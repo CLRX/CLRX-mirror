@@ -1,0 +1,19 @@
+* text=auto !eol
+CLRX/AmdBinaries.h -text
+CLRX/CMakeLists.txt -text svneol=unset#text/plain
+CLRX/Config.h.in -text
+CLRX/Utilities.h -text
+/CMakeLists.txt -text svneol=unset#text/plain
+/COPYING -text
+/Doxyfile.in -text
+amdbin/AmdBinaries.cpp -text
+amdbin/CMakeLists.txt -text svneol=unset#text/plain
+clwrapper/CLFunctions1.cpp -text
+clwrapper/CLFunctions2.cpp -text
+clwrapper/CLFunctions3.cpp -text
+clwrapper/CLInternals.cpp -text
+clwrapper/CLWrapper.h -text
+clwrapper/CMakeLists.txt -text svneol=unset#text/plain
+clwrapper/DispatchStruct.h -text
+utils/CMakeLists.txt -text svneol=unset#text/plain
+utils/Utilities.cpp -text

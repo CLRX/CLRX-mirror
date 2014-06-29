@@ -1,0 +1,127 @@
+/*
+ *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
+ *  Copyright (C) 2014 Mateusz Szpakowski
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+#ifndef __CLRX_CONFIG_H__
+#define __CLRX_CONFIG_H__
+
+#define CLRX_VERSION "${CLRX_VERSION}"
+
+#define CLRX_MAJOR_VERSION ${CLRX_MAJOR_VERSION}
+
+#define CLRX_MINOR_VERSION ${CLRX_MINOR_VERSION}
+
+#define CLRX_MICRO_VERSION ${CLRX_MICRO_VERSION}
+
+#cmakedefine HAVE_POPT
+
+#cmakedefine HAVE_GNU11
+
+#cmakedefine HAVE_ELF_H
+
+/* architecture setup */
+
+#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || \
+        defined(_M_IX86) || defined(__i386) || defined(_X86_)
+#  define HAVE_ARCH_INTEL 1
+#  define HAVE_ARCH_X86 1
+#  define HAVE_32BIT 1
+#endif
+
+#if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || \
+        defined(_M_X64) || defined(_M_AMD64)
+#  define HAVE_ARCH_INTEL 1
+#  define HAVE_ARCH_X86_64 1
+#  define HAVE_64BIT 1
+#endif
+
+/* machine bits */
+#if !defined(HAVE_32BIT) && !defined(HAVE_64BIT)
+#  ifdef _WIN64
+#    define HAVE_64BIT 1
+#  else
+#    ifdef _WIN32
+#      define HAVE_32BIT 1
+#    endif
+#  endif
+#endif
+
+#if !defined(HAVE_32BIT) && !defined(HAVE_64BIT)
+#  if defined(__SIZEOF_POINTER__) && __SIZEOF_POINTER__==8
+#    define HAVE_64BIT 1
+#  else
+#    define HAVE_32BIT 1
+#  endif
+#endif
+
+/* operating system */
+
+#ifdef __GNU__
+#  define HAVE_GNU 1
+#endif
+
+#if defined(__linux__) || defined(linux)
+#  define HAVE_LINUX 1
+#endif
+
+#if defined(_WIN32) || defined(_WIN64) || defined(__WINDOWS__) || defined(__WIN32__)
+#  define HAVE_WINDOWS 1
+#endif
+
+/* config setup */
+
+#ifdef HAVE_LINUX
+#define SYSTEM_CONFIG_PATH "/etc"
+#else
+#error "Other platforms is unsupported"
+#endif
+
+#ifdef HAVE_LINUX
+#  ifdef HAVE_32BIT
+#  define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
+#  else
+#  define DEFAULT_AMDOCLPATH "/usr/lib/libamdocl32.so"
+#  endif
+#else
+#  error "Unsupported platform"
+#endif
+
+/* symbols visibility */
+
+#if __GNUC__ >= 4
+#define CLRX_INTERNAL __attribute__((visibility("hidden")))
+#endif
+
+/* types and defs */
+
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
+typedef signed char cxchar;
+typedef unsigned char cxuchar;
+typedef signed short cxshort;
+typedef unsigned short cxushort;
+typedef signed int cxint;
+typedef unsigned int cxuint;
+typedef signed long cxlong;
+typedef unsigned long cxulong;
+typedef signed long long cxllong;
+typedef unsigned long long cxullong;
+
+#endif
