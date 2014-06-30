@@ -34,7 +34,6 @@
 #include <CL/cl_gl_ext.h>
 #include <CL/cl_ext.h>
 
-// Platform APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetPlatformIDs)(
         cl_uint, cl_platform_id*, cl_uint*) CL_API_SUFFIX__VERSION_1_0;
 
@@ -42,7 +41,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetPlatformInfo)(
         cl_platform_id, cl_platform_info, size_t, void*, size_t*)
         CL_API_SUFFIX__VERSION_1_0;
 
-// Device APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetDeviceIDs)(
         cl_platform_id, cl_device_type, cl_uint, cl_device_id*, cl_uint*)
         CL_API_SUFFIX__VERSION_1_0;
@@ -59,7 +57,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clRetainDevice)(
 typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clReleaseDevice)(
         cl_device_id) CL_API_SUFFIX__VERSION_1_2;
 
-// Context APIs  
 typedef CL_API_ENTRY cl_context (CL_API_CALL *CLRXpfn_clCreateContext)(
         const cl_context_properties*, cl_uint, const cl_device_id*,
         void (CL_CALLBACK*)(const char*, const void*, size_t, void*), void*, cl_int*)
@@ -79,7 +76,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clReleaseContext)(
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetContextInfo)(
         cl_context, cl_context_info, size_t, void*, size_t*) CL_API_SUFFIX__VERSION_1_0;
 
-// Command Queue APIs
 typedef CL_API_ENTRY cl_command_queue (CL_API_CALL *CLRXpfn_clCreateCommandQueue)(
         cl_context, cl_device_id, cl_command_queue_properties, cl_int*)
         CL_API_SUFFIX__VERSION_1_0;
@@ -94,7 +90,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetCommandQueueInfo)(
         cl_command_queue, cl_command_queue_info, size_t, void*, size_t*)
         CL_API_SUFFIX__VERSION_1_0;
 
-// Memory Object APIs
 typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreateBuffer)(
         cl_context, cl_mem_flags, size_t, void*, cl_int*) CL_API_SUFFIX__VERSION_1_0;
 
@@ -118,7 +113,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetMemObjectInfo)(
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetImageInfo)(
         cl_mem, cl_image_info, size_t, void*, size_t*) CL_API_SUFFIX__VERSION_1_0;
 
-// Sampler APIs
 typedef CL_API_ENTRY cl_sampler (CL_API_CALL *CLRXpfn_clCreateSampler)(
         cl_context, cl_bool, cl_addressing_mode, cl_filter_mode, cl_int*)
         CL_API_SUFFIX__VERSION_1_0;
@@ -202,7 +196,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetKernelWorkGroupInfo)(
         cl_kernel, cl_device_id, cl_kernel_work_group_info, size_t, void*, size_t*)
         CL_API_SUFFIX__VERSION_1_0;
 
-// Event Object APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clWaitForEvents)(
         cl_uint, const cl_event*) CL_API_SUFFIX__VERSION_1_0;
 
@@ -215,18 +208,15 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clRetainEvent)(cl_event)
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clReleaseEvent)(cl_event)
         CL_API_SUFFIX__VERSION_1_0;
 
-// Profiling APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetEventProfilingInfo)(
         cl_event, cl_profiling_info, size_t, void*, size_t*) CL_API_SUFFIX__VERSION_1_0;
 
-// Flush and Finish APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clFlush)(cl_command_queue)
         CL_API_SUFFIX__VERSION_1_0;
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clFinish)(cl_command_queue)
         CL_API_SUFFIX__VERSION_1_0;
 
-// Enqueued Commands APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueReadBuffer)(
         cl_command_queue, cl_mem, cl_bool, size_t, size_t, void*, cl_uint, const cl_event*,
         cl_event*) CL_API_SUFFIX__VERSION_1_0;
@@ -349,7 +339,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueBarrier)(
 typedef CL_API_ENTRY void * (CL_API_CALL *CLRXpfn_clGetExtensionFunctionAddress)(
         const char*) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED;
 
-// GL and other APIs
 typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreateFromGLBuffer)(
         cl_context, cl_mem_flags, GLuint, int*) CL_API_SUFFIX__VERSION_1_0;
 
@@ -382,33 +371,11 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueReleaseGLObjects)(
         cl_command_queue, cl_uint, const cl_mem*, cl_uint, const cl_event*, cl_event*)
         CL_API_SUFFIX__VERSION_1_0;
 
-/* cl_khr_gl_sharing */
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetGLContextInfoKHR)(
         const cl_context_properties*, cl_gl_context_info, size_t, void*, size_t*);
 
-/* cl_khr_gl_event */
 typedef CL_API_ENTRY cl_event (CL_API_CALL *CLRXpfn_clCreateEventFromGLsyncKHR)(
         cl_context, cl_GLsync, cl_int*);
-
-/* Direct3D10 and Direct3D11 pointers */
-typedef void *CLRXpfn_clGetDeviceIDsFromD3D10KHR;
-typedef void *CLRXpfn_clCreateFromD3D10BufferKHR;
-typedef void *CLRXpfn_clCreateFromD3D10Texture2DKHR;
-typedef void *CLRXpfn_clCreateFromD3D10Texture3DKHR;
-typedef void *CLRXpfn_clEnqueueAcquireD3D10ObjectsKHR;
-typedef void *CLRXpfn_clEnqueueReleaseD3D10ObjectsKHR;
-typedef void *CLRXpfn_clGetDeviceIDsFromD3D11KHR;
-typedef void *CLRXpfn_clCreateFromD3D11BufferKHR;
-typedef void *CLRXpfn_clCreateFromD3D11Texture2DKHR;
-typedef void *CLRXpfn_clCreateFromD3D11Texture3DKHR;
-typedef void *CLRXpfn_clEnqueueAcquireD3D11ObjectsKHR;
-typedef void *CLRXpfn_clEnqueueReleaseD3D11ObjectsKHR;
-typedef void *CLRXpfn_clCreateFromDX9MediaSurfaceKHR;
-typedef void *CLRXpfn_clEnqueueAcquireDX9MediaSurfacesKHR;
-typedef void *CLRXpfn_clEnqueueReleaseDX9MediaSurfacesKHR;
-typedef void *CLRXpfn_clGetDeviceIDsFromDX9MediaAdapterKHR;
-
-/* OpenCL 1.1 */
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetEventCallback)(
         cl_event, cl_int, void(CL_CALLBACK*)(cl_event, cl_int, void*), void*)
@@ -436,6 +403,8 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clRetainDeviceEXT)(
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clReleaseDeviceEXT)(
         cl_device_id) CL_API_SUFFIX__VERSION_1_0;
+
+typedef void *CLRXpfn_emtyFunction;
 
 typedef struct _CLRXIcdDispatch
 {
@@ -515,12 +484,12 @@ typedef struct _CLRXIcdDispatch
     CLRXpfn_clEnqueueReleaseGLObjects clEnqueueReleaseGLObjects;
     CLRXpfn_clGetGLContextInfoKHR clGetGLContextInfoKHR;
     /* Direct3D */
-    CLRXpfn_clGetDeviceIDsFromD3D10KHR clGetDeviceIDsFromD3D10KHR;
-    CLRXpfn_clCreateFromD3D10BufferKHR clCreateFromD3D10BufferKHR;
-    CLRXpfn_clCreateFromD3D10Texture2DKHR clCreateFromD3D10Texture2DKHR;
-    CLRXpfn_clCreateFromD3D10Texture3DKHR clCreateFromD3D10Texture3DKHR;
-    CLRXpfn_clEnqueueAcquireD3D10ObjectsKHR clEnqueueAcquireD3D10ObjectsKHR;
-    CLRXpfn_clEnqueueReleaseD3D10ObjectsKHR clEnqueueReleaseD3D10ObjectsKHR;
+    CLRXpfn_emtyFunction clGetDeviceIDsFromD3D10KHR;
+    CLRXpfn_emtyFunction clCreateFromD3D10BufferKHR;
+    CLRXpfn_emtyFunction clCreateFromD3D10Texture2DKHR;
+    CLRXpfn_emtyFunction clCreateFromD3D10Texture3DKHR;
+    CLRXpfn_emtyFunction clEnqueueAcquireD3D10ObjectsKHR;
+    CLRXpfn_emtyFunction clEnqueueReleaseD3D10ObjectsKHR;
     /* opencl 1.1 */
     CLRXpfn_clSetEventCallback clSetEventCallback;
     CLRXpfn_clCreateSubBuffer clCreateSubBuffer;
@@ -554,17 +523,16 @@ typedef struct _CLRXIcdDispatch
     CLRXpfn_clGetExtensionFunctionAddressForPlatform clGetExtensionFunctionAddressForPlatform;
     CLRXpfn_clCreateFromGLTexture clCreateFromGLTexture;
 
-    CLRXpfn_clGetDeviceIDsFromD3D11KHR clGetDeviceIDsFromD3D11KHR;
-    CLRXpfn_clCreateFromD3D11BufferKHR clCreateFromD3D11BufferKHR;
-    CLRXpfn_clCreateFromD3D11Texture2DKHR clCreateFromD3D11Texture2DKHR;
-    CLRXpfn_clCreateFromD3D11Texture3DKHR  clCreateFromD3D11Texture3DKHR;
-    CLRXpfn_clCreateFromDX9MediaSurfaceKHR clCreateFromDX9MediaSurfaceKHR;
-    CLRXpfn_clEnqueueAcquireD3D11ObjectsKHR clEnqueueAcquireD3D11ObjectsKHR;
-    CLRXpfn_clEnqueueReleaseD3D11ObjectsKHR clEnqueueReleaseD3D11ObjectsKHR;
-
-    CLRXpfn_clGetDeviceIDsFromDX9MediaAdapterKHR clGetDeviceIDsFromDX9MediaAdapterKHR;
-    CLRXpfn_clEnqueueAcquireDX9MediaSurfacesKHR clEnqueueAcquireDX9MediaSurfacesKHR;
-    CLRXpfn_clEnqueueReleaseDX9MediaSurfacesKHR clEnqueueReleaseDX9MediaSurfacesKHR;
+    CLRXpfn_emtyFunction clGetDeviceIDsFromD3D11KHR;
+    CLRXpfn_emtyFunction clCreateFromD3D11BufferKHR;
+    CLRXpfn_emtyFunction clCreateFromD3D11Texture2DKHR;
+    CLRXpfn_emtyFunction clCreateFromD3D11Texture3DKHR;
+    CLRXpfn_emtyFunction clCreateFromDX9MediaSurfaceKHR;
+    CLRXpfn_emtyFunction clEnqueueAcquireD3D11ObjectsKHR;
+    CLRXpfn_emtyFunction clEnqueueReleaseD3D11ObjectsKHR;
+    CLRXpfn_emtyFunction clGetDeviceIDsFromDX9MediaAdapterKHR;
+    CLRXpfn_emtyFunction clEnqueueAcquireDX9MediaSurfacesKHR;
+    CLRXpfn_emtyFunction clEnqueueReleaseDX9MediaSurfacesKHR;
 } CLRXIcdDispatch;
 
 struct _cl_platform_id
@@ -593,6 +561,5 @@ struct _cl_event
 
 struct _cl_sampler
 { CLRXIcdDispatch *dispatch; };
-
 
 #endif
