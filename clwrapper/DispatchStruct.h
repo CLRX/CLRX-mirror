@@ -126,7 +126,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clReleaseSampler)(cl_sampler)
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetSamplerInfo)(
         cl_sampler, cl_sampler_info, size_t, void*, size_t*) CL_API_SUFFIX__VERSION_1_0;
 
-// Program Object APIs
 typedef CL_API_ENTRY cl_program (CL_API_CALL *CLRXpfn_clCreateProgramWithSource)(
         cl_context, cl_uint, const char**, const size_t*, cl_int*)
         CL_API_SUFFIX__VERSION_1_0;
@@ -311,7 +310,6 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueBarrierWithWaitList)(
 typedef CL_API_ENTRY void * (CL_API_CALL *CLRXpfn_clGetExtensionFunctionAddressForPlatform)(
         cl_platform_id, const char*) CL_API_SUFFIX__VERSION_1_2;
 
-// Deprecated APIs
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetCommandQueueProperty)(
         cl_command_queue, cl_command_queue_properties, cl_bool,
         cl_command_queue_properties*) CL_EXT_SUFFIX__VERSION_1_0_DEPRECATED;
