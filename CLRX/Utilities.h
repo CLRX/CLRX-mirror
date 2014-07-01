@@ -78,7 +78,7 @@ public:
      * \param filename library filename
      * \param flags flags specifies way to load library and a resolving symbols
      */
-    DynLibrary(const std::string& filename, cxuint flags = 0);
+    DynLibrary(const char* filename, cxuint flags = 0);
     ~DynLibrary();
     
     DynLibrary(const DynLibrary&) = delete;
@@ -90,7 +90,7 @@ public:
      * \param filename library filename
      * \param flags flags specifies way to load library and a resolving symbols
      */
-    void load(const std::string& filename, cxuint flags = 0);
+    void load(const char* filename, cxuint flags = 0);
     /// unload library
     void unload();
     

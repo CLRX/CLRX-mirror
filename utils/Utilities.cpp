@@ -59,7 +59,7 @@ DynLibrary::DynLibrary()
     handle = nullptr;
 }
 
-DynLibrary::DynLibrary(const std::string& filename, cxuint flags)
+DynLibrary::DynLibrary(const char* filename, cxuint flags)
 {
     handle = nullptr;
     load(filename, flags);
@@ -70,7 +70,7 @@ DynLibrary::~DynLibrary()
     unload();
 }
 
-void DynLibrary::load(const std::string& filename, cxuint flags)
+void DynLibrary::load(const char* filename, cxuint flags)
 {
     std::lock_guard<std::mutex> lock(mutex);
 #ifdef HAVE_LINUX
@@ -80,7 +80,7 @@ void DynLibrary::load(const std::string& filename, cxuint flags)
         outFlags |= RTLD_LAZY;
     if ((flags & DYNLIB_MODE1_MASK) == DYNLIB_NOW)
         outFlags |= RTLD_NOW;
-    handle = dlopen(filename.c_str(), outFlags);
+    handle = dlopen(filename, outFlags);
     if (handle == nullptr)
         throw Exception(dlerror());
 #endif
