@@ -1105,6 +1105,7 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
                     InitKernelArgMapEntry entry;
                     entry.index = argIndex++;
                     entry.namePos = pos;
+                    entry.ptrSpace = KernelPtrSpace::GLOBAL;
                     entry.argType = KernelArgType::IMAGE; // set as image
                     std::pair<InitKernelArgMap::iterator, bool> result = 
                         initKernelArgs.insert(std::make_pair(
