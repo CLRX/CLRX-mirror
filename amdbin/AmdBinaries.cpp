@@ -696,6 +696,9 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
             if (argNameSym.argType > 0x26)
                 throw Exception("Unknown kernel arg type");
             karg.argType = x86ArgTypeTable[argNameSym.argType];
+            if (karg.argType == KernelArgType::POINTER &&
+                (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
+                karg.argType = KernelArgType::IMAGE;
             karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
             karg.typeName = binaryCode + argTypeSym.nameOffset;
@@ -811,6 +814,9 @@ size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
             if (argNameSym.argType > 0x26)
                 throw Exception("Unknown kernel arg type");
             karg.argType = x86ArgTypeTable[argNameSym.argType];
+            if (karg.argType == KernelArgType::POINTER &&
+                (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
+                karg.argType = KernelArgType::IMAGE;
             karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
             karg.typeName = binaryCode + argTypeOffset;
