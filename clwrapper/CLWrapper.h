@@ -342,6 +342,69 @@ static inline void clrxReleaseOnlyCLRXProgram(cl_program program)
 }
 
 /* internal macros */
+#define CLRX_INITIALIZE \
+    { \
+        try \
+        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); } \
+        catch(const std::exception& ex) \
+        { \
+            std::cerr << "Fatal error at wrapper initialization: " << \
+                    ex.what() << std::endl; \
+            abort(); \
+        } \
+        catch(...) \
+        { \
+            std::cerr << \
+                "Fatal and unknown error at wrapper initialization: " << std::endl; \
+            abort(); \
+        } \
+        if (clrxWrapperInitStatus != CL_SUCCESS) \
+            return clrxWrapperInitStatus; \
+    }
+
+#define CLRX_INITIALIZE_OBJ \
+    { \
+        try \
+        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); } \
+        catch(const std::exception& ex) \
+        { \
+            std::cerr << "Fatal error at wrapper initialization: " << \
+                    ex.what() << std::endl; \
+            abort(); \
+        } \
+        catch(...) \
+        { \
+            std::cerr << \
+                "Fatal and unknown error at wrapper initialization: " << std::endl; \
+            abort(); \
+        } \
+        if (clrxWrapperInitStatus != CL_SUCCESS) \
+        { \
+            if (errcode_ret != nullptr) \
+                *errcode_ret = clrxWrapperInitStatus; \
+            return nullptr; \
+        } \
+    }
+
+#define CLRX_INITIALIZE_VOIDPTR \
+    { \
+        try \
+        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); } \
+        catch(const std::exception& ex) \
+        { \
+            std::cerr << "Fatal error at wrapper initialization: " << \
+                    ex.what() << std::endl; \
+            abort(); \
+        } \
+        catch(...) \
+        { \
+            std::cerr << \
+                "Fatal and unknown error at wrapper initialization: " << std::endl; \
+            abort(); \
+        } \
+        if (clrxWrapperInitStatus != CL_SUCCESS) \
+            return nullptr; \
+    }
 
 #define CREATE_CLRXCONTEXT_OBJECT(CLRXTYPE, AMDOBJECTMEMBER, \
         AMDOBJECT, CLRELEASECALL, FATALERROR) \

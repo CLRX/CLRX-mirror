@@ -912,6 +912,8 @@ clEnqueueBarrier(cl_command_queue command_queue) CL_EXT_SUFFIX__VERSION_1_1_DEPR
 CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED void * CL_API_CALL
 clGetExtensionFunctionAddress(const char * func_name) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
+    CLRX_INITIALIZE_VOIDPTR
+    
     const CLRXExtensionEntry tmp{func_name};
     const size_t length = sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
     const CLRXExtensionEntry* entry = std::lower_bound(clrxExtensionsTable,
@@ -1159,6 +1161,8 @@ clGetGLContextInfoKHR(const cl_context_properties * properties,
       void *                        param_value,
       size_t *                      param_value_size_ret) CL_API_SUFFIX__VERSION_1_0
 {
+    CLRX_INITIALIZE
+    
     CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
     bool doTranslateProps = false;
     size_t propNums = 0;

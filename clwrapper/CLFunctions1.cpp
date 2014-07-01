@@ -36,29 +36,12 @@ clGetPlatformIDs(cl_uint          num_entries,
                  cl_platform_id * platforms,
                  cl_uint *        num_platforms) CL_API_SUFFIX__VERSION_1_0
 {
+    CLRX_INITIALIZE
+    
     if (num_entries == 0 && platforms != nullptr)
         return CL_INVALID_VALUE;
     if (platforms == nullptr && num_platforms == nullptr)
         return CL_INVALID_VALUE;
-    
-    {
-        try
-        { std::call_once(clrxOnceFlag, clrxWrapperInitialize); }
-        catch(const std::exception& ex)
-        {
-            std::cerr << "Fatal error at wrapper initialization: " <<
-                    ex.what() << std::endl;
-            abort();
-        }
-        catch(...)
-        {
-            std::cerr <<
-                "Fatal and unknown error at wrapper initialization: " << std::endl;
-            abort();
-        }
-        if (clrxWrapperInitStatus != CL_SUCCESS)
-            return clrxWrapperInitStatus;
-    }
     
     if (!useCLRXWrapper) // ignore wrapper, returns original AMD platforms
     {
@@ -109,6 +92,8 @@ clGetPlatformInfo(cl_platform_id   platform,
                   void *           param_value,
                   size_t *         param_value_size_ret) CL_API_SUFFIX__VERSION_1_0
 {
+    CLRX_INITIALIZE
+    
     if (platform == nullptr)
         return CL_INVALID_PLATFORM;
     
@@ -155,6 +140,8 @@ clGetDeviceIDs(cl_platform_id   platform,
                cl_device_id *   devices,
                cl_uint *        num_devices) CL_API_SUFFIX__VERSION_1_0
 {
+    CLRX_INITIALIZE
+    
     if (platform == nullptr)
         return CL_INVALID_PLATFORM;
     if (device_type == 0)
@@ -274,6 +261,8 @@ clCreateContext(const cl_context_properties * properties,
                 void *                  user_data,
                 cl_int *                errcode_ret) CL_API_SUFFIX__VERSION_1_0
 {
+    CLRX_INITIALIZE_OBJ
+    
     if (devices == nullptr || num_devices == 0)
     {
         if (errcode_ret != nullptr)
@@ -401,6 +390,8 @@ clCreateContextFromType(const cl_context_properties * properties,
                     void *                  user_data,
                     cl_int *                errcode_ret) CL_API_SUFFIX__VERSION_1_0
 {
+    CLRX_INITIALIZE_OBJ
+    
     CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
     
     bool doTranslateProps = false;
@@ -1214,6 +1205,8 @@ clBuildProgram(cl_program           program,
 CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
 clUnloadCompiler(void) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
+    CLRX_INITIALIZE
+    
     if (amdOclUnloadCompiler != nullptr)
         return amdOclUnloadCompiler();
     return CL_SUCCESS;
