@@ -76,7 +76,7 @@ enum KernelArgType : uint8_t
 };
 
 /// kernel pointer type of argument
-enum class KernelPtrType : uint8_t
+enum class KernelPtrSpace : uint8_t
 {
     NONE = 0,   ///< no pointer
     LOCAL,      ///< pointer to local memory
@@ -98,7 +98,7 @@ enum : uint8_t
 struct KernelArg
 {
     KernelArgType argType;  ///< argument type
-    KernelPtrType ptrType;  ///< pointer type for argument if argument is pointer or image
+    KernelPtrSpace ptrSpace;  ///< pointer space for argument if argument is pointer or image
     uint8_t ptrAccess;  ///< pointer access flags
     std::string typeName;   ///< name of type of argument
     std::string argName;    ///< argument name

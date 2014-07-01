@@ -696,7 +696,7 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
             if (argNameSym.argType > 0x26)
                 throw Exception("Unknown kernel arg type");
             karg.argType = x86ArgTypeTable[argNameSym.argType];
-            karg.ptrType = static_cast<KernelPtrType>(argNameSym.ptrType);
+            karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
             karg.typeName = binaryCode + argTypeSym.nameOffset;
         }
@@ -811,7 +811,7 @@ size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
             if (argNameSym.argType > 0x26)
                 throw Exception("Unknown kernel arg type");
             karg.argType = x86ArgTypeTable[argNameSym.argType];
-            karg.ptrType = static_cast<KernelPtrType>(argNameSym.ptrType);
+            karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
             karg.typeName = binaryCode + argTypeOffset;
         }
@@ -854,14 +854,14 @@ struct InitKernelArgMapEntry {
     uint32_t index;
     KernelArgType argType;
     KernelArgType origArgType;
-    KernelPtrType ptrType;
+    KernelPtrSpace ptrSpace;
     uint32_t ptrAccess;
     size_t namePos;
     size_t typePos;
     
     InitKernelArgMapEntry() : index(0), argType(KernelArgType::VOID),
         origArgType(KernelArgType::VOID),
-        ptrType(KernelPtrType::NONE), ptrAccess(0), namePos(0), typePos(0)
+        ptrSpace(KernelPtrSpace::NONE), ptrAccess(0), namePos(0), typePos(0)
     { }
 };
 
@@ -1064,25 +1064,25 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
                     kernelDesc[pos+1] == 'a' && kernelDesc[pos+2] == 'v' &&
                     kernelDesc[pos+3] == ':')
                 {
-                    argIt->second.ptrType = KernelPtrType::GLOBAL;
+                    argIt->second.ptrSpace = KernelPtrSpace::GLOBAL;
                     pos += 4;
                 }
                 else if (pos+3 <= sym.st_size && kernelDesc[pos] == 'h' &&
                     kernelDesc[pos+1] == 'c' && kernelDesc[pos+2] == ':')
                 {
-                    argIt->second.ptrType = KernelPtrType::CONSTANT;
+                    argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
                     pos += 3;
                 }
                 else if (pos+3 <= sym.st_size && kernelDesc[pos] == 'h' &&
                     kernelDesc[pos+1] == 'l' && kernelDesc[pos+2] == ':')
                 {
-                    argIt->second.ptrType = KernelPtrType::LOCAL;
+                    argIt->second.ptrSpace = KernelPtrSpace::LOCAL;
                     pos += 3;
                 }
                 else if (pos+2 <= sym.st_size && kernelDesc[pos] == 'c' &&
                       kernelDesc[pos+1] == ':')
                 {
-                    argIt->second.ptrType = KernelPtrType::CONSTANT;
+                    argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
                     pos += 2;
                 }
                 else //if not match
@@ -1199,7 +1199,7 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
         {   /* initialize kernel arguments before set argument type from reflections */
             KernelArg& karg = kernelInfo.argInfos[e.second.index];
             karg.argType = e.second.argType;
-            karg.ptrType = e.second.ptrType;
+            karg.ptrSpace = e.second.ptrSpace;
             karg.ptrAccess = e.second.ptrAccess;
             karg.argName = stringFromCStringDelim(kernelDesc + e.second.namePos,
                       sym.st_size-e.second.namePos, ':');
