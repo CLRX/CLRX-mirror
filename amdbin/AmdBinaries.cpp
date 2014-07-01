@@ -853,12 +853,14 @@ const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
 struct InitKernelArgMapEntry {
     uint32_t index;
     KernelArgType argType;
+    KernelArgType origArgType;
     KernelPtrType ptrType;
     uint32_t ptrAccess;
     size_t namePos;
     size_t typePos;
     
     InitKernelArgMapEntry() : index(0), argType(KernelArgType::VOID),
+        origArgType(KernelArgType::VOID),
         ptrType(KernelPtrType::NONE), ptrAccess(0), namePos(0), typePos(0)
     { }
 };
@@ -1143,9 +1145,12 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
                 
                 std::string argName(kernelDesc+pos, tokPos-pos);
                 InitKernelArgMap::iterator argIt = initKernelArgs.find(argName);
-                if (argIt == initKernelArgs.end())
-                    throw ParseException(lineNo, "Cant find sampler argument");
-                argIt->second.argType = KernelArgType::SAMPLER;
+                if (argIt != initKernelArgs.end())
+                {
+                    argIt->second.origArgType = argIt->second.argType;
+                    argIt->second.argType = KernelArgType::SAMPLER;
+                }
+                
                 pos = tokPos;
             }
             else if (::strncmp(kernelDesc + pos, "constarg", tokPos-pos) == 0)
@@ -1237,6 +1242,20 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
                 pos = tokPos+1;
                 kernelInfo.argInfos[argIndex].typeName = stringFromCStringDelim(
                     kernelDesc+pos, sym.st_size-pos, '\n');
+                
+                KernelArg& argInfo = kernelInfo.argInfos[argIndex];
+                
+                if (argInfo.argName.compare(0, 8, "unknown_") == 0 &&
+                    argInfo.typeName != "sampler_t" &&
+                    argInfo.argType == KernelArgType::SAMPLER)
+                {   InitKernelArgMap::const_iterator argIt =
+                                initKernelArgs.find(argInfo.argName);
+                    if (argIt != initKernelArgs.end() &&
+                        argIt->second.origArgType != KernelArgType::VOID)
+                    {   /* revert sampler type and restore original arg type */
+                        argInfo.argType = argIt->second.origArgType;
+                    }
+                }    
                 
                 while (pos < sym.st_size && kernelDesc[pos] != '\n') pos++;
                 lineNo++;
