@@ -33,7 +33,7 @@ extern "C"
 
 #define CLRX_CLCOMMAND_PREFIX q->amdOclCommandQueue->dispatch->
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clSetEventCallback( cl_event    event,
                     cl_int      command_exec_callback_type,
                     void (CL_CALLBACK * pfn_notify)(cl_event, cl_int, void *),
@@ -61,7 +61,7 @@ clSetEventCallback( cl_event    event,
     return status;
 }
 
-CL_API_ENTRY cl_mem CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_mem CL_API_CALL
 clCreateSubBuffer(cl_mem                   buffer,
                   cl_mem_flags             flags,
                   cl_buffer_create_type    buffer_create_type,
@@ -91,7 +91,7 @@ clCreateSubBuffer(cl_mem                   buffer,
     return outObject;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clSetMemObjectDestructorCallback(  cl_mem memobj, 
                 void (CL_CALLBACK * pfn_notify)( cl_mem, void* ), 
                 void * user_data)             CL_API_SUFFIX__VERSION_1_1
@@ -118,7 +118,7 @@ clSetMemObjectDestructorCallback(  cl_mem memobj,
     return status;
 }
 
-CL_API_ENTRY cl_event CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_event CL_API_CALL
 clCreateUserEvent(cl_context    context,
                   cl_int *      errcode_ret) CL_API_SUFFIX__VERSION_1_1
 {
@@ -143,7 +143,7 @@ clCreateUserEvent(cl_context    context,
     return outObject;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clSetUserEventStatus(cl_event   event,
                      cl_int     execution_status) CL_API_SUFFIX__VERSION_1_1
 {
@@ -155,7 +155,7 @@ clSetUserEventStatus(cl_event   event,
                       execution_status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueReadBufferRect(cl_command_queue    command_queue,
                         cl_mem              buffer,
                         cl_bool             blocking_read,
@@ -194,7 +194,7 @@ clEnqueueReadBufferRect(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueWriteBufferRect(cl_command_queue    command_queue,
                          cl_mem              buffer,
                          cl_bool             blocking_write,
@@ -233,7 +233,7 @@ clEnqueueWriteBufferRect(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueCopyBufferRect(cl_command_queue    command_queue,
                         cl_mem              src_buffer,
                         cl_mem              dst_buffer, 
@@ -271,7 +271,7 @@ clEnqueueCopyBufferRect(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL clCreateSubDevicesEXT(cl_device_id in_device,
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clCreateSubDevicesEXT(cl_device_id in_device,
                             const cl_device_partition_property_ext * properties,
                             cl_uint num_entries,
                             cl_device_id * out_devices,
@@ -301,7 +301,7 @@ CL_API_ENTRY cl_int CL_API_CALL clCreateSubDevicesEXT(cl_device_id in_device,
     return status;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clRetainDeviceEXT(cl_device_id device) CL_EXT_SUFFIX__VERSION_1_1
 {
     if (device == nullptr)
@@ -315,7 +315,7 @@ clRetainDeviceEXT(cl_device_id device) CL_EXT_SUFFIX__VERSION_1_1
     return status;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clReleaseDeviceEXT(cl_device_id device) CL_EXT_SUFFIX__VERSION_1_1
 {
     if (device == nullptr)
@@ -329,7 +329,7 @@ clReleaseDeviceEXT(cl_device_id device) CL_EXT_SUFFIX__VERSION_1_1
     return status;
 }
 
-CL_API_ENTRY cl_event CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_event CL_API_CALL
 clCreateEventFromGLsyncKHR(cl_context           context,
                    cl_GLsync            cl_GLsync,
                    cl_int *             errcode_ret) CL_EXT_SUFFIX__VERSION_1_1
@@ -355,7 +355,7 @@ clCreateEventFromGLsyncKHR(cl_context           context,
     return outObject;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clCreateSubDevices(cl_device_id  in_device,
                const cl_device_partition_property * properties,
                cl_uint           num_devices,
@@ -385,7 +385,7 @@ clCreateSubDevices(cl_device_id  in_device,
     return status;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clRetainDevice(cl_device_id device) CL_API_SUFFIX__VERSION_1_2
 {
     if (device == nullptr)
@@ -399,7 +399,7 @@ clRetainDevice(cl_device_id device) CL_API_SUFFIX__VERSION_1_2
     return status;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clReleaseDevice(cl_device_id device) CL_API_SUFFIX__VERSION_1_2
 {
     if (device == nullptr)
@@ -413,7 +413,7 @@ clReleaseDevice(cl_device_id device) CL_API_SUFFIX__VERSION_1_2
     return status;
 }
 
-CL_API_ENTRY cl_mem CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_mem CL_API_CALL
 clCreateImage(cl_context              context,
               cl_mem_flags            flags,
               const cl_image_format * image_format,
@@ -442,7 +442,7 @@ clCreateImage(cl_context              context,
     return outObject;
 }
 
-CL_API_ENTRY cl_program CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_program CL_API_CALL
 clCreateProgramWithBuiltInKernels(cl_context            context,
                   cl_uint               num_devices,
                   const cl_device_id *  device_list,
@@ -499,7 +499,7 @@ clCreateProgramWithBuiltInKernels(cl_context            context,
     return outProgram;
 }
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+extern CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clCompileProgram(cl_program           program,
                  cl_uint              num_devices,
                  const cl_device_id * device_list,
@@ -617,7 +617,7 @@ clCompileProgram(cl_program           program,
     }
 }
 
-CL_API_ENTRY cl_program CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_program CL_API_CALL
 clLinkProgram(cl_context           context,
               cl_uint              num_devices,
               const cl_device_id * device_list,
@@ -787,14 +787,14 @@ clLinkProgram(cl_context           context,
     return outProgram;
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clUnloadPlatformCompiler(cl_platform_id platform) CL_API_SUFFIX__VERSION_1_2
 {
     const CLRXPlatform* p = static_cast<const CLRXPlatform*>(platform);
     return p->amdOclPlatform->dispatch->clUnloadPlatformCompiler(p->amdOclPlatform);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clGetKernelArgInfo(cl_kernel       kernel,
                    cl_uint         arg_indx,
                    cl_kernel_arg_info  param_name,
@@ -810,7 +810,7 @@ clGetKernelArgInfo(cl_kernel       kernel,
              arg_indx, param_name, param_value_size, param_value, param_value_size_ret);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueFillBuffer(cl_command_queue    command_queue,
                     cl_mem             buffer, 
                     const void *       pattern,
@@ -842,7 +842,7 @@ clEnqueueFillBuffer(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueFillImage(cl_command_queue   command_queue,
                    cl_mem             image,
                    const void *       fill_color,
@@ -873,7 +873,7 @@ clEnqueueFillImage(cl_command_queue   command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueMigrateMemObjects(cl_command_queue       command_queue,
                            cl_uint                num_mem_objects,
                            const cl_mem *         mem_objects,
@@ -915,7 +915,7 @@ clEnqueueMigrateMemObjects(cl_command_queue       command_queue,
     { return CL_OUT_OF_HOST_MEMORY; }
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueMarkerWithWaitList(cl_command_queue command_queue,
                             cl_uint           num_events_in_wait_list,
                             const cl_event *  event_wait_list,
@@ -938,7 +938,7 @@ clEnqueueMarkerWithWaitList(cl_command_queue command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
 clEnqueueBarrierWithWaitList(cl_command_queue command_queue,
                              cl_uint           num_events_in_wait_list,
                              const cl_event *  event_wait_list,
@@ -961,7 +961,7 @@ clEnqueueBarrierWithWaitList(cl_command_queue command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY void * CL_API_CALL 
+CLRX_INTERNAL CL_API_ENTRY void * CL_API_CALL 
 clGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
              const char *   func_name) CL_API_SUFFIX__VERSION_1_2
 {
@@ -972,7 +972,7 @@ clGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
     return clGetExtensionFunctionAddress(func_name);
 }
 
-CL_API_ENTRY cl_mem CL_API_CALL
+CLRX_INTERNAL CL_API_ENTRY cl_mem CL_API_CALL
 clCreateFromGLTexture(cl_context      context,
                       cl_mem_flags    flags,
                       cl_GLenum       target,
@@ -1008,7 +1008,8 @@ clCreateFromGLTexture(cl_context      context,
 #undef CLRX_CLCOMMAND_PREFIX
 #define CLRX_CLCOMMAND_PREFIX
 
-CL_API_ENTRY cl_int CL_API_CALL clEnqueueWaitSignalAMD( cl_command_queue command_queue,
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clEnqueueWaitSignalAMD(
+                           cl_command_queue command_queue,
                            cl_mem mem_object,
                            cl_uint value,
                            cl_uint num_events_in_wait_list,
@@ -1036,7 +1037,7 @@ CL_API_ENTRY cl_int CL_API_CALL clEnqueueWaitSignalAMD( cl_command_queue command
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL clEnqueueWriteSignalAMD(
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clEnqueueWriteSignalAMD(
                         cl_command_queue command_queue,
                         cl_mem mem_object,
                         cl_uint value,
@@ -1066,7 +1067,7 @@ CL_API_ENTRY cl_int CL_API_CALL clEnqueueWriteSignalAMD(
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
+CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
                          cl_command_queue command_queue,
                          cl_uint num_mem_objects,
                          cl_mem * mem_objects,

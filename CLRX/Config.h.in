@@ -93,9 +93,9 @@
 
 #ifdef HAVE_LINUX
 #  ifdef HAVE_32BIT
-#  define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
-#  else
 #  define DEFAULT_AMDOCLPATH "/usr/lib/libamdocl32.so"
+#  else
+#  define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
 #  endif
 #else
 #  error "Unsupported platform"

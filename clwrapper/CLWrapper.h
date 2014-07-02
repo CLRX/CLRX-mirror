@@ -263,6 +263,8 @@ CLRX_INTERNAL extern CLRXPlatform* clrxPlatforms;
 CLRX_INTERNAL extern clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD;
 CLRX_INTERNAL extern clEnqueueWriteSignalAMD_fn amdOclEnqueueWriteSignalAMD;
 CLRX_INTERNAL extern clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD;
+CLRX_INTERNAL extern CLRXpfn_clGetExtensionFunctionAddress
+        amdOclGetExtensionFunctionAddress;
 
 CLRX_INTERNAL extern const CLRXIcdDispatch clrxDispatchRecord;
 CLRX_INTERNAL extern const CLRXExtensionEntry clrxExtensionsTable[7];

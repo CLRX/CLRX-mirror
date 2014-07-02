@@ -46,6 +46,7 @@ CLRXPlatform* clrxPlatforms = nullptr;
 clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD = nullptr;
 clEnqueueWriteSignalAMD_fn amdOclEnqueueWriteSignalAMD = nullptr;
 clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD = nullptr;
+CLRXpfn_clGetExtensionFunctionAddress amdOclGetExtensionFunctionAddress = nullptr;
 
 /* extensions table */
 const CLRXExtensionEntry clrxExtensionsTable[7] =
@@ -323,24 +324,23 @@ void clrxWrapperInitialize()
         catch(const CLRX::Exception& ex)
         { /* ignore if not found */ }
         
-        const CLRXpfn_clGetExtensionFunctionAddress pclGetExtensionFunctionAddress =
-                (CLRXpfn_clGetExtensionFunctionAddress)
+        amdOclGetExtensionFunctionAddress = (CLRXpfn_clGetExtensionFunctionAddress)
                 tmpAmdOclLibrary->getSymbol("clGetExtensionFunctionAddress");
-        if (pclGetExtensionFunctionAddress == nullptr)
+        if (amdOclGetExtensionFunctionAddress == nullptr)
             throw Exception("AMDOCL clGetExtensionFunctionAddress have invalid value!");
         
         const pfn_clIcdGetPlatformIDs pgetPlatformIDs = (pfn_clIcdGetPlatformIDs)
-                pclGetExtensionFunctionAddress("clIcdGetPlatformIDsKHR");
-        if (pclGetExtensionFunctionAddress == nullptr)
+                amdOclGetExtensionFunctionAddress("clIcdGetPlatformIDsKHR");
+        if (amdOclGetExtensionFunctionAddress == nullptr)
             throw Exception("AMDOCL clIcdGetPlatformIDsKHR have invalid value!");
         
         /* specific amd extensions functions */
         amdOclEnqueueWaitSignalAMD = (clEnqueueWaitSignalAMD_fn)
-            pclGetExtensionFunctionAddress("clEnqueueWaitSignalAMD");
+            amdOclGetExtensionFunctionAddress("clEnqueueWaitSignalAMD");
         amdOclEnqueueWriteSignalAMD = (clEnqueueWriteSignalAMD_fn)
-            pclGetExtensionFunctionAddress("clEnqueueWriteSignalAMD");
+            amdOclGetExtensionFunctionAddress("clEnqueueWriteSignalAMD");
         amdOclEnqueueMakeBuffersResidentAMD = (clEnqueueMakeBuffersResidentAMD_fn)
-            pclGetExtensionFunctionAddress("clEnqueueMakeBuffersResidentAMD");
+            amdOclGetExtensionFunctionAddress("clEnqueueMakeBuffersResidentAMD");
         
         cl_uint platformCount;
         cl_int status = pgetPlatformIDs(0, nullptr, &platformCount);
@@ -383,7 +383,8 @@ void clrxWrapperInitialize()
                 continue;
             }
             
-            amdOclVendors[i].clGetExtensionFunctionAddress = pclGetExtensionFunctionAddress;
+            amdOclVendors[i].clGetExtensionFunctionAddress =
+                    amdOclGetExtensionFunctionAddress;
             amdOclVendors[i].platform = amdOclPlatforms[i];
             amdOclVendors[i].suffix = suffixBuffer;
             
@@ -398,14 +399,17 @@ void clrxWrapperInitialize()
             if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
                         CL_PLATFORM_EXTENSIONS, 0, nullptr, &extsSize) != CL_SUCCESS)
                 continue;
-            char* extsBuffer = new char[extsSize+ 20];
+            char* extsBuffer = new char[extsSize + 20];
             if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
                     CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer, nullptr) != CL_SUCCESS)
             {
                 delete[] extsBuffer;
                 continue;
             }
-            strcat(extsBuffer, " cl_radeon_extender");
+            if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
+                strcat(extsBuffer, " cl_radeon_extender");
+            else
+                strcat(extsBuffer, "cl_radeon_extender");
             clrxPlatforms[i].extensions = extsBuffer;
             clrxPlatforms[i].extensionsSize = strlen(extsBuffer)+1;
             
