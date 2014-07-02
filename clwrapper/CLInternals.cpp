@@ -21,11 +21,13 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <utility>
 #include <thread>
 #include <mutex>
 #include <memory>
 #include <cstring>
 #include <CLRX/Utilities.h>
+#include <CLRX/AmdBinaries.h>
 #include "CLWrapper.h"
 
 using namespace CLRX;
@@ -264,6 +266,7 @@ CLRXSampler::~CLRXSampler()
 
 CLRXProgram::CLRXProgram() : refCount(1)
 {
+    kernelArgFlagsInitialized = false;
     context = nullptr;
     assocDevicesNum = 0;
     assocDevices = nullptr;
@@ -278,7 +281,8 @@ CLRXProgram::~CLRXProgram()
     delete[] origAssocDevices;
 }
 
-CLRXKernel::CLRXKernel() : refCount(1)
+CLRXKernel::CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
+        argTypes(_argTypes)
 {
     program = nullptr;
 }
@@ -626,7 +630,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
            (CLRXDevice**)(platformDevices.data()), amdDevicesNum, amdDevices);
     // now is ours devices
     c->devicesNum = amdDevicesNum;
-    c->devices = amdDevices;
+    c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
     return CL_SUCCESS;
 }
 
@@ -662,7 +666,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
                    amdDevicesNum, amdDevices);
     // now is ours devices
     c->devicesNum = amdDevicesNum;
-    c->devices = amdDevices;
+    c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
     return CL_SUCCESS;
 }
 
@@ -673,7 +677,7 @@ cl_int clrxSetProgramOrigDevices(CLRXProgram* p)
     cl_uint amdDevicesNum;
     cl_device_id* amdDevices = nullptr;
     
-    const CLRXContext* c = static_cast<CLRXContext*>(p->context);
+    const CLRXContext* c = static_cast<const CLRXContext*>(p->context);
     
     cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(p->amdOclProgram,
         CL_PROGRAM_NUM_DEVICES, sizeof(cl_uint), &amdDevicesNum, nullptr);
@@ -701,7 +705,7 @@ cl_int clrxSetProgramOrigDevices(CLRXProgram* p)
            (CLRXDevice**)(c->devices), amdDevicesNum, amdDevices);
     // now is ours devices
     p->origAssocDevicesNum = amdDevicesNum;
-    p->origAssocDevices = amdDevices;
+    p->origAssocDevices = reinterpret_cast<CLRXDevice**>(amdDevices);
     return CL_SUCCESS;
 }
 
@@ -756,7 +760,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
                amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
         delete[] p->assocDevices;
         p->assocDevicesNum = amdAssocDevicesNum;
-        p->assocDevices = amdAssocDevices;
+        p->assocDevices = reinterpret_cast<CLRXDevice**>(amdAssocDevices);
     }
     catch(const std::bad_alloc& ex)
     {
@@ -801,10 +805,16 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                 clrxSetProgramOrigDevices(outProgram);
                 // initialize assoc devices num
                 outProgram->assocDevicesNum = outProgram->origAssocDevicesNum;
-                outProgram->assocDevices = new cl_device_id[outProgram->assocDevicesNum];
+                outProgram->assocDevices = new CLRXDevice*[outProgram->assocDevicesNum];
                 std::copy(outProgram->origAssocDevices,
                           outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
                           outProgram->assocDevices);
+                
+                if (clrxInitKernelArgFlagsMap(outProgram) != CL_SUCCESS)
+                {
+                    std::cerr << "Fatal error on notify wrapper!" << std::endl;
+                    abort();
+                }
             }
             wrappedData->clrxProgram = outProgram;
             wrappedData->clrxProgramFilled = true;
@@ -839,7 +849,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
         outProgram = new CLRXProgram;
         outProgram->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
         outProgram->amdOclProgram = amdProgram;
-        outProgram->context = (cl_context)c;
+        outProgram->context = c;
         if (clrxSetProgramOrigDevices(outProgram) != CL_SUCCESS)
         {
             std::cerr << "Error at initializing original assoc devices" << std::endl;
@@ -859,7 +869,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
         return nullptr;
     }
     
-    clrxRetainOnlyCLRXContext((cl_context)c);
+    clrxRetainOnlyCLRXContext(c);
     return outProgram;
 }
 
@@ -874,7 +884,7 @@ cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
             outEvent = new CLRXEvent;
             outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
             outEvent->amdOclEvent = amdEvent;
-            outEvent->commandQueue = (cl_command_queue)q;
+            outEvent->commandQueue = const_cast<CLRXCommandQueue*>(q);
             outEvent->context = q->context;
             *event = outEvent;
         }
@@ -948,4 +958,97 @@ void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
     wrappedData->realNotify(wrappedData->clrxMemObject, wrappedData->realUserData);
     // must be called only once (freeing wrapped data)
     delete wrappedData;
+}
+
+cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
+{
+    if (program->kernelArgFlagsInitialized)
+        return CL_SUCCESS; // if already initialized
+    // clear before set up
+    program->kernelArgFlagsMap.clear();
+    
+    cl_program_binary_type ptype;
+    cl_int status = program->amdOclProgram->dispatch->clGetProgramBuildInfo(
+        program->amdOclProgram, program->assocDevices[0]->amdOclDevice,
+        CL_PROGRAM_BINARY_TYPE, sizeof(cl_program_binary_type), &ptype, nullptr);
+    if (status != CL_SUCCESS)
+    {
+        std::cerr << "Cant retrieve program binary type" << std::endl;
+        abort();
+    }
+    
+    if (ptype != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
+        return CL_SUCCESS; // do nothing if not executable
+    
+    size_t* binarySizes = nullptr;
+    char** binaries = nullptr;
+    try
+    {
+        binarySizes = new size_t[program->assocDevicesNum];
+        binaries = new char*[program->assocDevicesNum];
+        std::fill(binaries, binaries + program->assocDevicesNum, nullptr);
+        
+        status = program->amdOclProgram->dispatch->clGetProgramInfo(
+                program->amdOclProgram, CL_PROGRAM_BINARY_SIZES,
+                sizeof(size_t)*program->assocDevicesNum, binarySizes, nullptr);
+        if (status != CL_SUCCESS)
+        {
+            std::cerr << "Cant program binary sizes!" << std::endl;
+            abort();
+        }
+        binaries[0] = new char[binarySizes[0]];
+        status = program->amdOclProgram->dispatch->clGetProgramInfo(
+                program->amdOclProgram, CL_PROGRAM_BINARIES,
+                sizeof(char*)*program->assocDevicesNum, binaries, nullptr);
+        if (status != CL_SUCCESS)
+        {
+            std::cerr << "Cant program binaries!" << std::endl;
+            abort();
+        }
+        
+        std::unique_ptr<AmdMainBinaryBase> amdBin(
+            createAmdBinaryFromCode(binarySizes[0], binaries[0],
+                         AMDBIN_CREATE_KERNELINFO));
+        size_t kernelsNum = amdBin->getKernelInfosNum();
+        const KernelInfo* kernelInfos = amdBin->getKernelInfos();
+        /* create kernel argsflags map (for setKernelArg) */
+        for (size_t i = 0; i < kernelsNum; i++)
+        {
+            const KernelInfo& kernelInfo = kernelInfos[i];
+            std::vector<bool> kernelFlags(kernelInfo.argsNum<<1);
+            for (cxuint k = 0; k < kernelInfo.argsNum; k++)
+            {
+                const KernelArg& karg = kernelInfo.argInfos[k];
+                // if mem object (image or
+                kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
+                        (karg.ptrSpace == KernelPtrSpace::GLOBAL ||
+                         karg.ptrSpace == KernelPtrSpace::CONSTANT)) ||
+                         karg.argType == KernelArgType::IMAGE);
+                // if sampler
+                kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
+            }
+            program->kernelArgFlagsMap.insert(std::make_pair(kernelInfo.kernelName,
+                        std::move(kernelFlags)));
+        }
+    }
+    catch(const std::bad_alloc& ex)
+    {
+        if (binaries != nullptr)
+            delete[] binaries[0];
+        delete[] binarySizes;
+        delete[] binaries;
+        return CL_OUT_OF_HOST_MEMORY;
+    }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal error at kernelArgFlagsMap creation" << std::endl;
+        abort();
+    }
+    
+    if (binaries != nullptr)
+        delete[] binaries[0];
+    delete[] binarySizes;
+    delete[] binaries;
+    program->kernelArgFlagsInitialized = true;
+    return CL_SUCCESS;
 }

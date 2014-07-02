@@ -77,7 +77,7 @@ clGetEventInfo(cl_event         event,
 {
     if (event == nullptr)
         return CL_INVALID_EVENT;
-    const CLRXEvent* e = static_cast<CLRXEvent*>(event);
+    const CLRXEvent* e = static_cast<const CLRXEvent*>(event);
     
     switch (param_name)
     {

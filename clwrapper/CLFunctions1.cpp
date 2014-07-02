@@ -378,7 +378,7 @@ clCreateContext(const cl_context_properties * properties,
     std::copy(properties, properties + propNums+1, outContext->properties);
     
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
-        clrxRetainOnlyCLRXDevice(outContext->devices[i]);
+        clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
     
     return outContext;
 }
@@ -486,7 +486,7 @@ clCreateContextFromType(const cl_context_properties * properties,
     std::copy(properties, properties + propNums+1, outContext->properties);
     
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
-        clrxRetainOnlyCLRXDevice(outContext->devices[i]);
+        clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
     
     return outContext;
 }
@@ -607,9 +607,9 @@ clCreateCommandQueue(cl_context                     context,
     CREATE_CLRXCONTEXT_OBJECT(CLRXCommandQueue, amdOclCommandQueue, amdCmdQueue,
               clReleaseCommandQueue,
               "Fatal Error at handling error at command queue creation!")
-    outObject->device = device;
+    outObject->device = static_cast<CLRXDevice*>(device);
     
-    clrxRetainOnlyCLRXDevice(device);
+    clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(device));
     return outObject;
 }
 
@@ -1119,7 +1119,7 @@ clBuildProgram(cl_program           program,
     {
         wrappedData = new CLRXBuildProgramUserData;
         wrappedData->realNotify = pfn_notify;
-        wrappedData->clrxProgram = program;
+        wrappedData->clrxProgram = static_cast<CLRXProgram*>(program);
         wrappedData->realUserData = user_data;
         destUserData = wrappedData;
         notifyToCall = clrxBuildProgramNotifyWrapper;
@@ -1132,6 +1132,7 @@ clBuildProgram(cl_program           program,
     {
         std::lock_guard<std::mutex> lock(p->mutex);
         p->concurrentBuilds++;
+        p->kernelArgFlagsInitialized = false; // 
     }
     
     if (num_devices == 0)
@@ -1148,6 +1149,13 @@ clBuildProgram(cl_program           program,
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
             if (newStatus != CL_SUCCESS)
                 return newStatus;
+            
+            if (status == CL_SUCCESS)
+            {
+                cl_int newStatus = clrxInitKernelArgFlagsMap(p);
+                if (newStatus != CL_SUCCESS)
+                    return newStatus;
+            }
             return status;
         }
         catch(const std::bad_alloc& ex)
@@ -1181,6 +1189,13 @@ clBuildProgram(cl_program           program,
     if (status != CL_INVALID_DEVICE)
     {
         const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
+        if (newStatus != CL_SUCCESS)
+            return newStatus;
+    }
+    
+    if (status == CL_SUCCESS)
+    {
+        const cl_int newStatus = clrxInitKernelArgFlagsMap(p);
         if (newStatus != CL_SUCCESS)
             return newStatus;
     }
@@ -1325,14 +1340,44 @@ clCreateKernel(cl_program      program,
     }
     
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
-    const cl_kernel amdKernel = p->amdOclProgram->dispatch->clCreateKernel(p->amdOclProgram,
-                kernel_name, errcode_ret);
+    const cl_kernel amdKernel = p->amdOclProgram->dispatch->clCreateKernel(
+                p->amdOclProgram, kernel_name, errcode_ret);
     if (amdKernel == nullptr)
         return nullptr;
     
     CLRXKernel* outKernel = nullptr;
     try
-    { outKernel = new CLRXKernel; }
+    {
+        std::lock_guard<std::mutex> l(p->mutex);
+        if (p->concurrentBuilds != 0)
+        {
+            // update only when concurrent builds is working
+            cl_int status = clrxUpdateProgramAssocDevices(p);
+            if (status != CL_SUCCESS)
+            {
+                if (errcode_ret != nullptr)
+                    *errcode_ret = status;
+                return nullptr;
+            }
+            
+            status = clrxInitKernelArgFlagsMap(p);
+            if (status != CL_SUCCESS)
+            {
+                if (errcode_ret != nullptr)
+                    *errcode_ret = status;
+                return nullptr;
+            }
+        }
+        
+        CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
+                p->kernelArgFlagsMap.find(kernel_name);
+        if (argFlagMapIt == p->kernelArgFlagsMap.end())
+        {
+            std::cerr << "Cant find kernel arg flag!" << std::endl;
+            abort();
+        }
+        outKernel = new CLRXKernel(argFlagMapIt->second);
+    }
     catch(const std::bad_alloc& ex)
     {
         if (p->amdOclProgram->dispatch->clReleaseKernel(amdKernel) != CL_SUCCESS)
@@ -1344,10 +1389,15 @@ clCreateKernel(cl_program      program,
             *errcode_ret = CL_OUT_OF_HOST_MEMORY;
         return nullptr;
     }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
+        abort();
+    }
     
     outKernel->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
     outKernel->amdOclKernel = amdKernel;
-    outKernel->program = program;
+    outKernel->program = p;
     
     clrxRetainOnlyCLRXProgram(program);
     return outKernel;
@@ -1379,19 +1429,65 @@ clCreateKernelsInProgram(cl_program     program,
     /* replaces original kernels by our (CLRXKernels) */
     const cl_uint kernelsToCreate = std::min(num_kernels, numKernelsOut);
     cl_uint kp = 0; // kernel already processed
+    char* kernelName = nullptr;
+    size_t maxKernelNameSize = 0;
     try
     {
+        std::lock_guard<std::mutex> l(p->mutex);
+        if (p->concurrentBuilds != 0)
+        {   // update only when concurrent builds is working
+            cl_int status = clrxUpdateProgramAssocDevices(p);
+            if (status != CL_SUCCESS)
+                return status;
+            
+            status = clrxInitKernelArgFlagsMap(p);
+            if (status != CL_SUCCESS)
+                return status;
+        }
+        
         for (kp = 0; kp < kernelsToCreate; kp++)
         {
-            CLRXKernel* outKernel = new CLRXKernel;
+            size_t kernelNameSize;
+            cl_int status = kernels[kp]->dispatch->clGetKernelInfo(
+                    kernels[kp], CL_KERNEL_FUNCTION_NAME, 0, nullptr, &kernelNameSize);
+            if (status != CL_SUCCESS)
+            {
+                std::cerr << "Cant get kernel function name" << std::endl;
+                abort();
+            }
+            if (kernelName != nullptr && kernelNameSize > maxKernelNameSize)
+            {
+                delete[] kernelName;
+                kernelName = new char[kernelNameSize];
+                maxKernelNameSize = kernelNameSize;
+            }
+            
+            status = kernels[kp]->dispatch->clGetKernelInfo(kernels[kp],
+                        CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName, nullptr);
+            if (status != CL_SUCCESS)
+            {
+                std::cerr << "Cant get kernel function name" << std::endl;
+                abort();
+            }
+            
+            CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
+                    p->kernelArgFlagsMap.find(kernelName);
+            if (argFlagMapIt == p->kernelArgFlagsMap.end())
+            {
+                std::cerr << "Cant find kernel arg flag!" << std::endl;
+                abort();
+            }
+            
+            CLRXKernel* outKernel = new CLRXKernel(argFlagMapIt->second);
             outKernel->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
             outKernel->amdOclKernel = kernels[kp];
-            outKernel->program = program;
+            outKernel->program = p;
             kernels[kp] = outKernel;
         }
     }
     catch(const std::bad_alloc& ex)
     {   // already processed kernels
+        delete[] kernelName;
         for (cl_uint i = 0; i < kp; i++)
         {
             CLRXKernel* outKernel = static_cast<CLRXKernel*>(kernels[i]);
@@ -1406,7 +1502,14 @@ clCreateKernelsInProgram(cl_program     program,
                     "Fatal Error at handling error at kernel creation!" << std::endl;
                 abort();
             }
+        return CL_OUT_OF_HOST_MEMORY;
     }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
+        abort();
+    }
+    delete[] kernelName;
     
     if (num_kernels_ret != nullptr)
         *num_kernels_ret = numKernelsOut;
@@ -1495,7 +1598,7 @@ clGetKernelInfo(cl_kernel       kernel,
 {
     if (kernel == nullptr)
         return CL_INVALID_KERNEL;
-    const CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
+    const CLRXKernel* k = static_cast<const CLRXKernel*>(kernel);
     
     switch(param_name)
     {
@@ -1544,8 +1647,8 @@ clGetKernelWorkGroupInfo(cl_kernel                  kernel,
     if (device == nullptr)
         return CL_INVALID_DEVICE;
     
-    const CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
-    const CLRXDevice* d = static_cast<CLRXDevice*>(device);
+    const CLRXKernel* k = static_cast<const CLRXKernel*>(kernel);
+    const CLRXDevice* d = static_cast<const CLRXDevice*>(device);
     
     return k->amdOclKernel->dispatch->clGetKernelWorkGroupInfo(k->amdOclKernel,
            d->amdOclDevice, param_name, param_value_size, param_value,

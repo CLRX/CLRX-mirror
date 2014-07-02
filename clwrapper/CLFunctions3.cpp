@@ -43,13 +43,13 @@ clSetEventCallback( cl_event    event,
         return CL_INVALID_EVENT;
     if (pfn_notify == nullptr)
         return CL_INVALID_VALUE;
-    const CLRXEvent* e = static_cast<CLRXEvent*>(event);
+    CLRXEvent* e = static_cast<CLRXEvent*>(event);
     
     cl_int status = CL_SUCCESS;
     try
     {
         CLRXEventCallbackUserData* wrappedData = new CLRXEventCallbackUserData;
-        wrappedData->clrxEvent = event;
+        wrappedData->clrxEvent = e;
         wrappedData->realNotify = pfn_notify;
         wrappedData->realUserData = user_data;
         
@@ -75,7 +75,7 @@ clCreateSubBuffer(cl_mem                   buffer,
         return nullptr;
     }
     
-    const CLRXMemObject* b = static_cast<CLRXMemObject*>(buffer);
+    const CLRXMemObject* b = static_cast<const CLRXMemObject*>(buffer);
     const cl_mem amdBuffer = b->amdOclMemObject->dispatch->clCreateSubBuffer(
                 b->amdOclMemObject, flags, buffer_create_type, buffer_create_info,
                 errcode_ret);
@@ -84,7 +84,6 @@ clCreateSubBuffer(cl_mem                   buffer,
         return nullptr;
     
     CLRXContext* c = static_cast<CLRXContext*>(b->context);
-    cl_context context = c;
     CREATE_CLRXCONTEXT_OBJECT(CLRXMemObject, amdOclMemObject, amdBuffer,
               clReleaseMemObject,
               "Fatal Error at handling error at subbufer creation!")
@@ -101,13 +100,13 @@ clSetMemObjectDestructorCallback(  cl_mem memobj,
         return CL_INVALID_MEM_OBJECT;
     if (pfn_notify == nullptr)
         return CL_INVALID_VALUE;
-    const CLRXMemObject* m = static_cast<CLRXMemObject*>(memobj);
+    CLRXMemObject* m = static_cast<CLRXMemObject*>(memobj);
     
     cl_int status = CL_SUCCESS;
     try
     {
         CLRXMemDtorCallbackUserData* wrappedData = new CLRXMemDtorCallbackUserData;
-        wrappedData->clrxMemObject= memobj;
+        wrappedData->clrxMemObject = m;
         wrappedData->realNotify = pfn_notify;
         wrappedData->realUserData = user_data;
         
@@ -151,7 +150,7 @@ clSetUserEventStatus(cl_event   event,
     if (event == nullptr)
         return CL_INVALID_EVENT;
     
-    const CLRXEvent* e = static_cast<CLRXEvent*>(event);
+    const CLRXEvent* e = static_cast<const CLRXEvent*>(event);
     return e->amdOclEvent->dispatch->clSetUserEventStatus(e->amdOclEvent,
                       execution_status);
 }
@@ -284,7 +283,7 @@ CL_API_ENTRY cl_int CL_API_CALL clCreateSubDevicesEXT(cl_device_id in_device,
         (out_devices == nullptr && num_devices == nullptr))
         return CL_INVALID_VALUE;
     
-    const CLRXDevice* d = static_cast<CLRXDevice*>(in_device);
+    const CLRXDevice* d = static_cast<const CLRXDevice*>(in_device);
     cl_uint devicesNum = 0;
     cl_int status = d->amdOclDevice->dispatch->clCreateSubDevicesEXT(
             d->amdOclDevice, properties, num_entries, out_devices, &devicesNum);
@@ -368,7 +367,7 @@ clCreateSubDevices(cl_device_id  in_device,
     if (num_devices == 0 && out_devices != nullptr)
         return CL_INVALID_VALUE;
     
-    const CLRXDevice* d = static_cast<CLRXDevice*>(in_device);
+    const CLRXDevice* d = static_cast<const CLRXDevice*>(in_device);
     cl_uint devicesNum = 0;
     cl_int status = d->amdOclDevice->dispatch->clCreateSubDevices(
             d->amdOclDevice, properties, num_devices, out_devices, &devicesNum);
@@ -527,17 +526,18 @@ clCompileProgram(cl_program           program,
     void* destUserData = user_data;
     CLRXBuildProgramUserData* wrappedData = nullptr;
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
+    CLRXProgram* p = static_cast<CLRXProgram*>(program);
+    
     if (pfn_notify != nullptr)
     {
         wrappedData = new CLRXBuildProgramUserData;
         wrappedData->realNotify = pfn_notify;
-        wrappedData->clrxProgram = program;
+        wrappedData->clrxProgram = p;
         wrappedData->realUserData = user_data;
         destUserData = wrappedData;
         notifyToCall = clrxBuildProgramNotifyWrapper;
     }
     
-    CLRXProgram* p = static_cast<CLRXProgram*>(program);
     try
     { // catching system_error
     {
@@ -653,20 +653,21 @@ clLinkProgram(cl_context           context,
     void* destUserData = user_data;
     CLRXLinkProgramUserData* wrappedData = nullptr;
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
+    CLRXContext* c = static_cast<CLRXContext*>(context);
+    
     if (pfn_notify != nullptr)
     {
         wrappedData = new CLRXLinkProgramUserData;
         wrappedData->realNotify = pfn_notify;
         wrappedData->clrxProgramFilled = false;
         wrappedData->clrxProgram = nullptr;
-        wrappedData->clrxContext = context;
+        wrappedData->clrxContext = c;
         wrappedData->realUserData = user_data;
         wrappedData->toDeleteByCallback = false;
         destUserData = wrappedData;
         notifyToCall = clrxLinkProgramNotifyWrapper;
     }
     
-    const CLRXContext* c = static_cast<CLRXContext*>(context);
     cl_program amdProgram = nullptr;
     CLRXProgram* outProgram = nullptr;
     try
@@ -720,16 +721,24 @@ clLinkProgram(cl_context           context,
                     outProgram->dispatch = const_cast<CLRXIcdDispatch*>
                                 (&clrxDispatchRecord);
                     outProgram->amdOclProgram = amdProgram;
-                    outProgram->context = context;
+                    outProgram->context = c;
                     outProgram->concurrentBuilds = 0;
                     clrxSetProgramOrigDevices(outProgram);
                     // initialize assoc devices num
                     outProgram->assocDevicesNum = outProgram->origAssocDevicesNum;
                     outProgram->assocDevices =
-                            new cl_device_id[outProgram->assocDevicesNum];
+                            new CLRXDevice*[outProgram->assocDevicesNum];
                     std::copy(outProgram->origAssocDevices,
                           outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
                           outProgram->assocDevices);
+                    
+                    const cl_int status = clrxInitKernelArgFlagsMap(outProgram);
+                    if (status != CL_SUCCESS)
+                    {
+                        if (errcode_ret != nullptr)
+                            *errcode_ret = status;
+                        return nullptr;
+                    }
                     wrappedData->clrxProgramFilled = true;
                     wrappedData->clrxProgram = outProgram;
                 }

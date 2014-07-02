@@ -75,6 +75,7 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #include <atomic>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include <CLRX/Utilities.h>
 
 struct CLRXVendorRecord
@@ -111,9 +112,9 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
 {
     std::atomic<size_t> refCount;
     cl_device_id amdOclDevice;
-    cl_platform_id platform;
+    CLRXPlatform* platform;
     cl_device_type type;
-    cl_device_id parent;
+    CLRXDevice* parent;
     const char* extensions;
     size_t extensionsSize;
     
@@ -126,7 +127,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
     std::atomic<size_t> refCount;
     cl_context amdOclContext;
     cl_uint devicesNum;
-    cl_device_id* devices;
+    CLRXDevice** devices;
     size_t propertiesNum;
     cl_context_properties* properties;
     
@@ -138,98 +139,102 @@ struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue
 {
     std::atomic<size_t> refCount;
     cl_command_queue amdOclCommandQueue;
-    cl_context context;
-    cl_device_id device;
+    CLRXContext* context;
+    CLRXDevice* device;
     
     CLRXCommandQueue();
     ~CLRXCommandQueue();
-};
-
-struct CLRXMemDtorCallbackUserData
-{
-    cl_mem clrxMemObject;
-    void (*realNotify)(cl_mem memobj, void * user_data);
-    void* realUserData;
 };
 
 struct CLRX_INTERNAL CLRXMemObject: _cl_mem
 {
     std::atomic<size_t> refCount;
     cl_mem amdOclMemObject;
-    cl_context context;
+    CLRXContext* context;
     
     CLRXMemObject();
     ~CLRXMemObject();
 };
 
-struct CLRXBuildProgramUserData
+struct CLRX_INTERNAL CLRXMemDtorCallbackUserData
 {
-    cl_program clrxProgram;
-    void (*realNotify)(cl_program program, void * user_data);
+    CLRXMemObject* clrxMemObject;
+    void (*realNotify)(cl_mem memobj, void * user_data);
     void* realUserData;
 };
 
-struct CLRXLinkProgramUserData
-{
-    std::mutex mutex;
-    bool clrxProgramFilled;
-    cl_context clrxContext;
-    cl_program clrxProgram;
-    void (*realNotify)(cl_program program, void * user_data);
-    void* realUserData;
-    bool toDeleteByCallback;
-};
+typedef std::unordered_map<std::string, std::vector<bool> > CLRXKernelArgFlagMap;
 
 struct CLRX_INTERNAL CLRXProgram: _cl_program
 {
     std::atomic<size_t> refCount;
     std::mutex mutex; // for thread-safe updating assoc devices
     cl_program amdOclProgram;
-    cl_context context;
+    CLRXContext* context;
     cl_uint assocDevicesNum;
-    cl_device_id* assocDevices;
+    CLRXDevice** assocDevices;
     cl_uint origAssocDevicesNum;
-    cl_device_id* origAssocDevices;
+    CLRXDevice** origAssocDevices;
     cl_ulong concurrentBuilds;
+    bool kernelArgFlagsInitialized;
+    CLRXKernelArgFlagMap kernelArgFlagsMap;
     
     CLRXProgram();
     ~CLRXProgram();
+};
+
+struct CLRX_INTERNAL CLRXBuildProgramUserData
+{
+    CLRXProgram* clrxProgram;
+    void (*realNotify)(cl_program program, void * user_data);
+    void* realUserData;
+};
+
+struct CLRX_INTERNAL CLRXLinkProgramUserData
+{
+    std::mutex mutex;
+    bool clrxProgramFilled;
+    CLRXContext* clrxContext;
+    CLRXProgram* clrxProgram;
+    void (*realNotify)(cl_program program, void * user_data);
+    void* realUserData;
+    bool toDeleteByCallback;
 };
 
 struct CLRX_INTERNAL CLRXKernel: _cl_kernel
 {
     std::atomic<size_t> refCount;
     cl_kernel amdOclKernel;
-    cl_program program;
-    std::vector<bool> argTypes;
+    CLRXProgram* program;
+    const std::vector<bool>& argTypes;
     
-    CLRXKernel();
+    CLRXKernel(const std::vector<bool>& argTypes);
     ~CLRXKernel();
-};
-
-struct CLRXEventCallbackUserData
-{
-    cl_event clrxEvent;
-    void (*realNotify)(cl_event event, cl_int exec_status, void * user_data);
-    void* realUserData;
 };
 
 struct CLRX_INTERNAL CLRXEvent: _cl_event
 {
     std::atomic<size_t> refCount;
     cl_event amdOclEvent;
-    cl_context context;
-    cl_command_queue commandQueue;
+    CLRXContext* context;
+    CLRXCommandQueue* commandQueue;
     
      CLRXEvent();
      ~CLRXEvent();
+};
+
+struct CLRX_INTERNAL CLRXEventCallbackUserData
+{
+    CLRXEvent* clrxEvent;
+    void (*realNotify)(cl_event event, cl_int exec_status, void * user_data);
+    void* realUserData;
 };
 
 struct CLRX_INTERNAL CLRXSampler: _cl_sampler
 {
     std::atomic<size_t> refCount;
     cl_sampler amdOclSampler;
-    cl_context context;
+    CLRXContext* context;
     
     CLRXSampler();
     ~CLRXSampler();
@@ -261,6 +266,8 @@ CLRX_INTERNAL extern clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffers
 CLRX_INTERNAL extern const CLRXIcdDispatch clrxDispatchRecord;
 CLRX_INTERNAL extern const CLRXExtensionEntry clrxExtensionsTable[7];
 
+/* internal routines */
+
 CLRX_INTERNAL void clrxWrapperInitialize();
 CLRX_INTERNAL void clrxPlatformInitializeDevices(CLRXPlatform* platform);
 CLRX_INTERNAL void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
@@ -283,29 +290,27 @@ CLRX_INTERNAL void clrxEventCallbackWrapper(cl_event event, cl_int exec_status,
         void * user_data);
 CLRX_INTERNAL void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data);
 
-/* internal routines */
+CLRX_INTERNAL cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program);
 
-static inline void clrxRetainOnlyCLRXDevice(cl_device_id device)
+
+static inline void clrxRetainOnlyCLRXDevice(CLRXDevice* device)
 {
-    CLRXDevice* d = static_cast<CLRXDevice*>(device);
-    if (d->parent != nullptr)
-        d->refCount.fetch_add(1);
+    if (device->parent != nullptr)
+        device->refCount.fetch_add(1);
 }
 
-static inline void clrxReleaseOnlyCLRXDevice(cl_device_id device)
+static inline void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
 {
-    CLRXDevice* d = static_cast<CLRXDevice*>(device);
-    if (d->parent != nullptr)
-        if (d->refCount.fetch_sub(1) == 1)
+    if (device->parent != nullptr)
+        if (device->refCount.fetch_sub(1) == 1)
         {   // amdOclDevice has been already released, we release only our device
-            delete d;
+            delete device;
         }
 }
 
-static inline void clrxRetainOnlyCLRXContext(cl_context context)
+static inline void clrxRetainOnlyCLRXContext(CLRXContext* context)
 {
-    CLRXContext* c = static_cast<CLRXContext*>(context);
-    c->refCount.fetch_add(1);
+    context->refCount.fetch_add(1);
 }
 
 static inline void clrxReleaseOnlyCLRXContext(cl_context context)
@@ -426,9 +431,9 @@ static inline void clrxReleaseOnlyCLRXProgram(cl_program program)
     \
     outObject->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord); \
     outObject->AMDOBJECTMEMBER = AMDOBJECT; \
-    outObject->context = context; \
+    outObject->context = c; \
     \
-    clrxRetainOnlyCLRXContext(context);
+    clrxRetainOnlyCLRXContext(c);
 
 #define CLRX_CALL_QUEUE_COMMAND \
     cl_event amdEvent = nullptr; \
