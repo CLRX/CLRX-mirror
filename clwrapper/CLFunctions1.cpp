@@ -1349,6 +1349,7 @@ clCreateKernel(cl_program      program,
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
+        p->kernelsAttached = true;
         if (p->concurrentBuilds != 0)
         {
             // update only when concurrent builds is working
@@ -1434,6 +1435,7 @@ clCreateKernelsInProgram(cl_program     program,
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
+        p->kernelsAttached = true;
         if (p->concurrentBuilds != 0)
         {   // update only when concurrent builds is working
             cl_int status = clrxUpdateProgramAssocDevices(p);

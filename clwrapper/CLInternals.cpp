@@ -266,6 +266,7 @@ CLRXSampler::~CLRXSampler()
 
 CLRXProgram::CLRXProgram() : refCount(1)
 {
+    kernelsAttached = false;
     kernelArgFlagsInitialized = false;
     context = nullptr;
     assocDevicesNum = 0;
@@ -962,7 +963,7 @@ void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
 
 cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
 {
-    if (program->kernelArgFlagsInitialized)
+    if (program->kernelArgFlagsInitialized || program->kernelsAttached)
         return CL_SUCCESS; // if already initialized
     // clear before set up
     program->kernelArgFlagsMap.clear();

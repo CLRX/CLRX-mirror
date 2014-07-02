@@ -177,6 +177,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
     CLRXDevice** origAssocDevices;
     cl_ulong concurrentBuilds;
     bool kernelArgFlagsInitialized;
+    bool kernelsAttached;
     CLRXKernelArgFlagMap kernelArgFlagsMap;
     
     CLRXProgram();
