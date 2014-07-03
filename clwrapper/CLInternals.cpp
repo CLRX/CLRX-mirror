@@ -516,7 +516,10 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 delete[] extsBuffer;
                 break;
             }
-            strcat(extsBuffer, " cl_radeon_extender");
+            if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
+                strcat(extsBuffer, " cl_radeon_extender");
+            else
+                strcat(extsBuffer, "cl_radeon_extender");
             clrxDevice.extensionsSize = strlen(extsBuffer)+1;
             clrxDevice.extensions = extsBuffer;
         }
