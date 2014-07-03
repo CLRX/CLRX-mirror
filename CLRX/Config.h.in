@@ -86,32 +86,27 @@
 /* config setup */
 
 #ifdef HAVE_LINUX
-#define SYSTEM_CONFIG_PATH "/etc"
-#else
-#error "Other platforms is unsupported"
-#endif
+#  define SYSTEM_CONFIG_PATH "/etc"
 
-#ifdef HAVE_LINUX
 #  ifdef HAVE_32BIT
 #  define DEFAULT_AMDOCLPATH "/usr/lib/libamdocl32.so"
 #  else
 #  define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
 #  endif
+
 #else
-#  error "Unsupported platform"
+#error "Other platforms than Linux is not unsupported"
 #endif
 
 /* symbols visibility */
 
 #if __GNUC__ >= 4
-#define CLRX_INTERNAL __attribute__((visibility("hidden")))
+#  define CLRX_INTERNAL __attribute__((visibility("hidden")))
+#else
+#  define CLRX_INTERNAL
 #endif
 
 /* types and defs */
-
-#include <stddef.h>
-#include <stdint.h>
-#include <sys/types.h>
 
 typedef signed char cxchar;
 typedef unsigned char cxuchar;

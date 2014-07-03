@@ -31,10 +31,49 @@
 extern "C"
 {
 
+/* public API definitions */
+
+CLRX_CL_PUBLIC_SYM(clWaitForEvents)
+CLRX_CL_PUBLIC_SYM(clGetEventInfo)
+CLRX_CL_PUBLIC_SYM(clRetainEvent)
+CLRX_CL_PUBLIC_SYM(clReleaseEvent)
+CLRX_CL_PUBLIC_SYM(clGetEventProfilingInfo)
+CLRX_CL_PUBLIC_SYM(clFlush)
+CLRX_CL_PUBLIC_SYM(clFinish)
+CLRX_CL_PUBLIC_SYM(clEnqueueReadBuffer)
+CLRX_CL_PUBLIC_SYM(clEnqueueWriteBuffer)
+CLRX_CL_PUBLIC_SYM(clEnqueueCopyBuffer)
+CLRX_CL_PUBLIC_SYM(clEnqueueReadImage)
+CLRX_CL_PUBLIC_SYM(clEnqueueWriteImage)
+CLRX_CL_PUBLIC_SYM(clEnqueueCopyImage)
+CLRX_CL_PUBLIC_SYM(clEnqueueCopyImageToBuffer)
+CLRX_CL_PUBLIC_SYM(clEnqueueCopyBufferToImage)
+CLRX_CL_PUBLIC_SYM(clEnqueueMapBuffer)
+CLRX_CL_PUBLIC_SYM(clEnqueueMapImage)
+CLRX_CL_PUBLIC_SYM(clEnqueueUnmapMemObject)
+CLRX_CL_PUBLIC_SYM(clEnqueueNDRangeKernel)
+CLRX_CL_PUBLIC_SYM(clEnqueueTask)
+CLRX_CL_PUBLIC_SYM(clEnqueueNativeKernel)
+CLRX_CL_PUBLIC_SYM(clEnqueueMarker)
+CLRX_CL_PUBLIC_SYM(clEnqueueWaitForEvents)
+CLRX_CL_PUBLIC_SYM(clEnqueueBarrier)
+CLRX_CL_PUBLIC_SYM(clGetExtensionFunctionAddress)
+CLRX_CL_PUBLIC_SYM(clCreateFromGLBuffer)
+CLRX_CL_PUBLIC_SYM(clCreateFromGLTexture2D)
+CLRX_CL_PUBLIC_SYM(clCreateFromGLTexture3D)
+CLRX_CL_PUBLIC_SYM(clCreateFromGLRenderbuffer)
+CLRX_CL_PUBLIC_SYM(clGetGLObjectInfo)
+CLRX_CL_PUBLIC_SYM(clGetGLTextureInfo)
+CLRX_CL_PUBLIC_SYM(clEnqueueAcquireGLObjects)
+CLRX_CL_PUBLIC_SYM(clEnqueueReleaseGLObjects)
+CLRX_CL_PUBLIC_SYM(clGetGLContextInfoKHR)
+
+/* end of public API definitions */
+
 #define CLRX_CLCOMMAND_PREFIX q->amdOclCommandQueue->dispatch->
     
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clWaitForEvents(cl_uint             num_events,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclWaitForEvents(cl_uint             num_events,
                 const cl_event *    event_list) CL_API_SUFFIX__VERSION_1_0
 {
     if (num_events == 0 || event_list == nullptr)
@@ -68,8 +107,8 @@ clWaitForEvents(cl_uint             num_events,
     { return CL_OUT_OF_HOST_MEMORY; }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetEventInfo(cl_event         event,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetEventInfo(cl_event         event,
                cl_event_info    param_name,
                size_t           param_value_size,
                void *           param_value,
@@ -108,8 +147,8 @@ clGetEventInfo(cl_event         event,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
 {
     if (event == nullptr)
         return CL_INVALID_EVENT;
@@ -121,8 +160,8 @@ clRetainEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
 {
     if (event == nullptr)
         return CL_INVALID_EVENT;
@@ -138,8 +177,8 @@ clReleaseEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetEventProfilingInfo(cl_event            event,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetEventProfilingInfo(cl_event            event,
                 cl_profiling_info   param_name,
                 size_t              param_value_size,
                 void *              param_value,
@@ -153,8 +192,8 @@ clGetEventProfilingInfo(cl_event            event,
                  param_value_size, param_value, param_value_size_ret);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clFlush(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclFlush(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
 {
     if (command_queue == nullptr)
         return CL_INVALID_COMMAND_QUEUE;
@@ -163,8 +202,8 @@ clFlush(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
     return q->amdOclCommandQueue->dispatch->clFlush(q->amdOclCommandQueue);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clFinish(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclFinish(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
 {
     if (command_queue == nullptr)
         return CL_INVALID_COMMAND_QUEUE;
@@ -173,8 +212,8 @@ clFinish(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
     return q->amdOclCommandQueue->dispatch->clFinish(q->amdOclCommandQueue);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueReadBuffer(cl_command_queue    command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueReadBuffer(cl_command_queue    command_queue,
                     cl_mem              buffer,
                     cl_bool             blocking_read,
                     size_t              offset,
@@ -205,8 +244,8 @@ clEnqueueReadBuffer(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueWriteBuffer(cl_command_queue   command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueWriteBuffer(cl_command_queue   command_queue,
                      cl_mem             buffer,
                      cl_bool            blocking_write,
                      size_t             offset,
@@ -237,8 +276,8 @@ clEnqueueWriteBuffer(cl_command_queue   command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueCopyBuffer(cl_command_queue    command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueCopyBuffer(cl_command_queue    command_queue,
                     cl_mem              src_buffer,
                     cl_mem              dst_buffer,
                     size_t              src_offset,
@@ -270,8 +309,8 @@ clEnqueueCopyBuffer(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueReadImage(cl_command_queue     command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueReadImage(cl_command_queue     command_queue,
                    cl_mem               image,
                    cl_bool              blocking_read,
                    const size_t *       origin,
@@ -306,8 +345,8 @@ clEnqueueReadImage(cl_command_queue     command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueWriteImage(cl_command_queue    command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueWriteImage(cl_command_queue    command_queue,
                     cl_mem              image,
                     cl_bool             blocking_write,
                     const size_t *      origin,
@@ -342,8 +381,8 @@ clEnqueueWriteImage(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueCopyImage(cl_command_queue     command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueCopyImage(cl_command_queue     command_queue,
                    cl_mem               src_image,
                    cl_mem               dst_image, 
                    const size_t *       src_origin,
@@ -375,8 +414,8 @@ clEnqueueCopyImage(cl_command_queue     command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueCopyImageToBuffer(cl_command_queue command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueCopyImageToBuffer(cl_command_queue command_queue,
                            cl_mem           src_image,
                            cl_mem           dst_buffer, 
                            const size_t *   src_origin,
@@ -408,8 +447,8 @@ clEnqueueCopyImageToBuffer(cl_command_queue command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueCopyBufferToImage(cl_command_queue command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueCopyBufferToImage(cl_command_queue command_queue,
                            cl_mem           src_buffer,
                            cl_mem           dst_image,
                            size_t           src_offset,
@@ -441,8 +480,8 @@ clEnqueueCopyBufferToImage(cl_command_queue command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY void * CL_API_CALL
-clEnqueueMapBuffer(cl_command_queue command_queue,
+CL_API_ENTRY void * CL_API_CALL
+clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                    cl_mem           buffer,
                    cl_bool          blocking_map,
                    cl_map_flags     map_flags,
@@ -545,8 +584,8 @@ clEnqueueMapBuffer(cl_command_queue command_queue,
     return output;
 }
 
-CLRX_INTERNAL CL_API_ENTRY void * CL_API_CALL
-clEnqueueMapImage(cl_command_queue  command_queue,
+CL_API_ENTRY void * CL_API_CALL
+clrxclEnqueueMapImage(cl_command_queue  command_queue,
                   cl_mem            image,
                   cl_bool           blocking_map,
                   cl_map_flags      map_flags,
@@ -652,8 +691,8 @@ clEnqueueMapImage(cl_command_queue  command_queue,
     return output;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueUnmapMemObject(cl_command_queue command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueUnmapMemObject(cl_command_queue command_queue,
                         cl_mem           memobj,
                         void *           mapped_ptr,
                         cl_uint          num_events_in_wait_list,
@@ -681,8 +720,8 @@ clEnqueueUnmapMemObject(cl_command_queue command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueNDRangeKernel(cl_command_queue command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueNDRangeKernel(cl_command_queue command_queue,
                        cl_kernel        kernel,
                        cl_uint          work_dim,
                        const size_t *   global_work_offset,
@@ -714,8 +753,8 @@ clEnqueueNDRangeKernel(cl_command_queue command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueTask(cl_command_queue  command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueTask(cl_command_queue  command_queue,
               cl_kernel         kernel,
               cl_uint           num_events_in_wait_list,
               const cl_event *  event_wait_list,
@@ -742,8 +781,8 @@ clEnqueueTask(cl_command_queue  command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueNativeKernel(cl_command_queue  command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueNativeKernel(cl_command_queue  command_queue,
                       void (CL_CALLBACK * user_func)(void *), 
                       void *            args,
                       size_t            cb_args, 
@@ -839,8 +878,8 @@ clEnqueueNativeKernel(cl_command_queue  command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
-clEnqueueMarker(cl_command_queue    command_queue,
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
+clrxclEnqueueMarker(cl_command_queue    command_queue,
                 cl_event *          event) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
     if (command_queue == nullptr)
@@ -858,8 +897,8 @@ clEnqueueMarker(cl_command_queue    command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
-clEnqueueWaitForEvents(cl_command_queue command_queue,
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
+clrxclEnqueueWaitForEvents(cl_command_queue command_queue,
             cl_uint          num_events,
             const cl_event * event_list) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
@@ -899,8 +938,8 @@ clEnqueueWaitForEvents(cl_command_queue command_queue,
     { return CL_OUT_OF_HOST_MEMORY; }
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
-clEnqueueBarrier(cl_command_queue command_queue) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
+clrxclEnqueueBarrier(cl_command_queue command_queue) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
     if (command_queue == nullptr)
         return CL_INVALID_COMMAND_QUEUE;
@@ -910,7 +949,8 @@ clEnqueueBarrier(cl_command_queue command_queue) CL_EXT_SUFFIX__VERSION_1_1_DEPR
 }
 
 CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED void * CL_API_CALL
-clGetExtensionFunctionAddress(const char * func_name) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
+clrxclGetExtensionFunctionAddress(const char * func_name)
+        CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
     CLRX_INITIALIZE_VOIDPTR
     
@@ -931,8 +971,8 @@ clGetExtensionFunctionAddress(const char * func_name) CL_EXT_SUFFIX__VERSION_1_1
     return entry->address;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_mem CL_API_CALL
-clCreateFromGLBuffer(cl_context     context,
+CL_API_ENTRY cl_mem CL_API_CALL
+clrxclCreateFromGLBuffer(cl_context     context,
                      cl_mem_flags   flags,
                      cl_GLuint      bufobj,
                      int *          errcode_ret) CL_API_SUFFIX__VERSION_1_0
@@ -958,8 +998,8 @@ clCreateFromGLBuffer(cl_context     context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
-clCreateFromGLTexture2D(cl_context      context,
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
+clrxclCreateFromGLTexture2D(cl_context      context,
                 cl_mem_flags    flags,
                 cl_GLenum       target,
                 cl_GLint        miplevel,
@@ -987,8 +1027,8 @@ clCreateFromGLTexture2D(cl_context      context,
     return outObject;
 }
     
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
-clCreateFromGLTexture3D(cl_context      context,
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
+clrxclCreateFromGLTexture3D(cl_context      context,
                 cl_mem_flags    flags,
                 cl_GLenum       target,
                 cl_GLint        miplevel,
@@ -1016,8 +1056,8 @@ clCreateFromGLTexture3D(cl_context      context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_mem CL_API_CALL
-clCreateFromGLRenderbuffer(cl_context   context,
+CL_API_ENTRY cl_mem CL_API_CALL
+clrxclCreateFromGLRenderbuffer(cl_context   context,
                            cl_mem_flags flags,
                            cl_GLuint    renderbuffer,
                            cl_int *     errcode_ret) CL_API_SUFFIX__VERSION_1_0
@@ -1043,8 +1083,8 @@ clCreateFromGLRenderbuffer(cl_context   context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetGLObjectInfo(cl_mem                memobj,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetGLObjectInfo(cl_mem                memobj,
                   cl_gl_object_type *   gl_object_type,
                   cl_GLuint *           gl_object_name) CL_API_SUFFIX__VERSION_1_0
 {
@@ -1056,8 +1096,8 @@ clGetGLObjectInfo(cl_mem                memobj,
                            gl_object_type, gl_object_name);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetGLTextureInfo(cl_mem               memobj,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetGLTextureInfo(cl_mem               memobj,
                cl_gl_texture_info   param_name,
                size_t               param_value_size,
                void *               param_value,
@@ -1071,8 +1111,8 @@ clGetGLTextureInfo(cl_mem               memobj,
             param_name, param_value_size, param_value, param_value_size_ret);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueAcquireGLObjects(cl_command_queue      command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueAcquireGLObjects(cl_command_queue      command_queue,
                           cl_uint               num_objects,
                           const cl_mem *        mem_objects,
                           cl_uint               num_events_in_wait_list,
@@ -1114,8 +1154,8 @@ clEnqueueAcquireGLObjects(cl_command_queue      command_queue,
     { return CL_OUT_OF_HOST_MEMORY; }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clEnqueueReleaseGLObjects(cl_command_queue      command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueReleaseGLObjects(cl_command_queue      command_queue,
                           cl_uint               num_objects,
                           const cl_mem *        mem_objects,
                           cl_uint               num_events_in_wait_list,
@@ -1157,8 +1197,8 @@ clEnqueueReleaseGLObjects(cl_command_queue      command_queue,
     { return CL_OUT_OF_HOST_MEMORY; }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetGLContextInfoKHR(const cl_context_properties * properties,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
       cl_gl_context_info            param_name,
       size_t                        param_value_size,
       void *                        param_value,

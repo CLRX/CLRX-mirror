@@ -31,8 +31,55 @@
 extern "C"
 {
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetPlatformIDs(cl_uint          num_entries,
+/* public API definitions */
+
+CLRX_CL_PUBLIC_SYM(clGetPlatformIDs)
+CLRX_CL_PUBLIC_SYM(clIcdGetPlatformIDsKHR)
+CLRX_CL_PUBLIC_SYM(clGetPlatformInfo)
+CLRX_CL_PUBLIC_SYM(clGetDeviceIDs)
+CLRX_CL_PUBLIC_SYM(clGetDeviceInfo)
+CLRX_CL_PUBLIC_SYM(clCreateContext)
+CLRX_CL_PUBLIC_SYM(clCreateContextFromType)
+CLRX_CL_PUBLIC_SYM(clRetainContext)
+CLRX_CL_PUBLIC_SYM(clReleaseContext)
+CLRX_CL_PUBLIC_SYM(clGetContextInfo)
+CLRX_CL_PUBLIC_SYM(clCreateCommandQueue)
+CLRX_CL_PUBLIC_SYM(clRetainCommandQueue)
+CLRX_CL_PUBLIC_SYM(clReleaseCommandQueue)
+CLRX_CL_PUBLIC_SYM(clGetCommandQueueInfo)
+CLRX_CL_PUBLIC_SYM(clSetCommandQueueProperty)
+CLRX_CL_PUBLIC_SYM(clCreateBuffer)
+CLRX_CL_PUBLIC_SYM(clCreateImage2D)
+CLRX_CL_PUBLIC_SYM(clCreateImage3D)
+CLRX_CL_PUBLIC_SYM(clRetainMemObject)
+CLRX_CL_PUBLIC_SYM(clReleaseMemObject)
+CLRX_CL_PUBLIC_SYM(clGetSupportedImageFormats)
+CLRX_CL_PUBLIC_SYM(clGetMemObjectInfo)
+CLRX_CL_PUBLIC_SYM(clGetImageInfo)
+CLRX_CL_PUBLIC_SYM(clCreateSampler)
+CLRX_CL_PUBLIC_SYM(clRetainSampler)
+CLRX_CL_PUBLIC_SYM(clReleaseSampler)
+CLRX_CL_PUBLIC_SYM(clGetSamplerInfo)
+CLRX_CL_PUBLIC_SYM(clCreateProgramWithSource)
+CLRX_CL_PUBLIC_SYM(clCreateProgramWithBinary)
+CLRX_CL_PUBLIC_SYM(clRetainProgram)
+CLRX_CL_PUBLIC_SYM(clReleaseProgram)
+CLRX_CL_PUBLIC_SYM(clBuildProgram)
+CLRX_CL_PUBLIC_SYM(clUnloadCompiler)
+CLRX_CL_PUBLIC_SYM(clGetProgramInfo)
+CLRX_CL_PUBLIC_SYM(clGetProgramBuildInfo)
+CLRX_CL_PUBLIC_SYM(clCreateKernel)
+CLRX_CL_PUBLIC_SYM(clCreateKernelsInProgram)
+CLRX_CL_PUBLIC_SYM(clRetainKernel)
+CLRX_CL_PUBLIC_SYM(clReleaseKernel)
+CLRX_CL_PUBLIC_SYM(clSetKernelArg)
+CLRX_CL_PUBLIC_SYM(clGetKernelInfo)
+CLRX_CL_PUBLIC_SYM(clGetKernelWorkGroupInfo)
+
+/* end of public API definitions */
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetPlatformIDs(cl_uint          num_entries,
                  cl_platform_id * platforms,
                  cl_uint *        num_platforms) CL_API_SUFFIX__VERSION_1_0
 {
@@ -68,13 +115,13 @@ clGetPlatformIDs(cl_uint          num_entries,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clIcdGetPlatformIDsKHR(
+CL_API_ENTRY cl_int CL_API_CALL clrxclIcdGetPlatformIDsKHR(
             cl_uint num_entries, 
             cl_platform_id *platforms, 
             cl_uint *num_platforms) CL_API_SUFFIX__VERSION_1_0
 {
     cl_uint myNumPlatforms;
-    const cl_int status = clGetPlatformIDs(num_entries, platforms, &myNumPlatforms);
+    const cl_int status = clrxclGetPlatformIDs(num_entries, platforms, &myNumPlatforms);
     
     if (status != CL_SUCCESS)
         return status;
@@ -85,8 +132,8 @@ CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clIcdGetPlatformIDsKHR(
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL 
-clGetPlatformInfo(cl_platform_id   platform,
+CL_API_ENTRY cl_int CL_API_CALL 
+clrxclGetPlatformInfo(cl_platform_id   platform,
                   cl_platform_info param_name,
                   size_t           param_value_size,
                   void *           param_value,
@@ -133,8 +180,8 @@ clGetPlatformInfo(cl_platform_id   platform,
     }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetDeviceIDs(cl_platform_id   platform,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetDeviceIDs(cl_platform_id   platform,
                cl_device_type   device_type,
                cl_uint          num_entries,
                cl_device_id *   devices,
@@ -192,8 +239,8 @@ clGetDeviceIDs(cl_platform_id   platform,
     return (outIdx != 0) ? CL_SUCCESS : CL_DEVICE_NOT_FOUND;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetDeviceInfo(cl_device_id    device,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetDeviceInfo(cl_device_id    device,
                 cl_device_info  param_name,
                 size_t          param_value_size,
                 void *          param_value,
@@ -253,8 +300,8 @@ clGetDeviceInfo(cl_device_id    device,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_context CL_API_CALL
-clCreateContext(const cl_context_properties * properties,
+CL_API_ENTRY cl_context CL_API_CALL
+clrxclCreateContext(const cl_context_properties * properties,
                 cl_uint                 num_devices,
                 const cl_device_id *    devices,
                 void (CL_CALLBACK * pfn_notify)(const char *, const void *, size_t, void *),
@@ -383,8 +430,8 @@ clCreateContext(const cl_context_properties * properties,
     return outContext;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_context CL_API_CALL
-clCreateContextFromType(const cl_context_properties * properties,
+CL_API_ENTRY cl_context CL_API_CALL
+clrxclCreateContextFromType(const cl_context_properties * properties,
                     cl_device_type          device_type,
         void (CL_CALLBACK *     pfn_notify )(const char *, const void *, size_t, void *),
                     void *                  user_data,
@@ -491,8 +538,8 @@ clCreateContextFromType(const cl_context_properties * properties,
     return outContext;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
 {
     if (context == nullptr)
         return CL_INVALID_CONTEXT;
@@ -504,8 +551,8 @@ clRetainContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
 {
     if (context == nullptr)
         return CL_INVALID_CONTEXT;
@@ -516,8 +563,8 @@ clReleaseContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetContextInfo(cl_context         context, 
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetContextInfo(cl_context         context, 
                  cl_context_info    param_name,
                  size_t             param_value_size,
                  void *             param_value, 
@@ -577,8 +624,8 @@ clGetContextInfo(cl_context         context,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_command_queue CL_API_CALL
-clCreateCommandQueue(cl_context                     context, 
+CL_API_ENTRY cl_command_queue CL_API_CALL
+clrxclCreateCommandQueue(cl_context                     context, 
                      cl_device_id                   device, 
                      cl_command_queue_properties    properties,
                      cl_int *                       errcode_ret) CL_API_SUFFIX__VERSION_1_0
@@ -613,8 +660,8 @@ clCreateCommandQueue(cl_context                     context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
 {
     if (command_queue == nullptr)
         return CL_INVALID_COMMAND_QUEUE;
@@ -627,8 +674,8 @@ clRetainCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
 {
     if (command_queue == nullptr)
         return CL_INVALID_COMMAND_QUEUE;
@@ -645,8 +692,8 @@ clReleaseCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetCommandQueueInfo(cl_command_queue      command_queue,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetCommandQueueInfo(cl_command_queue      command_queue,
               cl_command_queue_info param_name,
               size_t                param_value_size,
               void *                param_value,
@@ -686,7 +733,7 @@ clGetCommandQueueInfo(cl_command_queue      command_queue,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clSetCommandQueueProperty(
+CL_API_ENTRY cl_int CL_API_CALL clrxclSetCommandQueueProperty(
     cl_command_queue              command_queue,
     cl_command_queue_properties   properties, 
     cl_bool                       enable,
@@ -700,8 +747,8 @@ CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL clSetCommandQueueProperty(
             q->amdOclCommandQueue, properties, enable, old_properties);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_mem CL_API_CALL
-clCreateBuffer(cl_context   context,
+CL_API_ENTRY cl_mem CL_API_CALL
+clrxclCreateBuffer(cl_context   context,
                cl_mem_flags flags,
                size_t       size,
                void *       host_ptr,
@@ -728,8 +775,8 @@ clCreateBuffer(cl_context   context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
-clCreateImage2D(cl_context              context,
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
+clrxclCreateImage2D(cl_context              context,
             cl_mem_flags             flags,
             const cl_image_format * image_format,
             size_t                  image_width,
@@ -760,8 +807,8 @@ clCreateImage2D(cl_context              context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
-clCreateImage3D(cl_context              context,
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_mem CL_API_CALL
+clrxclCreateImage3D(cl_context              context,
             cl_mem_flags            flags,
             const cl_image_format * image_format,
             size_t                  image_width, 
@@ -794,8 +841,8 @@ clCreateImage3D(cl_context              context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
 {
     if (memobj == nullptr)
         return CL_INVALID_MEM_OBJECT;
@@ -808,8 +855,8 @@ clRetainMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
 {
     if (memobj == nullptr)
         return CL_INVALID_MEM_OBJECT;
@@ -825,8 +872,8 @@ clReleaseMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetSupportedImageFormats(cl_context           context,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetSupportedImageFormats(cl_context           context,
                    cl_mem_flags         flags,
                    cl_mem_object_type   image_type,
                    cl_uint              num_entries,
@@ -841,8 +888,8 @@ clGetSupportedImageFormats(cl_context           context,
                    image_type, num_entries, image_formats, num_image_formats);
 }                          
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetMemObjectInfo(cl_mem           memobj,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetMemObjectInfo(cl_mem           memobj,
                    cl_mem_info      param_name, 
                    size_t           param_value_size,
                    void *           param_value,
@@ -871,8 +918,8 @@ clGetMemObjectInfo(cl_mem           memobj,
     }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetImageInfo(cl_mem           image,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetImageInfo(cl_mem           image,
                cl_image_info    param_name,
                size_t           param_value_size,
                void *           param_value,
@@ -886,8 +933,8 @@ clGetImageInfo(cl_mem           image,
             param_value_size, param_value, param_value_size_ret);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_sampler CL_API_CALL
-clCreateSampler(cl_context          context,
+CL_API_ENTRY cl_sampler CL_API_CALL
+clrxclCreateSampler(cl_context          context,
                 cl_bool             normalized_coords,
                 cl_addressing_mode  addressing_mode,
                 cl_filter_mode      filter_mode,
@@ -914,8 +961,8 @@ clCreateSampler(cl_context          context,
     return outObject;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainSampler(cl_sampler sampler) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainSampler(cl_sampler sampler) CL_API_SUFFIX__VERSION_1_0
 {
     if (sampler == nullptr)
         return CL_INVALID_SAMPLER;
@@ -927,8 +974,8 @@ clRetainSampler(cl_sampler sampler) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseSampler(cl_sampler sampler) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseSampler(cl_sampler sampler) CL_API_SUFFIX__VERSION_1_0
 {
     if (sampler == nullptr)
         return CL_INVALID_SAMPLER;
@@ -943,8 +990,8 @@ clReleaseSampler(cl_sampler sampler) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetSamplerInfo(cl_sampler         sampler,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetSamplerInfo(cl_sampler         sampler,
                  cl_sampler_info    param_name,
                  size_t             param_value_size,
                  void *             param_value,
@@ -972,8 +1019,8 @@ clGetSamplerInfo(cl_sampler         sampler,
     }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_program CL_API_CALL
-clCreateProgramWithSource(cl_context        context,
+CL_API_ENTRY cl_program CL_API_CALL
+clrxclCreateProgramWithSource(cl_context        context,
                           cl_uint           count,
                           const char **     strings,
                           const size_t *    lengths,
@@ -998,8 +1045,8 @@ clCreateProgramWithSource(cl_context        context,
     return outProgram;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_program CL_API_CALL
-clCreateProgramWithBinary(cl_context                     context,
+CL_API_ENTRY cl_program CL_API_CALL
+clrxclCreateProgramWithBinary(cl_context                     context,
               cl_uint                        num_devices,
               const cl_device_id *           device_list,
               const size_t *                 lengths,
@@ -1057,8 +1104,8 @@ clCreateProgramWithBinary(cl_context                     context,
     return outProgram;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
 {
     if (program == nullptr)
         return CL_INVALID_PROGRAM;
@@ -1070,8 +1117,8 @@ clRetainProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
 {
     if (program == nullptr)
         return CL_INVALID_PROGRAM;
@@ -1097,8 +1144,8 @@ clReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clBuildProgram(cl_program           program,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclBuildProgram(cl_program           program,
                cl_uint              num_devices,
                const cl_device_id * device_list,
                const char *         options, 
@@ -1217,8 +1264,8 @@ clBuildProgram(cl_program           program,
     }
 }
 
-CLRX_INTERNAL CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
-clUnloadCompiler(void) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
+CL_API_ENTRY CL_EXT_PREFIX__VERSION_1_1_DEPRECATED cl_int CL_API_CALL
+clrxclUnloadCompiler(void) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
 {
     CLRX_INITIALIZE
     
@@ -1227,8 +1274,8 @@ clUnloadCompiler(void) CL_EXT_SUFFIX__VERSION_1_1_DEPRECATED
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetProgramInfo(cl_program         program,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetProgramInfo(cl_program         program,
                  cl_program_info    param_name,
                  size_t             param_value_size,
                  void *             param_value,
@@ -1307,8 +1354,8 @@ clGetProgramInfo(cl_program         program,
     }
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetProgramBuildInfo(cl_program            program,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetProgramBuildInfo(cl_program            program,
               cl_device_id          device,
               cl_program_build_info param_name,
               size_t                param_value_size,
@@ -1327,8 +1374,8 @@ clGetProgramBuildInfo(cl_program            program,
             param_value_size_ret);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_kernel CL_API_CALL
-clCreateKernel(cl_program      program,
+CL_API_ENTRY cl_kernel CL_API_CALL
+clrxclCreateKernel(cl_program      program,
                const char *    kernel_name,
                cl_int *        errcode_ret) CL_API_SUFFIX__VERSION_1_0
 {
@@ -1404,8 +1451,8 @@ clCreateKernel(cl_program      program,
     return outKernel;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clCreateKernelsInProgram(cl_program     program,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclCreateKernelsInProgram(cl_program     program,
                          cl_uint        num_kernels,
                          cl_kernel *    kernels,
                          cl_uint *      num_kernels_ret) CL_API_SUFFIX__VERSION_1_0
@@ -1520,8 +1567,8 @@ clCreateKernelsInProgram(cl_program     program,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clRetainKernel(cl_kernel    kernel) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclRetainKernel(cl_kernel    kernel) CL_API_SUFFIX__VERSION_1_0
 {
     if (kernel == nullptr)
         return CL_INVALID_KERNEL;
@@ -1533,8 +1580,8 @@ clRetainKernel(cl_kernel    kernel) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
 {
     if (kernel == nullptr)
         return CL_INVALID_KERNEL;
@@ -1550,8 +1597,8 @@ clReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
     return status;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clSetKernelArg(cl_kernel    kernel,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclSetKernelArg(cl_kernel    kernel,
                cl_uint      arg_index,
                size_t       arg_size,
                const void * arg_value) CL_API_SUFFIX__VERSION_1_0
@@ -1591,8 +1638,8 @@ clSetKernelArg(cl_kernel    kernel,
                  arg_size, arg_value);
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetKernelInfo(cl_kernel       kernel,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetKernelInfo(cl_kernel       kernel,
                 cl_kernel_info  param_name,
                 size_t          param_value_size,
                 void *          param_value,
@@ -1635,8 +1682,8 @@ clGetKernelInfo(cl_kernel       kernel,
     return CL_SUCCESS;
 }
 
-CLRX_INTERNAL CL_API_ENTRY cl_int CL_API_CALL
-clGetKernelWorkGroupInfo(cl_kernel                  kernel,
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetKernelWorkGroupInfo(cl_kernel                  kernel,
          cl_device_id               device,
          cl_kernel_work_group_info  param_name,
          size_t                     param_value_size,

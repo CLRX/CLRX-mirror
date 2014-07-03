@@ -69,6 +69,8 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
                          const cl_event * event_list,
                          cl_event * event) CL_EXT_SUFFIX__VERSION_1_2;
 
+#include "InternalDecls.h"
+
 }
 
 #include <mutex>

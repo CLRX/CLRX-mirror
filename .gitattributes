@@ -15,5 +15,6 @@ clwrapper/CLInternals.cpp -text
 clwrapper/CLWrapper.h -text
 clwrapper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/DispatchStruct.h -text
+clwrapper/InternalDecls.h -text
 utils/CMakeLists.txt -text svneol=unset#text/plain
 utils/Utilities.cpp -text
