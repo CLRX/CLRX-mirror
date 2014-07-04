@@ -202,7 +202,7 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     CLRXPlatform* p = static_cast<CLRXPlatform*>(platform);
     try
     { std::call_once(p->onceFlag, clrxPlatformInitializeDevices, p); }
-    catch(const std::exception& ex) \
+    catch(const std::exception& ex)
     {
         std::cerr << "Fatal error at device initialization: " << ex.what() << std::endl;
         abort();

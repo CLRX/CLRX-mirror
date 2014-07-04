@@ -570,7 +570,10 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
             cl_uint j;
             for (j = 0; j < allDevicesNum; j++)
                 if (amdDevices[i] == allDevices[j]->amdOclDevice)
+                {
                     amdDevices[i] = const_cast<CLRXDevice**>(allDevices)[j];
+                    break;
+                }
                 
             if (j == allDevicesNum)
             {
