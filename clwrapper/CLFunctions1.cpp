@@ -406,7 +406,8 @@ clrxclCreateContext(const cl_context_properties * properties,
             abort();
         }
         outContext->propertiesNum = propNums>>1;
-        outContext->properties = new cl_context_properties[propNums+1];
+        if (properties != nullptr)
+            outContext->properties = new cl_context_properties[propNums+1];
     }
     catch(const std::bad_alloc& ex)
     {   
@@ -422,7 +423,8 @@ clrxclCreateContext(const cl_context_properties * properties,
         return nullptr;
     }
     
-    std::copy(properties, properties + propNums+1, outContext->properties);
+    if (properties != nullptr)
+        std::copy(properties, properties + propNums+1, outContext->properties);
     
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
         clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
@@ -514,7 +516,8 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             abort();
         }
         outContext->propertiesNum = propNums>>1;
-        outContext->properties = new cl_context_properties[propNums+1];
+        if (properties != nullptr)
+            outContext->properties = new cl_context_properties[propNums+1];
     }
     catch(const std::bad_alloc& ex)
     {   
@@ -530,7 +533,8 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
         return nullptr;
     }
     
-    std::copy(properties, properties + propNums+1, outContext->properties);
+    if (properties != nullptr)
+        std::copy(properties, properties + propNums+1, outContext->properties);
     
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
         clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
@@ -598,7 +602,7 @@ clrxclGetContextInfo(cl_context         context,
                 *param_value_size_ret = sizeof(cl_device_id)*c->devicesNum;
             break;
         case CL_CONTEXT_PROPERTIES:
-            if (c->propertiesNum == 0)
+            if (c->properties == nullptr)
             {
                 if (param_value_size_ret != nullptr)
                     *param_value_size_ret = 0;
