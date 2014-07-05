@@ -940,8 +940,22 @@ clrxclGetImageInfo(cl_mem           image,
         return CL_INVALID_MEM_OBJECT;
     
     const CLRXMemObject* m = static_cast<const CLRXMemObject*>(image);
-    return m->amdOclMemObject->dispatch->clGetImageInfo(m->amdOclMemObject, param_name,
-            param_value_size, param_value, param_value_size_ret);
+    if (param_name != CL_IMAGE_BUFFER)
+        return m->amdOclMemObject->dispatch->clGetImageInfo(m->amdOclMemObject, param_name,
+                param_value_size, param_value, param_value_size_ret);
+    else
+    {
+        if (param_value != nullptr)
+        {
+            if (param_value_size < sizeof(cl_mem))
+                return CL_INVALID_VALUE;
+            // returns parent (parent is associated buffer for image)
+            *static_cast<cl_mem*>(param_value) = m->parent;
+        }
+        if (param_value_size_ret != nullptr)
+            *param_value_size_ret = sizeof(cl_mem);
+        return CL_SUCCESS;
+    }
 }
 
 CL_API_ENTRY cl_sampler CL_API_CALL

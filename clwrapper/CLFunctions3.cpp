@@ -468,8 +468,26 @@ clrxclCreateImage(cl_context              context,
     }
     
     CLRXContext* c = static_cast<CLRXContext*>(context);
+    
+    cl_image_desc imageDesc;
+    if (image_desc != nullptr)
+    {
+        imageDesc = *image_desc;
+        if (imageDesc.buffer != nullptr)
+        {
+            if (imageDesc.image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
+            {
+                if (errcode_ret != nullptr)
+                    *errcode_ret = CL_INVALID_IMAGE_DESCRIPTOR;
+                return nullptr;
+            }
+            imageDesc.buffer =
+                static_cast<const CLRXMemObject*>(imageDesc.buffer)->amdOclMemObject;
+        }
+    }
+    
     const cl_mem amdImage = c->amdOclContext->dispatch->clCreateImage(c->amdOclContext,
-              flags, image_format, image_desc, host_ptr, errcode_ret);
+              flags, image_format, &imageDesc, host_ptr, errcode_ret);
     
     if (amdImage == nullptr)
         return nullptr;
@@ -477,6 +495,12 @@ clrxclCreateImage(cl_context              context,
     CREATE_CLRXCONTEXT_OBJECT(CLRXMemObject, amdOclMemObject, amdImage,
               clReleaseMemObject,
               "Fatal Error at handling error at image creation!")
+    
+    if (image_desc != nullptr && image_desc->buffer != nullptr)
+    {
+        outObject->parent = (CLRXMemObject*)image_desc->buffer;
+        clrxRetainOnlyCLRXMemObject(outObject->parent);
+    }
     
     return outObject;
 }
