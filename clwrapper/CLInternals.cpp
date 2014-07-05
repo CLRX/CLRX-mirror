@@ -908,7 +908,7 @@ cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
     return status;
 }
 
-cl_int clrxCreateOutDevices(const CLRXDevice* d, cl_uint devicesNum,
+cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
        cl_device_id* out_devices, cl_int (*AMDReleaseDevice)(cl_device_id),
        const char* fatalErrorMessage)
 {
@@ -921,6 +921,7 @@ cl_int clrxCreateOutDevices(const CLRXDevice* d, cl_uint devicesNum,
             device->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
             device->amdOclDevice = out_devices[dp];
             device->platform = d->platform;
+            device->parent = d;
             device->type = d->type;
             if (d->extensionsSize != 0)
             {

@@ -111,7 +111,7 @@ clrxclCreateSubBuffer(cl_mem                   buffer,
         return nullptr;
     }
     
-    const CLRXMemObject* b = static_cast<const CLRXMemObject*>(buffer);
+    CLRXMemObject* b = static_cast<CLRXMemObject*>(buffer);
     const cl_mem amdBuffer = b->amdOclMemObject->dispatch->clCreateSubBuffer(
                 b->amdOclMemObject, flags, buffer_create_type, buffer_create_info,
                 errcode_ret);
@@ -124,7 +124,9 @@ clrxclCreateSubBuffer(cl_mem                   buffer,
               clReleaseMemObject,
               "Fatal Error at handling error at subbufer creation!")
     
-    clrxRetainOnlyCLRXMemObject(outObject->parent);
+    outObject->parent = b;
+    
+    clrxRetainOnlyCLRXMemObject(b);
     return outObject;
 }
 
@@ -404,7 +406,7 @@ clrxclCreateSubDevices(cl_device_id  in_device,
     if (num_devices == 0 && out_devices != nullptr)
         return CL_INVALID_VALUE;
     
-    const CLRXDevice* d = static_cast<const CLRXDevice*>(in_device);
+    CLRXDevice* d = static_cast<CLRXDevice*>(in_device);
     cl_uint devicesNum = 0;
     cl_int status = d->amdOclDevice->dispatch->clCreateSubDevices(
             d->amdOclDevice, properties, num_devices, out_devices, &devicesNum);

@@ -289,7 +289,7 @@ CLRX_INTERNAL CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdP
           cl_int* errcode_ret);
 CLRX_INTERNAL cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
              cl_event amdEvent, cl_int status);
-CLRX_INTERNAL cl_int clrxCreateOutDevices(const CLRXDevice* d, cl_uint devicesNum,
+CLRX_INTERNAL cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
        cl_device_id* out_devices, cl_int (*AMDReleaseDevice)(cl_device_id),
        const char* fatalErrorMessage);
 CLRX_INTERNAL void clrxEventCallbackWrapper(cl_event event, cl_int exec_status,
