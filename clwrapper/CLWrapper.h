@@ -425,8 +425,7 @@ static inline void clrxReleaseOnlyCLRXProgram(cl_program program)
     { \
         if (c->amdOclContext->dispatch->CLRELEASECALL(AMDOBJECT) != CL_SUCCESS) \
         { \
-            std::cerr << \
-                FATALERROR << std::endl; \
+            std::cerr << FATALERROR << std::endl; \
             abort(); \
         } \
         if (errcode_ret != nullptr) \
