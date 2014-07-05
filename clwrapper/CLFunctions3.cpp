@@ -421,6 +421,7 @@ clrxclCreateSubDevices(cl_device_id  in_device,
     if (num_devices_ret != nullptr)
         *num_devices_ret = devicesNum;
     
+    clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
     return status;
 }
 
