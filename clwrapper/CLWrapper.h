@@ -153,6 +153,7 @@ struct CLRX_INTERNAL CLRXMemObject: _cl_mem
     std::atomic<size_t> refCount;
     cl_mem amdOclMemObject;
     CLRXContext* context;
+    CLRXMemObject* parent;
     
     CLRXMemObject();
     ~CLRXMemObject();
@@ -304,11 +305,18 @@ static inline void clrxRetainOnlyCLRXDevice(CLRXDevice* device)
         device->refCount.fetch_add(1);
 }
 
+static inline void clrxRetainOnlyCLRXDeviceNTimes(CLRXDevice* device, cl_uint ntimes)
+{
+    if (device->parent != nullptr)
+        device->refCount.fetch_add(ntimes);
+}
+
 static inline void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
 {
     if (device->parent != nullptr)
         if (device->refCount.fetch_sub(1) == 1)
         {   // amdOclDevice has been already released, we release only our device
+            clrxReleaseOnlyCLRXDevice(device->parent);
             delete device;
         }
 }
@@ -318,36 +326,47 @@ static inline void clrxRetainOnlyCLRXContext(CLRXContext* context)
     context->refCount.fetch_add(1);
 }
 
-static inline void clrxReleaseOnlyCLRXContext(cl_context context)
+static inline void clrxReleaseOnlyCLRXContext(CLRXContext* context)
 {
-    CLRXContext* c = static_cast<CLRXContext*>(context);
-    if (c->refCount.fetch_sub(1) == 1)
+    if (context->refCount.fetch_sub(1) == 1)
     {   // amdOclContext has been already released, we release only our context
-        for (cl_uint i = 0; i < c->devicesNum; i++)
-            clrxReleaseOnlyCLRXDevice(c->devices[i]);
-        delete c;
+        for (cl_uint i = 0; i < context->devicesNum; i++)
+            clrxReleaseOnlyCLRXDevice(context->devices[i]);
+        delete context;
     }
 }
 
-static inline void clrxRetainOnlyCLRXProgram(cl_program program)
+static inline void clrxRetainOnlyCLRXMemObject(CLRXMemObject* memObject)
 {
-    CLRXProgram* p = static_cast<CLRXProgram*>(program);
-    p->refCount.fetch_add(1);
+    memObject->refCount.fetch_add(1);
 }
 
-static inline void clrxRetainOnlyCLRXProgramNTimes(cl_program program, cl_uint ntimes)
+static inline void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
 {
-    CLRXProgram* p = static_cast<CLRXProgram*>(program);
-    p->refCount.fetch_add(ntimes);
+    if (memObject->refCount.fetch_sub(1) == 1)
+    {   // amdOclContext has been already released, we release only our context
+        if (memObject->parent != nullptr)
+            clrxReleaseOnlyCLRXMemObject(memObject->parent);
+        delete memObject;
+    }
 }
 
-static inline void clrxReleaseOnlyCLRXProgram(cl_program program)
+static inline void clrxRetainOnlyCLRXProgram(CLRXProgram* program)
 {
-    CLRXProgram* p = static_cast<CLRXProgram*>(program);
-    if (p->refCount.fetch_sub(1) == 1)
+    program->refCount.fetch_add(1);
+}
+
+static inline void clrxRetainOnlyCLRXProgramNTimes(CLRXProgram* program, cl_uint ntimes)
+{
+    program->refCount.fetch_add(ntimes);
+}
+
+static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
+{
+    if (program->refCount.fetch_sub(1) == 1)
     {   // amdOclProgram has been already released, we release only our program
-        clrxReleaseOnlyCLRXContext(p->context);
-        delete p;
+        clrxReleaseOnlyCLRXContext(program->context);
+        delete program;
     }
 }
 

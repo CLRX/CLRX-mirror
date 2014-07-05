@@ -124,6 +124,7 @@ clrxclCreateSubBuffer(cl_mem                   buffer,
               clReleaseMemObject,
               "Fatal Error at handling error at subbufer creation!")
     
+    clrxRetainOnlyCLRXMemObject(outObject->parent);
     return outObject;
 }
 
@@ -319,7 +320,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclCreateSubDevicesEXT(cl_device_id in_device
         (out_devices == nullptr && num_devices == nullptr))
         return CL_INVALID_VALUE;
     
-    const CLRXDevice* d = static_cast<const CLRXDevice*>(in_device);
+    CLRXDevice* d = static_cast<CLRXDevice*>(in_device);
     cl_uint devicesNum = 0;
     cl_int status = d->amdOclDevice->dispatch->clCreateSubDevicesEXT(
             d->amdOclDevice, properties, num_entries, out_devices, &devicesNum);
@@ -333,7 +334,8 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclCreateSubDevicesEXT(cl_device_id in_device
     
     if (num_devices != nullptr)
         *num_devices = devicesNum;
-        
+    
+    clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
     return status;
 }
 
@@ -360,8 +362,7 @@ clrxclReleaseDeviceEXT(cl_device_id device) CL_EXT_SUFFIX__VERSION_1_1
     CLRXDevice* d = static_cast<CLRXDevice*>(device);
     const cl_uint status = d->amdOclDevice->dispatch->clReleaseDeviceEXT(d->amdOclDevice);
     if (status == CL_SUCCESS && d->parent != nullptr)
-        if (d->refCount.fetch_sub(1) == 1)
-            delete d;
+        clrxReleaseOnlyCLRXDevice(d);
     return status;
 }
 
@@ -444,8 +445,7 @@ clrxclReleaseDevice(cl_device_id device) CL_API_SUFFIX__VERSION_1_2
     CLRXDevice* d = static_cast<CLRXDevice*>(device);
     const cl_uint status = d->amdOclDevice->dispatch->clReleaseDevice(d->amdOclDevice);
     if (status == CL_SUCCESS && d->parent != nullptr)
-        if (d->refCount.fetch_sub(1) == 1)
-            delete d;
+        clrxReleaseOnlyCLRXDevice(d);
     return status;
 }
 

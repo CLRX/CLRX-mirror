@@ -563,7 +563,7 @@ clrxclReleaseContext(cl_context context) CL_API_SUFFIX__VERSION_1_0
     CLRXContext* c = static_cast<CLRXContext*>(context);
     const cl_int status = c->amdOclContext->dispatch->clReleaseContext(c->amdOclContext);
     if (status == CL_SUCCESS)
-        clrxReleaseOnlyCLRXContext(context);
+        clrxReleaseOnlyCLRXContext(c);
     return status;
 }
 
@@ -868,11 +868,7 @@ clrxclReleaseMemObject(cl_mem memobj) CL_API_SUFFIX__VERSION_1_0
     const cl_int status = m->amdOclMemObject->dispatch->clReleaseMemObject(
                 m->amdOclMemObject);
     if (status == CL_SUCCESS)
-        if (m->refCount.fetch_sub(1) == 1)
-        {
-            clrxReleaseOnlyCLRXContext(m->context);
-            delete m;
-        }
+        clrxReleaseOnlyCLRXMemObject(m);
     return status;
 }
 
@@ -903,23 +899,34 @@ clrxclGetMemObjectInfo(cl_mem           memobj,
         return CL_INVALID_MEM_OBJECT;
     
     const CLRXMemObject* m = static_cast<const CLRXMemObject*>(memobj);
-    if (param_name != CL_MEM_CONTEXT)
-        // if no extensions (or not changed) and platform
-        return m->amdOclMemObject->
+    switch(param_name)
+    {
+        case CL_MEM_CONTEXT:
+            if (param_value != nullptr)
+            {
+                if (param_value_size < sizeof(cl_context))
+                    return CL_INVALID_VALUE;
+                *static_cast<cl_context*>(param_value) = m->context;
+            }
+            if (param_value_size_ret != nullptr)
+                *param_value_size_ret = sizeof(cl_context);
+            break;
+        case CL_MEM_ASSOCIATED_MEMOBJECT:
+            if (param_value != nullptr)
+            {
+                if (param_value_size < sizeof(cl_mem))
+                    return CL_INVALID_VALUE;
+                *static_cast<cl_mem*>(param_value) = m->parent;
+            }
+            if (param_value_size_ret != nullptr)
+                *param_value_size_ret = sizeof(cl_mem);
+            break;
+        default:
+            return m->amdOclMemObject->
                 dispatch->clGetMemObjectInfo(m->amdOclMemObject, param_name,
                     param_value_size, param_value, param_value_size_ret);
-    else // 
-    {
-        if (param_value != nullptr)
-        {
-            if (param_value_size < sizeof(cl_context))
-                return CL_INVALID_VALUE;
-            *static_cast<cl_context*>(param_value) = m->context;
-        }
-        if (param_value_size_ret != nullptr)
-            *param_value_size_ret = sizeof(cl_context);
-        return CL_SUCCESS;
     }
+    return CL_SUCCESS;
 }
 
 CL_API_ENTRY cl_int CL_API_CALL
@@ -1451,7 +1458,7 @@ clrxclCreateKernel(cl_program      program,
     outKernel->amdOclKernel = amdKernel;
     outKernel->program = p;
     
-    clrxRetainOnlyCLRXProgram(program);
+    clrxRetainOnlyCLRXProgram(p);
     return outKernel;
 }
 
@@ -1567,7 +1574,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
     if (num_kernels_ret != nullptr)
         *num_kernels_ret = numKernelsOut;
     
-    clrxRetainOnlyCLRXProgramNTimes(program, kernelsToCreate);
+    clrxRetainOnlyCLRXProgramNTimes(p, kernelsToCreate);
     return CL_SUCCESS;
 }
 
