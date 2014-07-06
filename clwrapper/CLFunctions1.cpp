@@ -1342,7 +1342,12 @@ clrxclGetProgramInfo(cl_program         program,
                               static_cast<cl_device_id*>(param_value));
             }
             if (param_value_size_ret != nullptr)
-                *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
+            {
+                if (p->assocDevices != nullptr)
+                    *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
+                else
+                    *param_value_size_ret = sizeof(cl_device_id)*p->origAssocDevicesNum;
+            }
         }
             break;
         default:
