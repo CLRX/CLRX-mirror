@@ -1065,9 +1065,7 @@ clrxclCreateProgramWithSource(cl_context        context,
     if (amdProgram == nullptr)
         return nullptr;
     
-    CLRXProgram* outProgram = clrxCreateCLRXProgram(c, amdProgram, errcode_ret);
-    
-    return outProgram;
+    return clrxCreateCLRXProgram(c, amdProgram, errcode_ret);
 }
 
 CL_API_ENTRY cl_program CL_API_CALL
@@ -1124,9 +1122,7 @@ clrxclCreateProgramWithBinary(cl_context                     context,
     if (amdProgram == nullptr)
         return nullptr;
     
-    CLRXProgram* outProgram = clrxCreateCLRXProgram(c, amdProgram, errcode_ret);
-    
-    return outProgram;
+    return clrxCreateCLRXProgram(c, amdProgram, errcode_ret);
 }
 
 CL_API_ENTRY cl_int CL_API_CALL
@@ -1314,7 +1310,10 @@ clrxclGetProgramInfo(cl_program         program,
             {
                 if (param_value_size < sizeof(cl_uint))
                     return CL_INVALID_VALUE;
-                *static_cast<cl_uint*>(param_value) = p->assocDevicesNum;
+                if (p->assocDevices != nullptr)
+                    *static_cast<cl_uint*>(param_value) = p->assocDevicesNum;
+                else
+                    *static_cast<cl_uint*>(param_value) = p->origAssocDevicesNum;
             }
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_uint);
@@ -1334,8 +1333,13 @@ clrxclGetProgramInfo(cl_program         program,
             {
                 if (param_value_size < sizeof(cl_device_id)*p->assocDevicesNum)
                     return CL_INVALID_VALUE;
-                std::copy(p->assocDevices, p->assocDevices + p->assocDevicesNum,
-                        static_cast<cl_device_id*>(param_value));
+                if (p->assocDevices != nullptr)
+                    std::copy(p->assocDevices, p->assocDevices + p->assocDevicesNum,
+                            static_cast<cl_device_id*>(param_value));
+                else
+                    std::copy(p->origAssocDevices,
+                              p->origAssocDevices + p->origAssocDevicesNum,
+                              static_cast<cl_device_id*>(param_value));
             }
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
