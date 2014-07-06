@@ -463,9 +463,9 @@ static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr; \
     if (event_wait_list != nullptr) \
     { \
-        if (num_events_in_wait_list <= 100) \
+        if (num_events_in_wait_list <= maxLocalEventsNum) \
         { \
-            cl_event amdWaitList[100]; \
+            cl_event amdWaitList[maxLocalEventsNum]; \
             for (cl_uint i = 0; i < num_events_in_wait_list; i++) \
             { \
                 if (event_wait_list[i] == nullptr) \
@@ -498,5 +498,7 @@ static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
     else \
         status = CLRX_CLCOMMAND_PREFIX CLRX_ORIG_CLCOMMAND, \
             0, nullptr, amdEventPtr);
-    
+
+static const cxuint maxLocalEventsNum = 50;
+
 #endif

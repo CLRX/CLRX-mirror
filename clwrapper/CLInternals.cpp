@@ -583,20 +583,21 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
             }
         }
     }
-    else // sorting
+    else if(amdDevicesNum != 0) // sorting
     {
         std::vector<const CLRXDevice*> sortedOriginal(allDevices,
                  allDevices + allDevicesNum);
         std::sort(sortedOriginal.begin(), sortedOriginal.end(),
                   clrxDeviceCompareByAmdDevice);
+        auto newEnd = std::unique(sortedOriginal.begin(), sortedOriginal.end());
         
         CLRXDevice tmpDevice;
         for (cl_uint i = 0; i < amdDevicesNum; i++)
         {
             tmpDevice.amdOclDevice = amdDevices[i];
             const auto& found = std::lower_bound(sortedOriginal.begin(),
-                     sortedOriginal.end(), &tmpDevice, clrxDeviceCompareByAmdDevice);
-            if (found != sortedOriginal.end())
+                     newEnd, &tmpDevice, clrxDeviceCompareByAmdDevice);
+            if (found != newEnd)
                 amdDevices[i] = (cl_device_id)(*found);
             else
             {

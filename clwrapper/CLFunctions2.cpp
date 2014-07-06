@@ -71,7 +71,7 @@ CLRX_CL_PUBLIC_SYM(clGetGLContextInfoKHR)
 /* end of public API definitions */
 
 #define CLRX_CLCOMMAND_PREFIX q->amdOclCommandQueue->dispatch->
-    
+
 CL_API_ENTRY cl_int CL_API_CALL
 clrxclWaitForEvents(cl_uint             num_events,
                 const cl_event *    event_list) CL_API_SUFFIX__VERSION_1_0
@@ -80,9 +80,9 @@ clrxclWaitForEvents(cl_uint             num_events,
         return CL_INVALID_VALUE;
     
     const CLRXEvent* e = static_cast<const CLRXEvent*>(event_list[0]);
-    if (num_events <= 100)
+    if (num_events <= maxLocalEventsNum)
     {   /* for static allocation */
-        cl_event amdEvents[100];
+        cl_event amdEvents[maxLocalEventsNum];
         for (cl_uint i = 0; i < num_events; i++)
         {
             if (event_list[i] == nullptr)
@@ -521,9 +521,9 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     void* output = nullptr;
     if (event_wait_list != nullptr)
     {
-        if (num_events_in_wait_list <= 100)
+        if (num_events_in_wait_list <= maxLocalEventsNum)
         {
-            cl_event amdWaitList[100];
+            cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {
                 if (event_wait_list[i] == nullptr)
@@ -627,9 +627,9 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
     void* output = nullptr;
     if (event_wait_list != nullptr)
     {
-        if (num_events_in_wait_list <= 100)
+        if (num_events_in_wait_list <= maxLocalEventsNum)
         {
-            cl_event amdWaitList[100];
+            cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {
                 if (event_wait_list[i] == nullptr)
@@ -828,9 +828,9 @@ clrxclEnqueueNativeKernel(cl_command_queue  command_queue,
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
     if (event_wait_list != nullptr)
     {
-        if (num_events_in_wait_list <= 100)
+        if (num_events_in_wait_list <= maxLocalEventsNum)
         {
-            cl_event amdWaitList[100];
+            cl_event amdWaitList[maxLocalEventsNum];
             for (cl_uint i = 0; i < num_events_in_wait_list; i++)
             {
                 if (event_wait_list[i] == nullptr)
@@ -909,9 +909,9 @@ clrxclEnqueueWaitForEvents(cl_command_queue command_queue,
         return CL_INVALID_VALUE;
     
     const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
-    if (num_events <= 100)
+    if (num_events <= maxLocalEventsNum)
     {   /* for static allocation */
-        cl_event amdEvents[100];
+        cl_event amdEvents[maxLocalEventsNum];
         for (cl_uint i = 0; i < num_events; i++)
         {
             if (event_list[i] == nullptr)
