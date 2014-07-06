@@ -1025,7 +1025,7 @@ clrxclGetSamplerInfo(cl_sampler         sampler,
     if (sampler == nullptr)
         return CL_INVALID_SAMPLER;
     const CLRXSampler* s = static_cast<const CLRXSampler*>(sampler);
-    if (param_name != CL_SAMPLER_CONTEXT && param_name != CL_SAMPLER_REFERENCE_COUNT)
+    if (param_name != CL_SAMPLER_CONTEXT)
         // if no extensions (or not changed) and platform
         return s->amdOclSampler->
                 dispatch->clGetSamplerInfo(s->amdOclSampler, param_name,
@@ -1207,53 +1207,29 @@ clrxclBuildProgram(cl_program           program,
         p->kernelArgFlagsInitialized = false; // 
     }
     
+    cl_int status;
     if (num_devices == 0)
-    {
-        try
+        status = p->amdOclProgram->dispatch->clBuildProgram(
+            p->amdOclProgram, 0, nullptr, options, notifyToCall,
+            destUserData);
+    else
+    {   // if devices list is supplied, we change associated devices for program
+        std::vector<cl_device_id> amdDevices(num_devices);
+        
+        for (cl_uint i = 0; i < num_devices; i++)
         {
-            const cl_int status = p->amdOclProgram->dispatch->clBuildProgram(
-                p->amdOclProgram, 0, nullptr, options, notifyToCall,
-                destUserData);
-            wrappedData = nullptr; // consumed by original clBuildProgram
-            
-            std::lock_guard<std::mutex> lock(p->mutex);
-            p->concurrentBuilds--; // after this building
-            const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
-            if (newStatus != CL_SUCCESS)
-                return newStatus;
-            
-            if (status == CL_SUCCESS)
+            if (device_list[i] == nullptr)
             {
-                cl_int newStatus = clrxInitKernelArgFlagsMap(p);
-                if (newStatus != CL_SUCCESS)
-                    return newStatus;
+                delete wrappedData;
+                return CL_INVALID_DEVICE;
             }
-            return status;
+            amdDevices[i] = static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
         }
-        catch(const std::bad_alloc& ex)
-        {
-            delete wrappedData; // delete only if original clBuildProgram is not called
-            return CL_OUT_OF_HOST_MEMORY;
-        }
+        
+        status = p->amdOclProgram->dispatch->clBuildProgram(
+                p->amdOclProgram, num_devices, amdDevices.data(), options,
+                         notifyToCall, destUserData);
     }
-    
-    // if devices list is supplied, we change associated devices for program
-    std::vector<cl_device_id> amdDevices(num_devices);
-    
-    for (cl_uint i = 0; i < num_devices; i++)
-    {
-        if (device_list[i] == nullptr)
-        {
-            delete wrappedData;
-            return CL_INVALID_DEVICE;
-        }
-        amdDevices[i] = static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
-    }
-    
-    const cl_int status = p->amdOclProgram->dispatch->clBuildProgram(
-            p->amdOclProgram, num_devices, amdDevices.data(), options,
-                     notifyToCall, destUserData);
-    
     wrappedData = nullptr; // consumed by original clBuildProgram
     
     std::lock_guard<std::mutex> lock(p->mutex);
@@ -1423,8 +1399,7 @@ clrxclCreateKernel(cl_program      program,
         std::lock_guard<std::mutex> l(p->mutex);
         p->kernelsAttached = true;
         if (p->concurrentBuilds != 0)
-        {
-            // update only when concurrent builds is working
+        {   // update only when concurrent builds is working
             cl_int status = clrxUpdateProgramAssocDevices(p);
             if (status != CL_SUCCESS)
             {
