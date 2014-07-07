@@ -795,13 +795,6 @@ clrxclLinkProgram(cl_context           context,
                           outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
                           outProgram->assocDevices);
                     
-                    const cl_int status = clrxInitKernelArgFlagsMap(outProgram);
-                    if (status != CL_SUCCESS)
-                    {
-                        if (errcode_ret != nullptr)
-                            *errcode_ret = status;
-                        return nullptr;
-                    }
                     wrappedData->clrxProgramFilled = true;
                     wrappedData->clrxProgram = outProgram;
                 }

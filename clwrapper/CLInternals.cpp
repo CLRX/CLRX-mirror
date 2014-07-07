@@ -823,12 +823,6 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                 std::copy(outProgram->origAssocDevices,
                           outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
                           outProgram->assocDevices);
-                
-                if (clrxInitKernelArgFlagsMap(outProgram) != CL_SUCCESS)
-                {
-                    std::cerr << "Fatal error on notify wrapper!" << std::endl;
-                    abort();
-                }
             }
             wrappedData->clrxProgram = outProgram;
             wrappedData->clrxProgramFilled = true;

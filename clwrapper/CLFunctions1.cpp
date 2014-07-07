@@ -1237,13 +1237,6 @@ clrxclBuildProgram(cl_program           program,
             return newStatus;
     }
     
-    if (status == CL_SUCCESS)
-    {
-        const cl_int newStatus = clrxInitKernelArgFlagsMap(p);
-        if (newStatus != CL_SUCCESS)
-            return newStatus;
-    }
-    
     if (status != CL_SUCCESS)
         return status;
     
@@ -1679,7 +1672,6 @@ clrxclGetKernelInfo(cl_kernel       kernel,
                 *param_value_size_ret = sizeof(cl_context);
             break;
         case CL_KERNEL_PROGRAM:
-        {
             if (param_value != nullptr)
             {
                 if (param_value_size < sizeof(cl_program))
@@ -1688,7 +1680,6 @@ clrxclGetKernelInfo(cl_kernel       kernel,
             }
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_program);
-        }
             break;
         default:
             return k->amdOclKernel->
