@@ -738,7 +738,8 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         }
         
         amdAssocDevices = new cl_device_id[origAssocDevicesNum];
-        // single OpenCL call should be atomic
+        // single OpenCL call should be atomic:
+        // reason: can be called between clBuildProgram which changes associated devices
         const cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(
             p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*origAssocDevicesNum,
                       amdAssocDevices, &amdAssocDevicesNum);

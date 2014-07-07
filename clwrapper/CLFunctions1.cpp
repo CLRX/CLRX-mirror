@@ -1331,7 +1331,6 @@ clrxclGetProgramInfo(cl_program         program,
             
             if (param_value != nullptr)
             {
-                
                 if (p->assocDevices != nullptr)
                 {
                     if (param_value_size < sizeof(cl_device_id)*p->assocDevicesNum)
