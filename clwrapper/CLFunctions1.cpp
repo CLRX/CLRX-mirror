@@ -1496,7 +1496,6 @@ clrxclCreateKernelsInProgram(cl_program     program,
             return status;
         
         if (kernels != nullptr)
-        {
             for (kp = 0; kp < kernelsToCreate; kp++)
             {
                 size_t kernelNameSize;
@@ -1536,8 +1535,6 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 outKernel->program = p;
                 kernels[kp] = outKernel;
             }
-            clrxRetainOnlyCLRXProgramNTimes(p, kernelsToCreate);
-        }
     }
     catch(const std::bad_alloc& ex)
     {
@@ -1571,6 +1568,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
     if (num_kernels_ret != nullptr)
         *num_kernels_ret = numKernelsOut;
     
+    if (kernels != nullptr)
+        clrxRetainOnlyCLRXProgramNTimes(p, kernelsToCreate);
     return CL_SUCCESS;
 }
 
