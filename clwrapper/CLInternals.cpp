@@ -982,6 +982,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     // clear before set up
     program->kernelArgFlagsMap.clear();
     
+    if (program->assocDevicesNum == 0)
+        return CL_SUCCESS;
+    
     cl_program_binary_type ptype;
     cl_int status = program->amdOclProgram->dispatch->clGetProgramBuildInfo(
         program->amdOclProgram, program->assocDevices[0]->amdOclDevice,
