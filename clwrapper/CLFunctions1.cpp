@@ -1476,9 +1476,6 @@ clrxclCreateKernelsInProgram(cl_program     program,
         return CL_INVALID_PROGRAM;
 
     CLRXProgram* p = static_cast<CLRXProgram*>(program);    
-    if (kernels == nullptr)
-        return p->amdOclProgram->dispatch->clCreateKernelsInProgram(p->amdOclProgram,
-                        num_kernels, kernels, num_kernels_ret);
     
     cl_uint numKernelsOut = 0; // for numKernelsOut
     if (num_kernels_ret != nullptr)
@@ -1509,63 +1506,67 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 return status;
         }
         
-        for (kp = 0; kp < kernelsToCreate; kp++)
-        {
-            size_t kernelNameSize;
-            cl_int status = kernels[kp]->dispatch->clGetKernelInfo(
-                    kernels[kp], CL_KERNEL_FUNCTION_NAME, 0, nullptr, &kernelNameSize);
-            if (status != CL_SUCCESS)
+        if (kernels != nullptr)
+            for (kp = 0; kp < kernelsToCreate; kp++)
             {
-                std::cerr << "Cant get kernel function name" << std::endl;
-                abort();
+                size_t kernelNameSize;
+                cl_int status = kernels[kp]->dispatch->clGetKernelInfo(
+                        kernels[kp], CL_KERNEL_FUNCTION_NAME, 0, nullptr, &kernelNameSize);
+                if (status != CL_SUCCESS)
+                {
+                    std::cerr << "Cant get kernel function name" << std::endl;
+                    abort();
+                }
+                if (kernelName != nullptr && kernelNameSize > maxKernelNameSize)
+                {
+                    delete[] kernelName;
+                    kernelName = new char[kernelNameSize];
+                    maxKernelNameSize = kernelNameSize;
+                }
+                
+                status = kernels[kp]->dispatch->clGetKernelInfo(kernels[kp],
+                            CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName, nullptr);
+                if (status != CL_SUCCESS)
+                {
+                    std::cerr << "Cant get kernel function name" << std::endl;
+                    abort();
+                }
+                
+                CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
+                        p->kernelArgFlagsMap.find(kernelName);
+                if (argFlagMapIt == p->kernelArgFlagsMap.end())
+                {
+                    std::cerr << "Cant find kernel arg flag!" << std::endl;
+                    abort();
+                }
+                
+                CLRXKernel* outKernel = new CLRXKernel(argFlagMapIt->second);
+                outKernel->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+                outKernel->amdOclKernel = kernels[kp];
+                outKernel->program = p;
+                kernels[kp] = outKernel;
             }
-            if (kernelName != nullptr && kernelNameSize > maxKernelNameSize)
-            {
-                delete[] kernelName;
-                kernelName = new char[kernelNameSize];
-                maxKernelNameSize = kernelNameSize;
-            }
-            
-            status = kernels[kp]->dispatch->clGetKernelInfo(kernels[kp],
-                        CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName, nullptr);
-            if (status != CL_SUCCESS)
-            {
-                std::cerr << "Cant get kernel function name" << std::endl;
-                abort();
-            }
-            
-            CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
-                    p->kernelArgFlagsMap.find(kernelName);
-            if (argFlagMapIt == p->kernelArgFlagsMap.end())
-            {
-                std::cerr << "Cant find kernel arg flag!" << std::endl;
-                abort();
-            }
-            
-            CLRXKernel* outKernel = new CLRXKernel(argFlagMapIt->second);
-            outKernel->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
-            outKernel->amdOclKernel = kernels[kp];
-            outKernel->program = p;
-            kernels[kp] = outKernel;
-        }
     }
     catch(const std::bad_alloc& ex)
-    {   // already processed kernels
-        delete[] kernelName;
-        for (cl_uint i = 0; i < kp; i++)
-        {
-            CLRXKernel* outKernel = static_cast<CLRXKernel*>(kernels[i]);
-            kernels[i] = outKernel->amdOclKernel;
-            delete outKernel;
-        }
-        // freeing original kernels
-        for (cl_uint i = 0; i < kernelsToCreate; i++)
-            if (p->amdOclProgram->dispatch->clReleaseKernel(kernels[i]) != CL_SUCCESS)
+    {
+        if (kernels != nullptr)
+        {   // already processed kernels
+            delete[] kernelName;
+            for (cl_uint i = 0; i < kp; i++)
             {
-                std::cerr <<
-                    "Fatal Error at handling error at kernel creation!" << std::endl;
-                abort();
+                CLRXKernel* outKernel = static_cast<CLRXKernel*>(kernels[i]);
+                kernels[i] = outKernel->amdOclKernel;
+                delete outKernel;
             }
+            // freeing original kernels
+            for (cl_uint i = 0; i < kernelsToCreate; i++)
+                if (p->amdOclProgram->dispatch->clReleaseKernel(kernels[i]) != CL_SUCCESS)
+                {
+                    std::cerr <<
+                        "Fatal Error at handling error at kernel creation!" << std::endl;
+                    abort();
+                }
+        }
         return CL_OUT_OF_HOST_MEMORY;
     }
     catch(const std::exception& ex)
