@@ -1405,24 +1405,22 @@ clrxclCreateKernel(cl_program      program,
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
-        p->kernelsAttached = true;
         if (p->concurrentBuilds != 0)
         {   // update only when concurrent builds is working
-            cl_int status = clrxUpdateProgramAssocDevices(p);
+            const cl_int status = clrxUpdateProgramAssocDevices(p);
             if (status != CL_SUCCESS)
             {
                 if (errcode_ret != nullptr)
                     *errcode_ret = status;
                 return nullptr;
             }
-            
-            status = clrxInitKernelArgFlagsMap(p);
-            if (status != CL_SUCCESS)
-            {
-                if (errcode_ret != nullptr)
-                    *errcode_ret = status;
-                return nullptr;
-            }
+        }
+        const cl_int status = clrxInitKernelArgFlagsMap(p);
+        if (status != CL_SUCCESS)
+        {
+            if (errcode_ret != nullptr)
+                *errcode_ret = status;
+            return nullptr;
         }
         
         CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
@@ -1487,17 +1485,15 @@ clrxclCreateKernelsInProgram(cl_program     program,
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
-        p->kernelsAttached = true;
         if (p->concurrentBuilds != 0)
         {   // update only when concurrent builds is working
-            cl_int status = clrxUpdateProgramAssocDevices(p);
-            if (status != CL_SUCCESS)
-                return status;
-            
-            status = clrxInitKernelArgFlagsMap(p);
+            const cl_int status = clrxUpdateProgramAssocDevices(p);
             if (status != CL_SUCCESS)
                 return status;
         }
+        const cl_int status = clrxInitKernelArgFlagsMap(p);
+        if (status != CL_SUCCESS)
+            return status;
         
         if (kernels != nullptr)
             for (kp = 0; kp < kernelsToCreate; kp++)
