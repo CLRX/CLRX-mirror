@@ -1398,15 +1398,16 @@ clrxclCreateKernel(cl_program      program,
     }
     
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
-    const cl_kernel amdKernel = p->amdOclProgram->dispatch->clCreateKernel(
-                p->amdOclProgram, kernel_name, errcode_ret);
-    if (amdKernel == nullptr)
-        return nullptr;
-    
+    cl_kernel amdKernel = nullptr;
     CLRXKernel* outKernel = nullptr;
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
+        amdKernel = p->amdOclProgram->dispatch->clCreateKernel(
+                p->amdOclProgram, kernel_name, errcode_ret);
+        if (amdKernel == nullptr)
+            return nullptr;
+        
         if (p->concurrentBuilds != 0)
         {   // update only when concurrent builds is working
             const cl_int status = clrxUpdateProgramAssocDevices(p);
@@ -1474,27 +1475,31 @@ clrxclCreateKernelsInProgram(cl_program     program,
     cl_uint numKernelsOut = 0; // for numKernelsOut
     if (num_kernels_ret != nullptr)
         numKernelsOut = *num_kernels_ret; 
-    const cl_int status = p->amdOclProgram->dispatch->clCreateKernelsInProgram(
-        p->amdOclProgram, num_kernels, kernels, &numKernelsOut);
-    
-    if (status != CL_SUCCESS)
-        return status;
     
     /* replaces original kernels by our (CLRXKernels) */
-    const cl_uint kernelsToCreate = std::min(num_kernels, numKernelsOut);
+    size_t kernelsToCreate = 0;
     cl_uint kp = 0; // kernel already processed
     char* kernelName = nullptr;
     size_t maxKernelNameSize = 0;
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
+        cl_int status = p->amdOclProgram->dispatch->clCreateKernelsInProgram(
+            p->amdOclProgram, num_kernels, kernels, &numKernelsOut);
+        
+        if (status != CL_SUCCESS)
+            return status;
+        
+        /* replaces original kernels by our (CLRXKernels) */
+        kernelsToCreate = std::min(num_kernels, numKernelsOut);
+        
         if (p->concurrentBuilds != 0)
         {   // update only when concurrent builds is working
-            const cl_int status = clrxUpdateProgramAssocDevices(p);
+            status = clrxUpdateProgramAssocDevices(p);
             if (status != CL_SUCCESS)
                 return status;
         }
-        const cl_int status = clrxInitKernelArgFlagsMap(p);
+        status = clrxInitKernelArgFlagsMap(p);
         if (status != CL_SUCCESS)
             return status;
         
