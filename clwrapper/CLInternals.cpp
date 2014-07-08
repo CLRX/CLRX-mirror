@@ -269,6 +269,7 @@ CLRXSampler::~CLRXSampler()
 CLRXProgram::CLRXProgram() : refCount(1)
 {
     kernelArgFlagsInitialized = false;
+    kernelsAttached = 0;
     context = nullptr;
     assocDevicesNum = 0;
     assocDevices = nullptr;
@@ -785,16 +786,17 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
 
 void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
 {
-    CLRXBuildProgramUserData* wrappedData =
+    CLRXBuildProgramUserData* wrappedDataPtr =
             static_cast<CLRXBuildProgramUserData*>(user_data);
-    wrappedData->realNotify(wrappedData->clrxProgram, wrappedData->realUserData);
+    CLRXBuildProgramUserData wrappedData = *wrappedDataPtr;
     // must be called only once (freeing wrapped data)
-    delete wrappedData;
+    delete wrappedDataPtr;
+    wrappedData.realNotify(wrappedData.clrxProgram, wrappedData.realUserData);
 }
 
 void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
 {
-    CLRXLinkProgramUserData* wrappedData =
+    CLRXLinkProgramUserData* wrappedDataPtr =
             static_cast<CLRXLinkProgramUserData*>(user_data);
     
     bool initializedByCallback = false;
@@ -802,8 +804,8 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
     void* realUserData = nullptr;
     try
     {
-        std::lock_guard<std::mutex> l(wrappedData->mutex);
-        if (!wrappedData->clrxProgramFilled)
+        std::lock_guard<std::mutex> l(wrappedDataPtr->mutex);
+        if (!wrappedDataPtr->clrxProgramFilled)
         {
             initializedByCallback = true;
             CLRXProgram* outProgram = nullptr;
@@ -813,7 +815,7 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                 outProgram->dispatch =
                     const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
                 outProgram->amdOclProgram = program;
-                outProgram->context = wrappedData->clrxContext;
+                outProgram->context = wrappedDataPtr->clrxContext;
                 outProgram->concurrentBuilds = 0;
                 clrxSetProgramOrigDevices(outProgram);
                 // initialize assoc devices num
@@ -823,11 +825,11 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                           outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
                           outProgram->assocDevices);
             }
-            wrappedData->clrxProgram = outProgram;
-            wrappedData->clrxProgramFilled = true;
+            wrappedDataPtr->clrxProgram = outProgram;
+            wrappedDataPtr->clrxProgramFilled = true;
         }
-        clrxProgram = wrappedData->clrxProgram;
-        realUserData = wrappedData->realUserData;
+        clrxProgram = wrappedDataPtr->clrxProgram;
+        realUserData = wrappedDataPtr->realUserData;
     }
     catch(std::bad_alloc& ex)
     {
@@ -840,10 +842,12 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
         abort();
     }
     
-    wrappedData->realNotify(clrxProgram, realUserData);
-    if (!initializedByCallback || wrappedData->toDeleteByCallback)
+    void (*realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
+    if (!initializedByCallback || wrappedDataPtr->toDeleteByCallback)
         // if not initialized by this callback to delete
-        delete wrappedData;
+        delete wrappedDataPtr;
+    
+    realNotify(clrxProgram, realUserData);
 }
 
 CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
@@ -951,21 +955,23 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
 
 void clrxEventCallbackWrapper(cl_event event, cl_int exec_status, void * user_data)
 {
-    CLRXEventCallbackUserData* wrappedData =
+    CLRXEventCallbackUserData* wrappedDataPtr =
             static_cast<CLRXEventCallbackUserData*>(user_data);
-    wrappedData->realNotify(wrappedData->clrxEvent, exec_status,
-                wrappedData->realUserData);
+    CLRXEventCallbackUserData wrappedData = *wrappedDataPtr;
     // must be called only once (freeing wrapped data)
-    delete wrappedData;
+    delete wrappedDataPtr;
+    wrappedData.realNotify(wrappedData.clrxEvent, exec_status,
+                wrappedData.realUserData);
 }
 
 void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
 {
-    CLRXMemDtorCallbackUserData* wrappedData =
+    CLRXMemDtorCallbackUserData* wrappedDataPtr =
             static_cast<CLRXMemDtorCallbackUserData*>(user_data);
-    wrappedData->realNotify(wrappedData->clrxMemObject, wrappedData->realUserData);
+    CLRXMemDtorCallbackUserData wrappedData = *wrappedDataPtr;
     // must be called only once (freeing wrapped data)
-    delete wrappedData;
+    delete wrappedDataPtr;
+    wrappedData.realNotify(wrappedData.clrxMemObject, wrappedData.realUserData);
 }
 
 cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)

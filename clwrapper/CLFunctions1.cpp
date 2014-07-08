@@ -1199,8 +1199,10 @@ clrxclBuildProgram(cl_program           program,
     { // catching system_error
     {
         std::lock_guard<std::mutex> lock(p->mutex);
+        if (p->kernelsAttached != 0) // if kernels attached
+            return CL_INVALID_OPERATION;
         p->concurrentBuilds++;
-        p->kernelArgFlagsInitialized = false; // 
+        p->kernelArgFlagsInitialized = false;
     }
     
     cl_int status;
@@ -1431,6 +1433,7 @@ clrxclCreateKernel(cl_program      program,
             abort();
         }
         outKernel = new CLRXKernel(argFlagMapIt->second);
+        p->kernelsAttached++;
     }
     catch(const std::bad_alloc& ex)
     {
@@ -1496,6 +1499,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
             return status;
         
         if (kernels != nullptr)
+        {
             for (kp = 0; kp < kernelsToCreate; kp++)
             {
                 size_t kernelNameSize;
@@ -1506,7 +1510,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
                     std::cerr << "Cant get kernel function name" << std::endl;
                     abort();
                 }
-                if (kernelName != nullptr && kernelNameSize > maxKernelNameSize)
+                if (kernelName == nullptr ||
+                    (kernelName != nullptr && kernelNameSize > maxKernelNameSize))
                 {
                     delete[] kernelName;
                     kernelName = new char[kernelNameSize];
@@ -1535,6 +1540,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 outKernel->program = p;
                 kernels[kp] = outKernel;
             }
+            p->kernelsAttached += kernelsToCreate;
+        }
     }
     catch(const std::bad_alloc& ex)
     {
@@ -1593,10 +1600,17 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
         return CL_INVALID_KERNEL;
     CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
     
-    const cl_int status = k->amdOclKernel->dispatch->clReleaseKernel(k->amdOclKernel);
+    cl_int status;
+    {
+        std::lock_guard<std::mutex> l(k->program->mutex);
+        status = k->amdOclKernel->dispatch->clReleaseKernel(k->amdOclKernel);
+        if (status == CL_SUCCESS)
+            k->program->kernelsAttached--; // decrease kernel attached
+    }
+            
     if (status == CL_SUCCESS)
         if (k->refCount.fetch_sub(1) == 1)
-        {
+        {   // after decreasing kernels attached number
             clrxReleaseOnlyCLRXProgram(k->program);
             delete k;
         }
