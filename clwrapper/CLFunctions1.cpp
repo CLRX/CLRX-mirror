@@ -1638,15 +1638,21 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
         return CL_INVALID_KERNEL;
     CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
     
-    const cl_int status = k->amdOclKernel->dispatch->clReleaseKernel(k->amdOclKernel);
+    cl_int status;
+    try
+    {   // must be in clauses, because
+        std::lock_guard<std::mutex> l(k->program->mutex);
+        status = k->amdOclKernel->dispatch->clReleaseKernel(k->amdOclKernel);
+        k->program->kernelsAttached--; // decrease kernel attached
+    }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
+        abort();
+    }
     if (status == CL_SUCCESS)
         if (k->refCount.fetch_sub(1) == 1)
         {
-            {   // must be in clauses, because
-                std::lock_guard<std::mutex> l(k->program->mutex);
-                k->program->kernelsAttached--; // decrease kernel attached
-            }
-            // after decreasing kernels attached number
             clrxReleaseOnlyCLRXProgram(k->program);
             delete k;
         }
@@ -1661,7 +1667,6 @@ clrxclSetKernelArg(cl_kernel    kernel,
 {
     if (kernel == nullptr)
         return CL_INVALID_KERNEL;
-    
     
     const CLRXKernel* k = static_cast<const CLRXKernel*>(kernel);
     if (arg_index >= (k->argTypes.size()>>1))
