@@ -789,8 +789,28 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
     CLRXBuildProgramUserData* wrappedDataPtr =
             static_cast<CLRXBuildProgramUserData*>(user_data);
     CLRXBuildProgramUserData wrappedData = *wrappedDataPtr;
+    CLRXProgram* p = wrappedDataPtr->clrxProgram;
+    {
+        std::lock_guard<std::mutex> l(p->mutex);
+        if (!wrappedDataPtr->inClFunction)
+        {   // do it if not done in clBuildProgram
+            p->concurrentBuilds--; // after this building
+            const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
+            if (newStatus != CL_SUCCESS)
+            {
+                std::cerr << "Fatal error: cant update programAssocDevices" << std::endl;
+                abort();
+            }
+        }
+        wrappedDataPtr->callDone = true;
+        if (wrappedDataPtr->inClFunction) // delete if done in clBuildProgram
+        {
+            //std::cout << "Delete WrappedData: " << wrappedDataPtr << std::endl;
+            delete wrappedDataPtr;
+        }
+    }
+    
     // must be called only once (freeing wrapped data)
-    delete wrappedDataPtr;
     wrappedData.realNotify(wrappedData.clrxProgram, wrappedData.realUserData);
 }
 

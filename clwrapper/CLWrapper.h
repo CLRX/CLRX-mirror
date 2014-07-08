@@ -190,6 +190,8 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
 struct CLRX_INTERNAL CLRXBuildProgramUserData
 {
     CLRXProgram* clrxProgram;
+    bool callDone;
+    bool inClFunction;
     void (*realNotify)(cl_program program, void * user_data);
     void* realUserData;
 };

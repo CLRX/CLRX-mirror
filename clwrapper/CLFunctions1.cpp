@@ -445,10 +445,10 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     
     bool doTranslateProps = false;
     size_t propNums = 0;
-    std::vector<cl_context_properties> amdProps;
     cl_context amdContext = nullptr;
     try
     {
+        std::vector<cl_context_properties> amdProps;
         /* translate props if needed */
         if (properties != nullptr)
         {
@@ -1180,23 +1180,27 @@ clrxclBuildProgram(cl_program           program,
         (num_devices == 0 && device_list != nullptr))
         return CL_INVALID_VALUE;
     
+    bool doDeleteWrappedData = true;
     void* destUserData = user_data;
     CLRXBuildProgramUserData* wrappedData = nullptr;
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
+    try
+    { // catching system_error
     if (pfn_notify != nullptr)
     {
         wrappedData = new CLRXBuildProgramUserData;
         wrappedData->realNotify = pfn_notify;
         wrappedData->clrxProgram = static_cast<CLRXProgram*>(program);
         wrappedData->realUserData = user_data;
+        wrappedData->callDone = false;
+        wrappedData->inClFunction = false;
         destUserData = wrappedData;
+        //std::cout << "WrappedData: " << wrappedData << std::endl;
         notifyToCall = clrxBuildProgramNotifyWrapper;
     }
     
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
     
-    try
-    { // catching system_error
     {
         std::lock_guard<std::mutex> lock(p->mutex);
         if (p->kernelsAttached != 0) // if kernels attached
@@ -1228,25 +1232,42 @@ clrxclBuildProgram(cl_program           program,
                 p->amdOclProgram, num_devices, amdDevices.data(), options,
                          notifyToCall, destUserData);
     }
-    wrappedData = nullptr; // consumed by original clBuildProgram
     
     std::lock_guard<std::mutex> lock(p->mutex);
-    p->concurrentBuilds--; // after this building
-    if (status != CL_INVALID_DEVICE)
-    {
-        const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
-        if (newStatus != CL_SUCCESS)
-            return newStatus;
+    // determine whether wrapped must deleted when out of memory happened
+    doDeleteWrappedData = wrappedData != nullptr &&
+            (status != CL_SUCCESS || wrappedData->callDone);
+    
+    const cl_int clBuildStatus = status;
+    if (wrappedData == nullptr || !wrappedData->callDone)
+    {   // do it if callback not called
+        p->concurrentBuilds--; // after this building
+        if (status != CL_INVALID_DEVICE)
+        {
+            const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
+            if (newStatus != CL_SUCCESS)
+                status = newStatus;
+        }
+        if (wrappedData != nullptr)
+            wrappedData->inClFunction = true;
     }
-    
-    if (status != CL_SUCCESS)
-        return status;
-    
-    return CL_SUCCESS;
+    // delete wrappedData if clBuildProgram not finished successfully
+    // or callback is called
+    if (wrappedData != nullptr && (clBuildStatus != CL_SUCCESS || wrappedData->callDone))
+    {
+        //std::cout << "Delete WrappedData: " << wrappedData << std::endl;
+        delete wrappedData;
+        wrappedData = nullptr;
+    }
+    return status;
     }
     catch(const std::bad_alloc& ex)
     {
-        delete wrappedData; // delete only if original clBuildProgram is not called
+        if (doDeleteWrappedData)
+        {
+            //std::cout << "Delete WrappedData: " << wrappedData << std::endl;
+            delete wrappedData;
+        }
         return CL_OUT_OF_HOST_MEMORY;
     }
     catch(const std::exception& ex)
@@ -1398,28 +1419,33 @@ clrxclCreateKernel(cl_program      program,
     }
     
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
-    const cl_kernel amdKernel = p->amdOclProgram->dispatch->clCreateKernel(
-                p->amdOclProgram, kernel_name, errcode_ret);
-    if (amdKernel == nullptr)
-        return nullptr;
     
+    cl_kernel amdKernel = nullptr;
     CLRXKernel* outKernel = nullptr;
     try
     {
         std::lock_guard<std::mutex> l(p->mutex);
         if (p->concurrentBuilds != 0)
-        {   // update only when concurrent builds is working
-            const cl_int status = clrxUpdateProgramAssocDevices(p);
-            if (status != CL_SUCCESS)
-            {
-                if (errcode_ret != nullptr)
-                    *errcode_ret = status;
-                return nullptr;
-            }
+        {   // creating kernel is not legal when building in progress
+            if (errcode_ret != nullptr)
+                *errcode_ret = CL_INVALID_PROGRAM_EXECUTABLE;
+            return nullptr;
         }
+        
+        amdKernel = p->amdOclProgram->dispatch->clCreateKernel(
+                    p->amdOclProgram, kernel_name, errcode_ret);
+        if (amdKernel == nullptr)
+            return nullptr;
+        
         const cl_int status = clrxInitKernelArgFlagsMap(p);
         if (status != CL_SUCCESS)
         {
+            if (p->amdOclProgram->dispatch->clReleaseKernel(amdKernel) != CL_SUCCESS)
+            {
+                std::cerr <<
+                    "Fatal Error at handling error at kernel creation!" << std::endl;
+                abort();
+            }
             if (errcode_ret != nullptr)
                 *errcode_ret = status;
             return nullptr;
@@ -1474,14 +1500,10 @@ clrxclCreateKernelsInProgram(cl_program     program,
     cl_uint numKernelsOut = 0; // for numKernelsOut
     if (num_kernels_ret != nullptr)
         numKernelsOut = *num_kernels_ret; 
-    const cl_int status = p->amdOclProgram->dispatch->clCreateKernelsInProgram(
-        p->amdOclProgram, num_kernels, kernels, &numKernelsOut);
     
-    if (status != CL_SUCCESS)
-        return status;
     
     /* replaces original kernels by our (CLRXKernels) */
-    const cl_uint kernelsToCreate = std::min(num_kernels, numKernelsOut);
+    cl_uint kernelsToCreate = 0;
     cl_uint kp = 0; // kernel already processed
     char* kernelName = nullptr;
     size_t maxKernelNameSize = 0;
@@ -1489,14 +1511,30 @@ clrxclCreateKernelsInProgram(cl_program     program,
     {
         std::lock_guard<std::mutex> l(p->mutex);
         if (p->concurrentBuilds != 0)
-        {   // update only when concurrent builds is working
-            const cl_int status = clrxUpdateProgramAssocDevices(p);
-            if (status != CL_SUCCESS)
-                return status;
-        }
-        const cl_int status = clrxInitKernelArgFlagsMap(p);
+            // creating kernel is not legal when building in progress
+            return CL_INVALID_PROGRAM_EXECUTABLE;
+        
+        // call after checking concurrent buildings
+        cl_int status = p->amdOclProgram->dispatch->clCreateKernelsInProgram(
+            p->amdOclProgram, num_kernels, kernels, &numKernelsOut);
+        
         if (status != CL_SUCCESS)
             return status;
+        
+        kernelsToCreate = std::min(num_kernels, numKernelsOut);
+        
+        status = clrxInitKernelArgFlagsMap(p);
+        if (status != CL_SUCCESS)
+        {   // free if error happeded
+            for (cl_uint i = 0; i < kernelsToCreate; i++)
+                if (p->amdOclProgram->dispatch->clReleaseKernel(kernels[i]) != CL_SUCCESS)
+                {
+                    std::cerr <<
+                        "Fatal Error at handling error at kernel creation!" << std::endl;
+                    abort();
+                }
+            return status;
+        }
         
         if (kernels != nullptr)
         {
