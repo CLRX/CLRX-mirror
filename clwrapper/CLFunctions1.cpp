@@ -1146,7 +1146,7 @@ clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
     CLRXProgram * p = static_cast<CLRXProgram*>(program);
     
     const cl_int status = p->amdOclProgram->dispatch->clReleaseProgram(p->amdOclProgram);
-    
+    bool doDelete = false;
     if (status == CL_SUCCESS)
         try
         {
@@ -1154,7 +1154,7 @@ clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
             if (p->refCount.fetch_sub(1) == 1)
             {
                 clrxReleaseOnlyCLRXContext(p->context);
-                delete p;
+                doDelete = true;
             }
         }
         catch(const std::exception& ex)
@@ -1162,6 +1162,8 @@ clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
             std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
             abort();
         }
+    if (doDelete)
+        delete p;
     return status;
 }
 
@@ -1624,7 +1626,7 @@ clrxclRetainKernel(cl_kernel    kernel) CL_API_SUFFIX__VERSION_1_0
         return CL_INVALID_KERNEL;
     
     CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
-    const cl_int status = k->dispatch->clRetainKernel(k->amdOclKernel);
+    const cl_int status = k->amdOclKernel->dispatch->clRetainKernel(k->amdOclKernel);
     if (status == CL_SUCCESS)
         k->refCount.fetch_add(1);
     return status;
