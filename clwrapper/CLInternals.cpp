@@ -951,7 +951,15 @@ cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
             *event = outEvent;
         }
         catch (const std::bad_alloc& ex)
-        { return CL_OUT_OF_HOST_MEMORY; }
+        {
+            if (q->amdOclCommandQueue->dispatch->clReleaseEvent(amdEvent) != CL_SUCCESS)
+            {
+                std::cerr <<
+                    "Fatal Error at handling error at apply event!" << std::endl;
+                abort();
+            }
+            return CL_OUT_OF_HOST_MEMORY;
+        }
     }
     
     clrxRetainOnlyCLRXContext(q->context);

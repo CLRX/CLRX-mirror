@@ -1227,7 +1227,8 @@ clrxclBuildProgram(cl_program           program,
                     delete wrappedData;
                     return CL_INVALID_DEVICE;
                 }
-                amdDevices[i] = static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
+                amdDevices[i] =
+                    static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
             }
             
             status = p->amdOclProgram->dispatch->clBuildProgram(

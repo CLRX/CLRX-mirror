@@ -154,7 +154,7 @@ clrxclRetainEvent(cl_event event) CL_API_SUFFIX__VERSION_1_0
         return CL_INVALID_EVENT;
     
     CLRXEvent* e = static_cast<CLRXEvent*>(event);
-    const cl_int status = e->dispatch->clRetainEvent(e->amdOclEvent);
+    const cl_int status = e->amdOclEvent->dispatch->clRetainEvent(e->amdOclEvent);
     if (status == CL_SUCCESS)
         e->refCount.fetch_add(1);
     return status;
