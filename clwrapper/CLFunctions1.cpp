@@ -1152,10 +1152,7 @@ clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
         {
             std::lock_guard<std::mutex> lock(p->mutex); // lock if assocDevices is changed
             if (p->refCount.fetch_sub(1) == 1)
-            {
-                clrxReleaseOnlyCLRXContext(p->context);
                 doDelete = true;
-            }
         }
         catch(const std::exception& ex)
         {
@@ -1163,7 +1160,10 @@ clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
             abort();
         }
     if (doDelete)
+    {
+        clrxReleaseOnlyCLRXContext(p->context);
         delete p;
+    }
     return status;
 }
 
@@ -1237,10 +1237,11 @@ clrxclBuildProgram(cl_program           program,
     
     std::lock_guard<std::mutex> lock(p->mutex);
     // determine whether wrapped must deleted when out of memory happened
+    // delete wrappedData if clBuildProgram not finished successfully
+    // or callback is called
     doDeleteWrappedData = wrappedData != nullptr &&
             (status != CL_SUCCESS || wrappedData->callDone);
     
-    const cl_int clBuildStatus = status;
     if (wrappedData == nullptr || !wrappedData->callDone)
     {   // do it if callback not called
         p->concurrentBuilds--; // after this building
@@ -1255,7 +1256,7 @@ clrxclBuildProgram(cl_program           program,
     }
     // delete wrappedData if clBuildProgram not finished successfully
     // or callback is called
-    if (wrappedData != nullptr && (clBuildStatus != CL_SUCCESS || wrappedData->callDone))
+    if (doDeleteWrappedData)
     {
         //std::cout << "Delete WrappedData: " << wrappedData << std::endl;
         delete wrappedData;

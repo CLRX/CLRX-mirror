@@ -347,6 +347,7 @@ static inline void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
 {
     if (memObject->refCount.fetch_sub(1) == 1)
     {   // amdOclContext has been already released, we release only our context
+        clrxReleaseOnlyCLRXContext(memObject->context);
         if (memObject->parent != nullptr)
             clrxReleaseOnlyCLRXMemObject(memObject->parent);
         delete memObject;
