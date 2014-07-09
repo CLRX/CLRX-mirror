@@ -498,8 +498,8 @@ clrxclCreateImage(cl_context              context,
     
     if (image_desc != nullptr && image_desc->buffer != nullptr)
     {
-        outObject->parent = (CLRXMemObject*)image_desc->buffer;
-        clrxRetainOnlyCLRXMemObject(outObject->parent);
+        outObject->buffer = (CLRXMemObject*)image_desc->buffer;
+        clrxRetainOnlyCLRXMemObject(outObject->buffer);
     }
     
     return outObject;

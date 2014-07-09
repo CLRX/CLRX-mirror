@@ -251,6 +251,7 @@ CLRXMemObject::CLRXMemObject() : refCount(1)
 {
     context = nullptr;
     parent = nullptr;
+    buffer = nullptr; // for image
 }
 
 CLRXMemObject::~CLRXMemObject()

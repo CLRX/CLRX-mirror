@@ -949,8 +949,7 @@ clrxclGetImageInfo(cl_mem           image,
         {
             if (param_value_size < sizeof(cl_mem))
                 return CL_INVALID_VALUE;
-            // returns parent (parent is associated buffer for image)
-            *static_cast<cl_mem*>(param_value) = m->parent;
+            *static_cast<cl_mem*>(param_value) = m->buffer;
         }
         if (param_value_size_ret != nullptr)
             *param_value_size_ret = sizeof(cl_mem);

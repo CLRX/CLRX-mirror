@@ -154,6 +154,7 @@ struct CLRX_INTERNAL CLRXMemObject: _cl_mem
     cl_mem amdOclMemObject;
     CLRXContext* context;
     CLRXMemObject* parent;
+    CLRXMemObject* buffer; // for buffer
     
     CLRXMemObject();
     ~CLRXMemObject();
@@ -350,6 +351,8 @@ static inline void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
         clrxReleaseOnlyCLRXContext(memObject->context);
         if (memObject->parent != nullptr)
             clrxReleaseOnlyCLRXMemObject(memObject->parent);
+        if (memObject->buffer != nullptr)
+            clrxReleaseOnlyCLRXMemObject(memObject->buffer);
         delete memObject;
     }
 }
