@@ -209,7 +209,7 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     }
     catch(...)
     {
-        std::cerr << "Fatal and unknown error at device initialization: " << std::endl;
+        std::cerr << "Fatal and unknown error at device initialization" << std::endl;
         abort();
     }
     if (p->deviceInitStatus != CL_SUCCESS)
@@ -279,7 +279,6 @@ clrxclGetDeviceInfo(cl_device_id    device,
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_platform_id);
             break;
-            
         case CL_DEVICE_PARENT_DEVICE_EXT:
         case CL_DEVICE_PARENT_DEVICE:
             if (param_value != nullptr)
@@ -1217,21 +1216,31 @@ clrxclBuildProgram(cl_program           program,
             destUserData);
     else
     {   // if devices list is supplied, we change associated devices for program
-        std::vector<cl_device_id> amdDevices(num_devices);
-        
-        for (cl_uint i = 0; i < num_devices; i++)
+        try
         {
-            if (device_list[i] == nullptr)
+            std::vector<cl_device_id> amdDevices(num_devices);
+            
+            for (cl_uint i = 0; i < num_devices; i++)
             {
-                delete wrappedData;
-                return CL_INVALID_DEVICE;
+                if (device_list[i] == nullptr)
+                {
+                    delete wrappedData;
+                    return CL_INVALID_DEVICE;
+                }
+                amdDevices[i] = static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
             }
-            amdDevices[i] = static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
+            
+            status = p->amdOclProgram->dispatch->clBuildProgram(
+                    p->amdOclProgram, num_devices, amdDevices.data(), options,
+                             notifyToCall, destUserData);
         }
-        
-        status = p->amdOclProgram->dispatch->clBuildProgram(
-                p->amdOclProgram, num_devices, amdDevices.data(), options,
-                         notifyToCall, destUserData);
+        catch(std::bad_alloc& ex)
+        {   // if allocation failed
+            std::lock_guard<std::mutex> lock(p->mutex);
+            p->concurrentBuilds--; // after this building
+            delete wrappedData;
+            return CL_OUT_OF_HOST_MEMORY;
+        }
     }
     
     std::lock_guard<std::mutex> lock(p->mutex);
@@ -1476,7 +1485,8 @@ clrxclCreateKernel(cl_program      program,
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
+        std::cerr << "Fatal Error at handling error at kernel creation: " <<
+                    ex.what() << std::endl;
         abort();
     }
     
@@ -1606,7 +1616,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
+        std::cerr << "Fatal Error at handling error at kernel creation: " <<
+                    ex.what() << std::endl;
         abort();
     }
     delete[] kernelName;
@@ -1654,7 +1665,7 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
+        std::cerr << "Fatal Error at releasing kernel: " << ex.what() << std::endl;
         abort();
     }
     if (doDelete)

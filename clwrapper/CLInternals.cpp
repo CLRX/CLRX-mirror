@@ -637,14 +637,22 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
         return status;
     }
     
-    std::vector<cl_device_id> platformDevices(platform->devicesNum);
-    for (cl_uint i = 0; i < platform->devicesNum; i++)
-        platformDevices[i] = platform->devices + i;
-    translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-           (CLRXDevice**)(platformDevices.data()), amdDevicesNum, amdDevices);
-    // now is ours devices
-    c->devicesNum = amdDevicesNum;
-    c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
+    try
+    {
+        std::vector<cl_device_id> platformDevices(platform->devicesNum);
+        for (cl_uint i = 0; i < platform->devicesNum; i++)
+            platformDevices[i] = platform->devices + i;
+        translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
+               (CLRXDevice**)(platformDevices.data()), amdDevicesNum, amdDevices);
+        // now is ours devices
+        c->devicesNum = amdDevicesNum;
+        c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
+    }
+    catch(const std::bad_alloc& ex)
+    {
+        delete[] amdDevices;
+        return CL_OUT_OF_HOST_MEMORY;
+    }
     return CL_SUCCESS;
 }
 
@@ -676,11 +684,19 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
         return status;
     }
     
-    translateAMDDevicesIntoCLRXDevices(inDevicesNum, (CLRXDevice**)inDevices,
-                   amdDevicesNum, amdDevices);
-    // now is ours devices
-    c->devicesNum = amdDevicesNum;
-    c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
+    try
+    {
+        translateAMDDevicesIntoCLRXDevices(inDevicesNum, (CLRXDevice**)inDevices,
+                       amdDevicesNum, amdDevices);
+        // now is ours devices
+        c->devicesNum = amdDevicesNum;
+        c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
+    }
+    catch(const std::bad_alloc& ex)
+    {
+        delete[] amdDevices;
+        return CL_OUT_OF_HOST_MEMORY;
+    }
     return CL_SUCCESS;
 }
 
@@ -715,11 +731,19 @@ cl_int clrxSetProgramOrigDevices(CLRXProgram* p)
         return status;
     }
     
-    translateAMDDevicesIntoCLRXDevices(c->devicesNum,
-           (CLRXDevice**)(c->devices), amdDevicesNum, amdDevices);
-    // now is ours devices
-    p->origAssocDevicesNum = amdDevicesNum;
-    p->origAssocDevices = reinterpret_cast<CLRXDevice**>(amdDevices);
+    try
+    {
+        translateAMDDevicesIntoCLRXDevices(c->devicesNum,
+               (CLRXDevice**)(c->devices), amdDevicesNum, amdDevices);
+        // now is ours devices
+        p->origAssocDevicesNum = amdDevicesNum;
+        p->origAssocDevices = reinterpret_cast<CLRXDevice**>(amdDevices);
+    }
+    catch(const std::bad_alloc& ex)
+    {
+        delete[] amdDevices;
+        return CL_OUT_OF_HOST_MEMORY;
+    }
     return CL_SUCCESS;
 }
 
@@ -791,6 +815,7 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
             static_cast<CLRXBuildProgramUserData*>(user_data);
     CLRXBuildProgramUserData wrappedData = *wrappedDataPtr;
     CLRXProgram* p = wrappedDataPtr->clrxProgram;
+    try
     {
         std::lock_guard<std::mutex> l(p->mutex);
         if (!wrappedDataPtr->inClFunction)
@@ -809,6 +834,11 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
             //std::cout << "Delete WrappedData: " << wrappedDataPtr << std::endl;
             delete wrappedDataPtr;
         }
+    }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
+        abort();
     }
     
     // must be called only once (freeing wrapped data)
@@ -1079,7 +1109,8 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal error at kernelArgFlagsMap creation" << std::endl;
+        std::cerr << "Fatal error at kernelArgFlagsMap creation: " <<
+                ex.what() << std::endl;
         abort();
     }
     
