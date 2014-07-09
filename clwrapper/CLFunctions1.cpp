@@ -1638,23 +1638,28 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
     CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
     
     cl_int status;
+    bool doDelete = false;
     try
     {   // must be in clauses, because
         std::lock_guard<std::mutex> l(k->program->mutex);
         status = k->amdOclKernel->dispatch->clReleaseKernel(k->amdOclKernel);
-        k->program->kernelsAttached--; // decrease kernel attached
+        if (status == CL_SUCCESS)
+            if (k->refCount.fetch_sub(1) == 1)
+            {
+                k->program->kernelsAttached--; // decrease kernel attached
+                doDelete = true;
+            }
     }
     catch(const std::exception& ex)
     {
         std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
         abort();
     }
-    if (status == CL_SUCCESS)
-        if (k->refCount.fetch_sub(1) == 1)
-        {
-            clrxReleaseOnlyCLRXProgram(k->program);
-            delete k;
-        }
+    if (doDelete)
+    {   // release program and delete kernel
+        clrxReleaseOnlyCLRXProgram(k->program);
+        delete k;
+    }
     return status;
 }
 
