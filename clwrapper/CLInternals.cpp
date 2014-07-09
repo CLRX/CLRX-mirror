@@ -199,7 +199,7 @@ CLRXPlatform::CLRXPlatform()
     versionSize = 0;
     devicesNum = 0;
     devices = nullptr;
-    deviceStatusInit = CL_SUCCESS;
+    deviceInitStatus = CL_SUCCESS;
 }
 
 CLRXPlatform::~CLRXPlatform()
@@ -466,7 +466,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     if (status != CL_SUCCESS)
     {
         platform->devicesNum = 0;
-        platform->deviceStatusInit = status;
+        platform->deviceInitStatus = status;
         return;
     }
     try
@@ -482,7 +482,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         {
             delete[] platform->devices;
             platform->devices = nullptr;
-            platform->deviceStatusInit = status;
+            platform->deviceInitStatus = status;
             return;
         }
         for (cl_uint i = 0; i < platform->devicesNum; i++)
@@ -531,7 +531,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             delete[] platform->devices;
             platform->devicesNum = 0;
             platform->devices = nullptr;
-            platform->deviceStatusInit = status;
+            platform->deviceInitStatus = status;
             return;
         }
     }
@@ -540,7 +540,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         delete[] platform->devices;
         platform->devicesNum = 0;
         platform->devices = nullptr;
-        platform->deviceStatusInit = CL_OUT_OF_HOST_MEMORY;
+        platform->deviceInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
     }
     catch(...)

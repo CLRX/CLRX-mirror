@@ -212,8 +212,8 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
         std::cerr << "Fatal and unknown error at device initialization: " << std::endl;
         abort();
     }
-    if (p->deviceStatusInit != CL_SUCCESS)
-        return p->deviceStatusInit;
+    if (p->deviceInitStatus != CL_SUCCESS)
+        return p->deviceInitStatus;
     
     /* real function */
     cl_uint outIdx = 0;

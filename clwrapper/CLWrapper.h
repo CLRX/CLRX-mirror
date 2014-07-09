@@ -104,7 +104,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     
     cl_uint devicesNum;
     CLRXDevice* devices;
-    cl_int deviceStatusInit;
+    cl_int deviceInitStatus;
     
     CLRXPlatform();
     ~CLRXPlatform();
