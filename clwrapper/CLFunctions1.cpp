@@ -1501,7 +1501,6 @@ clrxclCreateKernelsInProgram(cl_program     program,
     if (num_kernels_ret != nullptr)
         numKernelsOut = *num_kernels_ret; 
     
-    
     /* replaces original kernels by our (CLRXKernels) */
     cl_uint kernelsToCreate = 0;
     cl_uint kp = 0; // kernel already processed
@@ -1672,8 +1671,10 @@ clrxclSetKernelArg(cl_kernel    kernel,
     if (arg_index >= (k->argTypes.size()>>1))
         return CL_INVALID_ARG_INDEX;
     
-    if (k->argTypes[arg_index<<1]) // buffer
+    if (k->argTypes[arg_index<<1]) // memobject
     {
+        /*std::cout << "set buffer for kernel " << kernel << " for arg " <<
+                    arg_index << std::endl;*/
         if (arg_size != sizeof(cl_mem))
             return CL_INVALID_ARG_SIZE;
         
@@ -1685,6 +1686,8 @@ clrxclSetKernelArg(cl_kernel    kernel,
     }
     else if (k->argTypes[(arg_index<<1) + 1]) // sampler
     {
+        /*std::cout << "set sampler for kernel " << kernel << " for arg " <<
+                    arg_index << std::endl;*/
         if (arg_size != sizeof(cl_sampler))
             return CL_INVALID_ARG_SIZE;
         
