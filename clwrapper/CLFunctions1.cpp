@@ -217,11 +217,11 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     
     /* real function */
     cl_uint outIdx = 0;
-    if (p->devices != nullptr)
+    if (p->devicesArray != nullptr)
     {
         for (cl_uint i = 0; i < p->devicesNum; i++)
         {
-            CLRXDevice& clrxDevice = p->devices[i];
+            CLRXDevice& clrxDevice = p->devicesArray[i];
             if ((clrxDevice.type & device_type) == 0)
                 continue;
             if (num_entries != 0 && outIdx < num_entries)

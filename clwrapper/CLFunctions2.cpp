@@ -1264,15 +1264,10 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
         if (param_value != nullptr &&
             (param_name == CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR ||
             param_name == CL_DEVICES_FOR_GL_CONTEXT_KHR))
-        {
-            std::vector<cl_device_id> platformDevices(platform->devicesNum);
-            for (cl_uint i = 0; i < platform->devicesNum; i++)
-                platformDevices[i] = platform->devices + i;
-            
             translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-                   (CLRXDevice**)(platformDevices.data()),
+                   (const CLRXDevice**)(platform->devicePtrs),
                    myParamValueSize/sizeof(cl_device_id), (cl_device_id*)param_value);
-        }
+        
         if (param_value_size_ret != nullptr)
             *param_value_size_ret = myParamValueSize;
     }

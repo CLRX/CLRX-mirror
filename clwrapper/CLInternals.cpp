@@ -198,7 +198,8 @@ CLRXPlatform::CLRXPlatform()
     version = nullptr;
     versionSize = 0;
     devicesNum = 0;
-    devices = nullptr;
+    devicesArray = nullptr;
+    devicePtrs = nullptr;
     deviceInitStatus = CL_SUCCESS;
 }
 
@@ -206,7 +207,8 @@ CLRXPlatform::~CLRXPlatform()
 { 
     delete[] extensions;
     delete[] version;
-    delete[] devices;
+    delete[] devicesArray;
+    delete[] devicePtrs;
 }
 
 CLRXDevice::CLRXDevice() : refCount(1)
@@ -459,7 +461,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     try
     {
         std::vector<cl_device_id> amdDevices(platform->devicesNum);
-        platform->devices = new CLRXDevice[platform->devicesNum];
+        platform->devicesArray = new CLRXDevice[platform->devicesNum];
     
         /* get amd devices */
         status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
@@ -467,14 +469,14 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 amdDevices.data(), nullptr);
         if (status != CL_SUCCESS)
         {
-            delete[] platform->devices;
-            platform->devices = nullptr;
+            delete[] platform->devicesArray;
+            platform->devicesArray = nullptr;
             platform->deviceInitStatus = status;
             return;
         }
         for (cl_uint i = 0; i < platform->devicesNum; i++)
         {
-            CLRXDevice& clrxDevice = platform->devices[i];
+            CLRXDevice& clrxDevice = platform->devicesArray[i];
             clrxDevice.dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
             clrxDevice.amdOclDevice = amdDevices[i];
             clrxDevice.platform = platform;
@@ -515,26 +517,34 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         
         if (status != CL_SUCCESS)
         {
-            delete[] platform->devices;
+            delete[] platform->devicesArray;
             platform->devicesNum = 0;
-            platform->devices = nullptr;
+            platform->devicesArray = nullptr;
             platform->deviceInitStatus = status;
             return;
         }
+        // init device pointers
+        platform->devicePtrs = new CLRXDevice*[platform->devicesNum];
+        for (cl_uint i = 0; i < platform->devicesNum; i++)
+            platform->devicePtrs[i] = platform->devicesArray + i;
     }
     catch(const std::bad_alloc& ex)
     {
-        delete[] platform->devices;
+        delete[] platform->devicesArray;
+        delete[] platform->devicePtrs;
         platform->devicesNum = 0;
-        platform->devices = nullptr;
+        platform->devicesArray = nullptr;
+        platform->devicePtrs = nullptr;
         platform->deviceInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
     }
     catch(...)
     {
-        delete[] platform->devices;
+        delete[] platform->devicesArray;
+        delete[] platform->devicePtrs;
         platform->devicesNum = 0;
-        platform->devices = nullptr;
+        platform->devicesArray = nullptr;
+        platform->devicePtrs = nullptr;
         throw;
     }
 }
@@ -549,7 +559,7 @@ static inline bool clrxDeviceCompareByAmdDevice(const CLRXDevice* l, const CLRXD
 }
 
 void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
-           CLRXDevice** allDevices, cl_uint amdDevicesNum, cl_device_id* amdDevices)
+           const CLRXDevice** allDevices, cl_uint amdDevicesNum, cl_device_id* amdDevices)
 {
     /* after it we replaces amdDevices into ours devices */
     if (allDevicesNum < 16)  //efficient for small
@@ -626,11 +636,8 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
     
     try
     {
-        std::vector<cl_device_id> platformDevices(platform->devicesNum);
-        for (cl_uint i = 0; i < platform->devicesNum; i++)
-            platformDevices[i] = platform->devices + i;
         translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-               (CLRXDevice**)(platformDevices.data()), amdDevicesNum, amdDevices);
+               (const CLRXDevice**)(platform->devicePtrs), amdDevicesNum, amdDevices);
         // now is ours devices
         c->devicesNum = amdDevicesNum;
         c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
@@ -673,7 +680,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
     
     try
     {
-        translateAMDDevicesIntoCLRXDevices(inDevicesNum, (CLRXDevice**)inDevices,
+        translateAMDDevicesIntoCLRXDevices(inDevicesNum, (const CLRXDevice**)inDevices,
                        amdDevicesNum, amdDevices);
         // now is ours devices
         c->devicesNum = amdDevicesNum;
@@ -721,7 +728,7 @@ cl_int clrxSetProgramOrigDevices(CLRXProgram* p)
     try
     {
         translateAMDDevicesIntoCLRXDevices(c->devicesNum,
-               (CLRXDevice**)(c->devices), amdDevicesNum, amdDevices);
+               (const CLRXDevice**)(c->devices), amdDevicesNum, amdDevices);
         // now is ours devices
         p->origAssocDevicesNum = amdDevicesNum;
         p->origAssocDevices = reinterpret_cast<CLRXDevice**>(amdDevices);
@@ -782,7 +789,8 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         }
         
         /* after it we replaces amdDevices into ours devices */
-        translateAMDDevicesIntoCLRXDevices(origAssocDevicesNum, origAssocDevices,
+        translateAMDDevicesIntoCLRXDevices(origAssocDevicesNum,
+               const_cast<const CLRXDevice**>(origAssocDevices),
                amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
         delete[] p->assocDevices;
         p->assocDevicesNum = amdAssocDevicesNum;

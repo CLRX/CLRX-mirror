@@ -100,7 +100,8 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     size_t versionSize;
     
     cl_uint devicesNum;
-    CLRXDevice* devices;
+    CLRXDevice* devicesArray;
+    CLRXDevice** devicePtrs;
     cl_int deviceInitStatus;
     
     CLRXPlatform();
@@ -277,7 +278,7 @@ CLRX_INTERNAL extern const CLRXExtensionEntry clrxExtensionsTable[7];
 CLRX_INTERNAL void clrxWrapperInitialize();
 CLRX_INTERNAL void clrxPlatformInitializeDevices(CLRXPlatform* platform);
 CLRX_INTERNAL void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
-       CLRXDevice** allDevices, cl_uint amdDevicesNum, cl_device_id* amdDevices);
+       const CLRXDevice** allDevices, cl_uint amdDevicesNum, cl_device_id* amdDevices);
 CLRX_INTERNAL cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform);
 CLRX_INTERNAL cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
             const cl_device_id* inDevices);
