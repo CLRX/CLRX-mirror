@@ -82,13 +82,10 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 
 struct CLRXVendorRecord
 {
-    char *suffix;
     CLRXpfn_clGetExtensionFunctionAddress clGetExtensionFunctionAddress;
     cl_platform_id platform;
     
-    CLRXVendorRecord() { suffix = nullptr; }
-    ~CLRXVendorRecord()
-    { delete[] suffix; }
+    CLRXVendorRecord() = default;
 };
 
 struct CLRXDevice;

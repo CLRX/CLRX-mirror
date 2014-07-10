@@ -373,22 +373,9 @@ void clrxWrapperInitialize()
             if (amdOclPlatforms[i] == nullptr)
                 continue;
             
-            size_t suffixSize;
-            if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
-                        CL_PLATFORM_ICD_SUFFIX_KHR, 0, nullptr, &suffixSize) != CL_SUCCESS)
-                continue;
-            char* suffixBuffer = new char[suffixSize];
-            if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
-                        CL_PLATFORM_ICD_SUFFIX_KHR, suffixSize, suffixBuffer, nullptr))
-            {
-                delete[] suffixBuffer;
-                continue;
-            }
-            
             amdOclVendors[i].clGetExtensionFunctionAddress =
                     amdOclGetExtensionFunctionAddress;
             amdOclVendors[i].platform = amdOclPlatforms[i];
-            amdOclVendors[i].suffix = suffixBuffer;
             
             if (!useCLRXWrapper)
                 continue; // continue if CLRXWrapper has not been used
@@ -904,21 +891,20 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
 CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
           cl_int* errcode_ret)
 {
-    /* in this place should be program handling */
     CLRXProgram* outProgram = nullptr;
+    cl_int error = CL_SUCCESS;
     try
     {
         outProgram = new CLRXProgram;
         outProgram->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
         outProgram->amdOclProgram = amdProgram;
         outProgram->context = c;
-        if (clrxSetProgramOrigDevices(outProgram) != CL_SUCCESS)
-        {
-            std::cerr << "Error at initializing original assoc devices" << std::endl;
-            abort();
-        }
+        error = clrxSetProgramOrigDevices(outProgram);
     }
     catch(const std::bad_alloc& ex)
+    { error = CL_OUT_OF_HOST_MEMORY; }
+    
+    if (error != CL_SUCCESS)
     {
         delete outProgram;
         if (c->amdOclContext->dispatch->clReleaseProgram(amdProgram) != CL_SUCCESS)
@@ -927,7 +913,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
             abort();
         }
         if (errcode_ret != nullptr)
-            *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            *errcode_ret = error;
         return nullptr;
     }
     

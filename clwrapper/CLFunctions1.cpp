@@ -391,6 +391,7 @@ clrxclCreateContext(const cl_context_properties * properties,
         return nullptr;
     }
     
+    cl_int error = CL_SUCCESS;
     /* create own context */
     CLRXContext* outContext = nullptr;
     try
@@ -398,18 +399,20 @@ clrxclCreateContext(const cl_context_properties * properties,
         outContext = new CLRXContext;
         outContext->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
         outContext->amdOclContext = amdContext;
-        // handle out of memory
-        if (clrxSetContextDevices(outContext, num_devices, devices) != CL_SUCCESS)
+        
+        error = clrxSetContextDevices(outContext, num_devices, devices);
+        if (error == CL_SUCCESS)
         {
-            std::cerr << "Error at associating devices in context" << std::endl;
-            abort();
+            outContext->propertiesNum = propNums>>1;
+            if (properties != nullptr)
+                outContext->properties = new cl_context_properties[propNums+1];
         }
-        outContext->propertiesNum = propNums>>1;
-        if (properties != nullptr)
-            outContext->properties = new cl_context_properties[propNums+1];
     }
     catch(const std::bad_alloc& ex)
-    {   
+    { error = CL_OUT_OF_HOST_MEMORY; }
+    
+    if (error != CL_SUCCESS)
+    {
         delete outContext; // and deletes devices and properties
         // release context
         if (d->amdOclDevice->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
@@ -418,7 +421,7 @@ clrxclCreateContext(const cl_context_properties * properties,
             abort();
         }
         if (errcode_ret != nullptr)
-            *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            *errcode_ret = error;
         return nullptr;
     }
     
@@ -503,24 +506,27 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     
     /* create own context */
     CLRXContext* outContext = nullptr;
+    cl_int error = CL_SUCCESS;
     try
     { 
         outContext = new CLRXContext;
         outContext->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
         outContext->amdOclContext = amdContext;
         // handle out of memory
-        if (clrxSetContextDevices(outContext, platform) != CL_SUCCESS)
+        error = clrxSetContextDevices(outContext, platform);
+        if (error == CL_SUCCESS)
         {
-            std::cerr << "Error at associating devices in context" << std::endl;
-            abort();
+            outContext->propertiesNum = propNums>>1;
+            if (properties != nullptr)
+                outContext->properties = new cl_context_properties[propNums+1];
         }
-        outContext->propertiesNum = propNums>>1;
-        if (properties != nullptr)
-            outContext->properties = new cl_context_properties[propNums+1];
     }
     catch(const std::bad_alloc& ex)
-    {   
-        delete outContext; // and deletes properties
+    { error = CL_OUT_OF_HOST_MEMORY; }
+    
+    if (error != CL_SUCCESS)
+    {
+        delete outContext; // and deletes devices and properties
         // release context
         if (platform->amdOclPlatform->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
         {
@@ -528,7 +534,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             abort();
         }
         if (errcode_ret != nullptr)
-            *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            *errcode_ret = error;
         return nullptr;
     }
     
