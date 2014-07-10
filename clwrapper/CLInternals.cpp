@@ -954,9 +954,9 @@ cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
             }
             return CL_OUT_OF_HOST_MEMORY;
         }
+        clrxRetainOnlyCLRXContext(q->context);
     }
     
-    clrxRetainOnlyCLRXContext(q->context);
     return status;
 }
 
