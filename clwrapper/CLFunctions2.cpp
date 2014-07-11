@@ -519,6 +519,23 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     cl_event amdEvent = nullptr;
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
     void* output = nullptr;
+    
+    CLRXEvent* outEvent = nullptr;
+    if (event != nullptr)
+        try // allocate our event object
+        {
+            outEvent = new CLRXEvent;
+            outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            outEvent->commandQueue = const_cast<CLRXCommandQueue*>(q);
+            outEvent->context = q->context;
+        }
+        catch(const std::bad_alloc& ex)
+        {
+            if (errcode_ret != nullptr)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return nullptr;
+        }
+    
     if (event_wait_list != nullptr)
     {
         if (num_events_in_wait_list <= maxLocalEventsNum)
@@ -574,13 +591,13 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                 q->amdOclCommandQueue, b->amdOclMemObject, blocking_map, map_flags,
                 offset, size, 0, nullptr, amdEventPtr, errcode_ret);
     
-    cl_int status = CL_SUCCESS;
-    if (errcode_ret != nullptr)
-        status = *errcode_ret;
-    
-    status = clrxApplyCLRXEvent(q, event, amdEvent, status);
-    if (errcode_ret != nullptr)
-        *errcode_ret = status;
+    if (amdEvent != nullptr)
+    {   // if amd event has been set
+        outEvent->amdOclEvent = amdEvent;
+        *event = outEvent;
+    }
+    else // free outEvent
+        delete outEvent;
     return output;
 }
 
@@ -625,6 +642,23 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
     cl_event amdEvent = nullptr;
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
     void* output = nullptr;
+    
+    CLRXEvent* outEvent = nullptr;
+    if (event != nullptr)
+        try // allocate our event object
+        {
+            outEvent = new CLRXEvent;
+            outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            outEvent->commandQueue = const_cast<CLRXCommandQueue*>(q);
+            outEvent->context = q->context;
+        }
+        catch(const std::bad_alloc& ex)
+        {
+            if (errcode_ret != nullptr)
+                *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            return nullptr;
+        }
+    
     if (event_wait_list != nullptr)
     {
         if (num_events_in_wait_list <= maxLocalEventsNum)
@@ -681,13 +715,13 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
                 origin, region, image_row_pitch, image_slice_pitch,
                 0, nullptr, amdEventPtr, errcode_ret);
     
-    cl_int status = CL_SUCCESS;
-    if (errcode_ret != nullptr)
-        status = *errcode_ret;
-    
-    status = clrxApplyCLRXEvent(q, event, amdEvent, status);
-    if (errcode_ret != nullptr)
-        *errcode_ret = status;
+    if (amdEvent != nullptr)
+    {   // if amd event has been set
+        outEvent->amdOclEvent = amdEvent;
+        *event = outEvent;
+    }
+    else // free outEvent
+        delete outEvent;
     return output;
 }
 
