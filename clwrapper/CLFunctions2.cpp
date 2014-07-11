@@ -547,6 +547,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                 {
                     if (errcode_ret != nullptr)
                         *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
+                    delete outEvent;
                     return nullptr;
                 }
                 amdWaitList[i] =
@@ -568,6 +569,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                     {
                         if (errcode_ret != nullptr)
                             *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
+                        delete outEvent;
                         return nullptr;
                     }
                     amdWaitList[i] =
@@ -583,6 +585,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
             { 
                 if (errcode_ret != nullptr)
                     *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+                delete outEvent;
                 return nullptr;
             }
     }
@@ -595,6 +598,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     {   // if amd event has been set
         outEvent->amdOclEvent = amdEvent;
         *event = outEvent;
+        clrxRetainOnlyCLRXContext(q->context);
     }
     else // free outEvent
         delete outEvent;
@@ -670,6 +674,7 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
                 {
                     if (errcode_ret != nullptr)
                         *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
+                    delete outEvent;
                     return nullptr;
                 }
                 amdWaitList[i] =
@@ -691,6 +696,7 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
                     {
                         if (errcode_ret != nullptr)
                             *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
+                        delete outEvent;
                         return nullptr;
                     }
                     amdWaitList[i] =
@@ -706,6 +712,7 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
             { 
                 if (errcode_ret != nullptr)
                     *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+                delete outEvent;
                 return nullptr;
             }
     }
@@ -719,6 +726,7 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
     {   // if amd event has been set
         outEvent->amdOclEvent = amdEvent;
         *event = outEvent;
+        clrxRetainOnlyCLRXContext(q->context);
     }
     else // free outEvent
         delete outEvent;
