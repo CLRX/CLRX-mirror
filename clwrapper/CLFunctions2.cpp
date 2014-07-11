@@ -846,48 +846,45 @@ clrxclEnqueueNativeKernel(cl_command_queue  command_queue,
         (num_mem_objects == 0 && (mem_list != nullptr || args_mem_loc != nullptr)))
         return CL_INVALID_VALUE;
     
-    void* amdArgs = args; // copy for original call
-    if (num_mem_objects != 0)
-    {   // create copy AMD callback
-        amdArgs = malloc(cb_args);
-        if (amdArgs == nullptr)
-            return CL_OUT_OF_HOST_MEMORY;
-        memcpy(amdArgs, args, cb_args);
-        /* copy our memobject to new args */
-        for (cl_uint i = 0; i < num_mem_objects; i++)
-        {
-            if (mem_list[i] == nullptr)
-                return CL_INVALID_VALUE;
-            *(cl_mem*)((char*)amdArgs + ((ptrdiff_t)args_mem_loc-(ptrdiff_t)args)) = 
-                    mem_list[i];
-        }
-    }
-    
     const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
     // real call
     cl_int status = CL_SUCCESS;
     cl_event amdEvent = nullptr;
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
-    if (event_wait_list != nullptr)
+    
+    try
     {
-        if (num_events_in_wait_list <= maxLocalEventsNum)
+        std::vector<cl_mem> amdMemList(num_mem_objects);
+        /* get AMD mem object from memList */
+        for (cl_uint i = 0; i < num_mem_objects; i++)
         {
-            cl_event amdWaitList[maxLocalEventsNum];
-            for (cl_uint i = 0; i < num_events_in_wait_list; i++)
-            {
-                if (event_wait_list[i] == nullptr)
-                    return CL_INVALID_EVENT_WAIT_LIST;
-                amdWaitList[i] =
-                    static_cast<CLRXEvent*>(event_wait_list[i])->amdOclEvent;
-            }
-            
-            status = q->amdOclCommandQueue->dispatch->clEnqueueNativeKernel(
-                    q->amdOclCommandQueue, user_func, amdArgs, cb_args,
-                    num_mem_objects, mem_list, args_mem_loc, num_events_in_wait_list,
-                    amdWaitList, amdEventPtr);
+            if (mem_list[i] == nullptr)
+                return CL_INVALID_MEM_OBJECT;
+            amdMemList[i] =
+                static_cast<const CLRXMemObject*>(mem_list[i])->amdOclMemObject;
         }
-        else
-            try
+        
+        const cl_mem* amdMemListPtr = (num_mem_objects!=0) ? amdMemList.data() : nullptr;
+        
+        if (event_wait_list != nullptr)
+        {
+            if (num_events_in_wait_list <= maxLocalEventsNum)
+            {
+                cl_event amdWaitList[maxLocalEventsNum];
+                for (cl_uint i = 0; i < num_events_in_wait_list; i++)
+                {
+                    if (event_wait_list[i] == nullptr)
+                        return CL_INVALID_EVENT_WAIT_LIST;
+                    amdWaitList[i] =
+                        static_cast<CLRXEvent*>(event_wait_list[i])->amdOclEvent;
+                }
+                
+                status = q->amdOclCommandQueue->dispatch->clEnqueueNativeKernel(
+                        q->amdOclCommandQueue, user_func, args, cb_args,
+                        num_mem_objects, amdMemListPtr, args_mem_loc,
+                        num_events_in_wait_list, amdWaitList, amdEventPtr);
+            }
+            else
             {
                 std::vector<cl_event> amdWaitList(num_events_in_wait_list);
                 for (cl_uint i = 0; i < num_events_in_wait_list; i++)
@@ -899,24 +896,20 @@ clrxclEnqueueNativeKernel(cl_command_queue  command_queue,
                 }
                 
                 status = q->amdOclCommandQueue->dispatch->clEnqueueNativeKernel(
-                        q->amdOclCommandQueue, user_func, amdArgs, cb_args,
-                        num_mem_objects, mem_list, args_mem_loc, num_events_in_wait_list,
-                        amdWaitList.data(), amdEventPtr);
+                        q->amdOclCommandQueue, user_func, args, cb_args,
+                        num_mem_objects, amdMemListPtr, args_mem_loc,
+                        num_events_in_wait_list, amdWaitList.data(), amdEventPtr);
             }
-            catch (const std::bad_alloc& ex)
-            {
-                if (num_mem_objects != 0)
-                    free(amdArgs); // free amd args
-                return CL_OUT_OF_HOST_MEMORY;
-            }
+        }
+        else
+            status = q->amdOclCommandQueue->dispatch->clEnqueueNativeKernel(
+                        q->amdOclCommandQueue, user_func, args, cb_args,
+                        num_mem_objects, amdMemListPtr, args_mem_loc,
+                        0, nullptr, amdEventPtr);
     }
-    else
-        status = q->amdOclCommandQueue->dispatch->clEnqueueNativeKernel(
-                    q->amdOclCommandQueue, user_func, amdArgs, cb_args,
-                    num_mem_objects, mem_list, args_mem_loc, 0, nullptr, amdEventPtr);
-    
-    if (num_mem_objects != 0)
-        free(amdArgs);
+    catch(const std::bad_alloc& ex)
+    { return CL_OUT_OF_HOST_MEMORY; }
+        
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
