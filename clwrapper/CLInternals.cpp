@@ -24,7 +24,6 @@
 #include <utility>
 #include <thread>
 #include <mutex>
-#include <memory>
 #include <cstring>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
@@ -34,9 +33,8 @@ using namespace CLRX;
 
 std::once_flag clrxOnceFlag;
 bool useCLRXWrapper = true;
-std::shared_ptr<DynLibrary> amdOclLibrary;
+static DynLibrary* amdOclLibrary = nullptr;
 cl_uint amdOclNumPlatforms = 0;
-CLRXVendorRecord* amdOclVendors = nullptr;
 CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs = nullptr;
 CLRXpfn_clUnloadCompiler amdOclUnloadCompiler = nullptr;
 cl_int clrxWrapperInitStatus = CL_SUCCESS;
@@ -309,13 +307,13 @@ CLRXEvent::~CLRXEvent()
 
 void clrxWrapperInitialize()
 {
+    DynLibrary* tmpAmdOclLibrary = nullptr;
     try
     {
         useCLRXWrapper = !parseEnvVariable<bool>("CLRX_FORCE_ORIGINAL_AMDOCL", false);
         std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
                            DEFAULT_AMDOCLPATH);
-        std::shared_ptr<DynLibrary> tmpAmdOclLibrary(
-                new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW));
+        DynLibrary* tmpAmdOclLibrary = new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW);
         
         amdOclGetPlatformIDs = (CLRXpfn_clGetPlatformIDs)
                 tmpAmdOclLibrary->getSymbol("clGetPlatformIDs");
@@ -351,11 +349,15 @@ void clrxWrapperInitialize()
         if (status != CL_SUCCESS)
         {
             clrxWrapperInitStatus = status;
+            delete tmpAmdOclLibrary;
             return;
         }
         
         if (platformCount == 0)
+        {
+            delete tmpAmdOclLibrary;
             return;
+        }
         
         std::vector<cl_platform_id> amdOclPlatforms(platformCount);
         std::fill(amdOclPlatforms.begin(), amdOclPlatforms.end(), nullptr);
@@ -364,83 +366,80 @@ void clrxWrapperInitialize()
         if (status != CL_SUCCESS)
         {
             clrxWrapperInitStatus = status;
+            delete tmpAmdOclLibrary;
             return;
         }
         
-        amdOclVendors = new CLRXVendorRecord[platformCount];
         if (useCLRXWrapper)
-            clrxPlatforms = new CLRXPlatform[platformCount];
-        for (cl_uint i = 0; i < platformCount; i++)
         {
-            if (amdOclPlatforms[i] == nullptr)
-                continue;
-            
-            amdOclVendors[i].clGetExtensionFunctionAddress =
-                    amdOclGetExtensionFunctionAddress;
-            amdOclVendors[i].platform = amdOclPlatforms[i];
-            
-            if (!useCLRXWrapper)
-                continue; // continue if CLRXWrapper has not been used
-            
-            /* clrxPlatform init */
-            clrxPlatforms[i].amdOclPlatform = amdOclPlatforms[i];
-            clrxPlatforms[i].dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
-            
-            size_t extsSize;
-            if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
-                        CL_PLATFORM_EXTENSIONS, 0, nullptr, &extsSize) != CL_SUCCESS)
-                continue;
-            char* extsBuffer = new char[extsSize + 20];
-            if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
-                    CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer, nullptr) != CL_SUCCESS)
+            clrxPlatforms = new CLRXPlatform[platformCount];
+            for (cl_uint i = 0; i < platformCount; i++)
             {
-                delete[] extsBuffer;
-                continue;
+                if (amdOclPlatforms[i] == nullptr)
+                    continue;
+                
+                /* clrxPlatform init */
+                clrxPlatforms[i].amdOclPlatform = amdOclPlatforms[i];
+                clrxPlatforms[i].dispatch =
+                    const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+                
+                size_t extsSize;
+                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                            CL_PLATFORM_EXTENSIONS, 0, nullptr, &extsSize) != CL_SUCCESS)
+                    continue;
+                char* extsBuffer = new char[extsSize + 20];
+                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                        CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer,
+                        nullptr) != CL_SUCCESS)
+                {
+                    delete[] extsBuffer;
+                    continue;
+                }
+                if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
+                    strcat(extsBuffer, " cl_radeon_extender");
+                else
+                    strcat(extsBuffer, "cl_radeon_extender");
+                clrxPlatforms[i].extensions = extsBuffer;
+                clrxPlatforms[i].extensionsSize = strlen(extsBuffer)+1;
+                
+                size_t versionSize;
+                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                            CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
+                    continue;
+                char* versionBuffer = new char[versionSize + 20];
+                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                        CL_PLATFORM_VERSION, versionSize,
+                        versionBuffer, nullptr) != CL_SUCCESS)
+                {
+                    delete[] versionBuffer;
+                    continue;
+                }
+                strcat(versionBuffer, " (clrx 0.0)");
+                clrxPlatforms[i].version = versionBuffer;
+                clrxPlatforms[i].versionSize = strlen(versionBuffer)+1;
             }
-            if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
-                strcat(extsBuffer, " cl_radeon_extender");
-            else
-                strcat(extsBuffer, "cl_radeon_extender");
-            clrxPlatforms[i].extensions = extsBuffer;
-            clrxPlatforms[i].extensionsSize = strlen(extsBuffer)+1;
-            
-            size_t versionSize;
-            if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
-                        CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
-                continue;
-            char* versionBuffer = new char[versionSize + 20];
-            if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
-                    CL_PLATFORM_VERSION, versionSize, versionBuffer, nullptr) != CL_SUCCESS)
-            {
-                delete[] versionBuffer;
-                continue;
-            }
-            strcat(versionBuffer, " (clrx 0.0)");
-            clrxPlatforms[i].version = versionBuffer;
-            clrxPlatforms[i].versionSize = strlen(versionBuffer)+1;
         }
         
         amdOclLibrary = tmpAmdOclLibrary;
+        tmpAmdOclLibrary = nullptr;
         amdOclNumPlatforms = platformCount;
     }
     catch(const std::bad_alloc& ex)
     { 
-        delete[] amdOclVendors;
         delete[] clrxPlatforms;
-        amdOclVendors = nullptr;
         clrxPlatforms = nullptr;
-        amdOclLibrary.reset();
+        delete amdOclLibrary;
+        delete tmpAmdOclLibrary;
         amdOclNumPlatforms = 0;
         clrxWrapperInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
     }
     catch(...)
     { 
-        delete[] amdOclVendors;
         delete[] clrxPlatforms;
-        amdOclVendors = nullptr;
         clrxPlatforms = nullptr;
-        amdOclLibrary.reset();
+        delete amdOclLibrary;
+        delete tmpAmdOclLibrary;
         amdOclNumPlatforms = 0;
         throw; // fatal exception
     }
@@ -501,7 +500,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 break;
             char* extsBuffer = new char[extsSize+20];
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
-                  CL_DEVICE_EXTENSIONS, extsSize, extsBuffer, &extsSize);
+                  CL_DEVICE_EXTENSIONS, extsSize, extsBuffer, nullptr);
             if (status != CL_SUCCESS)
             {
                 delete[] extsBuffer;

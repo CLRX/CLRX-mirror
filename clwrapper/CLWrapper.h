@@ -80,14 +80,6 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #include <unordered_map>
 #include <CLRX/Utilities.h>
 
-struct CLRXVendorRecord
-{
-    CLRXpfn_clGetExtensionFunctionAddress clGetExtensionFunctionAddress;
-    cl_platform_id platform;
-    
-    CLRXVendorRecord() = default;
-};
-
 struct CLRXDevice;
 
 struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
@@ -255,9 +247,7 @@ struct CLRXExtensionEntry
 
 CLRX_INTERNAL extern std::once_flag clrxOnceFlag;
 CLRX_INTERNAL extern bool useCLRXWrapper;
-CLRX_INTERNAL extern std::shared_ptr<CLRX::DynLibrary> amdOclLibrary;
 CLRX_INTERNAL extern cl_uint amdOclNumPlatforms;
-CLRX_INTERNAL extern CLRXVendorRecord* amdOclVendors;
 CLRX_INTERNAL extern CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs;
 CLRX_INTERNAL extern CLRXpfn_clUnloadCompiler amdOclUnloadCompiler;
 CLRX_INTERNAL extern cl_int clrxWrapperInitStatus;
