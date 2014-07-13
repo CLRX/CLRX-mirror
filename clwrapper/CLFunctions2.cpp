@@ -924,7 +924,7 @@ clrxclEnqueueMarker(cl_command_queue    command_queue,
         return CL_INVALID_VALUE;
     
     const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
-
+    
     cl_event amdEvent = nullptr;
     const cl_int status = q->amdOclCommandQueue->dispatch->clEnqueueMarker(
             q->amdOclCommandQueue, &amdEvent);

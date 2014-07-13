@@ -198,8 +198,8 @@ CL_API_ENTRY cl_int CL_API_CALL
 clrxclEnqueueReadBufferRect(cl_command_queue    command_queue,
                         cl_mem              buffer,
                         cl_bool             blocking_read,
-                        const size_t *      buffer_offset,
-                        const size_t *      host_offset,
+                        const size_t *      buffer_origin,
+                        const size_t *      host_origin,
                         const size_t *      region,
                         size_t              buffer_row_pitch,
                         size_t              buffer_slice_pitch,
@@ -226,7 +226,7 @@ clrxclEnqueueReadBufferRect(cl_command_queue    command_queue,
     
 #undef CLRX_ORIG_CLCOMMAND
 #define CLRX_ORIG_CLCOMMAND clEnqueueReadBufferRect(q->amdOclCommandQueue, \
-            b->amdOclMemObject, blocking_read, buffer_offset, host_offset, region, \
+            b->amdOclMemObject, blocking_read, buffer_origin, host_origin, region, \
             buffer_row_pitch, buffer_slice_pitch, host_row_pitch, host_slice_pitch, ptr
     CLRX_CALL_QUEUE_COMMAND
     
@@ -237,8 +237,8 @@ CL_API_ENTRY cl_int CL_API_CALL
 clrxclEnqueueWriteBufferRect(cl_command_queue    command_queue,
                          cl_mem              buffer,
                          cl_bool             blocking_write,
-                         const size_t *      buffer_offset,
-                         const size_t *      host_offset, 
+                         const size_t *      buffer_origin,
+                         const size_t *      host_origin, 
                          const size_t *      region,
                          size_t              buffer_row_pitch,
                          size_t              buffer_slice_pitch,
@@ -265,7 +265,7 @@ clrxclEnqueueWriteBufferRect(cl_command_queue    command_queue,
     
 #undef CLRX_ORIG_CLCOMMAND
 #define CLRX_ORIG_CLCOMMAND clEnqueueWriteBufferRect(q->amdOclCommandQueue, \
-            b->amdOclMemObject, blocking_write, buffer_offset, host_offset, region, \
+            b->amdOclMemObject, blocking_write, buffer_origin, host_origin, region, \
             buffer_row_pitch, buffer_slice_pitch, host_row_pitch, host_slice_pitch, ptr
     CLRX_CALL_QUEUE_COMMAND
     
