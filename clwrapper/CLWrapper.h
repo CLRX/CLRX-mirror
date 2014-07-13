@@ -261,7 +261,7 @@ CLRX_INTERNAL extern CLRXpfn_clGetExtensionFunctionAddress
         amdOclGetExtensionFunctionAddress;
 
 CLRX_INTERNAL extern const CLRXIcdDispatch clrxDispatchRecord;
-CLRX_INTERNAL extern const CLRXExtensionEntry clrxExtensionsTable[7];
+CLRX_INTERNAL extern const CLRXExtensionEntry clrxExtensionsTable[18];
 
 /* internal routines */
 

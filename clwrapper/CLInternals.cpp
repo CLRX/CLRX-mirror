@@ -47,12 +47,23 @@ clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD = nullptr
 CLRXpfn_clGetExtensionFunctionAddress amdOclGetExtensionFunctionAddress = nullptr;
 
 /* extensions table */
-const CLRXExtensionEntry clrxExtensionsTable[7] =
+const CLRXExtensionEntry clrxExtensionsTable[18] =
 {
+    { "clCreateEventFromGLsyncKHR", (void*)clrxclCreateEventFromGLsyncKHR },
+    { "clCreateFromGLBuffer", (void*)clrxclCreateFromGLBuffer },
+    { "clCreateFromGLRenderbuffer", (void*)clrxclCreateFromGLRenderbuffer },
+    { "clCreateFromGLTexture", (void*)clrxclCreateFromGLTexture },
+    { "clCreateFromGLTexture2D", (void*)clrxclCreateFromGLTexture2D },
+    { "clCreateFromGLTexture3D", (void*)clrxclCreateFromGLTexture3D },
     { "clCreateSubDevicesEXT", (void*)clrxclCreateSubDevicesEXT },
+    { "clEnqueueAcquireGLObjects", (void*)clrxclEnqueueAcquireGLObjects },
     { "clEnqueueMakeBuffersResidentAMD", (void*)clrxclEnqueueMakeBuffersResidentAMD },
+    { "clEnqueueReleaseGLObjects", (void*)clrxclEnqueueReleaseGLObjects },
     { "clEnqueueWaitSignalAMD", (void*)clrxclEnqueueWaitSignalAMD },
     { "clEnqueueWriteSignalAMD", (void*)clrxclEnqueueWriteSignalAMD },
+    { "clGetGLContextInfoKHR", (void*)clrxclGetGLContextInfoKHR },
+    { "clGetGLObjectInfo", (void*)clrxclGetGLObjectInfo },
+    { "clGetGLTextureInfo", (void*)clrxclGetGLTextureInfo },
     { "clIcdGetPlatformIDsKHR", (void*)clrxclIcdGetPlatformIDsKHR },
     { "clReleaseDeviceEXT", (void*)clrxclReleaseDeviceEXT },
     { "clRetainDeviceEXT", (void*)clrxclRetainDeviceEXT }
