@@ -411,7 +411,7 @@ void clrxWrapperInitialize()
                 else
                     strcat(extsBuffer, "cl_radeon_extender");
                 clrxPlatforms[i].extensions = extsBuffer;
-                clrxPlatforms[i].extensionsSize = strlen(extsBuffer)+1;
+                clrxPlatforms[i].extensionsSize = ::strlen(extsBuffer)+1;
                 
                 size_t versionSize;
                 if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
@@ -427,7 +427,7 @@ void clrxWrapperInitialize()
                 }
                 strcat(versionBuffer, " (clrx 0.0)");
                 clrxPlatforms[i].version = versionBuffer;
-                clrxPlatforms[i].versionSize = strlen(versionBuffer)+1;
+                clrxPlatforms[i].versionSize = ::strlen(versionBuffer)+1;
             }
         }
         
@@ -521,7 +521,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 strcat(extsBuffer, " cl_radeon_extender");
             else
                 strcat(extsBuffer, "cl_radeon_extender");
-            clrxDevice.extensionsSize = strlen(extsBuffer)+1;
+            clrxDevice.extensionsSize = ::strlen(extsBuffer)+1;
             clrxDevice.extensions = extsBuffer;
         }
         
@@ -989,7 +989,7 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
             {
                 device->extensionsSize = d->extensionsSize;
                 device->extensions = new char[d->extensionsSize];
-                strcpy((char*)device->extensions, d->extensions);
+                ::strcpy((char*)device->extensions, d->extensions);
             }
             out_devices[dp] = device;
         }

@@ -172,7 +172,7 @@ bool parseEnvVariable<bool>(const char* envVar, const bool& defaultValue)
     for (; *var == ' ' || *var == '\t' || *var == '\r'; var++);
     
     for (const char* v: { "1", "true", "TRUE", "ON", "on", "YES", "yes"})
-        if (strncmp(var, v, strlen(v)) == 0)
+        if (::strncmp(var, v, ::strlen(v)) == 0)
             return true;
     return false; // false
 }

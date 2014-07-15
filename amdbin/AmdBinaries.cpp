@@ -775,7 +775,7 @@ size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
         const char* symName = getDynSymbolName(i);
-        const size_t len = strlen(symName);
+        const size_t len = ::strlen(symName);
         kernelInfo.kernelName.assign(symName+9, len-18);
         kernelInfo.allocateArgs(argsNum);
         
@@ -1305,7 +1305,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, char* binaryCode,
     for (uint32_t i = 0; i < symbolsNum; i++)
     {
         const char* symName = getSymbolName(i);
-        size_t len = strlen(symName);
+        size_t len = ::strlen(symName);
         if (len < 16 || ::strncmp(symName, "__OpenCL_", 9) != 0)
             continue;
         
@@ -1330,7 +1330,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, char* binaryCode,
         for (auto it: choosenSyms)
         {
             const char* symName = getSymbolName(it);
-            size_t len = strlen(symName);
+            size_t len = ::strlen(symName);
             const Elf32_Sym& sym = getSymbol(it);
             
             if (sym.st_value > textHdr.sh_size)

@@ -992,16 +992,16 @@ clrxclGetExtensionFunctionAddress(const char * func_name)
     if (!useCLRXWrapper) // call original amdocl function
         return amdOclGetExtensionFunctionAddress(func_name);
     
-    const CLRXExtensionEntry tmp{func_name};
+    const CLRXExtensionEntry tmp = {func_name, nullptr};
     const size_t length = sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
     const CLRXExtensionEntry* entry = std::lower_bound(clrxExtensionsTable,
            clrxExtensionsTable + length,
            tmp, [](const CLRXExtensionEntry& l, const CLRXExtensionEntry& r) -> bool
-           { return strcmp(l.funcname, r.funcname)<0; });
+           { return ::strcmp(l.funcname, r.funcname)<0; });
     
     if (entry == clrxExtensionsTable + length)
         return nullptr;
-    if (strcmp(func_name, entry->funcname)!=0)
+    if (::strcmp(func_name, entry->funcname)!=0)
         return nullptr;
     return entry->address;
 }
