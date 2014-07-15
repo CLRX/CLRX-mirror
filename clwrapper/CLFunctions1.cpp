@@ -966,28 +966,14 @@ clrxclGetImageInfo(cl_mem           image,
                 param_value_size, param_value, param_value_size_ret);
     else
     {
-        cl_int status = m->amdOclMemObject->dispatch->clGetImageInfo(
-                m->amdOclMemObject, param_name, param_value_size, param_value,
-                param_value_size_ret);
-        if (status != CL_SUCCESS)
-            return status;
         if (param_value != nullptr)
-        {   /* check what is returned and translate it */
-            cl_mem* outMem = static_cast<cl_mem*>(param_value);
-            if (*outMem != nullptr)
-            {   // fix output memobject
-                if (m->parent != nullptr && m->parent->amdOclMemObject != nullptr)
-                    *outMem = m->parent;
-                else if (m->buffer != nullptr && m->buffer->amdOclMemObject != nullptr)
-                    *outMem = m->buffer;
-                else
-                {
-                    std::cerr << "Stupid AMD drivers "
-                            "(because returns invalid imageBuffer)!" << std::endl;
-                    abort();
-                }
-            }
+        {
+            if (param_value_size < sizeof(cl_mem))
+                return CL_INVALID_VALUE;
+            *static_cast<cl_mem*>(param_value) = m->buffer;
         }
+        if (param_value_size_ret != nullptr)
+            *param_value_size_ret = sizeof(cl_mem);
         return CL_SUCCESS;
     }
 }
