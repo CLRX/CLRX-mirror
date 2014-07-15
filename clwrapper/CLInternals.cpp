@@ -939,7 +939,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
     return outProgram;
 }
 
-cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
+cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
              cl_event amdEvent, cl_int status)
 {
     CLRXEvent* outEvent = nullptr;
@@ -950,7 +950,7 @@ cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
             outEvent = new CLRXEvent;
             outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
             outEvent->amdOclEvent = amdEvent;
-            outEvent->commandQueue = const_cast<CLRXCommandQueue*>(q);
+            outEvent->commandQueue = q;
             outEvent->context = q->context;
             *event = outEvent;
         }
@@ -965,6 +965,7 @@ cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
             return CL_OUT_OF_HOST_MEMORY;
         }
         clrxRetainOnlyCLRXContext(q->context);
+        clrxRetainOnlyCLRXCommandQueue(q);
     }
     
     return status;

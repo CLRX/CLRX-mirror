@@ -219,7 +219,7 @@ clrxclEnqueueReadBufferRect(cl_command_queue    command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* b = static_cast<const CLRXMemObject*>(buffer);
     
     cl_int status = CL_SUCCESS;
@@ -258,7 +258,7 @@ clrxclEnqueueWriteBufferRect(cl_command_queue    command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* b = static_cast<const CLRXMemObject*>(buffer);
     
     cl_int status = CL_SUCCESS;
@@ -296,7 +296,7 @@ clrxclEnqueueCopyBufferRect(cl_command_queue    command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* sb = static_cast<const CLRXMemObject*>(src_buffer);
     const CLRXMemObject* db = static_cast<const CLRXMemObject*>(dst_buffer);
     
@@ -886,7 +886,7 @@ clrxclEnqueueFillBuffer(cl_command_queue    command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* b = static_cast<const CLRXMemObject*>(buffer);
     
     cl_int status = CL_SUCCESS;
@@ -917,7 +917,7 @@ clrxclEnqueueFillImage(cl_command_queue   command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* b = static_cast<const CLRXMemObject*>(image);
     
     cl_int status = CL_SUCCESS;
@@ -947,7 +947,7 @@ clrxclEnqueueMigrateMemObjects(cl_command_queue       command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     
     try
     {
@@ -984,7 +984,7 @@ clrxclEnqueueMarkerWithWaitList(cl_command_queue command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     
     cl_int status = CL_SUCCESS;
 #undef CLRX_ORIG_CLCOMMAND
@@ -1007,7 +1007,7 @@ clrxclEnqueueBarrierWithWaitList(cl_command_queue command_queue,
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     
     cl_int status = CL_SUCCESS;
 #undef CLRX_ORIG_CLCOMMAND
@@ -1081,7 +1081,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueWaitSignalAMD(
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* m = static_cast<const CLRXMemObject*>(mem_object);
     
     cl_int status = CL_SUCCESS;
@@ -1111,7 +1111,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueWriteSignalAMD(
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     const CLRXMemObject* m = static_cast<const CLRXMemObject*>(mem_object);
     
     cl_int status = CL_SUCCESS;
@@ -1142,7 +1142,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueMakeBuffersResidentAMD(
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
         return CL_INVALID_EVENT_WAIT_LIST;
     
-    const CLRXCommandQueue* q = static_cast<const CLRXCommandQueue*>(command_queue);
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
     
     try
     {

@@ -692,12 +692,7 @@ clrxclReleaseCommandQueue(cl_command_queue command_queue) CL_API_SUFFIX__VERSION
     const cl_int status = q->amdOclCommandQueue->dispatch->
             clReleaseCommandQueue(q->amdOclCommandQueue);
     if (status == CL_SUCCESS)
-        if (q->refCount.fetch_sub(1) == 1)
-        {
-            clrxReleaseOnlyCLRXDevice(q->device);
-            clrxReleaseOnlyCLRXContext(q->context);
-            delete q;
-        }
+        clrxReleaseOnlyCLRXCommandQueue(q);
     return status;
 }
 

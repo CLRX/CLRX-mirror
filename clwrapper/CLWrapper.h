@@ -278,7 +278,7 @@ CLRX_INTERNAL void clrxBuildProgramNotifyWrapper(cl_program program, void * user
 CLRX_INTERNAL void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data);
 CLRX_INTERNAL CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
           cl_int* errcode_ret);
-CLRX_INTERNAL cl_int clrxApplyCLRXEvent(const CLRXCommandQueue* q, cl_event* event,
+CLRX_INTERNAL cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
              cl_event amdEvent, cl_int status);
 CLRX_INTERNAL cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
        cl_device_id* out_devices, cl_int (*AMDReleaseDevice)(cl_device_id),
@@ -324,6 +324,21 @@ static inline void clrxReleaseOnlyCLRXContext(CLRXContext* context)
         for (cl_uint i = 0; i < context->devicesNum; i++)
             clrxReleaseOnlyCLRXDevice(context->devices[i]);
         delete context;
+    }
+}
+
+static inline void clrxRetainOnlyCLRXCommandQueue(CLRXCommandQueue* cmdQueue)
+{
+    cmdQueue->refCount.fetch_add(1);
+}
+
+static inline void clrxReleaseOnlyCLRXCommandQueue(CLRXCommandQueue* cmdQueue)
+{
+    if (cmdQueue->refCount.fetch_sub(1) == 1)
+    {
+        clrxReleaseOnlyCLRXDevice(cmdQueue->device);
+        clrxReleaseOnlyCLRXContext(cmdQueue->context);
+        delete cmdQueue;
     }
 }
 
