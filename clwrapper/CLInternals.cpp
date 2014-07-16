@@ -846,7 +846,6 @@ cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
                     "Fatal Error at handling error at apply event!" << std::endl;
                 abort();
             }
-            *event = nullptr; // set null event
             return CL_OUT_OF_HOST_MEMORY;
         }
         clrxRetainOnlyCLRXContext(q->context);
