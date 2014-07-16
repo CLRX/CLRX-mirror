@@ -200,122 +200,6 @@ const CLRXIcdDispatch clrxDispatchRecord =
     nullptr // clEnqueueReleaseDX9MediaSurfacesKHR
 };
 
-CLRXPlatform::CLRXPlatform()
-{
-    extensions = nullptr;
-    extensionsSize = 0;
-    version = nullptr;
-    versionSize = 0;
-    devicesNum = 0;
-    devicesArray = nullptr;
-    devicePtrs = nullptr;
-    deviceInitStatus = CL_SUCCESS;
-}
-
-CLRXPlatform::~CLRXPlatform()
-{ 
-    delete[] extensions;
-    delete[] version;
-    delete[] devicesArray;
-    delete[] devicePtrs;
-}
-
-CLRXDevice::CLRXDevice() : refCount(1)
-{
-    platform = nullptr;
-    type = 0;
-    extensions = nullptr;
-    extensionsSize = 0;
-    parent = nullptr;
-}
-
-CLRXDevice::~CLRXDevice()
-{
-    delete[] extensions;
-}
-
-CLRXContext::CLRXContext() : refCount(1)
-{
-    devicesNum = 0;
-    devices = nullptr;
-    propertiesNum = 0;
-    properties = nullptr;
-}
-
-CLRXContext::~CLRXContext()
-{
-    delete[] properties;
-    delete[] devices;
-}
-
-CLRXCommandQueue::CLRXCommandQueue() : refCount(1)
-{
-    context = nullptr;
-    device = nullptr;
-}
-
-CLRXCommandQueue::~CLRXCommandQueue()
-{
-}
-
-CLRXMemObject::CLRXMemObject() : refCount(1)
-{
-    context = nullptr;
-    parent = nullptr;
-    buffer = nullptr; // for image
-}
-
-CLRXMemObject::~CLRXMemObject()
-{
-}
-
-CLRXSampler::CLRXSampler() : refCount(1)
-{
-    context = nullptr;
-}
-
-CLRXSampler::~CLRXSampler()
-{
-}
-
-CLRXProgram::CLRXProgram() : refCount(1)
-{
-    kernelArgFlagsInitialized = false;
-    kernelsAttached = 0;
-    context = nullptr;
-    assocDevicesNum = 0;
-    assocDevices = nullptr;
-    origAssocDevicesNum = 0;
-    origAssocDevices = nullptr;
-    concurrentBuilds = 0;
-}
-
-CLRXProgram::~CLRXProgram()
-{
-    delete[] assocDevices;
-    delete[] origAssocDevices;
-}
-
-CLRXKernel::CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
-        argTypes(_argTypes)
-{
-    program = nullptr;
-}
-
-CLRXKernel::~CLRXKernel()
-{
-}
-
-CLRXEvent::CLRXEvent() : refCount(1)
-{
-    context = nullptr;
-    commandQueue = nullptr;
-}
-
-CLRXEvent::~CLRXEvent()
-{
-}
-
 void clrxWrapperInitialize()
 {
     DynLibrary* tmpAmdOclLibrary = nullptr;
@@ -962,6 +846,7 @@ cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
                     "Fatal Error at handling error at apply event!" << std::endl;
                 abort();
             }
+            *event = nullptr; // set null event
             return CL_OUT_OF_HOST_MEMORY;
         }
         clrxRetainOnlyCLRXContext(q->context);

@@ -80,7 +80,30 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #include <unordered_map>
 #include <CLRX/Utilities.h>
 
-struct CLRXDevice;
+struct CLRXPlatform;
+
+struct CLRX_INTERNAL CLRXDevice: _cl_device_id
+{
+    std::atomic<size_t> refCount;
+    cl_device_id amdOclDevice;
+    CLRXPlatform* platform;
+    cl_device_type type;
+    CLRXDevice* parent;
+    const char* extensions;
+    size_t extensionsSize;
+
+    CLRXDevice() : refCount(1)
+    {
+        platform = nullptr;
+        type = 0;
+        extensions = nullptr;
+        extensionsSize = 0;
+        parent = nullptr;
+    }
+
+    ~CLRXDevice()
+    { delete[] extensions; }
+};
 
 struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
 {
@@ -95,23 +118,26 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     CLRXDevice* devicesArray;
     CLRXDevice** devicePtrs;
     cl_int deviceInitStatus;
-    
-    CLRXPlatform();
-    ~CLRXPlatform();
-};
 
-struct CLRX_INTERNAL CLRXDevice: _cl_device_id
-{
-    std::atomic<size_t> refCount;
-    cl_device_id amdOclDevice;
-    CLRXPlatform* platform;
-    cl_device_type type;
-    CLRXDevice* parent;
-    const char* extensions;
-    size_t extensionsSize;
-    
-    CLRXDevice();
-    ~CLRXDevice();
+    CLRXPlatform()
+    {
+        extensions = nullptr;
+        extensionsSize = 0;
+        version = nullptr;
+        versionSize = 0;
+        devicesNum = 0;
+        devicesArray = nullptr;
+        devicePtrs = nullptr;
+        deviceInitStatus = CL_SUCCESS;
+    }
+
+    ~CLRXPlatform()
+    { 
+        delete[] extensions;
+        delete[] version;
+        delete[] devicesArray;
+        delete[] devicePtrs;
+    }
 };
 
 struct CLRX_INTERNAL CLRXContext: _cl_context
@@ -122,9 +148,20 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
     CLRXDevice** devices;
     size_t propertiesNum;
     cl_context_properties* properties;
-    
-    CLRXContext();
-    ~CLRXContext();
+
+    CLRXContext() : refCount(1)
+    {
+        devicesNum = 0;
+        devices = nullptr;
+        propertiesNum = 0;
+        properties = nullptr;
+    }
+
+    ~CLRXContext()
+    {
+        delete[] properties;
+        delete[] devices;
+    }
 };
 
 struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue
@@ -133,9 +170,12 @@ struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue
     cl_command_queue amdOclCommandQueue;
     CLRXContext* context;
     CLRXDevice* device;
-    
-    CLRXCommandQueue();
-    ~CLRXCommandQueue();
+
+    CLRXCommandQueue() : refCount(1)
+    {
+        context = nullptr;
+        device = nullptr;
+    }
 };
 
 struct CLRX_INTERNAL CLRXMemObject: _cl_mem
@@ -145,9 +185,13 @@ struct CLRX_INTERNAL CLRXMemObject: _cl_mem
     CLRXContext* context;
     CLRXMemObject* parent;
     CLRXMemObject* buffer; // for buffer
-    
-    CLRXMemObject();
-    ~CLRXMemObject();
+
+    CLRXMemObject() : refCount(1)
+    {
+        context = nullptr;
+        parent = nullptr;
+        buffer = nullptr; // for image
+    }
 };
 
 struct CLRX_INTERNAL CLRXMemDtorCallbackUserData
@@ -173,9 +217,24 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
     size_t kernelsAttached;
     bool kernelArgFlagsInitialized;
     CLRXKernelArgFlagMap kernelArgFlagsMap;
-    
-    CLRXProgram();
-    ~CLRXProgram();
+
+    CLRXProgram() : refCount(1)
+    {
+        kernelArgFlagsInitialized = false;
+        kernelsAttached = 0;
+        context = nullptr;
+        assocDevicesNum = 0;
+        assocDevices = nullptr;
+        origAssocDevicesNum = 0;
+        origAssocDevices = nullptr;
+        concurrentBuilds = 0;
+    }
+
+    ~CLRXProgram()
+    {
+        delete[] assocDevices;
+        delete[] origAssocDevices;
+    }
 };
 
 struct CLRX_INTERNAL CLRXBuildProgramUserData
@@ -204,9 +263,10 @@ struct CLRX_INTERNAL CLRXKernel: _cl_kernel
     cl_kernel amdOclKernel;
     CLRXProgram* program;
     const std::vector<bool>& argTypes;
-    
-    CLRXKernel(const std::vector<bool>& argTypes);
-    ~CLRXKernel();
+
+    CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
+            argTypes(_argTypes)
+    { program = nullptr; }
 };
 
 struct CLRX_INTERNAL CLRXEvent: _cl_event
@@ -215,9 +275,12 @@ struct CLRX_INTERNAL CLRXEvent: _cl_event
     cl_event amdOclEvent;
     CLRXContext* context;
     CLRXCommandQueue* commandQueue;
-    
-     CLRXEvent();
-     ~CLRXEvent();
+
+    CLRXEvent() : refCount(1)
+    {
+        context = nullptr;
+        commandQueue = nullptr;
+    }
 };
 
 struct CLRX_INTERNAL CLRXEventCallbackUserData
@@ -233,8 +296,8 @@ struct CLRX_INTERNAL CLRXSampler: _cl_sampler
     cl_sampler amdOclSampler;
     CLRXContext* context;
     
-    CLRXSampler();
-    ~CLRXSampler();
+    CLRXSampler() : refCount(1)
+    { context = nullptr; }
 };
 
 /* internals */

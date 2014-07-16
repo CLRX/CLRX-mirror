@@ -535,6 +535,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
         {
             if (errcode_ret != nullptr)
                 *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            *event = nullptr;
             return nullptr;
         }
     
@@ -663,6 +664,7 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
         {
             if (errcode_ret != nullptr)
                 *errcode_ret = CL_OUT_OF_HOST_MEMORY;
+            *event = nullptr;
             return nullptr;
         }
     
