@@ -47,7 +47,7 @@ clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD = nullptr
 CLRXpfn_clGetExtensionFunctionAddress amdOclGetExtensionFunctionAddress = nullptr;
 
 /* extensions table */
-const CLRXExtensionEntry clrxExtensionsTable[18] =
+CLRXExtensionEntry clrxExtensionsTable[18] =
 {
     { "clCreateEventFromGLsyncKHR", (void*)clrxclCreateEventFromGLsyncKHR },
     { "clCreateFromGLBuffer", (void*)clrxclCreateFromGLBuffer },
@@ -238,6 +238,13 @@ void clrxWrapperInitialize()
             amdOclGetExtensionFunctionAddress("clEnqueueWriteSignalAMD");
         amdOclEnqueueMakeBuffersResidentAMD = (clEnqueueMakeBuffersResidentAMD_fn)
             amdOclGetExtensionFunctionAddress("clEnqueueMakeBuffersResidentAMD");
+        
+        /* update clrxExtensionsTable */
+        for (CLRXExtensionEntry& extEntry: clrxExtensionsTable)
+            // erase CLRX extension entry if not reflected in AMD extensions
+            if (amdOclGetExtensionFunctionAddress(extEntry.funcname) == nullptr)
+                extEntry.address = nullptr;
+        /* end of clrxExtensionsTable */
         
         cl_uint platformCount;
         cl_int status = pgetPlatformIDs(0, nullptr, &platformCount);

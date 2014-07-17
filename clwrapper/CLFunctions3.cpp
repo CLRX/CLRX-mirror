@@ -564,9 +564,7 @@ clrxclCreateProgramWithBuiltInKernels(cl_context            context,
     if (amdProgram == nullptr)
         return nullptr;
     
-    CLRXProgram* outProgram = clrxCreateCLRXProgram(c, amdProgram, errcode_ret);
-    
-    return outProgram;
+    return clrxCreateCLRXProgram(c, amdProgram, errcode_ret);
 }
 
 extern CL_API_ENTRY cl_int CL_API_CALL
