@@ -335,8 +335,9 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclCreateSubDevicesEXT(cl_device_id in_device
         status = clrxCreateOutDevices(d, curSubDevicesNum, out_devices,
               d->amdOclDevice->dispatch->clReleaseDeviceEXT,
               "Fatal error at handling error for clCreateSubDevicesEXT");
-        if (status == CL_SUCCESS)
-            clrxRetainOnlyCLRXDeviceNTimes(d, curSubDevicesNum);
+        if (status != CL_SUCCESS)
+            return status;
+        clrxRetainOnlyCLRXDeviceNTimes(d, curSubDevicesNum);
     }
     
     if (num_devices != nullptr)
@@ -421,8 +422,9 @@ clrxclCreateSubDevices(cl_device_id  in_device,
         status = clrxCreateOutDevices(d, devicesNum, out_devices,
               d->amdOclDevice->dispatch->clReleaseDevice,
               "Fatal error at handling error for clCreateSubDevices");
-        if (status == CL_SUCCESS)
-            clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
+        if (status != CL_SUCCESS)
+            return status;
+        clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
     }
     
     if (num_devices_ret != nullptr)
