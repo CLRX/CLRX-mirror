@@ -508,8 +508,6 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
     
     cl_int status = c->amdOclContext->dispatch->clGetContextInfo(c->amdOclContext,
         CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &amdDevicesNum, nullptr);
-    if (status == CL_OUT_OF_HOST_MEMORY)
-        throw std::bad_alloc();
     if (status != CL_SUCCESS)
         return status;
     
@@ -552,8 +550,6 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
     
     cl_int status = c->amdOclContext->dispatch->clGetContextInfo(c->amdOclContext,
         CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &amdDevicesNum, nullptr);
-    if (status == CL_OUT_OF_HOST_MEMORY)
-        throw std::bad_alloc();
     if (status != CL_SUCCESS)
         return status;
     
