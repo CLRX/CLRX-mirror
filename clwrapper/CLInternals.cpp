@@ -615,6 +615,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
             cl_device_id* tmpAmdAssocDevices = new cl_device_id[amdAssocDevicesNum];
             std::copy(amdAssocDevices, amdAssocDevices+amdAssocDevicesNum,
                       tmpAmdAssocDevices);
+            delete[] amdAssocDevices;
             amdAssocDevices = tmpAmdAssocDevices;
         }
         
