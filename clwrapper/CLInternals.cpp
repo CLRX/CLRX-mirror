@@ -278,11 +278,12 @@ void clrxWrapperInitialize()
                 clrxPlatforms[i].dispatch =
                     const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
                 
+                // add to extensions "cl_radeon_extender"
                 size_t extsSize;
                 if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
                             CL_PLATFORM_EXTENSIONS, 0, nullptr, &extsSize) != CL_SUCCESS)
                     continue;
-                char* extsBuffer = new char[extsSize + 20];
+                char* extsBuffer = new char[extsSize + 19];
                 if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
                         CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer,
                         nullptr) != CL_SUCCESS)
@@ -291,17 +292,18 @@ void clrxWrapperInitialize()
                     continue;
                 }
                 if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
-                    strcat(extsBuffer, " cl_radeon_extender");
+                    ::strcat(extsBuffer, " cl_radeon_extender");
                 else
-                    strcat(extsBuffer, "cl_radeon_extender");
+                    ::strcat(extsBuffer, "cl_radeon_extender");
                 clrxPlatforms[i].extensions = extsBuffer;
                 clrxPlatforms[i].extensionsSize = ::strlen(extsBuffer)+1;
                 
+                // add to version " (clrx 0.0)"
                 size_t versionSize;
                 if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
                             CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
                     continue;
-                char* versionBuffer = new char[versionSize + 20];
+                char* versionBuffer = new char[versionSize+20];
                 if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
                         CL_PLATFORM_VERSION, versionSize,
                         versionBuffer, nullptr) != CL_SUCCESS)
@@ -309,7 +311,7 @@ void clrxWrapperInitialize()
                     delete[] versionBuffer;
                     continue;
                 }
-                strcat(versionBuffer, " (clrx 0.0)");
+                ::strcat(versionBuffer, " (clrx 0.0)");
                 clrxPlatforms[i].version = versionBuffer;
                 clrxPlatforms[i].versionSize = ::strlen(versionBuffer)+1;
             }
@@ -386,14 +388,14 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             if ((devType & CL_DEVICE_TYPE_GPU) == 0)
                 continue; // do not change extensions if not gpu
             
-            /* get extensions */
+            // add to extensions "cl_radeon_extender"
             size_t extsSize;
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
                       CL_DEVICE_EXTENSIONS, 0, nullptr, &extsSize);
             
             if (status != CL_SUCCESS)
                 break;
-            char* extsBuffer = new char[extsSize+20];
+            char* extsBuffer = new char[extsSize+19];
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
                   CL_DEVICE_EXTENSIONS, extsSize, extsBuffer, nullptr);
             if (status != CL_SUCCESS)
@@ -407,6 +409,24 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 strcat(extsBuffer, "cl_radeon_extender");
             clrxDevice.extensionsSize = ::strlen(extsBuffer)+1;
             clrxDevice.extensions = extsBuffer;
+            
+            // add to version " (clrx 0.0)"
+            size_t versionSize;
+            status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
+                      CL_DEVICE_VERSION, 0, nullptr, &versionSize);
+            if (status != CL_SUCCESS)
+                break;
+            char* versionBuffer = new char[versionSize+20];
+            status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
+                      CL_DEVICE_VERSION, versionSize, versionBuffer, nullptr);
+            if (status != CL_SUCCESS)
+            {
+                delete[] versionBuffer;
+                break;
+            }
+            ::strcat(versionBuffer, " (clrx 0.0)");
+            clrxDevice.version = versionBuffer;
+            clrxDevice.versionSize = ::strlen(versionBuffer)+1;
         }
         
         if (status != CL_SUCCESS)
@@ -818,7 +838,13 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
             {
                 device->extensionsSize = d->extensionsSize;
                 device->extensions = new char[d->extensionsSize];
-                ::strcpy((char*)device->extensions, d->extensions);
+                ::memcpy((char*)device->extensions, d->extensions, d->extensionsSize);
+            }
+            if (d->versionSize != 0)
+            {
+                device->versionSize = d->versionSize;
+                device->version = new char[d->versionSize];
+                ::memcpy((char*)device->version, d->version, d->versionSize);
             }
             out_devices[dp] = device;
         }

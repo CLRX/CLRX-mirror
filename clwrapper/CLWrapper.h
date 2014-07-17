@@ -91,6 +91,8 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
     CLRXDevice* parent;
     const char* extensions;
     size_t extensionsSize;
+    const char* version;
+    size_t versionSize;
 
     CLRXDevice() : refCount(1)
     {
@@ -98,11 +100,16 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
         type = 0;
         extensions = nullptr;
         extensionsSize = 0;
+        version = nullptr;
+        versionSize = 0;
         parent = nullptr;
     }
 
     ~CLRXDevice()
-    { delete[] extensions; }
+    {
+        delete[] version;
+        delete[] extensions;
+    }
 };
 
 struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id

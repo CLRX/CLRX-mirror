@@ -159,13 +159,13 @@ clrxclGetPlatformInfo(cl_platform_id   platform,
             {
                 if (param_value_size < p->extensionsSize)
                     return CL_INVALID_VALUE;
-                memcpy(param_value, p->extensions, p->extensionsSize);
+                ::memcpy(param_value, p->extensions, p->extensionsSize);
             }
             else // CL_PLATFORM_VERSION
             {
                 if (param_value_size < p->versionSize)
                     return CL_INVALID_VALUE;
-                memcpy(param_value, p->version, p->versionSize);
+                ::memcpy(param_value, p->version, p->versionSize);
             }
         }
         
@@ -263,10 +263,27 @@ clrxclGetDeviceInfo(cl_device_id    device,
                 {
                     if (param_value_size < d->extensionsSize)
                         return CL_INVALID_VALUE;
-                    memcpy(param_value, d->extensions, d->extensionsSize);
+                    ::memcpy(param_value, d->extensions, d->extensionsSize);
                 }
                 if (param_value_size_ret != nullptr)
                     *param_value_size_ret = d->extensionsSize;
+            }
+            break;
+        case CL_DEVICE_VERSION:
+            if (d->version == nullptr)
+                return d->amdOclDevice->
+                    dispatch->clGetDeviceInfo(d->amdOclDevice, param_name,
+                        param_value_size, param_value, param_value_size_ret);
+            else
+            {
+                if (param_value != nullptr)
+                {
+                    if (param_value_size < d->versionSize)
+                        return CL_INVALID_VALUE;
+                    ::memcpy(param_value, d->version, d->versionSize);
+                }
+                if (param_value_size_ret != nullptr)
+                    *param_value_size_ret = d->versionSize;
             }
             break;
         case CL_DEVICE_PLATFORM:
