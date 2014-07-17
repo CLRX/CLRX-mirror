@@ -518,7 +518,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
     if (status == CL_OUT_OF_HOST_MEMORY)
     {
         delete[] amdDevices;
-        throw std::bad_alloc();
+        return status;
     }
     if (status != CL_SUCCESS)
     {
@@ -560,7 +560,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
     if (status == CL_OUT_OF_HOST_MEMORY)
     {
         delete[] amdDevices;
-        throw std::bad_alloc();
+        return status;
     }
     if (status != CL_SUCCESS)
     {
