@@ -211,8 +211,6 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
     CLRXContext* context;
     cl_uint assocDevicesNum;
     CLRXDevice** assocDevices;
-    cl_uint origAssocDevicesNum;
-    CLRXDevice** origAssocDevices;
     cl_ulong concurrentBuilds;
     size_t kernelsAttached;
     bool kernelArgFlagsInitialized;
@@ -225,15 +223,12 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
         context = nullptr;
         assocDevicesNum = 0;
         assocDevices = nullptr;
-        origAssocDevicesNum = 0;
-        origAssocDevices = nullptr;
         concurrentBuilds = 0;
     }
 
     ~CLRXProgram()
     {
         delete[] assocDevices;
-        delete[] origAssocDevices;
     }
 };
 
@@ -335,7 +330,6 @@ CLRX_INTERNAL void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
 CLRX_INTERNAL cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform);
 CLRX_INTERNAL cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
             const cl_device_id* inDevices);
-CLRX_INTERNAL cl_int clrxSetProgramOrigDevices(CLRXProgram* p);
 CLRX_INTERNAL cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p);
 CLRX_INTERNAL void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data);
 CLRX_INTERNAL void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data);

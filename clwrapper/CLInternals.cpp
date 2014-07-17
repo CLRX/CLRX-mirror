@@ -588,74 +588,20 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
     return CL_SUCCESS;
 }
 
-
-/* called always on creating program */
-cl_int clrxSetProgramOrigDevices(CLRXProgram* p)
-{
-    cl_uint amdDevicesNum;
-    cl_device_id* amdDevices = nullptr;
-    
-    const CLRXContext* c = static_cast<const CLRXContext*>(p->context);
-    
-    cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(p->amdOclProgram,
-        CL_PROGRAM_NUM_DEVICES, sizeof(cl_uint), &amdDevicesNum, nullptr);
-    if (status == CL_OUT_OF_HOST_MEMORY)
-        throw std::bad_alloc();
-    if (status != CL_SUCCESS)
-        return status;
-    
-    amdDevices = new cl_device_id[amdDevicesNum];
-    status = p->amdOclProgram->dispatch->clGetProgramInfo(p->amdOclProgram,
-            CL_PROGRAM_DEVICES, sizeof(cl_device_id)*amdDevicesNum,
-            amdDevices, nullptr);
-    if (status == CL_OUT_OF_HOST_MEMORY)
-    {
-        delete[] amdDevices;
-        throw std::bad_alloc();
-    }
-    if (status != CL_SUCCESS)
-    {
-        delete[] amdDevices;
-        return status;
-    }
-    
-    try
-    {
-        translateAMDDevicesIntoCLRXDevices(c->devicesNum,
-               (const CLRXDevice**)(c->devices), amdDevicesNum, amdDevices);
-        // now is ours devices
-        p->origAssocDevicesNum = amdDevicesNum;
-        p->origAssocDevices = reinterpret_cast<CLRXDevice**>(amdDevices);
-    }
-    catch(const std::bad_alloc& ex)
-    {
-        delete[] amdDevices;
-        return CL_OUT_OF_HOST_MEMORY;
-    }
-    return CL_SUCCESS;
-}
-
 cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
 {
     size_t amdAssocDevicesNum;
     cl_device_id* amdAssocDevices = nullptr;
     try
     {
-        cl_uint origAssocDevicesNum = p->origAssocDevicesNum;
-        CLRXDevice** origAssocDevices = (CLRXDevice**)(p->origAssocDevices);
-        if (origAssocDevices == nullptr)
-        {
-            const CLRXContext* c = static_cast<const CLRXContext*>(p->context);
-            origAssocDevicesNum = c->devicesNum;
-            origAssocDevices = (CLRXDevice**)(c->devices);
-        }
-        
-        amdAssocDevices = new cl_device_id[origAssocDevicesNum];
+        cl_uint contextDevicesNum = p->context->devicesNum;
+        amdAssocDevices = new cl_device_id[contextDevicesNum];
         // single OpenCL call should be atomic:
         // reason: can be called between clBuildProgram which changes associated devices
         const cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(
-            p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*origAssocDevicesNum,
+            p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*contextDevicesNum,
                       amdAssocDevices, &amdAssocDevicesNum);
+        
         if (status != CL_SUCCESS)
         {
             delete[] amdAssocDevices;
@@ -663,6 +609,14 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         }
         
         amdAssocDevicesNum /= sizeof(cl_device_id); // number of amd devices
+        
+        if (contextDevicesNum != amdAssocDevicesNum)
+        {   /* reallocate amdAssocDevices */
+            cl_device_id* tmpAmdAssocDevices = new cl_device_id[amdAssocDevicesNum];
+            std::copy(amdAssocDevices, amdAssocDevices+amdAssocDevicesNum,
+                      tmpAmdAssocDevices);
+            amdAssocDevices = tmpAmdAssocDevices;
+        }
         
         /* compare with previous assocDevices */
         if (p->assocDevicesNum == amdAssocDevicesNum && p->assocDevices != nullptr)
@@ -682,9 +636,8 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
             }
         }
         
-        /* after it we replaces amdDevices into ours devices */
-        translateAMDDevicesIntoCLRXDevices(origAssocDevicesNum,
-               const_cast<const CLRXDevice**>(origAssocDevices),
+        translateAMDDevicesIntoCLRXDevices(p->context->devicesNum,
+               const_cast<const CLRXDevice**>(p->context->devices),
                amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
         delete[] p->assocDevices;
         p->assocDevicesNum = amdAssocDevicesNum;
@@ -757,13 +710,7 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                 outProgram->amdOclProgram = program;
                 outProgram->context = wrappedDataPtr->clrxContext;
                 outProgram->concurrentBuilds = 0;
-                clrxSetProgramOrigDevices(outProgram);
-                // initialize assoc devices num
-                outProgram->assocDevicesNum = outProgram->origAssocDevicesNum;
-                outProgram->assocDevices = new CLRXDevice*[outProgram->assocDevicesNum];
-                std::copy(outProgram->origAssocDevices,
-                          outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
-                          outProgram->assocDevices);
+                clrxUpdateProgramAssocDevices(outProgram);
             }
             wrappedDataPtr->clrxProgram = outProgram;
             wrappedDataPtr->clrxProgramFilled = true;
@@ -801,7 +748,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
         outProgram->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
         outProgram->amdOclProgram = amdProgram;
         outProgram->context = c;
-        error = clrxSetProgramOrigDevices(outProgram);
+        error = clrxUpdateProgramAssocDevices(outProgram);
     }
     catch(const std::bad_alloc& ex)
     { error = CL_OUT_OF_HOST_MEMORY; }

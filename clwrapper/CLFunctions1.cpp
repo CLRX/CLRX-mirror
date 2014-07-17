@@ -1355,10 +1355,7 @@ clrxclGetProgramInfo(cl_program         program,
             {
                 if (param_value_size < sizeof(cl_uint))
                     return CL_INVALID_VALUE;
-                if (p->assocDevices != nullptr)
-                    *static_cast<cl_uint*>(param_value) = p->assocDevicesNum;
-                else
-                    *static_cast<cl_uint*>(param_value) = p->origAssocDevicesNum;
+                *static_cast<cl_uint*>(param_value) = p->assocDevicesNum;
             }
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_uint);
@@ -1376,29 +1373,13 @@ clrxclGetProgramInfo(cl_program         program,
             
             if (param_value != nullptr)
             {
-                if (p->assocDevices != nullptr)
-                {
-                    if (param_value_size < sizeof(cl_device_id)*p->assocDevicesNum)
-                        return CL_INVALID_VALUE;
-                    std::copy(p->assocDevices, p->assocDevices + p->assocDevicesNum,
-                            static_cast<cl_device_id*>(param_value));
-                }
-                else
-                {
-                    if (param_value_size < sizeof(cl_device_id)*p->origAssocDevicesNum)
-                        return CL_INVALID_VALUE;
-                    std::copy(p->origAssocDevices,
-                              p->origAssocDevices + p->origAssocDevicesNum,
-                              static_cast<cl_device_id*>(param_value));
-                }
+                if (param_value_size < sizeof(cl_device_id)*p->assocDevicesNum)
+                    return CL_INVALID_VALUE;
+                std::copy(p->assocDevices, p->assocDevices + p->assocDevicesNum,
+                        static_cast<cl_device_id*>(param_value));
             }
             if (param_value_size_ret != nullptr)
-            {
-                if (p->assocDevices != nullptr)
-                    *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
-                else
-                    *param_value_size_ret = sizeof(cl_device_id)*p->origAssocDevicesNum;
-            }
+                *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
         }
             break;
         default:

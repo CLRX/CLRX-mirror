@@ -330,14 +330,16 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclCreateSubDevicesEXT(cl_device_id in_device
         return status;
     
     if (out_devices != nullptr)
+    {
         status = clrxCreateOutDevices(d, devicesNum, out_devices,
               d->amdOclDevice->dispatch->clReleaseDeviceEXT,
               "Fatal error at handling error for clCreateSubDevicesEXT");
+        if (status == CL_SUCCESS)
+            clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
+    }
     
     if (num_devices != nullptr)
         *num_devices = devicesNum;
-    
-    clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
     return status;
 }
 
@@ -414,14 +416,17 @@ clrxclCreateSubDevices(cl_device_id  in_device,
         return status;
     
     if (out_devices != nullptr)
+    {
         status = clrxCreateOutDevices(d, devicesNum, out_devices,
               d->amdOclDevice->dispatch->clReleaseDevice,
               "Fatal error at handling error for clCreateSubDevices");
+        if (status == CL_SUCCESS)
+            clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
+    }
     
     if (num_devices_ret != nullptr)
         *num_devices_ret = devicesNum;
     
-    clrxRetainOnlyCLRXDeviceNTimes(d, devicesNum);
     return status;
 }
 
@@ -786,14 +791,7 @@ clrxclLinkProgram(cl_context           context,
                     outProgram->amdOclProgram = amdProgram;
                     outProgram->context = c;
                     outProgram->concurrentBuilds = 0;
-                    clrxSetProgramOrigDevices(outProgram);
-                    // initialize assoc devices num
-                    outProgram->assocDevicesNum = outProgram->origAssocDevicesNum;
-                    outProgram->assocDevices =
-                            new CLRXDevice*[outProgram->assocDevicesNum];
-                    std::copy(outProgram->origAssocDevices,
-                          outProgram->origAssocDevices + outProgram->origAssocDevicesNum,
-                          outProgram->assocDevices);
+                    clrxUpdateProgramAssocDevices(outProgram);
                     
                     wrappedData->clrxProgramFilled = true;
                     wrappedData->clrxProgram = outProgram;
