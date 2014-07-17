@@ -1027,7 +1027,7 @@ clrxclGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
     
     if (platform == nullptr)
         return nullptr;
-    return clGetExtensionFunctionAddress(func_name);
+    return clrxclGetExtensionFunctionAddress(func_name);
 }
 
 CL_API_ENTRY cl_mem CL_API_CALL
@@ -1054,7 +1054,7 @@ clrxclCreateFromGLTexture(cl_context      context,
     
     CREATE_CLRXCONTEXT_OBJECT(CLRXMemObject, amdOclMemObject, amdBuffer,
               clReleaseMemObject,
-              "Fatal Error at handling error at fromGLTexture3D creation!")
+              "Fatal Error at handling error at fromGLTexture creation!")
     
     return outObject;
 }
