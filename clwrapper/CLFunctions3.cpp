@@ -846,6 +846,8 @@ clrxclLinkProgram(cl_context           context,
 CL_API_ENTRY cl_int CL_API_CALL
 clrxclUnloadPlatformCompiler(cl_platform_id platform) CL_API_SUFFIX__VERSION_1_2
 {
+    if (platform == nullptr)
+        return CL_INVALID_PLATFORM;
     const CLRXPlatform* p = static_cast<const CLRXPlatform*>(platform);
     return p->amdOclPlatform->dispatch->clUnloadPlatformCompiler(p->amdOclPlatform);
 }
