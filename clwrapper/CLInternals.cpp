@@ -46,7 +46,7 @@ clEnqueueWriteSignalAMD_fn amdOclEnqueueWriteSignalAMD = nullptr;
 clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD = nullptr;
 CLRXpfn_clGetExtensionFunctionAddress amdOclGetExtensionFunctionAddress = nullptr;
 
-/* extensions table */
+/* extensions table - entries are sorted in function name's order */
 CLRXExtensionEntry clrxExtensionsTable[18] =
 {
     { "clCreateEventFromGLsyncKHR", (void*)clrxclCreateEventFromGLsyncKHR },
