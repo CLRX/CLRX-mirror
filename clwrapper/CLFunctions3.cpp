@@ -591,9 +591,13 @@ clrxclCompileProgram(cl_program           program,
         (num_input_headers == 0 && header_include_names != nullptr))
         return CL_INVALID_VALUE;
     
+    bool doDeleteWrappedData = true;
     void* destUserData = user_data;
     CLRXBuildProgramUserData* wrappedData = nullptr;
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
+    
+    try
+    {
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
     
     if (pfn_notify != nullptr)
@@ -602,80 +606,108 @@ clrxclCompileProgram(cl_program           program,
         wrappedData->realNotify = pfn_notify;
         wrappedData->clrxProgram = p;
         wrappedData->realUserData = user_data;
+        wrappedData->callDone = false;
+        wrappedData->inClFunction = false;
         destUserData = wrappedData;
         notifyToCall = clrxBuildProgramNotifyWrapper;
     }
     
-    try
-    { // catching system_error
     {
         std::lock_guard<std::mutex> lock(p->mutex);
+        p->kernelArgFlagsInitialized = false;
         p->concurrentBuilds++;
     }
     
-    /* translate into AMD program headers */
-    std::vector<cl_program> amdHeaders(num_input_headers);
-    for (cl_uint i = 0; i < num_input_headers; i++)
+    cl_int status;
+    try
     {
-        if (input_headers[i] == nullptr)
+        /* translate into AMD program headers */
+        std::vector<cl_program> amdHeaders(num_input_headers);
+        for (cl_uint i = 0; i < num_input_headers; i++)
         {
-            delete wrappedData;
-            return CL_INVALID_PROGRAM;
+            if (input_headers[i] == nullptr)
+            {   // bad header
+                std::lock_guard<std::mutex> lock(p->mutex);
+                p->concurrentBuilds--; // after this building
+                delete wrappedData;
+                return CL_INVALID_PROGRAM;
+            }
+            amdHeaders[i] = static_cast<CLRXProgram*>(input_headers[i])->amdOclProgram;
         }
-        amdHeaders[i] = static_cast<CLRXProgram*>(input_headers[i])->amdOclProgram;
-    }
-    cl_program* amdHeadersPtr = (input_headers!=nullptr) ? amdHeaders.data() : nullptr;
+        cl_program* amdHeadersPtr = (input_headers!=nullptr) ? amdHeaders.data() : nullptr;
     
-    // real procedure
-    if (num_devices == 0)
-    {
-        const cl_int status = p->amdOclProgram->dispatch->clCompileProgram(
-            p->amdOclProgram, 0, nullptr, options, num_input_headers, amdHeadersPtr,
-            header_include_names, notifyToCall, destUserData);
-        wrappedData = nullptr; // consumed by original clBuildProgram
-        
+        if (num_devices == 0)
+            status = p->amdOclProgram->dispatch->clCompileProgram(
+                p->amdOclProgram, 0, nullptr, options, num_input_headers, amdHeadersPtr,
+                header_include_names, notifyToCall, destUserData);
+        else
+        {
+            // if devices list is supplied, we change associated devices for program
+            std::vector<cl_device_id> amdDevices(num_devices);
+            
+            for (cl_uint i = 0; i < num_devices; i++)
+            {
+                if (device_list[i] == nullptr)
+                {   // bad device
+                    std::lock_guard<std::mutex> lock(p->mutex);
+                    p->concurrentBuilds--; // after this building
+                    delete wrappedData;
+                    return CL_INVALID_DEVICE;
+                }
+                amdDevices[i] =
+                    static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
+            }
+            
+            status = p->amdOclProgram->dispatch->clCompileProgram(
+                    p->amdOclProgram, num_devices, amdDevices.data(),
+                    options, num_input_headers, amdHeadersPtr, header_include_names,
+                    notifyToCall, destUserData);
+        }
+    }
+    catch(const std::bad_alloc& ex)
+    {   // if allocation failed
         std::lock_guard<std::mutex> lock(p->mutex);
         p->concurrentBuilds--; // after this building
-        const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
-        if (newStatus != CL_SUCCESS)
-            return newStatus;
-        return status;
+        delete wrappedData;
+        return CL_OUT_OF_HOST_MEMORY;
     }
-    
-    // if devices list is supplied, we change associated devices for program
-    std::vector<cl_device_id> amdDevices(num_devices);
-    
-    for (cl_uint i = 0; i < num_devices; i++)
-    {
-        if (device_list[i] == nullptr)
-        {
-            delete wrappedData;
-            return CL_INVALID_DEVICE;
-        }
-        amdDevices[i] = static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
-    }
-    
-    const cl_int status = p->amdOclProgram->dispatch->clCompileProgram(
-            p->amdOclProgram, num_devices, amdDevices.data(),
-            options, num_input_headers, amdHeadersPtr, header_include_names,
-            notifyToCall, destUserData);
-    
-    wrappedData = nullptr; // consumed by original clBuildProgram
     
     std::lock_guard<std::mutex> lock(p->mutex);
-    p->concurrentBuilds--; // after this building
-    if (status != CL_INVALID_DEVICE)
-    {
-        const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
-        if (newStatus != CL_SUCCESS)
-            return newStatus;
-    }
+    // determine whether wrapped must deleted when out of memory happened
+    // delete wrappedData if clBuildProgram not finished successfully
+    // or callback is called
+    doDeleteWrappedData = wrappedData != nullptr &&
+            (status != CL_SUCCESS || wrappedData->callDone);
     
+    if (wrappedData == nullptr || !wrappedData->callDone)
+    {   // do it if callback not called
+        p->concurrentBuilds--; // after this building
+        if (status != CL_INVALID_DEVICE)
+        {
+            const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
+            if (newStatus != CL_SUCCESS)
+                status = newStatus;
+        }
+        if (wrappedData != nullptr)
+            wrappedData->inClFunction = true;
+    }
+    // delete wrappedData if clBuildProgram not finished successfully
+    // or callback is called
+    if (doDeleteWrappedData)
+    {
+        //std::cout << "Delete WrappedData: " << wrappedData << std::endl;
+        delete wrappedData;
+        wrappedData = nullptr;
+    }
     return status;
     }
     catch(const std::bad_alloc& ex)
     {
-        delete wrappedData; // delete only if original clBuildProgram is not called
+        if (doDeleteWrappedData)
+        {
+            //std::cout << "Delete WrappedData: " << wrappedData << std::endl;
+            delete wrappedData;
+        }
         return CL_OUT_OF_HOST_MEMORY;
     }
     catch(const std::exception& ex)

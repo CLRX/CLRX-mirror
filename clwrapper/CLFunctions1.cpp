@@ -1220,11 +1220,13 @@ clrxclBuildProgram(cl_program           program,
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
     try
     { // catching system_error
+    CLRXProgram* p = static_cast<CLRXProgram*>(program);
+    
     if (pfn_notify != nullptr)
     {
         wrappedData = new CLRXBuildProgramUserData;
         wrappedData->realNotify = pfn_notify;
-        wrappedData->clrxProgram = static_cast<CLRXProgram*>(program);
+        wrappedData->clrxProgram = p;
         wrappedData->realUserData = user_data;
         wrappedData->callDone = false;
         wrappedData->inClFunction = false;
@@ -1232,8 +1234,6 @@ clrxclBuildProgram(cl_program           program,
         //std::cout << "WrappedData: " << wrappedData << std::endl;
         notifyToCall = clrxBuildProgramNotifyWrapper;
     }
-    
-    CLRXProgram* p = static_cast<CLRXProgram*>(program);
     
     {
         std::lock_guard<std::mutex> lock(p->mutex);
@@ -1257,7 +1257,9 @@ clrxclBuildProgram(cl_program           program,
             for (cl_uint i = 0; i < num_devices; i++)
             {
                 if (device_list[i] == nullptr)
-                {
+                {   // if bad device
+                    std::lock_guard<std::mutex> lock(p->mutex);
+                    p->concurrentBuilds--; // after this building
                     delete wrappedData;
                     return CL_INVALID_DEVICE;
                 }
