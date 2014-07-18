@@ -1249,7 +1249,7 @@ clrxclBuildProgram(cl_program           program,
             p->amdOclProgram, 0, nullptr, options, notifyToCall,
             destUserData);
     else
-    {   // if devices list is supplied, we change associated devices for program
+    {   
         try
         {
             std::vector<cl_device_id> amdDevices(num_devices);
@@ -1279,6 +1279,8 @@ clrxclBuildProgram(cl_program           program,
             return CL_OUT_OF_HOST_MEMORY;
         }
     }
+    /* after this we update associated devices and decrease concurrentBuilds in
+     * in this place or in pfn_notify call */
     
     std::lock_guard<std::mutex> lock(p->mutex);
     // determine whether wrapped must deleted when out of memory happened
