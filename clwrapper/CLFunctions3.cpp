@@ -746,7 +746,7 @@ clrxclLinkProgram(cl_context           context,
         return nullptr;
     }
     
-    if (num_input_programs == 0 || input_programs != nullptr)
+    if (num_input_programs == 0 || input_programs == nullptr)
     {
         if (errcode_ret != nullptr)
             *errcode_ret = CL_INVALID_VALUE;

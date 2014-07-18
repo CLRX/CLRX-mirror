@@ -1556,7 +1556,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
         
         status = clrxInitKernelArgFlagsMap(p);
         if (status != CL_SUCCESS)
-        {   // free if error happeded
+        {   // free if error happened
             if (kernels != nullptr)
             {
                 for (cl_uint i = 0; i < kernelsToCreate; i++)
