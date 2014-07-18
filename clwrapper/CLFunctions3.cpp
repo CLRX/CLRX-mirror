@@ -614,6 +614,8 @@ clrxclCompileProgram(cl_program           program,
     
     {
         std::lock_guard<std::mutex> lock(p->mutex);
+        if (p->kernelsAttached != 0) // if kernels attached
+            return CL_INVALID_OPERATION;
         p->kernelArgFlagsInitialized = false;
         p->concurrentBuilds++;
     }
@@ -674,7 +676,7 @@ clrxclCompileProgram(cl_program           program,
     
     std::lock_guard<std::mutex> lock(p->mutex);
     // determine whether wrapped must deleted when out of memory happened
-    // delete wrappedData if clBuildProgram not finished successfully
+    // delete wrappedData if clCompileProgram not finished successfully
     // or callback is called
     doDeleteWrappedData = wrappedData != nullptr &&
             (status != CL_SUCCESS || wrappedData->callDone);
@@ -691,7 +693,7 @@ clrxclCompileProgram(cl_program           program,
         if (wrappedData != nullptr)
             wrappedData->inClFunction = true;
     }
-    // delete wrappedData if clBuildProgram not finished successfully
+    // delete wrappedData if clCompileProgram not finished successfully
     // or callback is called
     if (doDeleteWrappedData)
     {
