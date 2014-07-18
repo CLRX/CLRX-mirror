@@ -825,7 +825,6 @@ clrxclLinkProgram(cl_context           context,
                                 (&clrxDispatchRecord);
                     outProgram->amdOclProgram = amdProgram;
                     outProgram->context = c;
-                    outProgram->concurrentBuilds = 0;
                     clrxUpdateProgramAssocDevices(outProgram);
                     
                     wrappedData->clrxProgramFilled = true;

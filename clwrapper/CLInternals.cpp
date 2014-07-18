@@ -733,7 +733,6 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                     const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
                 outProgram->amdOclProgram = program;
                 outProgram->context = wrappedDataPtr->clrxContext;
-                outProgram->concurrentBuilds = 0;
                 clrxUpdateProgramAssocDevices(outProgram);
             }
             wrappedDataPtr->clrxProgram = outProgram;
