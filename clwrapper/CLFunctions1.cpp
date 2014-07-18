@@ -1557,13 +1557,17 @@ clrxclCreateKernelsInProgram(cl_program     program,
         status = clrxInitKernelArgFlagsMap(p);
         if (status != CL_SUCCESS)
         {   // free if error happeded
-            for (cl_uint i = 0; i < kernelsToCreate; i++)
-                if (p->amdOclProgram->dispatch->clReleaseKernel(kernels[i]) != CL_SUCCESS)
-                {
-                    std::cerr <<
-                        "Fatal Error at handling error at kernel creation!" << std::endl;
-                    abort();
-                }
+            if (kernels != nullptr)
+            {
+                for (cl_uint i = 0; i < kernelsToCreate; i++)
+                    if (p->amdOclProgram->dispatch->
+                        clReleaseKernel(kernels[i]) != CL_SUCCESS)
+                    {
+                        std::cerr << "Fatal Error at handling "
+                            "error at kernel creation!" << std::endl;
+                        abort();
+                    }
+            }
             return status;
         }
         
