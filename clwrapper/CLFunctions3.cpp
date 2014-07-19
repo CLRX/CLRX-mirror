@@ -846,6 +846,16 @@ clrxclLinkProgram(cl_context           context,
                 wrappedData = nullptr;
             }
         }
+        else if (amdProgram != nullptr)
+        {
+            outProgram = new CLRXProgram;
+            outProgram->dispatch = const_cast<CLRXIcdDispatch*>
+                        (&clrxDispatchRecord);
+            outProgram->amdOclProgram = amdProgram;
+            outProgram->context = c;
+            clrxUpdateProgramAssocDevices(outProgram);
+            clrxRetainOnlyCLRXContext(c);
+        }
     }
     catch(const std::bad_alloc& ex)
     {
