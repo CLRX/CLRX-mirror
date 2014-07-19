@@ -69,7 +69,7 @@ CLRXExtensionEntry clrxExtensionsTable[18] =
     { "clRetainDeviceEXT", (void*)clrxclRetainDeviceEXT }
 };
 
-/* management */
+/* dispatch structure */
 const CLRXIcdDispatch clrxDispatchRecord = 
 {
     clrxclGetPlatformIDs,
@@ -199,6 +199,39 @@ const CLRXIcdDispatch clrxDispatchRecord =
     nullptr, // clEnqueueAcquireDX9MediaSurfacesKHR,
     nullptr // clEnqueueReleaseDX9MediaSurfacesKHR
 };
+
+void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
+{
+    if (device->parent != nullptr)
+        if (device->refCount.fetch_sub(1) == 1)
+        {   // amdOclDevice has been already released, we release only our device
+            clrxReleaseOnlyCLRXDevice(device->parent);
+            delete device;
+        }
+}
+
+void clrxReleaseOnlyCLRXContext(CLRXContext* context)
+{
+    if (context->refCount.fetch_sub(1) == 1)
+    {   // amdOclContext has been already released, we release only our context
+        for (cl_uint i = 0; i < context->devicesNum; i++)
+            clrxReleaseOnlyCLRXDevice(context->devices[i]);
+        delete context;
+    }
+}
+
+void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
+{
+    if (memObject->refCount.fetch_sub(1) == 1)
+    {   // amdOclContext has been already released, we release only our context
+        clrxReleaseOnlyCLRXContext(memObject->context);
+        if (memObject->parent != nullptr)
+            clrxReleaseOnlyCLRXMemObject(memObject->parent);
+        if (memObject->buffer != nullptr)
+            clrxReleaseOnlyCLRXMemObject(memObject->buffer);
+        delete memObject;
+    }
+}
 
 void clrxWrapperInitialize()
 {
@@ -754,8 +787,7 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
     }
     
     void (*realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
-    if (!initializedByCallback || wrappedDataPtr->toDeleteByCallback)
-        // if not initialized by this callback to delete
+    if (!initializedByCallback) // if not initialized by this callback to delete
         delete wrappedDataPtr;
     
     realNotify(clrxProgram, realUserData);

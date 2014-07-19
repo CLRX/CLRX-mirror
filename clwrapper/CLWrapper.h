@@ -256,7 +256,6 @@ struct CLRX_INTERNAL CLRXLinkProgramUserData
     CLRXProgram* clrxProgram;
     void (*realNotify)(cl_program program, void * user_data);
     void* realUserData;
-    bool toDeleteByCallback;
 };
 
 struct CLRX_INTERNAL CLRXKernel: _cl_kernel
@@ -366,30 +365,14 @@ static inline void clrxRetainOnlyCLRXDeviceNTimes(CLRXDevice* device, cl_uint nt
         device->refCount.fetch_add(ntimes);
 }
 
-static inline void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
-{
-    if (device->parent != nullptr)
-        if (device->refCount.fetch_sub(1) == 1)
-        {   // amdOclDevice has been already released, we release only our device
-            clrxReleaseOnlyCLRXDevice(device->parent);
-            delete device;
-        }
-}
+CLRX_INTERNAL extern void clrxReleaseOnlyCLRXDevice(CLRXDevice* device);
 
 static inline void clrxRetainOnlyCLRXContext(CLRXContext* context)
 {
     context->refCount.fetch_add(1);
 }
 
-static inline void clrxReleaseOnlyCLRXContext(CLRXContext* context)
-{
-    if (context->refCount.fetch_sub(1) == 1)
-    {   // amdOclContext has been already released, we release only our context
-        for (cl_uint i = 0; i < context->devicesNum; i++)
-            clrxReleaseOnlyCLRXDevice(context->devices[i]);
-        delete context;
-    }
-}
+CLRX_INTERNAL extern void clrxReleaseOnlyCLRXContext(CLRXContext* context);
 
 static inline void clrxRetainOnlyCLRXCommandQueue(CLRXCommandQueue* cmdQueue)
 {
@@ -411,18 +394,7 @@ static inline void clrxRetainOnlyCLRXMemObject(CLRXMemObject* memObject)
     memObject->refCount.fetch_add(1);
 }
 
-static inline void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
-{
-    if (memObject->refCount.fetch_sub(1) == 1)
-    {   // amdOclContext has been already released, we release only our context
-        clrxReleaseOnlyCLRXContext(memObject->context);
-        if (memObject->parent != nullptr)
-            clrxReleaseOnlyCLRXMemObject(memObject->parent);
-        if (memObject->buffer != nullptr)
-            clrxReleaseOnlyCLRXMemObject(memObject->buffer);
-        delete memObject;
-    }
-}
+CLRX_INTERNAL extern void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject);
 
 static inline void clrxRetainOnlyCLRXProgram(CLRXProgram* program)
 {

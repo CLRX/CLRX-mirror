@@ -760,7 +760,6 @@ clrxclLinkProgram(cl_context           context,
         wrappedData->clrxProgram = nullptr;
         wrappedData->clrxContext = c;
         wrappedData->realUserData = user_data;
-        wrappedData->toDeleteByCallback = false;
         destUserData = wrappedData;
         notifyToCall = clrxLinkProgramNotifyWrapper;
     }
@@ -826,10 +825,9 @@ clrxclLinkProgram(cl_context           context,
                         
                         wrappedData->clrxProgramFilled = true;
                         wrappedData->clrxProgram = outProgram;
+                        initializedByCLCall = true; // force skip deletion of wrappedData
                     }
-                    else // error occurred, callback must delete wrappedData
-                        wrappedData->toDeleteByCallback = true;
-                    initializedByCLCall = true; // force skip deletion of wrappedData
+                    // error occurred and no callback called, delete wrappedData
                 }
                 else // get from wrapped data our program
                 {
