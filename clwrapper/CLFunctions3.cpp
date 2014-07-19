@@ -835,8 +835,10 @@ clrxclLinkProgram(cl_context           context,
                 {
                     if (amdProgram != nullptr) // only if returned not null program
                         outProgram = static_cast<CLRXProgram*>(wrappedData->clrxProgram);
-                    /* otherwise we do nothing and delete wrappedData if
+                    /* otherwise we do free own CLRXProgram and delete wrappedData if
                      * initialized by callback */
+                    else
+                        clrxReleaseOnlyCLRXProgram(wrappedData->clrxProgram);
                 }
             }
             
@@ -849,8 +851,7 @@ clrxclLinkProgram(cl_context           context,
         else if (amdProgram != nullptr)
         {
             outProgram = new CLRXProgram;
-            outProgram->dispatch = const_cast<CLRXIcdDispatch*>
-                        (&clrxDispatchRecord);
+            outProgram->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
             outProgram->amdOclProgram = amdProgram;
             outProgram->context = c;
             clrxUpdateProgramAssocDevices(outProgram);
