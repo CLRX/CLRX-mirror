@@ -734,6 +734,7 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                 outProgram->amdOclProgram = program;
                 outProgram->context = wrappedDataPtr->clrxContext;
                 clrxUpdateProgramAssocDevices(outProgram);
+                clrxRetainOnlyCLRXContext(wrappedDataPtr->clrxContext);
             }
             wrappedDataPtr->clrxProgram = outProgram;
             wrappedDataPtr->clrxProgramFilled = true;

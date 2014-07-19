@@ -739,14 +739,8 @@ clrxclLinkProgram(cl_context           context,
     }
     
     if ((num_devices != 0 && device_list == nullptr) ||
-        (num_devices == 0 && device_list != nullptr))
-    {
-        if (errcode_ret != nullptr)
-            *errcode_ret = CL_INVALID_VALUE;
-        return nullptr;
-    }
-    
-    if (num_input_programs == 0 || input_programs == nullptr)
+        (num_devices == 0 && device_list != nullptr) ||
+        (num_input_programs == 0 || input_programs == nullptr))
     {
         if (errcode_ret != nullptr)
             *errcode_ret = CL_INVALID_VALUE;
@@ -813,40 +807,44 @@ clrxclLinkProgram(cl_context           context,
                     0, nullptr, options, num_input_programs, 
                     amdInputPrograms.data(), notifyToCall, destUserData, errcode_ret);
         
-        bool initializedByCLCall = false;
+        if (wrappedData != nullptr)
         {
-            std::lock_guard<std::mutex> l(wrappedData->mutex);
-            if (!wrappedData->clrxProgramFilled)
+            bool initializedByCLCall = false;
             {
-                if (amdProgram != nullptr)
+                std::lock_guard<std::mutex> l(wrappedData->mutex);
+                if (!wrappedData->clrxProgramFilled)
                 {
-                    outProgram = new CLRXProgram;
-                    outProgram->dispatch = const_cast<CLRXIcdDispatch*>
-                                (&clrxDispatchRecord);
-                    outProgram->amdOclProgram = amdProgram;
-                    outProgram->context = c;
-                    clrxUpdateProgramAssocDevices(outProgram);
-                    
-                    wrappedData->clrxProgramFilled = true;
-                    wrappedData->clrxProgram = outProgram;
+                    if (amdProgram != nullptr)
+                    {
+                        outProgram = new CLRXProgram;
+                        outProgram->dispatch = const_cast<CLRXIcdDispatch*>
+                                    (&clrxDispatchRecord);
+                        outProgram->amdOclProgram = amdProgram;
+                        outProgram->context = c;
+                        clrxUpdateProgramAssocDevices(outProgram);
+                        clrxRetainOnlyCLRXContext(c);
+                        
+                        wrappedData->clrxProgramFilled = true;
+                        wrappedData->clrxProgram = outProgram;
+                    }
+                    else // error occurred, callback must delete wrappedData
+                        wrappedData->toDeleteByCallback = true;
+                    initializedByCLCall = true; // force skip deletion of wrappedData
                 }
-                else // error occurred, callback must delete wrappedData
-                    wrappedData->toDeleteByCallback = true;
-                initializedByCLCall = true; // force skip deletion of wrappedData
+                else // get from wrapped data our program
+                {
+                    if (amdProgram != nullptr) // only if returned not null program
+                        outProgram = static_cast<CLRXProgram*>(wrappedData->clrxProgram);
+                    /* otherwise we do nothing and delete wrappedData if
+                     * initialized by callback */
+                }
             }
-            else // get from wrapped data our program
-            {
-                if (amdProgram != nullptr) // only if returned not null program
-                    outProgram = static_cast<CLRXProgram*>(wrappedData->clrxProgram);
-                /* otherwise we do nothing and delete wrappedData if
-                 * initialized by callback */
+            
+            if (!initializedByCLCall)
+            {   /* delete if initialized by callback */
+                delete wrappedData;
+                wrappedData = nullptr;
             }
-        }
-        
-        if (!initializedByCLCall)
-        {   /* delete if initialized by callback */
-            delete wrappedData;
-            wrappedData = nullptr;
         }
     }
     catch(const std::bad_alloc& ex)
