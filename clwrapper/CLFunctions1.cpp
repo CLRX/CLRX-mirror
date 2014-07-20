@@ -408,8 +408,6 @@ clrxclCreateContext(const cl_context_properties * properties,
         return nullptr;
     }
     
-    CLRX_INITIALIZE_DEVICES_CONTEXT
-    
     cl_int error = CL_SUCCESS;
     /* create own context */
     CLRXContext* outContext = nullptr;
@@ -523,7 +521,29 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
         return nullptr;
     }
     
-    CLRX_INITIALIZE_DEVICES_CONTEXT
+    try
+    { std::call_once(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal error at device initialization: " << ex.what() << std::endl;
+        abort();
+    }
+    catch(...)
+    {
+        std::cerr << "Fatal and unknown error at device initialization" << std::endl;
+        abort();
+    }
+    if (platform->deviceInitStatus != CL_SUCCESS)
+    {
+        if (platform->amdOclPlatform->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
+        {
+            std::cerr << "Fatal Error at handling error at context creation!" << std::endl;
+            abort();
+        }
+        if (errcode_ret != nullptr)
+            *errcode_ret = platform->deviceInitStatus;
+        return nullptr;
+    }
     
     /* create own context */
     CLRXContext* outContext = nullptr;
