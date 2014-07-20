@@ -408,6 +408,8 @@ clrxclCreateContext(const cl_context_properties * properties,
         return nullptr;
     }
     
+    CLRX_INITIALIZE_DEVICES_CONTEXT
+    
     cl_int error = CL_SUCCESS;
     /* create own context */
     CLRXContext* outContext = nullptr;
@@ -520,6 +522,8 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             *errcode_ret = CL_OUT_OF_HOST_MEMORY;
         return nullptr;
     }
+    
+    CLRX_INITIALIZE_DEVICES_CONTEXT
     
     /* create own context */
     CLRXContext* outContext = nullptr;
