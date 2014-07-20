@@ -1247,10 +1247,10 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
                 if (argIndex >= kernelInfo.argsNum)
                     throw ParseException(lineNo, "Argument index out of range");
                 pos = tokPos+1;
-                kernelInfo.argInfos[argIndex].typeName = stringFromCStringDelim(
-                    kernelDesc+pos, sym.st_size-pos, '\n');
                 
                 KernelArg& argInfo = kernelInfo.argInfos[argIndex];
+                argInfo.typeName = stringFromCStringDelim(
+                    kernelDesc+pos, sym.st_size-pos, '\n');
                 
                 if (argInfo.argName.compare(0, 8, "unknown_") == 0 &&
                     argInfo.typeName != "sampler_t" &&
