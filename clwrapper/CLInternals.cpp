@@ -395,7 +395,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         return;
     }
     /* custom devices not listed in all devices */
-    cl_uint customDevicesNum;
+    cl_uint customDevicesNum = 0;
     status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
             platform->amdOclPlatform, CL_DEVICE_TYPE_CUSTOM, 0, nullptr,
             &customDevicesNum);
@@ -409,6 +409,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     
     if (status == CL_SUCCESS) // if some devices
         platform->devicesNum += customDevicesNum;
+    else
+        customDevicesNum = 0;
     
     try
     {
