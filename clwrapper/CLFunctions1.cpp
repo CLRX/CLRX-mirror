@@ -297,14 +297,23 @@ clrxclGetDeviceInfo(cl_device_id    device,
             break;
         case CL_DEVICE_PARENT_DEVICE_EXT:
         case CL_DEVICE_PARENT_DEVICE:
-            if (param_value != nullptr)
-            {
-                if (param_value_size < sizeof(cl_device_id))
-                    return CL_INVALID_VALUE;
-                *static_cast<cl_device_id*>(param_value) = d->parent;
+            if (d->platform->openCLVersionNum >= getOpenCLVersionNum(1, 2) ||
+                (d->platform->dispatch->clCreateSubDevicesEXT != nullptr &&
+                 param_name == CL_DEVICE_PARENT_DEVICE_EXT))
+            {   /* if OpenCL 1.2 or later or
+                 * clCreateSubDevicesEXT is available and
+                 *      CL_DEVICE_PARENT_DEVICE_EXT is param_name */
+                if (param_value != nullptr)
+                {
+                    if (param_value_size < sizeof(cl_device_id))
+                        return CL_INVALID_VALUE;
+                    *static_cast<cl_device_id*>(param_value) = d->parent;
+                }
+                if (param_value_size_ret != nullptr)
+                    *param_value_size_ret = sizeof(cl_device_id);
             }
-            if (param_value_size_ret != nullptr)
-                *param_value_size_ret = sizeof(cl_device_id);
+            else // if param_name is not available
+                return CL_INVALID_VALUE;
             break;
         default:
             return d->amdOclDevice->
@@ -413,8 +422,9 @@ clrxclCreateContext(const cl_context_properties * properties,
     try
     {
         outContext = new CLRXContext;
-        outContext->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+        outContext->dispatch = platform->dispatch;
         outContext->amdOclContext = amdContext;
+        outContext->openCLVersionNum = platform->openCLVersionNum;
         
         error = clrxSetContextDevices(outContext, num_devices, devices);
         if (error == CL_SUCCESS)
@@ -526,8 +536,9 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     try
     { 
         outContext = new CLRXContext;
-        outContext->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+        outContext->dispatch = platform->dispatch;
         outContext->amdOclContext = amdContext;
+        outContext->openCLVersionNum = platform->openCLVersionNum;
         
         try
         { std::call_once(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
@@ -617,14 +628,19 @@ clrxclGetContextInfo(cl_context         context,
     switch(param_name)
     {
         case CL_CONTEXT_NUM_DEVICES:
-            if (param_value != nullptr)
+            if (c->openCLVersionNum >= getOpenCLVersionNum(1, 1))
             {
-                if (param_value_size < sizeof(cl_uint))
-                    return CL_INVALID_VALUE;
-                *static_cast<cl_uint*>(param_value) = c->devicesNum;
+                if (param_value != nullptr)
+                {
+                    if (param_value_size < sizeof(cl_uint))
+                        return CL_INVALID_VALUE;
+                    *static_cast<cl_uint*>(param_value) = c->devicesNum;
+                }
+                if (param_value_size_ret != nullptr)
+                    *param_value_size_ret = sizeof(cl_uint);
             }
-            if (param_value_size_ret != nullptr)
-                *param_value_size_ret = sizeof(cl_uint);
+            else // if not available for OpenCL 1.0
+                return CL_INVALID_VALUE;
             break;
         case CL_CONTEXT_DEVICES:
             if (param_value != nullptr)
@@ -944,6 +960,9 @@ clrxclGetMemObjectInfo(cl_mem           memobj,
             break;
         case CL_MEM_ASSOCIATED_MEMOBJECT:
         {   /* check what is returned and translate it */
+            if (m->context->openCLVersionNum < getOpenCLVersionNum(1, 1))
+                return CL_INVALID_VALUE; /* if OpenCL 1.0 */
+            
             cl_int status = m->amdOclMemObject->
                 dispatch->clGetMemObjectInfo(m->amdOclMemObject, param_name,
                     param_value_size, param_value, param_value_size_ret);
@@ -990,8 +1009,8 @@ clrxclGetImageInfo(cl_mem           image,
     if (param_name != CL_IMAGE_BUFFER)
         return m->amdOclMemObject->dispatch->clGetImageInfo(m->amdOclMemObject, param_name,
                 param_value_size, param_value, param_value_size_ret);
-    else
-    {
+    else if (m->context->openCLVersionNum >= getOpenCLVersionNum(1, 2))
+    {   /* only if OpenCL 1.2 or later */
         if (param_value != nullptr)
         {
             if (param_value_size < sizeof(cl_mem))
@@ -1002,6 +1021,8 @@ clrxclGetImageInfo(cl_mem           image,
             *param_value_size_ret = sizeof(cl_mem);
         return CL_SUCCESS;
     }
+    else // CL_IMAGE_BUFFER is unsupported by earlier OpenCL version
+        return CL_INVALID_VALUE;
 }
 
 CL_API_ENTRY cl_sampler CL_API_CALL
@@ -1524,7 +1545,7 @@ clrxclCreateKernel(cl_program      program,
         abort();
     }
     
-    outKernel->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+    outKernel->dispatch = p->dispatch;
     outKernel->amdOclKernel = amdKernel;
     outKernel->program = p;
     
@@ -1622,7 +1643,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 }
                 
                 CLRXKernel* outKernel = new CLRXKernel(argFlagMapIt->second);
-                outKernel->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+                outKernel->dispatch = p->dispatch;
                 outKernel->amdOclKernel = kernels[kp];
                 outKernel->program = p;
                 kernels[kp] = outKernel;

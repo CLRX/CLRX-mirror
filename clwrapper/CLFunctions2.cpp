@@ -121,14 +121,19 @@ clrxclGetEventInfo(cl_event         event,
     switch (param_name)
     {
         case CL_EVENT_CONTEXT:
-            if (param_value != nullptr)
+            if (e->context->openCLVersionNum >= getOpenCLVersionNum(1, 1))
             {
-                if (param_value_size < sizeof(cl_context))
-                    return CL_INVALID_VALUE;
-                *static_cast<cl_context*>(param_value) = e->context;
+                if (param_value != nullptr)
+                {
+                    if (param_value_size < sizeof(cl_context))
+                        return CL_INVALID_VALUE;
+                    *static_cast<cl_context*>(param_value) = e->context;
+                }
+                if (param_value_size_ret != nullptr)
+                    *param_value_size_ret = sizeof(cl_context);
             }
-            if (param_value_size_ret != nullptr)
-                *param_value_size_ret = sizeof(cl_context);
+            else // if OpenCL 1.0
+                return CL_INVALID_VALUE;
             break;
         case CL_EVENT_COMMAND_QUEUE:
             if (param_value != nullptr)
@@ -527,7 +532,7 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
         try // allocate our event object
         {
             outEvent = new CLRXEvent;
-            outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            outEvent->dispatch = q->dispatch;
             outEvent->commandQueue = q;
             outEvent->context = q->context;
         }
@@ -655,7 +660,7 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
         try // allocate our event object
         {
             outEvent = new CLRXEvent;
-            outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            outEvent->dispatch = q->dispatch;
             outEvent->commandQueue = q;
             outEvent->context = q->context;
         }

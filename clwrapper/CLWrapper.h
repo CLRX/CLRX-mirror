@@ -167,6 +167,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
     CLRXDevice** devices;
     size_t propertiesNum;
     cl_context_properties* properties;
+    uint32_t openCLVersionNum;
 
     CLRXContext() : refCount(1)
     {
@@ -174,6 +175,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
         devices = nullptr;
         propertiesNum = 0;
         properties = nullptr;
+        openCLVersionNum = 0;
     }
 
     ~CLRXContext()
@@ -501,7 +503,7 @@ static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
         return nullptr; \
     } \
     \
-    outObject->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord); \
+    outObject->dispatch = c->dispatch; \
     outObject->AMDOBJECTMEMBER = AMDOBJECT; \
     outObject->context = c; \
     \

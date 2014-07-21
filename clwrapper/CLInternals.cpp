@@ -323,8 +323,9 @@ void clrxWrapperInitialize()
                 
                 /* clrxPlatform init */
                 clrxPlatform.amdOclPlatform = amdOclPlatform;
-                clrxPlatform.dispatch =
-                    const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+                clrxPlatform.dispatch = new CLRXIcdDispatch;
+                ::memcpy(clrxPlatform.dispatch, &clrxDispatchRecord,
+                         sizeof(CLRXIcdDispatch));
                 
                 // add to extensions "cl_radeon_extender"
                 size_t extsSize;
@@ -397,6 +398,26 @@ void clrxWrapperInitialize()
                             extEntry.address = nullptr;
                     /* end of p->extEntries for platform */
                 }
+                
+                /* filtering for different OpenCL standards */
+                size_t icdEntriesToKept = CLRXICD_ENTRIES_NUM;
+                if (clrxPlatform.openCLVersionNum < getOpenCLVersionNum(1, 1))
+                    // if earlier than OpenCL 1.1
+                    icdEntriesToKept =
+                            offsetof(CLRXIcdDispatch, clSetEventCallback)/sizeof(void*);
+                else if (clrxPlatform.openCLVersionNum < getOpenCLVersionNum(1, 2))
+                    // if earlier than OpenCL 1.2
+                    icdEntriesToKept =
+                            offsetof(CLRXIcdDispatch, clCreateSubDevices)/sizeof(void*);
+                
+                // zeroing unsupported entries for later version of OpenCL standard
+                std::fill(clrxPlatform.dispatch->entries + icdEntriesToKept,
+                          clrxPlatform.dispatch->entries + CLRXICD_ENTRIES_NUM, nullptr);
+                
+                for (size_t k = 0; k < icdEntriesToKept; k++)
+                    /* disable function when not in original driver */
+                    if (amdOclPlatform->dispatch->entries[k] == nullptr)
+                        clrxPlatform.dispatch->entries[k] = nullptr;
             }
         }
         
@@ -501,7 +522,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         for (cl_uint i = 0; i < platform->devicesNum; i++)
         {
             CLRXDevice& clrxDevice = platform->devicesArray[i];
-            clrxDevice.dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            clrxDevice.dispatch = platform->dispatch;
             clrxDevice.amdOclDevice = amdDevices[i];
             clrxDevice.platform = platform;
             
@@ -848,8 +869,7 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
             if (program != nullptr)
             {
                 outProgram = new CLRXProgram;
-                outProgram->dispatch =
-                    const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+                outProgram->dispatch = wrappedDataPtr->clrxContext->dispatch;
                 outProgram->amdOclProgram = program;
                 outProgram->context = wrappedDataPtr->clrxContext;
                 clrxUpdateProgramAssocDevices(outProgram);
@@ -887,7 +907,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
     try
     {
         outProgram = new CLRXProgram;
-        outProgram->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+        outProgram->dispatch = c->dispatch;
         outProgram->amdOclProgram = amdProgram;
         outProgram->context = c;
         error = clrxUpdateProgramAssocDevices(outProgram);
@@ -921,7 +941,7 @@ cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
         try
         {
             outEvent = new CLRXEvent;
-            outEvent->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            outEvent->dispatch = q->dispatch;
             outEvent->amdOclEvent = amdEvent;
             outEvent->commandQueue = q;
             outEvent->context = q->context;
@@ -954,7 +974,7 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
         for (dp = 0; dp < devicesNum; dp++)
         {
             CLRXDevice* device = new CLRXDevice;
-            device->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            device->dispatch = d->dispatch;
             device->amdOclDevice = out_devices[dp];
             device->platform = d->platform;
             device->parent = d;

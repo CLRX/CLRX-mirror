@@ -816,8 +816,7 @@ clrxclLinkProgram(cl_context           context,
                     if (amdProgram != nullptr)
                     {
                         outProgram = new CLRXProgram;
-                        outProgram->dispatch = const_cast<CLRXIcdDispatch*>
-                                    (&clrxDispatchRecord);
+                        outProgram->dispatch = c->dispatch;
                         outProgram->amdOclProgram = amdProgram;
                         outProgram->context = c;
                         clrxUpdateProgramAssocDevices(outProgram);
@@ -849,7 +848,7 @@ clrxclLinkProgram(cl_context           context,
         else if (amdProgram != nullptr)
         {
             outProgram = new CLRXProgram;
-            outProgram->dispatch = const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
+            outProgram->dispatch = c->dispatch;
             outProgram->amdOclProgram = amdProgram;
             outProgram->context = c;
             clrxUpdateProgramAssocDevices(outProgram);

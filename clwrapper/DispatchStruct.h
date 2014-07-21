@@ -404,6 +404,8 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clReleaseDeviceEXT)(
 
 typedef void *CLRXpfn_emtyFunction;
 
+#define CLRXICD_ENTRIES_NUM (119U)
+
 typedef union _CLRXIcdDispatch
 {
     struct
@@ -535,7 +537,7 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_emtyFunction clEnqueueAcquireDX9MediaSurfacesKHR;
         CLRXpfn_emtyFunction clEnqueueReleaseDX9MediaSurfacesKHR;
     };
-    void* entries[119];
+    void* entries[CLRXICD_ENTRIES_NUM];
 } CLRXIcdDispatch;
 
 struct _cl_platform_id
