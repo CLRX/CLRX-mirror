@@ -191,8 +191,6 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     
     if (platform == nullptr)
         return CL_INVALID_PLATFORM;
-    if (device_type == 0)
-        return CL_INVALID_DEVICE_TYPE;
     
     if (num_entries == 0 && devices != nullptr)
         return CL_INVALID_VALUE;
