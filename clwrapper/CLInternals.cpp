@@ -25,6 +25,8 @@
 #include <thread>
 #include <mutex>
 #include <cstring>
+#include <atomic>
+#include <cstddef>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
 #include "CLWrapper.h"
@@ -998,23 +1000,27 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     if (ptype != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
         return CL_SUCCESS; // do nothing if not executable
     
-    size_t* binarySizes = nullptr;
-    char** binaries = nullptr;
+    unsigned char** binaries = nullptr;
     try
     {
-        binarySizes = new size_t[program->assocDevicesNum];
-        binaries = new char*[program->assocDevicesNum];
-        std::fill(binaries, binaries + program->assocDevicesNum, nullptr);
+        std::vector<size_t> binarySizes(program->assocDevicesNum);
         
         status = program->amdOclProgram->dispatch->clGetProgramInfo(
                 program->amdOclProgram, CL_PROGRAM_BINARY_SIZES,
-                sizeof(size_t)*program->assocDevicesNum, binarySizes, nullptr);
+                sizeof(size_t)*program->assocDevicesNum, binarySizes.data(), nullptr);
         if (status != CL_SUCCESS)
         {
             std::cerr << "Cant get program binary sizes!" << std::endl;
             abort();
         }
-        binaries[0] = new char[binarySizes[0]];
+        
+        binaries = new unsigned char*[program->assocDevicesNum];
+        std::fill(binaries, binaries + program->assocDevicesNum, nullptr);
+        
+        for (cl_uint i = 0; i < program->assocDevicesNum; i++)
+            if (binarySizes[i] != 0) // if available
+                binaries[i] = new unsigned char[binarySizes[i]];
+        
         status = program->amdOclProgram->dispatch->clGetProgramInfo(
                 program->amdOclProgram, CL_PROGRAM_BINARIES,
                 sizeof(char*)*program->assocDevicesNum, binaries, nullptr);
@@ -1023,38 +1029,55 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             std::cerr << "Cant get program binaries!" << std::endl;
             abort();
         }
-        
-        std::unique_ptr<AmdMainBinaryBase> amdBin(
-            createAmdBinaryFromCode(binarySizes[0], binaries[0],
-                         AMDBIN_CREATE_KERNELINFO));
-        size_t kernelsNum = amdBin->getKernelInfosNum();
-        const KernelInfo* kernelInfos = amdBin->getKernelInfos();
-        /* create kernel argsflags map (for setKernelArg) */
-        for (size_t i = 0; i < kernelsNum; i++)
+        /* get kernel arg info from all binaries */
+        for (cl_uint i = 0; i < program->assocDevicesNum; i++)
         {
-            const KernelInfo& kernelInfo = kernelInfos[i];
-            std::vector<bool> kernelFlags(kernelInfo.argsNum<<1);
-            for (cxuint k = 0; k < kernelInfo.argsNum; k++)
+            std::unique_ptr<AmdMainBinaryBase> amdBin(
+                createAmdBinaryFromCode(binarySizes[i], (char*)(binaries[i]),
+                             AMDBIN_CREATE_KERNELINFO));
+            size_t kernelsNum = amdBin->getKernelInfosNum();
+            const KernelInfo* kernelInfos = amdBin->getKernelInfos();
+            /* create kernel argsflags map (for setKernelArg) */
+            for (size_t i = 0; i < kernelsNum; i++)
             {
-                const KernelArg& karg = kernelInfo.argInfos[k];
-                // if mem object (image or
-                kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
-                        (karg.ptrSpace == KernelPtrSpace::GLOBAL ||
-                         karg.ptrSpace == KernelPtrSpace::CONSTANT)) ||
-                         karg.argType == KernelArgType::IMAGE);
-                // if sampler
-                kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
+                const KernelInfo& kernelInfo = kernelInfos[i];
+                std::vector<bool> kernelFlags(kernelInfo.argsNum<<1);
+                for (cxuint k = 0; k < kernelInfo.argsNum; k++)
+                {
+                    const KernelArg& karg = kernelInfo.argInfos[k];
+                    // if mem object (image or
+                    kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
+                            (karg.ptrSpace == KernelPtrSpace::GLOBAL ||
+                             karg.ptrSpace == KernelPtrSpace::CONSTANT)) ||
+                             karg.argType == KernelArgType::IMAGE);
+                    // if sampler
+                    kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
+                }
+                
+                auto insertInfo = program->kernelArgFlagsMap.insert(
+                    std::make_pair(kernelInfo.kernelName, kernelFlags));
+                
+                if (!insertInfo.second)
+                { // if not inserted (already exists)
+                    if ((insertInfo.first)->second != kernelFlags)
+                    {   /* if not match!!! */
+                        for (cl_uint x = 0; x < program->assocDevicesNum; x++)
+                            delete[] binaries[x];
+                        delete[] binaries;
+                        return CL_INVALID_KERNEL_DEFINITION;
+                    }
+                }
             }
-            program->kernelArgFlagsMap.insert(std::make_pair(kernelInfo.kernelName,
-                        std::move(kernelFlags)));
         }
     }
     catch(const std::bad_alloc& ex)
     {
         if (binaries != nullptr)
-            delete[] binaries[0];
-        delete[] binarySizes;
-        delete[] binaries;
+        {
+            for (cl_uint x = 0; x < program->assocDevicesNum; x++)
+                delete[] binaries[x];
+            delete[] binaries;
+        }
         return CL_OUT_OF_HOST_MEMORY;
     }
     catch(const std::exception& ex)
@@ -1065,9 +1088,11 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     }
     
     if (binaries != nullptr)
-        delete[] binaries[0];
-    delete[] binarySizes;
-    delete[] binaries;
+    {
+        for (cl_uint x = 0; x < program->assocDevicesNum; x++)
+            delete[] binaries[x];
+        delete[] binaries;
+    }
     program->kernelArgFlagsInitialized = true;
     return CL_SUCCESS;
 }
