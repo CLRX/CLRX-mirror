@@ -80,6 +80,14 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #include <unordered_map>
 #include <CLRX/Utilities.h>
 
+struct CLRXExtensionEntry
+{
+    const char* funcname;
+    void* address;
+};
+
+CLRX_INTERNAL extern CLRXExtensionEntry clrxExtensionsTable[18];
+
 struct CLRXPlatform;
 
 struct CLRX_INTERNAL CLRXDevice: _cl_device_id
@@ -92,7 +100,7 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
     size_t extensionsSize;
     const char* version;
     size_t versionSize;
-
+    
     CLRXDevice() : refCount(1)
     {
         platform = nullptr;
@@ -122,6 +130,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     cl_uint devicesNum;
     CLRXDevice* devicesArray;
     CLRXDevice** devicePtrs;
+    CLRXExtensionEntry extEntries[sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry)];
     cl_int deviceInitStatus;
 
     CLRXPlatform()
@@ -300,13 +309,6 @@ struct CLRX_INTERNAL CLRXSampler: _cl_sampler
 };
 
 /* internals */
-
-struct CLRXExtensionEntry
-{
-    const char* funcname;
-    void* address;
-};
-
 CLRX_INTERNAL extern std::once_flag clrxOnceFlag;
 CLRX_INTERNAL extern bool useCLRXWrapper;
 CLRX_INTERNAL extern cl_uint amdOclNumPlatforms;
@@ -323,7 +325,6 @@ CLRX_INTERNAL extern CLRXpfn_clGetExtensionFunctionAddress
         amdOclGetExtensionFunctionAddress;
 
 CLRX_INTERNAL extern const CLRXIcdDispatch clrxDispatchRecord;
-CLRX_INTERNAL extern CLRXExtensionEntry clrxExtensionsTable[18];
 
 /* internal routines */
 

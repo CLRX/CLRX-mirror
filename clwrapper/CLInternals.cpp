@@ -309,24 +309,43 @@ void clrxWrapperInitialize()
         
         if (useCLRXWrapper)
         {
+            const size_t clrxExtEntriesNum =
+                    sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
+            
             clrxPlatforms = new CLRXPlatform[platformCount];
             for (cl_uint i = 0; i < platformCount; i++)
             {
                 if (amdOclPlatforms[i] == nullptr)
                     continue;
                 
+                const cl_platform_id amdOclPlatform = amdOclPlatforms[i];
+                CLRXPlatform& clrxPlatform = clrxPlatforms[i];
+                
+                /* initialize extTable */
+                std::copy(clrxExtensionsTable, clrxExtensionsTable + clrxExtEntriesNum,
+                          clrxPlatform.extEntries);
+                
+                /* update p->extEntries for platform */
+                for (CLRXExtensionEntry& extEntry: clrxPlatform.extEntries)
+                    // erase CLRX extension entry if not reflected in AMD extensions
+                    if (amdOclPlatform->dispatch->
+                        clGetExtensionFunctionAddressForPlatform
+                                (amdOclPlatform, extEntry.funcname) == nullptr)
+                        extEntry.address = nullptr;
+                /* end of clrxExtensionsTable */
+                
                 /* clrxPlatform init */
-                clrxPlatforms[i].amdOclPlatform = amdOclPlatforms[i];
-                clrxPlatforms[i].dispatch =
+                clrxPlatform.amdOclPlatform = amdOclPlatform;
+                clrxPlatform.dispatch =
                     const_cast<CLRXIcdDispatch*>(&clrxDispatchRecord);
                 
                 // add to extensions "cl_radeon_extender"
                 size_t extsSize;
-                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                             CL_PLATFORM_EXTENSIONS, 0, nullptr, &extsSize) != CL_SUCCESS)
                     continue;
                 char* extsBuffer = new char[extsSize + 19];
-                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                         CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer,
                         nullptr) != CL_SUCCESS)
                 {
@@ -337,16 +356,16 @@ void clrxWrapperInitialize()
                     ::strcat(extsBuffer, " cl_radeon_extender");
                 else
                     ::strcat(extsBuffer, "cl_radeon_extender");
-                clrxPlatforms[i].extensions = extsBuffer;
-                clrxPlatforms[i].extensionsSize = ::strlen(extsBuffer)+1;
+                clrxPlatform.extensions = extsBuffer;
+                clrxPlatform.extensionsSize = ::strlen(extsBuffer)+1;
                 
                 // add to version " (clrx 0.0)"
                 size_t versionSize;
-                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                             CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
                     continue;
                 char* versionBuffer = new char[versionSize+20];
-                if (amdOclPlatforms[i]->dispatch->clGetPlatformInfo(amdOclPlatforms[i],
+                if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                         CL_PLATFORM_VERSION, versionSize,
                         versionBuffer, nullptr) != CL_SUCCESS)
                 {
@@ -354,8 +373,8 @@ void clrxWrapperInitialize()
                     continue;
                 }
                 ::strcat(versionBuffer, " (clrx 0.0)");
-                clrxPlatforms[i].version = versionBuffer;
-                clrxPlatforms[i].versionSize = ::strlen(versionBuffer)+1;
+                clrxPlatform.version = versionBuffer;
+                clrxPlatform.versionSize = ::strlen(versionBuffer)+1;
             }
         }
         

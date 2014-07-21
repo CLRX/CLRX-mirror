@@ -1066,7 +1066,20 @@ clrxclGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
     
     if (platform == nullptr)
         return nullptr;
-    return clrxclGetExtensionFunctionAddress(func_name);
+    
+    const CLRXPlatform* p = static_cast<CLRXPlatform*>(platform);
+    const CLRXExtensionEntry tmp = {func_name, nullptr};
+    const size_t length = sizeof(p->extEntries)/sizeof(CLRXExtensionEntry);
+    const CLRXExtensionEntry* entry = std::lower_bound(p->extEntries,
+           p->extEntries + length,
+           tmp, [](const CLRXExtensionEntry& l, const CLRXExtensionEntry& r) -> bool
+           { return ::strcmp(l.funcname, r.funcname)<0; });
+    
+    if (entry == p->extEntries + length)
+        return nullptr;
+    if (::strcmp(func_name, entry->funcname)!=0)
+        return nullptr;
+    return entry->address;
 }
 
 CL_API_ENTRY cl_mem CL_API_CALL
