@@ -216,7 +216,7 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
         return p->deviceInitStatus;
     
     /* real function */
-    /* if not all devices, we get from original function and translate them,
+    /* we get from original function and translate them,
      * function must returns devices in original order */
     cl_uint myNumDevices;
     const cl_int status = p->amdOclPlatform->dispatch->clGetDeviceIDs(
