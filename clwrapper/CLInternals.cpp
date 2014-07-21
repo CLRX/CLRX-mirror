@@ -321,19 +321,6 @@ void clrxWrapperInitialize()
                 const cl_platform_id amdOclPlatform = amdOclPlatforms[i];
                 CLRXPlatform& clrxPlatform = clrxPlatforms[i];
                 
-                /* initialize extTable */
-                std::copy(clrxExtensionsTable, clrxExtensionsTable + clrxExtEntriesNum,
-                          clrxPlatform.extEntries);
-                
-                /* update p->extEntries for platform */
-                for (CLRXExtensionEntry& extEntry: clrxPlatform.extEntries)
-                    // erase CLRX extension entry if not reflected in AMD extensions
-                    if (amdOclPlatform->dispatch->
-                        clGetExtensionFunctionAddressForPlatform
-                                (amdOclPlatform, extEntry.funcname) == nullptr)
-                        extEntry.address = nullptr;
-                /* end of clrxExtensionsTable */
-                
                 /* clrxPlatform init */
                 clrxPlatform.amdOclPlatform = amdOclPlatform;
                 clrxPlatform.dispatch =
@@ -375,6 +362,41 @@ void clrxWrapperInitialize()
                 ::strcat(versionBuffer, " (clrx 0.0)");
                 clrxPlatform.version = versionBuffer;
                 clrxPlatform.versionSize = ::strlen(versionBuffer)+1;
+                
+                /* parse OpenCL version */
+                cxuint openCLmajor = 0;
+                cxuint openCLminor = 0;
+                const char* verEnd = nullptr;
+                if (::strncmp(versionBuffer, "OpenCL ", 7) == 0)
+                {
+                    openCLmajor = CLRX::cstrtoui(versionBuffer + 7, verEnd);
+                    if (verEnd != nullptr && *verEnd == '.')
+                    {
+                        const char* verEnd2 = nullptr;
+                        openCLminor = CLRX::cstrtoui(verEnd + 1, verEnd2);
+                        if (openCLmajor > UINT16_MAX || openCLminor > UINT16_MAX)
+                            openCLmajor = openCLminor = 0; // if failed
+                    }
+                    clrxPlatform.openCLVersionNum = getOpenCLVersionNum(
+                                    openCLmajor, openCLminor);
+                }
+                /*std::cout << "Platform OCL version: " <<
+                        openCLmajor << "." << openCLminor << std::endl;*/
+                
+                /* initialize extTable */
+                std::copy(clrxExtensionsTable, clrxExtensionsTable + clrxExtEntriesNum,
+                          clrxPlatform.extEntries);
+                
+                if (clrxPlatform.openCLVersionNum >= getOpenCLVersionNum(1, 2))
+                {   /* update p->extEntries for platform */
+                    for (CLRXExtensionEntry& extEntry: clrxPlatform.extEntries)
+                        // erase CLRX extension entry if not reflected in AMD extensions
+                        if (amdOclPlatform->dispatch->
+                            clGetExtensionFunctionAddressForPlatform
+                                    (amdOclPlatform, extEntry.funcname) == nullptr)
+                            extEntry.address = nullptr;
+                    /* end of p->extEntries for platform */
+                }
             }
         }
         
@@ -419,9 +441,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         platform->devicesNum = 0; // reset
     
     /* check whether OpenCL 1.2 or later */
-    bool isOCL12OrLater = (::strncmp(platform->version, "OpenCL ", 7) == 0) &&
-        ((platform->version[7] > '1' || platform->version[8] != '.') ||
-         (platform->version[7] == '1' && platform->version[9] >= '2'));
+    bool isOCL12OrLater = platform->openCLVersionNum >= getOpenCLVersionNum(1, 2);
     //std::cout << "IsOCl12OrLater: " << isOCL12OrLater << std::endl;
     
     /* custom devices not listed in all devices */

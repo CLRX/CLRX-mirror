@@ -118,6 +118,9 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
     }
 };
 
+static inline uint32_t getOpenCLVersionNum(uint16_t major, uint16_t minor)
+{ return (cxuint(major)<<16) | minor; }
+
 struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
 {
     cl_platform_id amdOclPlatform;
@@ -131,8 +134,9 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     CLRXDevice* devicesArray;
     CLRXDevice** devicePtrs;
     CLRXExtensionEntry extEntries[sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry)];
+    uint32_t openCLVersionNum; /* major - upper half, minor - lower half */
     cl_int deviceInitStatus;
-
+    
     CLRXPlatform()
     {
         extensions = nullptr;
@@ -143,6 +147,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
         devicesArray = nullptr;
         devicePtrs = nullptr;
         deviceInitStatus = CL_SUCCESS;
+        openCLVersionNum = 0;
     }
 
     ~CLRXPlatform()
