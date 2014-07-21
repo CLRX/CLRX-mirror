@@ -423,8 +423,6 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             if (status != CL_SUCCESS)
                 break;
             
-            clrxDevice.type = devType;
-            
             if ((devType & CL_DEVICE_TYPE_GPU) == 0)
                 continue; // do not change extensions if not gpu
             
@@ -872,7 +870,6 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
             device->amdOclDevice = out_devices[dp];
             device->platform = d->platform;
             device->parent = d;
-            device->type = d->type;
             if (d->extensionsSize != 0)
             {
                 device->extensionsSize = d->extensionsSize;

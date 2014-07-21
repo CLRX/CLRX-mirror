@@ -87,7 +87,6 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
     std::atomic<size_t> refCount;
     cl_device_id amdOclDevice;
     CLRXPlatform* platform;
-    cl_device_type type;
     CLRXDevice* parent;
     const char* extensions;
     size_t extensionsSize;
@@ -97,7 +96,6 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
     CLRXDevice() : refCount(1)
     {
         platform = nullptr;
-        type = 0;
         extensions = nullptr;
         extensionsSize = 0;
         version = nullptr;

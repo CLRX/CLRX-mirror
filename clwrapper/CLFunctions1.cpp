@@ -216,27 +216,40 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
         return p->deviceInitStatus;
     
     /* real function */
-    cl_uint outIdx = 0;
-    if (p->devicesArray != nullptr)
-    {
-        for (cl_uint i = 0; i < p->devicesNum; i++)
-        {
-            CLRXDevice& clrxDevice = p->devicesArray[i];
-            if ((clrxDevice.type & device_type) == 0)
-                continue;
-            if (num_entries != 0 && outIdx < num_entries)
-            {
-                if (devices != nullptr)
-                    devices[outIdx] = &clrxDevice;
-            }
-            outIdx++;
-        }
+    if (device_type == CL_DEVICE_TYPE_ALL)
+    {   /* if all devices, we only get already retrieved devices from platform */
+        if (devices != nullptr)
+            std::copy(p->devicePtrs, p->devicePtrs +
+                    std::min(num_entries, p->devicesNum), devices);
+        
+        if (num_devices != nullptr)
+            *num_devices = p->devicesNum;
+        return (p->devicesNum != 0) ? CL_SUCCESS : CL_DEVICE_NOT_FOUND;
     }
-    
-    if (num_devices != nullptr)
-        *num_devices = outIdx;
-    
-    return (outIdx != 0) ? CL_SUCCESS : CL_DEVICE_NOT_FOUND;
+    else
+    {   /* if not all devices, we get from original function and translate them,
+         * function must returns devices in original order */
+        cl_uint myNumDevices;
+        const cl_int status = p->amdOclPlatform->dispatch->clGetDeviceIDs(
+                p->amdOclPlatform, device_type, num_entries, devices, &myNumDevices);
+        if (status == CL_DEVICE_NOT_FOUND)
+        {
+            if (num_devices != nullptr)
+                *num_devices = 0;
+            return status;
+        }
+        if (status != CL_SUCCESS)
+            return status;
+        
+        if (devices != nullptr)
+            translateAMDDevicesIntoCLRXDevices(p->devicesNum,
+                    const_cast<const CLRXDevice**>(p->devicePtrs),
+                    std::min(myNumDevices, num_entries), devices);
+        
+        if (num_devices != nullptr)
+            *num_devices = myNumDevices;
+        return CL_SUCCESS;
+    }
 }
 
 CL_API_ENTRY cl_int CL_API_CALL
