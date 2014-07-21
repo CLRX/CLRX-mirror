@@ -397,23 +397,32 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     if (status == CL_DEVICE_NOT_FOUND)
         platform->devicesNum = 0; // reset
     
+    /* check whether OpenCL 1.2 or later */
+    bool isOCL12OrLater = (::strncmp(platform->version, "OpenCL ", 7) == 0) &&
+        ((platform->version[7] == '1' && platform->version[9] >= '2') ||
+         (platform->version[7] > '1'));
+    //std::cout << "IsOCl12OrLater: " << isOCL12OrLater << std::endl;
+    
     /* custom devices not listed in all devices */
     cl_uint customDevicesNum = 0;
-    status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
-            platform->amdOclPlatform, CL_DEVICE_TYPE_CUSTOM, 0, nullptr,
-            &customDevicesNum);
-    
-    if (status != CL_SUCCESS && status != CL_DEVICE_NOT_FOUND)
+    if (isOCL12OrLater)
     {
-        platform->devicesNum = 0;
-        platform->deviceInitStatus = status;
-        return;
+        status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
+                platform->amdOclPlatform, CL_DEVICE_TYPE_CUSTOM, 0, nullptr,
+                &customDevicesNum);
+        
+        if (status != CL_SUCCESS && status != CL_DEVICE_NOT_FOUND)
+        {
+            platform->devicesNum = 0;
+            platform->deviceInitStatus = status;
+            return;
+        }
+        
+        if (status == CL_SUCCESS) // if some devices
+            platform->devicesNum += customDevicesNum;
+        else // status == CL_DEVICE_NOT_FOUND
+            customDevicesNum = 0;
     }
-    
-    if (status == CL_SUCCESS) // if some devices
-        platform->devicesNum += customDevicesNum;
-    else // status == CL_DEVICE_NOT_FOUND
-        customDevicesNum = 0;
     
     try
     {
