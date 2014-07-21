@@ -427,6 +427,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         if (status != CL_SUCCESS)
         {
             delete[] platform->devicesArray;
+            platform->devicesNum = 0;
             platform->devicesArray = nullptr;
             platform->deviceInitStatus = status;
             return;
@@ -440,6 +441,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             if (status != CL_SUCCESS)
             {
                 delete[] platform->devicesArray;
+                platform->devicesNum = 0;
                 platform->devicesArray = nullptr;
                 platform->deviceInitStatus = status;
                 return;
