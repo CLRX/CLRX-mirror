@@ -394,6 +394,22 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         platform->deviceInitStatus = status;
         return;
     }
+    /* custom devices not listed in all devices */
+    cl_uint customDevicesNum;
+    status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
+            platform->amdOclPlatform, CL_DEVICE_TYPE_CUSTOM, 0, nullptr,
+            &customDevicesNum);
+    
+    if (status != CL_SUCCESS && status != CL_DEVICE_NOT_FOUND)
+    {
+        platform->devicesNum = 0;
+        platform->deviceInitStatus = status;
+        return;
+    }
+    
+    if (status == CL_SUCCESS) // if some devices
+        platform->devicesNum += customDevicesNum;
+    
     try
     {
         std::vector<cl_device_id> amdDevices(platform->devicesNum);
@@ -401,8 +417,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     
         /* get amd devices */
         status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
-                platform->amdOclPlatform, CL_DEVICE_TYPE_ALL, platform->devicesNum,
-                amdDevices.data(), nullptr);
+                platform->amdOclPlatform, CL_DEVICE_TYPE_ALL,
+                platform->devicesNum-customDevicesNum, amdDevices.data(), nullptr);
         if (status != CL_SUCCESS)
         {
             delete[] platform->devicesArray;
@@ -410,6 +426,21 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             platform->deviceInitStatus = status;
             return;
         }
+        // custom devices
+        if (customDevicesNum != 0)
+        {
+            status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
+                    platform->amdOclPlatform, CL_DEVICE_TYPE_CUSTOM, customDevicesNum,
+                    amdDevices.data()+platform->devicesNum-customDevicesNum, nullptr);
+            if (status != CL_SUCCESS)
+            {
+                delete[] platform->devicesArray;
+                platform->devicesArray = nullptr;
+                platform->deviceInitStatus = status;
+                return;
+            }
+        }
+        
         for (cl_uint i = 0; i < platform->devicesNum; i++)
         {
             CLRXDevice& clrxDevice = platform->devicesArray[i];
