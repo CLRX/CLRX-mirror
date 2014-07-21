@@ -298,10 +298,11 @@ clrxclGetDeviceInfo(cl_device_id    device,
         case CL_DEVICE_PARENT_DEVICE_EXT:
         case CL_DEVICE_PARENT_DEVICE:
             if (d->platform->openCLVersionNum >= getOpenCLVersionNum(1, 2) ||
-                (d->platform->dispatch->clCreateSubDevicesEXT != nullptr &&
+                (d->platform->openCLVersionNum >= getOpenCLVersionNum(1, 1) &&
+                 d->platform->dispatch->clCreateSubDevicesEXT != nullptr &&
                  param_name == CL_DEVICE_PARENT_DEVICE_EXT))
             {   /* if OpenCL 1.2 or later or
-                 * clCreateSubDevicesEXT is available and
+                 * clCreateSubDevicesEXT is available and OpenCL 1.1 and
                  *      CL_DEVICE_PARENT_DEVICE_EXT is param_name */
                 if (param_value != nullptr)
                 {
