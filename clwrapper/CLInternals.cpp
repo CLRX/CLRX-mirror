@@ -399,8 +399,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     
     /* check whether OpenCL 1.2 or later */
     bool isOCL12OrLater = (::strncmp(platform->version, "OpenCL ", 7) == 0) &&
-        ((platform->version[7] == '1' && platform->version[9] >= '2') ||
-         (platform->version[7] > '1'));
+        ((platform->version[7] > '1' || platform->version[8] != '.') ||
+         (platform->version[7] == '1' && platform->version[9] >= '2'));
     //std::cout << "IsOCl12OrLater: " << isOCL12OrLater << std::endl;
     
     /* custom devices not listed in all devices */
