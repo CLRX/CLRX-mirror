@@ -73,6 +73,7 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 
 }
 
+#include <CLRX/Config.h>
 #include <mutex>
 #include <atomic>
 #include <vector>
