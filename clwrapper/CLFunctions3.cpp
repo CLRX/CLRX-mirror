@@ -477,19 +477,19 @@ clrxclCreateImage(cl_context              context,
     CLRXContext* c = static_cast<CLRXContext*>(context);
     
     cl_image_desc imageDesc;
+    bool processedBufferField = false;
     if (image_desc != nullptr)
     {
         imageDesc = *image_desc;
-        if (imageDesc.buffer != nullptr)
-        {
-            if (imageDesc.image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
-            {
-                if (errcode_ret != nullptr)
-                    *errcode_ret = CL_INVALID_IMAGE_DESCRIPTOR;
-                return nullptr;
-            }
+        
+        if ((imageDesc.image_type == CL_MEM_OBJECT_IMAGE1D_BUFFER ||
+                imageDesc.image_type == CL_MEM_OBJECT_IMAGE2D) &&
+                imageDesc.buffer != nullptr) // check buffer field
+        {   /* do it if buffer not null and type is CL_MEM_OBJECT_IMAGE1D_BUFFER or
+             * CL_MEM_OBJECT_IMAGE2D, otherwise we ignore buffer field */
             imageDesc.buffer =
                 static_cast<const CLRXMemObject*>(imageDesc.buffer)->amdOclMemObject;
+            processedBufferField = true;
         }
     }
     
@@ -503,7 +503,7 @@ clrxclCreateImage(cl_context              context,
               clReleaseMemObject,
               "Fatal Error at handling error at image creation!")
     
-    if (image_desc != nullptr && image_desc->buffer != nullptr)
+    if (processedBufferField)
     {
         outObject->buffer = (CLRXMemObject*)image_desc->buffer;
         clrxRetainOnlyCLRXMemObject(outObject->buffer);
