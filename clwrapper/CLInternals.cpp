@@ -26,6 +26,8 @@
 #include <mutex>
 #include <cstring>
 #include <atomic>
+#include <climits>
+#include <cstdint>
 #include <cstddef>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
