@@ -1068,7 +1068,7 @@ clrxclGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
     
     const CLRXPlatform* p = static_cast<CLRXPlatform*>(platform);
     const CLRXExtensionEntry tmp = {func_name, nullptr};
-    const size_t length = sizeof(p->extEntries)/sizeof(CLRXExtensionEntry);
+    const size_t length = sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
     const CLRXExtensionEntry* entry = std::lower_bound(p->extEntries,
            p->extEntries + length,
            tmp, [](const CLRXExtensionEntry& l, const CLRXExtensionEntry& r) -> bool
@@ -1206,7 +1206,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueMakeBuffersResidentAMD(
                 return CL_INVALID_MEM_OBJECT;
             amdMemObjects[i] = static_cast<CLRXMemObject*>(mem_objects[i])->amdOclMemObject;
         }
-    
+        
         cl_int status = CL_SUCCESS;
 #undef CLRX_ORIG_CLCOMMAND
 #define CLRX_ORIG_CLCOMMAND amdOclEnqueueMakeBuffersResidentAMD(q->amdOclCommandQueue, \

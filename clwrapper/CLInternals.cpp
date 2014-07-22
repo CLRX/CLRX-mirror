@@ -309,7 +309,7 @@ void clrxWrapperInitialize()
         
         if (useCLRXWrapper)
         {
-            const size_t clrxExtEntriesNum =
+            const cxuint clrxExtEntriesNum =
                     sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
             
             clrxPlatforms = new CLRXPlatform[platformCount];
@@ -385,17 +385,20 @@ void clrxWrapperInitialize()
                         openCLmajor << "." << openCLminor << std::endl;*/
                 
                 /* initialize extTable */
+                clrxPlatform.extEntries = new CLRXExtensionEntry[clrxExtEntriesNum];
                 std::copy(clrxExtensionsTable, clrxExtensionsTable + clrxExtEntriesNum,
                           clrxPlatform.extEntries);
                 
                 if (clrxPlatform.openCLVersionNum >= getOpenCLVersionNum(1, 2))
                 {   /* update p->extEntries for platform */
-                    for (CLRXExtensionEntry& extEntry: clrxPlatform.extEntries)
-                        // erase CLRX extension entry if not reflected in AMD extensions
+                    for (size_t k = 0; k < clrxExtEntriesNum; k++)
+                    {   // erase CLRX extension entry if not reflected in AMD extensions
+                        CLRXExtensionEntry& extEntry = clrxPlatform.extEntries[k];
                         if (amdOclPlatform->dispatch->
                             clGetExtensionFunctionAddressForPlatform
                                     (amdOclPlatform, extEntry.funcname) == nullptr)
                             extEntry.address = nullptr;
+                    }
                     /* end of p->extEntries for platform */
                 }
                 
@@ -1091,6 +1094,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
         /* get kernel arg info from all binaries */
         for (cl_uint i = 0; i < program->assocDevicesNum; i++)
         {
+            if (binaries[i] == nullptr)
+                continue; // skip if not built for this device
+            
             std::unique_ptr<AmdMainBinaryBase> amdBin(
                 createAmdBinaryFromCode(binarySizes[i], (char*)(binaries[i]),
                              AMDBIN_CREATE_KERNELINFO));

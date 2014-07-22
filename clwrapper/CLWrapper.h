@@ -133,7 +133,8 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     cl_uint devicesNum;
     CLRXDevice* devicesArray;
     CLRXDevice** devicePtrs;
-    CLRXExtensionEntry extEntries[sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry)];
+    //CLRXExtensionEntry extEntries[sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry)];
+    CLRXExtensionEntry* extEntries;
     uint32_t openCLVersionNum; /* major - upper half, minor - lower half */
     cl_int deviceInitStatus;
     
@@ -156,6 +157,8 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
         delete[] version;
         delete[] devicesArray;
         delete[] devicePtrs;
+        delete[] extEntries;
+        delete dispatch; // allocated in CLRXPlatform
     }
 };
 
