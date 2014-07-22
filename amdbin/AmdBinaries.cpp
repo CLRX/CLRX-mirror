@@ -854,8 +854,6 @@ const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
     return kernelInfos[it->second];
 }
 
-/* AmdMainGPUBinary32 */
-
 struct InitKernelArgMapEntry {
     uint32_t index;
     KernelArgType argType;
@@ -930,6 +928,323 @@ static inline std::string stringFromCStringDelim(const char* c1,
 
 typedef std::map<std::string, InitKernelArgMapEntry> InitKernelArgMap;
 
+static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
+          const char* kernelDesc, KernelInfo& kernelInfo)
+{   /* parse kernel description */
+    size_t lineNo = 1;
+    size_t pos = 0;
+    uint32_t argIndex = 0;
+    
+    InitKernelArgMap initKernelArgs;
+    
+    // first phase (value/pointer/image/sampler)
+    while (pos < metadataSize)
+    {
+        if (kernelDesc[pos] != ';')
+            throw ParseException(lineNo, "This is not KernelDesc line");
+        pos++;
+        if (pos >= metadataSize)
+            throw ParseException(lineNo, "This is not KernelDesc line");
+        
+        size_t tokPos = pos;
+        while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+            kernelDesc[tokPos] != '\n') tokPos++;
+        if (tokPos >= metadataSize)
+            throw ParseException(lineNo, "Is not KernelDesc line");
+        
+        if (::strncmp(kernelDesc + pos, "value", tokPos-pos) == 0)
+        { // value
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not value line");
+            
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                throw ParseException(lineNo, "No separator after name");
+            
+            // extract arg name
+            InitKernelArgMap::iterator argIt;
+            {
+                InitKernelArgMapEntry entry;
+                entry.index = argIndex++;
+                entry.namePos = pos;
+                std::pair<InitKernelArgMap::iterator, bool> result = 
+                    initKernelArgs.insert(std::make_pair(
+                        std::string(kernelDesc+pos, tokPos-pos), entry));
+                if (!result.second)
+                    throw ParseException(lineNo, "Argument has been duplicated");
+                argIt = result.first;
+            }
+            ///
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                throw ParseException(lineNo, "No separator after type");
+            // get arg type
+            const char* argType = kernelDesc + pos;
+            /// 
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                throw ParseException(lineNo, "No separator after vector size");
+            // get vector size
+            {
+                const char* outEnd;
+                cxuint vectorSize = cstrtouiParse(kernelDesc + pos, kernelDesc + tokPos,
+                    outEnd, ':', lineNo);
+                if (outEnd != kernelDesc + tokPos)
+                    throw ParseException(lineNo, "Garbages after integer");
+                argIt->second.argType = determineKernelArgType(argType,
+                       vectorSize, lineNo);
+            }
+            pos = tokPos;
+        }
+        else if (::strncmp(kernelDesc + pos, "pointer", tokPos-pos) == 0)
+        { // pointer
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not pointer line");
+            
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                throw ParseException(lineNo, "No separator after name");
+            
+            // extract arg name
+            InitKernelArgMap::iterator argIt;
+            {
+                InitKernelArgMapEntry entry;
+                entry.index = argIndex++;
+                entry.namePos = pos;
+                entry.argType = KernelArgType::POINTER;
+                std::pair<InitKernelArgMap::iterator, bool> result = 
+                    initKernelArgs.insert(std::make_pair(
+                        std::string(kernelDesc+pos, tokPos-pos), entry));
+                if (!result.second)
+                    throw ParseException(lineNo, "Argument has been duplicated");
+                argIt = result.first;
+            }
+            ///
+            ++tokPos;
+            for (cxuint k = 0; k < 4; k++) // // skip four fields
+            {
+                while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                    kernelDesc[tokPos] != '\n') tokPos++;
+                if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                    throw ParseException(lineNo, "No separator after field");
+                tokPos++;
+            }
+            pos = tokPos;
+            // get pointer type (global/local/constant)
+            if (pos+4 <= metadataSize && kernelDesc[pos] == 'u' && 
+                kernelDesc[pos+1] == 'a' && kernelDesc[pos+2] == 'v' &&
+                kernelDesc[pos+3] == ':')
+            {
+                argIt->second.ptrSpace = KernelPtrSpace::GLOBAL;
+                pos += 4;
+            }
+            else if (pos+3 <= metadataSize && kernelDesc[pos] == 'h' &&
+                kernelDesc[pos+1] == 'c' && kernelDesc[pos+2] == ':')
+            {
+                argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
+                pos += 3;
+            }
+            else if (pos+3 <= metadataSize && kernelDesc[pos] == 'h' &&
+                kernelDesc[pos+1] == 'l' && kernelDesc[pos+2] == ':')
+            {
+                argIt->second.ptrSpace = KernelPtrSpace::LOCAL;
+                pos += 3;
+            }
+            else if (pos+2 <= metadataSize && kernelDesc[pos] == 'c' &&
+                  kernelDesc[pos+1] == ':')
+            {
+                argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
+                pos += 2;
+            }
+            else //if not match
+                throw ParseException(lineNo, "Unknown pointer type");
+        }
+        else if (::strncmp(kernelDesc + pos, "image", tokPos-pos) == 0)
+        { // image
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not image line");
+            
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "No separator after name");
+            
+            // extract arg name
+            InitKernelArgMap::iterator argIt;
+            {
+                InitKernelArgMapEntry entry;
+                entry.index = argIndex++;
+                entry.namePos = pos;
+                entry.ptrSpace = KernelPtrSpace::GLOBAL;
+                entry.argType = KernelArgType::IMAGE; // set as image
+                std::pair<InitKernelArgMap::iterator, bool> result = 
+                    initKernelArgs.insert(std::make_pair(
+                        std::string(kernelDesc+pos, tokPos-pos), entry));
+                if (!result.second)
+                    throw ParseException(lineNo, "Argument has been duplicated");
+                argIt = result.first;
+            }
+            
+            pos = ++tokPos; // skip next field
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "No separator after field");
+            
+            pos = ++tokPos;
+            if (pos+3 > metadataSize || kernelDesc[pos+2] != ':')
+                throw ParseException(lineNo, "Cant parse image access qualifier");
+            
+            if (kernelDesc[pos] == 'R' && kernelDesc[pos+1] == 'O')
+                argIt->second.ptrAccess |= KARG_PTR_READ_ONLY;
+            else if (kernelDesc[pos] == 'W' && kernelDesc[pos+1] == 'O')
+                argIt->second.ptrAccess |= KARG_PTR_WRITE_ONLY;
+            else
+                throw ParseException(lineNo, "Cant parse image access qualifier");
+            pos += 3;
+        }
+        else if (::strncmp(kernelDesc + pos, "sampler", tokPos-pos) == 0)
+        { // sampler (set up some argument as sampler
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not sampler line");
+            
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize)
+                throw ParseException(lineNo, "No separator after name");
+            
+            std::string argName(kernelDesc+pos, tokPos-pos);
+            InitKernelArgMap::iterator argIt = initKernelArgs.find(argName);
+            if (argIt != initKernelArgs.end())
+            {
+                argIt->second.origArgType = argIt->second.argType;
+                argIt->second.argType = KernelArgType::SAMPLER;
+            }
+            
+            pos = tokPos;
+        }
+        else if (::strncmp(kernelDesc + pos, "constarg", tokPos-pos) == 0)
+        {
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not constarg line");
+            
+            pos = ++tokPos;
+            // skip number
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "No separator after field");
+            
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize)
+                throw ParseException(lineNo, "End of data");
+            
+            /// put constant
+            const std::string thisName(kernelDesc+pos, tokPos-pos);
+            InitKernelArgMap::iterator argIt = initKernelArgs.find(thisName);
+            if (argIt == initKernelArgs.end())
+                throw ParseException(lineNo, "Cant find constant argument");
+            // set up const access type
+            argIt->second.ptrAccess |= KARG_PTR_CONST;
+            pos = tokPos;
+        }
+        else if (::strncmp(kernelDesc + pos, "reflection", tokPos-pos) == 0)
+        {
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not reflection line");
+            break;
+        }
+        
+        while (pos < metadataSize && kernelDesc[pos] != '\n') pos++;
+        lineNo++;
+        pos++; // skip newline
+    }
+    
+    kernelInfo.kernelName.assign(symName+9, ::strlen(symName)-18);
+    kernelInfo.allocateArgs(argIndex);
+    
+    for (const auto& e: initKernelArgs)
+    {   /* initialize kernel arguments before set argument type from reflections */
+        KernelArg& karg = kernelInfo.argInfos[e.second.index];
+        karg.argType = e.second.argType;
+        karg.ptrSpace = e.second.ptrSpace;
+        karg.ptrAccess = e.second.ptrAccess;
+        karg.argName = stringFromCStringDelim(kernelDesc + e.second.namePos,
+                  metadataSize-e.second.namePos, ':');
+    }
+    
+    if (argIndex != 0)
+    {   /* check whether not end */
+        if (pos >= metadataSize)
+            throw ParseException(lineNo, "Unexpected end of data");
+        
+        // reflections
+        pos--; // skip ';'
+        while (pos < metadataSize)
+        {
+            if (kernelDesc[pos] != ';')
+                throw ParseException(lineNo, "Is not KernelDesc line");
+            pos++;
+            if (pos >= metadataSize)
+                throw ParseException(lineNo, "Is not KernelDesc line");
+            
+            if (pos+11 > metadataSize ||
+                ::strncmp(kernelDesc+pos, "reflection:", 11) != 0)
+                break; // end!!!
+            pos += 11;
+            
+            size_t tokPos = pos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize || kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "Is not KernelDesc line");
+            
+            const char* outEnd;
+            cxuint argIndex = cstrtouiParse(kernelDesc+pos, kernelDesc+tokPos,
+                            outEnd, ':', lineNo);
+            
+            if (outEnd != kernelDesc + tokPos)
+                throw ParseException(lineNo, "Garbages after integer");
+            if (argIndex >= kernelInfo.argsNum)
+                throw ParseException(lineNo, "Argument index out of range");
+            pos = tokPos+1;
+            
+            KernelArg& argInfo = kernelInfo.argInfos[argIndex];
+            argInfo.typeName = stringFromCStringDelim(
+                kernelDesc+pos, metadataSize-pos, '\n');
+            
+            if (argInfo.argName.compare(0, 8, "unknown_") == 0 &&
+                argInfo.typeName != "sampler_t" &&
+                argInfo.argType == KernelArgType::SAMPLER)
+            {   InitKernelArgMap::const_iterator argIt =
+                            initKernelArgs.find(argInfo.argName);
+                if (argIt != initKernelArgs.end() &&
+                    argIt->second.origArgType != KernelArgType::VOID)
+                {   /* revert sampler type and restore original arg type */
+                    argInfo.argType = argIt->second.origArgType;
+                }
+            }    
+            
+            while (pos < metadataSize && kernelDesc[pos] != '\n') pos++;
+            lineNo++;
+            pos++;
+        }
+    }
+}
+
+/* AmdMainGPUBinary32 */
+
 void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
          const std::vector<uint32_t>& metadataSyms)
 {
@@ -938,345 +1253,34 @@ void AmdMainGPUBinary32::initKernelInfos(cxuint creationFlags,
     
     try
     {
-    kernelInfos = new KernelInfo[metadataSyms.size()];
-    
-    uint32_t ki = 0;
-    for (uint32_t it: metadataSyms)
-    {   // read symbol _OpenCL..._metadata
-        const Elf32_Sym& sym = getSymbol(it);
-        const char* symName = getSymbolName(it);
-        if (sym.st_shndx >= getSectionHeadersNum())
-            throw Exception("Metadata section index out of range");
+        kernelInfos = new KernelInfo[metadataSyms.size()];
         
-        const Elf32_Shdr& rodataHdr = getSectionHeader(sym.st_shndx);
-        const char* rodataContent = binaryCode + rodataHdr.sh_offset;
-        
-        if (sym.st_value > rodataHdr.sh_size)
-            throw Exception("Metadata offset out of range");
-        if (sym.st_value+sym.st_size > rodataHdr.sh_size)
-            throw Exception("Metadata offset+size out of range");
-        
-        const char* kernelDesc = rodataContent + sym.st_value;
-        /* parse kernel description */
-        size_t lineNo = 1;
-        size_t pos = 0;
-        uint32_t argIndex = 0;
-        
-        InitKernelArgMap initKernelArgs;
-        
-        // first phase (value/pointer/image/sampler)
-        while (pos < sym.st_size)
-        {
-            if (kernelDesc[pos] != ';')
-                throw ParseException(lineNo, "This is not KernelDesc line");
-            pos++;
-            if (pos >= sym.st_size)
-                throw ParseException(lineNo, "This is not KernelDesc line");
+        uint32_t ki = 0;
+        for (uint32_t it: metadataSyms)
+        {   // read symbol _OpenCL..._metadata
+            const Elf32_Sym& sym = getSymbol(it);
+            const char* symName = getSymbolName(it);
+            if (sym.st_shndx >= getSectionHeadersNum())
+                throw Exception("Metadata section index out of range");
             
-            size_t tokPos = pos;
-            while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                kernelDesc[tokPos] != '\n') tokPos++;
-            if (tokPos >= sym.st_size)
-                throw ParseException(lineNo, "Is not KernelDesc line");
+            const Elf32_Shdr& rodataHdr = getSectionHeader(sym.st_shndx);
+            const char* rodataContent = binaryCode + rodataHdr.sh_offset;
             
-            if (::strncmp(kernelDesc + pos, "value", tokPos-pos) == 0)
-            { // value
-                if (kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "This is not value line");
-                
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] =='\n')
-                    throw ParseException(lineNo, "No separator after name");
-                
-                // extract arg name
-                InitKernelArgMap::iterator argIt;
-                {
-                    InitKernelArgMapEntry entry;
-                    entry.index = argIndex++;
-                    entry.namePos = pos;
-                    std::pair<InitKernelArgMap::iterator, bool> result = 
-                        initKernelArgs.insert(std::make_pair(
-                            std::string(kernelDesc+pos, tokPos-pos), entry));
-                    if (!result.second)
-                        throw ParseException(lineNo, "Argument has been duplicated");
-                    argIt = result.first;
-                }
-                ///
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] =='\n')
-                    throw ParseException(lineNo, "No separator after type");
-                // get arg type
-                const char* argType = kernelDesc + pos;
-                /// 
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] =='\n')
-                    throw ParseException(lineNo, "No separator after vector size");
-                // get vector size
-                {
-                    const char* outEnd;
-                    cxuint vectorSize = cstrtouiParse(kernelDesc + pos, kernelDesc + tokPos,
-                        outEnd, ':', lineNo);
-                    if (outEnd != kernelDesc + tokPos)
-                        throw ParseException(lineNo, "Garbages after integer");
-                    argIt->second.argType = determineKernelArgType(argType,
-                           vectorSize, lineNo);
-                }
-                pos = tokPos;
-            }
-            else if (::strncmp(kernelDesc + pos, "pointer", tokPos-pos) == 0)
-            { // pointer
-                if (kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "This is not pointer line");
-                
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] =='\n')
-                    throw ParseException(lineNo, "No separator after name");
-                
-                // extract arg name
-                InitKernelArgMap::iterator argIt;
-                {
-                    InitKernelArgMapEntry entry;
-                    entry.index = argIndex++;
-                    entry.namePos = pos;
-                    entry.argType = KernelArgType::POINTER;
-                    std::pair<InitKernelArgMap::iterator, bool> result = 
-                        initKernelArgs.insert(std::make_pair(
-                            std::string(kernelDesc+pos, tokPos-pos), entry));
-                    if (!result.second)
-                        throw ParseException(lineNo, "Argument has been duplicated");
-                    argIt = result.first;
-                }
-                ///
-                ++tokPos;
-                for (cxuint k = 0; k < 4; k++) // // skip four fields
-                {
-                    while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                        kernelDesc[tokPos] != '\n') tokPos++;
-                    if (tokPos >= sym.st_size || kernelDesc[tokPos] =='\n')
-                        throw ParseException(lineNo, "No separator after field");
-                    tokPos++;
-                }
-                pos = tokPos;
-                // get pointer type (global/local/constant)
-                if (pos+4 <= sym.st_size && kernelDesc[pos] == 'u' && 
-                    kernelDesc[pos+1] == 'a' && kernelDesc[pos+2] == 'v' &&
-                    kernelDesc[pos+3] == ':')
-                {
-                    argIt->second.ptrSpace = KernelPtrSpace::GLOBAL;
-                    pos += 4;
-                }
-                else if (pos+3 <= sym.st_size && kernelDesc[pos] == 'h' &&
-                    kernelDesc[pos+1] == 'c' && kernelDesc[pos+2] == ':')
-                {
-                    argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
-                    pos += 3;
-                }
-                else if (pos+3 <= sym.st_size && kernelDesc[pos] == 'h' &&
-                    kernelDesc[pos+1] == 'l' && kernelDesc[pos+2] == ':')
-                {
-                    argIt->second.ptrSpace = KernelPtrSpace::LOCAL;
-                    pos += 3;
-                }
-                else if (pos+2 <= sym.st_size && kernelDesc[pos] == 'c' &&
-                      kernelDesc[pos+1] == ':')
-                {
-                    argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
-                    pos += 2;
-                }
-                else //if not match
-                    throw ParseException(lineNo, "Unknown pointer type");
-            }
-            else if (::strncmp(kernelDesc + pos, "image", tokPos-pos) == 0)
-            { // image
-                if (kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "This is not image line");
-                
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "No separator after name");
-                
-                // extract arg name
-                InitKernelArgMap::iterator argIt;
-                {
-                    InitKernelArgMapEntry entry;
-                    entry.index = argIndex++;
-                    entry.namePos = pos;
-                    entry.ptrSpace = KernelPtrSpace::GLOBAL;
-                    entry.argType = KernelArgType::IMAGE; // set as image
-                    std::pair<InitKernelArgMap::iterator, bool> result = 
-                        initKernelArgs.insert(std::make_pair(
-                            std::string(kernelDesc+pos, tokPos-pos), entry));
-                    if (!result.second)
-                        throw ParseException(lineNo, "Argument has been duplicated");
-                    argIt = result.first;
-                }
-                
-                pos = ++tokPos; // skip next field
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "No separator after field");
-                
-                pos = ++tokPos;
-                if (pos+3 > sym.st_size || kernelDesc[pos+2] != ':')
-                    throw ParseException(lineNo, "Cant parse image access qualifier");
-                
-                if (kernelDesc[pos] == 'R' && kernelDesc[pos+1] == 'O')
-                    argIt->second.ptrAccess |= KARG_PTR_READ_ONLY;
-                else if (kernelDesc[pos] == 'W' && kernelDesc[pos+1] == 'O')
-                    argIt->second.ptrAccess |= KARG_PTR_WRITE_ONLY;
-                else
-                    throw ParseException(lineNo, "Cant parse image access qualifier");
-                pos += 3;
-            }
-            else if (::strncmp(kernelDesc + pos, "sampler", tokPos-pos) == 0)
-            { // sampler (set up some argument as sampler
-                if (kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "This is not sampler line");
-                
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size)
-                    throw ParseException(lineNo, "No separator after name");
-                
-                std::string argName(kernelDesc+pos, tokPos-pos);
-                InitKernelArgMap::iterator argIt = initKernelArgs.find(argName);
-                if (argIt != initKernelArgs.end())
-                {
-                    argIt->second.origArgType = argIt->second.argType;
-                    argIt->second.argType = KernelArgType::SAMPLER;
-                }
-                
-                pos = tokPos;
-            }
-            else if (::strncmp(kernelDesc + pos, "constarg", tokPos-pos) == 0)
-            {
-                if (kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "This is not constarg line");
-                
-                pos = ++tokPos;
-                // skip number
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "No separator after field");
-                
-                pos = ++tokPos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size)
-                    throw ParseException(lineNo, "End of data");
-                
-                /// put constant
-                const std::string thisName(kernelDesc+pos, tokPos-pos);
-                InitKernelArgMap::iterator argIt = initKernelArgs.find(thisName);
-                if (argIt == initKernelArgs.end())
-                    throw ParseException(lineNo, "Cant find constant argument");
-                // set up const access type
-                argIt->second.ptrAccess |= KARG_PTR_CONST;
-                pos = tokPos;
-            }
-            else if (::strncmp(kernelDesc + pos, "reflection", tokPos-pos) == 0)
-            {
-                if (kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "This is not reflection line");
-                break;
-            }
+            if (sym.st_value > rodataHdr.sh_size)
+                throw Exception("Metadata offset out of range");
+            if (sym.st_value+sym.st_size > rodataHdr.sh_size)
+                throw Exception("Metadata offset+size out of range");
             
-            while (pos < sym.st_size && kernelDesc[pos] != '\n') pos++;
-            lineNo++;
-            pos++; // skip newline
+            parseAmdGpuKernelMetadata(symName, sym.st_size, rodataContent + sym.st_value,
+                      kernelInfos[ki]);
+            ki++;
         }
-        
-        KernelInfo& kernelInfo = kernelInfos[ki++];
-        kernelInfo.kernelName.assign(symName+9, ::strlen(symName)-18);
-        kernelInfo.allocateArgs(argIndex);
-        
-        for (const auto& e: initKernelArgs)
-        {   /* initialize kernel arguments before set argument type from reflections */
-            KernelArg& karg = kernelInfo.argInfos[e.second.index];
-            karg.argType = e.second.argType;
-            karg.ptrSpace = e.second.ptrSpace;
-            karg.ptrAccess = e.second.ptrAccess;
-            karg.argName = stringFromCStringDelim(kernelDesc + e.second.namePos,
-                      sym.st_size-e.second.namePos, ':');
-        }
-        
-        if (argIndex != 0)
-        {   /* check whether not end */
-            if (pos >= sym.st_size)
-                throw ParseException(lineNo, "Unexpected end of data");
-            
-            // reflections
-            pos--; // skip ';'
-            while (pos < sym.st_size)
-            {
-                if (kernelDesc[pos] != ';')
-                    throw ParseException(lineNo, "Is not KernelDesc line");
-                pos++;
-                if (pos >= sym.st_size)
-                    throw ParseException(lineNo, "Is not KernelDesc line");
-                
-                if (pos+11 > sym.st_size ||
-                    ::strncmp(kernelDesc+pos, "reflection:", 11) != 0)
-                    break; // end!!!
-                pos += 11;
-                
-                size_t tokPos = pos;
-                while (tokPos < sym.st_size && kernelDesc[tokPos] != ':' &&
-                    kernelDesc[tokPos] != '\n') tokPos++;
-                if (tokPos >= sym.st_size || kernelDesc[tokPos] == '\n')
-                    throw ParseException(lineNo, "Is not KernelDesc line");
-                
-                const char* outEnd;
-                cxuint argIndex = cstrtouiParse(kernelDesc+pos, kernelDesc+tokPos,
-                                outEnd, ':', lineNo);
-                
-                if (outEnd != kernelDesc + tokPos)
-                    throw ParseException(lineNo, "Garbages after integer");
-                if (argIndex >= kernelInfo.argsNum)
-                    throw ParseException(lineNo, "Argument index out of range");
-                pos = tokPos+1;
-                
-                KernelArg& argInfo = kernelInfo.argInfos[argIndex];
-                argInfo.typeName = stringFromCStringDelim(
-                    kernelDesc+pos, sym.st_size-pos, '\n');
-                
-                if (argInfo.argName.compare(0, 8, "unknown_") == 0 &&
-                    argInfo.typeName != "sampler_t" &&
-                    argInfo.argType == KernelArgType::SAMPLER)
-                {   InitKernelArgMap::const_iterator argIt =
-                                initKernelArgs.find(argInfo.argName);
-                    if (argIt != initKernelArgs.end() &&
-                        argIt->second.origArgType != KernelArgType::VOID)
-                    {   /* revert sampler type and restore original arg type */
-                        argInfo.argType = argIt->second.origArgType;
-                    }
-                }    
-                
-                while (pos < sym.st_size && kernelDesc[pos] != '\n') pos++;
-                lineNo++;
-                pos++;
-            }
-        }
-        
         kernelInfosNum = metadataSyms.size();
         /* maps kernel info */
         if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
             for (size_t i = 0; i < kernelInfosNum; i++)
                 kernelInfosMap.insert(
                     std::make_pair(kernelInfos[i].kernelName, i));
-    }
     }
     catch(...)
     {
@@ -1372,6 +1376,139 @@ const AmdInnerGPUBinary32& AmdMainGPUBinary32::getInnerBinary(const char* name) 
     return innerBinaries[it->second];
 }
 
+/* AmdMainGPUBinary64 */
+
+void AmdMainGPUBinary64::initKernelInfos(cxuint creationFlags,
+         const std::vector<size_t>& metadataSyms)
+{
+    delete[] kernelInfos;
+    kernelInfos = nullptr;
+    
+    try
+    {
+        kernelInfos = new KernelInfo[metadataSyms.size()];
+        
+        size_t ki = 0;
+        for (size_t it: metadataSyms)
+        {   // read symbol _OpenCL..._metadata
+            const Elf64_Sym& sym = getSymbol(it);
+            const char* symName = getSymbolName(it);
+            if (sym.st_shndx >= getSectionHeadersNum())
+                throw Exception("Metadata section index out of range");
+            
+            const Elf64_Shdr& rodataHdr = getSectionHeader(sym.st_shndx);
+            const char* rodataContent = binaryCode + rodataHdr.sh_offset;
+            
+            if (sym.st_value > rodataHdr.sh_size)
+                throw Exception("Metadata offset out of range");
+            if (sym.st_value+sym.st_size > rodataHdr.sh_size)
+                throw Exception("Metadata offset+size out of range");
+            
+            parseAmdGpuKernelMetadata(symName, sym.st_size, rodataContent + sym.st_value,
+                      kernelInfos[ki]);
+            ki++;
+        }
+        kernelInfosNum = metadataSyms.size();
+        /* maps kernel info */
+        if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
+            for (size_t i = 0; i < kernelInfosNum; i++)
+                kernelInfosMap.insert(
+                    std::make_pair(kernelInfos[i].kernelName, i));
+    }
+    catch(...)
+    {
+        delete[] kernelInfos;
+        kernelInfos = nullptr;
+        throw;
+    }
+}
+
+AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, char* binaryCode,
+       cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_64_BINARY),
+          ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
+          innerBinariesNum(0), innerBinaries(nullptr)
+{
+    cxuint textIndex = SHN_UNDEF;
+    try
+    { textIndex = getSectionIndex(".text"); }
+    catch(const Exception& ex)
+    { } // ignore failed
+    
+    std::vector<size_t> choosenSyms;
+    std::vector<size_t> choosenSymsMetadata;
+    
+    const bool doKernelInfo = (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0;
+    
+    for (size_t i = 0; i < symbolsNum; i++)
+    {
+        const char* symName = getSymbolName(i);
+        size_t len = ::strlen(symName);
+        if (len < 16 || ::strncmp(symName, "__OpenCL_", 9) != 0)
+            continue;
+        
+        if (::strcmp(symName+len-7, "_kernel") == 0) // if kernel
+            choosenSyms.push_back(i);
+        if (doKernelInfo && len >= 18 &&
+            ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
+            choosenSymsMetadata.push_back(i);
+    }
+    innerBinariesNum = choosenSyms.size();
+    
+    try
+    {
+    if (textIndex != SHN_UNDEF)
+    {   /* if have ".text" */
+        const Elf64_Shdr& textHdr = getSectionHeader(textIndex);
+        char* textContent = binaryCode + textHdr.sh_offset;
+        
+        /* create table of innerBinaries */
+        innerBinaries = new AmdInnerGPUBinary32[innerBinariesNum];
+        size_t ki = 0;
+        for (auto it: choosenSyms)
+        {
+            const char* symName = getSymbolName(it);
+            size_t len = ::strlen(symName);
+            const Elf64_Sym& sym = getSymbol(it);
+            
+            if (sym.st_value > textHdr.sh_size)
+                throw Exception("Inner binary offset out of range!");
+            if (sym.st_value + sym.st_size > textHdr.sh_size)
+                throw Exception("Inner binary offset+size out of range!");
+            
+            innerBinaries[ki++] = AmdInnerGPUBinary32(std::string(symName+9, len-16),
+                sym.st_size, textContent+sym.st_value, 
+                (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
+        }
+    }
+    
+    if ((creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0)
+        for (size_t i = 0; i < innerBinariesNum; i++)
+            innerBinaryMap.insert(std::make_pair(innerBinaries[i].getKernelName(), i));
+    
+    if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
+        initKernelInfos(creationFlags, choosenSymsMetadata);
+    }
+    catch(...)
+    {   /* free arrays */
+        delete[] innerBinaries;
+        delete[] kernelInfos;
+        throw;
+    }
+}
+
+AmdMainGPUBinary64::~AmdMainGPUBinary64()
+{
+    delete[] innerBinaries;
+}
+
+const AmdInnerGPUBinary32& AmdMainGPUBinary64::getInnerBinary(const char* name) const
+{
+    InnerBinaryMap::const_iterator it = innerBinaryMap.find(name);
+    if (it == innerBinaryMap.end())
+        throw Exception("Cant find inner binary");
+    return innerBinaries[it->second];
+}
+
 /* AmdMainX86Binary32 */
 
 void AmdMainX86Binary32::initKernelInfos(cxuint creationFlags)
@@ -1459,7 +1596,7 @@ AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, char* bi
     {
         const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binaryCode);
         if (ehdr->e_machine != ELF_M_X86)
-            throw Exception("This is not x86-64 binary");
+            return new AmdMainGPUBinary64(binaryCodeSize, binaryCode, creationFlags);
         return new AmdMainX86Binary64(binaryCodeSize, binaryCode, creationFlags);
     }
     else // fatal error

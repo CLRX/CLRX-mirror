@@ -589,6 +589,7 @@ public:
 enum class AmdMainType
 {
     GPU_BINARY, ///< binary for GPU
+    GPU_64_BINARY, ///< binary for GPU with 64-bit memory model
     X86_BINARY, ///< binary for x86 systems
     X86_64_BINARY ///< binary for x86-64 systems
 };
@@ -673,6 +674,56 @@ public:
     
     /// get inner binary with specified index
     const AmdInnerGPUBinary32& getInnerBinary(uint32_t index) const
+    { return innerBinaries[index]; }
+    
+    /// get inner binary with specified name (requires inner binary map)
+    const AmdInnerGPUBinary32& getInnerBinary(const char* name) const;
+};
+
+/// AMD main binary for GPU
+class AmdMainGPUBinary64: public AmdMainBinaryBase, public ElfBinary64
+{
+public:
+    /// inner binary map
+    typedef std::unordered_map<std::string, size_t> InnerBinaryMap;
+private:
+    size_t innerBinariesNum;
+    AmdInnerGPUBinary32* innerBinaries;
+    InnerBinaryMap innerBinaryMap;
+    
+    void initKernelInfos(cxuint creationFlags, const std::vector<size_t>& metadataSyms);
+public:
+    /** constructor
+     * \param binaryCodeSize binary code size
+     * \param binaryCode pointer to binary code
+     * \param creationFlags flags that specified what will be created during creation
+     */
+    AmdMainGPUBinary64(size_t binaryCodeSize, char* binaryCode,
+            cxuint creationFlags = AMDBIN_CREATE_ALL);
+    virtual ~AmdMainGPUBinary64();
+    
+    /// returns true if binary has kernel informations
+    bool hasKernelInfo() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
+    
+    /// returns true if binary has kernel informations map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
+    /// returns true if binary has inner binary map
+    bool hasInnerBinaryMap() const
+    { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
+    
+    /// get number of inner binaries
+    size_t getInnerBinariesNum() const
+    { return innerBinariesNum; }
+    
+    /// get inner binary with specified index
+    AmdInnerGPUBinary32& getInnerBinary(size_t index)
+    { return innerBinaries[index]; }
+    
+    /// get inner binary with specified index
+    const AmdInnerGPUBinary32& getInnerBinary(size_t index) const
     { return innerBinaries[index]; }
     
     /// get inner binary with specified name (requires inner binary map)
