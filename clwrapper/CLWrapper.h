@@ -368,6 +368,10 @@ CLRX_INTERNAL void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data);
 
 CLRX_INTERNAL cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program);
 
+CLRX_INTERNAL void clrxInitProgramTransDevicesMap(CLRXProgram* program,
+              cl_uint devices_num, const cl_device_id* device_list,
+              const std::vector<cl_device_id>& amdDevices);
+CLRX_INTERNAL void clrxReleaseConcurrentBuild(CLRXProgram* program);
 
 static inline void clrxRetainOnlyCLRXDevice(CLRXDevice* device)
 {

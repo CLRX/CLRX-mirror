@@ -847,18 +847,13 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
         std::lock_guard<std::mutex> l(p->mutex);
         if (!wrappedDataPtr->inClFunction)
         {   // do it if not done in clBuildProgram
-            p->concurrentBuilds--; // after this building
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
             if (newStatus != CL_SUCCESS)
             {
                 std::cerr << "Fatal error: cant update programAssocDevices" << std::endl;
                 abort();
             }
-            if (p->concurrentBuilds == 0)
-            {
-                delete p->transDevicesMap;
-                p->transDevicesMap = nullptr;
-            }
+            clrxReleaseConcurrentBuild(p);
         }
         wrappedDataPtr->callDone = true;
         if (wrappedDataPtr->inClFunction) // delete if done in clBuildProgram
@@ -1188,4 +1183,36 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     }
     program->kernelArgFlagsInitialized = true;
     return CL_SUCCESS;
+}
+
+
+void clrxInitProgramTransDevicesMap(CLRXProgram* program,
+            cl_uint num_devices, const cl_device_id* device_list,
+            const std::vector<cl_device_id>& amdDevices)
+{
+    /* initialize transDevicesMap if not needed */
+    if (program->transDevicesMap == nullptr) // if not initialized
+    {   // initialize transDevicesMap
+        program->transDevicesMap = new CLRXProgramDevicesMap;
+        for (cl_uint i = 0; i < program->context->devicesNum; i++)
+        {
+            CLRXDevice* device = program->context->devices[i];
+            program->transDevicesMap->insert(std::make_pair(
+                        device->amdOclDevice, device));
+        }
+    }
+    // add device_list into translate device map
+    for (cl_uint i = 0; i < num_devices; i++)
+        program->transDevicesMap->insert(std::make_pair(amdDevices[i],
+              device_list[i]));
+}
+
+void clrxReleaseConcurrentBuild(CLRXProgram* program)
+{
+    program->concurrentBuilds--; // after this building
+    if (program->concurrentBuilds == 0)
+    {
+        delete program->transDevicesMap;
+        program->transDevicesMap = nullptr;
+    }
 }
