@@ -1277,6 +1277,16 @@ clrxclBuildProgram(cl_program           program,
             return CL_INVALID_OPERATION;
         p->concurrentBuilds++;
         p->kernelArgFlagsInitialized = false;
+        /* initialize transDevicesMap */
+        if (p->concurrentBuilds == 1) // if first
+        {   // initialize transDevicesMap
+            p->transDevicesMap = new CLRXProgramDevicesMap;
+            for (cl_uint i = 0; i < p->context->devicesNum; i++)
+            {
+                CLRXDevice* device = p->context->devices[i];
+                p->transDevicesMap->insert(std::make_pair(device->amdOclDevice, device));
+            }
+        }
     }
     
     cl_int status;
@@ -1296,12 +1306,22 @@ clrxclBuildProgram(cl_program           program,
                 {   // if bad device
                     std::lock_guard<std::mutex> lock(p->mutex);
                     p->concurrentBuilds--; // after this building
+                    if (p->concurrentBuilds == 0)
+                    {
+                        delete p->transDevicesMap;
+                        p->transDevicesMap = nullptr;
+                    }
                     delete wrappedData;
                     return CL_INVALID_DEVICE;
                 }
                 amdDevices[i] =
                     static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
             }
+            
+            // add device_list into translate device map
+            for (cl_uint i = 0; i < num_devices; i++)
+                p->transDevicesMap->insert(std::make_pair(amdDevices[i],
+                      device_list[i]));
             
             status = p->amdOclProgram->dispatch->clBuildProgram(
                     p->amdOclProgram, num_devices, amdDevices.data(), options,
@@ -1311,6 +1331,11 @@ clrxclBuildProgram(cl_program           program,
         {   // if allocation failed
             std::lock_guard<std::mutex> lock(p->mutex);
             p->concurrentBuilds--; // after this building
+            if (p->concurrentBuilds == 0)
+            {
+                delete p->transDevicesMap;
+                p->transDevicesMap = nullptr;
+            }
             delete wrappedData;
             return CL_OUT_OF_HOST_MEMORY;
         }
@@ -1336,6 +1361,11 @@ clrxclBuildProgram(cl_program           program,
         }
         if (wrappedData != nullptr)
             wrappedData->inClFunction = true;
+        if (p->concurrentBuilds == 0)
+        {
+            delete p->transDevicesMap;
+            p->transDevicesMap = nullptr;
+        }
     }
     // delete wrappedData if clBuildProgram not finished successfully
     // or callback is called

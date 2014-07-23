@@ -78,6 +78,7 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #include <atomic>
 #include <vector>
 #include <memory>
+#include <map>
 #include <unordered_map>
 #include <CLRX/Utilities.h>
 
@@ -226,6 +227,8 @@ struct CLRX_INTERNAL CLRXMemDtorCallbackUserData
     void* realUserData;
 };
 
+typedef std::map<cl_device_id, cl_device_id> CLRXProgramDevicesMap;
+
 typedef std::unordered_map<std::string, std::vector<bool> > CLRXKernelArgFlagMap;
 
 struct CLRX_INTERNAL CLRXProgram: _cl_program
@@ -237,6 +240,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
     cl_uint assocDevicesNum;
     CLRXDevice** assocDevices;
     cl_ulong concurrentBuilds;
+    CLRXProgramDevicesMap* transDevicesMap;
     size_t kernelsAttached;
     bool kernelArgFlagsInitialized;
     CLRXKernelArgFlagMap kernelArgFlagsMap;
@@ -249,6 +253,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
         assocDevicesNum = 0;
         assocDevices = nullptr;
         concurrentBuilds = 0;
+        transDevicesMap = nullptr;
     }
 
     ~CLRXProgram()
@@ -272,6 +277,7 @@ struct CLRX_INTERNAL CLRXLinkProgramUserData
     bool clrxProgramFilled;
     CLRXContext* clrxContext;
     CLRXProgram* clrxProgram;
+    CLRXProgramDevicesMap* transDevicesMap;
     void (*realNotify)(cl_program program, void * user_data);
     void* realUserData;
 };

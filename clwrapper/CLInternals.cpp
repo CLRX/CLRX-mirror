@@ -762,12 +762,14 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
     cl_device_id* amdAssocDevices = nullptr;
     try
     {
-        cl_uint contextDevicesNum = p->context->devicesNum;
-        amdAssocDevices = new cl_device_id[contextDevicesNum];
+        cl_uint totalDevicesNum = (p->transDevicesMap != nullptr) ?
+                    p->transDevicesMap->size() : p->context->devicesNum;
+        
+        amdAssocDevices = new cl_device_id[totalDevicesNum];
         // single OpenCL call should be atomic:
         // reason: can be called between clBuildProgram which changes associated devices
         const cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(
-            p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*contextDevicesNum,
+            p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*totalDevicesNum,
                       amdAssocDevices, &amdAssocDevicesNum);
         
         if (status != CL_SUCCESS)
@@ -778,7 +780,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         
         amdAssocDevicesNum /= sizeof(cl_device_id); // number of amd devices
         
-        if (contextDevicesNum != amdAssocDevicesNum)
+        if (totalDevicesNum != amdAssocDevicesNum)
         {   /* reallocate amdAssocDevices */
             cl_device_id* tmpAmdAssocDevices = new cl_device_id[amdAssocDevicesNum];
             std::copy(amdAssocDevices, amdAssocDevices+amdAssocDevicesNum,
@@ -805,9 +807,23 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
             }
         }
         
-        translateAMDDevicesIntoCLRXDevices(p->context->devicesNum,
-               const_cast<const CLRXDevice**>(p->context->devices),
-               amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
+        if (p->transDevicesMap != nullptr)
+            for (cl_uint i = 0; i < amdAssocDevicesNum; i++)
+            {
+                CLRXProgramDevicesMap::const_iterator found =
+                        p->transDevicesMap->find(amdAssocDevices[i]);
+                if (found == p->transDevicesMap->end())
+                {
+                    std::cerr << "Fatal error at translating AMD devices" << std::endl;
+                    abort();
+                }
+                amdAssocDevices[i] = found->second;
+            }
+        else
+            translateAMDDevicesIntoCLRXDevices(p->context->devicesNum,
+                   const_cast<const CLRXDevice**>(p->context->devices),
+                   amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
+        
         delete[] p->assocDevices;
         p->assocDevicesNum = amdAssocDevicesNum;
         p->assocDevices = reinterpret_cast<CLRXDevice**>(amdAssocDevices);
@@ -837,6 +853,11 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
             {
                 std::cerr << "Fatal error: cant update programAssocDevices" << std::endl;
                 abort();
+            }
+            if (p->concurrentBuilds == 0)
+            {
+                delete p->transDevicesMap;
+                p->transDevicesMap = nullptr;
             }
         }
         wrappedDataPtr->callDone = true;
@@ -877,7 +898,9 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
                 outProgram->dispatch = wrappedDataPtr->clrxContext->dispatch;
                 outProgram->amdOclProgram = program;
                 outProgram->context = wrappedDataPtr->clrxContext;
+                outProgram->transDevicesMap = wrappedDataPtr->transDevicesMap;
                 clrxUpdateProgramAssocDevices(outProgram);
+                outProgram->transDevicesMap = nullptr;
                 clrxRetainOnlyCLRXContext(wrappedDataPtr->clrxContext);
             }
             wrappedDataPtr->clrxProgram = outProgram;
@@ -899,7 +922,10 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
     
     void (*realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
     if (!initializedByCallback) // if not initialized by this callback to delete
+    {
+        delete wrappedDataPtr->transDevicesMap;
         delete wrappedDataPtr;
+    }
     
     realNotify(clrxProgram, realUserData);
 }

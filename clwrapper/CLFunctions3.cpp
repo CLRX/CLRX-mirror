@@ -618,6 +618,16 @@ clrxclCompileProgram(cl_program           program,
             return CL_INVALID_OPERATION;
         p->kernelArgFlagsInitialized = false;
         p->concurrentBuilds++;
+        /* initialize transDevicesMap */
+        if (p->concurrentBuilds == 1) // if first
+        {   // initialize transDevicesMap
+            p->transDevicesMap = new CLRXProgramDevicesMap;
+            for (cl_uint i = 0; i < p->context->devicesNum; i++)
+            {
+                CLRXDevice* device = p->context->devices[i];
+                p->transDevicesMap->insert(std::make_pair(device->amdOclDevice, device));
+            }
+        }
     }
     
     cl_int status;
@@ -631,6 +641,11 @@ clrxclCompileProgram(cl_program           program,
             {   // bad header
                 std::lock_guard<std::mutex> lock(p->mutex);
                 p->concurrentBuilds--; // after this building
+                if (p->concurrentBuilds == 0)
+                {
+                    delete p->transDevicesMap;
+                    p->transDevicesMap = nullptr;
+                }
                 delete wrappedData;
                 return CL_INVALID_PROGRAM;
             }
@@ -652,12 +667,22 @@ clrxclCompileProgram(cl_program           program,
                 {   // bad device
                     std::lock_guard<std::mutex> lock(p->mutex);
                     p->concurrentBuilds--; // after this building
+                    if (p->concurrentBuilds == 0)
+                    {
+                        delete p->transDevicesMap;
+                        p->transDevicesMap = nullptr;
+                    }
                     delete wrappedData;
                     return CL_INVALID_DEVICE;
                 }
                 amdDevices[i] =
                     static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
             }
+            
+            // add device_list into translate device map
+            for (cl_uint i = 0; i < num_devices; i++)
+                p->transDevicesMap->insert(std::make_pair(amdDevices[i],
+                      device_list[i]));
             
             status = p->amdOclProgram->dispatch->clCompileProgram(
                     p->amdOclProgram, num_devices, amdDevices.data(),
@@ -669,6 +694,11 @@ clrxclCompileProgram(cl_program           program,
     {   // if allocation failed
         std::lock_guard<std::mutex> lock(p->mutex);
         p->concurrentBuilds--; // after this building
+        if (p->concurrentBuilds == 0)
+        {
+            delete p->transDevicesMap;
+            p->transDevicesMap = nullptr;
+        }
         delete wrappedData;
         return CL_OUT_OF_HOST_MEMORY;
     }
@@ -690,6 +720,11 @@ clrxclCompileProgram(cl_program           program,
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
             if (newStatus != CL_SUCCESS)
                 status = newStatus;
+        }
+        if (p->concurrentBuilds == 0)
+        {
+            delete p->transDevicesMap;
+            p->transDevicesMap = nullptr;
         }
         if (wrappedData != nullptr)
             wrappedData->inClFunction = true;
@@ -766,14 +801,26 @@ clrxclLinkProgram(cl_context           context,
     
     cl_program amdProgram = nullptr;
     CLRXProgram* outProgram = nullptr;
+    CLRXProgramDevicesMap* transDevicesMap = nullptr;
     try
     {
+        transDevicesMap = new CLRXProgramDevicesMap;
+        for (cl_uint i = 0; i < c->devicesNum; i++)
+        {
+            CLRXDevice* device = c->devices[i];
+            transDevicesMap->insert(std::make_pair(device->amdOclDevice, device));
+        }
+        
+        if (wrappedData != nullptr)
+            wrappedData->transDevicesMap = transDevicesMap;
+        
         std::vector<cl_program> amdInputPrograms(num_input_programs);
         for (cl_uint i = 0; i < num_input_programs; i++)
         {
             if (input_programs[i] == nullptr)
             {
                 delete wrappedData;
+                delete transDevicesMap;
                 if (errcode_ret != nullptr)
                     *errcode_ret = CL_INVALID_PROGRAM;
                 return nullptr;
@@ -790,12 +837,18 @@ clrxclLinkProgram(cl_context           context,
                 if (device_list[i] == nullptr)
                 {
                     delete wrappedData;
+                    delete transDevicesMap;
                     if (errcode_ret != nullptr)
                         *errcode_ret = CL_INVALID_DEVICE;
                     return nullptr;
                 }
                 amdDevices[i] = static_cast<CLRXDevice*>(device_list[i])->amdOclDevice;
             }
+            
+            // add device_list into translate device map
+            for (cl_uint i = 0; i < num_devices; i++)
+                transDevicesMap->insert(std::make_pair(amdDevices[i],
+                      device_list[i]));
             
             amdProgram = c->amdOclContext->dispatch->clLinkProgram(c->amdOclContext,
                     num_devices, amdDevices.data(), options, num_input_programs, 
@@ -819,7 +872,9 @@ clrxclLinkProgram(cl_context           context,
                         outProgram->dispatch = c->dispatch;
                         outProgram->amdOclProgram = amdProgram;
                         outProgram->context = c;
+                        outProgram->transDevicesMap = transDevicesMap;
                         clrxUpdateProgramAssocDevices(outProgram);
+                        outProgram->transDevicesMap = nullptr;
                         clrxRetainOnlyCLRXContext(c);
                         
                         wrappedData->clrxProgramFilled = true;
@@ -841,6 +896,7 @@ clrxclLinkProgram(cl_context           context,
             
             if (!initializedByCLCall)
             {   /* delete if initialized by callback */
+                delete transDevicesMap;
                 delete wrappedData;
                 wrappedData = nullptr;
             }
@@ -851,8 +907,11 @@ clrxclLinkProgram(cl_context           context,
             outProgram->dispatch = c->dispatch;
             outProgram->amdOclProgram = amdProgram;
             outProgram->context = c;
+            outProgram->transDevicesMap = transDevicesMap;
             clrxUpdateProgramAssocDevices(outProgram);
+            outProgram->transDevicesMap = nullptr;
             clrxRetainOnlyCLRXContext(c);
+            delete transDevicesMap;
         }
     }
     catch(const std::bad_alloc& ex)
@@ -868,6 +927,7 @@ clrxclLinkProgram(cl_context           context,
         }
         delete outProgram;
         delete wrappedData;
+        delete transDevicesMap;
         if (errcode_ret != nullptr)
             *errcode_ret = CL_OUT_OF_HOST_MEMORY;
         return nullptr;
