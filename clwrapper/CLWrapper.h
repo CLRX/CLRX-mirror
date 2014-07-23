@@ -244,7 +244,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
     size_t kernelsAttached;
     bool kernelArgFlagsInitialized;
     CLRXKernelArgFlagMap kernelArgFlagsMap;
-
+    
     CLRXProgram() : refCount(1)
     {
         kernelArgFlagsInitialized = false;

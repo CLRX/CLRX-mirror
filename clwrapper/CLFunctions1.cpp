@@ -1277,16 +1277,6 @@ clrxclBuildProgram(cl_program           program,
             return CL_INVALID_OPERATION;
         p->concurrentBuilds++;
         p->kernelArgFlagsInitialized = false;
-        /* initialize transDevicesMap */
-        if (p->concurrentBuilds == 1) // if first
-        {   // initialize transDevicesMap
-            p->transDevicesMap = new CLRXProgramDevicesMap;
-            for (cl_uint i = 0; i < p->context->devicesNum; i++)
-            {
-                CLRXDevice* device = p->context->devices[i];
-                p->transDevicesMap->insert(std::make_pair(device->amdOclDevice, device));
-            }
-        }
     }
     
     cl_int status;
@@ -1318,6 +1308,17 @@ clrxclBuildProgram(cl_program           program,
                     static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
             }
             
+            /* initialize transDevicesMap if not needed */
+            if (p->transDevicesMap == nullptr) // if not initialized
+            {   // initialize transDevicesMap
+                p->transDevicesMap = new CLRXProgramDevicesMap;
+                for (cl_uint i = 0; i < p->context->devicesNum; i++)
+                {
+                    CLRXDevice* device = p->context->devices[i];
+                    p->transDevicesMap->insert(std::make_pair(
+                                device->amdOclDevice, device));
+                }
+            }
             // add device_list into translate device map
             for (cl_uint i = 0; i < num_devices; i++)
                 p->transDevicesMap->insert(std::make_pair(amdDevices[i],
