@@ -71,8 +71,8 @@ enum KernelArgType : uint8_t
     LONG2, LONG3, LONG4, LONG8, LONG16,
     FLOAT2, FLOAT3, FLOAT4, FLOAT8, FLOAT16,
     DOUBLE2, DOUBLE3, DOUBLE4, DOUBLE8, DOUBLE16,
-    SAMPLER,
-    MAX_VALUE = SAMPLER
+    SAMPLER, STRUCTURE,
+    MAX_VALUE = STRUCTURE
 };
 
 /// kernel pointer type of argument
@@ -138,6 +138,8 @@ struct KernelInfo
     
     /// allocate arguments to specified size
     void allocateArgs(cxuint argsNum);
+    
+    void reallocateArgs(cxuint argsNum);
 };
 
 /// ELF binary base class

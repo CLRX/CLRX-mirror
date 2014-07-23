@@ -29,6 +29,7 @@
 #include <vector>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
+#include <CL/cl_platform.h>
 
 using namespace CLRX;
 
@@ -199,6 +200,18 @@ void KernelInfo::allocateArgs(cxuint argsNum)
     argInfos = nullptr;
     this->argsNum = argsNum;
     argInfos = new KernelArg[argsNum];
+}
+
+void KernelInfo::reallocateArgs(cxuint newArgsNum)
+{
+    if (newArgsNum == argsNum)
+        return; // do nothing
+    KernelArg* newArgInfos = new KernelArg[newArgsNum];
+    if (argInfos != nullptr)
+        std::copy(argInfos, argInfos + std::min(newArgsNum, argsNum), newArgInfos);
+    delete[] argInfos;
+    argInfos = newArgInfos;
+    argsNum = newArgsNum;
 }
 
 /* determine unfinished strings region in string table for checking further consistency */
@@ -601,6 +614,24 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
 {
 }
 
+template<typename ArgSym>
+static size_t skipStructureArgX86(const ArgSym* argDescTable,
+            size_t argDescsNum, size_t startPos)
+{
+    size_t nestedLevel = 0;
+    size_t pos = startPos;
+    do {
+        const ArgSym& argDesc = argDescTable[pos++];
+        if (argDesc.argType == 0x28)
+            nestedLevel++;
+        else if (argDesc.argType == 0)
+            nestedLevel--;
+    } while (nestedLevel != 0 && pos < argDescsNum);
+    if (nestedLevel != 0)
+        throw Exception("Unfinished kernel argument structure");
+    return pos;
+}
+
 /* AMD inner X86 binary */
 
 AmdInnerX86Binary32::AmdInnerX86Binary32(size_t binaryCodeSize, char* binaryCode,
@@ -658,26 +689,29 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
         const char* data = binaryCode + fileOffset;
         
         /* parse number of args */
-        uint32_t argsNum = (*reinterpret_cast<const uint32_t*>(data) - 44)/24;
+        uint32_t argDescsNum = (*reinterpret_cast<const uint32_t*>(data) - 44)/12;
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
         const char* symName = getDynSymbolName(i);
         const size_t len = ::strlen(symName);
         kernelInfo.kernelName.assign(symName+9, len-18);
-        kernelInfo.allocateArgs(argsNum);
+        kernelInfo.allocateArgs(argDescsNum>>1);
         
         /* get argument info */
-        for (uint32_t ai = 0; ai < argsNum; ai++)
+        const X86KernelArgSym* argDescTable =
+                reinterpret_cast<const X86KernelArgSym*>(data + 32);
+        
+        cxuint realArgsNum = 0;
+        for (size_t ai = 0; ai < argDescsNum; ai++)
         {
-            const X86KernelArgSym& argNameSym =
-                *reinterpret_cast<const X86KernelArgSym*>(
-                    data + 32 + 16*2*size_t(ai));
+            const X86KernelArgSym& argNameSym = argDescTable[ai];
+            if (argNameSym.argType == 0x28) // skip structure
+                ai = skipStructureArgX86<X86KernelArgSym>(argDescTable, argDescsNum, ai);
+            else // if not structure
+                ai++;
+            const X86KernelArgSym& argTypeSym = argDescTable[ai];
             
-            const X86KernelArgSym& argTypeSym =
-                *reinterpret_cast<const X86KernelArgSym*>(
-                    data + 32 + 16*(2*size_t(ai)+1));
-            
-            KernelArg& karg = kernelInfo.argInfos[ai];
+            KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             if (argNameSym.nameOffset < rodataHdr.sh_offset ||
                 argNameSym.nameOffset >= rodataHdr.sh_offset+rodataHdr.sh_size)
                 throw Exception("kernel arg name offset out of range!");
@@ -693,16 +727,23 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
                 throw Exception("Type name is unfinished!");
             
             karg.argName = binaryCode + argNameSym.nameOffset;
-            if (argNameSym.argType > 0x26)
-                throw Exception("Unknown kernel arg type");
-            karg.argType = x86ArgTypeTable[argNameSym.argType];
-            if (karg.argType == KernelArgType::POINTER &&
-                (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
-                karg.argType = KernelArgType::IMAGE;
+            if (argNameSym.argType != 0x28)
+            {
+                if (argNameSym.argType > 0x26)
+                    throw Exception("Unknown kernel arg type");
+                karg.argType = x86ArgTypeTable[argNameSym.argType];
+                if (karg.argType == KernelArgType::POINTER &&
+                    (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
+                    karg.argType = KernelArgType::IMAGE;
+            }
+            else // if structure
+                karg.argType = KernelArgType::STRUCTURE;
+            
             karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
             karg.typeName = binaryCode + argTypeSym.nameOffset;
         }
+        kernelInfo.reallocateArgs(realArgsNum);
     }
     }
     catch(...) // if exception happens
@@ -771,26 +812,29 @@ size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
         const char* data = binaryCode + fileOffset;
         
         /* parse number of args */
-        size_t argsNum = (*reinterpret_cast<const uint64_t*>(data) - 80)/32;
+        size_t argDescsNum = (*reinterpret_cast<const uint64_t*>(data) - 80)/16;
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
         const char* symName = getDynSymbolName(i);
         const size_t len = ::strlen(symName);
         kernelInfo.kernelName.assign(symName+9, len-18);
-        kernelInfo.allocateArgs(argsNum);
+        kernelInfo.allocateArgs(argDescsNum>>1);
         
         /* get argument info */
-        for (size_t ai = 0; ai < argsNum; ai++)
+        const X86_64KernelArgSym* argDescTable =
+                reinterpret_cast<const X86_64KernelArgSym*>(data + 64);
+        
+        cxuint realArgsNum = 0;
+        for (size_t ai = 0; ai < argDescsNum; ai++)
         {
-            const X86_64KernelArgSym& argNameSym =
-                *reinterpret_cast<const X86_64KernelArgSym*>(
-                    data + 64 + 20*2*size_t(ai));
-                
-            const X86_64KernelArgSym& argTypeSym =
-                *reinterpret_cast<const X86_64KernelArgSym*>(
-                    data + 64 + 20*(2*size_t(ai)+1));
+            const X86_64KernelArgSym& argNameSym = argDescTable[ai];
+            if (argNameSym.argType == 0x28) // skip structure
+                ai = skipStructureArgX86<X86_64KernelArgSym>(argDescTable, argDescsNum, ai);
+            else // if not structure
+                ai++;
+            const X86_64KernelArgSym& argTypeSym = argDescTable[ai];
             
-            KernelArg& karg = kernelInfo.argInfos[ai];
+            KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t argNameOffset = 
                 (uint64_t(argNameSym.nameOffsetHi)<<32) + argNameSym.nameOffsetLo;
             const size_t argTypeOffset = 
@@ -811,16 +855,22 @@ size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
                 throw Exception("Arg type name is unfinished!");
             
             karg.argName = binaryCode + argNameOffset;
-            if (argNameSym.argType > 0x26)
-                throw Exception("Unknown kernel arg type");
-            karg.argType = x86ArgTypeTable[argNameSym.argType];
-            if (karg.argType == KernelArgType::POINTER &&
-                (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
-                karg.argType = KernelArgType::IMAGE;
+            if (argNameSym.argType != 0x28)
+            {
+                if (argNameSym.argType > 0x26)
+                    throw Exception("Unknown kernel arg type");
+                karg.argType = x86ArgTypeTable[argNameSym.argType];
+                if (karg.argType == KernelArgType::POINTER &&
+                    (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
+                    karg.argType = KernelArgType::IMAGE;
+            }
+            else // if structure
+                karg.argType = KernelArgType::STRUCTURE;
             karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
             karg.typeName = binaryCode + argTypeOffset;
         }
+        kernelInfo.reallocateArgs(realArgsNum);
     }
     
     }
@@ -984,23 +1034,28 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 throw ParseException(lineNo, "No separator after type");
             // get arg type
             const char* argType = kernelDesc + pos;
-            /// 
-            pos = ++tokPos;
-            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
-                kernelDesc[tokPos] != '\n') tokPos++;
-            if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
-                throw ParseException(lineNo, "No separator after vector size");
-            // get vector size
-            {
-                const char* outEnd;
-                cxuint vectorSize = cstrtouiParse(kernelDesc + pos, kernelDesc + tokPos,
-                    outEnd, ':', lineNo);
-                if (outEnd != kernelDesc + tokPos)
-                    throw ParseException(lineNo, "Garbages after integer");
-                argIt->second.argType = determineKernelArgType(argType,
-                       vectorSize, lineNo);
+            ///
+            if (tokPos - pos != 6 || ::strncmp(argType, "struct", 6)!=0)
+            {   // regular type
+                pos = ++tokPos;
+                while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                    kernelDesc[tokPos] != '\n') tokPos++;
+                if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                    throw ParseException(lineNo, "No separator after vector size");
+                // get vector size
+                {
+                    const char* outEnd;
+                    cxuint vectorSize = cstrtouiParse(kernelDesc + pos,
+                          kernelDesc + tokPos, outEnd, ':', lineNo);
+                    if (outEnd != kernelDesc + tokPos)
+                        throw ParseException(lineNo, "Garbages after integer");
+                    argIt->second.argType = determineKernelArgType(argType,
+                           vectorSize, lineNo);
+                }
+                pos = tokPos;
             }
-            pos = tokPos;
+            else // if structure
+                argIt->second.argType = KernelArgType::STRUCTURE;
         }
         else if (::strncmp(kernelDesc + pos, "pointer", tokPos-pos) == 0)
         { // pointer
