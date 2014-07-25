@@ -110,6 +110,9 @@ struct X86KernelArgSym
     uint32_t ptrType;
     uint32_t ptrAccess;
     uint32_t nameOffset;
+    
+    size_t getNameOffset() const
+    { return nameOffset; }
 };
 
 struct X86_64KernelArgSym
@@ -119,6 +122,9 @@ struct X86_64KernelArgSym
     uint32_t ptrAccess;
     uint32_t nameOffsetLo;
     uint32_t nameOffsetHi;
+    
+    size_t getNameOffset() const
+    { return (uint64_t(nameOffsetHi)<<32)+uint64_t(nameOffsetLo); }
 };
 
 /// kernel informations
@@ -142,8 +148,35 @@ struct KernelInfo
     void reallocateArgs(cxuint argsNum);
 };
 
-/// ELF binary base class
-class ElfBinaryBase
+struct Elf32Types
+{
+    typedef uint32_t Size;
+    typedef uint32_t Word;
+    typedef Elf32_Ehdr Ehdr;
+    typedef Elf32_Shdr Shdr;
+    typedef Elf32_Phdr Phdr;
+    typedef Elf32_Sym Sym;
+    static const uint8_t ELFCLASS;
+    static const cxuint bitness;
+    static const char* bitName;
+};
+
+struct Elf64Types
+{
+    typedef size_t Size;
+    typedef uint64_t Word;
+    typedef Elf64_Ehdr Ehdr;
+    typedef Elf64_Shdr Shdr;
+    typedef Elf64_Phdr Phdr;
+    typedef Elf64_Sym Sym;
+    static const uint8_t ELFCLASS;
+    static const cxuint bitness;
+    static const char* bitName;
+};
+
+/// ELF binary class
+template<typename Types>
+class ElfBinaryTemplate
 {
 public:
     /// section index map
@@ -165,8 +198,22 @@ protected:
     SymbolIndexMap symbolIndexMap;      ///< symbol's index map
     SymbolIndexMap dynSymIndexMap;      ///< dynamic symbol's index map
     
-    ElfBinaryBase();
+    typename Types::Size symbolsNum;    ///< symbols number
+    typename Types::Size dynSymbolsNum; ///< dynamic symbols number
+    uint16_t symbolEntSize; ///< symbol entry size in a symbol's table
+    uint16_t dynSymEntSize; ///< dynamic symbol entry size in a dynamic symbol's table
+    
 public:
+    ElfBinaryTemplate();
+    /** constructor
+     * \param binaryCodeSize binary code size
+     * \param binaryCode pointer to binary code
+     * \param creationFlags flags that specified what will be created during creation
+     */
+    ElfBinaryTemplate(size_t binaryCodeSize, char* binaryCode,
+                cxuint cretionFlags = ELF_CREATE_ALL);
+    ~ElfBinaryTemplate();
+    
     /// get creation flags
     cxuint getCreationFlags() const
     { return creationFlags; }
@@ -194,53 +241,35 @@ public:
     /// returns true if object is uninitialized
     bool operator !() const
     { return binaryCode==nullptr; }
-};
-
-/// 32-bit ELF binary class
-class ElfBinary32: public ElfBinaryBase
-{
-protected:
-    uint32_t symbolsNum;    ///< symbols number
-    uint32_t dynSymbolsNum; ///< dynamic symbols number
-    uint16_t symbolEntSize; ///< symbol entry size in a symbol's table
-    uint16_t dynSymEntSize; ///< dynamic symbol entry size in a dynamic symbol's table
     
-public:
-    ElfBinary32();
-    /** constructor
-     * \param binaryCodeSize binary code size
-     * \param binaryCode pointer to binary code
-     * \param creationFlags flags that specified what will be created during creation
-     */
-    ElfBinary32(size_t binaryCodeSize, char* binaryCode,
-                cxuint cretionFlags = ELF_CREATE_ALL);
-    ~ElfBinary32() = default;
+    const char* getBinaryCode() const
+    { return binaryCode; }
     
     /// get ELF binary header
-    const Elf32_Ehdr& getHeader() const
-    { return *reinterpret_cast<const Elf32_Ehdr*>(binaryCode); }
+    const typename Types::Ehdr& getHeader() const
+    { return *reinterpret_cast<const typename Types::Ehdr*>(binaryCode); }
     
     /// get ELF binary header
-    Elf32_Ehdr& getHeader()
-    { return *reinterpret_cast<Elf32_Ehdr*>(binaryCode); }
+    typename Types::Ehdr& getHeader()
+    { return *reinterpret_cast<typename Types::Ehdr*>(binaryCode); }
     
     /// get section headers number
     uint16_t getSectionHeadersNum() const
     { return getHeader().e_shnum; }
     
     /// get section header with specified index
-    const Elf32_Shdr& getSectionHeader(uint16_t index) const
+    const typename Types::Shdr& getSectionHeader(uint16_t index) const
     {
-        const Elf32_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<const Elf32_Shdr*>(binaryCode + ehdr.e_shoff +
+        const typename Types::Ehdr& ehdr = getHeader();
+        return *reinterpret_cast<const typename Types::Shdr*>(binaryCode + ehdr.e_shoff +
                 size_t(ehdr.e_shentsize)*index);
     }
     
     /// get section header with specified index
-    Elf32_Shdr& getSectionHeader(uint16_t index)
+    typename Types::Shdr& getSectionHeader(uint16_t index)
     {
-        const Elf32_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<Elf32_Shdr*>(binaryCode + ehdr.e_shoff +
+        const typename Types::Ehdr& ehdr = getHeader();
+        return *reinterpret_cast<typename Types::Shdr*>(binaryCode + ehdr.e_shoff +
                 size_t(ehdr.e_shentsize)*index);
     }
     
@@ -249,69 +278,75 @@ public:
     { return getHeader().e_phnum; }
     
     /// get program header with specified index
-    const Elf32_Phdr& getProgramHeader(uint16_t index) const
+    const typename Types::Phdr& getProgramHeader(uint16_t index) const
     {
-        const Elf32_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<const Elf32_Phdr*>(binaryCode + ehdr.e_phoff +
+        const typename Types::Ehdr& ehdr = getHeader();
+        return *reinterpret_cast<const typename Types::Phdr*>(binaryCode + ehdr.e_phoff +
                 size_t(ehdr.e_phentsize)*index);
     }
     
     /// get program header with specified index
-    Elf32_Phdr& getProgramHeader(uint16_t index)
+    typename Types::Phdr& getProgramHeader(uint16_t index)
     {
-        const Elf32_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<Elf32_Phdr*>(binaryCode + ehdr.e_phoff +
+        const typename Types::Ehdr& ehdr = getHeader();
+        return *reinterpret_cast<typename Types::Phdr*>(binaryCode + ehdr.e_phoff +
                 size_t(ehdr.e_phentsize)*index);
     }
     
     /// get symbols number
-    uint32_t getSymbolsNum() const
+    typename Types::Size getSymbolsNum() const
     { return symbolsNum; }
     
     /// get dynamic symbols number
-    uint32_t getDynSymbolsNum() const
+    typename Types::Size getDynSymbolsNum() const
     { return dynSymbolsNum; }
     
     /// get symbol with specified index
-    const Elf32_Sym& getSymbol(uint32_t index) const
+    const typename Types::Sym& getSymbol(typename Types::Size index) const
     {
-        return *reinterpret_cast<const Elf32_Sym*>(symbolTable +
+        return *reinterpret_cast<const typename Types::Sym*>(symbolTable +
                     size_t(index)*symbolEntSize);
     }
     
     /// get symbol with specified index
-    Elf32_Sym& getSymbol(uint32_t index)
-    { return *reinterpret_cast<Elf32_Sym*>(symbolTable + size_t(index)*symbolEntSize); }
-    
-    /// get dynamic symbol with specified index
-    const Elf32_Sym& getDynSymbol(uint32_t index) const
+    typename Types::Sym& getSymbol(typename Types::Size index)
     {
-        return *reinterpret_cast<const Elf32_Sym*>(dynSymTable +
-                    size_t(index)*dynSymEntSize);
+        return *reinterpret_cast<typename Types::Sym*>(
+            symbolTable + size_t(index)*symbolEntSize);
     }
     
     /// get dynamic symbol with specified index
-    Elf32_Sym& getDynSymbol(uint32_t index)
-    { return *reinterpret_cast<Elf32_Sym*>(dynSymTable + size_t(index)*dynSymEntSize); }
+    const typename Types::Sym& getDynSymbol(typename Types::Size index) const
+    {
+        return *reinterpret_cast<const typename Types::Sym*>(dynSymTable +
+            size_t(index)*dynSymEntSize);
+    }
+    
+    /// get dynamic symbol with specified index
+    typename Types::Sym& getDynSymbol(typename Types::Size index)
+    {
+        return *reinterpret_cast<typename Types::Sym*>(
+        dynSymTable + size_t(index)*dynSymEntSize);
+    }
     
     /// get symbol name with specified index
-    const char* getSymbolName(uint32_t index) const
+    const char* getSymbolName(typename Types::Size index) const
     {
-        const Elf32_Sym& sym = getSymbol(index);
+        const typename Types::Sym& sym = getSymbol(index);
         return symbolStringTable + sym.st_name;
     }
     
     /// get dynamic symbol name with specified index
-    const char* getDynSymbolName(uint32_t index) const
+    const char* getDynSymbolName(typename Types::Size index) const
     {
-        const Elf32_Sym& sym = getDynSymbol(index);
+        const typename Types::Sym& sym = getDynSymbol(index);
         return dynSymStringTable + sym.st_name;
     }
     
     /// get section name with specified index
     const char* getSectionName(uint16_t index) const
     {
-        const Elf32_Shdr& section = getSectionHeader(index);
+        const typename Types::Shdr& section = getSectionHeader(index);
         return sectionStringTable + section.sh_name;
     }
     
@@ -319,215 +354,55 @@ public:
     uint16_t getSectionIndex(const char* name) const;
     
     /// get symbol index with specified name (requires symbol index map)
-    uint32_t getSymbolIndex(const char* name) const;
+    typename Types::Size getSymbolIndex(const char* name) const;
     
     /// get dynamic symbol index with specified name (requires dynamic symbol index map)
-    uint32_t getDynSymbolIndex(const char* name) const;
+    typename Types::Size getDynSymbolIndex(const char* name) const;
     
     /// get section header with specified name
-    const Elf32_Shdr& getSectionHeader(const char* name) const
+    const typename Types::Shdr& getSectionHeader(const char* name) const
     { return getSectionHeader(getSectionIndex(name)); }
     
     /// get section header with specified name
-    Elf32_Shdr& getSectionHeader(const char* name)
+    typename Types::Shdr& getSectionHeader(const char* name)
     { return getSectionHeader(getSectionIndex(name)); }
     
     /// get symbol with specified name (requires symbol index map)
-    const Elf32_Sym& getSymbol(const char* name) const
+    const typename Types::Sym& getSymbol(const char* name) const
     { return getSymbol(getSymbolIndex(name)); }
     
     /// get symbol with specified name (requires symbol index map)
-    Elf32_Sym& getSymbol(const char* name)
+    typename Types::Sym& getSymbol(const char* name)
     { return getSymbol(getSymbolIndex(name)); }
     
     /// get dynamic symbol with specified name (requires dynamic symbol index map)
-    const Elf32_Sym& getDynSymbol(const char* name) const
+    const typename Types::Sym& getDynSymbol(const char* name) const
     { return getDynSymbol(getDynSymbolIndex(name)); }
     
     /// get dynamic symbol with specified name (requires dynamic symbol index map)
-    Elf32_Sym& getDynSymbol(const char* name)
+    typename Types::Sym& getDynSymbol(const char* name)
     { return getDynSymbol(getDynSymbolIndex(name)); }
     
     /// get section content pointer
     const char* getSectionContent(uint16_t index) const
     {
-        const Elf32_Shdr& shdr = getSectionHeader(index);
+        const typename Types::Shdr& shdr = getSectionHeader(index);
         return binaryCode + shdr.sh_offset;
     }
     
     /// get section content pointer
     char* getSectionContent(uint16_t index)
     {
-        Elf32_Shdr& shdr = getSectionHeader(index);
+        typename Types::Shdr& shdr = getSectionHeader(index);
         return binaryCode + shdr.sh_offset;
     }
 };
 
-/// 64-bit ELF binary class
-class ElfBinary64 : public ElfBinaryBase
-{
-protected:
-    size_t symbolsNum;      ///< symbols number
-    size_t dynSymbolsNum; ///< dynamic symbols number
-    uint16_t symbolEntSize; ///< symbol entry size in a symbol's table
-    uint16_t dynSymEntSize; ///< dynamic symbol entry size in a dynamic symbol's table
-public:
-    ElfBinary64();
-    /** constructor
-     * \param binaryCodeSize binary code size
-     * \param binaryCode pointer to binary code
-     * \param creationFlags flags that specified what will be created during creation
-     */
-    ElfBinary64(size_t binaryCodeSize, char* binaryCode,
-                cxuint cretionFlags = ELF_CREATE_ALL);
-    ~ElfBinary64() = default;
-    
-    /// get ELF binary header
-    const Elf64_Ehdr& getHeader() const
-    { return *reinterpret_cast<const Elf64_Ehdr*>(binaryCode); }
-    
-    /// get ELF binary header
-    Elf64_Ehdr& getHeader()
-    { return *reinterpret_cast<Elf64_Ehdr*>(binaryCode); }
-    
-    /// get section headers number
-    uint16_t getSectionHeadersNum() const
-    { return getHeader().e_shnum; }
-    
-    /// get section header with specified index
-    const Elf64_Shdr& getSectionHeader(uint16_t index) const
-    {
-        const Elf64_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<const Elf64_Shdr*>(binaryCode + ehdr.e_shoff +
-                size_t(ehdr.e_shentsize)*index);
-    }
-    
-    /// get section header with specified index
-    Elf64_Shdr& getSectionHeader(uint16_t index)
-    {
-        const Elf64_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<Elf64_Shdr*>(binaryCode + ehdr.e_shoff +
-                size_t(ehdr.e_shentsize)*index);
-    }
-    
-    /// get program headers number
-    uint16_t getProgramHeadersNum() const
-    { return getHeader().e_phnum; }
-    
-    /// get program header with specified index
-    const Elf64_Phdr& getProgramHeader(uint16_t index) const
-    {
-        const Elf64_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<const Elf64_Phdr*>(binaryCode + ehdr.e_phoff +
-                size_t(ehdr.e_phentsize)*index);
-    }
-    
-    /// get program header with specified index
-    Elf64_Phdr& getProgramHeader(uint16_t index)
-    {
-        const Elf64_Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<Elf64_Phdr*>(binaryCode + ehdr.e_phoff +
-                size_t(ehdr.e_phentsize)*index);
-    }
-    
-    /// get symbols number
-    size_t getSymbolsNum() const
-    { return symbolsNum; }
-    
-    /// get dynamic symbols number
-    size_t getDynSymbolsNum() const
-    { return dynSymbolsNum; }
-    
-    /// get symbol with specified index
-    const Elf64_Sym& getSymbol(size_t index) const
-    {
-        return *reinterpret_cast<const Elf64_Sym*>(symbolTable +
-                    size_t(index)*symbolEntSize);
-    }
-    
-    /// get symbol with specified index
-    Elf64_Sym& getSymbol(size_t index)
-    { return *reinterpret_cast<Elf64_Sym*>(symbolTable + size_t(index)*symbolEntSize); }
-    
-    /// get dynamic symbol with specified index
-    const Elf64_Sym& getDynSymbol(size_t index) const
-    {
-        return *reinterpret_cast<const Elf64_Sym*>(dynSymTable +
-                    size_t(index)*dynSymEntSize);
-    }
-    
-    /// get dynamic symbol with specified index
-    Elf64_Sym& getDynSymbol(size_t index)
-    { return *reinterpret_cast<Elf64_Sym*>(dynSymTable + size_t(index)*dynSymEntSize); }
-    
-    /// get symbol with specified name
-    const char* getSymbolName(size_t index) const
-    {
-        const Elf64_Sym& sym = getSymbol(index);
-        return symbolStringTable + sym.st_name;
-    }
-    
-    /// get dynamic symbol with specified name
-    const char* getDynSymbolName(size_t index) const
-    {
-        const Elf64_Sym& sym = getDynSymbol(index);
-        return dynSymStringTable + sym.st_name;
-    }
-    
-    /// get section with specified name
-    const char* getSectionName(uint16_t index) const
-    {
-        const Elf64_Shdr& section = getSectionHeader(index);
-        return sectionStringTable + section.sh_name;
-    }
-    
-    /// get section index with specified name
-    uint16_t getSectionIndex(const char* name) const;
-    
-    /// get symbol index with specified name (requires symbol index map)
-    size_t getSymbolIndex(const char* name) const;
-    
-    /// get dynamic symbol index with specified name (requires dynamic symbol index map)
-    size_t getDynSymbolIndex(const char* name) const;
-    
-    /// get section header with specified name
-    const Elf64_Shdr& getSectionHeader(const char* name) const
-    { return getSectionHeader(getSectionIndex(name)); }
-    
-    /// get section header with specified name
-    Elf64_Shdr& getSectionHeader(const char* name)
-    { return getSectionHeader(getSectionIndex(name)); }
-    
-    /// get symbol with specified name (requires symbol index map)
-    const Elf64_Sym& getSymbol(const char* name) const
-    { return getSymbol(getSymbolIndex(name)); }
-    
-    /// get symbol with specified name (requires symbol index map)
-    Elf64_Sym& getSymbol(const char* name)
-    { return getSymbol(getSymbolIndex(name)); }
-    
-    /// get dynamic symbol with specified name (requires dynamic symbol index map)
-    const Elf64_Sym& getDynSymbol(const char* name) const
-    { return getDynSymbol(getDynSymbolIndex(name)); }
-    
-    /// get dynamic symbol with specified name (requires dynamic symbol index map)
-    Elf64_Sym& getDynSymbol(const char* name)
-    { return getDynSymbol(getDynSymbolIndex(name)); }
-    
-    /// get section content pointer
-    const char* getSectionContent(uint16_t index) const
-    {
-        const Elf64_Shdr& shdr = getSectionHeader(index);
-        return binaryCode + shdr.sh_offset;
-    }
-    
-    /// get section content pointer
-    char* getSectionContent(uint16_t index)
-    {
-        Elf64_Shdr& shdr = getSectionHeader(index);
-        return binaryCode + shdr.sh_offset;
-    }
-};
+extern template class ElfBinaryTemplate<Elf32Types>;
+extern template class ElfBinaryTemplate<Elf64Types>;
+
+typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
+typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 
 /// AMD inner binary for GPU binaries that represent a single kernel
 class AmdInnerGPUBinary32: public ElfBinary32
@@ -551,7 +426,6 @@ public:
     { return kernelName; }
 };
 
-/// AMD inner binary for X86 binaries
 class AmdInnerX86Binary32: public ElfBinary32
 {
 public:

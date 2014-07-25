@@ -29,7 +29,6 @@
 #include <vector>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
-#include <CL/cl_platform.h>
 
 using namespace CLRX;
 
@@ -225,36 +224,58 @@ static size_t unfinishedRegionOfStringTable(const char* table, size_t size)
     return (table[k]==0)?k+1:k;
 }
 
-/* ElfBinaryBase */
+/* elf32 types */
 
-ElfBinaryBase::ElfBinaryBase() : binaryCodeSize(0), binaryCode(nullptr),
+const uint8_t CLRX::Elf32Types::ELFCLASS = ELFCLASS32;
+const uint32_t CLRX::Elf32Types::bitness = 32;
+const char* CLRX::Elf32Types::bitName = "32";
+
+/* elf64 types */
+
+const uint8_t CLRX::Elf64Types::ELFCLASS = ELFCLASS64;
+const cxuint CLRX::Elf64Types::bitness = 64;
+const char* CLRX::Elf64Types::bitName = "64";
+
+template class ElfBinaryTemplate<CLRX::Elf32Types>;
+template class ElfBinaryTemplate<CLRX::Elf64Types>;
+
+/* ElfBinaryTemplate */
+
+template<typename Types>
+ElfBinaryTemplate<Types>::ElfBinaryTemplate() : binaryCodeSize(0), binaryCode(nullptr),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
-        symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr)
-{
-}
-
-/* ElfBinary32 */
-
-ElfBinary32::ElfBinary32() : symbolsNum(0), dynSymbolsNum(0),
+        symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
+        symbolsNum(0), dynSymbolsNum(0),
         symbolEntSize(0), dynSymEntSize(0)
 {
 }
 
-ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
+template<typename Types>
+ElfBinaryTemplate<Types>::~ElfBinaryTemplate()
+{ }
+
+template<typename Types>
+ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, char* binaryCode,
+             cxuint creationFlags) :
+        binaryCodeSize(0), binaryCode(nullptr),
+        sectionStringTable(nullptr), symbolStringTable(nullptr),
+        symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
         symbolsNum(0), dynSymbolsNum(0), symbolEntSize(0), dynSymEntSize(0)
 {
     this->creationFlags = creationFlags;
     this->binaryCode = binaryCode;
     this->binaryCodeSize = binaryCodeSize;
     
-    if (binaryCodeSize < sizeof(Elf32_Ehdr))
+    if (binaryCodeSize < sizeof(typename Types::Ehdr))
         throw Exception("Binary is too small!!!");
     
-    const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr*>(binaryCode);
+    const typename Types::Ehdr* ehdr =
+            reinterpret_cast<const typename Types::Ehdr*>(binaryCode);
+    
     if (*reinterpret_cast<const uint32_t*>(binaryCode) != elfMagicValue)
         throw Exception("This is not ELF binary");
-    if (ehdr->e_ident[EI_CLASS] != ELFCLASS32)
-        throw Exception("This is not 32-bit ELF binary");
+    if (ehdr->e_ident[EI_CLASS] != Types::ELFCLASS)
+        throw Exception(std::string("This is not ")+Types::bitName+"bit ELF binary");
     if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
         throw Exception("Other than little-endian binaries are not supported!");
     
@@ -267,7 +288,7 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
         
         for (cxuint i = 0; i < ehdr->e_phnum; i++)
         {
-            const Elf32_Phdr& phdr = getProgramHeader(i);
+            const typename Types::Phdr& phdr = getProgramHeader(i);
             if (phdr.p_offset > binaryCodeSize)
                 throw Exception("Segment offset out of range!");
             if (phdr.p_offset+phdr.p_filesz > binaryCodeSize)
@@ -284,17 +305,17 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
         if (ehdr->e_shstrndx >= ehdr->e_shnum)
             throw Exception("Shstrndx out of range!");
         
-        Elf32_Shdr& shstrShdr = getSectionHeader(ehdr->e_shstrndx);
+        typename Types::Shdr& shstrShdr = getSectionHeader(ehdr->e_shstrndx);
         sectionStringTable = binaryCode + shstrShdr.sh_offset;
         const size_t unfinishedShstrPos = unfinishedRegionOfStringTable(
                     sectionStringTable, shstrShdr.sh_size);
         
-        const Elf32_Shdr* symTableHdr = nullptr;
-        const Elf32_Shdr* dynSymTableHdr = nullptr;
+        const typename Types::Shdr* symTableHdr = nullptr;
+        const typename Types::Shdr* dynSymTableHdr = nullptr;
         
         for (cxuint i = 0; i < ehdr->e_shnum; i++)
         {
-            const Elf32_Shdr& shdr = getSectionHeader(i);
+            const typename Types::Shdr& shdr = getSectionHeader(i);
             if (shdr.sh_offset > binaryCodeSize)
                 throw Exception("Section offset out of range!");
             if (shdr.sh_type != SHT_NOBITS)
@@ -321,7 +342,7 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
         
         if (symTableHdr != nullptr)
         {   // indexing symbols
-            if (symTableHdr->sh_entsize < sizeof(Elf32_Sym))
+            if (symTableHdr->sh_entsize < sizeof(typename Types::Sym))
                 throw Exception("SymTable entry size is too small!");
             
             symbolEntSize = symTableHdr->sh_entsize;
@@ -329,16 +350,16 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
             if (symTableHdr->sh_link == SHN_UNDEF)
                 throw Exception("Symbol table doesnt have string table");
             
-            Elf32_Shdr& symstrShdr = getSectionHeader(symTableHdr->sh_link);
+            typename Types::Shdr& symstrShdr = getSectionHeader(symTableHdr->sh_link);
             symbolStringTable = binaryCode + symstrShdr.sh_offset;
             
             const size_t unfinishedSymstrPos = unfinishedRegionOfStringTable(
                     symbolStringTable, symstrShdr.sh_size);
             symbolsNum = symTableHdr->sh_size/symTableHdr->sh_entsize;
             
-            for (uint32_t i = 0; i < symbolsNum; i++)
+            for (typename Types::Size i = 0; i < symbolsNum; i++)
             {   /* verify symbol names */
-                const Elf32_Sym& sym = getSymbol(i);
+                const typename Types::Sym& sym = getSymbol(i);
                 if (sym.st_name >= symstrShdr.sh_size)
                     throw Exception("Symbol name index out of range!");
                 if (sym.st_name >= unfinishedSymstrPos)
@@ -352,7 +373,7 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
         }
         if (dynSymTableHdr != nullptr)
         {   // indexing dynamic symbols
-            if (dynSymTableHdr->sh_entsize < sizeof(Elf32_Sym))
+            if (dynSymTableHdr->sh_entsize < sizeof(typename Types::Sym))
                 throw Exception("DynSymTable entry size is too small!");
             
             dynSymEntSize = dynSymTableHdr->sh_entsize;
@@ -360,16 +381,16 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
             if (dynSymTableHdr->sh_link == SHN_UNDEF)
                 throw Exception("DynSymbol table doesnt have string table");
             
-            Elf32_Shdr& dynSymstrShdr = getSectionHeader(dynSymTableHdr->sh_link);
+            typename Types::Shdr& dynSymstrShdr = getSectionHeader(dynSymTableHdr->sh_link);
             dynSymbolsNum = dynSymTableHdr->sh_size/dynSymTableHdr->sh_entsize;
             
             dynSymStringTable = binaryCode + dynSymstrShdr.sh_offset;
             const size_t unfinishedSymstrPos = unfinishedRegionOfStringTable(
                     dynSymStringTable, dynSymstrShdr.sh_size);
             
-            for (uint32_t i = 0; i < dynSymbolsNum; i++)
+            for (typename Types::Size i = 0; i < dynSymbolsNum; i++)
             {   /* verify symbol names */
-                const Elf32_Sym& sym = getDynSymbol(i);
+                const typename Types::Sym& sym = getDynSymbol(i);
                 if (sym.st_name >= dynSymstrShdr.sh_size)
                     throw Exception("DynSymbol name index out of range!");
                 if (sym.st_name >= unfinishedSymstrPos)
@@ -384,7 +405,8 @@ ElfBinary32::ElfBinary32(size_t binaryCodeSize, char* binaryCode, cxuint creatio
     }
 }
 
-uint16_t ElfBinary32::getSectionIndex(const char* name) const
+template<typename Types>
+uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
 {
     if (hasSectionMap())
     {
@@ -404,7 +426,8 @@ uint16_t ElfBinary32::getSectionIndex(const char* name) const
     }
 }
 
-uint32_t ElfBinary32::getSymbolIndex(const char* name) const
+template<typename Types>
+typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) const
 {
     SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
     if (it == symbolIndexMap.end())
@@ -412,197 +435,12 @@ uint32_t ElfBinary32::getSymbolIndex(const char* name) const
     return it->second;
 }
 
-uint32_t ElfBinary32::getDynSymbolIndex(const char* name) const
+template<typename Types>
+typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* name) const
 {
     SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
     if (it == dynSymIndexMap.end())
         throw Exception("Cant find Elf32 DynSymbol");
-    return it->second;
-}
-
-/* ElfBinary64 */
-
-ElfBinary64::ElfBinary64() : symbolsNum(0), dynSymbolsNum(0),
-        symbolEntSize(0), dynSymEntSize(0)
-{
-}
-
-ElfBinary64::ElfBinary64(size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
-        symbolsNum(0), dynSymbolsNum(0), symbolEntSize(0), dynSymEntSize(0)
-{
-    this->binaryCode = binaryCode;
-    this->binaryCodeSize = binaryCodeSize;
-    this->creationFlags = creationFlags;
-    
-    if (binaryCodeSize < sizeof(Elf64_Ehdr))
-        throw Exception("Binary is too small!!!");
-    
-    const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binaryCode);
-    if (*reinterpret_cast<const uint32_t*>(binaryCode) != elfMagicValue)
-        throw Exception("This is not ELF binary");
-    if (ehdr->e_ident[EI_CLASS] != ELFCLASS64)
-        throw Exception("This is not 64-bit ELF binary");
-    if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
-        throw Exception("Other than little-endian binaries are not supported!");
-    
-    if (ehdr->e_phoff != 0)
-    {   /* reading and checking program headers */
-        if (ehdr->e_phoff > binaryCodeSize)
-            throw Exception("ProgramHeaders offset out of range!");
-        if (ehdr->e_phoff + size_t(ehdr->e_phentsize)*ehdr->e_phnum > binaryCodeSize)
-            throw Exception("ProgramHeaders offset+size out of range!");
-        
-        for (cxuint i = 0; i < ehdr->e_phnum; i++)
-        {
-            const Elf64_Phdr& phdr = getProgramHeader(i);
-            if (phdr.p_offset > binaryCodeSize)
-                throw Exception("Segment offset out of range!");
-            if (phdr.p_offset+phdr.p_filesz > binaryCodeSize)
-                throw Exception("Segment offset+size out of range!");
-        }
-    }
-    
-    if (ehdr->e_shoff != 0 && ehdr->e_shstrndx != SHN_UNDEF)
-    {   /* indexing of sections */
-        if (ehdr->e_shoff > binaryCodeSize)
-            throw Exception("SectionHeaders offset out of range!");
-        if (ehdr->e_shoff + size_t(ehdr->e_shentsize)*ehdr->e_shnum > binaryCodeSize)
-            throw Exception("SectionHeaders offset+size out of range!");
-        if (ehdr->e_shstrndx >= ehdr->e_shnum)
-            throw Exception("Shstrndx out of range!");
-        
-        Elf64_Shdr& shstrShdr = getSectionHeader(ehdr->e_shstrndx);
-        sectionStringTable = binaryCode + shstrShdr.sh_offset;
-        const size_t unfinishedShstrPos = unfinishedRegionOfStringTable(
-                    sectionStringTable, shstrShdr.sh_size);
-        
-        const Elf64_Shdr* symTableHdr = nullptr;
-        const Elf64_Shdr* dynSymTableHdr = nullptr;
-        
-        for (cxuint i = 0; i < ehdr->e_shnum; i++)
-        {
-            const Elf64_Shdr& shdr = getSectionHeader(i);
-            if (shdr.sh_offset > binaryCodeSize)
-                throw Exception("Section offset out of range!");
-            if (shdr.sh_type != SHT_NOBITS)
-                if (shdr.sh_offset+shdr.sh_size > binaryCodeSize)
-                    throw Exception("Section offset+size out of range!");
-            if (shdr.sh_link >= ehdr->e_shnum)
-                throw Exception("Section link out of range!");
-            
-            if (shdr.sh_name >= shstrShdr.sh_size)
-                throw Exception("Section name index out of range!");
-            
-            if (shdr.sh_name >= unfinishedShstrPos)
-                throw Exception("Unfinished section name!");
-            
-            const char* shname = sectionStringTable + shdr.sh_name;
-            if (*shname != 0 && (creationFlags & ELF_CREATE_SECTIONMAP) != 0)
-                sectionIndexMap.insert(std::make_pair(shname, i));
-            if (shdr.sh_type == SHT_SYMTAB)
-                symTableHdr = &shdr;
-            if (shdr.sh_type == SHT_DYNSYM)
-                dynSymTableHdr = &shdr;
-        }
-        
-        if (symTableHdr != nullptr)
-        {   // indexing symbols
-            if (symTableHdr->sh_entsize < sizeof(Elf64_Sym))
-                throw Exception("SymTable entry size is too small!");
-            
-            symbolEntSize = symTableHdr->sh_entsize;
-            symbolTable = binaryCode + symTableHdr->sh_offset;
-            if (symTableHdr->sh_link == SHN_UNDEF)
-                throw Exception("Symbol table doesnt have string table");
-            
-            Elf64_Shdr& symstrShdr = getSectionHeader(symTableHdr->sh_link);
-            symbolStringTable = binaryCode + symstrShdr.sh_offset;
-            
-            const size_t unfinishedSymstrPos = unfinishedRegionOfStringTable(
-                    symbolStringTable, symstrShdr.sh_size);
-            symbolsNum = symTableHdr->sh_size/symTableHdr->sh_entsize;
-            
-            for (size_t i = 0; i < symbolsNum; i++)
-            {   /* verify symbol names */
-                const Elf64_Sym& sym = getSymbol(i);
-                if (sym.st_name >= symstrShdr.sh_size)
-                    throw Exception("Symbol name index out of range!");
-                if (sym.st_name >= unfinishedSymstrPos)
-                    throw Exception("Unfinished symbol name!");
-                
-                const char* symname = symbolStringTable + sym.st_name;
-                // add to symbol map
-                if (*symname != 0 && (creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
-                    symbolIndexMap.insert(std::make_pair(symname, i));
-            }
-        }
-        if (dynSymTableHdr != nullptr)
-        {   // indexing dynamic symbols
-            if (dynSymTableHdr->sh_entsize < sizeof(Elf64_Sym))
-                throw Exception("DynSymTable entry size is too small!");
-            
-            dynSymEntSize = dynSymTableHdr->sh_entsize;
-            dynSymTable = binaryCode + dynSymTableHdr->sh_offset;
-            if (dynSymTableHdr->sh_link == SHN_UNDEF)
-                throw Exception("DynSymbol table doesnt have string table");
-            
-            Elf64_Shdr& dynSymstrShdr = getSectionHeader(dynSymTableHdr->sh_link);
-            dynSymbolsNum = dynSymTableHdr->sh_size/dynSymTableHdr->sh_entsize;
-            
-            dynSymStringTable = binaryCode + dynSymstrShdr.sh_offset;
-            const size_t unfinishedSymstrPos = unfinishedRegionOfStringTable(
-                    dynSymStringTable, dynSymstrShdr.sh_size);
-            
-            for (size_t i = 0; i < dynSymbolsNum; i++)
-            {   /* verify symbol names */
-                const Elf64_Sym& sym = getDynSymbol(i);
-                if (sym.st_name >= dynSymstrShdr.sh_size)
-                    throw Exception("DynSymbol name index out of range!");
-                if (sym.st_name >= unfinishedSymstrPos)
-                    throw Exception("Unfinished dynsymbol name!");
-                
-                const char* symname = dynSymStringTable + sym.st_name;
-                // add to symbol map
-                if (*symname != 0 && (creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
-                    dynSymIndexMap.insert(std::make_pair(symname, i));
-            }
-        }
-    }
-}
-
-uint16_t ElfBinary64::getSectionIndex(const char* name) const
-{
-    if (hasSectionMap())
-    {
-        SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
-        if (it == sectionIndexMap.end())
-            throw Exception("Cant find Elf64 Section");
-        return it->second;
-    }
-    else
-    {
-        for (cxuint i = 0; i < getSectionHeadersNum(); i++)
-        {
-            if (::strcmp(getSectionName(i), name) == 0)
-                return i;
-        }
-        throw Exception("Cant find Elf64 Section");
-    }
-}
-
-size_t ElfBinary64::getSymbolIndex(const char* name) const
-{
-    SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
-    if (it == symbolIndexMap.end())
-        throw Exception("Cant find Elf64 Symbol");
-    return it->second;
-}
-
-size_t ElfBinary64::getDynSymbolIndex(const char* name) const
-{
-    SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
-    if (it == dynSymIndexMap.end())
-        throw Exception("Cant find Elf64 DynSymbol");
     return it->second;
 }
 
@@ -634,32 +472,54 @@ static size_t skipStructureArgX86(const ArgSym* argDescTable,
 
 /* AMD inner X86 binary */
 
-AmdInnerX86Binary32::AmdInnerX86Binary32(size_t binaryCodeSize, char* binaryCode,
-         cxuint creationFlags) : ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
+struct AmdInnerX86Types : Elf32Types
 {
-}
+    typedef X86KernelArgSym KernelArgSym;
+    typedef ElfBinary32 ElfBinary;
+    static const size_t argDescsNumOffset;
+    static const size_t argDescsNumESize;
+    static const size_t argDescTableOffset;
+};
 
-size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
+struct AmdInnerX86_64Types : Elf64Types
+{
+    typedef X86_64KernelArgSym KernelArgSym;
+    typedef ElfBinary64 ElfBinary;
+    static const size_t argDescsNumOffset;
+    static const size_t argDescsNumESize;
+    static const size_t argDescTableOffset;
+};
+
+const size_t AmdInnerX86Types::argDescsNumOffset = 44;
+const size_t AmdInnerX86Types::argDescsNumESize = 12;
+const size_t AmdInnerX86Types::argDescTableOffset = 32;
+
+const size_t AmdInnerX86_64Types::argDescsNumOffset = 80;
+const size_t AmdInnerX86_64Types::argDescsNumESize = 16;
+const size_t AmdInnerX86_64Types::argDescTableOffset = 64;
+
+
+template<typename Types>
+size_t getKernelInfosInternal(const typename Types::ElfBinary& elf, KernelInfo*& kernelInfos)
 {
     delete[] kernelInfos;
     kernelInfos = nullptr;
     
-    if (binaryCode == nullptr)
-        return 0;
+    if (!elf) return 0;
     
     cxuint rodataIndex = SHN_UNDEF;
     try
-    { rodataIndex = getSectionIndex(".rodata"); }
+    { rodataIndex = elf.getSectionIndex(".rodata"); }
     catch(const Exception& ex)
     { return 0; /* no section */ }
     
-    const Elf32_Shdr& rodataHdr = getSectionHeader(rodataIndex);
+    const typename Types::Shdr& rodataHdr = elf.getSectionHeader(rodataIndex);
     
     /* get kernel metadata symbols */
-    std::vector<uint32_t> choosenSyms;
-    for (uint32_t i = 0; i < dynSymbolsNum; i++)
+    std::vector<typename Types::Size> choosenSyms;
+    for (typename Types::Size i = 0; i < elf.getDynSymbolsNum(); i++)
     {
-        const char* symName = getDynSymbolName(i);
+        const char* symName = elf.getDynSymbolName(i);
         const size_t len = ::strlen(symName);
         if (len < 18 || (::strncmp(symName, "__OpencCL_", 9) != 0 &&
             ::strcmp(symName+len-9, "_metadata") != 0)) // not metdata then skip
@@ -670,6 +530,8 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
     try
     {
     kernelInfos = new KernelInfo[choosenSyms.size()];
+    
+    const char* binaryCode = elf.getBinaryCode();
     
     const size_t unfinishedRegion = unfinishedRegionOfStringTable(
         binaryCode + rodataHdr.sh_offset, rodataHdr.sh_size);
@@ -677,11 +539,12 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
     size_t ki = 0;
     for (auto i: choosenSyms)
     {
-        const Elf32_Sym& sym = getDynSymbol(i);
-        if (sym.st_shndx >= getSectionHeadersNum())
+        const typename Types::Sym& sym = elf.getDynSymbol(i);
+        if (sym.st_shndx >= elf.getSectionHeadersNum())
             throw Exception("Metadata section index out of range");
         
-        const Elf32_Shdr& dataHdr = getSectionHeader(sym.st_shndx); // from symbol
+        const typename Types::Shdr& dataHdr = 
+                elf.getSectionHeader(sym.st_shndx); // from symbol
         const size_t fileOffset = sym.st_value - dataHdr.sh_addr + dataHdr.sh_offset;
         if (fileOffset < dataHdr.sh_offset ||
             fileOffset >= dataHdr.sh_offset + dataHdr.sh_size)
@@ -689,44 +552,48 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
         const char* data = binaryCode + fileOffset;
         
         /* parse number of args */
-        uint32_t argDescsNum = (*reinterpret_cast<const uint32_t*>(data) - 44)/12;
+        typename Types::Size argDescsNum =
+                (*reinterpret_cast<const uint32_t*>(data) -
+                Types::argDescsNumOffset)/Types::argDescsNumESize;
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
-        const char* symName = getDynSymbolName(i);
+        const char* symName = elf.getDynSymbolName(i);
         const size_t len = ::strlen(symName);
         kernelInfo.kernelName.assign(symName+9, len-18);
         kernelInfo.allocateArgs(argDescsNum>>1);
         
         /* get argument info */
-        const X86KernelArgSym* argDescTable =
-                reinterpret_cast<const X86KernelArgSym*>(data + 32);
+        const typename Types::KernelArgSym* argDescTable =
+                reinterpret_cast<const typename Types::KernelArgSym*>(
+                    data + Types::argDescTableOffset);
         
         cxuint realArgsNum = 0;
         for (size_t ai = 0; ai < argDescsNum; ai++)
         {
-            const X86KernelArgSym& argNameSym = argDescTable[ai];
+            const typename Types::KernelArgSym& argNameSym = argDescTable[ai];
             if (argNameSym.argType == 0x28) // skip structure
-                ai = skipStructureArgX86<X86KernelArgSym>(argDescTable, argDescsNum, ai);
+                ai = skipStructureArgX86<typename Types::KernelArgSym>(
+                    argDescTable, argDescsNum, ai);
             else // if not structure
                 ai++;
-            const X86KernelArgSym& argTypeSym = argDescTable[ai];
+            const typename Types::KernelArgSym& argTypeSym = argDescTable[ai];
             
             KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
-            if (argNameSym.nameOffset < rodataHdr.sh_offset ||
-                argNameSym.nameOffset >= rodataHdr.sh_offset+rodataHdr.sh_size)
+            if (argNameSym.getNameOffset() < rodataHdr.sh_offset ||
+                argNameSym.getNameOffset() >= rodataHdr.sh_offset+rodataHdr.sh_size)
                 throw Exception("kernel arg name offset out of range!");
             
-            if (argNameSym.nameOffset-rodataHdr.sh_offset >= unfinishedRegion)
+            if (argNameSym.getNameOffset()-rodataHdr.sh_offset >= unfinishedRegion)
                 throw Exception("Arg name is unfinished!");
             
-            if (argTypeSym.nameOffset < rodataHdr.sh_offset ||
-                argTypeSym.nameOffset >= rodataHdr.sh_offset+rodataHdr.sh_size)
+            if (argTypeSym.getNameOffset() < rodataHdr.sh_offset ||
+                argTypeSym.getNameOffset() >= rodataHdr.sh_offset+rodataHdr.sh_size)
                 throw Exception("kernel arg type offset out of range!");
             
-            if (argTypeSym.nameOffset-rodataHdr.sh_offset >= unfinishedRegion)
+            if (argTypeSym.getNameOffset()-rodataHdr.sh_offset >= unfinishedRegion)
                 throw Exception("Type name is unfinished!");
             
-            karg.argName = binaryCode + argNameSym.nameOffset;
+            karg.argName = binaryCode + argNameSym.getNameOffset();
             if (argNameSym.argType != 0x28)
             {
                 if (argNameSym.argType > 0x26)
@@ -741,7 +608,7 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
             
             karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
             karg.ptrAccess = argNameSym.ptrAccess;
-            karg.typeName = binaryCode + argTypeSym.nameOffset;
+            karg.typeName = binaryCode + argTypeSym.getNameOffset();
         }
         kernelInfo.reallocateArgs(realArgsNum);
     }
@@ -755,133 +622,24 @@ size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
     return choosenSyms.size();
 }
 
-/* AMD inner X86-64 binary */
+AmdInnerX86Binary32::AmdInnerX86Binary32(
+            size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
+            ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
+{ }
 
-AmdInnerX86Binary64::AmdInnerX86Binary64(size_t binaryCodeSize, char* binaryCode,
-         cxuint creationFlags) : ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+size_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
 {
+    return getKernelInfosInternal<AmdInnerX86Types>(*this, kernelInfos);
 }
+
+AmdInnerX86Binary64::AmdInnerX86Binary64(
+            size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
+            ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+{ }
 
 size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
 {
-    delete[] kernelInfos;
-    kernelInfos = nullptr;
-    
-    if (binaryCode == nullptr)
-        return 0;
-    
-    cxuint rodataIndex = SHN_UNDEF;
-    try
-    { rodataIndex = getSectionIndex(".rodata"); }
-    catch(const Exception& ex)
-    { return 0; /* no section */ }
-    
-    const Elf64_Shdr& rodataHdr = getSectionHeader(rodataIndex);
-    
-    /* get kernel metadata symbols */
-    std::vector<size_t> choosenSyms;
-    for (size_t i = 0; i < dynSymbolsNum; i++)
-    {
-        const char* symName = getDynSymbolName(i);
-        const size_t len = ::strlen(symName);
-        if (len < 18 || (::strncmp(symName, "__OpencCL_", 9) != 0 &&
-            ::strcmp(symName+len-9, "_metadata") != 0)) // not metdata then skip
-            continue;
-        choosenSyms.push_back(i);
-    }
-    
-    try
-    {
-    kernelInfos = new KernelInfo[choosenSyms.size()];
-    
-    const size_t unfinishedRegion = unfinishedRegionOfStringTable(
-        binaryCode + rodataHdr.sh_offset, rodataHdr.sh_size);
-    
-    size_t ki = 0;
-    for (size_t i: choosenSyms)
-    {
-        const Elf64_Sym& sym = getDynSymbol(i);
-        if (sym.st_shndx >= getSectionHeadersNum())
-            throw Exception("Metadata section index out of range");
-        
-        const Elf64_Shdr& dataHdr = getSectionHeader(sym.st_shndx); // from symbol
-        const size_t fileOffset = sym.st_value - dataHdr.sh_addr + dataHdr.sh_offset;
-        if (fileOffset < dataHdr.sh_offset ||
-            fileOffset >= dataHdr.sh_offset + dataHdr.sh_size)
-            throw Exception("File offset of kernelMetadata out of range!");
-        const char* data = binaryCode + fileOffset;
-        
-        /* parse number of args */
-        size_t argDescsNum = (*reinterpret_cast<const uint64_t*>(data) - 80)/16;
-        KernelInfo& kernelInfo = kernelInfos[ki++];
-        
-        const char* symName = getDynSymbolName(i);
-        const size_t len = ::strlen(symName);
-        kernelInfo.kernelName.assign(symName+9, len-18);
-        kernelInfo.allocateArgs(argDescsNum>>1);
-        
-        /* get argument info */
-        const X86_64KernelArgSym* argDescTable =
-                reinterpret_cast<const X86_64KernelArgSym*>(data + 64);
-        
-        cxuint realArgsNum = 0;
-        for (size_t ai = 0; ai < argDescsNum; ai++)
-        {
-            const X86_64KernelArgSym& argNameSym = argDescTable[ai];
-            if (argNameSym.argType == 0x28) // skip structure
-                ai = skipStructureArgX86<X86_64KernelArgSym>(argDescTable, argDescsNum, ai);
-            else // if not structure
-                ai++;
-            const X86_64KernelArgSym& argTypeSym = argDescTable[ai];
-            
-            KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
-            const size_t argNameOffset = 
-                (uint64_t(argNameSym.nameOffsetHi)<<32) + argNameSym.nameOffsetLo;
-            const size_t argTypeOffset = 
-                (uint64_t(argTypeSym.nameOffsetHi)<<32) + argTypeSym.nameOffsetLo;
-                
-            if (argNameOffset < rodataHdr.sh_offset ||
-                argNameOffset >= rodataHdr.sh_offset+rodataHdr.sh_size)
-                throw Exception("kernel arg name offset out of range!");
-            
-            if (argNameOffset-rodataHdr.sh_offset >= unfinishedRegion)
-                throw Exception("Arg name is unfinished!");
-                
-            if (argTypeOffset < rodataHdr.sh_offset ||
-                argTypeOffset >= rodataHdr.sh_offset+rodataHdr.sh_size)
-                throw Exception("kernel arg type offset out of range!");
-            
-            if (argTypeOffset-rodataHdr.sh_offset >= unfinishedRegion)
-                throw Exception("Arg type name is unfinished!");
-            
-            karg.argName = binaryCode + argNameOffset;
-            if (argNameSym.argType != 0x28)
-            {
-                if (argNameSym.argType > 0x26)
-                    throw Exception("Unknown kernel arg type");
-                karg.argType = x86ArgTypeTable[argNameSym.argType];
-                if (karg.argType == KernelArgType::POINTER &&
-                    (argNameSym.ptrAccess & (KARG_PTR_READ_ONLY|KARG_PTR_WRITE_ONLY)) != 0)
-                    karg.argType = KernelArgType::IMAGE;
-            }
-            else // if structure
-                karg.argType = KernelArgType::STRUCTURE;
-            karg.ptrSpace = static_cast<KernelPtrSpace>(argNameSym.ptrType);
-            karg.ptrAccess = argNameSym.ptrAccess;
-            karg.typeName = binaryCode + argTypeOffset;
-        }
-        kernelInfo.reallocateArgs(realArgsNum);
-    }
-    
-    }
-    catch(...) // if exception happens
-    {
-        delete[] kernelInfos;
-        kernelInfos = nullptr;
-        throw;
-    }
-    
-    return choosenSyms.size();
+    return getKernelInfosInternal<AmdInnerX86_64Types>(*this, kernelInfos);
 }
 
 /* AmdMaiBinaryBase */
