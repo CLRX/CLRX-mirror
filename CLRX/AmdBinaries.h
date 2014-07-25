@@ -245,6 +245,9 @@ public:
     const char* getBinaryCode() const
     { return binaryCode; }
     
+    char* getBinaryCode()
+    { return binaryCode; }
+    
     /// get ELF binary header
     const typename Types::Ehdr& getHeader() const
     { return *reinterpret_cast<const typename Types::Ehdr*>(binaryCode); }
@@ -440,7 +443,7 @@ public:
     ~AmdInnerX86Binary32() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
-    size_t getKernelInfos(KernelInfo*& kernelInfos) const;
+    uint32_t getKernelInfos(KernelInfo*& kernelInfos) const;
 };
 
 /// AMD inner binary for X86-64 binaries
@@ -475,7 +478,7 @@ class AmdMainBinaryBase
 {
 public:
     /// Kernel info map
-    typedef std::unordered_map<std::string, size_t>KernelInfoMap;
+    typedef std::unordered_map<std::string, size_t> KernelInfoMap;
 protected:
     AmdMainType type;   ///< type of binaries
     size_t kernelInfosNum;  ///< number of kernel infos that is number of kernels
@@ -516,8 +519,6 @@ private:
     uint32_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
-    
-    void initKernelInfos(cxuint creationFlags, const std::vector<uint32_t>& metadataSyms);
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -566,8 +567,6 @@ private:
     size_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
-    
-    void initKernelInfos(cxuint creationFlags, const std::vector<size_t>& metadataSyms);
 public:
     /** constructor
      * \param binaryCodeSize binary code size
