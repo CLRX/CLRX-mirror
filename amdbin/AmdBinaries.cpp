@@ -500,7 +500,8 @@ const size_t AmdInnerX86_64Types::argDescTableOffset = 64;
 
 
 template<typename Types>
-size_t getKernelInfosInternal(const typename Types::ElfBinary& elf, KernelInfo*& kernelInfos)
+static size_t getKernelInfosInternal(
+    const typename Types::ElfBinary& elf, KernelInfo*& kernelInfos)
 {
     delete[] kernelInfos;
     kernelInfos = nullptr;
