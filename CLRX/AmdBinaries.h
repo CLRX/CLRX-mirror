@@ -404,7 +404,9 @@ public:
 extern template class ElfBinaryTemplate<Elf32Types>;
 extern template class ElfBinaryTemplate<Elf64Types>;
 
+/// type for 32-bit ELF binary
 typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
+/// type for 64-bit ELF binary
 typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 
 /// AMD inner binary for GPU binaries that represent a single kernel
@@ -429,6 +431,7 @@ public:
     { return kernelName; }
 };
 
+/// AMD inner X86 binary
 class AmdInnerX86Binary32: public ElfBinary32
 {
 public:
@@ -509,7 +512,7 @@ public:
     const KernelInfo& getKernelInfo(const char* name) const;
 };
 
-/// AMD main binary for GPU
+/// AMD main binary for GPU for 32-bit mode
 class AmdMainGPUBinary32: public AmdMainBinaryBase, public ElfBinary32
 {
 public:
@@ -557,7 +560,7 @@ public:
     const AmdInnerGPUBinary32& getInnerBinary(const char* name) const;
 };
 
-/// AMD main binary for GPU
+/// AMD main binary for GPU for 64-bit mode
 class AmdMainGPUBinary64: public AmdMainBinaryBase, public ElfBinary64
 {
 public:

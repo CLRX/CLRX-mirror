@@ -145,8 +145,7 @@ static const uint32_t elfMagicValue = 0x464c457fU;
 /* kernel info class */
 
 KernelInfo::KernelInfo() : argsNum(0), argInfos(nullptr)
-{
-}
+{ }
 
 KernelInfo::~KernelInfo()
 {
@@ -472,7 +471,7 @@ static size_t skipStructureArgX86(const ArgSym* argDescTable,
 
 /* AMD inner X86 binary */
 
-struct AmdInnerX86Types : Elf32Types
+struct CLRX_INTERNAL AmdInnerX86Types : Elf32Types
 {
     typedef X86KernelArgSym KernelArgSym;
     typedef ElfBinary32 ElfBinary;
@@ -481,7 +480,7 @@ struct AmdInnerX86Types : Elf32Types
     static const size_t argDescTableOffset;
 };
 
-struct AmdInnerX86_64Types : Elf64Types
+struct CLRX_INTERNAL AmdInnerX86_64Types : Elf64Types
 {
     typedef X86_64KernelArgSym KernelArgSym;
     typedef ElfBinary64 ElfBinary;
@@ -648,8 +647,7 @@ size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
 
 AmdMainBinaryBase::AmdMainBinaryBase(AmdMainType _type) : type(_type),
         kernelInfosNum(0), kernelInfos(nullptr)
-{
-}
+{ }
 
 AmdMainBinaryBase::~AmdMainBinaryBase()
 {
