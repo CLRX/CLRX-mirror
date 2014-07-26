@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <iostream>
 #include <algorithm>
+#include <exception>
 #include <vector>
 #include <thread>
 #include <mutex>

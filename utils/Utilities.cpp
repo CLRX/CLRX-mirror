@@ -23,6 +23,7 @@
 #endif
 #include <mutex>
 #include <cstring>
+#include <string>
 #include <climits>
 #define __UTILITIES_MODULE__ 1
 #include <CLRX/Utilities.h>

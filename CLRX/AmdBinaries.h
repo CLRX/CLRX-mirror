@@ -17,7 +17,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /*! \file AmdBinaries.h
- * \brief an AMD binaries handling
+ * \brief AMD binaries handling
  */
 
 #ifndef __CLRX_AMDBINARIES_H__
@@ -175,6 +175,9 @@ struct Elf64Types
 };
 
 /// ELF binary class
+/** This object doenst copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 template<typename Types>
 class ElfBinaryTemplate
 {
@@ -205,7 +208,7 @@ protected:
     
 public:
     ElfBinaryTemplate();
-    /** constructor
+    /** constructor.
      * \param binaryCodeSize binary code size
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation

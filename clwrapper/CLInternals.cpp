@@ -20,11 +20,13 @@
 #include <CLRX/Config.h>
 #include <iostream>
 #include <algorithm>
+#include <exception>
 #include <vector>
 #include <utility>
 #include <thread>
 #include <mutex>
 #include <cstring>
+#include <string>
 #include <atomic>
 #include <climits>
 #include <cstdint>

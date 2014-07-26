@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include <map>
 #include <utility>
+#include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
