@@ -215,7 +215,7 @@ public:
      */
     ElfBinaryTemplate(size_t binaryCodeSize, char* binaryCode,
                 cxuint cretionFlags = ELF_CREATE_ALL);
-    ~ElfBinaryTemplate();
+    virtual ~ElfBinaryTemplate();
     
     /// get creation flags
     cxuint getCreationFlags() const
@@ -427,7 +427,7 @@ public:
      */
     AmdInnerGPUBinary32(const std::string& kernelName, size_t binaryCodeSize,
             char* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
-    ~AmdInnerGPUBinary32() = default;
+    virtual ~AmdInnerGPUBinary32();
     
     /// get kernel name
     const std::string& getKernelName() const
@@ -446,7 +446,7 @@ public:
      */
     AmdInnerX86Binary32(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = ELF_CREATE_ALL);
-    ~AmdInnerX86Binary32() = default;
+    virtual ~AmdInnerX86Binary32();
     
     /// generate kernel info from this binary and save to KernelInfo array
     uint32_t getKernelInfos(KernelInfo*& kernelInfos) const;
@@ -464,7 +464,7 @@ public:
      */
     AmdInnerX86Binary64(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = ELF_CREATE_ALL);
-    ~AmdInnerX86Binary64() = default;
+    virtual ~AmdInnerX86Binary64();
     
     /// generate kernel info from this binary and save to KernelInfo array
     size_t getKernelInfos(KernelInfo*& kernelInfos) const;
@@ -626,7 +626,7 @@ public:
      */
     AmdMainX86Binary32(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    virtual ~AmdMainX86Binary32() = default;
+    virtual ~AmdMainX86Binary32();
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
@@ -664,7 +664,7 @@ public:
      */
     AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    virtual ~AmdMainX86Binary64() = default;
+    virtual ~AmdMainX86Binary64();
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const

@@ -247,8 +247,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate() : binaryCodeSize(0), binaryCode(nu
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
         symbolsNum(0), dynSymbolsNum(0),
         symbolEntSize(0), dynSymEntSize(0)
-{
-}
+{ }
 
 template<typename Types>
 ElfBinaryTemplate<Types>::~ElfBinaryTemplate()
@@ -449,8 +448,10 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
 AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
          size_t binaryCodeSize, char* binaryCode, cxuint creationFlags)
         : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName)
-{
-}
+{ }
+
+AmdInnerGPUBinary32::~AmdInnerGPUBinary32()
+{ }
 
 template<typename ArgSym>
 static size_t skipStructureArgX86(const ArgSym* argDescTable,
@@ -629,6 +630,9 @@ AmdInnerX86Binary32::AmdInnerX86Binary32(
             ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 { }
 
+AmdInnerX86Binary32::~AmdInnerX86Binary32()
+{ }
+
 uint32_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
 {
     return getKernelInfosInternal<AmdInnerX86Types>(*this, kernelInfos);
@@ -637,6 +641,9 @@ uint32_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
 AmdInnerX86Binary64::AmdInnerX86Binary64(
             size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+{ }
+
+AmdInnerX86Binary64::~AmdInnerX86Binary64()
 { }
 
 size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
@@ -1308,6 +1315,9 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, char* binaryCode,
         initKernelInfos(creationFlags);
 }
 
+AmdMainX86Binary32::~AmdMainX86Binary32()
+{ }
+
 /* AmdMainX86Binary64 */
 
 void AmdMainX86Binary64::initKernelInfos(cxuint creationFlags)
@@ -1340,6 +1350,9 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
         initKernelInfos(creationFlags);
 }
+
+AmdMainX86Binary64::~AmdMainX86Binary64()
+{ }
 
 /* create amd binary */
 

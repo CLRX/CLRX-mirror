@@ -1,5 +1,6 @@
 * text=auto !eol
 CLRX/AmdBinaries.h -text
+CLRX/Assembler.h -text
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
 CLRX/Utilities.h -text
