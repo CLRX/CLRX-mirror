@@ -26,25 +26,59 @@
 #include <CLRX/Config.h>
 #include <cstddef>
 #include <string>
+#include <istream>
 #include <vector>
+#include <unordered_map>
 #include <CLRX/Utilities.h>
 
 /// main namespace
 namespace CLRX
 {
 
-class AssemblerBase
+
+
+class ISAAssembler
+{
+public:
+    typedef std::unordered_map<std::string, uint64_t> SymbolMap;
+private:
+    SymbolMap& symbolMap;
+    
+    ISAAssembler(SymbolMap& symbolMap);
+public:
+    virtual ~ISAAssembler();
+    
+    virtual size_t getMaxOutputSize() const = 0;
+    virtual size_t assemble(size_t lineSize, const char* line, char* output) = 0;
+};
+
+class ISADisassembler
 {
 private:
+    ISADisassembler();
 public:
-    AssemblerBase();
-    ~AssemblerBase();
+    virtual ~ISADisassembler();
     
+    virtual size_t getMaxISASize() const = 0;
+    virtual size_t assemble(size_t lineSize, const char* line, char* outBinary) = 0;
+};
+
+class Assembler
+{
+protected:
+    explicit Assembler(const char* string);
+    explicit Assembler(const std::istream& is);
+public:
+    virtual ~Assembler();
     
+    void assemble();
 };
 
 class DisassemblerBase
 {
+protected:
+    explicit DisassemblerBase(const std::ostream& os);
+public
 };
 
 };

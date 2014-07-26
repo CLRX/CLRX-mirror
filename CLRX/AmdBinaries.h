@@ -175,7 +175,7 @@ struct Elf64Types
 };
 
 /// ELF binary class
-/** This object doenst copy binary code content.
+/** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
  */
 template<typename Types>
@@ -413,6 +413,9 @@ typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
 typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 
 /// AMD inner binary for GPU binaries that represent a single kernel
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 class AmdInnerGPUBinary32: public ElfBinary32
 {
 private:
@@ -453,6 +456,9 @@ public:
 };
 
 /// AMD inner binary for X86-64 binaries
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 class AmdInnerX86Binary64: public ElfBinary64
 {
 public:
@@ -493,6 +499,11 @@ protected:
     
     explicit AmdMainBinaryBase(AmdMainType type);
 public:
+    // no copyable and no movable
+    AmdMainBinaryBase(const AmdMainBinaryBase&) = delete;
+    AmdMainBinaryBase(AmdMainBinaryBase&&) = delete;
+    AmdMainBinaryBase& operator=(const AmdMainBinaryBase&) = delete;
+    AmdMainBinaryBase& operator=(AmdMainBinaryBase&&) = delete;
     virtual ~AmdMainBinaryBase();
     
     /// get binary type
@@ -516,6 +527,9 @@ public:
 };
 
 /// AMD main binary for GPU for 32-bit mode
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 class AmdMainGPUBinary32: public AmdMainBinaryBase, public ElfBinary32
 {
 public:
@@ -564,6 +578,9 @@ public:
 };
 
 /// AMD main binary for GPU for 64-bit mode
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 class AmdMainGPUBinary64: public AmdMainBinaryBase, public ElfBinary64
 {
 public:
@@ -612,6 +629,9 @@ public:
 };
 
 /// AMD main binary for X86 systems
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 class AmdMainX86Binary32: public AmdMainBinaryBase, public ElfBinary32
 {
 private:
@@ -650,6 +670,9 @@ public:
 };
 
 /// AMD main binary for X86-64 systems
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
 class AmdMainX86Binary64: public AmdMainBinaryBase, public ElfBinary64
 {
 private:
