@@ -35,55 +35,122 @@
 namespace CLRX
 {
 
-//typedef std::unordered_map<std::string, uint64_t> SymbolMap;
+class Assembler;
+class Disassembler;
+
+enum: cxuint
+{
+    DISASM_ADDRESS = 1,
+    DISASM_HEXCODE = 2
+};
+
+enum class Disasm
 
 class ISAAssembler
 {
-public:
-    
 private:
-    SymbolMap& symbolMap;
+    Assembler& assembler;
     
-    ISAAssembler(SymbolMap& symbolMap);
+    size_t outputSize;
+    char* output;
+    
+    explicit ISAAssembler(Assembler& assembler);
+protected:
+    void reallocateOutput(size_t newSize);
 public:
     virtual ~ISAAssembler();
     
     virtual size_t getMaxOutputSize() const = 0;
-    virtual size_t assemble(size_t lineNo, size_t lineSize,
-        const char* line, char* output) = 0;
-    virtual void translateVirtualRegisters() = 0;
+    virtual size_t assemble(size_t lineNo, const char* line) = 0;
+    virtual void finish() = 0;
+    
+    size_t getOutputSize() const
+    { return outputSize; }
+    
+    const char* getOutput() const
+    { return output; }
+};
+
+class R800Assembler: public ISAAssembler
+{
+public:
+    explicit R800Assembler(Assembler& assembler);
+    ~R800Assembler();
+    
+    size_t getMaxOutputSize() const;
+    size_t assemble(size_t lineNo, const char* line);
+    void finish();
+};
+
+class R1000Assembler: public ISAAssembler
+{
+public:
+    explicit R1000Assembler(Assembler& assembler);
+    ~R1000Assembler();
+    
+    size_t getMaxOutputSize() const;
+    size_t assemble(size_t lineNo, const char* line);
+    void finish();
 };
 
 class ISADisassembler
 {
 private:
-    ISADisassembler();
+    Disassembler& disassembler;
+    
+    size_t inputSize;
+    const char* input;
+    
+    ISADisassembler(Disassembler& disassembler);
 public:
     virtual ~ISADisassembler();
     
-    virtual size_t getMaxISASize() const = 0;
-    virtual size_t assemble(size_t lineSize, const char* line, char* outBinary) = 0;
+    virtual size_t getMaxLineSize() const = 0;
+    virtual size_t disassemble(char* line) = 0;
+};
+
+class R800Disassembler: public ISADisassembler
+{
+public:
+    R800Disassembler(Disassembler& disassembler);
+    ~R800Disassembler();
+    
+    size_t getMaxLineSize() const;
+    size_t disassemble(char* line);
+};
+
+class R1000Disassembler: public ISADisassembler
+{
+public:
+    R1000Disassembler(Disassembler& disassembler);
+    ~R1000Disassembler();
+    
+    size_t getMaxLineSize() const;
+    size_t disassemble(char* line);
 };
 
 class Assembler
 {
-protected:
+public:
     explicit Assembler(const char* string);
     explicit Assembler(const std::istream& is);
-public:
-    virtual ~Assembler();
+    ~Assembler();
     
     void assemble();
     
     const SymbolMap& getSymbolMap() const;
-    uint64_t parseExpresion(size_t stringSize, const char* string) const;
+    uint64_t parseExpression(size_t stringSize, const char* string) const;
 };
 
-class DisassemblerBase
+class Disassembler
 {
 protected:
-    explicit DisassemblerBase(const std::ostream& os);
 public:
+    Disassembler(size_t maxSize, char* output);
+    explicit Disassembler(const std::ostream& os);
+    ~Disassembler();
+    
+    void disassemble();
 };
 
 };

@@ -57,7 +57,7 @@ enum : cxuint {
 };
 
 /// kernel argument type
-enum KernelArgType : uint8_t
+enum class KernelArgType : uint8_t
 {
     VOID = 0,
     UCHAR, CHAR, USHORT, SHORT, UINT, INT, ULONG, LONG, FLOAT, DOUBLE, POINTER, IMAGE,
@@ -183,10 +183,10 @@ class ElfBinaryTemplate
 {
 public:
     /// section index map
-    typedef std::unordered_map<const char*, size_t, CLRX::CStringHash,
+    typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
             CLRX::CStringEqual> SectionIndexMap;
     /// symbol index map
-    typedef std::unordered_map<const char*, size_t, CLRX::CStringHash,
+    typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
             CLRX::CStringEqual> SymbolIndexMap;
 protected:
     cxuint creationFlags;   ///< creation flags holder
@@ -356,6 +356,11 @@ public:
         return sectionStringTable + section.sh_name;
     }
     
+    SectionIndexMap::const_iterator getSectionIterEnd(const char* name) const
+    { return sectionIndexMap.end(); }
+    
+    SectionIndexMap::const_iterator getSectionIter(const char* name) const;
+    
     /// get section index with specified name
     uint16_t getSectionIndex(const char* name) const;
     
@@ -364,6 +369,18 @@ public:
     
     /// get dynamic symbol index with specified name (requires dynamic symbol index map)
     typename Types::Size getDynSymbolIndex(const char* name) const;
+    
+    SymbolIndexMap::const_iterator getSymbolIterEnd(const char* name) const
+    { return symbolIndexMap.end(); }
+    
+    SymbolIndexMap::const_iterator getDynSymbolIterEnd(const char* name) const
+    { return dynSymIndexMap.end(); }
+    
+    /// get symbol iterator with specified name (requires symbol index map)
+    SymbolIndexMap::const_iterator getSymbolIter(const char* name) const;
+    
+    /// get dynamic symbol iterator with specified name (requires dynamic symbol index map)
+    SymbolIndexMap::const_iterator getDynSymbolIter(const char* name) const;
     
     /// get section header with specified name
     const typename Types::Shdr& getSectionHeader(const char* name) const
@@ -430,7 +447,7 @@ public:
      */
     AmdInnerGPUBinary32(const std::string& kernelName, size_t binaryCodeSize,
             char* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
-    virtual ~AmdInnerGPUBinary32() = default;
+    ~AmdInnerGPUBinary32() = default;
     
     /// get kernel name
     const std::string& getKernelName() const
@@ -449,7 +466,7 @@ public:
      */
     AmdInnerX86Binary32(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = ELF_CREATE_ALL);
-    virtual ~AmdInnerX86Binary32() = default;
+    ~AmdInnerX86Binary32() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
     uint32_t getKernelInfos(KernelInfo*& kernelInfos) const;
@@ -470,7 +487,7 @@ public:
      */
     AmdInnerX86Binary64(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = ELF_CREATE_ALL);
-    virtual ~AmdInnerX86Binary64() = default;
+    ~AmdInnerX86Binary64() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
     size_t getKernelInfos(KernelInfo*& kernelInfos) const;
@@ -547,7 +564,7 @@ public:
      */
     AmdMainGPUBinary32(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    virtual ~AmdMainGPUBinary32();
+    ~AmdMainGPUBinary32();
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
@@ -598,7 +615,7 @@ public:
      */
     AmdMainGPUBinary64(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    virtual ~AmdMainGPUBinary64();
+    ~AmdMainGPUBinary64();
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
@@ -646,7 +663,7 @@ public:
      */
     AmdMainX86Binary32(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    virtual ~AmdMainX86Binary32() = default;
+    ~AmdMainX86Binary32() = default;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
@@ -687,7 +704,7 @@ public:
      */
     AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    virtual ~AmdMainX86Binary64() = default;
+    ~AmdMainX86Binary64() = default;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const

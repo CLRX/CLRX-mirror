@@ -35,109 +35,109 @@ using namespace CLRX;
 
 static const KernelArgType x86ArgTypeTable[]
 {
-    VOID,
-    CHAR,
-    SHORT,
-    INT,
-    LONG,
-    FLOAT,
-    DOUBLE,
-    POINTER,
-    CHAR2,
-    CHAR3,
-    CHAR4,
-    CHAR8,
-    CHAR16,
-    SHORT2,
-    SHORT3,
-    SHORT4,
-    SHORT8,
-    SHORT16,
-    INT2,
-    INT3,
-    INT4,
-    INT8,
-    INT16,
-    LONG2,
-    LONG3,
-    LONG4,
-    LONG8,
-    LONG16,
-    FLOAT2,
-    FLOAT3,
-    FLOAT4,
-    FLOAT8,
-    FLOAT16,
-    DOUBLE2,
-    DOUBLE3,
-    DOUBLE4,
-    DOUBLE8,
-    DOUBLE16,
-    SAMPLER
+    KernelArgType::VOID,
+    KernelArgType::CHAR,
+    KernelArgType::SHORT,
+    KernelArgType::INT,
+    KernelArgType::LONG,
+    KernelArgType::FLOAT,
+    KernelArgType::DOUBLE,
+    KernelArgType::POINTER,
+    KernelArgType::CHAR2,
+    KernelArgType::CHAR3,
+    KernelArgType::CHAR4,
+    KernelArgType::CHAR8,
+    KernelArgType::CHAR16,
+    KernelArgType::SHORT2,
+    KernelArgType::SHORT3,
+    KernelArgType::SHORT4,
+    KernelArgType::SHORT8,
+    KernelArgType::SHORT16,
+    KernelArgType::INT2,
+    KernelArgType::INT3,
+    KernelArgType::INT4,
+    KernelArgType::INT8,
+    KernelArgType::INT16,
+    KernelArgType::LONG2,
+    KernelArgType::LONG3,
+    KernelArgType::LONG4,
+    KernelArgType::LONG8,
+    KernelArgType::LONG16,
+    KernelArgType::FLOAT2,
+    KernelArgType::FLOAT3,
+    KernelArgType::FLOAT4,
+    KernelArgType::FLOAT8,
+    KernelArgType::FLOAT16,
+    KernelArgType::DOUBLE2,
+    KernelArgType::DOUBLE3,
+    KernelArgType::DOUBLE4,
+    KernelArgType::DOUBLE8,
+    KernelArgType::DOUBLE16,
+    KernelArgType::SAMPLER
 };
 
 static const KernelArgType gpuArgTypeTable[]
 {
-    UCHAR,
-    UCHAR2,
-    UCHAR3,
-    UCHAR4,
-    UCHAR8,
-    UCHAR16,
-    CHAR,
-    CHAR2,
-    CHAR3,
-    CHAR4,
-    CHAR8,
-    CHAR16,
-    USHORT,
-    USHORT2,
-    USHORT3,
-    USHORT4,
-    USHORT8,
-    USHORT16,
-    SHORT,
-    SHORT2,
-    SHORT3,
-    SHORT4,
-    SHORT8,
-    SHORT16,
-    UINT,
-    UINT2,
-    UINT3,
-    UINT4,
-    UINT8,
-    UINT16,
-    INT,
-    INT2,
-    INT3,
-    INT4,
-    INT8,
-    INT16,
-    ULONG,
-    ULONG2,
-    ULONG3,
-    ULONG4,
-    ULONG8,
-    ULONG16,
-    LONG,
-    LONG2,
-    LONG3,
-    LONG4,
-    LONG8,
-    LONG16,
-    FLOAT,
-    FLOAT2,
-    FLOAT3,
-    FLOAT4,
-    FLOAT8,
-    FLOAT16,
-    DOUBLE,
-    DOUBLE2,
-    DOUBLE3,
-    DOUBLE4,
-    DOUBLE8,
-    DOUBLE16
+    KernelArgType::UCHAR,
+    KernelArgType::UCHAR2,
+    KernelArgType::UCHAR3,
+    KernelArgType::UCHAR4,
+    KernelArgType::UCHAR8,
+    KernelArgType::UCHAR16,
+    KernelArgType::CHAR,
+    KernelArgType::CHAR2,
+    KernelArgType::CHAR3,
+    KernelArgType::CHAR4,
+    KernelArgType::CHAR8,
+    KernelArgType::CHAR16,
+    KernelArgType::USHORT,
+    KernelArgType::USHORT2,
+    KernelArgType::USHORT3,
+    KernelArgType::USHORT4,
+    KernelArgType::USHORT8,
+    KernelArgType::USHORT16,
+    KernelArgType::SHORT,
+    KernelArgType::SHORT2,
+    KernelArgType::SHORT3,
+    KernelArgType::SHORT4,
+    KernelArgType::SHORT8,
+    KernelArgType::SHORT16,
+    KernelArgType::UINT,
+    KernelArgType::UINT2,
+    KernelArgType::UINT3,
+    KernelArgType::UINT4,
+    KernelArgType::UINT8,
+    KernelArgType::UINT16,
+    KernelArgType::INT,
+    KernelArgType::INT2,
+    KernelArgType::INT3,
+    KernelArgType::INT4,
+    KernelArgType::INT8,
+    KernelArgType::INT16,
+    KernelArgType::ULONG,
+    KernelArgType::ULONG2,
+    KernelArgType::ULONG3,
+    KernelArgType::ULONG4,
+    KernelArgType::ULONG8,
+    KernelArgType::ULONG16,
+    KernelArgType::LONG,
+    KernelArgType::LONG2,
+    KernelArgType::LONG3,
+    KernelArgType::LONG4,
+    KernelArgType::LONG8,
+    KernelArgType::LONG16,
+    KernelArgType::FLOAT,
+    KernelArgType::FLOAT2,
+    KernelArgType::FLOAT3,
+    KernelArgType::FLOAT4,
+    KernelArgType::FLOAT8,
+    KernelArgType::FLOAT16,
+    KernelArgType::DOUBLE,
+    KernelArgType::DOUBLE2,
+    KernelArgType::DOUBLE3,
+    KernelArgType::DOUBLE4,
+    KernelArgType::DOUBLE8,
+    KernelArgType::DOUBLE16
 };
 
 
@@ -426,6 +426,21 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
 }
 
 template<typename Types>
+ElfBinaryTemplate<Types>::SectionIndexMap::const_iterator
+ElfBinaryTemplate<Types>::getSectionIter(const char* name) const
+{
+    if (hasSectionMap())
+    {
+        SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
+        if (it == sectionIndexMap.end())
+            throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
+        return it;
+    }
+    else // exception
+        throw Exception("This operation requires section index map!");
+}
+
+template<typename Types>
 typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) const
 {
     SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
@@ -443,6 +458,25 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
     return it->second;
 }
 
+template<typename Types>
+ElfBinaryTemplate<Types>::SymbolIndexMap::const_iterator 
+ElfBinaryTemplate<Types>::getSymbolIter(const char* name) const
+{
+    SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
+    if (it == symbolIndexMap.end())
+        throw Exception(std::string("Cant find Elf")+Types::bitName+" Symbol");
+    return it;
+}
+
+template<typename Types>
+ElfBinaryTemplate<Types>::SymbolIndexMap::const_iterator 
+ElfBinaryTemplate<Types>::getDynSymbolIter(const char* name) const
+{
+    SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
+    if (it == dynSymIndexMap.end())
+        throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
+    return it;
+}
 
 /* AMD inner GPU binary */
 
