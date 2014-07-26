@@ -411,7 +411,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
     {
         SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
         if (it == sectionIndexMap.end())
-            throw Exception("Cant find Elf32 Section");
+            throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
         return it->second;
     }
     else
@@ -421,7 +421,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
             if (::strcmp(getSectionName(i), name) == 0)
                 return i;
         }
-        throw Exception("Cant find Elf32 Section");
+        throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
     }
 }
 
@@ -430,7 +430,7 @@ typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) 
 {
     SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
     if (it == symbolIndexMap.end())
-        throw Exception("Cant find Elf32 Symbol");
+        throw Exception(std::string("Cant find Elf")+Types::bitName+" Symbol");
     return it->second;
 }
 
@@ -439,9 +439,10 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
 {
     SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
     if (it == dynSymIndexMap.end())
-        throw Exception("Cant find Elf32 DynSymbol");
+        throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
     return it->second;
 }
+
 
 /* AMD inner GPU binary */
 

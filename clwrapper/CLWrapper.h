@@ -113,7 +113,7 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
         versionSize = 0;
         parent = nullptr;
     }
-
+    
     ~CLRXDevice()
     {
         delete[] version;
@@ -153,7 +153,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
         deviceInitStatus = CL_SUCCESS;
         openCLVersionNum = 0;
     }
-
+    
     ~CLRXPlatform()
     { 
         delete[] extensions;
@@ -183,7 +183,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
         properties = nullptr;
         openCLVersionNum = 0;
     }
-
+    
     ~CLRXContext()
     {
         delete[] properties;
@@ -256,7 +256,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
         concurrentBuilds = 0;
         transDevicesMap = nullptr;
     }
-
+    
     ~CLRXProgram()
     {
         delete[] assocDevices;

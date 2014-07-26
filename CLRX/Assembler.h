@@ -35,12 +35,12 @@
 namespace CLRX
 {
 
-
+//typedef std::unordered_map<std::string, uint64_t> SymbolMap;
 
 class ISAAssembler
 {
 public:
-    typedef std::unordered_map<std::string, uint64_t> SymbolMap;
+    
 private:
     SymbolMap& symbolMap;
     
@@ -49,7 +49,9 @@ public:
     virtual ~ISAAssembler();
     
     virtual size_t getMaxOutputSize() const = 0;
-    virtual size_t assemble(size_t lineSize, const char* line, char* output) = 0;
+    virtual size_t assemble(size_t lineNo, size_t lineSize,
+        const char* line, char* output) = 0;
+    virtual void translateVirtualRegisters() = 0;
 };
 
 class ISADisassembler
@@ -72,16 +74,18 @@ public:
     virtual ~Assembler();
     
     void assemble();
+    
+    const SymbolMap& getSymbolMap() const;
+    uint64_t parseExpresion(size_t stringSize, const char* string) const;
 };
 
 class DisassemblerBase
 {
 protected:
     explicit DisassemblerBase(const std::ostream& os);
-public
+public:
 };
 
 };
 
 #endif
-
