@@ -429,15 +429,10 @@ template<typename Types>
 ElfBinaryTemplate<Types>::SectionIndexMap::const_iterator
 ElfBinaryTemplate<Types>::getSectionIter(const char* name) const
 {
-    if (hasSectionMap())
-    {
-        SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
-        if (it == sectionIndexMap.end())
-            throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
-        return it;
-    }
-    else // exception
-        throw Exception("This operation requires section index map!");
+    SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
+    if (it == sectionIndexMap.end())
+        throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
+    return it;
 }
 
 template<typename Types>
