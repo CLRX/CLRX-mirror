@@ -40,12 +40,23 @@ class Disassembler;
 
 enum: cxuint
 {
+    ASM_ALTMACRO = 1,
+    ASM_WARNINGS = 2,
+    ASM_WARN_SIGNED_OVERFLOW = 4,
+    ASM_64BIT_MODE = 8
+};
+
+enum: cxuint
+{
     DISASM_ADDRESS = 1,
-    DISASM_HEXCODE = 2
+    DISASM_HEXCODE = 2,
+    DISASM_CALLPARAMS = 4,
+    DISASM_ASMFORM = 8
 };
 
 enum class GPUDeviceType
 {
+    UNDEFINED = 0,
     CEDAR, ///< Radeon HD5400
     REDWOOD, ///< Radeon HD5500
     JUNIPER, ///< Radeon HD5700
@@ -86,6 +97,31 @@ enum class GPUDeviceType
     RADEON_R9_270 = CURACAO,
     RADEON_R9_290 = HAWAII
 };
+
+enum class AsmSymbolType: uint8_t
+{
+    OBJECT,
+    FUNCTION,
+    FILE,
+    KERNEL
+};
+
+enum class AsmSymbolBind: uint8_t
+{
+    LOCAL,
+    GLOBAL,
+    WEAK
+};
+
+struct AsmSymbol
+{
+    AsmSymbolBind bind;
+    AsmSymbolType type;
+    bool isDefined;
+    uint64_t value;
+};
+
+typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
 
 class ISAAssembler
 {
@@ -173,11 +209,42 @@ public:
 class Assembler
 {
 public:
-    explicit Assembler(const char* string);
-    explicit Assembler(const std::istream& is);
+    typedef std::unordered_map<std::string, std::string> DefSymMap;
+    typedef std::unordered_map<std::string, std::string> MacroMap;
+private:
+    cxuint flags;
+    GPUDeviceType deviceType;
+    ISAAssembler* isaAssembler;
+    std::vector<std::string> includeDirs;
+    AsmSymbolMap symbolMap;
+    MacroMap macroMap;
+public:
+    explicit Assembler(const char* string, cxuint flags);
+    explicit Assembler(const std::istream& is, cxuint flags);
     ~Assembler();
     
     void assemble();
+    
+    GPUDeviceType getDeviceType() const
+    { return deviceType; }
+    
+    void setDeviceType(const GPUDeviceType deviceType)
+    { this->deviceType = deviceType; }
+    
+    cxuint getFlags() const
+    { return flags; }
+    void setFlags(cxuint flags)
+    { this->flags = flags; }
+    
+    const std::vector<std::string>& getIncludeDirs() const
+    { return includeDirs; }
+    
+    const AsmSymbolMap& getSymbolMap() const
+    { return symbolMap; }
+    
+    void setInitialDefSyms(const DefSymMap& defsyms);
+    
+    void addInitialDefSym(const std::string& symName, const std::string& symExpr);
     
     const SymbolMap& getSymbolMap() const;
     uint64_t parseExpression(size_t stringSize, const char* string) const;
@@ -185,10 +252,12 @@ public:
 
 class Disassembler
 {
-protected:
+private:
+    GPUDeviceType deviceType;
+    cxuint flags;
 public:
-    Disassembler(size_t maxSize, char* output);
-    explicit Disassembler(const std::ostream& os);
+    Disassembler(size_t maxSize, char* output, cxuint flags);
+    explicit Disassembler(const std::ostream& os, cxuint flags);
     ~Disassembler();
     
     void disassemble();

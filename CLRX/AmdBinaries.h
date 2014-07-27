@@ -214,7 +214,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     ElfBinaryTemplate(size_t binaryCodeSize, char* binaryCode,
-                cxuint cretionFlags = ELF_CREATE_ALL);
+                cxuint creationFlags = ELF_CREATE_ALL);
     virtual ~ElfBinaryTemplate();
     
     /// get creation flags
