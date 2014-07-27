@@ -114,6 +114,12 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
         parent = nullptr;
     }
     
+    // non-copyable and non-movable
+    CLRXDevice(const CLRXDevice&) = delete;
+    CLRXDevice(CLRXDevice&&) = delete;
+    CLRXDevice& operator=(const CLRXDevice&) = delete;
+    CLRXDevice& operator=(CLRXDevice&&) = delete;
+    
     ~CLRXDevice()
     {
         delete[] version;
@@ -154,6 +160,12 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
         openCLVersionNum = 0;
     }
     
+    // non-copyable and non-movable
+    CLRXPlatform(const CLRXPlatform&) = delete;
+    CLRXPlatform(CLRXPlatform&&) = delete;
+    CLRXPlatform& operator=(const CLRXPlatform&) = delete;
+    CLRXPlatform& operator=(CLRXPlatform&&) = delete;
+    
     ~CLRXPlatform()
     { 
         delete[] extensions;
@@ -174,7 +186,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
     size_t propertiesNum;
     cl_context_properties* properties;
     uint32_t openCLVersionNum;
-
+    
     CLRXContext() : refCount(1)
     {
         devicesNum = 0;
@@ -183,6 +195,12 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
         properties = nullptr;
         openCLVersionNum = 0;
     }
+    
+    // non-copyable and non-movable
+    CLRXContext(const CLRXContext&) = delete;
+    CLRXContext(CLRXContext&&) = delete;
+    CLRXContext& operator=(const CLRXContext&) = delete;
+    CLRXContext& operator=(CLRXContext&&) = delete;
     
     ~CLRXContext()
     {
@@ -203,6 +221,12 @@ struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue
         context = nullptr;
         device = nullptr;
     }
+    
+    // non-copyable and non-movable
+    CLRXCommandQueue(const CLRXCommandQueue&) = delete;
+    CLRXCommandQueue(CLRXCommandQueue&&) = delete;
+    CLRXCommandQueue& operator=(const CLRXCommandQueue&) = delete;
+    CLRXCommandQueue& operator=(CLRXCommandQueue&&) = delete;
 };
 
 struct CLRX_INTERNAL CLRXMemObject: _cl_mem
@@ -219,6 +243,12 @@ struct CLRX_INTERNAL CLRXMemObject: _cl_mem
         parent = nullptr;
         buffer = nullptr; // for image
     }
+    
+    // non-copyable and non-movable
+    CLRXMemObject(const CLRXMemObject&) = delete;
+    CLRXMemObject(CLRXMemObject&&) = delete;
+    CLRXMemObject& operator=(const CLRXMemObject&) = delete;
+    CLRXMemObject& operator=(CLRXMemObject&&) = delete;
 };
 
 struct CLRX_INTERNAL CLRXMemDtorCallbackUserData
@@ -257,6 +287,12 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
         transDevicesMap = nullptr;
     }
     
+    // non-copyable and non-movable
+    CLRXProgram(const CLRXProgram&) = delete;
+    CLRXProgram(CLRXProgram&&) = delete;
+    CLRXProgram& operator=(const CLRXProgram&) = delete;
+    CLRXProgram& operator=(CLRXProgram&&) = delete;
+    
     ~CLRXProgram()
     {
         delete[] assocDevices;
@@ -293,6 +329,12 @@ struct CLRX_INTERNAL CLRXKernel: _cl_kernel
     CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
             argTypes(_argTypes)
     { program = nullptr; }
+    
+    // non-copyable and non-movable
+    CLRXKernel(const CLRXKernel&) = delete;
+    CLRXKernel(CLRXKernel&&) = delete;
+    CLRXKernel& operator=(const CLRXKernel&) = delete;
+    CLRXKernel& operator=(CLRXKernel&&) = delete;
 };
 
 struct CLRX_INTERNAL CLRXEvent: _cl_event
@@ -307,6 +349,12 @@ struct CLRX_INTERNAL CLRXEvent: _cl_event
         context = nullptr;
         commandQueue = nullptr;
     }
+    
+    // non-copyable and non-movable
+    CLRXEvent(const CLRXEvent&) = delete;
+    CLRXEvent(CLRXEvent&&) = delete;
+    CLRXEvent& operator=(const CLRXEvent&) = delete;
+    CLRXEvent& operator=(CLRXEvent&&) = delete;
 };
 
 struct CLRX_INTERNAL CLRXEventCallbackUserData

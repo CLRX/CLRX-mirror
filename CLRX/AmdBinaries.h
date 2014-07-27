@@ -356,9 +356,11 @@ public:
         return sectionStringTable + section.sh_name;
     }
     
+    /// get end iterator if section index map
     SectionIndexMap::const_iterator getSectionIterEnd(const char* name) const
     { return sectionIndexMap.end(); }
     
+    /// get section iterator with specified name (requires section index map)
     SectionIndexMap::const_iterator getSectionIter(const char* name) const;
     
     /// get section index with specified name
@@ -370,9 +372,11 @@ public:
     /// get dynamic symbol index with specified name (requires dynamic symbol index map)
     typename Types::Size getDynSymbolIndex(const char* name) const;
     
+    /// get end iterator of symbol index map
     SymbolIndexMap::const_iterator getSymbolIterEnd(const char* name) const
     { return symbolIndexMap.end(); }
     
+    /// get end iterator of dynamic symbol index map
     SymbolIndexMap::const_iterator getDynSymbolIterEnd(const char* name) const
     { return dynSymIndexMap.end(); }
     
