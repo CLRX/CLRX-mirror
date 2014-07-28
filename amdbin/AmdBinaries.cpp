@@ -593,7 +593,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         
         /* parse number of args */
         typename Types::Size argDescsNum =
-                (*reinterpret_cast<const uint32_t*>(data) -
+                (ULEV(*reinterpret_cast<const uint32_t*>(data)) -
                 Types::argDescsNumOffset)/Types::argDescsNumESize;
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
