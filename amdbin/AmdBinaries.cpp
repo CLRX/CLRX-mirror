@@ -854,8 +854,14 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 // get vector size
                 {
                     const char* outEnd;
-                    cxuint vectorSize = cstrtouiParse(kernelDesc + pos,
-                          kernelDesc + tokPos, outEnd, ':', lineNo);
+                    cxuint vectorSize = 0;
+                    try
+                    {
+                        vectorSize = cstrtoui(kernelDesc + pos,
+                              kernelDesc + tokPos, outEnd);
+                    }
+                    catch(const ParseException& ex)
+                    { throw ParseException(lineNo, ex.what()); }
                     if (outEnd != kernelDesc + tokPos)
                         throw ParseException(lineNo, "Garbages after integer");
                     argIt->second.argType = determineKernelArgType(argType,
@@ -1075,8 +1081,11 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 throw ParseException(lineNo, "Is not KernelDesc line");
             
             const char* outEnd;
-            cxuint argIndex = cstrtouiParse(kernelDesc+pos, kernelDesc+tokPos,
-                            outEnd, ':', lineNo);
+            cxuint argIndex = 0;
+            try
+            { argIndex = cstrtoui(kernelDesc+pos, kernelDesc+tokPos, outEnd); }
+            catch(const ParseException& ex)
+            { throw ParseException(lineNo, ex.what()); }
             
             if (outEnd != kernelDesc + tokPos)
                 throw ParseException(lineNo, "Garbages after integer");

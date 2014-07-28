@@ -374,14 +374,19 @@ void clrxWrapperInitialize()
                 const char* verEnd = nullptr;
                 if (::strncmp(versionBuffer, "OpenCL ", 7) == 0)
                 {
-                    openCLmajor = CLRX::cstrtoui(versionBuffer + 7, verEnd);
-                    if (verEnd != nullptr && *verEnd == '.')
+                    try
                     {
-                        const char* verEnd2 = nullptr;
-                        openCLminor = CLRX::cstrtoui(verEnd + 1, verEnd2);
-                        if (openCLmajor > UINT16_MAX || openCLminor > UINT16_MAX)
-                            openCLmajor = openCLminor = 0; // if failed
+                        openCLmajor = CLRX::cstrtoui(versionBuffer + 7, nullptr, verEnd);
+                        if (verEnd != nullptr && *verEnd == '.')
+                        {
+                            const char* verEnd2 = nullptr;
+                            openCLminor = CLRX::cstrtoui(verEnd + 1, nullptr, verEnd2);
+                            if (openCLmajor > UINT16_MAX || openCLminor > UINT16_MAX)
+                                openCLmajor = openCLminor = 0; // if failed
+                        }
                     }
+                    catch(const ParseException& ex)
+                    { /* ignore parse exception */ }
                     clrxPlatform.openCLVersionNum = getOpenCLVersionNum(
                                     openCLmajor, openCLminor);
                 }

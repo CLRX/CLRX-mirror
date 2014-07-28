@@ -40,6 +40,11 @@ const char* Exception::what() const throw()
     return message.c_str();
 }
 
+ParseException::ParseException(const std::string& message)
+{
+    this->message = message;
+}
+
 ParseException::ParseException(size_t lineNo, const std::string& message)
 {
     std::ostringstream oss;
@@ -187,22 +192,7 @@ template
 bool CLRX::parseEnvVariable<bool>(const char* envVar, const bool& defaultValue);
 
 
-cxuint CLRX::cstrtoui(const char* s, const char*& end)
-{
-    uint64_t out = 0;
-    const char* p;
-    for (p = s; *p >= '0' && *p <= '9'; p++)
-    {
-        out = (out*10U) + *p-'0';
-        if (out > UINT_MAX)
-            throw Exception("UInt out of range");
-    }
-    end = p;
-    return out;
-}
-
-cxuint CLRX::cstrtouiParse(const char* s, const char* inend, const char*& outend,
-                     char delim, size_t lineNo)
+cxuint CLRX::cstrtoui(const char* s, const char* inend, const char*& outend)
 {
     uint64_t out = 0;
     const char* p;
@@ -210,12 +200,8 @@ cxuint CLRX::cstrtouiParse(const char* s, const char* inend, const char*& outend
     {
         out = (out*10U) + *p-'0';
         if (out > UINT_MAX)
-            throw ParseException(lineNo, "UInt out of range");
+            throw ParseException("UInt out of range");
     }
-    if (*p == 0)
-        throw ParseException(lineNo, "No delimiter");
-    if (*p != delim)
-        throw ParseException(lineNo, "Wrong delimiter");
     outend = p;
     return out;
 }

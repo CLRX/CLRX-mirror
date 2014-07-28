@@ -44,7 +44,7 @@ protected:
     std::string message;
 public:
     Exception() = default;
-    Exception(const std::string& message);
+    explicit Exception(const std::string& message);
     virtual ~Exception() throw() = default;
     
     const char* what() const throw();
@@ -54,6 +54,7 @@ class ParseException: public Exception
 {
 public:
     ParseException() = default;
+    explicit ParseException(const std::string& message);
     ParseException(size_t lineNo, const std::string& message);
     virtual ~ParseException() throw() = default;
 };
@@ -177,27 +178,19 @@ struct CStringHash
 };
 
 /// parse unsigned integer regardless locales
-cxuint cstrtoui(const char* s, const char*& end);
-
-/// parse unsigned integer regardless locales
-cxuint cstrtouiParse(const char* s, const char* inend, const char*& outend,
-                     char delim, size_t lineNo);
+cxuint cstrtoui(const char* s, const char* inend, const char*& outend);
 
 /// parse 64-bit unsigned formatted looks like C-style
-uint64_t cstrtou64CStyle(const char* s, const char* inend,
-             const char*& outend, size_t lineNo, bool binaryFormat = false);
+uint64_t cstrtou64CStyle(const char* s, const char* inend, const char*& outend);
 
 /// parse half float formatted looks like C-style
-cxushort cstrtohCStyle(const char* s, const char* inend,
-             const char*& outend, size_t lineNo, bool binaryFormat = false);
+cxushort cstrtohCStyle(const char* s, const char* inend, const char*& outend);
 
 /// parse single float formatted looks like C-style
-float cstrtofCStyle(const char* s, const char* inend,
-             const char*& outend, size_t lineNo, bool binaryFormat = false);
+float cstrtofCStyle(const char* s, const char* inend, const char*& outend);
 
 /// parse double float formatted looks like C-style
-double cstrtodCStyle(const char* s, const char* inend,
-             const char*& outend, size_t lineNo, bool binaryFormat = false);
+double cstrtodCStyle(const char* s, const char* inend, const char*& outend);
 
 };
 
