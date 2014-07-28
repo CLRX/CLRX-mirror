@@ -1218,4 +1218,3 @@ void clrxReleaseConcurrentBuild(CLRXProgram* program)
         program->transDevicesMap = nullptr;
     }
 }
-

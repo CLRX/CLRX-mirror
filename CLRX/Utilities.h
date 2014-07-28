@@ -183,10 +183,20 @@ cxuint cstrtoui(const char* s, const char*& end);
 cxuint cstrtouiParse(const char* s, const char* inend, const char*& outend,
                      char delim, size_t lineNo);
 
-uint64_t cstrtou64Format(const char* s, const char* inend,
+/// parse 64-bit unsigned formatted looks like C-style
+uint64_t cstrtou64CStyle(const char* s, const char* inend,
              const char*& outend, size_t lineNo, bool binaryFormat = false);
 
-double cstrtodFormat(const char* s, const char* inend,
+/// parse half float formatted looks like C-style
+cxushort cstrtohCStyle(const char* s, const char* inend,
+             const char*& outend, size_t lineNo, bool binaryFormat = false);
+
+/// parse single float formatted looks like C-style
+float cstrtofCStyle(const char* s, const char* inend,
+             const char*& outend, size_t lineNo, bool binaryFormat = false);
+
+/// parse double float formatted looks like C-style
+double cstrtodCStyle(const char* s, const char* inend,
              const char*& outend, size_t lineNo, bool binaryFormat = false);
 
 };
