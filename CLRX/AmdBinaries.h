@@ -33,6 +33,12 @@
 #include <CLRX/MemAccess.h>
 #include <CLRX/Utilities.h>
 
+/* INFO: in this file is used ULEV function for conversion
+ * from LittleEndian and unaligned access to other memory access policy and endianness
+ * Please use this function whenever you want to get or set word in ELF binary,
+ * because ELF binaries can be unaligned in memory (as inner binaries).
+ */
+
 /// main namespace
 namespace CLRX
 {
