@@ -1398,14 +1398,14 @@ AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, char* bi
     if (binaryCode[EI_CLASS] == ELFCLASS32)
     {
         const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr*>(binaryCode);
-        if (ehdr->e_machine != ELF_M_X86) //if gpu
+        if (ULEV(ehdr->e_machine) != ELF_M_X86) //if gpu
             return new AmdMainGPUBinary32(binaryCodeSize, binaryCode, creationFlags);
         return new AmdMainX86Binary32(binaryCodeSize, binaryCode, creationFlags);
     }
     else if (binaryCode[EI_CLASS] == ELFCLASS64)
     {
         const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binaryCode);
-        if (ehdr->e_machine != ELF_M_X86)
+        if (ULEV(ehdr->e_machine) != ELF_M_X86)
             return new AmdMainGPUBinary64(binaryCodeSize, binaryCode, creationFlags);
         return new AmdMainX86Binary64(binaryCodeSize, binaryCode, creationFlags);
     }
