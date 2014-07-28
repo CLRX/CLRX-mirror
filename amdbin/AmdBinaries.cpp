@@ -1128,19 +1128,22 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
         {   // read symbol _OpenCL..._metadata
             const typename Types::Sym& sym = elf.getSymbol(it);
             const char* symName = elf.getSymbolName(it);
-            if (sym.st_shndx >= elf.getSectionHeadersNum())
+            if (ULEV(sym.st_shndx) >= elf.getSectionHeadersNum())
                 throw Exception("Metadata section index out of range");
             
-            const typename Types::Shdr& rodataHdr = elf.getSectionHeader(sym.st_shndx);
-            const char* rodataContent = elf.getBinaryCode() + rodataHdr.sh_offset;
+            const typename Types::Shdr& rodataHdr =
+                    elf.getSectionHeader(ULEV(sym.st_shndx));
+            const char* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
             
-            if (ULEV(sym.st_value) > ULEV(rodataHdr.sh_size))
+            const typename Types::Size symvalue = ULEV(sym.st_value);
+            const typename Types::Size symsize = ULEV(sym.st_size);
+            if (symvalue > ULEV(rodataHdr.sh_size))
                 throw Exception("Metadata offset out of range");
-            if (ULEV(sym.st_value)+ULEV(sym.st_size) > ULEV(rodataHdr.sh_size))
+            if (symvalue+symsize > ULEV(rodataHdr.sh_size))
                 throw Exception("Metadata offset+size out of range");
             
-            parseAmdGpuKernelMetadata(symName, ULEV(sym.st_size),
-                      rodataContent + ULEV(sym.st_value), kernelInfos[ki]);
+            parseAmdGpuKernelMetadata(symName, symsize,
+                      rodataContent + symvalue, kernelInfos[ki]);
             ki++;
         }
         kernelInfosNum = metadataSyms.size();
@@ -1166,7 +1169,7 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
          uint16_t textIndex, AmdMainGPUBinary32::InnerBinaryMap& innerBinaryMap)
 {
     const typename Types::Shdr& textHdr = elf.getSectionHeader(textIndex);
-    char* textContent = elf.getBinaryCode() + textHdr.sh_offset;
+    char* textContent = elf.getBinaryCode() + ULEV(textHdr.sh_offset);
     
     /* create table of innerBinaries */
     innerBinaries = new AmdInnerGPUBinary32[innerBinariesNum];
@@ -1177,13 +1180,15 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
         size_t len = ::strlen(symName);
         const typename Types::Sym& sym = elf.getSymbol(it);
         
-        if (ULEV(sym.st_value) > ULEV(textHdr.sh_size))
+        const typename Types::Size symvalue = ULEV(sym.st_value);
+        const typename Types::Size symsize = ULEV(sym.st_size);
+        if (symvalue > ULEV(textHdr.sh_size))
             throw Exception("Inner binary offset out of range!");
-        if (ULEV(sym.st_value) + ULEV(sym.st_size) > ULEV(textHdr.sh_size))
+        if (symvalue + symsize > ULEV(textHdr.sh_size))
             throw Exception("Inner binary offset+size out of range!");
         
         innerBinaries[ki++] = AmdInnerGPUBinary32(std::string(symName+9, len-16),
-            ULEV(sym.st_size), textContent+ULEV(sym.st_value),
+            symsize, textContent+symvalue,
             (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
     }
     if ((creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0)
