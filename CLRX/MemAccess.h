@@ -32,33 +32,33 @@ namespace CLRX
 
 #ifdef HAVE_LITTLE_ENDIAN
 /// get little endian value as native-endian from unaligned memory
-inline uint16_t ULEV(const uint16_t& t)
+static inline uint16_t ULEV(const uint16_t& t)
 { return t; }
 /// get little endian value as native-endian from unaligned memory
-inline int16_t ULEV(const int16_t& t)
+static inline int16_t ULEV(const int16_t& t)
 { return t; }
 
 /// get little endian value as native-endian from unaligned memory
-inline uint32_t ULEV(const uint32_t& t)
+static inline uint32_t ULEV(const uint32_t& t)
 { return t; }
 /// get little endian value as native-endian from unaligned memory
-inline int32_t ULEV(const int32_t& t)
+static inline int32_t ULEV(const int32_t& t)
 { return t; }
 
 #  ifdef HAVE_ARCH_ARM32
 /// get little endian value as native-endian from unaligned memory
-inline uint64_t ULEV(const uint64_t& t)
+static inline uint64_t ULEV(const uint64_t& t)
 { return ((uint64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
 
 /// get little endian value as native-endian from unaligned memory
-inline int64_t ULEV(const int64_t& t)
+static inline int64_t ULEV(const int64_t& t)
 { return ((int64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
 #  else
 /// get little endian value as native-endian from unaligned memory
-inline uint64_t ULEV(const uint64_t& t)
+static inline uint64_t ULEV(const uint64_t& t)
 { return t; }
 /// get little endian value as native-endian from unaligned memory
-inline int64_t ULEV(const int64_t& t)
+static inline int64_t ULEV(const int64_t& t)
 { return t; }
 #  endif
 #else // BIG ENDIAN
