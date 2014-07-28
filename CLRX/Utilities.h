@@ -28,6 +28,7 @@
 #include <string>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <locale>
 #include <mutex>
 #include <sstream>
@@ -181,6 +182,12 @@ cxuint cstrtoui(const char* s, const char*& end);
 /// parse unsigned integer regardless locales
 cxuint cstrtouiParse(const char* s, const char* inend, const char*& outend,
                      char delim, size_t lineNo);
+
+uint64_t cstrtou64Format(const char* s, const char* inend,
+             const char*& outend, size_t lineNo, bool binaryFormat = false);
+
+double cstrtodFormat(const char* s, const char* inend,
+             const char*& outend, size_t lineNo, bool binaryFormat = false);
 
 };
 

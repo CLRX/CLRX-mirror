@@ -26,9 +26,11 @@
 #include <CLRX/Config.h>
 #include <elf.h>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <CLRX/MemAccess.h>
 #include <CLRX/Utilities.h>
 
 /// main namespace
@@ -112,7 +114,7 @@ struct X86KernelArgSym
     uint32_t nameOffset;
     
     size_t getNameOffset() const
-    { return nameOffset; }
+    { return ULEV(nameOffset); }
 };
 
 struct X86_64KernelArgSym
@@ -124,7 +126,7 @@ struct X86_64KernelArgSym
     uint32_t nameOffsetHi;
     
     size_t getNameOffset() const
-    { return (uint64_t(nameOffsetHi)<<32)+uint64_t(nameOffsetLo); }
+    { return (uint64_t(ULEV(nameOffsetHi))<<32)+uint64_t(ULEV(nameOffsetLo)); }
 };
 
 /// kernel informations
@@ -261,42 +263,42 @@ public:
     
     /// get section headers number
     uint16_t getSectionHeadersNum() const
-    { return getHeader().e_shnum; }
+    { return ULEV(getHeader().e_shnum); }
     
     /// get section header with specified index
     const typename Types::Shdr& getSectionHeader(uint16_t index) const
     {
         const typename Types::Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<const typename Types::Shdr*>(binaryCode + ehdr.e_shoff +
-                size_t(ehdr.e_shentsize)*index);
+        return *reinterpret_cast<const typename Types::Shdr*>(binaryCode +
+                ULEV(ehdr.e_shoff) + size_t(ULEV(ehdr.e_shentsize))*index);
     }
     
     /// get section header with specified index
     typename Types::Shdr& getSectionHeader(uint16_t index)
     {
         const typename Types::Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<typename Types::Shdr*>(binaryCode + ehdr.e_shoff +
-                size_t(ehdr.e_shentsize)*index);
+        return *reinterpret_cast<typename Types::Shdr*>(binaryCode +
+                ULEV(ehdr.e_shoff) + size_t(ULEV(ehdr.e_shentsize))*index);
     }
     
     /// get program headers number
     uint16_t getProgramHeadersNum() const
-    { return getHeader().e_phnum; }
+    { return ULEV(getHeader().e_phnum); }
     
     /// get program header with specified index
     const typename Types::Phdr& getProgramHeader(uint16_t index) const
     {
         const typename Types::Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<const typename Types::Phdr*>(binaryCode + ehdr.e_phoff +
-                size_t(ehdr.e_phentsize)*index);
+        return *reinterpret_cast<const typename Types::Phdr*>(binaryCode +
+                ULEV(ehdr.e_phoff) + size_t(ULEV(ehdr.e_phentsize))*index);
     }
     
     /// get program header with specified index
     typename Types::Phdr& getProgramHeader(uint16_t index)
     {
         const typename Types::Ehdr& ehdr = getHeader();
-        return *reinterpret_cast<typename Types::Phdr*>(binaryCode + ehdr.e_phoff +
-                size_t(ehdr.e_phentsize)*index);
+        return *reinterpret_cast<typename Types::Phdr*>(binaryCode +
+                ULEV(ehdr.e_phoff) + size_t(ULEV(ehdr.e_phentsize))*index);
     }
     
     /// get symbols number
@@ -339,21 +341,21 @@ public:
     const char* getSymbolName(typename Types::Size index) const
     {
         const typename Types::Sym& sym = getSymbol(index);
-        return symbolStringTable + sym.st_name;
+        return symbolStringTable + ULEV(sym.st_name);
     }
     
     /// get dynamic symbol name with specified index
     const char* getDynSymbolName(typename Types::Size index) const
     {
         const typename Types::Sym& sym = getDynSymbol(index);
-        return dynSymStringTable + sym.st_name;
+        return dynSymStringTable + ULEV(sym.st_name);
     }
     
     /// get section name with specified index
     const char* getSectionName(uint16_t index) const
     {
         const typename Types::Shdr& section = getSectionHeader(index);
-        return sectionStringTable + section.sh_name;
+        return sectionStringTable + ULEV(section.sh_name);
     }
     
     /// get end iterator if section index map
@@ -414,14 +416,14 @@ public:
     const char* getSectionContent(uint16_t index) const
     {
         const typename Types::Shdr& shdr = getSectionHeader(index);
-        return binaryCode + shdr.sh_offset;
+        return binaryCode + ULEV(shdr.sh_offset);
     }
     
     /// get section content pointer
     char* getSectionContent(uint16_t index)
     {
         typename Types::Shdr& shdr = getSectionHeader(index);
-        return binaryCode + shdr.sh_offset;
+        return binaryCode + ULEV(shdr.sh_offset);
     }
 };
 

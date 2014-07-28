@@ -3,6 +3,7 @@ CLRX/AmdBinaries.h -text
 CLRX/Assembler.h -text
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
+CLRX/MemAccess.h -text
 CLRX/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
 /COPYING -text
