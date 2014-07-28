@@ -63,10 +63,6 @@ static inline uint32_t ULEV(const uint32_t& t)
 { return __builtin_bswap32(t); }
 static inline int32_t ULEV(const int32_t& t)
 { return __builtin_bswap32(t); }
-static inline uint64_t ULEV(const uint64_t& t)
-{ return __builtin_bswap64(t); }
-static inline int64_t ULEV(const int64_t& t)
-{ return __builtin_bswap64(t); }
 
 #  ifdef HAVE_ARCH_ARM32
 static inline uint64_t ULEV(const uint64_t& t)
