@@ -202,76 +202,123 @@ size_t CStringHash::operator()(const char* c) const
     return hash;
 }
 
-cxuint CLRX::cstrtoui(const char* s, const char* inend, const char*& outend)
+cxuint CLRX::cstrtoui(const char* str, const char* inend, const char*& outend)
 {
     uint64_t out = 0;
     const char* p;
-    for (p = s; p != inend && *p >= '0' && *p <= '9'; p++)
+    if (inend == str)
+        throw ParseException("No characters to parse");
+    
+    for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
     {
         out = (out*10U) + *p-'0';
         if (out > UINT_MAX)
-            throw ParseException("UInt out of range");
+            throw ParseException("number out of range");
+    }
+    if (p == str)
+        throw ParseException("A missing number");
+    outend = p;
+    return out;
+}
+
+static uint64_t cstrtouXCStyle(const char* str, const char* inend,
+             const char*& outend, cxuint bits)
+{
+    uint64_t out = 0;
+    const char* p = 0;
+    if (inend == str)
+        throw ParseException("No characters to parse");
+    
+    if (*str == '0')
+    {
+        if (inend != str+1 && (str[1] == 'x' || str[1] == 'X'))
+        {   // hex
+            if (inend == str+2)
+                throw ParseException("Number is too short");
+            
+            const uint64_t lastHex = (15ULL<<(bits-4));
+            for (p = str+2; p != inend; p++)
+            {
+                cxuint digit;
+                if (*p >= '0' && *p <= '9')
+                    digit = *p-'0';
+                else if (*p >= 'A' && *p <= 'F')
+                    digit = *p-'A'+10;
+                else if (*p >= 'a' && *p <= 'f')
+                    digit = *p-'a'+10;
+                else //
+                    break;
+                
+                if ((out & lastHex) != 0)
+                    throw ParseException("Number out of range");
+                out = (out<<4) + digit;
+            }
+            if (p == str+2)
+                throw ParseException("A missing number");
+        }
+        else if (inend != str+1 && (str[1] == 'b' || str[1] == 'B'))
+        {   // binary
+            if (inend == str+2)
+                throw ParseException("Number is too short");
+            
+            const uint64_t lastBit = (1ULL<<(bits-1));
+            for (p = str+2; p != inend && (*p == '0' || *p == '1'); p++)
+            {
+                if ((out & lastBit) != 0)
+                    throw ParseException("Number out of range");
+                out = (out<<1) + (*p-'0');
+            }
+            if (p == str+2)
+                throw ParseException("A missing number");
+        }
+        else
+        {   // octal
+            const uint64_t lastOct = (7ULL<<(bits-3));
+            for (p = str+1; p != inend && *p >= '0' && *p <= '7'; p++)
+            {
+                if ((out & lastOct) != 0)
+                    throw ParseException("Number out of range");
+                out = (out<<3) + (*p-'0');
+            }
+            // if no octal parsed, then zero and correctly treated as decimal zero
+        }
+    }
+    else
+    {   // decimal
+        const uint64_t mask = (bits < 64) ? ((1ULL<<bits)-1) : (-1ULL); /* fix for shift */
+        const uint64_t lastDigitValue = mask/10;
+        for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
+        {
+            if (out > lastDigitValue)
+                throw ParseException("Number out of range");
+            cxuint digit = (*p-'0');
+            out = out * 10 + digit;
+            if ((out&mask) < digit) // if carry
+                throw ParseException("Number out of range");
+        }
+        if (p == str)
+        throw ParseException("A missing number");
     }
     outend = p;
     return out;
 }
 
+uint8_t CLRX::cstrtou8CStyle(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, 8);
+}
+
+uint16_t CLRX::cstrtou16CStyle(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, 16);
+}
+
+uint32_t CLRX::cstrtou32CStyle(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, 32);
+}
+
 uint64_t CLRX::cstrtou64CStyle(const char* str, const char* inend, const char*& outend)
 {
-    uint64_t out = 0;
-    const char* p = 0;
-    if (*str == '0')
-    {
-        if (str[1] == 'x' || str[1] == 'X')
-        {   // hex
-            for (p = str+2; p != inend; p++)
-            {
-                cxuint digit;
-                if (*p >= '0' && *p >= '9')
-                    digit = *p-'0';
-                else if (*p >= 'A' && *p >= 'F')
-                    digit = *p-'A'+10;
-                else if (*p >= 'a' && *p >= 'f')
-                    digit = *p-'a'+10;
-                else //
-                    break;
-                
-                if ((out & (15ULL<<60)) != 0)
-                    throw ParseException("UInt64 out of range");
-                out = (out<<4) + digit;
-            }
-        }
-        else if (str[1] == 'b' || str[1] == 'B')
-        {   // binary
-            for (p = str+2; p != inend && (*p == '0' || *p == '1'); p++)
-            {
-                if ((out & (1ULL<<63)) != 0)
-                    throw ParseException("UInt64 out of range");
-                out = (out<<1) + (*p-'0');
-            }
-        }
-        else
-        {   // octal
-            for (p = str+1; p != inend && *p >= '0' && *p <= '7'; p++)
-            {
-                if ((out & (7ULL<<61)) != 0)
-                    throw ParseException("UInt64 out of range");
-                out = (out<<3) + (*p-'0');
-            }
-        }
-    }
-    else
-    {   // decimal
-        for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
-        {
-            if (out > UINT64_MAX/10)
-                throw ParseException("UInt64 out of range");
-            cxuint digit = (*p-'0');
-            out = out * 10 + digit;
-            if (out < digit) // if carry
-                throw ParseException("UInt64 out of range");
-        }
-    }
-    outend = p;
-    return out;
+    return cstrtouXCStyle(str, inend, outend, 64);
 }

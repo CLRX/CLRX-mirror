@@ -178,19 +178,28 @@ struct CStringHash
 };
 
 /// parse unsigned integer regardless locales
-cxuint cstrtoui(const char* s, const char* inend, const char*& outend);
+cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
+
+/// parse 8-bit unsigned formatted looks like C-style
+uint8_t cstrtou8CStyle(const char* str, const char* inend, const char*& outend);
+
+/// parse 16-bit unsigned formatted looks like C-style
+uint16_t cstrtou16CStyle(const char* str, const char* inend, const char*& outend);
+
+/// parse 32-bit unsigned formatted looks like C-style
+uint32_t cstrtou32CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 64-bit unsigned formatted looks like C-style
-uint64_t cstrtou64CStyle(const char* s, const char* inend, const char*& outend);
+uint64_t cstrtou64CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse half float formatted looks like C-style
-cxushort cstrtohCStyle(const char* s, const char* inend, const char*& outend);
+cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse single float formatted looks like C-style
-float cstrtofCStyle(const char* s, const char* inend, const char*& outend);
+float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse double float formatted looks like C-style
-double cstrtodCStyle(const char* s, const char* inend, const char*& outend);
+double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
 };
 
