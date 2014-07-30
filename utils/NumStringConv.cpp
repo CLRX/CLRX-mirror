@@ -189,8 +189,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         // if not we parse again 
     }
     
-    const int minExpNonDenorm = (1U<<(expBits))-2;
-    const int minExpDenorm = minExpNonDenorm-mantisaBits;
+    const int minExpNonDenorm = -((1U<<(expBits-1))-2);
+    const int minExpDenorm = (minExpNonDenorm-mantisaBits);
     const int maxExp = (1U<<(expBits-1))-1;
     
     if (p+1 != inend && *p == '0' && (p[1] == 'x' || p[1] == 'X'))
@@ -230,7 +230,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     throw ParseException("Exponent out of range");
                 cxuint digit = (*expstr-'0');
                 absExponent = absExponent * 10 + digit;
-                if ((absExponent&(1U<<31)) < digit) // if carry
+                if ((absExponent&((1U<<31)-1)) < digit) // if carry
                     throw ParseException("Exponent out of range");
             }
             
@@ -288,8 +288,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 throw ParseException("No integer and fraction in number");
         }
         
-        if (p == inend || ((*p < '0' || *p > '9') && (*p < 'a' || *p > 'f') &&
-                (*p < 'A' || *p > 'F')))
+        if (vs == inend || ((*vs < '0' || *vs > '9') && (*vs < 'a' || *vs > 'f') &&
+                (*vs < 'A' || *vs > 'F')))
             return out;   // return zero
         
         const int64_t tempExp = int64_t(expOfValue)+int64_t(binaryExp);
@@ -322,8 +322,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             if (fvalue >= (1ULL<<significantBits))
                 break;
         }
-        /* parsedBits - bits of parsed value. parsedDigits*4 - 4 + firstDigitBits */
-        parsedBits = parsedBits + 4 - firstDigitBits;
+        /* parsedBits - bits of parsed value. parsedDigits*4 - 4 + firstDigitBits+1 */
+        parsedBits = parsedBits - 4 + firstDigitBits;
         // compute required bits for fvalue
         cxuint requiredBits = significantBits;
         if (requiredBits > parsedBits)
@@ -336,8 +336,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         const uint64_t roundBit = (1ULL<<(nativeFPShift-1));
         
         // convert to native FP mantisa and native FP exponent
-        uint64_t fpMantisa = fvalue >> nativeFPShift;
-        cxuint fpExponent = (tempExp >= minExpNonDenorm) ? tempExp+(1U<<expBits)-1 : 0;
+        uint64_t fpMantisa = (fvalue >> nativeFPShift) & ((1ULL<<mantisaBits)-1ULL);
+        cxuint fpExponent = (tempExp >= minExpNonDenorm) ? tempExp+(1U<<(expBits-1))-1 : 0;
         bool addRoundings = false;
         
         if ((fvalue & roundBit) != 0)
