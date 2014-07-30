@@ -290,8 +290,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 throw ParseException("No integer and fraction in number");
         }
         
-        if (vs == inend || ((*vs < '0' || *vs > '9') && (*vs < 'a' || *vs > 'f') &&
-                (*vs < 'A' || *vs > 'F')))
+        if (vs == nullptr || vs == inend || ((*vs < '0' || *vs > '9') &&
+                (*vs < 'a' || *vs > 'f') && (*vs < 'A' || *vs > 'F')))
             return out;   // return zero
         
         const int64_t tempExp = int64_t(expOfValue)+int64_t(binaryExp);
