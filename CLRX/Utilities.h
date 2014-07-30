@@ -178,27 +178,108 @@ struct CStringHash
 };
 
 /// parse unsigned integer regardless locales
+/** parses unsigned integer in decimal form from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed integer value
+ */
 cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
 
 /// parse 8-bit unsigned formatted looks like C-style
+/** parses 8-bit unsigned integer from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format, octal form (with prefix '0'), hexadecimal form
+ * (prefix '0x' or '0X'), and binary form (prefix '0b' or '0B').
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed integer value
+ */
 uint8_t cstrtou8CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 16-bit unsigned formatted looks like C-style
+/** parses 16-bit unsigned integer from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format, octal form (with prefix '0'), hexadecimal form
+ * (prefix '0x' or '0X'), and binary form (prefix '0b' or '0B').
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed integer value
+ */
 uint16_t cstrtou16CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 32-bit unsigned formatted looks like C-style
+/** parses 32-bit unsigned integer from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format, octal form (with prefix '0'), hexadecimal form
+ * (prefix '0x' or '0X'), and binary form (prefix '0b' or '0B').
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed integer value
+ */
 uint32_t cstrtou32CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 64-bit unsigned formatted looks like C-style
+/** parses 64-bit unsigned integerfrom str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format, octal form (with prefix '0'), hexadecimal form
+ * (prefix '0x' or '0X'), and binary form (prefix '0b' or '0B').
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed integer value
+ */
 uint64_t cstrtou64CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse half float formatted looks like C-style
+/** parses half floating point from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format and binary format. Result is rounded to nearest even
+ * (if two values are equally close will be choosen a even value).
+ * Currently only IEEE-754 format is supported.
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed floating point value
+ */
 cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse single float formatted looks like C-style
+/** parses single floating point from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format and binary format. Result is rounded to nearest even
+ * (if two values are equally close will be choosen a even value).
+ * Currently only IEEE-754 format is supported.
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed floating point value
+ */
 float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse double float formatted looks like C-style
+/** parses double floating point from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format and binary format. Result is rounded to nearest even
+ * (if two values are equally close will be choosen a even value).
+ * Currently only IEEE-754 format is supported.
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed floating point value
+ */
 double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
 };

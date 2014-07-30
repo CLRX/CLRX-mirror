@@ -30,60 +30,118 @@
 namespace CLRX
 {
 
+/// convert from/to big endian value
+inline uint16_t BEV(uint16_t t);
+/// convert from/to big endian value
+inline int16_t BEV(int16_t t);
+
+/// convert from/to big endian value
+inline uint32_t BEV(uint32_t t);
+/// convert from/to big endian value
+inline int32_t BEV(int32_t t);
+
+/// convert from/to big endian value
+inline uint64_t BEV(uint64_t t);
+/// convert from/to big endian value
+inline int64_t BEV(int64_t t);
+
+/// convert from/to big endian value from unaligned memory
+inline uint16_t UBEV(const uint16_t& t);
+/// convert from/to big endian value from unaligned memory
+inline int16_t UBEV(const int16_t& t);
+
+/// convert from/to big endian value from unaligned memory
+inline uint32_t UBEV(const uint32_t& t);
+/// convert from/to big endian value from unaligned memory
+inline int32_t UBEV(const int32_t& t);
+
+/// convert from/to big endian value from unaligned memory
+inline uint64_t UBEV(const uint64_t& t);
+/// convert from/to big endian value from unaligned memory
+inline int64_t UBEV(const int64_t& t);
+
+/// convert from/to little endian value
+inline uint16_t LEV(uint16_t t);
+/// convert from/to little endian value
+inline int16_t LEV(int16_t t);
+
+/// convert from/to little endian value
+inline uint32_t LEV(uint32_t t);
+/// convert from/to little endian value
+inline int32_t LEV(int32_t t);
+
+/// convert from/to little endian value
+inline uint64_t LEV(uint64_t t);
+/// convert from/to little endian value
+inline int64_t LEV(int64_t t);
+
+/// convert from/to little endian value from unaligned memory
+inline uint16_t ULEV(const uint16_t& t);
+/// convert from/to little endian value from unaligned memory
+inline int16_t ULEV(const int16_t& t);
+/// convert from/to little endian value from unaligned memory
+inline uint32_t ULEV(const uint32_t& t);
+/// convert from/to little endian value from unaligned memory
+inline int32_t ULEV(const int32_t& t);
+/// convert from/to little endian value from unaligned memory
+inline uint64_t ULEV(const uint64_t& t);
+/// convert from/to little endian value from unaligned memory
+inline int64_t ULEV(const int64_t& t);
+
 #ifdef HAVE_LITTLE_ENDIAN
 
 #  ifdef __GNUC__
 /// convert from/to big endian value
-static inline uint16_t BEV(uint16_t t)
+inline uint16_t BEV(uint16_t t)
 { return __builtin_bswap16(t); }
 /// convert from/to big endian value
-static inline int16_t BEV(int16_t t)
+inline int16_t BEV(int16_t t)
 { return __builtin_bswap16(t); }
 
 /// convert from/to big endian value
-static inline uint32_t BEV(uint32_t t)
+inline uint32_t BEV(uint32_t t)
 { return __builtin_bswap32(t); }
 /// convert from/to big endian value
-static inline int32_t BEV(int32_t t)
+inline int32_t BEV(int32_t t)
 { return __builtin_bswap32(t); }
 
 /// convert from/to big endian value
-static inline uint64_t BEV(uint64_t t)
+inline uint64_t BEV(uint64_t t)
 { return __builtin_bswap64(t); }
 /// convert from/to big endian value
-static inline int64_t BEV(int64_t t)
+inline int64_t BEV(int64_t t)
 { return __builtin_bswap64(t); }
 
 /// convert from/to big endian value from unaligned memory
-static inline uint16_t UBEV(const uint16_t& t)
+inline uint16_t UBEV(const uint16_t& t)
 { return __builtin_bswap16(t); }
 /// convert from/to big endian value from unaligned memory
-static inline int16_t UBEV(const int16_t& t)
+inline int16_t UBEV(const int16_t& t)
 { return __builtin_bswap16(t); }
 
 /// convert from/to big endian value from unaligned memory
-static inline uint32_t UBEV(const uint32_t& t)
+inline uint32_t UBEV(const uint32_t& t)
 { return __builtin_bswap32(t); }
 /// convert from/to big endian value from unaligned memory
-static inline int32_t UBEV(const int32_t& t)
+inline int32_t UBEV(const int32_t& t)
 { return __builtin_bswap32(t); }
 
 #  ifdef HAVE_ARCH_ARM32
 /// convert from/to big endian value from unaligned memory
-static inline uint64_t UBEV(const uint64_t& t)
+inline uint64_t UBEV(const uint64_t& t)
 { return __builtin_bswap64(
     ((uint64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1])); }
 
 /// convert from/to big endian value from unaligned memory
-static inline int64_t UBEV(const int64_t& t)
+inline int64_t UBEV(const int64_t& t)
 { return __builtin_bswap64(
     ((int64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1])); }
 #  else
 /// convert from/to big endian value from unaligned memory
-static inline uint64_t UBEV(const uint64_t& t)
+inline uint64_t UBEV(const uint64_t& t)
 { return __builtin_bswap64(t); }
 /// convert from/to big endian value from unaligned memory
-static inline int64_t UBEV(const int64_t& t)
+inline int64_t UBEV(const int64_t& t)
 { return __builtin_bswap64(t); }
 #  endif
 #  else
@@ -91,164 +149,164 @@ static inline int64_t UBEV(const int64_t& t)
 #  endif
 
 /// convert from/to little endian value
-static inline uint16_t LEV(uint16_t t)
+inline uint16_t LEV(uint16_t t)
 { return t; }
 /// convert from/to little endian value
-static inline int16_t LEV(int16_t t)
+inline int16_t LEV(int16_t t)
 { return t; }
 
 /// convert from/to little endian value
-static inline uint32_t LEV(uint32_t t)
+inline uint32_t LEV(uint32_t t)
 { return t; }
 /// convert from/to little endian value
-static inline int32_t LEV(int32_t t)
+inline int32_t LEV(int32_t t)
 { return t; }
 
 /// convert from/to little endian value
-static inline uint64_t LEV(uint64_t t)
+inline uint64_t LEV(uint64_t t)
 { return t; }
 /// convert from/to little endian value
-static inline int64_t LEV(int64_t t)
+inline int64_t LEV(int64_t t)
 { return t; }
 
-
-/// convert from/to little endian value from unaligned memory
-static inline uint16_t ULEV(const uint16_t& t)
-{ return t; }
-/// convert from/to little endian value from unaligned memory
-static inline int16_t ULEV(const int16_t& t)
-{ return t; }
 
 /// convert from/to little endian value from unaligned memory
-static inline uint32_t ULEV(const uint32_t& t)
+inline uint16_t ULEV(const uint16_t& t)
 { return t; }
 /// convert from/to little endian value from unaligned memory
-static inline int32_t ULEV(const int32_t& t)
+inline int16_t ULEV(const int16_t& t)
+{ return t; }
+
+/// convert from/to little endian value from unaligned memory
+inline uint32_t ULEV(const uint32_t& t)
+{ return t; }
+/// convert from/to little endian value from unaligned memory
+inline int32_t ULEV(const int32_t& t)
 { return t; }
 
 #  ifdef HAVE_ARCH_ARM32
 /// convert from/to little endian value from unaligned memory
-static inline uint64_t ULEV(const uint64_t& t)
+inline uint64_t ULEV(const uint64_t& t)
 { return ((uint64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
 
 /// convert from/to little endian value from unaligned memory
-static inline int64_t ULEV(const int64_t& t)
+inline int64_t ULEV(const int64_t& t)
 { return ((int64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
 #  else
 /// convert from/to little endian value from unaligned memory
-static inline uint64_t ULEV(const uint64_t& t)
+inline uint64_t ULEV(const uint64_t& t)
 { return t; }
 /// convert from/to little endian value from unaligned memory
-static inline int64_t ULEV(const int64_t& t)
+inline int64_t ULEV(const int64_t& t)
 { return t; }
 #  endif
 #else // BIG ENDIAN
 
 /// convert from/to big endian value
-static inline uint16_t BEV(uint16_t t)
+inline uint16_t BEV(uint16_t t)
 { return t; }
 /// convert from/to big endian value
-static inline int16_t BEV(int16_t t)
+inline int16_t BEV(int16_t t)
 { return t; }
 
 /// convert from/to big endian value
-static inline uint32_t BEV(uint32_t t)
+inline uint32_t BEV(uint32_t t)
 { return t; }
 /// convert from/to big endian value
-static inline int32_t BEV(int32_t t)
+inline int32_t BEV(int32_t t)
 { return t; }
 
 /// convert from/to big endian value
-static inline uint64_t BEV(uint64_t t)
+inline uint64_t BEV(uint64_t t)
 { return t; }
 /// convert from/to big endian value
-static inline int64_t BEV(int64_t t)
+inline int64_t BEV(int64_t t)
 { return t; }
 
-
-/// convert from/to big endian value from unaligned memory
-static inline uint16_t UBEV(const uint16_t& t)
-{ return t; }
-/// convert from/to big endian value from unaligned memory
-static inline int16_t UBEV(const int16_t& t)
-{ return t; }
 
 /// convert from/to big endian value from unaligned memory
-static inline uint32_t UBEV(const uint32_t& t)
+inline uint16_t UBEV(const uint16_t& t)
 { return t; }
 /// convert from/to big endian value from unaligned memory
-static inline int32_t UBEV(const int32_t& t)
+inline int16_t UBEV(const int16_t& t)
+{ return t; }
+
+/// convert from/to big endian value from unaligned memory
+inline uint32_t UBEV(const uint32_t& t)
+{ return t; }
+/// convert from/to big endian value from unaligned memory
+inline int32_t UBEV(const int32_t& t)
 { return t; }
 
 #  ifdef HAVE_ARCH_ARM32
 /// convert from/to big endian value from unaligned memory
-static inline uint64_t UBEV(const uint64_t& t)
+inline uint64_t UBEV(const uint64_t& t)
 { return ((uint64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
 
 /// convert from/to big endian value from unaligned memory
-static inline int64_t UBEV(const int64_t& t)
+inline int64_t UBEV(const int64_t& t)
 { return ((int64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
 #  else
 /// convert from/to big endian value from unaligned memory
-static inline uint64_t UBEV(const uint64_t& t)
+inline uint64_t UBEV(const uint64_t& t)
 { return t; }
 /// convert from/to big endian value from unaligned memory
-static inline int64_t UBEV(const int64_t& t)
+inline int64_t UBEV(const int64_t& t)
 { return t; }
 #  endif
 
 #  ifdef __GNUC__
 /// convert from/to little endian value
-static inline uint16_t LEV(uint16_t t)
+inline uint16_t LEV(uint16_t t)
 { return __builtin_bswap16(t); }
 /// convert from/to little endian value
-static inline int16_t LEV(int16_t t)
+inline int16_t LEV(int16_t t)
 { return __builtin_bswap16(t); }
 
 /// convert from/to little endian value
-static inline uint32_t LEV(uint32_t t)
+inline uint32_t LEV(uint32_t t)
 { return __builtin_bswap32(t); }
 /// convert from/to little endian value
-static inline int32_t LEV(int32_t t)
+inline int32_t LEV(int32_t t)
 { return __builtin_bswap32(t); }
 
 /// convert from/to little endian value
-static inline uint64_t LEV(uint64_t t)
+inline uint64_t LEV(uint64_t t)
 { return __builtin_bswap64(t); }
 /// convert from/to little endian value
-static inline int64_t LEV(int64_t t)
+inline int64_t LEV(int64_t t)
 { return __builtin_bswap64(t); }
 
 /// convert from/to little endian value from unaligned memory
-static inline uint16_t ULEV(const uint16_t& t)
+inline uint16_t ULEV(const uint16_t& t)
 { return __builtin_bswap16(t); }
 /// convert from/to little endian value from unaligned memory
-static inline int16_t ULEV(const int16_t& t)
+inline int16_t ULEV(const int16_t& t)
 { return __builtin_bswap16(t); }
 
 /// convert from/to little endian value from unaligned memory
-static inline uint32_t ULEV(const uint32_t& t)
+inline uint32_t ULEV(const uint32_t& t)
 { return __builtin_bswap32(t); }
 /// convert from/to little endian value from unaligned memory
-static inline int32_t ULEV(const int32_t& t)
+inline int32_t ULEV(const int32_t& t)
 { return __builtin_bswap32(t); }
 
 #  ifdef HAVE_ARCH_ARM32
 /// convert from/to little endian value from unaligned memory
-static inline uint64_t ULEV(const uint64_t& t)
+inline uint64_t ULEV(const uint64_t& t)
 { return __builtin_bswap64(
     ((uint64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1])); }
 
 /// convert from/to little endian value from unaligned memory
-static inline int64_t ULEV(const int64_t& t)
+inline int64_t ULEV(const int64_t& t)
 { return __builtin_bswap64(
     ((int64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1])); }
 #  else
 /// convert from/to little endian value from unaligned memory
-static inline uint64_t ULEV(const uint64_t& t)
+inline uint64_t ULEV(const uint64_t& t)
 { return __builtin_bswap64(t); }
 /// convert from/to little endian value from unaligned memory
-static inline int64_t ULEV(const int64_t& t)
+inline int64_t ULEV(const int64_t& t)
 { return __builtin_bswap64(t); }
 #  endif
 #  else
