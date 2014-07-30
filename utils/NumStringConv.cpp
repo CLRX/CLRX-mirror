@@ -193,7 +193,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
     const int minExpDenorm = (minExpNonDenorm-mantisaBits);
     const int maxExp = (1U<<(expBits-1))-1;
     
-    if (p+1 != inend && *p == '0' && (p[1] == 'x' || p[1] == 'X'))
+    if (p != inend && p+1 != inend && *p == '0' && (p[1] == 'x' || p[1] == 'X'))
     {   // in hex format
         p+=2;
         cxint binaryExp = 0;
@@ -207,6 +207,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 if (comma) break;
                 comma = true;
             }
+            
+        if (p == expstr || (p+1 == expstr && *p == '.'))
+            throw ParseException("No value part in number");
         // value end in string
         const char* valEnd = expstr;
         
@@ -248,10 +251,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         // determine real exponent
         cxint expOfValue = 0;
-        const char* pstart = p;
         while (p != inend && *p == '0') p++; // skip zeroes
         
-        const bool haveIntegerPart = (p != pstart);
         const char* vs = nullptr;
         cxuint firstDigitBits = 0;
         if (p != inend)
@@ -270,9 +271,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
             else if (*p == '.')
             {
-                const char* pfract = ++p;
                 // count exponent of fractional part
-                for (; p != inend && *p == '0'; p++)
+                for (p++; p != inend && *p == '0'; p++)
                     expOfValue -= 4; // skip zeroes
                 if (p != inend && ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
                         (*p >= 'A' && *p <= 'F')))
@@ -283,11 +283,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     vs = p; // set pointer to real value
                     p++;
                 }
-                if (pfract == p && !haveIntegerPart) // if no any value part
-                    throw ParseException("No integer and fraction in number");
             }
-            else if (!haveIntegerPart) // if no any value part
-                throw ParseException("No integer and fraction in number");
         }
         
         if (vs == nullptr || vs == inend || ((*vs < '0' || *vs > '9') &&
