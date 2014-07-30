@@ -306,7 +306,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         uint64_t fvalue = 0;
         // get exponent data from
         cxuint parsedBits = 0;
-        for (; vs != valEnd; vs++)
+        for (; vs != valEnd && fvalue < (1ULL<<significantBits); vs++)
         {
             cxuint digit = 0;
             if (*vs >= '0' && *vs <= '9')
@@ -319,8 +319,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 continue; // skip comma
             fvalue = (fvalue<<4) + digit;
             parsedBits += 4;
-            if (fvalue >= (1ULL<<significantBits))
-                break;
         }
         /* parsedBits - bits of parsed value. parsedDigits*4 - 4 + firstDigitBits+1 */
         parsedBits = parsedBits - 4 + firstDigitBits;
