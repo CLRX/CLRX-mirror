@@ -209,7 +209,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
             
         if (p == expstr || (p+1 == expstr && *p == '.'))
-            throw ParseException("No value part in number");
+            throw ParseException("Floating point doesn't have value part!");
         // value end in string
         const char* valEnd = expstr;
         
@@ -245,9 +245,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             
         }
         outend = expstr; // set out end
-        
-        if (p == inend)
-            throw ParseException("Floating point doesnt have value part!");
         
         // determine real exponent
         cxint expOfValue = 0;
