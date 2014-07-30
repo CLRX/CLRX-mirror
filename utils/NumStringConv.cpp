@@ -230,7 +230,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     throw ParseException("Exponent out of range");
                 cxuint digit = (*expstr-'0');
                 absExponent = absExponent * 10 + digit;
-                if ((absExponent&((1U<<31)-1)) < digit) // if carry
+                if ((absExponent&((1U<<31)-1)) < digit && absExponent != (1U<<31))
+                    // if carry
                     throw ParseException("Exponent out of range");
             }
             
