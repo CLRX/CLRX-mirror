@@ -195,6 +195,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
     
     if (p+1 != inend && *p == '0' && (p[1] == 'x' || p[1] == 'X'))
     {   // in hex format
+        p+=2;
         cxint binaryExp = 0;
         const char* expstr = p;
         bool comma = false;
@@ -260,11 +261,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 firstDigitBits = (*p >= '8') ? 4 : (*p >= '4') ? 3 : (*p >= '2') ? 2 : 1;
                 expOfValue = firstDigitBits-1;
                 // count exponent of integer part
+                vs = p; // set pointer to real value
                 for (p++; p != inend &&
                     ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
                     (*p >= 'A' && *p <= 'F')); p++)
                     expOfValue += 4;
-                vs = p; // set pointer to real value
             }
             else if (*p == '.')
             {
@@ -381,6 +382,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
     }
     else
     {   // in decimal format
+        throw ParseException("Unsupported");
     }
     return out;
 }
