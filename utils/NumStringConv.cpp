@@ -210,7 +210,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         // value end in string
         const char* valEnd = expstr;
         
-        if (expstr != inend && *expstr == 'p') // we found exponential
+        if (expstr != inend && (*expstr == 'p' || *expstr == 'P')) // we found exponential
         {
             expstr++;
             if (expstr  == inend)
