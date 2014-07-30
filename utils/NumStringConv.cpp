@@ -170,7 +170,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
     // check for nan or inf
     if (signOfValue) // sign
         out = (1ULL<<(expBits + mantisaBits));
-    if (inend != nullptr && p+3 <= inend)
+    if (p != inend && p+1 != inend && p+2 != inend)
     {
         if ((p[0] == 'n' || p[0] == 'N') && (p[1] == 'a' || p[1] == 'A') &&
             (p[2] == 'n' || p[2] == 'N'))
@@ -418,4 +418,3 @@ double CLRX::cstrtodCStyle(const char* str, const char* inend, const char*& oute
     v.u = cstrtofXCStyle(str, inend, outend, 11, 52);
     return v.d;
 }
-
