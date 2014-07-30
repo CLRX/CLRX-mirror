@@ -280,6 +280,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                             (*p >= '2') ? 2 : 1;
                     expOfValue += (firstDigitBits-1) - 4;
                     vs = p; // set pointer to real value
+                    p++;
                 }
                 if (pfract == p && !haveIntegerPart) // if no any value part
                     throw ParseException("No integer and fraction in number");
@@ -361,7 +362,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             
             /* is greater than half or value is odd or is half of
              * smallest denormalized value */
-            addRoundings = (!isHalf || (fpMantisa&1)!=0 || fpExponent == 0);
+            addRoundings = (!isHalf || (fpMantisa&1)!=0 ||
+                    (fpExponent == 0 && fpMantisa==0));
         }
         
         if (addRoundings)
