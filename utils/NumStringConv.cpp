@@ -250,20 +250,18 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint
         const uint64_t suma = biga[0]+biga[1];
         const uint64_t sumb = bigb[0]+bigb[1];
         mul64full(suma, sumb, mx); /* (a0+a1)*(b0+b1)  */
-        mx[2] = 0; // zeroing last elem
         bool sumaLast = suma < biga[0]; // last bit of suma
         bool sumbLast = sumb < bigb[0]; // last bit of sumb
+        mx[2] = sumaLast&sumbLast; // zeroing last elem
         if (sumaLast) // last bit in a0+a1 is set
         {   // add (1<<64)*sumb
             mx[1] += sumb;
             mx[2] += (mx[1] < sumb); // carry from add
-            mx[2] += sumbLast; // last bit of sumb
         }
         if (sumbLast) // last bit in b0+b1 is set
         {   // add (1<<64)*suma
             mx[1] += suma;
             mx[2] += (mx[1] < suma); // carry from add
-            mx[2] += sumaLast; // last bit of suma
         }
         {
             // mx-bigcL
@@ -303,18 +301,12 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint
         uint64_t* sumb = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
         bool sumaLast = bigAdd(halfSize, biga, biga+halfSize, suma);
         bool sumbLast = bigAdd(halfSize, bigb, bigb+halfSize, sumb);
-        mx[size] = 0;
+        mx[size] = sumaLast&sumbLast;
         bigMul(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
-        if (sumaLast) // last bit in a0+a1 is set
-        {   // add (1<<64)*sumb
+        if (sumaLast) // last bit in a0+a1 is set add (1<<64)*sumb
             mx[size] += bigAdd(size, mx, sumb);
-            mx[size] += sumbLast;
-        }
-        if (sumbLast) // last bit in b0+b1 is set
-        {   // add (1<<64)*suma
+        if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
             mx[size] += bigAdd(size, mx, suma);
-            mx[size] += sumaLast;
-        }
         // mx-bigL
         mx[size] -= bigSub(size, mx, bigc);
         mx[size] -= bigSub(size, mx, bigc+size);
