@@ -146,6 +146,38 @@ uint64_t CLRX::cstrtou64CStyle(const char* str, const char* inend, const char*& 
 }
 
 /*
+ * parseExponent
+ */
+
+static int32_t parseFloatExponent(const char*& expstr, const char* inend)
+{
+    bool signOfExp = false; // positive exponent
+    if (*expstr == '+' || *expstr == '-')
+    {
+        signOfExp = (*expstr == '-'); // set sign of exponent
+        expstr++;
+        if (expstr == inend)
+            throw ParseException("End of floating point at exponent");
+    }
+    cxuint absExponent = 0;
+    for (;expstr != inend && *expstr >= '0' && *expstr <= '9'; expstr++)
+    {
+        if (absExponent > ((1U<<31)/10))
+            throw ParseException("Exponent out of range");
+        cxuint digit = (*expstr-'0');
+        absExponent = absExponent * 10 + digit;
+        if ((absExponent&((1U<<31)-1)) < digit && absExponent != (1U<<31))
+            // if carry
+            throw ParseException("Exponent out of range");
+    }
+    
+    if (!signOfExp && absExponent == (1U<<31))
+        // if abs exponent with max negative value and not negative
+        throw ParseException("Exponent out of range");
+    return (signOfExp) ? -absExponent : absExponent;
+}
+
+/*
  * cstrtofXCStyle
  */
 
@@ -212,36 +244,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         // value end in string
         const char* valEnd = expstr;
         
-        if (expstr != inend && (*expstr == 'p' || *expstr == 'P')) // we found exponential
+        if (expstr != inend && (*expstr == 'p' || *expstr == 'P')) // we found exponent
         {
             expstr++;
-            if (expstr  == inend)
+            if (expstr == inend)
                 throw ParseException("End of floating point at exponent");
-            bool signOfExp = false; // positive exponent
-            if (*expstr == '+' || *expstr == '-')
-            {
-                signOfExp = (*expstr == '-'); // set sign of exponent
-                expstr++;
-                if (expstr == inend)
-                    throw ParseException("End of floating point at exponent");
-            }
-            cxuint absExponent = 0;
-            for (;expstr != inend && *expstr >= '0' && *expstr <= '9'; expstr++)
-            {
-                if (absExponent > ((1U<<31)/10))
-                    throw ParseException("Exponent out of range");
-                cxuint digit = (*expstr-'0');
-                absExponent = absExponent * 10 + digit;
-                if ((absExponent&((1U<<31)-1)) < digit && absExponent != (1U<<31))
-                    // if carry
-                    throw ParseException("Exponent out of range");
-            }
-            
-            if (!signOfExp && absExponent == (1U<<31))
-                // if abs exponent with max negative value and not negative
-                throw ParseException("Exponent out of range");
-            binaryExp = (signOfExp) ? -absExponent : absExponent;
-            
+            binaryExp = parseFloatExponent(expstr, inend);
         }
         outend = expstr; // set out end
         
