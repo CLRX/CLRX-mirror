@@ -18,8 +18,7 @@
  */
 
 #include <CLRX/Config.h>
-#include <cstring>
-#include <string>
+#include <cstdint>
 #include <climits>
 #include <CLRX/Utilities.h>
 
@@ -278,7 +277,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                             (*p >= '2') ? 2 : 1;
                     expOfValue += (firstDigitBits-1) - 4;
                     vs = p; // set pointer to real value
-                    p++;
                 }
             }
         }
