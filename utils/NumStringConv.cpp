@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <cstdint>
+#include <alloca.h>
 #include <climits>
 #include <CLRX/Utilities.h>
 
@@ -107,7 +108,8 @@ static uint64_t cstrtouXCStyle(const char* str, const char* inend,
     }
     else
     {   // decimal
-        const uint64_t mask = (bits < 64) ? ((1ULL<<bits)-1) : (-1ULL); /* fix for shift */
+        const uint64_t mask = (bits < 64) ? ((1ULL<<bits)-1) :
+                    UINT64_MAX; /* fix for shift */
         const uint64_t lastDigitValue = mask/10;
         for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
         {
@@ -175,6 +177,156 @@ static int32_t parseFloatExponent(const char*& expstr, const char* inend)
         // if abs exponent with max negative value and not negative
         throw ParseException("Exponent out of range");
     return (signOfExp) ? -absExponent : absExponent;
+}
+
+/*
+ * SimpleBigNum
+ */
+
+static void mul64full(uint64_t a, uint64_t b, uint64_t* c)
+{
+    const uint32_t a0 = a;
+    const uint32_t a1 = a>>32;
+    const uint32_t b0 = b;
+    const uint32_t b1 = b>>32;
+    c[0] = uint64_t(a0)*b0;
+    const uint64_t m01 = uint64_t(a0)*b1;
+    const uint64_t m10 = uint64_t(a1)*b0;
+    c[1] = uint64_t(a1)*b1;
+    const uint64_t mx = m01 + m10; // (a1*b0)+(a0*b1)
+    c[0] += mx<<32;
+    c[1] += (c[0] < (mx<<32)); // add carry from previous addition
+    // (mx < m10) - carry from m01+m10
+    c[1] += (mx>>32) + (uint64_t(mx < m10)<<32);
+}
+
+static bool bigAdd(cxuint aSize, const uint64_t* biga,
+       const uint64_t* bigb, uint64_t* bigc, bool carryIn = false)
+{
+    bool carry = carryIn;
+    for (cxuint i = 0; i < aSize; i++)
+    {
+        bigc[i] = biga[i] + bigb[i] + carry;
+        carry = (bigc[i] < biga[i]) || ((bigc[i] == biga[i]) && carry);
+    }
+    return carry;
+}
+
+static bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb,
+                   bool carryIn = false)
+{
+    bool carry = carryIn;
+    for (cxuint i = 0; i < aSize; i++)
+    {
+        biga[i] += bigb[i] + carry;
+        carry = (biga[i] < bigb[i]) || ((biga[i] == bigb[i]) && carry);
+    }
+    return carry;
+}
+
+static bool bigSub(cxuint aSize, uint64_t* biga, const uint64_t* bigb,
+                   bool borrowIn = false)
+{
+    bool borrow = borrowIn;
+    for (cxuint i = 0; i < aSize; i++)
+    {
+        const uint64_t tmp = biga[i];
+        biga[i] -= bigb[i] + borrow;
+        borrow = (biga[i] > tmp) || (biga[i] == tmp && borrow);
+    }
+    return borrow;
+}
+
+
+static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint64_t* bigc)
+{
+    if (size == 1)
+        mul64full(biga[0], bigb[0], bigc);
+    else if (size == 2)
+    {   /* in this level we are using Karatsuba algorithm */
+        uint64_t mx[3];
+        mul64full(biga[0], bigb[0], bigc);
+        mul64full(biga[1], bigb[1], bigc+2);
+        const uint64_t suma = biga[0]+biga[1];
+        const uint64_t sumb = bigb[0]+bigb[1];
+        mul64full(suma, sumb, mx); /* (a0+a1)*(b0+b1)  */
+        mx[2] = 0; // zeroing last elem
+        bool sumaLast = suma < biga[0]; // last bit of suma
+        bool sumbLast = sumb < bigb[0]; // last bit of sumb
+        if (sumaLast) // last bit in a0+a1 is set
+        {   // add (1<<64)*sumb
+            mx[1] += sumb;
+            mx[2] += (mx[1] < sumb); // carry from add
+            mx[2] += sumbLast; // last bit of sumb
+        }
+        if (sumbLast) // last bit in b0+b1 is set
+        {   // add (1<<64)*suma
+            mx[1] += suma;
+            mx[2] += (mx[1] < suma); // carry from add
+            mx[2] += sumaLast; // last bit of suma
+        }
+        {
+            // mx-bigcL
+            bool borrow;
+            uint64_t old = mx[0];
+            mx[0] -= bigc[0];
+            borrow = (mx[0]>old);
+            old = mx[1];
+            mx[1] -= bigc[1] + borrow;
+            borrow = (mx[1]>old) || (mx[1] == old && borrow);
+            mx[2] -= borrow;
+            // mx-bigcH
+            old = mx[0];
+            mx[0] -= bigc[2];
+            borrow = (mx[0]>old);
+            old = mx[1];
+            mx[1] -= bigc[3] + borrow;
+            borrow = (mx[1]>old) || (mx[1] == old && borrow);
+            mx[2] -= borrow;
+        }
+        // add to bigc
+        bigc[1] += mx[0];
+        const uint64_t oldBigc2 = bigc[2]; // old for carry
+        bigc[2] += (bigc[1] < mx[0]); // carry from bigc[1]+mx[0]
+        bigc[3] += (bigc[2] < oldBigc2); // propagate previous carry
+        bigc[2] += mx[1]; // next add
+        bigc[3] += (bigc[2] < mx[1]); // carry from bigc[2]+mx[1]
+        bigc[3] += mx[2];   // last addition
+    }
+    else
+    {   // higher level
+        const size_t halfSize = size>>1;
+        uint64_t* mx = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(size+1)));
+        bigMul(halfSize, biga, bigb, bigc);
+        bigMul(halfSize, biga+halfSize, bigb+halfSize, bigc+size);
+        uint64_t* suma = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
+        uint64_t* sumb = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
+        bool sumaLast = bigAdd(halfSize, biga, biga+halfSize, suma);
+        bool sumbLast = bigAdd(halfSize, bigb, bigb+halfSize, sumb);
+        mx[size] = 0;
+        bigMul(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
+        if (sumaLast) // last bit in a0+a1 is set
+        {   // add (1<<64)*sumb
+            mx[size] += bigAdd(size, mx, sumb);
+            mx[size] += sumbLast;
+        }
+        if (sumbLast) // last bit in b0+b1 is set
+        {   // add (1<<64)*suma
+            mx[size] += bigAdd(size, mx, suma);
+            mx[size] += sumaLast;
+        }
+        // mx-bigL
+        mx[size] -= bigSub(size, mx, bigc);
+        mx[size] -= bigSub(size, mx, bigc+size);
+        // add to bigc
+        bool carry = bigAdd(size, bigc+halfSize, mx);
+        if (carry)
+            for (cxuint i = halfSize*3; i < size*2; i++)
+            {
+                bigc[i] += carry;
+                carry = (bigc[i] < carry);
+            }
+    }
 }
 
 /*
