@@ -263,8 +263,7 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint
             mx[1] += suma;
             mx[2] += (mx[1] < suma); // carry from add
         }
-        {
-            // mx-bigcL
+        {   // mx-bigcL
             bool borrow;
             uint64_t old = mx[0];
             mx[0] -= bigc[0];
@@ -293,7 +292,7 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint
     }
     else
     {   // higher level
-        const size_t halfSize = size>>1;
+        const cxuint halfSize = size>>1;
         uint64_t* mx = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(size+1)));
         bigMul(halfSize, biga, bigb, bigc);
         bigMul(halfSize, biga+halfSize, bigb+halfSize, bigc+size);
@@ -304,9 +303,9 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint
         mx[size] = sumaLast&sumbLast;
         bigMul(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
         if (sumaLast) // last bit in a0+a1 is set add (1<<64)*sumb
-            mx[size] += bigAdd(size, mx, sumb);
+            mx[size] += bigAdd(halfSize, mx+halfSize, sumb);
         if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
-            mx[size] += bigAdd(size, mx, suma);
+            mx[size] += bigAdd(halfSize, mx+halfSize, suma);
         // mx-bigL
         mx[size] -= bigSub(size, mx, bigc);
         mx[size] -= bigSub(size, mx, bigc+size);
@@ -318,6 +317,67 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint
                 bigc[i] += carry;
                 carry = (bigc[i] < carry);
             }
+    }
+}
+
+static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
+           const uint64_t* bigb, uint64_t* bigc)
+{
+    cxuint av;
+    for (av = 1; av < asize; av <<= 1);
+    cxuint bv;
+    for (bv = 1; bv < bsize; bv <<= 1);
+        
+    if (asize == bsize && asize == av && bsize == bv)
+    {
+        // if this same sizes and is powers of 2
+        bigMul(asize, biga, bigb, bigc);
+        return;
+    }
+    // otherwise we choose algorithm
+    if (asize == 1 || bsize == 1)
+    {
+        uint64_t ae;
+        cxuint size;
+        const uint64_t* bignum;
+        if (asize != 1)
+        {
+            ae = bigb[0];
+            size = asize;
+            bignum = biga;
+        }
+        else
+        {
+            ae = biga[0];
+            size = bsize;
+            bignum = bigb;
+        }
+        // main routine
+        bigc[0] = 0;
+        uint64_t t[2];
+        for (cxuint i = 0; i < size-1; i++)
+        {
+            mul64full(ae, bignum[i], t);
+            // add to bigc
+            bigc[i] += t[0];
+            bool carry = (bigc[i] < t[0]);
+            bigc[i+1] += t[1] + carry;
+            bigc[i+2] = (bigc[i+1] < t[1]) || (bigc[i+1] == t[1] && carry);
+        }
+        // last elem
+        mul64full(ae, bignum[size-1], t);
+        bigc[size-1] += t[0];
+        bool carry = (bigc[size-1] < t[0]);
+        bigc[size] += t[1] + carry;
+    }
+    else if ((asize<<1) < bsize || (bsize<<1) < asize)
+    {
+    }
+    else
+    {
+        av = (av != asize)?av>>1:av;
+        bv = (bv != bsize)?bv>>1:bv;
+        
     }
 }
 
