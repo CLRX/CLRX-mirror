@@ -196,6 +196,8 @@ ENDIF(POPT_FOUND)
 # other dependencies and checks
 ###
 
+TRY_COMPILE(HAVE_INT128 ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/Int128Detect.c)
+
 CHECK_INCLUDE_FILE_CXX(elf.h HAVE_ELF_H)
 
 ###

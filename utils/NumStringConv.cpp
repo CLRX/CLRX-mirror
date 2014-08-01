@@ -184,8 +184,13 @@ static int32_t parseFloatExponent(const char*& expstr, const char* inend)
  * SimpleBigNum
  */
 
-static void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
+static inline void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
 {
+#ifdef HAVE_INT128
+    unsigned __int128 v = ((unsigned __int128)a)*b;
+    c[0] = v;
+    c[1] = v>>64;
+#else
     const uint32_t a0 = a;
     const uint32_t a1 = a>>32;
     const uint32_t b0 = b;
@@ -199,6 +204,7 @@ static void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
     c[1] += (c[0] < (mx<<32)); // add carry from previous addition
     // (mx < m10) - carry from m01+m10
     c[1] += (mx>>32) + (uint64_t(mx < m10)<<32);
+#endif
 }
 
 static bool bigAdd(cxuint aSize, const uint64_t* biga,

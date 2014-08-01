@@ -8,6 +8,7 @@ CLRX/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
 /COPYING -text
 /Doxyfile.in -text
+/Int128Detect.c -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
 amdbin/AmdBinaries.cpp -text
 amdbin/CMakeLists.txt -text svneol=unset#text/plain
