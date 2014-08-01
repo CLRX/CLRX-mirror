@@ -219,10 +219,9 @@ static bool bigAdd(cxuint aSize, const uint64_t* biga,
     return carry;
 }
 
-static bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb,
-                   bool carryIn = false)
+static bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 {
-    bool carry = carryIn;
+    bool carry = false;
     for (cxuint i = 0; i < aSize; i++)
     {
         biga[i] += bigb[i] + carry;
@@ -231,10 +230,9 @@ static bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb,
     return carry;
 }
 
-static bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb,
-                   bool carryIn = false)
+static bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
 {
-    bool carry = carryIn;
+    bool carry = false;
     cxuint minSize = std::min(aSize, bSize);
     cxuint i = 0;
     for (; i < minSize; i++)
@@ -250,10 +248,9 @@ static bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* b
     return carry;
 }
 
-static bool bigSub(cxuint aSize, uint64_t* biga, const uint64_t* bigb,
-                   bool borrowIn = false)
+static bool bigSub(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 {
-    bool borrow = borrowIn;
+    bool borrow = false;
     for (cxuint i = 0; i < aSize; i++)
     {
         const uint64_t tmp = biga[i];
@@ -352,14 +349,10 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
     bsizeRound = (bsizeRound != bsize)?bsizeRound>>1:bsizeRound;
     
     if (asize == bsize && asize == asizeRound && bsize == bsizeRound)
-    {
         // if this same sizes and is powers of 2
         bigMul(asize, biga, bigb, bigc);
-        return;
-    }
-    // otherwise we choose algorithm
-    if (asize == 1 || bsize == 1)
-    {
+    else if (asize == 1 || bsize == 1)
+    {   // if one number is single 64-bit
         uint64_t ae;
         cxuint size;
         const uint64_t* bignum;
@@ -394,7 +387,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         bigc[size] += t[1] + carry;
     }
     else
-    {   /* all numbers is non two power */
+    {   /* otherwise we reuses bigMul to multiply numbers with various sizes */
         cxuint lsizeRound;
         cxuint lsize, gsize;
         const uint64_t* bigl, *bigg;
