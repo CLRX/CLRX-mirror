@@ -561,10 +561,8 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             if ((stepsNum&1) != 0)
             {
                 bigMul(lsize, bigl, lsizeRound, bigg + glastPos-lsizeRound, tmpMul);
-                cxuint lastAddSize = lsize+lsizeRound;
-                if (glastSize != 0)
-                    lastAddSize++; // for handling carry
-                bigAdd(lastAddSize, bigc + glastPos-lsizeRound,
+                // include carry only when required (lsize+lsizeRound + (glastSize != 0))
+                bigAdd(lsize+lsizeRound + (glastSize != 0), bigc + glastPos-lsizeRound,
                        lsize+lsizeRound, tmpMul);
             }
             if (glastSize != 0)
