@@ -242,7 +242,7 @@ static bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* b
     for (; i < aSize; i++)
     {
         biga[i] += carry;
-        carry = (biga[i-1] < carry);
+        carry = (biga[i] < carry);
     }
     return carry;
 }
