@@ -333,7 +333,7 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb,
         mx[size] -= bigSub(size, mx, bigc);
         mx[size] -= bigSub(size, mx, bigc+size);
         // add to bigc
-        bigAdd(size, bigc+halfSize, size+halfSize, mx);
+        bigAdd(size+halfSize, bigc+halfSize, size+1, mx);
     }
 }
 
