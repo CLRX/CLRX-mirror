@@ -207,10 +207,9 @@ static inline void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
 #endif
 }
 
-static bool bigAdd(cxuint aSize, const uint64_t* biga,
-       const uint64_t* bigb, uint64_t* bigc, bool carryIn = false)
+static bool bigAdd(cxuint aSize, const uint64_t* biga, const uint64_t* bigb, uint64_t* bigc)
 {
-    bool carry = carryIn;
+    bool carry = false;
     for (cxuint i = 0; i < aSize; i++)
     {
         bigc[i] = biga[i] + bigb[i] + carry;
@@ -261,7 +260,8 @@ static bool bigSub(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 }
 
 
-static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb, uint64_t* bigc)
+static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb,
+                   uint64_t* bigc)
 {
     if (size == 1)
         mul64Full(biga[0], bigb[0], bigc);
