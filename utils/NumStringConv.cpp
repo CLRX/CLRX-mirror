@@ -516,6 +516,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         std::fill(bigc, bigc + gsize+lsize, uint64_t(0));
         const cxuint lsizeRound2 = (lsizeRound<<1);
         
+        const cxuint glastSize = (gsize&(lsizeRound-1));
         if (lsizeRound == asize)
         {   /* lsize is power of two */
             uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
@@ -526,7 +527,6 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
                 bigMul(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
                 bigAdd(lsizeRound2+1, bigc + i*lsizeRound, lsizeRound2, tmpMul);
             }
-            cxuint glastSize = (gsize&(lsizeRound-1));
             bigMul(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
             // lsizeRound2+(glastSize!=0) - includes carry only when required
             bigAdd(lsizeRound2 + (glastSize!=0), bigc + i*lsizeRound, lsizeRound2, tmpMul);
@@ -552,7 +552,6 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
                 bigAdd(lsizeRound2+lsize+1, bigc + i*lsizeRound,
                        lsizeRound2+lsize, tmpMul);
             }
-            cxuint glastSize = (gsize&(lsizeRound-1));
             bigMul(lsize, bigl, lsizeRound2, bigg + i*lsizeRound, tmpMul);
             // include carry only when required
             bigAdd(lsizeRound2+lsize + ((gsize&(lsizeRound2-1)) != 0),
