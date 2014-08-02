@@ -447,7 +447,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         }
         uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*gsize));
         bigMul(lsize, bigl, bigg, bigc);
-        bigMul(lsize, bigl, gsize-lsize, bigg, tmpMul);
+        bigMul(lsize, bigl, gsize-lsize, bigg+lsize, tmpMul);
         // zeroing before addition
         std::fill(bigc+(lsize<<1), bigc+lsize+gsize, uint64_t(0));
         // adds two subproducts
@@ -537,7 +537,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         else
         {   /* lsize is not power of two */
             uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
-                    lsizeRound2+lsize));
+                    (lsizeRound2+lsize)));
             
             for (cxuint i = 0; i < stepsNum; i+=2)
             {
