@@ -539,7 +539,8 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
                     (lsizeRound2+lsize)));
             
-            for (cxuint i = 0; i < stepsNum; i+=2)
+            const cxuint newStepsNum = stepsNum-1;
+            for (cxuint i = 0; i < newStepsNum; i+=2)
             {
                 bigMul(lsize, bigl, lsizeRound2, bigg + i*lsizeRound, tmpMul);
                 bigAdd(lsizeRound2+lsize+1, bigc + i*lsizeRound,
