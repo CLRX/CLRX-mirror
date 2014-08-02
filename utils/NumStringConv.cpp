@@ -369,7 +369,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             bignum = bigb;
         }
         // main routine
-        bigc[0] = 0;
+        bigc[0] = bigc[1] = 0;
         uint64_t t[2];
         for (cxuint i = 0; i < size-1; i++)
         {
