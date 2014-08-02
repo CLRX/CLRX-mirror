@@ -520,12 +520,17 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         {   /* lsize is power of two */
             uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
                     lsizeRound2));
-            for (cxuint i = 0; i < stepsNum; i++)
+            cxuint i;
+            for (i = 0; i < stepsNum-1; i++)
             {
                 bigMul(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
                 bigAdd(lsizeRound2+1, bigc + i*lsizeRound, lsizeRound2, tmpMul);
             }
             cxuint glastSize = (gsize&(lsizeRound-1));
+            bigMul(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
+            // lsizeRound2+(glastSize!=0) - includes carry only when required
+            bigAdd(lsizeRound2 + (glastSize!=0), bigc + i*lsizeRound, lsizeRound2, tmpMul);
+            
             if (glastSize != 0)
             {   // last part of H
                 const cxuint glastPos = stepsNum*lsizeRound;
@@ -540,14 +545,19 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
                     (lsizeRound2+lsize)));
             
             const cxuint newStepsNum = stepsNum&~1;
-            for (cxuint i = 0; i < newStepsNum; i+=2)
+            cxuint i;
+            for (i = 0; i < newStepsNum-2; i+=2)
             {
                 bigMul(lsize, bigl, lsizeRound2, bigg + i*lsizeRound, tmpMul);
                 bigAdd(lsizeRound2+lsize+1, bigc + i*lsizeRound,
                        lsizeRound2+lsize, tmpMul);
             }
-            
             cxuint glastSize = (gsize&(lsizeRound-1));
+            bigMul(lsize, bigl, lsizeRound2, bigg + i*lsizeRound, tmpMul);
+            // include carry only when required
+            bigAdd(lsizeRound2+lsize + ((gsize&(lsizeRound2-1)) != 0),
+                   bigc + i*lsizeRound, lsizeRound2+lsize, tmpMul);
+            
             const cxuint glastPos = stepsNum*lsizeRound;
             if ((stepsNum&1) != 0)
             {
