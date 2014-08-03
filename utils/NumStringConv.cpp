@@ -298,7 +298,7 @@ static bool bigSub(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* b
     return borrow;
 }
 
-static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb,
+static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
                    uint64_t* bigc)
 {
     if (size == 1)
@@ -355,14 +355,14 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb,
     {   // higher level (use Karatsuba algorithm)
         const cxuint halfSize = size>>1;
         uint64_t* mx = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(size+1)));
-        bigMul(halfSize, biga, bigb, bigc);
-        bigMul(halfSize, biga+halfSize, bigb+halfSize, bigc+size);
+        bigMulPow2(halfSize, biga, bigb, bigc);
+        bigMulPow2(halfSize, biga+halfSize, bigb+halfSize, bigc+size);
         uint64_t* suma = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
         uint64_t* sumb = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
         bool sumaLast = bigAdd(halfSize, biga, biga+halfSize, suma);
         bool sumbLast = bigAdd(halfSize, bigb, bigb+halfSize, sumb);
         mx[size] = sumaLast&sumbLast;
-        bigMul(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
+        bigMulPow2(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
         if (sumaLast) // last bit in a0+a1 is set add (1<<64)*sumb
             mx[size] += bigAdd(halfSize, mx+halfSize, sumb);
         if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
@@ -378,19 +378,34 @@ static void bigMul(cxuint size, const uint64_t* biga, const uint64_t* bigb,
 static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
            const uint64_t* bigb, uint64_t* bigc)
 {
-    cxuint asizeRound;
-    for (asizeRound = 1; asizeRound < asize; asizeRound <<= 1);
-    cxuint bsizeRound;
-    for (bsizeRound = 1; bsizeRound < bsize; bsizeRound <<= 1);
+    cxuint asizeRound, bsizeRound;
+    cxuint asizeBit, bsizeBit;
+#ifdef __GNUC__
+    asizeBit = sizeof(cxuint)*8-__builtin_clz(asize);
+    bsizeBit = sizeof(cxuint)*8-__builtin_clz(bsize);
+    asizeRound = 1U<<asizeBit;
+    bsizeRound = 1U<<bsizeBit;
+#else
+    for (asizeBit = 0, asizeRound = 1; asizeRound < asize; asizeRound <<= 1, asizeBit++);
+    for (bsizeBit = 0, bsizeRound = 1; bsizeRound < bsize; bsizeRound <<= 1, bsizeBit++);
+#endif
     
-    asizeRound = (asizeRound != asize)?asizeRound>>1:asizeRound;
-    bsizeRound = (bsizeRound != bsize)?bsizeRound>>1:bsizeRound;
+    if (asizeRound != asize)
+    {
+        asizeBit--;
+        asizeRound = asizeRound>>1;
+    }
+    if (bsizeRound != bsize)
+    {
+        bsizeBit--;
+        bsizeRound = bsizeRound>>1;
+    }
     
     const cxuint smallerRound = std::min(asizeRound, bsizeRound);
     
     if (asize == bsize && asize == asizeRound && bsize == bsizeRound)
         // if this same sizes and is powers of 2
-        bigMul(asize, biga, bigb, bigc);
+        bigMulPow2(asize, biga, bigb, bigc);
     else if (asize == 1 || bsize == 1)
     {   // if one number is single 64-bit
         uint64_t ae;
@@ -446,7 +461,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             bigg = biga;
         }
         uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*gsize));
-        bigMul(lsize, bigl, bigg, bigc);
+        bigMulPow2(lsize, bigl, bigg, bigc);
         bigMul(lsize, bigl, gsize-lsize, bigg+lsize, tmpMul);
         // zeroing before addition
         std::fill(bigc+(lsize<<1), bigc+lsize+gsize, uint64_t(0));
@@ -461,7 +476,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         const cxuint bhalfSize2 = bsize-halfSize;
         cxuint size = halfSize<<1;
         uint64_t* mx = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(size+1)));
-        bigMul(halfSize, biga, bigb, bigc);
+        bigMulPow2(halfSize, biga, bigb, bigc);
         bigMul(ahalfSize2, biga+halfSize, bhalfSize2, bigb+halfSize, bigc+size);
         if (halfSize*halfSize < (ahalfSize2+bhalfSize2)*halfSize)
         {   // if karatsuba better
@@ -470,7 +485,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             bool sumaLast = bigAdd(halfSize, biga, ahalfSize2, biga+halfSize, suma);
             bool sumbLast = bigAdd(halfSize, bigb, bhalfSize2, bigb+halfSize, sumb);
             mx[size] = sumaLast&sumbLast;
-            bigMul(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
+            bigMulPow2(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
             if (sumaLast) // last bit in a0+a1 is set add (1<<64)*sumb
                 mx[size] += bigAdd(halfSize, mx+halfSize, sumb);
             if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
@@ -495,6 +510,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         cxuint lsizeRound;
         cxuint lsize, gsize;
         const uint64_t* bigl, *bigg;
+        cxuint lsizeBit;
         if (asize < bsize)
         {
             lsizeRound = asizeRound;
@@ -502,6 +518,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             bigl = biga;
             gsize = bsize;
             bigg = bigb;
+            lsizeBit = asizeBit;
         }
         else
         {
@@ -510,9 +527,10 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             bigl = bigb;
             gsize = asize;
             bigg = biga;
+            lsizeBit = bsizeBit;
         }
         /* main routine */
-        const cxuint stepsNum = gsize/lsizeRound;
+        const cxuint stepsNum = gsize>>lsizeBit;
         std::fill(bigc, bigc + gsize+lsize, uint64_t(0));
         const cxuint lsizeRound2 = (lsizeRound<<1);
         
@@ -524,10 +542,10 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             cxuint i;
             for (i = 0; i < stepsNum-1; i++)
             {
-                bigMul(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
+                bigMulPow2(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
                 bigAdd(lsizeRound2+1, bigc + i*lsizeRound, lsizeRound2, tmpMul);
             }
-            bigMul(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
+            bigMulPow2(lsizeRound, bigl, bigg + i*lsizeRound, tmpMul);
             // lsizeRound2+(glastSize!=0) - includes carry only when required
             bigAdd(lsizeRound2 + (glastSize!=0), bigc + i*lsizeRound, lsizeRound2, tmpMul);
             
