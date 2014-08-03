@@ -207,7 +207,8 @@ static inline void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
 #endif
 }
 
-static bool bigAdd(cxuint aSize, const uint64_t* biga, const uint64_t* bigb, uint64_t* bigc)
+static inline bool bigAdd(cxuint aSize, const uint64_t* biga, const uint64_t* bigb,
+              uint64_t* bigc)
 {
     bool carry = false;
     for (cxuint i = 0; i < aSize; i++)
@@ -218,7 +219,7 @@ static bool bigAdd(cxuint aSize, const uint64_t* biga, const uint64_t* bigb, uin
     return carry;
 }
 
-static bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
+static bool inline bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 {
     bool carry = false;
     for (cxuint i = 0; i < aSize; i++)
@@ -229,7 +230,7 @@ static bool bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
     return carry;
 }
 
-static bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
+static bool inline bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
 {
     bool carry = false;
     cxuint minSize = std::min(aSize, bSize);
@@ -247,8 +248,8 @@ static bool bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* b
     return carry;
 }
 
-static bool bigAdd(cxuint aSize, const uint64_t* biga, cxuint bSize, const uint64_t* bigb,
-       uint64_t* bigc)
+static bool inline bigAdd(cxuint aSize, const uint64_t* biga, cxuint bSize,
+          const uint64_t* bigb, uint64_t* bigc)
 {
     bool carry = false;
     cxuint minSize = std::min(aSize, bSize);
@@ -266,7 +267,7 @@ static bool bigAdd(cxuint aSize, const uint64_t* biga, cxuint bSize, const uint6
     return carry;
 }
 
-static bool bigSub(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
+static inline bool bigSub(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
 {
     bool borrow = false;
     cxuint minSize = std::min(aSize, bSize);
