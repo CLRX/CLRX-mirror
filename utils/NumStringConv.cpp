@@ -266,18 +266,6 @@ static bool bigAdd(cxuint aSize, const uint64_t* biga, cxuint bSize, const uint6
     return carry;
 }
 
-static bool bigSub(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
-{
-    bool borrow = false;
-    for (cxuint i = 0; i < aSize; i++)
-    {
-        const uint64_t tmp = biga[i];
-        biga[i] -= bigb[i] + borrow;
-        borrow = (biga[i] > tmp) || (biga[i] == tmp && borrow);
-    }
-    return borrow;
-}
-
 static bool bigSub(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
 {
     bool borrow = false;
@@ -364,12 +352,12 @@ static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
         mx[size] = sumaLast&sumbLast;
         bigMulPow2(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
         if (sumaLast) // last bit in a0+a1 is set add (1<<64)*sumb
-            mx[size] += bigAdd(halfSize, mx+halfSize, sumb);
+            bigAdd(halfSize+1, mx+halfSize, halfSize, sumb);
         if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
-            mx[size] += bigAdd(halfSize, mx+halfSize, suma);
+            bigAdd(halfSize+1, mx+halfSize, halfSize, suma);
         // mx-bigL
-        mx[size] -= bigSub(size, mx, bigc);
-        mx[size] -= bigSub(size, mx, bigc+size);
+        bigSub(size+1, mx, size, bigc);
+        bigSub(size+1, mx, size, bigc+size);
         // add to bigc
         bigAdd(size+halfSize, bigc+halfSize, size+1, mx);
     }
@@ -471,7 +459,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
     else if (smallerRound < asize && smallerRound < bsize &&
              (smallerRound<<1) >= asize && (smallerRound<<1) >= bsize)
     {   // Karatsuba for various size
-        const cxuint halfSize = (asize < bsize) ? asizeRound : bsizeRound;
+        const cxuint halfSize = smallerRound;
         const cxuint ahalfSize2 = asize-halfSize;
         const cxuint bhalfSize2 = bsize-halfSize;
         cxuint size = halfSize<<1;
@@ -487,12 +475,12 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             mx[size] = sumaLast&sumbLast;
             bigMulPow2(halfSize, suma, sumb, mx); /* (a0+a1)*(b0+b1) */
             if (sumaLast) // last bit in a0+a1 is set add (1<<64)*sumb
-                mx[size] += bigAdd(halfSize, mx+halfSize, sumb);
+                bigAdd(halfSize+1, mx+halfSize, halfSize, sumb);
             if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
-                mx[size] += bigAdd(halfSize, mx+halfSize, suma);
-            // mx-bigL
-            mx[size] -= bigSub(size, mx, bigc);
-            mx[size] -= bigSub(size, mx, ahalfSize2+bhalfSize2, bigc+size);
+                bigAdd(halfSize+1, mx+halfSize, halfSize, suma);
+            // mx-bigL-bigH
+            bigSub(size+1, mx, size, bigc);
+            bigSub(size+1, mx, ahalfSize2+bhalfSize2, bigc+size);
         }
         else
         {   // if normal product is better than Karatsuba
