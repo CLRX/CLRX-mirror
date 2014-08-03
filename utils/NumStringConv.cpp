@@ -287,11 +287,54 @@ static inline bool bigSub(cxuint aSize, uint64_t* biga, cxuint bSize, const uint
     return borrow;
 }
 
+#ifdef HAVE_INT128
+/*
+ * bigMulSimple
+ */
+static void bigMulSimple(cxuint asize, const uint64_t* biga, cxuint bsize,
+           const uint64_t* bigb, uint64_t* bigc)
+{
+    uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(bsize+1)));
+    std::fill(bigc, bigc + asize + bsize, uint64_t(0));
+    for (cxuint i = 0; i < asize; i++)
+    {
+        uint64_t t[2];
+        tmpMul[0] = tmpMul[1] = 0;
+        for (cxuint j = 0; j < bsize-1; j++)
+        {
+            mul64Full(biga[i], bigb[j], t);
+            // add to bigc
+            tmpMul[j] += t[0];
+            bool carry = (tmpMul[j] < t[0]);
+            tmpMul[j+1] += t[1] + carry;
+            tmpMul[j+2] = (tmpMul[j+1] < t[1]) || (tmpMul[j+1] == t[1] && carry);
+        }
+        mul64Full(biga[i], bigb[bsize-1], t);
+        tmpMul[bsize-1] += t[0];
+        bool carry = (tmpMul[bsize-1] < t[0]);
+        tmpMul[bsize] += t[1] + carry;
+        // ad to product
+        carry = false;
+        for (cxuint j = 0; j < bsize+1; j++)
+        {
+            bigc[i+j] += tmpMul[j] + carry;
+            carry = (bigc[i+j] < tmpMul[j]) || ((bigc[i+j] == tmpMul[j]) && carry);
+        }
+        if (i+bsize+1 < asize+bsize)
+            bigc[i+bsize+1] += carry;
+    }
+}
+#endif
+
 static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
                    uint64_t* bigc)
 {
     if (size == 1)
         mul64Full(biga[0], bigb[0], bigc);
+#ifdef HAVE_INT128
+    else if (size <= 8)
+        bigMulSimple(size, biga, size, bigb, bigc);
+#else
     else if (size == 2)
     {   /* in this level we are using Karatsuba algorithm */
         uint64_t mx[3];
@@ -340,6 +383,7 @@ static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
         bigc[3] += (bigc[2] < mx[1]); // carry from bigc[2]+mx[1]
         bigc[3] += mx[2];   // last addition
     }
+#endif
     else
     {   // higher level (use Karatsuba algorithm)
         const cxuint halfSize = size>>1;
@@ -430,6 +474,10 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         bool carry = (bigc[size-1] < t[0]);
         bigc[size] += t[1] + carry;
     }
+#ifdef HAVE_INT128
+    else if (asize*bsize <= 128)
+        bigMulSimple(asize, biga, bsize, bigb, bigc);
+#endif
     else if ((smallerRound == asize || smallerRound == bsize) &&
         (smallerRound<<1) >= asize && (smallerRound<<1) >= bsize)
     {   // [Ah,AL]*[BL] or [AL]*[Bh,BL] where sizeof Bh or Ah is smaller than BL
