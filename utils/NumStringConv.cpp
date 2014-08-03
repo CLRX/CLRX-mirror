@@ -523,7 +523,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         const cxuint lsizeRound2 = (lsizeRound<<1);
         
         const cxuint glastSize = (gsize&(lsizeRound-1));
-        if (lsizeRound == asize)
+        if (lsizeRound == lsize)
         {   /* lsize is power of two */
             uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
                     lsizeRound2));
