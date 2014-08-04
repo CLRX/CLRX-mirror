@@ -192,11 +192,17 @@ IF(POPT_FOUND)
     SET(HAVE_POPT 1)
 ENDIF(POPT_FOUND)
 
+TRY_COMPILE(HAVE_INT128 ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/Int128Detect.c)
+
+IF(HAVE_INT128)
+    MESSAGE(STATUS "128-bit integer arithmetic detected")
+ELSE(HAVE_INT128)
+    MESSAGE(STATUS "128-bit integer arithmetic not supported by compiler")
+ENDIF(HAVE_INT128)
+
 ###
 # other dependencies and checks
 ###
-
-TRY_COMPILE(HAVE_INT128 ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/Int128Detect.c)
 
 CHECK_INCLUDE_FILE_CXX(elf.h HAVE_ELF_H)
 
