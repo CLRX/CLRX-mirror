@@ -629,6 +629,193 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
     }
 }
 
+static inline void bigShift64Right(cxuint size, uint64_t* bigNum, cxuint shift64)
+{
+    const cxuint shift64n = 64-shift64;
+    for (cxuint i = 0; i < size-1; i++)
+        bigNum[i] = (bigNum[i]>>shift64) | (bigNum[i+1]<<shift64n);
+    bigNum[size-1] >>= shift64;
+}
+
+static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
+            uint64_t* bigNum)
+{
+    cxuint roundSize = inSize-outSize;
+    bool carry = false;
+    if ((bigNum[roundSize-1] & (1ULL<<63)) != 0)
+    {   /* apply rounding */
+        for (cxuint i = 0; i < outSize; i++)
+        {
+            bigNum[i] = bigNum[roundSize+i] + carry;
+            carry = (bigNum[i] < carry);
+        }
+    }
+    else // if no rounding
+        for (cxuint i = 0; i < outSize; i++)
+            bigNum[i] = bigNum[roundSize+i];
+    
+    if (carry)
+        exponent++;
+    return carry;
+}
+
+struct Pow5NumTableEntry
+{
+    uint64_t value;
+    cxuint exponent;
+};
+
+static const Pow5NumTableEntry pow5Table[28] =
+{
+    { 0x0000000000000000ULL, 0 },
+    { 0x4000000000000000ULL, 2 },
+    { 0x9000000000000000ULL, 4 },
+    { 0xf400000000000000ULL, 6 },
+    { 0x3880000000000000ULL, 9 },
+    { 0x86a0000000000000ULL, 11 },
+    { 0xe848000000000000ULL, 13 },
+    { 0x312d000000000000ULL, 16 },
+    { 0x7d78400000000000ULL, 18 },
+    { 0xdcd6500000000000ULL, 20 },
+    { 0x2a05f20000000000ULL, 23 },
+    { 0x74876e8000000000ULL, 25 },
+    { 0xd1a94a2000000000ULL, 27 },
+    { 0x2309ce5400000000ULL, 30 },
+    { 0x6bcc41e900000000ULL, 32 },
+    { 0xc6bf526340000000ULL, 34 },
+    { 0x1c37937e08000000ULL, 37 },
+    { 0x6345785d8a000000ULL, 39 },
+    { 0xbc16d674ec800000ULL, 41 },
+    { 0x158e460913d00000ULL, 44 },
+    { 0x5af1d78b58c40000ULL, 46 },
+    { 0xb1ae4d6e2ef50000ULL, 48 },
+    { 0x0f0cf064dd592000ULL, 51 },
+    { 0x52d02c7e14af6800ULL, 53 },
+    { 0xa784379d99db4200ULL, 55 },
+    { 0x08b2a2c280290940ULL, 58 },
+    { 0x4adf4b7320334b90ULL, 60 },
+    { 0x9d971e4fe8401e74ULL, 62 }
+};
+
+static void bigMulFP(cxuint maxSize,
+        cxuint bigaSize, cxuint bigaBits, cxint bigaExp, const uint64_t* biga,
+        cxuint bigbSize, cxuint bigbBits, cxint bigbExp, const uint64_t* bigb,
+        cxuint& bigcBits, cxuint& bigcSize, cxint& bigcExp, uint64_t* bigc)
+{
+    /* A*B */
+    bigMul(bigaSize, biga, bigbSize, bigb, bigc);
+    /* realize AH*BH+AH*B+BH*A */
+    cxuint carry = bigAdd(bigaSize, bigc + bigbSize, biga);
+    carry += bigAdd(bigbSize, bigc + bigaSize, biga);
+    bigcSize = bigaSize + bigbSize;
+    bigcBits = bigaBits + bigbBits;
+    bigcExp = bigaExp + bigbExp;
+    if (carry)
+    {   // carry, we shift right, and increment exponent
+        bool lsbit = bigc[0]&1;
+        bigShift64Right(bigcSize, bigc, 1);
+        bigc[bigcSize-1] |= (carry==2);
+        bigcExp++;
+        bigcBits++;
+        if (bigcBits == (bigcSize<<6)+1 && bigcSize < maxSize)
+        {   // push least signicant bit to first elem
+            /* this make sense only when number needs smaller space than maxSize */
+            for (cxuint j = 0; j < bigcSize; j++)
+                bigc[j+1] = bigc[j];
+            bigc[0] = uint64_t(lsbit)<<63;
+            bigcSize++;
+        }
+    }
+    if (bigcSize > maxSize)
+    {   /* if out of maxSize, then round this number */
+        bigcBits = maxSize<<6;
+        bigFPRoundToNearest(bigcSize, maxSize, bigcExp, bigc);
+        bigcSize = maxSize;
+    }
+    else if ((bigcSize<<6) > bigcBits)
+    {   // fix bigc size if doesnt match with bigcBits
+        cxuint newBigcSize = ((bigcBits+63)>>6);
+        for (cxuint i = 0; i < bigcSize; i++)
+            bigc[i] = bigc[i+newBigcSize-bigcSize];
+        bigcSize = newBigcSize;
+    }
+}
+
+/* generate bit Power of 5.
+ * power - power, maxSize - max size of number
+ * outSize - size of output number
+ * exponent - output number exponent
+ * outPow - output number
+ * Number in format: (1 + outNumber/2**(dstsize*64)) * 2**exponent
+ */
+static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
+            cxint& exponent, uint64_t* outPow)
+{
+    if (power >= 0 && power < 28)
+    {
+        outPow[0] = pow5Table[power].value;
+        powSize = 1;
+        exponent = pow5Table[power].exponent;
+        return;
+    }
+    
+    uint64_t* curPow2Pow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
+    uint64_t* prevPow2Pow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
+    uint64_t* curPow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
+    uint64_t* prevPow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
+    
+    cxuint pow2PowSize, pow2PowBits, powBits;
+    cxint pow2PowExp;
+    
+    
+    const cxuint absPower = std::abs(power);
+    cxuint p = 0;
+    
+    if (absPower >= 0)
+    {
+        powSize = 1;
+        curPow[0] = pow5Table[power&15].value;
+        exponent = pow5Table[power&15].exponent;
+        powBits = exponent;
+        pow2PowSize = 1;
+        curPow2Pow[0] = pow5Table[16].value;
+        pow2PowExp = pow5Table[16].exponent;
+        pow2PowBits = pow2PowExp;
+        p = 16;
+    }
+    else
+    {
+        powSize = maxSize;
+        std::fill(curPow, curPow + maxSize, uint64_t(0));
+        exponent = 0;
+        powBits = maxSize<<6;
+        pow2PowSize = maxSize;
+        std::fill(curPow2Pow, curPow2Pow + maxSize, uint64_t(0x9999999999999999ULL));
+        pow2PowExp = 2;
+        pow2PowBits = maxSize<<6;
+        p = 1;
+    }
+    
+    for (; p <= absPower; p<<=1)
+    {
+        if ((absPower&p)!=0)
+        {   /* POW = POW2*POW */
+            bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+                 powSize, powBits, exponent, curPow,
+                 powSize, powBits, exponent, prevPow);
+            std::swap(curPow, prevPow);
+        }
+        
+        /* POW2*POW2 */
+        bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+                 pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+                 pow2PowSize, pow2PowBits, pow2PowExp, prevPow2Pow);
+        std::swap(curPow2Pow, prevPow2Pow);
+    }
+    // copy result to output
+    std::copy(curPow, curPow + powSize, outPow);
+}
+
 /*
  * cstrtofXCStyle
  */
