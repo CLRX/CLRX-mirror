@@ -741,31 +741,6 @@ static void bigMulFP(cxuint maxSize,
     }
 }
 
-static uint64_t uint64FPmul(cxint aExp, uint64_t a64, cxint bExp, uint64_t b64,
-                cxint& exponent)
-{
-    uint64_t temp[2];
-    mul64Full(a64, b64, temp);
-    temp[1] += a64;
-    cxuint carry = (temp[1] < a64);
-    temp[1] += b64;
-    carry += (temp[1] < b64);
-    exponent = aExp+bExp;
-    if (carry != 0)
-    {
-        temp[1] = (temp[1]>>1) | (uint64_t(carry==2)<<63);
-        exponent++;
-    }
-    // rounding
-    if ((temp[0] & (1ULL<<63)) != 0)
-    {
-        temp[1]++;
-        if (temp[1] == 0)
-            exponent++;
-    }
-    return temp[1];
-}
-
 /* generate bit Power of 5.
  * power - power, maxSize - max size of number
  * outSize - size of output number
@@ -783,6 +758,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         exponent = pow5Table[power].exponent;
         return;
     }
+    
+    maxSize++; // increase by 1 elem (64-bit) for accuracy
     
     uint64_t* curPow2Pow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
     uint64_t* prevPow2Pow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
@@ -824,39 +801,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         p = 1;
     }
     
-    if (maxSize == 1) // if only 64-bit value needed
+    for (; p <= (absPower>>1); p<<=1)
     {
-        for (; p <= (absPower>>1); p<<=1)
-        {
-            if ((absPower&p)!=0)
-                curPow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
-                        exponent, curPow[0], exponent);
-            
-            curPow2Pow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
-                        pow2PowExp, curPow2Pow[0], pow2PowExp);
-        }
-        if ((absPower&p)!=0)
-            curPow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
-                    exponent, curPow[0], exponent);
-    }
-    else    // greater than 1 64-bit value
-    {
-        for (; p <= (absPower>>1); p<<=1)
-        {
-            if ((absPower&p)!=0)
-            {   /* POW = POW2*POW */
-                bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
-                     powSize, powBits, exponent, curPow,
-                     powSize, powBits, exponent, prevPow);
-                std::swap(curPow, prevPow);
-            }
-            
-            /* POW2*POW2 */
-            bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
-                     pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
-                     pow2PowSize, pow2PowBits, pow2PowExp, prevPow2Pow);
-            std::swap(curPow2Pow, prevPow2Pow);
-        }
         if ((absPower&p)!=0)
         {   /* POW = POW2*POW */
             bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
@@ -864,6 +810,26 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
                  powSize, powBits, exponent, prevPow);
             std::swap(curPow, prevPow);
         }
+        
+        /* POW2*POW2 */
+        bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+                 pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+                 pow2PowSize, pow2PowBits, pow2PowExp, prevPow2Pow);
+        std::swap(curPow2Pow, prevPow2Pow);
+    }
+    // last iteration
+    if ((absPower&p)!=0)
+    {   /* POW = POW2*POW */
+        bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+             powSize, powBits, exponent, curPow,
+             powSize, powBits, exponent, prevPow);
+        std::swap(curPow, prevPow);
+    }
+    // after computing
+    if (powSize == maxSize)
+    {   /* round to nearest if result size is greater than original maxSize */
+        bigFPRoundToNearest(maxSize, maxSize-1, exponent, curPow);
+        powSize = maxSize-1;
     }
     // copy result to output
     std::copy(curPow, curPow + powSize, outPow);
