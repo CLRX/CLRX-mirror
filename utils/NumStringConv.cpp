@@ -644,6 +644,7 @@ static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
     bool carry = false;
     if ((bigNum[roundSize-1] & (1ULL<<63)) != 0)
     {   /* apply rounding */
+        carry = true;
         for (cxuint i = 0; i < outSize; i++)
         {
             bigNum[i] = bigNum[roundSize+i] + carry;
@@ -795,8 +796,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     const cxuint absPower = std::abs(power);
     cxuint p = 0;
     
-    if (absPower >= 0)
-    {
+    if (power >= 0)
+    {   // positive power
         powSize = 1;
         curPow[0] = pow5Table[power&15].value;
         exponent = pow5Table[power&15].exponent;
@@ -808,12 +809,14 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         p = 16;
     }
     else
-    {
+    {   // negative power (fractions)
         powSize = maxSize;
+        // one in curPow
         std::fill(curPow, curPow + maxSize, uint64_t(0));
         exponent = 0;
         powBits = maxSize<<6;
         pow2PowSize = maxSize;
+        // perfect 1/5 in pow2PowExp 1/5^1
         std::fill(curPow2Pow, curPow2Pow + maxSize, uint64_t(0x9999999999999999ULL));
         pow2PowExp = 2;
         pow2PowBits = maxSize<<6;
