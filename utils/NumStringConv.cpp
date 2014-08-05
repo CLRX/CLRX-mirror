@@ -701,7 +701,7 @@ static const Pow5NumTableEntry pow5Table[28] =
 static void bigMulFP(cxuint maxSize,
         cxuint bigaSize, cxuint bigaBits, cxint bigaExp, const uint64_t* biga,
         cxuint bigbSize, cxuint bigbBits, cxint bigbExp, const uint64_t* bigb,
-        cxuint& bigcBits, cxuint& bigcSize, cxint& bigcExp, uint64_t* bigc)
+        cxuint& bigcSize, cxuint& bigcBits, cxint& bigcExp, uint64_t* bigc)
 {
     /* A*B */
     bigMul(bigaSize, biga, bigbSize, bigb, bigc);
