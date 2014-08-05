@@ -710,11 +710,11 @@ static void bigMulFP(cxuint maxSize,
     bigcSize = bigaSize + bigbSize;
     bigcBits = bigaBits + bigbBits;
     bigcExp = bigaExp + bigbExp;
-    if (carry)
+    if (carry != 0)
     {   // carry, we shift right, and increment exponent
         const bool lsbit = bigc[0]&1;
         bigShift64Right(bigcSize, bigc, 1);
-        bigc[bigcSize-1] |= (carry==2);
+        bigc[bigcSize-1] |= (uint64_t(carry==2)<<63);
         bigcExp++;
         bigcBits++;
         if (bigcBits == (bigcSize<<6)+1 && bigcSize < maxSize)
