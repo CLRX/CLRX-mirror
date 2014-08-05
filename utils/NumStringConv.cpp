@@ -640,7 +640,7 @@ static inline void bigShift64Right(cxuint size, uint64_t* bigNum, cxuint shift64
 static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
             uint64_t* bigNum)
 {
-    cxuint roundSize = inSize-outSize;
+    const cxuint roundSize = inSize-outSize;
     bool carry = false;
     if ((bigNum[roundSize-1] & (1ULL<<63)) != 0)
     {   /* apply rounding */
@@ -706,13 +706,13 @@ static void bigMulFP(cxuint maxSize,
     bigMul(bigaSize, biga, bigbSize, bigb, bigc);
     /* realize AH*BH+AH*B+BH*A */
     cxuint carry = bigAdd(bigaSize, bigc + bigbSize, biga);
-    carry += bigAdd(bigbSize, bigc + bigaSize, biga);
+    carry += bigAdd(bigbSize, bigc + bigaSize, bigb);
     bigcSize = bigaSize + bigbSize;
     bigcBits = bigaBits + bigbBits;
     bigcExp = bigaExp + bigbExp;
     if (carry)
     {   // carry, we shift right, and increment exponent
-        bool lsbit = bigc[0]&1;
+        const bool lsbit = bigc[0]&1;
         bigShift64Right(bigcSize, bigc, 1);
         bigc[bigcSize-1] |= (carry==2);
         bigcExp++;
@@ -720,8 +720,8 @@ static void bigMulFP(cxuint maxSize,
         if (bigcBits == (bigcSize<<6)+1 && bigcSize < maxSize)
         {   // push least signicant bit to first elem
             /* this make sense only when number needs smaller space than maxSize */
-            for (cxuint j = 0; j < bigcSize; j++)
-                bigc[j+1] = bigc[j];
+            for (cxuint j = bigcSize; j > 0; j--)
+                bigc[j] = bigc[j-1];
             bigc[0] = uint64_t(lsbit)<<63;
             bigcSize++;
         }
@@ -732,12 +732,11 @@ static void bigMulFP(cxuint maxSize,
         bigFPRoundToNearest(bigcSize, maxSize, bigcExp, bigc);
         bigcSize = maxSize;
     }
-    else if ((bigcSize<<6) > bigcBits)
+    else if (bigcSize > ((bigcBits+63)>>6))
     {   // fix bigc size if doesnt match with bigcBits
-        cxuint newBigcSize = ((bigcBits+63)>>6);
         for (cxuint i = 0; i < bigcSize; i++)
-            bigc[i] = bigc[i+newBigcSize-bigcSize];
-        bigcSize = newBigcSize;
+            bigc[i] = bigc[i+1];
+        bigcSize--;
     }
 }
 
@@ -827,7 +826,7 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
             if ((absPower&p)!=0)
                 curPow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
                         exponent, curPow[0], exponent);
-                        
+            
             curPow2Pow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
                         pow2PowExp, curPow2Pow[0], pow2PowExp);
         }
