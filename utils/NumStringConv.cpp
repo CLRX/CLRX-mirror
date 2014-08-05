@@ -818,8 +818,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         powBits = maxSize<<6;
         // perfect 1/5 in pow2PowExp 1/5^1
         std::fill(curPow2Pow+1, curPow2Pow + maxSize, uint64_t(0x9999999999999999ULL));
-        curPow[0] = 0x999999999999999aULL; // includes nearest rounding
-        pow2PowExp = 2;
+        curPow2Pow[0] = 0x999999999999999aULL; // includes nearest rounding
+        pow2PowExp = -3;
         pow2PowBits = maxSize<<6;
         p = 1;
     }
