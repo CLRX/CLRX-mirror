@@ -825,7 +825,8 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     }
     
     if (maxSize == 1) // if only 64-bit value needed
-        for (; p <= absPower; p<<=1)
+    {
+        for (; p <= (absPower>>1); p<<=1)
         {
             if ((absPower&p)!=0)
                 curPow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
@@ -834,8 +835,13 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
             curPow2Pow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
                         pow2PowExp, curPow2Pow[0], pow2PowExp);
         }
+        if ((absPower&p)!=0)
+            curPow[0] = uint64FPmul(pow2PowExp, curPow2Pow[0],
+                    exponent, curPow[0], exponent);
+    }
     else    // greater than 1 64-bit value
-        for (; p <= absPower; p<<=1)
+    {
+        for (; p <= (absPower>>1); p<<=1)
         {
             if ((absPower&p)!=0)
             {   /* POW = POW2*POW */
@@ -851,6 +857,14 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
                      pow2PowSize, pow2PowBits, pow2PowExp, prevPow2Pow);
             std::swap(curPow2Pow, prevPow2Pow);
         }
+        if ((absPower&p)!=0)
+        {   /* POW = POW2*POW */
+            bigMulFP(maxSize, pow2PowSize, pow2PowBits, pow2PowExp, curPow2Pow,
+                 powSize, powBits, exponent, curPow,
+                 powSize, powBits, exponent, prevPow);
+            std::swap(curPow, prevPow);
+        }
+    }
     // copy result to output
     std::copy(curPow, curPow + powSize, outPow);
 }
