@@ -294,7 +294,7 @@ static inline bool bigSub(cxuint aSize, uint64_t* biga, cxuint bSize, const uint
 static void bigMulSimple(cxuint asize, const uint64_t* biga, cxuint bsize,
            const uint64_t* bigb, uint64_t* bigc)
 {
-    uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(bsize+1)));
+    uint64_t* tmpMul = static_cast<uint64_t*>(::alloca((bsize+1)<<3));
     std::fill(bigc, bigc + asize + bsize, uint64_t(0));
     for (cxuint i = 0; i < asize; i++)
     {
@@ -387,11 +387,11 @@ static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
     else
     {   // higher level (use Karatsuba algorithm)
         const cxuint halfSize = size>>1;
-        uint64_t* mx = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(size+1)));
+        uint64_t* mx = static_cast<uint64_t*>(::alloca((size+1)<<3));
         bigMulPow2(halfSize, biga, bigb, bigc);
         bigMulPow2(halfSize, biga+halfSize, bigb+halfSize, bigc+size);
-        uint64_t* suma = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
-        uint64_t* sumb = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
+        uint64_t* suma = static_cast<uint64_t*>(::alloca(halfSize<<3));
+        uint64_t* sumb = static_cast<uint64_t*>(::alloca(halfSize<<3));
         bool sumaLast = bigAdd(halfSize, biga, biga+halfSize, suma);
         bool sumbLast = bigAdd(halfSize, bigb, bigb+halfSize, sumb);
         mx[size] = sumaLast&sumbLast;
@@ -497,7 +497,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
             bigl = bigb;
             bigg = biga;
         }
-        uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*gsize));
+        uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(gsize<<3));
         bigMulPow2(lsize, bigl, bigg, bigc);
         bigMul(lsize, bigl, gsize-lsize, bigg+lsize, tmpMul);
         // zeroing before addition
@@ -512,13 +512,13 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         const cxuint ahalfSize2 = asize-halfSize;
         const cxuint bhalfSize2 = bsize-halfSize;
         cxuint size = halfSize<<1;
-        uint64_t* mx = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(size+1)));
+        uint64_t* mx = static_cast<uint64_t*>(::alloca((size+1)<<3));
         bigMulPow2(halfSize, biga, bigb, bigc);
         bigMul(ahalfSize2, biga+halfSize, bhalfSize2, bigb+halfSize, bigc+size);
         if (halfSize*halfSize < (ahalfSize2+bhalfSize2)*halfSize)
         {   // if karatsuba better
-            uint64_t* suma = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
-            uint64_t* sumb = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(halfSize)));
+            uint64_t* suma = static_cast<uint64_t*>(::alloca(halfSize<<3));
+            uint64_t* sumb = static_cast<uint64_t*>(::alloca(halfSize<<3));
             bool sumaLast = bigAdd(halfSize, biga, ahalfSize2, biga+halfSize, suma);
             bool sumbLast = bigAdd(halfSize, bigb, bhalfSize2, bigb+halfSize, sumb);
             mx[size] = sumaLast&sumbLast;
@@ -533,7 +533,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         }
         else
         {   // if normal product is better than Karatsuba
-            uint64_t* mx2 = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*size));
+            uint64_t* mx2 = static_cast<uint64_t*>(::alloca(size<<3));
             std::fill(mx+asize, mx+size+1, uint64_t(0));
             bigMul(ahalfSize2, biga+halfSize, halfSize, bigb, mx);
             bigMul(halfSize, biga, bhalfSize2, bigb+halfSize, mx2);
@@ -574,8 +574,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         const cxuint glastSize = (gsize&(lsizeRound-1));
         if (lsizeRound == lsize)
         {   /* lsize is power of two */
-            uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
-                    lsizeRound2));
+            uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(lsizeRound2<<3));
             cxuint i;
             for (i = 0; i < stepsNum-1; i++)
             {
@@ -596,8 +595,7 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
         }
         else
         {   /* lsize is not power of two */
-            uint64_t* tmpMul = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*
-                    (lsizeRound2+lsize)));
+            uint64_t* tmpMul = static_cast<uint64_t*>(::alloca((lsizeRound2+lsize)<<3));
             
             const cxuint newStepsNum = stepsNum&~1;
             cxuint i;
@@ -752,24 +750,21 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
             cxint& exponent, uint64_t* outPow)
 {
     if (power >= 0 && power < 28)
-    {
+    {   /* get result from table */
         outPow[0] = pow5Table[power].value;
         powSize = 1;
         exponent = pow5Table[power].exponent;
         return;
     }
-    
     maxSize++; // increase by 1 elem (64-bit) for accuracy
     
-    uint64_t* curPow2Pow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
-    uint64_t* prevPow2Pow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
-    uint64_t* curPow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
-    uint64_t* prevPow = static_cast<uint64_t*>(::alloca(sizeof(uint64_t)*(maxSize<<1)));
+    uint64_t* curPow2Pow = static_cast<uint64_t*>(::alloca(maxSize<<4));
+    uint64_t* prevPow2Pow = static_cast<uint64_t*>(::alloca(maxSize<<4));
+    uint64_t* curPow = static_cast<uint64_t*>(::alloca(maxSize<<4));
+    uint64_t* prevPow = static_cast<uint64_t*>(::alloca(maxSize<<4));
     
     cxuint pow2PowSize, pow2PowBits, powBits;
     cxint pow2PowExp;
-    
-    
     const cxuint absPower = std::abs(power);
     cxuint p = 0;
     
