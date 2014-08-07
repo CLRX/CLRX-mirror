@@ -908,31 +908,26 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         // determine real exponent
         cxint expOfValue = 0;
-        while (p != inend && *p == '0') p++; // skip zeroes
+        while (p != valEnd && *p == '0') p++; // skip zeroes
         
         const char* vs = nullptr;
         cxuint firstDigitBits = 0;
-        if (p != inend)
+        if (p != valEnd)
         {
-            if ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
-                (*p >= 'A' && *p <= 'F')) // if integer part
+            if (*p != '.') // if integer part
             {
                 firstDigitBits = (*p >= '8') ? 4 : (*p >= '4') ? 3 : (*p >= '2') ? 2 : 1;
                 expOfValue = firstDigitBits-1;
                 // count exponent of integer part
                 vs = p; // set pointer to real value
-                for (p++; p != inend &&
-                    ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
-                    (*p >= 'A' && *p <= 'F')); p++)
+                for (p++; p != valEnd && *p != '.'; p++)
                     expOfValue += 4;
             }
-            else if (*p == '.')
-            {
-                // count exponent of fractional part
-                for (p++; p != inend && *p == '0'; p++)
+            else // if fraction
+            {   // count exponent of fractional part
+                for (p++; p != valEnd && *p == '0'; p++)
                     expOfValue -= 4; // skip zeroes
-                if (p != inend && ((*p >= '0' && *p <= '9') || (*p >= 'a' && *p <= 'f') ||
-                        (*p >= 'A' && *p <= 'F')))
+                if (p != valEnd)
                 {
                     firstDigitBits = (*p >= '8') ? 4 : (*p >= '4') ? 3 :
                             (*p >= '2') ? 2 : 1;
@@ -942,8 +937,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
         }
         
-        if (vs == nullptr || vs == inend || ((*vs < '0' || *vs > '9') &&
-                (*vs < 'a' || *vs > 'f') && (*vs < 'A' || *vs > 'F')))
+        if (vs == nullptr || vs == valEnd)
             return out;   // return zero
         
         const int64_t tempExp = int64_t(expOfValue)+int64_t(binaryExp);
@@ -1035,7 +1029,56 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
     }
     else
     {   // in decimal format
-        throw ParseException("Unsupported");
+        cxint decimalExp = 0;
+        const char* expstr = p;
+        bool comma = false;
+        for (;expstr != inend && (*expstr == '.' || (*expstr >= '0' && *expstr <= '9'));
+             expstr++)
+            if (*expstr == '.')
+            {   // if comma found and we found next we break skipping
+                if (comma) break;
+                comma = true;
+            }
+            
+        if (p == expstr || (p+1 == expstr && *p == '.'))
+            throw ParseException("Floating point doesn't have value part!");
+        // value end in string
+        const char* valEnd = expstr;
+        
+        if (expstr != inend && (*expstr == 'p' || *expstr == 'P')) // we found exponent
+        {
+            expstr++;
+            if (expstr == inend)
+                throw ParseException("End of floating point at exponent");
+            decimalExp = parseFloatExponent(expstr, inend);
+        }
+        outend = expstr; // set out end
+        
+        // determine real exponent
+        cxint expOfValue = 0;
+        const char* vs = p;
+        
+        while (p != valEnd && *p == '0') p++; // skip zeroes
+        
+        if (p != valEnd)
+        {
+            if (*p != '.') // if integer part
+            {   // count exponent of integer part
+                vs = p; // set pointer to real value
+                for (p++; p != valEnd && *p != '.'; p++)
+                    expOfValue++;
+            }
+            else
+            {   // count exponent of fractional part
+                expOfValue--;
+                for (p++; p != valEnd && *p == '0'; p++)
+                    expOfValue--; // skip zeroes
+                vs = p;
+            }
+        }
+        
+        if (vs == nullptr || vs == valEnd)
+            return out;   // return zero
     }
     return out;
 }
