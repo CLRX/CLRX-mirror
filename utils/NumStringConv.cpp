@@ -834,6 +834,31 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
  * cstrtofXCStyle
  */
 
+static const double LOG2BYLOG10 = .301029995663981195213738894724;
+
+static const uint64_t tenTables[19] =
+{
+    1ULL,
+    10ULL,
+    100ULL,
+    1000ULL,
+    10000ULL,
+    100000ULL,
+    1000000ULL,
+    10000000ULL,
+    100000000ULL,
+    1000000000ULL,
+    10000000000ULL,
+    100000000000ULL,
+    1000000000000ULL,
+    10000000000000ULL,
+    100000000000000ULL,
+    1000000000000000ULL,
+    10000000000000000ULL,
+    100000000000000000ULL,
+    1000000000000000000ULL
+};
+
 static uint64_t cstrtofXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint expBits, cxuint mantisaBits)
 {
@@ -1055,7 +1080,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         outend = expstr; // set out end
         
         // determine real exponent
-        cxint expOfValue = 0;
+        cxint decExpOfValue = 0;
         const char* vs = p;
         
         while (p != valEnd && *p == '0') p++; // skip zeroes
@@ -1066,19 +1091,175 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             {   // count exponent of integer part
                 vs = p; // set pointer to real value
                 for (p++; p != valEnd && *p != '.'; p++)
-                    expOfValue++;
+                    decExpOfValue++;
             }
             else
             {   // count exponent of fractional part
-                expOfValue--;
+                decExpOfValue = -1;
                 for (p++; p != valEnd && *p == '0'; p++)
-                    expOfValue--; // skip zeroes
+                    decExpOfValue--; // skip zeroes
                 vs = p;
             }
         }
         
         if (vs == nullptr || vs == valEnd)
             return out;   // return zero
+        
+        const int64_t decTempExp = int64_t(decExpOfValue)+int64_t(decimalExp);
+        // handling exponent range
+        if (decTempExp > (maxExp+1)*LOG2BYLOG10) // out of max exponent
+            throw ParseException("Absolute value of number is too big");
+        if (decTempExp < (minExpDenorm-1)*LOG2BYLOG10)
+            return out; // return zero
+        /*
+         * first trial with 64-bit precision
+         */
+        uint64_t value = 0;
+        uint64_t rescaledValue;
+        cxuint parsedDigits = 0;
+        for (; vs != valEnd; vs++)
+        {
+            if (value > ((1ULL<<63)-1)/10)
+                break; // is end of precision
+            if (*vs >= '0' && *vs <= '9')
+            {
+                const cxuint digit = *vs-'0';
+                const uint64_t tmpValue = value*10 + digit;
+                if ((tmpValue&((1ULL<<63)-1)) < digit)
+                    break; // end of precision
+                value = tmpValue;
+            }
+            else if (*vs == '.')
+                continue;
+            parsedDigits++;
+        }
+        cxuint valueShift = 0;
+#ifdef __GNUC__
+        valueShift = __builtin_clz(value)-1;
+#else
+        for (uint64_t t = 1ULL<<62; t > value; t>>=1, valueShift++);
+#endif
+        value>>=valueShift;
+        
+        uint64_t decFactor;
+        cxint decFacBinExp;
+        cxuint powSize;
+        bigPow5(decTempExp-parsedDigits, 1, powSize, decFacBinExp, &decFactor);
+        // multiply if needed
+        if (decFactor != 0)
+        {   /* rescale value to binary exponent */
+            uint64_t rescaled[2];
+            mul64Full(decFactor, value, rescaled);
+            // add (without carry, because values in range 0...(1<<64)-1
+            rescaled[1] += value;
+            // rounding
+            if ((rescaled[0] & (1ULL<<63)) != 0)
+                rescaled[1]++;
+            rescaledValue = rescaled[1];
+        }
+        else  // if decFactor==1.0
+            rescaledValue = value;
+        
+        // compute binary exponent
+        cxint binaryExp = decFacBinExp + decTempExp-parsedDigits +
+                62-valueShift + (rescaledValue>=(1ULL<<63));
+        if (binaryExp > maxExp) // out of max exponent
+            throw ParseException("Absolute value of number is too big");
+        if (binaryExp < minExpDenorm-1)
+            return out; // return zero
+        
+        cxuint significandBits = (binaryExp >= minExpNonDenorm) ? mantisaBits+1 :
+                binaryExp-minExpDenorm+1;
+        bool isNotTooExact = false;
+        
+        const cxuint subValueShift = 62+(rescaledValue>=(1ULL<<63)) - significandBits+1;
+        const uint64_t subValue = rescaledValue&(1ULL<<((subValueShift)-1ULL));
+        const uint64_t half = 1ULL<<(subValueShift-1);
+        
+        /* check if value is too close to half of value, if yes we going to next trials
+         * too close value between HALF-1 and HALF+3 (3 because we expects value from
+         * previous digit */
+        isNotTooExact = (subValue >= half-1ULL && subValue <= half+3ULL);
+        bool addRoundings = false;
+        uint64_t fpMantisa;
+        cxuint fpExponent = (binaryExp >= minExpNonDenorm) ?
+                binaryExp+(1U<<(expBits-1))-1 : 0;;
+        
+        if (!isNotTooExact)
+        {   // value is exact (not too close half
+            addRoundings = (subValue >= half);
+            fpMantisa = (rescaledValue>>subValueShift)&((1ULL<<mantisaBits)-1ULL);
+        }
+        else
+        {   // max digits to compute value
+            const cxuint maxDigits = (binaryExp-mantisaBits-1 >= 0) ? decTempExp+1 :
+                -binaryExp - significandBits - decTempExp;
+            
+            uint64_t* bigDecFactor = static_cast<uint64_t*>(::alloca(40<<3));
+            uint64_t* bigValue = static_cast<uint64_t*>(::alloca(40<<3));
+            uint64_t* bigResult = static_cast<uint64_t*>(::alloca(40<<4));
+            
+            bigValue[0] = value;
+            
+            cxuint prevBigSize = 1;
+            cxuint bigSize = 2;
+            while (isNotTooExact && parsedDigits < maxDigits)
+            {   /* next trials with higher precision */
+                cxuint digitsOfPart = 0;
+                value = 0;
+                while (vs != valEnd)
+                {
+                    for (; vs != valEnd && digitsOfPart < 19; vs++)
+                    {
+                        if (*vs >= '0' && *vs <= '9')
+                        {
+                            const cxuint digit = *vs-'0';
+                            value = value*10 + digit;
+                        }
+                        else if (*vs == '.')
+                            continue;
+                        parsedDigits++;
+                        digitsOfPart++;
+                    }
+                    // put part into bigValue
+                    /*bigMulUInt64(tenTables[digitsOfPart],
+                                 bigValueSize, bigValue, bigValue);*/
+                    bigValue[0] += value;
+                    //for (cxuint i = 1; i < big
+                    value = 0;
+                    digitsOfPart = 0;
+                }
+                
+                bigPow5(decTempExp-parsedDigits, bigSize, powSize,
+                        decFacBinExp, bigDecFactor);
+                
+                // next big size
+                prevBigSize = bigSize;
+                if (bigSize != 2)
+                    bigSize = (bigSize<<1)+1;
+                else
+                    bigSize += 1;
+            }
+            //
+            // after last trial we checks isNotTooExact, if yes we checking parity
+            // of next value
+            // and scans further digits for a determining what is half of value
+        }
+        
+        // add rounding if needed
+        if (addRoundings)
+        {   // add roundings
+            fpMantisa++;
+            // check promotion to next exponent
+            if (fpMantisa >= (1ULL<<mantisaBits))
+            {
+                fpExponent++;
+                if (fpExponent == ((1U<<expBits)-1)) // overflow!!!
+                    throw ParseException("Absolute value of number is too big");
+                fpMantisa = 0; // zeroing value
+            }
+        }
+        out |= fpMantisa | (uint64_t(fpExponent)<<mantisaBits);
     }
     return out;
 }
