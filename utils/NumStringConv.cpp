@@ -758,10 +758,11 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     }
     maxSize++; // increase by 1 elem (64-bit) for accuracy
     
-    uint64_t* curPow2Pow = static_cast<uint64_t*>(::alloca(maxSize<<4));
-    uint64_t* prevPow2Pow = static_cast<uint64_t*>(::alloca(maxSize<<4));
-    uint64_t* curPow = static_cast<uint64_t*>(::alloca(maxSize<<4));
-    uint64_t* prevPow = static_cast<uint64_t*>(::alloca(maxSize<<4));
+    uint64_t* heap = new uint64_t[maxSize<<3]; // four (maxSize<<1)
+    uint64_t* curPow2Pow = heap;
+    uint64_t* prevPow2Pow = heap + (maxSize<<1);
+    uint64_t* curPow = heap + (maxSize<<1)*2;
+    uint64_t* prevPow = heap + (maxSize<<1)*3;
     
     cxuint pow2PowSize, pow2PowBits, powBits;
     cxint pow2PowExp;
@@ -828,15 +829,18 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     }
     // copy result to output
     std::copy(curPow, curPow + powSize, outPow);
+    
+    delete[] heap;
 }
 
 /*
  * cstrtofXCStyle
  */
 
-static const double LOG2BYLOG10 = .301029995663981195213738894724;
+static const cxint LOG2BYLOG10_20 = 315653;
+static const cxint LOG10BYLOG2_18 = 415489;
 
-static const uint64_t tenTables[19] =
+static const uint64_t tenTables[20] =
 {
     1ULL,
     10ULL,
@@ -856,7 +860,8 @@ static const uint64_t tenTables[19] =
     1000000000000000ULL,
     10000000000000000ULL,
     100000000000000000ULL,
-    1000000000000000000ULL
+    1000000000000000000ULL,
+    10000000000000000000ULL
 };
 
 static uint64_t cstrtofXCStyle(const char* str, const char* inend,
@@ -988,7 +993,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 digit = *vs - 'a' + 10;
             else if (*vs >= 'A' && *vs <= 'F')
                 digit = *vs - 'A' + 10;
-            else if (*vs == '.')
+            else //if (*vs == '.')
                 continue; // skip comma
             fvalue = (fvalue<<4) + digit;
             parsedBits += 4;
@@ -1107,9 +1112,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         const int64_t decTempExp = int64_t(decExpOfValue)+int64_t(decimalExp);
         // handling exponent range
-        if (decTempExp > (maxExp+1)*LOG2BYLOG10) // out of max exponent
+        if (decTempExp > ((maxExp+1)*LOG2BYLOG10_20)>>20) // out of max exponent
             throw ParseException("Absolute value of number is too big");
-        if (decTempExp < (minExpDenorm-1)*LOG2BYLOG10)
+        if (decTempExp < ((minExpDenorm-1)*LOG2BYLOG10_20)>>20)
             return out; // return zero
         /*
          * first trial with 64-bit precision
@@ -1117,62 +1122,71 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         uint64_t value = 0;
         uint64_t rescaledValue;
         cxuint parsedDigits = 0;
-        for (; vs != valEnd; vs++)
+        for (parsedDigits = 0; vs != valEnd && parsedDigits < 19; vs++)
         {
-            if (value > ((1ULL<<63)-1)/10)
-                break; // is end of precision
             if (*vs >= '0' && *vs <= '9')
-            {
-                const cxuint digit = *vs-'0';
-                const uint64_t tmpValue = value*10 + digit;
-                if ((tmpValue&((1ULL<<63)-1)) < digit)
-                    break; // end of precision
-                value = tmpValue;
-            }
-            else if (*vs == '.')
+                value = value*10 + *vs-'0';
+            else // if (*vs == '.')
                 continue;
             parsedDigits++;
         }
-        cxuint valueShift = 0;
-#ifdef __GNUC__
-        valueShift = __builtin_clz(value)-1;
-#else
-        for (uint64_t t = 1ULL<<62; t > value; t>>=1, valueShift++);
-#endif
-        value>>=valueShift;
+        if (parsedDigits < 19)
+        {   /* align to 19 digits */
+            value *= tenTables[19-parsedDigits];
+            parsedDigits = 19;
+        }
         
         uint64_t decFactor;
         cxint decFacBinExp;
         cxuint powSize;
-        bigPow5(decTempExp-parsedDigits, 1, powSize, decFacBinExp, &decFactor);
-        // multiply if needed
-        if (decFactor != 0)
+        cxuint rescaledValueBits;
+        cxuint powerof5 = decTempExp-parsedDigits;
+        bigPow5(powerof5, 1, powSize, decFacBinExp, &decFactor);
+        
         {   /* rescale value to binary exponent */
             uint64_t rescaled[2];
-            mul64Full(decFactor, value, rescaled);
-            // add (without carry, because values in range 0...(1<<64)-1
+            if (decFactor != 0 && decFacBinExp != 0)
+                mul64Full(decFactor, value, rescaled);
+            else //
+                rescaled[0] = rescaled[1] = 0;
+            // addition for integer part of decFactor
             rescaled[1] += value;
+            bool rvCarry = (rescaled[1] < value);
             // rounding
             if ((rescaled[0] & (1ULL<<63)) != 0)
+            {
                 rescaled[1]++;
+                rvCarry = (rescaled[1] == 0);
+            }
             rescaledValue = rescaled[1];
+            if (!rvCarry)
+            {   /* compute rescaledValueBits */
+#ifdef __GNUC__
+                rescaledValueBits = 63-__builtin_clz(rescaledValue);
+#else
+                rescaledValueBits = 63;
+                for (uint64_t t = 1ULL<<63; rescaledValue >= t;
+                     t>>=1, rescaledValueBits--);
+#endif
+                // remove integer part (lastbit) from rescaled value
+                rescaledValue &= (1ULL<<rescaledValueBits)-1ULL;
+            }
+            else
+                rescaledValueBits = 64;
         }
-        else  // if decFactor==1.0
-            rescaledValue = value;
         
         // compute binary exponent
-        cxint binaryExp = decFacBinExp + decTempExp-parsedDigits +
-                62-valueShift + (rescaledValue>=(1ULL<<63));
+        cxint binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
         if (binaryExp > maxExp) // out of max exponent
             throw ParseException("Absolute value of number is too big");
         if (binaryExp < minExpDenorm-1)
             return out; // return zero
         
-        cxuint significandBits = (binaryExp >= minExpNonDenorm) ? mantisaBits+1 :
-                binaryExp-minExpDenorm+1;
+        cxuint mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
+                binaryExp-minExpDenorm;
         bool isNotTooExact = false;
         
-        const cxuint subValueShift = 62+(rescaledValue>=(1ULL<<63)) - significandBits+1;
+        const cxuint subValueShift = rescaledValueBits - mantSignifBits;
         const uint64_t subValue = rescaledValue&(1ULL<<((subValueShift)-1ULL));
         const uint64_t half = 1ULL<<(subValueShift-1);
         
@@ -1183,7 +1197,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         bool addRoundings = false;
         uint64_t fpMantisa;
         cxuint fpExponent = (binaryExp >= minExpNonDenorm) ?
-                binaryExp+(1U<<(expBits-1))-1 : 0;;
+                binaryExp+(1U<<(expBits-1))-1 : 0;
         
         if (!isNotTooExact)
         {   // value is exact (not too close half
@@ -1193,45 +1207,115 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         else
         {   // max digits to compute value
             const cxuint maxDigits = (binaryExp-mantisaBits-1 >= 0) ? decTempExp+1 :
-                -binaryExp - significandBits - decTempExp;
+                    -binaryExp - mantSignifBits + 1 - decTempExp;
             
-            uint64_t* bigDecFactor = static_cast<uint64_t*>(::alloca(40<<3));
-            uint64_t* bigValue = static_cast<uint64_t*>(::alloca(40<<3));
-            uint64_t* bigResult = static_cast<uint64_t*>(::alloca(40<<4));
+            const cxuint maxBigSize = ((((maxDigits+3)*LOG10BYLOG2_18)>>18)+63)>>6;
+            uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
+            uint64_t* bigDecFactor = heap+maxBigSize;
+            uint64_t* curBigValue = heap+maxBigSize+1;
+            uint64_t* prevBigValue = heap+maxBigSize*2 + 1;
+            uint64_t* bigRescaled = heap+maxBigSize*3 + 2;
             
-            bigValue[0] = value;
+            curBigValue[0] = value;
             
             cxuint prevBigSize = 1;
             cxuint bigSize = 2;
+            cxuint bigValueSize = 1;
+            /* next trials with higher precision */
             while (isNotTooExact && parsedDigits < maxDigits)
-            {   /* next trials with higher precision */
-                cxuint digitsOfPart = 0;
-                value = 0;
-                while (vs != valEnd)
+            {   /* parse digits and put to bigValue */
+                uint64_t digitPack[4];
+                uint64_t packTens[4];
+                cxuint digitPacksNum = 0;
+                digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
+                packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
+                
+                const cxuint digitsToParse = std::min(maxDigits,
+                        ((bigSize<<6)*LOG2BYLOG10_20)>>20);
+                
+                cxuint digitsOfPack = 0;
+                while (vs != valEnd && parsedDigits < digitsToParse)
                 {
-                    for (; vs != valEnd && digitsOfPart < 19; vs++)
+                    cxuint digitsOfPart = 0;
+                    uint64_t curValue = 0;
+                    while (vs != valEnd && digitPacksNum < 4 &&
+                        parsedDigits < digitsToParse)
+                    {
+                        for (; vs != valEnd && digitsOfPart < 19 &&
+                            parsedDigits < digitsToParse; vs++)
+                        {
+                            if (*vs >= '0' && *vs <= '9')
+                                curValue = curValue*10 + *vs-'0';
+                            else if (*vs == '.')
+                                continue;
+                            parsedDigits++;
+                            digitsOfPart++;
+                        }
+                        uint64_t tmpPack[4];
+                        // put to digitPack
+                        bigMul(1, &tenTables[digitsOfPart], 4, digitPack, tmpPack);
+                        digitPack[0] = tmpPack[0];
+                        digitPack[1] = tmpPack[1];
+                        digitPack[2] = tmpPack[2];
+                        digitPack[3] = tmpPack[3];
+                        bigAdd(4, digitPack, 1, &curValue);
+                        digitsOfPack += digitsOfPart;
+                        packTens[digitPacksNum] = tenTables[digitsOfPart];
+                        digitPacksNum++;
+                    }
+                    // generate power of tens for digitPack
+                    uint64_t packPowerOfTen[4];
+                    uint64_t tmpProd[4];
+                    if (digitPacksNum >= 2)
+                    {
+                        mul64Full(packTens[0], packTens[1], tmpProd);
+                        mul64Full(packTens[2], packTens[3], tmpProd+2);
+                        bigMulPow2(2, tmpProd, tmpProd+2, packPowerOfTen);
+                    }
+                    else
+                    {
+                        mul64Full(packTens[0], packTens[1], packPowerOfTen);
+                        packPowerOfTen[2] = packPowerOfTen[3] = 0;
+                    }
+                    cxuint digitPackSize = 4;
+                    if (packPowerOfTen[3] == 0)
+                    {
+                        if (packPowerOfTen[2] == 0)
+                            digitPackSize = (packPowerOfTen[1] == 0)?2:1;
+                        else //
+                            digitPackSize = 3;
+                    }
+                    // put to bigValue
+                    bigMul(digitPackSize, packPowerOfTen, bigValueSize,
+                           curBigValue, prevBigValue);
+                    bigAdd(bigValueSize, prevBigValue, digitPackSize, digitPack);
+                    std::swap(prevBigValue, curBigValue);
+                }
+                // fill last digits for current bigSize
+                if (vs != valEnd && parsedDigits < digitsToParse)
+                {   /* WARNING: This code is designed only for expBits lesser than 11 */
+                    uint64_t curValue = 0;
+                    cxuint digitsOfPart = 0;
+                    for (; vs != valEnd && parsedDigits < digitsToParse; vs++)
                     {
                         if (*vs >= '0' && *vs <= '9')
-                        {
-                            const cxuint digit = *vs-'0';
-                            value = value*10 + digit;
-                        }
+                            curValue = curValue*10 + *vs-'0';
                         else if (*vs == '.')
                             continue;
                         parsedDigits++;
                         digitsOfPart++;
                     }
-                    // put part into bigValue
-                    /*bigMulUInt64(tenTables[digitsOfPart],
-                                 bigValueSize, bigValue, bigValue);*/
-                    bigValue[0] += value;
-                    //for (cxuint i = 1; i < big
-                    value = 0;
-                    digitsOfPart = 0;
+                    // put to bigValue
+                    bigMul(1, tenTables+digitsOfPart, bigValueSize, curBigValue,
+                           prevBigValue);
+                    bigAdd(bigValueSize, prevBigValue, 1, &curValue);
+                    std::swap(curBigValue, prevBigValue);
                 }
-                
+                // compute power of 5
                 bigPow5(decTempExp-parsedDigits, bigSize, powSize,
                         decFacBinExp, bigDecFactor);
+                // rescale value
+                bigMul(bigValueSize, curBigValue, bigSize, bigDecFactor, bigRescaled);
                 
                 // next big size
                 prevBigSize = bigSize;
@@ -1239,11 +1323,13 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     bigSize = (bigSize<<1)+1;
                 else
                     bigSize += 1;
+                bigSize = std::min(bigSize, maxBigSize);
             }
             //
             // after last trial we checks isNotTooExact, if yes we checking parity
             // of next value
             // and scans further digits for a determining what is half of value
+            delete[] heap;
         }
         
         // add rounding if needed
