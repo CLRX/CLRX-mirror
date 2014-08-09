@@ -635,23 +635,6 @@ static inline void bigShift64Right(cxuint size, uint64_t* bigNum, cxuint shift64
     bigNum[size-1] >>= shift64;
 }
 
-static inline void bigShiftLeft(cxuint size, uint64_t* bigNum, cxuint shift)
-{
-    const cxuint shPos = shift>>6;
-    const cxuint shift64 = shift&63;
-    if (shift64 != 0)
-    {
-        const cxuint shift64n = 64-shift64;
-        for (cxint i = size-1; i > 0; i--)
-            bigNum[i+shPos] = (bigNum[i]<<shift64) | (bigNum[i-1]>>shift64n);
-        bigNum[shPos] = bigNum[0]<<shift64;
-    }
-    else
-        for (cxint i = size-1; i >= 0; i--)
-            bigNum[i+shPos] = bigNum[i];
-    std::fill(bigNum, bigNum+shPos, uint64_t(0));
-}
-
 static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
             uint64_t* bigNum)
 {
@@ -1235,12 +1218,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     (((-binaryExp*LOG10BYLOG2_18)-1)>>18);
             
             const cxuint maxBigSize = ((((maxDigits+3)*LOG10BYLOG2_18)>>18)+63)>>6;
-            uint64_t* heap = new uint64_t[maxBigSize*6 + 4];
+            uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
             uint64_t* bigDecFactor = heap+maxBigSize;
             uint64_t* curBigValue = heap+maxBigSize+1;
             uint64_t* prevBigValue = heap+maxBigSize*2 + 1;
             uint64_t* bigRescaled = heap+maxBigSize*3 + 2;
-            uint64_t* bigTmpPow5 = heap+maxBigSize*5 + 3;
             
             curBigValue[0] = value;
             bigDecFactor[0] = decFactor;
@@ -1267,12 +1249,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         ((powSize<<6)*LOG2BYLOG10_20)>>20);
                 
                 cxuint digitsOfPack = 0;
-                while (vs != valEnd && parsedDigits < digitsToParse)
+                while (parsedDigits < digitsToParse)
                 {
                     cxuint digitsOfPart = 0;
                     uint64_t curValue = 0;
-                    while (vs != valEnd && digitPacksNum < 4 &&
-                        parsedDigits < digitsToParse)
+                    while (digitPacksNum < 4 && parsedDigits < digitsToParse)
                     {
                         for (; vs != valEnd && digitsOfPart < 19 &&
                             parsedDigits < digitsToParse; vs++)
@@ -1283,6 +1264,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                                 continue;
                             parsedDigits++;
                             digitsOfPart++;
+                        }
+                        if (parsedDigits < digitsToParse)
+                        {
+                            cxuint pow10 = std::min(digitsToParse-parsedDigits, cxuint(19));
+                            curValue = curValue*tenTables[pow10];
+                            parsedDigits += pow10;
                         }
                         uint64_t tmpPack[4];
                         // put to digitPack
@@ -1332,27 +1319,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     else // if carry!!!
                         bigValueSize++;
                     std::swap(prevBigValue, curBigValue);
-                }
-                // fillup empty digits
-                if (parsedDigits < digitsToParse)
-                {
-                    cxuint tmpPow5 = digitsToParse-parsedDigits;
-                    cxuint tmpPow5Size;
-                    cxint tmpExponent;
-                    bigPow5(tmpPow5, bigSize, tmpPow5Size, tmpExponent, bigTmpPow5);
-                    bigMul(tmpPow5Size, bigTmpPow5, bigSize, curBigValue, prevBigValue);
-                    // fix bigValueSize
-                    bigValueSize += tmpPow5Size;
-                    if (prevBigValue[bigValueSize-1] == 0)
-                        bigValueSize--;
-                    // apply shift (for 2's for 5's -> 10)
-                    bigShiftLeft(bigSize, prevBigValue, tmpPow5);
-                    bigValueSize += (tmpPow5+63)>>6;
-                    if (prevBigValue[bigValueSize-1] == 0)
-                        bigValueSize--;
-                    
-                    std::swap(curBigValue, prevBigValue);
-                    parsedDigits = digitsToParse;
                 }
                 
                 // rescale value
