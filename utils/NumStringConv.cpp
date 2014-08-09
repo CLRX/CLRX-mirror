@@ -635,6 +635,23 @@ static inline void bigShift64Right(cxuint size, uint64_t* bigNum, cxuint shift64
     bigNum[size-1] >>= shift64;
 }
 
+static inline void bigShiftLeft(cxuint size, uint64_t* bigNum, cxuint shift)
+{
+    const cxuint shPos = shift>>6;
+    const cxuint shift64 = shift&63;
+    if (shift64 != 0)
+    {
+        const cxuint shift64n = 64-shift64;
+        for (cxint i = size-1; i > 0; i--)
+            bigNum[i+shPos] = (bigNum[i]<<shift64) | (bigNum[i-1]>>shift64n);
+        bigNum[shPos] = bigNum[0]<<shift64;
+    }
+    else
+        for (cxint i = size-1; i >= 0; i--)
+            bigNum[i+shPos] = bigNum[i];
+    std::fill(bigNum, bigNum+shPos, uint64_t(0));
+}
+
 static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
             uint64_t* bigNum)
 {
@@ -1206,23 +1223,34 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         }
         else
         {   // max digits to compute value
-            const cxuint maxDigits = (binaryExp-mantisaBits-1 >= 0) ? decTempExp+1 :
-                    -binaryExp - mantSignifBits + 1 - decTempExp;
+            cxuint maxDigits;
+            if (binaryExp-mantisaBits-1 >= 0)
+                maxDigits = decTempExp+1; // when rounding bit of mantisa is not fraction
+            else if (binaryExp >= 0)
+                // if rounding bit is fraction but value have integer part
+                maxDigits = ((binaryExp*LOG10BYLOG2_18 + (1U<<18)-1)>>18) -
+                        (binaryExp-mantisaBits-1); // negative power of rounding bit
+            else // if all value is fractional value
+                maxDigits = -(binaryExp-mantisaBits-1) -
+                    (((-binaryExp*LOG10BYLOG2_18)-1)>>18);
             
             const cxuint maxBigSize = ((((maxDigits+3)*LOG10BYLOG2_18)>>18)+63)>>6;
-            uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
+            uint64_t* heap = new uint64_t[maxBigSize*6 + 4];
             uint64_t* bigDecFactor = heap+maxBigSize;
             uint64_t* curBigValue = heap+maxBigSize+1;
             uint64_t* prevBigValue = heap+maxBigSize*2 + 1;
             uint64_t* bigRescaled = heap+maxBigSize*3 + 2;
+            uint64_t* bigTmpPow5 = heap+maxBigSize*5 + 3;
             
             curBigValue[0] = value;
+            bigDecFactor[0] = decFactor;
+            bigRescaled[0] = 0;
+            bigRescaled[1] = rescaledValue;
             
-            cxuint prevBigSize = 1;
             cxuint bigSize = 2;
             cxuint bigValueSize = 1;
             /* next trials with higher precision */
-            while (isNotTooExact && parsedDigits < maxDigits)
+            while (isNotTooExact && parsedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
                 uint64_t digitPack[4];
                 uint64_t packTens[4];
@@ -1230,8 +1258,13 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
                 packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
                 
-                const cxuint digitsToParse = std::min(maxDigits,
-                        ((bigSize<<6)*LOG2BYLOG10_20)>>20);
+                // compute power of 5
+                powerof5 = decTempExp-parsedDigits;
+                bigPow5(decTempExp-parsedDigits, bigSize, powSize,
+                        decFacBinExp, bigDecFactor);
+                
+                const cxuint digitsToParse = std::min(maxDigits+3,
+                        ((powSize<<6)*LOG2BYLOG10_20)>>20);
                 
                 cxuint digitsOfPack = 0;
                 while (vs != valEnd && parsedDigits < digitsToParse)
@@ -1288,37 +1321,82 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     // put to bigValue
                     bigMul(digitPackSize, packPowerOfTen, bigValueSize,
                            curBigValue, prevBigValue);
-                    bigAdd(bigValueSize, prevBigValue, digitPackSize, digitPack);
+                    bigValueSize += digitPackSize;
+                    prevBigValue[bigValueSize] = 0; // zeroing after addition
+                    bigAdd(bigValueSize+1, prevBigValue, digitPackSize, digitPack);
+                    if (prevBigValue[bigValueSize] == 0)
+                    {
+                        if (prevBigValue[bigValueSize-1] == 0)
+                            bigValueSize--; // if last elem is zero
+                    }
+                    else // if carry!!!
+                        bigValueSize++;
                     std::swap(prevBigValue, curBigValue);
                 }
-                // fill last digits for current bigSize
-                if (vs != valEnd && parsedDigits < digitsToParse)
-                {   /* WARNING: This code is designed only for expBits lesser than 11 */
-                    uint64_t curValue = 0;
-                    cxuint digitsOfPart = 0;
-                    for (; vs != valEnd && parsedDigits < digitsToParse; vs++)
-                    {
-                        if (*vs >= '0' && *vs <= '9')
-                            curValue = curValue*10 + *vs-'0';
-                        else if (*vs == '.')
-                            continue;
-                        parsedDigits++;
-                        digitsOfPart++;
-                    }
-                    // put to bigValue
-                    bigMul(1, tenTables+digitsOfPart, bigValueSize, curBigValue,
-                           prevBigValue);
-                    bigAdd(bigValueSize, prevBigValue, 1, &curValue);
+                // fillup empty digits
+                if (parsedDigits < digitsToParse)
+                {
+                    cxuint tmpPow5 = digitsToParse-parsedDigits;
+                    cxuint tmpPow5Size;
+                    cxint tmpExponent;
+                    bigPow5(tmpPow5, bigSize, tmpPow5Size, tmpExponent, bigTmpPow5);
+                    bigMul(tmpPow5Size, bigTmpPow5, bigSize, curBigValue, prevBigValue);
+                    // fix bigValueSize
+                    bigValueSize += tmpPow5Size;
+                    if (prevBigValue[bigValueSize-1] == 0)
+                        bigValueSize--;
+                    // apply shift (for 2's for 5's -> 10)
+                    bigShiftLeft(bigSize, prevBigValue, tmpPow5);
+                    bigValueSize += (tmpPow5+63)>>6;
+                    if (prevBigValue[bigValueSize-1] == 0)
+                        bigValueSize--;
+                    
                     std::swap(curBigValue, prevBigValue);
+                    parsedDigits = digitsToParse;
                 }
-                // compute power of 5
-                bigPow5(decTempExp-parsedDigits, bigSize, powSize,
-                        decFacBinExp, bigDecFactor);
+                
                 // rescale value
-                bigMul(bigValueSize, curBigValue, bigSize, bigDecFactor, bigRescaled);
+                bigMul(bigValueSize, curBigValue, powSize, bigDecFactor, bigRescaled);
+                bool rvCarry = bigAdd(bigValueSize, bigRescaled + powSize,
+                            curBigValue);
+                if ((bigRescaled[bigValueSize-1]&((1ULL<<63)-1ULL)) != 0)
+                {
+                    bool carry = true;
+                    for (cxuint k = powSize; k < powSize+bigValueSize; k++)
+                    {
+                        bigRescaled[k] += carry;
+                        carry = (bigRescaled[k] < carry);
+                    }
+                    if (carry)
+                        rvCarry = true;
+                }
+                if (!rvCarry)
+                {   /* compute rescaledValueBits */
+#ifdef __GNUC__
+                    rescaledValueBits = (bigValueSize<<6) - 1 -__builtin_clz(
+                        bigRescaled[powSize+bigValueSize-1]);
+#else
+                    rescaledValueBits = (bigValueSize<<6)-1;
+                    for (uint64_t t = 1ULL<<63; bigRescaled[powSize+bigValueSize-1] >= t;
+                         t>>=1, rescaledValueBits--);
+#endif
+                    // remove integer part (lastbit) from rescaled value
+                    bigRescaled[powSize+bigValueSize] &= (1ULL<<rescaledValueBits)-1ULL;
+                }
+                else
+                    rescaledValueBits = bigValueSize<<6;
+                
+                // compute binary exponent
+                binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
+                if (binaryExp > maxExp) // out of max exponent
+                    throw ParseException("Absolute value of number is too big");
+                if (binaryExp < minExpDenorm-1)
+                    return out; // return zero
+                
+                mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
+                        binaryExp-minExpDenorm;
                 
                 // next big size
-                prevBigSize = bigSize;
                 if (bigSize != 2)
                     bigSize = (bigSize<<1)+1;
                 else
