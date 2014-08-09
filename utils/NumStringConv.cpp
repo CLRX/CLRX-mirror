@@ -1025,8 +1025,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             if (isHalf && (fpMantisa&1)==0)
             {   // check further digits if still is half and value is even
                 for (; vs != valEnd; vs++)
-                {
-                    // digits character has been already checked, we check that is not zero
+                {   // digits character has been already checked, we check that is not zero
                     if (*vs == '.')
                         continue; // skip comma
                     else if (*vs > '0')
@@ -1145,7 +1144,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         {   /* rescale value to binary exponent */
             uint64_t rescaled[2];
-            if (decFactor != 0 && decFacBinExp != 0)
+            if (decFacBinExp != 0)
                 mul64Full(decFactor, value, rescaled);
             else //
                 rescaled[0] = rescaled[1] = 0;
@@ -1191,9 +1190,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         const uint64_t half = 1ULL<<(subValueShift-1);
         
         /* check if value is too close to half of value, if yes we going to next trials
-         * too close value between HALF-1 and HALF+3 (3 because we expects value from
-         * previous digit */
-        isNotTooExact = (subValue >= half-1ULL && subValue <= half+3ULL);
+         * too close value between HALF+1 and HALF-3 (3 because we expects value from
+         * next digit */
+        isNotTooExact = (subValue >= half-3ULL && subValue <= half+1ULL);
         bool addRoundings = false;
         uint64_t fpMantisa;
         cxuint fpExponent = (binaryExp >= minExpNonDenorm) ?
@@ -1322,7 +1321,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 }
                 
                 // rescale value
-                bigMul(bigValueSize, curBigValue, powSize, bigDecFactor, bigRescaled);
+                if (decFacBinExp != 0) // if not 1 in bigDecFactor
+                    bigMul(bigValueSize, curBigValue, powSize, bigDecFactor, bigRescaled);
+                else // if one in bigDecFactor
+                    std::fill(bigRescaled, bigRescaled + bigValueSize+powSize, uint64_t(0));
+                
                 bool rvCarry = bigAdd(bigValueSize, bigRescaled + powSize,
                             curBigValue);
                 /* round rescaled value */
@@ -1366,15 +1369,16 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 const cxuint halfValuePos = (rescaledValueBits - mantSignifBits-1)>>6;
                 const uint64_t halfValue = (1ULL<<halfValueShift);
                 
+                /* check if value is too close to half of value, if yes we going to next
+                 * trials. too close value between HALF+1 and HALF-3
+                 * (3 because we expects value from next digit) */
+                isHalfEqual = false;
                 isNotTooExact = false;
                 isHalf = ((bigRescaled[powSize+halfValuePos]&halfValue) != 0);
                 if (isHalf)
                 {
-                    if (halfValuePos == 0)
-                    {  
-                        isNotTooExact = ((bigRescaled[powSize] & (halfValue-1)) <= 3);
-                        isHalfEqual = ((bigRescaled[powSize] & (halfValue-1)) <= 1);
-                    }
+                    if (halfValuePos == 0 && ((bigRescaled[powSize] & (halfValue-1)) <= 1))
+                        isHalfEqual = isNotTooExact = true;
                     else if (halfValuePos != 0 &&
                         (bigRescaled[powSize+halfValuePos] & (halfValue-1)) == 0)
                     {
@@ -1382,26 +1386,32 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         for (cxuint k = 1; k < halfValuePos; k++)
                             if (bigRescaled[powSize+k] != 0)
                             { zeroes = false; break; }
-                        if (zeroes)
-                        {
-                            isNotTooExact = (bigRescaled[powSize] <= 3);
-                            isHalfEqual = (bigRescaled[powSize] <= 1);
-                        }
+                        isNotTooExact = isHalfEqual =
+                            (zeroes && (bigRescaled[powSize] <= 1));
                     }
                 }
                 else
                 {
-                    if (halfValuePos == 0 && (bigRescaled[powSize] & (halfValue-1)) >=
-                                (halfValue-1))
-                        isHalfEqual = isNotTooExact = true;
-                    else
+                    if (halfValuePos == 0)
+                    {
+                        isHalfEqual = ((bigRescaled[powSize] & (halfValue-1)) >=
+                                halfValue-1);
+                        isNotTooExact = ((bigRescaled[powSize] & (halfValue-1)) >=
+                                halfValue-3);
+                    }
+                    else if (halfValuePos != 0 &&
+                            (bigRescaled[powSize+halfValuePos] & (halfValue-1)) ==
+                            (halfValue-1))
                     {
                         bool ones = true;
                         for (cxuint k = 1; k < halfValuePos; k++)
                             if (bigRescaled[powSize+k] != UINT64_MAX)
                             { ones = false; break; }
-                        isHalfEqual = isNotTooExact =
-                            (ones && bigRescaled[powSize] == UINT64_MAX);
+                        if (ones)
+                        {
+                            isNotTooExact = (bigRescaled[powSize] >= UINT64_MAX-2);
+                            isHalfEqual = (bigRescaled[powSize] == UINT64_MAX);
+                        }
                     }
                 }
                 
@@ -1429,11 +1439,10 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             fpExponent = (binaryExp >= minExpNonDenorm) ?
                 binaryExp+(1U<<(expBits-1))-1 : 0;
             
-            if (isHalfEqual && isNotTooExact)
-            {   /* parse futher numbers */
-                // if odd value or smallest denormalized value (not zero)
+            if (isHalfEqual) // isHalfEqual implies isNotTooExact
+            {   // if odd value or smallest denormalized value (not zero)
                 if ((fpMantisa&1) != 0 || (fpExponent == 0 && fpMantisa == 0))
-                {
+                {   /* parse futher numbers */
                     bool onlyZeros = true;
                     for (; vs != valEnd; vs++)
                         if (*vs != 0)
