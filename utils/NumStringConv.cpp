@@ -1249,21 +1249,20 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             /* next trials with higher precision */
             while (isNotTooExact && parsedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
-                uint64_t digitPack[4];
-                uint64_t packTens[4];
-                cxuint digitPacksNum = 0;
-                digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
-                packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
-                
                 const cxuint digitsToParse = std::min(int(maxDigits),
                         log2ByLog10Ceil(bigSize<<6));
-                
                 // compute power of 5
                 powerof5 = decTempExp-digitsToParse;
                 bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
                 while (parsedDigits < digitsToParse)
                 {
+                    uint64_t digitPack[4];
+                    uint64_t packTens[4];
+                    digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
+                    packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
+                    
+                    cxuint digitPacksNum = 0;
                     cxuint digitsOfPack = 0;
                     while (digitPacksNum < 4 && parsedDigits < digitsToParse)
                     {
