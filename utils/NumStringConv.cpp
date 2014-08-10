@@ -1262,12 +1262,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 powerof5 = decTempExp-digitsToParse;
                 bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
-                cxuint digitsOfPack = 0;
                 while (parsedDigits < digitsToParse)
                 {
-                    cxuint digitsOfPart = 0;
+                    cxuint digitsOfPack = 0;
                     while (digitPacksNum < 4 && parsedDigits < digitsToParse)
                     {
+                        cxuint digitsOfPart = 0;
                         uint64_t curValue = 0;
                         for (; vs != valEnd && digitsOfPart < 19 &&
                             parsedDigits < digitsToParse; vs++)
@@ -1279,7 +1279,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                             parsedDigits++;
                             digitsOfPart++;
                         }
-                        if (parsedDigits < digitsToParse)
+                        if (vs == valEnd)
                         {   // fill first digits with zeroes
                             cxuint pow10 = std::min(digitsToParse-parsedDigits, cxuint(19));
                             curValue = curValue*power10sTable[pow10];
