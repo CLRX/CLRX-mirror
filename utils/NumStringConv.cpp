@@ -1190,7 +1190,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         const uint64_t half = 1ULL<<(subValueShift-1);
         
         /* check if value is too close to half of value, if yes we going to next trials
-         * too close value between HALF+1 and HALF-3 (3 because we expects value from
+         * too close value between HALF-3 and HALF+1 (3 because we expects value from
          * next digit */
         isNotTooExact = (subValue >= half-3ULL && subValue <= half+1ULL);
         bool addRoundings = false;
@@ -1202,6 +1202,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         {   // value is exact (not too close half
             addRoundings = (subValue >= half);
             fpMantisa = (rescaledValue>>subValueShift)&((1ULL<<mantisaBits)-1ULL);
+            if (fpExponent == 0)
+                fpMantisa |= 1ULL<<mantSignifBits;
         }
         else
         {   // max digits to compute value
@@ -1245,7 +1247,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 powerof5 = decTempExp-parsedDigits;
                 bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
-                const cxuint digitsToParse = std::min(maxDigits+3,
+                const cxuint digitsToParse = std::min(maxDigits,
                         ((powSize<<6)*LOG2BYLOG10_20)>>20);
                 
                 cxuint digitsOfPack = 0;
@@ -1320,6 +1322,16 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     std::swap(prevBigValue, curBigValue);
                 }
                 
+                if (digitsToParse == maxDigits)
+                {   // adds three digits extra in last iteration
+                    // because threshold is needed for half equality detection
+                    bigMul(1, power10sTable+3, bigValueSize, curBigValue, prevBigValue);
+                    if (prevBigValue[bigValueSize]!=0)
+                        bigValueSize++;
+                    parsedDigits += 3;
+                    std::swap(prevBigValue, curBigValue);
+                }
+                
                 // rescale value
                 if (decFacBinExp != 0) // if not 1 in bigDecFactor
                     bigMul(bigValueSize, curBigValue, powSize, bigDecFactor, bigRescaled);
@@ -1370,7 +1382,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 const uint64_t halfValue = (1ULL<<halfValueShift);
                 
                 /* check if value is too close to half of value, if yes we going to next
-                 * trials. too close value between HALF+1 and HALF-3
+                 * trials. too close value between HALF-3 and HALF+1
                  * (3 because we expects value from next digit) */
                 isHalfEqual = false;
                 isNotTooExact = false;
@@ -1427,6 +1439,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             // final value
             const cxuint subValueShift = (rescaledValueBits - mantSignifBits)&63;
             const cxuint subValuePos = (rescaledValueBits - mantSignifBits)>>6;
+            fpExponent = (binaryExp >= minExpNonDenorm) ?
+                binaryExp+(1U<<(expBits-1))-1 : 0;
             if (subValueShift != 0)
             {
                 fpMantisa = (bigRescaled[powSize+subValuePos]>>subValueShift);
@@ -1436,8 +1450,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
             else // shift = 0
                 fpMantisa = bigRescaled[powSize+subValuePos];
-            fpExponent = (binaryExp >= minExpNonDenorm) ?
-                binaryExp+(1U<<(expBits-1))-1 : 0;
+            if (fpExponent == 0)
+                fpMantisa |= 1ULL<<mantSignifBits;
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
             {   // if odd value or smallest denormalized value (not zero)
