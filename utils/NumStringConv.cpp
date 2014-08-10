@@ -1284,6 +1284,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                             cxuint pow10 = std::min(digitsToParse-parsedDigits, cxuint(19));
                             curValue = curValue*power10sTable[pow10];
                             parsedDigits += pow10;
+                            digitsOfPart += pow10;
                         }
                         uint64_t tmpPack[4];
                         // put to digitPack
@@ -1314,7 +1315,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     if (packPowerOfTen[3] == 0)
                     {
                         if (packPowerOfTen[2] == 0)
-                            digitPackSize = (packPowerOfTen[1] == 0)?2:1;
+                            digitPackSize = (packPowerOfTen[1] != 0)?2:1;
                         else //
                             digitPackSize = 3;
                     }
