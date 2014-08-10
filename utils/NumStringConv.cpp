@@ -1299,7 +1299,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     // generate power of tens for digitPack
                     uint64_t packPowerOfTen[4];
                     uint64_t tmpProd[4];
-                    if (digitPacksNum >= 2)
+                    if (digitPacksNum > 2)
                     {
                         mul64Full(packTens[0], packTens[1], tmpProd);
                         mul64Full(packTens[2], packTens[3], tmpProd+2);
