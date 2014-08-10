@@ -1243,12 +1243,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
                 packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
                 
-                // compute power of 5
-                powerof5 = decTempExp-parsedDigits;
-                bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
-                
                 const cxuint digitsToParse = std::min(maxDigits,
-                        ((powSize<<6)*LOG2BYLOG10_20)>>20);
+                        ((bigSize<<6)*LOG2BYLOG10_20)>>20);
+                
+                // compute power of 5
+                powerof5 = decTempExp-digitsToParse;
+                bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
                 cxuint digitsOfPack = 0;
                 while (parsedDigits < digitsToParse)
