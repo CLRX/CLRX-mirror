@@ -837,8 +837,20 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
  * cstrtofXCStyle
  */
 
-static const cxint LOG2BYLOG10_20 = 315653;
-static const cxint LOG10BYLOG2_18 = 415489;
+static const int64_t LOG2BYLOG10_32 = 1292913987LL;
+static const int64_t LOG10BYLOG2_32 = 14267572528LL;
+
+static inline cxint log2ByLog10Floor(cxint v)
+{ return (int64_t(v)*LOG2BYLOG10_32)>>32; }
+
+static inline cxint log2ByLog10Ceil(cxint v)
+{ return (int64_t(v)*LOG2BYLOG10_32 + (1ULL<<32)-1)>>32; }
+
+static inline cxint log10ByLog2Floor(cxint v)
+{ return (int64_t(v)*LOG10BYLOG2_32)>>32; }
+
+static inline cxint log10ByLog2Ceil(cxint v)
+{ return (int64_t(v)*LOG10BYLOG2_32 + (1ULL<<32)-1)>>32; }
 
 static const uint64_t power10sTable[20] =
 {
@@ -1111,9 +1123,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         const int64_t decTempExp = int64_t(decExpOfValue)+int64_t(decimalExp);
         // handling exponent range
-        if (decTempExp > ((maxExp+1)*LOG2BYLOG10_20)>>20) // out of max exponent
+        if (decTempExp > log2ByLog10Ceil(maxExp)) // out of max exponent
             throw ParseException("Absolute value of number is too big");
-        if (decTempExp < ((minExpDenorm-1)*LOG2BYLOG10_20)>>20)
+        if (decTempExp < log2ByLog10Floor(minExpDenorm-1))
             return out; // return zero
         /*
          * first trial with 64-bit precision
@@ -1212,13 +1224,13 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 maxDigits = decTempExp+1; // when rounding bit of mantisa is not fraction
             else if (binaryExp >= 0)
                 // if rounding bit is fraction but value have integer part
-                maxDigits = ((binaryExp*LOG10BYLOG2_18 + (1U<<18)-1)>>18) -
+                maxDigits = log10ByLog2Ceil(binaryExp) -
                         (binaryExp-mantisaBits-1); // negative power of rounding bit
             else // if all value is fractional value
                 maxDigits = -(binaryExp-mantisaBits-1) -
-                    (((-binaryExp*LOG10BYLOG2_18)-1)>>18);
+                    log10ByLog2Floor(-binaryExp);
             
-            const cxuint maxBigSize = ((((maxDigits+3)*LOG10BYLOG2_18)>>18)+63)>>6;
+            const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
             uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
             uint64_t* bigDecFactor = heap+maxBigSize;
             uint64_t* curBigValue = heap+maxBigSize+1;
@@ -1243,8 +1255,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
                 packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
                 
-                const cxuint digitsToParse = std::min(maxDigits,
-                        ((bigSize<<6)*LOG2BYLOG10_20)>>20);
+                const cxuint digitsToParse = std::min(int(maxDigits),
+                        log2ByLog10Ceil(bigSize<<6));
                 
                 // compute power of 5
                 powerof5 = decTempExp-digitsToParse;
