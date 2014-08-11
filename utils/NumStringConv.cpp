@@ -1086,7 +1086,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         // value end in string
         const char* valEnd = expstr;
         
-        if (expstr != inend && (*expstr == 'p' || *expstr == 'P')) // we found exponent
+        if (expstr != inend && (*expstr == 'e' || *expstr == 'E')) // we found exponent
         {
             expstr++;
             if (expstr == inend)
