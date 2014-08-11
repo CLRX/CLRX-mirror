@@ -1097,7 +1097,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         // determine real exponent
         cxint decExpOfValue = 0;
-        const char* vs = p;
+        const char* vs = nullptr;
         
         while (p != valEnd && *p == '0') p++; // skip zeroes
         
