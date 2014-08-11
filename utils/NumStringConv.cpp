@@ -1234,8 +1234,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
             uint64_t* bigDecFactor = heap+maxBigSize;
             uint64_t* curBigValue = heap+maxBigSize+1;
-            uint64_t* prevBigValue = heap+maxBigSize*2 + 1;
-            uint64_t* bigRescaled = heap+maxBigSize*3 + 2;
+            uint64_t* prevBigValue = heap+maxBigSize*2 + 2;
+            uint64_t* bigRescaled = heap+maxBigSize*3 + 4;
             
             curBigValue[0] = value;
             bigDecFactor[0] = decFactor;
@@ -1251,10 +1251,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             {   /* parse digits and put to bigValue */
                 const cxuint digitsToParse = std::min(int(maxDigits),
                         log2ByLog10Ceil(bigSize<<6));
-                // compute power of 5
-                powerof5 = decTempExp-digitsToParse;
-                bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
-                
                 while (parsedDigits < digitsToParse)
                 {
                     uint64_t digitPack[4];
@@ -1344,6 +1340,10 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     parsedDigits += 3;
                     std::swap(prevBigValue, curBigValue);
                 }
+                
+                // compute power of 5
+                powerof5 = decTempExp-digitsToParse;
+                bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
                 // rescale value
                 if (decFacBinExp != 0) // if not 1 in bigDecFactor
