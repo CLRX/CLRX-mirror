@@ -1251,6 +1251,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             {   /* parse digits and put to bigValue */
                 const cxuint digitsToParse = std::min(int(maxDigits),
                         log2ByLog10Ceil(bigSize<<6));
+                
                 while (parsedDigits < digitsToParse)
                 {
                     uint64_t digitPack[4];
@@ -1342,7 +1343,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 }
                 
                 // compute power of 5
-                powerof5 = decTempExp-digitsToParse;
+                powerof5 = decTempExp-parsedDigits;
                 bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
                 // rescale value
