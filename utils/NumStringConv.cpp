@@ -1280,7 +1280,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         }
                         if (vs == valEnd)
                         {   // fill first digits with zeroes
-                            cxuint pow10 = std::min(digitsToParse-parsedDigits, cxuint(19));
+                            const cxuint pow10 = std::min(digitsToParse-parsedDigits,
+                                        19-digitsOfPart);
                             curValue = curValue*power10sTable[pow10];
                             parsedDigits += pow10;
                             digitsOfPart += pow10;
