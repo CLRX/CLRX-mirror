@@ -1343,7 +1343,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 }
                 
                 // compute power of 5
-                powerof5 = decTempExp-processedDigits;
+                powerof5 = decTempExp-processedDigits+1;
                 bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
                 // rescale value
