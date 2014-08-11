@@ -1132,26 +1132,26 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
          */
         uint64_t value = 0;
         uint64_t rescaledValue;
-        cxuint parsedDigits = 0;
-        for (parsedDigits = 0; vs != valEnd && parsedDigits < 19; vs++)
+        cxuint processedDigits = 0;
+        for (processedDigits = 0; vs != valEnd && processedDigits < 19; vs++)
         {
             if (*vs >= '0' && *vs <= '9')
                 value = value*10 + *vs-'0';
             else // if (*vs == '.')
                 continue;
-            parsedDigits++;
+            processedDigits++;
         }
-        if (parsedDigits < 19)
+        if (processedDigits < 19)
         {   /* align to 19 digits */
-            value *= power10sTable[19-parsedDigits];
-            parsedDigits = 19;
+            value *= power10sTable[19-processedDigits];
+            processedDigits = 19;
         }
         
         uint64_t decFactor;
         cxint decFacBinExp;
         cxuint powSize;
         cxuint rescaledValueBits;
-        cxuint powerof5 = decTempExp-parsedDigits;
+        cxuint powerof5 = decTempExp-processedDigits;
         bigPow5(powerof5, 1, powSize, decFacBinExp, &decFactor);
         
         {   /* rescale value to binary exponent */
@@ -1247,12 +1247,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             bool isHalf = false;    // if second half
             bool isHalfEqual = false; // if value is nearly equal to half of value
             /* next trials with higher precision */
-            while (isNotTooExact && parsedDigits < maxDigits+3)
+            while (isNotTooExact && processedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
-                const cxuint digitsToParse = std::min(int(maxDigits),
+                const cxuint digitsToProcess = std::min(int(maxDigits),
                         log2ByLog10Ceil(bigSize<<6));
                 
-                while (parsedDigits < digitsToParse)
+                while (processedDigits < digitsToProcess)
                 {
                     uint64_t digitPack[4];
                     uint64_t packTens[4];
@@ -1261,26 +1261,26 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     
                     cxuint digitPacksNum = 0;
                     cxuint digitsOfPack = 0;
-                    while (digitPacksNum < 4 && parsedDigits < digitsToParse)
+                    while (digitPacksNum < 4 && processedDigits < digitsToProcess)
                     {
                         cxuint digitsOfPart = 0;
                         uint64_t curValue = 0;
                         for (; vs != valEnd && digitsOfPart < 19 &&
-                            parsedDigits < digitsToParse; vs++)
+                            processedDigits < digitsToProcess; vs++)
                         {
                             if (*vs >= '0' && *vs <= '9')
                                 curValue = curValue*10 + *vs-'0';
                             else if (*vs == '.')
                                 continue;
-                            parsedDigits++;
+                            processedDigits++;
                             digitsOfPart++;
                         }
                         if (vs == valEnd)
                         {   // fill first digits with zeroes
-                            const cxuint pow10 = std::min(digitsToParse-parsedDigits,
+                            const cxuint pow10 = std::min(digitsToProcess-processedDigits,
                                         19-digitsOfPart);
                             curValue = curValue*power10sTable[pow10];
-                            parsedDigits += pow10;
+                            processedDigits += pow10;
                             digitsOfPart += pow10;
                         }
                         uint64_t tmpPack[4];
@@ -1332,18 +1332,18 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     std::swap(prevBigValue, curBigValue);
                 }
                 
-                if (digitsToParse == maxDigits)
+                if (digitsToProcess == maxDigits)
                 {   // adds three digits extra in last iteration
                     // because threshold is needed for half equality detection
                     bigMul(1, power10sTable+3, bigValueSize, curBigValue, prevBigValue);
                     if (prevBigValue[bigValueSize]!=0)
                         bigValueSize++;
-                    parsedDigits += 3;
+                    processedDigits += 3;
                     std::swap(prevBigValue, curBigValue);
                 }
                 
                 // compute power of 5
-                powerof5 = decTempExp-parsedDigits;
+                powerof5 = decTempExp-processedDigits;
                 bigPow5(powerof5, bigSize, powSize, decFacBinExp, bigDecFactor);
                 
                 // rescale value
