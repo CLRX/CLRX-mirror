@@ -1151,7 +1151,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         cxint decFacBinExp;
         cxuint powSize;
         cxuint rescaledValueBits;
-        cxuint powerof5 = decTempExp-processedDigits;
+        cxint powerof5 = decTempExp-processedDigits+1;
         bigPow5(powerof5, 1, powSize, decFacBinExp, &decFactor);
         
         {   /* rescale value to binary exponent */
@@ -1173,7 +1173,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             if (!rvCarry)
             {   /* compute rescaledValueBits */
 #ifdef __GNUC__
-                rescaledValueBits = 63-__builtin_clz(rescaledValue);
+                rescaledValueBits = 63-__builtin_clzll(rescaledValue);
 #else
                 rescaledValueBits = 63;
                 for (uint64_t t = 1ULL<<63; rescaledValue < t;
@@ -1198,7 +1198,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         bool isNotTooExact = false;
         
         const cxuint subValueShift = rescaledValueBits - mantSignifBits;
-        const uint64_t subValue = rescaledValue&(1ULL<<((subValueShift)-1ULL));
+        const uint64_t subValue = rescaledValue&((1ULL<<(subValueShift))-1ULL);
         const uint64_t half = 1ULL<<(subValueShift-1);
         
         /* check if value is too close to half of value, if yes we going to next trials
@@ -1368,7 +1368,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 if (!rvCarry)
                 {   /* compute rescaledValueBits */
 #ifdef __GNUC__
-                    rescaledValueBits = (bigValueSize<<6) - 1 -__builtin_clz(
+                    rescaledValueBits = (bigValueSize<<6) - 1 -__builtin_clzll(
                         bigRescaled[powSize+bigValueSize-1]);
 #else
                     rescaledValueBits = (bigValueSize<<6)-1;
