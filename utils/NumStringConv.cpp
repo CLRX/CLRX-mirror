@@ -1352,10 +1352,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 else // if one in bigDecFactor
                     std::fill(bigRescaled, bigRescaled + bigValueSize+powSize, uint64_t(0));
                 
-                bool rvCarry = bigAdd(bigValueSize, bigRescaled + powSize,
-                            curBigValue);
+                bool rvCarry = bigAdd(bigValueSize, bigRescaled + powSize, curBigValue);
                 /* round rescaled value */
-                if ((bigRescaled[bigValueSize-1]&((1ULL<<63)-1ULL)) != 0)
+                if ((bigRescaled[powSize-1]&((1ULL<<63)-1ULL)) != 0)
                 {
                     bool carry = true;
                     for (cxuint k = powSize; k < powSize+bigValueSize; k++)
