@@ -1220,7 +1220,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         else
         {   // max digits to compute value
             cxuint maxDigits;
-            if (binaryExp-mantisaBits-1 >= 0)
+            if (binaryExp-cxint(mantisaBits)-1 >= 0)
                 maxDigits = decTempExp+1; // when rounding bit of mantisa is not fraction
             else if (binaryExp >= 0)
                 // if rounding bit is fraction but value have integer part
@@ -1375,7 +1375,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                          t>>=1, rescaledValueBits--);
 #endif
                     // remove integer part (lastbit) from rescaled value
-                    bigRescaled[powSize+bigValueSize-1] &= (1ULL<<rescaledValueBits)-1ULL;
+                    bigRescaled[powSize+bigValueSize-1] &=
+                            (1ULL<<(rescaledValueBits&63))-1ULL;
                 }
                 else
                     rescaledValueBits = bigValueSize<<6;
