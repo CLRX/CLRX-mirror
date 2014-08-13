@@ -1260,6 +1260,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             else // if all value is fractional value
                 maxDigits = -(binaryExp-cxint(mantSignifBits)-1) -
                     log2ByLog10Floor(-binaryExp);
+            maxDigits = std::max(maxDigits, processedDigits);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
             uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
