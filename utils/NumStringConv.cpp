@@ -1224,12 +1224,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 maxDigits = decTempExp+1; // when rounding bit of mantisa is not fraction
             else if (binaryExp >= 0)
                 // if rounding bit is fraction but value have integer part
-                maxDigits = log10ByLog2Ceil(binaryExp) -
+                maxDigits = std::max(1,log2ByLog10Ceil(binaryExp)) -
                          // negative power of rounding bit
                         (binaryExp-cxint(mantSignifBits)-1);
             else // if all value is fractional value
                 maxDigits = -(binaryExp-cxint(mantSignifBits)-1) -
-                    log10ByLog2Floor(-binaryExp);
+                    log2ByLog10Floor(-binaryExp);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
             uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
