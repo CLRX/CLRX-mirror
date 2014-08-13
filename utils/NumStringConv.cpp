@@ -1459,7 +1459,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             if (subValueShift != 0)
             {
                 fpMantisa = (bigRescaled[powSize+subValuePos]>>subValueShift);
-                if (subValuePos+1 < bigValueSize && subValueShift!=0)
+                if (subValuePos+1 < bigValueSize)
                     fpMantisa |=
                         (bigRescaled[powSize+subValuePos+1]<<(64-subValueShift));
             }
