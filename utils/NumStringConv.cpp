@@ -1275,8 +1275,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             
             cxuint bigSize = 2;
             cxuint bigValueSize = 1;
-            bool isHalf = false;    // if second half
-            bool isHalfEqual = false; // if value is nearly equal to half of value
+            bool isHalf = (subValue >= half);    // if second half
+            // if value is nearly equal to half of value
+            bool isHalfEqual = (subValue >= half-1ULL && subValue <= half+1ULL);
             /* next trials with higher precision */
             while (isNotTooExact && processedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
