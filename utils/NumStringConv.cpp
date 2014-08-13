@@ -1220,12 +1220,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         cxint binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
         if (binaryExp > maxExp+1) // out of max exponent+1
             throw ParseException("Absolute value of number is too big");
-        if (binaryExp < minExpDenorm-1)
-            return out; // return zero
         
         cxuint mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
                 binaryExp-minExpDenorm;
         bool isNotTooExact = false;
+        //std::cout << "mantSignifBits: " << mantSignifBits << std::endl;
         
         const cxuint subValueShift = rescaledValueBits - mantSignifBits;
         const uint64_t subValue = rescaledValue&((1ULL<<(subValueShift))-1ULL);
@@ -1240,6 +1239,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         cxuint fpExponent = (binaryExp >= minExpNonDenorm) ?
                 binaryExp+(1U<<(expBits-1))-1 : 0;
         
+        if (binaryExp < minExpDenorm-1 && !isNotTooExact)
+            return out; // return zero
+                
         if (!isNotTooExact)
         {   // value is exact (not too close half
             addRoundings = (subValue >= half);
@@ -1265,7 +1267,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
             uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
             uint64_t* bigDecFactor = heap;
-            uint64_t* curBigValue = heap+maxBigSize*1+1;
+            uint64_t* curBigValue = heap+maxBigSize;
             uint64_t* prevBigValue = heap+maxBigSize*2 + 2;
             uint64_t* bigRescaled = heap+maxBigSize*3 + 4;
             
@@ -1508,7 +1510,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
             {   // if even value and if not smallest denormalized value (not zero)
                 if ((fpMantisa&1) == 0 && (fpExponent != 0 || fpMantisa != 0))
-                {   /* parse futher numbers */
+                {   /* parse rest of the numbers */
                     bool onlyZeros = true;
                     for (; vs != valEnd; vs++)
                     {
