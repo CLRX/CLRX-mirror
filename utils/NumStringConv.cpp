@@ -1214,7 +1214,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         {   // value is exact (not too close half
             addRoundings = (subValue >= half);
             fpMantisa = (rescaledValue>>subValueShift)&((1ULL<<mantisaBits)-1ULL);
-            if (fpExponent == 0)
+            if (fpExponent == 0) // add one for denormalized value
                 fpMantisa |= 1ULL<<mantSignifBits;
         }
         else
@@ -1465,7 +1465,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
             else // shift = 0
                 fpMantisa = bigRescaled[powSize+subValuePos];
-            if (fpExponent == 0)
+            if (fpExponent == 0) // add one for denormalized value
                 fpMantisa |= 1ULL<<mantSignifBits;
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
