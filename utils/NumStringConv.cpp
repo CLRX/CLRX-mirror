@@ -17,8 +17,15 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+//#define CSTRTOFX_DUMP_IRRESULTS 1
+
 #include <CLRX/Config.h>
 #include <algorithm>
+#ifdef CSTRTOFX_DUMP_IRRESULTS
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#endif
 #include <cstdint>
 #include <alloca.h>
 #include <climits>
@@ -876,6 +883,29 @@ static const uint64_t power10sTable[20] =
     10000000000000000000ULL
 };
 
+#ifdef CSTRTOFX_DUMP_IRRESULTS
+static void dumpIntermediateResults(cxuint bigSize, const uint64_t* bigValue,
+        const uint64_t* bigRescaled, cxint binaryExp, cxint powerof5, cxuint maxDigits,
+        cxuint rescaledValueBits, cxuint processedDigits)
+{
+    std::ostringstream oss;
+    oss << "DEBUG: Dump of InterResults for cstrtof:\n";
+    oss << "PowerOf5: " << powerof5 << ", binaryExp: " << binaryExp <<
+            ", maxDigits: " << maxDigits << ", bigSize: " << bigSize <<
+            "\nrvBits: " << rescaledValueBits <<
+            ", processedDigits: " << processedDigits << "\n";
+    oss << "BigValue: ";
+    for (cxuint i = 0; i < bigSize; i++)
+        oss << std::hex << std::setw(16) << std::setfill('0') << bigValue[bigSize-i-1];
+    oss << "\nBigRescaled: ";
+    for (cxuint i = 0; i < bigSize; i++)
+        oss << std::hex << std::setw(16) << std::setfill('0') << bigRescaled[bigSize-i-1];
+    oss << "\n";
+    oss.flush();
+    std::cout << oss.str() << std::endl;
+}
+#endif
+
 static uint64_t cstrtofXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint expBits, cxuint mantisaBits)
 {
@@ -1232,11 +1262,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     log2ByLog10Floor(-binaryExp);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
-            uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
+            uint64_t* heap = new uint64_t[maxBigSize*6 + 4];
             uint64_t* bigDecFactor = heap+maxBigSize;
-            uint64_t* curBigValue = heap+maxBigSize+1;
-            uint64_t* prevBigValue = heap+maxBigSize*2 + 2;
-            uint64_t* bigRescaled = heap+maxBigSize*3 + 4;
+            uint64_t* curBigValue = heap+maxBigSize*2+1;
+            uint64_t* prevBigValue = heap+maxBigSize*3 + 2;
+            uint64_t* bigRescaled = heap+maxBigSize*4 + 4;
             
             curBigValue[0] = value;
             bigDecFactor[0] = decFactor;
@@ -1251,7 +1281,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             while (isNotTooExact && processedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
                 const cxuint digitsToProcess = std::min(int(maxDigits),
-                        log2ByLog10Ceil(bigSize<<6));
+                        log2ByLog10Floor(bigSize<<6));
                 
                 while (processedDigits < digitsToProcess)
                 {
@@ -1388,6 +1418,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     throw ParseException("Absolute value of number is too big");
                 if (binaryExp < minExpDenorm-1)
                     return out; // return zero
+
+#ifdef CSTRTOFX_DUMP_IRRESULTS
+                dumpIntermediateResults(bigValueSize, curBigValue, bigRescaled+powSize,
+                        binaryExp, powerof5, maxDigits, rescaledValueBits, processedDigits);
+#endif
                 
                 mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
                         binaryExp-minExpDenorm;
