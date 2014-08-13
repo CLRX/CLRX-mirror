@@ -1262,11 +1262,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     log2ByLog10Floor(-binaryExp);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
-            uint64_t* heap = new uint64_t[maxBigSize*6 + 4];
-            uint64_t* bigDecFactor = heap+maxBigSize;
-            uint64_t* curBigValue = heap+maxBigSize*2+1;
-            uint64_t* prevBigValue = heap+maxBigSize*3 + 2;
-            uint64_t* bigRescaled = heap+maxBigSize*4 + 4;
+            uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
+            uint64_t* bigDecFactor = heap;
+            uint64_t* curBigValue = heap+maxBigSize*1+1;
+            uint64_t* prevBigValue = heap+maxBigSize*2 + 2;
+            uint64_t* bigRescaled = heap+maxBigSize*3 + 4;
             
             curBigValue[0] = value;
             bigDecFactor[0] = decFactor;
