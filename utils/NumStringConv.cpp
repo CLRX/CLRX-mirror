@@ -1509,11 +1509,15 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 {   /* parse futher numbers */
                     bool onlyZeros = true;
                     for (; vs != valEnd; vs++)
+                    {
+                        if (*vs == '.')
+                            continue;
                         if (*vs != '0')
                         {
                             onlyZeros = false;
                             break;
                         }
+                    }
                     addRoundings = !onlyZeros;
                 }
                 else  // otherwise force rounding
