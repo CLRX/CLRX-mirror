@@ -1504,7 +1504,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 fpMantisa |= 1ULL<<mantSignifBits;
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
-            {   // if odd value or smallest denormalized value (not zero)
+            {   // if even value and if not smallest denormalized value (not zero)
                 if ((fpMantisa&1) == 0 && (fpExponent != 0 || fpMantisa != 0))
                 {   /* parse futher numbers */
                     bool onlyZeros = true;
@@ -1516,8 +1516,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         }
                     addRoundings = !onlyZeros;
                 }
-                else  // otherwise
-                    addRoundings = false;
+                else  // otherwise force rounding
+                    addRoundings = true;
             }
             else // otherwise
                 addRoundings = isHalf;
