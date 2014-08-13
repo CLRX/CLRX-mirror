@@ -1225,9 +1225,10 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             else if (binaryExp >= 0)
                 // if rounding bit is fraction but value have integer part
                 maxDigits = log10ByLog2Ceil(binaryExp) -
-                        (binaryExp-cxint(mantisaBits)-1); // negative power of rounding bit
+                         // negative power of rounding bit
+                        (binaryExp-cxint(mantSignifBits)-1);
             else // if all value is fractional value
-                maxDigits = -(binaryExp-cxint(mantisaBits)-1) -
+                maxDigits = -(binaryExp-cxint(mantSignifBits)-1) -
                     log10ByLog2Floor(-binaryExp);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
