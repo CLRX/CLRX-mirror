@@ -17,7 +17,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-//#define CSTRTOFX_DUMP_IRRESULTS 1
+#define CSTRTOFX_DUMP_IRRESULTS 1
 
 #include <CLRX/Config.h>
 #include <algorithm>
@@ -1505,11 +1505,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
             {   // if odd value or smallest denormalized value (not zero)
-                if ((fpMantisa&1) != 0 || (fpExponent == 0 && fpMantisa == 0))
+                if ((fpMantisa&1) == 0 && (fpExponent != 0 || fpMantisa != 0))
                 {   /* parse futher numbers */
                     bool onlyZeros = true;
                     for (; vs != valEnd; vs++)
-                        if (*vs != 0)
+                        if (*vs != '0')
                         {
                             onlyZeros = false;
                             break;
