@@ -1226,11 +1226,20 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 binaryExp-minExpDenorm;
         bool isNotTooExact = false;
         //std::cout << "mantSignifBits: " << mantSignifBits << std::endl;
-        
         const cxuint subValueShift = rescaledValueBits - mantSignifBits;
         const uint64_t subValue = (subValueShift<64)?
                 rescaledValue&((1ULL<<(subValueShift))-1ULL):UINT64_MAX;
         const uint64_t half = (subValueShift<65)?(1ULL<<(subValueShift-1)):0;
+#ifdef CSTRTOFX_DUMP_IRRESULTS
+        {
+            std::ostringstream oss;
+            oss << "SubValue: " << std::hex << subValue << ", Half: " <<
+                std::dec << half << ", rvBits: " << rescaledValueBits <<
+                ", pow5: " << powerof5;
+            oss.flush();
+            std::cout << oss.str() << std::endl;
+        }
+#endif
         
         /* check if value is too close to half of value, if yes we going to next trials
          * too close value between HALF-3 and HALF+1 (3 because we expects value from
