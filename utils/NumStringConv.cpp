@@ -1454,8 +1454,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         // zeroing before OR'ing
                         bigRescaled[powSize+bigValueSize] = 0;
                     // add one to value
-                    bigRescaled[powSize+bigValueSize-1] |=
-                            (1ULL<<(rescaledValueBits&63));
+                    if (rescaledValueBits < (bigValueSize<<6))
+                        bigRescaled[powSize+bigValueSize-1] |=
+                                (1ULL<<(rescaledValueBits&63));
+                    else // add carry if rescaledValueBits==bigValueSize<<6
+                        bigRescaled[powSize+bigValueSize] |= 1;
                 }
                 
                 /* check if value is too close to half of value, if yes we going to next
