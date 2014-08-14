@@ -1079,10 +1079,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 }
             }
             
-            /* is greater than half or value is odd or is half of
-             * smallest denormalized value */
-            addRoundings = (!isHalf || (fpMantisa&1)!=0 ||
-                    (fpExponent == 0 && fpMantisa==0));
+            /* is greater than half or value is odd */
+            addRoundings = (!isHalf || (fpMantisa&1)!=0);
         }
         
         if (addRoundings)
@@ -1541,8 +1539,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
-            {   // if even value and if not smallest denormalized value (not zero)
-                if ((fpMantisa&1) == 0 && (fpExponent != 0 || fpMantisa != 0))
+            {   // if even value
+                if ((fpMantisa&1) == 0)
                 {   /* parse rest of the numbers */
                     bool onlyZeros = true;
                     for (; vs != valEnd; vs++)
