@@ -1228,14 +1228,14 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         //std::cout << "mantSignifBits: " << mantSignifBits << std::endl;
         const cxuint subValueShift = rescaledValueBits - mantSignifBits;
         const uint64_t subValue = (subValueShift<64)?
-                rescaledValue&((1ULL<<(subValueShift))-1ULL):UINT64_MAX;
+                rescaledValue&((1ULL<<(subValueShift))-1ULL):rescaledValue;
         const uint64_t half = (subValueShift<65)?(1ULL<<(subValueShift-1)):0;
 #ifdef CSTRTOFX_DUMP_IRRESULTS
         {
             std::ostringstream oss;
             oss << "SubValue: " << std::hex << subValue << ", Half: " <<
                 std::hex << half << ", rvBits: " << std::dec << rescaledValueBits <<
-                ", pow5: " << powerof5;
+                ", pow5: " << powerof5 << ", mantSignBits: " << mantSignifBits;
             oss.flush();
             std::cout << oss.str() << std::endl;
         }
@@ -1299,9 +1299,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             
             cxuint bigSize = 2;
             cxuint bigValueSize = 1;
-            bool isHalf = (subValue >= half);    // if second half
-            // if value is nearly equal to half of value
-            bool isHalfEqual = (subValue >= half-1ULL && subValue <= half+1ULL);
+            bool isHalf = false; // initialize for compiler warning
+            bool isHalfEqual = false; // initialize for compiler warning
+            
             /* next trials with higher precision */
             while (isNotTooExact && processedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
@@ -1326,7 +1326,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         {
                             if (*vs >= '0' && *vs <= '9')
                                 curValue = curValue*10 + *vs-'0';
-                            else if (*vs == '.')
+                            else // if (*vs == '.')
                                 continue;
                             processedDigits++;
                             digitsOfPart++;
@@ -1459,9 +1459,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 
                 if (mantSignifBits < 0)
                 {   // smaller than smallest denormal, add half
-                    if (((rescaledValueBits - mantSignifBits-1)>>6) == bigValueSize)
-                        // zeroing before OR'ing
-                        bigRescaled[powSize+bigValueSize] = 0;
+                    bigRescaled[powSize+bigValueSize] = 0;
                     // add one to value
                     if (rescaledValueBits < (bigValueSize<<6))
                         bigRescaled[powSize+bigValueSize-1] |=
