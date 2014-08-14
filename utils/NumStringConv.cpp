@@ -1270,9 +1270,9 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 // if rounding bit is fraction but value have integer part
                 maxDigits = std::max(1,log2ByLog10Ceil(binaryExp)) -
                          // negative power of rounding bit
-                        (binaryExp-cxint(mantSignifBits)-1);
+                        (binaryExp-mantSignifBits-1);
             else // if all value is fractional value
-                maxDigits = -(binaryExp-cxint(mantSignifBits)-1) -
+                maxDigits = -(binaryExp-mantSignifBits-1) -
                     log2ByLog10Floor(-binaryExp);
             maxDigits = std::max(maxDigits, processedDigits);
             
