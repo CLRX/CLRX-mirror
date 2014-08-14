@@ -886,14 +886,15 @@ static const uint64_t power10sTable[20] =
 #ifdef CSTRTOFX_DUMP_IRRESULTS
 static void dumpIntermediateResults(cxuint bigSize, const uint64_t* bigValue,
         const uint64_t* bigRescaled, cxint binaryExp, cxint powerof5, cxuint maxDigits,
-        cxuint rescaledValueBits, cxuint processedDigits)
+        cxuint rescaledValueBits, cxuint processedDigits, cxint mantSignifBits)
 {
     std::ostringstream oss;
     oss << "DEBUG: Dump of InterResults for cstrtof:\n";
     oss << "PowerOf5: " << powerof5 << ", binaryExp: " << binaryExp <<
             ", maxDigits: " << maxDigits << ", bigSize: " << bigSize <<
             "\nrvBits: " << rescaledValueBits <<
-            ", processedDigits: " << processedDigits << "\n";
+            ", processedDigits: " << processedDigits <<
+            ", mantSignifBits: " << mantSignifBits << "\n";
     oss << "BigValue: ";
     for (cxuint i = 0; i < bigSize; i++)
         oss << std::hex << std::setw(16) << std::setfill('0') << bigValue[bigSize-i-1];
@@ -1220,34 +1221,47 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         cxint binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
         if (binaryExp > maxExp+1) // out of max exponent+1
             throw ParseException("Absolute value of number is too big");
-        
-        cxuint mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
+        if (binaryExp < minExpDenorm-2)
+            return out; // return zero
+                
+        cxint mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
                 binaryExp-minExpDenorm;
         bool isNotTooExact = false;
         //std::cout << "mantSignifBits: " << mantSignifBits << std::endl;
         
         const cxuint subValueShift = rescaledValueBits - mantSignifBits;
-        const uint64_t subValue = rescaledValue&((1ULL<<(subValueShift))-1ULL);
-        const uint64_t half = 1ULL<<(subValueShift-1);
+        const uint64_t subValue = (subValueShift<64)?
+                rescaledValue&((1ULL<<(subValueShift))-1ULL):UINT64_MAX;
+        const uint64_t half = (subValueShift<65)?(1ULL<<(subValueShift-1)):0;
         
         /* check if value is too close to half of value, if yes we going to next trials
          * too close value between HALF-3 and HALF+1 (3 because we expects value from
          * next digit */
-        isNotTooExact = (subValue >= half-3ULL && subValue <= half+1ULL);
+        if (mantSignifBits >= 0)
+            isNotTooExact = (subValue >= half-3ULL && subValue <= half+1ULL);
+        else if (mantSignifBits == -1) // if half of smallest denormal
+            isNotTooExact = (subValue <= 1ULL);
+        else if (mantSignifBits == -2) // if half of smallest denormal
+            isNotTooExact = (subValue >= (half>>1)-3ULL);
         bool addRoundings = false;
         uint64_t fpMantisa;
         cxuint fpExponent = (binaryExp >= minExpNonDenorm) ?
                 binaryExp+(1U<<(expBits-1))-1 : 0;
         
-        if (binaryExp < minExpDenorm-1 && !isNotTooExact)
-            return out; // return zero
-                
         if (!isNotTooExact)
         {   // value is exact (not too close half
-            addRoundings = (subValue >= half);
-            fpMantisa = (rescaledValue>>subValueShift)&((1ULL<<mantisaBits)-1ULL);
-            if (fpExponent == 0) // add one for denormalized value
-                fpMantisa |= 1ULL<<mantSignifBits;
+            if (mantSignifBits>=0)
+            {
+                addRoundings = (subValue >= half);
+                fpMantisa = (rescaledValue>>subValueShift)&((1ULL<<mantisaBits)-1ULL);
+                if (fpExponent == 0) // add one for denormalized value
+                    fpMantisa |= 1ULL<<mantSignifBits;
+            }
+            else // if half of smallest denormal
+            {
+                addRoundings = (mantSignifBits == -1);
+                fpMantisa = 0;
+            }
         }
         else
         {   // max digits to compute value
@@ -1265,7 +1279,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             maxDigits = std::max(maxDigits, processedDigits);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
-            uint64_t* heap = new uint64_t[maxBigSize*5 + 4];
+            uint64_t* heap = new uint64_t[maxBigSize*5 + 5];
             uint64_t* bigDecFactor = heap;
             uint64_t* curBigValue = heap+maxBigSize;
             uint64_t* prevBigValue = heap+maxBigSize*2 + 2;
@@ -1420,20 +1434,31 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
                 if (binaryExp > maxExp + 1) // out of max exponent+1
                     throw ParseException("Absolute value of number is too big");
-                if (binaryExp < minExpDenorm-1)
+                if (binaryExp < minExpDenorm-2)
                     return out; // return zero
-
-#ifdef CSTRTOFX_DUMP_IRRESULTS
-                dumpIntermediateResults(bigValueSize, curBigValue, bigRescaled+powSize,
-                        binaryExp, powerof5, maxDigits, rescaledValueBits, processedDigits);
-#endif
                 
                 mantSignifBits = (binaryExp >= minExpNonDenorm) ? mantisaBits :
                         binaryExp-minExpDenorm;
+#ifdef CSTRTOFX_DUMP_IRRESULTS
+                dumpIntermediateResults(bigValueSize, curBigValue, bigRescaled+powSize,
+                        binaryExp, powerof5, maxDigits, rescaledValueBits, processedDigits,
+                        mantSignifBits);
+#endif
+                
                 // determine whether is nearly half
                 const cxuint halfValueShift = (rescaledValueBits - mantSignifBits-1)&63;
                 const cxuint halfValuePos = (rescaledValueBits - mantSignifBits-1)>>6;
                 const uint64_t halfValue = (1ULL<<halfValueShift);
+                
+                if (mantSignifBits < 0)
+                {   // smaller than smallest denormal, add half
+                    if (((rescaledValueBits - mantSignifBits-1)>>6) == bigValueSize)
+                        // zeroing before OR'ing
+                        bigRescaled[powSize+halfValuePos] = 0;
+                    // add one to value
+                    bigRescaled[powSize+bigValueSize-1] |=
+                            (1ULL<<(rescaledValueBits&63));
+                }
                 
                 /* check if value is too close to half of value, if yes we going to next
                  * trials. too close value between HALF-3 and HALF+1
@@ -1495,17 +1520,25 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             const cxuint subValuePos = (rescaledValueBits - mantSignifBits)>>6;
             fpExponent = (binaryExp >= minExpNonDenorm) ?
                 binaryExp+(1U<<(expBits-1))-1 : 0;
-            if (subValueShift != 0)
+            if (mantSignifBits >= 0)
             {
-                fpMantisa = (bigRescaled[powSize+subValuePos]>>subValueShift);
-                if (subValuePos+1 < bigValueSize)
-                    fpMantisa |=
-                        (bigRescaled[powSize+subValuePos+1]<<(64-subValueShift));
+                if (subValueShift != 0)
+                {
+                    fpMantisa = (bigRescaled[powSize+subValuePos]>>subValueShift);
+                    if (subValuePos+1 < bigValueSize)
+                        fpMantisa |=
+                            (bigRescaled[powSize+subValuePos+1]<<(64-subValueShift));
+                }
+                else // shift = 0
+                    fpMantisa = bigRescaled[powSize+subValuePos];
+                if (fpExponent == 0) // add one for denormalized value
+                    fpMantisa |= 1ULL<<mantSignifBits;
             }
-            else // shift = 0
-                fpMantisa = bigRescaled[powSize+subValuePos];
-            if (fpExponent == 0) // add one for denormalized value
-                fpMantisa |= 1ULL<<mantSignifBits;
+            else
+            {   //
+                fpMantisa = 0;
+                addRoundings = (mantSignifBits == -1);
+            }
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
             {   // if even value and if not smallest denormalized value (not zero)
