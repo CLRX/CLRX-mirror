@@ -17,7 +17,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-//#define CSTRTOFX_DUMP_IRRESULTS 1
+#define CSTRTOFX_DUMP_IRRESULTS 1
 
 #include <CLRX/Config.h>
 #include <algorithm>
@@ -1270,10 +1270,10 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 // if rounding bit is fraction but value have integer part
                 maxDigits = std::max(1,log2ByLog10Ceil(binaryExp)) -
                          // negative power of rounding bit
-                        (binaryExp-mantSignifBits-1);
+                        (binaryExp-mantSignifBits-1)+1;
             else // if all value is fractional value
                 maxDigits = -(binaryExp-mantSignifBits-1) -
-                    log2ByLog10Floor(-binaryExp);
+                    log2ByLog10Floor(-binaryExp)+1;
             maxDigits = std::max(maxDigits, processedDigits);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
