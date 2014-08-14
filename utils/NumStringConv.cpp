@@ -1234,7 +1234,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         {
             std::ostringstream oss;
             oss << "SubValue: " << std::hex << subValue << ", Half: " <<
-                std::dec << half << ", rvBits: " << rescaledValueBits <<
+                std::hex << half << ", rvBits: " << std::dec << rescaledValueBits <<
                 ", pow5: " << powerof5;
             oss.flush();
             std::cout << oss.str() << std::endl;
@@ -1410,7 +1410,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 
                 bool rvCarry = bigAdd(bigValueSize, bigRescaled + powSize, curBigValue);
                 /* round rescaled value */
-                if ((bigRescaled[powSize-1]&((1ULL<<63)-1ULL)) != 0)
+                if ((bigRescaled[powSize-1]&(1ULL<<63)) != 0)
                 {
                     bool carry = true;
                     for (cxuint k = powSize; k < powSize+bigValueSize; k++)
