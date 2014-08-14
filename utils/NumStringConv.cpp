@@ -1452,7 +1452,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 {   // smaller than smallest denormal, add half
                     if (((rescaledValueBits - mantSignifBits-1)>>6) == bigValueSize)
                         // zeroing before OR'ing
-                        bigRescaled[powSize+halfValuePos] = 0;
+                        bigRescaled[powSize+bigValueSize] = 0;
                     // add one to value
                     bigRescaled[powSize+bigValueSize-1] |=
                             (1ULL<<(rescaledValueBits&63));
