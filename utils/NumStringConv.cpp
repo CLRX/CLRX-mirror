@@ -17,7 +17,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#define CSTRTOFX_DUMP_IRRESULTS 1
+//#define CSTRTOFX_DUMP_IRRESULTS 1
 
 #include <CLRX/Config.h>
 #include <algorithm>
