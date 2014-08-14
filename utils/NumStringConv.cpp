@@ -1545,7 +1545,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             else
             {   //
                 fpMantisa = 0;
-                addRoundings = (mantSignifBits == -1);
+                addRoundings = false;
             }
             
             if (isHalfEqual) // isHalfEqual implies isNotTooExact
