@@ -27,6 +27,7 @@
 #include <iomanip>
 #endif
 #include <cstdint>
+#include <vector>
 #include <alloca.h>
 #include <climits>
 #include <CLRX/Utilities.h>
@@ -1286,11 +1287,12 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             maxDigits = std::max(maxDigits, processedDigits);
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
-            uint64_t* heap = new uint64_t[maxBigSize*5 + 5];
-            uint64_t* bigDecFactor = heap;
-            uint64_t* curBigValue = heap+maxBigSize;
-            uint64_t* prevBigValue = heap+maxBigSize*2 + 2;
-            uint64_t* bigRescaled = heap+maxBigSize*3 + 4;
+            // using vector for prevents memory leaks (function can throw exception)
+            std::vector<uint64_t> heap = std::vector<uint64_t>(maxBigSize*5 + 5);
+            uint64_t* bigDecFactor = heap.data();
+            uint64_t* curBigValue = heap.data()+maxBigSize;
+            uint64_t* prevBigValue = heap.data()+maxBigSize*2 + 2;
+            uint64_t* bigRescaled = heap.data()+maxBigSize*3 + 4;
             
             curBigValue[0] = value;
             bigDecFactor[0] = decFactor;
@@ -1570,7 +1572,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             }
             else // otherwise
                 addRoundings = isHalf;
-            delete[] heap;
         }
         
         // add rounding if needed
