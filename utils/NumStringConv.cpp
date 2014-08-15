@@ -1218,7 +1218,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         // compute binary exponent
         cxint binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
-        if (binaryExp > maxExp+1) // out of max exponent+1
+        if (binaryExp > maxExp) // out of max exponent
             throw ParseException("Absolute value of number is too big");
         if (binaryExp < minExpDenorm-2)
             return out; // return zero
@@ -1441,8 +1441,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 
                 // compute binary exponent
                 binaryExp = decFacBinExp + powerof5 + rescaledValueBits;
-                if (binaryExp > maxExp + 1) // out of max exponent+1
-                    throw ParseException("Absolute value of number is too big");
                 if (binaryExp < minExpDenorm-2)
                     return out; // return zero
                 
