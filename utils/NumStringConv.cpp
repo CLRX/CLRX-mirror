@@ -1582,8 +1582,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             if (fpMantisa >= (1ULL<<mantisaBits))
             {
                 fpExponent++;
-                if (fpExponent == ((1U<<expBits)-1)) // overflow!!!
-                    throw ParseException("Absolute value of number is too big");
                 fpMantisa = 0; // zeroing value
             }
         }
