@@ -852,13 +852,13 @@ static inline cxint log2ByLog10Floor(cxint v)
 { return (int64_t(v)*LOG2BYLOG10_32)>>32; }
 
 static inline cxint log2ByLog10Ceil(cxint v)
-{ return (int64_t(v)*LOG2BYLOG10_32 + (1ULL<<32)-1)>>32; }
+{ return (int64_t(v)*LOG2BYLOG10_32 + (1LL<<32)-1)>>32; }
 
 static inline cxint log10ByLog2Floor(cxint v)
 { return (int64_t(v)*LOG10BYLOG2_32)>>32; }
 
 static inline cxint log10ByLog2Ceil(cxint v)
-{ return (int64_t(v)*LOG10BYLOG2_32 + (1ULL<<32)-1)>>32; }
+{ return (int64_t(v)*LOG10BYLOG2_32 + (1LL<<32)-1)>>32; }
 
 static const uint64_t power10sTable[20] =
 {
