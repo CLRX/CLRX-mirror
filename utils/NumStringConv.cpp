@@ -124,7 +124,7 @@ static uint64_t cstrtouXCStyle(const char* str, const char* inend,
         {
             if (out > lastDigitValue)
                 throw ParseException("Number out of range");
-            cxuint digit = (*p-'0');
+            const cxuint digit = (*p-'0');
             out = out * 10 + digit;
             if ((out&mask) < digit) // if carry
                 throw ParseException("Number out of range");
@@ -1251,6 +1251,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             isNotTooExact = (subValue <= 1ULL);
         else if (mantSignifBits == -2) // if half of smallest denormal
             isNotTooExact = (subValue >= (half>>1)-3ULL);
+        // otherwise isNotExact is false if value too small
+        
         bool addRoundings = false;
         uint64_t fpMantisa;
         cxuint fpExponent = (binaryExp >= minExpNonDenorm) ?
