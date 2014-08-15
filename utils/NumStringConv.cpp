@@ -321,7 +321,7 @@ static void bigMulSimple(cxuint asize, const uint64_t* biga, cxuint bsize,
         tmpMul[bsize-1] += t[0];
         bool carry = (tmpMul[bsize-1] < t[0]);
         tmpMul[bsize] += t[1] + carry;
-        // ad to product
+        // add to product
         carry = false;
         for (cxuint j = 0; j < bsize+1; j++)
         {
@@ -408,7 +408,7 @@ static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
             bigAdd(halfSize+1, mx+halfSize, halfSize, sumb);
         if (sumbLast) // last bit in b0+b1 is set add (1<<64)*suma
             bigAdd(halfSize+1, mx+halfSize, halfSize, suma);
-        // mx-bigL
+        // mx-bigL-bigH
         bigSub(size+1, mx, size, bigc);
         bigSub(size+1, mx, size, bigc+size);
         // add to bigc
