@@ -282,6 +282,18 @@ float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
  */
 double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
+enum class FPFormating
+{
+    HUMAN_READABLE,
+    SCIENTIFIC
+};
+
+size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormating formating);
+
+size_t ftocstrCStyle(float value, char* str, size_t maxSize, FPFormating formating);
+
+size_t dtocstrCStyle(double value, char* str, size_t maxSize, FPFormating formating);
+
 };
 
 #endif

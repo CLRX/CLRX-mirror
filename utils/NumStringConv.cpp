@@ -1062,11 +1062,11 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
         
         if ((fvalue & roundBit) != 0)
         { // rounding to nearest even
-            bool isHalf = true;
+            bool isSecondHalf = true;
             if ((fvalue & (roundBit-1ULL)) != 0)
-                isHalf = false;
+                isSecondHalf = false;
             
-            if (isHalf && (fpMantisa&1)==0)
+            if (isSecondHalf && (fpMantisa&1)==0)
             {   // check further digits if still is half and value is even
                 for (; vs != valEnd; vs++)
                 {   // digits character has been already checked, we check that is not zero
@@ -1074,14 +1074,14 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                         continue; // skip comma
                     else if (*vs > '0')
                     {   // if not zero (is half of value)
-                        isHalf = false;
+                        isSecondHalf = false;
                         break;
                     }
                 }
             }
             
             /* is greater than half or value is odd */
-            addRoundings = (!isHalf || (fpMantisa&1)!=0);
+            addRoundings = (!isSecondHalf || (fpMantisa&1)!=0);
         }
         
         if (addRoundings)
@@ -1303,7 +1303,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             
             cxuint bigSize = 2;
             cxuint bigValueSize = 1;
-            bool isHalf = false; // initialize for compiler warning
+            bool isSecondHalf = false; // initialize for compiler warning
             bool isHalfEqual = false; // initialize for compiler warning
             
             /* next trials with higher precision */
@@ -1475,8 +1475,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                  * (3 because we expects value from next digit) */
                 isHalfEqual = false;
                 isNotTooExact = false;
-                isHalf = ((bigRescaled[powSize+halfValuePos]&halfValue) != 0);
-                if (isHalf)
+                isSecondHalf = ((bigRescaled[powSize+halfValuePos]&halfValue) != 0);
+                if (isSecondHalf)
                 {
                     if (halfValuePos == 0 && ((bigRescaled[powSize] & (halfValue-1)) <= 1))
                         isHalfEqual = isNotTooExact = true;
@@ -1571,7 +1571,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                     addRoundings = true;
             }
             else // otherwise
-                addRoundings = isHalf;
+                addRoundings = isSecondHalf;
         }
         
         // add rounding if needed
