@@ -54,6 +54,15 @@ ParseException::ParseException(size_t lineNo, const std::string& message)
     this->message = oss.str();
 }
 
+ParseException::ParseException(size_t lineNo, size_t charNo, const std::string& message)
+{
+    std::ostringstream oss;
+    oss.imbue(std::locale::classic());
+    oss << lineNo << ":" << charNo << ": " << message;
+    oss.flush();
+    this->message = oss.str();
+}
+
 #ifndef HAVE_LINUX
 #error "Other platforms than Linux not supported"
 #endif

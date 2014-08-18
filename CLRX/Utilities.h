@@ -56,6 +56,7 @@ public:
     ParseException() = default;
     explicit ParseException(const std::string& message);
     ParseException(size_t lineNo, const std::string& message);
+    ParseException(size_t lineNo, size_t charNo, const std::string& message);
     virtual ~ParseException() throw() = default;
 };
 

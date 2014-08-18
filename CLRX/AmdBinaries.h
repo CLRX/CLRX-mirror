@@ -106,7 +106,7 @@ enum : uint8_t
 struct KernelArg
 {
     KernelArgType argType;  ///< argument type
-    KernelPtrSpace ptrSpace;  ///< pointer space for argument if argument is pointer or image
+    KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
     uint8_t ptrAccess;  ///< pointer access flags
     std::string typeName;   ///< name of type of argument
     std::string argName;    ///< argument name
@@ -339,8 +339,8 @@ public:
     /// get dynamic symbol with specified index
     typename Types::Sym& getDynSymbol(typename Types::Size index)
     {
-        return *reinterpret_cast<typename Types::Sym*>(
-        dynSymTable + size_t(index)*dynSymEntSize);
+        return *reinterpret_cast<typename Types::Sym*>(dynSymTable +
+            size_t(index)*dynSymEntSize);
     }
     
     /// get symbol name with specified index
@@ -365,11 +365,17 @@ public:
     }
     
     /// get end iterator if section index map
-    SectionIndexMap::const_iterator getSectionIterEnd(const char* name) const
+    SectionIndexMap::const_iterator getSectionIterEnd() const
     { return sectionIndexMap.end(); }
     
     /// get section iterator with specified name (requires section index map)
-    SectionIndexMap::const_iterator getSectionIter(const char* name) const;
+    SectionIndexMap::const_iterator getSectionIter(const char* name) const
+    {
+        SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
+        if (it == sectionIndexMap.end())
+            throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
+        return it;
+    }
     
     /// get section index with specified name
     uint16_t getSectionIndex(const char* name) const;
@@ -381,18 +387,31 @@ public:
     typename Types::Size getDynSymbolIndex(const char* name) const;
     
     /// get end iterator of symbol index map
-    SymbolIndexMap::const_iterator getSymbolIterEnd(const char* name) const
+    SymbolIndexMap::const_iterator getSymbolIterEnd() const
     { return symbolIndexMap.end(); }
     
     /// get end iterator of dynamic symbol index map
-    SymbolIndexMap::const_iterator getDynSymbolIterEnd(const char* name) const
+    SymbolIndexMap::const_iterator getDynSymbolIterEnd() const
     { return dynSymIndexMap.end(); }
     
     /// get symbol iterator with specified name (requires symbol index map)
-    SymbolIndexMap::const_iterator getSymbolIter(const char* name) const;
-    
+    SymbolIndexMap::const_iterator getSymbolIter(const char* name) const
+    {
+        SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
+        if (it == symbolIndexMap.end())
+            throw Exception(std::string("Cant find Elf")+Types::bitName+" Symbol");
+        return it;
+    }
+
     /// get dynamic symbol iterator with specified name (requires dynamic symbol index map)
-    SymbolIndexMap::const_iterator getDynSymbolIter(const char* name) const;
+    SymbolIndexMap::const_iterator getDynSymbolIter(const char* name) const
+    {
+        SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
+        if (it == dynSymIndexMap.end())
+            throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
+        return it;
+    }
+
     
     /// get section header with specified name
     const typename Types::Shdr& getSectionHeader(const char* name) const

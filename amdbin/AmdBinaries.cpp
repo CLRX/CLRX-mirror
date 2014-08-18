@@ -440,16 +440,6 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
 }
 
 template<typename Types>
-ElfBinaryTemplate<Types>::SectionIndexMap::const_iterator
-ElfBinaryTemplate<Types>::getSectionIter(const char* name) const
-{
-    SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
-    if (it == sectionIndexMap.end())
-        throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
-    return it;
-}
-
-template<typename Types>
 typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) const
 {
     SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
@@ -465,26 +455,6 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
     if (it == dynSymIndexMap.end())
         throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
     return it->second;
-}
-
-template<typename Types>
-ElfBinaryTemplate<Types>::SymbolIndexMap::const_iterator 
-ElfBinaryTemplate<Types>::getSymbolIter(const char* name) const
-{
-    SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
-    if (it == symbolIndexMap.end())
-        throw Exception(std::string("Cant find Elf")+Types::bitName+" Symbol");
-    return it;
-}
-
-template<typename Types>
-ElfBinaryTemplate<Types>::SymbolIndexMap::const_iterator 
-ElfBinaryTemplate<Types>::getDynSymbolIter(const char* name) const
-{
-    SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
-    if (it == dynSymIndexMap.end())
-        throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
-    return it;
 }
 
 /* AMD inner GPU binary */
