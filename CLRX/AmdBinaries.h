@@ -411,7 +411,6 @@ public:
             throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
         return it;
     }
-
     
     /// get section header with specified name
     const typename Types::Shdr& getSectionHeader(const char* name) const

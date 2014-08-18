@@ -242,9 +242,6 @@ const uint8_t CLRX::Elf64Types::ELFCLASS = ELFCLASS64;
 const cxuint CLRX::Elf64Types::bitness = 64;
 const char* CLRX::Elf64Types::bitName = "64";
 
-template class ElfBinaryTemplate<CLRX::Elf32Types>;
-template class ElfBinaryTemplate<CLRX::Elf64Types>;
-
 /* ElfBinaryTemplate */
 
 template<typename Types>
@@ -456,6 +453,9 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
         throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
     return it->second;
 }
+
+template class CLRX::ElfBinaryTemplate<CLRX::Elf32Types>;
+template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
 
 /* AMD inner GPU binary */
 
