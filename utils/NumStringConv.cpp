@@ -30,6 +30,7 @@
 #include <vector>
 #include <alloca.h>
 #include <climits>
+#include <cstddef>
 #include <CLRX/Utilities.h>
 
 using namespace CLRX;
@@ -421,15 +422,10 @@ static void bigMul(cxuint asize, const uint64_t* biga, cxuint bsize,
 {
     cxuint asizeRound, bsizeRound;
     cxuint asizeBit, bsizeBit;
-#ifdef __GNUC__
-    asizeBit = sizeof(cxuint)*8-__builtin_clz(asize);
-    bsizeBit = sizeof(cxuint)*8-__builtin_clz(bsize);
+    asizeBit = sizeof(cxuint)*8-CLZ32(asize);
+    bsizeBit = sizeof(cxuint)*8-CLZ32(bsize);
     asizeRound = 1U<<asizeBit;
     bsizeRound = 1U<<bsizeBit;
-#else
-    for (asizeBit = 0, asizeRound = 1; asizeRound < asize; asizeRound <<= 1, asizeBit++);
-    for (bsizeBit = 0, bsizeRound = 1; bsizeRound < bsize; bsizeRound <<= 1, bsizeBit++);
-#endif
     
     if (asizeRound != asize)
     {
@@ -1202,13 +1198,7 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
             rescaledValue = rescaled[1];
             if (!rvCarry)
             {   /* compute rescaledValueBits */
-#ifdef __GNUC__
-                rescaledValueBits = 63-__builtin_clzll(rescaledValue);
-#else
-                rescaledValueBits = 63;
-                for (uint64_t t = 1ULL<<63; rescaledValue < t;
-                     t>>=1, rescaledValueBits--);
-#endif
+                rescaledValueBits = 63 - CLZ64(rescaledValue);
                 // remove integer part (lastbit) from rescaled value
                 rescaledValue &= (1ULL<<rescaledValueBits)-1ULL;
             }
@@ -1426,14 +1416,8 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
                 }
                 if (!rvCarry)
                 {   /* compute rescaledValueBits */
-#ifdef __GNUC__
-                    rescaledValueBits = (bigValueSize<<6) - 1 -__builtin_clzll(
+                    rescaledValueBits = (bigValueSize<<6) - 1 - CLZ64(
                         bigRescaled[powSize+bigValueSize-1]);
-#else
-                    rescaledValueBits = (bigValueSize<<6)-1;
-                    for (uint64_t t = 1ULL<<63; bigRescaled[powSize+bigValueSize-1] < t;
-                         t>>=1, rescaledValueBits--);
-#endif
                     // remove integer part (lastbit) from rescaled value
                     bigRescaled[powSize+bigValueSize-1] &=
                             (1ULL<<(rescaledValueBits&63))-1ULL;
@@ -1621,4 +1605,118 @@ double CLRX::cstrtodCStyle(const char* str, const char* inend, const char*& oute
     DoubleUnion v;
     v.u = cstrtofXCStyle(str, inend, outend, 11, 52);
     return v.d;
+}
+
+static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
+        FPFormatting formatting, cxuint mantisaBits, cxuint expBits)
+{
+    char* p = str;
+    bool signOfValue = ((value>>(expBits+mantisaBits))!=0);
+    const cxuint expMask = ((1U<<expBits)-1U);
+    const uint64_t mantisaMask = (1ULL<<mantisaBits)-1ULL;
+    
+    if (((value >> mantisaBits)&expMask) == expMask)
+    {   // infinity or nans
+        if (signOfValue)
+        {
+            if (maxSize < 5)
+                throw Exception("Max size is too small");
+            *p++ = '-';
+        }
+        else if (maxSize < 4)
+            throw Exception("Max size is too small");
+        
+        if ((value&mantisaMask) != 0)
+        {   /* nan */
+            *p++ = 'n';
+            *p++ = 'a';
+            *p++ = 'n';
+        }
+        else
+        {   /* infinity */
+            *p++ = 'i';
+            *p++ = 'n';
+            *p++ = 'f';
+        }
+        *p++ = 0;
+        return ((ptrdiff_t)p)-((ptrdiff_t)str);
+    }
+    
+    uint64_t mantisa = value&mantisaMask;
+    const int minExpNonDenorm = -((1U<<(expBits-1))-2);
+    const int binaryExp = ((value>>mantisaBits)&expMask) - (expMask>>1);
+    
+    if (mantisa == 0 && binaryExp == minExpNonDenorm-1)
+    {   /* if zero */
+        if (signOfValue)
+        {
+            if (maxSize < 2)
+                throw Exception("Max size is too small");
+            *p++ = '-';
+        }
+        else if (maxSize < 1)
+            throw Exception("Max size is too small");
+        *p++ = '0';
+        *p++ = 0;
+        return ((ptrdiff_t)p)-((ptrdiff_t)str);
+    }
+    
+    cxuint significantBits = 0;
+    
+    if (binaryExp >= minExpNonDenorm)
+        significantBits = mantisaBits;
+    else
+    {   /* if value is denormalized */
+        significantBits = 63 - CLZ64(mantisa);
+        mantisa &= (1ULL<<significantBits)-1ULL; // remove last bit
+    }
+    
+    const int binExpOfValue = binaryExp-significantBits;
+    const int decExpOfValue = log2ByLog10Floor(binExpOfValue);
+    const int reqBinExpOfValue = log10ByLog2Floor(decExpOfValue);
+    const cxuint oneBitPos = 62-significantBits - (binExpOfValue-reqBinExpOfValue) +
+        (decExpOfValue != 0);
+    mantisa <<= 62-significantBits;
+    uint64_t pow5[2];
+    uint64_t inMantisa[2] = { 0, mantisa };
+    uint64_t rescaled[4];
+    cxuint powSize;
+    cxint pow5Exp;
+    // generate rescaled value
+    if (decExpOfValue != 0)
+    {
+        bigPow5(-decExpOfValue, 2, powSize, pow5Exp, pow5);
+        bigMul(powSize, pow5, 2, inMantisa, rescaled);
+        rescaled[powSize+1] += mantisa;
+    }
+    else
+    {   /* if one */
+        powSize = 1;
+        rescaled[0] = rescaled[0] = 0;
+        rescaled[2] = mantisa;
+    }
+    //if (
+    return ((ptrdiff_t)p)-((ptrdiff_t)str);
+}
+
+size_t CLRX::htocstrCStyle(cxushort value, char* str, size_t maxSize,
+        FPFormatting formatting)
+{
+    return fXtocstrCStyle(value, str, maxSize, formatting, 10, 5);
+}
+
+size_t CLRX::ftocstrCStyle(float value, char* str, size_t maxSize,
+        FPFormatting formatting)
+{
+    FloatUnion v;
+    v.f = value;
+    return fXtocstrCStyle(v.u, str, maxSize, formatting, 23, 8);
+}
+
+size_t CLRX::dtocstrCStyle(double value, char* str, size_t maxSize,
+        FPFormatting formatting)
+{
+    DoubleUnion v;
+    v.d = value;
+    return fXtocstrCStyle(v.u, str, maxSize, formatting, 10, 5);
 }

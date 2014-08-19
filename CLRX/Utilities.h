@@ -178,6 +178,34 @@ struct CStringHash
     size_t operator()(const char* c) const;
 };
 
+/// counts leading zeroes for 32-bit unsigned integer
+inline cxuint CLZ32(uint32_t v);
+/// counts leading zeroes for 64-bit unsigned integer
+inline cxuint CLZ64(uint64_t v);
+
+inline cxuint CLZ32(uint32_t v)
+{
+#ifdef __GNUC__
+    return __builtin_clz(v);
+#else
+    cxuint count = 0;
+    for (uint32_t t = 1U<<31; t > v; t>>=1, count++);
+    return count;
+#endif
+}
+
+/// counts leading zeroes for 64-bit unsigned integer
+inline cxuint CLZ64(uint64_t v)
+{
+#ifdef __GNUC__
+    return __builtin_clzll(v);
+#else
+    cxuint count = 0;
+    for (uint64_t t = 1ULL<<63; t > v; t>>=1, count++);
+    return count;
+#endif
+}
+
 /// parse unsigned integer regardless locales
 /** parses unsigned integer in decimal form from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
@@ -283,17 +311,41 @@ float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
  */
 double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
-enum class FPFormating
+enum class FPFormatting
 {
     HUMAN_READABLE,
     SCIENTIFIC
 };
 
-size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormating formating);
+/// format half float in C-style
+/** format to string the half float in C-style formatting.
+ * \param value float value
+ * \param str output string
+ * \param maxSize max size of string (including null-character)
+ * \param formating formating style
+ * \return length of output string (excluding null-character)
+ */
+size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormatting formatting);
 
-size_t ftocstrCStyle(float value, char* str, size_t maxSize, FPFormating formating);
+/// format single float in C-style
+/** format to string the single float in C-style formatting.
+ * \param value float value
+ * \param str output string
+ * \param maxSize max size of string (including null-character)
+ * \param formating formating style
+ * \return length of output string (excluding null-character)
+ */
+size_t ftocstrCStyle(float value, char* str, size_t maxSize, FPFormatting formatting);
 
-size_t dtocstrCStyle(double value, char* str, size_t maxSize, FPFormating formating);
+/// format double float in C-style
+/** format to string the double float in C-style formatting.
+ * \param value float value
+ * \param str output string
+ * \param maxSize max size of string (including null-character)
+ * \param formating formating style
+ * \return length of output string (excluding null-character)
+ */
+size_t dtocstrCStyle(double value, char* str, size_t maxSize, FPFormatting formatting);
 
 };
 
