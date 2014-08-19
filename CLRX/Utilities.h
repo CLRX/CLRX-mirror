@@ -178,9 +178,9 @@ struct CStringHash
     size_t operator()(const char* c) const;
 };
 
-/// counts leading zeroes for 32-bit unsigned integer
+/// counts leading zeroes for 32-bit unsigned integer. For zero behavior is undefined
 inline cxuint CLZ32(uint32_t v);
-/// counts leading zeroes for 64-bit unsigned integer
+/// counts leading zeroes for 64-bit unsigned integer. For zero behavior is undefined
 inline cxuint CLZ64(uint64_t v);
 
 inline cxuint CLZ32(uint32_t v)
@@ -194,7 +194,6 @@ inline cxuint CLZ32(uint32_t v)
 #endif
 }
 
-/// counts leading zeroes for 64-bit unsigned integer
 inline cxuint CLZ64(uint64_t v)
 {
 #ifdef __GNUC__
