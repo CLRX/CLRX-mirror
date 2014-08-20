@@ -1720,7 +1720,6 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         if (mod >= 66 || mod <= 34)
         {   // check higher round
             uint64_t rescaledHalf[4];
-            const uint64_t threshold = 4ULL;
             // rescaled half (ULP) minus threshold (4)
             rescaledHalf[0] = 0;
             rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
@@ -1730,7 +1729,9 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
                 rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
                 rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
             }
-            bigSub(2+powSize, rescaledHalf, 1, &threshold);
+            const uint64_t tmp = rescaledHalf[powSize];
+            rescaledHalf[powSize] -= 2;
+            rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
             
             if (mod >= 66)
             {   // we must add some bits
