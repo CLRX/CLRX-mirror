@@ -1672,13 +1672,20 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     }
     
     const int binExpOfValue = binaryExp-significantBits;
-    const int decExpOfValue = log2ByLog10Floor(binExpOfValue);
+    // decimal exponent for value plus one for extraneous digit
+    const int decExpOfValue = log2ByLog10Floor(binExpOfValue)+1;
+    // binary exponent for 
     const int reqBinExpOfValue = log10ByLog2Floor(decExpOfValue);
-    const cxuint oneBitPos = 62-significantBits - (binExpOfValue-reqBinExpOfValue) +
-        (decExpOfValue != 0);
-    mantisa <<= 62-significantBits;
+    const cxuint mantisaShift = (62-significantBits);
+    
+    cxuint oneBitPos = mantisaShift - (binExpOfValue-reqBinExpOfValue);
+    if (binaryExp >= minExpNonDenorm) // set one in mantisa
+        mantisa |= 1ULL<<mantisaBits;
+    
+    mantisa = mantisa<<mantisaShift;
+    
     uint64_t pow5[2];
-    uint64_t inMantisa[2] = { 0, mantisa };
+    const uint64_t inMantisa[2] = { 0, mantisa };
     uint64_t rescaled[4];
     cxuint powSize;
     cxint pow5Exp;
@@ -1688,6 +1695,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bigPow5(-decExpOfValue, 2, powSize, pow5Exp, pow5);
         bigMul(powSize, pow5, 2, inMantisa, rescaled);
         rescaled[powSize+1] += mantisa;
+        oneBitPos++;
     }
     else
     {   /* if one */
@@ -1695,7 +1703,147 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         rescaled[0] = rescaled[1] = 0;
         rescaled[2] = mantisa;
     }
-    //if (
+    
+    const uint64_t oneValue = 1ULL<<oneBitPos;
+    uint64_t decValue = rescaled[powSize+1]>>oneBitPos;
+    char buffer[26];
+    cxuint digitsNum = 0;
+    
+    bool roundingFix = false;
+    /* fix for rounding to ten */
+    if (formatting == FPFormatting::HUMAN_READABLE)
+    {   /* check rounding digits */
+        const cxuint mod = (decValue) % 100;
+        if (mod >= 88 || mod <= 12)
+        {   // check higher round
+            uint64_t rescaledHalf[4];
+            const uint64_t threshold = 4ULL;
+            // rescaled half (ULP) minus threshold (4)
+            rescaledHalf[0] = 0;
+            rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
+            rescaledHalf[2] = pow5[0]>>(64-mantisaShift+1);
+            if (powSize == 2)
+            {
+                rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
+                rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
+            }
+            bigSub(2+powSize, rescaledHalf, 1, &threshold);
+            
+            if (mod >= 88)
+            {   // we must add some bits
+                uint64_t toAdd[4] = { 0, 0, 0, 0 };
+                //uint64_t threshold[4] = { };
+                toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) + rescaled[powSize+1];
+                bigSub(2+powSize, toAdd, 2+powSize, rescaled);
+                // check if half changed
+                if (!bigSub(2+powSize, toAdd, 2+powSize, rescaledHalf))
+                {   // if toAdd is smaller than rescaledHalf
+                    decValue += (100-mod);
+                    roundingFix = true;
+                }
+            }
+            else if (mod <= 12)
+            {   // we must subtract some bits
+                uint64_t toSub[4];
+                toSub[powSize+1] = (mod<<oneBitPos);
+                toSub[0] = rescaled[0];
+                if (powSize == 2)
+                    toSub[1] = rescaled[1];
+                toSub[powSize] = rescaled[powSize];
+                if (!bigSub(2+powSize, toSub, 2+powSize, rescaledHalf))
+                {   // if toSub is smaller than rescaledHalf
+                    decValue -= mod;
+                    roundingFix = true;
+                }
+            }
+        }
+    }
+    
+    /* fix for rounding to one */
+    if (!roundingFix && rescaled[powSize] == UINT64_MAX-2 &&
+        ((rescaled[powSize+1] & (oneValue-1)) == oneValue-1))
+        decValue++;
+    
+    for (uint64_t tmpVal = decValue; tmpVal != 0; )
+    {
+        const uint64_t tmp = tmpVal/10;
+        const cxuint digit = tmpVal - tmp*10;
+        buffer[digitsNum++] = '0'+digit;
+        tmpVal = tmp;
+    }
+    
+    cxuint roundPos = 0;
+    // count roundPos
+    for (roundPos = 0; buffer[roundPos] == '0' && roundPos < digitsNum; roundPos++);
+    
+    if (digitsNum-roundPos > maxSize)
+        throw Exception("Max size is too small");
+    
+    const char* strend = str + maxSize-1;
+    
+    cxuint commaPos = digitsNum-1;
+    cxint decExponent = decExpOfValue + digitsNum - 1;
+    if (formatting == FPFormatting::HUMAN_READABLE)
+    {
+        if (decExponent >= -5 && decExponent < 0)
+        {   // over same number
+            if (p+2 > strend)
+                throw Exception("Max size is too small");
+            *p++ = '0';
+            *p++ = '.';
+            for (cxint dx = -1; dx >= decExponent; dx--)
+                *p++ = '0';
+        }
+        else if (decExponent >= 0 && decExponent <= int(digitsNum))
+        {
+            commaPos = digitsNum - decExponent - 1;
+            roundPos = std::min(commaPos, roundPos);
+        }
+    }
+    /* put to string */
+    if (p + digitsNum+1 > strend) // out of string
+        throw Exception("Max size is too small");
+    
+    for (cxuint pos = digitsNum; pos > roundPos; pos--)
+    {
+        *p++ = buffer[pos-1];
+        if (pos-1 == commaPos)
+            *p++ = '.';
+    }
+        
+    if (formatting == FPFormatting::SCIENTIFIC || decExponent < -5 ||
+        decExponent > int(digitsNum))
+    {   /* print exponent */
+        *p++ = 'e';
+        if (p == strend) // out of string
+            throw Exception("Max size is too small");
+        if (decExponent < 0)
+        {
+            *p++ = '-';
+            decExponent = -decExponent;
+        }
+        else
+            *p++ = '+';
+        if (p == strend) // out of string
+            throw Exception("Max size is too small");
+        
+        cxuint decExpDigitsNum = 0;
+        while (decExponent != 0)
+        {
+            const cxint tmp = decExponent/10;
+            const cxint digit = decExponent - tmp*10;
+            buffer[decExpDigitsNum] = '0' + digit;
+            decExponent = tmp;
+        }
+        
+        if ((p + decExpDigitsNum) > strend)
+            throw Exception("Max size is too small");
+        
+        for (cxuint pos = decExpDigitsNum; pos > 0; pos--)
+            *p++ = buffer[pos-1];
+    }
+    
+    *p++ = 0;
     return ((ptrdiff_t)p)-((ptrdiff_t)str);
 }
 
