@@ -1717,7 +1717,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     if (formatting == FPFormatting::HUMAN_READABLE)
     {   /* check rounding digits */
         const cxuint mod = (decValue) % 100;
-        if (mod >= 66 || mod <= 34)
+        if (mod >= 82 || mod <= 18)
         {   // check higher round
             uint64_t rescaledHalf[4];
             // rescaled half (ULP) minus threshold (4)
@@ -1733,7 +1733,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             rescaledHalf[powSize] -= 2;
             rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
             
-            if (mod >= 66)
+            if (mod >= 82)
             {   // we must add some bits
                 uint64_t toAdd[4] = { 0, 0, 0, 0 };
                 //uint64_t threshold[4] = { };
@@ -1746,7 +1746,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
                     roundingFix = true;
                 }
             }
-            else if (mod <= 34)
+            else if (mod <= 18)
             {   // we must subtract some bits
                 uint64_t toSub[4];
                 toSub[powSize+1] = (mod<<oneBitPos);
