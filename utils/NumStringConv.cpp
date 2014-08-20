@@ -847,6 +847,9 @@ static const int64_t LOG10BYLOG2_32 = 14267572528LL;
 static inline cxint log2ByLog10Floor(cxint v)
 { return (int64_t(v)*LOG2BYLOG10_32)>>32; }
 
+static inline cxint log2ByLog10Round(cxint v)
+{ return (int64_t(v)*LOG2BYLOG10_32 + (1LL<<31))>>32; }
+
 static inline cxint log2ByLog10Ceil(cxint v)
 { return (int64_t(v)*LOG2BYLOG10_32 + (1LL<<32)-1)>>32; }
 
@@ -1673,7 +1676,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     const int binExpOfValue = binaryExp-significantBits;
     // decimal exponent for value plus one for extraneous digit
-    const int decExpOfValue = log2ByLog10Floor(binExpOfValue)+1;
+    const int decExpOfValue = log2ByLog10Round(binExpOfValue)-1;
     // binary exponent for 
     const int reqBinExpOfValue = log10ByLog2Floor(decExpOfValue);
     const cxuint mantisaShift = (62-significantBits);
@@ -1714,7 +1717,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     if (formatting == FPFormatting::HUMAN_READABLE)
     {   /* check rounding digits */
         const cxuint mod = (decValue) % 100;
-        if (mod >= 88 || mod <= 12)
+        if (mod >= 66 || mod <= 34)
         {   // check higher round
             uint64_t rescaledHalf[4];
             const uint64_t threshold = 4ULL;
@@ -1729,7 +1732,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             }
             bigSub(2+powSize, rescaledHalf, 1, &threshold);
             
-            if (mod >= 88)
+            if (mod >= 66)
             {   // we must add some bits
                 uint64_t toAdd[4] = { 0, 0, 0, 0 };
                 //uint64_t threshold[4] = { };
@@ -1742,7 +1745,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
                     roundingFix = true;
                 }
             }
-            else if (mod <= 12)
+            else if (mod <= 34)
             {   // we must subtract some bits
                 uint64_t toSub[4];
                 toSub[powSize+1] = (mod<<oneBitPos);
