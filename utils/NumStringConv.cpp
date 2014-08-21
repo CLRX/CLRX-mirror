@@ -1711,59 +1711,57 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     bool roundingFix = false;
     /* fix for rounding to ten */
-    if (formatting == FPFormatting::HUMAN_READABLE)
-    {   /* check rounding digits */
-        const cxuint mod = (decValue) % 100;
-        if (mod >= 82 || (mod <= 18 && mod != 0))
-        {   // check higher round
-            uint64_t rescaledHalf[4];
-            // rescaled half (ULP) minus threshold (4)
-            rescaledHalf[0] = 0;
-            rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
-            rescaledHalf[2] = pow5[0]>>(64-mantisaShift+1);
+    /* check rounding digits */
+    const cxuint mod = (decValue) % 100;
+    if (mod >= 82 || (mod <= 18 && mod != 0))
+    {   // check higher round
+        uint64_t rescaledHalf[4];
+        // rescaled half (ULP) minus threshold (4)
+        rescaledHalf[0] = 0;
+        rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
+        rescaledHalf[2] = pow5[0]>>(64-mantisaShift+1);
+        if (powSize == 2)
+        {
+            rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
+            rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
+        }
+        rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift-1));
+        
+        const uint64_t tmp = rescaledHalf[powSize];
+        rescaledHalf[powSize] -= 2;
+        rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
+        
+        if (mod >= 82)
+        {   // we must add some bits
+            uint64_t toAdd[4] = { 0, 0, 0, 0 };
+            //uint64_t threshold[4] = { };
+            toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) + rescaled[powSize+1];
+            bigSub(2+powSize, toAdd, 2+powSize, rescaled);
+            // check if half changed
+            if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toAdd))
+            {   // if toAdd is smaller than rescaledHalf
+                decValue += (100-mod);
+                roundingFix = true;
+            }
+        }
+        else if (mod <= 18)
+        {   // we must subtract some bits
+            uint64_t toSub[4];
+            toSub[powSize+1] = (mod<<oneBitPos);
+            toSub[0] = rescaled[0];
             if (powSize == 2)
-            {
-                rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
-                rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
-            }
-            rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift+1));
-            
-            const uint64_t tmp = rescaledHalf[powSize];
-            rescaledHalf[powSize] -= 2;
-            rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
-            
-            if (mod >= 82)
-            {   // we must add some bits
-                uint64_t toAdd[4] = { 0, 0, 0, 0 };
-                //uint64_t threshold[4] = { };
-                toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) + rescaled[powSize+1];
-                bigSub(2+powSize, toAdd, 2+powSize, rescaled);
-                // check if half changed
-                if (!bigSub(2+powSize, toAdd, 2+powSize, rescaledHalf))
-                {   // if toAdd is smaller than rescaledHalf
-                    decValue += (100-mod);
-                    roundingFix = true;
-                }
-            }
-            else if (mod <= 18)
-            {   // we must subtract some bits
-                uint64_t toSub[4];
-                toSub[powSize+1] = (mod<<oneBitPos);
-                toSub[0] = rescaled[0];
-                if (powSize == 2)
-                    toSub[1] = rescaled[1];
-                toSub[powSize] = rescaled[powSize];
-                if (!bigSub(2+powSize, toSub, 2+powSize, rescaledHalf))
-                {   // if toSub is smaller than rescaledHalf
-                    decValue -= mod;
-                    roundingFix = true;
-                }
+                toSub[1] = rescaled[1];
+            toSub[powSize] = rescaled[powSize];
+            if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toSub))
+            {   // if toSub is smaller than rescaledHalf
+                decValue -= mod;
+                roundingFix = true;
             }
         }
     }
     
     /* fix for rounding to one */
-    if (!roundingFix && rescaled[powSize] == UINT64_MAX-2 &&
+    if (!roundingFix && rescaled[powSize] >= UINT64_MAX-2 &&
         ((rescaled[powSize+1] & (oneValue-1)) == oneValue-1))
         decValue++;
     
@@ -1784,7 +1782,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     const char* strend = str + maxSize-1;
     
-    if ((value & (1ULL<<(mantisaBits+expBits))) != 0)
+    if (signOfValue)
     {
         *p++ = '-';
         if (p > strend)
@@ -1818,7 +1816,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     for (cxuint pos = digitsNum; pos > roundPos; pos--)
     {
         *p++ = buffer[pos-1];
-        if (pos-1 == commaPos)
+        if (pos-1 == commaPos && pos-1 > roundPos)
             *p++ = '.';
     }
         
