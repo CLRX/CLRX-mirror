@@ -1777,7 +1777,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     cxuint roundPos = 0;
     // count roundPos
-    //for (roundPos = 0; buffer[roundPos] == '0' && roundPos < digitsNum; roundPos++);
+    for (roundPos = 0; buffer[roundPos] == '0' && roundPos < digitsNum; roundPos++);
     
     if (digitsNum-roundPos > maxSize)
         throw Exception("Max size is too small");
@@ -1808,7 +1808,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         else if (decExponent >= 0 && decExponent <= int(digitsNum-1))
         {
             commaPos = digitsNum - decExponent - 1;
-            roundPos = 0;
+            roundPos = std::min(commaPos, roundPos);
         }
     }
     /* put to string */
