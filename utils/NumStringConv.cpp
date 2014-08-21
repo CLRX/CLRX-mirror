@@ -1665,7 +1665,6 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     }
     
     cxuint significantBits = 0;
-    
     if (binaryExp >= minExpNonDenorm)
     {   /* normalized value */
         significantBits = mantisaBits;
@@ -1674,7 +1673,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     else /* if value is denormalized */
         significantBits = 63 - CLZ64(mantisa);
     
-    const int binExpOfValue = binaryExp-significantBits;
+    const int binExpOfValue = binaryExp-mantisaBits+(binaryExp < minExpNonDenorm);
     // decimal exponent for value plus one for extraneous digit
     const int decExpOfValue = log2ByLog10Round(binExpOfValue)-1;
     // binary exponent for
