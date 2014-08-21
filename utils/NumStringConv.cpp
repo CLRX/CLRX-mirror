@@ -1667,25 +1667,22 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     cxuint significantBits = 0;
     
     if (binaryExp >= minExpNonDenorm)
+    {   /* normalized value */
         significantBits = mantisaBits;
-    else
-    {   /* if value is denormalized */
-        significantBits = 63 - CLZ64(mantisa);
-        mantisa &= (1ULL<<significantBits)-1ULL; // remove last bit
+        mantisa |= 1ULL<<mantisaBits;
     }
+    else /* if value is denormalized */
+        significantBits = 63 - CLZ64(mantisa);
     
     const int binExpOfValue = binaryExp-significantBits;
     // decimal exponent for value plus one for extraneous digit
     const int decExpOfValue = log2ByLog10Round(binExpOfValue)-1;
-    // binary exponent for 
+    // binary exponent for
     const int reqBinExpOfValue = log10ByLog2Floor(decExpOfValue);
     const cxuint mantisaShift = (62-significantBits);
+    mantisa = mantisa<<mantisaShift;
     
     cxuint oneBitPos = mantisaShift - (binExpOfValue-reqBinExpOfValue);
-    if (binaryExp >= minExpNonDenorm) // set one in mantisa
-        mantisa |= 1ULL<<mantisaBits;
-    
-    mantisa = mantisa<<mantisaShift;
     
     uint64_t pow5[2];
     const uint64_t inMantisa[2] = { 0, mantisa };
@@ -1709,7 +1706,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     const uint64_t oneValue = 1ULL<<oneBitPos;
     uint64_t decValue = rescaled[powSize+1]>>oneBitPos;
-    char buffer[26];
+    char buffer[20];
     cxuint digitsNum = 0;
     
     bool roundingFix = false;
@@ -1717,7 +1714,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     if (formatting == FPFormatting::HUMAN_READABLE)
     {   /* check rounding digits */
         const cxuint mod = (decValue) % 100;
-        if (mod >= 82 || mod <= 18)
+        if (mod >= 82 || (mod <= 18 && mod != 0))
         {   // check higher round
             uint64_t rescaledHalf[4];
             // rescaled half (ULP) minus threshold (4)
@@ -1729,6 +1726,8 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
                 rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
                 rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
             }
+            rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift+1));
+            
             const uint64_t tmp = rescaledHalf[powSize];
             rescaledHalf[powSize] -= 2;
             rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
