@@ -1673,6 +1673,11 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     else /* if value is denormalized */
         significantBits = 63 - CLZ64(mantisa);
     
+    /* binExpOfValue - exponent for binaryValue (in integer form).
+     * binaryExp - mantisaBits - for normalized values
+     * binaryExp - mantisaBits + 1 - for denormalized form. adds 1 because integer of
+     *   denormalized value is in fraction part (mantisa) binaryExp is -expMask/2.
+     */
     const int binExpOfValue = binaryExp-mantisaBits+(binaryExp < minExpNonDenorm);
     // decimal exponent for value plus one for extraneous digit
     const int decExpOfValue = log2ByLog10Round(binExpOfValue)-1;
@@ -1710,51 +1715,53 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     bool roundingFix = false;
     /* fix for rounding to ten */
-    /* check rounding digits */
-    const cxuint mod = (decValue) % 100;
-    if (mod >= 82 || (mod <= 18 && mod != 0))
-    {   // check higher round
-        uint64_t rescaledHalf[4];
-        // rescaled half (ULP) minus threshold (4)
-        rescaledHalf[0] = 0;
-        rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
-        rescaledHalf[2] = pow5[0]>>(64-mantisaShift+1);
-        if (powSize == 2)
-        {
-            rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
-            rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
-        }
-        rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift-1));
-        
-        const uint64_t tmp = rescaledHalf[powSize];
-        rescaledHalf[powSize] -= 2;
-        rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
-        
-        if (mod >= 82)
-        {   // we must add some bits
-            uint64_t toAdd[4] = { 0, 0, 0, 0 };
-            //uint64_t threshold[4] = { };
-            toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) + rescaled[powSize+1];
-            bigSub(2+powSize, toAdd, 2+powSize, rescaled);
-            // check if half changed
-            if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toAdd))
-            {   // if toAdd is smaller than rescaledHalf
-                decValue += (100-mod);
-                roundingFix = true;
-            }
-        }
-        else if (mod <= 18)
-        {   // we must subtract some bits
-            uint64_t toSub[4];
-            toSub[powSize+1] = (mod<<oneBitPos);
-            toSub[0] = rescaled[0];
+    if (significantBits >= 4)
+    {   /* check rounding digits */
+        const cxuint mod = (decValue) % 100;
+        if (mod >= 82 || (mod <= 18 && mod != 0))
+        {   // check higher round
+            uint64_t rescaledHalf[4];
+            // rescaled half (ULP) minus threshold (4)
+            rescaledHalf[0] = 0;
+            rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
+            rescaledHalf[2] = pow5[0]>>(64-mantisaShift+1);
             if (powSize == 2)
-                toSub[1] = rescaled[1];
-            toSub[powSize] = rescaled[powSize];
-            if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toSub))
-            {   // if toSub is smaller than rescaledHalf
-                decValue -= mod;
-                roundingFix = true;
+            {
+                rescaledHalf[2] |= pow5[1]<<(mantisaShift-1);
+                rescaledHalf[3] = pow5[1]>>(64-mantisaShift+1);
+            }
+            rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift-1));
+            
+            const uint64_t tmp = rescaledHalf[powSize];
+            rescaledHalf[powSize] -= 2;
+            rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
+            
+            if (mod >= 82)
+            {   // we must add some bits
+                uint64_t toAdd[4] = { 0, 0, 0, 0 };
+                //uint64_t threshold[4] = { };
+                toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) + rescaled[powSize+1];
+                bigSub(2+powSize, toAdd, 2+powSize, rescaled);
+                // check if half changed
+                if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toAdd))
+                {   // if toAdd is smaller than rescaledHalf
+                    decValue += (100-mod);
+                    roundingFix = true;
+                }
+            }
+            else if (mod <= 18)
+            {   // we must subtract some bits
+                uint64_t toSub[4];
+                toSub[powSize+1] = (mod<<oneBitPos);
+                toSub[0] = rescaled[0];
+                if (powSize == 2)
+                    toSub[1] = rescaled[1];
+                toSub[powSize] = rescaled[powSize];
+                if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toSub))
+                {   // if toSub is smaller than rescaledHalf
+                    decValue -= mod;
+                    roundingFix = true;
+                }
             }
         }
     }
