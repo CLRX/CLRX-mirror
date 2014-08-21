@@ -1777,7 +1777,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     cxuint roundPos = 0;
     // count roundPos
-    for (roundPos = 0; buffer[roundPos] == '0' && roundPos < digitsNum; roundPos++);
+    //for (roundPos = 0; buffer[roundPos] == '0' && roundPos < digitsNum; roundPos++);
     
     if (digitsNum-roundPos > maxSize)
         throw Exception("Max size is too small");
@@ -1801,13 +1801,14 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
                 throw Exception("Max size is too small");
             *p++ = '0';
             *p++ = '.';
-            for (cxint dx = -1; dx >= decExponent; dx--)
+            for (cxint dx = -1; dx > decExponent; dx--)
                 *p++ = '0';
+            commaPos = digitsNum;
         }
-        else if (decExponent >= 0 && decExponent <= int(digitsNum))
+        else if (decExponent >= 0 && decExponent <= int(digitsNum-1))
         {
             commaPos = digitsNum - decExponent - 1;
-            roundPos = std::min(commaPos, roundPos);
+            roundPos = 0;
         }
     }
     /* put to string */
@@ -1822,7 +1823,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     }
         
     if (formatting == FPFormatting::SCIENTIFIC || decExponent < -5 ||
-        decExponent > int(digitsNum))
+        decExponent > int(digitsNum-1))
     {   /* print exponent */
         *p++ = 'e';
         if (p == strend) // out of string
