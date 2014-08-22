@@ -1740,7 +1740,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         {   // we must add some bits
             uint64_t toAdd[4] = { 0, 0, 0, 0 };
             // (100-mod) - (rest from value beginning one) - value to add
-            toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) +
+            toAdd[powSize+1] = ((100ULL-uint64_t(mod))<<oneBitPos) +
                     (rescaled[powSize+1] & ~(oneValue-1));
             bigSub(2+powSize, toAdd, 2+powSize, rescaled);
             // check if half changed
@@ -1770,7 +1770,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     /* fix for rounding to one (to nearest value) (if not rounding zeros) */
     if (!roundingFix && mod != 0 &&
-        ((rescaled[powSize+1] & (oneValue-1)) > (oneValue>>1)))
+        ((rescaled[powSize+1] & (oneValue-1)) >= (oneValue>>1)))
         decValue++;
     
     for (uint64_t tmpVal = decValue; tmpVal != 0; )
