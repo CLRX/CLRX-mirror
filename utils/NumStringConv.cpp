@@ -1715,9 +1715,9 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     bool roundingFix = false;
     /* fix for rounding to ten */
+    const cxuint mod = (decValue) % 100;
     if (significantBits >= 4)
     {   /* check rounding digits */
-        const cxuint mod = (decValue) % 100;
         if (mod >= 82 || (mod <= 18 && mod != 0))
         {   // check higher round
             uint64_t rescaledHalf[4];
@@ -1766,9 +1766,9 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
     }
     
-    /* fix for rounding to one */
-    if (!roundingFix && rescaled[powSize] >= UINT64_MAX-2 &&
-        ((rescaled[powSize+1] & (oneValue-1)) == oneValue-1))
+    /* fix for rounding to one (to nearest value) (if not rounding zeros) */
+    if (!roundingFix && mod != 0 &&
+        ((rescaled[powSize+1] & (oneValue-1)) > (oneValue>>1)))
         decValue++;
     
     for (uint64_t tmpVal = decValue; tmpVal != 0; )
