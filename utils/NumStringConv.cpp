@@ -1792,9 +1792,9 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     if (signOfValue)
     {
-        *p++ = '-';
-        if (p > strend)
+        if (p >= strend)
             throw Exception("Max size is too small");
+        *p++ = '-';
     }
     
     cxuint commaPos = digitsNum-1;
@@ -1808,7 +1808,11 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             *p++ = '0';
             *p++ = '.';
             for (cxint dx = -1; dx > decExponent; dx--)
+            {
+                if (p >= strend)
+                    throw Exception("Max size is too small");
                 *p++ = '0';
+            }
             commaPos = digitsNum;
         }
         else if (decExponent >= 0 && decExponent <= int(digitsNum-1))
@@ -1818,7 +1822,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
     }
     /* put to string */
-    if (p + digitsNum+1 > strend) // out of string
+    if (p + digitsNum > strend) // out of string
         throw Exception("Max size is too small");
     
     for (cxuint pos = digitsNum; pos > roundPos; pos--)
@@ -1827,13 +1831,16 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         if (pos-1 == commaPos && pos-1 > roundPos)
             *p++ = '.';
     }
+    
+    if (p > strend) // out of string
+        throw Exception("Max size is too small");
         
     if (formatting == FPFormatting::SCIENTIFIC || decExponent < -5 ||
         decExponent > int(digitsNum-1))
     {   /* print exponent */
-        *p++ = 'e';
-        if (p == strend) // out of string
+        if (p >= strend) // out of string
             throw Exception("Max size is too small");
+        *p++ = 'e';
         if (decExponent < 0)
         {
             *p++ = '-';
@@ -1841,15 +1848,13 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
         else
             *p++ = '+';
-        if (p == strend) // out of string
-            throw Exception("Max size is too small");
         
         cxuint decExpDigitsNum = 0;
         if (decExponent != 0)
             while (decExponent != 0)
             {
-                const cxint tmp = decExponent/10U;
-                const cxint digit = decExponent - tmp*10U;
+                const cxint tmp = decExponent/10;
+                const cxint digit = decExponent - tmp*10;
                 buffer[decExpDigitsNum++] = '0' + digit;
                 decExponent = tmp;
             }
