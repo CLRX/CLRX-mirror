@@ -317,7 +317,10 @@ enum class FPFormatting
 };
 
 /// format half float in C-style
-/** format to string the half float in C-style formatting.
+/** format to string the half float in C-style formatting. This function handles 2 modes
+ * of printing value: human readable and scientific. Scientific mode forces form with
+ * decimal exponent.
+ * Currently only IEEE-754 format is supported.
  * \param value float value
  * \param str output string
  * \param maxSize max size of string (including null-character)
@@ -327,7 +330,10 @@ enum class FPFormatting
 size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormatting formatting);
 
 /// format single float in C-style
-/** format to string the single float in C-style formatting.
+/** format to string the single float in C-style formatting. This function handles 2 modes
+ * of printing value: human readable and scientific. Scientific mode forces form with
+ * decimal exponent.
+ * Currently only IEEE-754 format is supported.
  * \param value float value
  * \param str output string
  * \param maxSize max size of string (including null-character)
@@ -337,7 +343,10 @@ size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormatting for
 size_t ftocstrCStyle(float value, char* str, size_t maxSize, FPFormatting formatting);
 
 /// format double float in C-style
-/** format to string the double float in C-style formatting.
+/** format to string the double float in C-style formatting. This function handles 2 modes
+ * of printing value: human readable and scientific. Scientific mode forces form with
+ * decimal exponent.
+ * Currently only IEEE-754 format is supported.
  * \param value float value
  * \param str output string
  * \param maxSize max size of string (including null-character)

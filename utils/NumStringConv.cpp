@@ -1641,7 +1641,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             *p++ = 'n';
             *p++ = 'f';
         }
-        *p++ = 0;
+        *p = 0;
         return ((ptrdiff_t)p)-((ptrdiff_t)str);
     }
     
@@ -1668,7 +1668,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             *p++='+';
             *p++='0';
         }   
-        *p++ = 0;
+        *p = 0;
         return ((ptrdiff_t)p)-((ptrdiff_t)str);
     }
     
@@ -1879,7 +1879,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             *p++ = buffer[pos-1];
     }
     
-    *p++ = 0;
+    *p = 0;
     return ((ptrdiff_t)p)-((ptrdiff_t)str);
 }
 
