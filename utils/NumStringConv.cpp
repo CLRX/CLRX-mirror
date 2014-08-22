@@ -1729,7 +1729,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     if (mod >= 82 || (mod <= 18 && mod != 0))
     {   // check higher round
         uint64_t rescaledHalf[4];
-        // rescaled half (ULP) minus threshold (4)
+        // rescaled half (ULP) minus rescaled max error + 1
         rescaledHalf[0] = 0;
         rescaledHalf[1] = pow5[0]<<(mantisaShift-1);
         rescaledHalf[2] = pow5[0]>>(64-mantisaShift+1);
