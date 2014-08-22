@@ -1746,6 +1746,8 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             const uint64_t maxRescaledError = (mantisa>>1) + (mantisa>>30);
             bigSub(powSize+1, rescaledHalf+1, 1, &maxRescaledError);
         }
+        const uint64_t one64 = 1; // preserve rounding for exact half case
+        bigSub(powSize+2, rescaledHalf, 1, &one64);
         
         if (mod >= 82)
         {   // we must add some bits
