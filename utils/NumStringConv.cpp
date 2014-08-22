@@ -1704,6 +1704,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     else
     {   /* if one */
         powSize = 1;
+        pow5[0] = 0;
         rescaled[0] = rescaled[1] = 0;
         rescaled[2] = mantisa;
     }
