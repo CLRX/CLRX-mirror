@@ -1740,9 +1740,12 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
         rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift-1));
         
-        const uint64_t tmp = rescaledHalf[powSize];
-        rescaledHalf[powSize] -= 2;
-        rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
+        if (decExpOfValue != 0)
+        {   // if not one on pow5 (rescaled value is not exact value)
+            const uint64_t tmp = rescaledHalf[powSize];
+            rescaledHalf[powSize] -= 2;
+            rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
+        }
         
         if (mod >= 82)
         {   // we must add some bits
@@ -1762,7 +1765,8 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         {   // we must subtract some bits
             uint64_t toSub[4];
             // value to subtract
-            toSub[powSize+1] = (uint64_t(mod)<<oneBitPos);
+            toSub[powSize+1] = (uint64_t(mod)<<oneBitPos) |
+                    (rescaled[powSize+1]&(oneValue-1));
             toSub[0] = rescaled[0];
             if (powSize == 2)
                 toSub[1] = rescaled[1];
