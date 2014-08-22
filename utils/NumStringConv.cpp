@@ -1740,11 +1740,11 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
         rescaledHalf[powSize+1] |= (1ULL<<(mantisaShift-1));
         
-        if (decExpOfValue != 0)
-        {   // if not one on pow5 (rescaled value is not exact value)
-            const uint64_t tmp = rescaledHalf[powSize];
-            rescaledHalf[powSize] -= 2;
-            rescaledHalf[powSize+1] -= (rescaledHalf[powSize] > tmp);
+        if (-decExpOfValue < 0 || -decExpOfValue > 55)
+        {   // if not exact pow5 (rescaled value is not exact value)
+            // compute max error of rescaled value ((0.5 + 2**-29)*mantisa)
+            const uint64_t maxRescaledError = (mantisa>>1) + (mantisa>>30);
+            bigSub(powSize+1, rescaledHalf+1, 1, &maxRescaledError);
         }
         
         if (mod >= 82)
