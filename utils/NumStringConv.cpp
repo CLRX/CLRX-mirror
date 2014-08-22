@@ -1660,6 +1660,14 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         else if (maxSize < 1)
             throw Exception("Max size is too small");
         *p++ = '0';
+        if (formatting == FPFormatting::SCIENTIFIC)
+        {
+            if (p+3 >= str + maxSize)
+                throw Exception("Max size is too small");
+            *p++='e';
+            *p++='+';
+            *p++='0';
+        }   
         *p++ = 0;
         return ((ptrdiff_t)p)-((ptrdiff_t)str);
     }
