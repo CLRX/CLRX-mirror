@@ -1830,7 +1830,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
     }
     /* put to string */
-    if (p + digitsNum > strend) // out of string
+    if (p + digitsNum-roundPos > strend) // out of string
         throw Exception("Max size is too small");
     
     for (cxuint pos = digitsNum; pos > roundPos; pos--)
