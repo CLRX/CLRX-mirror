@@ -1743,8 +1743,9 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         if (-decExpOfValue < 0 || -decExpOfValue > 55)
         {   // if not exact pow5 (rescaled value is not exact value)
             // compute max error of rescaled value ((0.5 + 2**-29)*mantisa)
-            const uint64_t maxRescaledError = (mantisa>>1) + (mantisa>>30);
-            bigSub(powSize+1, rescaledHalf+1, 1, &maxRescaledError);
+            const uint64_t maxRescaledError[2] = 
+            { mantisa<<(64-30), (mantisa>>1) + (mantisa>>30) };
+            bigSub(powSize+2, rescaledHalf, 2, maxRescaledError);
         }
         const uint64_t one64 = 1; // preserve rounding for exact half case
         bigSub(powSize+2, rescaledHalf, 1, &one64);
