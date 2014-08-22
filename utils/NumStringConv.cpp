@@ -1739,8 +1739,9 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             if (mod >= 82)
             {   // we must add some bits
                 uint64_t toAdd[4] = { 0, 0, 0, 0 };
-                //uint64_t threshold[4] = { };
-                toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) + rescaled[powSize+1];
+                // (100-mod) - (rest from value beginning one) - value to add
+                toAdd[powSize+1] = ((100ULL-mod)<<oneBitPos) +
+                        (rescaled[powSize+1] & ~(oneValue-1));
                 bigSub(2+powSize, toAdd, 2+powSize, rescaled);
                 // check if half changed
                 if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toAdd))
@@ -1752,11 +1753,13 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
             else if (mod <= 18)
             {   // we must subtract some bits
                 uint64_t toSub[4];
+                // value to subtract
                 toSub[powSize+1] = (mod<<oneBitPos);
                 toSub[0] = rescaled[0];
                 if (powSize == 2)
                     toSub[1] = rescaled[1];
                 toSub[powSize] = rescaled[powSize];
+                // check if half changed
                 if (!bigSub(2+powSize, rescaledHalf, 2+powSize, toSub))
                 {   // if toSub is smaller than rescaledHalf
                     decValue -= mod;
