@@ -601,14 +601,14 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             const size_t rodataHdrSize= ULEV(rodataHdr.sh_size);
             if (argNameSym.getNameOffset() < rodataHdrOffset ||
                 argNameSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
-                throw Exception("kernel arg name offset out of range!");
+                throw Exception("Kernel arg name offset out of range!");
             
             if (argNameSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
                 throw Exception("Arg name is unfinished!");
             
             if (argTypeSym.getNameOffset() < rodataHdrOffset ||
                 argTypeSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
-                throw Exception("kernel arg type offset out of range!");
+                throw Exception("Kernel arg type offset out of range!");
             
             if (argTypeSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
                 throw Exception("Type name is unfinished!");
