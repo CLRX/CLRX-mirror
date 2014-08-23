@@ -1697,13 +1697,13 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     cxuint oneBitPos = mantisaShift - (binExpOfValue-reqBinExpOfValue);
     
     uint64_t pow5[2];
-    const uint64_t inMantisa[2] = { 0, mantisa };
     uint64_t rescaled[4];
     cxuint powSize;
     cxint pow5Exp;
     // generate rescaled value
     if (decExpOfValue != 0)
     {
+        const uint64_t inMantisa[2] = { 0, mantisa };
         bigPow5(-decExpOfValue, 2, powSize, pow5Exp, pow5);
         bigMul(powSize, pow5, 2, inMantisa, rescaled);
         rescaled[powSize+1] += mantisa;
