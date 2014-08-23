@@ -1611,7 +1611,7 @@ double CLRX::cstrtodCStyle(const char* str, const char* inend, const char*& oute
 }
 
 static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
-        FPFormatting formatting, cxuint expBits, cxuint mantisaBits)
+        bool scientific, cxuint expBits, cxuint mantisaBits)
 {
     char* p = str;
     bool signOfValue = ((value>>(expBits+mantisaBits))!=0);
@@ -1660,7 +1660,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         else if (maxSize < 2)
             throw Exception("Max size is too small");
         *p++ = '0';
-        if (formatting == FPFormatting::SCIENTIFIC)
+        if (scientific)
         {
             if (p+3 >= str + maxSize)
                 throw Exception("Max size is too small");
@@ -1814,7 +1814,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     
     cxuint commaPos = digitsNum-1;
     cxint decExponent = decExpOfValue + digitsNum - 1;
-    if (formatting == FPFormatting::HUMAN_READABLE)
+    if (!scientific)
     {
         if (decExponent >= -5 && decExponent < 0)
         {   // over same number
@@ -1850,8 +1850,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     if (p > strend) // out of string
         throw Exception("Max size is too small");
         
-    if (formatting == FPFormatting::SCIENTIFIC || decExponent < -5 ||
-        decExponent > int(digitsNum-1))
+    if (scientific || decExponent < -5 || decExponent > int(digitsNum-1))
     {   /* print exponent */
         if (p >= strend) // out of string
             throw Exception("Max size is too small");
@@ -1890,24 +1889,21 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     return ((ptrdiff_t)p)-((ptrdiff_t)str);
 }
 
-size_t CLRX::htocstrCStyle(cxushort value, char* str, size_t maxSize,
-        FPFormatting formatting)
+size_t CLRX::htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific)
 {
-    return fXtocstrCStyle(value, str, maxSize, formatting, 5, 10);
+    return fXtocstrCStyle(value, str, maxSize, scientific, 5, 10);
 }
 
-size_t CLRX::ftocstrCStyle(float value, char* str, size_t maxSize,
-        FPFormatting formatting)
+size_t CLRX::ftocstrCStyle(float value, char* str, size_t maxSize, bool scientific)
 {
     FloatUnion v;
     v.f = value;
-    return fXtocstrCStyle(v.u, str, maxSize, formatting, 8, 23);
+    return fXtocstrCStyle(v.u, str, maxSize, scientific, 8, 23);
 }
 
-size_t CLRX::dtocstrCStyle(double value, char* str, size_t maxSize,
-        FPFormatting formatting)
+size_t CLRX::dtocstrCStyle(double value, char* str, size_t maxSize, bool scientific)
 {
     DoubleUnion v;
     v.d = value;
-    return fXtocstrCStyle(v.u, str, maxSize, formatting, 11, 52);
+    return fXtocstrCStyle(v.u, str, maxSize, scientific, 11, 52);
 }

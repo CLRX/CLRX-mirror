@@ -310,12 +310,6 @@ float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
  */
 double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
-enum class FPFormatting
-{
-    HUMAN_READABLE,
-    SCIENTIFIC
-};
-
 /// format half float in C-style
 /** format to string the half float in C-style formatting. This function handles 2 modes
  * of printing value: human readable and scientific. Scientific mode forces form with
@@ -324,10 +318,10 @@ enum class FPFormatting
  * \param value float value
  * \param str output string
  * \param maxSize max size of string (including null-character)
- * \param formating formating style
+ * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormatting formatting);
+size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific = false);
 
 /// format single float in C-style
 /** format to string the single float in C-style formatting. This function handles 2 modes
@@ -337,10 +331,10 @@ size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, FPFormatting for
  * \param value float value
  * \param str output string
  * \param maxSize max size of string (including null-character)
- * \param formating formating style
+ * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-size_t ftocstrCStyle(float value, char* str, size_t maxSize, FPFormatting formatting);
+size_t ftocstrCStyle(float value, char* str, size_t maxSize, bool scientific = false);
 
 /// format double float in C-style
 /** format to string the double float in C-style formatting. This function handles 2 modes
@@ -350,10 +344,10 @@ size_t ftocstrCStyle(float value, char* str, size_t maxSize, FPFormatting format
  * \param value float value
  * \param str output string
  * \param maxSize max size of string (including null-character)
- * \param formating formating style
+ * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-size_t dtocstrCStyle(double value, char* str, size_t maxSize, FPFormatting formatting);
+size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scientific = false);
 
 };
 
