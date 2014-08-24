@@ -1128,7 +1128,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 continue; // skip if not built for this device
             
             std::unique_ptr<AmdMainBinaryBase> amdBin(
-                createAmdBinaryFromCode(binarySizes[i], (char*)(binaries[i]),
+                createAmdBinaryFromCode(binarySizes[i], binaries[i],
                              AMDBIN_CREATE_KERNELINFO));
             size_t kernelsNum = amdBin->getKernelInfosNum();
             const KernelInfo* kernelInfos = amdBin->getKernelInfos();

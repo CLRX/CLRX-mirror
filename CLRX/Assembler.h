@@ -29,6 +29,7 @@
 #include <string>
 #include <istream>
 #include <vector>
+#include <utility>
 #include <unordered_map>
 #include <CLRX/Utilities.h>
 
@@ -41,10 +42,9 @@ class Disassembler;
 
 enum: cxuint
 {
-    ASM_ALTMACRO = 1,
-    ASM_WARNINGS = 2,
-    ASM_WARN_SIGNED_OVERFLOW = 4,
-    ASM_64BIT_MODE = 8
+    ASM_WARNINGS = 1,
+    ASM_WARN_SIGNED_OVERFLOW = 2,
+    ASM_64BIT_MODE = 4
 };
 
 enum: cxuint
@@ -52,7 +52,8 @@ enum: cxuint
     DISASM_ADDRESS = 1,
     DISASM_HEXCODE = 2,
     DISASM_CALLPARAMS = 4,
-    DISASM_ASMFORM = 8
+    DISASM_ASMFORM = 8,
+    DISASM_DISPLAYDATA = 16
 };
 
 enum class GPUDeviceType
@@ -99,30 +100,25 @@ enum class GPUDeviceType
     RADEON_R9_290 = HAWAII
 };
 
-enum class AsmSymbolType: uint8_t
-{
-    OBJECT,
-    FUNCTION,
-    FILE,
-    KERNEL
-};
-
-enum class AsmSymbolBind: uint8_t
-{
-    LOCAL,
-    GLOBAL,
-    WEAK
-};
-
 struct AsmSymbol
 {
-    AsmSymbolBind bind;
-    AsmSymbolType type;
+    cxuint sectionId;
     bool isDefined;
     uint64_t value;
 };
 
 typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
+
+struct AsmKernelMetadata
+{
+    
+};
+
+struct AsmKernel
+{
+    AsmKernelMetadata metadata;
+    std::vector<cxbyte> code;
+};
 
 class ISAAssembler
 {
@@ -177,7 +173,7 @@ private:
     Disassembler& disassembler;
     
     size_t inputSize;
-    const char* input;
+    const cxbyte* input;
     
     ISADisassembler(Disassembler& disassembler);
 public:
@@ -212,6 +208,7 @@ class Assembler
 public:
     typedef std::unordered_map<std::string, std::string> DefSymMap;
     typedef std::unordered_map<std::string, std::string> MacroMap;
+    typedef std::unordered_map<std::string, AsmKernel> KernelMap;
 private:
     cxuint flags;
     GPUDeviceType deviceType;
@@ -219,6 +216,9 @@ private:
     std::vector<std::string> includeDirs;
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
+    
+    std::vector<char> globalData;
+    KernelMap kernelMap;
 public:
     explicit Assembler(const char* string, cxuint flags);
     explicit Assembler(const std::istream& is, cxuint flags);
@@ -243,6 +243,9 @@ public:
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
     
+    const AsmKernelMetadata& getKernelMetadata(const std::string& kernelName) const;
+    const cxbyte* getKernelCode(const std::string& kernelName) const;
+    
     void setInitialDefSyms(const DefSymMap& defsyms);
     
     void addInitialDefSym(const std::string& symName, const std::string& symExpr);
@@ -251,17 +254,37 @@ public:
     uint64_t parseExpression(size_t stringSize, const char* string) const;
 };
 
+struct DisasmSection
+{
+    const char* name;
+    bool isCode;
+    size_t size;
+    const cxbyte* data;
+};
+
+typedef std::vector<DisasmSection> DisasmSectionList;
+
 class Disassembler
 {
 private:
     GPUDeviceType deviceType;
     cxuint flags;
 public:
-    Disassembler(size_t maxSize, char* output, cxuint flags);
-    explicit Disassembler(const std::ostream& os, cxuint flags);
+    Disassembler(const DisasmSectionList& sectionList,
+                 GPUDeviceType deviceType, cxuint flags);
+    Disassembler(const DisasmSectionList& sectionList,
+                 GPUDeviceType deviceType, const std::ostream& os, cxuint flags);
     ~Disassembler();
     
     void disassemble();
+    
+    const char* getInput() const;
+    size_t getInputSize() const;
+    
+    cxuint getFlags() const
+    { return flags; }
+    void setFlags(cxuint flags)
+    { this->flags = flags; }
 };
 
 };

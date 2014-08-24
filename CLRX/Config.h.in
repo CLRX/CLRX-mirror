@@ -150,6 +150,7 @@
 
 typedef signed char cxchar;
 typedef unsigned char cxuchar;
+typedef unsigned char cxbyte;
 typedef signed short cxshort;
 typedef unsigned short cxushort;
 typedef signed int cxint;

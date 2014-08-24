@@ -199,12 +199,12 @@ public:
 protected:
     cxuint creationFlags;   ///< creation flags holder
     size_t binaryCodeSize;  ///< binary code size
-    char* binaryCode;       ///< pointer to binary code
-    char* sectionStringTable;   ///< pointer to section's string table
-    char* symbolStringTable;    ///< pointer to symbol's string table
-    char* symbolTable;          ///< pointer to symbol table
-    char* dynSymStringTable;    ///< pointer to dynamic symbol's string table
-    char* dynSymTable;          ///< pointer to dynamic symbol table
+    cxbyte* binaryCode;       ///< pointer to binary code
+    cxbyte* sectionStringTable;   ///< pointer to section's string table
+    cxbyte* symbolStringTable;    ///< pointer to symbol's string table
+    cxbyte* symbolTable;          ///< pointer to symbol table
+    cxbyte* dynSymStringTable;    ///< pointer to dynamic symbol's string table
+    cxbyte* dynSymTable;          ///< pointer to dynamic symbol table
     SectionIndexMap sectionIndexMap;    ///< section's index map
     SymbolIndexMap symbolIndexMap;      ///< symbol's index map
     SymbolIndexMap dynSymIndexMap;      ///< dynamic symbol's index map
@@ -221,7 +221,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    ElfBinaryTemplate(size_t binaryCodeSize, char* binaryCode,
+    ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binaryCode,
                 cxuint creationFlags = ELF_CREATE_ALL);
     virtual ~ElfBinaryTemplate();
     
@@ -253,10 +253,10 @@ public:
     bool operator !() const
     { return binaryCode==nullptr; }
     
-    const char* getBinaryCode() const
+    const cxbyte* getBinaryCode() const
     { return binaryCode; }
     
-    char* getBinaryCode()
+    cxbyte* getBinaryCode()
     { return binaryCode; }
     
     /// get ELF binary header
@@ -347,21 +347,21 @@ public:
     const char* getSymbolName(typename Types::Size index) const
     {
         const typename Types::Sym& sym = getSymbol(index);
-        return symbolStringTable + ULEV(sym.st_name);
+        return reinterpret_cast<const char*>(symbolStringTable + ULEV(sym.st_name));
     }
     
     /// get dynamic symbol name with specified index
     const char* getDynSymbolName(typename Types::Size index) const
     {
         const typename Types::Sym& sym = getDynSymbol(index);
-        return dynSymStringTable + ULEV(sym.st_name);
+        return reinterpret_cast<const char*>(dynSymStringTable + ULEV(sym.st_name));
     }
     
     /// get section name with specified index
     const char* getSectionName(uint16_t index) const
     {
         const typename Types::Shdr& section = getSectionHeader(index);
-        return sectionStringTable + ULEV(section.sh_name);
+        return reinterpret_cast<const char*>(sectionStringTable + ULEV(section.sh_name));
     }
     
     /// get end iterator if section index map
@@ -437,14 +437,14 @@ public:
     { return getDynSymbol(getDynSymbolIndex(name)); }
     
     /// get section content pointer
-    const char* getSectionContent(uint16_t index) const
+    const cxbyte* getSectionContent(uint16_t index) const
     {
         const typename Types::Shdr& shdr = getSectionHeader(index);
         return binaryCode + ULEV(shdr.sh_offset);
     }
     
     /// get section content pointer
-    char* getSectionContent(uint16_t index)
+    cxbyte* getSectionContent(uint16_t index)
     {
         typename Types::Shdr& shdr = getSectionHeader(index);
         return binaryCode + ULEV(shdr.sh_offset);
@@ -476,7 +476,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdInnerGPUBinary32(const std::string& kernelName, size_t binaryCodeSize,
-            char* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
+            cxbyte* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
     ~AmdInnerGPUBinary32() = default;
     
     /// get kernel name
@@ -494,7 +494,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdInnerX86Binary32(size_t binaryCodeSize, char* binaryCode,
+    AmdInnerX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = ELF_CREATE_ALL);
     ~AmdInnerX86Binary32() = default;
     
@@ -515,7 +515,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdInnerX86Binary64(size_t binaryCodeSize, char* binaryCode,
+    AmdInnerX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = ELF_CREATE_ALL);
     ~AmdInnerX86Binary64() = default;
     
@@ -592,7 +592,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdMainGPUBinary32(size_t binaryCodeSize, char* binaryCode,
+    AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainGPUBinary32();
     
@@ -643,7 +643,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdMainGPUBinary64(size_t binaryCodeSize, char* binaryCode,
+    AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainGPUBinary64();
     
@@ -691,7 +691,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdMainX86Binary32(size_t binaryCodeSize, char* binaryCode,
+    AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainX86Binary32() = default;
     
@@ -732,7 +732,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
+    AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainX86Binary64() = default;
     
@@ -763,7 +763,7 @@ public:
  * \param creationFlags flags that specified what will be created during creation
  */
 extern AmdMainBinaryBase* createAmdBinaryFromCode(
-            size_t binaryCodeSize, char* binaryCode,
+            size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
 
 };

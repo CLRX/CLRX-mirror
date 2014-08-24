@@ -220,7 +220,7 @@ void KernelInfo::reallocateArgs(cxuint newArgsNum)
 }
 
 /* determine unfinished strings region in string table for checking further consistency */
-static size_t unfinishedRegionOfStringTable(const char* table, size_t size)
+static size_t unfinishedRegionOfStringTable(const cxbyte* table, size_t size)
 {
     if (size == 0) // if zero
         return 0;
@@ -257,7 +257,7 @@ ElfBinaryTemplate<Types>::~ElfBinaryTemplate()
 { }
 
 template<typename Types>
-ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, char* binaryCode,
+ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binaryCode,
              cxuint creationFlags) :
         binaryCodeSize(0), binaryCode(nullptr),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
@@ -337,7 +337,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, char* binaryC
             if (sh_nameindx >= unfinishedShstrPos)
                 throw Exception("Unfinished section name!");
             
-            const char* shname = sectionStringTable + sh_nameindx;
+            const char* shname =
+                reinterpret_cast<const char*>(sectionStringTable + sh_nameindx);
             
             if (*shname != 0 && (creationFlags & ELF_CREATE_SECTIONMAP) != 0)
                 sectionIndexMap.insert(std::make_pair(shname, i));
@@ -373,7 +374,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, char* binaryC
                 if (symnameindx >= unfinishedSymstrPos)
                     throw Exception("Unfinished symbol name!");
                 
-                const char* symname = symbolStringTable + symnameindx;
+                const char* symname =
+                    reinterpret_cast<const char*>(symbolStringTable + symnameindx);
                 // add to symbol map
                 if (*symname != 0 && (creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
                     symbolIndexMap.insert(std::make_pair(symname, i));
@@ -406,7 +408,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, char* binaryC
                 if (symnameindx >= unfinishedSymstrPos)
                     throw Exception("Unfinished dynsymbol name!");
                 
-                const char* symname = dynSymStringTable + symnameindx;
+                const char* symname =
+                    reinterpret_cast<const char*>(dynSymStringTable + symnameindx);
                 // add to symbol map
                 if (*symname != 0 && (creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
                     dynSymIndexMap.insert(std::make_pair(symname, i));
@@ -460,7 +463,7 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
 /* AMD inner GPU binary */
 
 AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
-         size_t binaryCodeSize, char* binaryCode, cxuint creationFlags)
+         size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags)
         : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName)
 { }
 
@@ -545,7 +548,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     {
     kernelInfos = new KernelInfo[choosenSyms.size()];
     
-    const char* binaryCode = elf.getBinaryCode();
+    const cxbyte* binaryCode = elf.getBinaryCode();
     
     const size_t unfinishedRegion = unfinishedRegionOfStringTable(
         binaryCode + ULEV(rodataHdr.sh_offset), ULEV(rodataHdr.sh_size));
@@ -565,7 +568,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         if (fileOffset < ULEV(dataHdr.sh_offset) ||
             fileOffset >= ULEV(dataHdr.sh_offset) + ULEV(dataHdr.sh_size))
             throw Exception("File offset of kernelMetadata out of range!");
-        const char* data = binaryCode + fileOffset;
+        const cxbyte* data = binaryCode + fileOffset;
         
         /* parse number of args */
         typename Types::Size argDescsNum =
@@ -613,7 +616,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             if (argTypeSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
                 throw Exception("Type name is unfinished!");
             
-            karg.argName = binaryCode + argNameSym.getNameOffset();
+            karg.argName = reinterpret_cast<const char*>(
+                    binaryCode + argNameSym.getNameOffset());
             
             if (argType != 0x28)
             {
@@ -630,7 +634,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             
             karg.ptrSpace = static_cast<KernelPtrSpace>(ULEV(argNameSym.ptrType));
             karg.ptrAccess = ULEV(argNameSym.ptrAccess);
-            karg.typeName = binaryCode + argTypeSym.getNameOffset();
+            karg.typeName = reinterpret_cast<const char*>(
+                    binaryCode + argTypeSym.getNameOffset());
         }
         kernelInfo.reallocateArgs(realArgsNum);
     }
@@ -645,7 +650,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
 }
 
 AmdInnerX86Binary32::AmdInnerX86Binary32(
-            size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
+            size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags) :
             ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 { }
 
@@ -655,7 +660,7 @@ uint32_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
 }
 
 AmdInnerX86Binary64::AmdInnerX86Binary64(
-            size_t binaryCodeSize, char* binaryCode, cxuint creationFlags) :
+            size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags) :
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 { }
 
@@ -1118,7 +1123,7 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
             
             const typename Types::Shdr& rodataHdr =
                     elf.getSectionHeader(ULEV(sym.st_shndx));
-            const char* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
+            const cxbyte* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
             
             const typename Types::Size symvalue = ULEV(sym.st_value);
             const typename Types::Size symsize = ULEV(sym.st_size);
@@ -1128,7 +1133,8 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
                 throw Exception("Metadata offset+size out of range");
             
             parseAmdGpuKernelMetadata(symName, symsize,
-                      rodataContent + symvalue, kernelInfos[ki]);
+                  reinterpret_cast<const char*>(rodataContent + symvalue),
+                  kernelInfos[ki]);
             ki++;
         }
         kernelInfosNum = metadataSyms.size();
@@ -1154,7 +1160,7 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
          uint16_t textIndex, AmdMainGPUBinary32::InnerBinaryMap& innerBinaryMap)
 {
     const typename Types::Shdr& textHdr = elf.getSectionHeader(textIndex);
-    char* textContent = elf.getBinaryCode() + ULEV(textHdr.sh_offset);
+    cxbyte* textContent = elf.getBinaryCode() + ULEV(textHdr.sh_offset);
     
     /* create table of innerBinaries */
     innerBinaries = new AmdInnerGPUBinary32[innerBinariesNum];
@@ -1183,7 +1189,7 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
 
 /* AmdMainGPUBinary32 */
 
-AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, char* binaryCode,
+AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
        cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_BINARY),
           ElfBinary32(binaryCodeSize, binaryCode, creationFlags),
           innerBinariesNum(0), innerBinaries(nullptr)
@@ -1247,7 +1253,7 @@ const AmdInnerGPUBinary32& AmdMainGPUBinary32::getInnerBinary(const char* name) 
 
 /* AmdMainGPUBinary64 */
 
-AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, char* binaryCode,
+AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
        cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_64_BINARY),
           ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
           innerBinariesNum(0), innerBinaries(nullptr)
@@ -1320,7 +1326,7 @@ void AmdMainX86Binary32::initKernelInfos(cxuint creationFlags)
                 std::make_pair(kernelInfos[i].kernelName, i));
 }
 
-AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, char* binaryCode,
+AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
        cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::X86_BINARY),
        ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
@@ -1333,7 +1339,7 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, char* binaryCode,
     if (textIndex != SHN_UNDEF)
     {
         const Elf32_Shdr& textHdr = getSectionHeader(textIndex);
-        char* textContent = binaryCode + ULEV(textHdr.sh_offset);
+        cxbyte* textContent = binaryCode + ULEV(textHdr.sh_offset);
         
         innerBinary = AmdInnerX86Binary32(ULEV(textHdr.sh_size), textContent,
                 (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
@@ -1353,7 +1359,7 @@ void AmdMainX86Binary64::initKernelInfos(cxuint creationFlags)
                 std::make_pair(kernelInfos[i].kernelName, i));
 }
 
-AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
+AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,
        cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::X86_64_BINARY),
        ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
@@ -1366,7 +1372,7 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
     if (textIndex != SHN_UNDEF)
     {
         const Elf64_Shdr& textHdr = getSectionHeader(".text");
-        char* textContent = binaryCode + ULEV(textHdr.sh_offset);
+        cxbyte* textContent = binaryCode + ULEV(textHdr.sh_offset);
         
         innerBinary = AmdInnerX86Binary64(ULEV(textHdr.sh_size), textContent,
                 (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
@@ -1377,7 +1383,7 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, char* binaryCode,
 
 /* create amd binary */
 
-AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, char* binaryCode,
+AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* binaryCode,
         cxuint creationFlags)
 {
     if (ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
