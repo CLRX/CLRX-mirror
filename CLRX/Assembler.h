@@ -31,6 +31,7 @@
 #include <vector>
 #include <utility>
 #include <unordered_map>
+#include <CLRX/AmdBinaries.h>
 #include <CLRX/Utilities.h>
 
 /// main namespace
@@ -100,23 +101,46 @@ enum class GPUDeviceType
     RADEON_R9_290 = HAWAII
 };
 
+class AsmExpression;
+
 struct AsmSymbol
 {
     cxuint sectionId;
     bool isDefined;
     uint64_t value;
+    AsmExpression* resolvingExpression;
 };
 
 typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
 
+struct AsmGlobalMetadata
+{
+    std::string driverVersion;
+    std::string compileOptions;
+};
+
+struct AsmCALNote
+{
+    CALNoteHeader header;
+    cxbyte* data;
+};
+
 struct AsmKernelMetadata
 {
+    std::string metadata;
+    cxbyte header[32];
+    std::vector<AsmCALNote> calNotes;
+    cxuint progInfoIndex;
     
+    cxuint getProgInfoEntriesNum() const;
+    const CALProgramInfoEntry* getProgInfoEntries() const;
+    CALProgramInfoEntry* getProgInfoEntries();
 };
 
 struct AsmKernel
 {
     AsmKernelMetadata metadata;
+    std::vector<cxbyte> execData;
     std::vector<cxbyte> code;
 };
 
@@ -217,7 +241,8 @@ private:
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
     
-    std::vector<char> globalData;
+    AsmGlobalMetadata globalMetadata;
+    std::vector<cxbyte> globalData; // 
     KernelMap kernelMap;
 public:
     explicit Assembler(const char* string, cxuint flags);
@@ -254,15 +279,24 @@ public:
     uint64_t parseExpression(size_t stringSize, const char* string) const;
 };
 
-struct DisasmSection
+struct DisasmKernelInput
 {
-    const char* name;
-    bool isCode;
-    size_t size;
-    const cxbyte* data;
+    size_t metadataSize;
+    char* metadata;
+    cxbyte* header;
+    std::vector<AsmCALNote> calNotes;
+    cxbyte* execData;
+    cxbyte* code;
 };
 
-typedef std::vector<DisasmSection> DisasmSectionList;
+struct DisasmInput
+{
+    bool is64BitMode;
+    GPUDeviceType deviceType;
+    AsmGlobalMetadata metadata;
+    cxbyte* globalData;
+    std::vector<DisasmKernelInput> kernelInputs;
+};
 
 class Disassembler
 {
@@ -270,10 +304,13 @@ private:
     GPUDeviceType deviceType;
     cxuint flags;
 public:
-    Disassembler(const DisasmSectionList& sectionList,
-                 GPUDeviceType deviceType, cxuint flags);
-    Disassembler(const DisasmSectionList& sectionList,
-                 GPUDeviceType deviceType, const std::ostream& os, cxuint flags);
+    Disassembler(const AmdMainGPUBinary32& binary, cxuint flags);
+    Disassembler(const AmdMainGPUBinary64& binary, cxuint flags);
+    Disassembler(const AmdMainGPUBinary32& binary, const std::ostream& os, cxuint flags);
+    Disassembler(const AmdMainGPUBinary64& binary, const std::ostream& os, cxuint flags);
+    
+    Disassembler(const DisasmInput& disasmInput, cxuint flags);
+    Disassembler(const DisasmInput& disasmInput, const std::ostream& os, cxuint flags);
     ~Disassembler();
     
     void disassemble();

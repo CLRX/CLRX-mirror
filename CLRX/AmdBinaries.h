@@ -135,6 +135,41 @@ struct X86_64KernelArgSym
     { return (uint64_t(ULEV(nameOffsetHi))<<32)+uint64_t(ULEV(nameOffsetLo)); }
 };
 
+enum class CALNoteType: uint32_t
+{   /* this cal note types comes from MultiSim-4.2 sources */
+    ATI_PROGINFO = 1,
+    ATI_INPUTS = 2,
+    ATI_OUTPUTS = 3,
+    ATI_CONDOUT = 4,
+    ATI_FLOAT32CONSTS = 5,
+    ATI_INT32CONSTS = 6,
+    ATI_BOOL32CONSTS = 7,
+    ATI_EARLYEXIT = 8,
+    ATI_GLOBAL_BUFFERS = 9,
+    ATI_CONSTANT_BUFFERS = 10,
+    ATI_INPUT_SAMPLERS = 11,
+    ATI_PERSISTENT_BUFFERS = 12,
+    ATI_SCRATCH_BUFFERS = 13,
+    ATI_SUB_CONSTANT_BUFFERS = 14,
+    ATI_UAV_MAILBOX_SIZE = 15,
+    ATI_UAV = 16,
+    ATI_UAV_OP_MASK = 17
+};
+
+struct CALNoteHeader
+{
+    uint32_t nameSize;
+    uint32_t descSize;
+    CALNoteType type;
+    char name[8];
+};
+
+struct CALProgramInfoEntry
+{
+    uint32_t address;
+    uint32_t value;
+};
+
 /// kernel informations
 struct KernelInfo
 {
