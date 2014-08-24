@@ -1227,9 +1227,9 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
                         getSectionContent(compileOptionShIndex));
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
-            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
-                throw Exception("CompileOptions value out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            if (compileOptionsEnd > ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
         else if (doKernelInfo && len >= 18 &&
@@ -1326,9 +1326,9 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
                         getSectionContent(compileOptionShIndex));
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
-            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
-                throw Exception("CompileOptions value+size out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            if (compileOptionsEnd > ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
         else if (doKernelInfo && len >= 18 &&
@@ -1432,9 +1432,9 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
                         getSectionContent(compileOptionShIndex));
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
-            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
-                throw Exception("CompileOptions value+size out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            if (compileOptionsEnd > ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
     }
@@ -1506,9 +1506,9 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
                         getSectionContent(compileOptionShIndex));
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
-            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
-                throw Exception("CompileOptions value+size out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            if (compileOptionsEnd > ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
     }
