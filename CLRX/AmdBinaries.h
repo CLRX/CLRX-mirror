@@ -579,6 +579,9 @@ protected:
     KernelInfo* kernelInfos;    ///< kernel informations
     KernelInfoMap kernelInfosMap;   ///< kernel informations map
     
+    std::string driverInfo;
+    std::string compileOptions;
+    
     explicit AmdMainBinaryBase(AmdMainType type);
 public:
     // no copyable and no movable
@@ -606,6 +609,11 @@ public:
     
     /// get kernel information with specified kernel name (requires kernel info map)
     const KernelInfo& getKernelInfo(const char* name) const;
+    
+    const std::string getDriverInfo() const
+    { return driverInfo; }
+    const std::string getCompileOptions() const
+    { return compileOptions; }
 };
 
 /// AMD main binary for GPU for 32-bit mode

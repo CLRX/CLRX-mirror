@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <string>
 #include <istream>
+#include <ostream>
 #include <vector>
 #include <utility>
 #include <unordered_map>
@@ -99,49 +100,6 @@ enum class GPUDeviceType
     RADEON_R7_260 = BONAIRE,
     RADEON_R9_270 = CURACAO,
     RADEON_R9_290 = HAWAII
-};
-
-class AsmExpression;
-
-struct AsmSymbol
-{
-    cxuint sectionId;
-    bool isDefined;
-    uint64_t value;
-    AsmExpression* resolvingExpression;
-};
-
-typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
-
-struct AsmGlobalMetadata
-{
-    std::string driverVersion;
-    std::string compileOptions;
-};
-
-struct AsmCALNote
-{
-    CALNoteHeader header;
-    cxbyte* data;
-};
-
-struct AsmKernelMetadata
-{
-    std::string metadata;
-    cxbyte header[32];
-    std::vector<AsmCALNote> calNotes;
-    cxuint progInfoIndex;
-    
-    cxuint getProgInfoEntriesNum() const;
-    const CALProgramInfoEntry* getProgInfoEntries() const;
-    CALProgramInfoEntry* getProgInfoEntries();
-};
-
-struct AsmKernel
-{
-    AsmKernelMetadata metadata;
-    std::vector<cxbyte> execData;
-    std::vector<cxbyte> code;
 };
 
 class ISAAssembler
@@ -227,6 +185,49 @@ public:
     size_t disassemble(char* line);
 };
 
+class AsmExpression;
+
+struct AsmSymbol
+{
+    cxuint sectionId;
+    bool isDefined;
+    uint64_t value;
+    AsmExpression* resolvingExpression;
+};
+
+typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
+
+struct AsmGlobalMetadata
+{
+    std::string driverVersion;
+    std::string compileOptions;
+};
+
+struct AsmCALNote
+{
+    CALNoteHeader header;
+    cxbyte* data;
+};
+
+struct AsmKernelMetadata
+{
+    std::string metadata;
+    cxbyte header[32];
+    std::vector<AsmCALNote> calNotes;
+    cxuint progInfoIndex;
+    
+    cxuint getProgInfoEntriesNum() const;
+    const CALProgramInfoEntry* getProgInfoEntries() const;
+    CALProgramInfoEntry* getProgInfoEntries();
+};
+
+struct AsmKernel
+{
+    AsmKernelMetadata metadata;
+    std::vector<cxbyte> execData;
+    std::vector<cxbyte> code;
+};
+
 class Assembler
 {
 public:
@@ -245,8 +246,7 @@ private:
     std::vector<cxbyte> globalData; // 
     KernelMap kernelMap;
 public:
-    explicit Assembler(const char* string, cxuint flags);
-    explicit Assembler(const std::istream& is, cxuint flags);
+    explicit Assembler(std::istream& input, cxuint flags);
     ~Assembler();
     
     void assemble();
@@ -268,15 +268,20 @@ public:
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
     
-    const AsmKernelMetadata& getKernelMetadata(const std::string& kernelName) const;
-    const cxbyte* getKernelCode(const std::string& kernelName) const;
-    
     void setInitialDefSyms(const DefSymMap& defsyms);
     
     void addInitialDefSym(const std::string& symName, const std::string& symExpr);
     
-    const SymbolMap& getSymbolMap() const;
     uint64_t parseExpression(size_t stringSize, const char* string) const;
+    
+    const AsmGlobalMetadata& getGlobalMetadata() const
+    { return globalMetadata; }
+    const cxbyte* getGlobalData() const
+    { return globalData.data(); }
+    const AsmKernel& getKernel(const std::string& kernelName) const;
+    
+    const KernelMap& getKernelMap() const
+    { return kernelMap; }
 };
 
 struct DisasmKernelInput
@@ -301,27 +306,31 @@ struct DisasmInput
 class Disassembler
 {
 private:
-    GPUDeviceType deviceType;
+    ISADisassembler* isaDisassembler;
+    const DisasmInput& input;
+    std::ostream& output;
     cxuint flags;
 public:
-    Disassembler(const AmdMainGPUBinary32& binary, cxuint flags);
-    Disassembler(const AmdMainGPUBinary64& binary, cxuint flags);
-    Disassembler(const AmdMainGPUBinary32& binary, const std::ostream& os, cxuint flags);
-    Disassembler(const AmdMainGPUBinary64& binary, const std::ostream& os, cxuint flags);
+    Disassembler(const AmdMainGPUBinary32& binary, std::ostream& os, cxuint flags);
+    Disassembler(const AmdMainGPUBinary64& binary, std::ostream& os, cxuint flags);
     
-    Disassembler(const DisasmInput& disasmInput, cxuint flags);
-    Disassembler(const DisasmInput& disasmInput, const std::ostream& os, cxuint flags);
+    Disassembler(const DisasmInput& disasmInput, std::ostream& os, cxuint flags);
     ~Disassembler();
     
     void disassemble();
-    
-    const char* getInput() const;
-    size_t getInputSize() const;
     
     cxuint getFlags() const
     { return flags; }
     void setFlags(cxuint flags)
     { this->flags = flags; }
+    
+    const DisasmInput& getInput() const
+    { return input; }
+    
+    const std::ostream& getOutput() const
+    { return output; }
+    std::ostream& getOutput()
+    { return output; }
 };
 
 };

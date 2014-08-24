@@ -1204,6 +1204,8 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
     std::vector<size_t> choosenSymsMetadata;
     
     const bool doKernelInfo = (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0;
+    size_t compileOptionsEnd = 0;
+    uint16_t compileOptionShIndex = SHN_UNDEF;
     
     for (uint32_t i = 0; i < symbolsNum; i++)
     {
@@ -1214,10 +1216,43 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
         
         if (::strcmp(symName+len-7, "_kernel") == 0) // if kernel
             choosenSyms.push_back(i);
+        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        {   // set compile options
+            const Elf32_Sym& sym = getSymbol(i);
+            compileOptionShIndex = ULEV(sym.st_shndx);
+            if (compileOptionShIndex >= getSectionHeadersNum())
+                throw Exception("CompileOptions section index out of range");
+            const Elf32_Shdr& shdr = getSectionHeader(compileOptionShIndex);
+            const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(compileOptionShIndex));
+            if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value out of range");
+            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value out of range");
+            compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
+        }
         if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
             choosenSymsMetadata.push_back(i);
     }
+    // put driver info
+    uint16_t commentShIndex = SHN_UNDEF;
+    try
+    { commentShIndex = getSectionIndex(".comment"); }
+    catch(const Exception& ex)
+    { }
+    if (commentShIndex != SHN_UNDEF)
+    {
+        size_t offset = 0;
+        if (compileOptionShIndex == commentShIndex)
+            offset = compileOptionsEnd;
+        const Elf32_Shdr& shdr = getSectionHeader(commentShIndex);
+        const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(commentShIndex));
+        driverInfo.assign(sectionContent + offset, ULEV(shdr.sh_size)-offset);
+    }
+    
     innerBinariesNum = choosenSyms.size();
     
     try
@@ -1268,6 +1303,8 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
     std::vector<size_t> choosenSymsMetadata;
     
     const bool doKernelInfo = (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0;
+    size_t compileOptionsEnd = 0;
+    uint16_t compileOptionShIndex = SHN_UNDEF;
     
     for (size_t i = 0; i < symbolsNum; i++)
     {
@@ -1278,10 +1315,43 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
         
         if (::strcmp(symName+len-7, "_kernel") == 0) // if kernel
             choosenSyms.push_back(i);
+        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        {   // set compile options
+            const Elf64_Sym& sym = getSymbol(i);
+            compileOptionShIndex = ULEV(sym.st_shndx);
+            if (compileOptionShIndex >= getSectionHeadersNum())
+                throw Exception("CompileOptions section index out of range");
+            const Elf64_Shdr& shdr = getSectionHeader(compileOptionShIndex);
+            const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(compileOptionShIndex));
+            if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value out of range");
+            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
+            compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
+        }
         if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
             choosenSymsMetadata.push_back(i);
     }
+    // put driver info
+    uint16_t commentShIndex = SHN_UNDEF;
+    try
+    { commentShIndex = getSectionIndex(".comment"); }
+    catch(const Exception& ex)
+    { }
+    if (commentShIndex != SHN_UNDEF)
+    {
+        size_t offset = 0;
+        if (compileOptionShIndex == commentShIndex)
+            offset = compileOptionsEnd;
+        const Elf64_Shdr& shdr = getSectionHeader(commentShIndex);
+        const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(commentShIndex));
+        driverInfo.assign(sectionContent + offset, ULEV(shdr.sh_size)-offset);
+    }
+    
     innerBinariesNum = choosenSyms.size();
     
     try
@@ -1344,6 +1414,51 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
         innerBinary = AmdInnerX86Binary32(ULEV(textHdr.sh_size), textContent,
                 (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
     }
+    
+    size_t compileOptionsEnd = 0;
+    uint16_t compileOptionShIndex = SHN_UNDEF;
+    
+    for (size_t i = 0; i < symbolsNum; i++)
+    {
+        const char* symName = getSymbolName(i);
+        size_t len = ::strlen(symName);
+        if (len < 16 || ::strncmp(symName, "__OpenCL_", 9) != 0)
+            continue;
+        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        {   // set compile options
+            const Elf32_Sym& sym = getSymbol(i);
+            compileOptionShIndex = ULEV(sym.st_shndx);
+            if (compileOptionShIndex >= getSectionHeadersNum())
+                throw Exception("CompileOptions section index out of range");
+            const Elf32_Shdr& shdr = getSectionHeader(compileOptionShIndex);
+            const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(compileOptionShIndex));
+            if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value out of range");
+            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
+            compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
+        }
+    }
+    
+    // put driver info
+    uint16_t commentShIndex = SHN_UNDEF;
+    try
+    { commentShIndex = getSectionIndex(".comment"); }
+    catch(const Exception& ex)
+    { }
+    if (commentShIndex != SHN_UNDEF)
+    {
+        size_t offset = 0;
+        if (compileOptionShIndex == commentShIndex)
+            offset = compileOptionsEnd;
+        const Elf32_Shdr& shdr = getSectionHeader(commentShIndex);
+        const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(commentShIndex));
+        driverInfo.assign(sectionContent + offset, ULEV(shdr.sh_size)-offset);
+    }
+    
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
         initKernelInfos(creationFlags);
 }
@@ -1377,6 +1492,50 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
         innerBinary = AmdInnerX86Binary64(ULEV(textHdr.sh_size), textContent,
                 (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
     }
+    
+    size_t compileOptionsEnd = 0;
+    uint16_t compileOptionShIndex = SHN_UNDEF;
+    for (size_t i = 0; i < symbolsNum; i++)
+    {
+        const char* symName = getSymbolName(i);
+        size_t len = ::strlen(symName);
+        if (len < 16 || ::strncmp(symName, "__OpenCL_", 9) != 0)
+            continue;
+        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        {   // set compile options
+            const Elf64_Sym& sym = getSymbol(i);
+            compileOptionShIndex = ULEV(sym.st_shndx);
+            if (compileOptionShIndex >= getSectionHeadersNum())
+                throw Exception("CompileOptions section index out of range");
+            const Elf64_Shdr& shdr = getSectionHeader(compileOptionShIndex);
+            const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(compileOptionShIndex));
+            if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value out of range");
+            if (ULEV(sym.st_size) + ULEV(sym.st_size) >= ULEV(shdr.sh_size))
+                throw Exception("CompileOptions value+size out of range");
+            compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
+            compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
+        }
+    }
+    
+    // put driver info
+    uint16_t commentShIndex = SHN_UNDEF;
+    try
+    { commentShIndex = getSectionIndex(".comment"); }
+    catch(const Exception& ex)
+    { }
+    if (commentShIndex != SHN_UNDEF)
+    {
+        size_t offset = 0;
+        if (compileOptionShIndex == commentShIndex)
+            offset = compileOptionsEnd;
+        const Elf64_Shdr& shdr = getSectionHeader(commentShIndex);
+        const char* sectionContent = reinterpret_cast<char*>(
+                        getSectionContent(commentShIndex));
+        driverInfo.assign(sectionContent + offset, ULEV(shdr.sh_size)-offset);
+    }
+    
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
         initKernelInfos(creationFlags);
 }
