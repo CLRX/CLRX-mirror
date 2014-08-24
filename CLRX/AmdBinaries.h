@@ -164,6 +164,12 @@ struct CALNoteHeader
     char name[8];
 };
 
+struct CALNote
+{
+    CALNoteHeader* header;
+    cxbyte* data;
+};
+
 struct CALProgramInfoEntry
 {
     uint32_t address;
@@ -502,8 +508,12 @@ class AmdInnerGPUBinary32: public ElfBinary32
 {
 private:
     std::string kernelName; ///< kernel name
+    std::vector<CALNote> calNotes;
+    uint32_t calProgInfoIndex;
+    uint32_t calProgInfoEntriesNum;
+    CALProgramInfoEntry* calProgInfoEntries;
 public:
-    AmdInnerGPUBinary32() = default;
+    AmdInnerGPUBinary32();
     /** constructor
      * \param kernelName kernel name
      * \param binaryCodeSize binary code size
@@ -517,6 +527,34 @@ public:
     /// get kernel name
     const std::string& getKernelName() const
     { return kernelName; }
+    
+    /// get CAL Notes number
+    uint32_t getCALNotesNum() const
+    { return calNotes.size(); }
+    
+    /// get CAL Note header
+    const CALNoteHeader& getCALNoteHeader(uint32_t index) const
+    { return *calNotes[index].header; }
+    
+    /// get CAL Note header
+    CALNoteHeader& getCALNoteHeader(uint32_t index)
+    { return *calNotes[index].header; }
+    
+    /// get CAL Note data
+    const cxbyte* getCALNoteData(uint32_t index) const
+    { return calNotes[index].data; }
+    /// get CAL Note data
+    cxbyte* getCALNoteData(uint32_t index)
+    { return calNotes[index].data; }
+    
+    /// get CAL Program Info entries number
+    uint32_t getCALProgramInfoEntriesNum() const
+    { return calProgInfoEntriesNum; }
+    
+    /// get CAL Program Info entries
+    const CALProgramInfoEntry* getCALProgramInfoEntries() const;
+    /// get CAL Program Info entries
+    CALProgramInfoEntry* getCALProgramInfoEntries();
 };
 
 /// AMD inner X86 binary
@@ -629,6 +667,7 @@ private:
     uint32_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
+    uint32_t calNoteHeaders;
 public:
     /** constructor
      * \param binaryCodeSize binary code size

@@ -462,10 +462,65 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
 
 /* AMD inner GPU binary */
 
+AmdInnerGPUBinary32::AmdInnerGPUBinary32() :
+        calProgInfoIndex(UINT32_MAX), calProgInfoEntriesNum(0), calProgInfoEntries(nullptr)
+{ }
+
 AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
          size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags)
-        : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName)
-{ }
+        : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName),
+          calProgInfoIndex(UINT32_MAX), calProgInfoEntriesNum(0),
+          calProgInfoEntries(nullptr)
+{
+    for (uint32_t i = 0; i < getProgramHeadersNum(); i++)
+    {
+        const Elf32_Phdr& phdr = getProgramHeader(i);
+        if (ULEV(phdr.p_type) == PT_NOTE)
+        {   // get offset
+            size_t offset = ULEV(phdr.p_offset);
+            size_t size = ULEV(phdr.p_filesz);
+            if (offset >= binaryCodeSize)
+                throw Exception("Program NOTE offset out of range");
+            if (offset + size > binaryCodeSize)
+                throw Exception("Program NOTE offset+size out of range");
+            uint32_t calNotesCount = 0;
+            for (uint32_t pos = 0; pos < size; calNotesCount++)
+            {
+                const CALNoteHeader& nhdr =
+                    *reinterpret_cast<const CALNoteHeader*>(binaryCode+offset+pos);
+                if (ULEV(nhdr.nameSize) != 8)
+                    throw Exception("Wrong name size in Note header!");
+                if (::memcmp(nhdr.name, "ATI CAL", 8) != 0)
+                    throw Exception("Wrong name in Note header!");
+                if (pos + sizeof(CALNoteHeader) + ULEV(nhdr.descSize) > size)
+                    throw Exception("CAL Note desc size out of range");
+                pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
+            }
+            
+            // put CAL Notes
+            calNotes.resize(calNotesCount);
+            uint32_t count = 0;
+            for (uint32_t pos = 0; pos < size; count++)
+            {
+                CALNoteHeader& nhdr =
+                    *reinterpret_cast<CALNoteHeader*>(binaryCode+offset+pos);
+                calNotes[count].header = &nhdr;
+                if (CALNoteType(ULEV(uint32_t(nhdr.type))) == CALNoteType::ATI_PROGINFO)
+                    calProgInfoIndex = count;
+                calNotes[count].data = binaryCode + offset + pos + sizeof(CALNoteHeader);
+                pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
+            }
+        }
+        
+        if (calProgInfoIndex != UINT32_MAX)
+        {
+            calProgInfoEntries = reinterpret_cast<CALProgramInfoEntry*>(
+                calNotes[calProgInfoIndex].data);
+            calProgInfoEntriesNum = ULEV(calNotes[calProgInfoIndex].header->descSize) /
+                    sizeof(CALProgramInfoEntry);
+        }
+    }
+}
 
 template<typename ArgSym>
 static size_t skipStructureArgX86(const ArgSym* argDescTable,
