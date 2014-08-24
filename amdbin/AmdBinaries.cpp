@@ -1216,7 +1216,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
         
         if (::strcmp(symName+len-7, "_kernel") == 0) // if kernel
             choosenSyms.push_back(i);
-        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        else if (::strcmp(symName, "__OpenCL_compile_options") == 0)
         {   // set compile options
             const Elf32_Sym& sym = getSymbol(i);
             compileOptionShIndex = ULEV(sym.st_shndx);
@@ -1232,7 +1232,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
-        if (doKernelInfo && len >= 18 &&
+        else if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
             choosenSymsMetadata.push_back(i);
     }
@@ -1315,7 +1315,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
         
         if (::strcmp(symName+len-7, "_kernel") == 0) // if kernel
             choosenSyms.push_back(i);
-        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        else if (::strcmp(symName, "__OpenCL_compile_options") == 0)
         {   // set compile options
             const Elf64_Sym& sym = getSymbol(i);
             compileOptionShIndex = ULEV(sym.st_shndx);
@@ -1331,7 +1331,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
-        if (doKernelInfo && len >= 18 &&
+        else if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
             choosenSymsMetadata.push_back(i);
     }
@@ -1421,10 +1421,7 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const char* symName = getSymbolName(i);
-        size_t len = ::strlen(symName);
-        if (len < 16 || ::strncmp(symName, "__OpenCL_", 9) != 0)
-            continue;
-        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        if (::strcmp(symName, "__OpenCL_compile_options") == 0)
         {   // set compile options
             const Elf32_Sym& sym = getSymbol(i);
             compileOptionShIndex = ULEV(sym.st_shndx);
@@ -1498,10 +1495,7 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const char* symName = getSymbolName(i);
-        size_t len = ::strlen(symName);
-        if (len < 16 || ::strncmp(symName, "__OpenCL_", 9) != 0)
-            continue;
-        if (::strcmp(symName+len-16, "_compile_options") == 0) // if kernel
+        if (::strcmp(symName, "__OpenCL_compile_options") == 0)
         {   // set compile options
             const Elf64_Sym& sym = getSymbol(i);
             compileOptionShIndex = ULEV(sym.st_shndx);
