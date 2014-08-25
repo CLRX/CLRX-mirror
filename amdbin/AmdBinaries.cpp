@@ -489,7 +489,8 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
                         throw Exception("Wrong name size in Note header!");
                     if (::memcmp(nhdr.name, "ATI CAL", 8) != 0)
                         throw Exception("Wrong name in Note header!");
-                    if (pos + sizeof(CALNoteHeader) + ULEV(nhdr.descSize) > size)
+                    if (usumGt(uint32_t(pos + sizeof(CALNoteHeader)),
+                                ULEV(nhdr.descSize), size))
                         throw Exception("CAL Note desc size out of range");
                     pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
                 }
