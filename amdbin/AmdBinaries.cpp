@@ -1463,7 +1463,7 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
         cxbyte* textContent = binaryCode + ULEV(textHdr.sh_offset);
         
         innerBinary = AmdInnerX86Binary32(ULEV(textHdr.sh_size), textContent,
-                (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
+                (creationFlags >> AMDBIN_INNER_SHIFT) & AMDBIN_INNER_INT_CREATE_ALL);
     }
     
     if ((creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0)
@@ -1542,7 +1542,7 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
         cxbyte* textContent = binaryCode + ULEV(textHdr.sh_offset);
         
         innerBinary = AmdInnerX86Binary64(ULEV(textHdr.sh_size), textContent,
-                (creationFlags >> AMDBIN_INNER_SHIFT) & ELF_CREATE_ALL);
+                (creationFlags >> AMDBIN_INNER_SHIFT) & AMDBIN_INNER_INT_CREATE_ALL);
     }
     
     if ((creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0)
