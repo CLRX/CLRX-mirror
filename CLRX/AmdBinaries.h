@@ -47,16 +47,20 @@ enum : cxuint {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections
     ELF_CREATE_SYMBOLMAP = 2,   ///< create map of symbols
     ELF_CREATE_DYNSYMMAP = 4,   ///< create map of dynamic symbols
-    ELF_CREATE_ALL = 7, ///< creation flags for ELF binaries
+    ELF_CREATE_ALL = 0xf, ///< creation flags for ELF binaries
+    AMDBIN_INNER_INT_CREATE_ALL = 0xff,
+    AMDBIN_CREATE_CALNOTES = 0x10, ///< only for internal usage
+    
     AMDBIN_CREATE_KERNELINFO = 0x10,    ///< create kernel informations
     AMDBIN_CREATE_KERNELINFOMAP = 0x20, ///< create map of kernel informations
     AMDBIN_CREATE_INNERBINMAP = 0x40,   ///< create map of inner binaries
     AMDBIN_INNER_CREATE_SECTIONMAP = 0x100, ///< create map of sections for inner binaries
     AMDBIN_INNER_CREATE_SYMBOLMAP = 0x200,  ///< create map of symbols for inner binaries
     /** create map of dynamic symbols for inner binaries */
-    AMDBIN_INNER_CREATE_DYNSYMMAP = 0x400,  
+    AMDBIN_INNER_CREATE_DYNSYMMAP = 0x400,
+    AMDBIN_INNER_CREATE_CALNOTES = 0x1000, ///< create CAL notes for AMD inner GPU binary
     
-    AMDBIN_CREATE_ALL = ELF_CREATE_ALL | 0xff0, ///< all AMD binaries creation flags
+    AMDBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all AMD binaries creation flags
     AMDBIN_INNER_SHIFT = 8 ///< shift for convert inner binary flags into elf binary flags
 };
 
@@ -530,11 +534,8 @@ class AmdInnerGPUBinary32: public ElfBinary32
 private:
     std::string kernelName; ///< kernel name
     std::vector<CALNote> calNotes;
-    uint32_t calProgInfoIndex;
-    uint32_t calProgInfoEntriesNum;
-    CALProgramInfoEntry* calProgInfoEntries;
 public:
-    AmdInnerGPUBinary32();
+    AmdInnerGPUBinary32() = default;
     /** constructor
      * \param kernelName kernel name
      * \param binaryCodeSize binary code size
@@ -544,6 +545,9 @@ public:
     AmdInnerGPUBinary32(const std::string& kernelName, size_t binaryCodeSize,
             cxbyte* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
     ~AmdInnerGPUBinary32() = default;
+    
+    bool hasCALNotes() const
+    { return (creationFlags & AMDBIN_CREATE_CALNOTES) != 0; }
     
     /// get kernel name
     const std::string& getKernelName() const
@@ -567,15 +571,6 @@ public:
     /// get CAL Note data
     cxbyte* getCALNoteData(uint32_t index)
     { return calNotes[index].data; }
-    
-    /// get CAL Program Info entries number
-    uint32_t getCALProgramInfoEntriesNum() const
-    { return calProgInfoEntriesNum; }
-    
-    /// get CAL Program Info entries
-    const CALProgramInfoEntry* getCALProgramInfoEntries() const;
-    /// get CAL Program Info entries
-    CALProgramInfoEntry* getCALProgramInfoEntries();
 };
 
 /// AMD inner X86 binary
