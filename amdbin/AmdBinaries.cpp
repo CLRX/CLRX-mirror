@@ -505,7 +505,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
                 CALNoteHeader& nhdr =
                     *reinterpret_cast<CALNoteHeader*>(binaryCode+offset+pos);
                 calNotes[count].header = &nhdr;
-                if (CALNoteType(ULEV(uint32_t(nhdr.type))) == CALNoteType::ATI_PROGINFO)
+                if (ULEV(uint32_t(nhdr.type)) == CALNOTE_ATI_PROGINFO)
                     calProgInfoIndex = count;
                 calNotes[count].data = binaryCode + offset + pos + sizeof(CALNoteHeader);
                 pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
