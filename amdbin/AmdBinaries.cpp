@@ -285,8 +285,9 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
     {   /* reading and checking program headers */
         if (ULEV(ehdr->e_phoff) > binaryCodeSize)
             throw Exception("ProgramHeaders offset out of range!");
-        if (ULEV(ehdr->e_phoff) + size_t(ULEV(ehdr->e_phentsize))*ULEV(ehdr->e_phnum) >
-            binaryCodeSize)
+        if (usumGt(size_t(ULEV(ehdr->e_phoff)),
+                   size_t(ULEV(ehdr->e_phentsize))*ULEV(ehdr->e_phnum),
+                   binaryCodeSize))
             throw Exception("ProgramHeaders offset+size out of range!");
         
         cxuint phnum = ULEV(ehdr->e_phnum);
@@ -295,7 +296,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             const typename Types::Phdr& phdr = getProgramHeader(i);
             if (ULEV(phdr.p_offset) > binaryCodeSize)
                 throw Exception("Segment offset out of range!");
-            if (ULEV(phdr.p_offset)+ULEV(phdr.p_filesz) > binaryCodeSize)
+            if (usumGt(size_t(ULEV(phdr.p_offset)), size_t(ULEV(phdr.p_filesz)),
+                       binaryCodeSize))
                 throw Exception("Segment offset+size out of range!");
         }
     }
@@ -304,8 +306,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
     {   /* indexing of sections */
         if (ULEV(ehdr->e_shoff) > binaryCodeSize)
             throw Exception("SectionHeaders offset out of range!");
-        if (ULEV(ehdr->e_shoff) + size_t(ULEV(ehdr->e_shentsize))*ULEV(ehdr->e_shnum) >
-            binaryCodeSize)
+        if (usumGt(size_t(ULEV(ehdr->e_shoff)),
+            size_t(ULEV(ehdr->e_shentsize))*ULEV(ehdr->e_shnum), binaryCodeSize))
             throw Exception("SectionHeaders offset+size out of range!");
         if (ULEV(ehdr->e_shstrndx) >= ULEV(ehdr->e_shnum))
             throw Exception("Shstrndx out of range!");
@@ -325,7 +327,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             if (ULEV(shdr.sh_offset) > binaryCodeSize)
                 throw Exception("Section offset out of range!");
             if (ULEV(shdr.sh_type) != SHT_NOBITS)
-                if (ULEV(shdr.sh_offset)+ULEV(shdr.sh_size) > binaryCodeSize)
+                if (usumGt(size_t(ULEV(shdr.sh_offset)), size_t(ULEV(shdr.sh_size)),
+                    binaryCodeSize))
                     throw Exception("Section offset+size out of range!");
             if (ULEV(shdr.sh_link) >= ULEV(ehdr->e_shnum))
                 throw Exception("Section link out of range!");
@@ -481,7 +484,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
             size_t size = ULEV(phdr.p_filesz);
             if (offset >= binaryCodeSize)
                 throw Exception("Program NOTE offset out of range");
-            if (offset + size > binaryCodeSize)
+            if (usumGt(offset, size, binaryCodeSize))
                 throw Exception("Program NOTE offset+size out of range");
             uint32_t calNotesCount = 0;
             for (uint32_t pos = 0; pos < size; calNotesCount++)
@@ -1184,7 +1187,7 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
             const typename Types::Size symsize = ULEV(sym.st_size);
             if (symvalue > ULEV(rodataHdr.sh_size))
                 throw Exception("Metadata offset out of range");
-            if (symvalue+symsize > ULEV(rodataHdr.sh_size))
+            if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
                 throw Exception("Metadata offset+size out of range");
             
             parseAmdGpuKernelMetadata(symName, symsize,
@@ -1230,7 +1233,7 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
         const typename Types::Size symsize = ULEV(sym.st_size);
         if (symvalue > ULEV(textHdr.sh_size))
             throw Exception("Inner binary offset out of range!");
-        if (symvalue + symsize > ULEV(textHdr.sh_size))
+        if (usumGt(symvalue, symsize, ULEV(textHdr.sh_size)))
             throw Exception("Inner binary offset+size out of range!");
         
         innerBinaries[ki++] = AmdInnerGPUBinary32(std::string(symName+9, len-16),
@@ -1283,7 +1286,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
-            if (compileOptionsEnd > ULEV(shdr.sh_size))
+            if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                 throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
@@ -1382,7 +1385,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
-            if (compileOptionsEnd > ULEV(shdr.sh_size))
+            if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                 throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
@@ -1488,7 +1491,7 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
-            if (compileOptionsEnd > ULEV(shdr.sh_size))
+            if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                 throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
@@ -1562,7 +1565,7 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
             if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
                 throw Exception("CompileOptions value out of range");
             compileOptionsEnd = ULEV(sym.st_value) + ULEV(sym.st_size);
-            if (compileOptionsEnd > ULEV(shdr.sh_size))
+            if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                 throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }

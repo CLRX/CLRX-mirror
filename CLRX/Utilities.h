@@ -205,6 +205,16 @@ inline cxuint CLZ64(uint64_t v)
 #endif
 }
 
+/// safely compares sum of two unsigned integers with other unsigned integer
+template<typename T>
+inline bool usumGt(T a, T b, T c)
+{ return ((a+b)>c) || ((a+b)<a); }
+
+/// safely compares sum of two unsigned integers with other unsigned integer
+template<typename T>
+inline bool usumGe(T a, T b, T c)
+{ return ((a+b)>=c) || ((a+b)<a); }
+
 /// parse unsigned integer regardless locales
 /** parses unsigned integer in decimal form from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
