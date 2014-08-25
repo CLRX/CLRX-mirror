@@ -214,11 +214,6 @@ struct AsmKernelMetadata
     std::string metadata;
     cxbyte header[32];
     std::vector<AsmCALNote> calNotes;
-    cxuint progInfoIndex;
-    
-    cxuint getProgInfoEntriesNum() const;
-    const CALProgramInfoEntry* getProgInfoEntries() const;
-    CALProgramInfoEntry* getProgInfoEntries();
 };
 
 struct AsmKernel
@@ -290,7 +285,9 @@ struct DisasmKernelInput
     char* metadata;
     cxbyte* header;
     std::vector<AsmCALNote> calNotes;
+    size_t execDataSize;
     cxbyte* execData;
+    size_t codeSize;
     cxbyte* code;
 };
 
