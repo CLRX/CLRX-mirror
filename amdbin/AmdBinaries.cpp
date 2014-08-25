@@ -1183,8 +1183,8 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
                     elf.getSectionHeader(ULEV(sym.st_shndx));
             const cxbyte* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
             
-            const typename Types::Size symvalue = ULEV(sym.st_value);
-            const typename Types::Size symsize = ULEV(sym.st_size);
+            const typename Types::Word symvalue = ULEV(sym.st_value);
+            const typename Types::Word symsize = ULEV(sym.st_size);
             if (symvalue > ULEV(rodataHdr.sh_size))
                 throw Exception("Metadata offset out of range");
             if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
@@ -1229,8 +1229,8 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
         size_t len = ::strlen(symName);
         const typename Types::Sym& sym = elf.getSymbol(it);
         
-        const typename Types::Size symvalue = ULEV(sym.st_value);
-        const typename Types::Size symsize = ULEV(sym.st_size);
+        const typename Types::Word symvalue = ULEV(sym.st_value);
+        const typename Types::Word symsize = ULEV(sym.st_size);
         if (symvalue > ULEV(textHdr.sh_size))
             throw Exception("Inner binary offset out of range!");
         if (usumGt(symvalue, symsize, ULEV(textHdr.sh_size)))
