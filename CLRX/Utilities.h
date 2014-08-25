@@ -206,13 +206,13 @@ inline cxuint CLZ64(uint64_t v)
 }
 
 /// safely compares sum of two unsigned integers with other unsigned integer
-template<typename T>
-inline bool usumGt(T a, T b, T c)
+template<typename T, typename T2>
+inline bool usumGt(T a, T b, T2 c)
 { return ((a+b)>c) || ((a+b)<a); }
 
 /// safely compares sum of two unsigned integers with other unsigned integer
-template<typename T>
-inline bool usumGe(T a, T b, T c)
+template<typename T, typename T2>
+inline bool usumGe(T a, T b, T2 c)
 { return ((a+b)>=c) || ((a+b)<a); }
 
 /// parse unsigned integer regardless locales

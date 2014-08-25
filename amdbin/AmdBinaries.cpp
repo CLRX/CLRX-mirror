@@ -285,8 +285,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
     {   /* reading and checking program headers */
         if (ULEV(ehdr->e_phoff) > binaryCodeSize)
             throw Exception("ProgramHeaders offset out of range!");
-        if (usumGt(size_t(ULEV(ehdr->e_phoff)),
-                   size_t(ULEV(ehdr->e_phentsize))*ULEV(ehdr->e_phnum),
+        if (usumGt(ULEV(ehdr->e_phoff),
+                   ((typename Types::Word)ULEV(ehdr->e_phentsize))*ULEV(ehdr->e_phnum),
                    binaryCodeSize))
             throw Exception("ProgramHeaders offset+size out of range!");
         
@@ -296,8 +296,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             const typename Types::Phdr& phdr = getProgramHeader(i);
             if (ULEV(phdr.p_offset) > binaryCodeSize)
                 throw Exception("Segment offset out of range!");
-            if (usumGt(size_t(ULEV(phdr.p_offset)), size_t(ULEV(phdr.p_filesz)),
-                       binaryCodeSize))
+            if (usumGt(ULEV(phdr.p_offset), ULEV(phdr.p_filesz), binaryCodeSize))
                 throw Exception("Segment offset+size out of range!");
         }
     }
@@ -306,8 +305,9 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
     {   /* indexing of sections */
         if (ULEV(ehdr->e_shoff) > binaryCodeSize)
             throw Exception("SectionHeaders offset out of range!");
-        if (usumGt(size_t(ULEV(ehdr->e_shoff)),
-            size_t(ULEV(ehdr->e_shentsize))*ULEV(ehdr->e_shnum), binaryCodeSize))
+        if (usumGt(ULEV(ehdr->e_shoff),
+                  ((typename Types::Word)ULEV(ehdr->e_shentsize))*ULEV(ehdr->e_shnum),
+                  binaryCodeSize))
             throw Exception("SectionHeaders offset+size out of range!");
         if (ULEV(ehdr->e_shstrndx) >= ULEV(ehdr->e_shnum))
             throw Exception("Shstrndx out of range!");
@@ -327,8 +327,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             if (ULEV(shdr.sh_offset) > binaryCodeSize)
                 throw Exception("Section offset out of range!");
             if (ULEV(shdr.sh_type) != SHT_NOBITS)
-                if (usumGt(size_t(ULEV(shdr.sh_offset)), size_t(ULEV(shdr.sh_size)),
-                    binaryCodeSize))
+                if (usumGt(ULEV(shdr.sh_offset), ULEV(shdr.sh_size), binaryCodeSize))
                     throw Exception("Section offset+size out of range!");
             if (ULEV(shdr.sh_link) >= ULEV(ehdr->e_shnum))
                 throw Exception("Section link out of range!");
