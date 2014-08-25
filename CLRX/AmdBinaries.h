@@ -54,14 +54,15 @@ enum : cxuint {
     AMDBIN_CREATE_KERNELINFO = 0x10,    ///< create kernel informations
     AMDBIN_CREATE_KERNELINFOMAP = 0x20, ///< create map of kernel informations
     AMDBIN_CREATE_INNERBINMAP = 0x40,   ///< create map of inner binaries
-    AMDBIN_INNER_CREATE_SECTIONMAP = 0x100, ///< create map of sections for inner binaries
-    AMDBIN_INNER_CREATE_SYMBOLMAP = 0x200,  ///< create map of symbols for inner binaries
+    AMDBIN_CREATE_INFOSTRINGS = 0x80, ///< create compile options and driver info
+    AMDBIN_INNER_CREATE_SECTIONMAP = 0x1000, ///< create map of sections for inner binaries
+    AMDBIN_INNER_CREATE_SYMBOLMAP = 0x2000,  ///< create map of symbols for inner binaries
     /** create map of dynamic symbols for inner binaries */
-    AMDBIN_INNER_CREATE_DYNSYMMAP = 0x400,
-    AMDBIN_INNER_CREATE_CALNOTES = 0x1000, ///< create CAL notes for AMD inner GPU binary
+    AMDBIN_INNER_CREATE_DYNSYMMAP = 0x4000,
+    AMDBIN_INNER_CREATE_CALNOTES = 0x10000, ///< create CAL notes for AMD inner GPU binary
     
-    AMDBIN_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all AMD binaries creation flags
-    AMDBIN_INNER_SHIFT = 8 ///< shift for convert inner binary flags into elf binary flags
+    AMDBIN_CREATE_ALL = ELF_CREATE_ALL | 0xffff0, ///< all AMD binaries creation flags
+    AMDBIN_INNER_SHIFT = 12 ///< shift for convert inner binary flags into elf binary flags
 };
 
 enum : cxuint {
@@ -546,6 +547,7 @@ public:
             cxbyte* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
     ~AmdInnerGPUBinary32() = default;
     
+    /// return true if binary has CAL notes infos
     bool hasCALNotes() const
     { return (creationFlags & AMDBIN_CREATE_CALNOTES) != 0; }
     
@@ -706,6 +708,10 @@ public:
     bool hasInnerBinaryMap() const
     { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
     
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    
     /// get number of inner binaries
     uint32_t getInnerBinariesNum() const
     { return innerBinariesNum; }
@@ -757,6 +763,10 @@ public:
     bool hasInnerBinaryMap() const
     { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
     
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    
     /// get number of inner binaries
     size_t getInnerBinariesNum() const
     { return innerBinariesNum; }
@@ -801,6 +811,10 @@ public:
     bool hasKernelInfoMap() const
     { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
     
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    
     /// return true if binary has inner binary
     bool hasInnerBinary() const
     { return innerBinary; }
@@ -841,6 +855,10 @@ public:
     /// returns true if binary has kernel informations map
     bool hasKernelInfoMap() const
     { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
     
     /// return true if binary has inner binary
     bool hasInnerBinary() const
