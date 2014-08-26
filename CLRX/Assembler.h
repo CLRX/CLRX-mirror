@@ -61,41 +61,17 @@ enum: cxuint
 enum class GPUDeviceType
 {
     UNDEFINED = 0,
-    CEDAR, ///< Radeon HD5400
-    REDWOOD, ///< Radeon HD5500
-    JUNIPER, ///< Radeon HD5700
-    CYPRESS, ///< Radeon HD5800
-    CAICOS, ///< Radeon HD6400
-    TURKS, ///< Radeon HD6500
-    BARTS, ///< Radeon HD6800
-    CAYMAN, ///< Radeon HD6900
-    WINTER_PARK, ///< Radeon HD6300D
-    BEAVER_CREEK, ///< Radeon HD6500D
     CAPE_VERDE, ///< Radeon HD7700
     PITCAIRN, ///< Radeon HD7800
     TAHITI, ///< Radeon HD7900
-    DEVASTATOR, ///< Radeon HD7x00D
-    SCRAPPER, ///< Radeon HD7400G
     OLAND, ///< Radeon R7 250
     BONAIRE, ///< Radeon R7 260
     CURACAO, ///< Radeon R9 270
     HAWAII, ///< Radeon R9 290
     
-    RADEON_HD5400 = CEDAR,
-    RADEON_HD5500 = REDWOOD,
-    RADEON_HD5700 = JUNIPER,
-    RADEON_HD5800 = CYPRESS,
-    RADEON_HD6400 = CAICOS,
-    RADEON_HD6500 = TURKS,
-    RADEON_HD6800 = BARTS,
-    RADEON_HD6900 = CAYMAN,
-    RADEON_HD6300D = WINTER_PARK,
-    RADEON_HD6500D = BEAVER_CREEK,
     RADEON_HD7700 = CAPE_VERDE,
     RADEON_HD7800 = PITCAIRN,
     RADEON_HD7900 = TAHITI,
-    RADEON_HD7X00D = DEVASTATOR,
-    RADEON_HD7400G = SCRAPPER,
     RADEON_R7_250 = OLAND,
     RADEON_R7_260 = BONAIRE,
     RADEON_R9_270 = CURACAO,
@@ -127,22 +103,11 @@ public:
     { return output; }
 };
 
-class R800Assembler: public ISAAssembler
+class GCNAssembler: public ISAAssembler
 {
 public:
-    explicit R800Assembler(Assembler& assembler);
-    ~R800Assembler();
-    
-    size_t getMaxOutputSize() const;
-    size_t assemble(size_t lineNo, const char* line);
-    void finish();
-};
-
-class R1000Assembler: public ISAAssembler
-{
-public:
-    explicit R1000Assembler(Assembler& assembler);
-    ~R1000Assembler();
+    explicit GCNAssembler(Assembler& assembler);
+    ~GCNAssembler();
     
     size_t getMaxOutputSize() const;
     size_t assemble(size_t lineNo, const char* line);
@@ -165,21 +130,11 @@ public:
     virtual size_t disassemble(char* line) = 0;
 };
 
-class R800Disassembler: public ISADisassembler
+class GCNDisassembler: public ISADisassembler
 {
 public:
-    R800Disassembler(Disassembler& disassembler);
-    ~R800Disassembler();
-    
-    size_t getMaxLineSize() const;
-    size_t disassemble(char* line);
-};
-
-class R1000Disassembler: public ISADisassembler
-{
-public:
-    R1000Disassembler(Disassembler& disassembler);
-    ~R1000Disassembler();
+    GCNDisassembler(Disassembler& disassembler);
+    ~GCNDisassembler();
     
     size_t getMaxLineSize() const;
     size_t disassemble(char* line);
