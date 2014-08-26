@@ -1331,6 +1331,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
 AmdMainGPUBinary32::~AmdMainGPUBinary32()
 {
     delete[] innerBinaries;
+    delete[] metadatas;
 }
 
 const AmdInnerGPUBinary32& AmdMainGPUBinary32::getInnerBinary(const char* name) const
@@ -1435,6 +1436,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
 AmdMainGPUBinary64::~AmdMainGPUBinary64()
 {
     delete[] innerBinaries;
+    delete[] metadatas;
 }
 
 const AmdInnerGPUBinary32& AmdMainGPUBinary64::getInnerBinary(const char* name) const
