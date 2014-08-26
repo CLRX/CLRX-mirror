@@ -685,7 +685,6 @@ private:
     uint32_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
-    uint32_t calNoteHeaders;
 public:
     /** constructor
      * \param binaryCodeSize binary code size
