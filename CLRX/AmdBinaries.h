@@ -803,15 +803,15 @@ public:
     const AmdInnerGPUBinary32& getInnerBinary(const char* name) const;
     
     /// get metadata size for specified inner binary
-    uint32_t getMetadataSize(uint32_t index) const
+    size_t getMetadataSize(size_t index) const
     { return metadatas[index].size; }
     
     /// get metadata size for specified inner binary
-    const char* getMetadata(uint32_t index) const
+    const char* getMetadata(size_t index) const
     { return metadatas[index].data; }
     
     /// get metadata size for specified inner binary
-    char* getMetadata(uint32_t index)
+    char* getMetadata(size_t index)
     { return metadatas[index].data; }
 };
 
