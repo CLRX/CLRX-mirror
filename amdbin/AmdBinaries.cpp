@@ -1146,16 +1146,18 @@ struct AmdGPU64Types: Elf64Types
 };
 
 template<typename Types>
-static size_t initKernelInfos(const typename Types::ElfBinary& elf,
+static size_t initKernelInfos(typename Types::ElfBinary& elf,
          cxuint creationFlags, KernelInfo*& kernelInfos,
          const std::vector<size_t>& metadataSyms,
-         AmdMainBinaryBase::KernelInfoMap& kernelInfosMap)
+         AmdMainBinaryBase::KernelInfoMap& kernelInfosMap,
+         AmdGPUKernelMetadata*& metadatas)
 {
     size_t kernelInfosNum = 0;
     
     try
     {
         kernelInfos = new KernelInfo[metadataSyms.size()];
+        metadatas = new AmdGPUKernelMetadata[metadataSyms.size()];
         
         typename Types::Size ki = 0;
         for (typename Types::Size it: metadataSyms)
@@ -1167,7 +1169,7 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
             
             const typename Types::Shdr& rodataHdr =
                     elf.getSectionHeader(ULEV(sym.st_shndx));
-            const cxbyte* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
+            cxbyte* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
             
             const typename Types::Word symvalue = ULEV(sym.st_value);
             const typename Types::Word symsize = ULEV(sym.st_size);
@@ -1179,6 +1181,8 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
             parseAmdGpuKernelMetadata(symName, symsize,
                   reinterpret_cast<const char*>(rodataContent + symvalue),
                   kernelInfos[ki]);
+            metadatas[ki].size = symsize;
+            metadatas[ki].data = reinterpret_cast<char*>(rodataContent + symvalue);
             ki++;
         }
         kernelInfosNum = metadataSyms.size();
@@ -1192,6 +1196,8 @@ static size_t initKernelInfos(const typename Types::ElfBinary& elf,
     {
         delete[] kernelInfos;
         kernelInfos = nullptr;
+        delete[] metadatas;
+        metadatas = nullptr;
         throw;
     }
     return kernelInfosNum;
@@ -1236,7 +1242,7 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
 AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
        cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_BINARY),
           ElfBinary32(binaryCodeSize, binaryCode, creationFlags),
-          innerBinariesNum(0), innerBinaries(nullptr)
+          innerBinariesNum(0), innerBinaries(nullptr), metadatas(nullptr)
 {
     cxuint textIndex = SHN_UNDEF;
     try
@@ -1311,12 +1317,13 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
     
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
         kernelInfosNum = initKernelInfos<AmdGPU32Types>(*this, creationFlags,
-                        kernelInfos, choosenSymsMetadata, kernelInfosMap);
+                        kernelInfos, choosenSymsMetadata, kernelInfosMap, metadatas);
     }
     catch(...)
     {   /* free arrays */
         delete[] innerBinaries;
         delete[] kernelInfos;
+        delete[] metadatas;
         throw;
     }
 }
@@ -1414,12 +1421,13 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
     
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
         kernelInfosNum = initKernelInfos<AmdGPU64Types>(*this, creationFlags,
-                        kernelInfos, choosenSymsMetadata, kernelInfosMap);;
+                        kernelInfos, choosenSymsMetadata, kernelInfosMap, metadatas);
     }
     catch(...)
     {   /* free arrays */
         delete[] innerBinaries;
         delete[] kernelInfos;
+        delete[] metadatas;
         throw;
     }
 }

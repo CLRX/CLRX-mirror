@@ -672,6 +672,13 @@ public:
     { return compileOptions; }
 };
 
+/// AMD GPU metadata for kernel
+struct AmdGPUKernelMetadata
+{
+    size_t size;
+    char* data;
+};
+
 /// AMD main binary for GPU for 32-bit mode
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
@@ -685,6 +692,7 @@ private:
     uint32_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
+    AmdGPUKernelMetadata* metadatas;
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -725,6 +733,18 @@ public:
     
     /// get inner binary with specified name (requires inner binary map)
     const AmdInnerGPUBinary32& getInnerBinary(const char* name) const;
+    
+    /// get metadata size for specified inner binary
+    uint32_t getMetadataSize(uint32_t index) const
+    { return metadatas[index].size; }
+    
+    /// get metadata size for specified inner binary
+    const char* getMetadata(uint32_t index) const
+    { return metadatas[index].data; }
+    
+    /// get metadata size for specified inner binary
+    char* getMetadata(uint32_t index)
+    { return metadatas[index].data; }
 };
 
 /// AMD main binary for GPU for 64-bit mode
@@ -740,6 +760,7 @@ private:
     size_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
+    AmdGPUKernelMetadata* metadatas;
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -780,6 +801,18 @@ public:
     
     /// get inner binary with specified name (requires inner binary map)
     const AmdInnerGPUBinary32& getInnerBinary(const char* name) const;
+    
+    /// get metadata size for specified inner binary
+    uint32_t getMetadataSize(uint32_t index) const
+    { return metadatas[index].size; }
+    
+    /// get metadata size for specified inner binary
+    const char* getMetadata(uint32_t index) const
+    { return metadatas[index].data; }
+    
+    /// get metadata size for specified inner binary
+    char* getMetadata(uint32_t index)
+    { return metadatas[index].data; }
 };
 
 /// AMD main binary for X86 systems
