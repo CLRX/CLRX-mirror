@@ -78,6 +78,15 @@ enum class GPUDeviceType
     RADEON_R9_290 = HAWAII
 };
 
+struct ISAReservedRegister
+{
+    const char* name;
+    char destPrefix;
+    bool lastIndices;
+    cxuint destIndex;
+    cxuint destSize;
+};
+
 class ISAAssembler
 {
 private:
@@ -95,6 +104,13 @@ public:
     virtual size_t getMaxOutputSize() const = 0;
     virtual size_t assemble(size_t lineNo, const char* line) = 0;
     virtual void finish() = 0;
+    
+    virtual const char* getRegisterPrefixes() const = 0;
+    virtual const ISAReservedRegister* getReservedRegisters() const = 0;
+    virtual cxuint getRegistersNum(char prefix) const = 0;
+    
+    virtual void setRegisterIndices(const cxuint* registersNum,
+                    const cxuint* registerIndices) = 0;
     
     size_t getOutputSize() const
     { return outputSize; }
