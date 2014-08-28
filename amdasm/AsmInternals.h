@@ -53,6 +53,7 @@ enum : cxuint
     ARCH_SEA_ISLANDS = 2,
     ARCH_HD7X00 = 1,
     ARCH_RX2X0 = 2,
+    ARCH_GCN_ALL = 0xff,
 };
 
 enum : cxuint
@@ -76,6 +77,8 @@ enum : cxuint
     GCN_SRC12_NONE = 0x80,
     GCN_ARG1_IMM = 0x90,
     GCN_ARG2_IMM = 0xa0,
+    GCN_ARGS_VCMP = 0xb0,
+    GCN_ARGS_VCMP64 = 0xbf,
     GCN_MEMOP_MX1 = 0x0,
     GCN_MEMOP_MX2 = 0x100,
     GCN_MEMOP_MX4 = 0x200,
@@ -83,7 +86,7 @@ enum : cxuint
     GCN_MEMOP_MX16 = 0x400,
 };
 
-struct GCNInstruction
+struct CLRX_INTERNAL GCNInstruction
 {
     GCNEncoding encoding;
     const char* mnemonic;
@@ -92,6 +95,9 @@ struct GCNInstruction
     cxuint archMask; // mask of architectures whose have instruction
 };
 
+extern const CLRX::GCNInstruction gcnInstrTables[];
+
 };
+
 
 #endif
