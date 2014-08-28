@@ -95,7 +95,7 @@ struct CLRX_INTERNAL GCNInstruction
     cxuint archMask; // mask of architectures whose have instruction
 };
 
-extern const CLRX::GCNInstruction gcnInstrTables[];
+CLRX_INTERNAL extern const CLRX::GCNInstruction gcnInstrsTable[];
 
 };
 
