@@ -24,27 +24,27 @@
 namespace CLRX
 {
 
-enum class GCNEncoding: cxbyte
+enum GCNEncoding: cxbyte
 {
-    SOPC,
-    SOPP,
-    SOP1,
-    SOP2,
-    SOPK,
-    SMRD,
-    VOPC,
-    VOP1,
-    VOP2,
-    VOP3A,
-    VOP3,
-    VOP3B,
-    VINTRP,
-    DS,
-    MUBUF,
-    MTBUF,
-    MIMG,
-    EXP,
-    FLAT
+    GCNENC_SOPC,
+    GCNENC_SOPP,
+    GCNENC_SOP1,
+    GCNENC_SOP2,
+    GCNENC_SOPK,
+    GCNENC_SMRD,
+    GCNENC_VOPC,
+    GCNENC_VOP1,
+    GCNENC_VOP2,
+    GCNENC_VOP3A,
+    GCNENC_VOP3,
+    GCNENC_VOP3B,
+    GCNENC_VINTRP,
+    GCNENC_DS,
+    GCNENC_MUBUF,
+    GCNENC_MTBUF,
+    GCNENC_MIMG,
+    GCNENC_EXP,
+    GCNENC_FLAT
 };
 
 enum : cxuint
