@@ -57,14 +57,13 @@ enum : cxuint
 
 enum : cxuint
 {
-    GCN_REG_ALL_32 = 0,
+    GCN_STDMODE = 0,
     GCN_REG_ALL_64 = 15,
     GCN_REG_DST_64 = 1,
     GCN_REG_SRC0_64 = 2,
     GCN_REG_SRC1_64 = 4,
     GCN_REG_SRC2_64 = 8,
     GCN_REG_DS0_64 = 3,
-    GCN_MODE_NORMAL = 0,
     GCN_IMM_NONE = 0x10,
     GCN_ARG_NONE = 0x20,
     GCN_REG_S1_JMP = 0x20,
@@ -79,11 +78,15 @@ enum : cxuint
     GCN_ARGS_VCMP = 0xb0,
     GCN_ARGS_VCMP64 = 0xbf,
     GCN_S0EQS12 = 0xc0,
+    GCN_DS_ADDR_DST = 0x10,
+    GCN_DS_ADDR_SRC = 0x20,
+    GCN_DS_VDATA2 = 0x40,
+    GCN_FLOATLIT = 0x100,
     GCN_MEMOP_MX1 = 0x0,
     GCN_MEMOP_MX2 = 0x100,
     GCN_MEMOP_MX4 = 0x200,
     GCN_MEMOP_MX8 = 0x300,
-    GCN_MEMOP_MX16 = 0x400,
+    GCN_MEMOP_MX16 = 0x400
 };
 
 struct CLRX_INTERNAL GCNInstruction
