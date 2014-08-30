@@ -93,7 +93,14 @@ enum : cxuint
     GCN_MEMOP_MX2 = 0x100,
     GCN_MEMOP_MX4 = 0x200,
     GCN_MEMOP_MX8 = 0x300,
-    GCN_MEMOP_MX16 = 0x400
+    GCN_MEMOP_MX16 = 0x400,
+    GCN_MUBUF_X = 0x0,
+    GCN_MUBUF_XY = 0x100,
+    GCN_MUBUF_XYZ = 0x200,
+    GCN_MUBUF_XYZW = 0x300,
+    GCN_MUBUF_MX1 = 0x400,
+    GCN_MUBUF_MX2 = 0x500,
+    GCN_MUBUF_MX4 = 0x600,
 };
 
 struct CLRX_INTERNAL GCNInstruction
