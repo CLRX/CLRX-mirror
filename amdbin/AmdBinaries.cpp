@@ -1283,6 +1283,19 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
                 throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
         }
+        else if (::strcmp(symName, "__OpenCL_0_global") == 0 ||
+                 ::strcmp(symName, "__OpenCL_2_global") == 0)
+        {
+            const Elf32_Sym& sym = getSymbol(i);
+            const uint16_t shindex = ULEV(sym.st_shndx);
+            const Elf32_Shdr& shdr = getSectionHeader(shindex);
+            if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
+                throw Exception("globalData value out of range");
+            if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
+                throw Exception("globalData value+size out of range");
+            globalDataSize = ULEV(sym.st_size);
+            globalData = getSectionContent(shindex) + ULEV(sym.st_value);
+        }
         else if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
             choosenSymsMetadata.push_back(i);
@@ -1387,6 +1400,19 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
             if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
                 throw Exception("CompileOptions value+size out of range");
             compileOptions.assign(sectionContent + ULEV(sym.st_value), ULEV(sym.st_size));
+        }
+        else if (::strcmp(symName, "__OpenCL_0_global") == 0 ||
+                 ::strcmp(symName, "__OpenCL_2_global") == 0)
+        {
+            const Elf64_Sym& sym = getSymbol(i);
+            const uint16_t shindex = ULEV(sym.st_shndx);
+            const Elf64_Shdr& shdr = getSectionHeader(shindex);
+            if (ULEV(sym.st_value) >= ULEV(shdr.sh_size))
+                throw Exception("globalData value out of range");
+            if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(shdr.sh_size)))
+                throw Exception("globalData value+size out of range");
+            globalDataSize = ULEV(sym.st_size);
+            globalData = getSectionContent(shindex) + ULEV(sym.st_value);
         }
         else if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata

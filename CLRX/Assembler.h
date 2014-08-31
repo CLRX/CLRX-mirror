@@ -68,6 +68,7 @@ enum class GPUDeviceType
     BONAIRE, ///< Radeon R7 260
     CURACAO, ///< Radeon R9 270
     HAWAII, ///< Radeon R9 290
+    GPUDEVICE_MAX = HAWAII,
     
     RADEON_HD7700 = CAPE_VERDE,
     RADEON_HD7800 = PITCAIRN,
@@ -170,7 +171,7 @@ typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
 
 struct AsmGlobalMetadata
 {
-    std::string driverVersion;
+    std::string driverInfo;
     std::string compileOptions;
 };
 
@@ -252,14 +253,15 @@ public:
 
 struct DisasmKernelInput
 {
+    std::string kernelName;
     size_t metadataSize;
-    char* metadata;
-    cxbyte* header;
+    const char* metadata;
+    const cxbyte* header;
     std::vector<AsmCALNote> calNotes;
-    size_t execDataSize;
-    cxbyte* execData;
+    size_t dataSize;
+    const cxbyte* data;
     size_t codeSize;
-    cxbyte* code;
+    const cxbyte* code;
 };
 
 struct DisasmInput
@@ -267,7 +269,8 @@ struct DisasmInput
     bool is64BitMode;
     GPUDeviceType deviceType;
     AsmGlobalMetadata metadata;
-    cxbyte* globalData;
+    size_t globalDataSize;
+    const cxbyte* globalData;
     std::vector<DisasmKernelInput> kernelInputs;
 };
 
@@ -275,14 +278,17 @@ class Disassembler
 {
 private:
     ISADisassembler* isaDisassembler;
-    const DisasmInput& input;
+    bool fromBinary;
+    const DisasmInput* input;
     std::ostream& output;
     cxuint flags;
 public:
-    Disassembler(const AmdMainGPUBinary32& binary, std::ostream& os, cxuint flags);
-    Disassembler(const AmdMainGPUBinary64& binary, std::ostream& os, cxuint flags);
-    
-    Disassembler(const DisasmInput& disasmInput, std::ostream& os, cxuint flags);
+    Disassembler(const AmdMainGPUBinary32& binary, std::ostream& output,
+                 cxuint flags = 0);
+    Disassembler(const AmdMainGPUBinary64& binary, std::ostream& output,
+                 cxuint flags = 0);
+    Disassembler(const DisasmInput* disasmInput, std::ostream& output,
+                 cxuint flags = 0);
     ~Disassembler();
     
     void disassemble();
@@ -292,7 +298,7 @@ public:
     void setFlags(cxuint flags)
     { this->flags = flags; }
     
-    const DisasmInput& getInput() const
+    const DisasmInput* getInput() const
     { return input; }
     
     const std::ostream& getOutput() const

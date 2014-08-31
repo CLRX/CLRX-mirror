@@ -693,6 +693,8 @@ private:
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
     AmdGPUKernelMetadata* metadatas;
+    uint32_t globalDataSize;
+    cxbyte* globalData;
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -745,6 +747,17 @@ public:
     /// get metadata size for specified inner binary
     char* getMetadata(uint32_t index)
     { return metadatas[index].data; }
+    
+    /// get global data size
+    uint32_t getGlobalDataSize() const
+    { return globalDataSize; }
+    
+    /// get global data
+    const cxbyte* getGlobalData() const
+    { return globalData; }
+    /// get global data
+    cxbyte* getGlobalData()
+    { return globalData; }
 };
 
 /// AMD main binary for GPU for 64-bit mode
@@ -761,6 +774,8 @@ private:
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
     AmdGPUKernelMetadata* metadatas;
+    uint32_t globalDataSize;
+    cxbyte* globalData;
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -813,6 +828,17 @@ public:
     /// get metadata size for specified inner binary
     char* getMetadata(size_t index)
     { return metadatas[index].data; }
+    
+    /// get global data size
+    uint32_t getGlobalDataSize() const
+    { return globalDataSize; }
+    
+    /// get global data
+    const cxbyte* getGlobalData() const
+    { return globalData; }
+    /// get global data
+    cxbyte* getGlobalData()
+    { return globalData; }
 };
 
 /// AMD main binary for X86 systems
