@@ -64,6 +64,7 @@ enum : cxuint
     GCN_REG_SRC1_64 = 4,
     GCN_REG_SRC2_64 = 8,
     GCN_REG_DS0_64 = 3,
+    GCN_REG_DS2_64 = 9,
     GCN_IMM_NONE = 0x10,
     GCN_ARG_NONE = 0x20,
     GCN_REG_S1_JMP = 0x20,
@@ -79,6 +80,7 @@ enum : cxuint
     GCN_ARGS_VCMP64 = 0xbf,
     GCN_S0EQS12 = 0xc0,
     // DS encoding modes
+    GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,
     GCN_ADDR_SRC = 0x20,
     GCN_ADDR_DST64 = 0x1f,
@@ -88,6 +90,11 @@ enum : cxuint
     GCN_2SRCS = 0xc0,
     GCN_SRC_ADDR2  = 0x100,
     GCN_SRC_ADDR2_64  = 0x10f,
+    GCN_ADDR_DST96  = 0x150,
+    GCN_ADDR_DST128  = 0x190,
+    GCN_ADDR_SRC96  = 0x160,
+    GCN_ADDR_SRC128  = 0x1a0,
+    // others
     GCN_FLOATLIT = 0x100,
     GCN_MEMOP_MX1 = 0x0,
     GCN_MEMOP_MX2 = 0x100,
@@ -100,7 +107,8 @@ enum : cxuint
     GCN_MUBUF_XYZW = 0x300,
     GCN_MUBUF_MX1 = 0x400,
     GCN_MUBUF_MX2 = 0x500,
-    GCN_MUBUF_MX4 = 0x600,
+    GCN_MUBUF_MX3 = 0x600,
+    GCN_MUBUF_MX4 = 0x700,
 };
 
 struct CLRX_INTERNAL GCNInstruction
