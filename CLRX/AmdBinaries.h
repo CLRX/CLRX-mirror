@@ -668,8 +668,11 @@ public:
     /// get kernel information with specified kernel name (requires kernel info map)
     const KernelInfo& getKernelInfo(const char* name) const;
     
+    /// get driver info string
     const std::string getDriverInfo() const
     { return driverInfo; }
+    
+    /// get compile options string
     const std::string getCompileOptions() const
     { return compileOptions; }
 };
@@ -686,7 +689,7 @@ struct AmdGPUKernelHeader
 {
     std::string kernelName;
     size_t size;
-    char* data;
+    cxbyte* data;
 };
 
 
@@ -773,11 +776,11 @@ public:
     { return kernelHeaders[index].size; }
     
     /// get kernel header for specified index
-    const char* getKernelHeader(size_t index) const
+    const cxbyte* getKernelHeader(size_t index) const
     { return kernelHeaders[index].data; }
     
     /// get kernel header for specified index
-    char* getKernelHeader(size_t index)
+    cxbyte* getKernelHeader(size_t index)
     { return kernelHeaders[index].data; }
 };
 

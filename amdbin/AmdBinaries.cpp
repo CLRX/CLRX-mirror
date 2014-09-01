@@ -1346,7 +1346,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             
             kernelHeaders[ki].kernelName.assign(symName + 9, symName + symNameLen-7);
             kernelHeaders[ki].size = symsize;
-            kernelHeaders[ki].data = reinterpret_cast<char*>(secContent + symvalue);
+            kernelHeaders[ki].data = secContent + symvalue;
             ki++;
         }
         /* maps kernel headers */
