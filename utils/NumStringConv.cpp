@@ -1907,3 +1907,89 @@ size_t CLRX::dtocstrCStyle(double value, char* str, size_t maxSize, bool scienti
     v.d = value;
     return fXtocstrCStyle(v.u, str, maxSize, scientific, 11, 52);
 }
+
+size_t CLRX::u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix,
+             cxuint width)
+{
+    return u64tocstrCStyle(value, str, maxSize, radix, width);
+}
+
+size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
+            cxuint width)
+{
+   cxuint digitsNum = 0;
+   char buffer[64];
+   
+   char* strend = str + maxSize-1;
+   char* p = str;
+   switch(radix)
+   {
+       case 2:
+           if (p+2 >= strend)
+               throw Exception("Max size is too small");
+           *p++ = '0';
+           *p++ = 'b';
+           for (uint64_t tval = value; tval != 0; digitsNum++)
+           {
+               const cxuint digit = tval&1;
+               buffer[digitsNum] = '0'+digit;
+               tval = tval>>1;
+           }
+           break;
+       case 8:
+           if (p+1 >= strend)
+               throw Exception("Max size is too small");
+           *p++ = '0';
+           for (uint64_t tval = value; tval != 0; digitsNum++)
+           {
+               const cxuint digit = tval&7;
+               buffer[digitsNum] = '0'+digit;
+               tval = tval>>3;
+           }
+           break;
+       case 10:
+           for (uint64_t tval = value; tval != 0; digitsNum++)
+           {
+               const uint64_t tmp = tval/10ULL;
+               const cxuint digit = tval - tmp*10ULL;
+               buffer[digitsNum] = '0'+digit;
+               tval = tmp;
+           }
+           break;
+       case 16:
+           if (p+2 >= strend)
+               throw Exception("Max size is too small");
+           *p++ = '0';
+           *p++ = 'x';
+           for (uint64_t tval = value; tval != 0; digitsNum++)
+           {
+               const cxuint digit = tval&15;
+               buffer[digitsNum] = (digit < 10) ? ('0'+digit) : ('a'+digit-10);
+               tval = tval>>4;
+           }
+           break;
+       default:
+           throw Exception("Unknown radix");
+           break;
+   }
+   
+   // if zero
+   if (value == 0)
+       buffer[digitsNum++] = '0';
+   
+   if (p+digitsNum > strend || p+width > strend)
+       throw Exception("Max size is too small");
+   
+   if (digitsNum < width)
+   {
+       const char fillchar = (radix == 10)?' ':'0';
+       for (cxuint pos = 0; pos < width-digitsNum; pos++)
+           *p++ = fillchar;
+   }
+   
+   for (cxuint pos = digitsNum; pos > 0; pos--)
+        *p++ = buffer[pos-1];
+   
+   *p = 0;
+    return ((ptrdiff_t)p)-((ptrdiff_t)str);
+}

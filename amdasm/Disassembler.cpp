@@ -129,18 +129,21 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
             cxuint flags) : fromBinary(true), output(_output)
 {
+    this->flags = flags;
     input = getDisasmInputFromBinary(binary);
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
             cxuint flags) : fromBinary(true), output(_output)
 {
+    this->flags = flags;
     input = getDisasmInputFromBinary(binary);
 }
 
 Disassembler::Disassembler(const DisasmInput* disasmInput, std::ostream& _output,
             cxuint flags) : fromBinary(false), input(disasmInput), output(_output)
 {
+    this->flags = flags;
 }
 
 Disassembler::~Disassembler()
