@@ -693,6 +693,9 @@ protected:
     cxbyte* globalData;
     
     explicit AmdMainGPUBinaryBase(AmdMainType type);
+    
+    template<typename Types>
+    void initMainGPUBinary(typename Types::ElfBinary& binary);
 public:
     ~AmdMainGPUBinaryBase();
     
