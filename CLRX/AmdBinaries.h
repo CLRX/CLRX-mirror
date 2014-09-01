@@ -753,6 +753,10 @@ public:
     cxbyte* getGlobalData()
     { return globalData; }
     
+    /// get kernel header number
+    size_t getKernelHeadersNum() const
+    { return kernelHeadersNum; }
+    
     /// get kernel header struct for specified index
     const AmdGPUKernelHeader& getKernelHeaderStruct(size_t index) const
     { return kernelHeaders[index]; }
