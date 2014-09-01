@@ -256,6 +256,7 @@ struct DisasmKernelInput
     std::string kernelName;
     size_t metadataSize;
     const char* metadata;
+    size_t headerSize;
     const cxbyte* header;
     std::vector<AsmCALNote> calNotes;
     size_t dataSize;

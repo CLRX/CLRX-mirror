@@ -1145,108 +1145,17 @@ struct AmdGPU64Types: Elf64Types
     typedef ElfBinary64 ElfBinary;
 };
 
-template<typename Types>
-static size_t initKernelInfos(typename Types::ElfBinary& elf,
-         cxuint creationFlags, KernelInfo*& kernelInfos,
-         const std::vector<size_t>& metadataSyms,
-         AmdMainBinaryBase::KernelInfoMap& kernelInfosMap,
-         AmdGPUKernelMetadata*& metadatas)
-{
-    size_t kernelInfosNum = 0;
-    
-    try
-    {
-        kernelInfos = new KernelInfo[metadataSyms.size()];
-        metadatas = new AmdGPUKernelMetadata[metadataSyms.size()];
-        
-        typename Types::Size ki = 0;
-        for (typename Types::Size it: metadataSyms)
-        {   // read symbol _OpenCL..._metadata
-            const typename Types::Sym& sym = elf.getSymbol(it);
-            const char* symName = elf.getSymbolName(it);
-            if (ULEV(sym.st_shndx) >= elf.getSectionHeadersNum())
-                throw Exception("Metadata section index out of range");
-            
-            const typename Types::Shdr& rodataHdr =
-                    elf.getSectionHeader(ULEV(sym.st_shndx));
-            cxbyte* rodataContent = elf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
-            
-            const typename Types::Word symvalue = ULEV(sym.st_value);
-            const typename Types::Word symsize = ULEV(sym.st_size);
-            if (symvalue > ULEV(rodataHdr.sh_size))
-                throw Exception("Metadata offset out of range");
-            if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
-                throw Exception("Metadata offset+size out of range");
-            
-            parseAmdGpuKernelMetadata(symName, symsize,
-                  reinterpret_cast<const char*>(rodataContent + symvalue),
-                  kernelInfos[ki]);
-            metadatas[ki].size = symsize;
-            metadatas[ki].data = reinterpret_cast<char*>(rodataContent + symvalue);
-            ki++;
-        }
-        kernelInfosNum = metadataSyms.size();
-        /* maps kernel info */
-        if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
-            for (size_t i = 0; i < kernelInfosNum; i++)
-                kernelInfosMap.insert(
-                    std::make_pair(kernelInfos[i].kernelName, i));
-    }
-    catch(...)
-    {
-        delete[] kernelInfos;
-        kernelInfos = nullptr;
-        delete[] metadatas;
-        metadatas = nullptr;
-        throw;
-    }
-    return kernelInfosNum;
-}
-
-template<typename Types>
-static void initInnerBinaries(typename Types::ElfBinary& elf,
-         cxuint creationFlags, AmdInnerGPUBinary32*& innerBinaries,
-         size_t innerBinariesNum, const std::vector<size_t>& choosenSyms,
-         uint16_t textIndex, AmdMainGPUBinary32::InnerBinaryMap& innerBinaryMap)
-{
-    const typename Types::Shdr& textHdr = elf.getSectionHeader(textIndex);
-    cxbyte* textContent = elf.getBinaryCode() + ULEV(textHdr.sh_offset);
-    
-    /* create table of innerBinaries */
-    innerBinaries = new AmdInnerGPUBinary32[innerBinariesNum];
-    size_t ki = 0;
-    for (auto it: choosenSyms)
-    {
-        const char* symName = elf.getSymbolName(it);
-        size_t len = ::strlen(symName);
-        const typename Types::Sym& sym = elf.getSymbol(it);
-        
-        const typename Types::Word symvalue = ULEV(sym.st_value);
-        const typename Types::Word symsize = ULEV(sym.st_size);
-        if (symvalue > ULEV(textHdr.sh_size))
-            throw Exception("Inner binary offset out of range!");
-        if (usumGt(symvalue, symsize, ULEV(textHdr.sh_size)))
-            throw Exception("Inner binary offset+size out of range!");
-        
-        innerBinaries[ki++] = AmdInnerGPUBinary32(std::string(symName+9, len-16),
-            symsize, textContent+symvalue,
-            (creationFlags >> AMDBIN_INNER_SHIFT) & AMDBIN_INNER_INT_CREATE_ALL);
-    }
-    if ((creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0)
-        for (size_t i = 0; i < innerBinariesNum; i++)
-            innerBinaryMap.insert(std::make_pair(innerBinaries[i].getKernelName(), i));
-}
-
 AmdMainGPUBinaryBase::AmdMainGPUBinaryBase(AmdMainType type)
         : AmdMainBinaryBase(type), innerBinariesNum(0),
-          innerBinaries(nullptr), metadatas(nullptr), globalDataSize(0), globalData(0)
-{
-}
+          innerBinaries(nullptr), metadatas(nullptr),
+          kernelHeadersNum(0), kernelHeaders(nullptr), globalDataSize(0), globalData(0)
+{ }
 
 AmdMainGPUBinaryBase::~AmdMainGPUBinaryBase()
 {
     delete[] innerBinaries;
     delete[] metadatas;
+    delete[] kernelHeaders;
 }
 
 template<typename Types>
@@ -1260,9 +1169,11 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
     
     std::vector<size_t> choosenSyms;
     std::vector<size_t> choosenSymsMetadata;
+    std::vector<size_t> choosenSymsHeaders;
     
     const cxuint creationFlags = mainElf.getCreationFlags();
     
+    const bool doKernelHeaders = (creationFlags & AMDBIN_CREATE_KERNELHEADERS) != 0;
     const bool doKernelInfo = (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0;
     const bool doInfoStrings = (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0;
     size_t compileOptionsEnd = 0;
@@ -1311,6 +1222,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         else if (doKernelInfo && len >= 18 &&
             ::strcmp(symName+len-9, "_metadata") == 0) // if metadata
             choosenSymsMetadata.push_back(i);
+        else if (doKernelHeaders && ::strcmp(symName+len-7, "_header") == 0) // if header
+            choosenSymsHeaders.push_back(i);
     }
     
     try
@@ -1337,18 +1250,123 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
     innerBinariesNum = choosenSyms.size();
     
     if (textIndex != SHN_UNDEF) /* if have ".text" */
-        initInnerBinaries<Types>(mainElf, creationFlags, innerBinaries,
-                         innerBinariesNum, choosenSyms, textIndex, innerBinaryMap);
+    {
+        const typename Types::Shdr& textHdr = mainElf.getSectionHeader(textIndex);
+        cxbyte* textContent = mainElf.getBinaryCode() + ULEV(textHdr.sh_offset);
+        
+        /* create table of innerBinaries */
+        innerBinaries = new AmdInnerGPUBinary32[innerBinariesNum];
+        size_t ki = 0;
+        for (auto it: choosenSyms)
+        {
+            const char* symName = mainElf.getSymbolName(it);
+            size_t len = ::strlen(symName);
+            const typename Types::Sym& sym = mainElf.getSymbol(it);
+            
+            const typename Types::Word symvalue = ULEV(sym.st_value);
+            const typename Types::Word symsize = ULEV(sym.st_size);
+            if (symvalue > ULEV(textHdr.sh_size))
+                throw Exception("Inner binary offset out of range!");
+            if (usumGt(symvalue, symsize, ULEV(textHdr.sh_size)))
+                throw Exception("Inner binary offset+size out of range!");
+            
+            innerBinaries[ki++] = AmdInnerGPUBinary32(std::string(symName+9, len-16),
+                symsize, textContent+symvalue,
+                (creationFlags >> AMDBIN_INNER_SHIFT) & AMDBIN_INNER_INT_CREATE_ALL);
+        }
+        if ((creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0)
+            for (size_t i = 0; i < innerBinariesNum; i++)
+                innerBinaryMap.insert(std::make_pair(innerBinaries[i].getKernelName(), i));
+    }
     
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
-        kernelInfosNum = initKernelInfos<Types>(mainElf, creationFlags,
-                        kernelInfos, choosenSymsMetadata, kernelInfosMap, metadatas);
+    {
+        kernelInfosNum = choosenSymsMetadata.size();
+        kernelInfos = new KernelInfo[kernelInfosNum];
+        metadatas = new AmdGPUKernelMetadata[kernelInfosNum];
+        
+        typename Types::Size ki = 0;
+        
+        for (typename Types::Size it: choosenSymsMetadata)
+        {   // read symbol _OpenCL..._metadata
+            const typename Types::Sym& sym = mainElf.getSymbol(it);
+            const char* symName = mainElf.getSymbolName(it);
+            if (ULEV(sym.st_shndx) >= mainElf.getSectionHeadersNum())
+                throw Exception("Metadata section index out of range");
+            
+            const typename Types::Shdr& rodataHdr =
+                    mainElf.getSectionHeader(ULEV(sym.st_shndx));
+            cxbyte* secContent = mainElf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
+            
+            const typename Types::Word symvalue = ULEV(sym.st_value);
+            const typename Types::Word symsize = ULEV(sym.st_size);
+            if (symvalue > ULEV(rodataHdr.sh_size))
+                throw Exception("Metadata offset out of range");
+            if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
+                throw Exception("Metadata offset+size out of range");
+            
+            parseAmdGpuKernelMetadata(symName, symsize,
+                  reinterpret_cast<const char*>(secContent + symvalue),
+                  kernelInfos[ki]);
+            metadatas[ki].size = symsize;
+            metadatas[ki].data = reinterpret_cast<char*>(secContent + symvalue);
+            ki++;
+        }
+        /* maps kernel info */
+        if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
+            for (size_t i = 0; i < kernelInfosNum; i++)
+                kernelInfosMap.insert(
+                    std::make_pair(kernelInfos[i].kernelName, i));
+    }
+    if ((creationFlags & AMDBIN_CREATE_KERNELHEADERS) != 0)
+    {
+        kernelHeadersNum = choosenSymsHeaders.size();
+        kernelHeaders = new AmdGPUKernelHeader[kernelHeadersNum];
+        metadatas = new AmdGPUKernelMetadata[kernelHeadersNum];
+        
+        typename Types::Size ki = 0;
+        
+        for (typename Types::Size it: choosenSymsHeaders)
+        {
+            const typename Types::Sym& sym = mainElf.getSymbol(it);
+            const char* symName = mainElf.getSymbolName(it);
+            const size_t symNameLen = ::strlen(symName);
+            if (ULEV(sym.st_shndx) >= mainElf.getSectionHeadersNum())
+                throw Exception("KernelHeader section index out of range");
+            
+            const typename Types::Shdr& rodataHdr =
+                    mainElf.getSectionHeader(ULEV(sym.st_shndx));
+            cxbyte* secContent = mainElf.getBinaryCode() + ULEV(rodataHdr.sh_offset);
+            
+            const typename Types::Word symvalue = ULEV(sym.st_value);
+            const typename Types::Word symsize = ULEV(sym.st_size);
+            if (symvalue > ULEV(rodataHdr.sh_size))
+                throw Exception("KernelHeader offset out of range");
+            if (usumGt(symvalue, symsize, ULEV(rodataHdr.sh_size)))
+                throw Exception("KernelHeader offset+size out of range");
+            
+            kernelHeaders[ki].kernelName.assign(symName + 9, symName + symNameLen-7);
+            kernelHeaders[ki].size = symsize;
+            kernelHeaders[ki].data = reinterpret_cast<char*>(secContent + symvalue);
+            ki++;
+        }
+        /* maps kernel headers */
+        if ((creationFlags & AMDBIN_CREATE_KERNELHEADERMAP) != 0)
+            for (size_t i = 0; i < kernelHeadersNum; i++)
+                kernelHeaderMap.insert(
+                    std::make_pair(kernelHeaders[i].kernelName, i));
+    }
     }
     catch(...)
     {   /* free arrays */
         delete[] innerBinaries;
         delete[] kernelInfos;
         delete[] metadatas;
+        delete[] kernelHeaders;
+        innerBinaries = nullptr;
+        kernelInfos = nullptr;
+        metadatas = nullptr;
+        kernelHeaders = nullptr;
         throw;
     }
 }
@@ -1359,6 +1377,15 @@ const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name
     if (it == innerBinaryMap.end())
         throw Exception("Cant find inner binary");
     return innerBinaries[it->second];
+}
+
+const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderStruct(
+            const char* name) const
+{
+    KernelHeaderMap::const_iterator it = kernelHeaderMap.find(name);
+    if (it == kernelHeaderMap.end())
+        throw Exception("Cant find kernel header");
+    return kernelHeaders[it->second];
 }
 
 /* AmdMainGPUBinary32 */

@@ -55,6 +55,8 @@ enum : cxuint {
     AMDBIN_CREATE_KERNELINFOMAP = 0x20, ///< create map of kernel informations
     AMDBIN_CREATE_INNERBINMAP = 0x40,   ///< create map of inner binaries
     AMDBIN_CREATE_INFOSTRINGS = 0x80, ///< create compile options and driver info
+    AMDBIN_CREATE_KERNELHEADERS = 0x100,    ///< create kernel headers
+    AMDBIN_CREATE_KERNELHEADERMAP = 0x200,    ///< create kernel headers map
     AMDBIN_INNER_CREATE_SECTIONMAP = 0x1000, ///< create map of sections for inner binaries
     AMDBIN_INNER_CREATE_SYMBOLMAP = 0x2000,  ///< create map of symbols for inner binaries
     /** create map of dynamic symbols for inner binaries */
@@ -679,16 +681,30 @@ struct AmdGPUKernelMetadata
     char* data;
 };
 
+/// AMD GPU header for kernel
+struct AmdGPUKernelHeader
+{
+    std::string kernelName;
+    size_t size;
+    char* data;
+};
+
+
+/// main AMD GPU binary base class
 class AmdMainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
     /// inner binary map
     typedef std::unordered_map<std::string, size_t> InnerBinaryMap;
+    typedef std::unordered_map<std::string, size_t> KernelHeaderMap;
 protected:
     size_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
     AmdGPUKernelMetadata* metadatas;
+    size_t kernelHeadersNum;
+    AmdGPUKernelHeader* kernelHeaders;
+    KernelHeaderMap kernelHeaderMap;
     size_t globalDataSize;
     cxbyte* globalData;
     
@@ -718,11 +734,11 @@ public:
     size_t getMetadataSize(size_t index) const
     { return metadatas[index].size; }
     
-    /// get metadata size for specified inner binary
+    /// get metadata for specified inner binary
     const char* getMetadata(size_t index) const
     { return metadatas[index].data; }
     
-    /// get metadata size for specified inner binary
+    /// get metadata for specified inner binary
     char* getMetadata(size_t index)
     { return metadatas[index].data; }
     
@@ -736,6 +752,29 @@ public:
     /// get global data
     cxbyte* getGlobalData()
     { return globalData; }
+    
+    /// get kernel header struct for specified index
+    const AmdGPUKernelHeader& getKernelHeaderStruct(size_t index) const
+    { return kernelHeaders[index]; }
+    
+    /// get kernel header struct for specified index
+    const AmdGPUKernelHeader& getKernelHeaderStruct(const char* name) const;
+    
+    /// get kernel header struct for specified index
+    AmdGPUKernelHeader& getKernelHeaderStruct(size_t index)
+    { return kernelHeaders[index]; }
+    
+    /// get kernel header size for specified index
+    size_t getKernelHeaderSize(size_t index) const
+    { return kernelHeaders[index].size; }
+    
+    /// get kernel header for specified index
+    const char* getKernelHeader(size_t index) const
+    { return kernelHeaders[index].data; }
+    
+    /// get kernel header for specified index
+    char* getKernelHeader(size_t index)
+    { return kernelHeaders[index].data; }
 };
 
 /// AMD main binary for GPU for 32-bit mode
@@ -769,6 +808,14 @@ public:
     /// returns true if binary has info strings
     bool hasInfoStrings() const
     { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    
+    /// return true if binary has kernel headers
+    bool hasKernelHeaders() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELHEADERS) != 0; }
+    
+    /// return true if binary has kernel header map
+    bool hasKernelHeaderMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELHEADERMAP) != 0; }
 };
 
 /// AMD main binary for GPU for 64-bit mode
@@ -802,6 +849,14 @@ public:
     /// returns true if binary has info strings
     bool hasInfoStrings() const
     { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    
+    /// return true if binary has kernel headers
+    bool hasKernelHeaders() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELHEADERS) != 0; }
+    
+    /// return true if binary has kernel header map
+    bool hasKernelHeaderMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELHEADERMAP) != 0; }
 };
 
 /// AMD main binary for X86 systems
