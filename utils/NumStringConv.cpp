@@ -1909,13 +1909,13 @@ size_t CLRX::dtocstrCStyle(double value, char* str, size_t maxSize, bool scienti
 }
 
 size_t CLRX::u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix,
-             cxuint width)
+             cxuint width, bool prefix)
 {
     return u64tocstrCStyle(value, str, maxSize, radix, width);
 }
 
 size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
-            cxuint width)
+            cxuint width, bool prefix)
 {
    cxuint digitsNum = 0;
    char buffer[64];
@@ -1925,10 +1925,13 @@ size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
    switch(radix)
    {
        case 2:
-           if (p+2 >= strend)
-               throw Exception("Max size is too small");
-           *p++ = '0';
-           *p++ = 'b';
+           if (prefix)
+           {
+               if (p+2 >= strend)
+                   throw Exception("Max size is too small");
+               *p++ = '0';
+               *p++ = 'b';
+           }
            for (uint64_t tval = value; tval != 0; digitsNum++)
            {
                const cxuint digit = tval&1;
@@ -1937,9 +1940,12 @@ size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
            }
            break;
        case 8:
-           if (p+1 >= strend)
-               throw Exception("Max size is too small");
-           *p++ = '0';
+           if (prefix)
+           {
+               if (p+1 >= strend)
+                   throw Exception("Max size is too small");
+               *p++ = '0';
+           }
            for (uint64_t tval = value; tval != 0; digitsNum++)
            {
                const cxuint digit = tval&7;
@@ -1957,10 +1963,13 @@ size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
            }
            break;
        case 16:
-           if (p+2 >= strend)
-               throw Exception("Max size is too small");
-           *p++ = '0';
-           *p++ = 'x';
+           if (prefix)
+           {
+               if (p+2 >= strend)
+                   throw Exception("Max size is too small");
+               *p++ = '0';
+               *p++ = 'x';
+           }
            for (uint64_t tval = value; tval != 0; digitsNum++)
            {
                const cxuint digit = tval&15;

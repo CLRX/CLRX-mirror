@@ -322,11 +322,11 @@ double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
 /// format 32-bit unsigned integer
 size_t u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0);
+       cxuint width = 0, bool prefix = true);
 
 /// format 64-bit unsigned integer
 size_t u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix = 10,
-        cxuint width = 0);
+        cxuint width = 0, bool prefix = true);
 
 /// format half float in C-style
 /** format to string the half float in C-style formatting. This function handles 2 modes
