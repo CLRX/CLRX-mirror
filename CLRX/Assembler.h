@@ -267,8 +267,8 @@ struct DisasmKernelInput
 
 struct DisasmInput
 {
-    bool is64BitMode;
     GPUDeviceType deviceType;
+    bool is64BitMode;
     AsmGlobalMetadata metadata;
     size_t globalDataSize;
     const cxbyte* globalData;

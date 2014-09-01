@@ -65,17 +65,27 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
     input->kernelInputs.resize(kernelInfosNum);
     if (kernelInfosNum != binary.getInnerBinariesNum())
         throw Exception("KernelInfosNum != InnerBinariesNum");
+    if (kernelInfosNum != binary.getKernelHeadersNum())
+        throw Exception("KernelInfosNum != KernelHeadersNum");
     
     for (cxuint i = 0; i < kernelInfosNum; i++)
     {
         const KernelInfo& kernelInfo = binary.getKernelInfo(i);
         const AmdInnerGPUBinary32* innerBin = &binary.getInnerBinary(i);
         if (kernelInfo.kernelName != kernelInfo.kernelName)
-            // fallback if not order
+            // fallback if not in order
             innerBin = &binary.getInnerBinary(kernelInfo.kernelName.c_str());
         DisasmKernelInput& kernelInput = input->kernelInputs[i];
         kernelInput.metadataSize = binary.getMetadataSize(i);
         kernelInput.metadata = binary.getMetadata(i);
+        
+        // kernel header
+        const AmdGPUKernelHeader* khdr = &binary.getKernelHeaderEntry(i);
+        if (khdr->kernelName != kernelInfo.kernelName)
+            // fallback if not in order
+            khdr = &binary.getKernelHeaderEntry(kernelInfo.kernelName.c_str());
+        kernelInput.headerSize = khdr->size;
+        kernelInput.header = khdr->data;
         
         bool codeFound = false, dataFound = false;
         kernelInput.codeSize = kernelInput.dataSize = 0;
@@ -112,8 +122,6 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
             std::copy(calNoteHdr.name, calNoteHdr.name+8, outCalNote.header.name);
             outCalNote.data = const_cast<cxbyte*>(innerBin->getCALNoteData(j));
         }
-        
-        // find kernel header
     }
     return input;
 }
