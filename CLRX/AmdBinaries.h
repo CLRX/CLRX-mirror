@@ -752,7 +752,7 @@ public:
      */
     AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    ~AmdMainGPUBinary32();
+    ~AmdMainGPUBinary32() = default;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const
@@ -785,7 +785,7 @@ public:
      */
     AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
-    ~AmdMainGPUBinary64();
+    ~AmdMainGPUBinary64() = default;
     
     /// returns true if binary has kernel informations
     bool hasKernelInfo() const

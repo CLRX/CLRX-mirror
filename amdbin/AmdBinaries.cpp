@@ -1370,9 +1370,6 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
     initMainGPUBinary<AmdGPU32Types>(*this);
 }
 
-AmdMainGPUBinary32::~AmdMainGPUBinary32()
-{ }
-
 /* AmdMainGPUBinary64 */
 
 AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -1381,9 +1378,6 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
 {
     initMainGPUBinary<AmdGPU64Types>(*this);
 }
-
-AmdMainGPUBinary64::~AmdMainGPUBinary64()
-{ }
 
 /* AmdMainX86Binary32 */
 
