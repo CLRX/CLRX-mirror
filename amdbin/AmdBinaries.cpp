@@ -1237,12 +1237,31 @@ static void initInnerBinaries(typename Types::ElfBinary& elf,
             innerBinaryMap.insert(std::make_pair(innerBinaries[i].getKernelName(), i));
 }
 
+AmdMainGPUBinaryBase::AmdMainGPUBinaryBase(AmdMainType type)
+        : AmdMainBinaryBase(type), innerBinariesNum(0),
+          innerBinaries(nullptr), metadatas(nullptr), globalDataSize(0), globalData(0)
+{
+}
+
+AmdMainGPUBinaryBase::~AmdMainGPUBinaryBase()
+{
+    delete[] innerBinaries;
+    delete[] metadatas;
+}
+
+const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name) const
+{
+    InnerBinaryMap::const_iterator it = innerBinaryMap.find(name);
+    if (it == innerBinaryMap.end())
+        throw Exception("Cant find inner binary");
+    return innerBinaries[it->second];
+}
+
 /* AmdMainGPUBinary32 */
 
 AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
-       cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_BINARY),
-          ElfBinary32(binaryCodeSize, binaryCode, creationFlags),
-          innerBinariesNum(0), innerBinaries(nullptr), metadatas(nullptr)
+       cxuint creationFlags) : AmdMainGPUBinaryBase(AmdMainType::GPU_BINARY),
+          ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
     cxuint textIndex = SHN_UNDEF;
     try
@@ -1342,25 +1361,13 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
 }
 
 AmdMainGPUBinary32::~AmdMainGPUBinary32()
-{
-    delete[] innerBinaries;
-    delete[] metadatas;
-}
-
-const AmdInnerGPUBinary32& AmdMainGPUBinary32::getInnerBinary(const char* name) const
-{
-    InnerBinaryMap::const_iterator it = innerBinaryMap.find(name);
-    if (it == innerBinaryMap.end())
-        throw Exception("Cant find inner binary");
-    return innerBinaries[it->second];
-}
+{ }
 
 /* AmdMainGPUBinary64 */
 
 AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-       cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_64_BINARY),
-          ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
-          innerBinariesNum(0), innerBinaries(nullptr)
+       cxuint creationFlags) : AmdMainGPUBinaryBase(AmdMainType::GPU_64_BINARY),
+          ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     cxuint textIndex = SHN_UNDEF;
     try
@@ -1460,18 +1467,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
 }
 
 AmdMainGPUBinary64::~AmdMainGPUBinary64()
-{
-    delete[] innerBinaries;
-    delete[] metadatas;
-}
-
-const AmdInnerGPUBinary32& AmdMainGPUBinary64::getInnerBinary(const char* name) const
-{
-    InnerBinaryMap::const_iterator it = innerBinaryMap.find(name);
-    if (it == innerBinaryMap.end())
-        throw Exception("Cant find inner binary");
-    return innerBinaries[it->second];
-}
+{ }
 
 /* AmdMainX86Binary32 */
 

@@ -679,128 +679,22 @@ struct AmdGPUKernelMetadata
     char* data;
 };
 
-/// AMD main binary for GPU for 32-bit mode
-/** This object doesn't copy binary code content.
- * Only it takes and uses a binary code.
- */
-class AmdMainGPUBinary32: public AmdMainBinaryBase, public ElfBinary32
+class AmdMainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
     /// inner binary map
     typedef std::unordered_map<std::string, size_t> InnerBinaryMap;
-private:
-    uint32_t innerBinariesNum;
-    AmdInnerGPUBinary32* innerBinaries;
-    InnerBinaryMap innerBinaryMap;
-    AmdGPUKernelMetadata* metadatas;
-    uint32_t globalDataSize;
-    cxbyte* globalData;
-public:
-    /** constructor
-     * \param binaryCodeSize binary code size
-     * \param binaryCode pointer to binary code
-     * \param creationFlags flags that specified what will be created during creation
-     */
-    AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
-    ~AmdMainGPUBinary32();
-    
-    /// returns true if binary has kernel informations
-    bool hasKernelInfo() const
-    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
-    
-    /// returns true if binary has kernel informations map
-    bool hasKernelInfoMap() const
-    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
-    
-    /// returns true if binary has inner binary map
-    bool hasInnerBinaryMap() const
-    { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
-    
-    /// returns true if binary has info strings
-    bool hasInfoStrings() const
-    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
-    
-    /// get number of inner binaries
-    uint32_t getInnerBinariesNum() const
-    { return innerBinariesNum; }
-    
-    /// get inner binary with specified index
-    AmdInnerGPUBinary32& getInnerBinary(uint32_t index)
-    { return innerBinaries[index]; }
-    
-    /// get inner binary with specified index
-    const AmdInnerGPUBinary32& getInnerBinary(uint32_t index) const
-    { return innerBinaries[index]; }
-    
-    /// get inner binary with specified name (requires inner binary map)
-    const AmdInnerGPUBinary32& getInnerBinary(const char* name) const;
-    
-    /// get metadata size for specified inner binary
-    uint32_t getMetadataSize(uint32_t index) const
-    { return metadatas[index].size; }
-    
-    /// get metadata size for specified inner binary
-    const char* getMetadata(uint32_t index) const
-    { return metadatas[index].data; }
-    
-    /// get metadata size for specified inner binary
-    char* getMetadata(uint32_t index)
-    { return metadatas[index].data; }
-    
-    /// get global data size
-    uint32_t getGlobalDataSize() const
-    { return globalDataSize; }
-    
-    /// get global data
-    const cxbyte* getGlobalData() const
-    { return globalData; }
-    /// get global data
-    cxbyte* getGlobalData()
-    { return globalData; }
-};
-
-/// AMD main binary for GPU for 64-bit mode
-/** This object doesn't copy binary code content.
- * Only it takes and uses a binary code.
- */
-class AmdMainGPUBinary64: public AmdMainBinaryBase, public ElfBinary64
-{
-public:
-    /// inner binary map
-    typedef std::unordered_map<std::string, size_t> InnerBinaryMap;
-private:
+protected:
     size_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;
     InnerBinaryMap innerBinaryMap;
     AmdGPUKernelMetadata* metadatas;
-    uint32_t globalDataSize;
+    size_t globalDataSize;
     cxbyte* globalData;
+    
+    explicit AmdMainGPUBinaryBase(AmdMainType type);
 public:
-    /** constructor
-     * \param binaryCodeSize binary code size
-     * \param binaryCode pointer to binary code
-     * \param creationFlags flags that specified what will be created during creation
-     */
-    AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
-    ~AmdMainGPUBinary64();
-    
-    /// returns true if binary has kernel informations
-    bool hasKernelInfo() const
-    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
-    
-    /// returns true if binary has kernel informations map
-    bool hasKernelInfoMap() const
-    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
-    
-    /// returns true if binary has inner binary map
-    bool hasInnerBinaryMap() const
-    { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
-    
-    /// returns true if binary has info strings
-    bool hasInfoStrings() const
-    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    ~AmdMainGPUBinaryBase();
     
     /// get number of inner binaries
     size_t getInnerBinariesNum() const
@@ -830,7 +724,7 @@ public:
     { return metadatas[index].data; }
     
     /// get global data size
-    uint32_t getGlobalDataSize() const
+    size_t getGlobalDataSize() const
     { return globalDataSize; }
     
     /// get global data
@@ -839,6 +733,72 @@ public:
     /// get global data
     cxbyte* getGlobalData()
     { return globalData; }
+};
+
+/// AMD main binary for GPU for 32-bit mode
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
+class AmdMainGPUBinary32: public AmdMainGPUBinaryBase, public ElfBinary32
+{
+public:
+    /** constructor
+     * \param binaryCodeSize binary code size
+     * \param binaryCode pointer to binary code
+     * \param creationFlags flags that specified what will be created during creation
+     */
+    AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
+            cxuint creationFlags = AMDBIN_CREATE_ALL);
+    ~AmdMainGPUBinary32();
+    
+    /// returns true if binary has kernel informations
+    bool hasKernelInfo() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
+    
+    /// returns true if binary has kernel informations map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
+    /// returns true if binary has inner binary map
+    bool hasInnerBinaryMap() const
+    { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
+    
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+};
+
+/// AMD main binary for GPU for 64-bit mode
+/** This object doesn't copy binary code content.
+ * Only it takes and uses a binary code.
+ */
+class AmdMainGPUBinary64: public AmdMainGPUBinaryBase, public ElfBinary64
+{
+public:
+    /** constructor
+     * \param binaryCodeSize binary code size
+     * \param binaryCode pointer to binary code
+     * \param creationFlags flags that specified what will be created during creation
+     */
+    AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
+            cxuint creationFlags = AMDBIN_CREATE_ALL);
+    ~AmdMainGPUBinary64();
+    
+    /// returns true if binary has kernel informations
+    bool hasKernelInfo() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
+    
+    /// returns true if binary has kernel informations map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
+    /// returns true if binary has inner binary map
+    bool hasInnerBinaryMap() const
+    { return (creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0; }
+    
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
 };
 
 /// AMD main binary for X86 systems
