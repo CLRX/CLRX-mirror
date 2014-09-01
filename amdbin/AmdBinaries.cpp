@@ -1378,7 +1378,7 @@ const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name
     return innerBinaries[it->second];
 }
 
-const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderStruct(
+const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderEntry(
             const char* name) const
 {
     KernelHeaderMap::const_iterator it = kernelHeaderMap.find(name);

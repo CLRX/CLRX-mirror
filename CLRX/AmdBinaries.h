@@ -692,7 +692,6 @@ struct AmdGPUKernelHeader
     cxbyte* data;
 };
 
-
 /// main AMD GPU binary base class
 class AmdMainGPUBinaryBase: public AmdMainBinaryBase
 {
@@ -760,15 +759,15 @@ public:
     size_t getKernelHeadersNum() const
     { return kernelHeadersNum; }
     
-    /// get kernel header struct for specified index
-    const AmdGPUKernelHeader& getKernelHeaderStruct(size_t index) const
+    /// get kernel header entry for specified index
+    const AmdGPUKernelHeader& getKernelHeaderEntry(size_t index) const
     { return kernelHeaders[index]; }
     
-    /// get kernel header struct for specified index
-    const AmdGPUKernelHeader& getKernelHeaderStruct(const char* name) const;
+    /// get kernel header entry for specified index
+    const AmdGPUKernelHeader& getKernelHeaderEntry(const char* name) const;
     
-    /// get kernel header struct for specified index
-    AmdGPUKernelHeader& getKernelHeaderStruct(size_t index)
+    /// get kernel header entry for specified index
+    AmdGPUKernelHeader& getKernelHeaderEntry(size_t index)
     { return kernelHeaders[index]; }
     
     /// get kernel header size for specified index
