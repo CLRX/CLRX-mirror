@@ -1322,7 +1322,6 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
     {
         kernelHeadersNum = choosenSymsHeaders.size();
         kernelHeaders = new AmdGPUKernelHeader[kernelHeadersNum];
-        metadatas = new AmdGPUKernelMetadata[kernelHeadersNum];
         
         typename Types::Size ki = 0;
         
