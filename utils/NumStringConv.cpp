@@ -1954,13 +1954,22 @@ size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
            }
            break;
        case 10:
-           for (uint64_t tval = value; tval != 0; digitsNum++)
-           {
-               const uint64_t tmp = tval/10ULL;
-               const cxuint digit = tval - tmp*10ULL;
-               buffer[digitsNum] = '0'+digit;
-               tval = tmp;
-           }
+           if (value > UINT32_MAX)
+               for (uint64_t tval = value; tval != 0; digitsNum++)
+               {
+                   const uint64_t tmp = tval/10U;
+                   const cxuint digit = tval - tmp*10U;
+                   buffer[digitsNum] = '0'+digit;
+                   tval = tmp;
+               }
+           else // for speed
+               for (uint32_t tval = value; tval != 0; digitsNum++)
+               {
+                   const uint32_t tmp = tval/10U;
+                   const cxuint digit = tval - tmp*10U;
+                   buffer[digitsNum] = '0'+digit;
+                   tval = tmp;
+               }
            break;
        case 16:
            if (prefix)

@@ -99,17 +99,19 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
                 const auto& shdr = innerBin->getSectionHeader(j);
                 kernelInput.codeSize = ULEV(shdr.sh_size);
                 kernelInput.code = innerBin->getSectionContent(j);
+                codeFound = true;
             }
             else if (!dataFound && ::strcmp(secName, ".data") == 0)
             {   // if found last .data
                 const auto& shdr = innerBin->getSectionHeader(j);
                 kernelInput.dataSize = ULEV(shdr.sh_size);
                 kernelInput.data = innerBin->getSectionContent(j);
+                dataFound = true;
             }
             
             if (codeFound && dataFound)
                 break; // end of finding
-        }   
+        }
         
         kernelInput.calNotes.resize(innerBin->getCALNotesNum());
         for (cxuint j = 0; j < kernelInput.calNotes.size(); j++)
