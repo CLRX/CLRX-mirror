@@ -21,6 +21,7 @@
 #define __CLRX_ASMINTERNALS_H__
 
 #include <CLRX/Config.h>
+#include <cstdint>
 
 namespace CLRX
 {
@@ -47,7 +48,7 @@ enum GCNEncoding: cxbyte
     GCNENC_FLAT
 };
 
-enum : cxuint
+enum : uint16_t
 {
     ARCH_SOUTHERN_ISLANDS = 1,
     ARCH_SEA_ISLANDS = 2,
@@ -56,7 +57,7 @@ enum : cxuint
     ARCH_GCN_ALL = 0xff,
 };
 
-enum : cxuint
+enum : uint16_t
 {
     GCN_STDMODE = 0,
     GCN_REG_ALL_64 = 15,
@@ -117,16 +118,15 @@ enum : cxuint
 
 struct CLRX_INTERNAL GCNInstruction
 {
-    GCNEncoding encoding;
     const char* mnemonic;
-    cxuint mode;
-    cxuint code;
-    cxuint archMask; // mask of architectures whose have instruction
+    GCNEncoding encoding;
+    uint16_t mode;
+    uint16_t code;
+    uint16_t archMask; // mask of architectures whose have instruction
 };
 
 CLRX_INTERNAL extern const CLRX::GCNInstruction gcnInstrsTable[];
 
 };
-
 
 #endif
