@@ -19,7 +19,8 @@
 
 #ifndef __CLRX_ASMINTERNALS_H__
 #define __CLRX_ASMINTERNALS_H__
-#include <CLRX/Config.h.in>
+
+#include <CLRX/Config.h>
 
 namespace CLRX
 {
@@ -71,14 +72,15 @@ enum : cxuint
     GCN_IMM_REL = 0x30,
     GCN_IMM_LOCKS = 0x40,
     GCN_IMM_MSGS = 0x50,
-    GCN_SRC2_NONE = 0x60,
-    GCN_SRC2_VCC = 0x70,
-    GCN_SRC12_NONE = 0x80,
-    GCN_ARG1_IMM = 0x90,
-    GCN_ARG2_IMM = 0xa0,
-    GCN_ARGS_VCMP = 0xb0,
-    GCN_ARGS_VCMP64 = 0xbf,
-    GCN_S0EQS12 = 0xc0,
+    GCN_IMM_SREG = 0x60,
+    GCN_SRC2_NONE = 0x70,
+    GCN_SRC2_VCC = 0x80,
+    GCN_SRC12_NONE = 0x90,
+    GCN_ARG1_IMM = 0xa0,
+    GCN_ARG2_IMM = 0xb0,
+    GCN_ARGS_VCMP = 0xc0,
+    GCN_ARGS_VCMP64 = 0xcf,
+    GCN_S0EQS12 = 0xd0,
     // DS encoding modes
     GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,
@@ -94,8 +96,10 @@ enum : cxuint
     GCN_ADDR_DST128  = 0x190,
     GCN_ADDR_SRC96  = 0x160,
     GCN_ADDR_SRC128  = 0x1a0,
+    GCN_ONLYDST = 0x200,
     // others
     GCN_FLOATLIT = 0x100,
+    GCN_F16LIT = 0x200,
     GCN_MEMOP_MX1 = 0x0,
     GCN_MEMOP_MX2 = 0x100,
     GCN_MEMOP_MX4 = 0x200,
