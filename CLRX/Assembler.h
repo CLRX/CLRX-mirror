@@ -66,7 +66,6 @@ enum class GPUDeviceType
     TAHITI, ///< Radeon HD7900
     OLAND, ///< Radeon R7 250
     BONAIRE, ///< Radeon R7 260
-    CURACAO, ///< Radeon R9 270
     HAWAII, ///< Radeon R9 290
     GPUDEVICE_MAX = HAWAII,
     
@@ -75,7 +74,6 @@ enum class GPUDeviceType
     RADEON_HD7900 = TAHITI,
     RADEON_R7_250 = OLAND,
     RADEON_R7_260 = BONAIRE,
-    RADEON_R9_270 = CURACAO,
     RADEON_R9_290 = HAWAII
 };
 
@@ -138,13 +136,21 @@ private:
     
     size_t inputSize;
     const cxbyte* input;
-    
-    ISADisassembler(Disassembler& disassembler);
+    std::vector<size_t> labels;
+    bool finished;
+protected:
+    explicit ISADisassembler(Disassembler& disassembler);
 public:
     virtual ~ISADisassembler();
     
-    virtual size_t getMaxLineSize() const = 0;
-    virtual size_t disassemble(char* line) = 0;
+    void setInput(size_t inputSize, const cxbyte* input);
+    // before disassemble - first phase before generating output.
+    // collects labels and other symbols 
+    virtual void beforeDisassemble() = 0;
+    virtual size_t disassemble(size_t maxSize, char* buffer) = 0;
+    
+    bool isFinished() const
+    { return finished; }
 };
 
 class GCNDisassembler: public ISADisassembler
@@ -153,8 +159,9 @@ public:
     GCNDisassembler(Disassembler& disassembler);
     ~GCNDisassembler();
     
-    size_t getMaxLineSize() const;
-    size_t disassemble(char* line);
+    void setInput(size_t inputSize, const cxbyte* input);
+    void beforeDisassemble();
+    size_t disassemble(size_t maxSize, char* buffer);
 };
 
 class AsmExpression;

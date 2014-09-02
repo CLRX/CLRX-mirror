@@ -321,10 +321,28 @@ float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
 double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
 /// format 32-bit unsigned integer
+/** format 32-bit unsigned integer in C-style formatting.
+ * \param value integer value
+ * \param str output string
+ * \param maxSize max size of string (including null-character)
+ * \param radix radix of digits (2, 8, 10, 16)
+ * \param width max number of digits in number
+ * \param prefix adds required prefix if true
+ * \return length of output string (excluding null-character)
+ */
 size_t u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix = 10,
        cxuint width = 0, bool prefix = true);
 
 /// format 64-bit unsigned integer
+/** format 64-bit unsigned integer in C-style formatting.
+ * \param value integer value
+ * \param str output string
+ * \param maxSize max size of string (including null-character)
+ * \param radix radix of digits (2, 8, 10, 16)
+ * \param width max number of digits in number
+ * \param prefix adds required prefix if true
+ * \return length of output string (excluding null-character)
+ */
 size_t u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix = 10,
         cxuint width = 0, bool prefix = true);
 

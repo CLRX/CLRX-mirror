@@ -1172,7 +1172,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { GCNENC_MIMG,   "image_sample_cd_cl_o", GCN_STDMODE,              109,  ARCH_GCN_ALL  },
     { GCNENC_MIMG,   "image_sample_c_cd_o", GCN_STDMODE,              110,  ARCH_GCN_ALL  },
     { GCNENC_MIMG,   "image_sample_c_cd_cl_o", GCN_STDMODE,              111,  ARCH_GCN_ALL  },
-    { GCNENC_EXP,    "export",              GCN_STDMODE,              0,    ARCH_GCN_ALL  },
+    { GCNENC_EXP,    "exp",                 GCN_STDMODE,              0,    ARCH_GCN_ALL  },
     { GCNENC_FLAT,   "flat_load_ubyte",     GCN_MUBUF_MX1,            8,    ARCH_RX2X0    },
     { GCNENC_FLAT,   "flat_load_sbyte",     GCN_MUBUF_MX1,            9,    ARCH_RX2X0    },
     { GCNENC_FLAT,   "flat_load_ushort",    GCN_MUBUF_MX1,            10,   ARCH_RX2X0    },

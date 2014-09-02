@@ -27,13 +27,45 @@
 
 using namespace CLRX;
 
+ISADisassembler::ISADisassembler(Disassembler& disassembler_)
+        : disassembler(disassembler_)
+{ }
+
+ISADisassembler::~ISADisassembler()
+{ }
+
+void ISADisassembler::setInput(size_t inputSize, const cxbyte* input)
+{
+    this->inputSize = inputSize;
+    this->input = input;
+}
+
+GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
+        : ISADisassembler(disassembler)
+{
+}
+
+GCNDisassembler::~GCNDisassembler()
+{ }
+
+void GCNDisassembler::beforeDisassemble()
+{
+}
+
+size_t GCNDisassembler::disassemble(size_t maxSize, char* buffer)
+{
+    return 0;
+}
+
+/* helpers for main Disassembler class */
+
 struct GPUDeviceCodeEntry
 {
     uint16_t elfMachine;
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDevbiceCodeTable[6] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[6] =
 {
     { 0x3ff, GPUDeviceType::CAPE_VERDE },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -50,13 +82,13 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
     cxuint index = 0;
     const uint16_t elfMachine = ULEV(binary.getHeader().e_machine);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
-    const cxuint entriesNum = sizeof(gpuDevbiceCodeTable)/sizeof(GPUDeviceCodeEntry);
+    const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
     for (index = 0; index < entriesNum; index++)
-        if (gpuDevbiceCodeTable[index].elfMachine == elfMachine)
+        if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
             break;
     if (entriesNum == index)
         throw Exception("Cant determine GPU device type");
-    input->deviceType = gpuDevbiceCodeTable[index].deviceType;
+    input->deviceType = gpuDeviceCodeTable[index].deviceType;
     input->metadata.compileOptions = binary.getCompileOptions();
     input->metadata.driverInfo = binary.getDriverInfo();
     input->globalDataSize = binary.getGlobalDataSize();
@@ -133,6 +165,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _outp
 {
     this->flags = flags;
     input = getDisasmInputFromBinary(binary);
+    //isaDisassembler = new GCNDisassembler(*this);
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
@@ -140,12 +173,14 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
 {
     this->flags = flags;
     input = getDisasmInputFromBinary(binary);
+    //isaDisassembler = new GCNDisassembler(*this);
 }
 
 Disassembler::Disassembler(const DisasmInput* disasmInput, std::ostream& _output,
             cxuint flags) : fromBinary(false), input(disasmInput), output(_output)
 {
     this->flags = flags;
+    //isaDisassembler = new GCNDisassembler(*this);
 }
 
 Disassembler::~Disassembler()
