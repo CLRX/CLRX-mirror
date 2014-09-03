@@ -231,13 +231,20 @@ std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
         const cxbyte c = str[i];
         if (c < 0x20 || c > 0x7e)
         {
-            if (cstyleEscapesTable[c] != 0)
+            if (c < 0x20 && cstyleEscapesTable[c] != 0)
             {
                 out.push_back('\\');
                 out.push_back(cstyleEscapesTable[c]);
             }
             else // otherwise
-                out.push_back(c);
+            {
+                out.push_back('\\');
+                if ((c>>6) != 0)
+                    out.push_back('0'+(c>>6));
+                if ((c>>3) != 0)
+                    out.push_back('0'+((c>>3)&7));
+                out.push_back('0'+(c&7));
+            }
         }
         else  if (c == '\"')
         {   // backslash
