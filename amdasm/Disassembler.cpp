@@ -231,13 +231,17 @@ Disassembler::~Disassembler()
     delete isaDisassembler;
 }
 
-static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output)
+static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
+                bool secondAlign = false)
 {
     char buf[6];
+    const char* linePrefix = "    .byte ";
+    if (secondAlign)
+        linePrefix = "        .byte ";
     for (size_t p = 0; p < size; p++)
     {
         if ((p & 15) == 0)
-            output << "    .byte ";
+            output << linePrefix;
         u32tocstrCStyle(data[p], buf, 6, 16, 2);
         output << buf;
         if (p+1 < size)
@@ -247,14 +251,18 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
     }
 }
 
-static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& output)
+static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& output,
+                bool secondAlign = false)
 {
-    char buf[10];
+    char buf[12];
+    const char* linePrefix = "    .int ";
+    if (secondAlign)
+        linePrefix = "        .int ";
     for (size_t p = 0; p < size; p++)
     {
         if ((p & 3) == 0)
-            output << "    .int ";
-        u32tocstrCStyle(data[p], buf, 10, 16, 8);
+            output << linePrefix;
+        u32tocstrCStyle(data[p], buf, 12, 16, 8);
         output << buf;
         if (p+1 < size)
             output << ",";
@@ -264,15 +272,19 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
 }
 
 
-static void printDisasmLongString(size_t size, const char* data, std::ostream& output)
+static void printDisasmLongString(size_t size, const char* data, std::ostream& output,
+            bool secondAlign = false)
 {
+    const char* linePrefix = "    .string \"";
+    if (secondAlign)
+        linePrefix = "        .string \"";
     for (size_t pos = 0; pos < size; )
     {
         const size_t end = std::min(pos+size_t(80), size);
         const size_t oldPos = pos;
         while (pos < end && data[pos] != '\n') pos++;
-        if (pos+1 <= end && data[pos] == '\n') pos++; // embrace newline
-        output << "    .string \"" <<
+        if (pos < end && data[pos] == '\n') pos++; // embrace newline
+        output << linePrefix <<
                 escapeStringCStyle(pos-oldPos, data+oldPos) << "\"\n";
     }
 }
@@ -324,19 +336,19 @@ void Disassembler::disassemble()
             if (kinput.header != nullptr && kinput.headerSize != 0)
             {   // if kernel header available
                 output << "    .header\n";
-                printDisasmData(kinput.headerSize, kinput.header, output);
+                printDisasmData(kinput.headerSize, kinput.header, output, true);
             }
             if (kinput.metadata != nullptr && kinput.metadataSize != 0)
             {   // if kernel metadata available
                 output << "    .metadata\n";
-                printDisasmLongString(kinput.metadataSize, kinput.metadata, output);
+                printDisasmLongString(kinput.metadataSize, kinput.metadata, output, true);
             }
         }
         if ((flags & DISASM_DUMPDATA) != 0 &&
             kinput.data != nullptr && kinput.dataSize != 0)
         {   // if kernel data available
             output << "    .kerneldata\n";
-            printDisasmData(kinput.dataSize, kinput.data, output);
+            printDisasmData(kinput.dataSize, kinput.data, output, true);
         }
         
         if ((flags & DISASM_CALNOTES) != 0)
@@ -364,7 +376,7 @@ void Disassembler::disassemble()
                         {
                             const CALProgramInfoEntry& progInfo = progInfos[k];
                             u32tocstrCStyle(ULEV(progInfo.address), buf, 32, 16);
-                            output << "    .set " << buf << ", ";
+                            output << "        .set " << buf << ", ";
                             u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16);
                             output << buf << '\n';
                         }
@@ -372,7 +384,7 @@ void Disassembler::disassemble()
                         printDisasmData(calNote.header.descSize -
                                 progInfosNum*sizeof(CALProgramInfoEntry),
                                 calNote.data + progInfosNum*sizeof(CALProgramInfoEntry),
-                                output);
+                                output, true);
                         break;
                     }
                     case CALNOTE_ATI_INPUTS:
@@ -382,9 +394,10 @@ void Disassembler::disassemble()
                     case CALNOTE_ATI_PERSISTENT_BUFFERS:
                         output << '\n';
                         printDisasmDataU32(calNote.header.descSize>>2,
-                               reinterpret_cast<const uint32_t*>(calNote.data), output);
+                               reinterpret_cast<const uint32_t*>(calNote.data),
+                               output, true);
                         printDisasmData(calNote.header.descSize&3,
-                               calNote.data + (calNote.header.descSize&~3U), output);
+                               calNote.data + (calNote.header.descSize&~3U), output, true);
                         break;
                     case CALNOTE_ATI_INT32CONSTS:
                     case CALNOTE_ATI_FLOAT32CONSTS:
@@ -407,7 +420,7 @@ void Disassembler::disassemble()
                         printDisasmData(calNote.header.descSize -
                                 segmentsNum*sizeof(CALDataSegmentEntry),
                                 calNote.data + segmentsNum*sizeof(CALDataSegmentEntry),
-                                output);
+                                output, true);
                         break;
                     }
                     case CALNOTE_ATI_INPUT_SAMPLERS:
@@ -429,7 +442,7 @@ void Disassembler::disassemble()
                         printDisasmData(calNote.header.descSize -
                                 samplersNum*sizeof(CALSamplerMapEntry),
                                 calNote.data + samplersNum*sizeof(CALSamplerMapEntry),
-                                output);
+                                output, true);
                         break;
                     }
                     case CALNOTE_ATI_CONSTANT_BUFFERS:
@@ -451,7 +464,7 @@ void Disassembler::disassemble()
                         printDisasmData(calNote.header.descSize -
                             constBufMasksNum*sizeof(CALConstantBufferMask),
                             calNote.data + constBufMasksNum*sizeof(CALConstantBufferMask),
-                            output);
+                            output, true);
                         break;
                     }
                     case CALNOTE_ATI_EARLYEXIT:
@@ -466,12 +479,14 @@ void Disassembler::disassemble()
                         else // otherwise if size is not dword
                         {
                             output << '\n';
-                            printDisasmData(calNote.header.descSize, calNote.data, output);
+                            printDisasmData(calNote.header.descSize,
+                                    calNote.data, output, true);
                         }
                         break;
                     default:
                         output << '\n';
-                        printDisasmData(calNote.header.descSize, calNote.data, output);
+                        printDisasmData(calNote.header.descSize, calNote.data,
+                                        output, true);
                         break;
                 }
             }
