@@ -118,7 +118,7 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
         const AmdInnerGPUBinary32* innerBin = nullptr;
         if (i < innerBinariesNum)
             innerBin = &binary.getInnerBinary(i);
-        if (innerBin == nullptr || kernelInfo.kernelName != kernelInfo.kernelName)
+        if (innerBin == nullptr || innerBin->getKernelName() != kernelInfo.kernelName)
         {   // fallback if not in order
             try
             { innerBin = &binary.getInnerBinary(kernelInfo.kernelName.c_str()); }
@@ -272,7 +272,6 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
     }
 }
 
-
 static void printDisasmLongString(size_t size, const char* data, std::ostream& output,
             bool secondAlign = false)
 {
@@ -316,14 +315,16 @@ void Disassembler::disassemble()
     output << ".gpu " << gpuDeviceNameTable[cxuint(input->deviceType)] << "\n" <<
             ((input->is64BitMode) ? ".64bit\n" : ".32bit\n");
     
-    if ((flags & DISASM_METADATA) != 0)
+    const bool doMetadata = ((flags & DISASM_METADATA) != 0);
+    const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
+    
+    if (doMetadata)
         output << ".compile_options \"" <<
                         escapeStringCStyle(input->metadata.compileOptions) << "\"\n" <<
                   ".driver_info \"" <<
                         escapeStringCStyle(input->metadata.driverInfo) << "\"\n";
     
-    if ((flags & DISASM_DUMPDATA) != 0 &&
-        input->globalData != nullptr && input->globalDataSize != 0)
+    if (doDumpData && input->globalData != nullptr && input->globalDataSize != 0)
     {   //
         output << ".data\n";
         printDisasmData(input->globalDataSize, input->globalData, output);
@@ -332,7 +333,7 @@ void Disassembler::disassemble()
     for (const DisasmKernelInput& kinput: input->kernelInputs)
     {
         output << ".kernel \"" << escapeStringCStyle(kinput.kernelName) << "\"\n";
-        if ((flags & DISASM_METADATA) != 0)
+        if (doMetadata)
         {
             if (kinput.header != nullptr && kinput.headerSize != 0)
             {   // if kernel header available
@@ -345,8 +346,7 @@ void Disassembler::disassemble()
                 printDisasmLongString(kinput.metadataSize, kinput.metadata, output, true);
             }
         }
-        if ((flags & DISASM_DUMPDATA) != 0 &&
-            kinput.data != nullptr && kinput.dataSize != 0)
+        if (doDumpData && kinput.data != nullptr && kinput.dataSize != 0)
         {   // if kernel data available
             output << "    .kerneldata\n";
             printDisasmData(kinput.dataSize, kinput.data, output, true);
