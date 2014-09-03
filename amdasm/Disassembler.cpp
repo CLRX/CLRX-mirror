@@ -26,6 +26,7 @@
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
 #include <CLRX/Assembler.h>
+#include <CLRX/MemAccess.h>
 
 using namespace CLRX;
 
@@ -247,7 +248,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         if (p+1 < size)
             output << ",";
         if ((p & 15) == 15 || p+1 >= size)
-            output << "\n";
+            output << '\n';
     }
 }
 
@@ -255,9 +256,9 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
                 bool secondAlign = false)
 {
     char buf[12];
-    const char* linePrefix = "    .int ";
+    const char* linePrefix = "    .dword ";
     if (secondAlign)
-        linePrefix = "        .int ";
+        linePrefix = "        .dword ";
     for (size_t p = 0; p < size; p++)
     {
         if ((p & 3) == 0)
@@ -267,7 +268,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         if (p+1 < size)
             output << ",";
         if ((p & 3) == 3 || p+1 >= size)
-            output << "\n";
+            output << '\n';
     }
 }
 
@@ -412,7 +413,7 @@ void Disassembler::disassemble()
                         {
                             const CALDataSegmentEntry& segment = segments[k];
                             u32tocstrCStyle(ULEV(segment.offset), buf, 32);
-                            output << "    .segment " << buf << ", ";
+                            output << "        .segment " << buf << ", ";
                             u32tocstrCStyle(ULEV(segment.size), buf, 32);
                             output << buf << '\n';
                         }
@@ -434,7 +435,7 @@ void Disassembler::disassemble()
                         {
                             const CALSamplerMapEntry& segment = samplers[k];
                             u32tocstrCStyle(ULEV(segment.input), buf, 32);
-                            output << "    .sampler " << buf << ", ";
+                            output << "        .sampler " << buf << ", ";
                             u32tocstrCStyle(ULEV(segment.sampler), buf, 32, 16);
                             output << buf << '\n';
                         }
@@ -456,7 +457,7 @@ void Disassembler::disassemble()
                         {
                             const CALConstantBufferMask& cbufMask = constBufMasks[k];
                             u32tocstrCStyle(ULEV(cbufMask.index), buf, 32);
-                            output << "    .cbmask " << buf << ", ";
+                            output << "        .cbmask " << buf << ", ";
                             u32tocstrCStyle(ULEV(cbufMask.size), buf, 32);
                             output << buf << '\n';
                         }
