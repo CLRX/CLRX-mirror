@@ -210,3 +210,52 @@ size_t CStringHash::operator()(const char* c) const
         hash = ((hash<<8)^(uint8_t)*p)*size_t(0x93cda145bf146a3dU);
     return hash;
 }
+
+static const char cstyleEscapesTable[32] =
+{
+    '0', 0, 0, 0, 0, 0, 0, 'a', 'b', 't', 'n', 'v', 'f', 'r', 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+std::string CLRX::escapeStringCStyle(const std::string& str)
+{
+    return escapeStringCStyle(str.size(), str.c_str());
+}
+
+std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
+{
+    std::string out;
+    out.reserve(strSize);
+    for (size_t i = 0; i < strSize; i++)
+    {
+        const cxbyte c = str[i];
+        if (c < 0x20 || c > 0x7e)
+        {
+            if (cstyleEscapesTable[c] != 0)
+            {
+                out.push_back('\\');
+                out.push_back(cstyleEscapesTable[c]);
+            }
+            else // otherwise
+                out.push_back(c);
+        }
+        else  if (c == '\"')
+        {   // backslash
+            out.push_back('\\');
+            out.push_back('\"');
+        }
+        else  if (c == '\'')
+        {   // backslash
+            out.push_back('\\');
+            out.push_back('\'');
+        }
+        else  if (c == '\\')
+        {   // backslash
+            out.push_back('\\');
+            out.push_back('\\');
+        }
+        else // otherwise normal character
+            out.push_back(c);
+    }
+    return out;
+}

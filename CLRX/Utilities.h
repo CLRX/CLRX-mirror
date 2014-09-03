@@ -215,6 +215,10 @@ template<typename T, typename T2>
 inline bool usumGe(T a, T b, T2 c)
 { return ((a+b)>=c) || ((a+b)<a); }
 
+extern std::string escapeStringCStyle(const std::string& str);
+
+extern std::string escapeStringCStyle(size_t strSize, const char* str);
+
 /// parse unsigned integer regardless locales
 /** parses unsigned integer in decimal form from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
@@ -224,7 +228,7 @@ inline bool usumGe(T a, T b, T2 c)
  * \param outend returns end of number in string
  * \return parsed integer value
  */
-cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
+extern cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
 
 /// parse 8-bit unsigned formatted looks like C-style
 /** parses 8-bit unsigned integer from str string. inend can points
@@ -237,7 +241,7 @@ cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
  * \param outend returns end of number in string
  * \return parsed integer value
  */
-uint8_t cstrtou8CStyle(const char* str, const char* inend, const char*& outend);
+extern uint8_t cstrtou8CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 16-bit unsigned formatted looks like C-style
 /** parses 16-bit unsigned integer from str string. inend can points
@@ -250,7 +254,7 @@ uint8_t cstrtou8CStyle(const char* str, const char* inend, const char*& outend);
  * \param outend returns end of number in string
  * \return parsed integer value
  */
-uint16_t cstrtou16CStyle(const char* str, const char* inend, const char*& outend);
+extern uint16_t cstrtou16CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 32-bit unsigned formatted looks like C-style
 /** parses 32-bit unsigned integer from str string. inend can points
@@ -263,7 +267,7 @@ uint16_t cstrtou16CStyle(const char* str, const char* inend, const char*& outend
  * \param outend returns end of number in string
  * \return parsed integer value
  */
-uint32_t cstrtou32CStyle(const char* str, const char* inend, const char*& outend);
+extern uint32_t cstrtou32CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse 64-bit unsigned formatted looks like C-style
 /** parses 64-bit unsigned integerfrom str string. inend can points
@@ -276,7 +280,7 @@ uint32_t cstrtou32CStyle(const char* str, const char* inend, const char*& outend
  * \param outend returns end of number in string
  * \return parsed integer value
  */
-uint64_t cstrtou64CStyle(const char* str, const char* inend, const char*& outend);
+extern uint64_t cstrtou64CStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse half float formatted looks like C-style
 /** parses half floating point from str string. inend can points
@@ -290,7 +294,7 @@ uint64_t cstrtou64CStyle(const char* str, const char* inend, const char*& outend
  * \param outend returns end of number in string
  * \return parsed floating point value
  */
-cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
+extern cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse single float formatted looks like C-style
 /** parses single floating point from str string. inend can points
@@ -304,7 +308,7 @@ cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
  * \param outend returns end of number in string
  * \return parsed floating point value
  */
-float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
+extern float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse double float formatted looks like C-style
 /** parses double floating point from str string. inend can points
@@ -318,7 +322,7 @@ float cstrtofCStyle(const char* str, const char* inend, const char*& outend);
  * \param outend returns end of number in string
  * \return parsed floating point value
  */
-double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
+extern double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
 
 /// format 32-bit unsigned integer
 /** format 32-bit unsigned integer in C-style formatting.
@@ -330,7 +334,7 @@ double cstrtodCStyle(const char* str, const char* inend, const char*& outend);
  * \param prefix adds required prefix if true
  * \return length of output string (excluding null-character)
  */
-size_t u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix = 10,
+extern size_t u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix = 10,
        cxuint width = 0, bool prefix = true);
 
 /// format 64-bit unsigned integer
@@ -343,7 +347,7 @@ size_t u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix =
  * \param prefix adds required prefix if true
  * \return length of output string (excluding null-character)
  */
-size_t u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix = 10,
+extern size_t u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix = 10,
         cxuint width = 0, bool prefix = true);
 
 /// format half float in C-style
@@ -357,7 +361,8 @@ size_t u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix =
  * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific = false);
+extern size_t htocstrCStyle(cxushort value, char* str, size_t maxSize,
+                            bool scientific = false);
 
 /// format single float in C-style
 /** format to string the single float in C-style formatting. This function handles 2 modes
@@ -370,7 +375,8 @@ size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific 
  * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-size_t ftocstrCStyle(float value, char* str, size_t maxSize, bool scientific = false);
+extern size_t ftocstrCStyle(float value, char* str, size_t maxSize,
+                            bool scientific = false);
 
 /// format double float in C-style
 /** format to string the double float in C-style formatting. This function handles 2 modes
@@ -383,7 +389,8 @@ size_t ftocstrCStyle(float value, char* str, size_t maxSize, bool scientific = f
  * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scientific = false);
+extern size_t dtocstrCStyle(double value, char* str, size_t maxSize,
+                            bool scientific = false);
 
 };
 

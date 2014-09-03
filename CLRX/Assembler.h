@@ -51,11 +51,9 @@ enum: cxuint
 
 enum: cxuint
 {
-    DISASM_ADDRESS = 1,
-    DISASM_HEXCODE = 2,
-    DISASM_CALLPARAMS = 4,
-    DISASM_ASMFORM = 8,
-    DISASM_DISPLAYDATA = 16
+    DISASM_DUMPCODE = 1,
+    DISASM_CALLPARAMS = 2,
+    DISASM_DUMPDATA = 4
 };
 
 enum class GPUDeviceType

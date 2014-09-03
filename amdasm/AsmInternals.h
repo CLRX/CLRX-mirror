@@ -113,7 +113,7 @@ enum : uint16_t
     GCN_MUBUF_MX1 = 0x400,
     GCN_MUBUF_MX2 = 0x500,
     GCN_MUBUF_MX3 = 0x600,
-    GCN_MUBUF_MX4 = 0x700,
+    GCN_MUBUF_MX4 = 0x700
 };
 
 struct CLRX_INTERNAL GCNInstruction

@@ -1130,6 +1130,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             std::unique_ptr<AmdMainBinaryBase> amdBin(
                 createAmdBinaryFromCode(binarySizes[i], binaries[i],
                              AMDBIN_CREATE_KERNELINFO));
+            
             size_t kernelsNum = amdBin->getKernelInfosNum();
             const KernelInfo* kernelInfos = amdBin->getKernelInfos();
             /* create kernel argsflags map (for setKernelArg) */
