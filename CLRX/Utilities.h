@@ -50,6 +50,7 @@ public:
     const char* what() const throw();
 };
 
+/// parse exception class
 class ParseException: public Exception
 {
 public:
@@ -215,8 +216,10 @@ template<typename T, typename T2>
 inline bool usumGe(T a, T b, T2 c)
 { return ((a+b)>=c) || ((a+b)<a); }
 
+/// escape string into C-style string
 extern std::string escapeStringCStyle(const std::string& str);
 
+/// escape string into C-style string
 extern std::string escapeStringCStyle(size_t strSize, const char* str);
 
 /// parse unsigned integer regardless locales

@@ -247,6 +247,23 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
     }
 }
 
+static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& output)
+{
+    char buf[10];
+    for (size_t p = 0; p < size; p++)
+    {
+        if ((p & 3) == 0)
+            output << "    .int ";
+        u32tocstrCStyle(data[p], buf, 10, 16, 8);
+        output << buf;
+        if (p+1 < size)
+            output << ",";
+        if ((p & 3) == 3 || p+1 < size)
+            output << "\n";
+    }
+}
+
+
 static void printDisasmLongString(size_t size, const char* data, std::ostream& output)
 {
     for (size_t pos = 0; pos < size; )
@@ -259,16 +276,40 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
     }
 }
 
+static const char* disasmCALNoteNamesTable[] =
+{
+    ".proginfo",
+    ".inputs",
+    ".outputs",
+    ".condout",
+    ".floatconsts",
+    ".intconsts",
+    ".boolconsts",
+    ".earlyexit",
+    ".globalbuffers",
+    ".constantbuffers",
+    ".inputsamplers",
+    ".persistentbuffers",
+    ".scratchbuffers",
+    ".subconstantbuffers",
+    ".uavmailboxsize",
+    ".uav",
+    ".uavopmask"
+};
+
 void Disassembler::disassemble()
 {
     output << ".gpu " << gpuDeviceNameTable[cxuint(input->deviceType)] << "\n" <<
-            ((input->is64BitMode) ? ".64bit\n" : ".32bit\n") <<
-            ".compile_options \"" <<
-                    escapeStringCStyle(input->metadata.compileOptions) << "\"\n" <<
-            ".driver_info \"" <<
-                    escapeStringCStyle(input->metadata.driverInfo) << "\"\n";
+            ((input->is64BitMode) ? ".64bit\n" : ".32bit\n");
     
-    if (input->globalData != nullptr && input->globalDataSize != 0)
+    if ((flags & DISASM_METADATA) != 0)
+        output << ".compile_options \"" <<
+                        escapeStringCStyle(input->metadata.compileOptions) << "\"\n" <<
+                  ".driver_info \"" <<
+                        escapeStringCStyle(input->metadata.driverInfo) << "\"\n";
+    
+    if ((flags & DISASM_DUMPDATA) != 0 &&
+        input->globalData != nullptr && input->globalDataSize != 0)
     {   //
         output << ".data\n";
         printDisasmData(input->globalDataSize, input->globalData, output);
@@ -277,15 +318,135 @@ void Disassembler::disassemble()
     for (const DisasmKernelInput& kinput: input->kernelInputs)
     {
         output << ".kernel \"" << escapeStringCStyle(kinput.kernelName) << "\"\n";
-        if (kinput.header != nullptr && kinput.headerSize != 0)
-        {   // if kernel header available
-            output << "    .header\n";
-            printDisasmData(kinput.headerSize, kinput.header, output);
+        if ((flags & DISASM_METADATA) != 0)
+        {
+            if (kinput.header != nullptr && kinput.headerSize != 0)
+            {   // if kernel header available
+                output << "    .header\n";
+                printDisasmData(kinput.headerSize, kinput.header, output);
+            }
+            if (kinput.metadata != nullptr && kinput.metadataSize != 0)
+            {   // if kernel metadata available
+                output << "    .metadata\n";
+                printDisasmLongString(kinput.metadataSize, kinput.metadata, output);
+            }
         }
-        if (kinput.metadata != nullptr && kinput.metadataSize != 0)
-        {   // if kernel metadata available
-            output << "    .metadata\n";
-            printDisasmLongString(kinput.metadataSize, kinput.metadata, output);
+        if ((flags & DISASM_DUMPDATA) != 0 &&
+            kinput.data != nullptr && kinput.dataSize != 0)
+        {   // if kernel data available
+            output << "    .kerneldata\n";
+            printDisasmData(kinput.dataSize, kinput.data, output);
+        }
+        
+        if ((flags & DISASM_CALNOTES) != 0)
+            for (const AsmCALNote& calNote: kinput.calNotes)
+            {
+                char buf[32];
+                if (calNote.header.type != 0 && calNote.header.type <= CALNOTE_ATI_MAXTYPE)
+                    output << "    " << disasmCALNoteNamesTable[calNote.header.type-1];
+                else
+                {
+                    u32tocstrCStyle(calNote.header.type, buf, 32, 16);
+                    output << "    .calnote " << buf;
+                }
+                
+                switch(calNote.header.type)
+                {   // handle CAL note types
+                    case CALNOTE_ATI_PROGINFO:
+                    {
+                        output << '\n';
+                        const cxuint progInfosNum =
+                                calNote.header.descSize/sizeof(CALProgramInfoEntry);
+                        const CALProgramInfoEntry* progInfos =
+                                reinterpret_cast<const CALProgramInfoEntry*>(calNote.data);
+                        for (cxuint k = 0; k < progInfosNum; k++)
+                        {
+                            const CALProgramInfoEntry& progInfo = progInfos[k];
+                            u32tocstrCStyle(ULEV(progInfo.address), buf, 32, 16);
+                            output << "    .set " << buf << ", ";
+                            u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16);
+                            output << buf << '\n';
+                        }
+                        break;
+                    }
+                    case CALNOTE_ATI_INPUTS:
+                    case CALNOTE_ATI_OUTPUTS:
+                    case CALNOTE_ATI_GLOBAL_BUFFERS:
+                    case CALNOTE_ATI_SCRATCH_BUFFERS:
+                    case CALNOTE_ATI_PERSISTENT_BUFFERS:
+                        output << '\n';
+                        printDisasmDataU32(calNote.header.descSize>>2,
+                               reinterpret_cast<const uint32_t*>(calNote.data), output);
+                        break;
+                    case CALNOTE_ATI_INT32CONSTS:
+                    case CALNOTE_ATI_FLOAT32CONSTS:
+                    case CALNOTE_ATI_BOOL32CONSTS:
+                    {
+                        output << '\n';
+                        const cxuint segmentsNum =
+                                calNote.header.descSize/sizeof(CALDataSegmentEntry);
+                        const CALDataSegmentEntry* segments =
+                                reinterpret_cast<const CALDataSegmentEntry*>(calNote.data);
+                        for (cxuint k = 0; k < segmentsNum; k++)
+                        {
+                            const CALDataSegmentEntry& segment = segments[k];
+                            u32tocstrCStyle(ULEV(segment.offset), buf, 32);
+                            output << "    .segment " << buf << ", ";
+                            u32tocstrCStyle(ULEV(segment.size), buf, 32);
+                            output << buf << '\n';
+                        }
+                        break;
+                    }
+                    case CALNOTE_ATI_INPUT_SAMPLERS:
+                    {
+                        output << '\n';
+                        const cxuint samplersNum =
+                                calNote.header.descSize/sizeof(CALSamplerMapEntry);
+                        const CALSamplerMapEntry* samplers =
+                                reinterpret_cast<const CALSamplerMapEntry*>(calNote.data);
+                        for (cxuint k = 0; k < samplersNum; k++)
+                        {
+                            const CALSamplerMapEntry& segment = samplers[k];
+                            u32tocstrCStyle(ULEV(segment.input), buf, 32);
+                            output << "    .sampler " << buf << ", ";
+                            u32tocstrCStyle(ULEV(segment.sampler), buf, 32, 16);
+                            output << buf << '\n';
+                        }
+                        break;
+                    }
+                    case CALNOTE_ATI_CONSTANT_BUFFERS:
+                    {
+                        output << '\n';
+                        const cxuint constBufMasksNum =
+                                calNote.header.descSize/sizeof(CALConstantBufferMask);
+                        const CALConstantBufferMask* constBufMasks =
+                            reinterpret_cast<const CALConstantBufferMask*>(calNote.data);
+                        for (cxuint k = 0; k < constBufMasksNum; k++)
+                        {
+                            const CALConstantBufferMask& cbufMask = constBufMasks[k];
+                            u32tocstrCStyle(ULEV(cbufMask.index), buf, 32);
+                            output << "    .cbmask " << buf << ", ";
+                            u32tocstrCStyle(ULEV(cbufMask.size), buf, 32);
+                            output << buf << '\n';
+                        }
+                        break;
+                    }
+                    case CALNOTE_ATI_EARLYEXIT:
+                    case CALNOTE_ATI_UAV_OP_MASK:
+                    case CALNOTE_ATI_UAV_MAILBOX_SIZE:
+                        u32tocstrCStyle(ULEV(*reinterpret_cast<const uint32_t*>(
+                                    calNote.data)), buf, 32);
+                        output << " " << buf << '\n';
+                        break;
+                    default:
+                        output << '\n';
+                        printDisasmData(calNote.header.descSize, calNote.data, output);
+                        break;
+                }
+            }
+        
+        if (kinput.code != nullptr && kinput.codeSize != 0)
+        {   // input kernel code (main disassembly)
         }
     }
     output.flush();
