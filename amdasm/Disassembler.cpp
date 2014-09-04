@@ -265,7 +265,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
             output.write(",1,", 3);
             u32tocstrCStyle(data[oldP], buf, 6, 16, 2);
             output.write(buf, 4);
-            output.write("\n", 1);
+            output.put('\n');
             continue;
         }
         
@@ -276,9 +276,9 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
             u32tocstrCStyle(data[p], buf, 6, 16, 2);
             output.write(buf, 4);
             if (p+1 < lineEnd)
-                output.write(",", 1);
+                output.put(',');
         }
-        output.write("\n", 1);
+        output.put('\n');
     }
 }
 
@@ -311,7 +311,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             output.write(",4,", 3);
             u32tocstrCStyle(ULEV(data[oldP]), buf, 12, 16, 8);
             output.write(buf, 10);
-            output.write("\n", 1);
+            output.put('\n');
             continue;
         }
         
@@ -322,9 +322,9 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             u32tocstrCStyle(ULEV(data[p]), buf, 12, 16, 8);
             output.write(buf, 10);
             if (p+1 < lineEnd)
-                output.write(",", 1);
+                output.put(',');
         }
-        output.write("\n", 1);
+        output.put('\n');
     }
 }
 
@@ -462,7 +462,7 @@ void Disassembler::disassemble()
                 {   // handle CAL note types
                     case CALNOTE_ATI_PROGINFO:
                     {
-                        output.write("\n", 1);
+                        output.put('\n');
                         const cxuint progInfosNum =
                                 calNote.header.descSize/sizeof(CALProgramInfoEntry);
                         const CALProgramInfoEntry* progInfos =
@@ -474,10 +474,10 @@ void Disassembler::disassemble()
                                          buf, 32, 16);
                             output.write("        .set ", 13);
                             output.write(buf, len);
-                            output.write(",", 1);
+                            output.put(',');
                             len = u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16);
                             output.write(buf, len);
-                            output.write("\n", 1);
+                            output.put('\n');
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -491,7 +491,7 @@ void Disassembler::disassemble()
                     case CALNOTE_ATI_GLOBAL_BUFFERS:
                     case CALNOTE_ATI_SCRATCH_BUFFERS:
                     case CALNOTE_ATI_PERSISTENT_BUFFERS:
-                        output.write("\n", 1);
+                        output.put('\n');
                         printDisasmDataU32(calNote.header.descSize>>2,
                                reinterpret_cast<const uint32_t*>(calNote.data),
                                output, true);
@@ -502,7 +502,7 @@ void Disassembler::disassemble()
                     case CALNOTE_ATI_FLOAT32CONSTS:
                     case CALNOTE_ATI_BOOL32CONSTS:
                     {
-                        output.write("\n", 1);
+                        output.put('\n');
                         const cxuint segmentsNum =
                                 calNote.header.descSize/sizeof(CALDataSegmentEntry);
                         const CALDataSegmentEntry* segments =
@@ -513,10 +513,10 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(segment.offset), buf, 32);
                             output.write("        .segment ", 17);
                             output.write(buf, len);
-                            output.write(",", 1);
+                            output.put(',');
                             len = u32tocstrCStyle(ULEV(segment.size), buf, 32);
                             output.write(buf, len);
-                            output.write("\n", 1);
+                            output.put('\n');
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -527,7 +527,7 @@ void Disassembler::disassemble()
                     }
                     case CALNOTE_ATI_INPUT_SAMPLERS:
                     {
-                        output.write("\n", 1);
+                        output.put('\n');
                         const cxuint samplersNum =
                                 calNote.header.descSize/sizeof(CALSamplerMapEntry);
                         const CALSamplerMapEntry* samplers =
@@ -538,10 +538,10 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(segment.input), buf, 32);
                             output.write("        .sampler ", 17);
                             output.write(buf, len);
-                            output.write(",", 1);
+                            output.put(',');
                             len = u32tocstrCStyle(ULEV(segment.sampler), buf, 32, 16);
                             output.write(buf, len);
-                            output.write("\n", 1);
+                            output.put('\n');
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -552,7 +552,7 @@ void Disassembler::disassemble()
                     }
                     case CALNOTE_ATI_CONSTANT_BUFFERS:
                     {
-                        output.write("\n", 1);
+                        output.put('\n');
                         const cxuint constBufMasksNum =
                                 calNote.header.descSize/sizeof(CALConstantBufferMask);
                         const CALConstantBufferMask* constBufMasks =
@@ -563,10 +563,10 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(cbufMask.index), buf, 32);
                             output.write("        .cbmask ", 16);
                             output.write(buf, len);
-                            output.write(",", 1);
+                            output.put(',');
                             len = u32tocstrCStyle(ULEV(cbufMask.size), buf, 32, 16);
                             output.write(buf, len);
-                            output.write("\n", 1);
+                            output.put('\n');
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -583,19 +583,19 @@ void Disassembler::disassemble()
                             const size_t len = u32tocstrCStyle(
                                     ULEV(*reinterpret_cast<const uint32_t*>(
                                         calNote.data)), buf, 32);
-                            output.write(" ", 1);
+                            output.put(' ');
                             output.write(buf, len);
-                            output.write("\n", 1);
+                            output.put('\n');
                         }
                         else // otherwise if size is not 4 bytes
                         {
-                            output.write("\n", 1);
+                            output.put('\n');
                             printDisasmData(calNote.header.descSize,
                                     calNote.data, output, true);
                         }
                         break;
                     default:
-                        output.write("\n", 1);
+                        output.put('\n');
                         printDisasmData(calNote.header.descSize, calNote.data,
                                         output, true);
                         break;
