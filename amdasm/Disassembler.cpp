@@ -261,7 +261,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
             output << fillPrefix;
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(15) : fillEnd;
-            u32tocstrCStyle(p-oldP, buf, 20, 10);
+            u64tocstrCStyle(p-oldP, buf, 20, 10);
             output << buf << ",1,";
             u32tocstrCStyle(data[oldP], buf, 6, 16, 2);
             output << buf << '\n';
@@ -302,7 +302,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             output << fillPrefix;
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
-            u32tocstrCStyle(p-oldP, buf, 20, 10);
+            u64tocstrCStyle(p-oldP, buf, 20, 10);
             output << buf << ",4,";
             u32tocstrCStyle(data[oldP], buf, 12, 16, 8);
             output << buf << '\n';
@@ -332,7 +332,7 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
     char buffer[85];
     for (size_t pos = 0; pos < size; )
     {
-        const size_t end = std::min(pos+size_t(80), size);
+        const size_t end = std::min(pos+80, size);
         const size_t oldPos = pos;
         while (pos < end && data[pos] != '\n') pos++;
         if (pos < end && data[pos] == '\n') pos++; // embrace newline
