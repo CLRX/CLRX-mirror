@@ -278,7 +278,7 @@ std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
 }
 
 size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
-                 size_t outMaxSize, char* outStr)
+                 size_t outMaxSize, char* outStr, size_t& outSize)
 {
     size_t i = 0, d = 0;
     bool notFullOctalEscape = false;
@@ -342,5 +342,6 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
         }
     }
     outStr[d] = 0;
+    outSize = d;
     return i;
 }

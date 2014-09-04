@@ -231,7 +231,7 @@ extern std::string escapeStringCStyle(size_t strSize, const char* str);
  * \return number of processed input characters
  */
 extern size_t escapeStringCStyle(size_t strSize, const char* str,
-                 size_t outMaxSize, char* outStr);
+                 size_t outMaxSize, char* outStr, size_t& outSize);
 
 /// parse unsigned integer regardless locales
 /** parses unsigned integer in decimal form from str string. inend can points
