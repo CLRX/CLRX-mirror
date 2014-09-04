@@ -21,7 +21,6 @@
 #include <string>
 #include <cstring>
 #include <ostream>
-#include <locale>
 #include <vector>
 #include <algorithm>
 #include <CLRX/Utilities.h>
