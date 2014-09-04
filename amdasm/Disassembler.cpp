@@ -474,7 +474,7 @@ void Disassembler::disassemble()
                                          buf, 32, 16);
                             output.write("        .set ", 13);
                             output.write(buf, len);
-                            output.write(", ", 2);
+                            output.write(",", 1);
                             len = u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16);
                             output.write(buf, len);
                             output.write("\n", 1);
@@ -513,7 +513,7 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(segment.offset), buf, 32);
                             output.write("        .segment ", 17);
                             output.write(buf, len);
-                            output.write(", ", 2);
+                            output.write(",", 1);
                             len = u32tocstrCStyle(ULEV(segment.size), buf, 32);
                             output.write(buf, len);
                             output.write("\n", 1);
@@ -538,7 +538,7 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(segment.input), buf, 32);
                             output.write("        .sampler ", 17);
                             output.write(buf, len);
-                            output.write(", ", 2);
+                            output.write(",", 1);
                             len = u32tocstrCStyle(ULEV(segment.sampler), buf, 32, 16);
                             output.write(buf, len);
                             output.write("\n", 1);
@@ -563,7 +563,7 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(cbufMask.index), buf, 32);
                             output.write("        .cbmask ", 16);
                             output.write(buf, len);
-                            output.write(", ", 2);
+                            output.write(",", 1);
                             len = u32tocstrCStyle(ULEV(cbufMask.size), buf, 32, 16);
                             output.write(buf, len);
                             output.write("\n", 1);
