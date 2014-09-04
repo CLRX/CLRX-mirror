@@ -68,17 +68,21 @@ struct GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[6] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[10] =
 {
-    { 0x3ff, GPUDeviceType::CAPE_VERDE },
-    { 0x3fe, GPUDeviceType::PITCAIRN },
     { 0x3fd, GPUDeviceType::TAHITI },
+    { 0x3fe, GPUDeviceType::PITCAIRN },
+    { 0x3ff, GPUDeviceType::CAPE_VERDE },
     { 0x402, GPUDeviceType::OLAND },
     { 0x403, GPUDeviceType::BONAIRE },
+    { 0x404, GPUDeviceType::SPECTRE },
+    { 0x405, GPUDeviceType::SPOOKY },
+    { 0x406, GPUDeviceType::KALINDI },
+    { 0x407, GPUDeviceType::HAINAN },
     { 0x408, GPUDeviceType::HAWAII }
 };
 
-static const char* gpuDeviceNameTable[7] =
+static const char* gpuDeviceNameTable[11] =
 {
     "UNDEFINED",
     "CapeVerde",
@@ -86,6 +90,10 @@ static const char* gpuDeviceNameTable[7] =
     "Tahiti",
     "Oland",
     "Bonaire",
+    "Spectre",
+    "Spooky",
+    "Kalindi",
+    "Hainan",
     "Hawaii"
 };
 
@@ -256,9 +264,9 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
                 bool secondAlign = false)
 {
     char buf[12];
-    const char* linePrefix = "    .dword ";
+    const char* linePrefix = "    .int ";
     if (secondAlign)
-        linePrefix = "        .dword ";
+        linePrefix = "        .int ";
     for (size_t p = 0; p < size; p++)
     {
         if ((p & 3) == 0)
@@ -278,14 +286,16 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
     const char* linePrefix = "    .string \"";
     if (secondAlign)
         linePrefix = "        .string \"";
+    
+    char buffer[85];
     for (size_t pos = 0; pos < size; )
     {
         const size_t end = std::min(pos+size_t(80), size);
         const size_t oldPos = pos;
         while (pos < end && data[pos] != '\n') pos++;
         if (pos < end && data[pos] == '\n') pos++; // embrace newline
-        output << linePrefix <<
-                escapeStringCStyle(pos-oldPos, data+oldPos) << "\"\n";
+        pos = oldPos + escapeStringCStyle(pos-oldPos, data+oldPos, 85, buffer);
+        output << linePrefix << buffer << "\"\n";
     }
 }
 
@@ -477,7 +487,7 @@ void Disassembler::disassemble()
                                         calNote.data)), buf, 32);
                             output << " " << buf << '\n';
                         }
-                        else // otherwise if size is not dword
+                        else // otherwise if size is not 4 bytes
                         {
                             output << '\n';
                             printDisasmData(calNote.header.descSize,

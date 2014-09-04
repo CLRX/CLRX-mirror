@@ -226,15 +226,17 @@ std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
 {
     std::string out;
     out.reserve(strSize);
+    bool notFullOctalEscape = false;
     for (size_t i = 0; i < strSize; i++)
     {
         const cxbyte c = str[i];
-        if (c < 0x20 || c > 0x7e)
+        if (c < 0x20 || c > 0x7e || (notFullOctalEscape && c >= 0x30 && c <= 0x37))
         {
             if (c < 0x20 && cstyleEscapesTable[c] != 0)
             {
                 out.push_back('\\');
                 out.push_back(cstyleEscapesTable[c]);
+                notFullOctalEscape = false;
             }
             else // otherwise
             {
@@ -244,25 +246,101 @@ std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
                 if ((c>>3) != 0)
                     out.push_back('0'+((c>>3)&7));
                 out.push_back('0'+(c&7));
+                if ((c>>6) == 0) // if next character can change octal escape
+                    notFullOctalEscape = true;
             }
         }
         else  if (c == '\"')
         {   // backslash
             out.push_back('\\');
             out.push_back('\"');
+            notFullOctalEscape = false;
         }
         else  if (c == '\'')
         {   // backslash
             out.push_back('\\');
             out.push_back('\'');
+            notFullOctalEscape = false;
         }
         else  if (c == '\\')
         {   // backslash
             out.push_back('\\');
             out.push_back('\\');
+            notFullOctalEscape = false;
         }
         else // otherwise normal character
+        {
             out.push_back(c);
+            notFullOctalEscape = false;
+        }
     }
     return out;
+}
+
+size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
+                 size_t outMaxSize, char* outStr)
+{
+    size_t i = 0, d = 0;
+    bool notFullOctalEscape = false;
+    for (i = 0; i < strSize; i++)
+    {
+        const cxbyte c = str[i];
+        if (c < 0x20 || c > 0x7e || (notFullOctalEscape && c >= 0x30 && c <= 0x37))
+        {
+            if (c < 0x20 && cstyleEscapesTable[c] != 0)
+            {
+                if (d+2 >= outMaxSize)
+                    break; // end
+                outStr[d++] = '\\';
+                outStr[d++] = cstyleEscapesTable[c];
+                notFullOctalEscape = false;
+            }
+            else // otherwise
+            {
+                if (d + 2 + ((c>>3) != 0) + ((c>>6) != 0) >= outMaxSize)
+                    break; // end
+                outStr[d++] = '\\';
+                if ((c>>6) != 0)
+                    outStr[d++] = '0'+(c>>6);
+                if ((c>>3) != 0)
+                    outStr[d++] = '0'+((c>>3)&7);
+                outStr[d++] = '0'+(c&7);
+                if ((c>>6) == 0) // if next character can change octal escape
+                    notFullOctalEscape = true;
+            }
+        }
+        else  if (c == '\"')
+        {   // backslash
+            if (d+2 >= outMaxSize)
+                break; // end
+            outStr[d++] = '\\';
+            outStr[d++] = '\"';
+            notFullOctalEscape = false;
+        }
+        else  if (c == '\'')
+        {   // backslash
+            if (d+2 >= outMaxSize)
+                break; // end
+            outStr[d++] = '\\';
+            outStr[d++] = '\'';
+            notFullOctalEscape = false;
+        }
+        else  if (c == '\\')
+        {   // backslash
+            if (d+2 >= outMaxSize)
+                break; // end
+            outStr[d++] = '\\';
+            outStr[d++] = '\\';
+            notFullOctalEscape = false;
+        }
+        else // otherwise normal character
+        {
+            if (d+1 >= outMaxSize)
+                break; // end
+            outStr[d++] = c;
+            notFullOctalEscape = false;
+        }
+    }
+    outStr[d] = 0;
+    return i;
 }

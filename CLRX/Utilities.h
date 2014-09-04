@@ -222,6 +222,17 @@ extern std::string escapeStringCStyle(const std::string& str);
 /// escape string into C-style string
 extern std::string escapeStringCStyle(size_t strSize, const char* str);
 
+/// escape string into C-style string
+/**
+ * \param strSize string size
+ * \param str string
+ * \param outMaxSize output max size (including null-character)
+ * \param outStr output string
+ * \return number of processed input characters
+ */
+extern size_t escapeStringCStyle(size_t strSize, const char* str,
+                 size_t outMaxSize, char* outStr);
+
 /// parse unsigned integer regardless locales
 /** parses unsigned integer in decimal form from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string

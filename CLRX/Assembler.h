@@ -66,6 +66,10 @@ enum class GPUDeviceType
     TAHITI, ///< Radeon HD7900
     OLAND, ///< Radeon R7 250
     BONAIRE, ///< Radeon R7 260
+    SPECTRE, ///< Kaveri
+    SPOOKY, ///< Kaveri
+    KALINDI, ///< ???
+    HAINAN, ///< ???? 
     HAWAII, ///< Radeon R9 290
     GPUDEVICE_MAX = HAWAII,
     
