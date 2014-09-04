@@ -243,7 +243,7 @@ Disassembler::~Disassembler()
 static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
                 bool secondAlign = false)
 {
-    char buf[20];
+    char buf[22];
     const char* linePrefix = "    .byte ";
     const char* fillPrefix = "    .fill ";
     if (secondAlign)
@@ -261,7 +261,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
             output << fillPrefix;
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(15) : fillEnd;
-            u64tocstrCStyle(p-oldP, buf, 20, 10);
+            u64tocstrCStyle(p-oldP, buf, 22, 10);
             output << buf << ",1,";
             u32tocstrCStyle(data[oldP], buf, 6, 16, 2);
             output << buf << '\n';
@@ -284,7 +284,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
 static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& output,
                 bool secondAlign = false)
 {
-    char buf[20];
+    char buf[22];
     const char* linePrefix = "    .int ";
     const char* fillPrefix = "    .fill ";
     if (secondAlign)
@@ -302,7 +302,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             output << fillPrefix;
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
-            u64tocstrCStyle(p-oldP, buf, 20, 10);
+            u64tocstrCStyle(p-oldP, buf, 22, 10);
             output << buf << ",4,";
             u32tocstrCStyle(data[oldP], buf, 12, 16, 8);
             output << buf << '\n';
@@ -364,6 +364,10 @@ static const char* disasmCALNoteNamesTable[] =
 
 void Disassembler::disassemble()
 {
+    if (input->deviceType == GPUDeviceType::UNDEFINED ||
+        cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+        throw Exception("Undefined GPU device type");
+    
     output << ".gpu " << gpuDeviceNameTable[cxuint(input->deviceType)] << "\n" <<
             ((input->is64BitMode) ? ".64bit\n" : ".32bit\n");
     
