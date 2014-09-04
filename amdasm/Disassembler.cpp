@@ -243,40 +243,82 @@ Disassembler::~Disassembler()
 static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
                 bool secondAlign = false)
 {
-    char buf[6];
+    char buf[20];
     const char* linePrefix = "    .byte ";
+    const char* fillPrefix = "    .fill ";
     if (secondAlign)
-        linePrefix = "        .byte ";
-    for (size_t p = 0; p < size; p++)
     {
-        if ((p & 15) == 0)
-            output << linePrefix;
-        u32tocstrCStyle(data[p], buf, 6, 16, 2);
-        output << buf;
-        if (p+1 < size)
-            output << ",";
-        if ((p & 15) == 15 || p+1 >= size)
-            output << '\n';
+        linePrefix = "        .byte ";
+        fillPrefix = "        .fill ";
+    }
+    for (size_t p = 0; p < size;)
+    {
+        size_t fillEnd;
+        // find max repetition of this element
+        for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
+        if (fillEnd >= p+16)
+        {   // if element repeated for least 1 line
+            output << fillPrefix;
+            const size_t oldP = p;
+            p = (fillEnd != size) ? fillEnd&~size_t(15) : fillEnd;
+            u32tocstrCStyle(p-oldP, buf, 20, 10);
+            output << buf << ",1,";
+            u32tocstrCStyle(data[oldP], buf, 6, 16, 2);
+            output << buf << '\n';
+            continue;
+        }
+        
+        const size_t lineEnd = std::min(p+16, size);
+        output << linePrefix;
+        for (; p < lineEnd; p++)
+        {
+            u32tocstrCStyle(data[p], buf, 6, 16, 2);
+            output << buf;
+            if (p+1 < size)
+                output << ",";
+        }
+        output << '\n';
     }
 }
 
 static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& output,
                 bool secondAlign = false)
 {
-    char buf[12];
+    char buf[20];
     const char* linePrefix = "    .int ";
+    const char* fillPrefix = "    .fill ";
     if (secondAlign)
-        linePrefix = "        .int ";
-    for (size_t p = 0; p < size; p++)
     {
-        if ((p & 3) == 0)
-            output << linePrefix;
-        u32tocstrCStyle(data[p], buf, 12, 16, 8);
-        output << buf;
-        if (p+1 < size)
-            output << ",";
-        if ((p & 3) == 3 || p+1 >= size)
-            output << '\n';
+        linePrefix = "        .int ";
+        fillPrefix = "        .fill ";
+    }
+    for (size_t p = 0; p < size;)
+    {
+        size_t fillEnd;
+        // find max repetition of this char
+        for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
+        if (fillEnd >= p+4)
+        {   // if element repeated for least 1 line
+            output << fillPrefix;
+            const size_t oldP = p;
+            p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
+            u32tocstrCStyle(p-oldP, buf, 20, 10);
+            output << buf << ",4,";
+            u32tocstrCStyle(data[oldP], buf, 12, 16, 8);
+            output << buf << '\n';
+            continue;
+        }
+        
+        const size_t lineEnd = std::min(p+4, size);
+        output << linePrefix;
+        for (; p < lineEnd; p++)
+        {
+            u32tocstrCStyle(data[p], buf, 12, 16, 8);
+            output << buf;
+            if (p+1 < size)
+                output << ",";
+        }
+        output << '\n';
     }
 }
 
@@ -330,9 +372,9 @@ void Disassembler::disassemble()
     
     if (doMetadata)
         output << ".compile_options \"" <<
-                        escapeStringCStyle(input->metadata.compileOptions) << "\"\n" <<
-                  ".driver_info \"" <<
-                        escapeStringCStyle(input->metadata.driverInfo) << "\"\n";
+                escapeStringCStyle(input->metadata.compileOptions) << "\"\n" <<
+          ".driver_info \"" <<
+                escapeStringCStyle(input->metadata.driverInfo) << "\"\n";
     
     if (doDumpData && input->globalData != nullptr && input->globalDataSize != 0)
     {   //
