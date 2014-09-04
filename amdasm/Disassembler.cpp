@@ -310,7 +310,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             const size_t len = u64tocstrCStyle(p-oldP, buf, 22, 10);
             output.write(buf, len);
             output.write(",4,", 3);
-            u32tocstrCStyle(data[oldP], buf, 12, 16, 8);
+            u32tocstrCStyle(ULEV(data[oldP]), buf, 12, 16, 8);
             output.write(buf, 10);
             output.write("\n", 1);
             continue;
@@ -320,7 +320,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         output.write(linePrefix, intPrefixSize);
         for (; p < lineEnd; p++)
         {
-            u32tocstrCStyle(data[p], buf, 12, 16, 8);
+            u32tocstrCStyle(ULEV(data[p]), buf, 12, 16, 8);
             output.write(buf, 10);
             if (p+1 < lineEnd)
                 output.write(",", 1);
@@ -445,6 +445,7 @@ void Disassembler::disassemble()
             for (const AsmCALNote& calNote: kinput.calNotes)
             {
                 char buf[32];
+                // calNote.header fields is already in native endian
                 if (calNote.header.type != 0 && calNote.header.type <= CALNOTE_ATI_MAXTYPE)
                 {
                     output.write("    ", 4);
