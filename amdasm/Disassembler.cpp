@@ -276,7 +276,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         {
             u32tocstrCStyle(data[p], buf, 6, 16, 2);
             output.write(buf, 4);
-            if (p+1 < size)
+            if (p+1 < lineEnd)
                 output.write(",", 1);
         }
         output.write("\n", 1);
@@ -322,7 +322,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         {
             u32tocstrCStyle(data[p], buf, 12, 16, 8);
             output.write(buf, 10);
-            if (p+1 < size)
+            if (p+1 < lineEnd)
                 output.write(",", 1);
         }
         output.write("\n", 1);
