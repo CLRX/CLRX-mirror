@@ -240,7 +240,7 @@ Disassembler::~Disassembler()
 static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
                 bool secondAlign = false)
 {
-    char buf[22];
+    char buf[68];
     const char* linePrefix = "    .byte ";
     const char* fillPrefix = "    .fill ";
     size_t prefixSize = 10;
@@ -250,6 +250,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         fillPrefix = "        .fill ";
         prefixSize += 4;
     }
+    ::memcpy(buf, linePrefix, prefixSize);
     for (size_t p = 0; p < size;)
     {
         size_t fillEnd;
@@ -257,35 +258,52 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
         if (fillEnd >= p+8)
         {   // if element repeated for least 1 line
+            char numBuf[22];
             output.write(fillPrefix, prefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(7) : fillEnd;
-            const size_t len = u64tocstrCStyle(p-oldP, buf, 22, 10);
-            output.write(buf, len);
+            const size_t len = u64tocstrCStyle(p-oldP, numBuf, 22, 10);
+            output.write(numBuf, len);
             output.write(", 1, ", 5);
-            u32tocstrCStyle(data[oldP], buf, 6, 16, 2);
-            output.write(buf, 4);
+            u32tocstrCStyle(data[oldP], numBuf, 6, 16, 2);
+            output.write(numBuf, 4);
             output.put('\n');
             continue;
         }
         
         const size_t lineEnd = std::min(p+8, size);
-        output.write(linePrefix, prefixSize);
+        size_t bufPos = prefixSize;
         for (; p < lineEnd; p++)
         {
-            u32tocstrCStyle(data[p], buf, 6, 16, 2);
-            output.write(buf, 4);
+            buf[bufPos++] = '0';
+            buf[bufPos++] = 'x';
+            {   // inline byte in hexadecimal
+                cxuint digit = data[p]>>4;
+                if (digit < 10)
+                    buf[bufPos++] = '0'+digit;
+                else
+                    buf[bufPos++] = 'a'+digit-10;
+                digit = data[p]&0xf;
+                if (digit < 10)
+                    buf[bufPos++] = '0'+digit;
+                else
+                    buf[bufPos++] = 'a'+digit-10;
+            }
             if (p+1 < lineEnd)
-                output.write(", ", 2);
+            {
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+            }
         }
-        output.put('\n');
+        buf[bufPos++] = '\n';
+        output.write(buf, bufPos);
     }
 }
 
 static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& output,
                 bool secondAlign = false)
 {
-    char buf[22];
+    char buf[68];
     const char* linePrefix = "    .int ";
     const char* fillPrefix = "    .fill ";
     size_t fillPrefixSize = 10;
@@ -296,6 +314,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         fillPrefixSize += 4;
     }
     const size_t intPrefixSize = fillPrefixSize-1;
+    ::memcpy(buf, linePrefix, intPrefixSize);
     for (size_t p = 0; p < size;)
     {
         size_t fillEnd;
@@ -303,28 +322,32 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
         if (fillEnd >= p+4)
         {   // if element repeated for least 1 line
+            char numBuf[22];
             output.write(fillPrefix, fillPrefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
-            const size_t len = u64tocstrCStyle(p-oldP, buf, 22, 10);
-            output.write(buf, len);
+            const size_t len = u64tocstrCStyle(p-oldP, numBuf, 22, 10);
+            output.write(numBuf, len);
             output.write(", 4, ", 5);
-            u32tocstrCStyle(ULEV(data[oldP]), buf, 12, 16, 8);
-            output.write(buf, 10);
+            u32tocstrCStyle(ULEV(data[oldP]), numBuf, 12, 16, 8);
+            output.write(numBuf, 10);
             output.put('\n');
             continue;
         }
         
         const size_t lineEnd = std::min(p+4, size);
-        output.write(linePrefix, intPrefixSize);
+        size_t bufPos = intPrefixSize;
         for (; p < lineEnd; p++)
         {
-            u32tocstrCStyle(ULEV(data[p]), buf, 12, 16, 8);
-            output.write(buf, 10);
+            bufPos += u32tocstrCStyle(ULEV(data[p]), buf+bufPos, 12, 16, 8);
             if (p+1 < lineEnd)
-                output.write(", ", 2);
+            {
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+            }
         }
-        output.put('\n');
+        buf[bufPos++] = '\n';
+        output.write(buf, bufPos);
     }
 }
 
@@ -339,8 +362,9 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
         linePrefix = "        .string \"";
         prefixSize += 4;
     }
+    char buffer[96];
+    ::memcpy(buffer, linePrefix, prefixSize);
     
-    char buffer[76];
     for (size_t pos = 0; pos < size; )
     {
         const size_t end = std::min(pos+72, size);
@@ -348,10 +372,11 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
         while (pos < end && data[pos] != '\n') pos++;
         if (pos < end && data[pos] == '\n') pos++; // embrace newline
         size_t escapeSize;
-        pos = oldPos + escapeStringCStyle(pos-oldPos, data+oldPos, 76, buffer, escapeSize);
-        output.write(linePrefix, prefixSize);
-        output.write(buffer, escapeSize);
-        output.write("\"\n", 2);
+        pos = oldPos + escapeStringCStyle(pos-oldPos, data+oldPos, 76,
+                      buffer+prefixSize, escapeSize);
+        buffer[prefixSize+escapeSize] = '\"';
+        buffer[prefixSize+escapeSize+1] = '\n';
+        output.write(buffer, prefixSize+escapeSize+2);
     }
 }
 
@@ -443,7 +468,7 @@ void Disassembler::disassemble()
         if ((flags & DISASM_CALNOTES) != 0)
             for (const AsmCALNote& calNote: kinput.calNotes)
             {
-                char buf[32];
+                char buf[64];
                 // calNote.header fields is already in native endian
                 if (calNote.header.type != 0 && calNote.header.type <= CALNOTE_ATI_MAXTYPE)
                 {
@@ -467,17 +492,18 @@ void Disassembler::disassemble()
                                 calNote.header.descSize/sizeof(CALProgramInfoEntry);
                         const CALProgramInfoEntry* progInfos =
                             reinterpret_cast<const CALProgramInfoEntry*>(calNote.data);
+                        ::memcpy(buf, "        .set ", 13);
                         for (cxuint k = 0; k < progInfosNum; k++)
                         {
                             const CALProgramInfoEntry& progInfo = progInfos[k];
-                            size_t len = u32tocstrCStyle(ULEV(progInfo.address),
-                                         buf, 32, 16, 8);
-                            output.write("        .set ", 13);
-                            output.write(buf, len);
-                            output.write(", ", 2);
-                            len = u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16, 8);
-                            output.write(buf, len);
-                            output.put('\n');
+                            size_t bufPos = 13 + u32tocstrCStyle(ULEV(progInfo.address),
+                                         buf+13, 32, 16, 8);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += u32tocstrCStyle(ULEV(progInfo.value),
+                                      buf+bufPos, 32, 16, 8);
+                            buf[bufPos++] = '\n';
+                            output.write(buf, bufPos);
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -507,16 +533,17 @@ void Disassembler::disassemble()
                                 calNote.header.descSize/sizeof(CALDataSegmentEntry);
                         const CALDataSegmentEntry* segments =
                                 reinterpret_cast<const CALDataSegmentEntry*>(calNote.data);
+                        ::memcpy(buf, "        .segment ", 17);
                         for (cxuint k = 0; k < segmentsNum; k++)
                         {
                             const CALDataSegmentEntry& segment = segments[k];
-                            size_t len = u32tocstrCStyle(ULEV(segment.offset), buf, 32);
-                            output.write("        .segment ", 17);
-                            output.write(buf, len);
-                            output.write(", ", 2);
-                            len = u32tocstrCStyle(ULEV(segment.size), buf, 32);
-                            output.write(buf, len);
-                            output.put('\n');
+                            size_t bufPos = 17 + u32tocstrCStyle(
+                                        ULEV(segment.offset), buf + 17, 32);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += u32tocstrCStyle(ULEV(segment.size), buf+bufPos, 32);
+                            buf[bufPos++] = '\n';
+                            output.write(buf, bufPos);
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -532,16 +559,18 @@ void Disassembler::disassemble()
                                 calNote.header.descSize/sizeof(CALSamplerMapEntry);
                         const CALSamplerMapEntry* samplers =
                                 reinterpret_cast<const CALSamplerMapEntry*>(calNote.data);
+                        ::memcpy(buf, "        .sampler ", 17);
                         for (cxuint k = 0; k < samplersNum; k++)
                         {
-                            const CALSamplerMapEntry& segment = samplers[k];
-                            size_t len = u32tocstrCStyle(ULEV(segment.input), buf, 32);
-                            output.write("        .sampler ", 17);
-                            output.write(buf, len);
-                            output.write(", ", 2);
-                            len = u32tocstrCStyle(ULEV(segment.sampler), buf, 32, 16);
-                            output.write(buf, len);
-                            output.put('\n');
+                            const CALSamplerMapEntry& sampler = samplers[k];
+                            size_t bufPos = 17 + u32tocstrCStyle(
+                                        ULEV(sampler.input), buf + 17, 32);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += u32tocstrCStyle(ULEV(sampler.sampler),
+                                        buf+bufPos, 32, 16);
+                            buf[bufPos++] = '\n';
+                            output.write(buf, bufPos);
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
@@ -557,16 +586,17 @@ void Disassembler::disassemble()
                                 calNote.header.descSize/sizeof(CALConstantBufferMask);
                         const CALConstantBufferMask* constBufMasks =
                             reinterpret_cast<const CALConstantBufferMask*>(calNote.data);
+                        ::memcpy(buf, "        .cbmask ", 16);
                         for (cxuint k = 0; k < constBufMasksNum; k++)
                         {
                             const CALConstantBufferMask& cbufMask = constBufMasks[k];
-                            size_t len = u32tocstrCStyle(ULEV(cbufMask.index), buf, 32);
-                            output.write("        .cbmask ", 16);
-                            output.write(buf, len);
-                            output.write(", ", 2);
-                            len = u32tocstrCStyle(ULEV(cbufMask.size), buf, 32);
-                            output.write(buf, len);
-                            output.put('\n');
+                            size_t bufPos = 16 + u32tocstrCStyle(
+                                        ULEV(cbufMask.index), buf + 16, 32);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += u32tocstrCStyle(ULEV(cbufMask.size), buf+bufPos, 32);
+                            buf[bufPos++] = '\n';
+                            output.write(buf, bufPos);
                         }
                         /// rest
                         printDisasmData(calNote.header.descSize -
