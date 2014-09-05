@@ -665,11 +665,75 @@ static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
 struct Pow5NumTableEntry
 {
     uint64_t value;
-    cxuint exponent;
+    int exponent;
 };
 
-static const Pow5NumTableEntry pow5Table[28] =
+static const Pow5NumTableEntry pow5Table[129] =
 {
+    { 0x50ffd44f4a73d34aULL, -149 },
+    { 0xa53fc9631d10c81dULL, -147 },
+    { 0x0747ddddf22a7d12ULL, -144 },
+    { 0x4919d5556eb51c57ULL, -142 },
+    { 0x9b604aaaca62636cULL, -140 },
+    { 0x011c2eaabe7d7e24ULL, -137 },
+    { 0x41633a556e1cddadULL, -135 },
+    { 0x91bc08eac9a41518ULL, -133 },
+    { 0xf62b0b257c0d1a5eULL, -131 },
+    { 0x39dae6f76d88307bULL, -128 },
+    { 0x8851a0b548ea3c99ULL, -126 },
+    { 0xea6608e29b24cbc0ULL, -124 },
+    { 0x327fc58da0f6ff58ULL, -121 },
+    { 0x7f1fb6f10934bf2eULL, -119 },
+    { 0xdee7a4ad4b81eef9ULL, -117 },
+    { 0x2b50c6ec4f31355cULL, -114 },
+    { 0x7624f8a762fd82b3ULL, -112 },
+    { 0xd3ae36d13bbce35fULL, -110 },
+    { 0x244ce242c5560e1cULL, -107 },
+    { 0x6d601ad376ab91a2ULL, -105 },
+    { 0xc8b821885456760bULL, -103 },
+    { 0x1d7314f534b609c7ULL, -100 },
+    { 0x64cfda3281e38c39ULL, -98 },
+    { 0xbe03d0bf225c6f47ULL, -96 },
+    { 0x16c262777579c58cULL, -93 },
+    { 0x5c72fb1552d836efULL, -91 },
+    { 0xb38fb9daa78e44abULL, -89 },
+    { 0x1039d428a8b8eaebULL, -86 },
+    { 0x54484932d2e725a6ULL, -84 },
+    { 0xa95a5b7f87a0ef0fULL, -82 },
+    { 0x09d8792fb4c49569ULL, -79 },
+    { 0x4c4e977ba1f5bac4ULL, -77 },
+    { 0x9f623d5a8a732975ULL, -75 },
+    { 0x039d66589687f9e9ULL, -72 },
+    { 0x4484bfeebc29f863ULL, -70 },
+    { 0x95a5efea6b34767cULL, -68 },
+    { 0xfb0f6be50601941bULL, -66 },
+    { 0x3ce9a36f23c0fc91ULL, -63 },
+    { 0x8c240c4aecb13bb5ULL, -61 },
+    { 0xef2d0f5da7dd8aa2ULL, -59 },
+    { 0x357c299a88ea76a6ULL, -56 },
+    { 0x82db34012b25144fULL, -54 },
+    { 0xe392010175ee5963ULL, -52 },
+    { 0x2e3b40a0e9b4f7deULL, -49 },
+    { 0x79ca10c9242235d5ULL, -47 },
+    { 0xd83c94fb6d2ac34aULL, -45 },
+    { 0x2725dd1d243aba0eULL, -42 },
+    { 0x70ef54646d496892ULL, -40 },
+    { 0xcd2b297d889bc2b7ULL, -38 },
+    { 0x203af9ee756159b2ULL, -35 },
+    { 0x6849b86a12b9b01fULL, -33 },
+    { 0xc25c268497681c26ULL, -31 },
+    { 0x19799812dea11198ULL, -28 },
+    { 0x5fd7fe17964955feULL, -26 },
+    { 0xb7cdfd9d7bdbab7dULL, -24 },
+    { 0x12e0be826d694b2eULL, -21 },
+    { 0x5798ee2308c39dfaULL, -19 },
+    { 0xad7f29abcaf48578ULL, -17 },
+    { 0x0c6f7a0b5ed8d36bULL, -14 },
+    { 0x4f8b588e368f0846ULL, -12 },
+    { 0xa36e2eb1c432ca58ULL, -10 },
+    { 0x0624dd2f1a9fbe77ULL, -7 },
+    { 0x47ae147ae147ae14ULL, -5 },
+    { 0x999999999999999aULL, -3 },
     { 0x0000000000000000ULL, 0 },
     { 0x4000000000000000ULL, 2 },
     { 0x9000000000000000ULL, 4 },
@@ -697,7 +761,44 @@ static const Pow5NumTableEntry pow5Table[28] =
     { 0xa784379d99db4200ULL, 55 },
     { 0x08b2a2c280290940ULL, 58 },
     { 0x4adf4b7320334b90ULL, 60 },
-    { 0x9d971e4fe8401e74ULL, 62 }
+    { 0x9d971e4fe8401e74ULL, 62 },
+    { 0x027e72f1f1281308ULL, 65 },
+    { 0x431e0fae6d7217cbULL, 67 },
+    { 0x93e5939a08ce9dbdULL, 69 },
+    { 0xf8def8808b02452dULL, 71 },
+    { 0x3b8b5b5056e16b3cULL, 74 },
+    { 0x8a6e32246c99c60bULL, 76 },
+    { 0xed09bead87c0378eULL, 78 },
+    { 0x3426172c74d822b8ULL, 81 },
+    { 0x812f9cf7920e2b67ULL, 83 },
+    { 0xe17b84357691b640ULL, 85 },
+    { 0x2ced32a16a1b11e8ULL, 88 },
+    { 0x78287f49c4a1d662ULL, 90 },
+    { 0xd6329f1c35ca4bfbULL, 92 },
+    { 0x25dfa371a19e6f7dULL, 95 },
+    { 0x6f578c4e0a060b5cULL, 97 },
+    { 0xcb2d6f618c878e33ULL, 99 },
+    { 0x1efc659cf7d4b8e0ULL, 102 },
+    { 0x66bb7f0435c9e718ULL, 104 },
+    { 0xc06a5ec5433c60deULL, 106 },
+    { 0x18427b3b4a05bc8bULL, 109 },
+    { 0x5e531a0a1c872badULL, 111 },
+    { 0xb5e7e08ca3a8f698ULL, 113 },
+    { 0x11b0ec57e6499a1fULL, 116 },
+    { 0x561d276ddfdc00a7ULL, 118 },
+    { 0xaba4714957d300d1ULL, 120 },
+    { 0x0b46c6cdd6e3e083ULL, 123 },
+    { 0x4e1878814c9cd8a3ULL, 125 },
+    { 0xa19e96a19fc40eccULL, 127 },
+    { 0x05031e2503da893fULL, 130 },
+    { 0x4643e5ae44d12b8fULL, 132 },
+    { 0x97d4df19d6057673ULL, 134 },
+    { 0xfdca16e04b86d410ULL, 136 },
+    { 0x3e9e4e4c2f34448aULL, 139 },
+    { 0x8e45e1df3b0155adULL, 141 },
+    { 0xf1d75a5709c1ab18ULL, 143 },
+    { 0x3726987666190aefULL, 146 },
+    { 0x84f03e93ff9f4daaULL, 148 }
 };
 
 static void bigMulFP(cxuint maxSize,
@@ -753,15 +854,17 @@ static void bigMulFP(cxuint maxSize,
 static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
             cxint& exponent, uint64_t* outPow)
 {
-    if (power >= 0 && power < 28)
+    if ((power >= 0 && power < 28) ||
+        (maxSize == 1 && power >= -64 && power <= 64))
     {   /* get result from table */
-        outPow[0] = pow5Table[power].value;
+        outPow[0] = pow5Table[power+64].value;
         powSize = 1;
-        exponent = pow5Table[power].exponent;
+        exponent = pow5Table[power+64].exponent;
         return;
     }
-    maxSize++; // increase by 1 elem (64-bit) for accuracy
     
+    maxSize++; // increase by 1 elem (64-bit) for accuracy
+    const cxuint absPower = std::abs(power);
     uint64_t* heap = new uint64_t[maxSize<<3]; // four (maxSize<<1)
     uint64_t* curPow2Pow = heap;
     uint64_t* prevPow2Pow = heap + (maxSize<<1);
@@ -770,18 +873,18 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     
     cxuint pow2PowSize, pow2PowBits, powBits;
     cxint pow2PowExp;
-    const cxuint absPower = std::abs(power);
+    
     cxuint p = 0;
     
     if (power >= 0)
     {   // positive power
         powSize = 1;
-        curPow[0] = pow5Table[power&15].value;
-        exponent = pow5Table[power&15].exponent;
+        curPow[0] = pow5Table[64+(power&15)].value;
+        exponent = pow5Table[64+(power&15)].exponent;
         powBits = exponent;
         pow2PowSize = 1;
-        curPow2Pow[0] = pow5Table[16].value;
-        pow2PowExp = pow5Table[16].exponent;
+        curPow2Pow[0] = pow5Table[64+16].value;
+        pow2PowExp = pow5Table[64+16].exponent;
         pow2PowBits = pow2PowExp;
         p = 16;
     }
