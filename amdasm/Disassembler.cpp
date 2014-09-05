@@ -258,16 +258,20 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
         if (fillEnd >= p+8)
         {   // if element repeated for least 1 line
-            char numBuf[22];
-            output.write(fillPrefix, prefixSize);
+            ::memcpy(buf, fillPrefix, prefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(7) : fillEnd;
-            const size_t len = u64tocstrCStyle(p-oldP, numBuf, 22, 10);
-            output.write(numBuf, len);
-            output.write(", 1, ", 5);
-            u32tocstrCStyle(data[oldP], numBuf, 6, 16, 2);
-            output.write(numBuf, 4);
-            output.put('\n');
+            size_t bufPos = prefixSize;
+            bufPos += u64tocstrCStyle(p-oldP, buf+bufPos, 22, 10);
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            buf[bufPos++] = '1';
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            bufPos += u32tocstrCStyle(data[oldP], buf+bufPos, 6, 16, 2);
+            buf[bufPos++] = '\n';
+            output.write(buf, bufPos);
+            ::memcpy(buf, linePrefix, prefixSize);
             continue;
         }
         
@@ -322,16 +326,20 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
         if (fillEnd >= p+4)
         {   // if element repeated for least 1 line
-            char numBuf[22];
-            output.write(fillPrefix, fillPrefixSize);
+            ::memcpy(buf, fillPrefix, fillPrefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
-            const size_t len = u64tocstrCStyle(p-oldP, numBuf, 22, 10);
-            output.write(numBuf, len);
-            output.write(", 4, ", 5);
-            u32tocstrCStyle(ULEV(data[oldP]), numBuf, 12, 16, 8);
-            output.write(numBuf, 10);
-            output.put('\n');
+            size_t bufPos = fillPrefixSize;
+            bufPos += u64tocstrCStyle(p-oldP, buf+bufPos, 22, 10);
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            buf[bufPos++] = '4';
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            bufPos += u32tocstrCStyle(ULEV(data[oldP]), buf+bufPos, 12, 16, 8);
+            buf[bufPos++] = '\n';
+            output.write(buf, bufPos);
+            ::memcpy(buf, linePrefix, fillPrefixSize);
             continue;
         }
         
