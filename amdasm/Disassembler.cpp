@@ -255,28 +255,28 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         size_t fillEnd;
         // find max repetition of this element
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
-        if (fillEnd >= p+16)
+        if (fillEnd >= p+8)
         {   // if element repeated for least 1 line
             output.write(fillPrefix, prefixSize);
             const size_t oldP = p;
-            p = (fillEnd != size) ? fillEnd&~size_t(15) : fillEnd;
+            p = (fillEnd != size) ? fillEnd&~size_t(7) : fillEnd;
             const size_t len = u64tocstrCStyle(p-oldP, buf, 22, 10);
             output.write(buf, len);
-            output.write(",1,", 3);
+            output.write(", 1, ", 5);
             u32tocstrCStyle(data[oldP], buf, 6, 16, 2);
             output.write(buf, 4);
             output.put('\n');
             continue;
         }
         
-        const size_t lineEnd = std::min(p+16, size);
+        const size_t lineEnd = std::min(p+8, size);
         output.write(linePrefix, prefixSize);
         for (; p < lineEnd; p++)
         {
             u32tocstrCStyle(data[p], buf, 6, 16, 2);
             output.write(buf, 4);
             if (p+1 < lineEnd)
-                output.put(',');
+                output.write(", ", 2);
         }
         output.put('\n');
     }
@@ -308,7 +308,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
             const size_t len = u64tocstrCStyle(p-oldP, buf, 22, 10);
             output.write(buf, len);
-            output.write(",4,", 3);
+            output.write(", 4, ", 5);
             u32tocstrCStyle(ULEV(data[oldP]), buf, 12, 16, 8);
             output.write(buf, 10);
             output.put('\n');
@@ -322,7 +322,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             u32tocstrCStyle(ULEV(data[p]), buf, 12, 16, 8);
             output.write(buf, 10);
             if (p+1 < lineEnd)
-                output.put(',');
+                output.write(", ", 2);
         }
         output.put('\n');
     }
@@ -340,15 +340,15 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
         prefixSize += 4;
     }
     
-    char buffer[85];
+    char buffer[76];
     for (size_t pos = 0; pos < size; )
     {
-        const size_t end = std::min(pos+80, size);
+        const size_t end = std::min(pos+72, size);
         const size_t oldPos = pos;
         while (pos < end && data[pos] != '\n') pos++;
         if (pos < end && data[pos] == '\n') pos++; // embrace newline
         size_t escapeSize;
-        pos = oldPos + escapeStringCStyle(pos-oldPos, data+oldPos, 85, buffer, escapeSize);
+        pos = oldPos + escapeStringCStyle(pos-oldPos, data+oldPos, 76, buffer, escapeSize);
         output.write(linePrefix, prefixSize);
         output.write(buffer, escapeSize);
         output.write("\"\n", 2);
@@ -471,11 +471,11 @@ void Disassembler::disassemble()
                         {
                             const CALProgramInfoEntry& progInfo = progInfos[k];
                             size_t len = u32tocstrCStyle(ULEV(progInfo.address),
-                                         buf, 32, 16);
+                                         buf, 32, 16, 8);
                             output.write("        .set ", 13);
                             output.write(buf, len);
-                            output.put(',');
-                            len = u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16);
+                            output.write(", ", 2);
+                            len = u32tocstrCStyle(ULEV(progInfo.value), buf, 32, 16, 8);
                             output.write(buf, len);
                             output.put('\n');
                         }
@@ -513,7 +513,7 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(segment.offset), buf, 32);
                             output.write("        .segment ", 17);
                             output.write(buf, len);
-                            output.put(',');
+                            output.write(", ", 2);
                             len = u32tocstrCStyle(ULEV(segment.size), buf, 32);
                             output.write(buf, len);
                             output.put('\n');
@@ -538,7 +538,7 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(segment.input), buf, 32);
                             output.write("        .sampler ", 17);
                             output.write(buf, len);
-                            output.put(',');
+                            output.write(", ", 2);
                             len = u32tocstrCStyle(ULEV(segment.sampler), buf, 32, 16);
                             output.write(buf, len);
                             output.put('\n');
@@ -563,8 +563,8 @@ void Disassembler::disassemble()
                             size_t len = u32tocstrCStyle(ULEV(cbufMask.index), buf, 32);
                             output.write("        .cbmask ", 16);
                             output.write(buf, len);
-                            output.put(',');
-                            len = u32tocstrCStyle(ULEV(cbufMask.size), buf, 32, 16);
+                            output.write(", ", 2);
+                            len = u32tocstrCStyle(ULEV(cbufMask.size), buf, 32);
                             output.write(buf, len);
                             output.put('\n');
                         }
