@@ -30,7 +30,6 @@
 #include <istream>
 #include <ostream>
 #include <vector>
-#include <utility>
 #include <unordered_map>
 #include <CLRX/AmdBinaries.h>
 #include <CLRX/Utilities.h>
@@ -46,7 +45,8 @@ enum: cxuint
 {
     ASM_WARNINGS = 1,
     ASM_WARN_SIGNED_OVERFLOW = 2,
-    ASM_64BIT_MODE = 4
+    ASM_64BIT_MODE = 4,
+    ASM_ALL = 0xff 
 };
 
 enum: cxuint
@@ -55,6 +55,7 @@ enum: cxuint
     DISASM_METADATA = 2,
     DISASM_DUMPDATA = 4,
     DISASM_CALNOTES = 8,
+    DISASM_FLOATLITS = 16,
     DISASM_ALL = 0xff 
 };
 
@@ -133,6 +134,7 @@ public:
     void finish();
 };
 
+/// main class for
 class ISADisassembler
 {
 private:
@@ -147,12 +149,14 @@ protected:
 public:
     virtual ~ISADisassembler();
     
+    /// set input code
     void setInput(size_t inputSize, const cxbyte* input);
-    // before disassemble - first phase before generating output.
-    // collects labels and other symbols 
+    /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
+    /// disassemblers input code
     virtual size_t disassemble(size_t maxSize, char* buffer) = 0;
     
+    /// returns true if disassemblying has been finished
     bool isFinished() const
     { return finished; }
 };
@@ -180,16 +184,18 @@ struct AsmSymbol
 
 typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
 
+/// assembler global metadata's
 struct AsmGlobalMetadata
 {
-    std::string driverInfo;
-    std::string compileOptions;
+    std::string driverInfo; ///< driver info (for AMD Catalyst drivers)
+    std::string compileOptions; ///< compile options which used by in clBuildProgram
 };
 
+/// holds ATI CAL note
 struct AsmCALNote
 {
-    CALNoteHeader header;
-    cxbyte* data;
+    CALNoteHeader header;   ///< header
+    cxbyte* data;   ///< raw CAL note data
 };
 
 struct AsmKernelMetadata
@@ -262,30 +268,37 @@ public:
     { return kernelMap; }
 };
 
+/// single kernel input for disassembler
+/** all pointer members holds only pointers that should be freed by your routines.
+ * No management of data */
 struct DisasmKernelInput
 {
-    std::string kernelName;
-    size_t metadataSize;
-    const char* metadata;
-    size_t headerSize;
-    const cxbyte* header;
-    std::vector<AsmCALNote> calNotes;
-    size_t dataSize;
-    const cxbyte* data;
-    size_t codeSize;
-    const cxbyte* code;
+    std::string kernelName; ///< kernel name
+    size_t metadataSize;    ///< metadata size
+    const char* metadata;   ///< kernel's metadata
+    size_t headerSize;  ///< kernel header size
+    const cxbyte* header;   ///< kernel header size
+    std::vector<AsmCALNote> calNotes;   /// ATI CAL notes
+    size_t dataSize;    ///< data (from inner binary) size
+    const cxbyte* data; ///< data from inner binary
+    size_t codeSize;    ///< size of code of kernel
+    const cxbyte* code; ///< code of kernel
 };
 
+/// whole disassembler input
+/** all pointer members holds only pointers that should be freed by your routines.
+ * No management of data */
 struct DisasmInput
 {
-    GPUDeviceType deviceType;
-    bool is64BitMode;
-    AsmGlobalMetadata metadata;
-    size_t globalDataSize;
-    const cxbyte* globalData;
-    std::vector<DisasmKernelInput> kernelInputs;
+    GPUDeviceType deviceType;   ///< GPU device type
+    bool is64BitMode;       ///< true if 64-bit mode of addressing
+    AsmGlobalMetadata metadata; ///< global metadata (driver info & compile options)
+    size_t globalDataSize;  ///< global (constants for kernels) data size
+    const cxbyte* globalData;   ///< global (constants for kernels) data
+    std::vector<DisasmKernelInput> kernelInputs;    ///< kernel inputs
 };
 
+/// disassembler class
 class Disassembler
 {
 private:
@@ -295,26 +308,50 @@ private:
     std::ostream& output;
     cxuint flags;
 public:
+    /// constructor for 32-bit GPU binary
+    /**
+     * \param binary main GPU binary
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
     Disassembler(const AmdMainGPUBinary32& binary, std::ostream& output,
                  cxuint flags = 0);
+    /// constructor for 64-bit GPU binary
+    /**
+     * \param binary main GPU binary
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
     Disassembler(const AmdMainGPUBinary64& binary, std::ostream& output,
                  cxuint flags = 0);
+    /// constructor for disassembler input
+    /**
+     * \param disasmInput disassembler input object
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
     Disassembler(const DisasmInput* disasmInput, std::ostream& output,
                  cxuint flags = 0);
     ~Disassembler();
     
+    /// disassembles input
     void disassemble();
     
+    /// get disassemblers flags
     cxuint getFlags() const
     { return flags; }
+    /// get disassemblers flags
     void setFlags(cxuint flags)
     { this->flags = flags; }
     
+    /// get disassembler input
     const DisasmInput* getInput() const
     { return input; }
     
+    /// get output stream
     const std::ostream& getOutput() const
     { return output; }
+    /// get output stream
     std::ostream& getOutput()
     { return output; }
 };
