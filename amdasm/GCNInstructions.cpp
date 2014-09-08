@@ -1218,5 +1218,6 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "flat_atomic_dec_x2",  GCNENC_FLAT,   GCN_MUBUF_MX2,            93,   ARCH_RX2X0    },
     { "flat_atomic_fcmpswap_x2", GCNENC_FLAT,   GCN_MUBUF_MX2,        94,   ARCH_RX2X0    },
     { "flat_atomic_fmin_x2", GCNENC_FLAT,   GCN_MUBUF_MX2,            95,   ARCH_RX2X0    },
-    { "flat_atomic_fmax_x2", GCNENC_FLAT,   GCN_MUBUF_MX2,            96,   ARCH_RX2X0    }
+    { "flat_atomic_fmax_x2", GCNENC_FLAT,   GCN_MUBUF_MX2,            96,   ARCH_RX2X0    },
+    { nullptr, GCNENC_NONE, 0, 0, 0 }
 };

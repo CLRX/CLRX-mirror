@@ -26,26 +26,28 @@
 namespace CLRX
 {
 
-enum GCNEncoding: cxbyte
+enum : cxbyte
 {
-    GCNENC_SOPC,
-    GCNENC_SOPP,
-    GCNENC_SOP1,
-    GCNENC_SOP2,
-    GCNENC_SOPK,
-    GCNENC_SMRD,
-    GCNENC_VOPC,
-    GCNENC_VOP1,
-    GCNENC_VOP2,
-    GCNENC_VOP3A,
-    GCNENC_VOP3B,
-    GCNENC_VINTRP,
-    GCNENC_DS,
-    GCNENC_MUBUF,
-    GCNENC_MTBUF,
-    GCNENC_MIMG,
-    GCNENC_EXP,
-    GCNENC_FLAT
+    GCNENC_NONE,
+    GCNENC_SOPC,    /* 0x17e<<23, opcode = (7bit)<<16 */
+    GCNENC_SOPP,    /* 0x17f<<23, opcode = (7bit)<<16 */
+    GCNENC_SOP1,    /* 0x17d<<23, opcode = (8bit)<<8 */
+    GCNENC_SOP2,    /* 0x2<<30,   opcode = (7bit)<<23 */
+    GCNENC_SOPK,    /* 0xb<<28,   opcode = (5bit)<<23 */
+    GCNENC_SMRD,    /* 0x18<<27,  opcode = (6bit)<<22 */
+    GCNENC_VOPC,    /* 0x3e<<25,  opcode = (8bit)<<27 */
+    GCNENC_VOP1,    /* 0x3f<<25,  opcode = (8bit)<<9 */
+    GCNENC_VOP2,    /* 0x0<<31,   opcode = (6bit)<<25 */
+    GCNENC_VOP3A,   /* 0x34<<26,  opcode = (9bit)<<17 */
+    GCNENC_VOP3B,   /* 0x34<<26,  opcode = (9bit)<<17 */
+    GCNENC_VINTRP,  /* 0x32<<26,  opcode = (2bit)<<16 */
+    GCNENC_DS,      /* 0x36<<26,  opcode = (8bit)<<18 */
+    GCNENC_MUBUF,   /* 0x38<<26,  opcode = (7bit)<<18 */
+    GCNENC_MTBUF,   /* 0x3a<<26,  opcode = (3bit)<<16 */
+    GCNENC_MIMG,    /* 0x3c<<26,  opcode = (7bit)<<18 */
+    GCNENC_EXP,     /* 0x3e<<26,  opcode = none */
+    GCNENC_FLAT,    /* 0x37<<26,  opcode = (8bit)<<18 (???8bit) */
+    GCNENC_MAXVAL = GCNENC_FLAT
 };
 
 enum : uint16_t
@@ -119,13 +121,13 @@ enum : uint16_t
 struct CLRX_INTERNAL GCNInstruction
 {
     const char* mnemonic;
-    GCNEncoding encoding;
+    cxbyte encoding;
     uint16_t mode;
     uint16_t code;
     uint16_t archMask; // mask of architectures whose have instruction
 };
 
-CLRX_INTERNAL extern const CLRX::GCNInstruction gcnInstrsTable[];
+CLRX_INTERNAL extern const GCNInstruction gcnInstrsTable[];
 
 };
 

@@ -43,20 +43,20 @@ class Disassembler;
 
 enum: cxuint
 {
-    ASM_WARNINGS = 1,
-    ASM_WARN_SIGNED_OVERFLOW = 2,
-    ASM_64BIT_MODE = 4,
-    ASM_ALL = 0xff 
+    ASM_WARNINGS = 1,   ///< enable all warnings for assembler
+    ASM_WARN_SIGNED_OVERFLOW = 2,   ///< warn about signed overflow
+    ASM_64BIT_MODE = 4, ///< assemble to 64-bit addressing mode
+    ASM_ALL = 0xff  ///< all flags
 };
 
 enum: cxuint
 {
-    DISASM_DUMPCODE = 1,
-    DISASM_METADATA = 2,
-    DISASM_DUMPDATA = 4,
-    DISASM_CALNOTES = 8,
-    DISASM_FLOATLITS = 16,
-    DISASM_ALL = 0xff 
+    DISASM_DUMPCODE = 1,    ///< dump code
+    DISASM_METADATA = 2,    ///< dump metadatas
+    DISASM_DUMPDATA = 4,    ///< dump datas
+    DISASM_CALNOTES = 8,    ///< dump ATI CAL notes
+    DISASM_FLOATLITS = 16,  ///< print in comments float literals
+    DISASM_ALL = 0xff       ///< all disassembler flags
 };
 
 enum class GPUDeviceType
@@ -153,7 +153,7 @@ public:
     void setInput(size_t inputSize, const cxbyte* input);
     /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
-    /// disassemblers input code
+    /// disassembles input code
     virtual size_t disassemble(size_t maxSize, char* buffer) = 0;
     
     /// returns true if disassemblying has been finished

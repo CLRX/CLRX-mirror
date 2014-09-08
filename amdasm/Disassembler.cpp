@@ -23,12 +23,62 @@
 #include <ostream>
 #include <vector>
 #include <algorithm>
+#include <mutex>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
 #include <CLRX/Assembler.h>
 #include <CLRX/MemAccess.h>
+#include "AsmInternals.h"
 
 using namespace CLRX;
+
+static std::once_flag clrxGCNDisasmOnceFlag; 
+static GCNInstruction* gcnInstrTableByCode = nullptr;
+
+struct GCNEncodingSpace
+{
+    cxuint offset;
+    cxuint instrsNum;
+};
+
+static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1] =
+{
+    { 0, 0 },
+    { 0, 0x80 }, // GCNENC_SOPC, opcode = (7bit)<<16 */
+    { 0x0080, 0x80 }, // GCNENC_SOPP, opcode = (7bit)<<16 */
+    { 0x0100, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 */
+    { 0x0200, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 */
+    { 0x0280, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 */
+    { 0x02a0, 0x40 }, /* GCNENC_SMRD, opcode = (6bit)<<22 */
+    { 0x02e0, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 */
+    { 0x03e0, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 */
+    { 0x04e0, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 */
+    { 0x0520, 0x200 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 */
+    { 0x0520, 0x200 }, /* GCNENC_VOP3B, opcode = (9bit)<<17 */
+    { 0x0720, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
+    { 0x0724, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 */
+    { 0x0824, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
+    { 0x08a4, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
+    { 0x08ac, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
+    { 0x092c, 0x1 }, /* GCNENC_EXP, opcode = none */
+    { 0x092d, 0x100 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+};
+
+static const size_t gcnInstrTableByCodeLength = 0x0a2d;
+
+static void initializeGCNDisassembler()
+{
+    gcnInstrTableByCode = new GCNInstruction[gcnInstrTableByCodeLength];
+    for (cxuint i = 0; i < gcnInstrTableByCodeLength; i++)
+        gcnInstrTableByCode[i].mnemonic = nullptr;
+    
+    for (cxuint i = 0; gcnInstrsTable[i].mnemonic != nullptr; i++)
+    {
+        const GCNInstruction& instr = gcnInstrsTable[i];
+        const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[instr.encoding];
+        gcnInstrTableByCode[encSpace.offset] = instr;
+    }
+}
 
 ISADisassembler::ISADisassembler(Disassembler& disassembler_)
         : disassembler(disassembler_)
@@ -46,6 +96,7 @@ void ISADisassembler::setInput(size_t inputSize, const cxbyte* input)
 GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
         : ISADisassembler(disassembler)
 {
+    std::call_once(clrxGCNDisasmOnceFlag, initializeGCNDisassembler);
 }
 
 GCNDisassembler::~GCNDisassembler()
@@ -98,9 +149,11 @@ static const char* gpuDeviceNameTable[11] =
 };
 
 template<typename AmdMainBinary>
-static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
+static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
 {
     DisasmInput* input = new DisasmInput;
+    try
+    {   // for free input when exception
     cxuint index = 0;
     const uint16_t elfMachine = ULEV(binary.getHeader().e_machine);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
@@ -201,25 +254,43 @@ static const DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
             }
         }
     }
+    }
+    catch(...)
+    {
+        delete input;
+        throw; // if exception
+    }
     return input;
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
-            cxuint flags) : fromBinary(true), output(_output)
+            cxuint flags) : fromBinary(true), input(nullptr), output(_output)
 {
     this->flags = flags;
     output.exceptions(std::ios::failbit | std::ios::badbit);
     input = getDisasmInputFromBinary(binary);
-    isaDisassembler = new GCNDisassembler(*this);
+    try
+    { isaDisassembler = new GCNDisassembler(*this); }
+    catch(...)
+    {
+        delete input;
+        throw;
+    }
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
-            cxuint flags) : fromBinary(true), output(_output)
+            cxuint flags) : fromBinary(true), input(nullptr), output(_output)
 {
     this->flags = flags;
     output.exceptions(std::ios::failbit | std::ios::badbit);
     input = getDisasmInputFromBinary(binary);
-    isaDisassembler = new GCNDisassembler(*this);
+    try
+    { isaDisassembler = new GCNDisassembler(*this); }
+    catch(...)
+    {
+        delete input;
+        throw;
+    }
 }
 
 Disassembler::Disassembler(const DisasmInput* disasmInput, std::ostream& _output,
