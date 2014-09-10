@@ -137,14 +137,11 @@ public:
 /// main class for
 class ISADisassembler
 {
-private:
+protected:
     Disassembler& disassembler;
-    
     size_t inputSize;
     const cxbyte* input;
     std::vector<size_t> labels;
-    bool finished;
-protected:
     explicit ISADisassembler(Disassembler& disassembler);
 public:
     virtual ~ISADisassembler();
@@ -154,11 +151,7 @@ public:
     /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
     /// disassembles input code
-    virtual size_t disassemble(size_t maxSize, char* buffer) = 0;
-    
-    /// returns true if disassemblying has been finished
-    bool isFinished() const
-    { return finished; }
+    virtual void disassemble() = 0;
 };
 
 class GCNDisassembler: public ISADisassembler
@@ -169,7 +162,7 @@ public:
     
     void setInput(size_t inputSize, const cxbyte* input);
     void beforeDisassemble();
-    size_t disassemble(size_t maxSize, char* buffer);
+    void disassemble();
 };
 
 class AsmExpression;

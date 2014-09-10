@@ -28,57 +28,8 @@
 #include <CLRX/AmdBinaries.h>
 #include <CLRX/Assembler.h>
 #include <CLRX/MemAccess.h>
-#include "AsmInternals.h"
 
 using namespace CLRX;
-
-static std::once_flag clrxGCNDisasmOnceFlag; 
-static GCNInstruction* gcnInstrTableByCode = nullptr;
-
-struct GCNEncodingSpace
-{
-    cxuint offset;
-    cxuint instrsNum;
-};
-
-static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1] =
-{
-    { 0, 0 },
-    { 0, 0x80 }, // GCNENC_SOPC, opcode = (7bit)<<16 */
-    { 0x0080, 0x80 }, // GCNENC_SOPP, opcode = (7bit)<<16 */
-    { 0x0100, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 */
-    { 0x0200, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 */
-    { 0x0280, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 */
-    { 0x02a0, 0x40 }, /* GCNENC_SMRD, opcode = (6bit)<<22 */
-    { 0x02e0, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 */
-    { 0x03e0, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 */
-    { 0x04e0, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 */
-    { 0x0520, 0x200 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 */
-    { 0x0520, 0x200 }, /* GCNENC_VOP3B, opcode = (9bit)<<17 */
-    { 0x0720, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
-    { 0x0724, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 */
-    { 0x0824, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
-    { 0x08a4, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
-    { 0x08ac, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
-    { 0x092c, 0x1 }, /* GCNENC_EXP, opcode = none */
-    { 0x092d, 0x100 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
-};
-
-static const size_t gcnInstrTableByCodeLength = 0x0a2d;
-
-static void initializeGCNDisassembler()
-{
-    gcnInstrTableByCode = new GCNInstruction[gcnInstrTableByCodeLength];
-    for (cxuint i = 0; i < gcnInstrTableByCodeLength; i++)
-        gcnInstrTableByCode[i].mnemonic = nullptr;
-    
-    for (cxuint i = 0; gcnInstrsTable[i].mnemonic != nullptr; i++)
-    {
-        const GCNInstruction& instr = gcnInstrsTable[i];
-        const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[instr.encoding];
-        gcnInstrTableByCode[encSpace.offset] = instr;
-    }
-}
 
 ISADisassembler::ISADisassembler(Disassembler& disassembler_)
         : disassembler(disassembler_)
@@ -91,24 +42,6 @@ void ISADisassembler::setInput(size_t inputSize, const cxbyte* input)
 {
     this->inputSize = inputSize;
     this->input = input;
-}
-
-GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
-        : ISADisassembler(disassembler)
-{
-    std::call_once(clrxGCNDisasmOnceFlag, initializeGCNDisassembler);
-}
-
-GCNDisassembler::~GCNDisassembler()
-{ }
-
-void GCNDisassembler::beforeDisassemble()
-{
-}
-
-size_t GCNDisassembler::disassemble(size_t maxSize, char* buffer)
-{
-    return 0;
 }
 
 /* helpers for main Disassembler class */

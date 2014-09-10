@@ -20,6 +20,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(LIBAMDASMSRC Disassembler.cpp
+        GCNDisasm.cpp
         GCNInstructions.cpp)
 
 SET(LINK_LIBRARIES CLRXAmdBin CLRXUtils)
