@@ -268,6 +268,100 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         return pos;
     }
     
+    if (op == 106 || op == 107)
+    {   // VCC
+        buf[0] = 'v';
+        buf[1] = 'c';
+        buf[2] = 'c';
+        if (vregNum == 2)
+        {
+            if (op == 107) // unaligned!!
+            {
+                buf[3] = '_';
+                buf[4] = 'u';
+                buf[5] = '!';
+                return 6;
+            }
+            return 3;
+        }
+        buf[3] = '_';
+        if (op == 106)
+        { buf[4] = 'l'; buf[5] = 'o'; }
+        else
+        { buf[4] = 'h'; buf[5] = 'i'; }
+        return 6;
+    }
+    if (op == 108 || op == 109)
+    {   // TBA
+        buf[0] = 't';
+        buf[1] = 'b';
+        buf[2] = 'a';
+        if (vregNum == 2)
+        {
+            if (op == 109)
+            {
+                buf[3] = '_';
+                buf[4] = 'u';
+                buf[5] = '!';
+                return 6;
+            }
+            return 3;
+        }
+        buf[3] = '_';
+        if (op == 108)
+        { buf[4] = 'l'; buf[5] = 'o'; }
+        else
+        { buf[4] = 'h'; buf[5] = 'i'; }
+        return 6;
+    }
+    if (op == 110 || op == 111)
+    {   // TMA
+        buf[0] = 't';
+        buf[1] = 'm';
+        buf[2] = 'a';
+        if (vregNum == 2)
+        {
+            if (op == 111)
+            {
+                buf[3] = '_';
+                buf[4] = 'u';
+                buf[5] = '!';
+                return 6;
+            }
+            return 3;
+        }
+        buf[3] = '_';
+        if (op == 110)
+        { buf[4] = 'l'; buf[5] = 'o'; }
+        else
+        { buf[4] = 'h'; buf[5] = 'i'; }
+        return 6;
+    }
+    if (op == 126 || op == 127)
+    {   // exec
+        buf[0] = 'e';
+        buf[1] = 'x';
+        buf[2] = 'e';
+        buf[3] = 'c';
+        if (vregNum == 2)
+        {
+            if (op == 127)
+            {
+                buf[4] = '_';
+                buf[5] = 'u';
+                buf[6] = '!';
+                return 7;
+            }
+            return 4;
+        }
+        buf[4] = '_';
+        if (op == 127)
+        { buf[5] = 'l'; buf[6] = 'o'; }
+        else
+        { buf[5] = 'h'; buf[6] = 'i'; }
+        return 7;
+    }
+    
     if (op == 255) // if literal
         return u32tocstrCStyle(literal, buf, 20, 16);
     

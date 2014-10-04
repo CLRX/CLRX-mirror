@@ -214,11 +214,11 @@ struct KernelInfo
     
     KernelInfo();
     KernelInfo(const KernelInfo& cp);
-    KernelInfo(KernelInfo&& cp);
+    KernelInfo(KernelInfo&& cp) noexcept;
     ~KernelInfo();
     
     KernelInfo& operator=(const KernelInfo& cp);
-    KernelInfo& operator=(KernelInfo&& cp);
+    KernelInfo& operator=(KernelInfo&& cp) noexcept;
     
     /// allocate arguments to specified size
     void allocateArgs(cxuint argsNum);

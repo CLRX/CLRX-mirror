@@ -167,7 +167,7 @@ KernelInfo::KernelInfo(const KernelInfo& cp)
     std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
 }
 
-KernelInfo::KernelInfo(KernelInfo&& cp)
+KernelInfo::KernelInfo(KernelInfo&& cp) noexcept
 {
     kernelName = std::move(cp.kernelName);
     argsNum = cp.argsNum;
@@ -187,7 +187,7 @@ KernelInfo& KernelInfo::operator=(const KernelInfo& cp)
     return *this;
 }
 
-KernelInfo& KernelInfo::operator=(KernelInfo&& cp)
+KernelInfo& KernelInfo::operator=(KernelInfo&& cp) noexcept
 {
     delete[] argInfos;
     argInfos = nullptr;
