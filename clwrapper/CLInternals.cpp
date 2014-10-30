@@ -1085,7 +1085,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
         CL_PROGRAM_BINARY_TYPE, sizeof(cl_program_binary_type), &ptype, nullptr);
     if (status != CL_SUCCESS)
     {
-        std::cerr << "Cant get program binary type" << std::endl;
+        std::cerr << "Can't get program binary type" << std::endl;
         abort();
     }
     
@@ -1102,7 +1102,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 sizeof(size_t)*program->assocDevicesNum, binarySizes.data(), nullptr);
         if (status != CL_SUCCESS)
         {
-            std::cerr << "Cant get program binary sizes!" << std::endl;
+            std::cerr << "Can't get program binary sizes!" << std::endl;
             abort();
         }
         
@@ -1118,7 +1118,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 sizeof(char*)*program->assocDevicesNum, binaries, nullptr);
         if (status != CL_SUCCESS)
         {
-            std::cerr << "Cant get program binaries!" << std::endl;
+            std::cerr << "Can't get program binaries!" << std::endl;
             abort();
         }
         /* get kernel arg info from all binaries */

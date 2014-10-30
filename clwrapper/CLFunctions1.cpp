@@ -1525,7 +1525,7 @@ clrxclCreateKernel(cl_program      program,
                 p->kernelArgFlagsMap.find(kernel_name);
         if (argFlagMapIt == p->kernelArgFlagsMap.end())
         {
-            std::cerr << "Cant find kernel arg flag!" << std::endl;
+            std::cerr << "Can't find kernel arg flag!" << std::endl;
             abort();
         }
         outKernel = new CLRXKernel(argFlagMapIt->second);
@@ -1619,7 +1619,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                         kernels[kp], CL_KERNEL_FUNCTION_NAME, 0, nullptr, &kernelNameSize);
                 if (status != CL_SUCCESS)
                 {
-                    std::cerr << "Cant get kernel function name" << std::endl;
+                    std::cerr << "Can't get kernel function name" << std::endl;
                     abort();
                 }
                 if (kernelName == nullptr ||
@@ -1634,7 +1634,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                             CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName, nullptr);
                 if (status != CL_SUCCESS)
                 {
-                    std::cerr << "Cant get kernel function name" << std::endl;
+                    std::cerr << "Can't get kernel function name" << std::endl;
                     abort();
                 }
                 
@@ -1642,7 +1642,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                         p->kernelArgFlagsMap.find(kernelName);
                 if (argFlagMapIt == p->kernelArgFlagsMap.end())
                 {
-                    std::cerr << "Cant find kernel arg flag!" << std::endl;
+                    std::cerr << "Can't find kernel arg flag!" << std::endl;
                     abort();
                 }
                 

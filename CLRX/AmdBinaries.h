@@ -443,7 +443,7 @@ public:
     {
         SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
         if (it == sectionIndexMap.end())
-            throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
+            throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
         return it;
     }
     
@@ -469,7 +469,7 @@ public:
     {
         SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
         if (it == symbolIndexMap.end())
-            throw Exception(std::string("Cant find Elf")+Types::bitName+" Symbol");
+            throw Exception(std::string("Can't find Elf")+Types::bitName+" Symbol");
         return it;
     }
 
@@ -478,7 +478,7 @@ public:
     {
         SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
         if (it == dynSymIndexMap.end())
-            throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
+            throw Exception(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
         return it;
     }
     

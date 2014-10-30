@@ -427,7 +427,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
     {
         SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
         if (it == sectionIndexMap.end())
-            throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
+            throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
         return it->second;
     }
     else
@@ -437,7 +437,7 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
             if (::strcmp(getSectionName(i), name) == 0)
                 return i;
         }
-        throw Exception(std::string("Cant find Elf")+Types::bitName+" Section");
+        throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
     }
 }
 
@@ -446,7 +446,7 @@ typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) 
 {
     SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
     if (it == symbolIndexMap.end())
-        throw Exception(std::string("Cant find Elf")+Types::bitName+" Symbol");
+        throw Exception(std::string("Can't find Elf")+Types::bitName+" Symbol");
     return it->second;
 }
 
@@ -455,7 +455,7 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
 {
     SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
     if (it == dynSymIndexMap.end())
-        throw Exception(std::string("Cant find Elf")+Types::bitName+" DynSymbol");
+        throw Exception(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
     return it->second;
 }
 
@@ -787,7 +787,7 @@ const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
 {
     KernelInfoMap::const_iterator it = kernelInfosMap.find(name);
     if (it == kernelInfosMap.end())
-        throw Exception("Cant find kernel name");
+        throw Exception("Can't find kernel name");
     return kernelInfos[it->second];
 }
 
@@ -832,7 +832,7 @@ static const KernelArgType determineKernelArgType(const char* typeString,
         if (typeString[1] == '8')
         {
             if (typeString[2] != ':')
-                throw ParseException(lineNo, "Cant parse type");
+                throw ParseException(lineNo, "Can't parse type");
             outType = gpuArgTypeTable[indexBase+vectorId];
         }
         else
@@ -844,13 +844,13 @@ static const KernelArgType determineKernelArgType(const char* typeString,
             else if (typeString[1] == '6' && typeString[2] == '4')
                 outType = gpuArgTypeTable[indexBase+6*6+vectorId];
             else // if not determined
-                throw ParseException(lineNo, "Cant parse type");
+                throw ParseException(lineNo, "Can't parse type");
             if (typeString[3] != ':')
-                throw ParseException(lineNo, "Cant parse type");
+                throw ParseException(lineNo, "Can't parse type");
         }
     }
     else
-        throw ParseException(lineNo, "Cant parse type");
+        throw ParseException(lineNo, "Can't parse type");
     
     return outType;
 }
@@ -1050,14 +1050,14 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             
             pos = ++tokPos;
             if (pos+3 > metadataSize || kernelDesc[pos+2] != ':')
-                throw ParseException(lineNo, "Cant parse image access qualifier");
+                throw ParseException(lineNo, "Can't parse image access qualifier");
             
             if (kernelDesc[pos] == 'R' && kernelDesc[pos+1] == 'O')
                 argIt->second.ptrAccess |= KARG_PTR_READ_ONLY;
             else if (kernelDesc[pos] == 'W' && kernelDesc[pos+1] == 'O')
                 argIt->second.ptrAccess |= KARG_PTR_WRITE_ONLY;
             else
-                throw ParseException(lineNo, "Cant parse image access qualifier");
+                throw ParseException(lineNo, "Can't parse image access qualifier");
             pos += 3;
         }
         else if (::strncmp(kernelDesc + pos, "sampler", tokPos-pos) == 0)
@@ -1102,7 +1102,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             const std::string thisName(kernelDesc+pos, tokPos-pos);
             InitKernelArgMap::iterator argIt = initKernelArgs.find(thisName);
             if (argIt == initKernelArgs.end())
-                throw ParseException(lineNo, "Cant find constant argument");
+                throw ParseException(lineNo, "Can't find constant argument");
             // set up const access type
             argIt->second.ptrAccess |= KARG_PTR_CONST;
             pos = tokPos;
@@ -1433,7 +1433,7 @@ const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name
 {
     InnerBinaryMap::const_iterator it = innerBinaryMap.find(name);
     if (it == innerBinaryMap.end())
-        throw Exception("Cant find inner binary");
+        throw Exception("Can't find inner binary");
     return innerBinaries[it->second];
 }
 
@@ -1442,7 +1442,7 @@ const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderEntry(
 {
     KernelHeaderMap::const_iterator it = kernelHeaderMap.find(name);
     if (it == kernelHeaderMap.end())
-        throw Exception("Cant find kernel header");
+        throw Exception("Can't find kernel header");
     return kernelHeaders[it->second];
 }
 
