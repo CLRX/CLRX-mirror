@@ -692,7 +692,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
             const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
-            if (argNameSym.getNameOffset() != 0)
+            if (!foundInStaticSymbols)
             {
                 if (argNameSym.getNameOffset() < rodataHdrOffset ||
                     argNameSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
@@ -708,7 +708,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 karg.argName = reinterpret_cast<const char*>(
                     binaryCode + argTypeNamesSyms[argNameTypeNameIdx++]);
             
-            if (argTypeSym.getNameOffset() != 0)
+            if (!foundInStaticSymbols)
             {
                 if (argTypeSym.getNameOffset() < rodataHdrOffset ||
                     argTypeSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
