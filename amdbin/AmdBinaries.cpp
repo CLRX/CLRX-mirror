@@ -588,6 +588,48 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         choosenSyms.push_back(i);
     }
     
+    bool foundInStaticSymbols = false;
+    std::vector<typename Types::Size> argTypeNamesSyms;
+    if (choosenSyms.empty())
+    {   /* if not found in symbol */
+        const size_t symbolsNum = elf.getSymbolsNum();
+        for (typename Types::Size i = 0; i < symbolsNum; i++)
+        {
+            const char* symName = elf.getSymbolName(i);
+            const size_t len = ::strlen(symName);
+            if (::strncmp(symName, ".str", 4) == 0)
+            {   /* add arg/type name symbol to our table */
+                cxuint index = 0;
+                if (symName[4] != 0)
+                {
+                    const char* outend;
+                    index = cstrtou32CStyle(symName+4, nullptr, outend);
+                    if (*outend != 0)
+                        throw Exception("Garbages in .str symbol name!");
+                }
+                if (argTypeNamesSyms.size() <= index)
+                    argTypeNamesSyms.resize(index+1);
+                
+                const typename Types::Sym& sym = elf.getSymbol(i);
+                if (ULEV(sym.st_shndx) >= elf.getSectionHeadersNum())
+                    throw Exception("ArgTypeNameSymStr section index out of range");
+                const typename Types::Shdr& secHdr = 
+                        elf.getSectionHeader(ULEV(sym.st_shndx)); // from symbol
+                
+                if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(secHdr.sh_size)))
+                    throw Exception("ArgTypeNameSymStr value+size out of range");
+                
+                argTypeNamesSyms[index] = ULEV(secHdr.sh_offset) + ULEV(sym.st_value);
+                continue;
+            }
+            if (len < 18 || (::strncmp(symName, "__OpencCL_", 9) != 0 &&
+                ::strcmp(symName+len-9, "_metadata") != 0)) // not metdata then skip
+                continue;
+            choosenSyms.push_back(i);
+        }
+        foundInStaticSymbols = true;
+    }
+    
     try
     {
     kernelInfos = new KernelInfo[choosenSyms.size()];
@@ -597,16 +639,19 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     const size_t unfinishedRegion = unfinishedRegionOfStringTable(
         binaryCode + ULEV(rodataHdr.sh_offset), ULEV(rodataHdr.sh_size));
     
+    size_t argNameTypeNameIdx = 0;
     size_t ki = 0;
     for (auto i: choosenSyms)
     {
-        const typename Types::Sym& sym = elf.getDynSymbol(i);
+        const typename Types::Sym& sym = (!foundInStaticSymbols)?elf.getDynSymbol(i):
+                elf.getSymbol(i);
         if (ULEV(sym.st_shndx) >= elf.getSectionHeadersNum())
             throw Exception("Metadata section index out of range");
         
         const typename Types::Shdr& dataHdr = 
                 elf.getSectionHeader(ULEV(sym.st_shndx)); // from symbol
-        const size_t fileOffset = ULEV(sym.st_value) - ULEV(dataHdr.sh_addr) +
+        const size_t fileOffset = ULEV(sym.st_value) -
+                ((!foundInStaticSymbols)?ULEV(dataHdr.sh_addr):0) +
                 ULEV(dataHdr.sh_offset);
         
         if (fileOffset < ULEV(dataHdr.sh_offset) ||
@@ -620,7 +665,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 Types::argDescsNumOffset)/Types::argDescsNumESize;
         KernelInfo& kernelInfo = kernelInfos[ki++];
         
-        const char* symName = elf.getDynSymbolName(i);
+        const char* symName = (!foundInStaticSymbols)?elf.getDynSymbolName(i):
+                elf.getSymbolName(i);
         const size_t len = ::strlen(symName);
         kernelInfo.kernelName.assign(symName+9, len-18);
         kernelInfo.allocateArgs(argDescsNum>>1);
@@ -645,23 +691,38 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             
             KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
-            const size_t rodataHdrSize= ULEV(rodataHdr.sh_size);
-            if (argNameSym.getNameOffset() < rodataHdrOffset ||
-                argNameSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
-                throw Exception("Kernel arg name offset out of range!");
-            
-            if (argNameSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
-                throw Exception("Arg name is unfinished!");
-            
-            if (argTypeSym.getNameOffset() < rodataHdrOffset ||
-                argTypeSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
-                throw Exception("Kernel arg type offset out of range!");
-            
-            if (argTypeSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
-                throw Exception("Type name is unfinished!");
-            
-            karg.argName = reinterpret_cast<const char*>(
+            const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
+            if (argNameSym.getNameOffset() != 0)
+            {
+                if (argNameSym.getNameOffset() < rodataHdrOffset ||
+                    argNameSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
+                    throw Exception("Kernel arg name offset out of range!");
+                
+                if (argNameSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
+                    throw Exception("Arg name is unfinished!");
+                
+                karg.argName = reinterpret_cast<const char*>(
                     binaryCode + argNameSym.getNameOffset());
+            }
+            else /* otherwise get from our table */
+                karg.argName = reinterpret_cast<const char*>(
+                    binaryCode + argTypeNamesSyms[argNameTypeNameIdx++]);
+            
+            if (argTypeSym.getNameOffset() != 0)
+            {
+                if (argTypeSym.getNameOffset() < rodataHdrOffset ||
+                    argTypeSym.getNameOffset() >= rodataHdrOffset+rodataHdrSize)
+                    throw Exception("Kernel arg type offset out of range!");
+                
+                if (argTypeSym.getNameOffset()-rodataHdrOffset >= unfinishedRegion)
+                    throw Exception("Type name is unfinished!");
+                
+                karg.typeName = reinterpret_cast<const char*>(
+                    binaryCode + argTypeSym.getNameOffset());
+            }
+            else /* otherwise get from our table */
+                karg.typeName = reinterpret_cast<const char*>(
+                    binaryCode + argTypeNamesSyms[argNameTypeNameIdx++]);
             
             if (argType != 0x28)
             {
@@ -678,8 +739,6 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             
             karg.ptrSpace = static_cast<KernelPtrSpace>(ULEV(argNameSym.ptrType));
             karg.ptrAccess = ULEV(argNameSym.ptrAccess);
-            karg.typeName = reinterpret_cast<const char*>(
-                    binaryCode + argTypeSym.getNameOffset());
         }
         kernelInfo.reallocateArgs(realArgsNum);
     }
