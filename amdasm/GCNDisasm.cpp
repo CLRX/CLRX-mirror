@@ -587,11 +587,11 @@ void GCNDisassembler::disassemble()
             case GCNENC_SOPC:
             {
                 bufPos += decodeGCNOperand(insnCode&0xff,
-                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, 0);
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal);
                 buf[bufPos++] = ',';
                 buf[bufPos++] = ' ';
                 bufPos += decodeGCNOperand((insnCode>>8)&0xff,
-                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, 0);
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, literal);
                 break;
             }
             case GCNENC_SOPP:
@@ -601,7 +601,7 @@ void GCNDisassembler::disassemble()
                 {
                     case GCN_IMM_REL:
                     {
-                        size_t branchPos = (pos + imm16 + 4)<<2;
+                        const size_t branchPos = (pos + imm16 + 1)<<2;
 #ifdef GCN_DISASM_TEST
                         const auto p =
                                 std::lower_bound(labels.begin(), labels.end(), branchPos);
@@ -724,11 +724,56 @@ void GCNDisassembler::disassemble()
                 break;
             }
             case GCNENC_SOP1:
+            {
+                bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(insnCode&0xff,
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal);
                 break;
+            }
             case GCNENC_SOP2:
+            {
+                if ((gcnInsn.mode & 0xf0) != GCN_REG_S1_JMP)
+                {
+                    bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
+                           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, 0);
+                    buf[bufPos++] = ',';
+                    buf[bufPos++] = ' ';
+                }
+                bufPos += decodeGCNOperand(insnCode&0xff,
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand((insnCode>>8)&0xff,
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, literal);
                 break;
+            }
             case GCNENC_SOPK:
+            {
+                bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                cxuint imm16 = insnCode&0xffff;
+                if ((gcnInsn.mode&0xf0) != GCN_IMM_REL)
+                    bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                else
+                {
+                    const size_t branchPos = (pos + imm16 + 1)<<2;
+#ifdef GCN_DISASM_TEST
+                    const auto p =
+                            std::lower_bound(labels.begin(), labels.end(), branchPos);
+                    if (p == labels.end() || *p != branchPos)
+                        throw Exception("FATAL: Label not found!!!");
+#endif
+                    buf[bufPos++] = 'L';
+                    bufPos += u32tocstrCStyle(branchPos,
+                              buf+bufPos, 320-bufPos, 10, 0, false);
+                }
                 break;
+            }
             case GCNENC_SMRD:
                 break;
             case GCNENC_VOPC:
