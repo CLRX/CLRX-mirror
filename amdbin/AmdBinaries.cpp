@@ -599,11 +599,11 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             const size_t len = ::strlen(symName);
             if (::strncmp(symName, ".str", 4) == 0)
             {   /* add arg/type name symbol to our table */
-                cxuint index = 0;
+                size_t index = 0;
                 if (symName[4] != 0)
                 {
                     const char* outend;
-                    index = cstrtou32CStyle(symName+4, nullptr, outend);
+                    index = cstrtou64CStyle(symName+4, nullptr, outend);
                     if (*outend != 0)
                         throw Exception("Garbages in .str symbol name!");
                 }

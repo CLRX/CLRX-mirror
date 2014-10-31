@@ -116,13 +116,13 @@ void GCNDisassembler::beforeDisassemble()
                         const cxuint opcode = (insnCode>>16)&0x7f;
                         if (opcode == 2 || (opcode >= 2 && opcode <= 9))
                             // if jump
-                            labels.push_back((pos<<2)+(insnCode&0xffff)+4);
+                            labels.push_back((pos+(insnCode&0xffff)+4)<<2);
                     }
                     else
                     {   // SOPK
                         if (((insnCode>>23)&0x1f) == 17)
                             // if branch fork
-                            labels.push_back((pos<<2)+(insnCode&0xffff)+4);
+                            labels.push_back((pos+(insnCode&0xffff)+1)<<2);
                     }
                 }
                 else
@@ -219,6 +219,12 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcodeTable[GCNENC_MAXVAL+1] =
     { 18, 8 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
+static const char* gcnOperandFloatTable[] =
+{
+    "0.5", "-0.5", "1.", "-1.", "2.", "-2.", "4.", "-4."
+};
+
+/* TODO: check SDST field in VOP3 */
 static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint literal)
 {
     if (op < 104 || (op >= 256 && op < 512))
@@ -268,98 +274,51 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         return pos;
     }
     
-    if (op == 106 || op == 107)
+    const cxuint op2 = op&~1U;
+    if (op2 == 106 || op2 == 108 || op2 == 110 || op2 == 126)
     {   // VCC
-        buf[0] = 'v';
-        buf[1] = 'c';
-        buf[2] = 'c';
+        size_t pos = 0;
+        switch(op2)
+        {
+            case 106:
+                buf[pos++] = 'v';
+                buf[pos++] = 'c';
+                buf[pos++] = 'c';
+                break;
+            case 108:
+                buf[pos++] = 't';
+                buf[pos++] = 'b';
+                buf[pos++] = 'a';
+                break;
+            case 110:
+                buf[pos++] = 't';
+                buf[pos++] = 'm';
+                buf[pos++] = 'a';
+                break;
+            case 126:
+                buf[pos++] = 'e';
+                buf[pos++] = 'x';
+                buf[pos++] = 'e';
+                buf[pos++] = 'c';
+                break;
+        }
         if (vregNum == 2)
         {
             if (op == 107) // unaligned!!
             {
-                buf[3] = '_';
-                buf[4] = 'u';
-                buf[5] = '!';
-                return 6;
+                buf[pos++] = '_';
+                buf[pos++] = 'u';
+                buf[pos++] = '!';
+                return pos;
             }
             return 3;
         }
-        buf[3] = '_';
-        if (op == 106)
-        { buf[4] = 'l'; buf[5] = 'o'; }
+        buf[pos++] = '_';
+        if ((op&1) == 0)
+        { buf[pos++] = 'l'; buf[pos++] = 'o'; }
         else
-        { buf[4] = 'h'; buf[5] = 'i'; }
-        return 6;
-    }
-    if (op == 108 || op == 109)
-    {   // TBA
-        buf[0] = 't';
-        buf[1] = 'b';
-        buf[2] = 'a';
-        if (vregNum == 2)
-        {
-            if (op == 109)
-            {
-                buf[3] = '_';
-                buf[4] = 'u';
-                buf[5] = '!';
-                return 6;
-            }
-            return 3;
-        }
-        buf[3] = '_';
-        if (op == 108)
-        { buf[4] = 'l'; buf[5] = 'o'; }
-        else
-        { buf[4] = 'h'; buf[5] = 'i'; }
-        return 6;
-    }
-    if (op == 110 || op == 111)
-    {   // TMA
-        buf[0] = 't';
-        buf[1] = 'm';
-        buf[2] = 'a';
-        if (vregNum == 2)
-        {
-            if (op == 111)
-            {
-                buf[3] = '_';
-                buf[4] = 'u';
-                buf[5] = '!';
-                return 6;
-            }
-            return 3;
-        }
-        buf[3] = '_';
-        if (op == 110)
-        { buf[4] = 'l'; buf[5] = 'o'; }
-        else
-        { buf[4] = 'h'; buf[5] = 'i'; }
-        return 6;
-    }
-    if (op == 126 || op == 127)
-    {   // exec
-        buf[0] = 'e';
-        buf[1] = 'x';
-        buf[2] = 'e';
-        buf[3] = 'c';
-        if (vregNum == 2)
-        {
-            if (op == 127)
-            {
-                buf[4] = '_';
-                buf[5] = 'u';
-                buf[6] = '!';
-                return 7;
-            }
-            return 4;
-        }
-        buf[4] = '_';
-        if (op == 127)
-        { buf[5] = 'l'; buf[6] = 'o'; }
-        else
-        { buf[5] = 'h'; buf[6] = 'i'; }
-        return 7;
+        { buf[pos++] = 'h'; buf[pos++] = 'i'; }
+        return pos;
     }
     
     if (op == 255) // if literal
@@ -380,6 +339,12 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         else
             buf[pos++] = op-112+'0';
         return pos;
+    }
+    if (op == 124)
+    {
+        buf[0] = 'm';
+        buf[1] = '0';
+        return 2;
     }
     
     if (op >= 128 && op <= 192)
@@ -405,10 +370,64 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
             buf[pos++] = op-192+'0';
         return pos;
     }
+    if (op >= 240 && op < 248)
+    {
+        size_t pos = 0;
+        const char* inOp = gcnOperandFloatTable[op-240];
+        for (pos = 0; inOp[pos] != 0; pos++)
+            buf[pos] = inOp[pos];
+        return pos;
+    }
+    
+    switch(op)
+    {
+        case 251:
+            buf[0] = 'v';
+            buf[1] = 'c';
+            buf[2] = 'c';
+            buf[3] = 'z';
+            return 4;
+        case 252:
+            buf[0] = 'e';
+            buf[1] = 'x';
+            buf[2] = 'e';
+            buf[3] = 'c';
+            buf[4] = 'z';
+            return 5;
+        case 253:
+            buf[0] = 's';
+            buf[1] = 'c';
+            buf[2] = 'c';
+            return 3;
+        case 254:
+            buf[0] = 'l';
+            buf[1] = 'd';
+            buf[2] = 's';
+            return 3;
+    }
     
     // reserved value (illegal)
-    return 0;
+    buf[0] = 'i';
+    buf[1] = 'l';
+    buf[2] = 'l';
+    buf[3] = '_';
+    buf[4] = '0'+op/100;
+    buf[5] = '0'+(op/10)%10;
+    buf[6] = '0'+op%10;
+    return 7;
 }
+
+static const char* sendMsgCodeMessageTable[16] =
+{
+    "0",
+    "interrupt",
+    "gs",
+    "gs_done",
+    "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "system"
+};
+
+static const char* sendGsOpMessageTable[4] =
+{ "nop", "cut", "emit", "emit-cut" };
 
 void GCNDisassembler::disassemble()
 {
@@ -427,7 +446,7 @@ void GCNDisassembler::disassemble()
         if (curLabel != labels.end() && (pos<<2) == *curLabel)
         {   // put label
             buf[bufPos++] = 'L';
-            bufPos += u32tocstrCStyle((pos<<2), buf+bufPos, 320-bufPos, 16, 0, false);
+            bufPos += u32tocstrCStyle((pos<<2), buf+bufPos, 320-bufPos, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
         }
@@ -566,9 +585,144 @@ void GCNDisassembler::disassemble()
         switch(gcnEncoding)
         {
             case GCNENC_SOPC:
+            {
+                bufPos += decodeGCNOperand(insnCode&0xff,
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand((insnCode>>8)&0xff,
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, 0);
                 break;
+            }
             case GCNENC_SOPP:
+            {
+                const cxuint imm16 = insnCode&0xffff;
+                switch(gcnInsn.mode&0xf0)
+                {
+                    case GCN_IMM_REL:
+                    {
+                        size_t branchPos = (pos + imm16 + 4)<<2;
+#ifdef GCN_DISASM_TEST
+                        const auto p =
+                                std::lower_bound(labels.begin(), labels.end(), branchPos);
+                        if (p == labels.end() || *p != branchPos)
+                            throw Exception("FATAL: Label not found!!!");
+#endif
+                        buf[bufPos++] = 'L';
+                        bufPos += u32tocstrCStyle(branchPos,
+                                  buf+bufPos, 320-bufPos, 10, 0, false);
+                        break;
+                    }
+                    case GCN_IMM_LOCKS:
+                    {
+                        bool prevLock = false;
+                        if ((imm16&15) != 15)
+                        {
+                            const cxuint lockCnt = imm16&15;
+                            buf[bufPos++] = 'v';
+                            buf[bufPos++] = 'm';
+                            buf[bufPos++] = 'c';
+                            buf[bufPos++] = 'n';
+                            buf[bufPos++] = 't';
+                            if (lockCnt >= 10)
+                                buf[bufPos++] = '1';
+                            buf[bufPos++] = '0' + (lockCnt>=10)?lockCnt-10:lockCnt;
+                            prevLock = true;
+                        }
+                        if (((imm16>>4)&7) != 7)
+                        {
+                            if (prevLock)
+                            {
+                                buf[bufPos++] = ' ';
+                                buf[bufPos++] = '&';
+                                buf[bufPos++] = ' ';
+                            }
+                            buf[bufPos++] = 'e';
+                            buf[bufPos++] = 'x';
+                            buf[bufPos++] = 'p';
+                            buf[bufPos++] = 'c';
+                            buf[bufPos++] = 'n';
+                            buf[bufPos++] = 't';
+                            buf[bufPos++] = '0' + ((imm16>>4)&7);
+                            prevLock = true;
+                        }
+                        if (((imm16>>8)&15) != 15)
+                        {   /* TODO: check LGKMCNT bits */
+                            const cxuint lockCnt = (imm16>>8)&15;
+                            if (prevLock)
+                            {
+                                buf[bufPos++] = ' ';
+                                buf[bufPos++] = '&';
+                                buf[bufPos++] = ' ';
+                            }
+                            buf[bufPos++] = 'l';
+                            buf[bufPos++] = 'g';
+                            buf[bufPos++] = 'k';
+                            buf[bufPos++] = 'm';
+                            buf[bufPos++] = 'c';
+                            buf[bufPos++] = 'n';
+                            buf[bufPos++] = 't';
+                            if (lockCnt >= 10)
+                                buf[bufPos++] = '1';
+                            buf[bufPos++] = '0' + (lockCnt>=10)?lockCnt-10:lockCnt;
+                            prevLock = true;
+                        }
+                        if ((imm16&0xf080) != 0)
+                        {   /* additional info about imm16 */
+                            if (prevLock)
+                            {
+                                buf[bufPos++] = ' ';
+                                buf[bufPos++] = ':';
+                            }
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                        }
+                        break;
+                    }
+                    case GCN_IMM_MSGS:
+                    {
+                        cxuint illMask = 0xfff0;
+                        buf[bufPos++] = 'm';
+                        buf[bufPos++] = 's';
+                        buf[bufPos++] = 'g';
+                        buf[bufPos++] = '(';
+                        const char* msgName = sendMsgCodeMessageTable[imm16&15];
+                        while (*msgName != 0)
+                            buf[bufPos++] = *msgName++;
+                        buf[bufPos++] = ',';
+                        buf[bufPos++] = ' ';
+                        if ((imm16&14) == 2) // gs ops
+                        {
+                            illMask = 0xffc0;
+                            const char* gsopName = sendGsOpMessageTable[(imm16>>4)&3];
+                            while (*gsopName != 0)
+                                buf[bufPos++] = *gsopName++;
+                            if ((imm16&0x30) != 0)
+                            {
+                                illMask = 0xfcc0;
+                                buf[bufPos++] = ',';
+                                buf[bufPos++] = ' ';
+                                buf[bufPos++] = '0' + ((imm16>>8)&3);
+                            }
+                        }
+                        buf[bufPos++] = ')';
+                        if ((imm16&illMask) != 0)
+                        {
+                            buf[bufPos++] = ' ';
+                            buf[bufPos++] = ':';
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                        }
+                        break;
+                    }
+                    case GCN_IMM_NONE:
+                        if (imm16 != 0)
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                        break;
+                    default:
+                        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                        break;
+                }
                 break;
+            }
             case GCNENC_SOP1:
                 break;
             case GCNENC_SOP2:
