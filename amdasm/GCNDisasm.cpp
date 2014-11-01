@@ -458,7 +458,6 @@ void GCNDisassembler::disassemble()
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
-    const bool displayFloatLits = (disassembler.getFlags()&DISASM_FLOATLITS) != 0;
     std::ostream& output = disassembler.getOutput();
     
     char buf[320];
@@ -604,6 +603,9 @@ void GCNDisassembler::disassemble()
         for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
             buf[bufPos++] = gcnInsn.mnemonic[k];
         buf[bufPos++] = ' ';
+        
+        const bool displayFloatLits = ((disassembler.getFlags()&DISASM_FLOATLITS) != 0 &&
+                (gcnInsn.mode & 0xf00) == GCN_FLOATLIT);
         
         switch(gcnEncoding)
         {
@@ -832,10 +834,30 @@ void GCNDisassembler::disassemble()
             }
             case GCNENC_VOP1:
             {
+                bufPos += decodeGCNOperand(((insnCode>>17)&0xff)+256,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(insnCode&0x1ff,
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal,
+                               displayFloatLits);
                 break;
             }
             case GCNENC_VOP2:
+            {
+                bufPos += decodeGCNOperand(((insnCode>>17)&0xff)+256,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(insnCode&0x1ff,
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal,
+                               displayFloatLits);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(((insnCode>>9)&0x1ff) + 256,
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, 0);
                 break;
+            }
             case GCNENC_VOP3A:
                 break;
             case GCNENC_VINTRP:
