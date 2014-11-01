@@ -77,13 +77,15 @@ enum : uint16_t
     GCN_IMM_MSGS = 0x50,
     GCN_IMM_SREG = 0x60,
     GCN_SRC2_NONE = 0x70,
-    GCN_SRC2_VCC = 0x80,
+    GCN_DS2_VCC = 0x80,
     GCN_SRC12_NONE = 0x90,
     GCN_ARG1_IMM = 0xa0,
     GCN_ARG2_IMM = 0xb0,
     GCN_ARGS_VCMP = 0xc0,
     GCN_ARGS_VCMP64 = 0xcf,
     GCN_S0EQS12 = 0xd0,
+    GCN_DST_VCC = 0xe0,
+    GCN_SRC2_VCC = 0xf0,
     // DS encoding modes
     GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,
@@ -116,7 +118,9 @@ enum : uint16_t
     GCN_MUBUF_MX1 = 0x400,
     GCN_MUBUF_MX2 = 0x500,
     GCN_MUBUF_MX3 = 0x600,
-    GCN_MUBUF_MX4 = 0x700
+    GCN_MUBUF_MX4 = 0x700,
+    GCN_MASK1 = 0xf0,
+    GCN_MASK2 = 0xf00
 };
 
 struct CLRX_INTERNAL GCNInstruction
