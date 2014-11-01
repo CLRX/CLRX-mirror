@@ -212,12 +212,12 @@ public:
     typedef std::unordered_map<std::string, std::string> MacroMap;
     typedef std::unordered_map<std::string, AsmKernel> KernelMap;
 private:
-    cxuint flags;
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;
     std::vector<std::string> includeDirs;
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
+    cxuint flags;
     
     AsmGlobalMetadata globalMetadata;
     std::vector<cxbyte> globalData; // 

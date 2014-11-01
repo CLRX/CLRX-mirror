@@ -616,6 +616,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 const typename Types::Shdr& secHdr = 
                         elf.getSectionHeader(ULEV(sym.st_shndx)); // from symbol
                 
+                if (ULEV(sym.st_value) >= ULEV(secHdr.sh_size))
+                    throw Exception("ArgTypeNameSymStr value out of range");
                 if (usumGt(ULEV(sym.st_value), ULEV(sym.st_size), ULEV(secHdr.sh_size)))
                     throw Exception("ArgTypeNameSymStr value+size out of range");
                 

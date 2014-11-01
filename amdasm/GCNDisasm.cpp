@@ -224,8 +224,14 @@ static const char* gcnOperandFloatTable[] =
     "0.5", "-0.5", "1.", "-1.", "2.", "-2.", "4.", "-4."
 };
 
-/* TODO: check SDST field in VOP3 */
-static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint literal)
+union FloatUnion
+{
+    float f;
+    uint32_t u;
+};
+
+static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint literal,
+               bool floatLit = false)
 {
     if (op < 104 || (op >= 256 && op < 512))
     {   // scalar
@@ -322,7 +328,23 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
     }
     
     if (op == 255) // if literal
-        return u32tocstrCStyle(literal, buf, 20, 16);
+    {
+        size_t pos = u32tocstrCStyle(literal, buf, 20, 16);
+        if (floatLit)
+        {
+            FloatUnion fu;
+            fu.u = literal;
+            buf[pos++] = ' ';
+            buf[pos++] = '/';
+            buf[pos++] = '*';
+            buf[pos++] = ' ';
+            pos += ftocstrCStyle(fu.f, buf+pos, 27);
+            buf[pos++] = ' ';
+            buf[pos++] = '*';
+            buf[pos++] = '/';
+        }
+        return pos;
+    }
     
     if (op >= 112 && op < 124)
     {
@@ -436,6 +458,7 @@ void GCNDisassembler::disassemble()
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
+    const bool displayFloatLits = (disassembler.getFlags()&DISASM_FLOATLITS) != 0;
     std::ostream& output = disassembler.getOutput();
     
     char buf[320];
@@ -674,7 +697,7 @@ void GCNDisassembler::disassemble()
                                 buf[bufPos++] = ' ';
                                 buf[bufPos++] = ':';
                             }
-                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
                         }
                         break;
                     }
@@ -709,16 +732,16 @@ void GCNDisassembler::disassemble()
                         {
                             buf[bufPos++] = ' ';
                             buf[bufPos++] = ':';
-                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
                         }
                         break;
                     }
                     case GCN_IMM_NONE:
                         if (imm16 != 0)
-                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
                         break;
                     default:
-                        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
                         break;
                 }
                 break;
@@ -758,7 +781,7 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = ' ';
                 cxuint imm16 = insnCode&0xffff;
                 if ((gcnInsn.mode&0xf0) != GCN_IMM_REL)
-                    bufPos += u32tocstrCStyle(imm16, buf+bufPos, 16);
+                    bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
                 else
                 {
                     const size_t branchPos = (pos + imm16 + 1)<<2;
@@ -786,19 +809,25 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = ',';
                 buf[bufPos++] = ' ';
                 if (insnCode&0x100) // immediate value
-                    bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 0, 16);
+                    bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 320-bufPos, 16);
                 else // S register
                     bufPos += decodeGCNOperand(insnCode&0xff, 1, buf + bufPos, 0);
                 break;
             }
             case GCNENC_VOPC:
             {
-                /*bufPos += decodeGCNOperand((insnCode)&0x1ff,
-                       dregsNum, buf + bufPos, literal);
+                buf[bufPos++] = 'v';
+                buf[bufPos++] = 'c';
+                buf[bufPos++] = 'c';
                 buf[bufPos++] = ',';
                 buf[bufPos++] = ' ';
-                bufPos += decodeGCNOperand(((insnCode>>9)&0x1ff)+256,
-                       dregsNum, buf + bufPos, literal);*/
+                bufPos += decodeGCNOperand(insnCode&0x1ff,
+                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal,
+                               displayFloatLits);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(((insnCode>>9)&0xff)+256,
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, 0);
                 break;
             }
             case GCNENC_VOP1:
