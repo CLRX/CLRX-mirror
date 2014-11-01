@@ -237,7 +237,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         else
             buf[0] = 's';
         size_t pos = 1;
-        if (vregNum!=0)
+        if (vregNum!=1)
             buf[pos++] = '[';
         cxuint val = op;
         if (val >= 100)
@@ -252,10 +252,10 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
                 buf[pos++] = digit1 + '0';
             buf[pos++] = val-digit1*10 + '0';
         }
-        if (vregNum!=0)
+        if (vregNum!=1)
         {
             buf[pos++] = ':';
-            op += vregNum;
+            op += vregNum-1;
             val = op;
             if (val >= 100)
             {
@@ -647,7 +647,7 @@ void GCNDisassembler::disassemble()
                             prevLock = true;
                         }
                         if (((imm16>>8)&15) != 15)
-                        {   /* TODO: check LGKMCNT bits */
+                        {   /* LGKMCNT bits is 4 */
                             const cxuint lockCnt = (imm16>>8)&15;
                             if (prevLock)
                             {
@@ -775,9 +775,32 @@ void GCNDisassembler::disassemble()
                 break;
             }
             case GCNENC_SMRD:
+            {
+                const cxuint dregsNum = 1<<(gcnInsn.mode & 0xf00);
+                bufPos += decodeGCNOperand((insnCode>>15)&0x7f,
+                       dregsNum, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand((insnCode>>8)&0x7e,
+                           (gcnInsn.mode&GCN_SBASE4)?4:2, buf + bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                if (insnCode&0x100) // immediate value
+                    bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 0, 16);
+                else // S register
+                    bufPos += decodeGCNOperand(insnCode&0xff, 1, buf + bufPos, 0);
                 break;
+            }
             case GCNENC_VOPC:
+            {
+                /*bufPos += decodeGCNOperand((insnCode)&0x1ff,
+                       dregsNum, buf + bufPos, literal);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(((insnCode>>9)&0x1ff)+256,
+                       dregsNum, buf + bufPos, literal);*/
                 break;
+            }
             case GCNENC_VOP1:
                 break;
             case GCNENC_VOP2:

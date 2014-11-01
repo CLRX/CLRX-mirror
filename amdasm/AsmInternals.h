@@ -101,6 +101,7 @@ enum : uint16_t
     GCN_ADDR_SRC128  = 0x1a0,
     GCN_ONLYDST = 0x200,
     // others
+    GCN_SBASE4 = 0x10,
     GCN_FLOATLIT = 0x100,
     GCN_F16LIT = 0x200,
     GCN_MEMOP_MX1 = 0x0,
