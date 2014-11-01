@@ -480,8 +480,8 @@ void GCNDisassembler::disassemble()
         
         cxbyte gcnEncoding = GCNENC_NONE;
         const uint32_t insnCode = codeWords[pos++];
-        uint32_t insn2Code;
-        uint32_t literal;
+        uint32_t insn2Code = 0;
+        uint32_t literal = 0;
         
         /* determine GCN encoding */
         if ((insnCode & 0x80000000U) != 0)
@@ -925,7 +925,8 @@ void GCNDisassembler::disassemble()
                 cxuint absFlags = 0;
                 if (gcnInsn.encoding == GCNENC_VOP3A)
                     absFlags = (insnCode>>8)&7;
-                else /* VOP3b */
+                else if ((gcnInsn.mode & GCN_MASK1) == GCN_DS2_VCC ||
+                    (gcnInsn.mode & GCN_MASK1) == GCN_DST_VCC) /* VOP3b */
                 {
                     buf[bufPos++] = ',';
                     buf[bufPos++] = ' ';
@@ -963,7 +964,7 @@ void GCNDisassembler::disassemble()
                         buf[bufPos++] = '(';
                     }
                     bufPos += decodeGCNOperand((insn2Code>>9)&0x1ff,
-                       (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal,
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, literal,
                                displayFloatLits);
                     if (absFlags & 2)
                         buf[bufPos++] = ')';
@@ -972,28 +973,63 @@ void GCNDisassembler::disassemble()
                     {
                         buf[bufPos++] = ',';
                         buf[bufPos++] = ' ';
-                        if ((insn2Code & (1U<<31)) != 0)
-                            buf[bufPos++] = '-';
-                        if (absFlags & 4)
+                        
+                        if ((gcnInsn.mode & GCN_MASK1) == GCN_DS2_VCC ||
+                            (gcnInsn.mode & GCN_MASK1) == GCN_SRC2_VCC)
                         {
-                            buf[bufPos++] = 'a';
-                            buf[bufPos++] = 'b';
-                            buf[bufPos++] = 's';
-                            buf[bufPos++] = '(';
+                            bufPos += decodeGCNOperand((insn2Code>>18)&0x1ff,
+                               2, buf + bufPos, 0);
                         }
-                        bufPos += decodeGCNOperand((insn2Code>>18)&0x1ff,
-                           (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal,
-                                   displayFloatLits);
-                        if (absFlags & 4)
-                            buf[bufPos++] = ')';
+                        else
+                        {
+                            if ((insn2Code & (1U<<31)) != 0)
+                                buf[bufPos++] = '-';
+                            if (absFlags & 4)
+                            {
+                                buf[bufPos++] = 'a';
+                                buf[bufPos++] = 'b';
+                                buf[bufPos++] = 's';
+                                buf[bufPos++] = '(';
+                            }
+                            bufPos += decodeGCNOperand((insn2Code>>18)&0x1ff,
+                               (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, buf + bufPos, literal,
+                                       displayFloatLits);
+                            if (absFlags & 4)
+                                buf[bufPos++] = ')';
+                        }
                     }
                 }
                 break;
             }
             case GCNENC_VINTRP:
+            {
+                bufPos += decodeGCNOperand(((insnCode>>18)&0xff)+256, 1, buf+bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(insnCode+256, 1, buf+bufPos, 0);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                buf[bufPos++] = 'a';
+                buf[bufPos++] = 't';
+                buf[bufPos++] = 't';
+                buf[bufPos++] = 'r';
+                const cxuint attr = (insnCode>>10)&63;
+                if (attr >= 10)
+                {
+                    const cxuint digit2 = attr/10;
+                    buf[bufPos++] = '0' + digit2;
+                    buf[bufPos++] = '0' + attr - 10*digit2;
+                }
+                else
+                    buf[bufPos++] = '0' + attr;
+                buf[bufPos++] = '.';
+                buf[bufPos++] = "xyzw"[((insnCode>>8)&3)]; // attrchannel
                 break;
+            }
             case GCNENC_DS:
+            {
                 break;
+            }
             case GCNENC_MUBUF:
                 break;
             case GCNENC_MTBUF:
