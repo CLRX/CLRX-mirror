@@ -329,7 +329,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
     
     if (op == 255) // if literal
     {
-        size_t pos = u32tocstrCStyle(literal, buf, 20, 16);
+        size_t pos = u32tocstrCStyle(literal, buf, 11, 16);
         if (floatLit)
         {
             FloatUnion fu;
@@ -469,7 +469,7 @@ void GCNDisassembler::disassemble()
         if (curLabel != labels.end() && (pos<<2) == *curLabel)
         {   // put label
             buf[bufPos++] = 'L';
-            bufPos += u32tocstrCStyle((pos<<2), buf+bufPos, 320-bufPos, 10, 0, false);
+            bufPos += u32tocstrCStyle((pos<<2), buf+bufPos, 11, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
         }
@@ -633,7 +633,7 @@ void GCNDisassembler::disassemble()
 #endif
                         buf[bufPos++] = 'L';
                         bufPos += u32tocstrCStyle(branchPos,
-                                  buf+bufPos, 320-bufPos, 10, 0, false);
+                                  buf+bufPos, 11, 10, 0, false);
                         break;
                     }
                     case GCN_IMM_LOCKS:
@@ -697,7 +697,7 @@ void GCNDisassembler::disassemble()
                                 buf[bufPos++] = ' ';
                                 buf[bufPos++] = ':';
                             }
-                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
                         }
                         break;
                     }
@@ -732,16 +732,16 @@ void GCNDisassembler::disassemble()
                         {
                             buf[bufPos++] = ' ';
                             buf[bufPos++] = ':';
-                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
                         }
                         break;
                     }
                     case GCN_IMM_NONE:
                         if (imm16 != 0)
-                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
+                            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
                         break;
                     default:
-                        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
+                        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
                         break;
                 }
                 break;
@@ -781,7 +781,7 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = ' ';
                 cxuint imm16 = insnCode&0xffff;
                 if ((gcnInsn.mode&0xf0) != GCN_IMM_REL)
-                    bufPos += u32tocstrCStyle(imm16, buf+bufPos, 320-bufPos, 16);
+                    bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
                 else
                 {
                     const size_t branchPos = (pos + imm16 + 1)<<2;
@@ -793,7 +793,7 @@ void GCNDisassembler::disassemble()
 #endif
                     buf[bufPos++] = 'L';
                     bufPos += u32tocstrCStyle(branchPos,
-                              buf+bufPos, 320-bufPos, 10, 0, false);
+                              buf+bufPos, 11, 10, 0, false);
                 }
                 break;
             }
@@ -809,7 +809,7 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = ',';
                 buf[bufPos++] = ' ';
                 if (insnCode&0x100) // immediate value
-                    bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 320-bufPos, 16);
+                    bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 11, 16);
                 else // S register
                     bufPos += decodeGCNOperand(insnCode&0xff, 1, buf + bufPos, 0);
                 break;
@@ -831,7 +831,9 @@ void GCNDisassembler::disassemble()
                 break;
             }
             case GCNENC_VOP1:
+            {
                 break;
+            }
             case GCNENC_VOP2:
                 break;
             case GCNENC_VOP3A:
