@@ -1028,6 +1028,7 @@ void GCNDisassembler::disassemble()
             }
             case GCNENC_DS:
             {
+                
                 break;
             }
             case GCNENC_MUBUF:

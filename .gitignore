@@ -1,0 +1,15 @@
+tests/*.kdev*
+tests/*.o
+tests/*~
+tests/.cproject
+tests/.directory
+tests/.project
+tests/.settings
+tests/build
+tests/core
+tests/debug
+tests/default
+tests/make.deps
+tests/optimized
+tests/relwithdebinfo
+tests/svn-commit.tmp
