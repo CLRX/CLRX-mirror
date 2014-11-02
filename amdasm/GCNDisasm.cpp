@@ -1079,7 +1079,7 @@ static size_t decodeMUBUFEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t insn2Code)
 {
     size_t bufPos = 0;
-    const cxuint dregsNum = 1<<((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2);
+    const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2);
     bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256,
                dregsNum, buf+bufPos);
     buf[bufPos++] = ',';
