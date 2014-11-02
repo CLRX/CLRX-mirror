@@ -65,7 +65,10 @@ static void initializeGCNDisassembler()
 {
     gcnInstrTableByCode = new GCNInstruction[gcnInstrTableByCodeLength];
     for (cxuint i = 0; i < gcnInstrTableByCodeLength; i++)
+    {
         gcnInstrTableByCode[i].mnemonic = nullptr;
+        gcnInstrTableByCode[i].mode = GCN_STDMODE;
+    }
     
     for (cxuint i = 0; gcnInstrsTable[i].mnemonic != nullptr; i++)
     {
@@ -116,7 +119,7 @@ void GCNDisassembler::beforeDisassemble()
                         const cxuint opcode = (insnCode>>16)&0x7f;
                         if (opcode == 2 || (opcode >= 2 && opcode <= 9))
                             // if jump
-                            labels.push_back((pos+int16_t(insnCode&0xffff)+4)<<2);
+                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                     }
                     else
                     {   // SOPK
@@ -246,34 +249,36 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         if (vregNum!=1)
             buf[pos++] = '[';
         cxuint val = op;
-        if (val >= 100)
+        if (val >= 100U)
         {
-            cxuint digit2 = val/100;
+            cxuint digit2 = val/100U;
             buf[pos++] = digit2+'0';
-            val -= digit2*100;
+            val -= digit2*100U;
         }
         {
-            const cxuint digit1 = val/10;
+            const cxuint digit1 = val/10U;
             if (digit1 != 0)
                 buf[pos++] = digit1 + '0';
-            buf[pos++] = val-digit1*10 + '0';
+            buf[pos++] = val-digit1*10U + '0';
         }
         if (vregNum!=1)
         {
             buf[pos++] = ':';
             op += vregNum-1;
+            if (op > 255)
+                op -= 256; // fix for VREGS
             val = op;
             if (val >= 100)
             {
-                cxuint digit2 = val/100;
+                cxuint digit2 = val/100U;
                 buf[pos++] = digit2+'0';
-                val -= digit2*100;
+                val -= digit2*100U;
             }
             {
-                const cxuint digit1 = val/10;
+                const cxuint digit1 = val/10U;
                 if (digit1 != 0)
                     buf[pos++] = digit1 + '0';
-                buf[pos++] = val-digit1*10 + '0';
+                buf[pos++] = val-digit1*10U + '0';
             }
             buf[pos++] = ']';
         }
@@ -373,10 +378,10 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
     {   // integer constant
         size_t pos = 0;
         op -= 128;
-        const cxuint digit1 = op/10;
+        const cxuint digit1 = op/10U;
         if (digit1 != 0)
             buf[pos++] = digit1 + '0';
-        buf[pos++] = op-digit1*10 + '0';
+        buf[pos++] = op-digit1*10U + '0';
         return pos;
     }
     if (op > 192 && op <= 208)
@@ -433,9 +438,9 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
     buf[1] = 'l';
     buf[2] = 'l';
     buf[3] = '_';
-    buf[4] = '0'+op/100;
-    buf[5] = '0'+(op/10)%10;
-    buf[6] = '0'+op%10;
+    buf[4] = '0'+op/100U;
+    buf[5] = '0'+(op/10U)%10U;
+    buf[6] = '0'+op%10U;
     return 7;
 }
 
@@ -468,7 +473,7 @@ void GCNDisassembler::disassemble()
         if (curLabel != labels.end() && (pos<<2) == *curLabel)
         {   // put label
             buf[bufPos++] = 'L';
-            bufPos += u32tocstrCStyle((pos<<2), buf+bufPos, 11, 10, 0, false);
+            bufPos += u64tocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
             curLabel++;
@@ -601,9 +606,21 @@ void GCNDisassembler::disassemble()
         const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
         const GCNInstruction& gcnInsn = gcnInstrTableByCode[encSpace.offset + opcode];
         
-        for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
-            buf[bufPos++] = gcnInsn.mnemonic[k];
-        buf[bufPos++] = ' ';
+        if (gcnInsn.mnemonic != nullptr)
+        {
+            for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
+                buf[bufPos++] = gcnInsn.mnemonic[k];
+            buf[bufPos++] = ' ';
+        }
+        else
+        {
+            buf[bufPos++] = 'I';
+            buf[bufPos++] = 'N';
+            buf[bufPos++] = 'V';
+            buf[bufPos++] = '_';
+            bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
+            buf[bufPos++] = ' ';
+        }
         
         const bool displayFloatLits = ((disassembler.getFlags()&DISASM_FLOATLITS) != 0 &&
                 (gcnInsn.mode & GCN_MASK2) == GCN_FLOATLIT);
@@ -635,8 +652,8 @@ void GCNDisassembler::disassemble()
                             throw Exception("FATAL: Label not found!!!");
 #endif
                         buf[bufPos++] = 'L';
-                        bufPos += u32tocstrCStyle(branchPos,
-                                  buf+bufPos, 11, 10, 0, false);
+                        bufPos += u64tocstrCStyle(branchPos,
+                                  buf+bufPos, 22, 10, 0, false);
                         break;
                     }
                     case GCN_IMM_LOCKS:
@@ -807,14 +824,14 @@ void GCNDisassembler::disassemble()
                         throw Exception("FATAL: Label not found!!!");
 #endif
                     buf[bufPos++] = 'L';
-                    bufPos += u32tocstrCStyle(branchPos,
-                              buf+bufPos, 11, 10, 0, false);
+                    bufPos += u64tocstrCStyle(branchPos,
+                              buf+bufPos, 22, 10, 0, false);
                 }
                 break;
             }
             case GCNENC_SMRD:
             {
-                const cxuint dregsNum = 1<<(gcnInsn.mode & 0xf00);
+                const cxuint dregsNum = 1<<((gcnInsn.mode & 0xf00)>>GCN_SHIFT2);
                 bufPos += decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, buf + bufPos);
                 buf[bufPos++] = ',';
                 buf[bufPos++] = ' ';
@@ -1064,11 +1081,16 @@ void GCNDisassembler::disassemble()
             }
             case GCNENC_DS:
             {
+                bool vdstUsed = false;
+                bool vaddrUsed = false;
+                bool vdata0Used = false;
+                bool vdata1Used = false;
                 if ((gcnInsn.mode & GCN_ADDR_DST) != 0) /* address is dst */
                 {
                     bufPos += decodeGCNOperand((insn2Code&0xff)+256, 1, buf+bufPos);
                     buf[bufPos++] = ',';
                     buf[bufPos++] = ' ';
+                    vaddrUsed = true;
                 }
                 else
                 {   /* vdst is dst */
@@ -1081,12 +1103,14 @@ void GCNDisassembler::disassemble()
                            buf+bufPos);
                     buf[bufPos++] = ',';
                     buf[bufPos++] = ' ';
+                    vdstUsed = true;
                 }
                 
                 if ((gcnInsn.mode & GCN_DSMASK2) != GCN_ONLYDST)
                 {   /* two vdata */
                     bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256,
                         (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf+bufPos);
+                    vdata0Used = true;
                     if ((gcnInsn.mode & GCN_DSMASK2) == GCN_2SRCS ||
                         (gcnInsn.mode & GCN_DSMASK2) == GCN_VDATA2)
                     {
@@ -1094,6 +1118,7 @@ void GCNDisassembler::disassemble()
                         buf[bufPos++] = ' ';
                         bufPos += decodeGCNOperand(((insn2Code>>16)&0xff) + 256,
                             (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf+bufPos);
+                        vdata1Used = true;
                     }
                 }
                 
@@ -1143,10 +1168,145 @@ void GCNDisassembler::disassemble()
                         }
                     }
                 }
+                
+                if (insnCode&0x10000)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'g';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 's';
+                }
+                
+                if (!vaddrUsed && (insn2Code&0xff) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'v';
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'r';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle((insn2Code&0xff), buf+bufPos, 6, 16);
+                }
+                if (!vdata0Used && ((insn2Code>>8)&0xff) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'v';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = 't';
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = '0';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
+                }
+                if (!vdata1Used && ((insn2Code>>16)&0xff) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'v';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = 't';
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = '1';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle((insn2Code>>16)&0xff, buf+bufPos, 6, 16);
+                }
+                if (!vdstUsed && (insn2Code>>24) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'v';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = 't';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
+                }
                 break;
             }
             case GCNENC_MUBUF:
             {
+                const cxuint dregsNum = 1<<((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2);
+                bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256,
+                           dregsNum, buf+bufPos);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                // determine number of vaddr registers
+                const cxuint aregsNum = (((insnCode & 0x1000U)? 1 : 0) +
+                        ((insnCode & 0x2000U)? 1 : 0))<<((insnCode & 0x8000U)?1:0);
+                bufPos += decodeGCNOperand((insn2Code&0xff) + 256, aregsNum, buf+bufPos);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand(((insn2Code>>14)&3), 4, buf+bufPos);
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                bufPos += decodeGCNOperand((insn2Code>>24), 1, buf+bufPos);
+                
+                if (insnCode & 0x1000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'o';
+                    buf[bufPos++] = 'f';
+                    buf[bufPos++] = 'f';
+                    buf[bufPos++] = 'e';
+                    buf[bufPos++] = 'n';
+                }
+                if (insnCode & 0x2000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'i';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'x';
+                    buf[bufPos++] = 'e';
+                    buf[bufPos++] = 'n';
+                }
+                buf[bufPos++] = ' ';
+                buf[bufPos++] = 'o';
+                buf[bufPos++] = 'f';
+                buf[bufPos++] = 'f';
+                buf[bufPos++] = 's';
+                buf[bufPos++] = 'e';
+                buf[bufPos++] = 't';
+                buf[bufPos++] = ':';
+                bufPos += u32tocstrCStyle(insnCode&0xfff, buf+bufPos, 7, 16);
+                if (insnCode & 0x4000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'g';
+                    buf[bufPos++] = 'l';
+                    buf[bufPos++] = 'c';
+                }
+                if (insn2Code & 0x400000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = 'l';
+                    buf[bufPos++] = 'c';
+                }
+                if (insnCode & 0x8000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 'r';
+                    buf[bufPos++] = '6';
+                    buf[bufPos++] = '4';
+                }
+                if (insnCode & 0x10000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 'l';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 's';
+                }
+                if (insn2Code & 0x800000U)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 't';
+                    buf[bufPos++] = 'f';
+                    buf[bufPos++] = 'e';
+                }
                 break;
             }
             case GCNENC_MTBUF:
@@ -1171,16 +1331,19 @@ void GCNDisassembler::disassemble()
     /* rest of the labels */
     for (; curLabel != labels.end(); ++curLabel)
     {   // put .org directory
-        buf[bufPos++] = '.';
-        buf[bufPos++] = 'o';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = ' ';
-        bufPos += u32tocstrCStyle(*curLabel, buf+bufPos, 20, 16, 0, false);
-        buf[bufPos++] = '\n';
+        if (inputSize != *curLabel)
+        {
+            buf[bufPos++] = '.';
+            buf[bufPos++] = 'o';
+            buf[bufPos++] = 'r';
+            buf[bufPos++] = 'g';
+            buf[bufPos++] = ' ';
+            bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 20, 16);
+            buf[bufPos++] = '\n';
+        }
         // put label
         buf[bufPos++] = 'L';
-        bufPos += u32tocstrCStyle(*curLabel, buf+bufPos, 11, 10, 0, false);
+        bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 11, 10, 0, false);
         buf[bufPos++] = ':';
         buf[bufPos++] = '\n';
     }

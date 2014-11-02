@@ -120,7 +120,8 @@ enum : uint16_t
     GCN_MUBUF_MX3 = 0x600,
     GCN_MUBUF_MX4 = 0x700,
     GCN_MASK1 = 0xf0,
-    GCN_MASK2 = 0xf00
+    GCN_MASK2 = 0xf00,
+    GCN_SHIFT2 = 8
 };
 
 struct CLRX_INTERNAL GCNInstruction
