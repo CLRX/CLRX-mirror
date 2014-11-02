@@ -90,16 +90,18 @@ enum : uint16_t
     GCN_ADDR_SRC = 0x20,
     GCN_ADDR_DST64 = 0x1f,
     GCN_ADDR_SRC64 = 0x2f,
-    GCN_VDATA2 = 0x40,
-    GCN_NOSRC = 0x80,
-    GCN_2SRCS = 0xc0,
+    GCN_VDATA2 = 0x40, /* two datas, two offsets1 */
+    GCN_NOSRC = 0x80, /* only address */
+    GCN_2SRCS = 0xc0, /* two datas, one offset */
     GCN_SRC_ADDR2  = 0x100,
     GCN_SRC_ADDR2_64  = 0x10f,
     GCN_ADDR_DST96  = 0x150,
     GCN_ADDR_DST128  = 0x190,
     GCN_ADDR_SRC96  = 0x160,
     GCN_ADDR_SRC128  = 0x1a0,
-    GCN_ONLYDST = 0x200,
+    GCN_ONLYDST = 0x200, /* only vdst */
+    GCN_DSMASK = 0x2f0,
+    GCN_DSMASK2 = 0x2c0,
     // others
     GCN_SBASE4 = 0x10,
     GCN_FLOATLIT = 0x100,
