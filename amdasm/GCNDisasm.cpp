@@ -116,13 +116,13 @@ void GCNDisassembler::beforeDisassemble()
                         const cxuint opcode = (insnCode>>16)&0x7f;
                         if (opcode == 2 || (opcode >= 2 && opcode <= 9))
                             // if jump
-                            labels.push_back((pos+(insnCode&0xffff)+4)<<2);
+                            labels.push_back((pos+int16_t(insnCode&0xffff)+4)<<2);
                     }
                     else
                     {   // SOPK
                         if (((insnCode>>23)&0x1f) == 17)
                             // if branch fork
-                            labels.push_back((pos+(insnCode&0xffff)+1)<<2);
+                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                     }
                 }
                 else
@@ -221,7 +221,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcodeTable[GCNENC_MAXVAL+1] =
 
 static const char* gcnOperandFloatTable[] =
 {
-    "0.5", "-0.5", "1.", "-1.", "2.", "-2.", "4.", "-4."
+    "0.5", "-0.5", "1.0", "-1.0", "2.0", "-2.0", "4.0", "-4.0"
 };
 
 union FloatUnion
@@ -453,7 +453,7 @@ static const char* sendGsOpMessageTable[4] =
 
 void GCNDisassembler::disassemble()
 {
-    const auto curLabel = labels.begin();
+    auto curLabel = labels.begin();
     if ((inputSize&3) != 0)
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
@@ -471,6 +471,7 @@ void GCNDisassembler::disassemble()
             bufPos += u32tocstrCStyle((pos<<2), buf+bufPos, 11, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
+            curLabel++;
         }
         
         // add spaces
@@ -626,7 +627,7 @@ void GCNDisassembler::disassemble()
                 {
                     case GCN_IMM_REL:
                     {
-                        const size_t branchPos = (pos + imm16 + 1)<<2;
+                        const size_t branchPos = (pos + int16_t(imm16) + 1)<<2;
 #ifdef GCN_DISASM_TEST
                         const auto p =
                                 std::lower_bound(labels.begin(), labels.end(), branchPos);
@@ -773,6 +774,18 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = ' ';
                 bufPos += decodeGCNOperand((insnCode>>8)&0xff,
                        (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, literal);
+                
+                if ((gcnInsn.mode & GCN_MASK1) == GCN_REG_S1_JMP &&
+                    ((insnCode>>16)&0x7f) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = 'd';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = 't';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
+                }
                 break;
             }
             case GCNENC_SOPK:
@@ -786,7 +799,7 @@ void GCNDisassembler::disassemble()
                     bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
                 else
                 {
-                    const size_t branchPos = (pos + imm16 + 1)<<2;
+                    const size_t branchPos = (pos + int16_t(imm16) + 1)<<2;
 #ifdef GCN_DISASM_TEST
                     const auto p =
                             std::lower_bound(labels.begin(), labels.end(), branchPos);
@@ -998,6 +1011,30 @@ void GCNDisassembler::disassemble()
                         }
                     }
                 }
+                /* as field */
+                if ((gcnInsn.mode & GCN_MASK1) == GCN_SRC12_NONE &&
+                    ((insn2Code>>9)&0x1ff) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = 'r';
+                    buf[bufPos++] = 'c';
+                    buf[bufPos++] = '1';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle((insn2Code>>9)&0x1ff, buf+bufPos, 6, 16);
+                }
+                if (((gcnInsn.mode & GCN_MASK1) == GCN_SRC12_NONE ||
+                    (gcnInsn.mode & GCN_MASK1) == GCN_SRC2_NONE) &&
+                    ((insn2Code>>9)&0x1ff) != 0)
+                {
+                    buf[bufPos++] = ' ';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = 'r';
+                    buf[bufPos++] = 'c';
+                    buf[bufPos++] = '2';
+                    buf[bufPos++] = '=';
+                    bufPos += u32tocstrCStyle((insn2Code>>18)&0x1ff, buf+bufPos, 6, 16);
+                }
                 break;
             }
             case GCNENC_VINTRP:
@@ -1060,25 +1097,11 @@ void GCNDisassembler::disassemble()
                     }
                 }
                 
-                if ((insnCode&0xffff) != 0)
+                const cxuint offset = (insnCode&0xffff);
+                if (offset != 0)
                 {
-                    buf[bufPos++] = ' ';
-                    buf[bufPos++] = 'o';
-                    buf[bufPos++] = 'f';
-                    buf[bufPos++] = 'f';
-                    buf[bufPos++] = 's';
-                    buf[bufPos++] = 'e';
-                    buf[bufPos++] = 't';
                     if ((gcnInsn.mode & GCN_DSMASK2) != GCN_VDATA2) /* single offset */
                     {
-                        buf[bufPos++] = ':';
-                        bufPos += u32tocstrCStyle(insnCode&0xffff, buf+bufPos, 7, 10);
-                    }
-                    else
-                    {
-                        buf[bufPos++] = '0';
-                        buf[bufPos++] = ':';
-                        bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 7, 10);
                         buf[bufPos++] = ' ';
                         buf[bufPos++] = 'o';
                         buf[bufPos++] = 'f';
@@ -1086,9 +1109,38 @@ void GCNDisassembler::disassemble()
                         buf[bufPos++] = 's';
                         buf[bufPos++] = 'e';
                         buf[bufPos++] = 't';
-                        buf[bufPos++] = '1';
                         buf[bufPos++] = ':';
-                        bufPos += u32tocstrCStyle((insnCode>>8)&0xff, buf+bufPos, 7, 10);
+                        bufPos += u32tocstrCStyle(offset, buf+bufPos, 7, 10);
+                    }
+                    else
+                    {
+                        if ((offset&0xff) != 0)
+                        {
+                            buf[bufPos++] = ' ';
+                            buf[bufPos++] = 'o';
+                            buf[bufPos++] = 'f';
+                            buf[bufPos++] = 'f';
+                            buf[bufPos++] = 's';
+                            buf[bufPos++] = 'e';
+                            buf[bufPos++] = 't';
+                            buf[bufPos++] = '0';
+                            buf[bufPos++] = ':';
+                            bufPos += u32tocstrCStyle(offset&0xff, buf+bufPos, 7, 10);
+                        }
+                        if ((offset&0xff00) != 0)
+                        {
+                            buf[bufPos++] = ' ';
+                            buf[bufPos++] = 'o';
+                            buf[bufPos++] = 'f';
+                            buf[bufPos++] = 'f';
+                            buf[bufPos++] = 's';
+                            buf[bufPos++] = 'e';
+                            buf[bufPos++] = 't';
+                            buf[bufPos++] = '1';
+                            buf[bufPos++] = ':';
+                            bufPos += u32tocstrCStyle((offset>>8)&0xff,
+                                      buf+bufPos, 7, 10);
+                        }
                     }
                 }
                 break;
@@ -1115,5 +1167,21 @@ void GCNDisassembler::disassemble()
             output.write(buf, bufPos);
             bufPos = 0;
         }
+    }
+    /* rest of the labels */
+    for (; curLabel != labels.end(); ++curLabel)
+    {   // put .org directory
+        buf[bufPos++] = '.';
+        buf[bufPos++] = 'o';
+        buf[bufPos++] = 'r';
+        buf[bufPos++] = 'g';
+        buf[bufPos++] = ' ';
+        bufPos += u32tocstrCStyle(*curLabel, buf+bufPos, 20, 16, 0, false);
+        buf[bufPos++] = '\n';
+        // put label
+        buf[bufPos++] = 'L';
+        bufPos += u32tocstrCStyle(*curLabel, buf+bufPos, 11, 10, 0, false);
+        buf[bufPos++] = ':';
+        buf[bufPos++] = '\n';
     }
 }
