@@ -1734,7 +1734,7 @@ void GCNDisassembler::disassemble()
         }
         // put label
         buf[bufPos++] = 'L';
-        bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 11, 10, 0, false);
+        bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
         buf[bufPos++] = ':';
         buf[bufPos++] = '\n';
         if (bufPos+40 >= 384)
