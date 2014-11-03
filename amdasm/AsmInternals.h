@@ -120,6 +120,12 @@ enum : uint16_t
     GCN_MUBUF_MX3 = 0x200,
     GCN_MUBUF_MX4 = 0x300,
     GCN_MIMG_SAMPLE = 0x100,
+    GCN_FLAT_DDST = 0x00,
+    GCN_FLAT_ADST = 0x10,
+    GCN_FLAT_NODATA = 0x20,
+    GCN_FLAT_NODST = 0x40,
+    GCN_FLAT_STORE = 0x50,
+    GCN_CMPSWAP =  0x80,
     GCN_MASK1 = 0xf0,
     GCN_MASK2 = 0xf00,
     GCN_SHIFT2 = 8
