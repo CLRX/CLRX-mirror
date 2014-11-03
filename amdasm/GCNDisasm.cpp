@@ -937,7 +937,8 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
     bool vdata0Used = false;
     bool vdata1Used = false;
     
-    if ((gcnInsn.mode & GCN_ADDR_DST) != 0) /* address is dst */
+    if ((gcnInsn.mode & GCN_ADDR_DST) != 0 &&
+        (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) == 0) /* address is dst */
     {
         bufPos += decodeGCNOperand((insn2Code&0xff)+256, 1, buf+bufPos);
         buf[bufPos++] = ',';
@@ -958,7 +959,9 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
         vdstUsed = true;
     }
     
-    if ((gcnInsn.mode & GCN_DSMASK2) != GCN_ONLYDST)
+    
+    if ((gcnInsn.mode & GCN_DSMASK2) != GCN_ONLYDST &&
+        (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0)
     {   /* two vdata */
         bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256,
             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf+bufPos);
@@ -1391,9 +1394,12 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t insn2Code)
 {
     size_t bufPos = 0;
+    bool vdstUsed = false;
+    bool vdataUsed = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
+        vdstUsed = true;
         bufPos += decodeGCNOperand((insn2Code>>24) + 256, dregsNum, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
@@ -1404,6 +1410,7 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
         bufPos += decodeGCNOperand((insn2Code&0xff) + 256, 2, buf+bufPos); // addr
         if ((gcnInsn.mode & GCN_FLAT_NODST) != 0)
         {
+            vdstUsed = true;
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
             bufPos += decodeGCNOperand((insn2Code>>24) + 256, dregsNum, buf+bufPos);
@@ -1412,6 +1419,7 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
     
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0) /* print data */
     {
+        vdataUsed = true;
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256, dregsNum, buf+bufPos);
@@ -1438,6 +1446,28 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
         buf[bufPos++] = 'f';
         buf[bufPos++] = 'e';
     }
+    
+    if (!vdataUsed && ((insn2Code>>8)&0xff) != 0)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'v';
+        buf[bufPos++] = 'd';
+        buf[bufPos++] = 'a';
+        buf[bufPos++] = 't';
+        buf[bufPos++] = 'a';
+        buf[bufPos++] = '=';
+        bufPos += u32tocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
+    }
+    if (!vdstUsed && (insn2Code>>24) != 0)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'v';
+        buf[bufPos++] = 'd';
+        buf[bufPos++] = 's';
+        buf[bufPos++] = 't';
+        buf[bufPos++] = '=';
+        bufPos += u32tocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
+    }
     return bufPos;
 }
 
@@ -1452,7 +1482,7 @@ void GCNDisassembler::disassemble()
     
     std::ostream& output = disassembler.getOutput();
     
-    char buf[320];
+    char buf[384];
     size_t bufPos = 0;
     const size_t codeWordsNum = (inputSize>>2);
     for (size_t pos = 0; pos < codeWordsNum;)
@@ -1583,7 +1613,14 @@ void GCNDisassembler::disassemble()
         }
         
         if (gcnEncoding == GCNENC_NONE)
-        {   // 
+        {   // invalid encoding
+            buf[bufPos++] = '.';
+            buf[bufPos++] = 'i';
+            buf[bufPos++] = 'n';
+            buf[bufPos++] = 't';
+            buf[bufPos++] = ' '; 
+            bufPos += u32tocstrCStyle(insnCode, buf+bufPos, 11, 16);
+            continue;
         }
         
         const cxuint opcode = (insnCode>>gcnEncodingOpcodeTable[gcnEncoding].bitPos) & 
@@ -1676,7 +1713,7 @@ void GCNDisassembler::disassemble()
         }
         buf[bufPos++] = '\n';
         
-        if (bufPos+100 >= 320)
+        if (bufPos+128 >= 384)
         {
             output.write(buf, bufPos);
             bufPos = 0;
@@ -1700,5 +1737,12 @@ void GCNDisassembler::disassemble()
         bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 11, 10, 0, false);
         buf[bufPos++] = ':';
         buf[bufPos++] = '\n';
+        if (bufPos+40 >= 384)
+        {
+            output.write(buf, bufPos);
+            bufPos = 0;
+        }
     }
+    output.write(buf, bufPos);
+    output.flush();
 }
