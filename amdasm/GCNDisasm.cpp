@@ -93,7 +93,8 @@ void GCNDisassembler::beforeDisassemble()
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
-    for (size_t pos = 0; pos < (inputSize>>2);)
+    size_t pos;
+    for (pos = 0; pos < (inputSize>>2);)
     {   /* scan all instructions and get jump addresses */
         const uint32_t insnCode = ULEV(codeWords[pos]);
         if ((insnCode & 0x80000000U) != 0)
@@ -117,7 +118,7 @@ void GCNDisassembler::beforeDisassemble()
                     else if (encPart == 0x0f800000U)
                     {   // SOPP
                         const cxuint opcode = (insnCode>>16)&0x7f;
-                        if (opcode == 2 || (opcode >= 2 && opcode <= 9))
+                        if (opcode == 2 || (opcode >= 4 && opcode <= 9))
                             // if jump
                             labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                     }
@@ -130,8 +131,8 @@ void GCNDisassembler::beforeDisassemble()
                 }
                 else
                 {   // SOP2
-                    if ((insnCode&0xff) == 0xff) // literal
-                        pos++;
+                    if ((insnCode&0xff) == 0xff || (insnCode&0xff00) == 0xff00)
+                        pos++;  // literal
                 }
             }
             else
@@ -149,7 +150,7 @@ void GCNDisassembler::beforeDisassemble()
         {   // some vector instructions
             if ((insnCode & 0x7e000000U) == 0x7c000000U)
             {   // VOPC
-                if ((insnCode&0x1ff) == 0xff || (insnCode&0x3fe00) == 0x1fe00) // literal
+                if ((insnCode&0x1ff) == 0xff) // literal
                     pos++;
             }
             else if ((insnCode & 0x7e000000U) == 0x7e000000U)
@@ -162,12 +163,15 @@ void GCNDisassembler::beforeDisassemble()
                 const cxuint opcode = (insnCode >> 25)&0x3f;
                 if (opcode == 32 || opcode == 33) // V_MADMK and V_MADAK
                     pos++;  // inline 32-bit constant
-                else if ((insnCode&0x1ff) == 0xff || (insnCode&0x3fe00) == 0x1fe00)
+                else if ((insnCode&0x1ff) == 0xff)
                     pos++;  // literal
             }
         }
         pos++;
     }
+    if (pos != (inputSize>>2))
+        throw Exception("Instruction outside of code space!");
+    
     std::sort(labels.begin(), labels.end());
     const auto newEnd = std::unique(labels.begin(), labels.end());
     labels.resize(newEnd-labels.begin());
@@ -1542,8 +1546,8 @@ void GCNDisassembler::disassemble()
                 }
                 else
                 {   // SOP2
-                    if ((insnCode&0xff) == 0xff) // literal
-                    {
+                    if ((insnCode&0xff) == 0xff || (insnCode&0xff00) == 0xff00)
+                    {   // literal
                         if (pos >= codeWordsNum)
                             throw Exception("Instruction outside code space!");
                         literal = ULEV(codeWords[pos++]);
@@ -1575,7 +1579,7 @@ void GCNDisassembler::disassemble()
         {   // some vector instructions
             if ((insnCode & 0x7e000000U) == 0x7c000000U)
             {   // VOPC
-                if ((insnCode&0x1ff) == 0xff || (insnCode&0x3fe00) == 0x1fe00) // literal
+                if ((insnCode&0x1ff) == 0xff) // literal
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
@@ -1602,7 +1606,7 @@ void GCNDisassembler::disassemble()
                         throw Exception("Instruction outside code space!");
                     literal = ULEV(codeWords[pos++]);
                 }
-                else if ((insnCode&0x1ff) == 0xff || (insnCode&0x3fe00) == 0x1fe00)
+                else if ((insnCode&0x1ff) == 0xff)
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
