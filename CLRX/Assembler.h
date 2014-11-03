@@ -69,8 +69,8 @@ enum class GPUDeviceType
     BONAIRE, ///< Radeon R7 260
     SPECTRE, ///< Kaveri
     SPOOKY, ///< Kaveri
-    KALINDI, ///< ???
-    HAINAN, ///< ???? 
+    KALINDI, ///< ???  GCN1.1
+    HAINAN, ///< ????  GCN1.0
     HAWAII, ///< Radeon R9 290
     GPUDEVICE_MAX = HAWAII,
     
@@ -290,8 +290,7 @@ struct DisasmInput
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<DisasmKernelInput> kernelInputs;    ///< kernel inputs
     
-    bool isGCN11() const
-    { return deviceType >= GPUDeviceType::OLAND; }
+    bool isGCN11() const;
 };
 
 /// disassembler class
