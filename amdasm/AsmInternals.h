@@ -119,6 +119,7 @@ enum : uint16_t
     GCN_MUBUF_MX2 = 0x100,
     GCN_MUBUF_MX3 = 0x200,
     GCN_MUBUF_MX4 = 0x300,
+    GCN_MIMG_SAMPLE = 0x100,
     GCN_MASK1 = 0xf0,
     GCN_MASK2 = 0xf00,
     GCN_SHIFT2 = 8

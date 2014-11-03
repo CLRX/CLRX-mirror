@@ -1199,6 +1199,87 @@ static size_t decodeMIMGEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t insn2Code)
 {
     size_t bufPos = 0;
+    bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256, 2, buf+bufPos);
+    buf[bufPos++] = ',';
+    buf[bufPos++] = ' ';
+    // determine number of vaddr registers
+    bufPos += decodeGCNOperand((insn2Code&0xff) + 256, 4, buf+bufPos);
+    buf[bufPos++] = ',';
+    buf[bufPos++] = ' ';
+    bufPos += decodeGCNOperand(((insn2Code>>14)&3), 4, buf+bufPos);
+    if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
+    {
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += decodeGCNOperand(((insn2Code>>19)&3), 4, buf+bufPos);
+    }
+    buf[bufPos++] = ' ';
+    buf[bufPos++] = 'd';
+    buf[bufPos++] = 'm';
+    buf[bufPos++] = 'a';
+    buf[bufPos++] = 's';
+    buf[bufPos++] = 'k';
+    buf[bufPos++] = ':';
+    const cxuint dmask =  (insnCode>>8)&15;
+    if (dmask >= 10)
+    {
+        buf[bufPos++] = '1';
+        buf[bufPos++] = '0' + dmask - 10;
+    }
+    else
+        buf[bufPos++] = '0' + dmask;
+    
+    if (insnCode & 0x1000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'u';
+        buf[bufPos++] = 'n';
+        buf[bufPos++] = 'o';
+        buf[bufPos++] = 'r';
+        buf[bufPos++] = 'm';
+    }
+    if (insnCode & 0x2000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'g';
+        buf[bufPos++] = 'l';
+        buf[bufPos++] = 'c';
+    }
+    if (insnCode & 0x2000000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 's';
+        buf[bufPos++] = 'l';
+        buf[bufPos++] = 'c';
+    }
+    if (insnCode & 0x8000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'r';
+        buf[bufPos++] = '1';
+        buf[bufPos++] = '2';
+        buf[bufPos++] = '8';
+    }
+    if (insnCode & 0x10000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 't';
+        buf[bufPos++] = 'f';
+        buf[bufPos++] = 'e';
+    }
+    if (insnCode & 0x20000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'l';
+        buf[bufPos++] = 'w';
+        buf[bufPos++] = 'e';
+    }
+    if (insnCode & 0x4000)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'd';
+        buf[bufPos++] = 'a';
+    }
     return bufPos;
 }
 
@@ -1424,6 +1505,7 @@ void GCNDisassembler::disassemble()
                                       true);
                 break;
             case GCNENC_MIMG:
+                bufPos += decodeMIMGEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
                 break;
             case GCNENC_EXP:
                 break;
