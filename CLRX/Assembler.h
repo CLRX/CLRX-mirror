@@ -289,6 +289,9 @@ struct DisasmInput
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<DisasmKernelInput> kernelInputs;    ///< kernel inputs
+    
+    bool isGCN11() const
+    { return deviceType >= GPUDeviceType::OLAND; }
 };
 
 /// disassembler class

@@ -93,6 +93,7 @@ void GCNDisassembler::beforeDisassemble()
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
+    const bool isGCN11 = disassembler.getInput()->isGCN11();
     size_t pos;
     for (pos = 0; pos < (inputSize>>2);)
     {   /* scan all instructions and get jump addresses */
@@ -118,14 +119,14 @@ void GCNDisassembler::beforeDisassemble()
                     else if (encPart == 0x0f800000U)
                     {   // SOPP
                         const cxuint opcode = (insnCode>>16)&0x7f;
-                        if (opcode == 2 || (opcode >= 4 && opcode <= 9))
-                            // if jump
+                        if (opcode == 2 || (opcode >= 4 && opcode <= 9) ||
+                            // GCN1.1 opcodes
+                            (isGCN11 && (opcode >= 23 && opcode <= 26))) // if jump
                             labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                     }
                     else
                     {   // SOPK
-                        if (((insnCode>>23)&0x1f) == 17)
-                            // if branch fork
+                        if (((insnCode>>23)&0x1f) == 17) // if branch fork
                             labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                     }
                 }
@@ -140,7 +141,7 @@ void GCNDisassembler::beforeDisassemble()
                 const uint32_t encPart = (insnCode&0x3c000000U);
                 if (encPart == 0x10000000U) // VOP3
                     pos++;
-                else if (encPart == 0x18000000U || encPart == 0x1c000000U ||
+                else if (encPart == 0x18000000U || (encPart == 0x1c000000U && isGCN11) ||
                         encPart == 0x20000000U || encPart == 0x28000000U ||
                         encPart == 0x30000000U || encPart == 0x38000000U)
                     pos++; // all DS,FLAT,MUBUF,MTBUF,MIMG,EXP have 8-byte opcode
@@ -182,19 +183,19 @@ static const cxbyte gcnEncoding11Table[16] =
     GCNENC_SMRD, // 0000
     GCNENC_SMRD, // 0001
     GCNENC_VINTRP, // 0010
-    GCNENC_SMRD, // 0011
+    GCNENC_NONE, // 0011 - illegal
     GCNENC_VOP3A, // 0100
-    GCNENC_SMRD, // 0101
+    GCNENC_NONE, // 0101 - illegal
     GCNENC_DS,   // 0110
     GCNENC_FLAT, // 0111
     GCNENC_MUBUF, // 1000
-    GCNENC_SMRD,  // 1001
+    GCNENC_NONE,  // 1001 - illegal
     GCNENC_MTBUF, // 1010
-    GCNENC_SMRD,  // 1011
+    GCNENC_NONE,  // 1011 - illegal
     GCNENC_MIMG,  // 1100
-    GCNENC_SMRD,  // 1101
+    GCNENC_NONE,  // 1101 - illegal
     GCNENC_EXP,   // 1110
-    GCNENC_SMRD   // 1111
+    GCNENC_NONE   // 1111 - illegal
 };
 
 struct GCNEncodingOpcodeBits
@@ -1484,6 +1485,7 @@ void GCNDisassembler::disassemble()
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
+    const bool isGCN11 = disassembler.getInput()->isGCN11();
     std::ostream& output = disassembler.getOutput();
     
     char buf[384];
@@ -1564,7 +1566,7 @@ void GCNDisassembler::disassemble()
                         throw Exception("Instruction outside code space!");
                     insn2Code = ULEV(codeWords[pos++]);
                 }
-                else if (encPart == 0x18000000U || encPart == 0x1c000000U ||
+                else if (encPart == 0x18000000U || (encPart == 0x1c000000U && isGCN11) ||
                         encPart == 0x20000000U || encPart == 0x28000000U ||
                         encPart == 0x30000000U || encPart == 0x38000000U)
                 {   // all DS,FLAT,MUBUF,MTBUF,MIMG,EXP have 8-byte opcode
@@ -1573,6 +1575,8 @@ void GCNDisassembler::disassemble()
                     insn2Code = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = gcnEncoding11Table[(encPart>>26)&0xf];
+                if (gcnEncoding == GCNENC_FLAT && !isGCN11)
+                    gcnEncoding = GCNENC_NONE; // illegal if not GCN1.1
             }
         }
         else
@@ -1634,7 +1638,10 @@ void GCNDisassembler::disassemble()
         const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
         const GCNInstruction& gcnInsn = gcnInstrTableByCode[encSpace.offset + opcode];
         
-        if (gcnInsn.mnemonic != nullptr)
+        if (gcnInsn.mnemonic != nullptr &&
+            /* check compatibility with arch */
+            (((gcnInsn.archMask & ARCH_HD7X00) && !isGCN11) ||
+            ((gcnInsn.archMask & ARCH_RX2X0) && isGCN11)))
         {
             for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
                 buf[bufPos++] = gcnInsn.mnemonic[k];
