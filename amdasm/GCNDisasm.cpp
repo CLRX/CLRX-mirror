@@ -74,7 +74,7 @@ static void initializeGCNDisassembler()
     {
         const GCNInstruction& instr = gcnInstrsTable[i];
         const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[instr.encoding];
-        gcnInstrTableByCode[encSpace.offset] = instr;
+        gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
     }
 }
 
