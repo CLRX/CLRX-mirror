@@ -937,7 +937,7 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
     bool vdata0Used = false;
     bool vdata1Used = false;
     
-    if ((gcnInsn.mode & GCN_ADDR_DST) != 0 &&
+    if ((gcnInsn.mode & GCN_ADDR_DST) != 0 ||
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) == 0) /* address is dst */
     {
         bufPos += decodeGCNOperand((insn2Code&0xff)+256, 1, buf+bufPos);
