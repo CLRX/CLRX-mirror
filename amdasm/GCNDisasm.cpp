@@ -95,7 +95,7 @@ void GCNDisassembler::beforeDisassemble()
     
     for (size_t pos = 0; pos < (inputSize>>2);)
     {   /* scan all instructions and get jump addresses */
-        const uint32_t insnCode = codeWords[pos];
+        const uint32_t insnCode = ULEV(codeWords[pos]);
         if ((insnCode & 0x80000000U) != 0)
         {   
             if ((insnCode & 0x40000000U) == 0)
@@ -1195,6 +1195,13 @@ static size_t decodeMUBUFEncoding(char* buf, const GCNInstruction& gcnInsn,
     return bufPos;
 }
 
+static size_t decodeMIMGEncoding(char* buf, const GCNInstruction& gcnInsn,
+                     uint32_t insnCode, uint32_t insn2Code)
+{
+    size_t bufPos = 0;
+    return bufPos;
+}
+
 /* main routine */
 
 void GCNDisassembler::disassemble()
@@ -1226,7 +1233,7 @@ void GCNDisassembler::disassemble()
         bufPos += 8;
         
         cxbyte gcnEncoding = GCNENC_NONE;
-        const uint32_t insnCode = codeWords[pos++];
+        const uint32_t insnCode = ULEV(codeWords[pos++]);
         uint32_t insn2Code = 0;
         uint32_t literal = 0;
         
@@ -1244,7 +1251,7 @@ void GCNDisassembler::disassemble()
                         {
                             if (pos >= codeWordsNum)
                                 throw Exception("Instruction outside code space!");
-                            literal = codeWords[pos++];
+                            literal = ULEV(codeWords[pos++]);
                         }
                         gcnEncoding = GCNENC_SOP1;
                     }
@@ -1255,7 +1262,7 @@ void GCNDisassembler::disassemble()
                         {
                             if (pos >= codeWordsNum)
                                 throw Exception("Instruction outside code space!");
-                            literal = codeWords[pos++];
+                            literal = ULEV(codeWords[pos++]);
                         }
                         gcnEncoding = GCNENC_SOPC;
                     }
@@ -1270,7 +1277,7 @@ void GCNDisassembler::disassemble()
                     {
                         if (pos >= codeWordsNum)
                             throw Exception("Instruction outside code space!");
-                        literal = codeWords[pos++];
+                        literal = ULEV(codeWords[pos++]);
                     }
                     gcnEncoding = GCNENC_SOP2;
                 }
@@ -1282,7 +1289,7 @@ void GCNDisassembler::disassemble()
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
-                    insn2Code = codeWords[pos++];
+                    insn2Code = ULEV(codeWords[pos++]);
                 }
                 else if (encPart == 0x18000000U || encPart == 0x1c000000U ||
                         encPart == 0x20000000U || encPart == 0x28000000U ||
@@ -1290,7 +1297,7 @@ void GCNDisassembler::disassemble()
                 {   // all DS,FLAT,MUBUF,MTBUF,MIMG,EXP have 8-byte opcode
                     if (pos+1 >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
-                    insn2Code = codeWords[pos++];
+                    insn2Code = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = gcnEncoding11Table[(encPart>>26)&0xf];
             }
@@ -1303,7 +1310,7 @@ void GCNDisassembler::disassemble()
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
-                    literal = codeWords[pos++];
+                    literal = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = GCNENC_VOPC;
             }
@@ -1313,7 +1320,7 @@ void GCNDisassembler::disassemble()
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
-                    literal = codeWords[pos++];
+                    literal = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = GCNENC_VOP1;
             }
@@ -1324,13 +1331,13 @@ void GCNDisassembler::disassemble()
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
-                    literal = codeWords[pos++];
+                    literal = ULEV(codeWords[pos++]);
                 }
                 else if ((insnCode&0x1ff) == 0xff || (insnCode&0x3fe00) == 0x1fe00)
                 {
                     if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
-                    literal = codeWords[pos++];
+                    literal = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = GCNENC_VOP2;
             }
