@@ -1075,8 +1075,21 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
     return bufPos;
 }
 
+static const char* mtbufDFMTTable[] =
+{
+    "invalid", "8", "16", "8_8", "32", "16_16", "10_11_11", "11_11_10",
+    "10_10_10_2", "2_10_10_10", "8_8_8_8", "32_32", "16_16_16_16", "32_32_32",
+    "32_32_32_32", "reserved"
+};
+
+static const char* mtbufNFMTTable[] =
+{
+    "unorm", "snorm", "uscaled", "sscaled",
+    "uint", "sint", "snorm_ogl", "float"
+};
+
 static size_t decodeMUBUFEncoding(char* buf, const GCNInstruction& gcnInsn,
-                     uint32_t insnCode, uint32_t insn2Code)
+                     uint32_t insnCode, uint32_t insn2Code, bool mtbuf)
 {
     size_t bufPos = 0;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2);
@@ -1146,7 +1159,7 @@ static size_t decodeMUBUFEncoding(char* buf, const GCNInstruction& gcnInsn,
         buf[bufPos++] = '6';
         buf[bufPos++] = '4';
     }
-    if (insnCode & 0x10000U)
+    if (!mtbuf && (insnCode & 0x10000U) != 0)
     {
         buf[bufPos++] = ' ';
         buf[bufPos++] = 'l';
@@ -1159,6 +1172,25 @@ static size_t decodeMUBUFEncoding(char* buf, const GCNInstruction& gcnInsn,
         buf[bufPos++] = 't';
         buf[bufPos++] = 'f';
         buf[bufPos++] = 'e';
+    }
+    if (mtbuf)
+    {
+        buf[bufPos++] = 'f';
+        buf[bufPos++] = 'o';
+        buf[bufPos++] = 'r';
+        buf[bufPos++] = 'm';
+        buf[bufPos++] = 'a';
+        buf[bufPos++] = 't';
+        buf[bufPos++] = ':';
+        buf[bufPos++] = '[';
+        const char* dfmtStr = mtbufDFMTTable[(insnCode>>19)&15];
+        for (cxuint k = 0; dfmtStr[k] != 0; k++)
+            buf[bufPos++] = dfmtStr[k];
+        buf[bufPos++] = ',';
+        const char* nfmtStr = mtbufNFMTTable[(insnCode>>23)&7];
+        for (cxuint k = 0; nfmtStr[k] != 0; k++)
+            buf[bufPos++] = nfmtStr[k];
+        buf[bufPos++] = ']';
     }
     return bufPos;
 }
@@ -1377,9 +1409,12 @@ void GCNDisassembler::disassemble()
                 bufPos += decodeDSEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
                 break;
             case GCNENC_MUBUF:
-                bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
+                bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
+                                      false);
                 break;
             case GCNENC_MTBUF:
+                bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
+                                      true);
                 break;
             case GCNENC_MIMG:
                 break;
