@@ -256,7 +256,7 @@ static size_t decodeGCNVRegOperand(cxuint op, cxuint vregNum, char* buf)
     }
     {
         const cxuint digit1 = val/10U;
-        if (digit1 != 0)
+        if (digit1 != 0 || op >= 100U)
             buf[pos++] = digit1 + '0';
         buf[pos++] = val-digit1*10U + '0';
     }
@@ -275,7 +275,7 @@ static size_t decodeGCNVRegOperand(cxuint op, cxuint vregNum, char* buf)
         }
         {
             const cxuint digit1 = val/10U;
-            if (digit1 != 0)
+            if (digit1 != 0 || op >= 100)
                 buf[pos++] = digit1 + '0';
             buf[pos++] = val-digit1*10U + '0';
         }
@@ -308,7 +308,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
         }
         {
             const cxuint digit1 = val/10U;
-            if (digit1 != 0)
+            if (digit1 != 0 || op >= 100)
                 buf[pos++] = digit1 + '0';
             buf[pos++] = val-digit1*10U + '0';
         }
@@ -327,7 +327,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
             }
             {
                 const cxuint digit1 = val/10U;
-                if (digit1 != 0)
+                if (digit1 != 0 || op >= 100)
                     buf[pos++] = digit1 + '0';
                 buf[pos++] = val-digit1*10U + '0';
             }
