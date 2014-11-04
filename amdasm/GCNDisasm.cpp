@@ -1628,99 +1628,104 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = 't';
             buf[bufPos++] = ' '; 
             bufPos += u32tocstrCStyle(insnCode, buf+bufPos, 11, 16);
-            continue;
-        }
-        
-        const cxuint opcode = (insnCode>>gcnEncodingOpcodeTable[gcnEncoding].bitPos) & 
-            ((1U<<gcnEncodingOpcodeTable[gcnEncoding].bits)-1U);
-        
-        /* decode instruction and put to output */
-        const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
-        const GCNInstruction& gcnInsn = gcnInstrTableByCode[encSpace.offset + opcode];
-        
-        if (gcnInsn.mnemonic != nullptr &&
-            /* check compatibility with arch */
-            (((gcnInsn.archMask & ARCH_HD7X00) && !isGCN11) ||
-            ((gcnInsn.archMask & ARCH_RX2X0) && isGCN11)))
-        {
-            for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
-                buf[bufPos++] = gcnInsn.mnemonic[k];
-            buf[bufPos++] = ' ';
         }
         else
         {
-            buf[bufPos++] = 'I';
-            buf[bufPos++] = 'N';
-            buf[bufPos++] = 'V';
-            buf[bufPos++] = '_';
-            bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
-            buf[bufPos++] = ' ';
-        }
-        
-        const bool displayFloatLits = ((disassembler.getFlags()&DISASM_FLOATLITS) != 0 &&
-                (gcnInsn.mode & GCN_MASK2) == GCN_FLOATLIT);
-        
-        switch(gcnEncoding)
-        {
-            case GCNENC_SOPC:
-                bufPos += decodeSOPCEncoding(buf+bufPos, gcnInsn, insnCode, literal);
-                break;
-            case GCNENC_SOPP:
-                bufPos += decodeSOPPEncoding(buf+bufPos, gcnInsn, insnCode, literal, pos);
-                break;
-            case GCNENC_SOP1:
-                bufPos += decodeSOP1Encoding(buf+bufPos, gcnInsn, insnCode, literal);
-                break;
-            case GCNENC_SOP2:
-                bufPos += decodeSOP2Encoding(buf+bufPos, gcnInsn, insnCode, literal);
-                break;
-            case GCNENC_SOPK:
-                bufPos += decodeSOPKEncoding(buf+bufPos, gcnInsn, insnCode, literal, pos);
-                break;
-            case GCNENC_SMRD:
-                bufPos += decodeSMRDEncoding(buf+bufPos, gcnInsn, insnCode, literal);
-                break;
-            case GCNENC_VOPC:
-                bufPos += decodeVOPCEncoding(buf+bufPos, gcnInsn, insnCode, literal,
-                                 displayFloatLits);
-                break;
-            case GCNENC_VOP1:
-                bufPos += decodeVOP1Encoding(buf+bufPos, gcnInsn, insnCode, literal,
-                                 displayFloatLits);
-                break;
-            case GCNENC_VOP2:
-                bufPos += decodeVOP2Encoding(buf+bufPos, gcnInsn, insnCode, literal,
-                                 displayFloatLits);
-                break;
-            case GCNENC_VOP3A:
-                bufPos += decodeVOP3Encoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
-                                 literal, displayFloatLits);
-                break;
-            case GCNENC_VINTRP:
-                bufPos += decodeVINTRPEncoding(buf+bufPos, gcnInsn, insnCode);
-                break;
-            case GCNENC_DS:
-                bufPos += decodeDSEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
-                break;
-            case GCNENC_MUBUF:
-                bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
-                                      false);
-                break;
-            case GCNENC_MTBUF:
-                bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
-                                      true);
-                break;
-            case GCNENC_MIMG:
-                bufPos += decodeMIMGEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
-                break;
-            case GCNENC_EXP:
-                bufPos += decodeEXPEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
-                break;
-            case GCNENC_FLAT:
-                bufPos += decodeFLATEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
-                break;
-            default:
-                break;
+            const cxuint opcode = 
+                    (insnCode>>gcnEncodingOpcodeTable[gcnEncoding].bitPos) & 
+                    ((1U<<gcnEncodingOpcodeTable[gcnEncoding].bits)-1U);
+            
+            /* decode instruction and put to output */
+            const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
+            const GCNInstruction& gcnInsn = gcnInstrTableByCode[encSpace.offset + opcode];
+            
+            if (gcnInsn.mnemonic != nullptr &&
+                /* check compatibility with arch */
+                (((gcnInsn.archMask & ARCH_HD7X00) && !isGCN11) ||
+                ((gcnInsn.archMask & ARCH_RX2X0) && isGCN11)))
+            {
+                for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
+                    buf[bufPos++] = gcnInsn.mnemonic[k];
+                buf[bufPos++] = ' ';
+            }
+            else
+            {
+                buf[bufPos++] = 'I';
+                buf[bufPos++] = 'N';
+                buf[bufPos++] = 'V';
+                buf[bufPos++] = '_';
+                bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
+                buf[bufPos++] = ' ';
+            }
+            
+            const bool displayFloatLits = 
+                    ((disassembler.getFlags()&DISASM_FLOATLITS) != 0 &&
+                    (gcnInsn.mode & GCN_MASK2) == GCN_FLOATLIT);
+            
+            switch(gcnEncoding)
+            {
+                case GCNENC_SOPC:
+                    bufPos += decodeSOPCEncoding(buf+bufPos, gcnInsn, insnCode, literal);
+                    break;
+                case GCNENC_SOPP:
+                    bufPos += decodeSOPPEncoding(buf+bufPos, gcnInsn, insnCode,
+                                                 literal, pos);
+                    break;
+                case GCNENC_SOP1:
+                    bufPos += decodeSOP1Encoding(buf+bufPos, gcnInsn, insnCode, literal);
+                    break;
+                case GCNENC_SOP2:
+                    bufPos += decodeSOP2Encoding(buf+bufPos, gcnInsn, insnCode, literal);
+                    break;
+                case GCNENC_SOPK:
+                    bufPos += decodeSOPKEncoding(buf+bufPos, gcnInsn, insnCode,
+                                                 literal, pos);
+                    break;
+                case GCNENC_SMRD:
+                    bufPos += decodeSMRDEncoding(buf+bufPos, gcnInsn, insnCode, literal);
+                    break;
+                case GCNENC_VOPC:
+                    bufPos += decodeVOPCEncoding(buf+bufPos, gcnInsn, insnCode, literal,
+                                     displayFloatLits);
+                    break;
+                case GCNENC_VOP1:
+                    bufPos += decodeVOP1Encoding(buf+bufPos, gcnInsn, insnCode, literal,
+                                     displayFloatLits);
+                    break;
+                case GCNENC_VOP2:
+                    bufPos += decodeVOP2Encoding(buf+bufPos, gcnInsn, insnCode, literal,
+                                     displayFloatLits);
+                    break;
+                case GCNENC_VOP3A:
+                    bufPos += decodeVOP3Encoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
+                                     literal, displayFloatLits);
+                    break;
+                case GCNENC_VINTRP:
+                    bufPos += decodeVINTRPEncoding(buf+bufPos, gcnInsn, insnCode);
+                    break;
+                case GCNENC_DS:
+                    bufPos += decodeDSEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
+                    break;
+                case GCNENC_MUBUF:
+                    bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
+                                          false);
+                    break;
+                case GCNENC_MTBUF:
+                    bufPos += decodeMUBUFEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code,
+                                          true);
+                    break;
+                case GCNENC_MIMG:
+                    bufPos += decodeMIMGEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
+                    break;
+                case GCNENC_EXP:
+                    bufPos += decodeEXPEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
+                    break;
+                case GCNENC_FLAT:
+                    bufPos += decodeFLATEncoding(buf+bufPos, gcnInsn, insnCode, insn2Code);
+                    break;
+                default:
+                    break;
+            }
         }
         buf[bufPos++] = '\n';
         
