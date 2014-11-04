@@ -238,6 +238,49 @@ union FloatUnion
     uint32_t u;
 };
 
+static size_t decodeGCNVRegOperand(cxuint op, cxuint vregNum, char* buf)
+{
+    size_t pos = 1;
+    buf[0] = 'v';
+    if (vregNum!=1)
+        buf[pos++] = '[';
+    cxuint val = op;
+    if (val >= 100U)
+    {
+        cxuint digit2 = val/100U;
+        buf[pos++] = digit2+'0';
+        val -= digit2*100U;
+    }
+    {
+        const cxuint digit1 = val/10U;
+        if (digit1 != 0)
+            buf[pos++] = digit1 + '0';
+        buf[pos++] = val-digit1*10U + '0';
+    }
+    if (vregNum!=1)
+    {
+        buf[pos++] = ':';
+        op += vregNum-1;
+        if (op > 255)
+            op -= 256; // fix for VREGS
+        val = op;
+        if (val >= 100)
+        {
+            cxuint digit2 = val/100U;
+            buf[pos++] = digit2+'0';
+            val -= digit2*100U;
+        }
+        {
+            const cxuint digit1 = val/10U;
+            if (digit1 != 0)
+                buf[pos++] = digit1 + '0';
+            buf[pos++] = val-digit1*10U + '0';
+        }
+        buf[pos++] = ']';
+    }
+    return pos;
+}
+
 static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint literal = 0,
                bool floatLit = false)
 {
@@ -363,6 +406,8 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         buf[2] = 'm';
         buf[3] = 'p';
         cxuint pos = 4;
+        if (vregNum > 1)
+            buf[pos++] = '[';
         if (op >= 122)
         {
             buf[pos++] = '1';
@@ -370,6 +415,19 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         }
         else
             buf[pos++] = op-112+'0';
+        if (vregNum > 1)
+        {
+            buf[pos++] = ':';
+            const cxuint op2 = op + vregNum-1;
+            if (op2 >= 122)
+            {
+                buf[pos++] = '1';
+                buf[pos++] = op2-122+'0';
+            }
+            else
+                buf[pos++] = op2-112+'0';
+            buf[pos++] = ']';
+        }
         return pos;
     }
     if (op == 124)
@@ -467,6 +525,7 @@ static size_t decodeSOPCEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand(insnCode&0xff,
            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal);
     buf[bufPos++] = ',';
@@ -486,6 +545,7 @@ static size_t decodeSOPPEncoding(char* buf, const GCNInstruction& gcnInsn,
         case GCN_IMM_REL:
         {
             const size_t branchPos = pos + int16_t(imm16) + 1;
+            buf[bufPos++] = ' ';
             buf[bufPos++] = 'L';
             bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
             break;
@@ -493,6 +553,7 @@ static size_t decodeSOPPEncoding(char* buf, const GCNInstruction& gcnInsn,
         case GCN_IMM_LOCKS:
         {
             bool prevLock = false;
+            buf[bufPos++] = ' ';
             if ((imm16&15) != 15)
             {
                 const cxuint lockCnt = imm16&15;
@@ -558,6 +619,7 @@ static size_t decodeSOPPEncoding(char* buf, const GCNInstruction& gcnInsn,
         case GCN_IMM_MSGS:
         {
             cxuint illMask = 0xfff0;
+            buf[bufPos++] = ' ';
             buf[bufPos++] = 'm';
             buf[bufPos++] = 's';
             buf[bufPos++] = 'g';
@@ -592,9 +654,13 @@ static size_t decodeSOPPEncoding(char* buf, const GCNInstruction& gcnInsn,
         }
         case GCN_IMM_NONE:
             if (imm16 != 0)
+            {
+                buf[bufPos++] = ' ';
                 bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+            }
             break;
         default:
+            buf[bufPos++] = ' ';
             bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
             break;
     }
@@ -605,6 +671,7 @@ static size_t decodeSOP1Encoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
            (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     buf[bufPos++] = ',';
@@ -618,6 +685,7 @@ static size_t decodeSOP2Encoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
     {
         bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
@@ -650,6 +718,7 @@ static size_t decodeSOPKEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal, size_t pos)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
            (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     buf[bufPos++] = ',';
@@ -670,6 +739,7 @@ static size_t decodeSMRDEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_MASK2)>>GCN_SHIFT2);
     bufPos += decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, buf + bufPos);
     buf[bufPos++] = ',';
@@ -689,6 +759,7 @@ static size_t decodeVOPCEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal, bool displayFloatLits)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     buf[bufPos++] = 'v';
     buf[bufPos++] = 'c';
     buf[bufPos++] = 'c';
@@ -698,8 +769,8 @@ static size_t decodeVOPCEncoding(char* buf, const GCNInstruction& gcnInsn,
            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, literal, displayFloatLits);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(((insnCode>>9)&0xff)+256,
-           (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, 0);
+    bufPos += decodeGCNVRegOperand(((insnCode>>9)&0xff),
+           (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos);
     return bufPos;
 }
 
@@ -707,8 +778,9 @@ static size_t decodeVOP1Encoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal, bool displayFloatLits)
 {
     size_t bufPos = 0;
-    bufPos += decodeGCNOperand(((insnCode>>17)&0xff)+256,
-           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, 0);
+    buf[bufPos++] = ' ';
+    bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
+           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand(insnCode&0x1ff,
@@ -721,7 +793,8 @@ static size_t decodeVOP2Encoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t literal, bool displayFloatLits)
 {
     size_t bufPos = 0;
-    bufPos += decodeGCNOperand(((insnCode>>17)&0xff)+256,
+    buf[bufPos++] = ' ';
+    bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
            (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
@@ -757,7 +830,7 @@ static size_t decodeVOP2Encoding(char* buf, const GCNInstruction& gcnInsn,
     }
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(((insnCode>>9)&0x1ff) + 256,
+    bufPos += decodeGCNVRegOperand(((insnCode>>9)&0xff),
            (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos);
     if ((gcnInsn.mode & GCN_MASK1) == GCN_ARG2_IMM)
     {
@@ -795,10 +868,11 @@ static size_t decodeVOP3Encoding(char* buf, const GCNInstruction& gcnInsn,
                      bool displayFloatLits)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     if (((insnCode>>17)&0x1ff) < 256) /* if compares */
         bufPos += decodeGCNOperand(((insnCode>>17)&0xff), 2, buf + bufPos);
     else /* regular instruction */
-        bufPos += decodeGCNOperand(((insnCode>>17)&0xff)+256,
+        bufPos += decodeGCNVRegOperand((insnCode>>17)&0xff,
            (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     
     cxuint absFlags = 0;
@@ -909,10 +983,11 @@ static size_t decodeVINTRPEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode)
 {
     size_t bufPos = 0;
-    bufPos += decodeGCNOperand(((insnCode>>18)&0xff)+256, 1, buf+bufPos);
+    buf[bufPos++] = ' ';
+    bufPos += decodeGCNVRegOperand((insnCode>>18)&0xff, 1, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(insnCode+256, 1, buf+bufPos);
+    bufPos += decodeGCNVRegOperand(insnCode&0xff, 1, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     buf[bufPos++] = 'a';
@@ -942,10 +1017,12 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
     bool vdata0Used = false;
     bool vdata1Used = false;
     
+    buf[bufPos++] = ' ';
+    
     if ((gcnInsn.mode & GCN_ADDR_DST) != 0 ||
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) == 0) /* address is dst */
     {
-        bufPos += decodeGCNOperand((insn2Code&0xff)+256, 1, buf+bufPos);
+        bufPos += decodeGCNVRegOperand(insn2Code&0xff, 1, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         vaddrUsed = true;
@@ -957,8 +1034,7 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DSMASK) == GCN_ADDR_SRC128)
             regsNum = 4;
-        bufPos += decodeGCNOperand((insn2Code>>24)+256, regsNum,
-               buf+bufPos);
+        bufPos += decodeGCNVRegOperand(insn2Code>>24, regsNum, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         vdstUsed = true;
@@ -968,7 +1044,7 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
     if ((gcnInsn.mode & GCN_DSMASK2) != GCN_ONLYDST &&
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0)
     {   /* two vdata */
-        bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256,
+        bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff,
             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf+bufPos);
         vdata0Used = true;
         if ((gcnInsn.mode & GCN_DSMASK2) == GCN_2SRCS ||
@@ -976,7 +1052,7 @@ static size_t decodeDSEncoding(char* buf, const GCNInstruction& gcnInsn,
         {
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            bufPos += decodeGCNOperand(((insn2Code>>16)&0xff) + 256,
+            bufPos += decodeGCNVRegOperand((insn2Code>>16)&0xff,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf+bufPos);
             vdata1Used = true;
         }
@@ -1101,15 +1177,16 @@ static size_t decodeMUBUFEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t insn2Code, bool mtbuf)
 {
     size_t bufPos = 0;
+    buf[bufPos++] = ' ';
     const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
-    bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256,
+    bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff,
                dregsNum, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     // determine number of vaddr registers
     const cxuint aregsNum = (((insnCode & 0x1000U)? 1 : 0) +
             ((insnCode & 0x2000U)? 1 : 0))<<((insnCode & 0x8000U)?1:0);
-    bufPos += decodeGCNOperand((insn2Code&0xff) + 256, aregsNum, buf+bufPos);
+    bufPos += decodeGCNVRegOperand(insn2Code&0xff, aregsNum, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand(((insn2Code>>14)&3), 4, buf+bufPos);
@@ -1208,11 +1285,12 @@ static size_t decodeMIMGEncoding(char* buf, const GCNInstruction& gcnInsn,
                      uint32_t insnCode, uint32_t insn2Code)
 {
     size_t bufPos = 0;
-    bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256, 2, buf+bufPos);
+    buf[bufPos++] = ' ';
+    bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff, 2, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     // determine number of vaddr registers
-    bufPos += decodeGCNOperand((insn2Code&0xff) + 256, 4, buf+bufPos);
+    bufPos += decodeGCNVRegOperand(insn2Code&0xff, 4, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand(((insn2Code>>14)&3), 4, buf+bufPos);
@@ -1298,6 +1376,7 @@ static size_t decodeEXPEncoding(char* buf, const GCNInstruction& gcnInsn,
     size_t bufPos = 0;
     /* export target */
     const cxuint target = (insnCode>>4)&63;
+    buf[bufPos++] = ' ';
     if (target >= 32)
     {
         buf[bufPos++] = 'p';
@@ -1360,7 +1439,7 @@ static size_t decodeEXPEncoding(char* buf, const GCNInstruction& gcnInsn,
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         if (insnCode & (1U<<i))
-            bufPos += decodeGCNOperand(((insn2Code>>(i<<3))&0xff) + 256, 1, buf+bufPos);
+            bufPos += decodeGCNVRegOperand((insn2Code>>(i<<3))&0xff, 1, buf+bufPos);
         else
         {
             buf[bufPos++] = 'o';
@@ -1401,24 +1480,25 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
     size_t bufPos = 0;
     bool vdstUsed = false;
     bool vdataUsed = false;
+    buf[bufPos++] = ' ';
     const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstUsed = true;
-        bufPos += decodeGCNOperand((insn2Code>>24) + 256, dregsNum, buf+bufPos);
+        bufPos += decodeGCNVRegOperand(insn2Code>>24, dregsNum, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += decodeGCNOperand((insn2Code&0xff) + 256, 2, buf+bufPos); // addr
+        bufPos += decodeGCNVRegOperand(insn2Code&0xff, 2, buf+bufPos); // addr
     }
     else
     {   /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
-        bufPos += decodeGCNOperand((insn2Code&0xff) + 256, 2, buf+bufPos); // addr
+        bufPos += decodeGCNVRegOperand(insn2Code&0xff, 2, buf+bufPos); // addr
         if ((gcnInsn.mode & GCN_FLAT_NODST) != 0)
         {
             vdstUsed = true;
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            bufPos += decodeGCNOperand((insn2Code>>24) + 256, dregsNum, buf+bufPos);
+            bufPos += decodeGCNVRegOperand(insn2Code>>24, dregsNum, buf+bufPos);
         }
     }
     
@@ -1427,7 +1507,7 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
         vdataUsed = true;
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += decodeGCNOperand(((insn2Code>>8)&0xff) + 256, dregsNum, buf+bufPos);
+        bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff, dregsNum, buf+bufPos);
     }
     
     if (insnCode & 0x10000U)
@@ -1651,7 +1731,6 @@ void GCNDisassembler::disassemble()
             {
                 for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
                     buf[bufPos++] = gcnInsn.mnemonic[k];
-                buf[bufPos++] = ' ';
             }
             else
             {
@@ -1660,7 +1739,6 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = 'V';
                 buf[bufPos++] = '_';
                 bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
-                buf[bufPos++] = ' ';
             }
             
             const bool displayFloatLits = 
