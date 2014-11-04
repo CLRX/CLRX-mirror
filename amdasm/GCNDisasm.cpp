@@ -284,8 +284,8 @@ static size_t decodeGCNVRegOperand(cxuint op, cxuint vregNum, char* buf)
     return pos;
 }
 
-static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t arch,
-           cxuint literal = 0, bool floatLit = false)
+static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arch,
+           uint32_t literal = 0, bool floatLit = false)
 {
     if (op < 104 || (op >= 256 && op < 512))
     {   // scalar
@@ -297,7 +297,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
         else
             buf[0] = 's';
         size_t pos = 1;
-        if (vregNum!=1)
+        if (regNum!=1)
             buf[pos++] = '[';
         cxuint val = op;
         if (val >= 100U)
@@ -312,10 +312,10 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
                 buf[pos++] = digit1 + '0';
             buf[pos++] = val-digit1*10U + '0';
         }
-        if (vregNum!=1)
+        if (regNum!=1)
         {
             buf[pos++] = ':';
-            op += vregNum-1;
+            op += regNum-1;
             if (op > 255)
                 op -= 256; // fix for VREGS
             val = op;
@@ -379,7 +379,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
                 buf[pos++] = 'c';
                 break;
         }
-        if (vregNum >= 2)
+        if (regNum >= 2)
         {
             if (op&1) // unaligned!!
             {
@@ -387,7 +387,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
                 buf[pos++] = 'u';
                 buf[pos++] = '!';
             }
-            if (vregNum > 2)
+            if (regNum > 2)
             {
                 buf[pos++] = '&';
                 buf[pos++] = 'i';
@@ -417,6 +417,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
             buf[pos++] = '*';
             buf[pos++] = ' ';
             pos += ftocstrCStyle(fu.f, buf+pos, 27);
+            buf[pos++] = 'f';
             buf[pos++] = ' ';
             buf[pos++] = '*';
             buf[pos++] = '/';
@@ -431,7 +432,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
         buf[2] = 'm';
         buf[3] = 'p';
         cxuint pos = 4;
-        if (vregNum > 1)
+        if (regNum > 1)
             buf[pos++] = '[';
         if (op >= 122)
         {
@@ -440,15 +441,15 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
         }
         else
             buf[pos++] = op-112+'0';
-        if (vregNum > 1)
+        if (regNum > 1)
         {
             buf[pos++] = ':';
-            cxuint op2 = op + vregNum-1;
+            cxuint op2 = op + regNum-1;
             op2 -= 112;
-            if (op2 >= 122)
+            if (op2 >= 10)
             {
                 cxuint digit2 = op2/10U;
-                buf[pos++] = digit2-122;
+                buf[pos++] = digit2+'0';
                 buf[pos++] = op2-digit2*10U+'0';
             }
             else
@@ -461,7 +462,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
     {
         buf[0] = 'm';
         buf[1] = '0';
-        if (vregNum > 1)
+        if (regNum > 1)
         {
             size_t pos = 2;
             buf[pos++] = '&';
@@ -488,7 +489,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, uint16_t ar
     {
         buf[0] = '-';
         cxuint pos = 1;
-        if (op >= 122)
+        if (op >= 202)
         {
             buf[pos++] = '1';
             buf[pos++] = op-202+'0';
@@ -1460,9 +1461,9 @@ static size_t decodeEXPEncoding(uint16_t arch, char* buf, const GCNInstruction& 
     }
     else
     {   /* reserved */
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 'e';
-        buf[bufPos++] = 's';
+        buf[bufPos++] = 'i';
+        buf[bufPos++] = 'l';
+        buf[bufPos++] = 'l';
         buf[bufPos++] = '_';
         const cxuint digit2 = target/10;
         buf[bufPos++] = '0' + digit2;
