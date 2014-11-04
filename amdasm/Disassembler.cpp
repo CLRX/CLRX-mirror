@@ -31,9 +31,6 @@
 
 using namespace CLRX;
 
-bool DisasmInput::isGCN11() const
-{ return deviceType >= GPUDeviceType::BONAIRE && deviceType != GPUDeviceType::HAINAN; }
-
 ISADisassembler::ISADisassembler(Disassembler& disassembler_)
         : disassembler(disassembler_)
 { }

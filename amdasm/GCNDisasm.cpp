@@ -30,6 +30,9 @@ using namespace CLRX;
 static std::once_flag clrxGCNDisasmOnceFlag; 
 static GCNInstruction* gcnInstrTableByCode = nullptr;
 
+static bool checkGCN11(GPUDeviceType deviceType)
+{ return deviceType >= GPUDeviceType::BONAIRE && deviceType != GPUDeviceType::HAINAN; }
+
 struct GCNEncodingSpace
 {
     cxuint offset;
@@ -93,7 +96,7 @@ void GCNDisassembler::beforeDisassemble()
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
-    const bool isGCN11 = disassembler.getInput()->isGCN11();
+    const bool isGCN11 = checkGCN11(disassembler.getInput()->deviceType);
     size_t pos;
     for (pos = 0; pos < (inputSize>>2);)
     {   /* scan all instructions and get jump addresses */
@@ -281,8 +284,8 @@ static size_t decodeGCNVRegOperand(cxuint op, cxuint vregNum, char* buf)
     return pos;
 }
 
-static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint literal = 0,
-               bool floatLit = false)
+static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf,
+           cxuint literal = 0, bool floatLit = false)
 {
     if (op < 104 || (op >= 256 && op < 512))
     {   // scalar
@@ -334,11 +337,25 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
     }
     
     const cxuint op2 = op&~1U;
-    if (op2 == 106 || op2 == 108 || op2 == 110 || op2 == 126)
+    if (op2 == 106 || op2 == 108 || op2 == 110 || op2 == 126 || op2 == 104)
     {   // VCC
         size_t pos = 0;
         switch(op2)
         {
+            case 104:
+                buf[pos++] = 'f';
+                buf[pos++] = 'l';
+                buf[pos++] = 'a';
+                buf[pos++] = 't';
+                buf[pos++] = '_';
+                buf[pos++] = 's';
+                buf[pos++] = 'c';
+                buf[pos++] = 'r';
+                buf[pos++] = 'a';
+                buf[pos++] = 't';
+                buf[pos++] = 'c';
+                buf[pos++] = 'h';
+                break;
             case 106:
                 buf[pos++] = 'v';
                 buf[pos++] = 'c';
@@ -361,16 +378,23 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
                 buf[pos++] = 'c';
                 break;
         }
-        if (vregNum == 2)
+        if (vregNum >= 2)
         {
-            if (op == 107) // unaligned!!
+            if (op&1) // unaligned!!
             {
                 buf[pos++] = '_';
                 buf[pos++] = 'u';
                 buf[pos++] = '!';
-                return pos;
             }
-            return 3;
+            if (vregNum > 2)
+            {
+                buf[pos++] = '&';
+                buf[pos++] = 'i';
+                buf[pos++] = 'l';
+                buf[pos++] = 'l';
+                buf[pos++] = '!';
+            }
+            return pos;
         }
         buf[pos++] = '_';
         if ((op&1) == 0)
@@ -418,14 +442,16 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
         if (vregNum > 1)
         {
             buf[pos++] = ':';
-            const cxuint op2 = op + vregNum-1;
+            cxuint op2 = op + vregNum-1;
+            op2 -= 112;
             if (op2 >= 122)
             {
-                buf[pos++] = '1';
-                buf[pos++] = op2-122+'0';
+                cxuint digit2 = op2/10U;
+                buf[pos++] = digit2-122;
+                buf[pos++] = op2-digit2*10U+'0';
             }
             else
-                buf[pos++] = op2-112+'0';
+                buf[pos++] = op2+'0';
             buf[pos++] = ']';
         }
         return pos;
@@ -434,6 +460,16 @@ static size_t decodeGCNOperand(cxuint op, cxuint vregNum, char* buf, cxuint lite
     {
         buf[0] = 'm';
         buf[1] = '0';
+        if (vregNum > 1)
+        {
+            size_t pos = 2;
+            buf[pos++] = '&';
+            buf[pos++] = 'i';
+            buf[pos++] = 'l';
+            buf[pos++] = 'l';
+            buf[pos++] = '!';
+            return 2;
+        }
         return 2;
     }
     
@@ -1566,7 +1602,7 @@ void GCNDisassembler::disassemble()
     auto curLabel = labels.begin();
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
-    const bool isGCN11 = disassembler.getInput()->isGCN11();
+    const bool isGCN11 = checkGCN11(disassembler.getInput()->deviceType);
     const uint16_t curArchMask = isGCN11?ARCH_RX2X0:ARCH_HD7X00;
     std::ostream& output = disassembler.getOutput();
     
