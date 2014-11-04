@@ -122,12 +122,12 @@ void GCNDisassembler::beforeDisassemble()
                         if (opcode == 2 || (opcode >= 4 && opcode <= 9) ||
                             // GCN1.1 opcodes
                             (isGCN11 && (opcode >= 23 && opcode <= 26))) // if jump
-                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
+                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
                     }
                     else
                     {   // SOPK
                         if (((insnCode>>23)&0x1f) == 17) // if branch fork
-                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
+                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
                     }
                 }
                 else
@@ -485,7 +485,7 @@ static size_t decodeSOPPEncoding(char* buf, const GCNInstruction& gcnInsn,
     {
         case GCN_IMM_REL:
         {
-            const size_t branchPos = (pos + int16_t(imm16) + 1)<<2;
+            const size_t branchPos = pos + int16_t(imm16) + 1;
             buf[bufPos++] = 'L';
             bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
             break;
@@ -659,7 +659,7 @@ static size_t decodeSOPKEncoding(char* buf, const GCNInstruction& gcnInsn,
         bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
     else
     {
-        const size_t branchPos = (pos + int16_t(imm16) + 1)<<2;
+        const size_t branchPos = pos + int16_t(imm16) + 1;
         buf[bufPos++] = 'L';
         bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
     }
@@ -1493,7 +1493,7 @@ void GCNDisassembler::disassemble()
     const size_t codeWordsNum = (inputSize>>2);
     for (size_t pos = 0; pos < codeWordsNum;)
     {   // check label
-        if (curLabel != labels.end() && (pos<<2) == *curLabel)
+        if (curLabel != labels.end() && pos == *curLabel)
         {   // put label
             buf[bufPos++] = 'L';
             bufPos += u64tocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
@@ -1738,14 +1738,14 @@ void GCNDisassembler::disassemble()
     /* rest of the labels */
     for (; curLabel != labels.end(); ++curLabel)
     {   // put .org directory
-        if (inputSize != *curLabel)
+        if (codeWordsNum != *curLabel)
         {
             buf[bufPos++] = '.';
             buf[bufPos++] = 'o';
             buf[bufPos++] = 'r';
             buf[bufPos++] = 'g';
             buf[bufPos++] = ' ';
-            bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 20, 16);
+            bufPos += u64tocstrCStyle((*curLabel)<<2, buf+bufPos, 20, 16);
             buf[bufPos++] = '\n';
         }
         // put label
