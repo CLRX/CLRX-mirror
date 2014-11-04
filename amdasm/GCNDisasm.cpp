@@ -1480,12 +1480,14 @@ static size_t decodeFLATEncoding(char* buf, const GCNInstruction& gcnInsn,
 
 void GCNDisassembler::disassemble()
 {
-    auto curLabel = labels.begin();
     if ((inputSize&3) != 0)
         throw Exception("Input code size must be aligned to 4 bytes!");
+    
+    auto curLabel = labels.begin();
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
     const bool isGCN11 = disassembler.getInput()->isGCN11();
+    const uint16_t curArchMask = isGCN11?ARCH_RX2X0:ARCH_HD7X00;
     std::ostream& output = disassembler.getOutput();
     
     char buf[384];
@@ -1499,6 +1501,11 @@ void GCNDisassembler::disassemble()
             bufPos += u64tocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
+            if (bufPos+128 >= 384)
+            {
+                output.write(buf, bufPos);
+                bufPos = 0;
+            }
             curLabel++;
         }
         
@@ -1640,9 +1647,7 @@ void GCNDisassembler::disassemble()
             const GCNInstruction& gcnInsn = gcnInstrTableByCode[encSpace.offset + opcode];
             
             if (gcnInsn.mnemonic != nullptr &&
-                /* check compatibility with arch */
-                (((gcnInsn.archMask & ARCH_HD7X00) && !isGCN11) ||
-                ((gcnInsn.archMask & ARCH_RX2X0) && isGCN11)))
+                (curArchMask & gcnInsn.archMask) != 0)
             {
                 for (size_t k = 0; gcnInsn.mnemonic[k]!=0; k++)
                     buf[bufPos++] = gcnInsn.mnemonic[k];

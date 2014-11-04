@@ -56,7 +56,7 @@ enum : uint16_t
     ARCH_SEA_ISLANDS = 2,
     ARCH_HD7X00 = 1,
     ARCH_RX2X0 = 2,
-    ARCH_GCN_ALL = 0xff,
+    ARCH_GCN_ALL = 0xffff,
 };
 
 enum : uint16_t
