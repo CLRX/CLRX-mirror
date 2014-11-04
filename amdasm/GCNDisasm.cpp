@@ -470,7 +470,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
             buf[pos++] = 'l';
             buf[pos++] = 'l';
             buf[pos++] = '!';
-            return 2;
+            return pos;
         }
         return 2;
     }
