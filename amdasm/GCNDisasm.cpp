@@ -595,7 +595,7 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         case GCN_IMM_REL:
         {
-            const size_t branchPos = pos + int16_t(imm16) + 1;
+            const size_t branchPos = pos + int16_t(imm16);
             bufPos = addSpaces(buf, spacesToAdd);
             buf[bufPos++] = 'L';
             bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
@@ -776,7 +776,7 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
     else
     {
-        const size_t branchPos = pos + int16_t(imm16) + 1;
+        const size_t branchPos = pos + int16_t(imm16);
         buf[bufPos++] = 'L';
         bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
     }
