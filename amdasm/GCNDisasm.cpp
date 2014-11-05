@@ -39,6 +39,12 @@ struct GCNEncodingSpace
     cxuint instrsNum;
 };
 
+static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
+{
+    "NONE", "SOPC", "SOPP", "SOP1", "SOP2", "SOPK", "SMRD", "VOPC", "VOP1", "VOP2",
+    "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
+};
+
 static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1] =
 {
     { 0, 0 },
@@ -1772,12 +1778,16 @@ void GCNDisassembler::disassemble()
             else
             {
                 const size_t oldBufPos = bufPos;
+                for (cxuint k = 0; gcnEncodingNames[gcnEncoding][k] != 0; k++)
+                    buf[bufPos++] = gcnEncodingNames[gcnEncoding][k];
+                buf[bufPos++] = '_';
                 buf[bufPos++] = 'i';
                 buf[bufPos++] = 'l';
                 buf[bufPos++] = 'l';
                 buf[bufPos++] = '_';
                 bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
-                spacesToAdd = spacesToAdd - (bufPos-oldBufPos);
+                spacesToAdd = spacesToAdd >= (bufPos-oldBufPos+1)?
+                    spacesToAdd - (bufPos-oldBufPos) : 1;
             }
             
             const bool displayFloatLits = 
