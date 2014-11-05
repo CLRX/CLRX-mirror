@@ -135,8 +135,11 @@ void GCNDisassembler::beforeDisassemble()
                     }
                     else
                     {   // SOPK
-                        if (((insnCode>>23)&0x1f) == 17) // if branch fork
+                        const cxuint opcode = (insnCode>>23)&0x1f;
+                        if (opcode == 17) // if branch fork
                             labels.push_back(pos+int16_t(insnCode&0xffff)+1);
+                        else if (opcode == 21)
+                            pos++; // additional literal
                     }
                 }
                 else
@@ -763,22 +766,101 @@ static size_t decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     return bufPos;
 }
 
+static const char* hwregNames[13] =
+{
+    "0", "MODE", "STATUS", "TRAPSTS",
+    "HW_ID", "GPR_ALLOC", "LDS_ALLOC", "IB_STS",
+    "PC_LO", "PC_HI", "INST_DW0", "INST_DW1",
+    "IB_DBG0"
+};
+
 static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal, size_t pos)
 {
     size_t bufPos = addSpaces(buf, spacesToAdd);
-    bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
-           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    cxuint imm16 = insnCode&0xffff;
-    if ((gcnInsn.mode&0xf0) != GCN_IMM_REL)
-        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
-    else
+    if ((gcnInsn.mode & GCN_IMM_DST) == 0)
+    {
+        bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
+               (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+    }
+    const cxuint imm16 = insnCode&0xffff;
+    if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
         const size_t branchPos = pos + int16_t(imm16);
         buf[bufPos++] = 'L';
         bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
+    }
+    else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
+    {
+        buf[bufPos++] = 'h';
+        buf[bufPos++] = 'w';
+        buf[bufPos++] = 'r';
+        buf[bufPos++] = 'e';
+        buf[bufPos++] = 'g';
+        buf[bufPos++] = '(';
+        const cxuint hwregId = imm16&0x3f;
+        if (hwregId < 13)
+        {
+            const char* hwregName = hwregNames[hwregId];
+            for (cxuint k = 0; hwregName[k] != 0; k++)
+                buf[bufPos++] = hwregName[k];
+        }
+        else
+        {
+            const cxuint digit2 = hwregId/10U;
+            buf[bufPos++] = '0' + digit2;
+            buf[bufPos++] = '0' + hwregId - digit2*10U;
+        }
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        const cxuint hwoffset = (imm16>>6)&31;
+        if (hwoffset >= 10)
+        {
+            const cxuint digit2 = hwoffset/10U;
+            buf[bufPos++] = '0' + digit2;
+            buf[bufPos++] = '0' + hwoffset - 10U*digit2;
+        }
+        else
+            buf[bufPos++] = '0' + hwoffset;
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        const cxuint hwsize = ((imm16>>11)&31)+1;
+        if (hwsize >= 10)
+        {
+            const cxuint digit2 = hwsize/10U;
+            buf[bufPos++] = '0' + digit2;
+            buf[bufPos++] = '0' + hwsize - 10U*digit2;
+        }
+        else
+            buf[bufPos++] = '0' + hwsize;
+        buf[bufPos++] = ')';
+    }
+    else
+        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+    
+    if (gcnInsn.mode & GCN_IMM_DST)
+    {
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        if (gcnInsn.mode & GCN_SOPK_CONST)
+        {
+            bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
+            if (((insnCode>>16)&0x7f) != 0)
+            {
+                buf[bufPos++] = ' ';
+                buf[bufPos++] = 's';
+                buf[bufPos++] = 'd';
+                buf[bufPos++] = 's';
+                buf[bufPos++] = 't';
+                buf[bufPos++] = '=';
+                bufPos += u32tocstrCStyle((insnCode>>16)&0x7f, buf+bufPos, 6, 16);
+            }
+        }
+        else
+            bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
     }
     return bufPos;
 }
@@ -1671,7 +1753,15 @@ void GCNDisassembler::disassemble()
                     else if (encPart == 0x0f800000U) // SOPP
                         gcnEncoding = GCNENC_SOPP;
                     else // SOPK
+                    {
                         gcnEncoding = GCNENC_SOPK;
+                        if (((insnCode>>23)&0x1f) == 21)
+                        {
+                            if (pos >= codeWordsNum)
+                                throw Exception("Instruction outside code space!");
+                            literal = ULEV(codeWords[pos++]);
+                        }
+                    }
                 }
                 else
                 {   // SOP2

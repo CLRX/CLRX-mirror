@@ -76,6 +76,10 @@ enum : uint16_t
     GCN_IMM_LOCKS = 0x40,
     GCN_IMM_MSGS = 0x50,
     GCN_IMM_SREG = 0x60,
+    GCN_IMM_DST = 0x100,
+    GCN_SOPK_CONST = 0x200,
+    GCN_SOPK_SRIMM32 = 0x300,
+    
     GCN_SRC2_NONE = 0x70,
     GCN_DS2_VCC = 0x80,
     GCN_SRC12_NONE = 0x90,
