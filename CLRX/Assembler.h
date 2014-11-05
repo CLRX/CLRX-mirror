@@ -160,7 +160,6 @@ public:
     GCNDisassembler(Disassembler& disassembler);
     ~GCNDisassembler();
     
-    void setInput(size_t inputSize, const cxbyte* input);
     void beforeDisassemble();
     void disassemble();
 };
