@@ -716,12 +716,8 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
-        buf[bufPos++] = 'h';
-        buf[bufPos++] = 'w';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 'e';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = '(';
+        ::memcpy(buf+bufPos, "hwreg(", 6);
+        bufPos += 6;
         const cxuint hwregId = imm16&0x3f;
         if (hwregId < 13)
         {
@@ -771,12 +767,8 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
             if (((insnCode>>16)&0x7f) != 0)
             {
-                buf[bufPos++] = ' ';
-                buf[bufPos++] = 's';
-                buf[bufPos++] = 'd';
-                buf[bufPos++] = 's';
-                buf[bufPos++] = 't';
-                buf[bufPos++] = '=';
+                ::memcpy(buf+bufPos, " sdst=", 6);
+                bufPos += 6;
                 bufPos += u32tocstrCStyle((insnCode>>16)&0x7f, buf+bufPos, 6, 16);
             }
         }
@@ -1013,24 +1005,16 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((gcnInsn.mode & GCN_MASK1) == GCN_SRC12_NONE &&
         ((insn2Code>>9)&0x1ff) != 0)
     {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 'c';
-        buf[bufPos++] = '1';
-        buf[bufPos++] = '=';
+        ::memcpy(buf+bufPos, " src1=", 6);
+        bufPos += 6;
         bufPos += u32tocstrCStyle((insn2Code>>9)&0x1ff, buf+bufPos, 6, 16);
     }
     if (((gcnInsn.mode & GCN_MASK1) == GCN_SRC12_NONE ||
         (gcnInsn.mode & GCN_MASK1) == GCN_SRC2_NONE) &&
         ((insn2Code>>9)&0x1ff) != 0)
     {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 'c';
-        buf[bufPos++] = '2';
-        buf[bufPos++] = '=';
+        ::memcpy(buf+bufPos, " src2=", 6);
+        bufPos += 6;
         bufPos += u32tocstrCStyle((insn2Code>>18)&0x1ff, buf+bufPos, 6, 16);
     }
             
@@ -1045,12 +1029,8 @@ static size_t decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     bufPos += decodeGCNVRegOperand(insnCode&0xff, 1, buf+bufPos);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    buf[bufPos++] = 'a';
-    buf[bufPos++] = 't';
-    buf[bufPos++] = 't';
-    buf[bufPos++] = 'r';
+    ::memcpy(buf+bufPos, ", attr", 6);
+    bufPos += 6;
     const cxuint attr = (insnCode>>10)&63;
     if (attr >= 10)
     {
@@ -1300,12 +1280,8 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     
     if (insnCode & 0x1000)
     {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'u';
-        buf[bufPos++] = 'n';
-        buf[bufPos++] = 'o';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 'm';
+        ::memcpy(buf+bufPos, " unorm", 6);
+        bufPos += 6;
     }
     if (insnCode & 0x2000)
     {
@@ -1439,12 +1415,8 @@ static size_t decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     if (insnCode&0x400)
     {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'c';
-        buf[bufPos++] = 'o';
-        buf[bufPos++] = 'm';
-        buf[bufPos++] = 'p';
-        buf[bufPos++] = 'r';
+        ::memcpy(buf+bufPos, " compr", 6);
+        bufPos += 6;
     }
     if (insnCode&0x100)
     {
