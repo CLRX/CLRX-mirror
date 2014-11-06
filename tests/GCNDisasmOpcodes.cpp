@@ -292,6 +292,10 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xbf951234U, 0, false, "        s_decperflevel  0x1234\n" },
     { 0xbf960000U, 0, false, "        s_ttracedata\n" },
     { 0xbf960dcaU, 0, false, "        s_ttracedata    0xdca\n" },
+    { 0xbf970020U, 0, false, "        SOPP_ill_23     0x20\n" },
+    { 0xbf980020U, 0, false, "        SOPP_ill_24     0x20\n" },
+    { 0xbf990020U, 0, false, "        SOPP_ill_25     0x20\n" },
+    { 0xbf9a0020U, 0, false, "        SOPP_ill_26     0x20\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

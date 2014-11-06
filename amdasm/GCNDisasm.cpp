@@ -1697,15 +1697,18 @@ void GCNDisassembler::disassemble()
             
             /* decode instruction and put to output */
             const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
-            const GCNInstruction& gcnInsn = gcnInstrTableByCode[encSpace.offset + opcode];
+            const GCNInstruction* gcnInsn = gcnInstrTableByCode + encSpace.offset + opcode;
             
+            GCNInstruction defaultInsn = { nullptr, gcnInsn->encoding, GCN_STDMODE,
+                        0, 0 };
             cxuint spacesToAdd = 16;
-            if (gcnInsn.mnemonic != nullptr &&
-                (curArchMask & gcnInsn.archMask) != 0)
+            if (gcnInsn->mnemonic != nullptr &&
+                (curArchMask & gcnInsn->archMask) != 0)
             {
                 size_t k;
-                for (k = 0; gcnInsn.mnemonic[k]!=0; k++)
-                    buf[bufPos++] = gcnInsn.mnemonic[k];
+                const char* mnem = gcnInsn->mnemonic;
+                for (k = 0; mnem[k]!=0; k++)
+                    buf[bufPos++] = mnem[k];
                 spacesToAdd = spacesToAdd>=k+1?spacesToAdd-k:1;
             }
             else
@@ -1721,81 +1724,82 @@ void GCNDisassembler::disassemble()
                 bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
                 spacesToAdd = spacesToAdd >= (bufPos-oldBufPos+1)?
                     spacesToAdd - (bufPos-oldBufPos) : 1;
+                gcnInsn = &defaultInsn;
             }
             
             const bool displayFloatLits = 
                     ((disassembler.getFlags()&DISASM_FLOATLITS) != 0 &&
-                    (gcnInsn.mode & GCN_MASK2) == GCN_FLOATLIT);
+                    (gcnInsn->mode & GCN_MASK2) == GCN_FLOATLIT);
             
             switch(gcnEncoding)
             {
                 case GCNENC_SOPC:
                     bufPos += decodeSOPCEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal);
+                                 buf+bufPos, *gcnInsn, insnCode, literal);
                     break;
                 case GCNENC_SOPP:
                     bufPos += decodeSOPPEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal, pos);
+                                 buf+bufPos, *gcnInsn, insnCode, literal, pos);
                     break;
                 case GCNENC_SOP1:
                     bufPos += decodeSOP1Encoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal);
+                                 buf+bufPos, *gcnInsn, insnCode, literal);
                     break;
                 case GCNENC_SOP2:
                     bufPos += decodeSOP2Encoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal);
+                                 buf+bufPos, *gcnInsn, insnCode, literal);
                     break;
                 case GCNENC_SOPK:
                     bufPos += decodeSOPKEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal, pos);
+                                 buf+bufPos, *gcnInsn, insnCode, literal, pos);
                     break;
                 case GCNENC_SMRD:
                     bufPos += decodeSMRDEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal);
+                                 buf+bufPos, *gcnInsn, insnCode, literal);
                     break;
                 case GCNENC_VOPC:
                     bufPos += decodeVOPCEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, literal, displayFloatLits);
+                                 buf+bufPos, *gcnInsn, insnCode, literal, displayFloatLits);
                     break;
                 case GCNENC_VOP1:
                     bufPos += decodeVOP1Encoding(spacesToAdd, curArchMask,
-                             buf+bufPos, gcnInsn, insnCode, literal, displayFloatLits);
+                             buf+bufPos, *gcnInsn, insnCode, literal, displayFloatLits);
                     break;
                 case GCNENC_VOP2:
                     bufPos += decodeVOP2Encoding(spacesToAdd, curArchMask,
-                             buf+bufPos, gcnInsn, insnCode, literal, displayFloatLits);
+                             buf+bufPos, *gcnInsn, insnCode, literal, displayFloatLits);
                     break;
                 case GCNENC_VOP3A:
                     bufPos += decodeVOP3Encoding(spacesToAdd, curArchMask, buf+bufPos,
-                             gcnInsn, insnCode, insn2Code, literal, displayFloatLits);
+                             *gcnInsn, insnCode, insn2Code, literal, displayFloatLits);
                     break;
                 case GCNENC_VINTRP:
                     bufPos += decodeVINTRPEncoding(spacesToAdd, curArchMask,
-                                   buf+bufPos, gcnInsn, insnCode);
+                                   buf+bufPos, *gcnInsn, insnCode);
                     break;
                 case GCNENC_DS:
                     bufPos += decodeDSEncoding(spacesToAdd, curArchMask,
-                                   buf+bufPos, gcnInsn, insnCode, insn2Code);
+                                   buf+bufPos, *gcnInsn, insnCode, insn2Code);
                     break;
                 case GCNENC_MUBUF:
                     bufPos += decodeMUBUFEncoding(spacesToAdd, curArchMask,
-                                    buf+bufPos, gcnInsn, insnCode, insn2Code, false);
+                                    buf+bufPos, *gcnInsn, insnCode, insn2Code, false);
                     break;
                 case GCNENC_MTBUF:
                     bufPos += decodeMUBUFEncoding(spacesToAdd, curArchMask,
-                                  buf+bufPos, gcnInsn, insnCode, insn2Code, true);
+                                  buf+bufPos, *gcnInsn, insnCode, insn2Code, true);
                     break;
                 case GCNENC_MIMG:
                     bufPos += decodeMIMGEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, insn2Code);
+                                 buf+bufPos, *gcnInsn, insnCode, insn2Code);
                     break;
                 case GCNENC_EXP:
                     bufPos += decodeEXPEncoding(spacesToAdd, curArchMask,
-                                buf+bufPos, gcnInsn, insnCode, insn2Code);
+                                buf+bufPos, *gcnInsn, insnCode, insn2Code);
                     break;
                 case GCNENC_FLAT:
                     bufPos += decodeFLATEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, gcnInsn, insnCode, insn2Code);
+                                 buf+bufPos, *gcnInsn, insnCode, insn2Code);
                     break;
                 default:
                     break;
