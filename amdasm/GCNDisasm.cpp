@@ -599,28 +599,24 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         {
             cxuint illMask = 0xfff0;
             bufPos = addSpaces(buf, spacesToAdd);
-            buf[bufPos++] = 'm';
-            buf[bufPos++] = 's';
-            buf[bufPos++] = 'g';
-            buf[bufPos++] = '(';
-            const char* msgName = sendMsgCodeMessageTable[imm16&15];
+            ::memcpy(buf+bufPos, "sendmsg(", 8);
+            bufPos += 8;
+            const cxuint msgType = imm16&15;
+            const char* msgName = sendMsgCodeMessageTable[msgType];
             while (*msgName != 0)
                 buf[bufPos++] = *msgName++;
-            buf[bufPos++] = ',';
-            buf[bufPos++] = ' ';
-            if ((imm16&14) == 2) // gs ops
+            if ((msgType&14) == 2 || (msgType >= 4 && msgType <= 14) ||
+                (imm16&0x3f0) != 0) // gs ops
             {
-                illMask = 0xffc0;
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                illMask = 0xfcc0;
                 const char* gsopName = sendGsOpMessageTable[(imm16>>4)&3];
                 while (*gsopName != 0)
                     buf[bufPos++] = *gsopName++;
-                if ((imm16&0x30) != 0)
-                {
-                    illMask = 0xfcc0;
-                    buf[bufPos++] = ',';
-                    buf[bufPos++] = ' ';
-                    buf[bufPos++] = '0' + ((imm16>>8)&3);
-                }
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                buf[bufPos++] = '0' + ((imm16>>8)&3);
             }
             buf[bufPos++] = ')';
             if ((imm16&illMask) != 0)

@@ -176,7 +176,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_icache_inv",        GCNENC_SOPP,   GCN_IMM_NONE,             19,   ARCH_GCN_ALL  },
     { "s_incperflevel",      GCNENC_SOPP,   GCN_STDMODE,              20,   ARCH_GCN_ALL  },
     { "s_decperflevel",      GCNENC_SOPP,   GCN_STDMODE,              21,   ARCH_GCN_ALL  },
-    { "s_tracedata",         GCNENC_SOPP,   GCN_IMM_NONE,             22,   ARCH_GCN_ALL  },
+    { "s_ttracedata",        GCNENC_SOPP,   GCN_IMM_NONE,             22,   ARCH_GCN_ALL  },
     { "s_cbranch_cdbgsys",   GCNENC_SOPP,   GCN_IMM_REL,              23,   ARCH_RX2X0    },
     { "s_cbranch_cdbguser",  GCNENC_SOPP,   GCN_IMM_REL,              24,   ARCH_RX2X0    },
     { "s_cbranch_cdbgsys_or_user",GCNENC_SOPP,   GCN_IMM_REL,              25,   ARCH_RX2X0    },
