@@ -89,6 +89,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x97953d04U, 0, false, "        SOP2_ill_47     s21, s4, s61\n" },
     { 0x98153d04U, 0, false, "        SOP2_ill_48     s21, s4, s61\n" },
     /* SOPK encoding */
+    { 0xb02b0000U, 0, false, "        s_movk_i32      s43, 0x0\n" },
     { 0xb02bd3b9U, 0, false, "        s_movk_i32      s43, 0xd3b9\n" },
     { 0xb0abd3b9U, 0, false, "        SOPK_ill_1      s43, 0xd3b9\n" },
     { 0xb12bd3b9U, 0, false, "        s_cmovk_i32     s43, 0xd3b9\n" },
@@ -237,6 +238,41 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xbf13451dU, 0, false, "        SOPC_ill_19     s29, s69\n" },
     { 0xbf14451dU, 0, false, "        SOPC_ill_20     s29, s69\n" },
     /* SOPP encoding */
+    { 0xbf800000U, 0, false, "        s_nop           0x0\n" },
+    { 0xbf800006U, 0, false, "        s_nop           0x6\n" },
+    { 0xbf80cd26U, 0, false, "        s_nop           0xcd26\n" },
+    { 0xbf810000U, 0, false, "        s_endpgm\n" },
+    { 0xbf818d33U, 0, false, "        s_endpgm        0x8d33\n" },
+    { 0xbf820029U, 0, false, "        s_branch        L42\n" },
+    { 0xbf82ffffU, 0, false, "        s_branch        L0\n" },
+    { 0xbf830020U, 0, false, "        SOPP_ill_3      0x20\n" },
+    { 0xbf840029U, 0, false, "        s_cbranch_scc0  L42\n" },
+    { 0xbf850029U, 0, false, "        s_cbranch_scc1  L42\n" },
+    { 0xbf860029U, 0, false, "        s_cbranch_vccz  L42\n" },
+    { 0xbf870029U, 0, false, "        s_cbranch_vccnz L42\n" },
+    { 0xbf880029U, 0, false, "        s_cbranch_execz L42\n" },
+    { 0xbf890029U, 0, false, "        s_cbranch_execnz L42\n" },
+    { 0xbf8a0000U, 0, false, "        s_barrier\n" },
+    { 0xbf8b0020U, 0, false, "        SOPP_ill_11     0x20\n" },
+    { 0xbf8c0d36U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c0d3fU, 0, false, "        s_waitcnt       expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c0d3eU, 0, false, "        s_waitcnt       "
+        "vmcnt(14) & expcnt(3) & lgkmcnt(13)\n" },
+    { 0xbf8c0d7eU, 0, false, "        s_waitcnt       vmcnt(14) & lgkmcnt(13)\n" },
+    { 0xbf8c0f7eU, 0, false, "        s_waitcnt       vmcnt(14)\n" },
+    { 0xbf8c0f7fU, 0, false, "        s_waitcnt       0xf7f\n" },
+    { 0xbf8cad36U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(13) :0xad36\n" },
+    { 0xbf8c0536U, 0, false, "        s_waitcnt       "
+        "vmcnt(6) & expcnt(3) & lgkmcnt(5)\n" },
+    { 0xbf8c0000U, 0, false, "        s_waitcnt       "
+        "vmcnt(0) & expcnt(0) & lgkmcnt(0)\n" },
+    { 0xbf8c0080U, 0, false, "        s_waitcnt       "
+        "vmcnt(0) & expcnt(0) & lgkmcnt(0) :0x80\n" },
+    { 0xbf8d032bU, 0, false, "        s_sethalt       0x32b\n" },
+    { 0xbf8e032bU, 0, false, "        s_sleep         0x32b\n" },
+    { 0xbf8f032bU, 0, false, "        s_setprio       0x32b\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

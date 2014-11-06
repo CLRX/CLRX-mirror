@@ -165,7 +165,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_cbranch_execz",     GCNENC_SOPP,   GCN_IMM_REL,              8,    ARCH_GCN_ALL  },
     { "s_cbranch_execnz",    GCNENC_SOPP,   GCN_IMM_REL,              9,    ARCH_GCN_ALL  },
     { "s_barrier",           GCNENC_SOPP,   GCN_IMM_NONE,             10,   ARCH_GCN_ALL  },
-    { "s_setkill",           GCNENC_SOPP,   GCN_STDMODE,              11,   ARCH_GCN_ALL  },
+    { "s_setkill",           GCNENC_SOPP,   GCN_STDMODE,              11,   ARCH_RX2X0    },
     { "s_waitcnt",           GCNENC_SOPP,   GCN_IMM_LOCKS,            12,   ARCH_GCN_ALL  },
     { "s_sethalt",           GCNENC_SOPP,   GCN_STDMODE,              13,   ARCH_GCN_ALL  },
     { "s_sleep",             GCNENC_SOPP,   GCN_STDMODE,              14,   ARCH_GCN_ALL  },

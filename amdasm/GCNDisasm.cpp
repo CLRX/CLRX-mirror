@@ -545,11 +545,12 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             if ((imm16&15) != 15)
             {
                 const cxuint lockCnt = imm16&15;
-                ::memcpy(buf+bufPos, "vmcnt", 5);
-                bufPos += 5;
+                ::memcpy(buf+bufPos, "vmcnt(", 6);
+                bufPos += 6;
                 if (lockCnt >= 10)
                     buf[bufPos++] = '1';
-                buf[bufPos++] = '0' + (lockCnt>=10)?lockCnt-10:lockCnt;
+                buf[bufPos++] = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
+                buf[bufPos++] = ')';
                 prevLock = true;
             }
             if (((imm16>>4)&7) != 7)
@@ -560,9 +561,10 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
                     buf[bufPos++] = '&';
                     buf[bufPos++] = ' ';
                 }
-                ::memcpy(buf+bufPos, "expcnt", 6);
-                bufPos += 6;
+                ::memcpy(buf+bufPos, "expcnt(", 7);
+                bufPos += 7;
                 buf[bufPos++] = '0' + ((imm16>>4)&7);
+                buf[bufPos++] = ')';
                 prevLock = true;
             }
             if (((imm16>>8)&15) != 15)
@@ -574,14 +576,15 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
                     buf[bufPos++] = '&';
                     buf[bufPos++] = ' ';
                 }
-                ::memcpy(buf+bufPos, "lgkmcnt", 7);
-                bufPos += 7;
+                ::memcpy(buf+bufPos, "lgkmcnt(", 8);
+                bufPos += 8;
                 if (lockCnt >= 10)
                     buf[bufPos++] = '1';
-                buf[bufPos++] = '0' + (lockCnt>=10)?lockCnt-10:lockCnt;
+                buf[bufPos++] = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
+                buf[bufPos++] = ')';
                 prevLock = true;
             }
-            if ((imm16&0xf080) != 0)
+            if ((imm16&0xf080) != 0 || (imm16==0xf7f))
             {   /* additional info about imm16 */
                 if (prevLock)
                 {
