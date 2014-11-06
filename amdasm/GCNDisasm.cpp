@@ -858,34 +858,15 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          bool displayFloatLits)
 {
     size_t bufPos = addSpaces(buf, spacesToAdd);
-    bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
-           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(insnCode&0x1ff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                       buf + bufPos, arch, literal, displayFloatLits);
-    if ((gcnInsn.mode & GCN_MASK1) == GCN_ARG1_IMM)
-    {
-        buf[bufPos++] = ',';
-        buf[bufPos++] = ' ';
-        bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
-        if (displayFloatLits)
-        {
-            FloatUnion fu;
-            fu.u = literal;
-            buf[bufPos++] = ' ';
-            buf[bufPos++] = '/';
-            buf[bufPos++] = '*';
-            buf[bufPos++] = ' ';
-            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 27);
-            buf[bufPos++] = 'f';
-            buf[bufPos++] = ' ';
-            buf[bufPos++] = '*';
-            buf[bufPos++] = '/';
-        }
-    }
-    else if ((gcnInsn.mode & GCN_MASK1) == GCN_DS2_VCC ||
-        (gcnInsn.mode & GCN_MASK1) == GCN_DST_VCC)
+    const cxuint mode1 = (gcnInsn.mode & GCN_MASK1);
+    
+    if (mode1 == GCN_DS1_SGPR)
+        bufPos += decodeGCNOperand(((insnCode>>17)&0xff),
+               (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
+    else
+        bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
+               (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
+    if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
@@ -895,9 +876,9 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNVRegOperand(((insnCode>>9)&0xff),
-           (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos);
-    if ((gcnInsn.mode & GCN_MASK1) == GCN_ARG2_IMM)
+    bufPos += decodeGCNOperand(insnCode&0x1ff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
+                       buf + bufPos, arch, literal, displayFloatLits);
+    if (mode1 == GCN_ARG1_IMM)
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
@@ -917,8 +898,35 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             buf[bufPos++] = '/';
         }
     }
-    else if ((gcnInsn.mode & GCN_MASK1) == GCN_DS2_VCC ||
-        (gcnInsn.mode & GCN_MASK1) == GCN_SRC2_VCC)
+    buf[bufPos++] = ',';
+    buf[bufPos++] = ' ';
+    if (mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR)
+        bufPos += decodeGCNOperand(((insnCode>>9)&0xff),
+               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch);
+    else
+        bufPos += decodeGCNVRegOperand(((insnCode>>9)&0xff),
+               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos);
+    if (mode1 == GCN_ARG2_IMM)
+    {
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
+        if (displayFloatLits)
+        {
+            FloatUnion fu;
+            fu.u = literal;
+            buf[bufPos++] = ' ';
+            buf[bufPos++] = '/';
+            buf[bufPos++] = '*';
+            buf[bufPos++] = ' ';
+            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 27);
+            buf[bufPos++] = 'f';
+            buf[bufPos++] = ' ';
+            buf[bufPos++] = '*';
+            buf[bufPos++] = '/';
+        }
+    }
+    else if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';

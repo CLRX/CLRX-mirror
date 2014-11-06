@@ -69,7 +69,7 @@ enum : uint16_t
     GCN_REG_SRC2_64 = 8,
     GCN_REG_DS0_64 = 3,
     GCN_REG_DS2_64 = 9,
-    GCN_IMM_NONE = 0x10,
+    GCN_IMM_NONE = 0x10, // used in Scall insns
     GCN_ARG_NONE = 0x20,
     GCN_REG_S1_JMP = 0x20,
     GCN_IMM_REL = 0x30,
@@ -90,6 +90,8 @@ enum : uint16_t
     GCN_S0EQS12 = 0xc0,
     GCN_DST_VCC = 0xd0,
     GCN_SRC2_VCC = 0xe0,
+    GCN_DS1_SGPR = 0xf0,
+    GCN_SRC1_SGPR = 0x10,
     // DS encoding modes
     GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,
