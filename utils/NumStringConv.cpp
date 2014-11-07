@@ -142,7 +142,8 @@ static uint64_t cstrtoiXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits)
 {
     const bool negative = (str != inend) && str[0] == '-';
-    const uint64_t out = cstrtouXCStyle(str + ((negative)?1:0), inend, outend, bits);
+    const bool sign = (str != inend) && (str[0] == '-' || str[0] == '+');
+    const uint64_t out = cstrtouXCStyle(str + ((sign)?1:0), inend, outend, bits);
     if (!negative)
     {
         if (out >= (1ULL<<(bits-1)))
