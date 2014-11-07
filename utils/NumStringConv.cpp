@@ -138,7 +138,7 @@ static uint64_t cstrtouXCStyle(const char* str, const char* inend,
     return out;
 }
 
-static uint64_t cstrtoiXCStyle(const char* str, const char* inend,
+static int64_t cstrtoiXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits)
 {
     const bool negative = (str != inend) && str[0] == '-';
