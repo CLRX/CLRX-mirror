@@ -244,6 +244,15 @@ extern size_t escapeStringCStyle(size_t strSize, const char* str,
  */
 extern cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
 
+extern int64_t cstrtoiXCStyle(const char* str, const char* inend,
+             const char*& outend, cxuint bits);
+
+extern uint64_t cstrtouXCStyle(const char* str, const char* inend,
+             const char*& outend, cxuint bits);
+
+extern uint64_t cstrtofXCStyle(const char* str, const char* inend,
+             const char*& outend, cxuint expBits, cxuint mantisaBits);
+
 /// parse integer or float point formatted looks like C-style
 /** parses integer or float point from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
@@ -262,43 +271,67 @@ extern cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
 template<typename T>
 extern T cstrtovCStyle(const char* str, const char* inend, const char*& outend);
 
-#ifndef __UTILITIES_MODULE__
-extern template
-cxuchar cstrtovCStyle<cxuchar>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxuchar cstrtovCStyle<cxuchar>(const char* str, const char* inend, const char*& outend)
+{ return cstrtouXCStyle(str, inend, outend, sizeof(cxuchar)<<3); }
 
-extern template
-cxchar cstrtovCStyle<cxchar>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxchar cstrtovCStyle<cxchar>(const char* str, const char* inend, const char*& outend)
+{ return cstrtoiXCStyle(str, inend, outend, sizeof(cxchar)<<3); }
 
-extern template
-cxuint cstrtovCStyle<cxuint>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxuint cstrtovCStyle<cxuint>(const char* str, const char* inend, const char*& outend)
+{ return cstrtouXCStyle(str, inend, outend, sizeof(cxuint)<<3); }
 
-extern template
-cxint cstrtovCStyle<cxint>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxint cstrtovCStyle<cxint>(const char* str, const char* inend, const char*& outend)
+{ return cstrtoiXCStyle(str, inend, outend, sizeof(cxint)<<3); }
 
-extern template
-cxushort cstrtovCStyle<cxushort>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxushort cstrtovCStyle<cxushort>(const char* str, const char* inend, const char*& outend)
+{ return cstrtouXCStyle(str, inend, outend, sizeof(cxushort)<<3); }
 
-extern template
-cxshort cstrtovCStyle<cxshort>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxshort cstrtovCStyle<cxshort>(const char* str, const char* inend, const char*& outend)
+{ return cstrtoiXCStyle(str, inend, outend, sizeof(cxshort)<<3); }
 
-extern template
-cxulong cstrtovCStyle<cxulong>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxulong cstrtovCStyle<cxulong>(const char* str, const char* inend, const char*& outend)
+{ return cstrtouXCStyle(str, inend, outend, sizeof(cxulong)<<3); }
 
-extern template
-cxlong cstrtovCStyle<cxlong>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxlong cstrtovCStyle<cxlong>(const char* str, const char* inend, const char*& outend)
+{ return cstrtoiXCStyle(str, inend, outend, sizeof(cxlong)<<3); }
 
-extern template
-cxullong cstrtovCStyle<cxullong>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxullong cstrtovCStyle<cxullong>(const char* str, const char* inend, const char*& outend)
+{ return cstrtouXCStyle(str, inend, outend, sizeof(cxullong)<<3); }
 
-extern template
-cxllong cstrtovCStyle<cxllong>(const char* str, const char* inend, const char*& outend);
+template<> inline
+cxllong cstrtovCStyle<cxllong>(const char* str, const char* inend, const char*& outend)
+{ return cstrtoiXCStyle(str, inend, outend, sizeof(cxllong)<<3); }
 
-extern template
-float cstrtovCStyle<float>(const char* str, const char* inend, const char*& outend);
+template<> inline
+float cstrtovCStyle<float>(const char* str, const char* inend, const char*& outend)
+{
+    union {
+        float f;
+        uint32_t u;
+    } v;
+    v.u = cstrtofXCStyle(str, inend, outend, 8, 23);
+    return v.f;
+}
 
-extern template
-double cstrtovCStyle<double>(const char* str, const char* inend, const char*& outend);
-#endif
+template<> inline
+double cstrtovCStyle<double>(const char* str, const char* inend, const char*& outend)
+{
+    union {
+        double d;
+        uint64_t u;
+    } v;
+    v.u = cstrtofXCStyle(str, inend, outend, 11, 52);
+    return v.d;
+}
 
 /// parse half float formatted looks like C-style
 /** parses half floating point from str string. inend can points
@@ -312,7 +345,17 @@ double cstrtovCStyle<double>(const char* str, const char* inend, const char*& ou
  * \param outend returns end of number in string
  * \return parsed floating point value
  */
-extern cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
+cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
+
+inline cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend)
+{ return cstrtofXCStyle(str, inend, outend, 5, 10); }
+
+
+extern size_t uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
+            cxuint width, bool prefix);
+
+extern size_t iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint radix,
+            cxuint width, bool prefix);
 
 /// format integer
 /** format integer in C-style formatting.
@@ -328,47 +371,58 @@ template<typename T>
 extern size_t itocstrCStyle(T value, char* str, size_t maxSize, cxuint radix = 10,
        cxuint width = 0, bool prefix = true);
 
-#ifndef __UTILITIES_MODULE__
-extern template
-size_t itocstrCStyle<cxuchar>(cxuchar value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxuchar>(cxuchar value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxchar>(cxchar value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxchar>(cxchar value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxushort>(cxushort value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxushort>(cxushort value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxshort>(cxshort value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxshort>(cxshort value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxuint>(cxuint value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxuint>(cxuint value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxint>(cxint value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxint>(cxint value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxulong>(cxulong value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxulong>(cxulong value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxlong>(cxlong value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxlong>(cxlong value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxullong>(cxullong value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
+template<> inline
+size_t itocstrCStyle<cxullong>(cxullong value, char* str, size_t maxSize, cxuint radix,
+       cxuint width , bool prefix)
+{ return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
-extern template
-size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint radix = 10,
-       cxuint width = 0, bool prefix = true);
-#endif
+template<> inline
+size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint radix,
+       cxuint width, bool prefix)
+{ return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
+
+extern size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
+        bool scientific, cxuint expBits, cxuint mantisaBits);
 
 /// format half float in C-style
 /** format to string the half float in C-style formatting. This function handles 2 modes
@@ -381,8 +435,11 @@ size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint r
  * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-extern size_t htocstrCStyle(cxushort value, char* str, size_t maxSize,
+size_t htocstrCStyle(cxushort value, char* str, size_t maxSize,
                             bool scientific = false);
+
+inline size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific)
+{ return fXtocstrCStyle(value, str, maxSize, scientific, 5, 10); }
 
 /// format single float in C-style
 /** format to string the single float in C-style formatting. This function handles 2 modes
@@ -395,8 +452,18 @@ extern size_t htocstrCStyle(cxushort value, char* str, size_t maxSize,
  * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-extern size_t ftocstrCStyle(float value, char* str, size_t maxSize,
+size_t ftocstrCStyle(float value, char* str, size_t maxSize,
                             bool scientific = false);
+
+inline size_t ftocstrCStyle(float value, char* str, size_t maxSize, bool scientific)
+{
+    union {
+        float f;
+        uint32_t u;
+    } v;
+    v.f = value;
+    return fXtocstrCStyle(v.u, str, maxSize, scientific, 8, 23);
+}
 
 /// format double float in C-style
 /** format to string the double float in C-style formatting. This function handles 2 modes
@@ -409,8 +476,19 @@ extern size_t ftocstrCStyle(float value, char* str, size_t maxSize,
  * \param scientific enable scientific mode
  * \return length of output string (excluding null-character)
  */
-extern size_t dtocstrCStyle(double value, char* str, size_t maxSize,
+size_t dtocstrCStyle(double value, char* str, size_t maxSize,
                             bool scientific = false);
+
+
+inline size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scientific)
+{
+    union {
+        double d;
+        uint64_t u;
+    } v;
+    v.d = value;
+    return fXtocstrCStyle(v.u, str, maxSize, scientific, 11, 52);
+}
 
 };
 

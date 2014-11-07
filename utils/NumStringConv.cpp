@@ -55,7 +55,7 @@ cxuint CLRX::cstrtoui(const char* str, const char* inend, const char*& outend)
     return out;
 }
 
-static uint64_t cstrtouXCStyle(const char* str, const char* inend,
+uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits)
 {
     uint64_t out = 0;
@@ -138,7 +138,7 @@ static uint64_t cstrtouXCStyle(const char* str, const char* inend,
     return out;
 }
 
-static int64_t cstrtoiXCStyle(const char* str, const char* inend,
+int64_t CLRX::cstrtoiXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits)
 {
     const bool negative = (str != inend) && str[0] == '-';
@@ -1022,7 +1022,7 @@ static void dumpIntermediateResults(cxuint bigSize, const uint64_t* bigValue,
 }
 #endif
 
-static uint64_t cstrtofXCStyle(const char* str, const char* inend,
+uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint expBits, cxuint mantisaBits)
 {
     uint64_t out = 0;
@@ -1694,11 +1694,6 @@ static uint64_t cstrtofXCStyle(const char* str, const char* inend,
     return out;
 }
 
-cxushort CLRX::cstrtohCStyle(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtofXCStyle(str, inend, outend, 5, 10);
-}
-
 union FloatUnion
 {
     float f;
@@ -1711,7 +1706,7 @@ union DoubleUnion
     uint64_t u;
 };
 
-static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
+size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bool scientific, cxuint expBits, cxuint mantisaBits)
 {
     char* p = str;
@@ -1990,26 +1985,7 @@ static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     return ((ptrdiff_t)p)-((ptrdiff_t)str);
 }
 
-size_t CLRX::htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific)
-{
-    return fXtocstrCStyle(value, str, maxSize, scientific, 5, 10);
-}
-
-size_t CLRX::ftocstrCStyle(float value, char* str, size_t maxSize, bool scientific)
-{
-    FloatUnion v;
-    v.f = value;
-    return fXtocstrCStyle(v.u, str, maxSize, scientific, 8, 23);
-}
-
-size_t CLRX::dtocstrCStyle(double value, char* str, size_t maxSize, bool scientific)
-{
-    DoubleUnion v;
-    v.d = value;
-    return fXtocstrCStyle(v.u, str, maxSize, scientific, 11, 52);
-}
-
-static size_t uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
+size_t CLRX::uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
             cxuint width, bool prefix)
 {
    cxuint digitsNum = 0;
@@ -2107,7 +2083,7 @@ static size_t uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
     return ((ptrdiff_t)p)-((ptrdiff_t)str);
 }
 
-static size_t iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint radix,
+size_t CLRX::iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint radix,
             cxuint width, bool prefix)
 {
     if (value >= 0)
@@ -2117,154 +2093,3 @@ static size_t iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint ra
     str[0] = '-';
     return uXtocstrCStyle(-value, str+1, maxSize-1, radix, width, prefix);
 }
-
-namespace CLRX
-{
-
-template<>
-cxuchar cstrtovCStyle<cxuchar>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, sizeof(cxuchar)<<3);
-}
-
-template<>
-cxchar cstrtovCStyle<cxchar>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtoiXCStyle(str, inend, outend, sizeof(cxchar)<<3);
-}
-
-template<>
-cxuint cstrtovCStyle<cxuint>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, sizeof(cxuint)<<3);
-}
-
-template<>
-cxint cstrtovCStyle<cxint>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtoiXCStyle(str, inend, outend, sizeof(cxint)<<3);
-}
-
-template<>
-cxushort cstrtovCStyle<cxushort>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, sizeof(cxushort)<<3);
-}
-
-template<>
-cxshort cstrtovCStyle<cxshort>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtoiXCStyle(str, inend, outend, sizeof(cxshort)<<3);
-}
-
-template<>
-cxulong cstrtovCStyle<cxulong>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, sizeof(cxulong)<<3);
-}
-
-template<>
-cxlong cstrtovCStyle<cxlong>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtoiXCStyle(str, inend, outend, sizeof(cxlong)<<3);
-}
-
-template<>
-cxullong cstrtovCStyle<cxullong>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, sizeof(cxullong)<<3);
-}
-
-template<>
-cxllong cstrtovCStyle<cxllong>(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtoiXCStyle(str, inend, outend, sizeof(cxllong)<<3);
-}
-
-template<>
-float cstrtovCStyle<float>(const char* str, const char* inend, const char*& outend)
-{
-    FloatUnion v;
-    v.u = cstrtofXCStyle(str, inend, outend, 8, 23);
-    return v.f;
-}
-
-template<>
-double cstrtovCStyle<double>(const char* str, const char* inend, const char*& outend)
-{
-    DoubleUnion v;
-    v.u = cstrtofXCStyle(str, inend, outend, 11, 52);
-    return v.d;
-}
-
-template<>
-size_t itocstrCStyle<cxuchar>(cxuchar value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return uXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxchar>(cxchar value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return iXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxushort>(cxushort value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return uXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxshort>(cxshort value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return iXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxuint>(cxuint value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return uXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxint>(cxint value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return iXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxulong>(cxulong value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return uXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxlong>(cxlong value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return iXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxullong>(cxullong value, char* str, size_t maxSize, cxuint radix,
-       cxuint width , bool prefix)
-{
-    return uXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-template<>
-size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint radix,
-       cxuint width, bool prefix)
-{
-    return iXtocstrCStyle(value, str, maxSize, radix, width, prefix);
-}
-
-};
