@@ -603,7 +603,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 if (symName[4] != 0)
                 {
                     const char* outend;
-                    index = cstrtou64CStyle(symName+4, nullptr, outend);
+                    index = cstrtovCStyle<size_t>(symName+4, nullptr, outend);
                     if (*outend != 0)
                         throw Exception("Garbages in .str symbol name!");
                 }

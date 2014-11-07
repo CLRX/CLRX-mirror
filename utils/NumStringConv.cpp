@@ -21,6 +21,7 @@
 
 #include <CLRX/Config.h>
 #include <algorithm>
+#define __UTILITIES_MODULE__ 1
 #ifdef CSTRTOFX_DUMP_IRRESULTS
 #include <iostream>
 #include <sstream>
@@ -137,24 +138,23 @@ static uint64_t cstrtouXCStyle(const char* str, const char* inend,
     return out;
 }
 
-uint8_t CLRX::cstrtou8CStyle(const char* str, const char* inend, const char*& outend)
+static uint64_t cstrtoiXCStyle(const char* str, const char* inend,
+             const char*& outend, cxuint bits)
 {
-    return cstrtouXCStyle(str, inend, outend, 8);
-}
-
-uint16_t CLRX::cstrtou16CStyle(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, 16);
-}
-
-uint32_t CLRX::cstrtou32CStyle(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, 32);
-}
-
-uint64_t CLRX::cstrtou64CStyle(const char* str, const char* inend, const char*& outend)
-{
-    return cstrtouXCStyle(str, inend, outend, 64);
+    const bool negative = (str != inend) && str[0] == '-';
+    const uint64_t out = cstrtouXCStyle(str + ((negative)?1:0), inend, outend, bits);
+    if (!negative)
+    {
+        if (out >= (1ULL<<(bits-1)))
+            throw ParseException("Number out of range");
+        return out;
+    }
+    else
+    {
+        if (out > (1ULL<<(bits-1)))
+            throw ParseException("Number out of range");
+        return -out;
+    }
 }
 
 /*
@@ -1704,25 +1704,11 @@ union FloatUnion
     uint32_t u;
 };
 
-float CLRX::cstrtofCStyle(const char* str, const char* inend, const char*& outend)
-{
-    FloatUnion v;
-    v.u = cstrtofXCStyle(str, inend, outend, 8, 23);
-    return v.f;
-}
-
 union DoubleUnion
 {
     double d;
     uint64_t u;
 };
-
-double CLRX::cstrtodCStyle(const char* str, const char* inend, const char*& outend)
-{
-    DoubleUnion v;
-    v.u = cstrtofXCStyle(str, inend, outend, 11, 52);
-    return v.d;
-}
 
 static size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bool scientific, cxuint expBits, cxuint mantisaBits)
@@ -2125,3 +2111,95 @@ size_t CLRX::u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
    *p = 0;
     return ((ptrdiff_t)p)-((ptrdiff_t)str);
 }
+
+size_t CLRX::i64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
+            cxuint width, bool prefix)
+{
+    if (value >= 0)
+        return u64tocstrCStyle(value, str, maxSize, radix, width);
+    if (maxSize < 3)
+        throw Exception("Max size is too small");
+    str[0] = '-';
+    return u64tocstrCStyle(value, str+1, maxSize-1, radix, width);
+}
+
+namespace CLRX
+{
+    
+template<>
+cxuchar cstrtovCStyle<cxuchar>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, sizeof(cxuchar)<<3);
+}
+
+template<>
+cxchar cstrtovCStyle<cxchar>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtoiXCStyle(str, inend, outend, sizeof(cxchar)<<3);
+}
+
+template<>
+cxuint cstrtovCStyle<cxuint>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, sizeof(cxuint)<<3);
+}
+
+template<>
+cxint cstrtovCStyle<cxint>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtoiXCStyle(str, inend, outend, sizeof(cxint)<<3);
+}
+
+template<>
+cxushort cstrtovCStyle<cxushort>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, sizeof(cxushort)<<3);
+}
+
+template<>
+cxshort cstrtovCStyle<cxshort>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtoiXCStyle(str, inend, outend, sizeof(cxshort)<<3);
+}
+
+template<>
+cxulong cstrtovCStyle<cxulong>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, sizeof(cxulong)<<3);
+}
+
+template<>
+cxlong cstrtovCStyle<cxlong>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtoiXCStyle(str, inend, outend, sizeof(cxlong)<<3);
+}
+
+template<>
+cxullong cstrtovCStyle<cxullong>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtouXCStyle(str, inend, outend, sizeof(cxullong)<<3);
+}
+
+template<>
+cxllong cstrtovCStyle<cxllong>(const char* str, const char* inend, const char*& outend)
+{
+    return cstrtoiXCStyle(str, inend, outend, sizeof(cxllong)<<3);
+}
+
+template<>
+float cstrtovCStyle<float>(const char* str, const char* inend, const char*& outend)
+{
+    FloatUnion v;
+    v.u = cstrtofXCStyle(str, inend, outend, 8, 23);
+    return v.f;
+}
+
+template<>
+double cstrtovCStyle<double>(const char* str, const char* inend, const char*& outend)
+{
+    DoubleUnion v;
+    v.u = cstrtofXCStyle(str, inend, outend, 11, 52);
+    return v.d;
+}
+
+};

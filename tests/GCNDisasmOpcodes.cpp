@@ -381,6 +381,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x6934d715U, 0, false, "        VOP2_ill_52     v154, v21, v107\n" },
     { 0x6b34d715U, 0, false, "        VOP2_ill_53     v154, v21, v107\n" },
     { 0x6d34d715U, 0, false, "        VOP2_ill_54     v154, v21, v107\n" },
+    /* VOP1 encoding */
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

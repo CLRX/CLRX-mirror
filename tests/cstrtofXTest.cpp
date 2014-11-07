@@ -71,7 +71,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
         case FT_F:
         {
             FloatUnion resultU;
-            resultU.f = cstrtofCStyle(testCase.string,
+            resultU.f = cstrtovCStyle<float>(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
             result = resultU.u;
             width = 8;
@@ -81,7 +81,7 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
         case FT_D:
         {
             DoubleUnion resultU;
-            resultU.d = cstrtodCStyle(testCase.string,
+            resultU.d = cstrtovCStyle<double>(testCase.string,
                     testCase.string+::strlen(testCase.string), end);
             result = resultU.u;
             width = 16;
