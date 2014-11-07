@@ -47,20 +47,23 @@ ParseException::ParseException(const std::string& message)
 
 ParseException::ParseException(size_t lineNo, const std::string& message)
 {
-    std::ostringstream oss;
-    oss.imbue(std::locale::classic());
-    oss << lineNo << ": " << message;
-    oss.flush();
-    this->message = oss.str();
+    char buf[32];
+    itocstrCStyle(lineNo, buf, 32);
+    this->message = buf;
+    this->message += ": ";
+    this->message += message;
 }
 
 ParseException::ParseException(size_t lineNo, size_t charNo, const std::string& message)
 {
-    std::ostringstream oss;
-    oss.imbue(std::locale::classic());
-    oss << lineNo << ":" << charNo << ": " << message;
-    oss.flush();
-    this->message = oss.str();
+    char buf[32];
+    itocstrCStyle(lineNo, buf, 32);
+    this->message = buf;
+    this->message += ": ";
+    itocstrCStyle(charNo, buf, 32);
+    this->message += buf;
+    this->message += ": ";
+    this->message += message;
 }
 
 #ifndef HAVE_LINUX
@@ -133,6 +136,15 @@ void* DynLibrary::getSymbol(const std::string& symbolName)
 }
 
 template
+cxuchar CLRX::parseEnvVariable<cxuchar>(const char* envVar,
+                const cxuchar& defaultValue);
+
+template
+cxchar CLRX::parseEnvVariable<cxchar>(const char* envVar,
+              const cxchar& defaultValue);
+
+
+template
 cxuint CLRX::parseEnvVariable<cxuint>(const char* envVar,
                const cxuint& defaultValue);
 
@@ -163,6 +175,15 @@ cxullong CLRX::parseEnvVariable<cxullong>(const char* envVar,
 template
 cxllong CLRX::parseEnvVariable<cxllong>(const char* envVar,
                const cxllong& defaultValue);
+
+template
+float CLRX::parseEnvVariable<float>(const char* envVar,
+            const float& defaultValue);
+
+template
+double CLRX::parseEnvVariable<double>(const char* envVar,
+              const double& defaultValue);
+
 
 namespace CLRX
 {

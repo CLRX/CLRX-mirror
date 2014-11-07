@@ -29,9 +29,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
-#include <locale>
 #include <mutex>
-#include <sstream>
 
 /// main namespace
 namespace CLRX
@@ -104,6 +102,24 @@ public:
 
 /* parse utilities */
 
+/// parse integer or float point formatted looks like C-style
+/** parses integer or float point from str string. inend can points
+ * to end of string or can be null. Function throws ParseException when number in string
+ * is out of range, when string does not have number or inend points to string.
+ * Function accepts decimal format, octal form (with prefix '0'), hexadecimal form
+ * (prefix '0x' or '0X'), and binary form (prefix '0b' or '0B').
+ * For floating points function accepts decimal format and binary format.
+ * Result is rounded to nearest even
+ * (if two values are equally close will be choosen a even value).
+ * Currently only IEEE-754 format is supported.
+ * \param str input string pointer
+ * \param inend pointer points to end of string or null if not end specified
+ * \param outend returns end of number in string
+ * \return parsed integer value
+ */
+template<typename T>
+extern T cstrtovCStyle(const char* str, const char* inend, const char*& outend);
+
 /// parse environment variable
 /**parse environment variable
  * \param envVar - name of environment variable
@@ -115,14 +131,22 @@ T parseEnvVariable(const char* envVar, const T& defaultValue = T())
     const char* var = getenv(envVar);
     if (var == nullptr)
         return defaultValue;
-    std::istringstream iss(var);
-    iss.imbue(std::locale::classic()); // force use classic locale
-    T value;
-    iss >> value;
-    if (iss.fail() || iss.bad())
+    while (*var == ' ' || *var == '\n' || *var == '\r' || *var == '\t' ||
+        *var == '\f' || *var == '\v') var++;
+    if (*var == 0)
         return defaultValue;
-    return value;
+    const char* outend;
+    try
+    { return cstrtovCStyle<T>(var, nullptr, outend); }
+    catch(const ParseException& ex)
+    { return defaultValue; }
 }
+
+extern template
+cxuchar parseEnvVariable<cxuchar>(const char* envVar, const cxuchar& defaultValue);
+
+extern template
+cxchar parseEnvVariable<cxchar>(const char* envVar, const cxchar& defaultValue);
 
 extern template
 cxuint parseEnvVariable<cxuint>(const char* envVar, const cxuint& defaultValue);
@@ -147,6 +171,12 @@ cxullong parseEnvVariable<cxullong>(const char* envVar, const cxullong& defaultV
 
 extern template
 cxllong parseEnvVariable<cxllong>(const char* envVar, const cxllong& defaultValue);
+
+extern template
+float parseEnvVariable<float>(const char* envVar, const float& defaultValue);
+
+extern template
+double parseEnvVariable<double>(const char* envVar, const double& defaultValue);
 
 #ifndef __UTILITIES_MODULE__
 
@@ -253,23 +283,7 @@ extern uint64_t cstrtouXCStyle(const char* str, const char* inend,
 extern uint64_t cstrtofXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint expBits, cxuint mantisaBits);
 
-/// parse integer or float point formatted looks like C-style
-/** parses integer or float point from str string. inend can points
- * to end of string or can be null. Function throws ParseException when number in string
- * is out of range, when string does not have number or inend points to string.
- * Function accepts decimal format, octal form (with prefix '0'), hexadecimal form
- * (prefix '0x' or '0X'), and binary form (prefix '0b' or '0B').
- * For floating points function accepts decimal format and binary format.
- * Result is rounded to nearest even
- * (if two values are equally close will be choosen a even value).
- * Currently only IEEE-754 format is supported.
- * \param str input string pointer
- * \param inend pointer points to end of string or null if not end specified
- * \param outend returns end of number in string
- * \return parsed integer value
- */
-template<typename T>
-extern T cstrtovCStyle(const char* str, const char* inend, const char*& outend);
+/* cstrtovcstyle impls */
 
 template<> inline
 cxuchar cstrtovCStyle<cxuchar>(const char* str, const char* inend, const char*& outend)
