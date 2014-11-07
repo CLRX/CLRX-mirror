@@ -21,7 +21,6 @@
 
 #include <CLRX/Config.h>
 #include <algorithm>
-#define __UTILITIES_MODULE__ 1
 #ifdef CSTRTOFX_DUMP_IRRESULTS
 #include <iostream>
 #include <sstream>
