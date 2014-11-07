@@ -1693,18 +1693,6 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
     return out;
 }
 
-union FloatUnion
-{
-    float f;
-    uint32_t u;
-};
-
-union DoubleUnion
-{
-    double d;
-    uint64_t u;
-};
-
 size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bool scientific, cxuint expBits, cxuint mantisaBits)
 {
