@@ -266,13 +266,13 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(7) : fillEnd;
             size_t bufPos = prefixSize;
-            bufPos += u64tocstrCStyle(p-oldP, buf+bufPos, 22, 10);
+            bufPos += itocstrCStyle(p-oldP, buf+bufPos, 22, 10);
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
             buf[bufPos++] = '1';
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            bufPos += u32tocstrCStyle(data[oldP], buf+bufPos, 6, 16, 2);
+            bufPos += itocstrCStyle(data[oldP], buf+bufPos, 6, 16, 2);
             buf[bufPos++] = '\n';
             output.write(buf, bufPos);
             ::memcpy(buf, linePrefix, prefixSize);
@@ -334,13 +334,13 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
             size_t bufPos = fillPrefixSize;
-            bufPos += u64tocstrCStyle(p-oldP, buf+bufPos, 22, 10);
+            bufPos += itocstrCStyle(p-oldP, buf+bufPos, 22, 10);
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
             buf[bufPos++] = '4';
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            bufPos += u32tocstrCStyle(ULEV(data[oldP]), buf+bufPos, 12, 16, 8);
+            bufPos += itocstrCStyle(ULEV(data[oldP]), buf+bufPos, 12, 16, 8);
             buf[bufPos++] = '\n';
             output.write(buf, bufPos);
             ::memcpy(buf, linePrefix, fillPrefixSize);
@@ -351,7 +351,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         size_t bufPos = intPrefixSize;
         for (; p < lineEnd; p++)
         {
-            bufPos += u32tocstrCStyle(ULEV(data[p]), buf+bufPos, 12, 16, 8);
+            bufPos += itocstrCStyle(ULEV(data[p]), buf+bufPos, 12, 16, 8);
             if (p+1 < lineEnd)
             {
                 buf[bufPos++] = ',';
@@ -490,7 +490,7 @@ void Disassembler::disassemble()
                 }
                 else
                 {
-                    const size_t len = u32tocstrCStyle(calNote.header.type, buf, 32, 16);
+                    const size_t len = itocstrCStyle(calNote.header.type, buf, 32, 16);
                     output.write("    .calnote ", 13);
                     output.write(buf, len);
                 }
@@ -508,11 +508,11 @@ void Disassembler::disassemble()
                         for (cxuint k = 0; k < progInfosNum; k++)
                         {
                             const CALProgramInfoEntry& progInfo = progInfos[k];
-                            size_t bufPos = 13 + u32tocstrCStyle(ULEV(progInfo.address),
+                            size_t bufPos = 13 + itocstrCStyle(ULEV(progInfo.address),
                                          buf+13, 32, 16, 8);
                             buf[bufPos++] = ',';
                             buf[bufPos++] = ' ';
-                            bufPos += u32tocstrCStyle(ULEV(progInfo.value),
+                            bufPos += itocstrCStyle(ULEV(progInfo.value),
                                       buf+bufPos, 32, 16, 8);
                             buf[bufPos++] = '\n';
                             output.write(buf, bufPos);
@@ -549,11 +549,11 @@ void Disassembler::disassemble()
                         for (cxuint k = 0; k < segmentsNum; k++)
                         {
                             const CALDataSegmentEntry& segment = segments[k];
-                            size_t bufPos = 17 + u32tocstrCStyle(
+                            size_t bufPos = 17 + itocstrCStyle(
                                         ULEV(segment.offset), buf + 17, 32);
                             buf[bufPos++] = ',';
                             buf[bufPos++] = ' ';
-                            bufPos += u32tocstrCStyle(ULEV(segment.size), buf+bufPos, 32);
+                            bufPos += itocstrCStyle(ULEV(segment.size), buf+bufPos, 32);
                             buf[bufPos++] = '\n';
                             output.write(buf, bufPos);
                         }
@@ -575,11 +575,11 @@ void Disassembler::disassemble()
                         for (cxuint k = 0; k < samplersNum; k++)
                         {
                             const CALSamplerMapEntry& sampler = samplers[k];
-                            size_t bufPos = 17 + u32tocstrCStyle(
+                            size_t bufPos = 17 + itocstrCStyle(
                                         ULEV(sampler.input), buf + 17, 32);
                             buf[bufPos++] = ',';
                             buf[bufPos++] = ' ';
-                            bufPos += u32tocstrCStyle(ULEV(sampler.sampler),
+                            bufPos += itocstrCStyle(ULEV(sampler.sampler),
                                         buf+bufPos, 32, 16);
                             buf[bufPos++] = '\n';
                             output.write(buf, bufPos);
@@ -602,11 +602,11 @@ void Disassembler::disassemble()
                         for (cxuint k = 0; k < constBufMasksNum; k++)
                         {
                             const CALConstantBufferMask& cbufMask = constBufMasks[k];
-                            size_t bufPos = 16 + u32tocstrCStyle(
+                            size_t bufPos = 16 + itocstrCStyle(
                                         ULEV(cbufMask.index), buf + 16, 32);
                             buf[bufPos++] = ',';
                             buf[bufPos++] = ' ';
-                            bufPos += u32tocstrCStyle(ULEV(cbufMask.size), buf+bufPos, 32);
+                            bufPos += itocstrCStyle(ULEV(cbufMask.size), buf+bufPos, 32);
                             buf[bufPos++] = '\n';
                             output.write(buf, bufPos);
                         }
@@ -622,7 +622,7 @@ void Disassembler::disassemble()
                     case CALNOTE_ATI_UAV_MAILBOX_SIZE:
                         if (calNote.header.descSize == 4)
                         {
-                            const size_t len = u32tocstrCStyle(
+                            const size_t len = itocstrCStyle(
                                     ULEV(*reinterpret_cast<const uint32_t*>(
                                         calNote.data)), buf, 32);
                             output.put(' ');

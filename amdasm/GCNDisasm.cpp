@@ -375,7 +375,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
     
     if (op == 255) // if literal
     {
-        size_t pos = u32tocstrCStyle(literal, buf, 11, 16);
+        size_t pos = itocstrCStyle(literal, buf, 11, 16);
         if (floatLit)
         {
             FloatUnion fu;
@@ -535,7 +535,7 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             const size_t branchPos = pos + int16_t(imm16);
             bufPos = addSpaces(buf, spacesToAdd);
             buf[bufPos++] = 'L';
-            bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
+            bufPos += itocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
             break;
         }
         case GCN_IMM_LOCKS:
@@ -591,7 +591,7 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
                     buf[bufPos++] = ' ';
                     buf[bufPos++] = ':';
                 }
-                bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+                bufPos += itocstrCStyle(imm16, buf+bufPos, 11, 16);
             }
             break;
         }
@@ -623,7 +623,7 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             {
                 buf[bufPos++] = ' ';
                 buf[bufPos++] = ':';
-                bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+                bufPos += itocstrCStyle(imm16, buf+bufPos, 11, 16);
             }
             break;
         }
@@ -631,12 +631,12 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             if (imm16 != 0)
             {
                 bufPos = addSpaces(buf, spacesToAdd);
-                bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+                bufPos += itocstrCStyle(imm16, buf+bufPos, 11, 16);
             }
             break;
         default:
             bufPos = addSpaces(buf, spacesToAdd);
-            bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+            bufPos += itocstrCStyle(imm16, buf+bufPos, 11, 16);
             break;
     }
     return bufPos;
@@ -665,14 +665,14 @@ static size_t decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         ::memcpy(buf+bufPos, " ssrc=", 6);
         bufPos += 6;
-        bufPos += u32tocstrCStyle((insnCode&0xff), buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insnCode&0xff), buf+bufPos, 6, 16);
     }
     
     if (!isDst && ((insnCode>>16)&0x7f) != 0)
     {
         ::memcpy(buf+bufPos, " sdst=", 6);
         bufPos += 6;
-        bufPos += u32tocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
     }
     
     return bufPos;
@@ -705,7 +705,7 @@ static size_t decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = 's';
         buf[bufPos++] = 't';
         buf[bufPos++] = '=';
-        bufPos += u32tocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
     }
     return bufPos;
 }
@@ -734,7 +734,7 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         const size_t branchPos = pos + int16_t(imm16);
         buf[bufPos++] = 'L';
-        bufPos += u64tocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
+        bufPos += itocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
@@ -778,7 +778,7 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = ')';
     }
     else
-        bufPos += u32tocstrCStyle(imm16, buf+bufPos, 11, 16);
+        bufPos += itocstrCStyle(imm16, buf+bufPos, 11, 16);
     
     if (gcnInsn.mode & GCN_IMM_DST)
     {
@@ -786,12 +786,12 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = ' ';
         if (gcnInsn.mode & GCN_SOPK_CONST)
         {
-            bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
+            bufPos += itocstrCStyle(literal, buf+bufPos, 11, 16);
             if (((insnCode>>16)&0x7f) != 0)
             {
                 ::memcpy(buf+bufPos, " sdst=", 6);
                 bufPos += 6;
-                bufPos += u32tocstrCStyle((insnCode>>16)&0x7f, buf+bufPos, 6, 16);
+                bufPos += itocstrCStyle((insnCode>>16)&0x7f, buf+bufPos, 6, 16);
             }
         }
         else
@@ -814,7 +814,7 @@ static size_t decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     if (insnCode&0x100) // immediate value
-        bufPos += u32tocstrCStyle(insnCode&0xff, buf+bufPos, 11, 16);
+        bufPos += itocstrCStyle(insnCode&0xff, buf+bufPos, 11, 16);
     else // S register
         bufPos += decodeGCNOperand(insnCode&0xff, 1, buf + bufPos, arch);
     return bufPos;
@@ -882,7 +882,7 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
+        bufPos += itocstrCStyle(literal, buf+bufPos, 11, 16);
         if (displayFloatLits)
         {
             FloatUnion fu;
@@ -910,7 +910,7 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += u32tocstrCStyle(literal, buf+bufPos, 11, 16);
+        bufPos += itocstrCStyle(literal, buf+bufPos, 11, 16);
         if (displayFloatLits)
         {
             FloatUnion fu;
@@ -1037,7 +1037,7 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         ::memcpy(buf+bufPos, " src1=", 6);
         bufPos += 6;
-        bufPos += u32tocstrCStyle((insn2Code>>9)&0x1ff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insn2Code>>9)&0x1ff, buf+bufPos, 6, 16);
     }
     if (((gcnInsn.mode & GCN_MASK1) == GCN_SRC12_NONE ||
         (gcnInsn.mode & GCN_MASK1) == GCN_SRC2_NONE) &&
@@ -1045,7 +1045,7 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         ::memcpy(buf+bufPos, " src2=", 6);
         bufPos += 6;
-        bufPos += u32tocstrCStyle((insn2Code>>18)&0x1ff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insn2Code>>18)&0x1ff, buf+bufPos, 6, 16);
     }
             
     return bufPos;
@@ -1130,7 +1130,7 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         {
             ::memcpy(buf+bufPos, "offset:", 8);
             bufPos += 8;
-            bufPos += u32tocstrCStyle(offset, buf+bufPos, 7, 10);
+            bufPos += itocstrCStyle(offset, buf+bufPos, 7, 10);
         }
         else
         {
@@ -1138,13 +1138,13 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             {
                 ::memcpy(buf+bufPos, "offset0:", 9);
                 bufPos += 9;
-                bufPos += u32tocstrCStyle(offset&0xff, buf+bufPos, 7, 10);
+                bufPos += itocstrCStyle(offset&0xff, buf+bufPos, 7, 10);
             }
             if ((offset&0xff00) != 0)
             {
                 ::memcpy(buf+bufPos, "offset1:", 9);
                 bufPos += 9;
-                bufPos += u32tocstrCStyle((offset>>8)&0xff, buf+bufPos, 7, 10);
+                bufPos += itocstrCStyle((offset>>8)&0xff, buf+bufPos, 7, 10);
             }
         }
     }
@@ -1161,25 +1161,25 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         ::memcpy(buf+bufPos, " vaddr=", 7);
         bufPos += 7;
-        bufPos += u32tocstrCStyle((insn2Code&0xff), buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insn2Code&0xff), buf+bufPos, 6, 16);
     }
     if (!vdata0Used && ((insn2Code>>8)&0xff) != 0)
     {
         ::memcpy(buf+bufPos, " vdata0=", 8);
         bufPos += 8;
-        bufPos += u32tocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
     }
     if (!vdata1Used && ((insn2Code>>16)&0xff) != 0)
     {
         ::memcpy(buf+bufPos, " vdata1=", 8);
         bufPos += 8;
-        bufPos += u32tocstrCStyle((insn2Code>>16)&0xff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insn2Code>>16)&0xff, buf+bufPos, 6, 16);
     }
     if (!vdstUsed && (insn2Code>>24) != 0)
     {
         ::memcpy(buf+bufPos, " vdst=", 6);
         bufPos += 6;
-        bufPos += u32tocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
     }
     return bufPos;
 }
@@ -1229,7 +1229,7 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     ::memcpy(buf+bufPos, "offset:", 9);
     bufPos += 9;
-    bufPos += u32tocstrCStyle(insnCode&0xfff, buf+bufPos, 7, 16);
+    bufPos += itocstrCStyle(insnCode&0xfff, buf+bufPos, 7, 16);
     if (insnCode & 0x4000U)
     {
         buf[bufPos++] = ' ';
@@ -1518,13 +1518,13 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         ::memcpy(buf+bufPos, " vdata=", 7);
         bufPos += 7;
-        bufPos += u32tocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
     }
     if (!vdstUsed && (insn2Code>>24) != 0)
     {
         ::memcpy(buf+bufPos, " vdst=", 6);
         bufPos += 6;
-        bufPos += u32tocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
     }
     return bufPos;
 }
@@ -1551,7 +1551,7 @@ void GCNDisassembler::disassemble()
         if (curLabel != labels.end() && pos == *curLabel)
         {   // put label
             buf[bufPos++] = 'L';
-            bufPos += u64tocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
+            bufPos += itocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
             if (bufPos+128 >= 384)
@@ -1695,7 +1695,7 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = 'n';
             buf[bufPos++] = 't';
             buf[bufPos++] = ' '; 
-            bufPos += u32tocstrCStyle(insnCode, buf+bufPos, 11, 16);
+            bufPos += itocstrCStyle(insnCode, buf+bufPos, 11, 16);
         }
         else
         {
@@ -1729,7 +1729,7 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = 'l';
                 buf[bufPos++] = 'l';
                 buf[bufPos++] = '_';
-                bufPos += u32tocstrCStyle(opcode, buf + bufPos, 6);
+                bufPos += itocstrCStyle(opcode, buf + bufPos, 6);
                 spacesToAdd = spacesToAdd >= (bufPos-oldBufPos+1)?
                     spacesToAdd - (bufPos-oldBufPos) : 1;
                 gcnInsn = &defaultInsn;
@@ -1831,12 +1831,12 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = 'r';
             buf[bufPos++] = 'g';
             buf[bufPos++] = ' ';
-            bufPos += u64tocstrCStyle((*curLabel)<<2, buf+bufPos, 20, 16);
+            bufPos += itocstrCStyle((*curLabel)<<2, buf+bufPos, 20, 16);
             buf[bufPos++] = '\n';
         }
         // put label
         buf[bufPos++] = 'L';
-        bufPos += u64tocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
+        bufPos += itocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
         buf[bufPos++] = ':';
         buf[bufPos++] = '\n';
         if (bufPos+40 >= 384)

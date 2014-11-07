@@ -314,8 +314,8 @@ double cstrtovCStyle<double>(const char* str, const char* inend, const char*& ou
  */
 extern cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
 
-/// format 32-bit unsigned integer
-/** format 32-bit unsigned integer in C-style formatting.
+/// format integer
+/** format integer in C-style formatting.
  * \param value integer value
  * \param str output string
  * \param maxSize max size of string (including null-character)
@@ -324,24 +324,51 @@ extern cxushort cstrtohCStyle(const char* str, const char* inend, const char*& o
  * \param prefix adds required prefix if true
  * \return length of output string (excluding null-character)
  */
-extern size_t u32tocstrCStyle(uint32_t value, char* str, size_t maxSize, cxuint radix = 10,
+template<typename T>
+extern size_t itocstrCStyle(T value, char* str, size_t maxSize, cxuint radix = 10,
        cxuint width = 0, bool prefix = true);
 
-/// format 64-bit unsigned integer
-/** format 64-bit unsigned integer in C-style formatting.
- * \param value integer value
- * \param str output string
- * \param maxSize max size of string (including null-character)
- * \param radix radix of digits (2, 8, 10, 16)
- * \param width max number of digits in number
- * \param prefix adds required prefix if true
- * \return length of output string (excluding null-character)
- */
-extern size_t u64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix = 10,
-        cxuint width = 0, bool prefix = true);
+#ifndef __UTILITIES_MODULE__
+extern template
+size_t itocstrCStyle<cxuchar>(cxuchar value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
 
-extern size_t i64tocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix = 10,
-            cxuint width = 0, bool prefix = true);
+extern template
+size_t itocstrCStyle<cxchar>(cxchar value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxushort>(cxushort value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxshort>(cxshort value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxuint>(cxuint value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxint>(cxint value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxulong>(cxulong value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxlong>(cxlong value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxullong>(cxullong value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+
+extern template
+size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint radix = 10,
+       cxuint width = 0, bool prefix = true);
+#endif
 
 /// format half float in C-style
 /** format to string the half float in C-style formatting. This function handles 2 modes
