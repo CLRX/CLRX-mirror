@@ -2091,5 +2091,5 @@ size_t CLRX::iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint rad
     if (maxSize < 3)
         throw Exception("Max size is too small");
     str[0] = '-';
-    return uXtocstrCStyle(-value, str+1, maxSize-1, radix, width, prefix);
+    return uXtocstrCStyle(-value, str+1, maxSize-1, radix, width, prefix)+1;
 }
