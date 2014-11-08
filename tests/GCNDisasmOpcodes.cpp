@@ -470,6 +470,61 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7f3c4f4fU, 0, false, "        v_log_f32       v158, v79\n" },
     { 0x7f3c4effU, 0x40000000U, true, "        v_log_f32       v158, "
                 "0x40000000 /* 2f */\n" },
+    { 0x7f3c514fU, 0, false, "        v_rcp_clamp_f32 v158, v79\n" },
+    { 0x7f3c50ffU, 0x40000000U, true, "        v_rcp_clamp_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c534fU, 0, false, "        v_rcp_legacy_f32 v158, v79\n" },
+    { 0x7f3c52ffU, 0x40000000U, true, "        v_rcp_legacy_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c554fU, 0, false, "        v_rcp_f32       v158, v79\n" },
+    { 0x7f3c54ffU, 0x40000000U, true, "        v_rcp_f32       v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c574fU, 0, false, "        v_rcp_iflag_f32 v158, v79\n" },
+    { 0x7f3c56ffU, 0x40000000U, true, "        v_rcp_iflag_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c594fU, 0, false, "        v_rsq_clamp_f32 v158, v79\n" },
+    { 0x7f3c58ffU, 0x40000000U, true, "        v_rsq_clamp_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c5b4fU, 0, false, "        v_rsq_legacy_f32 v158, v79\n" },
+    { 0x7f3c5affU, 0x40000000U, true, "        v_rsq_legacy_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c5d4fU, 0, false, "        v_rsq_f32       v158, v79\n" },
+    { 0x7f3c5cffU, 0x40000000U, true, "        v_rsq_f32       v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c5f4fU, 0, false, "        v_rcp_f64       v[158:159], v[79:80]\n" },
+    { 0x7f3c5effU, 0x40000000U, true, "        v_rcp_f64       v[158:159], "
+                "0x40000000\n" },
+    { 0x7f3c614fU, 0, false, "        v_rcp_clamp_f64 v[158:159], v[79:80]\n" },
+    { 0x7f3c634fU, 0, false, "        v_rsq_f64       v[158:159], v[79:80]\n" },
+    { 0x7f3c654fU, 0, false, "        v_rsq_clamp_f64 v[158:159], v[79:80]\n" },
+    { 0x7f3c674fU, 0, false, "        v_sqrt_f32      v158, v79\n" },
+    { 0x7f3c694fU, 0, false, "        v_sqrt_f64      v[158:159], v[79:80]\n" },
+    { 0x7f3c6b4fU, 0, false, "        v_sin_f32       v158, v79\n" },
+    { 0x7f3c6d4fU, 0, false, "        v_cos_f32       v158, v79\n" },
+    { 0x7f3c6f4fU, 0, false, "        v_not_b32       v158, v79\n" },
+    { 0x7f3c714fU, 0, false, "        v_bfrev_b32     v158, v79\n" },
+    { 0x7f3c734fU, 0, false, "        v_ffbh_u32      v158, v79\n" },
+    { 0x7f3c754fU, 0, false, "        v_ffbl_b32      v158, v79\n" },
+    { 0x7f3c774fU, 0, false, "        v_ffbh_i32      v158, v79\n" },
+    { 0x7f3c794fU, 0, false, "        v_frexp_exp_i32_f64 v158, v[79:80]\n" },
+    { 0x7f3c7b4fU, 0, false, "        v_frexp_mant_f64 v[158:159], v[79:80]\n" },
+    { 0x7f3c7d4fU, 0, false, "        v_fract_f64     v[158:159], v[79:80]\n" },
+    { 0x7f3c7f4fU, 0, false, "        v_frexp_exp_i32_f32 v158, v79\n" },
+    { 0x7f3c7effU, 0x40000000U, true, "        v_frexp_exp_i32_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c814fU, 0, false, "        v_frexp_mant_f32 v158, v79\n" },
+    { 0x7f3c80ffU, 0x40000000U, true, "        v_frexp_mant_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c834fU, 0, false, "        v_clrexcp       vdst=0x9e vsrc=0x14f\n" },
+    { 0x7e008200U, 0, false, "        v_clrexcp\n" },
+    { 0x7f3c854fU, 0, false, "        v_movreld_b32   v158, v79\n" },
+    { 0x7f3c874fU, 0, false, "        v_movrels_b32   v158, v79\n" },
+    { 0x7f3c894fU, 0, false, "        v_movrelsd_b32  v158, v79\n" },
+    { 0x7f3c8b4fU, 0, false, "        VOP1_ill_69     v158, v79\n" },
+    { 0x7f3c8d4fU, 0, false, "        VOP1_ill_70     v158, v79\n" },
+    { 0x7f3c8f4fU, 0, false, "        VOP1_ill_71     v158, v79\n" },
+    { 0x7f3c914fU, 0, false, "        VOP1_ill_72     v158, v79\n" },
+    { 0x7f3c934fU, 0, false, "        VOP1_ill_73     v158, v79\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
