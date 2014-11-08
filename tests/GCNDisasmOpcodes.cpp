@@ -382,6 +382,16 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x6b34d715U, 0, false, "        VOP2_ill_53     v154, v21, v107\n" },
     { 0x6d34d715U, 0, false, "        VOP2_ill_54     v154, v21, v107\n" },
     /* VOP1 encoding */
+    { 0x7f3c004fU, 0, false, "        v_nop           vdst=0x9e vsrc=0x4f\n" },
+    { 0x7f3c0000U, 0, false, "        v_nop           vdst=0x9e\n" },
+    { 0x7e00014fU, 0, false, "        v_nop           vsrc=0x14f\n" },
+    { 0x7e000000U, 0, false, "        v_nop\n" },
+    { 0x7f3c024fU, 0, false, "        v_mov_b32       v158, s79\n" },
+    { 0x7e3c044fU, 0, false, "        v_readfirstlane_b32 s30, s79\n" },
+    { 0x7f3c074fU, 0, false, "        v_cvt_i32_f64   v158, v[79:80]\n" },
+    { 0x7f3c094fU, 0, false, "        v_cvt_f64_i32   v[158:159], v79\n" },
+    { 0x7f3c0b4fU, 0, false, "        v_cvt_f32_i32   v158, v79\n" },
+    { 0x7f3c0d4fU, 0, false, "        v_cvt_f32_u32   v158, v79\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

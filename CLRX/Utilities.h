@@ -493,7 +493,6 @@ inline size_t ftocstrCStyle(float value, char* str, size_t maxSize, bool scienti
 size_t dtocstrCStyle(double value, char* str, size_t maxSize,
                             bool scientific = false);
 
-
 inline size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scientific)
 {
     union {

@@ -843,13 +843,39 @@ static size_t decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          bool displayFloatLits)
 {
-    size_t bufPos = addSpaces(buf, spacesToAdd);
-    bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
-           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(insnCode&0x1ff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                       buf + bufPos, arch, literal, displayFloatLits);
+    size_t bufPos = 0;
+    if ((gcnInsn.mode & GCN_MASK1) != GCN_ARG_NONE)
+    {
+        bufPos += addSpaces(buf, spacesToAdd);
+        if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_SGPR)
+            bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
+        else
+            bufPos += decodeGCNOperand(((insnCode>>17)&0xff),
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += decodeGCNOperand(insnCode&0x1ff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
+                           buf + bufPos, arch, literal, displayFloatLits);
+    }
+    else if ((insnCode & 0x1fe01ffU) != 0)
+    {
+        bufPos += addSpaces(buf, spacesToAdd);
+        if ((insnCode & 0x1fe0000U) != 0)
+        {
+            ::memcpy(buf+bufPos, "vdst=", 5);
+            bufPos += 5;
+            bufPos += itocstrCStyle((insnCode>>17)&0xff, buf+bufPos, 6, 16);
+            if ((insnCode & 0x1ff) != 0)
+                buf[bufPos++] = ' ';
+        }
+        if ((insnCode & 0x1ff) != 0)
+        {
+            ::memcpy(buf+bufPos, "vsrc=", 5);
+            bufPos += 5;
+            bufPos += itocstrCStyle(insnCode&0x1ff, buf+bufPos, 6, 16);
+        }
+    }
     return bufPos;
 }
 
