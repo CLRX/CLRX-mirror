@@ -525,6 +525,633 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7f3c8f4fU, 0, false, "        VOP1_ill_71     v158, v79\n" },
     { 0x7f3c914fU, 0, false, "        VOP1_ill_72     v158, v79\n" },
     { 0x7f3c934fU, 0, false, "        VOP1_ill_73     v158, v79\n" },
+    /* VOPC encoding */
+    { 0x7c01934fU, 0, false, "        v_cmp_f_f32     vcc, v79, v201\n" },
+    { 0x7c0192ffU, 0x40000000U, true, "        v_cmp_f_f32     "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c03934fU, 0, false, "        v_cmp_lt_f32    vcc, v79, v201\n" },
+    { 0x7c0392ffU, 0x40000000U, true, "        v_cmp_lt_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c05934fU, 0, false, "        v_cmp_eq_f32    vcc, v79, v201\n" },
+    { 0x7c0592ffU, 0x40000000U, true, "        v_cmp_eq_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c07934fU, 0, false, "        v_cmp_le_f32    vcc, v79, v201\n" },
+    { 0x7c0792ffU, 0x40000000U, true, "        v_cmp_le_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c09934fU, 0, false, "        v_cmp_gt_f32    vcc, v79, v201\n" },
+    { 0x7c0992ffU, 0x40000000U, true, "        v_cmp_gt_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c0b934fU, 0, false, "        v_cmp_lg_f32    vcc, v79, v201\n" },
+    { 0x7c0b92ffU, 0x40000000U, true, "        v_cmp_lg_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c0d934fU, 0, false, "        v_cmp_ge_f32    vcc, v79, v201\n" },
+    { 0x7c0d92ffU, 0x40000000U, true, "        v_cmp_ge_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c0f934fU, 0, false, "        v_cmp_o_f32     vcc, v79, v201\n" },
+    { 0x7c0f92ffU, 0x40000000U, true, "        v_cmp_o_f32     "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c11934fU, 0, false, "        v_cmp_u_f32     vcc, v79, v201\n" },
+    { 0x7c1192ffU, 0x40000000U, true, "        v_cmp_u_f32     "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c13934fU, 0, false, "        v_cmp_nge_f32   vcc, v79, v201\n" },
+    { 0x7c1392ffU, 0x40000000U, true, "        v_cmp_nge_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c15934fU, 0, false, "        v_cmp_nlg_f32   vcc, v79, v201\n" },
+    { 0x7c1592ffU, 0x40000000U, true, "        v_cmp_nlg_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c17934fU, 0, false, "        v_cmp_ngt_f32   vcc, v79, v201\n" },
+    { 0x7c1792ffU, 0x40000000U, true, "        v_cmp_ngt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c19934fU, 0, false, "        v_cmp_nle_f32   vcc, v79, v201\n" },
+    { 0x7c1992ffU, 0x40000000U, true, "        v_cmp_nle_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c1b934fU, 0, false, "        v_cmp_neq_f32   vcc, v79, v201\n" },
+    { 0x7c1b92ffU, 0x40000000U, true, "        v_cmp_neq_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c1d934fU, 0, false, "        v_cmp_nlt_f32   vcc, v79, v201\n" },
+    { 0x7c1d92ffU, 0x40000000U, true, "        v_cmp_nlt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c1f934fU, 0, false, "        v_cmp_tru_f32   vcc, v79, v201\n" },
+    { 0x7c1f92ffU, 0x40000000U, true, "        v_cmp_tru_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c21934fU, 0, false, "        v_cmpx_f_f32    vcc, v79, v201\n" },
+    { 0x7c2192ffU, 0x40000000U, true, "        v_cmpx_f_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c23934fU, 0, false, "        v_cmpx_lt_f32   vcc, v79, v201\n" },
+    { 0x7c2392ffU, 0x40000000U, true, "        v_cmpx_lt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c25934fU, 0, false, "        v_cmpx_eq_f32   vcc, v79, v201\n" },
+    { 0x7c2592ffU, 0x40000000U, true, "        v_cmpx_eq_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c27934fU, 0, false, "        v_cmpx_le_f32   vcc, v79, v201\n" },
+    { 0x7c2792ffU, 0x40000000U, true, "        v_cmpx_le_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c29934fU, 0, false, "        v_cmpx_gt_f32   vcc, v79, v201\n" },
+    { 0x7c2992ffU, 0x40000000U, true, "        v_cmpx_gt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c2b934fU, 0, false, "        v_cmpx_lg_f32   vcc, v79, v201\n" },
+    { 0x7c2b92ffU, 0x40000000U, true, "        v_cmpx_lg_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c2d934fU, 0, false, "        v_cmpx_ge_f32   vcc, v79, v201\n" },
+    { 0x7c2d92ffU, 0x40000000U, true, "        v_cmpx_ge_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c2f934fU, 0, false, "        v_cmpx_o_f32    vcc, v79, v201\n" },
+    { 0x7c2f92ffU, 0x40000000U, true, "        v_cmpx_o_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c31934fU, 0, false, "        v_cmpx_u_f32    vcc, v79, v201\n" },
+    { 0x7c3192ffU, 0x40000000U, true, "        v_cmpx_u_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c33934fU, 0, false, "        v_cmpx_nge_f32  vcc, v79, v201\n" },
+    { 0x7c3392ffU, 0x40000000U, true, "        v_cmpx_nge_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c35934fU, 0, false, "        v_cmpx_nlg_f32  vcc, v79, v201\n" },
+    { 0x7c3592ffU, 0x40000000U, true, "        v_cmpx_nlg_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c37934fU, 0, false, "        v_cmpx_ngt_f32  vcc, v79, v201\n" },
+    { 0x7c3792ffU, 0x40000000U, true, "        v_cmpx_ngt_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c39934fU, 0, false, "        v_cmpx_nle_f32  vcc, v79, v201\n" },
+    { 0x7c3992ffU, 0x40000000U, true, "        v_cmpx_nle_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c3b934fU, 0, false, "        v_cmpx_neq_f32  vcc, v79, v201\n" },
+    { 0x7c3b92ffU, 0x40000000U, true, "        v_cmpx_neq_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c3d934fU, 0, false, "        v_cmpx_nlt_f32  vcc, v79, v201\n" },
+    { 0x7c3d92ffU, 0x40000000U, true, "        v_cmpx_nlt_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c3f934fU, 0, false, "        v_cmpx_tru_f32  vcc, v79, v201\n" },
+    { 0x7c3f92ffU, 0x40000000U, true, "        v_cmpx_tru_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    
+    { 0x7c41934fU, 0, false, "        v_cmp_f_f64     vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4192ffU, 0x40000000U, true, "        v_cmp_f_f64     "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c43934fU, 0, false, "        v_cmp_lt_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4392ffU, 0x40000000U, true, "        v_cmp_lt_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c45934fU, 0, false, "        v_cmp_eq_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4592ffU, 0x40000000U, true, "        v_cmp_eq_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c47934fU, 0, false, "        v_cmp_le_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4792ffU, 0x40000000U, true, "        v_cmp_le_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c49934fU, 0, false, "        v_cmp_gt_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4992ffU, 0x40000000U, true, "        v_cmp_gt_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c4b934fU, 0, false, "        v_cmp_lg_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4b92ffU, 0x40000000U, true, "        v_cmp_lg_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c4d934fU, 0, false, "        v_cmp_ge_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4d92ffU, 0x40000000U, true, "        v_cmp_ge_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c4f934fU, 0, false, "        v_cmp_o_f64     vcc, v[79:80], v[201:202]\n" },
+    { 0x7c4f92ffU, 0x40000000U, true, "        v_cmp_o_f64     "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c51934fU, 0, false, "        v_cmp_u_f64     vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5192ffU, 0x40000000U, true, "        v_cmp_u_f64     "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c53934fU, 0, false, "        v_cmp_nge_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5392ffU, 0x40000000U, true, "        v_cmp_nge_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c55934fU, 0, false, "        v_cmp_nlg_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5592ffU, 0x40000000U, true, "        v_cmp_nlg_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c57934fU, 0, false, "        v_cmp_ngt_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5792ffU, 0x40000000U, true, "        v_cmp_ngt_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c59934fU, 0, false, "        v_cmp_nle_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5992ffU, 0x40000000U, true, "        v_cmp_nle_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c5b934fU, 0, false, "        v_cmp_neq_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5b92ffU, 0x40000000U, true, "        v_cmp_neq_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c5d934fU, 0, false, "        v_cmp_nlt_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5d92ffU, 0x40000000U, true, "        v_cmp_nlt_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c5f934fU, 0, false, "        v_cmp_tru_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c5f92ffU, 0x40000000U, true, "        v_cmp_tru_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c61934fU, 0, false, "        v_cmpx_f_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6192ffU, 0x40000000U, true, "        v_cmpx_f_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c63934fU, 0, false, "        v_cmpx_lt_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6392ffU, 0x40000000U, true, "        v_cmpx_lt_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c65934fU, 0, false, "        v_cmpx_eq_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6592ffU, 0x40000000U, true, "        v_cmpx_eq_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c67934fU, 0, false, "        v_cmpx_le_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6792ffU, 0x40000000U, true, "        v_cmpx_le_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c69934fU, 0, false, "        v_cmpx_gt_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6992ffU, 0x40000000U, true, "        v_cmpx_gt_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c6b934fU, 0, false, "        v_cmpx_lg_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6b92ffU, 0x40000000U, true, "        v_cmpx_lg_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c6d934fU, 0, false, "        v_cmpx_ge_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6d92ffU, 0x40000000U, true, "        v_cmpx_ge_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c6f934fU, 0, false, "        v_cmpx_o_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c6f92ffU, 0x40000000U, true, "        v_cmpx_o_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c71934fU, 0, false, "        v_cmpx_u_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7192ffU, 0x40000000U, true, "        v_cmpx_u_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c73934fU, 0, false, "        v_cmpx_nge_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7392ffU, 0x40000000U, true, "        v_cmpx_nge_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c75934fU, 0, false, "        v_cmpx_nlg_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7592ffU, 0x40000000U, true, "        v_cmpx_nlg_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c77934fU, 0, false, "        v_cmpx_ngt_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7792ffU, 0x40000000U, true, "        v_cmpx_ngt_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c79934fU, 0, false, "        v_cmpx_nle_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7992ffU, 0x40000000U, true, "        v_cmpx_nle_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c7b934fU, 0, false, "        v_cmpx_neq_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7b92ffU, 0x40000000U, true, "        v_cmpx_neq_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c7d934fU, 0, false, "        v_cmpx_nlt_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7d92ffU, 0x40000000U, true, "        v_cmpx_nlt_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7c7f934fU, 0, false, "        v_cmpx_tru_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7c7f92ffU, 0x40000000U, true, "        v_cmpx_tru_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    
+    /**** v_cmpsx_* ****/
+    { 0x7c81934fU, 0, false, "        v_cmps_f_f32    vcc, v79, v201\n" },
+    { 0x7c8192ffU, 0x40000000U, true, "        v_cmps_f_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c83934fU, 0, false, "        v_cmps_lt_f32   vcc, v79, v201\n" },
+    { 0x7c8392ffU, 0x40000000U, true, "        v_cmps_lt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c85934fU, 0, false, "        v_cmps_eq_f32   vcc, v79, v201\n" },
+    { 0x7c8592ffU, 0x40000000U, true, "        v_cmps_eq_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c87934fU, 0, false, "        v_cmps_le_f32   vcc, v79, v201\n" },
+    { 0x7c8792ffU, 0x40000000U, true, "        v_cmps_le_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c89934fU, 0, false, "        v_cmps_gt_f32   vcc, v79, v201\n" },
+    { 0x7c8992ffU, 0x40000000U, true, "        v_cmps_gt_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c8b934fU, 0, false, "        v_cmps_lg_f32   vcc, v79, v201\n" },
+    { 0x7c8b92ffU, 0x40000000U, true, "        v_cmps_lg_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c8d934fU, 0, false, "        v_cmps_ge_f32   vcc, v79, v201\n" },
+    { 0x7c8d92ffU, 0x40000000U, true, "        v_cmps_ge_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c8f934fU, 0, false, "        v_cmps_o_f32    vcc, v79, v201\n" },
+    { 0x7c8f92ffU, 0x40000000U, true, "        v_cmps_o_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c91934fU, 0, false, "        v_cmps_u_f32    vcc, v79, v201\n" },
+    { 0x7c9192ffU, 0x40000000U, true, "        v_cmps_u_f32    "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c93934fU, 0, false, "        v_cmps_nge_f32  vcc, v79, v201\n" },
+    { 0x7c9392ffU, 0x40000000U, true, "        v_cmps_nge_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c95934fU, 0, false, "        v_cmps_nlg_f32  vcc, v79, v201\n" },
+    { 0x7c9592ffU, 0x40000000U, true, "        v_cmps_nlg_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c97934fU, 0, false, "        v_cmps_ngt_f32  vcc, v79, v201\n" },
+    { 0x7c9792ffU, 0x40000000U, true, "        v_cmps_ngt_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c99934fU, 0, false, "        v_cmps_nle_f32  vcc, v79, v201\n" },
+    { 0x7c9992ffU, 0x40000000U, true, "        v_cmps_nle_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c9b934fU, 0, false, "        v_cmps_neq_f32  vcc, v79, v201\n" },
+    { 0x7c9b92ffU, 0x40000000U, true, "        v_cmps_neq_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c9d934fU, 0, false, "        v_cmps_nlt_f32  vcc, v79, v201\n" },
+    { 0x7c9d92ffU, 0x40000000U, true, "        v_cmps_nlt_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7c9f934fU, 0, false, "        v_cmps_tru_f32  vcc, v79, v201\n" },
+    { 0x7c9f92ffU, 0x40000000U, true, "        v_cmps_tru_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7ca1934fU, 0, false, "        v_cmpsx_f_f32   vcc, v79, v201\n" },
+    { 0x7ca192ffU, 0x40000000U, true, "        v_cmpsx_f_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7ca3934fU, 0, false, "        v_cmpsx_lt_f32  vcc, v79, v201\n" },
+    { 0x7ca392ffU, 0x40000000U, true, "        v_cmpsx_lt_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7ca5934fU, 0, false, "        v_cmpsx_eq_f32  vcc, v79, v201\n" },
+    { 0x7ca592ffU, 0x40000000U, true, "        v_cmpsx_eq_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7ca7934fU, 0, false, "        v_cmpsx_le_f32  vcc, v79, v201\n" },
+    { 0x7ca792ffU, 0x40000000U, true, "        v_cmpsx_le_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7ca9934fU, 0, false, "        v_cmpsx_gt_f32  vcc, v79, v201\n" },
+    { 0x7ca992ffU, 0x40000000U, true, "        v_cmpsx_gt_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cab934fU, 0, false, "        v_cmpsx_lg_f32  vcc, v79, v201\n" },
+    { 0x7cab92ffU, 0x40000000U, true, "        v_cmpsx_lg_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cad934fU, 0, false, "        v_cmpsx_ge_f32  vcc, v79, v201\n" },
+    { 0x7cad92ffU, 0x40000000U, true, "        v_cmpsx_ge_f32  "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7caf934fU, 0, false, "        v_cmpsx_o_f32   vcc, v79, v201\n" },
+    { 0x7caf92ffU, 0x40000000U, true, "        v_cmpsx_o_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cb1934fU, 0, false, "        v_cmpsx_u_f32   vcc, v79, v201\n" },
+    { 0x7cb192ffU, 0x40000000U, true, "        v_cmpsx_u_f32   "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cb3934fU, 0, false, "        v_cmpsx_nge_f32 vcc, v79, v201\n" },
+    { 0x7cb392ffU, 0x40000000U, true, "        v_cmpsx_nge_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cb5934fU, 0, false, "        v_cmpsx_nlg_f32 vcc, v79, v201\n" },
+    { 0x7cb592ffU, 0x40000000U, true, "        v_cmpsx_nlg_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cb7934fU, 0, false, "        v_cmpsx_ngt_f32 vcc, v79, v201\n" },
+    { 0x7cb792ffU, 0x40000000U, true, "        v_cmpsx_ngt_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cb9934fU, 0, false, "        v_cmpsx_nle_f32 vcc, v79, v201\n" },
+    { 0x7cb992ffU, 0x40000000U, true, "        v_cmpsx_nle_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cbb934fU, 0, false, "        v_cmpsx_neq_f32 vcc, v79, v201\n" },
+    { 0x7cbb92ffU, 0x40000000U, true, "        v_cmpsx_neq_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cbd934fU, 0, false, "        v_cmpsx_nlt_f32 vcc, v79, v201\n" },
+    { 0x7cbd92ffU, 0x40000000U, true, "        v_cmpsx_nlt_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7cbf934fU, 0, false, "        v_cmpsx_tru_f32 vcc, v79, v201\n" },
+    { 0x7cbf92ffU, 0x40000000U, true, "        v_cmpsx_tru_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    
+    { 0x7cc1934fU, 0, false, "        v_cmps_f_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7cc192ffU, 0x40000000U, true, "        v_cmps_f_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cc3934fU, 0, false, "        v_cmps_lt_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7cc392ffU, 0x40000000U, true, "        v_cmps_lt_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cc5934fU, 0, false, "        v_cmps_eq_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7cc592ffU, 0x40000000U, true, "        v_cmps_eq_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cc7934fU, 0, false, "        v_cmps_le_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7cc792ffU, 0x40000000U, true, "        v_cmps_le_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cc9934fU, 0, false, "        v_cmps_gt_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7cc992ffU, 0x40000000U, true, "        v_cmps_gt_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ccb934fU, 0, false, "        v_cmps_lg_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7ccb92ffU, 0x40000000U, true, "        v_cmps_lg_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ccd934fU, 0, false, "        v_cmps_ge_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7ccd92ffU, 0x40000000U, true, "        v_cmps_ge_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ccf934fU, 0, false, "        v_cmps_o_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7ccf92ffU, 0x40000000U, true, "        v_cmps_o_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cd1934fU, 0, false, "        v_cmps_u_f64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7cd192ffU, 0x40000000U, true, "        v_cmps_u_f64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cd3934fU, 0, false, "        v_cmps_nge_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cd392ffU, 0x40000000U, true, "        v_cmps_nge_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cd5934fU, 0, false, "        v_cmps_nlg_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cd592ffU, 0x40000000U, true, "        v_cmps_nlg_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cd7934fU, 0, false, "        v_cmps_ngt_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cd792ffU, 0x40000000U, true, "        v_cmps_ngt_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cd9934fU, 0, false, "        v_cmps_nle_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cd992ffU, 0x40000000U, true, "        v_cmps_nle_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cdb934fU, 0, false, "        v_cmps_neq_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cdb92ffU, 0x40000000U, true, "        v_cmps_neq_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cdd934fU, 0, false, "        v_cmps_nlt_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cdd92ffU, 0x40000000U, true, "        v_cmps_nlt_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cdf934fU, 0, false, "        v_cmps_tru_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7cdf92ffU, 0x40000000U, true, "        v_cmps_tru_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ce1934fU, 0, false, "        v_cmpsx_f_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7ce192ffU, 0x40000000U, true, "        v_cmpsx_f_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ce3934fU, 0, false, "        v_cmpsx_lt_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7ce392ffU, 0x40000000U, true, "        v_cmpsx_lt_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ce5934fU, 0, false, "        v_cmpsx_eq_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7ce592ffU, 0x40000000U, true, "        v_cmpsx_eq_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ce7934fU, 0, false, "        v_cmpsx_le_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7ce792ffU, 0x40000000U, true, "        v_cmpsx_le_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ce9934fU, 0, false, "        v_cmpsx_gt_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7ce992ffU, 0x40000000U, true, "        v_cmpsx_gt_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ceb934fU, 0, false, "        v_cmpsx_lg_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7ceb92ffU, 0x40000000U, true, "        v_cmpsx_lg_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ced934fU, 0, false, "        v_cmpsx_ge_f64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7ced92ffU, 0x40000000U, true, "        v_cmpsx_ge_f64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cef934fU, 0, false, "        v_cmpsx_o_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7cef92ffU, 0x40000000U, true, "        v_cmpsx_o_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cf1934fU, 0, false, "        v_cmpsx_u_f64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7cf192ffU, 0x40000000U, true, "        v_cmpsx_u_f64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cf3934fU, 0, false, "        v_cmpsx_nge_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cf392ffU, 0x40000000U, true, "        v_cmpsx_nge_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cf5934fU, 0, false, "        v_cmpsx_nlg_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cf592ffU, 0x40000000U, true, "        v_cmpsx_nlg_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cf7934fU, 0, false, "        v_cmpsx_ngt_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cf792ffU, 0x40000000U, true, "        v_cmpsx_ngt_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cf9934fU, 0, false, "        v_cmpsx_nle_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cf992ffU, 0x40000000U, true, "        v_cmpsx_nle_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cfb934fU, 0, false, "        v_cmpsx_neq_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cfb92ffU, 0x40000000U, true, "        v_cmpsx_neq_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cfd934fU, 0, false, "        v_cmpsx_nlt_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cfd92ffU, 0x40000000U, true, "        v_cmpsx_nlt_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7cff934fU, 0, false, "        v_cmpsx_tru_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7cff92ffU, 0x40000000U, true, "        v_cmpsx_tru_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+                
+    /*** integer comparisons and classes ***/
+    { 0x7d01934fU, 0, false, "        v_cmp_f_i32     vcc, v79, v201\n" },
+    { 0x7d0192ffU, 0x40000000U, true, "        v_cmp_f_i32     vcc, 0x40000000, v201\n" },
+    { 0x7d03934fU, 0, false, "        v_cmp_lt_i32    vcc, v79, v201\n" },
+    { 0x7d0392ffU, 0x40000000U, true, "        v_cmp_lt_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d05934fU, 0, false, "        v_cmp_eq_i32    vcc, v79, v201\n" },
+    { 0x7d0592ffU, 0x40000000U, true, "        v_cmp_eq_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d07934fU, 0, false, "        v_cmp_le_i32    vcc, v79, v201\n" },
+    { 0x7d0792ffU, 0x40000000U, true, "        v_cmp_le_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d09934fU, 0, false, "        v_cmp_gt_i32    vcc, v79, v201\n" },
+    { 0x7d0992ffU, 0x40000000U, true, "        v_cmp_gt_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d0b934fU, 0, false, "        v_cmp_lg_i32    vcc, v79, v201\n" },
+    { 0x7d0b92ffU, 0x40000000U, true, "        v_cmp_lg_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d0d934fU, 0, false, "        v_cmp_ge_i32    vcc, v79, v201\n" },
+    { 0x7d0d92ffU, 0x40000000U, true, "        v_cmp_ge_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d0f934fU, 0, false, "        v_cmp_tru_i32   vcc, v79, v201\n" },
+    { 0x7d0f92ffU, 0x40000000U, true, "        v_cmp_tru_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d11934fU, 0, false, "        v_cmp_class_f32 vcc, v79, v201\n" },
+    { 0x7d1192ffU, 0x40000000U, true, "        v_cmp_class_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7d13934fU, 0, false, "        VOPC_ill_137    vcc, v79, v201\n" },
+    { 0x7d15934fU, 0, false, "        VOPC_ill_138    vcc, v79, v201\n" },
+    { 0x7d17934fU, 0, false, "        VOPC_ill_139    vcc, v79, v201\n" },
+    { 0x7d19934fU, 0, false, "        VOPC_ill_140    vcc, v79, v201\n" },
+    { 0x7d1b934fU, 0, false, "        VOPC_ill_141    vcc, v79, v201\n" },
+    { 0x7d1d934fU, 0, false, "        VOPC_ill_142    vcc, v79, v201\n" },
+    { 0x7d1f934fU, 0, false, "        VOPC_ill_143    vcc, v79, v201\n" },
+    { 0x7d21934fU, 0, false, "        v_cmpx_f_i32    vcc, v79, v201\n" },
+    { 0x7d2192ffU, 0x40000000U, true, "        v_cmpx_f_i32    vcc, 0x40000000, v201\n" },
+    { 0x7d23934fU, 0, false, "        v_cmpx_lt_i32   vcc, v79, v201\n" },
+    { 0x7d2392ffU, 0x40000000U, true, "        v_cmpx_lt_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d25934fU, 0, false, "        v_cmpx_eq_i32   vcc, v79, v201\n" },
+    { 0x7d2592ffU, 0x40000000U, true, "        v_cmpx_eq_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d27934fU, 0, false, "        v_cmpx_le_i32   vcc, v79, v201\n" },
+    { 0x7d2792ffU, 0x40000000U, true, "        v_cmpx_le_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d29934fU, 0, false, "        v_cmpx_gt_i32   vcc, v79, v201\n" },
+    { 0x7d2992ffU, 0x40000000U, true, "        v_cmpx_gt_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d2b934fU, 0, false, "        v_cmpx_lg_i32   vcc, v79, v201\n" },
+    { 0x7d2b92ffU, 0x40000000U, true, "        v_cmpx_lg_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d2d934fU, 0, false, "        v_cmpx_ge_i32   vcc, v79, v201\n" },
+    { 0x7d2d92ffU, 0x40000000U, true, "        v_cmpx_ge_i32   vcc, 0x40000000, v201\n" },
+    { 0x7d2f934fU, 0, false, "        v_cmpx_tru_i32  vcc, v79, v201\n" },
+    { 0x7d2f92ffU, 0x40000000U, true, "        v_cmpx_tru_i32  vcc, 0x40000000, v201\n" },
+    { 0x7d31934fU, 0, false, "        v_cmpx_class_f32 vcc, v79, v201\n" },
+    { 0x7d3192ffU, 0x40000000U, true, "        v_cmpx_class_f32 "
+                "vcc, 0x40000000 /* 2f */, v201\n" },
+    { 0x7d33934fU, 0, false, "        VOPC_ill_153    vcc, v79, v201\n" },
+    { 0x7d35934fU, 0, false, "        VOPC_ill_154    vcc, v79, v201\n" },
+    { 0x7d37934fU, 0, false, "        VOPC_ill_155    vcc, v79, v201\n" },
+    { 0x7d39934fU, 0, false, "        VOPC_ill_156    vcc, v79, v201\n" },
+    { 0x7d3b934fU, 0, false, "        VOPC_ill_157    vcc, v79, v201\n" },
+    { 0x7d3d934fU, 0, false, "        VOPC_ill_158    vcc, v79, v201\n" },
+    { 0x7d3f934fU, 0, false, "        VOPC_ill_159    vcc, v79, v201\n" },
+    
+    { 0x7d41934fU, 0, false, "        v_cmp_f_i64     vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4192ffU, 0x40000000U, true, "        v_cmp_f_i64     "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d43934fU, 0, false, "        v_cmp_lt_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4392ffU, 0x40000000U, true, "        v_cmp_lt_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d45934fU, 0, false, "        v_cmp_eq_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4592ffU, 0x40000000U, true, "        v_cmp_eq_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d47934fU, 0, false, "        v_cmp_le_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4792ffU, 0x40000000U, true, "        v_cmp_le_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d49934fU, 0, false, "        v_cmp_gt_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4992ffU, 0x40000000U, true, "        v_cmp_gt_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d4b934fU, 0, false, "        v_cmp_lg_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4b92ffU, 0x40000000U, true, "        v_cmp_lg_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d4d934fU, 0, false, "        v_cmp_ge_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4d92ffU, 0x40000000U, true, "        v_cmp_ge_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d4f934fU, 0, false, "        v_cmp_tru_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d4f92ffU, 0x40000000U, true, "        v_cmp_tru_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d51934fU, 0, false, "        v_cmp_class_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7d5192ffU, 0x40000000U, true, "        v_cmp_class_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d53934fU, 0, false, "        VOPC_ill_169    vcc, v79, v201\n" },
+    { 0x7d55934fU, 0, false, "        VOPC_ill_170    vcc, v79, v201\n" },
+    { 0x7d57934fU, 0, false, "        VOPC_ill_171    vcc, v79, v201\n" },
+    { 0x7d59934fU, 0, false, "        VOPC_ill_172    vcc, v79, v201\n" },
+    { 0x7d5b934fU, 0, false, "        VOPC_ill_173    vcc, v79, v201\n" },
+    { 0x7d5d934fU, 0, false, "        VOPC_ill_174    vcc, v79, v201\n" },
+    { 0x7d5f934fU, 0, false, "        VOPC_ill_175    vcc, v79, v201\n" },
+    { 0x7d61934fU, 0, false, "        v_cmpx_f_i64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6192ffU, 0x40000000U, true, "        v_cmpx_f_i64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d63934fU, 0, false, "        v_cmpx_lt_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6392ffU, 0x40000000U, true, "        v_cmpx_lt_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d65934fU, 0, false, "        v_cmpx_eq_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6592ffU, 0x40000000U, true, "        v_cmpx_eq_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d67934fU, 0, false, "        v_cmpx_le_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6792ffU, 0x40000000U, true, "        v_cmpx_le_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d69934fU, 0, false, "        v_cmpx_gt_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6992ffU, 0x40000000U, true, "        v_cmpx_gt_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d6b934fU, 0, false, "        v_cmpx_lg_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6b92ffU, 0x40000000U, true, "        v_cmpx_lg_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d6d934fU, 0, false, "        v_cmpx_ge_i64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6d92ffU, 0x40000000U, true, "        v_cmpx_ge_i64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d6f934fU, 0, false, "        v_cmpx_tru_i64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7d6f92ffU, 0x40000000U, true, "        v_cmpx_tru_i64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d71934fU, 0, false, "        v_cmpx_class_f64 vcc, v[79:80], v[201:202]\n" },
+    { 0x7d7192ffU, 0x40000000U, true, "        v_cmpx_class_f64 "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7d73934fU, 0, false, "        VOPC_ill_185    vcc, v79, v201\n" },
+    { 0x7d75934fU, 0, false, "        VOPC_ill_186    vcc, v79, v201\n" },
+    { 0x7d77934fU, 0, false, "        VOPC_ill_187    vcc, v79, v201\n" },
+    { 0x7d79934fU, 0, false, "        VOPC_ill_188    vcc, v79, v201\n" },
+    { 0x7d7b934fU, 0, false, "        VOPC_ill_189    vcc, v79, v201\n" },
+    { 0x7d7d934fU, 0, false, "        VOPC_ill_190    vcc, v79, v201\n" },
+    { 0x7d7f934fU, 0, false, "        VOPC_ill_191    vcc, v79, v201\n" },
+    
+    /* unsigned integer comparisons */
+    { 0x7d81934fU, 0, false, "        v_cmp_f_u32     vcc, v79, v201\n" },
+    { 0x7d8192ffU, 0x40000000U, true, "        v_cmp_f_u32     vcc, 0x40000000, v201\n" },
+    { 0x7d83934fU, 0, false, "        v_cmp_lt_u32    vcc, v79, v201\n" },
+    { 0x7d8392ffU, 0x40000000U, true, "        v_cmp_lt_u32    vcc, 0x40000000, v201\n" },
+    { 0x7d85934fU, 0, false, "        v_cmp_eq_u32    vcc, v79, v201\n" },
+    { 0x7d8592ffU, 0x40000000U, true, "        v_cmp_eq_u32    vcc, 0x40000000, v201\n" },
+    { 0x7d87934fU, 0, false, "        v_cmp_le_u32    vcc, v79, v201\n" },
+    { 0x7d8792ffU, 0x40000000U, true, "        v_cmp_le_u32    vcc, 0x40000000, v201\n" },
+    { 0x7d89934fU, 0, false, "        v_cmp_gt_u32    vcc, v79, v201\n" },
+    { 0x7d8992ffU, 0x40000000U, true, "        v_cmp_gt_u32    vcc, 0x40000000, v201\n" },
+    { 0x7d8b934fU, 0, false, "        v_cmp_lg_u32    vcc, v79, v201\n" },
+    { 0x7d8b92ffU, 0x40000000U, true, "        v_cmp_lg_u32    vcc, 0x40000000, v201\n" },
+    { 0x7d8d934fU, 0, false, "        v_cmp_ge_u32    vcc, v79, v201\n" },
+    { 0x7d8d92ffU, 0x40000000U, true, "        v_cmp_ge_u32    vcc, 0x40000000, v201\n" },
+    { 0x7d8f934fU, 0, false, "        v_cmp_tru_u32   vcc, v79, v201\n" },
+    { 0x7d8f92ffU, 0x40000000U, true, "        v_cmp_tru_u32   vcc, 0x40000000, v201\n" },
+    { 0x7d91934fU, 0, false, "        VOPC_ill_200    vcc, v79, v201\n" },
+    { 0x7d93934fU, 0, false, "        VOPC_ill_201    vcc, v79, v201\n" },
+    { 0x7d95934fU, 0, false, "        VOPC_ill_202    vcc, v79, v201\n" },
+    { 0x7d97934fU, 0, false, "        VOPC_ill_203    vcc, v79, v201\n" },
+    { 0x7d99934fU, 0, false, "        VOPC_ill_204    vcc, v79, v201\n" },
+    { 0x7d9b934fU, 0, false, "        VOPC_ill_205    vcc, v79, v201\n" },
+    { 0x7d9d934fU, 0, false, "        VOPC_ill_206    vcc, v79, v201\n" },
+    { 0x7d9f934fU, 0, false, "        VOPC_ill_207    vcc, v79, v201\n" },
+    { 0x7da1934fU, 0, false, "        v_cmpx_f_u32    vcc, v79, v201\n" },
+    { 0x7da192ffU, 0x40000000U, true, "        v_cmpx_f_u32    vcc, 0x40000000, v201\n" },
+    { 0x7da3934fU, 0, false, "        v_cmpx_lt_u32   vcc, v79, v201\n" },
+    { 0x7da392ffU, 0x40000000U, true, "        v_cmpx_lt_u32   vcc, 0x40000000, v201\n" },
+    { 0x7da5934fU, 0, false, "        v_cmpx_eq_u32   vcc, v79, v201\n" },
+    { 0x7da592ffU, 0x40000000U, true, "        v_cmpx_eq_u32   vcc, 0x40000000, v201\n" },
+    { 0x7da7934fU, 0, false, "        v_cmpx_le_u32   vcc, v79, v201\n" },
+    { 0x7da792ffU, 0x40000000U, true, "        v_cmpx_le_u32   vcc, 0x40000000, v201\n" },
+    { 0x7da9934fU, 0, false, "        v_cmpx_gt_u32   vcc, v79, v201\n" },
+    { 0x7da992ffU, 0x40000000U, true, "        v_cmpx_gt_u32   vcc, 0x40000000, v201\n" },
+    { 0x7dab934fU, 0, false, "        v_cmpx_lg_u32   vcc, v79, v201\n" },
+    { 0x7dab92ffU, 0x40000000U, true, "        v_cmpx_lg_u32   vcc, 0x40000000, v201\n" },
+    { 0x7dad934fU, 0, false, "        v_cmpx_ge_u32   vcc, v79, v201\n" },
+    { 0x7dad92ffU, 0x40000000U, true, "        v_cmpx_ge_u32   vcc, 0x40000000, v201\n" },
+    { 0x7daf934fU, 0, false, "        v_cmpx_tru_u32  vcc, v79, v201\n" },
+    { 0x7daf92ffU, 0x40000000U, true, "        v_cmpx_tru_u32  vcc, 0x40000000, v201\n" },
+    { 0x7db1934fU, 0, false, "        VOPC_ill_216    vcc, v79, v201\n" },
+    { 0x7db3934fU, 0, false, "        VOPC_ill_217    vcc, v79, v201\n" },
+    { 0x7db5934fU, 0, false, "        VOPC_ill_218    vcc, v79, v201\n" },
+    { 0x7db7934fU, 0, false, "        VOPC_ill_219    vcc, v79, v201\n" },
+    { 0x7db9934fU, 0, false, "        VOPC_ill_220    vcc, v79, v201\n" },
+    { 0x7dbb934fU, 0, false, "        VOPC_ill_221    vcc, v79, v201\n" },
+    { 0x7dbd934fU, 0, false, "        VOPC_ill_222    vcc, v79, v201\n" },
+    { 0x7dbf934fU, 0, false, "        VOPC_ill_223    vcc, v79, v201\n" },
+    
+    { 0x7dc1934fU, 0, false, "        v_cmp_f_u64     vcc, v[79:80], v[201:202]\n" },
+    { 0x7dc192ffU, 0x40000000U, true, "        v_cmp_f_u64     "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dc3934fU, 0, false, "        v_cmp_lt_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7dc392ffU, 0x40000000U, true, "        v_cmp_lt_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dc5934fU, 0, false, "        v_cmp_eq_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7dc592ffU, 0x40000000U, true, "        v_cmp_eq_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dc7934fU, 0, false, "        v_cmp_le_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7dc792ffU, 0x40000000U, true, "        v_cmp_le_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dc9934fU, 0, false, "        v_cmp_gt_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7dc992ffU, 0x40000000U, true, "        v_cmp_gt_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dcb934fU, 0, false, "        v_cmp_lg_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7dcb92ffU, 0x40000000U, true, "        v_cmp_lg_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dcd934fU, 0, false, "        v_cmp_ge_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7dcd92ffU, 0x40000000U, true, "        v_cmp_ge_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dcf934fU, 0, false, "        v_cmp_tru_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7dcf92ffU, 0x40000000U, true, "        v_cmp_tru_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7dd1934fU, 0, false, "        VOPC_ill_232    vcc, v79, v201\n" },
+    { 0x7dd3934fU, 0, false, "        VOPC_ill_233    vcc, v79, v201\n" },
+    { 0x7dd5934fU, 0, false, "        VOPC_ill_234    vcc, v79, v201\n" },
+    { 0x7dd7934fU, 0, false, "        VOPC_ill_235    vcc, v79, v201\n" },
+    { 0x7dd9934fU, 0, false, "        VOPC_ill_236    vcc, v79, v201\n" },
+    { 0x7ddb934fU, 0, false, "        VOPC_ill_237    vcc, v79, v201\n" },
+    { 0x7ddd934fU, 0, false, "        VOPC_ill_238    vcc, v79, v201\n" },
+    { 0x7ddf934fU, 0, false, "        VOPC_ill_239    vcc, v79, v201\n" },
+    { 0x7de1934fU, 0, false, "        v_cmpx_f_u64    vcc, v[79:80], v[201:202]\n" },
+    { 0x7de192ffU, 0x40000000U, true, "        v_cmpx_f_u64    "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7de3934fU, 0, false, "        v_cmpx_lt_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7de392ffU, 0x40000000U, true, "        v_cmpx_lt_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7de5934fU, 0, false, "        v_cmpx_eq_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7de592ffU, 0x40000000U, true, "        v_cmpx_eq_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7de7934fU, 0, false, "        v_cmpx_le_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7de792ffU, 0x40000000U, true, "        v_cmpx_le_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7de9934fU, 0, false, "        v_cmpx_gt_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7de992ffU, 0x40000000U, true, "        v_cmpx_gt_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7deb934fU, 0, false, "        v_cmpx_lg_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7deb92ffU, 0x40000000U, true, "        v_cmpx_lg_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7ded934fU, 0, false, "        v_cmpx_ge_u64   vcc, v[79:80], v[201:202]\n" },
+    { 0x7ded92ffU, 0x40000000U, true, "        v_cmpx_ge_u64   "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7def934fU, 0, false, "        v_cmpx_tru_u64  vcc, v[79:80], v[201:202]\n" },
+    { 0x7def92ffU, 0x40000000U, true, "        v_cmpx_tru_u64  "
+                "vcc, 0x40000000, v[201:202]\n" },
+    { 0x7df1934fU, 0, false, "        VOPC_ill_248    vcc, v79, v201\n" },
+    { 0x7df3934fU, 0, false, "        VOPC_ill_249    vcc, v79, v201\n" },
+    { 0x7df5934fU, 0, false, "        VOPC_ill_250    vcc, v79, v201\n" },
+    { 0x7df7934fU, 0, false, "        VOPC_ill_251    vcc, v79, v201\n" },
+    { 0x7df9934fU, 0, false, "        VOPC_ill_252    vcc, v79, v201\n" },
+    { 0x7dfb934fU, 0, false, "        VOPC_ill_253    vcc, v79, v201\n" },
+    { 0x7dfd934fU, 0, false, "        VOPC_ill_254    vcc, v79, v201\n" },
+    { 0x7dff934fU, 0, false, "        VOPC_ill_255    vcc, v79, v201\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
