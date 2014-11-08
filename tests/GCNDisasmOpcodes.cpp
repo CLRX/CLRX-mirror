@@ -318,6 +318,14 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xc359bb5bU, 0, false, "        SMRD_ill_13     s51, s[58:59], 0x5b\n" },
     { 0xc399bb5bU, 0, false, "        SMRD_ill_14     s51, s[58:59], 0x5b\n" },
     { 0xc3d9bb5bU, 0, false, "        SMRD_ill_15     s51, s[58:59], 0x5b\n" },
+    { 0xc7998000U, 0, false, "        s_memtime       s[51:52]\n" },
+    { 0xc7998044U, 0, false, "        s_memtime       s[51:52] offset=0x44\n" },
+    { 0xc7998144U, 0, false, "        s_memtime       s[51:52] offset=0x44 imm=1\n" },
+    { 0xc7c00000U, 0, false, "        s_dcache_inv\n" },
+    { 0xc7c00100U, 0, false, "        s_dcache_inv    imm=1\n" },
+    { 0xc7fff023U, 0, false, "        s_dcache_inv    sdst=0x7f sbase=0x38 offset=0x23\n" },
+    { 0xc7fff000U, 0, false, "        s_dcache_inv    sdst=0x7f sbase=0x38\n" },
+    { 0xc7c07000U, 0, false, "        s_dcache_inv    sbase=0x38\n" },
     /* VOP2 encoding */
     { 0x0134d715U, 0, false, "        v_cndmask_b32   v154, v21, v107, vcc\n" },
     { 0x0134d6ffU, 0x445aa, true , "        v_cndmask_b32   v154, 0x445aa, v107, vcc\n" },
@@ -1152,6 +1160,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7dfb934fU, 0, false, "        VOPC_ill_253    vcc, v79, v201\n" },
     { 0x7dfd934fU, 0, false, "        VOPC_ill_254    vcc, v79, v201\n" },
     { 0x7dff934fU, 0, false, "        VOPC_ill_255    vcc, v79, v201\n" },
+    /* VOP3 encoding */
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

@@ -191,7 +191,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_buffer_load_dwordx4",GCNENC_SMRD,   GCN_MEMOP_MX4|GCN_SBASE4, 10,   ARCH_GCN_ALL  },
     { "s_buffer_load_dwordx8",GCNENC_SMRD,   GCN_MEMOP_MX8|GCN_SBASE4, 11,   ARCH_GCN_ALL  },
     { "s_buffer_load_dwordx16",GCNENC_SMRD,   GCN_MEMOP_MX16|GCN_SBASE4, 12,   ARCH_GCN_ALL  },
-    { "s_memtime",           GCNENC_SMRD,   GCN_REG_DST_64,           30,   ARCH_GCN_ALL  },
+    { "s_memtime",           GCNENC_SMRD,   GCN_SMRD_ONLYDST|GCN_REG_DST_64, 30,   ARCH_GCN_ALL  },
     { "s_dcache_inv",        GCNENC_SMRD,   GCN_ARG_NONE,             31,   ARCH_GCN_ALL  },
     { "v_cndmask_b32",       GCNENC_VOP2,   GCN_SRC2_VCC,             0,    ARCH_GCN_ALL  },
     { "v_cndmask_b32",       GCNENC_VOP3A,  GCN_SRC2_VCC,             256,  ARCH_GCN_ALL  },

@@ -804,19 +804,74 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
 static size_t decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
-    size_t bufPos = addSpaces(buf, spacesToAdd);
-    const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_MASK2)>>GCN_SHIFT2);
-    bufPos += decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, buf + bufPos, arch);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand((insnCode>>8)&0x7e,
-               (gcnInsn.mode&GCN_SBASE4)?4:2, buf + bufPos, arch);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    if (insnCode&0x100) // immediate value
-        bufPos += itocstrCStyle(insnCode&0xff, buf+bufPos, 11, 16);
-    else // S register
-        bufPos += decodeGCNOperand(insnCode&0xff, 1, buf + bufPos, arch);
+    size_t bufPos = 0;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    bool useDst = false;
+    bool useOthers = false;
+    
+    bool spacesAdded = false;
+    if (mode1 == GCN_SMRD_ONLYDST)
+    {
+        bufPos += addSpaces(buf, spacesToAdd);
+        bufPos += decodeGCNOperand((insnCode>>15)&0x7f,
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
+        useDst = true;
+        spacesAdded = true;
+    }
+    else if (mode1 != GCN_ARG_NONE)
+    {
+        const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_MASK2)>>GCN_SHIFT2);
+        bufPos += addSpaces(buf, spacesToAdd);
+        bufPos += decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, buf + bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += decodeGCNOperand((insnCode>>8)&0x7e,
+                   (gcnInsn.mode&GCN_SBASE4)?4:2, buf + bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        if (insnCode&0x100) // immediate value
+            bufPos += itocstrCStyle(insnCode&0xff, buf+bufPos, 11, 16);
+        else // S register
+            bufPos += decodeGCNOperand(insnCode&0xff, 1, buf + bufPos, arch);
+        useDst = true;
+        useOthers = true;
+        spacesAdded = true;
+    }
+    
+    if (!useDst && (insnCode & 0x3f8000U) != 0)
+    {
+        bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " sdst=", 6);
+        bufPos += 6;
+        bufPos += itocstrCStyle((insnCode>>15)&0x7f, buf+bufPos, 6, 16);
+    }
+    if (!useOthers && (insnCode & 0x7e00U)!=0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " sbase=", 7);
+        bufPos += 7;
+        bufPos += itocstrCStyle((insnCode>>9)&0x3f, buf+bufPos, 6, 16);
+    }
+    if (!useOthers && (insnCode & 0xffU)!=0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " offset=", 8);
+        bufPos += 8;
+        bufPos += itocstrCStyle(insnCode&0xff, buf+bufPos, 6, 16);
+    }
+    if (!useOthers && (insnCode & 0x100U)!=0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " imm=1", 6);
+        bufPos += 6;
+    }
     return bufPos;
 }
 
@@ -884,7 +939,7 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          bool displayFloatLits)
 {
     size_t bufPos = addSpaces(buf, spacesToAdd);
-    const cxuint mode1 = (gcnInsn.mode & GCN_MASK1);
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     
     if (mode1 == GCN_DS1_SGPR)
         bufPos += decodeGCNOperand(((insnCode>>17)&0xff),
