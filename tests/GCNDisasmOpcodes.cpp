@@ -324,11 +324,23 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x0234bd15U, 0, false, "        v_readlane_b32  s26, v21, s94\n" },
     { 0x0434bd15U, 0, false, "        v_writelane_b32 v26, v21, s94\n" },
     { 0x0734d715U, 0, false, "        v_add_f32       v154, v21, v107\n" },
+    { 0x0734d6ffU, 0x40000000U, true, "        v_add_f32       v154, "
+            "0x40000000 /* 2f */, v107\n" },
     { 0x0934d715U, 0, false, "        v_sub_f32       v154, v21, v107\n" },
+    { 0x0934d6ffU, 0x40000000U, true, "        v_sub_f32       v154, "
+            "0x40000000 /* 2f */, v107\n" },
     { 0x0b34d715U, 0, false, "        v_subrev_f32    v154, v21, v107\n" },
+    { 0x0b34d6ffU, 0x40000000U, true, "        v_subrev_f32    v154, "
+            "0x40000000 /* 2f */, v107\n" },
     { 0x0d34d715U, 0, false, "        v_mac_legacy_f32 v154, v21, v107\n" },
+    { 0x0d34d6ffU, 0x40000000U, true, "        v_mac_legacy_f32 v154, "
+            "0x40000000 /* 2f */, v107\n" },
     { 0x0f34d715U, 0, false, "        v_mul_legacy_f32 v154, v21, v107\n" },
+    { 0x0f34d6ffU, 0x40000000U, true, "        v_mul_legacy_f32 v154, "
+        "0x40000000 /* 2f */, v107\n" },
     { 0x1134d715U, 0, false, "        v_mul_f32       v154, v21, v107\n" },
+    { 0x1134d6ffU, 0x40000000U, true, "        v_mul_f32       v154, "
+        "0x40000000 /* 2f */, v107\n" },
     { 0x1334d715U, 0, false, "        v_mul_i32_i24   v154, v21, v107\n" },
     { 0x1534d715U, 0, false, "        v_mul_hi_i32_i24 v154, v21, v107\n" },
     { 0x1734d715U, 0, false, "        v_mul_u32_u24   v154, v21, v107\n" },
@@ -353,13 +365,15 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x3d34d715U, 0, false, "        v_bfm_b32       v154, v21, v107\n" },
     { 0x3f34d715U, 0, false, "        v_mac_f32       v154, v21, v107\n" },
     { 0x4134d715U, 0x567d0700U, true, "        v_madmk_f32     "
-            "v154, v21, 0x567d0700, v107\n" }, /* check floatLits */
+            "v154, v21, 0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
     { 0x4134d6ffU, 0x567d0700U, true, "        v_madmk_f32     "
-            "v154, 0x567d0700, 0x567d0700, v107\n" }, /* check floatLits */
+            "v154, 0x567d0700 /* 6.9551627e+13f */, "
+            "0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
     { 0x4334d715U, 0x567d0700U, true, "        v_madak_f32     "
-            "v154, v21, v107, 0x567d0700\n" },  /* check floatLits */
+            "v154, v21, v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
     { 0x4334d6ffU, 0x567d0700U, true, "        v_madak_f32     "
-            "v154, 0x567d0700, v107, 0x567d0700\n" },  /* check floatLits */
+            "v154, 0x567d0700 /* 6.9551627e+13f */, "
+            "v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
     { 0x4534d715U, 0, false, "        v_bcnt_u32_b32  v154, v21, v107\n" },
     { 0x4734d715U, 0, false, "        v_mbcnt_lo_u32_b32 v154, v21, v107\n" },
     { 0x4934d715U, 0, false, "        v_mbcnt_hi_u32_b32 v154, v21, v107\n" },
@@ -391,7 +405,71 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7f3c074fU, 0, false, "        v_cvt_i32_f64   v158, v[79:80]\n" },
     { 0x7f3c094fU, 0, false, "        v_cvt_f64_i32   v[158:159], v79\n" },
     { 0x7f3c0b4fU, 0, false, "        v_cvt_f32_i32   v158, v79\n" },
+    { 0x7f3c0affU, 0x4556fd, true, "        v_cvt_f32_i32   v158, 0x4556fd\n" },
     { 0x7f3c0d4fU, 0, false, "        v_cvt_f32_u32   v158, v79\n" },
+    { 0x7f3c0cffU, 0x40000000U, true, "        v_cvt_f32_u32   v158, 0x40000000\n" },
+    { 0x7f3c0f4fU, 0, false, "        v_cvt_u32_f32   v158, v79\n" },
+    { 0x7f3c0effU, 0x40000000U, true, "        v_cvt_u32_f32   v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c114fU, 0, false, "        v_cvt_i32_f32   v158, v79\n" },
+    { 0x7f3c10ffU, 0x40000000U, true, "        v_cvt_i32_f32   v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c134fU, 0, false, "        v_mov_fed_b32   v158, v79\n" },
+    { 0x7f3c154fU, 0, false, "        v_cvt_f16_f32   v158, v79\n" },
+    { 0x7f3c14ffU, 0x40000000U, true, "        v_cvt_f16_f32   v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c174fU, 0, false, "        v_cvt_f32_f16   v158, v79\n" },
+    { 0x7f3c16ffU, 0x40000000U, true, "        v_cvt_f32_f16   v158, "
+                "0x40000000\n" },
+    { 0x7f3c194fU, 0, false, "        v_cvt_rpi_i32_f32 v158, v79\n" },
+    { 0x7f3c18ffU, 0x40000000U, true, "        v_cvt_rpi_i32_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c1b4fU, 0, false, "        v_cvt_flr_i32_f32 v158, v79\n" },
+    { 0x7f3c1affU, 0x40000000U, true, "        v_cvt_flr_i32_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c1d4fU, 0, false, "        v_cvt_off_f32_i4 v158, v79\n" },
+    { 0x7f3c1cffU, 0x40000000U, true, "        v_cvt_off_f32_i4 v158, 0x40000000\n" },
+    { 0x7f3c1f4fU, 0, false, "        v_cvt_f32_f64   v158, v[79:80]\n" },
+    { 0x7f3c214fU, 0, false, "        v_cvt_f64_f32   v[158:159], v79\n" },
+    { 0x7f3c234fU, 0, false, "        v_cvt_f32_ubyte0 v158, v79\n" },
+    { 0x7f3c254fU, 0, false, "        v_cvt_f32_ubyte1 v158, v79\n" },
+    { 0x7f3c274fU, 0, false, "        v_cvt_f32_ubyte2 v158, v79\n" },
+    { 0x7f3c294fU, 0, false, "        v_cvt_f32_ubyte3 v158, v79\n" },
+    { 0x7f3c2b4fU, 0, false, "        v_cvt_u32_f64   v158, v[79:80]\n" },
+    { 0x7f3c2d4fU, 0, false, "        v_cvt_f64_u32   v[158:159], v79\n" },
+    { 0x7f3c2f4fU, 0, false, "        VOP1_ill_23     v158, v79\n" },
+    { 0x7f3c314fU, 0, false, "        VOP1_ill_24     v158, v79\n" },
+    { 0x7f3c334fU, 0, false, "        VOP1_ill_25     v158, v79\n" },
+    { 0x7f3c354fU, 0, false, "        VOP1_ill_26     v158, v79\n" },
+    { 0x7f3c374fU, 0, false, "        VOP1_ill_27     v158, v79\n" },
+    { 0x7f3c394fU, 0, false, "        VOP1_ill_28     v158, v79\n" },
+    { 0x7f3c3b4fU, 0, false, "        VOP1_ill_29     v158, v79\n" },
+    { 0x7f3c3d4fU, 0, false, "        VOP1_ill_30     v158, v79\n" },
+    { 0x7f3c3f4fU, 0, false, "        VOP1_ill_31     v158, v79\n" },
+    { 0x7f3c414fU, 0, false, "        v_fract_f32     v158, v79\n" },
+    { 0x7f3c40ffU, 0x40000000U, true, "        v_fract_f32     v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c434fU, 0, false, "        v_trunc_f32     v158, v79\n" },
+    { 0x7f3c42ffU, 0x40000000U, true, "        v_trunc_f32     v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c454fU, 0, false, "        v_ceil_f32      v158, v79\n" },
+    { 0x7f3c44ffU, 0x40000000U, true, "        v_ceil_f32      v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c474fU, 0, false, "        v_rndne_f32     v158, v79\n" },
+    { 0x7f3c46ffU, 0x40000000U, true, "        v_rndne_f32     v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c494fU, 0, false, "        v_floor_f32     v158, v79\n" },
+    { 0x7f3c48ffU, 0x40000000U, true, "        v_floor_f32     v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c4b4fU, 0, false, "        v_exp_f32       v158, v79\n" },
+    { 0x7f3c4affU, 0x40000000U, true, "        v_exp_f32       v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c4d4fU, 0, false, "        v_log_clamp_f32 v158, v79\n" },
+    { 0x7f3c4cffU, 0x40000000U, true, "        v_log_clamp_f32 v158, "
+                "0x40000000 /* 2f */\n" },
+    { 0x7f3c4f4fU, 0, false, "        v_log_f32       v158, v79\n" },
+    { 0x7f3c4effU, 0x40000000U, true, "        v_log_f32       v158, "
+                "0x40000000 /* 2f */\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
@@ -400,7 +478,7 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
     DisasmInput input;
     input.deviceType = GPUDeviceType::PITCAIRN;
     input.is64BitMode = false;
-    Disassembler disasm(&input, disOss, 0);
+    Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
     GCNDisassembler gcnDisasm(disasm);
     uint32_t inputCode[2] = { testCase.word0, testCase.word1 };
     gcnDisasm.setInput(testCase.twoWords?8:4, reinterpret_cast<cxbyte*>(inputCode));

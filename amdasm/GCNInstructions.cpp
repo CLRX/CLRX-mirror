@@ -307,7 +307,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_cvt_f32_i32",       GCNENC_VOP3A,  GCN_SRC12_NONE,           389,  ARCH_GCN_ALL  },
     { "v_cvt_f32_u32",       GCNENC_VOP1,   GCN_STDMODE,              6,    ARCH_GCN_ALL  },
     { "v_cvt_f32_u32",       GCNENC_VOP3A,  GCN_SRC12_NONE,           390,  ARCH_GCN_ALL  },
-    { "v_cvt_ui32_f32",      GCNENC_VOP1,   GCN_FLOATLIT,             7,    ARCH_GCN_ALL  },
+    { "v_cvt_u32_f32",       GCNENC_VOP1,   GCN_FLOATLIT,             7,    ARCH_GCN_ALL  },
     { "v_cvt_u32_f32",       GCNENC_VOP3A,  GCN_SRC12_NONE,           391,  ARCH_GCN_ALL  },
     { "v_cvt_i32_f32",       GCNENC_VOP1,   GCN_FLOATLIT,             8,    ARCH_GCN_ALL  },
     { "v_cvt_i32_f32",       GCNENC_VOP3A,  GCN_SRC12_NONE,           392,  ARCH_GCN_ALL  },
