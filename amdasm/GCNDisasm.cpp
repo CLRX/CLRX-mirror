@@ -1145,21 +1145,24 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     /* check whether instruction is this same like VOP2/VOP1/VOPC */
     bool isVOP1Word = false;
     if ((insnCode&(usedMask<<8)) == 0)
-    {
+    {   /* for VOPC */
         if (opcode < 256 && vdst == 106 /* vcc */ && omod==0 &&
             (insn2Code&(usedMask<<29)) == 0 &&
             vsrc0 >= 256 && vsrc1 >= 256 && vsrc2 == 0)
             isVOP1Word = true;
+        /* for VOP1 */
         else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP1 && omod==0 &&
             (insn2Code&(usedMask<<29)) == 0 &&
             ((!vsrc1Used && vsrc0 == 0) || vsrc0 >= 256) && vsrc1 == 0 && vsrc2 == 0)
             isVOP1Word = true;
+        /* for VOP2 */
         else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP2 && omod==0 &&
             (insn2Code&(usedMask<<29)) == 0 &&
             ((!vsrc1Used && vsrc0 == 0) || vsrc0 >= 256) && 
             ((!vsrc2Used && vsrc1 == 0) || vsrc1 >= 256) && vsrc2 == 0)
             isVOP1Word = true;
     }
+    /* for VOP2 encoded as VOP3b (v_addc....) */
     else if (gcnInsn.encoding == GCNENC_VOP3B && omod==0 && vsrc0 >= 256 &&
             (insn2Code&(usedMask<<29)) == 0 &&
             vsrc1 >= 256 && sdst == 106 /* vcc */ && vsrc2 == 0) /* VOP3b */
