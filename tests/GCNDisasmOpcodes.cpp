@@ -1162,6 +1162,36 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7dff934fU, 0, false, "        VOPC_ill_255    vcc, v79, v201\n" },
     
     /* VOP3 encoding */
+    { 0xd001002aU, 0x0002d732U, true, "        v_cmp_f_f32     s[42:43], v50, v107\n" },
+    { 0xd001032aU, 0x0002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107)\n" },
+    { 0xd0010b2aU, 0x0002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107) clamp\n" },
+    { 0xd0010b2aU, 0x0802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107) mul:2 clamp\n" },
+    { 0xd0010b2aU, 0x1002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), abs(v107) mul:4 clamp\n" },
+    { 0xd0010b2aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -abs(v107) div:2 clamp\n" },
+    { 0xd0010b2aU, 0xd802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], abs(v50), -abs(v107) div:2 clamp\n" },
+    { 0xd0010b2aU, 0xb802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), abs(v107) div:2 clamp\n" },
+    { 0xd0010a2aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -v50, -abs(v107) div:2 clamp\n" },
+    { 0xd001092aU, 0xf802d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -v107 div:2 clamp\n" },
+    { 0xd001012aU, 0x7002d732U, true, "        v_cmp_f_f32     "
+                "s[42:43], -abs(v50), -v107 mul:4\n" },
+    { 0xd001006aU, 0x0002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 vop3\n" },
+    { 0xd001002aU, 0x00aed732U, true, "        v_cmp_f_f32     "
+                "s[42:43], v50, v107 src2=0x2b\n" },
+    { 0xd001006aU, 0x00aed732U, true, "        v_cmp_f_f32     "
+                "vcc, v50, v107 src2=0x2b\n" },
+    { 0xd001006aU, 0x1002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 mul:4\n" },
+    { 0xd001006aU, 0x8002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 vop3\n" },
+    { 0xd001006aU, 0x4002d732U, true, "        v_cmp_f_f32     vcc, v50, -v107\n" },
+    { 0xd001016aU, 0x0002d732U, true, "        v_cmp_f_f32     vcc, abs(v50), v107\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
