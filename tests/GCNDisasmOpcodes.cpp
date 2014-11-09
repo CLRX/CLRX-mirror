@@ -1160,6 +1160,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7dfb934fU, 0, false, "        VOPC_ill_253    vcc, v79, v201\n" },
     { 0x7dfd934fU, 0, false, "        VOPC_ill_254    vcc, v79, v201\n" },
     { 0x7dff934fU, 0, false, "        VOPC_ill_255    vcc, v79, v201\n" },
+    
     /* VOP3 encoding */
 };
 

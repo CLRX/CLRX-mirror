@@ -94,6 +94,10 @@ enum : uint16_t
     GCN_DS1_SGPR = 0x90,
     GCN_SRC1_SGPR = 0xa0,
     GCN_DST_SGPR = 0xb0,
+    GCN_VOP3_VOP2 = 0x100,
+    GCN_VOP3_VOP1 = 0x200,
+    GCN_VOP3_VOP2_DS12 = 0x110,
+    GCN_VOP3_VOP1_DS1 = 0x230,
     // DS encoding modes
     GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,
