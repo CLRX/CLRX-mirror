@@ -1161,9 +1161,9 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             isVOP1Word = true;
     }
     /* for VOP2 encoded as VOP3b (v_addc....) */
-    else if (gcnInsn.encoding == GCNENC_VOP3B && omod==0 && vsrc0 >= 256 &&
+    else if (gcnInsn.encoding == GCNENC_VOP3B && omod==0 &&
             (insn2Code&(usedMask<<29)) == 0 &&
-            vsrc1 >= 256 && sdst == 106 /* vcc */ && vsrc2 == 0) /* VOP3b */
+            vsrc1 >= 256 && sdst == 106 /* vcc */ && vsrc2 == 106) /* VOP3b */
         isVOP1Word = true;
     
     if (isVOP1Word) // add vop3 for distinguishing encoding
