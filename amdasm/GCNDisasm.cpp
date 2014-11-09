@@ -1147,19 +1147,17 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((insnCode&(usedMask<<8)) == 0)
     {   /* for VOPC */
         if (opcode < 256 && vdst == 106 /* vcc */ && omod==0 &&
-            (insn2Code&(usedMask<<29)) == 0 &&
-            vsrc0 >= 256 && vsrc1 >= 256 && vsrc2 == 0)
+            (insn2Code&(usedMask<<29)) == 0 && vsrc1 >= 256 && vsrc2 == 0)
             isVOP1Word = true;
         /* for VOP1 */
         else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP1 && omod==0 &&
-            (insn2Code&(usedMask<<29)) == 0 &&
-            ((!vsrc1Used && vsrc0 == 0) || vsrc0 >= 256) && vsrc1 == 0 && vsrc2 == 0)
+            (insn2Code&(usedMask<<29)) == 0 && vsrc1 == 0 && vsrc2 == 0)
             isVOP1Word = true;
         /* for VOP2 */
         else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP2 && omod==0 &&
             (insn2Code&(usedMask<<29)) == 0 &&
-            ((!vsrc1Used && vsrc0 == 0) || vsrc0 >= 256) && 
-            ((!vsrc2Used && vsrc1 == 0) || vsrc1 >= 256) && vsrc2 == 0)
+            ((!vsrc1Used && vsrc1 == 0) || vsrc1 >= 256) &&
+            ((mode1 != GCN_SRC2_VCC && vsrc2 == 0) || vsrc2 == 106))
             isVOP1Word = true;
     }
     /* for VOP2 encoded as VOP3b (v_addc....) */
