@@ -98,6 +98,10 @@ enum : uint16_t
     GCN_VOP3_VOP1 = 0x200,
     GCN_VOP3_VOP2_DS12 = 0x110,
     GCN_VOP3_VOP1_DS1 = 0x230,
+    GCN_VOP3_DST_SGPR = 0x400,
+    GCN_VOP3_SRC1_SGPR = 0x800,
+    GCN_VOP3_DS1_SGPR = 0xc00,
+    GCN_VOP3_MASK2 = 0x300,
     // DS encoding modes
     GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,

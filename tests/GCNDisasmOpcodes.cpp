@@ -330,6 +330,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x0134d715U, 0, false, "        v_cndmask_b32   v154, v21, v107, vcc\n" },
     { 0x0134d6ffU, 0x445aa, true , "        v_cndmask_b32   v154, 0x445aa, v107, vcc\n" },
     { 0x0234bd15U, 0, false, "        v_readlane_b32  s26, v21, s94\n" },
+    { 0x0434bc15U, 0, false, "        v_writelane_b32 v26, s21, s94\n" },
     { 0x0434bd15U, 0, false, "        v_writelane_b32 v26, v21, s94\n" },
     { 0x0734d715U, 0, false, "        v_add_f32       v154, v21, v107\n" },
     { 0x0734d6ffU, 0x40000000U, true, "        v_add_f32       v154, "
@@ -1593,6 +1594,13 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd200002aU, 0x81a8c932U, true, "        v_cndmask_b32   "
                 "v42, v50, s100, vcc\n" },
     /* VOP2 in VOP3 */
+    /** ??? */
+    { 0xd2020037U, 0x0002b51bU, true, "        v_readlane_b32  s55, v27, v90\n" },
+    { 0xd2040037U, 0x0002b51bU, true, "        v_writelane_b32 v55, v27, v90\n" },
+    { 0xd2040037U, 0x0002b41bU, true, "        v_writelane_b32 v55, s27, v90\n" },
+    { 0xd2020037U, 0x0000b51bU, true, "        v_readlane_b32  s55, v27, s90 vop3\n" },
+    { 0xd2040037U, 0x0000b51bU, true, "        v_writelane_b32 v55, v27, s90 vop3\n" },
+    { 0xd2040037U, 0x0000b41bU, true, "        v_writelane_b32 v55, s27, s90 vop3\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

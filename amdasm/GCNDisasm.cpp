@@ -1031,8 +1031,9 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     const cxuint vsrc2 = (insn2Code>>18)&0x1ff;
     const cxuint sdst = (insnCode>>8)&0x7f;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    if (opcode < 256) /* if compares */
-        bufPos += decodeGCNOperand(vdst, 2, buf + bufPos, arch);
+    if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0) /* if compares */
+        bufPos += decodeGCNOperand(vdst,
+                   ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1, buf + bufPos, arch);
     else /* regular instruction */
         bufPos += decodeGCNVRegOperand(vdst,
            (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
@@ -1155,11 +1156,14 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         if (opcode < 256 && vdst == 106 /* vcc */ && vsrc1 >= 256 && vsrc2 == 0)
             isVOP1Word = true;
         /* for VOP1 */
-        else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP1 && vsrc1 == 0 && vsrc2 == 0)
+        else if ((gcnInsn.mode&GCN_VOP3_MASK2) == GCN_VOP3_VOP1 && vsrc1 == 0 && vsrc2 == 0)
             isVOP1Word = true;
         /* for VOP2 */
-        else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP2 &&
-            ((!vsrc1Used && vsrc1 == 0) || vsrc1 >= 256) &&
+        else if ((gcnInsn.mode&GCN_VOP3_MASK2) == GCN_VOP3_VOP2 &&
+            ((!vsrc1Used && vsrc1 == 0) || 
+            /* distinguish for v_read/writelane and other vop2 encoded as vop3 */
+            (((gcnInsn.mode&GCN_VOP3_SRC1_SGPR)==0) && vsrc1 >= 256) ||
+            (((gcnInsn.mode&GCN_VOP3_SRC1_SGPR)!=0) && vsrc1 < 256)) &&
             ((mode1 != GCN_SRC2_VCC && vsrc2 == 0) || vsrc2 == 106))
             isVOP1Word = true;
     }
