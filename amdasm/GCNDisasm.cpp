@@ -1065,6 +1065,7 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     
     bool vsrc1Used = false;
     bool vsrc2Used = false;
+    bool vsrc2CC = false;
     if (mode1 != GCN_SRC12_NONE)
     {
         buf[bufPos++] = ',';
@@ -1090,7 +1091,10 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             buf[bufPos++] = ' ';
             
             if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
+            {
                 bufPos += decodeGCNOperand(vsrc2, 2, buf + bufPos, arch);
+                vsrc2CC = true;
+            }
             else
             {
                 if ((insn2Code & (1U<<31)) != 0)
@@ -1141,30 +1145,30 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += itocstrCStyle(vsrc2, buf+bufPos, 6, 16);
     }
     
-    const cxuint usedMask = (vsrc2Used?4:0) | (vsrc1Used?2:0) | 1;
+    const cxuint usedMask = ((vsrc2Used && !vsrc2CC)?4:0) | (vsrc1Used?2:0) | 1;
     /* check whether instruction is this same like VOP2/VOP1/VOPC */
     bool isVOP1Word = false;
-    if ((insnCode&(usedMask<<8)) == 0)
+    const bool reqForVOP1Word = ((insnCode&((usedMask<<8)|0x800)) == 0) && omod==0 &&
+            ((insn2Code&(usedMask<<29)) == 0);
+    if (gcnInsn.encoding != GCNENC_VOP3B)
     {   /* for VOPC */
-        if (opcode < 256 && vdst == 106 /* vcc */ && omod==0 &&
-            (insn2Code&(usedMask<<29)) == 0 && vsrc1 >= 256 && vsrc2 == 0)
+        if (opcode < 256 && vdst == 106 /* vcc */ && vsrc1 >= 256 && vsrc2 == 0)
             isVOP1Word = true;
         /* for VOP1 */
-        else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP1 && omod==0 &&
-            (insn2Code&(usedMask<<29)) == 0 && vsrc1 == 0 && vsrc2 == 0)
+        else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP1 && vsrc1 == 0 && vsrc2 == 0)
             isVOP1Word = true;
         /* for VOP2 */
-        else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP2 && omod==0 &&
-            (insn2Code&(usedMask<<29)) == 0 &&
+        else if ((gcnInsn.mode&GCN_MASK2) == GCN_VOP3_VOP2 &&
             ((!vsrc1Used && vsrc1 == 0) || vsrc1 >= 256) &&
             ((mode1 != GCN_SRC2_VCC && vsrc2 == 0) || vsrc2 == 106))
             isVOP1Word = true;
     }
     /* for VOP2 encoded as VOP3b (v_addc....) */
-    else if (gcnInsn.encoding == GCNENC_VOP3B && omod==0 &&
-            (insn2Code&(usedMask<<29)) == 0 &&
+    else if (gcnInsn.encoding == GCNENC_VOP3B &&
             vsrc1 >= 256 && sdst == 106 /* vcc */ && vsrc2 == 106) /* VOP3b */
         isVOP1Word = true;
+    if (isVOP1Word && !reqForVOP1Word)
+        isVOP1Word = false;
     
     if (isVOP1Word) // add vop3 for distinguishing encoding
     {

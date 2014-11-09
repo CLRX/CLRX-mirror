@@ -1189,6 +1189,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd001006aU, 0x0002d732U, true, "        v_cmp_f_f32     vcc, v50, v107 vop3\n" },
     { 0xd001006aU, 0x0002d632U, true, "        v_cmp_f_f32     vcc, s50, v107 vop3\n" },
     /* no vop3 */
+    { 0xd001086aU, 0x0002d632U, true, "        v_cmp_f_f32     vcc, s50, v107 clamp\n" },
     { 0xd001006aU, 0x0000d632U, true, "        v_cmp_f_f32     vcc, s50, vcc_hi\n" },
     { 0xd001002aU, 0x00aed732U, true, "        v_cmp_f_f32     "
                 "s[42:43], v50, v107 src2=0x2b\n" },
@@ -1574,6 +1575,24 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
                 "v42, v50, v107, s[15:16]\n" },
     { 0xd200002aU, 0x01aad732U, true, "        v_cndmask_b32   "
                 "v42, v50, v107, vcc vop3\n" },
+    { 0xd200042aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    { 0xd200002aU, 0x81aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    /* no vop3 */
+    { 0xd200022aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, abs(v107), vcc\n" },
+    { 0xd200002aU, 0x41aad732U, true, "        v_cndmask_b32   v42, v50, -v107, vcc\n" },
+    { 0xd200012aU, 0x01aad732U, true, "        v_cndmask_b32   "
+                "v42, abs(v50), v107, vcc\n" },
+    { 0xd200002aU, 0x21aad732U, true, "        v_cndmask_b32   v42, -v50, v107, vcc\n" },
+    { 0xd200082aU, 0x81aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc clamp\n" },
+    { 0xd200002aU, 0x81aad732U, true, "        v_cndmask_b32   "
+                "v42, v50, v107, vcc vop3\n" },
+    { 0xd200002aU, 0x81a8c932U, true, "        v_cndmask_b32   "
+                "v42, v50, s100, vcc\n" },
+    /* VOP2 in VOP3 */
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
