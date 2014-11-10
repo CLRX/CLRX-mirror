@@ -78,6 +78,8 @@ static void initializeGCNDisassembler()
     {
         gcnInstrTableByCode[i].mnemonic = nullptr;
         gcnInstrTableByCode[i].mode = GCN_STDMODE;
+        // except VOP3 decoding routines ignores encoding (we can set None for encoding)
+        gcnInstrTableByCode[i].encoding = GCNENC_NONE;
     }
     
     for (cxuint i = 0; gcnInstrsTable[i].mnemonic != nullptr; i++)
