@@ -1133,20 +1133,46 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     
     /* as field */
-    if (!vsrc1Used && vsrc1 != 0)
+    if (!vsrc1Used)
     {
-        ::memcpy(buf+bufPos, " src1=", 6);
-        bufPos += 6;
-        bufPos += itocstrCStyle(vsrc1, buf+bufPos, 6, 16);
+        if (vsrc1 != 0)
+        {
+            ::memcpy(buf+bufPos, " src1=", 6);
+            bufPos += 6;
+            bufPos += itocstrCStyle(vsrc1, buf+bufPos, 6, 16);
+        }
+        if (absFlags & 2)
+        {
+            ::memcpy(buf+bufPos, " abs1", 5);
+            bufPos += 5;
+        }
+        if ((insn2Code & (1U<<30)) != 0)
+        {
+            ::memcpy(buf+bufPos, " neg1", 5);
+            bufPos += 5;
+        }
     }
-    if (!vsrc2Used && vsrc2 != 0)
+    if (!vsrc2Used)
     {
-        ::memcpy(buf+bufPos, " src2=", 6);
-        bufPos += 6;
-        bufPos += itocstrCStyle(vsrc2, buf+bufPos, 6, 16);
+        if (vsrc2 != 0)
+        {
+            ::memcpy(buf+bufPos, " src2=", 6);
+            bufPos += 6;
+            bufPos += itocstrCStyle(vsrc2, buf+bufPos, 6, 16);
+        }
+        if (absFlags & 4)
+        {
+            ::memcpy(buf+bufPos, " abs2", 5);
+            bufPos += 5;
+        }
+        if ((insn2Code & (1U<<31)) != 0)
+        {
+            ::memcpy(buf+bufPos, " neg2", 5);
+            bufPos += 5;
+        }
     }
     
-    const cxuint usedMask = ((vsrc2Used && !vsrc2CC)?4:0) | (vsrc1Used?2:0) | 1;
+    const cxuint usedMask = 7 & ~(vsrc2CC?4:0);
     /* check whether instruction is this same like VOP2/VOP1/VOPC */
     bool isVOP1Word = false;
     const bool reqForVOP1Word = ((insnCode&((usedMask<<8)|0x800)) == 0) && omod==0 &&
