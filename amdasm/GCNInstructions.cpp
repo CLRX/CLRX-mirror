@@ -300,7 +300,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_mov_b32",           GCNENC_VOP1,   GCN_STDMODE,              1,    ARCH_GCN_ALL  },
     { "v_mov_b32",           GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1, 385,  ARCH_GCN_ALL  },
     { "v_readfirstlane_b32", GCNENC_VOP1,   GCN_STDMODE|GCN_DST_SGPR, 2,    ARCH_GCN_ALL  },
-    { "v_readfirstlane_b32", GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_DST_SGPR, 386,  ARCH_GCN_ALL  },
+    { "v_readfirstlane_b32", GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_VOP3_DST_SGPR, 386,  ARCH_GCN_ALL  },
     { "v_cvt_i32_f64",       GCNENC_VOP1,   GCN_REG_SRC0_64,          3,    ARCH_GCN_ALL  },
     { "v_cvt_i32_f64",       GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_REG_SRC0_64 ,387,  ARCH_GCN_ALL  },
     { "v_cvt_f64_i32",       GCNENC_VOP1,   GCN_REG_DST_64,           4,    ARCH_GCN_ALL  },
