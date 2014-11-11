@@ -1665,6 +1665,19 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
                 "v55, s[7:8], s27, -v90, s[25:26]\n" },
     { 0xd2540737U, 0x4066b41bU, true, "        v_subbrev_u32   "
                 "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    /* others */
+    { 0xd2560037U, 0x4002b41bU, true, "        v_ldexp_f32     v55, s27, -v90\n" },
+    { 0xd2580037U, 0x4002b41bU, true, "        v_cvt_pkaccum_u8_f32 v55, s27, -v90\n" },
+    { 0xd25a0037U, 0x4002b41bU, true, "        v_cvt_pknorm_i16_f32 v55, s27, -v90\n" },
+    { 0xd25c0037U, 0x4002b41bU, true, "        v_cvt_pknorm_u16_f32 v55, s27, -v90\n" },
+    { 0xd25e0037U, 0x4002b41bU, true, "        v_cvt_pkrtz_f16_f32 v55, s27, -v90\n" },
+    { 0xd2600037U, 0x4002b41bU, true, "        v_cvt_pk_u16_u32 v55, s27, -v90\n" },
+    { 0xd2620037U, 0x4002b41bU, true, "        v_cvt_pk_i16_i32 v55, s27, -v90\n" },
+    { 0xd2640037U, 0x4002b41bU, true, "        VOP3A_ill_306   v55, s27, -v90, s0\n" },
+    { 0xd2660037U, 0x4002b41bU, true, "        VOP3A_ill_307   v55, s27, -v90, s0\n" },
+    { 0xd2680037U, 0x4002b41bU, true, "        VOP3A_ill_308   v55, s27, -v90, s0\n" },
+    { 0xd26a0037U, 0x4002b41bU, true, "        VOP3A_ill_309   v55, s27, -v90, s0\n" },
+    /* VOP1 encoding as VOP3 */
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
