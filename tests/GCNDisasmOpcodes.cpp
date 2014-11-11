@@ -1638,6 +1638,33 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd23a0037U, 0x4002b41bU, true, "        v_xor_b32       v55, s27, -v90\n" },
     { 0xd23c0037U, 0x4002b41bU, true, "        v_bfm_b32       v55, s27, -v90\n" },
     { 0xd23e0037U, 0x4002b41bU, true, "        v_mac_f32       v55, s27, -v90\n" },
+    /* what is syntax for v_madmk_f32 and v_madak_f32 in vop3 encoding? I don't know */
+    { 0xd2400037U, 0x405ab41bU, true, "        v_madmk_f32     v55, s27, -v90, s22 vop3\n" },
+    { 0xd2400037U, 0x0002b41bU, true, "        v_madmk_f32     v55, s27, v90, s0 vop3\n" },
+    { 0xd2400037U, 0x445ab41bU, true, "        v_madmk_f32     v55, s27, -v90, v22 vop3\n" },
+    { 0xd2420037U, 0x405ab41bU, true, "        v_madak_f32     v55, s27, -v90, s22 vop3\n" },
+    { 0xd2420037U, 0x0002b41bU, true, "        v_madak_f32     v55, s27, v90, s0 vop3\n" },
+    /* further instructions */
+    { 0xd2440037U, 0x4002b41bU, true, "        v_bcnt_u32_b32  v55, s27, -v90\n" },
+    { 0xd2460037U, 0x4002b41bU, true, "        v_mbcnt_lo_u32_b32 v55, s27, -v90\n" },
+    { 0xd2480037U, 0x4002b41bU, true, "        v_mbcnt_hi_u32_b32 v55, s27, -v90\n" },
+    // v_add_i32 - and others */
+    { 0xd24a0737U, 0x4002b41bU, true, "        v_add_i32       v55, s[7:8], s27, -v90\n" },
+    { 0xd24a6a37U, 0x0002b41bU, true, "        v_add_i32       v55, vcc, s27, v90 vop3\n" },
+    { 0xd24a6a37U, 0x2002b41bU, true, "        v_add_i32       v55, vcc, -s27, v90\n" },
+    { 0xd24c0737U, 0x4002b41bU, true, "        v_sub_i32       v55, s[7:8], s27, -v90\n" },
+    { 0xd24e0737U, 0x4002b41bU, true, "        v_subrev_i32    v55, s[7:8], s27, -v90\n" },
+    /* v_addcs */
+    { 0xd2500737U, 0x4066b41bU, true, "        v_addc_u32      "
+                "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd2506a37U, 0x01aab41bU, true, "        v_addc_u32      "
+                "v55, vcc, s27, v90, vcc vop3\n" },
+    { 0xd2506a37U, 0x41aab41bU, true, "        v_addc_u32      "
+                "v55, vcc, s27, -v90, vcc\n" },
+    { 0xd2520737U, 0x4066b41bU, true, "        v_subb_u32      "
+                "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd2540737U, 0x4066b41bU, true, "        v_subbrev_u32   "
+                "v55, s[7:8], s27, -v90, s[25:26]\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
