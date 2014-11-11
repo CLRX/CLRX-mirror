@@ -901,7 +901,7 @@ static size_t decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          bool displayFloatLits)
 {
     size_t bufPos = 0;
-    if ((gcnInsn.mode & GCN_MASK1) != GCN_ARG_NONE)
+    if ((gcnInsn.mode & GCN_MASK1) != GCN_VOP_ARG_NONE)
     {
         bufPos += addSpaces(buf, spacesToAdd);
         if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_SGPR)
@@ -1024,7 +1024,7 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insn2Code,
          uint32_t literal, bool displayFloatLits)
 {
-    size_t bufPos = addSpaces(buf, spacesToAdd);
+    size_t bufPos = 0;
     const cxuint opcode = ((insnCode>>17)&0x1ff);
     
     const cxuint vdst = insnCode&0xff;
@@ -1033,92 +1033,108 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     const cxuint vsrc2 = (insn2Code>>18)&0x1ff;
     const cxuint sdst = (insnCode>>8)&0x7f;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0) /* if compares */
-        bufPos += decodeGCNOperand(vdst,
-                   ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1, buf + bufPos, arch);
-    else /* regular instruction */
-        bufPos += decodeGCNVRegOperand(vdst,
-           (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     
-    cxuint absFlags = 0;
-    if (gcnInsn.encoding == GCNENC_VOP3A)
-        absFlags = (insnCode>>8)&7;
-    else if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC) /* VOP3b */
-    {
-        buf[bufPos++] = ',';
-        buf[bufPos++] = ' ';
-        bufPos += decodeGCNOperand(((insnCode>>8)&0x7f), 2, buf + bufPos, arch);
-    }
-    
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    if ((insn2Code & (1U<<29)) != 0)
-        buf[bufPos++] = '-';
-    if (absFlags & 1)
-    {
-        buf[bufPos++] = 'a';
-        buf[bufPos++] = 'b';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = '(';
-    }
-    bufPos += decodeGCNOperand(vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                           buf + bufPos, arch, literal, displayFloatLits);
-    if (absFlags & 1)
-        buf[bufPos++] = ')';
-    
+    bool vdstUsed = false;
+    bool vsrc0Used = false;
     bool vsrc1Used = false;
     bool vsrc2Used = false;
     bool vsrc2CC = false;
-    if (mode1 != GCN_SRC12_NONE)
+    cxuint absFlags = 0;
+    
+    if (gcnInsn.encoding == GCNENC_VOP3A)
+        absFlags = (insnCode>>8)&7;
+    
+    if (mode1 != GCN_VOP_ARG_NONE)
     {
+        bufPos = addSpaces(buf, spacesToAdd);
+        
+        if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0) /* if compares */
+            bufPos += decodeGCNOperand(vdst,
+                       ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1, buf + bufPos, arch);
+        else /* regular instruction */
+            bufPos += decodeGCNVRegOperand(vdst,
+               (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
+        
+        if (gcnInsn.encoding == GCNENC_VOP3B &&
+            (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)) /* VOP3b */
+        {
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            bufPos += decodeGCNOperand(((insnCode>>8)&0x7f), 2, buf + bufPos, arch);
+        }
+        
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        if ((insn2Code & (1U<<30)) != 0)
+    
+        if ((insn2Code & (1U<<29)) != 0)
             buf[bufPos++] = '-';
-        if (absFlags & 2)
+        if (absFlags & 1)
         {
             buf[bufPos++] = 'a';
             buf[bufPos++] = 'b';
             buf[bufPos++] = 's';
             buf[bufPos++] = '(';
         }
-        bufPos += decodeGCNOperand(vsrc1,
-           (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal,
-                   displayFloatLits);
-        if (absFlags & 2)
+        bufPos += decodeGCNOperand(vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
+                               buf + bufPos, arch, literal, displayFloatLits);
+        if (absFlags & 1)
             buf[bufPos++] = ')';
-        /* GCN_DST_VCC - only sdst is used, no vsrc2 */
-        if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC && opcode >= 256)
+        
+        if (mode1 != GCN_SRC12_NONE)
         {
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            
-            if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
+            if ((insn2Code & (1U<<30)) != 0)
+                buf[bufPos++] = '-';
+            if (absFlags & 2)
             {
-                bufPos += decodeGCNOperand(vsrc2, 2, buf + bufPos, arch);
-                vsrc2CC = true;
+                buf[bufPos++] = 'a';
+                buf[bufPos++] = 'b';
+                buf[bufPos++] = 's';
+                buf[bufPos++] = '(';
             }
-            else
+            bufPos += decodeGCNOperand(vsrc1,
+               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal,
+                       displayFloatLits);
+            if (absFlags & 2)
+                buf[bufPos++] = ')';
+            /* GCN_DST_VCC - only sdst is used, no vsrc2 */
+            if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC && opcode >= 256)
             {
-                if ((insn2Code & (1U<<31)) != 0)
-                    buf[bufPos++] = '-';
-                if (absFlags & 4)
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                
+                if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
                 {
-                    buf[bufPos++] = 'a';
-                    buf[bufPos++] = 'b';
-                    buf[bufPos++] = 's';
-                    buf[bufPos++] = '(';
+                    bufPos += decodeGCNOperand(vsrc2, 2, buf + bufPos, arch);
+                    vsrc2CC = true;
                 }
-                bufPos += decodeGCNOperand(vsrc2,
-                   (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, buf + bufPos, arch, literal,
-                           displayFloatLits);
-                if (absFlags & 4)
-                    buf[bufPos++] = ')';
+                else
+                {
+                    if ((insn2Code & (1U<<31)) != 0)
+                        buf[bufPos++] = '-';
+                    if (absFlags & 4)
+                    {
+                        buf[bufPos++] = 'a';
+                        buf[bufPos++] = 'b';
+                        buf[bufPos++] = 's';
+                        buf[bufPos++] = '(';
+                    }
+                    bufPos += decodeGCNOperand(vsrc2,
+                       (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, buf + bufPos, arch, literal,
+                               displayFloatLits);
+                    if (absFlags & 4)
+                        buf[bufPos++] = ')';
+                }
+                vsrc2Used = true;
             }
-            vsrc2Used = true;
+            vsrc1Used = true;
         }
-        vsrc1Used = true;
+        vsrc0Used = true;
+        vdstUsed = true;
     }
+    else
+        bufPos = addSpaces(buf, spacesToAdd-1);
     
     const cxuint omod = (insn2Code>>27)&3;
     if (omod != 0)
@@ -1135,6 +1151,32 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     
     /* as field */
+    if (!vdstUsed && vdst != 0)
+    {
+        ::memcpy(buf+bufPos, " dst=", 5);
+        bufPos += 5;
+        bufPos += itocstrCStyle(vdst, buf+bufPos, 6, 16);
+    }
+        
+    if (!vsrc0Used)
+    {
+        if (vsrc0 != 0)
+        {
+            ::memcpy(buf+bufPos, " src0=", 6);
+            bufPos += 6;
+            bufPos += itocstrCStyle(vsrc0, buf+bufPos, 6, 16);
+        }
+        if (absFlags & 1)
+        {
+            ::memcpy(buf+bufPos, " abs0", 5);
+            bufPos += 5;
+        }
+        if ((insn2Code & (1U<<29)) != 0)
+        {
+            ::memcpy(buf+bufPos, " neg0", 5);
+            bufPos += 5;
+        }
+    }
     if (!vsrc1Used)
     {
         if (vsrc1 != 0)

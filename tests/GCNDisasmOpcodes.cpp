@@ -1678,6 +1678,21 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd2680037U, 0x4002b41bU, true, "        VOP3A_ill_308   v55, s27, -v90, s0\n" },
     { 0xd26a0037U, 0x4002b41bU, true, "        VOP3A_ill_309   v55, s27, -v90, s0\n" },
     /* VOP1 encoding as VOP3 */
+    { 0xd3000037U, 0x4002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b src1=0x15a neg1\n" },
+    { 0xd3000000U, 0x00000000U, true, "        v_nop           vop3\n" },
+    { 0xd3000237U, 0x4002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b src1=0x15a abs1 neg1\n" },
+    { 0xd3000137U, 0x4002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b abs0 src1=0x15a neg1\n" },
+    { 0xd3000237U, 0xc01eb41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b src1=0x15a abs1 neg1 src2=0x7 neg2\n" },
+    { 0xd3000037U, 0x0002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b src1=0x15a\n" },
+    { 0xd3000037U, 0x0000001bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b vop3\n" },
+    { 0xd3000837U, 0x0000001bU, true, "        v_nop           "
+                "clamp dst=0x37 src0=0x1b\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
