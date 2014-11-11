@@ -758,25 +758,21 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         const cxuint hwoffset = (imm16>>6)&31;
-        if (hwoffset >= 10)
         {
             const cxuint digit2 = hwoffset/10U;
-            buf[bufPos++] = '0' + digit2;
+            if (digit2 != 0)
+                buf[bufPos++] = '0' + digit2;
             buf[bufPos++] = '0' + hwoffset - 10U*digit2;
         }
-        else
-            buf[bufPos++] = '0' + hwoffset;
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         const cxuint hwsize = ((imm16>>11)&31)+1;
-        if (hwsize >= 10)
         {
             const cxuint digit2 = hwsize/10U;
-            buf[bufPos++] = '0' + digit2;
+            if (digit2 != 0)
+                buf[bufPos++] = '0' + digit2;
             buf[bufPos++] = '0' + hwsize - 10U*digit2;
         }
-        else
-            buf[bufPos++] = '0' + hwsize;
         buf[bufPos++] = ')';
     }
     else
@@ -1276,14 +1272,10 @@ static size_t decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     ::memcpy(buf+bufPos, ", attr", 6);
     bufPos += 6;
     const cxuint attr = (insnCode>>10)&63;
-    if (attr >= 10)
-    {
-        const cxuint digit2 = attr/10U;
+    const cxuint digit2 = attr/10U;
+    if (digit2 != 0)
         buf[bufPos++] = '0' + digit2;
-        buf[bufPos++] = '0' + attr - 10U/10*digit2;
-    }
-    else
-        buf[bufPos++] = '0' + attr;
+    buf[bufPos++] = '0' + attr - 10U*digit2;
     buf[bufPos++] = '.';
     buf[bufPos++] = "xyzw"[((insnCode>>8)&3)]; // attrchannel
     return bufPos;
@@ -1586,14 +1578,10 @@ static size_t decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = 'a';
         buf[bufPos++] = 'm';
         const cxuint tpar = target-32;
-        if (tpar >= 10)
-        {
-            const cxuint digit2 = tpar/10;
+        const cxuint digit2 = tpar/10;
+        if (digit2 != 0)
             buf[bufPos++] = '0' + digit2;
-            buf[bufPos++] = '0' + tpar - 10*digit2;
-        }
-        else
-            buf[bufPos++] = '0' + tpar;
+        buf[bufPos++] = '0' + tpar - 10*digit2;
     }
     else if (target >= 12 && target <= 15)
     {
