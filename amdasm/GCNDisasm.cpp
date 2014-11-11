@@ -1056,7 +1056,8 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
                (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
         
         if (gcnInsn.encoding == GCNENC_VOP3B &&
-            (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)) /* VOP3b */
+            (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC ||
+             mode1 == GCN_S0EQS12)) /* VOP3b */
         {
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
@@ -1244,6 +1245,7 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         }
         /* for VOP2 encoded as VOP3b (v_addc....) */
         else if (gcnInsn.encoding == GCNENC_VOP3B &&
+                (gcnInsn.mode&GCN_VOP3_MASK2) == GCN_VOP3_VOP2 &&
                 vsrc1 >= 256 && sdst == 106 /* vcc */ &&
                 ((vsrc2 == 106 && mode1 == GCN_DS2_VCC) || vsrc2 == 0)) /* VOP3b */
             isVOP1Word = true;
