@@ -1905,6 +1905,10 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xc974f4d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr61.x\n" },
     { 0xc9776bd3U, 0, false, "        VINTRP_ill_3    v93, v211, attr26.w\n" },
     /* DS encoding */
+    { 0xd800cd67U, 0x8b27a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd800cd67U, 0x0000a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

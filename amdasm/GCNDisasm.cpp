@@ -1311,7 +1311,6 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         vdstUsed = true;
     }
     
-    
     if ((gcnInsn.mode & GCN_DSMASK2) != GCN_ONLYDST &&
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0)
     {   /* two vdata */
@@ -1334,7 +1333,7 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         if ((gcnInsn.mode & GCN_DSMASK2) != GCN_VDATA2) /* single offset */
         {
-            ::memcpy(buf+bufPos, "offset:", 8);
+            ::memcpy(buf+bufPos, " offset:", 8);
             bufPos += 8;
             bufPos += itocstrCStyle(offset, buf+bufPos, 7, 10);
         }
@@ -1342,13 +1341,13 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         {
             if ((offset&0xff) != 0)
             {
-                ::memcpy(buf+bufPos, "offset0:", 9);
+                ::memcpy(buf+bufPos, " offset0:", 9);
                 bufPos += 9;
                 bufPos += itocstrCStyle(offset&0xff, buf+bufPos, 7, 10);
             }
             if ((offset&0xff00) != 0)
             {
-                ::memcpy(buf+bufPos, "offset1:", 9);
+                ::memcpy(buf+bufPos, " offset1:", 9);
                 bufPos += 9;
                 bufPos += itocstrCStyle((offset>>8)&0xff, buf+bufPos, 7, 10);
             }
@@ -1840,7 +1839,7 @@ void GCNDisassembler::disassemble()
                         encPart == 0x20000000U || encPart == 0x28000000U ||
                         encPart == 0x30000000U || encPart == 0x38000000U)
                 {   // all DS,FLAT,MUBUF,MTBUF,MIMG,EXP have 8-byte opcode
-                    if (pos+1 >= codeWordsNum)
+                    if (pos >= codeWordsNum)
                         throw Exception("Instruction outside code space!");
                     insn2Code = ULEV(codeWords[pos++]);
                 }
