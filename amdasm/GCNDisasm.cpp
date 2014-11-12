@@ -1178,8 +1178,8 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         if (vsrc1 != 0)
         {
-            ::memcpy(buf+bufPos, " src1=", 6);
-            bufPos += 6;
+            ::memcpy(buf+bufPos, " vsrc1=", 7);
+            bufPos += 7;
             bufPos += itocstrCStyle(vsrc1, buf+bufPos, 6, 16);
         }
         if (absFlags & 2)
@@ -1197,8 +1197,8 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     {
         if (vsrc2 != 0)
         {
-            ::memcpy(buf+bufPos, " src2=", 6);
-            bufPos += 6;
+            ::memcpy(buf+bufPos, " vsrc2=", 7);
+            bufPos += 7;
             bufPos += itocstrCStyle(vsrc2, buf+bufPos, 6, 16);
         }
         if (absFlags & 4)
