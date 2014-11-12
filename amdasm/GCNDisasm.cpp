@@ -1289,40 +1289,50 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     bool vaddrUsed = false;
     bool vdata0Used = false;
     bool vdata1Used = false;
+    const cxuint vaddr = insn2Code&0xff;
+    const cxuint vdata0 = (insn2Code>>8)&0xff;
+    const cxuint vdata1 = (insn2Code>>16)&0xff;
+    const cxuint vdst = insn2Code>>24;
     
-    if ((gcnInsn.mode & GCN_ADDR_DST) != 0 ||
-        (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) == 0) /* address is dst */
-    {
-        bufPos += decodeGCNVRegOperand(insn2Code&0xff, 1, buf+bufPos);
-        buf[bufPos++] = ',';
-        buf[bufPos++] = ' ';
-        vaddrUsed = true;
-    }
-    else
+    if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
     {   /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
         if ((gcnInsn.mode&GCN_DSMASK) == GCN_ADDR_SRC96)
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DSMASK) == GCN_ADDR_SRC128)
             regsNum = 4;
-        bufPos += decodeGCNVRegOperand(insn2Code>>24, regsNum, buf+bufPos);
-        buf[bufPos++] = ',';
-        buf[bufPos++] = ' ';
+        bufPos += decodeGCNVRegOperand(vdst, regsNum, buf+bufPos);
         vdstUsed = true;
     }
-    
-    if ((gcnInsn.mode & GCN_DSMASK2) != GCN_ONLYDST &&
-        (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0)
-    {   /* two vdata */
-        bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff,
-            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf+bufPos);
-        vdata0Used = true;
-        if ((gcnInsn.mode & GCN_DSMASK2) == GCN_2SRCS ||
-            (gcnInsn.mode & GCN_DSMASK2) == GCN_VDATA2)
+    if ((gcnInsn.mode & GCN_ONLYDST) == 0)
+    {
+        if (vdstUsed)
         {
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            bufPos += decodeGCNVRegOperand((insn2Code>>16)&0xff,
+        }
+        bufPos += decodeGCNVRegOperand(vaddr, 1, buf+bufPos);
+        vaddrUsed = true;
+    }
+    
+    const uint16_t srcMode = (gcnInsn.mode & GCN_SRCS_MASK);
+    
+    if ((gcnInsn.mode & GCN_ONLYDST) == 0 &&
+        (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0 && srcMode != GCN_NOSRC)
+    {   /* two vdata */
+        if (vaddrUsed || vdstUsed)
+        {
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+        }
+        bufPos += decodeGCNVRegOperand(vdata0,
+            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf+bufPos);
+        vdata0Used = true;
+        if (srcMode == GCN_2SRCS)
+        {
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            bufPos += decodeGCNVRegOperand(vdata1,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf+bufPos);
             vdata1Used = true;
         }
@@ -1331,7 +1341,7 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     const cxuint offset = (insnCode&0xffff);
     if (offset != 0)
     {
-        if ((gcnInsn.mode & GCN_DSMASK2) != GCN_VDATA2) /* single offset */
+        if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
         {
             ::memcpy(buf+bufPos, " offset:", 8);
             bufPos += 8;
@@ -1362,29 +1372,29 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = 's';
     }
     
-    if (!vaddrUsed && (insn2Code&0xff) != 0)
+    if (!vaddrUsed && vaddr != 0)
     {
         ::memcpy(buf+bufPos, " vaddr=", 7);
         bufPos += 7;
-        bufPos += itocstrCStyle((insn2Code&0xff), buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(vaddr, buf+bufPos, 6, 16);
     }
-    if (!vdata0Used && ((insn2Code>>8)&0xff) != 0)
+    if (!vdata0Used && vdata0 != 0)
     {
         ::memcpy(buf+bufPos, " vdata0=", 8);
         bufPos += 8;
-        bufPos += itocstrCStyle((insn2Code>>8)&0xff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(vdata0, buf+bufPos, 6, 16);
     }
-    if (!vdata1Used && ((insn2Code>>16)&0xff) != 0)
+    if (!vdata1Used && vdata1 != 0)
     {
         ::memcpy(buf+bufPos, " vdata1=", 8);
         bufPos += 8;
-        bufPos += itocstrCStyle((insn2Code>>16)&0xff, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(vdata1, buf+bufPos, 6, 16);
     }
-    if (!vdstUsed && (insn2Code>>24) != 0)
+    if (!vdstUsed && vdst != 0)
     {
         ::memcpy(buf+bufPos, " vdst=", 6);
         bufPos += 6;
-        bufPos += itocstrCStyle(insn2Code>>24, buf+bufPos, 6, 16);
+        bufPos += itocstrCStyle(vdst, buf+bufPos, 6, 16);
     }
     return bufPos;
 }
