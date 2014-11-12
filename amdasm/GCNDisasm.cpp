@@ -1354,7 +1354,7 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         }
     }
     
-    if (insnCode&0x10000)
+    if (insnCode&0x20000)
     {
         buf[bufPos++] = ' ';
         buf[bufPos++] = 'g';

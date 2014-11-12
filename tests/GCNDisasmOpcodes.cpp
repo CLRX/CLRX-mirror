@@ -1907,8 +1907,28 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     /* DS encoding */
     { 0xd800cd67U, 0x8b27a947U, true, "        ds_add_u32      "
                 "v71, v169 offset:52583 vdata1=0x27 vdst=0x8b\n" },
-    { 0xd800cd67U, 0x0000a947U, true, "        ds_add_u32      "
-                "v71, v169 offset:52583\n" },
+    { 0xd8000000U, 0x8b27a947U, true, "        ds_add_u32      "
+                "v71, v169 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd800cd67U, 0x0000a947U, true, "        ds_add_u32      v71, v169 offset:52583\n" },
+    { 0xd802cd67U, 0x8b27a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583 gds vdata1=0x27 vdst=0x8b\n" },
+    { 0xd802cd67U, 0x0000a947U, true, "        ds_add_u32      "
+                "v71, v169 offset:52583 gds\n" },
+    { 0xd804cd67U, 0x0000a947U, true, "        ds_sub_u32      v71, v169 offset:52583\n" },
+    { 0xd808cd67U, 0x0000a947U, true, "        ds_rsub_u32     v71, v169 offset:52583\n" },
+    { 0xd80ccd67U, 0x0000a947U, true, "        ds_inc_u32      v71, v169 offset:52583\n" },
+    { 0xd810cd67U, 0x0000a947U, true, "        ds_dec_u32      v71, v169 offset:52583\n" },
+    { 0xd814cd67U, 0x0000a947U, true, "        ds_min_i32      v71, v169 offset:52583\n" },
+    { 0xd818cd67U, 0x0000a947U, true, "        ds_max_i32      v71, v169 offset:52583\n" },
+    { 0xd81ccd67U, 0x0000a947U, true, "        ds_min_u32      v71, v169 offset:52583\n" },
+    { 0xd820cd67U, 0x0000a947U, true, "        ds_max_u32      v71, v169 offset:52583\n" },
+    { 0xd824cd67U, 0x0000a947U, true, "        ds_and_b32      v71, v169 offset:52583\n" },
+    { 0xd828cd67U, 0x0000a947U, true, "        ds_or_b32       v71, v169 offset:52583\n" },
+    { 0xd82ccd67U, 0x0000a947U, true, "        ds_xor_b32      v71, v169 offset:52583\n" },
+    { 0xd830cd67U, 0x0027a947U, true, "        ds_mskor_b32    "
+                "v71, v169, v39 offset:52583\n" },
+    { 0xd830cd67U, 0x8b27a947U, true, "        ds_mskor_b32    "
+                "v71, v169, v39 offset:52583 vdst=0x8b\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
