@@ -1892,6 +1892,18 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd2ea0037U, 0x0000011bU, true, "        VOP3A_ill_373   v55, v27, s0, s0\n" },
     { 0xd2ec0037U, 0x0000011bU, true, "        VOP3A_ill_374   v55, v27, s0, s0\n" },
     { 0xd2ee0037U, 0x0000011bU, true, "        VOP3A_ill_375   v55, v27, s0, s0\n" },
+    /* VINTRP */
+    { 0xc9746bd3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.w\n" },
+    { 0xc9746ad3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.z\n" },
+    { 0xc97469d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.y\n" },
+    { 0xc97468d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr26.x\n" },
+    { 0xc97400d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr0.x\n" },
+    { 0xc97428d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr10.x\n" },
+    { 0xc9743cd3U, 0, false, "        v_interp_p1_f32 v93, v211, attr15.x\n" },
+    { 0xc9756bd3U, 0, false, "        v_interp_p2_f32 v93, v211, attr26.w\n" },
+    { 0xc9766bd3U, 0, false, "        v_interp_mov_f32 v93, v211, attr26.w\n" },
+    { 0xc974f4d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr61.x\n" },
+    { 0xc9776bd3U, 0, false, "        VINTRP_ill_3    v93, v211, attr26.w\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
