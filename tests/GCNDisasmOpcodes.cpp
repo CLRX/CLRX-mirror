@@ -2033,6 +2033,46 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
                 "v155 offset:52583 vaddr=0x47\n" },
     { 0xd8f8cd67U, 0x9b000000U, true, "        ds_append       v155 offset:52583\n" },
     { 0xd8fccd67U, 0x9b000047U, true, "        ds_ordered_count v155, v71 offset:52583\n" },
+    { 0xd900cd67U, 0x0000a947U, true, "        ds_add_u64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd904cd67U, 0x0000a947U, true, "        ds_sub_u64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd908cd67U, 0x0000a947U, true, "        ds_rsub_u64     "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd90ccd67U, 0x0000a947U, true, "        ds_inc_u64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd910cd67U, 0x0000a947U, true, "        ds_dec_u64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd914cd67U, 0x0000a947U, true, "        ds_min_i64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd918cd67U, 0x0000a947U, true, "        ds_max_i64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd91ccd67U, 0x0000a947U, true, "        ds_min_u64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd920cd67U, 0x0000a947U, true, "        ds_max_u64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd924cd67U, 0x0000a947U, true, "        ds_and_b64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd928cd67U, 0x0000a947U, true, "        ds_or_b64       "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd92ccd67U, 0x0000a947U, true, "        ds_xor_b64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd930cd67U, 0x0017a947U, true, "        ds_mskor_b64    "
+                "v71, v[169:170], v[23:24] offset:52583\n" },
+    { 0xd934cd67U, 0x0000a947U, true, "        ds_write_b64    "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd938cd67U, 0x0027a947U, true, "        ds_write2_b64   "
+                "v71, v[169:170], v[39:40] offset0:103 offset1:205\n" },
+    { 0xd93ccd67U, 0x0027a947U, true, "        ds_write2st64_b64 "
+                "v71, v[169:170], v[39:40] offset0:103 offset1:205\n" },
+    { 0xd940cd67U, 0x0027a947U, true, "        ds_cmpst_b64    "
+                "v71, v[169:170], v[39:40] offset:52583\n" },
+    { 0xd944cd67U, 0x0027a947U, true, "        ds_cmpst_f64    "
+                "v71, v[169:170], v[39:40] offset:52583\n" },
+    { 0xd948cd67U, 0x0000a947U, true, "        ds_min_f64      "
+                "v71, v[169:170] offset:52583\n" },
+    { 0xd94ccd67U, 0x0000a947U, true, "        ds_max_f64      "
+                "v71, v[169:170] offset:52583\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
