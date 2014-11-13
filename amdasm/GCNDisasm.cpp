@@ -570,7 +570,7 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
                 prevLock = true;
             }
             if (((imm16>>8)&15) != 15)
-            {   /* LGKMCNT bits is 4 */
+            {   /* LGKMCNT bits is 4 (5????) */
                 const cxuint lockCnt = (imm16>>8)&15;
                 if (prevLock)
                 {
@@ -580,9 +580,10 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
                 }
                 ::memcpy(buf+bufPos, "lgkmcnt(", 8);
                 bufPos += 8;
+                const cxuint digit2 = lockCnt/10U;
                 if (lockCnt >= 10)
-                    buf[bufPos++] = '1';
-                buf[bufPos++] = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
+                    buf[bufPos++] = '0'+digit2;
+                buf[bufPos++] = '0' + lockCnt-digit2*10U;
                 buf[bufPos++] = ')';
                 prevLock = true;
             }
@@ -1422,12 +1423,14 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     // determine number of vaddr registers
-    const cxuint aregsNum = (((insnCode & 0x1000U)? 1 : 0) +
-            ((insnCode & 0x2000U)? 1 : 0))<<((insnCode & 0x8000U)?1:0);
+    /* is (idxen+offen)*sizeof_addr or sizeof_addr if zero */
+    const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U? 2 : 1)
+            <<((insnCode & 0x8000U)?1:0);
+    
     bufPos += decodeGCNVRegOperand(insn2Code&0xff, aregsNum, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(((insn2Code>>14)&3), 4, buf+bufPos, arch);
+    bufPos += decodeGCNOperand(((insn2Code>>14)&0x7c), 4, buf+bufPos, arch);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand((insn2Code>>24), 1, buf+bufPos, arch);
@@ -1442,9 +1445,13 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         ::memcpy(buf+bufPos, " idxen", 6);
         bufPos += 6;
     }
-    ::memcpy(buf+bufPos, "offset:", 9);
-    bufPos += 9;
-    bufPos += itocstrCStyle(insnCode&0xfff, buf+bufPos, 7, 16);
+    const cxuint offset = insnCode&0xfff;
+    if (offset != 0)
+    {
+        ::memcpy(buf+bufPos, " offset:", 8);
+        bufPos += 8;
+        bufPos += itocstrCStyle(offset, buf+bufPos, 7, 10);
+    }
     if (insnCode & 0x4000U)
     {
         buf[bufPos++] = ' ';
@@ -1505,7 +1512,7 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     bufPos += decodeGCNVRegOperand(insn2Code&0xff, 4, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(((insn2Code>>14)&3), 4, buf+bufPos, arch);
+    bufPos += decodeGCNOperand(((insn2Code>>14)&0x7c), 4, buf+bufPos, arch);
     if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
     {
         buf[bufPos++] = ',';
