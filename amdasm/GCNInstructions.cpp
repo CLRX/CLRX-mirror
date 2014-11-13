@@ -994,7 +994,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "ds_and_src2_b32",     GCNENC_DS,     GCN_SRC_ADDR2,            137,  ARCH_GCN_ALL  },
     { "ds_or_src2_b32",      GCNENC_DS,     GCN_SRC_ADDR2,            138,  ARCH_GCN_ALL  },
     { "ds_xor_src2_b32",     GCNENC_DS,     GCN_SRC_ADDR2,            139,  ARCH_GCN_ALL  },
-    { "ds_write_src2_b32",   GCNENC_DS,     GCN_SRC_ADDR2,            140,  ARCH_GCN_ALL  },
+    { "ds_write_src2_b32",   GCNENC_DS,     GCN_SRC_ADDR2,/* 141???*/ 140,  ARCH_GCN_ALL  },
     { "ds_min_src2_f32",     GCNENC_DS,     GCN_SRC_ADDR2,            146,  ARCH_GCN_ALL  },
     { "ds_max_src2_f32",     GCNENC_DS,     GCN_SRC_ADDR2,            147,  ARCH_GCN_ALL  },
     { "ds_add_src2_u64",     GCNENC_DS,     GCN_SRC_ADDR2_64,         192,  ARCH_GCN_ALL  },

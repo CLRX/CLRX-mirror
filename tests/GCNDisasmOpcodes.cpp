@@ -2165,6 +2165,68 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xda24cd67U, 0x00000047U, true, "        ds_and_src2_b32 v71 offset:52583\n" },
     { 0xda28cd67U, 0x00000047U, true, "        ds_or_src2_b32  v71 offset:52583\n" },
     { 0xda2ccd67U, 0x00000047U, true, "        ds_xor_src2_b32 v71 offset:52583\n" },
+    { 0xda30cd67U, 0x00000047U, true, "        ds_write_src2_b32 v71 offset:52583\n" },
+    { 0xda34cd67U, 0x8b27a947U, true, "        DS_ill_141      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda38cd67U, 0x8b27a947U, true, "        DS_ill_142      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda3ccd67U, 0x8b27a947U, true, "        DS_ill_143      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda40cd67U, 0x8b27a947U, true, "        DS_ill_144      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda44cd67U, 0x8b27a947U, true, "        DS_ill_145      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda48cd67U, 0x00000047U, true, "        ds_min_src2_f32 v71 offset:52583\n" },
+    { 0xda4ccd67U, 0x00000047U, true, "        ds_max_src2_f32 v71 offset:52583\n" },
+    { 0xda50cd67U, 0x8b27a947U, true, "        DS_ill_148      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda54cd67U, 0x8b27a947U, true, "        DS_ill_149      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda58cd67U, 0x8b27a947U, true, "        DS_ill_150      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xda5ccd67U, 0x8b27a947U, true, "        DS_ill_151      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb00cd67U, 0x00000047U, true, "        ds_add_src2_u64 v71 offset:52583\n" },
+    { 0xdb04cd67U, 0x00000047U, true, "        ds_sub_src2_u64 v71 offset:52583\n" },
+    { 0xdb08cd67U, 0x00000047U, true, "        ds_rsub_src2_u64 v71 offset:52583\n" },
+    { 0xdb0ccd67U, 0x00000047U, true, "        ds_inc_src2_u64 v71 offset:52583\n" },
+    { 0xdb10cd67U, 0x00000047U, true, "        ds_dec_src2_u64 v71 offset:52583\n" },
+    { 0xdb14cd67U, 0x00000047U, true, "        ds_min_src2_i64 v71 offset:52583\n" },
+    { 0xdb18cd67U, 0x00000047U, true, "        ds_max_src2_i64 v71 offset:52583\n" },
+    { 0xdb1ccd67U, 0x00000047U, true, "        ds_min_src2_u64 v71 offset:52583\n" },
+    { 0xdb20cd67U, 0x00000047U, true, "        ds_max_src2_u64 v71 offset:52583\n" },
+    { 0xdb24cd67U, 0x00000047U, true, "        ds_and_src2_b64 v71 offset:52583\n" },
+    { 0xdb28cd67U, 0x00000047U, true, "        ds_or_src2_b64  v71 offset:52583\n" },
+    { 0xdb2ccd67U, 0x00000047U, true, "        ds_xor_src2_b64 v71 offset:52583\n" },
+    { 0xdb30cd67U, 0x00000047U, true, "        ds_write_src2_b64 v71 offset:52583\n" },
+    { 0xdb34cd67U, 0x8b27a947U, true, "        DS_ill_205      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb38cd67U, 0x8b27a947U, true, "        DS_ill_206      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb3ccd67U, 0x8b27a947U, true, "        DS_ill_207      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb40cd67U, 0x8b27a947U, true, "        DS_ill_208      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb44cd67U, 0x8b27a947U, true, "        DS_ill_209      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb48cd67U, 0x00000047U, true, "        ds_min_src2_f64 v71 offset:52583\n" },
+    { 0xdb4ccd67U, 0x00000047U, true, "        ds_max_src2_f64 v71 offset:52583\n" },
+    { 0xdb50cd67U, 0x8b27a947U, true, "        DS_ill_212      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb54cd67U, 0x8b27a947U, true, "        DS_ill_213      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb58cd67U, 0x8b27a947U, true, "        DS_ill_214      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb5ccd67U, 0x8b27a947U, true, "        DS_ill_215      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb60cd67U, 0x8b27a947U, true, "        DS_ill_216      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb64cd67U, 0x8b27a947U, true, "        DS_ill_217      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb68cd67U, 0x8b27a947U, true, "        DS_ill_218      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xdb6ccd67U, 0x8b27a947U, true, "        DS_ill_219      "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
