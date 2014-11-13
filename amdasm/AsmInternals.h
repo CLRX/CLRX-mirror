@@ -108,7 +108,7 @@ enum : uint16_t
     GCN_ADDR_DST = 0x10,
     GCN_ADDR_SRC = 0x20,
     GCN_ADDR_DST64 = 0x1f,
-    GCN_ADDR_SRC64 = 0x21,
+    GCN_ADDR_SRC64 = 0x2f,
     GCN_ADDR_SRC_D64 = 0x21,
     GCN_2OFFSETS = 0x100, /* two offset2 */
     GCN_VDATA2 = 0x140, /* two datas, two offsets1 */
