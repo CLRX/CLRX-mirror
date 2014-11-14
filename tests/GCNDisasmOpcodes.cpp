@@ -2849,6 +2849,14 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xf1c0fb00U, 0x00159d79U, true, "        MIMG_ill_112    "
         "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da\n" },
     /* EXP encoding */
+    { 0xf8001e57U, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001a57U, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, off done vm vsrc3=0x7c\n" },
+    { 0xf8001e5fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v116, v93, v93 done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001a5fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, v124 done vm\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)

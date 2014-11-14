@@ -1694,18 +1694,31 @@ static size_t decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = 'l';
         buf[bufPos++] = 'l';
         buf[bufPos++] = '_';
-        const cxuint digit2 = target/10;
+        const cxuint digit2 = target/10U;
         buf[bufPos++] = '0' + digit2;
-        buf[bufPos++] = '0' + target - 10*digit2;
+        buf[bufPos++] = '0' + target - 10U*digit2;
     }
     
     /* vdata registers */
+    cxuint vsrcsUsed = 0;
     for (cxuint i = 0; i < 4; i++)
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         if (insnCode & (1U<<i))
-            bufPos += decodeGCNVRegOperand((insn2Code>>(i<<3))&0xff, 1, buf+bufPos);
+        {
+            if ((insnCode&0x400)==0)
+            {
+                bufPos += decodeGCNVRegOperand((insn2Code>>(i<<3))&0xff, 1, buf+bufPos);
+                vsrcsUsed |= 1<<i;
+            }
+            else // if compr=1
+            {
+                bufPos += decodeGCNVRegOperand(((i>=2)?(insn2Code>>8):insn2Code)&0xff,
+                               1, buf+bufPos);
+                vsrcsUsed |= 1U<<(i>>1);
+            }
+        }
         else
         {
             buf[bufPos++] = 'o';
@@ -1727,11 +1740,23 @@ static size_t decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         ::memcpy(buf+bufPos, " compr", 6);
         bufPos += 6;
     }
-    if (insnCode&0x100)
+    if (insnCode&0x1000)
     {
         buf[bufPos++] = ' ';
         buf[bufPos++] = 'v';
         buf[bufPos++] = 'm';
+    }
+    
+    for (cxuint i = 0; i < 4; i++)
+    {
+        const cxuint val = (insn2Code>>(i<<3))&0xff;
+        if ((vsrcsUsed&(1U<<i))==0 && val!=0)
+        {
+            ::memcpy(buf+bufPos, " vsrc0=", 7);
+            buf[bufPos+5] += i; // number
+            bufPos += 7;
+            bufPos += itocstrCStyle(val, buf+bufPos, 6, 16);
+        }
     }
     return bufPos;
 }
