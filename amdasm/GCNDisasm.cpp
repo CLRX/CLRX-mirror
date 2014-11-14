@@ -1424,7 +1424,9 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((gcnInsn.mode & GCN_MASK1) != GCN_ARG_NONE)
     {
         bufPos = addSpaces(buf, spacesToAdd);
-        const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+        cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+        if (insn2Code & 0x800000U)
+            dregsNum++;
         bufPos += decodeGCNVRegOperand(vdata, dregsNum, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
@@ -1542,7 +1544,13 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insn2Code)
 {
     size_t bufPos = addSpaces(buf, spacesToAdd);
-    bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff, 2, buf+bufPos);
+    
+    const cxuint dmask =  (insnCode>>8)&15;
+    cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
+            ((dmask & 8)?1:0);
+    dregsNum = (dregsNum == 0) ? 1 : dregsNum;
+    
+    bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff, dregsNum, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     // determine number of vaddr registers
@@ -1558,7 +1566,6 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     ::memcpy(buf+bufPos, " dmask:", 7);
     bufPos += 7;
-    const cxuint dmask =  (insnCode>>8)&15;
     if (dmask >= 10)
     {
         buf[bufPos++] = '1';
