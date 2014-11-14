@@ -1083,7 +1083,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "tbuffer_store_format_xy", GCNENC_MTBUF,  GCN_MUBUF_XY,         5,    ARCH_GCN_ALL  },
     { "tbuffer_store_format_xyz", GCNENC_MTBUF,  GCN_MUBUF_XYZ,       6,    ARCH_GCN_ALL  },
     { "tbuffer_store_format_xyzw", GCNENC_MTBUF,  GCN_MUBUF_XYZW,     7,    ARCH_GCN_ALL  },
-    { "image_load",          GCNENC_MIMG,   GCN_STDMODE,              1,    ARCH_GCN_ALL  },
+    { "image_load",          GCNENC_MIMG,   GCN_STDMODE,              0,    ARCH_GCN_ALL  },
     { "image_load_mip",      GCNENC_MIMG,   GCN_STDMODE,              1,    ARCH_GCN_ALL  },
     { "image_load_pck",      GCNENC_MIMG,   GCN_STDMODE,              2,    ARCH_GCN_ALL  },
     { "image_load_pck_sgn",  GCNENC_MIMG,   GCN_STDMODE,              3,    ARCH_GCN_ALL  },
