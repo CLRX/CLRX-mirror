@@ -1560,7 +1560,8 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     bufPos += decodeGCNVRegOperand(insn2Code&0xff, 4, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(((insn2Code>>14)&0x7c), 4, buf+bufPos, arch);
+    bufPos += decodeGCNOperand(((insn2Code>>14)&0x7c),
+                   (insnCode & 0x8000)?4:8, buf+bufPos, arch);
     
     const cxuint ssamp = (insn2Code>>21)&0x1f;
     
