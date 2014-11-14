@@ -2857,6 +2857,68 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
         "param5, v116, v116, v93, v93 done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
     { 0xf8001a5fU, 0x7c1b5d74U, true, "        exp             "
         "param5, v116, v93, v27, v124 done vm\n" },
+    /* target */
+    { 0xf8001c07U, 0x7c1b5d74U, true, "        exp             "
+        "mrt0, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c17U, 0x7c1b5d74U, true, "        exp             "
+        "mrt1, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c27U, 0x7c1b5d74U, true, "        exp             "
+        "mrt2, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c37U, 0x7c1b5d74U, true, "        exp             "
+        "mrt3, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c47U, 0x7c1b5d74U, true, "        exp             "
+        "mrt4, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c57U, 0x7c1b5d74U, true, "        exp             "
+        "mrt5, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c67U, 0x7c1b5d74U, true, "        exp             "
+        "mrt6, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c77U, 0x7c1b5d74U, true, "        exp             "
+        "mrt7, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c87U, 0x7c1b5d74U, true, "        exp             "
+        "mrtz, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001c97U, 0x7c1b5d74U, true, "        exp             "
+        "null, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001ca7U, 0x7c1b5d74U, true, "        exp             "
+        "ill_10, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001cb7U, 0x7c1b5d74U, true, "        exp             "
+        "ill_11, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001cc7U, 0x7c1b5d74U, true, "        exp             "
+        "pos0, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001cd7U, 0x7c1b5d74U, true, "        exp             "
+        "pos1, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001ce7U, 0x7c1b5d74U, true, "        exp             "
+        "pos2, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001cf7U, 0x7c1b5d74U, true, "        exp             "
+        "pos3, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001d07U, 0x7c1b5d74U, true, "        exp             "
+        "ill_16, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001d17U, 0x7c1b5d74U, true, "        exp             "
+        "ill_17, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001d77U, 0x7c1b5d74U, true, "        exp             "
+        "ill_23, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001f47U, 0x7c1b5d74U, true, "        exp             "
+        "param20, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001fd7U, 0x7c1b5d74U, true, "        exp             "
+        "param29, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    /* flags */
+    { 0xf800125fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, v124 vm\n" },
+    { 0xf800025fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, v124\n" },
+    /* en on/off (compr) */
+    { 0xf8001e5cU, 0x7c1b5d74U, true, "        exp             "
+        "param5, off, off, v93, v93 done compr vm vsrc0=0x74 vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xf8001e5dU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, off, v93, v93 done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    /* en on/off (compr) */
+    { 0xf8001a55U, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, off, v27, off done vm vsrc1=0x5d vsrc3=0x7c\n" },
+    { 0xf8001a5eU, 0x7c1b5d74U, true, "        exp             "
+        "param5, off, v93, v27, v124 done vm vsrc0=0x74\n" },
+    { 0xf8001a5dU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, off, v27, v124 done vm vsrc1=0x5d\n" },
+    { 0xf8001a5bU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, off, v124 done vm vsrc2=0x1b\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
