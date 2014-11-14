@@ -1426,7 +1426,8 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos = addSpaces(buf, spacesToAdd);
         cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
         if (insn2Code & 0x800000U)
-            dregsNum++;
+            dregsNum++; // tfe
+        
         bufPos += decodeGCNVRegOperand(vdata, dregsNum, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
@@ -1549,6 +1550,8 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
             ((dmask & 8)?1:0);
     dregsNum = (dregsNum == 0) ? 1 : dregsNum;
+    if (insnCode & 0x10000)
+        dregsNum++; // tfe
     
     bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff, dregsNum, buf+bufPos);
     buf[bufPos++] = ',';
@@ -1558,21 +1561,27 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand(((insn2Code>>14)&0x7c), 4, buf+bufPos, arch);
+    
+    const cxuint ssamp = (insn2Code>>21)&0x1f;
+    
     if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
     {
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += decodeGCNOperand(((insn2Code>>19)&3), 4, buf+bufPos, arch);
+        bufPos += decodeGCNOperand(ssamp<<2, 4, buf+bufPos, arch);
     }
-    ::memcpy(buf+bufPos, " dmask:", 7);
-    bufPos += 7;
-    if (dmask >= 10)
+    if (dmask != 1)
     {
-        buf[bufPos++] = '1';
-        buf[bufPos++] = '0' + dmask - 10;
+        ::memcpy(buf+bufPos, " dmask:", 7);
+        bufPos += 7;
+        if (dmask >= 10)
+        {
+            buf[bufPos++] = '1';
+            buf[bufPos++] = '0' + dmask - 10;
+        }
+        else
+            buf[bufPos++] = '0' + dmask;
     }
-    else
-        buf[bufPos++] = '0' + dmask;
     
     if (insnCode & 0x1000)
     {
@@ -1620,6 +1629,13 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = ' ';
         buf[bufPos++] = 'd';
         buf[bufPos++] = 'a';
+    }
+    
+    if ((gcnInsn.mode & GCN_MASK2) != GCN_MIMG_SAMPLE && ssamp != 0)
+    {
+        ::memcpy(buf+bufPos, " ssamp=", 7);
+        bufPos += 7;
+        bufPos += itocstrCStyle(ssamp, buf+bufPos, 6, 16);
     }
     return bufPos;
 }
@@ -1725,7 +1741,10 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool vdstUsed = false;
     bool vdataUsed = false;
-    const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+    cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+    if (insn2Code & 0x800000U)
+        dregsNum++; // tfe
+    
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstUsed = true;

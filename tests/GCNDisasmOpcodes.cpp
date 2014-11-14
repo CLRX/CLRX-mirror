@@ -2561,8 +2561,64 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
         "v[61:65], v[18:21], s[80:83], s35 offen idxen offset:2004 glc slc addr64 tfe "
         "format:[8,sint]\n" },
     /* MIMG encoding */
-    { 0xf203fb00U, 0x02d59d79U, true, "        image_load      "
-        "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc slc r128 tfe lwe da\n" },
+    { 0xf203fb00U, 0x02d59d79U, true, "        image_load      v[157:160], "
+        "v[121:124], s[84:87] dmask:11 unorm glc slc r128 tfe lwe da ssamp=0x16\n" },
+    { 0xf203fb00U, 0x00159d79U, true, "        image_load      v[157:160], "
+        "v[121:124], s[84:87] dmask:11 unorm glc slc r128 tfe lwe da\n" },
+    /* dmasks */
+    { 0xf202f000U, 0x02d59d79U, true, "        image_load      v157, "
+        "v[121:124], s[84:87] dmask:0 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f100U, 0x02d59d79U, true, "        image_load      v157, "
+        "v[121:124], s[84:87] unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f200U, 0x02d59d79U, true, "        image_load      v157, "
+        "v[121:124], s[84:87] dmask:2 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f300U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:3 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f400U, 0x02d59d79U, true, "        image_load      v157, "
+        "v[121:124], s[84:87] dmask:4 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f500U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:5 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f600U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:6 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f700U, 0x02d59d79U, true, "        image_load      v[157:159], "
+        "v[121:124], s[84:87] dmask:7 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f800U, 0x02d59d79U, true, "        image_load      v157, "
+        "v[121:124], s[84:87] dmask:8 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202f900U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:9 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202fa00U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:10 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202fb00U, 0x02d59d79U, true, "        image_load      v[157:159], "
+        "v[121:124], s[84:87] dmask:11 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202fc00U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:12 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202fd00U, 0x02d59d79U, true, "        image_load      v[157:159], "
+        "v[121:124], s[84:87] dmask:13 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202fe00U, 0x02d59d79U, true, "        image_load      v[157:159], "
+        "v[121:124], s[84:87] dmask:14 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202ff00U, 0x02d59d79U, true, "        image_load      v[157:160], "
+        "v[121:124], s[84:87] dmask:15 unorm glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf203f000U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:0 unorm glc slc r128 tfe lwe da ssamp=0x16\n" },
+    { 0xf203f100U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] unorm glc slc r128 tfe lwe da ssamp=0x16\n" },
+    { 0xf203f200U, 0x02d59d79U, true, "        image_load      v[157:158], "
+        "v[121:124], s[84:87] dmask:2 unorm glc slc r128 tfe lwe da ssamp=0x16\n" },
+    /* other masks */
+    { 0xf202e100U, 0x02d59d79U, true, "        image_load      " /* no unorm */
+            "v157, v[121:124], s[84:87] glc slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202d100U, 0x02d59d79U, true, "        image_load      " /* no glc */
+            "v157, v[121:124], s[84:87] unorm slc r128 lwe da ssamp=0x16\n" },
+    { 0xf202b100U, 0x02d59d79U, true, "        image_load      " /* no da */
+            "v157, v[121:124], s[84:87] unorm glc slc r128 lwe ssamp=0x16\n" },
+    { 0xf2027100U, 0x02d59d79U, true, "        image_load      " /* no r128 */
+            "v157, v[121:124], s[84:87] unorm glc slc lwe da ssamp=0x16\n" },
+    { 0xf002f100U, 0x02d59d79U, true, "        image_load      " /* no slc */
+            "v157, v[121:124], s[84:87] unorm glc r128 lwe da ssamp=0x16\n" },
+    { 0xf200f100U, 0x02d59d79U, true, "        image_load      " /* no lwe */
+            "v157, v[121:124], s[84:87] unorm glc slc r128 da ssamp=0x16\n" },
+    { 0xf0000100U, 0x02d59d79U, true, "        image_load      " /* no flags */
+            "v157, v[121:124], s[84:87] ssamp=0x16\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
