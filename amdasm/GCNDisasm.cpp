@@ -1416,24 +1416,33 @@ static const char* mtbufNFMTTable[] =
 static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
       const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insn2Code, bool mtbuf)
 {
-    size_t bufPos = addSpaces(buf, spacesToAdd);
-    const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
-    bufPos += decodeGCNVRegOperand((insn2Code>>8)&0xff,
-               dregsNum, buf+bufPos);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    // determine number of vaddr registers
-    /* is (idxen+offen)*sizeof_addr or sizeof_addr if zero */
-    const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U? 2 : 1)
-            <<((insnCode & 0x8000U)?1:0);
-    
-    bufPos += decodeGCNVRegOperand(insn2Code&0xff, aregsNum, buf+bufPos);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand(((insn2Code>>14)&0x7c), 4, buf+bufPos, arch);
-    buf[bufPos++] = ',';
-    buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand((insn2Code>>24), 1, buf+bufPos, arch);
+    size_t bufPos = 0;
+    const cxuint vaddr = insn2Code&0xff;
+    const cxuint vdata = (insn2Code>>8)&0xff;
+    const cxuint srsrc = (insn2Code>>16)&0x1f;
+    const cxuint soffset = insn2Code>>24;
+    if ((gcnInsn.mode & GCN_MASK1) != GCN_ARG_NONE)
+    {
+        bufPos = addSpaces(buf, spacesToAdd);
+        const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+        bufPos += decodeGCNVRegOperand(vdata, dregsNum, buf+bufPos);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        // determine number of vaddr registers
+        /* is (idxen+offen)*sizeof_addr or sizeof_addr if zero */
+        const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U? 2 : 1)
+                <<((insnCode & 0x8000U)?1:0);
+        
+        bufPos += decodeGCNVRegOperand(vaddr, aregsNum, buf+bufPos);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += decodeGCNOperand(srsrc<<2, 4, buf+bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += decodeGCNOperand(soffset, 1, buf+bufPos, arch);
+    }
+    else
+        bufPos = addSpaces(buf, spacesToAdd-1);
     
     if (insnCode & 0x1000U)
     {
@@ -1497,6 +1506,34 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         for (cxuint k = 0; nfmtStr[k] != 0; k++)
             buf[bufPos++] = nfmtStr[k];
         buf[bufPos++] = ']';
+    }
+    
+    if ((gcnInsn.mode & GCN_MASK1) == GCN_ARG_NONE)
+    {
+        if (vaddr != 0)
+        {
+            ::memcpy(buf+bufPos, " vaddr=", 7);
+            bufPos += 7;
+            bufPos += itocstrCStyle(vaddr, buf+bufPos, 6, 16);
+        }
+        if (vdata != 0)
+        {
+            ::memcpy(buf+bufPos, " vdata=", 7);
+            bufPos += 7;
+            bufPos += itocstrCStyle(vdata, buf+bufPos, 6, 16);
+        }
+        if (srsrc != 0)
+        {
+            ::memcpy(buf+bufPos, " srsrc=", 7);
+            bufPos += 7;
+            bufPos += itocstrCStyle(srsrc, buf+bufPos, 6, 16);
+        }
+        if (soffset != 0)
+        {
+            ::memcpy(buf+bufPos, " soffset=", 9);
+            bufPos += 9;
+            bufPos += itocstrCStyle(soffset, buf+bufPos, 6, 16);
+        }
     }
     return bufPos;
 }
@@ -1772,7 +1809,7 @@ void GCNDisassembler::disassemble()
             bufPos += itocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
-            if (bufPos+128 >= 384)
+            if (bufPos+160 >= 384)
             {
                 output.write(buf, bufPos);
                 bufPos = 0;
@@ -2033,7 +2070,7 @@ void GCNDisassembler::disassemble()
         }
         buf[bufPos++] = '\n';
         
-        if (bufPos+128 >= 384)
+        if (bufPos+160 >= 384)
         {
             output.write(buf, bufPos);
             bufPos = 0;
@@ -2057,7 +2094,7 @@ void GCNDisassembler::disassemble()
         bufPos += itocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
         buf[bufPos++] = ':';
         buf[bufPos++] = '\n';
-        if (bufPos+40 >= 384)
+        if (bufPos+60 >= 384)
         {
             output.write(buf, bufPos);
             bufPos = 0;
