@@ -2918,14 +2918,43 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xf8001a5dU, 0x7c1b5d74U, true, "        exp             "
         "param5, v116, off, v27, v124 done vm vsrc1=0x5d\n" },
     { 0xf8001a5bU, 0x7c1b5d74U, true, "        exp             "
-        "param5, v116, v93, off, v124 done vm vsrc2=0x1b\n" },
+        "param5, v116, v93, off, v124 done vm vsrc2=0x1b\n" }
 };
 
-static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase)
+/* for Radeon RX2X0 series with GCN1.1 */
+static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
+{
+    /* SOP1 encoding (is in GCN1.1???) */
+    { 0xbed63514U, 0, false, "        s_mov_fed_b32   s86, s20\n" },
+    /* SOPP encoding */
+    { 0xbf8b032bU, 0, false, "        s_setkill       0x32b\n" },
+    { 0xbf970029U, 0, false, "        s_cbranch_cdbgsys L42\n" },
+    { 0xbf980029U, 0, false, "        s_cbranch_cdbguser L42\n" },
+    { 0xbf990029U, 0, false, "        s_cbranch_cdbgsys_or_user L42\n" },
+    { 0xbf9a0029U, 0, false, "        s_cbranch_cdbgsys_and_user L42\n" },
+    /* SMRD encoding */
+    { 0xc77ff023U, 0, false, "        s_dcache_inv_vol "
+                "sdst=0x7f sbase=0x38 offset=0x23\n" },
+    /* VOP2 encoding (is in GCN1.1???) */
+    { 0x7f3c134fU, 0, false, "        v_mov_fed_b32   v158, v79\n" },
+    { 0x7f3c12ffU, 0x40000000U, true, "        v_mov_fed_b32   v158, "
+                "0x40000000\n" },
+    /* VOP1 encoding */
+    { 0x7f3c2f4fU, 0, false, "        v_trunc_f64     v[158:159], v[79:80]\n" },
+    { 0x7f3c314fU, 0, false, "        v_ceil_f64      v[158:159], v[79:80]\n" },
+    { 0x7f3c334fU, 0, false, "        v_rndne_f64     v[158:159], v[79:80]\n" },
+    { 0x7f3c354fU, 0, false, "        v_floor_f64     v[158:159], v[79:80]\n" },
+    { 0x7f3c8b4fU, 0, false, "        v_log_legacy_f32 v158, v79\n" },
+    { 0x7f3c8d4fU, 0, false, "        v_exp_legacy_f32 v158, v79\n" },
+    /* VOP3 encoding */
+};
+
+static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
+                      GPUDeviceType deviceType)
 {
     std::ostringstream disOss;
     DisasmInput input;
-    input.deviceType = GPUDeviceType::PITCAIRN;
+    input.deviceType = deviceType;
     input.is64BitMode = false;
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
     GCNDisassembler gcnDisasm(disasm);
@@ -2950,7 +2979,15 @@ int main(int argc, const char** argv)
     int retVal = 0;
     for (cxuint i = 0; i < sizeof(decGCNOpcodeCases)/sizeof(GCNDisasmOpcodeCase); i++)
         try
-        { testDecGCNOpcodes(i, decGCNOpcodeCases[i]); }
+        { testDecGCNOpcodes(i, decGCNOpcodeCases[i], GPUDeviceType::PITCAIRN); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; i < sizeof(decGCNOpcodeGCN11Cases)/sizeof(GCNDisasmOpcodeCase); i++)
+        try
+        { testDecGCNOpcodes(i, decGCNOpcodeGCN11Cases[i], GPUDeviceType::HAWAII); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
