@@ -1306,9 +1306,9 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
     {   /* vdst is dst */
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
-        if ((gcnInsn.mode&GCN_DSMASK) == GCN_ADDR_SRC96)
+        if ((gcnInsn.mode&GCN_DS_96) != 0)
             regsNum = 3;
-        if ((gcnInsn.mode&GCN_DSMASK) == GCN_ADDR_SRC128)
+        if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
         bufPos += decodeGCNVRegOperand(vdst, regsNum, buf+bufPos);
         vdstUsed = true;
@@ -1334,8 +1334,12 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
         }
-        bufPos += decodeGCNVRegOperand(vdata0,
-            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf+bufPos);
+        cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+        if ((gcnInsn.mode&GCN_DS_96) != 0)
+            regsNum = 3;
+        if ((gcnInsn.mode&GCN_DS_128) != 0)
+            regsNum = 4;
+        bufPos += decodeGCNVRegOperand(vdata0, regsNum, buf+bufPos);
         vdata0Used = true;
         if (srcMode == GCN_2SRCS)
         {

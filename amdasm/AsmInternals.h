@@ -118,10 +118,8 @@ enum : uint16_t
     GCN_NOSRC_2OFF = 0x180, /* only address */
     GCN_SRC_ADDR2  = 0x200,
     GCN_SRC_ADDR2_64  = 0x20f,
-    GCN_ADDR_DST96  = 0x250,
-    GCN_ADDR_DST128  = 0x290,
-    GCN_ADDR_SRC96  = 0x260,
-    GCN_ADDR_SRC128  = 0x2a0,
+    GCN_DS_96  = 0x800,
+    GCN_DS_128  = 0x1000,
     GCN_ONLYDST = 0x400, /* only vdst */
     GCN_DSMASK = 0x3f0,
     GCN_DSMASK2 = 0x3c0,

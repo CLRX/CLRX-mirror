@@ -318,6 +318,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xc359bb5bU, 0, false, "        SMRD_ill_13     s51, s[58:59], 0x5b\n" },
     { 0xc399bb5bU, 0, false, "        SMRD_ill_14     s51, s[58:59], 0x5b\n" },
     { 0xc3d9bb5bU, 0, false, "        SMRD_ill_15     s51, s[58:59], 0x5b\n" },
+    { 0xc759bb5bU, 0, false, "        SMRD_ill_29     s51, s[58:59], 0x5b\n" },
     { 0xc7998000U, 0, false, "        s_memtime       s[51:52]\n" },
     { 0xc7998044U, 0, false, "        s_memtime       s[51:52] offset=0x44\n" },
     { 0xc7998144U, 0, false, "        s_memtime       s[51:52] offset=0x44 imm=1\n" },
@@ -2970,7 +2971,32 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
                 "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
     { 0xd860cd67U, 0x8b27a947U, true, "        ds_gws_sema_release_all "
                 "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
-    /* ds_wrap_rtn_b32 */
+    { 0xd8d0cd67U, 0x9b56a947U, true, "        ds_wrap_rtn_b32 "
+                "v155, v71, v169, v86 offset:52583\n" }, /* check */
+    { 0xd9f8cd67U, 0x9b56a947U, true, "        ds_condxchg32_rtn_b64 "
+                "v[155:156], v71, v[169:170] offset:52583 vdata1=0x56\n" },
+    { 0xdb78cd67U, 0x0000a947U, true, "        ds_write_b96    "
+                "v71, v[169:171] offset:52583\n" },
+    { 0xdb7ccd67U, 0x0000a947U, true, "        ds_write_b128   "
+                "v71, v[169:172] offset:52583\n" },
+    { 0xdbf4cd67U, 0x9b56a947U, true, "        ds_condxchg32_rtn_b128 " /* is good??? */
+                "v[155:158] offset:52583 vaddr=0x47 vdata0=0xa9 vdata1=0x56\n" },
+    { 0xdbf8cd67U, 0x9b56a947U, true, "        ds_read_b96     "
+                "v[155:157], v71 offset:52583 vdata0=0xa9 vdata1=0x56\n" },
+    { 0xdbfccd67U, 0x9b56a947U, true, "        ds_read_b128    "
+                "v[155:158], v71 offset:52583 vdata0=0xa9 vdata1=0x56\n" },
+    /* MUBUF encoding */
+    { 0xe03c325bU, 0x23343d12U, true, "        buffer_load_dwordx3 "
+                "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe07c325bU, 0x23343d12U, true, "        buffer_store_dwordx3 "
+                "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe0d0325bU, 0x23343d12U, true, "        MUBUF_ill_52    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    { 0xe150325bU, 0x23343d12U, true, "        MUBUF_ill_84    "
+                "v61, v[18:19], s[80:83], s35 offen idxen offset:603\n" },
+    /* MIMG encoding */
+    { 0xf04cfb00U, 0x00159d79U, true, "        MIMG_ill_19     "
+        "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
