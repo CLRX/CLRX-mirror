@@ -2923,8 +2923,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
 
 /* for Radeon RX2X0 series with GCN1.1 */
 static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
-{
-    /* SOP1 encoding (is in GCN1.1???) */
+{   /* SOP1 encoding (is in GCN1.1???) */
     { 0xbed63514U, 0, false, "        s_mov_fed_b32   s86, s20\n" },
     /* SOPP encoding */
     { 0xbf8b032bU, 0, false, "        s_setkill       0x32b\n" },
@@ -2960,6 +2959,18 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
                 "v[55:56], v[79:80], v166, v[229:230]\n" },
     { 0xd2e60037U, 0x07974d4fU, true, "        v_mqsad_pk_u16_u8 "
                 "v[55:56], v[79:80], v166, v[229:230]\n" },
+    { 0xd2ea0037U, 0x07974d4fU, true, "        v_mqsad_u32_u8  "
+                "v[55:56], v[79:80], v166, v[229:230]\n" },
+    { 0xd2ec2f37U, 0x07974d4fU, true, "        v_mad_u64_u32   "
+                "v[55:56], s[47:48], v79, v166, v[229:230]\n" },
+    { 0xd2ee2f37U, 0x07974d4fU, true, "        v_mad_i64_i32   "
+                "v[55:56], s[47:48], v79, v166, v[229:230]\n" },
+    /* DS encoding */
+    { 0xd850cd67U, 0x8b27a947U, true, "        ds_nop          "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd860cd67U, 0x8b27a947U, true, "        ds_gws_sema_release_all "
+                "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    /* ds_wrap_rtn_b32 */
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
