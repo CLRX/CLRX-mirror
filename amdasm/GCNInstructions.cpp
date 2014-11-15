@@ -870,6 +870,8 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_msad_u8",           GCNENC_VOP3A,  GCN_STDMODE,              369,  ARCH_GCN_ALL  },
     { "v_qsad_u8",           GCNENC_VOP3A,  GCN_REG_DS0_64|GCN_REG_SRC2_64, 370,  ARCH_HD7X00   },
     { "v_mqsad_u8",          GCNENC_VOP3A,  GCN_REG_DS0_64|GCN_REG_SRC2_64, 371,  ARCH_HD7X00   },
+    { "v_qsad_pk_u16_u8",    GCNENC_VOP3A,  GCN_REG_DS0_64|GCN_REG_SRC2_64, 370,  ARCH_RX2X0    },
+    { "v_mqsad_pk_u16_u8",   GCNENC_VOP3A,  GCN_REG_DS0_64|GCN_REG_SRC2_64, 371,  ARCH_RX2X0    },
     { "v_trig_preop_f64",    GCNENC_VOP3A,  GCN_REG_DS0_64|GCN_SRC2_NONE, 372,  ARCH_GCN_ALL  },
     { "v_mqsad_u32_u8",      GCNENC_VOP3A,  GCN_STDMODE,              373,  ARCH_RX2X0    },
     { "v_mad_u64_u32",       GCNENC_VOP3A,  GCN_REG_DS2_64,           374,  ARCH_RX2X0    },

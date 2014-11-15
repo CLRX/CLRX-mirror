@@ -2947,6 +2947,19 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     { 0x7f3c8b4fU, 0, false, "        v_log_legacy_f32 v158, v79\n" },
     { 0x7f3c8d4fU, 0, false, "        v_exp_legacy_f32 v158, v79\n" },
     /* VOP3 encoding */
+    { 0xd3120037U, 0x0000011bU, true, "        v_mov_fed_b32   v55, v27 vop3\n" },
+    { 0xd32e0037U, 0x0000011bU, true, "        v_trunc_f64     v[55:56], v[27:28] vop3\n" },
+    { 0xd3300037U, 0x0000011bU, true, "        v_ceil_f64      v[55:56], v[27:28] vop3\n" },
+    { 0xd3320037U, 0x0000011bU, true, "        v_rndne_f64     v[55:56], v[27:28] vop3\n" },
+    { 0xd3340037U, 0x0000011bU, true, "        v_floor_f64     v[55:56], v[27:28] vop3\n" },
+    { 0xd38a0037U, 0x0000011bU, true, "        v_log_legacy_f32 v55, v27 vop3\n" },
+    { 0xd38c0037U, 0x0000011bU, true, "        v_exp_legacy_f32 v55, v27 vop3\n" },
+    /* new VOP3 instructions */
+    { 0xd2e20037U, 0x07974d4fU, true, "        v_msad_u8       v55, v79, v166, v229\n" },
+    { 0xd2e40037U, 0x07974d4fU, true, "        v_qsad_pk_u16_u8 "
+                "v[55:56], v[79:80], v166, v[229:230]\n" },
+    { 0xd2e60037U, 0x07974d4fU, true, "        v_mqsad_pk_u16_u8 "
+                "v[55:56], v[79:80], v166, v[229:230]\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,

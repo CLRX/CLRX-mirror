@@ -46,7 +46,7 @@ static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
     "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
 };
 
-static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1] =
+static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1+2] =
 {
     { 0, 0 },
     { 0, 0x80 }, // GCNENC_SOPC, opcode = (7bit)<<16 */
@@ -66,10 +66,12 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1] =
     { 0x08a4, 0x8 }, /* GCNENC_MTBUF, opcode = (3bit)<<16 */
     { 0x08ac, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
     { 0x092c, 0x1 }, /* GCNENC_EXP, opcode = none */
-    { 0x092d, 0x100 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x092d, 0x100 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
+    { 0x0a2d, 0x200 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 (GCN1.1) */
+    { 0x0a2d, 0x200 }  /* GCNENC_VOP3B, opcode = (9bit)<<17 (GCN1.1) */
 };
 
-static const size_t gcnInstrTableByCodeLength = 0x0a2d;
+static const size_t gcnInstrTableByCodeLength = 0x0c2d;
 
 static void initializeGCNDisassembler()
 {
@@ -86,7 +88,13 @@ static void initializeGCNDisassembler()
     {
         const GCNInstruction& instr = gcnInstrsTable[i];
         const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[instr.encoding];
-        gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
+        if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr)
+            gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
+        else /* otherwise we for GCN1.1 */
+        {
+            const GCNEncodingSpace& encSpace2 = gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
+            gcnInstrTableByCode[encSpace2.offset + instr.code] = instr;
+        }
     }
 }
 
@@ -2017,8 +2025,24 @@ void GCNDisassembler::disassemble()
             GCNInstruction defaultInsn = { nullptr, gcnInsn->encoding, GCN_STDMODE,
                         0, 0 };
             cxuint spacesToAdd = 16;
+            bool isIllegal = false;
             if (gcnInsn->mnemonic != nullptr &&
-                (curArchMask & gcnInsn->archMask) != 0)
+                (curArchMask & gcnInsn->archMask) == 0 &&
+                gcnEncoding == GCNENC_VOP3A)
+            {    /* new overrides */
+                const GCNEncodingSpace& encSpace2 =
+                        gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
+                gcnInsn = gcnInstrTableByCode + encSpace2.offset + opcode;
+                if (gcnInsn->mnemonic == nullptr ||
+                        (curArchMask & gcnInsn->archMask) == 0)
+                        // illegal
+                    isIllegal = true;
+            }
+            else if (gcnInsn->mnemonic == nullptr ||
+                (curArchMask & gcnInsn->archMask) == 0)
+                isIllegal = true;
+            
+            if (!isIllegal)
             {
                 size_t k;
                 const char* mnem = gcnInsn->mnemonic;
