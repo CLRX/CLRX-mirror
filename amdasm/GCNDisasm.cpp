@@ -1779,14 +1779,14 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool vdstUsed = false;
     bool vdataUsed = false;
-    cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
-    if (insnCode2 & 0x800000U)
-        dregsNum++; // tfe
+    const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+    // tfe
+    const cxuint dstRegsNum = (insnCode2 & 0x800000U)?dregsNum+1:dregsNum;
     
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstUsed = true;
-        bufPos += decodeGCNVRegOperand(insnCode2>>24, dregsNum, buf+bufPos);
+        bufPos += decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         bufPos += decodeGCNVRegOperand(insnCode2&0xff, 2, buf+bufPos); // addr
@@ -1794,12 +1794,12 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     else
     {   /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
         bufPos += decodeGCNVRegOperand(insnCode2&0xff, 2, buf+bufPos); // addr
-        if ((gcnInsn.mode & GCN_FLAT_NODST) != 0)
+        if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
             vdstUsed = true;
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
-            bufPos += decodeGCNVRegOperand(insnCode2>>24, dregsNum, buf+bufPos);
+            bufPos += decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, buf+bufPos);
         }
     }
     

@@ -2997,6 +2997,71 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     /* MIMG encoding */
     { 0xf04cfb00U, 0x00159d79U, true, "        MIMG_ill_19     "
         "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da\n" },
+    /* FLAT encoding */
+    { 0xdc030000U, 0x2f8041bbU, true, "        FLAT_ill_0      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc070000U, 0x2f8041bbU, true, "        FLAT_ill_1      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc0b0000U, 0x2f8041bbU, true, "        FLAT_ill_2      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc0f0000U, 0x2f8041bbU, true, "        FLAT_ill_3      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc130000U, 0x2f8041bbU, true, "        FLAT_ill_4      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc170000U, 0x2f8041bbU, true, "        FLAT_ill_5      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc1b0000U, 0x2f8041bbU, true, "        FLAT_ill_6      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc1f0000U, 0x2f8041bbU, true, "        FLAT_ill_7      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc230000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc230000U, 0x2f0000bbU, true, "        flat_load_ubyte "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc230000U, 0x2f0062bbU, true, "        flat_load_ubyte "
+                "v47, v[187:188] glc slc vdata=0x62\n" },
+    { 0xdc200000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] tfe\n" },
+    { 0xdc210000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] glc tfe\n" },
+    { 0xdc220000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] slc tfe\n" },
+    { 0xdc220000U, 0x2f8000bfU, true, "        flat_load_ubyte "
+                "v[47:48], v[191:192] slc tfe\n" },
+    /* FLAT instructions */
+    { 0xdc270000U, 0x2f8000bbU, true, "        flat_load_sbyte "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc2b0000U, 0x2f8000bbU, true, "        flat_load_ushort "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc2f0000U, 0x2f8000bbU, true, "        flat_load_sshort "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc330000U, 0x2f8000bbU, true, "        flat_load_dword "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc370000U, 0x2f8000bbU, true, "        flat_load_dwordx2 "
+                "v[47:49], v[187:188] glc slc tfe\n" },
+    { 0xdc3b0000U, 0x2f8000bbU, true, "        flat_load_dwordx4 "
+                "v[47:51], v[187:188] glc slc tfe\n" },
+    { 0xdc3f0000U, 0x2f8000bbU, true, "        flat_load_dwordx3 "
+                "v[47:50], v[187:188] glc slc tfe\n" },
+    { 0xdc430000U, 0x2f8041bbU, true, "        FLAT_ill_16     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc470000U, 0x2f8041bbU, true, "        FLAT_ill_17     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc4b0000U, 0x2f8041bbU, true, "        FLAT_ill_18     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc4f0000U, 0x2f8041bbU, true, "        FLAT_ill_19     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc530000U, 0x2f8041bbU, true, "        FLAT_ill_20     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc570000U, 0x2f8041bbU, true, "        FLAT_ill_21     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc5b0000U, 0x2f8041bbU, true, "        FLAT_ill_22     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc5f0000U, 0x2f8041bbU, true, "        FLAT_ill_23     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    /* stores */
+    { 0xdc630000U, 0x2f8054bfU, true, "        flat_store_byte "
+                "v[191:192], v84 glc slc tfe vdst=0x2f\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
