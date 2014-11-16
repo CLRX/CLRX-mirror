@@ -33,12 +33,36 @@ struct GCNDisasmLabelCase
 };
 
 static const uint32_t code1tbl[] = { 0xd8dc2625U, 0x37000006U, 0xbf82fffeU };
+static const uint32_t code2tbl[] = { 0x7c6b92ffU };
+static const uint32_t code3tbl[] = { 0xd8dc2625U, 0x37000006U, 0xbf82fffeU, 0xbf820002U,
+    0xea88f7d4U, 0x23f43d12U, 0xd25a0037U, 0x4002b41bU
+};
+static const uint32_t code4tbl[] = { 0xbf820243U, 0xbf820106U, 0xbf820105U };
+
 static const GCNDisasmLabelCase decGCNLabelCases[] =
 {
     {
         3, code1tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
         ".org *-4\nL1:\n.org *+4\n        s_branch        L1\n"
+    },
+    {
+        1, code2tbl,
+        "        /* WARNING: Unfinished instruction at end! */\n"
+        "        v_cmpx_lg_f64   vcc, 0x0, v[201:202]\n"
+    },
+    {
+        8, code3tbl,
+        "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
+        ".org *-4\nL1:\n.org *+4\n        s_branch        L1\n"
+        "        s_branch        L6\n"
+        "        tbuffer_load_format_x v[61:62], v[18:21], s[80:83], s35"
+        " offen idxen offset:2004 glc slc addr64 tfe format:[8,sint]\n"
+        "L6:\n        v_cvt_pknorm_i16_f32 v55, s27, -v90\n"
+    },
+    {
+        3, code4tbl, "        s_branch        L580\n        s_branch        L264\n"
+        "        s_branch        L264\n.org 0x108\nL264:\n.org 0x244\nL580:\n"
     }
 };
 
