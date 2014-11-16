@@ -56,6 +56,7 @@ enum: cxuint
     DISASM_DUMPDATA = 4,    ///< dump datas
     DISASM_CALNOTES = 8,    ///< dump ATI CAL notes
     DISASM_FLOATLITS = 16,  ///< print in comments float literals
+    DISASM_HEXCODE = 32,
     DISASM_ALL = 0xff       ///< all disassembler flags
 };
 

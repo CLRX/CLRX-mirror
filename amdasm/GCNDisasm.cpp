@@ -1910,17 +1910,12 @@ void GCNDisassembler::disassemble()
             }
         }
         
-        // add spaces
-        for (size_t p = 0; p < 8; p++)
-            buf[bufPos+p] = ' ';
-        bufPos += 8;
-        
+        const size_t oldPos = pos;
         cxbyte gcnEncoding = GCNENC_NONE;
         const uint32_t insnCode = ULEV(codeWords[pos++]);
         uint32_t insnCode2 = 0;
         uint32_t literal = 0;
         
-        const size_t oldPos = pos;
         /* determine GCN encoding */
         if ((insnCode & 0x80000000U) != 0)
         {
@@ -2028,6 +2023,23 @@ void GCNDisassembler::disassemble()
         }
         
         prevIsTwoWord = (oldPos+2 == pos);
+        
+        if (disassembler.getFlags() & DISASM_HEXCODE)
+        {
+            buf[bufPos++] = '/';
+            buf[bufPos++] = '*';
+            bufPos += itocstrCStyle(insnCode, buf+bufPos, 12, 16, 8, false);
+            buf[bufPos++] = ' ';
+            if (prevIsTwoWord)
+                bufPos += itocstrCStyle(insnCode2, buf+bufPos, 12, 16, 8, false);
+            else
+                bufPos += addSpaces(buf+bufPos, 8);
+            buf[bufPos++] = '*';
+            buf[bufPos++] = '/';
+            buf[bufPos++] = ' ';
+        }
+        else // add spaces
+            bufPos += addSpaces(buf+bufPos, 8);
         
         if (gcnEncoding == GCNENC_NONE)
         {   // invalid encoding
