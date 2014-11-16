@@ -1894,13 +1894,13 @@ void GCNDisassembler::disassemble()
             }
             else  if (prevIsTwoWord && pos-1 == *curLabel)
             {   /* if label between words of previous instruction */
-                ::memcpy(buf+bufPos, "    .org *-4\nL", 14);
-                bufPos += 14;
-                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
+                ::memcpy(buf+bufPos, ".org *-4\nL", 10);
+                bufPos += 10;
+                bufPos += itocstrCStyle(pos-1, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
-                ::memcpy(buf+bufPos, "    .org *+4\n", 13);
-                bufPos += 13;
+                ::memcpy(buf+bufPos, ".org *+4\n", 9);
+                bufPos += 9;
                 if (bufPos+160 >= 384)
                 {
                     output.write(buf, bufPos);
