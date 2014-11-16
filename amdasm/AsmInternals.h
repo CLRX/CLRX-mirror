@@ -151,6 +151,7 @@ enum : uint16_t
     GCN_CMPSWAP =  0x80,
     GCN_MASK1 = 0xf0,
     GCN_MASK2 = 0xf00,
+    GCN_DSIZE_MASK = 0x700,
     GCN_SHIFT2 = 8
 };
 

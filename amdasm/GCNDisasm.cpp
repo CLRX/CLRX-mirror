@@ -827,7 +827,7 @@ static size_t decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     }
     else if (mode1 != GCN_ARG_NONE)
     {
-        const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_MASK2)>>GCN_SHIFT2);
+        const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
         bufPos += addSpaces(buf, spacesToAdd);
         bufPos += decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, buf + bufPos, arch);
         buf[bufPos++] = ',';
@@ -1436,7 +1436,7 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((gcnInsn.mode & GCN_MASK1) != GCN_ARG_NONE)
     {
         bufPos = addSpaces(buf, spacesToAdd);
-        cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+        cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
         if (insnCode2 & 0x800000U)
             dregsNum++; // tfe
         
@@ -1779,7 +1779,7 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool vdstUsed = false;
     bool vdataUsed = false;
-    const cxuint dregsNum = ((gcnInsn.mode&GCN_MASK2)>>GCN_SHIFT2)+1;
+    const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
     // tfe
     const cxuint dstRegsNum = (insnCode2 & 0x800000U)?dregsNum+1:dregsNum;
     
