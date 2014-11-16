@@ -156,6 +156,8 @@ public:
 
 class GCNDisassembler: public ISADisassembler
 {
+private:
+    bool instrOutOfCode;
 public:
     GCNDisassembler(Disassembler& disassembler);
     ~GCNDisassembler();

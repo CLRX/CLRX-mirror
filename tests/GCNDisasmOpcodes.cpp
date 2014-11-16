@@ -3185,7 +3185,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     { 0xdd870000U, 0x2f8041bbU, true, "        FLAT_ill_97     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
     { 0xdd8b0000U, 0x2f8041bbU, true, "        FLAT_ill_98     "
-                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+                "v[47:48], v[187:188], v65 glc slc tfe\n" }
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
@@ -3204,7 +3204,8 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
     if (outStr != testCase.expected)
     {
         std::ostringstream oss;
-        oss << "FAILED for decGCNCase#" << i << ": size=" << (testCase.twoWords?2:1) <<
+        oss << "FAILED for " << (deviceType==GPUDeviceType::HAWAII?"Hawaii":"Pitcairn") <<
+            " decGCNCase#" << i << ": size=" << (testCase.twoWords?2:1) <<
             ", word0=0x" << std::hex << testCase.word0 << std::dec;
         if (testCase.twoWords)
             oss << ", word1=0x" << std::hex << testCase.word1 << std::dec;
