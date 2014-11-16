@@ -2204,4 +2204,5 @@ void GCNDisassembler::disassemble()
     }
     output.write(buf, bufPos);
     output.flush();
+    labels.clear(); // free labels
 }
