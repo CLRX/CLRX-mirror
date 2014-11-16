@@ -1929,7 +1929,7 @@ void GCNDisassembler::disassemble()
                         if ((insnCode&0xff) == 0xff) // literal
                         {
                             if (pos < codeWordsNum)
-                                literal = ULEV(codeWords[pos++]);
+                                insnCode2 = literal = ULEV(codeWords[pos++]);
                         }
                         gcnEncoding = GCNENC_SOP1;
                     }
@@ -1939,7 +1939,7 @@ void GCNDisassembler::disassemble()
                             (insnCode&0xff00) == 0xff00) // literal
                         {
                             if (pos < codeWordsNum)
-                                literal = ULEV(codeWords[pos++]);
+                                insnCode2 = literal = ULEV(codeWords[pos++]);
                         }
                         gcnEncoding = GCNENC_SOPC;
                     }
@@ -1951,7 +1951,7 @@ void GCNDisassembler::disassemble()
                         if (((insnCode>>23)&0x1f) == 21)
                         {
                             if (pos < codeWordsNum)
-                                literal = ULEV(codeWords[pos++]);
+                                insnCode2 = literal = ULEV(codeWords[pos++]);
                         }
                     }
                 }
@@ -1960,7 +1960,7 @@ void GCNDisassembler::disassemble()
                     if ((insnCode&0xff) == 0xff || (insnCode&0xff00) == 0xff00)
                     {   // literal
                         if (pos < codeWordsNum)
-                            literal = ULEV(codeWords[pos++]);
+                            insnCode2 = literal = ULEV(codeWords[pos++]);
                     }
                     gcnEncoding = GCNENC_SOP2;
                 }
@@ -1992,7 +1992,7 @@ void GCNDisassembler::disassemble()
                 if ((insnCode&0x1ff) == 0xff) // literal
                 {
                     if (pos < codeWordsNum)
-                        literal = ULEV(codeWords[pos++]);
+                        insnCode2 = literal = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = GCNENC_VOPC;
             }
@@ -2001,7 +2001,7 @@ void GCNDisassembler::disassemble()
                 if ((insnCode&0x1ff) == 0xff) // literal
                 {
                     if (pos < codeWordsNum)
-                        literal = ULEV(codeWords[pos++]);
+                        insnCode2 = literal = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = GCNENC_VOP1;
             }
@@ -2011,12 +2011,12 @@ void GCNDisassembler::disassemble()
                 if (opcode == 32 || opcode == 33) // V_MADMK and V_MADAK
                 {
                     if (pos < codeWordsNum)
-                        literal = ULEV(codeWords[pos++]);
+                        insnCode2 = literal = ULEV(codeWords[pos++]);
                 }
                 else if ((insnCode&0x1ff) == 0xff)
                 {
                     if (pos < codeWordsNum)
-                        literal = ULEV(codeWords[pos++]);
+                        insnCode2 = literal = ULEV(codeWords[pos++]);
                 }
                 gcnEncoding = GCNENC_VOP2;
             }
