@@ -646,6 +646,10 @@ void Disassembler::disassemble()
         
         if (kinput.code != nullptr && kinput.codeSize != 0)
         {   // input kernel code (main disassembly)
+            output.write("    .text\n", 10);
+            isaDisassembler->setInput(kinput.codeSize, kinput.code);
+            isaDisassembler->beforeDisassemble();
+            isaDisassembler->disassemble();
         }
     }
     output.flush();

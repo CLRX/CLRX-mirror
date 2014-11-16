@@ -109,6 +109,8 @@ GCNDisassembler::~GCNDisassembler()
 
 void GCNDisassembler::beforeDisassemble()
 {
+    labels.clear();
+    
     if ((inputSize&3) != 0)
         throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
@@ -1871,20 +1873,41 @@ void GCNDisassembler::disassemble()
         bufPos = 54;
     }
     
+    bool prevIsTwoWord = false;
+    
     for (size_t pos = 0; pos < codeWordsNum;)
     {   // check label
-        if (curLabel != labels.end() && pos == *curLabel)
-        {   // put label
-            buf[bufPos++] = 'L';
-            bufPos += itocstrCStyle((pos<<2), buf+bufPos, 22, 10, 0, false);
-            buf[bufPos++] = ':';
-            buf[bufPos++] = '\n';
-            if (bufPos+160 >= 384)
-            {
-                output.write(buf, bufPos);
-                bufPos = 0;
+        if (curLabel != labels.end())
+        {
+            if (pos == *curLabel)
+            {   // put label
+                buf[bufPos++] = 'L';
+                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
+                buf[bufPos++] = ':';
+                buf[bufPos++] = '\n';
+                if (bufPos+160 >= 384)
+                {
+                    output.write(buf, bufPos);
+                    bufPos = 0;
+                }
+                curLabel++;
             }
-            curLabel++;
+            else  if (prevIsTwoWord && pos-1 == *curLabel)
+            {   /* if label between words of previous instruction */
+                ::memcpy(buf+bufPos, "    .org *-4\nL", 14);
+                bufPos += 14;
+                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
+                buf[bufPos++] = ':';
+                buf[bufPos++] = '\n';
+                ::memcpy(buf+bufPos, "    .org *+4\n", 13);
+                bufPos += 13;
+                if (bufPos+160 >= 384)
+                {
+                    output.write(buf, bufPos);
+                    bufPos = 0;
+                }
+                curLabel++;
+            }
         }
         
         // add spaces
@@ -1897,6 +1920,7 @@ void GCNDisassembler::disassemble()
         uint32_t insnCode2 = 0;
         uint32_t literal = 0;
         
+        const size_t oldPos = pos;
         /* determine GCN encoding */
         if ((insnCode & 0x80000000U) != 0)
         {
@@ -2002,6 +2026,8 @@ void GCNDisassembler::disassemble()
                 gcnEncoding = GCNENC_VOP2;
             }
         }
+        
+        prevIsTwoWord = (oldPos+2 == pos);
         
         if (gcnEncoding == GCNENC_NONE)
         {   // invalid encoding
@@ -2162,7 +2188,7 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = 'r';
             buf[bufPos++] = 'g';
             buf[bufPos++] = ' ';
-            bufPos += itocstrCStyle((*curLabel)<<2, buf+bufPos, 20, 16);
+            bufPos += itocstrCStyle(*curLabel, buf+bufPos, 20, 16);
             buf[bufPos++] = '\n';
         }
         // put label
