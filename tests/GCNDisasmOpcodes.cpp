@@ -35,6 +35,9 @@ struct GCNDisasmOpcodeCase
 static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
 {   /* SOP2 encoding */
     { 0x80153d04U, 0, false, "        s_add_u32       s21, s4, s61\n" },
+    /* flat registers illegal */
+    { 0x80683d04U, 0, false, "        s_add_u32       ill_104, s4, s61\n" },
+    
     { 0x807f3d04U, 0, false, "        s_add_u32       exec_hi, s4, s61\n" },
     { 0x807f3df1U, 0, false, "        s_add_u32       exec_hi, -0.5, s61\n" },
     { 0x807f3dffU, 0xd3abc5f, true, "        s_add_u32       exec_hi, 0xd3abc5f, s61\n" },
@@ -2924,7 +2927,9 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
 
 /* for Radeon RX2X0 series with GCN1.1 */
 static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
-{   /* SOP1 encoding (is in GCN1.1???) */
+{   /* flat registers */
+    { 0x80683d04U, 0, false, "        s_add_u32       flat_scratch_lo, s4, s61\n" },
+    /* SOP1 encoding (is in GCN1.1???) */
     { 0xbed63514U, 0, false, "        s_mov_fed_b32   s86, s20\n" },
     /* SOPP encoding */
     { 0xbf8b032bU, 0, false, "        s_setkill       0x32b\n" },

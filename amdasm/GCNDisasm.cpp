@@ -332,7 +332,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
         switch(op2)
         {
             case 104:
-                memcpy(buf+pos, "flat_scratch", 12);
+                ::memcpy(buf+pos, "flat_scratch", 12);
                 pos += 12;
                 break;
             case 106:
