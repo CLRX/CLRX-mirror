@@ -394,7 +394,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
             buf[pos++] = '/';
             buf[pos++] = '*';
             buf[pos++] = ' ';
-            pos += ftocstrCStyle(fu.f, buf+pos, 27);
+            pos += ftocstrCStyle(fu.f, buf+pos, 20);
             buf[pos++] = 'f';
             buf[pos++] = ' ';
             buf[pos++] = '*';
@@ -979,7 +979,7 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             buf[bufPos++] = '/';
             buf[bufPos++] = '*';
             buf[bufPos++] = ' ';
-            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 27);
+            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 20);
             buf[bufPos++] = 'f';
             buf[bufPos++] = ' ';
             buf[bufPos++] = '*';
@@ -1007,7 +1007,7 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             buf[bufPos++] = '/';
             buf[bufPos++] = '*';
             buf[bufPos++] = ' ';
-            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 27);
+            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 20);
             buf[bufPos++] = 'f';
             buf[bufPos++] = ' ';
             buf[bufPos++] = '*';
@@ -1849,6 +1849,8 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
 
 /* main routine */
 
+static const size_t maxBufSize = 512;
+
 void GCNDisassembler::disassemble()
 {
     auto curLabel = labels.begin();
@@ -1858,7 +1860,7 @@ void GCNDisassembler::disassemble()
     const uint16_t curArchMask = isGCN11?ARCH_RX2X0:ARCH_HD7X00;
     std::ostream& output = disassembler.getOutput();
     
-    char buf[384];
+    char buf[maxBufSize];
     size_t bufPos = 0;
     const size_t codeWordsNum = (inputSize>>2);
     
@@ -1887,7 +1889,7 @@ void GCNDisassembler::disassemble()
                 bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
-                if (bufPos+160 >= 384)
+                if (bufPos+250 >= maxBufSize)
                 {
                     output.write(buf, bufPos);
                     bufPos = 0;
@@ -1903,7 +1905,7 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = '\n';
                 ::memcpy(buf+bufPos, ".org *+4\n", 9);
                 bufPos += 9;
-                if (bufPos+160 >= 384)
+                if (bufPos+250 >= maxBufSize)
                 {
                     output.write(buf, bufPos);
                     bufPos = 0;
@@ -2185,7 +2187,7 @@ void GCNDisassembler::disassemble()
         }
         buf[bufPos++] = '\n';
         
-        if (bufPos+160 >= 384)
+        if (bufPos+250 >= maxBufSize)
         {
             output.write(buf, bufPos);
             bufPos = 0;
@@ -2209,7 +2211,7 @@ void GCNDisassembler::disassemble()
         bufPos += itocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
         buf[bufPos++] = ':';
         buf[bufPos++] = '\n';
-        if (bufPos+60 >= 384)
+        if (bufPos+80 >= maxBufSize)
         {
             output.write(buf, bufPos);
             bufPos = 0;
