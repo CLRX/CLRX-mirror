@@ -2061,7 +2061,7 @@ void GCNDisassembler::disassemble()
             const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
             const GCNInstruction* gcnInsn = gcnInstrTableByCode + encSpace.offset + opcode;
             
-            GCNInstruction defaultInsn = { nullptr, gcnInsn->encoding, GCN_STDMODE,
+            const GCNInstruction defaultInsn = { nullptr, gcnInsn->encoding, GCN_STDMODE,
                         0, 0 };
             cxuint spacesToAdd = 16;
             bool isIllegal = false;
