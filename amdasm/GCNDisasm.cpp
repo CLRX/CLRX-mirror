@@ -111,13 +111,12 @@ void GCNDisassembler::beforeDisassemble()
 {
     labels.clear();
     
-    if ((inputSize&3) != 0)
-        throw Exception("Input code size must be aligned to 4 bytes!");
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
+    const size_t codeWordsNum = (inputSize>>2);
     
     const bool isGCN11 = checkGCN11(disassembler.getInput()->deviceType);
     size_t pos;
-    for (pos = 0; pos < (inputSize>>2); pos++)
+    for (pos = 0; pos < codeWordsNum; pos++)
     {   /* scan all instructions and get jump addresses */
         const uint32_t insnCode = ULEV(codeWords[pos]);
         if ((insnCode & 0x80000000U) != 0)
@@ -195,7 +194,7 @@ void GCNDisassembler::beforeDisassemble()
         }
     }
     
-    instrOutOfCode = (pos != (inputSize>>2));
+    instrOutOfCode = (pos != codeWordsNum);
     
     std::sort(labels.begin(), labels.end());
     const auto newEnd = std::unique(labels.begin(), labels.end());
@@ -1852,9 +1851,6 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
 
 void GCNDisassembler::disassemble()
 {
-    if ((inputSize&3) != 0)
-        throw Exception("Input code size must be aligned to 4 bytes!");
-    
     auto curLabel = labels.begin();
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
@@ -1866,10 +1862,17 @@ void GCNDisassembler::disassemble()
     size_t bufPos = 0;
     const size_t codeWordsNum = (inputSize>>2);
     
+    if ((inputSize&3) != 0)
+    {
+        ::memcpy(buf+bufPos,
+             "        /* WARNING: Code size is not aligned to 4-byte word! */\n", 64);
+        bufPos += 64;
+    }
     if (instrOutOfCode)
     {
-        ::memcpy(buf, "        /* WARNING: Unfinished instruction at end! */\n", 54);
-        bufPos = 54;
+        ::memcpy(buf+bufPos,
+                 "        /* WARNING: Unfinished instruction at end! */\n", 54);
+        bufPos += 54;
     }
     
     bool prevIsTwoWord = false;
