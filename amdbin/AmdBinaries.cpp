@@ -1109,6 +1109,35 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             argIt->second.ptrAccess |= KARG_PTR_CONST;
             pos = tokPos;
         }
+        else if (::strncmp(kernelDesc + pos, "counter", tokPos-pos) == 0)
+        {
+            if (kernelDesc[tokPos] == '\n')
+                throw ParseException(lineNo, "This is not constarg line");
+            
+            pos = ++tokPos;
+            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                kernelDesc[tokPos] != '\n') tokPos++;
+            if (tokPos >= metadataSize)
+                throw ParseException(lineNo, "No separator after name");
+            
+            std::string argName(kernelDesc+pos, tokPos-pos);
+            // extract arg name
+            InitKernelArgMap::iterator argIt;
+            {
+                InitKernelArgMapEntry entry;
+                entry.index = argIndex++;
+                entry.namePos = pos;
+                entry.argType = KernelArgType::COUNTER32;
+                std::pair<InitKernelArgMap::iterator, bool> result = 
+                    initKernelArgs.insert(std::make_pair(
+                        std::string(kernelDesc+pos, tokPos-pos), entry));
+                if (!result.second)
+                    throw ParseException(lineNo, "Argument has been duplicated");
+                argIt = result.first;
+            }
+            
+            pos = tokPos;
+        }
         else if (::strncmp(kernelDesc + pos, "reflection", tokPos-pos) == 0)
         {
             if (kernelDesc[tokPos] == '\n')
