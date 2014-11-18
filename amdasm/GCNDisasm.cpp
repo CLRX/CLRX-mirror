@@ -261,11 +261,9 @@ union FloatUnion
     uint32_t u;
 };
 
-static size_t regRanges(cxuint op, cxuint vregNum, char* buf)
+static inline size_t putByteToBuf(cxuint op, char* buf)
 {
     size_t pos = 0;
-    if (vregNum!=1)
-        buf[pos++] = '[';
     cxuint val = op;
     if (val >= 100U)
     {
@@ -279,25 +277,22 @@ static size_t regRanges(cxuint op, cxuint vregNum, char* buf)
             buf[pos++] = digit1 + '0';
         buf[pos++] = val-digit1*10U + '0';
     }
+    return pos;
+}
+
+static size_t regRanges(cxuint op, cxuint vregNum, char* buf)
+{
+    size_t pos = 0;
+    if (vregNum!=1)
+        buf[pos++] = '[';
+    pos += putByteToBuf(op, buf+pos);
     if (vregNum!=1)
     {
         buf[pos++] = ':';
         op += vregNum-1;
         if (op > 255)
             op -= 256; // fix for VREGS
-        val = op;
-        if (val >= 100)
-        {
-            cxuint digit2 = val/100U;
-            buf[pos++] = digit2+'0';
-            val -= digit2*100U;
-        }
-        {
-            const cxuint digit1 = val/10U;
-            if (digit1 != 0 || op >= 100)
-                buf[pos++] = digit1 + '0';
-            buf[pos++] = val-digit1*10U + '0';
-        }
+        pos += putByteToBuf(op, buf+pos);
         buf[pos++] = ']';
     }
     return pos;
@@ -1365,13 +1360,13 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             {
                 ::memcpy(buf+bufPos, " offset0:", 9);
                 bufPos += 9;
-                bufPos += itocstrCStyle(offset&0xff, buf+bufPos, 7, 10);
+                bufPos += putByteToBuf(offset&0xff, buf+bufPos);
             }
             if ((offset&0xff00) != 0)
             {
                 ::memcpy(buf+bufPos, " offset1:", 9);
                 bufPos += 9;
-                bufPos += itocstrCStyle((offset>>8)&0xff, buf+bufPos, 7, 10);
+                bufPos += putByteToBuf((offset>>8)&0xff, buf+bufPos);
             }
         }
     }
