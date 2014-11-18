@@ -23,7 +23,6 @@
 #include <ostream>
 #include <vector>
 #include <algorithm>
-#include <mutex>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinaries.h>
 #include <CLRX/Assembler.h>
