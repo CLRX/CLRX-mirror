@@ -1145,7 +1145,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                     kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
                             (karg.ptrSpace == KernelPtrSpace::GLOBAL ||
                              karg.ptrSpace == KernelPtrSpace::CONSTANT)) ||
-                             karg.argType == KernelArgType::IMAGE);
+                             karg.argType == KernelArgType::IMAGE ||
+                             karg.argType == KernelArgType::COUNTER32 ||
+                             karg.argType == KernelArgType::COUNTER64);
                     // if sampler
                     kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
                 }
