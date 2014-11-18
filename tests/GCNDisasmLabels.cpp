@@ -22,6 +22,7 @@
 #include <sstream>
 #include <CLRX/Utilities.h>
 #include <CLRX/Assembler.h>
+#include <CLRX/MemAccess.h>
 
 using namespace CLRX;
 
@@ -80,7 +81,7 @@ static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
     {
         code = new uint32_t[testCase.wordsNum];
         for (cxuint i = 0; i < testCase.wordsNum; i++)
-            code[i] = ULEV(testCase.words[i]);
+            code[i] = LEV(testCase.words[i]);
         
         gcnDisasm.setInput(testCase.wordsNum<<2,
                reinterpret_cast<const cxbyte*>(code));
