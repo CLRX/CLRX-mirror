@@ -3202,7 +3202,7 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
     input.is64BitMode = false;
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
     GCNDisassembler gcnDisasm(disasm);
-    uint32_t inputCode[2] = { testCase.word0, testCase.word1 };
+    uint32_t inputCode[2] = { ULEV(testCase.word0), ULEV(testCase.word1) };
     gcnDisasm.setInput(testCase.twoWords?8:4, reinterpret_cast<cxbyte*>(inputCode));
     gcnDisasm.disassemble();
     std::string outStr = disOss.str();
