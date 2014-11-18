@@ -327,7 +327,8 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
     {
         size_t fillEnd;
         // find max repetition of this char
-        for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
+        for (fillEnd = p+1; fillEnd < size && ULEV(data[fillEnd])==ULEV(data[p]);
+             fillEnd++);
         if (fillEnd >= p+4)
         {   // if element repeated for least 1 line
             ::memcpy(buf, fillPrefix, fillPrefixSize);
