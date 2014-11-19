@@ -1438,9 +1438,9 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         // determine number of vaddr registers
-        /* is (idxen+offen)*sizeof_addr or sizeof_addr if zero */
-        const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U? 2 : 1)
-                <<((insnCode & 0x8000U)?1:0);
+        /* for addr32 - idxen+offen or 1, for addr64 - 2 (idxen and offen is illegal) */
+        const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U ||
+                (insnCode & 0x8000U))? 2 : 1;
         
         bufPos += decodeGCNVRegOperand(vaddr, aregsNum, buf+bufPos);
         buf[bufPos++] = ',';
