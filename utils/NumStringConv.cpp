@@ -1982,85 +1982,85 @@ size_t CLRX::uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint ra
     char* p = str;
     switch(radix)
     {
-       case 2:
-           if (prefix)
-           {
-               if (p+2 >= strend)
-                   throw Exception("Max size is too small");
-               *p++ = '0';
-               *p++ = 'b';
-           }
-           for (uint64_t tval = value; tval != 0; digitsNum++)
-           {
-               const cxuint digit = tval&1;
-               buffer[digitsNum] = '0'+digit;
-               tval = tval>>1;
-           }
-           break;
-       case 8:
-           if (prefix)
-           {
-               if (p+1 >= strend)
-                   throw Exception("Max size is too small");
-               *p++ = '0';
-           }
-           for (uint64_t tval = value; tval != 0; digitsNum++)
-           {
-               const cxuint digit = tval&7;
-               buffer[digitsNum] = '0'+digit;
-               tval = tval>>3;
-           }
-           break;
-       case 10:
-           if (value > UINT32_MAX)
-               for (uint64_t tval = value; tval != 0; digitsNum++)
-               {
-                   const uint64_t tmp = tval/10U;
-                   const cxuint digit = tval - tmp*10U;
-                   buffer[digitsNum] = '0'+digit;
-                   tval = tmp;
-               }
-           else // for speed
-               for (uint32_t tval = value; tval != 0; digitsNum++)
-               {
-                   const uint32_t tmp = tval/10U;
-                   const cxuint digit = tval - tmp*10U;
-                   buffer[digitsNum] = '0'+digit;
-                   tval = tmp;
-               }
-           break;
-       case 16:
-           if (prefix)
-           {
-               if (p+2 >= strend)
-                   throw Exception("Max size is too small");
-               *p++ = '0';
-               *p++ = 'x';
-           }
-           for (uint64_t tval = value; tval != 0; digitsNum++)
-           {
-               const cxuint digit = tval&15;
-               buffer[digitsNum] = (digit < 10) ? ('0'+digit) : ('a'+digit-10);
-               tval = tval>>4;
-           }
-           break;
-       default:
-           throw Exception("Unknown radix");
-           break;
+        case 2:
+            if (prefix)
+            {
+                if (p+2 >= strend)
+                    throw Exception("Max size is too small");
+                *p++ = '0';
+                *p++ = 'b';
+            }
+            for (uint64_t tval = value; tval != 0; digitsNum++)
+            {
+                const cxuint digit = tval&1;
+                buffer[digitsNum] = '0'+digit;
+                tval = tval>>1;
+            }
+            break;
+        case 8:
+            if (prefix)
+            {
+                if (p+1 >= strend)
+                    throw Exception("Max size is too small");
+                *p++ = '0';
+            }
+            for (uint64_t tval = value; tval != 0; digitsNum++)
+            {
+                const cxuint digit = tval&7;
+                buffer[digitsNum] = '0'+digit;
+                tval = tval>>3;
+            }
+            break;
+        case 10:
+            if (value > UINT32_MAX)
+                for (uint64_t tval = value; tval != 0; digitsNum++)
+                {
+                    const uint64_t tmp = tval/10U;
+                    const cxuint digit = tval - tmp*10U;
+                    buffer[digitsNum] = '0'+digit;
+                    tval = tmp;
+                }
+            else // for speed
+                for (uint32_t tval = value; tval != 0; digitsNum++)
+                {
+                    const uint32_t tmp = tval/10U;
+                    const cxuint digit = tval - tmp*10U;
+                    buffer[digitsNum] = '0'+digit;
+                    tval = tmp;
+                }
+            break;
+        case 16:
+            if (prefix)
+            {
+                if (p+2 >= strend)
+                    throw Exception("Max size is too small");
+                *p++ = '0';
+                *p++ = 'x';
+            }
+            for (uint64_t tval = value; tval != 0; digitsNum++)
+            {
+                const cxuint digit = tval&15;
+                buffer[digitsNum] = (digit < 10) ? ('0'+digit) : ('a'+digit-10);
+                tval = tval>>4;
+            }
+            break;
+        default:
+            throw Exception("Unknown radix");
+            break;
     }
 
     // if zero
     if (value == 0)
-       buffer[digitsNum++] = '0';
+        buffer[digitsNum++] = '0';
 
     if (p+digitsNum > strend || p+width > strend)
-       throw Exception("Max size is too small");
+        throw Exception("Max size is too small");
 
     if (digitsNum < width)
     {
-       const char fillchar = (radix == 10)?' ':'0';
-       for (cxuint pos = 0; pos < width-digitsNum; pos++)
-           *p++ = fillchar;
+        const char fillchar = (radix == 10)?' ':'0';
+        for (cxuint pos = 0; pos < width-digitsNum; pos++)
+            *p++ = fillchar;
     }
 
     for (cxuint pos = digitsNum; pos > 0; pos--)
