@@ -150,7 +150,8 @@ static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
         {   // if innerBinary exists
             bool codeFound = false;
             bool dataFound = false;
-            
+            /* in search in reverse order, because last .text have code from
+             * (older Catalyst drivers) */
             for (cxint j = innerBin->getSectionHeadersNum()-1; j >= 0; j--)
             {
                 const char* secName = innerBin->getSectionName(j);

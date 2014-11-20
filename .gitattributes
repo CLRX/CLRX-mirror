@@ -1,6 +1,7 @@
 * text=auto !eol
 CLRX/AmdBinaries.h -text
 CLRX/Assembler.h -text
+CLRX/CLIParser.h -text
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
 CLRX/MemAccess.h -text
@@ -28,6 +29,7 @@ tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/GCNDisasmLabels.cpp -text
 tests/GCNDisasmOpcodes.cpp -text
 tests/cstrtofXTest.cpp -text
+utils/CLIParser.cpp -text
 utils/CMakeLists.txt -text svneol=unset#text/plain
 utils/NumStringConv.cpp -text
 utils/Utilities.cpp -text
