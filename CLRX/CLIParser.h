@@ -72,11 +72,24 @@ struct CLIOption
     const char* description;
 };
 
+/// CLI exception class
+class CLIException: public Exception
+{
+public:
+    CLIException() = default;
+    explicit CLIException(const std::string& message);
+    CLIException(const std::string& message, char shortName);
+    CLIException(const std::string& message, const std::string& longName);
+    virtual ~CLIException() throw() = default;
+};
+
 class CLIParser
 {
 private:
     template<typename T>
     struct OptTypeTrait { static const CLIArgType type; };
+    
+    typedef std::map<const char*, cxuint, CLRX::CStringLess> LongNameMap;
     
     struct OptionEntry
     {
@@ -123,21 +136,30 @@ private:
             operator const char**() const { return sArr; }
         } v;
         size_t arrSize;
+        OptionEntry() : isSet(false), isArg(false) { }
     };
     
     const CLIOption* options;
     const char* programName;
     cxuint argc;
     const char** argv;
-    cxuint leftOverArgsNum;
-    const char** leftOverArgs;
+    std::vector<const char*> leftOverArgs;
     
     std::vector<OptionEntry> optionEntries;
+    LongNameMap longNameMap;
+    cxuint* shortNameMap;
     
     void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType);
     
     bool doExit;
+    
 public:
+    // non-copyable and non-movable
+    CLIParser(const CLIParser&) = delete;
+    CLIParser(CLIParser&&) = delete;
+    CLIParser& operator=(const CLIParser&) = delete;
+    CLIParser& operator=(CLIParser&&) = delete;
+    
     CLIParser(const char* programName, const CLIOption* options,
             cxuint argc, const char** argv);
     ~CLIParser();
@@ -166,21 +188,21 @@ public:
     bool hasOptArg(cxuint optionId) const
     {
         if (optionId < optionEntries.size())
-            throw Exception("No such command line option!");
+            throw CLIException("No such command line option!");
         return optionEntries[optionId].isArg;
     }
     
     bool hasOption(cxuint optionId) const
     { 
         if (optionId < optionEntries.size())
-            throw Exception("No such command line option!");
+            throw CLIException("No such command line option!");
         return optionEntries[optionId].isSet;
     }
     
     cxuint getArgsNum() const
-    { return leftOverArgsNum; }
-    const char** getArgs() const
-    { return leftOverArgs; }
+    { return leftOverArgs.size(); }
+    const char* const* getArgs() const
+    { return leftOverArgs.data(); }
     
     void printHelp(std::ostream& os) const;
     void printUsage(std::ostream& os) const;

@@ -28,47 +28,183 @@
 
 using namespace CLRX;
 
-CLIParser::CLIParser(const char* programName, const CLIOption* options,
-        cxuint argc, const char** argv) : leftOverArgsNum(0), leftOverArgs(nullptr)
+CLIException::CLIException(const std::string& message)
 {
+    this->message = message;
+}
+
+CLIException::CLIException(const std::string& message, char shortName)
+{
+    this->message = "Option '-";
+    this->message += shortName;
+    this->message += "': ";
+    this->message += message;
+}
+
+CLIException::CLIException(const std::string& message,
+               const std::string& longName)
+{
+    this->message = "Option '--";
+    this->message += longName;
+    this->message += "': ";
+    this->message += message;
+}
+
+CLIParser::CLIParser(const char* programName, const CLIOption* options,
+        cxuint argc, const char** argv)
+try
+{
+    shortNameMap = nullptr;
     this->programName = programName;
     this->options = options;
     this->argc = argc;
     this->argv = argv;
-}
-
-CLIParser::~CLIParser()
-{
-    delete[] leftOverArgs;
-}
-
-void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType)
-{
-    if (optionId < optionEntries.size())
-        throw Exception("No such command line option!");
-    if (!optionEntries[optionId].isArg)
-        throw Exception("Command line option doesn't have argument!");
-    if (argType != options[optionId].argType)
-        throw Exception("Argument type of command line option mismatch!");
-}
-
-typedef std::map<const char*, cxuint, CLRX::CStringLess> CLIOptionsMap;
-
-void CLIParser::parse()
-{
-    CLIOptionsMap longNameMap;
-    cxuint shortNameMap[256];
     
-    std::fill(shortNameMap, shortNameMap+256, UINT_MAX);
-    for (cxuint i = 0; options[i].longName != nullptr && options[i].shortName != 0; i++)
+    shortNameMap = new cxuint[256];
+    std::fill(shortNameMap, shortNameMap+256, UINT_MAX); // fill as unused
+    
+    cxuint i = 0;
+    for (; options[i].longName != nullptr && options[i].shortName != 0; i++)
     {
+        if (options[i].shortName == '-' || cxuchar(options[i].shortName) <= 0x20)
+            throw CLIException("Illegal short name");
+        
         if (options[i].longName != nullptr)
             longNameMap.insert(std::make_pair(options[i].longName, i));
         if (options[i].shortName != 0)
             shortNameMap[cxuchar(options[i].shortName)] = i;
     }
-    /* parse args */
+    optionEntries.resize(i); // resize to number of options
+}
+catch(...)
+{
+    delete[] shortNameMap;
+}
+
+CLIParser::~CLIParser()
+{
+    delete[] shortNameMap;
+}
+
+void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType)
+{
+    if (optionId < optionEntries.size())
+        throw CLIException("No such command line option!");
+    if (!optionEntries[optionId].isArg)
+        throw CLIException("Command line option doesn't have argument!");
+    if (argType != options[optionId].argType)
+        throw CLIException("Argument type of command line option mismatch!");
+}
+
+void CLIParser::parse()
+{   /* parse args */
+    bool isLeftOver = false;
     for (cxuint i = 1; i < argc; i++)
     {
+        if (argv[i] == nullptr)
+            continue; // skip nulls
+        const char* arg = argv[i];
+        if (!isLeftOver && arg[0] == '-')
+        {
+            if (arg[1] == '-')
+            {   // longNames
+                if (arg[2] == 0)
+                {   // if '--'
+                    isLeftOver = true;
+                    continue;
+                }
+                /* find option from long name */
+                auto it = longNameMap.lower_bound(arg+2);
+                const char* optLongName = nullptr;
+                bool found = false;
+                size_t optLongNameLen;
+                if (it != longNameMap.end())
+                {   /* check this same or greater key */
+                    optLongName = options[it->second].longName;
+                    optLongNameLen = ::strlen(optLongName);
+                    found = (::strncmp(arg+2, optLongName, optLongNameLen) == 0 &&
+                        (arg[2+optLongNameLen] == 0 || arg[2+optLongNameLen] == '='));
+                }
+                
+                if (!found && it != longNameMap.begin())
+                {   /* check previous (lower) entry in longNameMap */
+                    --it;
+                    optLongName = options[it->second].longName;
+                    optLongNameLen = ::strlen(optLongName);
+                    found = (::strncmp(arg+2, optLongName, optLongNameLen) == 0 &&
+                        (arg[2+optLongNameLen] == 0 || arg[2+optLongNameLen] == '='));
+                }
+                
+                if (!found) // unknown option
+                    throw CLIException("Unknown command line option", arg+2);
+                
+                const cxuint optionId = it->second;
+                const CLIOption& option = options[optionId];
+                OptionEntry& optionEntry =  optionEntries[optionId];
+                optionEntry.isSet = true;
+                if (option.argType != CLIArgType::NONE)
+                {
+                    const char* optArg = nullptr;
+                    if (arg[optLongNameLen+2] == '=' && arg[optLongNameLen+3] != 0)
+                        optArg = arg+1;  // if option arg in this same arg elem
+                    else if (i+1 < argc && !option.argIsOptional)
+                    {
+                        i++; // next elem
+                        optArg = argv[i];
+                    }
+                    else if (i+1 == argc && !option.argIsOptional)
+                        throw CLIException("Missing argument", option.shortName);
+                    
+                    if (optArg != nullptr)
+                    {   /* parse option argument */
+                    }
+                }
+            }
+            else
+            {   // short names
+                arg++;
+                for (; *arg != 0; arg++)
+                {
+                    const cxuint optionId = shortNameMap[cxuchar(*arg)];
+                    if (optionId != UINT_MAX)
+                    {
+                        const CLIOption& option = options[optionId];
+                        OptionEntry& optionEntry =  optionEntries[optionId];
+                        optionEntry.isSet = true;
+                        
+                        if (option.argType != CLIArgType::NONE)
+                        {
+                            const char* optArg = nullptr;
+                            if (arg[1] != 0) // if option arg in this same arg elem
+                                optArg = arg+1;
+                            else if (i+1 < argc && !option.argIsOptional)
+                            {
+                                i++; // next elem
+                                optArg = argv[i];
+                            }
+                            else if (i+1 == argc && !option.argIsOptional)
+                                throw CLIException("Missing argument", option.shortName);
+                            
+                            if (optArg != nullptr)
+                            {   /* parse option argument */
+                            }
+                            break; // end break parsing
+                        }
+                    }
+                    else // if option is not known
+                        throw CLIException("Unknown command line option", *arg);
+                }
+            }
+        }
+        else // left over args
+            leftOverArgs.push_back(arg);
     }
+}
+
+void CLIParser::printHelp(std::ostream& os) const
+{
+}
+
+void CLIParser::printUsage(std::ostream& os) const
+{
 }
