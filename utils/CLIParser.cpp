@@ -66,13 +66,20 @@ try
     cxuint i = 0;
     for (; options[i].longName != nullptr && options[i].shortName != 0; i++)
     {
-        if (options[i].shortName == '-' || cxuchar(options[i].shortName) <= 0x20)
-            throw CLIException("Illegal short name");
+        if (options[i].shortName != 0)
+        {
+            if (options[i].shortName == '-' || options[i].shortName == '=' ||
+                cxuchar(options[i].shortName) <= 0x20)
+                throw CLIException("Illegal short name");
+            shortNameMap[cxuchar(options[i].shortName)] = i;
+        }
         
         if (options[i].longName != nullptr)
+        {
+            if (::strchr(options[i].longName, '=') != nullptr)
+                throw CLIException("Illegal long name");
             longNameMap.insert(std::make_pair(options[i].longName, i));
-        if (options[i].shortName != 0)
-            shortNameMap[cxuchar(options[i].shortName)] = i;
+        }   
     }
     optionEntries.resize(i); // resize to number of options
 }
@@ -102,7 +109,7 @@ void CLIParser::parse()
     for (cxuint i = 1; i < argc; i++)
     {
         if (argv[i] == nullptr)
-            continue; // skip nulls
+            throw CLIException("Null argument!");
         const char* arg = argv[i];
         if (!isLeftOver && arg[0] == '-')
         {
@@ -146,13 +153,19 @@ void CLIParser::parse()
                 {
                     const char* optArg = nullptr;
                     if (arg[optLongNameLen+2] == '=' && arg[optLongNameLen+3] != 0)
-                        optArg = arg+1;  // if option arg in this same arg elem
-                    else if (i+1 < argc && !option.argIsOptional)
+                        // if option arg in this same arg elem
+                        optArg = arg+optLongNameLen+3;
+                    else if (i+1 < argc)
                     {
-                        i++; // next elem
-                        optArg = argv[i];
+                        if (argv[i+1] != nullptr && argv[i+1][0] != '-')
+                        {
+                            i++; // next elem
+                            if (argv[i] == nullptr)
+                                throw CLIException("Null argument!");
+                            optArg = argv[i];
+                        }
                     }
-                    else if (i+1 == argc && !option.argIsOptional)
+                    else if (!option.argIsOptional)
                         throw CLIException("Missing argument", option.shortName);
                     
                     if (optArg != nullptr)
@@ -175,14 +188,21 @@ void CLIParser::parse()
                         if (option.argType != CLIArgType::NONE)
                         {
                             const char* optArg = nullptr;
-                            if (arg[1] != 0) // if option arg in this same arg elem
+                            if (arg[1] == '=' && arg[2] != 0)
+                                optArg = arg+2; // if after '='
+                            else if (arg[1] != 0) // if option arg in this same arg elem
                                 optArg = arg+1;
-                            else if (i+1 < argc && !option.argIsOptional)
+                            else if (i+1 < argc)
                             {
-                                i++; // next elem
-                                optArg = argv[i];
+                                if (argv[i+1] != nullptr && argv[i+1][0] != '-')
+                                {
+                                    i++; // next elem
+                                    if (argv[i] == nullptr)
+                                        throw CLIException("Null argument!");
+                                    optArg = argv[i];
+                                }
                             }
-                            else if (i+1 == argc && !option.argIsOptional)
+                            else if (!option.argIsOptional)
                                 throw CLIException("Missing argument", option.shortName);
                             
                             if (optArg != nullptr)
