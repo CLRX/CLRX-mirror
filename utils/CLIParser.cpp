@@ -158,12 +158,11 @@ void CLIParser::parse()
                         optArg = arg+optLongNameLen+3;
                     else if (i+1 < argc)
                     {
-                        if (argv[i+1] != nullptr &&
-                            (argv[i+1][0] != '-' || !option.argIsOptional))
+                        if (argv[i+1] == nullptr)
+                            throw CLIException("Null argument!");
+                        if (argv[i+1][0] != '-' || !option.argIsOptional)
                         {
                             i++; // next elem
-                            if (argv[i] == nullptr)
-                                throw CLIException("Null argument!");
                             optArg = argv[i];
                         }
                     }
@@ -197,12 +196,11 @@ void CLIParser::parse()
                                 optArg = arg+1;
                             else if (i+1 < argc)
                             {
-                                if (argv[i+1] != nullptr && 
-                                    (argv[i+1][0] != '-' || !option.argIsOptional))
+                                if (argv[i+1] == nullptr)
+                                    throw CLIException("Null argument!");
+                                if (argv[i+1][0] != '-' || !option.argIsOptional)
                                 {
                                     i++; // next elem
-                                    if (argv[i] == nullptr)
-                                        throw CLIException("Null argument!");
                                     optArg = argv[i];
                                 }
                             }
