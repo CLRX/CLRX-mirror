@@ -113,6 +113,7 @@ void CLIParser::parse()
         const char* arg = argv[i];
         if (!isLeftOver && arg[0] == '-')
         {
+            
             if (arg[1] == '-')
             {   // longNames
                 if (arg[2] == 0)
@@ -157,7 +158,8 @@ void CLIParser::parse()
                         optArg = arg+optLongNameLen+3;
                     else if (i+1 < argc)
                     {
-                        if (argv[i+1] != nullptr && argv[i+1][0] != '-')
+                        if (argv[i+1] != nullptr &&
+                            (argv[i+1][0] != '-' || !option.argIsOptional))
                         {
                             i++; // next elem
                             if (argv[i] == nullptr)
@@ -166,7 +168,7 @@ void CLIParser::parse()
                         }
                     }
                     else if (!option.argIsOptional)
-                        throw CLIException("Missing argument", option.shortName);
+                        throw CLIException("Missing argument", option.longName);
                     
                     if (optArg != nullptr)
                     {   /* parse option argument */
@@ -186,6 +188,7 @@ void CLIParser::parse()
                         optionEntry.isSet = true;
                         
                         if (option.argType != CLIArgType::NONE)
+                            break;
                         {
                             const char* optArg = nullptr;
                             if (arg[1] == '=' && arg[2] != 0)
@@ -194,7 +197,8 @@ void CLIParser::parse()
                                 optArg = arg+1;
                             else if (i+1 < argc)
                             {
-                                if (argv[i+1] != nullptr && argv[i+1][0] != '-')
+                                if (argv[i+1] != nullptr && 
+                                    (argv[i+1][0] != '-' || !option.argIsOptional))
                                 {
                                     i++; // next elem
                                     if (argv[i] == nullptr)
