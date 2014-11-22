@@ -150,6 +150,7 @@ CLIParser::~CLIParser()
                 delete[] optEntry.v.dArr;
                 break;
             case CLIArgType::STRING_ARRAY:
+            case CLIArgType::TRIMMED_STRING_ARRAY:
                 for (size_t e = 0; e < optEntry.arrSize; e++)
                     delete[] optEntry.v.sArr[e];
                 delete[] optEntry.v.sArr;
@@ -438,7 +439,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             
             try
             {
-            while (*optArg != 0)
+            while (true)
             {
                 if (doTrim)
                     optArg = skipSpaces(optArg);
@@ -446,24 +447,33 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 size_t elemLength = 0;
                 const char* elemEnd;
                 for (elemEnd = optArg, elemLength = 0;
-                     *elemEnd == ',' || *elemEnd == 0; ++elemEnd, ++elemLength)
-                     if (*elemEnd == '\\' && *elemEnd == ',')
-                         elemEnd++; // escape of ','
+                     *elemEnd != ',' && *elemEnd != 0; ++elemEnd, ++elemLength)
+                     if (*elemEnd == '\\')
+                     {
+                         if (elemEnd[1] == ',' || elemEnd[1] == '\\')
+                             elemEnd++; // escape of ','
+                         else // bad escape
+                             throw CLIException("Incorrect escape of string",
+                                        option, chooseShortName);
+                     }
                 if (doTrim)
                 {
-                    const char* oldElemEnd = elemEnd;
-                    elemEnd = skipSpacesAtEnd(optArg, elemEnd-optArg);
-                    elemLength += oldElemEnd-elemEnd; // subtract length to trimmed
+                    const char* trimmedEnd = skipSpacesAtEnd(optArg, elemEnd-optArg);
+                    elemLength += trimmedEnd-elemEnd; // subtract length to trimmed
                 }
                 
                 char* strElem = new char[elemLength+1];
                 // copy
-                for (size_t l = 0; *optArg == ',' || *optArg == 0; ++optArg, ++l)
-                    if (*optArg == '\\' && *optArg == ',')
+                for (size_t l = 0; l < elemLength; ++optArg, ++l)
+                    if (*optArg == '\\' && (optArg[1] == ',' || optArg[1] == '\\'))
                     {
                         ++optArg;
                         strElem[l] = *optArg;
                     }
+                    else
+                        strElem[l] = *optArg;
+                
+                optArg = elemEnd;
                 strElem[elemLength] = 0;
                 sVec.push_back(strElem);
                 
@@ -472,6 +482,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 else if (*optArg != 0)
                     throw CLIException("Garbages at end of argument", option,
                                chooseShortName);
+                else
+                    break;
             }
             optEntry.v.sArr = new const char*[sVec.size()];
             optEntry.arrSize = sVec.size();
