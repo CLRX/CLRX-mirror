@@ -192,10 +192,10 @@ public:
     template<typename T>
     const T* getOptArgArray(cxuint optionId, size_t& length) const
     {
-        handleExceptionsForGetOptArg(optionId, OptTypeTrait<T>::type);
+        handleExceptionsForGetOptArg(optionId, OptTypeTrait<T*>::type);
         const OptionEntry& optEntry = optionEntries[optionId];
         length = optEntry.arrSize;
-        return static_cast<T*>(optEntry.v);
+        return static_cast<const T*>(optEntry.v);
     }
     
     /// returns true when argument provided for specified option

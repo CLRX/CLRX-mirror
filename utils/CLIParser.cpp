@@ -239,12 +239,15 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             optArg = skipSpaces(optArg);
             optEntry.v.b = false;
             for (const char* v: { "1", "true", "t", "on", "yes", "y"})
-                if (::strncasecmp(optArg, v, ::strlen(v)) == 0)
+            {
+                const size_t vlen = ::strlen(v);
+                if (::strncasecmp(optArg, v, vlen) == 0)
                 {
-                    optArg += ::strlen(v);
+                    optArg += vlen;
                     optEntry.v.b = true;
                     break;
                 }
+            }
             if (!optEntry.v.b)
             {
                 bool isFalse = false;
@@ -345,38 +348,45 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 const char* oldOptArg = optArg;
                 bool entryVal = false;
                 for (const char* v: { "1", "true", "t", "on", "yes", "y"})
-                    if (::strncasecmp(optArg, v, ::strlen(v)) == 0)
-                    {
-                        optArg += ::strlen(v);
-                        entryVal = true;
-                        break;
-                    }
-                bool isFalse = false;
-                for (const char* v: { "0", "false", "f", "off", "no", "n"})
                 {
                     const size_t vlen = ::strlen(v);
                     if (::strncasecmp(optArg, v, vlen) == 0)
                     {
                         optArg += vlen;
-                        isFalse = true;
+                        entryVal = true;
                         break;
                     }
                 }
-                    
-                if (!isFalse)
-                    throw CLIException("Can't parse array of boolean argument for option",
-                               option.shortName, option.longName, chooseShortName);
+                
+                if (!entryVal)
+                {
+                    bool isFalse = false;
+                    for (const char* v: { "0", "false", "f", "off", "no", "n"})
+                    {
+                        const size_t vlen = ::strlen(v);
+                        if (::strncasecmp(optArg, v, vlen) == 0)
+                        {
+                            optArg += vlen;
+                            isFalse = true;
+                            break;
+                        }
+                    }
+                        
+                    if (!isFalse)
+                        throw CLIException(
+                            "Can't parse array of boolean argument for option",
+                                   option.shortName, option.longName, chooseShortName);
+                }
                 bVec.push_back(entryVal);
                 
-                if (oldOptArg+1 != optArg)
-                {   /* is not single character */
-                    optArg = skipSpaces(optArg);
-                    if (*optArg == ',')
-                        optArg++;
-                    else if (*optArg != 0)
-                        throw CLIException("Garbages at end of argument",
-                               option.shortName, option.longName, chooseShortName);
-                }
+                const char* afterVal = optArg;
+                /* is not single character */
+                optArg = skipSpaces(optArg);
+                if (*optArg == ',')
+                    optArg++;
+                else if (*optArg != 0 && oldOptArg+1 != afterVal)
+                    throw CLIException("Garbages at end of argument",
+                           option.shortName, option.longName, chooseShortName);
             }
             // copy to option entry
             optEntry.v.bArr = new bool[bVec.size()];
