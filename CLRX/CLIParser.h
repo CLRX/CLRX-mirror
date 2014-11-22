@@ -28,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <ostream>
+#include <iostream>
 #include <cstring>
 #include <map>
 #include <CLRX/Utilities.h>
@@ -71,7 +72,7 @@ public:
     explicit CLIException(const std::string& message);
     CLIException(const std::string& message, char shortName);
     CLIException(const std::string& message, const std::string& longName);
-    CLIException(const std::string& message, char shortName, const std::string& longName,
+    CLIException(const std::string& message, const CLIOption& option,
              bool chooseShortName);
     virtual ~CLIException() throw() = default;
 };
@@ -222,9 +223,9 @@ public:
     { return leftOverArgs.data(); }
     
     /// print help for program (lists options)
-    void printHelp(std::ostream& os) const;
+    void printHelp(std::ostream& os = std::cout) const;
     /// print usage
-    void printUsage(std::ostream& os) const;
+    void printUsage(std::ostream& os = std::cout) const;
 };
 
 template<>

@@ -54,18 +54,18 @@ CLIException::CLIException(const std::string& message,
     this->message += message;
 }
 
-CLIException::CLIException(const std::string& message, char shortName,
-           const std::string& longName, bool chooseShortName)
+CLIException::CLIException(const std::string& message, const CLIOption& option,
+             bool chooseShortName)
 {
     if (chooseShortName)
     {
         this->message = "Option '-";
-        this->message += shortName;
+        this->message += option.shortName;
     }
     else
     {
         this->message = "Option '--";
-        this->message += longName;
+        this->message += option.longName;
     }
     this->message += "': ";
     this->message += message;
@@ -263,61 +263,54 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 }
                 if (!isFalse)
                     throw CLIException("Can't parse bool argument for option",
-                               option.shortName, option.longName, chooseShortName);
+                               option, chooseShortName);
             }
             optArg = skipSpaces(optArg);
             if (*optArg != 0)
                 throw CLIException("Garbages at end of argument",
-                               option.shortName, option.longName, chooseShortName);
+                               option, chooseShortName);
             break;
         case CLIArgType::UINT:
             try
             { optEntry.v.u32 = parseOptArg<uint32_t>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::INT:
             try
             { optEntry.v.i32 = parseOptArg<int32_t>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::UINT64:
             try
             { optEntry.v.u64 = parseOptArg<uint64_t>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::INT64:
             try
             { optEntry.v.i64 = parseOptArg<int64_t>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::SIZE:
             try
             { optEntry.v.size = parseOptArg<size_t>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::FLOAT:
             try
             { optEntry.v.f = parseOptArg<float>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::DOUBLE:
             try
             { optEntry.v.d = parseOptArg<double>(optArg); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::TRIMMED_STRING:
         {
@@ -375,7 +368,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                     if (!isFalse)
                         throw CLIException(
                             "Can't parse array of boolean argument for option",
-                                   option.shortName, option.longName, chooseShortName);
+                                   option, chooseShortName);
                 }
                 bVec.push_back(entryVal);
                 
@@ -386,7 +379,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                     optArg++;
                 else if (*optArg != 0 && oldOptArg+1 != afterVal)
                     throw CLIException("Garbages at end of argument",
-                           option.shortName, option.longName, chooseShortName);
+                           option, chooseShortName);
             }
             // copy to option entry
             optEntry.v.bArr = new bool[bVec.size()];
@@ -398,50 +391,43 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             try
             { optEntry.v.u32Arr = parseOptArgList<uint32_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::INT_ARRAY:
             try
             { optEntry.v.i32Arr = parseOptArgList<int32_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::UINT64_ARRAY:
             try
             { optEntry.v.u64Arr = parseOptArgList<uint64_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::INT64_ARRAY:
             try
             { optEntry.v.i64Arr = parseOptArgList<int64_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::SIZE_ARRAY:
             try
             { optEntry.v.sizeArr = parseOptArgList<size_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::FLOAT_ARRAY:
             try
             { optEntry.v.fArr = parseOptArgList<float>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::DOUBLE_ARRAY:
             try
             { optEntry.v.dArr = parseOptArgList<double>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option.shortName, option.longName,
-                        chooseShortName); }
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::STRING_ARRAY:
         case CLIArgType::TRIMMED_STRING_ARRAY:
@@ -484,8 +470,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 if (*optArg == ',')
                     optArg++;
                 else if (*optArg != 0)
-                    throw CLIException("Garbages at end of argument",
-                           option.shortName, option.longName, chooseShortName);
+                    throw CLIException("Garbages at end of argument", option,
+                               chooseShortName);
             }
             optEntry.v.sArr = new const char*[sVec.size()];
             optEntry.arrSize = sVec.size();
@@ -500,8 +486,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             break;
         }
         default:
-            throw CLIException("Unknown option argument type", option.shortName,
-                       option.longName, chooseShortName);
+            throw CLIException("Unknown option argument type", option, chooseShortName);
             break;
     }
     optEntry.isArg = true;
@@ -715,14 +700,14 @@ void CLIParser::printUsage(std::ostream& os) const
             if (option.shortName != 0)
                 os << '|';
             os << "--" << option.longName;
-            if (option.argType != CLIArgType::NONE)
-            {
-                if (option.argIsOptional)
-                    os << '[';
-                os << '=' << ((option.argName!=nullptr) ? option.argName : "ARG");
-                if (option.argIsOptional)
-                    os << ']';
-            }
+        }
+        if (option.argType != CLIArgType::NONE)
+        {
+            if (option.argIsOptional)
+                os << '[';
+            os << '=' << ((option.argName!=nullptr) ? option.argName : "ARG");
+            if (option.argIsOptional)
+                os << ']';
         }
         os << ']';
     }
