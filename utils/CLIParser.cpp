@@ -159,7 +159,7 @@ CLIParser::~CLIParser()
     delete[] shortNameMap;
 }
 
-void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType)
+void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType) const
 {
     if (optionId >= optionEntries.size())
         throw CLIException("No such command line option!");
@@ -540,7 +540,7 @@ void CLIParser::parse()
                         }
                     }
                     else if (!option.argIsOptional)
-                        throw CLIException("Missing argument", option.longName);
+                        throw CLIException("A missing argument", option.longName);
                     
                     if (optArg != nullptr) /* parse option argument */
                         parseOptionArg(optionId, optArg, false);
@@ -577,7 +577,7 @@ void CLIParser::parse()
                                 }
                             }
                             else if (!option.argIsOptional)
-                                throw CLIException("Missing argument", option.shortName);
+                                throw CLIException("A missing argument", option.shortName);
                             
                             if (optArg != nullptr) /* parse option argument */
                                 parseOptionArg(optionId, optArg, true);
@@ -607,6 +607,7 @@ void CLIParser::printHelp(std::ostream& os) const
         
         if (option.argType != CLIArgType::NONE)
         {
+            colLength++; // '='
             if (option.argName!=nullptr)
                 colLength += ::strlen(option.argName);
             else

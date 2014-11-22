@@ -142,7 +142,7 @@ private:
     LongNameMap longNameMap;
     cxuint* shortNameMap;
     
-    void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType);
+    void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType) const;
     void parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName);
         
 public:
@@ -170,7 +170,7 @@ public:
     template<typename T>
     T getOptArg(cxuint optionId) const
     {
-        handleExceptionsGetOptArg(optionId, OptTypeTrait<T>::type);
+        handleExceptionsForGetOptArg(optionId, OptTypeTrait<T>::type);
         return static_cast<T>(optionEntries[optionId].v);
     }
     
@@ -178,7 +178,7 @@ public:
     template<typename T>
     const T* getOptArgArray(cxuint optionId, size_t& length) const
     {
-        handleExceptionsGetOptArg(optionId, OptTypeTrait<T>::type);
+        handleExceptionsForGetOptArg(optionId, OptTypeTrait<T>::type);
         const OptionEntry& optEntry = optionEntries[optionId];
         length = optEntry.arrSize;
         return static_cast<T*>(optEntry.v);
@@ -214,6 +214,10 @@ public:
 };
 
 template<>
+struct CLIParser::OptTypeTrait<cxuint> {
+static const CLIArgType type = CLIArgType::UINT; };
+
+template<>
 struct CLIParser::OptTypeTrait<cxint> {
 static const CLIArgType type = CLIArgType::INT; };
 
@@ -244,6 +248,10 @@ static const CLIArgType type = CLIArgType::DOUBLE; };
 template<>
 struct CLIParser::OptTypeTrait<const char*> {
 static const CLIArgType type = CLIArgType::STRING; };
+
+template<>
+struct CLIParser::OptTypeTrait<cxuint*> {
+static const CLIArgType type = CLIArgType::UINT_ARRAY; };
 
 template<>
 struct CLIParser::OptTypeTrait<cxint*> {
