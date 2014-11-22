@@ -214,6 +214,10 @@ public:
 };
 
 template<>
+struct CLIParser::OptTypeTrait<bool> {
+static const CLIArgType type = CLIArgType::BOOL; };
+
+template<>
 struct CLIParser::OptTypeTrait<cxuint> {
 static const CLIArgType type = CLIArgType::UINT; };
 
@@ -252,6 +256,10 @@ static const CLIArgType type = CLIArgType::STRING; };
 template<>
 struct CLIParser::OptTypeTrait<cxuint*> {
 static const CLIArgType type = CLIArgType::UINT_ARRAY; };
+
+template<>
+struct CLIParser::OptTypeTrait<bool*> {
+static const CLIArgType type = CLIArgType::BOOL_ARRAY; };
 
 template<>
 struct CLIParser::OptTypeTrait<cxint*> {

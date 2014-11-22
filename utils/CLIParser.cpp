@@ -224,7 +224,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             optArg = skipSpaces(optArg);
             optEntry.v.b = false;
             for (const char* v: { "1", "true", "t", "on", "yes", "y"})
-                if (::strncasecmp(optArg, v, ::strlen(optArg)) == 0)
+                if (::strncasecmp(optArg, v, ::strlen(v)) == 0)
                 {
                     optArg += ::strlen(v);
                     optEntry.v.b = true;
@@ -234,12 +234,15 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             {
                 bool isFalse = false;
                 for (const char* v: { "0", "false", "f", "off", "no", "n"})
-                    if (::strncasecmp(optArg, v, ::strlen(optArg)) == 0)
+                {
+                    const size_t vlen = ::strlen(v);
+                    if (::strncasecmp(optArg, v, vlen) == 0)
                     {
-                        optArg += ::strlen(v);
+                        optArg += vlen;
                         isFalse = true;
                         break;
                     }
+                }
                 if (!isFalse)
                     throw CLIException("Can't parse bool argument for option",
                                option.shortName, option.longName, chooseShortName);
@@ -327,7 +330,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 const char* oldOptArg = optArg;
                 bool entryVal = false;
                 for (const char* v: { "1", "true", "t", "on", "yes", "y"})
-                    if (::strncasecmp(optArg, v, ::strlen(optArg)) == 0)
+                    if (::strncasecmp(optArg, v, ::strlen(v)) == 0)
                     {
                         optArg += ::strlen(v);
                         entryVal = true;
@@ -335,12 +338,15 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                     }
                 bool isFalse = false;
                 for (const char* v: { "0", "false", "f", "off", "no", "n"})
-                    if (::strncasecmp(optArg, v, ::strlen(optArg)) == 0)
+                {
+                    const size_t vlen = ::strlen(v);
+                    if (::strncasecmp(optArg, v, vlen) == 0)
                     {
-                        optArg += ::strlen(v);
+                        optArg += vlen;
                         isFalse = true;
                         break;
                     }
+                }
                     
                 if (!isFalse)
                     throw CLIException("Can't parse array of boolean argument for option",
