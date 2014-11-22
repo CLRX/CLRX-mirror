@@ -594,6 +594,7 @@ void CLIParser::parse()
         else // left over args
             leftOverArgs.push_back(arg);
     }
+    leftOverArgs.push_back(nullptr);
 }
 
 void CLIParser::printHelp(std::ostream& os) const

@@ -29,6 +29,7 @@
 #include <vector>
 #include <ostream>
 #include <cstring>
+#include <map>
 #include <CLRX/Utilities.h>
 
 /// main namespace
@@ -58,8 +59,8 @@ struct CLIOption
     char shortName;         ///< short name of option (single character)
     CLIArgType argType;     ///< type of argument of option (or none)
     bool argIsOptional;     ///< if true then option argument is optional
-    const char* argName;    ///< name of argument of option
     const char* description;    ///< description of option
+    const char* argName;    ///< name of argument of option
 };
 
 /// CLI exception class
@@ -201,8 +202,8 @@ public:
     
     /// get left over arguments number
     cxuint getArgsNum() const
-    { return leftOverArgs.size(); }
-    /// get left over arguments
+    { return leftOverArgs.size()-1; }
+    /// get left over arguments (null-terminated)
     const char* const* getArgs() const
     { return leftOverArgs.data(); }
     
