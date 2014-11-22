@@ -165,15 +165,22 @@ void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType
         throw CLIException("No such command line option!");
     if (!optionEntries[optionId].isArg)
         throw CLIException("Command line option doesn't have argument!");
-    if (argType != options[optionId].argType ||
+    if (argType != options[optionId].argType && !(
         (argType == CLIArgType::TRIMMED_STRING &&
-            options[optionId].argType == CLIArgType::STRING) ||
+            options[optionId].argType != CLIArgType::STRING) ||
         (argType == CLIArgType::STRING &&
             options[optionId].argType == CLIArgType::TRIMMED_STRING) ||
         (argType == CLIArgType::TRIMMED_STRING_ARRAY &&
             options[optionId].argType == CLIArgType::STRING_ARRAY) ||
         (argType == CLIArgType::STRING_ARRAY &&
-            options[optionId].argType == CLIArgType::TRIMMED_STRING_ARRAY))
+            options[optionId].argType == CLIArgType::TRIMMED_STRING_ARRAY) ||
+       /* size_t and integer types */
+       (sizeof(size_t) == 4 &&
+       ((argType == CLIArgType::UINT && options[optionId].argType == CLIArgType::SIZE) ||
+       (argType == CLIArgType::SIZE && options[optionId].argType == CLIArgType::UINT))) ||
+       (sizeof(size_t) == 8 &&
+       ((argType == CLIArgType::UINT64 && options[optionId].argType == CLIArgType::SIZE) ||
+       (argType == CLIArgType::SIZE && options[optionId].argType == CLIArgType::UINT64)))))
         throw CLIException("Argument type of command line option mismatch!");
 }
 

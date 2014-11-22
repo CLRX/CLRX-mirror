@@ -90,6 +90,12 @@ private:
         bool isArg;
         union {
             bool b;
+            cxint i;
+            cxuint u;
+            cxlong li;
+            cxulong lu;
+            cxllong lli;
+            cxullong llu;
             int32_t i32;
             uint32_t u32;
             int64_t i64;
@@ -99,6 +105,12 @@ private:
             double d;
             const char* s;
             bool* bArr;
+            cxint* iArr;
+            cxuint* uArr;
+            cxlong* liArr;
+            cxulong* luArr;
+            cxllong* lliArr;
+            cxullong* lluArr;
             int32_t* i32Arr;
             uint32_t* u32Arr;
             int64_t* i64Arr;
@@ -109,21 +121,23 @@ private:
             const char** sArr;
             
             operator bool() const { return b; }
-            operator int32_t() const { return i32; }
-            operator uint32_t() const { return u32; }
-            operator int64_t() const { return i64; }
-            operator uint64_t() const { return u64; }
-            operator size_t() const { return size; }
+            operator cxint() const { return i; }
+            operator cxuint() const { return u; }
+            operator cxlong() const { return li; }
+            operator cxulong() const { return lu; }
+            operator cxllong() const { return lli; }
+            operator cxullong() const { return llu; }
             operator float() const { return f; }
             operator double() const { return d; }
             operator const char*() const { return s; }
             
             operator const bool*() const { return bArr; }
-            operator const int32_t*() const { return i32Arr; }
-            operator const uint32_t*() const { return u32Arr; }
-            operator const int64_t*() const { return i64Arr; }
-            operator const uint64_t*() const { return u64Arr; }
-            operator const size_t*() const { return sizeArr; }
+            operator const cxint*() const { return iArr; }
+            operator const cxuint*() const { return uArr; }
+            operator const cxlong*() const { return liArr; }
+            operator const cxulong*() const { return luArr; }
+            operator const cxllong*() const { return lliArr; }
+            operator const cxullong*() const { return lluArr; }
             operator const float*() const { return fArr; }
             operator const double*() const { return dArr; }
             operator const char**() const { return sArr; }
