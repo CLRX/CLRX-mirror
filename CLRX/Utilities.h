@@ -102,6 +102,28 @@ public:
 
 /* parse utilities */
 
+/// skip spaces from cString
+inline const char* skipSpaces(const char* s);
+
+inline const char* skipSpaces(const char* s)
+{
+    while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t' ||
+        *s == '\f' || *s == '\v') s++;
+    return s;
+}
+
+/// skip spaces from cString
+inline const char* skipSpacesAtEnd(const char* s, size_t length);
+
+inline const char* skipSpacesAtEnd(const char* s, size_t length)
+{
+    const char* t = s+length;
+    if (t == s) return s;
+    for (t--; t != s-1 && (*t == ' ' || *t == '\n' || *t == '\r' || *t == '\t' ||
+        *t == '\f' || *t == '\v'); t--);
+    return t+1;
+}
+
 /// parse integer or float point formatted looks like C-style
 /** parses integer or float point from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
@@ -131,8 +153,7 @@ T parseEnvVariable(const char* envVar, const T& defaultValue = T())
     const char* var = getenv(envVar);
     if (var == nullptr)
         return defaultValue;
-    while (*var == ' ' || *var == '\n' || *var == '\r' || *var == '\t' ||
-        *var == '\f' || *var == '\v') var++;
+    var = skipSpaces(var);
     if (*var == 0)
         return defaultValue;
     const char* outend;

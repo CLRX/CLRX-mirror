@@ -39,7 +39,7 @@ namespace CLRX
  * CommandLine Interface
  */
 
-enum class CLIArgType: cxuint
+enum class CLIArgType: cxuchar
 {
     NONE = 0,
     BOOL,
@@ -51,6 +51,7 @@ enum class CLIArgType: cxuint
     FLOAT,
     DOUBLE,
     STRING,
+    TRIMMED_STRING, ///< trimmed string (without spaces at begin and end)
     BOOL_ARRAY = 32,
     UINT_ARRAY,
     INT_ARRAY,
@@ -59,7 +60,8 @@ enum class CLIArgType: cxuint
     SIZE_ARRAY,
     FLOAT_ARRAY,
     DOUBLE_ARRAY,
-    STRING_ARRAY
+    STRING_ARRAY,
+    TRIMMED_STRING_ARRAY, ///< trimmed string (without spaces at begin and end)
 };
 
 struct CLIOption
@@ -80,6 +82,8 @@ public:
     explicit CLIException(const std::string& message);
     CLIException(const std::string& message, char shortName);
     CLIException(const std::string& message, const std::string& longName);
+    CLIException(const std::string& message, char shortName, const std::string& longName,
+             bool chooseShortName);
     virtual ~CLIException() throw() = default;
 };
 
@@ -150,6 +154,7 @@ private:
     cxuint* shortNameMap;
     
     void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType);
+    void parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName);
     
     bool doExit;
     

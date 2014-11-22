@@ -207,8 +207,8 @@ bool parseEnvVariable<bool>(const char* envVar, const bool& defaultValue)
     // skip spaces
     for (; *var == ' ' || *var == '\t' || *var == '\r'; var++);
     
-    for (const char* v: { "1", "true", "TRUE", "ON", "on", "YES", "yes"})
-        if (::strncmp(var, v, ::strlen(v)) == 0)
+    for (const char* v: { "1", "true", "t", "on", "yes", "y"})
+        if (::strncasecmp(var, v, ::strlen(v)) == 0)
             return true;
     return false; // false
 }

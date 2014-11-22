@@ -628,7 +628,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
 
 static inline bool clrxDeviceCompareByAmdDevice(const CLRXDevice* l, const CLRXDevice* r)
 {
-    return ptrdiff_t(l->amdOclDevice) < ptrdiff_t(r->amdOclDevice);
+    return l->amdOclDevice < r->amdOclDevice;
 }
 
 void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
