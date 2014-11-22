@@ -660,6 +660,8 @@ void CLIParser::printHelp(std::ostream& os) const
             optColumn += ' ';
         
         os << optColumn;
+        optColumn.clear();
+        
         if (option.description != nullptr)
             os << option.description;
         os << '\n';
