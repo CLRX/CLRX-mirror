@@ -143,9 +143,7 @@ private:
     
     void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType);
     void parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName);
-    
-    bool doExit;
-    
+        
 public:
     // non-copyable and non-movable
     CLIParser(const CLIParser&) = delete;
@@ -166,10 +164,6 @@ public:
     
     /// parse options from arguments
     void parse();
-    
-    /// returns true if exit needed
-    bool isExit() const
-    { return doExit; }
     
     /// get option argument if it provided
     template<typename T>
