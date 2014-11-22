@@ -87,7 +87,7 @@ try
     std::fill(shortNameMap, shortNameMap+256, UINT_MAX); // fill as unused
     
     cxuint i = 0;
-    for (; options[i].longName != nullptr && options[i].shortName != 0; i++)
+    for (; options[i].longName != nullptr || options[i].shortName != 0; i++)
     {
         if (options[i].shortName != 0)
         {
@@ -161,7 +161,7 @@ CLIParser::~CLIParser()
 
 void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType)
 {
-    if (optionId < optionEntries.size())
+    if (optionId >= optionEntries.size())
         throw CLIException("No such command line option!");
     if (!optionEntries[optionId].isArg)
         throw CLIException("Command line option doesn't have argument!");
@@ -486,7 +486,6 @@ void CLIParser::parse()
         const char* arg = argv[i];
         if (!isLeftOver && arg[0] == '-' && arg[1] != 0)
         {
-            
             if (arg[1] == '-')
             {   // longNames
                 if (arg[2] == 0)
@@ -560,7 +559,6 @@ void CLIParser::parse()
                         optionEntry.isSet = true;
                         
                         if (option.argType != CLIArgType::NONE)
-                            break;
                         {
                             const char* optArg = nullptr;
                             if (arg[1] == '=')
@@ -627,7 +625,7 @@ void CLIParser::printHelp(std::ostream& os) const
     for (cxuint i = 0; i < optionEntries.size(); i++)
     {
         const CLIOption& option = options[i];
-        if (option.shortName == 0)
+        if (option.shortName != 0)
         {
             optColumn += "  -";
             optColumn += option.shortName;
@@ -685,7 +683,7 @@ void CLIParser::printUsage(std::ostream& os) const
             if (option.shortName != 0)
                 os << '|';
             os << "--" << option.longName;
-            if (option.argType == CLIArgType::NONE)
+            if (option.argType != CLIArgType::NONE)
             {
                 if (option.argIsOptional)
                     os << '[';

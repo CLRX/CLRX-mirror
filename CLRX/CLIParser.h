@@ -187,7 +187,7 @@ public:
     /// returns true when argument provided for specified option
     bool hasOptArg(cxuint optionId) const
     {
-        if (optionId < optionEntries.size())
+        if (optionId >= optionEntries.size())
             throw CLIException("No such command line option!");
         return optionEntries[optionId].isArg;
     }
@@ -195,7 +195,7 @@ public:
     /// returns true if option included in command line
     bool hasOption(cxuint optionId) const
     { 
-        if (optionId < optionEntries.size())
+        if (optionId >= optionEntries.size())
             throw CLIException("No such command line option!");
         return optionEntries[optionId].isSet;
     }
