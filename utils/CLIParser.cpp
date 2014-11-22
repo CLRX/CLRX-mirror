@@ -93,6 +93,8 @@ try
         {
             if (options[i].shortName == '-' || cxuchar(options[i].shortName) < 0x20)
                 throw CLIException("Illegal short name");
+            if (shortNameMap[cxuchar(options[i].shortName)] != UINT_MAX)
+                throw CLIException("Duplicate of option", options[i].shortName);
             shortNameMap[cxuchar(options[i].shortName)] = i;
         }
         
@@ -100,7 +102,8 @@ try
         {
             if (::strchr(options[i].longName, '=') != nullptr)
                 throw CLIException("Illegal long name");
-            longNameMap.insert(std::make_pair(options[i].longName, i));
+            if (!longNameMap.insert(std::make_pair(options[i].longName, i)).second)
+                throw CLIException("Duplicate of option", options[i].longName);
         }   
     }
     optionEntries.resize(i); // resize to number of options
@@ -165,23 +168,28 @@ void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType
         throw CLIException("No such command line option!");
     if (!optionEntries[optionId].isArg)
         throw CLIException("Command line option doesn't have argument!");
-    if (argType != options[optionId].argType && !(
+    const CLIArgType optArgType = options[optionId].argType;
+    if (argType != optArgType && !(
         (argType == CLIArgType::TRIMMED_STRING &&
-            options[optionId].argType != CLIArgType::STRING) ||
+            optArgType != CLIArgType::STRING) ||
         (argType == CLIArgType::STRING &&
-            options[optionId].argType == CLIArgType::TRIMMED_STRING) ||
+            optArgType == CLIArgType::TRIMMED_STRING) ||
         (argType == CLIArgType::TRIMMED_STRING_ARRAY &&
-            options[optionId].argType == CLIArgType::STRING_ARRAY) ||
+            optArgType == CLIArgType::STRING_ARRAY) ||
         (argType == CLIArgType::STRING_ARRAY &&
-            options[optionId].argType == CLIArgType::TRIMMED_STRING_ARRAY) ||
+            optArgType == CLIArgType::TRIMMED_STRING_ARRAY) ||
        /* size_t and integer types */
        (sizeof(size_t) == 4 &&
-       ((argType == CLIArgType::UINT && options[optionId].argType == CLIArgType::SIZE) ||
-       (argType == CLIArgType::SIZE && options[optionId].argType == CLIArgType::UINT))) ||
+       ((argType == CLIArgType::UINT && optArgType == CLIArgType::SIZE) ||
+       (argType == CLIArgType::SIZE && optArgType == CLIArgType::UINT) ||
+       (argType == CLIArgType::UINT_ARRAY && optArgType == CLIArgType::SIZE_ARRAY) ||
+       (argType == CLIArgType::SIZE_ARRAY && optArgType == CLIArgType::UINT_ARRAY))) ||
        (sizeof(size_t) == 8 &&
-       ((argType == CLIArgType::UINT64 && options[optionId].argType == CLIArgType::SIZE) ||
-       (argType == CLIArgType::SIZE && options[optionId].argType == CLIArgType::UINT64)))))
-        throw CLIException("Argument type of command line option mismatch!");
+       ((argType == CLIArgType::UINT64 && optArgType == CLIArgType::SIZE) ||
+       (argType == CLIArgType::SIZE && optArgType == CLIArgType::UINT64) ||
+       (argType == CLIArgType::UINT64_ARRAY && optArgType == CLIArgType::SIZE_ARRAY) ||
+       (argType == CLIArgType::SIZE_ARRAY && optArgType == CLIArgType::UINT64_ARRAY)))))
+        throw CLIException("Argument type of option mismatch!");
 }
 
 template<typename T>
