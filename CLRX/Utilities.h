@@ -124,7 +124,7 @@ inline const char* skipSpacesAtEnd(const char* s, size_t length)
     return t+1;
 }
 
-/// parse integer or float point formatted looks like C-style
+/// parses integer or float point formatted looks like C-style
 /** parses integer or float point from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
  * is out of range, when string does not have number or inend points to string.
@@ -270,10 +270,10 @@ inline bool usumGe(T a, T b, T2 c)
 /// escape string into C-style string
 extern std::string escapeStringCStyle(const std::string& str);
 
-/// escape string into C-style string
+/// escapes string into C-style string
 extern std::string escapeStringCStyle(size_t strSize, const char* str);
 
-/// escape string into C-style string
+/// escapes string into C-style string
 /**
  * \param strSize string size
  * \param str string
@@ -284,7 +284,7 @@ extern std::string escapeStringCStyle(size_t strSize, const char* str);
 extern size_t escapeStringCStyle(size_t strSize, const char* str,
                  size_t outMaxSize, char* outStr, size_t& outSize);
 
-/// parse unsigned integer regardless locales
+/// parses unsigned integer regardless locales
 /** parses unsigned integer in decimal form from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
  * is out of range, when string does not have number or inend points to string.
@@ -368,7 +368,7 @@ double cstrtovCStyle<double>(const char* str, const char* inend, const char*& ou
     return v.d;
 }
 
-/// parse half float formatted looks like C-style
+/// parses half float formatted looks like C-style
 /** parses half floating point from str string. inend can points
  * to end of string or can be null. Function throws ParseException when number in string
  * is out of range, when string does not have number or inend points to string.
@@ -392,8 +392,8 @@ extern size_t uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint r
 extern size_t iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint radix,
             cxuint width, bool prefix);
 
-/// format integer
-/** format integer in C-style formatting.
+/// formats an integer
+/** formats an integer in C-style formatting.
  * \param value integer value
  * \param str output string
  * \param maxSize max size of string (including null-character)
@@ -459,8 +459,8 @@ size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint r
 extern size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bool scientific, cxuint expBits, cxuint mantisaBits);
 
-/// format half float in C-style
-/** format to string the half float in C-style formatting. This function handles 2 modes
+/// formats half float in C-style
+/** formats to string the half float in C-style formatting. This function handles 2 modes
  * of printing value: human readable and scientific. Scientific mode forces form with
  * decimal exponent.
  * Currently only IEEE-754 format is supported.
@@ -476,8 +476,8 @@ size_t htocstrCStyle(cxushort value, char* str, size_t maxSize,
 inline size_t htocstrCStyle(cxushort value, char* str, size_t maxSize, bool scientific)
 { return fXtocstrCStyle(value, str, maxSize, scientific, 5, 10); }
 
-/// format single float in C-style
-/** format to string the single float in C-style formatting. This function handles 2 modes
+/// formats single float in C-style
+/** formats to string the single float in C-style formatting. This function handles 2 modes
  * of printing value: human readable and scientific. Scientific mode forces form with
  * decimal exponent.
  * Currently only IEEE-754 format is supported.
@@ -500,8 +500,8 @@ inline size_t ftocstrCStyle(float value, char* str, size_t maxSize, bool scienti
     return fXtocstrCStyle(v.u, str, maxSize, scientific, 8, 23);
 }
 
-/// format double float in C-style
-/** format to string the double float in C-style formatting. This function handles 2 modes
+/// formats double float in C-style
+/** formats to string the double float in C-style formatting. This function handles 2 modes
  * of printing value: human readable and scientific. Scientific mode forces form with
  * decimal exponent.
  * Currently only IEEE-754 format is supported.

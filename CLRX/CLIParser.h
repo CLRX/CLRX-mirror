@@ -39,39 +39,27 @@ namespace CLRX
  * CommandLine Interface
  */
 
+/// type of argument of the option
 enum class CLIArgType: cxuchar
 {
-    NONE = 0,
-    BOOL,
-    UINT,
-    INT,
-    UINT64,
-    INT64,
-    SIZE,
-    FLOAT,
-    DOUBLE,
-    STRING,
+    NONE = 0, ///< no argument
+    BOOL, UINT, INT, UINT64, INT64, SIZE, FLOAT, DOUBLE, STRING,
     TRIMMED_STRING, ///< trimmed string (without spaces at begin and end)
     BOOL_ARRAY = 32,
-    UINT_ARRAY,
-    INT_ARRAY,
-    UINT64_ARRAY,
-    INT64_ARRAY,
-    SIZE_ARRAY,
-    FLOAT_ARRAY,
-    DOUBLE_ARRAY,
-    STRING_ARRAY,
+    UINT_ARRAY, INT_ARRAY, UINT64_ARRAY, INT64_ARRAY, SIZE_ARRAY, FLOAT_ARRAY,
+    DOUBLE_ARRAY, STRING_ARRAY,
     TRIMMED_STRING_ARRAY, ///< trimmed string (without spaces at begin and end)
 };
 
+/// Command line option description
 struct CLIOption
 {
-    const char* longName;
-    char shortName;
-    bool argIsOptional;
-    CLIArgType argType;
-    const char* argName;
-    const char* description;
+    const char* longName;   ///< long name of option
+    char shortName;         ///< short name of option (single character)
+    CLIArgType argType;     ///< type of argument of option (or none)
+    bool argIsOptional;     ///< if true then option argument is optional
+    const char* argName;    ///< name of argument of option
+    const char* description;    ///< description of option
 };
 
 /// CLI exception class
@@ -165,15 +153,25 @@ public:
     CLIParser& operator=(const CLIParser&) = delete;
     CLIParser& operator=(CLIParser&&) = delete;
     
+    /// constructor
+    /**
+     * \param programName - name of program
+     * \param options - null-terminated (shortName==0, longName==NULL) options list
+     * \param argc - argc
+     * \param argv - argv
+     */
     CLIParser(const char* programName, const CLIOption* options,
             cxuint argc, const char** argv);
     ~CLIParser();
     
+    /// parse options from arguments
     void parse();
     
+    /// returns true if exit needed
     bool isExit() const
     { return doExit; }
     
+    /// get option argument if it provided
     template<typename T>
     T getOptArg(cxuint optionId) const
     {
@@ -181,6 +179,7 @@ public:
         return static_cast<T>(optionEntries[optionId].v);
     }
     
+    /// get option argument array  if it provided
     template<typename T>
     const T* getOptArgArray(cxuint optionId, size_t& length) const
     {
@@ -190,6 +189,7 @@ public:
         return static_cast<T*>(optEntry.v);
     }
     
+    /// returns true when argument provided for specified option
     bool hasOptArg(cxuint optionId) const
     {
         if (optionId < optionEntries.size())
@@ -197,6 +197,7 @@ public:
         return optionEntries[optionId].isArg;
     }
     
+    /// returns true if option included in command line
     bool hasOption(cxuint optionId) const
     { 
         if (optionId < optionEntries.size())
@@ -204,12 +205,16 @@ public:
         return optionEntries[optionId].isSet;
     }
     
+    /// get left over arguments number
     cxuint getArgsNum() const
     { return leftOverArgs.size(); }
+    /// get left over arguments
     const char* const* getArgs() const
     { return leftOverArgs.data(); }
     
+    /// print help for program (lists options)
     void printHelp(std::ostream& os) const;
+    /// print usage
     void printUsage(std::ostream& os) const;
 };
 

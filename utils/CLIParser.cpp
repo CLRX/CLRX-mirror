@@ -20,10 +20,12 @@
 #include <CLRX/Config.h>
 #include <algorithm>
 #include <cstring>
-#include <string>
-#include <cstddef>
 #include <climits>
+#include <cstddef>
+#include <string>
+#include <ostream>
 #include <map>
+#include <vector>
 #include <CLRX/Utilities.h>
 #include <CLRX/CLIParser.h>
 
@@ -411,20 +413,31 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                         chooseShortName); }
             break;
         case CLIArgType::STRING_ARRAY:
+        case CLIArgType::TRIMMED_STRING_ARRAY:
         {
             optEntry.arrSize = 0;
             std::vector<char*> sVec;
+            const bool doTrim = (option.argType == CLIArgType::TRIMMED_STRING_ARRAY);
             
             try
             {
             while (*optArg != 0)
             {
+                if (doTrim)
+                    optArg = skipSpaces(optArg);
+                
                 size_t elemLength = 0;
                 const char* elemEnd;
                 for (elemEnd = optArg, elemLength = 0;
                      *elemEnd == ',' || *elemEnd == 0; ++elemEnd, ++elemLength)
                      if (*elemEnd == '\\' && *elemEnd == ',')
                          elemEnd++; // escape of ','
+                if (doTrim)
+                {
+                    const char* oldElemEnd = elemEnd;
+                    elemEnd = skipSpacesAtEnd(optArg, elemEnd-optArg);
+                    elemLength += oldElemEnd-elemEnd; // subtract length to trimmed
+                }
                 
                 char* strElem = new char[elemLength+1];
                 // copy
@@ -446,32 +459,6 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             optEntry.v.sArr = new const char*[sVec.size()];
             optEntry.arrSize = sVec.size();
             std::copy(sVec.begin(), sVec.end(), optEntry.v.sArr);
-            }
-            catch(...)
-            {   // delete previously parsed strings
-                for (const char* v: sVec)
-                    delete[] v;
-                throw;
-            }
-            break;
-        }
-        case CLIArgType::TRIMMED_STRING_ARRAY:
-        {
-            optEntry.arrSize = 0;
-            std::vector<char*> sVec;
-            try
-            {
-            while (*optArg != 0)
-            {
-                optArg = skipSpaces(optArg);
-                size_t elemLength = 0;
-                const char* elemEnd;
-                for (elemEnd = optArg, elemLength = 0;
-                     *elemEnd == ',' || *elemEnd == 0; ++elemEnd, ++elemLength)
-                     if (*elemEnd == '\\' && *elemEnd == ',')
-                         elemEnd++; // escape of ','
-                elemEnd = skipSpacesAtEnd(optArg, elemEnd-optArg);
-            }
             }
             catch(...)
             {   // delete previously parsed strings
@@ -611,8 +598,100 @@ void CLIParser::parse()
 
 void CLIParser::printHelp(std::ostream& os) const
 {
+    size_t maxLen = 0;
+    for (cxuint i = 0; i < optionEntries.size(); i++)
+    {
+        const CLIOption& option = options[i];
+        size_t colLength = 4;
+        if (option.longName != nullptr)
+            colLength += ::strlen(option.longName)+4;
+        
+        if (option.argType != CLIArgType::NONE)
+        {
+            if (option.argName!=nullptr)
+                colLength += ::strlen(option.argName);
+            else
+                colLength += 3; // ARG
+            if (option.argIsOptional)
+                colLength += 2; // quadratic braces
+        }
+        maxLen = std::max(maxLen, colLength);
+    }
+    
+    os << "Usage: " << programName << " [OPTION...]\n";
+    /* print all options */
+    std::string optColumn;
+    optColumn.reserve(maxLen+3);
+    
+    for (cxuint i = 0; i < optionEntries.size(); i++)
+    {
+        const CLIOption& option = options[i];
+        if (option.shortName == 0)
+        {
+            optColumn += "  -";
+            optColumn += option.shortName;
+        }
+        else
+            optColumn += "    ";
+        
+        if (option.longName != nullptr)
+        {
+            optColumn += ((option.shortName!=0)?", --":"  --");
+            optColumn += option.longName;
+        }
+        
+        if (option.argType != CLIArgType::NONE)
+        {
+            optColumn += '=';
+            if (option.argName!=nullptr)
+            {
+                if (option.argIsOptional)
+                    optColumn += '[';
+                optColumn += option.argName;
+                if (option.argIsOptional)
+                    optColumn += ']';
+            }
+            else
+                optColumn += ((option.argIsOptional)?"[ARG]":"ARG");
+        }
+        
+        // align to next column (description)
+        for (size_t k = optColumn.size(); k < maxLen+2; k++)
+            optColumn += ' ';
+        
+        os << optColumn;
+        if (option.description != nullptr)
+            os << option.description;
+        os << '\n';
+    }
+    
+    os.flush();
 }
 
 void CLIParser::printUsage(std::ostream& os) const
 {
+    os << "Usage: " << programName;
+    for (cxuint i = 0; i < optionEntries.size(); i++)
+    {
+        const CLIOption& option = options[i];
+        os << " [";
+        if (option.shortName != 0)
+            os << '-' << option.shortName;
+        if (option.longName != nullptr)
+        {
+            if (option.shortName != 0)
+                os << '|';
+            os << "--" << option.longName;
+            if (option.argType == CLIArgType::NONE)
+            {
+                if (option.argIsOptional)
+                    os << '[';
+                os << '=' << ((option.argName!=nullptr) ? option.argName : "ARG");
+                if (option.argIsOptional)
+                    os << ']';
+            }
+        }
+        os << ']';
+    }
+    os << " ..." << std::endl;
 }
