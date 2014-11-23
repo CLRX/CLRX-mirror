@@ -100,8 +100,6 @@ try
         
         if (options[i].longName != nullptr)
         {
-            if (::strchr(options[i].longName, '=') != nullptr)
-                throw CLIException("Illegal long name");
             if (!longNameMap.insert(std::make_pair(options[i].longName, i)).second)
                 throw CLIException("Duplicate of option", options[i].longName);
         }   
@@ -534,13 +532,23 @@ void CLIParser::parse()
                         (arg[2+optLongNameLen] == 0 || arg[2+optLongNameLen] == '='));
                 }
                 
-                if (!found && it != longNameMap.begin())
+                if (it != longNameMap.begin())
                 {   /* check previous (lower) entry in longNameMap */
                     --it;
-                    optLongName = options[it->second].longName;
-                    optLongNameLen = ::strlen(optLongName);
-                    found = (::strncmp(arg+2, optLongName, optLongNameLen) == 0 &&
-                        (arg[2+optLongNameLen] == 0 || arg[2+optLongNameLen] == '='));
+                    const char* optLongName2 = options[it->second].longName;
+                    const size_t optLongNameLen2 = ::strlen(optLongName2);
+                    const bool found2 =
+                        (::strncmp(arg+2, optLongName2, optLongNameLen2) == 0 &&
+                        (arg[2+optLongNameLen2] == 0 || arg[2+optLongNameLen2] == '='));
+                    
+                    if (found && (!found2 || optLongNameLen2 < optLongNameLen))
+                        ++it; // choose previous choice (because is better match)
+                    else // this is better match
+                    {
+                        optLongName = optLongName2;
+                        optLongNameLen = optLongNameLen2;
+                        found = found2;
+                    }
                 }
                 
                 if (!found) // unknown option
