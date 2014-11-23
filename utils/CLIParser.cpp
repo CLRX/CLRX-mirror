@@ -529,7 +529,7 @@ void CLIParser::parse()
                 LongNameMap::const_iterator it;
                 
                 const char* lastEq = arg+::strlen(arg);
-                size_t optLongNameLen;
+                size_t optLongNameLen = lastEq-arg-2;
                 std::string curArgStr;
                 while(lastEq != arg+1)
                 {
