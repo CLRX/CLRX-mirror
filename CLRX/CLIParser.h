@@ -98,6 +98,11 @@ public:
  * entered by using backslash escapes in a string array element. An element of string array
  * can also be empty.
  * 
+ * An option identified by optionId which order number beginning from 0. Option can have
+ * short name, long name or both. Option without argument must have argType set likes
+ * CLIArgType::NONE (no type, no argument). Argument name (argName)
+ * is optional (can be null).
+ * 
  * IMPORTANT NOTICE: Option's list and argument's list must be available and unmodified
  * while whole lifecycle of this CLIParser. For whole lifecycle of any option argument or
  * left over argument, a CLIParser must be alive.
