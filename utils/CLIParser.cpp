@@ -525,35 +525,58 @@ void CLIParser::parse()
                     continue;
                 }
                 /* find option from long name */
-                auto it = longNameMap.lower_bound(arg+2);
+                LongNameMap::const_iterator it;
+                
+                const char* lastEq = arg+::strlen(arg);
+                
                 const char* optLongName = nullptr;
                 bool found = false;
                 size_t optLongNameLen;
-                if (it != longNameMap.end())
-                {   /* check this same or greater key */
-                    optLongName = options[it->second].longName;
-                    optLongNameLen = ::strlen(optLongName);
-                    found = (::strncmp(arg+2, optLongName, optLongNameLen) == 0 &&
-                        (arg[2+optLongNameLen] == 0 || arg[2+optLongNameLen] == '='));
-                }
                 
-                if (it != longNameMap.begin())
-                {   /* check previous (lower) entry in longNameMap */
-                    --it;
-                    const char* optLongName2 = options[it->second].longName;
-                    const size_t optLongNameLen2 = ::strlen(optLongName2);
-                    const bool found2 =
-                        (::strncmp(arg+2, optLongName2, optLongNameLen2) == 0 &&
-                        (arg[2+optLongNameLen2] == 0 || arg[2+optLongNameLen2] == '='));
+                std::string curArgStr;
+                while (!found)
+                {
+                    lastEq--;
+                    while (lastEq != arg+1 && *lastEq!='=') lastEq--;
+                    if (lastEq == arg+1) lastEq = nullptr;
+                        
+                    curArgStr.assign(arg+2, (lastEq!=nullptr)?lastEq-arg-2 :
+                            ::strlen(arg+2));
+                    const char* curArg = curArgStr.c_str();
                     
-                    if (found && (!found2 || optLongNameLen2 < optLongNameLen))
-                        ++it; // choose previous choice (because is better match)
-                    else // this is better match
-                    {
-                        optLongName = optLongName2;
-                        optLongNameLen = optLongNameLen2;
-                        found = found2;
+                    it = longNameMap.lower_bound(curArg);
+                    optLongName = nullptr;
+                    found = false;
+                    if (it != longNameMap.end())
+                    {   /* check this same or greater key */
+                        optLongName = options[it->second].longName;
+                        optLongNameLen = ::strlen(optLongName);
+                        found = (::strncmp(curArg, optLongName, optLongNameLen) == 0 &&
+                            (curArg[optLongNameLen] == 0 ||
+                                curArg[optLongNameLen] == '='));
                     }
+                    
+                    if (it != longNameMap.begin())
+                    {   /* check previous (lower) entry in longNameMap */
+                        --it;
+                        const char* optLongName2 = options[it->second].longName;
+                        const size_t optLongNameLen2 = ::strlen(optLongName2);
+                        const bool found2 =
+                            (::strncmp(curArg, optLongName2, optLongNameLen2) == 0 &&
+                            (curArg[optLongNameLen2] == 0 ||
+                                curArg[optLongNameLen2] == '='));
+                        
+                        if (found && (!found2 || optLongNameLen2 < optLongNameLen))
+                            ++it; // choose previous choice (because is better match)
+                        else // this is better match
+                        {
+                            optLongName = optLongName2;
+                            optLongNameLen = optLongNameLen2;
+                            found = found2;
+                        }
+                    }
+                    if (lastEq == nullptr)
+                        break; // end searching
                 }
                 
                 if (!found) // unknown option
