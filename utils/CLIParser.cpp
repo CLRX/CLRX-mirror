@@ -536,12 +536,7 @@ void CLIParser::parse()
                 std::string curArgStr;
                 while (!found)
                 {
-                    lastEq--;
-                    while (lastEq != arg+1 && *lastEq!='=') lastEq--;
-                    if (lastEq == arg+1) lastEq = nullptr;
-                        
-                    curArgStr.assign(arg+2, (lastEq!=nullptr)?lastEq-arg-2 :
-                            ::strlen(arg+2));
+                    curArgStr.assign(arg+2, lastEq-arg-2);
                     const char* curArg = curArgStr.c_str();
                     
                     it = longNameMap.lower_bound(curArg);
@@ -575,8 +570,11 @@ void CLIParser::parse()
                             found = found2;
                         }
                     }
-                    if (lastEq == nullptr)
-                        break; // end searching
+                    
+                    lastEq--;
+                    while (lastEq != arg+1 && *lastEq!='=') lastEq--;
+                    if (lastEq == arg+1)
+                        break;
                 }
                 
                 if (!found) // unknown option
