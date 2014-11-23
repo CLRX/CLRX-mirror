@@ -89,6 +89,11 @@ try
     cxuint i = 0;
     for (; options[i].longName != nullptr || options[i].shortName != 0; i++)
     {
+        if ((options[i].argType > CLIArgType::SINGLE_MAX && 
+             options[i].argType < CLIArgType::BOOL_ARRAY) ||
+             options[i].argType > CLIArgType::ARRAY_MAX)
+            throw CLIException("Illegal option argument type");
+        
         if (options[i].shortName != 0)
         {
             if (options[i].shortName == '-' || cxuchar(options[i].shortName) < 0x20)
@@ -102,7 +107,7 @@ try
         {
             if (!longNameMap.insert(std::make_pair(options[i].longName, i)).second)
                 throw CLIException("Duplicate of option", options[i].longName);
-        }   
+        }
     }
     optionEntries.resize(i); // resize to number of options
 }

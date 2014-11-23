@@ -47,10 +47,12 @@ enum class CLIArgType: cxuchar
     NONE = 0, ///< no argument
     BOOL, UINT, INT, UINT64, INT64, SIZE, FLOAT, DOUBLE, STRING,
     TRIMMED_STRING, ///< trimmed string (without spaces at begin and end)
+    SINGLE_MAX = TRIMMED_STRING,
     BOOL_ARRAY = 32,
     UINT_ARRAY, INT_ARRAY, UINT64_ARRAY, INT64_ARRAY, SIZE_ARRAY, FLOAT_ARRAY,
     DOUBLE_ARRAY, STRING_ARRAY,
     TRIMMED_STRING_ARRAY, ///< trimmed string (without spaces at begin and end)
+    ARRAY_MAX = TRIMMED_STRING_ARRAY
 };
 
 /// Command line option description
@@ -83,7 +85,9 @@ public:
  * and list of previous. Conventions of the option's (and their arguments) syntax
  * was adapted from popt library.
  * IMPORTANT NOTICE: Option's list and argument's list must be available and not changeable
- * while whole lifecycle of this CLIParser. */
+ * while whole lifecycle of this CLIParser. For whole lifecycle of any option argument or
+ * left over argument, a CLIParser must also lives
+ * (because it keeps values of these arguments). */
 class CLIParser
 {
 private:
