@@ -530,7 +530,7 @@ void CLIParser::parse()
                 const char* lastEq = arg+::strlen(arg);
                 size_t optLongNameLen;
                 std::string curArgStr;
-                while(true)
+                while(lastEq != arg+1)
                 {
                     optLongNameLen = lastEq-arg-2;
                     curArgStr.assign(arg+2, optLongNameLen);
@@ -542,8 +542,6 @@ void CLIParser::parse()
                     
                     lastEq--;
                     while (lastEq != arg+1 && *lastEq!='=') lastEq--;
-                    if (lastEq == arg+1)
-                        break;
                 }
                 
                 if (it == longNameMap.end()) // unknown option
