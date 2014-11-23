@@ -83,7 +83,7 @@ public:
     virtual ~CLIException() throw() = default;
 };
 
-/// an Command Line Parser (parses options and their arguments)
+/// The Command Line Parser (parses options and their arguments)
 /** This class implements a command-line parser which provides short options
  * and long options with/without arguments. Argument can be a string, number, boolean,
  * and list of previous. Conventions of the option's (and their arguments) syntax
