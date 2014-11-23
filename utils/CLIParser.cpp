@@ -691,11 +691,11 @@ void CLIParser::printHelp(std::ostream& os) const
         const CLIOption& option = options[i];
         if (option.shortName != 0)
         {
-            optColumn += "  -";
+            optColumn = "  -";
             optColumn += option.shortName;
         }
         else
-            optColumn += "    ";
+            optColumn = "    ";
         
         if (option.longName != nullptr)
         {
@@ -723,7 +723,6 @@ void CLIParser::printHelp(std::ostream& os) const
             optColumn += ' ';
         
         os << optColumn;
-        optColumn.clear();
         
         if (option.description != nullptr)
             os << option.description;
