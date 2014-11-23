@@ -676,7 +676,7 @@ void CLIParser::printHelp(std::ostream& os) const
             else
                 colLength += 3; // ARG
             if (option.argIsOptional)
-                colLength += 2; // quadratic braces
+                colLength += 2; // quadratic brackets
         }
         maxLen = std::max(maxLen, colLength);
     }
