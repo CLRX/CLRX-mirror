@@ -528,48 +528,17 @@ void CLIParser::parse()
                 LongNameMap::const_iterator it;
                 
                 const char* lastEq = arg+::strlen(arg);
-                
-                const char* optLongName = nullptr;
-                bool found = false;
                 size_t optLongNameLen;
-                
                 std::string curArgStr;
-                while (!found)
+                while(true)
                 {
-                    curArgStr.assign(arg+2, lastEq-arg-2);
+                    optLongNameLen = lastEq-arg-2;
+                    curArgStr.assign(arg+2, optLongNameLen);
                     const char* curArg = curArgStr.c_str();
                     
-                    it = longNameMap.lower_bound(curArg);
-                    optLongName = nullptr;
-                    found = false;
+                    it = longNameMap.find(curArg);
                     if (it != longNameMap.end())
-                    {   /* check this same or greater key */
-                        optLongName = options[it->second].longName;
-                        optLongNameLen = ::strlen(optLongName);
-                        found = (::strncmp(curArg, optLongName, optLongNameLen) == 0 &&
-                            (curArg[optLongNameLen] == 0 ||
-                                curArg[optLongNameLen] == '='));
-                    }
-                    
-                    if (it != longNameMap.begin())
-                    {   /* check previous (lower) entry in longNameMap */
-                        --it;
-                        const char* optLongName2 = options[it->second].longName;
-                        const size_t optLongNameLen2 = ::strlen(optLongName2);
-                        const bool found2 =
-                            (::strncmp(curArg, optLongName2, optLongNameLen2) == 0 &&
-                            (curArg[optLongNameLen2] == 0 ||
-                                curArg[optLongNameLen2] == '='));
-                        
-                        if (found && (!found2 || optLongNameLen2 < optLongNameLen))
-                            ++it; // choose previous choice (because is better match)
-                        else // this is better match
-                        {
-                            optLongName = optLongName2;
-                            optLongNameLen = optLongNameLen2;
-                            found = found2;
-                        }
-                    }
+                        break;
                     
                     lastEq--;
                     while (lastEq != arg+1 && *lastEq!='=') lastEq--;
@@ -577,7 +546,7 @@ void CLIParser::parse()
                         break;
                 }
                 
-                if (!found) // unknown option
+                if (it == longNameMap.end()) // unknown option
                     throw CLIException("Unknown command line option", arg+2);
                 
                 const cxuint optionId = it->second;
