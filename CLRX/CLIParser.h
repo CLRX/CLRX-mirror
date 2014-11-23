@@ -88,9 +88,19 @@ public:
  * and long options with/without arguments. Argument can be a string, number, boolean,
  * and list of previous. Conventions of the option's (and their arguments) syntax
  * was adapted from popt library.
- * IMPORTANT NOTICE: Option's list and argument's list must be available and not changeable
+ *
+ * Option argument can be attached in the next argument or in the rest of the argument
+ * (after '=' or not for short options). If argument option is optional then can be
+ * attached in a next argument only when argument does not have option
+ * (otherwise argument will be treated likes next option).
+ * 
+ * Elements of option argument array are separated by colon. Colons and backslashes can be
+ * entered by using backslash escapes in a string array element. An element of string array
+ * can also be empty.
+ * 
+ * IMPORTANT NOTICE: Option's list and argument's list must be available and unmodified
  * while whole lifecycle of this CLIParser. For whole lifecycle of any option argument or
- * left over argument, a CLIParser must also lives
+ * left over argument, a CLIParser must be alive.
  * (because it keeps values of these arguments). */
 class CLIParser
 {
