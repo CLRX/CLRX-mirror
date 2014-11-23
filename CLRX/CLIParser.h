@@ -94,7 +94,7 @@ public:
  * attached in a next argument only when argument does not have option
  * (otherwise argument will be treated likes next option).
  * 
- * Elements of option argument array are separated by ','. An ',' and backslashes can be
+ * Elements of option argument array are separated by comma. Commas and backslashes can be
  * entered by using backslash escapes in a string array element. An element of string array
  * can also be empty.
  * 
