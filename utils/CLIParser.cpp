@@ -369,7 +369,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                             break;
                         }
                     }
-                        
+                    
                     if (!isFalse)
                         throw CLIException(
                             "Can't parse array of boolean argument for option",
@@ -535,9 +535,7 @@ void CLIParser::parse()
                 {
                     optLongNameLen = lastEq-arg-2;
                     curArgStr.assign(arg+2, optLongNameLen);
-                    const char* curArg = curArgStr.c_str();
-                    
-                    it = longNameMap.find(curArg);
+                    it = longNameMap.find(curArgStr.c_str());
                     if (it != longNameMap.end())
                         break;
                     
@@ -622,6 +620,37 @@ void CLIParser::parse()
             leftOverArgs.push_back(arg);
     }
     leftOverArgs.push_back(nullptr);
+}
+
+cxuint CLIParser::findOption(char shortName) const
+{
+    cxuint optionId = shortNameMap[cxuchar(shortName)];
+    if (optionId == UINT_MAX)
+        throw CLIException("Option not found", shortName);
+    return optionId;
+}
+
+cxuint CLIParser::findOption(const char* longName) const
+{
+    const auto it = longNameMap.find(longName);
+    if (it == longNameMap.end())
+        throw CLIException("Option not found", longName);
+    return it->second;
+}
+
+bool CLIParser::handleHelpOrUsage(std::ostream& os) const
+{
+    if (hasOption(findOption("help")))
+    {
+        printHelp(os);
+        return true;
+    }
+    if (hasOption(findOption("usage")))
+    {
+        printUsage(os);
+        return true;
+    }
+    return false;
 }
 
 void CLIParser::printHelp(std::ostream& os) const

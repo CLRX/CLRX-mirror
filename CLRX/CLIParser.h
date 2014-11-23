@@ -37,6 +37,10 @@
 namespace CLRX
 {
 
+#define CLRX_CLI_AUTOHELP \
+    { "help", '?', CLIArgType::NONE, false, "print help", nullptr }, \
+    { "usage", 0, CLIArgType::NONE, false, "print usage", nullptr },
+    
 /*
  * CommandLine Interface
  */
@@ -191,6 +195,15 @@ public:
     
     /// parse options from arguments
     void parse();
+    
+    /// handle printing of help or usage. returns false when help or usage not enabled
+    bool handleHelpOrUsage(std::ostream& os = std::cout) const;
+    
+    /// find option by shortName, returns optionId
+    cxuint findOption(char shortName) const;
+    
+    /// find option by longName, returns optionId
+    cxuint findOption(const char* longName) const;
     
     /// get option argument if it provided
     template<typename T>
