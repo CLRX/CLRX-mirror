@@ -98,7 +98,7 @@ public:
  * entered by using backslash escapes in a string array element. An element of string array
  * can also be empty.
  * 
- * An option identified by optionId which order number beginning from 0. Option can have
+ * Option identified by optionId which order number. First optionId is 0. Option can have
  * short name, long name or both. Option without argument must have argType set likes
  * CLIArgType::NONE (no type, no argument). Argument name (argName)
  * is optional (can be null).
