@@ -115,6 +115,7 @@ try
 catch(...)
 {
     delete[] shortNameMap;
+    throw;
 }
 
 CLIParser::~CLIParser()
@@ -655,6 +656,10 @@ bool CLIParser::handleHelpOrUsage(std::ostream& os) const
 
 void CLIParser::printHelp(std::ostream& os) const
 {
+    const std::ios::iostate oldExceptions = os.exceptions();
+    os.exceptions(std::ios::failbit | std::ios::badbit);
+    try
+    {
     size_t maxLen = 0;
     for (cxuint i = 0; i < optionEntries.size(); i++)
     {
@@ -726,10 +731,21 @@ void CLIParser::printHelp(std::ostream& os) const
     }
     
     os.flush();
+    } /* try catch */
+    catch(...)
+    {
+        os.exceptions(oldExceptions);
+        throw;
+    }
+    os.exceptions(oldExceptions);
 }
 
 void CLIParser::printUsage(std::ostream& os) const
 {
+    const std::ios::iostate oldExceptions = os.exceptions();
+    os.exceptions(std::ios::failbit | std::ios::badbit);
+    try
+    {
     os << "Usage: " << programName;
     for (cxuint i = 0; i < optionEntries.size(); i++)
     {
@@ -754,4 +770,11 @@ void CLIParser::printUsage(std::ostream& os) const
         os << ']';
     }
     os << " ..." << std::endl;
+    }
+    catch(...)
+    {
+        os.exceptions(oldExceptions);
+        throw;
+    }
+    os.exceptions(oldExceptions);
 }

@@ -200,7 +200,6 @@ Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _outp
             cxuint flags) : fromBinary(true), input(nullptr), output(_output)
 {
     this->flags = flags;
-    output.exceptions(std::ios::failbit | std::ios::badbit);
     input = getDisasmInputFromBinary(binary);
     try
     { isaDisassembler = new GCNDisassembler(*this); }
@@ -215,7 +214,6 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
             cxuint flags) : fromBinary(true), input(nullptr), output(_output)
 {
     this->flags = flags;
-    output.exceptions(std::ios::failbit | std::ios::badbit);
     input = getDisasmInputFromBinary(binary);
     try
     { isaDisassembler = new GCNDisassembler(*this); }
@@ -416,6 +414,10 @@ static const char* disasmCALNoteNamesTable[] =
 
 void Disassembler::disassemble()
 {
+    const std::ios::iostate oldExceptions = output.exceptions();
+    output.exceptions(std::ios::failbit | std::ios::badbit);
+    try
+    {
     if (input->deviceType == GPUDeviceType::UNDEFINED ||
         cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
         throw Exception("Undefined GPU device type");
@@ -655,4 +657,11 @@ void Disassembler::disassemble()
         }
     }
     output.flush();
+    } /* try catch */
+    catch(...)
+    {
+        output.exceptions(oldExceptions);
+        throw;
+    }
+    output.exceptions(oldExceptions);
 }

@@ -184,10 +184,10 @@ public:
     
     /// constructor
     /**
-     * \param programName - name of program
-     * \param options - null-terminated (shortName==0, longName==NULL) options list
-     * \param argc - argc
-     * \param argv - argv
+     * \param programName name of program
+     * \param options null-terminated (shortName==0, longName==NULL) options list
+     * \param argc argc
+     * \param argv argv
      */
     CLIParser(const char* programName, const CLIOption* options,
             cxuint argc, const char** argv);
@@ -214,6 +214,10 @@ public:
     }
     
     /// get option argument array  if it provided
+    /**
+     * \param optionId id of option
+     * \param length length of array
+     */
     template<typename T>
     const T* getOptArgArray(cxuint optionId, size_t& length) const
     {
