@@ -177,7 +177,7 @@ void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType
     const CLIArgType optArgType = options[optionId].argType;
     if (argType != optArgType && !(
         (argType == CLIArgType::TRIMMED_STRING &&
-            optArgType != CLIArgType::STRING) ||
+            optArgType == CLIArgType::STRING) ||
         (argType == CLIArgType::STRING &&
             optArgType == CLIArgType::TRIMMED_STRING) ||
         (argType == CLIArgType::TRIMMED_STRING_ARRAY &&
