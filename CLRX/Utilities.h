@@ -524,6 +524,10 @@ inline size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scient
     return fXtocstrCStyle(v.u, str, maxSize, scientific, 11, 52);
 }
 
+/* file system utilities */
+
+extern bool isDirectory(const std::string& path);
+
 };
 
 #endif

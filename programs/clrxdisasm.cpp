@@ -1,0 +1,160 @@
+/*
+ *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
+ *  Copyright (C) 2014 Mateusz Szpakowski
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+#include <CLRX/Config.h>
+#include <iostream>
+#include <fstream>
+#include <CLRX/Utilities.h>
+#include <CLRX/CLIParser.h>
+#include <CLRX/Assembler.h>
+
+using namespace CLRX;
+
+enum {
+    PROGOPT_METADATA = 0,
+    PROGOPT_DATA,
+    PROGOPT_CALNOTES,
+    PROGOPT_FLOATS,
+    PROGOPT_HEXCODE,
+    PROGOPT_ALL
+};
+
+static const CLIOption programOptions[] =
+{
+    { "metadata", 'm', CLIArgType::NONE, false, "dump object metadata", nullptr },
+    { "data", 'd', CLIArgType::NONE, false, "dump global data", nullptr },
+    { "calNotes", 'c', CLIArgType::NONE, false, "dump ATI CAL notes", nullptr },
+    { "floats", 'f', CLIArgType::NONE, false, "display float literals", nullptr },
+    { "hexcode", 'h', CLIArgType::NONE, false,
+        "display hexadecimal instr. codes", nullptr },
+    { "all", 'a', CLIArgType::NONE, false,
+        "dump all (including hexcode and float literals)", nullptr },
+    CLRX_CLI_AUTOHELP
+    { nullptr, 0 }
+};
+
+static cxbyte* loadFromFile(const char* filename, size_t& size)
+{
+    if (isDirectory(filename))
+        throw Exception("This is directory!");
+    
+    std::ifstream ifs(filename, std::ios::binary);
+    if (!ifs)
+        throw Exception("Can't open file");
+    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+    ifs.seekg(0, std::ios::end); // to end of file
+    size = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
+    cxbyte* buf = nullptr;
+    try
+    {
+        buf = new cxbyte[size];
+        ifs.read((char*)buf, size);
+        if (ifs.gcount() != std::streamsize(size))
+            throw Exception("Can't read whole file");
+    }
+    catch(...)
+    {
+        delete[] buf;
+        throw;
+    }
+    return buf;
+}
+
+int main(int argc, const char** argv)
+try
+{
+    CLIParser cli("clrxdisasm", programOptions, argc, argv);
+    cli.parse();
+    if (cli.handleHelpOrUsage())
+        return 0;
+    
+    if (cli.getArgsNum() == 0)
+    {
+        std::cout << "No output files." << std::endl;
+        return 0;
+    }
+    
+    cxuint disasmFlags = DISASM_DUMPCODE;
+    if (cli.hasOption(PROGOPT_ALL))
+        disasmFlags = DISASM_ALL;
+    else
+        disasmFlags |= (cli.hasOption(PROGOPT_METADATA)?DISASM_METADATA:0) |
+            (cli.hasOption(PROGOPT_DATA)?DISASM_DUMPDATA:0) |
+            (cli.hasOption(PROGOPT_CALNOTES)?DISASM_CALNOTES:0) |
+            (cli.hasOption(PROGOPT_FLOATS)?DISASM_FLOATLITS:0) |
+            (cli.hasOption(PROGOPT_HEXCODE)?DISASM_HEXCODE:0);
+    
+    int ret = 0;
+    for (const char* const* args = cli.getArgs();*args != nullptr; args++)
+    {
+        std::cout << "// Disassembling '" << *args << '\'' << std::endl;
+        cxbyte* binaryData = nullptr;
+        size_t binarySize = 0;
+        AmdMainBinaryBase* base = nullptr;
+        try
+        {
+            binaryData = loadFromFile(*args, binarySize);
+            base = createAmdBinaryFromCode(binarySize, binaryData,
+                    AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
+                    AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
+                    AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_CREATE_INFOSTRINGS |
+                    AMDBIN_INNER_CREATE_CALNOTES);
+            if (base->getType() == AmdMainType::GPU_BINARY)
+            {
+                AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base);
+                Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                disasm.disassemble();
+            }
+            else if (base->getType() == AmdMainType::GPU_64_BINARY)
+            {
+                AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base);
+                Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                disasm.disassemble();
+            }
+        }
+        catch(std::exception& ex)
+        {
+            ret = 1;
+            std::cout << "// ERROR for '" << *args << '\'' << std::endl;
+            std::cerr << "Error at disassembling '" << *args << "': " <<
+                    ex.what() << std::endl;
+        }
+        delete[] binaryData;
+        delete base;
+    }
+    
+    return ret;
+}
+catch(const Exception& ex)
+{
+    std::cerr << ex.what() << std::endl;
+    return 1;
+}
+catch(const std::exception& ex)
+{
+    std::cerr << "System exception: " << ex.what() << std::endl;
+    return 1;
+}
+catch(...)
+{
+    std::cerr << "Unknown exception" << std::endl;
+    return 1;
+}
+

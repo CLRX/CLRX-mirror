@@ -21,6 +21,9 @@
 #ifdef HAVE_LINUX
 #include <dlfcn.h>
 #endif
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <mutex>
 #include <cstring>
 #include <string>
@@ -365,4 +368,13 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
     outStr[d] = 0;
     outSize = d;
     return i;
+}
+
+bool CLRX::isDirectory(const std::string& path)
+{
+    errno = 0;
+    struct stat stBuf;
+    if (stat(path.c_str(), &stBuf) == -1)
+        return false;
+    return S_ISDIR(stBuf.st_mode);
 }
