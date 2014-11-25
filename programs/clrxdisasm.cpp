@@ -128,6 +128,8 @@ try
                 Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
                 disasm.disassemble();
             }
+            else
+                throw Exception("This is not AMDGPU binary file!");
         }
         catch(const std::exception& ex)
         {
