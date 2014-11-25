@@ -129,7 +129,7 @@ try
                 disasm.disassemble();
             }
         }
-        catch(std::exception& ex)
+        catch(const std::exception& ex)
         {
             ret = 1;
             std::cout << "// ERROR for '" << *args << '\'' << std::endl;
@@ -157,4 +157,3 @@ catch(...)
     std::cerr << "Unknown exception" << std::endl;
     return 1;
 }
-
