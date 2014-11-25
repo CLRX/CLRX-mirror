@@ -2923,7 +2923,10 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xf8001a5dU, 0x7c1b5d74U, true, "        exp             "
         "param5, v116, off, v27, v124 done vm vsrc1=0x5d\n" },
     { 0xf8001a5bU, 0x7c1b5d74U, true, "        exp             "
-        "param5, v116, v93, off, v124 done vm vsrc2=0x1b\n" }
+        "param5, v116, v93, off, v124 done vm vsrc2=0x1b\n" },
+    /* illegal encoding */
+    { 0xdc270000U, 0x2f8000bbU, true, "        .int 0xdc270000\n"
+                "        v_ashr_i32      v192, 59, v0\n" },
 };
 
 /* for Radeon RX2X0 series with GCN1.1 */
