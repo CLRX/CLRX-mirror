@@ -22,6 +22,7 @@
 #include <dlfcn.h>
 #endif
 #include <cerrno>
+#include <fstream>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <mutex>
@@ -377,4 +378,74 @@ bool CLRX::isDirectory(const std::string& path)
     if (stat(path.c_str(), &stBuf) == -1)
         return false;
     return S_ISDIR(stBuf.st_mode);
+}
+
+cxbyte* CLRX::loadDataFromFile(const std::string& filename, size_t& size)
+{
+    if (isDirectory(filename))
+        throw Exception("This is directory!");
+    
+    std::ifstream ifs(filename.c_str(), std::ios::binary);
+    if (!ifs)
+        throw Exception("Can't open file");
+    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
+    
+    bool seekingIsWorking = true;
+    try
+    { ifs.seekg(0, std::ios::end); /* to end of file */ }
+    catch(const std::exception& ex)
+    {   /* oh, no! this is not regular file */
+        seekingIsWorking = false;
+        ifs.clear();
+    }
+    cxbyte* buf = nullptr;
+    if (seekingIsWorking)
+    {
+        size = ifs.tellg();
+        ifs.seekg(0, std::ios::beg);
+        try
+        {
+            buf = new cxbyte[size];
+            ifs.read((char*)buf, size);
+            if (ifs.gcount() != std::streamsize(size))
+                throw Exception("Can't read whole file");
+        }
+        catch(...)
+        {
+            delete[] buf;
+            throw;
+        }
+    }
+    else
+    {   /* growing, growing... */
+        ifs.exceptions(std::ifstream::badbit); // ignore failbit for read
+        size_t prevBufSize = 0;
+        size_t readBufSize = 256;
+        buf = new cxbyte[readBufSize];
+        try
+        {
+            while(true)
+            {
+                ifs.read((char*)(buf+prevBufSize), readBufSize-prevBufSize);
+                size_t readed = ifs.gcount();
+                if (readed < readBufSize-prevBufSize)
+                {   /* final */
+                    size = prevBufSize + readed;
+                    break;
+                }
+                prevBufSize = readBufSize;
+                readBufSize = prevBufSize+(prevBufSize>>1);
+                cxbyte* newBuf = new cxbyte[readBufSize];
+                std::copy(buf, buf + prevBufSize, newBuf);
+                delete[] buf;
+                buf = newBuf;
+            }
+        }
+        catch(...)
+        {
+            delete[] buf;
+            throw;
+        }
+    }
+    return buf;
 }

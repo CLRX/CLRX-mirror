@@ -526,7 +526,16 @@ inline size_t dtocstrCStyle(double value, char* str, size_t maxSize, bool scient
 
 /* file system utilities */
 
+/// returns true if path refers to directory
 extern bool isDirectory(const std::string& path);
+
+/// load data from file (any regular or pipe or device)
+/**
+ * \param filename filename
+ * \param size reference to size
+ * \return array of data (can be greater than size of data from file)
+ */
+extern cxbyte* loadDataFromFile(const std::string& filename, size_t& size);
 
 };
 

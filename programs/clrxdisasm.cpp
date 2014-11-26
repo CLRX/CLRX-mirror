@@ -54,34 +54,6 @@ static const CLIOption programOptions[] =
     { nullptr, 0 }
 };
 
-static cxbyte* loadFromFile(const char* filename, size_t& size)
-{
-    if (isDirectory(filename))
-        throw Exception("This is directory!");
-    
-    std::ifstream ifs(filename, std::ios::binary);
-    if (!ifs)
-        throw Exception("Can't open file");
-    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-    ifs.seekg(0, std::ios::end); // to end of file
-    size = ifs.tellg();
-    ifs.seekg(0, std::ios::beg);
-    cxbyte* buf = nullptr;
-    try
-    {
-        buf = new cxbyte[size];
-        ifs.read((char*)buf, size);
-        if (ifs.gcount() != std::streamsize(size))
-            throw Exception("Can't read whole file");
-    }
-    catch(...)
-    {
-        delete[] buf;
-        throw;
-    }
-    return buf;
-}
-
 int main(int argc, const char** argv)
 try
 {
@@ -124,7 +96,7 @@ try
         AmdMainBinaryBase* base = nullptr;
         try
         {
-            binaryData = loadFromFile(*args, binarySize);
+            binaryData = loadDataFromFile(*args, binarySize);
             
             if (!fromRawCode)
             {
