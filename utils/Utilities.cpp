@@ -122,7 +122,7 @@ void DynLibrary::unload()
     handle = nullptr;
 }
 
-void* DynLibrary::getSymbol(const std::string& symbolName)
+void* DynLibrary::getSymbol(const char* symbolName)
 {
     if (handle == nullptr)
         throw Exception("DynLibrary not loaded!");
@@ -131,7 +131,7 @@ void* DynLibrary::getSymbol(const std::string& symbolName)
     void* symbol = nullptr;
 #ifdef HAVE_LINUX
     dlerror(); // clear old errors
-    symbol = dlsym(handle, symbolName.c_str());
+    symbol = dlsym(handle, symbolName);
     const char* error = dlerror();
     if (symbol == nullptr && error != nullptr)
         throw Exception(error);

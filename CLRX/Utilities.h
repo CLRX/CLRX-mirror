@@ -97,7 +97,7 @@ public:
     void unload();
     
     /// get symbol
-    void* getSymbol(const std::string& symbolName);
+    void* getSymbol(const char* symbolName);
 };
 
 /* parse utilities */
