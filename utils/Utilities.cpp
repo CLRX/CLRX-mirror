@@ -371,21 +371,21 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
     return i;
 }
 
-bool CLRX::isDirectory(const std::string& path)
+bool CLRX::isDirectory(const char* path)
 {
     errno = 0;
     struct stat stBuf;
-    if (stat(path.c_str(), &stBuf) == -1)
+    if (stat(path, &stBuf) == -1)
         return false;
     return S_ISDIR(stBuf.st_mode);
 }
 
-cxbyte* CLRX::loadDataFromFile(const std::string& filename, size_t& size)
+cxbyte* CLRX::loadDataFromFile(const char* filename, size_t& size)
 {
     if (isDirectory(filename))
         throw Exception("This is directory!");
     
-    std::ifstream ifs(filename.c_str(), std::ios::binary);
+    std::ifstream ifs(filename, std::ios::binary);
     if (!ifs)
         throw Exception("Can't open file");
     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);

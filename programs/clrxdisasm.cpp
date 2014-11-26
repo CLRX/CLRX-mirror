@@ -19,7 +19,6 @@
 
 #include <CLRX/Config.h>
 #include <iostream>
-#include <fstream>
 #include <CLRX/Utilities.h>
 #include <CLRX/CLIParser.h>
 #include <CLRX/Assembler.h>
