@@ -21,7 +21,6 @@
 #ifdef HAVE_LINUX
 #include <dlfcn.h>
 #endif
-#include <cerrno>
 #include <fstream>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -373,10 +372,9 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
 
 bool CLRX::isDirectory(const char* path)
 {
-    errno = 0;
     struct stat stBuf;
-    if (stat(path, &stBuf) == -1)
-        return false;
+    if (stat(path, &stBuf) != 0)
+        throw Exception("Can't determine whether path refers to directory");
     return S_ISDIR(stBuf.st_mode);
 }
 
