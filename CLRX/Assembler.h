@@ -291,6 +291,10 @@ struct DisasmInput
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<DisasmKernelInput> kernelInputs;    ///< kernel inputs
+    
+    /// get disassembler input from raw binary data
+    static DisasmInput createFromRawBinary(GPUDeviceType deviceType,
+                        size_t binarySize, const cxbyte* binaryData);
 };
 
 /// disassembler class
@@ -350,6 +354,9 @@ public:
     std::ostream& getOutput()
     { return output; }
 };
+
+/// get GPU device type from name
+extern GPUDeviceType getGPUDeviceTypeFromName(const std::string& name);
 
 };
 

@@ -30,6 +30,15 @@
 
 using namespace CLRX;
 
+DisasmInput DisasmInput::createFromRawBinary(GPUDeviceType deviceType,
+                        size_t binarySize, const cxbyte* binaryData)
+{
+    return { deviceType,  false, { "", "" }, 0,  nullptr, {
+        { "binaryKernel", 0, nullptr, 0, nullptr, { }, 0, nullptr,
+            binarySize, binaryData }
+    } };
+}
+
 ISADisassembler::ISADisassembler(Disassembler& disassembler_)
         : disassembler(disassembler_)
 { }
@@ -80,8 +89,19 @@ static const char* gpuDeviceNameTable[11] =
     "Hawaii"
 };
 
+GPUDeviceType CLRX::getGPUDeviceTypeFromName(const std::string& name)
+{
+    cxuint found = 1;
+    for (; found < sizeof gpuDeviceNameTable / sizeof(const char*); found++)
+        if (name == gpuDeviceNameTable[found])
+            break;
+    if (found == sizeof(gpuDeviceNameTable) / sizeof(const char*))
+        throw Exception("Unknown GPU device type");
+    return GPUDeviceType(found);
+}
+
 template<typename AmdMainBinary>
-static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
+static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint flags)
 {
     DisasmInput* input = new DisasmInput;
     try
@@ -173,17 +193,20 @@ static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary)
                 if (codeFound && dataFound)
                     break; // end of finding
             }
-        
-            kernelInput.calNotes.resize(innerBin->getCALNotesNum());
-            for (cxuint j = 0; j < kernelInput.calNotes.size(); j++)
+            
+            if ((flags & DISASM_CALNOTES) != 0)
             {
-                const CALNoteHeader& calNoteHdr = innerBin->getCALNoteHeader(j);
-                AsmCALNote& outCalNote = kernelInput.calNotes[j];
-                outCalNote.header.nameSize = ULEV(calNoteHdr.nameSize);
-                outCalNote.header.type = ULEV(calNoteHdr.type);
-                outCalNote.header.descSize = ULEV(calNoteHdr.descSize);
-                std::copy(calNoteHdr.name, calNoteHdr.name+8, outCalNote.header.name);
-                outCalNote.data = const_cast<cxbyte*>(innerBin->getCALNoteData(j));
+                kernelInput.calNotes.resize(innerBin->getCALNotesNum());
+                for (cxuint j = 0; j < kernelInput.calNotes.size(); j++)
+                {
+                    const CALNoteHeader& calNoteHdr = innerBin->getCALNoteHeader(j);
+                    AsmCALNote& outCalNote = kernelInput.calNotes[j];
+                    outCalNote.header.nameSize = ULEV(calNoteHdr.nameSize);
+                    outCalNote.header.type = ULEV(calNoteHdr.type);
+                    outCalNote.header.descSize = ULEV(calNoteHdr.descSize);
+                    std::copy(calNoteHdr.name, calNoteHdr.name+8, outCalNote.header.name);
+                    outCalNote.data = const_cast<cxbyte*>(innerBin->getCALNoteData(j));
+                }
             }
         }
     }
@@ -200,7 +223,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _outp
             cxuint flags) : fromBinary(true), input(nullptr), output(_output)
 {
     this->flags = flags;
-    input = getDisasmInputFromBinary(binary);
+    input = getDisasmInputFromBinary(binary, flags);
     try
     { isaDisassembler = new GCNDisassembler(*this); }
     catch(...)
@@ -214,7 +237,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
             cxuint flags) : fromBinary(true), input(nullptr), output(_output)
 {
     this->flags = flags;
-    input = getDisasmInputFromBinary(binary);
+    input = getDisasmInputFromBinary(binary, flags);
     try
     { isaDisassembler = new GCNDisassembler(*this); }
     catch(...)

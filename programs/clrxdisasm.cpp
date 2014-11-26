@@ -32,7 +32,9 @@ enum {
     PROGOPT_CALNOTES,
     PROGOPT_FLOATS,
     PROGOPT_HEXCODE,
-    PROGOPT_ALL
+    PROGOPT_ALL,
+    PROGOPT_RAWCODE,
+    PROGOPT_GPUTYPE
 };
 
 static const CLIOption programOptions[] =
@@ -45,6 +47,9 @@ static const CLIOption programOptions[] =
         "display hexadecimal instr. codes", nullptr },
     { "all", 'a', CLIArgType::NONE, false,
         "dump all (including hexcode and float literals)", nullptr },
+    { "raw", 'r', CLIArgType::NONE, false, "treat input as raw GCN code", nullptr },
+    { "gpuType", 'g', CLIArgType::TRIMMED_STRING, false,
+        "set GPU type for raw binaries", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
 };
@@ -101,6 +106,15 @@ try
             (cli.hasOption(PROGOPT_FLOATS)?DISASM_FLOATLITS:0) |
             (cli.hasOption(PROGOPT_HEXCODE)?DISASM_HEXCODE:0);
     
+    GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
+    const bool fromRawCode = cli.hasOption(PROGOPT_RAWCODE);
+    if (fromRawCode)
+    {
+        if (cli.hasOption(PROGOPT_GPUTYPE))
+            gpuDeviceType = getGPUDeviceTypeFromName(
+                    cli.getOptArg<const char*>(PROGOPT_GPUTYPE));
+    }
+    
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)
     {
@@ -111,25 +125,40 @@ try
         try
         {
             binaryData = loadFromFile(*args, binarySize);
-            base = createAmdBinaryFromCode(binarySize, binaryData,
-                    AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
-                    AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
-                    AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_CREATE_INFOSTRINGS |
-                    AMDBIN_INNER_CREATE_CALNOTES);
-            if (base->getType() == AmdMainType::GPU_BINARY)
+            
+            if (!fromRawCode)
             {
-                AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base);
-                Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
-                disasm.disassemble();
-            }
-            else if (base->getType() == AmdMainType::GPU_64_BINARY)
-            {
-                AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base);
-                Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
-                disasm.disassemble();
+                cxuint binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
+                        AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
+                        AMDBIN_CREATE_KERNELHEADERMAP;
+                if ((disasmFlags & DISASM_CALNOTES) != 0)
+                    binFlags |= AMDBIN_INNER_CREATE_CALNOTES;
+                if ((disasmFlags & DISASM_METADATA) != 0)
+                    binFlags |= AMDBIN_CREATE_INFOSTRINGS;
+                
+                base = createAmdBinaryFromCode(binarySize, binaryData, binFlags);
+                if (base->getType() == AmdMainType::GPU_BINARY)
+                {
+                    AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base);
+                    Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                    disasm.disassemble();
+                }
+                else if (base->getType() == AmdMainType::GPU_64_BINARY)
+                {
+                    AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base);
+                    Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                    disasm.disassemble();
+                }
+                else
+                    throw Exception("This is not AMDGPU binary file!");
             }
             else
-                throw Exception("This is not AMDGPU binary file!");
+            {   /* raw binaries */
+                const DisasmInput disasmInput = DisasmInput::createFromRawBinary(
+                        gpuDeviceType, binarySize, binaryData);
+                Disassembler disasm(&disasmInput, std::cout, disasmFlags);
+                disasm.disassemble();
+            }
         }
         catch(const std::exception& ex)
         {
