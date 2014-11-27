@@ -130,16 +130,19 @@ try
                 Disassembler disasm(&disasmInput, std::cout, disasmFlags);
                 disasm.disassemble();
             }
+            
+            delete[] binaryData;
+            delete base;
         }
         catch(const std::exception& ex)
         {
+            delete[] binaryData;
+            delete base;
             ret = 1;
             std::cout << "// ERROR for '" << *args << '\'' << std::endl;
             std::cerr << "Error at disassembling '" << *args << "': " <<
                     ex.what() << std::endl;
         }
-        delete[] binaryData;
-        delete base;
     }
     
     return ret;
