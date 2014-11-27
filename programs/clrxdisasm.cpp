@@ -143,6 +143,12 @@ try
             std::cerr << "Error at disassembling '" << *args << "': " <<
                     ex.what() << std::endl;
         }
+        catch(...)
+        {
+            delete[] binaryData;
+            delete base;
+            throw;
+        }
     }
     
     return ret;
