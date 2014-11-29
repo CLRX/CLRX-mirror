@@ -1108,6 +1108,19 @@ void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
     wrappedData.realNotify(wrappedData.clrxMemObject, wrappedData.realUserData);
 }
 
+#ifdef CL_VERSION_2_0
+void clrxSVMFreeCallbackWrapper(cl_command_queue queue,
+      cl_uint num_svm_pointers, void** svm_pointers, void* user_data)
+{
+    CLRXSVMFreeCallbackUserData* wrappedDataPtr =
+            static_cast<CLRXSVMFreeCallbackUserData*>(user_data);
+    CLRXSVMFreeCallbackUserData wrappedData = *wrappedDataPtr;
+    delete wrappedDataPtr;
+    wrappedData.realNotify(wrappedData.clrxCommandQueue, num_svm_pointers, svm_pointers,
+           wrappedData.realUserData);
+}
+#endif
+
 cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
 {
     if (program->kernelArgFlagsInitialized)

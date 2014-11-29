@@ -1374,6 +1374,95 @@ clrxclSVMFree(cl_context        context,
     const CLRXContext* c = static_cast<const CLRXContext*>(context);
     return c->amdOclContext->dispatch->clSVMFree(c->amdOclContext, svm_pointer);
 }
+
+extern CL_API_ENTRY cl_int CL_API_CALL
+clEnqueueSVMFree(cl_command_queue  command_queue,
+                 cl_uint           num_svm_pointers,
+                 void **           svm_pointers,
+         void (CL_CALLBACK * pfn_free_func)(cl_command_queue, cl_uint, void **, void *),
+                 void *            user_data,
+                 cl_uint           num_events_in_wait_list,
+                 const cl_event *  event_wait_list,
+                 cl_event *        event) CL_API_SUFFIX__VERSION_2_0
+{
+    if (command_queue == nullptr)
+        return CL_INVALID_COMMAND_QUEUE;
+    
+    if ((num_events_in_wait_list == 0 && event_wait_list != nullptr) ||
+        (num_events_in_wait_list != 0 && event_wait_list == nullptr))
+        return CL_INVALID_EVENT_WAIT_LIST;
+    
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
+    cl_event amdEvent = nullptr;
+    cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
+    CLRXSVMFreeCallbackUserData* wrappedData = nullptr;
+    void (CL_CALLBACK * clrxFreeFunc)(cl_command_queue, cl_uint, void *[], void *) =
+            nullptr;
+    cl_int status = CL_SUCCESS;
+    try
+    {
+    if (pfn_free_func != nullptr)
+    {
+        wrappedData = new CLRXSVMFreeCallbackUserData;
+        wrappedData->clrxCommandQueue = q;
+        wrappedData->realNotify = pfn_free_func;
+        wrappedData->realUserData = user_data;
+        clrxFreeFunc = clrxSVMFreeCallbackWrapper;
+    }
+        
+    if (event_wait_list != nullptr)
+    {
+        if (num_events_in_wait_list <= maxLocalEventsNum)
+        {
+            cl_event amdWaitList[maxLocalEventsNum];
+            for (cl_uint i = 0; i < num_events_in_wait_list; i++)
+            {
+                if (event_wait_list[i] == nullptr)
+                    return CL_INVALID_EVENT_WAIT_LIST;
+                amdWaitList[i] =
+                    static_cast<CLRXEvent*>(event_wait_list[i])->amdOclEvent;
+            }
+            
+            status = q->amdOclCommandQueue->dispatch->clEnqueueSVMFree(
+                    q->amdOclCommandQueue, num_svm_pointers, svm_pointers, clrxFreeFunc,
+                    wrappedData, num_events_in_wait_list, amdWaitList, amdEventPtr);
+        }
+        else
+            try
+            {
+                std::vector<cl_event> amdWaitList(num_events_in_wait_list);
+                for (cl_uint i = 0; i < num_events_in_wait_list; i++)
+                {
+                    if (event_wait_list[i] == nullptr)
+                        return CL_INVALID_EVENT_WAIT_LIST;
+                    amdWaitList[i] =
+                        static_cast<CLRXEvent*>(event_wait_list[i])->amdOclEvent;
+                }
+                
+                status = q->amdOclCommandQueue->dispatch->clEnqueueSVMFree(
+                    q->amdOclCommandQueue, num_svm_pointers, svm_pointers, clrxFreeFunc,
+                    wrappedData, num_events_in_wait_list, amdWaitList.data(), amdEventPtr);
+            }
+            catch (const std::bad_alloc& ex)
+            {
+                delete wrappedData;
+                return CL_OUT_OF_HOST_MEMORY;
+            }
+    }
+    else
+        status = q->amdOclCommandQueue->dispatch->clEnqueueSVMFree(
+                q->amdOclCommandQueue, num_svm_pointers, svm_pointers, clrxFreeFunc,
+                wrappedData, 0, nullptr, amdEventPtr);
+    }
+    catch (const std::bad_alloc& ex)
+    {
+        delete wrappedData;
+        return CL_OUT_OF_HOST_MEMORY;
+    }
+    if (status != CL_SUCCESS)
+        delete wrappedData;
+    return status;
+}
 #endif /* CL_VERSION_2_0 */
 
 } /* extern "C" */

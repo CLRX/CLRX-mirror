@@ -426,6 +426,16 @@ struct CLRX_INTERNAL CLRXSampler: _cl_sampler
     { context = nullptr; }
 };
 
+#ifdef CL_VERSION_2_0
+struct CLRX_INTERNAL CLRXSVMFreeCallbackUserData
+{
+    CLRXCommandQueue* clrxCommandQueue;
+    void (*realNotify)(cl_command_queue queue, cl_uint num_svm_pointers,
+             void** svm_pointers, void* user_data);
+    void* realUserData;
+};
+#endif
+
 /* internals */
 CLRX_INTERNAL extern std::once_flag clrxOnceFlag;
 CLRX_INTERNAL extern bool useCLRXWrapper;
@@ -468,6 +478,8 @@ CLRX_INTERNAL cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
 CLRX_INTERNAL void clrxEventCallbackWrapper(cl_event event, cl_int exec_status,
         void * user_data);
 CLRX_INTERNAL void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data);
+CLRX_INTERNAL void clrxSVMFreeCallbackWrapper(cl_command_queue queue,
+      cl_uint num_svm_pointers, void** svm_pointers, void* user_data);
 
 CLRX_INTERNAL cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program);
 
