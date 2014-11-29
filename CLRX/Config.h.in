@@ -28,8 +28,6 @@
 
 #define CLRX_MICRO_VERSION ${CLRX_MICRO_VERSION}
 
-#cmakedefine HAVE_POPT
-
 #cmakedefine HAVE_GNU11
 
 #cmakedefine HAVE_ELF_H
