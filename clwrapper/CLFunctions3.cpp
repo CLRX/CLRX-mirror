@@ -67,6 +67,21 @@ CLRX_CL_PUBLIC_SYM(clEnqueueWaitSignalAMD)
 CLRX_CL_PUBLIC_SYM(clEnqueueWriteSignalAMD)
 CLRX_CL_PUBLIC_SYM(clEnqueueMakeBuffersResidentAMD)
 #endif
+#ifdef CL_VERSION_2_0
+CLRX_CL_PUBLIC_SYM(clCreateCommandQueueWithProperties)
+CLRX_CL_PUBLIC_SYM(clCreatePipe)
+CLRX_CL_PUBLIC_SYM(clGetPipeInfo)
+CLRX_CL_PUBLIC_SYM(clSVMAlloc)
+CLRX_CL_PUBLIC_SYM(clSVMFree)
+/*CLRX_CL_PUBLIC_SYM(clEnqueueSVMFree)
+CLRX_CL_PUBLIC_SYM(clEnqueueSVMMemcpy)
+CLRX_CL_PUBLIC_SYM(clEnqueueSVMMemFill)
+CLRX_CL_PUBLIC_SYM(clEnqueueSVMMap)
+CLRX_CL_PUBLIC_SYM(clEnqueueSVMUnmap)
+CLRX_CL_PUBLIC_SYM(clCreateSamplerWithProperties)
+CLRX_CL_PUBLIC_SYM(clSetKernelArgSVMPointer)
+CLRX_CL_PUBLIC_SYM(clSetKernelExecInfo)*/
+#endif
 
 /* end of public API definitions */
 
@@ -1251,5 +1266,114 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueMakeBuffersResidentAMD(
 }
 
 #endif /* CL_VERSION_1_2 */
+
+#ifdef CL_VERSION_2_0
+CL_API_ENTRY cl_command_queue CL_API_CALL
+clrxclCreateCommandQueueWithProperties(
+                cl_context context,
+                cl_device_id device,
+                const cl_queue_properties * properties,
+                cl_int * errcode_ret) CL_API_SUFFIX__VERSION_2_0
+{
+    if (context == nullptr)
+    {
+        if (errcode_ret != nullptr)
+            *errcode_ret = CL_INVALID_CONTEXT;
+        return nullptr;
+    }
+    if (device == nullptr)
+    {
+        if (errcode_ret != nullptr)
+            *errcode_ret = CL_INVALID_DEVICE;
+        return nullptr;
+    }
+    
+    CLRXContext* c = static_cast<CLRXContext*>(context);
+    CLRXDevice* d = static_cast<CLRXDevice*>(device);
+    const cl_command_queue amdCmdQueue =
+            c->amdOclContext->dispatch->clCreateCommandQueueWithProperties(
+                    c->amdOclContext, d->amdOclDevice, properties, errcode_ret);
+    
+    if (amdCmdQueue == nullptr)
+        return nullptr;
+    
+    CREATE_CLRXCONTEXT_OBJECT(CLRXCommandQueue, amdOclCommandQueue, amdCmdQueue,
+              clReleaseCommandQueue,
+              "Fatal Error at handling error at command queue creation!")
+    outObject->device = static_cast<CLRXDevice*>(device);
+    
+    clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(device));
+    return outObject;
+}
+
+CL_API_ENTRY cl_mem CL_API_CALL
+clrxclCreatePipe(cl_context                 context,
+             cl_mem_flags               flags,
+             cl_uint                    pipe_packet_size,
+             cl_uint                    pipe_max_packets,
+             const cl_pipe_properties * properties,
+             cl_int *                   errcode_ret) CL_API_SUFFIX__VERSION_2_0
+{
+    if (context == nullptr)
+    {
+        if (errcode_ret != nullptr)
+            *errcode_ret = CL_INVALID_CONTEXT;
+        return nullptr;
+    }
+    
+    CLRXContext* c = static_cast<CLRXContext*>(context);
+    const cl_mem amdPipe = c->amdOclContext->dispatch->clCreatePipe(c->amdOclContext,
+              flags, pipe_packet_size, pipe_max_packets, properties, errcode_ret);
+    
+    if (amdPipe == nullptr)
+        return nullptr;
+    
+    CREATE_CLRXCONTEXT_OBJECT(CLRXMemObject, amdOclMemObject, amdPipe,
+              clReleaseMemObject,
+              "Fatal Error at handling error at pipe creation!")
+    
+    return outObject;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclGetPipeInfo(cl_mem           pipe,
+               cl_pipe_info     param_name,
+               size_t           param_value_size,
+               void *           param_value,
+               size_t *         param_value_size_ret) CL_API_SUFFIX__VERSION_1_0
+{
+    if (pipe == nullptr)
+        return CL_INVALID_MEM_OBJECT;
+    
+    const CLRXMemObject* m = static_cast<const CLRXMemObject*>(pipe);
+    return m->amdOclMemObject->dispatch->clGetPipeInfo(m->amdOclMemObject, param_name,
+            param_value_size, param_value, param_value_size_ret);
+}
+
+CL_API_ENTRY void * CL_API_CALL
+clrxclSVMAlloc(cl_context       context,
+           cl_svm_mem_flags flags,
+           size_t           size,
+           cl_uint          alignment) CL_API_SUFFIX__VERSION_2_0
+{
+    if (context == nullptr)
+        return nullptr;
+    
+    const CLRXContext* c = static_cast<const CLRXContext*>(context);
+    return c->amdOclContext->dispatch->clSVMAlloc(c->amdOclContext,
+                              flags, size, alignment);
+}
+
+CL_API_ENTRY void CL_API_CALL
+clrxclSVMFree(cl_context        context,
+          void *            svm_pointer) CL_API_SUFFIX__VERSION_2_0
+{
+    if (context == nullptr)
+        return;
+    
+    const CLRXContext* c = static_cast<const CLRXContext*>(context);
+    return c->amdOclContext->dispatch->clSVMFree(c->amdOclContext, svm_pointer);
+}
+#endif /* CL_VERSION_2_0 */
 
 } /* extern "C" */

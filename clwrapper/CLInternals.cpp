@@ -448,6 +448,12 @@ void clrxWrapperInitialize()
                     icdEntriesToKept =
                             offsetof(CLRXIcdDispatch, clCreateSubDevices)/sizeof(void*);
 #endif
+#ifdef CL_VERSION_2_0
+                else if (clrxPlatform.openCLVersionNum < getOpenCLVersionNum(2, 0))
+                    // if earlier than OpenCL 2.0
+                    icdEntriesToKept =
+                            offsetof(CLRXIcdDispatch, emptyFunc119)/sizeof(void*);
+#endif
                 
                 // zeroing unsupported entries for later version of OpenCL standard
                 std::fill(clrxPlatform.dispatch->entries + icdEntriesToKept,

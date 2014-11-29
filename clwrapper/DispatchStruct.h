@@ -28,6 +28,10 @@
 #define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 #endif
 
+#ifndef CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#define CL_USE_DEPRECATED_OPENCL_2_0_APIS
+#endif
+
 #include <CL/cl.h>
 #include <GL/gl.h>
 #include <CL/cl_gl.h>
@@ -88,6 +92,12 @@ typedef CL_API_ENTRY cl_command_queue (CL_API_CALL *CLRXpfn_clCreateCommandQueue
         cl_context, cl_device_id, cl_command_queue_properties, cl_int*)
         CL_API_SUFFIX__VERSION_1_0;
 
+#ifdef CL_VERSION_2_0
+typedef CL_API_ENTRY cl_command_queue
+    (CL_API_CALL *CLRXpfn_clCreateCommandQueueWithProperties)(cl_context, cl_device_id,
+        const cl_queue_properties *, cl_int *) CL_API_SUFFIX__VERSION_2_0;
+#endif
+
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clRetainCommandQueue)(
         cl_command_queue) CL_API_SUFFIX__VERSION_1_0;
 
@@ -106,6 +116,10 @@ typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreateImage)(
         cl_context, cl_mem_flags, const cl_image_format*, const cl_image_desc*, void*,
         cl_int*) CL_API_SUFFIX__VERSION_1_2;
 #endif
+#ifdef CL_VERSION_2_0
+typedef CL_API_ENTRY cl_mem (CL_API_CALL *CLRXpfn_clCreatePipe)(cl_context, cl_mem_flags,
+        cl_uint, cl_uint, const cl_pipe_properties *, cl_int *) CL_API_SUFFIX__VERSION_2_0;
+#endif
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clRetainMemObject)(cl_mem)
         CL_API_SUFFIX__VERSION_1_0;
@@ -122,6 +136,20 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetMemObjectInfo)(
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetImageInfo)(
         cl_mem, cl_image_info, size_t, void*, size_t*) CL_API_SUFFIX__VERSION_1_0;
+
+#ifdef CL_VERSION_2_0
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetPipeInfo)(cl_mem, cl_pipe_info,
+        size_t, void *, size_t *) CL_API_SUFFIX__VERSION_2_0;
+
+typedef CL_API_ENTRY void * (CL_API_CALL *CLRXpfn_clSVMAlloc)(cl_context, cl_svm_mem_flags,
+        size_t, cl_uint) CL_API_SUFFIX__VERSION_2_0;
+
+typedef CL_API_ENTRY void (CL_API_CALL *CLRXpfn_clSVMFree)(cl_context, void *)
+        CL_API_SUFFIX__VERSION_2_0;
+    
+typedef CL_API_ENTRY cl_sampler (CL_API_CALL *CLRXpfn_clCreateSamplerWithProperties)(
+        cl_context, const cl_sampler_properties *, cl_int *) CL_API_SUFFIX__VERSION_2_0;
+#endif
 
 typedef CL_API_ENTRY cl_sampler (CL_API_CALL *CLRXpfn_clCreateSampler)(
         cl_context, cl_bool, cl_addressing_mode, cl_filter_mode, cl_int*)
@@ -197,6 +225,14 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clReleaseKernel)(cl_kernel)
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetKernelArg)(
         cl_kernel, cl_uint, size_t, const void*) CL_API_SUFFIX__VERSION_1_0;
+
+#ifdef CL_VERSION_2_0
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetKernelArgSVMPointer)(cl_kernel,
+        cl_uint, const void *) CL_API_SUFFIX__VERSION_2_0;
+
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetKernelExecInfo)(cl_kernel,
+        cl_kernel_exec_info, size_t, const void *) CL_API_SUFFIX__VERSION_2_0;
+#endif
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clGetKernelInfo)(
         cl_kernel, cl_kernel_info, size_t, void*, size_t*) CL_API_SUFFIX__VERSION_1_0;
@@ -334,6 +370,29 @@ typedef CL_API_ENTRY void * (CL_API_CALL *CLRXpfn_clGetExtensionFunctionAddressF
         cl_platform_id, const char*) CL_API_SUFFIX__VERSION_1_2;
 #endif
 
+#ifdef CL_VERSION_2_0
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueSVMFree)(cl_command_queue,
+        cl_uint, void *[],
+        void (CL_CALLBACK *)(cl_command_queue, cl_uint, void *[], void *),
+        void *, cl_uint, const cl_event *, cl_event *) CL_API_SUFFIX__VERSION_2_0;
+
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueSVMMemcpy)(cl_command_queue,
+        cl_bool, void *, const void *, size_t, cl_uint, const cl_event *,
+        cl_event *) CL_API_SUFFIX__VERSION_2_0;
+
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueSVMMemFill)(cl_command_queue,
+        void *, const void *, size_t, size_t, cl_uint, const cl_event *,
+        cl_event *) CL_API_SUFFIX__VERSION_2_0;
+    
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueSVMMap)(cl_command_queue,
+        cl_bool, cl_map_flags, void *, size_t, cl_uint, const cl_event *, cl_event *)
+        CL_API_SUFFIX__VERSION_2_0;
+    
+typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clEnqueueSVMUnmap)(cl_command_queue,
+        void *, cl_uint, const cl_event *, cl_event *) CL_API_SUFFIX__VERSION_2_0;
+
+#endif
+
 typedef CL_API_ENTRY cl_int (CL_API_CALL *CLRXpfn_clSetCommandQueueProperty)(
         cl_command_queue, cl_command_queue_properties, cl_bool,
         cl_command_queue_properties*) CL_EXT_SUFFIX__VERSION_1_0_DEPRECATED;
@@ -430,7 +489,7 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL * CLRXpfn_clReleaseDeviceEXT)(
 
 typedef void *CLRXpfn_emtyFunction;
 
-#define CLRXICD_ENTRIES_NUM (119U)
+#define CLRXICD_ENTRIES_NUM (136U)
 
 typedef union _CLRXIcdDispatch
 {
@@ -562,6 +621,25 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_emtyFunction clGetDeviceIDsFromDX9MediaAdapterKHR;
         CLRXpfn_emtyFunction clEnqueueAcquireDX9MediaSurfacesKHR;
         CLRXpfn_emtyFunction clEnqueueReleaseDX9MediaSurfacesKHR;
+#endif
+#ifdef CL_VERSION_2_0
+        CLRXpfn_emtyFunction emptyFunc119;
+        CLRXpfn_emtyFunction emptyFunc120;
+        CLRXpfn_emtyFunction emptyFunc121;
+        CLRXpfn_emtyFunction emptyFunc122;
+        CLRXpfn_clCreateCommandQueueWithProperties clCreateCommandQueueWithProperties;
+        CLRXpfn_clCreatePipe clCreatePipe;
+        CLRXpfn_clGetPipeInfo clGetPipeInfo;
+        CLRXpfn_clSVMAlloc clSVMAlloc;
+        CLRXpfn_clSVMFree clSVMFree;
+        CLRXpfn_clEnqueueSVMFree clEnqueueSVMFree;
+        CLRXpfn_clEnqueueSVMMemcpy clEnqueueSVMMemcpy;
+        CLRXpfn_clEnqueueSVMMemFill clEnqueueSVMMemFill;
+        CLRXpfn_clEnqueueSVMMap clEnqueueSVMMap;
+        CLRXpfn_clEnqueueSVMUnmap clEnqueueSVMUnmap;
+        CLRXpfn_clCreateSamplerWithProperties clCreateSamplerWithProperties;
+        CLRXpfn_clSetKernelArgSVMPointer clSetKernelArgSVMPointer;
+        CLRXpfn_clSetKernelExecInfo clSetKernelExecInfo;
 #endif
     };
     void* entries[CLRXICD_ENTRIES_NUM];

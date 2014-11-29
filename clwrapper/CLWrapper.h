@@ -43,6 +43,55 @@ extern CL_API_ENTRY cl_int CL_API_CALL clSetCommandQueueProperty(
     cl_command_queue_properties * old_properties) CL_EXT_SUFFIX__VERSION_1_0_DEPRECATED;
 
 #ifdef CL_VERSION_1_2
+
+#ifndef CL_MEM_BUS_ADDRESSABLE_AMD
+    /********************************
+    * cl_amd_bus_addressable_memory *
+    ********************************/
+
+    /* cl_mem flag - bitfield */
+    #define CL_MEM_BUS_ADDRESSABLE_AMD               (1<<30)
+    #define CL_MEM_EXTERNAL_PHYSICAL_AMD             (1<<31)
+
+    #define CL_COMMAND_WAIT_SIGNAL_AMD                0x4080
+    #define CL_COMMAND_WRITE_SIGNAL_AMD               0x4081
+    #define CL_COMMAND_MAKE_BUFFERS_RESIDENT_AMD      0x4082
+
+    typedef struct
+    {
+        cl_ulong surface_bus_address;
+        cl_ulong marker_bus_address;
+    } cl_bus_address_amd;
+    
+    typedef CL_API_ENTRY cl_int
+    (CL_API_CALL * clEnqueueWaitSignalAMD_fn)( cl_command_queue /*command_queue*/,
+                                               cl_mem /*mem_object*/,
+                                               cl_uint /*value*/,
+                                               cl_uint /*num_events*/,
+                                               const cl_event * /*event_wait_list*/,
+                                               cl_event * /*event*/) CL_EXT_SUFFIX__VERSION_1_2;
+
+    typedef CL_API_ENTRY cl_int
+    (CL_API_CALL * clEnqueueWriteSignalAMD_fn)( cl_command_queue /*command_queue*/,
+                                                cl_mem /*mem_object*/,
+                                                cl_uint /*value*/,
+                                                cl_ulong /*offset*/,
+                                                cl_uint /*num_events*/,
+                                                const cl_event * /*event_list*/,
+                                                cl_event * /*event*/) CL_EXT_SUFFIX__VERSION_1_2;
+
+    typedef CL_API_ENTRY cl_int
+    (CL_API_CALL * clEnqueueMakeBuffersResidentAMD_fn)( cl_command_queue /*command_queue*/,
+                                                 cl_uint /*num_mem_objs*/,
+                                                 cl_mem * /*mem_objects*/,
+                                                 cl_bool /*blocking_make_resident*/,
+                                                 cl_bus_address_amd * /*bus_addresses*/,
+                                                 cl_uint /*num_events*/,
+                                                 const cl_event * /*event_list*/,
+                                                 cl_event * /*event*/) CL_EXT_SUFFIX__VERSION_1_2;
+
+#endif
+
 extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueWaitSignalAMD(
                            cl_command_queue command_queue,
                            cl_mem mem_object,
