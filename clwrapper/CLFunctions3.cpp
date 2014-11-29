@@ -46,6 +46,7 @@ CLRX_CL_PUBLIC_SYM(clCreateSubDevicesEXT)
 CLRX_CL_PUBLIC_SYM(clRetainDeviceEXT)
 CLRX_CL_PUBLIC_SYM(clReleaseDeviceEXT)
 CLRX_CL_PUBLIC_SYM(clCreateEventFromGLsyncKHR)
+#ifdef CL_VERSION_1_2
 CLRX_CL_PUBLIC_SYM(clCreateSubDevices)
 CLRX_CL_PUBLIC_SYM(clRetainDevice)
 CLRX_CL_PUBLIC_SYM(clReleaseDevice)
@@ -65,6 +66,7 @@ CLRX_CL_PUBLIC_SYM(clCreateFromGLTexture)
 CLRX_CL_PUBLIC_SYM(clEnqueueWaitSignalAMD)
 CLRX_CL_PUBLIC_SYM(clEnqueueWriteSignalAMD)
 CLRX_CL_PUBLIC_SYM(clEnqueueMakeBuffersResidentAMD)
+#endif
 
 /* end of public API definitions */
 
@@ -399,6 +401,7 @@ clrxclCreateEventFromGLsyncKHR(cl_context           context,
     return outObject;
 }
 
+#ifdef CL_VERSION_1_2
 CL_API_ENTRY cl_int CL_API_CALL
 clrxclCreateSubDevices(cl_device_id  in_device,
                const cl_device_partition_property * properties,
@@ -1246,5 +1249,7 @@ CL_API_ENTRY cl_int CL_API_CALL clrxclEnqueueMakeBuffersResidentAMD(
     catch(const std::bad_alloc& ex)
     { return CL_OUT_OF_HOST_MEMORY; }
 }
+
+#endif /* CL_VERSION_1_2 */
 
 } /* extern "C" */

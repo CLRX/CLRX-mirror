@@ -297,7 +297,9 @@ clrxclGetDeviceInfo(cl_device_id    device,
                 *param_value_size_ret = sizeof(cl_platform_id);
             break;
         case CL_DEVICE_PARENT_DEVICE_EXT:
+#ifdef CL_VERSION_1_2
         case CL_DEVICE_PARENT_DEVICE:
+#endif
             if (d->platform->openCLVersionNum >= getOpenCLVersionNum(1, 2) ||
                 (d->platform->openCLVersionNum >= getOpenCLVersionNum(1, 1) &&
                  d->platform->dispatch->clCreateSubDevicesEXT != nullptr &&
@@ -1008,9 +1010,12 @@ clrxclGetImageInfo(cl_mem           image,
         return CL_INVALID_MEM_OBJECT;
     
     const CLRXMemObject* m = static_cast<const CLRXMemObject*>(image);
+#ifdef CL_VERSION_1_2
     if (param_name != CL_IMAGE_BUFFER)
+#endif
         return m->amdOclMemObject->dispatch->clGetImageInfo(m->amdOclMemObject, param_name,
                 param_value_size, param_value, param_value_size_ret);
+#ifdef CL_VERSION_1_2
     else if (m->context->openCLVersionNum >= getOpenCLVersionNum(1, 2))
     {   /* only if OpenCL 1.2 or later */
         if (param_value != nullptr)
@@ -1025,6 +1030,7 @@ clrxclGetImageInfo(cl_mem           image,
     }
     else // CL_IMAGE_BUFFER is unsupported by earlier OpenCL version
         return CL_INVALID_VALUE;
+#endif
 }
 
 CL_API_ENTRY cl_sampler CL_API_CALL

@@ -47,9 +47,11 @@ cl_int clrxWrapperInitStatus = CL_SUCCESS;
 
 CLRXPlatform* clrxPlatforms = nullptr;
 
+#ifdef CL_VERSION_1_2
 clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD = nullptr;
 clEnqueueWriteSignalAMD_fn amdOclEnqueueWriteSignalAMD = nullptr;
 clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD = nullptr;
+#endif
 CLRXpfn_clGetExtensionFunctionAddress amdOclGetExtensionFunctionAddress = nullptr;
 
 /* extensions table - entries are sorted in function name's order */
@@ -58,15 +60,28 @@ CLRXExtensionEntry clrxExtensionsTable[18] =
     { "clCreateEventFromGLsyncKHR", (void*)clrxclCreateEventFromGLsyncKHR },
     { "clCreateFromGLBuffer", (void*)clrxclCreateFromGLBuffer },
     { "clCreateFromGLRenderbuffer", (void*)clrxclCreateFromGLRenderbuffer },
+#ifdef CL_VERSION_1_2
     { "clCreateFromGLTexture", (void*)clrxclCreateFromGLTexture },
+#else
+    { "clCreateFromGLTexture", nullptr },
+#endif
     { "clCreateFromGLTexture2D", (void*)clrxclCreateFromGLTexture2D },
     { "clCreateFromGLTexture3D", (void*)clrxclCreateFromGLTexture3D },
     { "clCreateSubDevicesEXT", (void*)clrxclCreateSubDevicesEXT },
     { "clEnqueueAcquireGLObjects", (void*)clrxclEnqueueAcquireGLObjects },
+#ifdef CL_VERSION_1_2
     { "clEnqueueMakeBuffersResidentAMD", (void*)clrxclEnqueueMakeBuffersResidentAMD },
+#else
+    { "clEnqueueMakeBuffersResidentAMD", nullptr },
+#endif
     { "clEnqueueReleaseGLObjects", (void*)clrxclEnqueueReleaseGLObjects },
+#ifdef CL_VERSION_1_2
     { "clEnqueueWaitSignalAMD", (void*)clrxclEnqueueWaitSignalAMD },
     { "clEnqueueWriteSignalAMD", (void*)clrxclEnqueueWriteSignalAMD },
+#else
+    { "clEnqueueWaitSignalAMD", nullptr },
+    { "clEnqueueWriteSignalAMD", nullptr },
+#endif
     { "clGetGLContextInfoKHR", (void*)clrxclGetGLContextInfoKHR },
     { "clGetGLObjectInfo", (void*)clrxclGetGLObjectInfo },
     { "clGetGLTextureInfo", (void*)clrxclGetGLTextureInfo },
@@ -174,8 +189,10 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclRetainDeviceEXT,
     clrxclReleaseDeviceEXT,
 
-    clrxclCreateEventFromGLsyncKHR,
+    clrxclCreateEventFromGLsyncKHR
 
+#ifdef CL_VERSION_1_2
+    ,
     clrxclCreateSubDevices,
     clrxclRetainDevice,
     clrxclReleaseDevice,
@@ -204,6 +221,7 @@ const CLRXIcdDispatch clrxDispatchRecord =
     nullptr, // clGetDeviceIDsFromDX9MediaAdapterKHR,
     nullptr, // clEnqueueAcquireDX9MediaSurfacesKHR,
     nullptr // clEnqueueReleaseDX9MediaSurfacesKHR
+#endif
 };
 
 void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
@@ -271,12 +289,14 @@ void clrxWrapperInitialize()
             throw Exception("AMDOCL clIcdGetPlatformIDsKHR have invalid value!");
         
         /* specific amd extensions functions */
+#ifdef CL_VERSION_1_2
         amdOclEnqueueWaitSignalAMD = (clEnqueueWaitSignalAMD_fn)
             amdOclGetExtensionFunctionAddress("clEnqueueWaitSignalAMD");
         amdOclEnqueueWriteSignalAMD = (clEnqueueWriteSignalAMD_fn)
             amdOclGetExtensionFunctionAddress("clEnqueueWriteSignalAMD");
         amdOclEnqueueMakeBuffersResidentAMD = (clEnqueueMakeBuffersResidentAMD_fn)
             amdOclGetExtensionFunctionAddress("clEnqueueMakeBuffersResidentAMD");
+#endif
         
         /* update clrxExtensionsTable */
         for (CLRXExtensionEntry& extEntry: clrxExtensionsTable)
@@ -403,10 +423,15 @@ void clrxWrapperInitialize()
                     for (size_t k = 0; k < clrxExtEntriesNum; k++)
                     {   // erase CLRX extension entry if not reflected in AMD extensions
                         CLRXExtensionEntry& extEntry = clrxPlatform.extEntries[k];
+#ifdef CL_VERSION_1_2
                         if (amdOclPlatform->dispatch->
                             clGetExtensionFunctionAddressForPlatform
                                     (amdOclPlatform, extEntry.funcname) == nullptr)
                             extEntry.address = nullptr;
+#else
+                        if (amdOclGetExtensionFunctionAddress(extEntry.funcname) == nullptr)
+                            extEntry.address = nullptr;
+#endif
                     }
                     /* end of p->extEntries for platform */
                 }
@@ -417,10 +442,12 @@ void clrxWrapperInitialize()
                     // if earlier than OpenCL 1.1
                     icdEntriesToKept =
                             offsetof(CLRXIcdDispatch, clSetEventCallback)/sizeof(void*);
+#ifdef CL_VERSION_1_2
                 else if (clrxPlatform.openCLVersionNum < getOpenCLVersionNum(1, 2))
                     // if earlier than OpenCL 1.2
                     icdEntriesToKept =
                             offsetof(CLRXIcdDispatch, clCreateSubDevices)/sizeof(void*);
+#endif
                 
                 // zeroing unsupported entries for later version of OpenCL standard
                 std::fill(clrxPlatform.dispatch->entries + icdEntriesToKept,
@@ -474,6 +501,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         platform->devicesNum = 0; // reset
     
     /* check whether OpenCL 1.2 or later */
+#ifdef CL_VERSION_1_2
     bool isOCL12OrLater = platform->openCLVersionNum >= getOpenCLVersionNum(1, 2);
     //std::cout << "IsOCl12OrLater: " << isOCL12OrLater << std::endl;
     
@@ -497,6 +525,9 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         else // status == CL_DEVICE_NOT_FOUND
             customDevicesNum = 0;
     }
+#else
+    cl_uint customDevicesNum = 0;
+#endif
     
     try
     {
@@ -516,6 +547,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             return;
         }
         // custom devices
+#ifdef CL_VERSION_1_2
         if (customDevicesNum != 0)
         {
             status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
@@ -530,6 +562,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 return;
             }
         }
+#endif
         
         for (cl_uint i = 0; i < platform->devicesNum; i++)
         {
@@ -1079,6 +1112,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     if (program->assocDevicesNum == 0)
         return CL_SUCCESS;
     
+#ifdef CL_VERSION_1_2
     cl_program_binary_type ptype;
     cl_int status = program->amdOclProgram->dispatch->clGetProgramBuildInfo(
         program->amdOclProgram, program->assocDevices[0]->amdOclDevice,
@@ -1091,6 +1125,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     
     if (ptype != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
         return CL_SUCCESS; // do nothing if not executable
+#else
+    cl_int status = 0;
+#endif
     
     unsigned char** binaries = nullptr;
     try

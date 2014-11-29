@@ -42,6 +42,7 @@ extern CL_API_ENTRY cl_int CL_API_CALL clSetCommandQueueProperty(
     cl_bool                       enable,
     cl_command_queue_properties * old_properties) CL_EXT_SUFFIX__VERSION_1_0_DEPRECATED;
 
+#ifdef CL_VERSION_1_2
 extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueWaitSignalAMD(
                            cl_command_queue command_queue,
                            cl_mem mem_object,
@@ -68,6 +69,7 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
                          cl_uint num_events,
                          const cl_event * event_list,
                          cl_event * event) CL_EXT_SUFFIX__VERSION_1_2;
+#endif
 
 #include "InternalDecls.h"
 
@@ -385,9 +387,11 @@ CLRX_INTERNAL extern cl_int clrxWrapperInitStatus;
 
 CLRX_INTERNAL extern CLRXPlatform* clrxPlatforms;
 
+#ifdef CL_VERSION_1_2
 CLRX_INTERNAL extern clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD;
 CLRX_INTERNAL extern clEnqueueWriteSignalAMD_fn amdOclEnqueueWriteSignalAMD;
 CLRX_INTERNAL extern clEnqueueMakeBuffersResidentAMD_fn amdOclEnqueueMakeBuffersResidentAMD;
+#endif
 CLRX_INTERNAL extern CLRXpfn_clGetExtensionFunctionAddress
         amdOclGetExtensionFunctionAddress;
 

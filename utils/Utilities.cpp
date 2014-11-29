@@ -425,7 +425,7 @@ cxbyte* CLRX::loadDataFromFile(const char* filename, size_t& size)
             while(true)
             {
                 ifs.read((char*)(buf+prevBufSize), readBufSize-prevBufSize);
-                size_t readed = ifs.gcount();
+                const size_t readed = ifs.gcount();
                 if (readed < readBufSize-prevBufSize)
                 {   /* final */
                     size = prevBufSize + readed;
