@@ -73,10 +73,10 @@ CLRX_CL_PUBLIC_SYM(clCreatePipe)
 CLRX_CL_PUBLIC_SYM(clGetPipeInfo)
 CLRX_CL_PUBLIC_SYM(clSVMAlloc)
 CLRX_CL_PUBLIC_SYM(clSVMFree)
-/*CLRX_CL_PUBLIC_SYM(clEnqueueSVMFree)
+CLRX_CL_PUBLIC_SYM(clEnqueueSVMFree)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMMemcpy)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMMemFill)
-CLRX_CL_PUBLIC_SYM(clEnqueueSVMMap)
+/*CLRX_CL_PUBLIC_SYM(clEnqueueSVMMap)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMUnmap)
 CLRX_CL_PUBLIC_SYM(clCreateSamplerWithProperties)
 CLRX_CL_PUBLIC_SYM(clSetKernelArgSVMPointer)
@@ -1375,7 +1375,7 @@ clrxclSVMFree(cl_context        context,
     return c->amdOclContext->dispatch->clSVMFree(c->amdOclContext, svm_pointer);
 }
 
-extern CL_API_ENTRY cl_int CL_API_CALL
+CL_API_ENTRY cl_int CL_API_CALL
 clrxclEnqueueSVMFree(cl_command_queue  command_queue,
                  cl_uint           num_svm_pointers,
                  void **           svm_pointers,
@@ -1463,6 +1463,64 @@ clrxclEnqueueSVMFree(cl_command_queue  command_queue,
         delete wrappedData;
     return status;
 }
+
+#undef CLRX_CLCOMMAND_PREFIX
+#define CLRX_CLCOMMAND_PREFIX q->amdOclCommandQueue->dispatch->
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueSVMMemcpy(cl_command_queue  command_queue,
+                   cl_bool           blocking_copy,
+                   void *            dst_ptr,
+                   const void *      src_ptr,
+                   size_t            size,
+                   cl_uint           num_events_in_wait_list,
+                   const cl_event *  event_wait_list,
+                   cl_event *        event) CL_API_SUFFIX__VERSION_2_0
+{
+    if (command_queue == nullptr)
+        return CL_INVALID_COMMAND_QUEUE;
+    if ((num_events_in_wait_list == 0 && event_wait_list != nullptr) ||
+        (num_events_in_wait_list != 0 && event_wait_list == nullptr))
+        return CL_INVALID_EVENT_WAIT_LIST;
+    
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
+    
+    cl_int status = CL_SUCCESS;
+#undef CLRX_ORIG_CLCOMMAND
+#define CLRX_ORIG_CLCOMMAND clEnqueueSVMMemcpy(q->amdOclCommandQueue, \
+            blocking_copy, dst_ptr, src_ptr, size
+    CLRX_CALL_QUEUE_COMMAND
+    
+    return clrxApplyCLRXEvent(q, event, amdEvent, status);
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueSVMMemFill(cl_command_queue  command_queue,
+                    void *            svm_ptr,
+                    const void *      pattern,
+                    size_t            pattern_size,
+                    size_t            size,
+                    cl_uint           num_events_in_wait_list,
+                    const cl_event *  event_wait_list,
+                    cl_event *        event) CL_API_SUFFIX__VERSION_2_0
+{
+        if (command_queue == nullptr)
+        return CL_INVALID_COMMAND_QUEUE;
+    if ((num_events_in_wait_list == 0 && event_wait_list != nullptr) ||
+        (num_events_in_wait_list != 0 && event_wait_list == nullptr))
+        return CL_INVALID_EVENT_WAIT_LIST;
+    
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
+    
+    cl_int status = CL_SUCCESS;
+#undef CLRX_ORIG_CLCOMMAND
+#define CLRX_ORIG_CLCOMMAND clEnqueueSVMMemFill(q->amdOclCommandQueue, \
+            svm_ptr, pattern, pattern_size, size
+    CLRX_CALL_QUEUE_COMMAND
+    
+    return clrxApplyCLRXEvent(q, event, amdEvent, status);
+}
+
 #endif /* CL_VERSION_2_0 */
 
 } /* extern "C" */

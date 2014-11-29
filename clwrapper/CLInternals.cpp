@@ -233,7 +233,9 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclGetPipeInfo,
     clrxclSVMAlloc,
     clrxclSVMFree,
-    clrxclEnqueueSVMFree
+    clrxclEnqueueSVMFree,
+    clrxclEnqueueSVMMemcpy,
+    clrxclEnqueueSVMMemFill,
 #endif
 };
 
