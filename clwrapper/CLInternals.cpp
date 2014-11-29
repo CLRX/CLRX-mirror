@@ -222,6 +222,19 @@ const CLRXIcdDispatch clrxDispatchRecord =
     nullptr, // clEnqueueAcquireDX9MediaSurfacesKHR,
     nullptr // clEnqueueReleaseDX9MediaSurfacesKHR
 #endif
+#ifdef CL_VERSION_2_0
+    ,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    clrxclCreateCommandQueueWithProperties,
+    clrxclCreatePipe,
+    clrxclGetPipeInfo,
+    clrxclSVMAlloc,
+    clrxclSVMFree,
+    clrxclEnqueueSVMFree
+#endif
 };
 
 void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
