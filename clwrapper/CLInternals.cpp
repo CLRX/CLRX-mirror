@@ -236,6 +236,11 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclEnqueueSVMFree,
     clrxclEnqueueSVMMemcpy,
     clrxclEnqueueSVMMemFill,
+    clrxclEnqueueSVMMap,
+    clrxclEnqueueSVMUnmap,
+    clrxclCreateSamplerWithProperties,
+    clrxclSetKernelArgSVMPointer,
+    clrxclSetKernelExecInfo
 #endif
 };
 

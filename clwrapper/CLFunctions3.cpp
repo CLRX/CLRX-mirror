@@ -76,11 +76,11 @@ CLRX_CL_PUBLIC_SYM(clSVMFree)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMFree)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMMemcpy)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMMemFill)
-/*CLRX_CL_PUBLIC_SYM(clEnqueueSVMMap)
+CLRX_CL_PUBLIC_SYM(clEnqueueSVMMap)
 CLRX_CL_PUBLIC_SYM(clEnqueueSVMUnmap)
 CLRX_CL_PUBLIC_SYM(clCreateSamplerWithProperties)
 CLRX_CL_PUBLIC_SYM(clSetKernelArgSVMPointer)
-CLRX_CL_PUBLIC_SYM(clSetKernelExecInfo)*/
+CLRX_CL_PUBLIC_SYM(clSetKernelExecInfo)
 #endif
 
 /* end of public API definitions */
@@ -1504,7 +1504,7 @@ clrxclEnqueueSVMMemFill(cl_command_queue  command_queue,
                     const cl_event *  event_wait_list,
                     cl_event *        event) CL_API_SUFFIX__VERSION_2_0
 {
-        if (command_queue == nullptr)
+    if (command_queue == nullptr)
         return CL_INVALID_COMMAND_QUEUE;
     if ((num_events_in_wait_list == 0 && event_wait_list != nullptr) ||
         (num_events_in_wait_list != 0 && event_wait_list == nullptr))
@@ -1521,6 +1521,110 @@ clrxclEnqueueSVMMemFill(cl_command_queue  command_queue,
     return clrxApplyCLRXEvent(q, event, amdEvent, status);
 }
 
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueSVMMap(cl_command_queue  command_queue,
+                cl_bool           blocking_map,
+                cl_map_flags      flags,
+                void *            svm_ptr,
+                size_t            size,
+                cl_uint           num_events_in_wait_list,
+                const cl_event *  event_wait_list,
+                cl_event *        event) CL_API_SUFFIX__VERSION_2_0
+{
+    if (command_queue == nullptr)
+        return CL_INVALID_COMMAND_QUEUE;
+    if ((num_events_in_wait_list == 0 && event_wait_list != nullptr) ||
+        (num_events_in_wait_list != 0 && event_wait_list == nullptr))
+        return CL_INVALID_EVENT_WAIT_LIST;
+    
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
+    
+    cl_int status = CL_SUCCESS;
+#undef CLRX_ORIG_CLCOMMAND
+#define CLRX_ORIG_CLCOMMAND clEnqueueSVMMap(q->amdOclCommandQueue, \
+            blocking_map, flags, svm_ptr, size
+    CLRX_CALL_QUEUE_COMMAND
+    
+    return clrxApplyCLRXEvent(q, event, amdEvent, status);
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclEnqueueSVMUnmap(cl_command_queue  command_queue,
+                  void *            svm_ptr,
+                  cl_uint           num_events_in_wait_list,
+                  const cl_event *   event_wait_list,
+                  cl_event *        event) CL_API_SUFFIX__VERSION_2_0
+{
+    if (command_queue == nullptr)
+        return CL_INVALID_COMMAND_QUEUE;
+    if ((num_events_in_wait_list == 0 && event_wait_list != nullptr) ||
+        (num_events_in_wait_list != 0 && event_wait_list == nullptr))
+        return CL_INVALID_EVENT_WAIT_LIST;
+    
+    CLRXCommandQueue* q = static_cast<CLRXCommandQueue*>(command_queue);
+    
+    cl_int status = CL_SUCCESS;
+#undef CLRX_ORIG_CLCOMMAND
+#define CLRX_ORIG_CLCOMMAND clEnqueueSVMUnmap(q->amdOclCommandQueue, svm_ptr
+    CLRX_CALL_QUEUE_COMMAND
+    
+    return clrxApplyCLRXEvent(q, event, amdEvent, status);
+}
+
+CL_API_ENTRY cl_sampler CL_API_CALL
+clrxclCreateSamplerWithProperties(cl_context                     context,
+              const cl_sampler_properties *  properties,
+              cl_int *                       errcode_ret) CL_API_SUFFIX__VERSION_2_0
+{
+    if (context == nullptr)
+    {
+        if (errcode_ret != nullptr)
+            *errcode_ret = CL_INVALID_CONTEXT;
+        return nullptr;
+    }
+    
+    CLRXContext* c = static_cast<CLRXContext*>(context);
+    const cl_sampler amdSampler = c->amdOclContext->dispatch->clCreateSamplerWithProperties(
+            c->amdOclContext, properties, errcode_ret);
+    
+    if (amdSampler == nullptr)
+        return nullptr;
+    
+    CREATE_CLRXCONTEXT_OBJECT(CLRXSampler, amdOclSampler, amdSampler,
+              clReleaseSampler,
+              "Fatal Error at handling error at sampler creation!")
+    
+    return outObject;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclSetKernelArgSVMPointer(cl_kernel    kernel,
+                         cl_uint      arg_index,
+                         const void * arg_value) CL_API_SUFFIX__VERSION_2_0
+{
+    if (kernel == nullptr)
+        return CL_INVALID_KERNEL;
+    
+    const CLRXKernel* k = static_cast<const CLRXKernel*>(kernel);
+    if (arg_index >= (k->argTypes.size()>>1))
+        return CL_INVALID_ARG_INDEX;
+    return k->amdOclKernel->dispatch->clSetKernelArgSVMPointer(k->amdOclKernel,
+               arg_index, arg_value);
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clrxclSetKernelExecInfo(cl_kernel            kernel,
+                    cl_kernel_exec_info  param_name,
+                    size_t               param_value_size,
+                    const void *         param_value) CL_API_SUFFIX__VERSION_2_0
+{
+    if (kernel == nullptr)
+        return CL_INVALID_KERNEL;
+    
+    const CLRXKernel* k = static_cast<const CLRXKernel*>(kernel);
+    return k->amdOclKernel->dispatch->clSetKernelExecInfo(k->amdOclKernel, param_name,
+              param_value_size, param_value);
+}
 #endif /* CL_VERSION_2_0 */
 
 } /* extern "C" */
