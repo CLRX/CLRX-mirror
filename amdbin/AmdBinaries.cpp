@@ -1058,6 +1058,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 argIt->second.ptrAccess |= KARG_PTR_READ_ONLY;
             else if (kernelDesc[pos] == 'W' && kernelDesc[pos+1] == 'O')
                 argIt->second.ptrAccess |= KARG_PTR_WRITE_ONLY;
+            else if (kernelDesc[pos] == 'R' && kernelDesc[pos+1] == 'W') //???
+                argIt->second.ptrAccess |= KARG_PTR_READ_WRITE;
             else
                 throw ParseException(lineNo, "Can't parse image access qualifier");
             pos += 3;
