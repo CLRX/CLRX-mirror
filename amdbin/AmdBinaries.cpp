@@ -588,6 +588,12 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         choosenSyms.push_back(i);
     }
     
+    const cxbyte* binaryCode = elf.getBinaryCode();
+    const size_t unfinishedRegion = unfinishedRegionOfStringTable(
+        binaryCode + ULEV(rodataHdr.sh_offset), ULEV(rodataHdr.sh_size));
+    
+    size_t unfinishedRegionArgNameSym = SIZE_MAX;
+    
     bool foundInStaticSymbols = false;
     std::vector<typename Types::Size> argTypeNamesSyms;
     if (choosenSyms.empty())
@@ -622,6 +628,20 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                     throw Exception("ArgTypeNameSymStr value+size out of range");
                 
                 argTypeNamesSyms[index] = ULEV(secHdr.sh_offset) + ULEV(sym.st_value);
+                if (ULEV(sym.st_shndx) == rodataIndex)
+                {
+                    if (ULEV(sym.st_value) >= unfinishedRegion)
+                        throw Exception("Arg name/type is unfinished!");
+                }
+                else // is not roData
+                {
+                    if (unfinishedRegionArgNameSym == SIZE_MAX) // init unfished  strings
+                        unfinishedRegionArgNameSym = unfinishedRegionOfStringTable(
+                                binaryCode + ULEV(secHdr.sh_offset), ULEV(secHdr.sh_size));
+                    
+                    if (ULEV(sym.st_value) >= unfinishedRegionArgNameSym)
+                        throw Exception("Arg name/type is unfinished!");
+                }
                 continue;
             }
             if (len < 18 || (::strncmp(symName, "__OpencCL_", 9) != 0 &&
@@ -635,11 +655,6 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     try
     {
     kernelInfos = new KernelInfo[choosenSyms.size()];
-    
-    const cxbyte* binaryCode = elf.getBinaryCode();
-    
-    const size_t unfinishedRegion = unfinishedRegionOfStringTable(
-        binaryCode + ULEV(rodataHdr.sh_offset), ULEV(rodataHdr.sh_size));
     
     size_t argNameTypeNameIdx = 0;
     size_t ki = 0;
@@ -707,8 +722,15 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                     binaryCode + argNameSym.getNameOffset());
             }
             else /* otherwise get from our table */
-                karg.argName = reinterpret_cast<const char*>(
-                    binaryCode + argTypeNamesSyms[argNameTypeNameIdx++]);
+            {
+                if (argNameTypeNameIdx >= argTypeNamesSyms.size())
+                    throw Exception("ArgName sym index out of range");
+                const typename Types::Size value = argTypeNamesSyms[argNameTypeNameIdx++];
+                if (value >= elf.getSize())
+                    throw Exception("ArgName sym offset out of range");
+                
+                karg.argName = reinterpret_cast<const char*>(binaryCode + value);
+            }
             
             if (!foundInStaticSymbols)
             {
@@ -723,8 +745,15 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                     binaryCode + argTypeSym.getNameOffset());
             }
             else /* otherwise get from our table */
-                karg.typeName = reinterpret_cast<const char*>(
-                    binaryCode + argTypeNamesSyms[argNameTypeNameIdx++]);
+            {
+                if (argNameTypeNameIdx >= argTypeNamesSyms.size())
+                    throw Exception("ArgType sym index out of range");
+                const typename Types::Size value = argTypeNamesSyms[argNameTypeNameIdx++];
+                if (value >= elf.getSize())
+                    throw Exception("ArgType sym offset out of range");
+                
+                karg.typeName = reinterpret_cast<const char*>(binaryCode + value);
+            }
             
             if (argType != 0x28)
             {
