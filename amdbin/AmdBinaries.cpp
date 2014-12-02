@@ -1045,6 +1045,37 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             }
             else //if not match
                 throw ParseException(lineNo, "Unknown pointer type");
+            /* skip RW */
+            tokPos = pos;
+            for (cxuint k = 0; k < 3; k++) // // skip three fields
+            {
+                while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
+                    kernelDesc[tokPos] != '\n') tokPos++;
+                if (tokPos >= metadataSize || kernelDesc[tokPos] =='\n')
+                    throw ParseException(lineNo, "No separator after field");
+                tokPos++;
+            }
+            /* volatile */
+            pos = tokPos;
+            if (pos+2 <= metadataSize && kernelDesc[pos+1] == ':' &&
+                (kernelDesc[pos] == '0' || kernelDesc[pos] == '1'))
+            {
+                if (kernelDesc[pos] == '1')
+                    argIt->second.ptrAccess |= KARG_PTR_VOLATILE;
+                pos += 2;
+            }
+            else // error
+                throw ParseException("Unknown value or end at volatile field");
+            
+            if (pos+2 <= metadataSize && kernelDesc[pos+1] == '\n' &&
+                (kernelDesc[pos] == '0' || kernelDesc[pos] == '1'))
+            {
+                if (kernelDesc[pos] == '1')
+                    argIt->second.ptrAccess |= KARG_PTR_RESTRICT;
+                pos++;
+            }
+            else // error
+                throw ParseException("Unknown value or end at restrict field");
         }
         else if (::strncmp(kernelDesc + pos, "image", tokPos-pos) == 0)
         { // image
