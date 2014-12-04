@@ -547,6 +547,8 @@ typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 class AmdInnerGPUBinary32: public ElfBinary32
 {
 private:
+    /// ATTENTION: Do not put non-copyable stuff (likes pointers, arrays),
+    /// because this object will copied
     std::string kernelName; ///< kernel name
     uint32_t encodingEntriesNum;
     CALEncodingEntry* encodingEntries;
