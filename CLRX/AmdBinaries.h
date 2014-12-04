@@ -550,7 +550,7 @@ private:
     std::string kernelName; ///< kernel name
     uint32_t encodingEntriesNum;
     CALEncodingEntry* encodingEntries;
-    std::vector<CALNote>* calNotesTable;
+    std::vector<std::vector<CALNote> > calNotesTable;
 public:
     AmdInnerGPUBinary32() = default;
     /** constructor

@@ -467,7 +467,7 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
 AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
          size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags)
         : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName),
-          encodingEntriesNum(0), encodingEntries(nullptr), calNotesTable(nullptr)
+          encodingEntriesNum(0), encodingEntries(nullptr)
 {
     if (getProgramHeadersNum() >= 1)
     {
@@ -496,69 +496,61 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
                 throw Exception("Encoding entry offset+size out of range");
         }
         
-        if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0)
-            calNotesTable = new std::vector<CALNote>[encodingEntriesNum];
-        try
+        cxuint encodingIndex = 0;
+        calNotesTable.resize(encodingEntriesNum);
+        
+        for (uint32_t i = 1; i < getProgramHeadersNum(); i++)
         {
-            cxuint encodingIndex = 0;
-            for (uint32_t i = 1; i < getProgramHeadersNum(); i++)
-            {
-                const Elf32_Phdr& phdr = getProgramHeader(i);
-                std::vector<CALNote>& calNotes = calNotesTable[encodingIndex];
-                const CALEncodingEntry& encEntry = encodingEntries[encodingIndex];
-                const size_t encEntryOffset = ULEV(encEntry.offset);
-                const size_t encEntrySize = ULEV(encEntry.size);
-                const size_t offset = ULEV(phdr.p_offset);
-                const size_t size = ULEV(phdr.p_filesz);
-                
-                if (offset < encEntryOffset)
-                    throw Exception("Kernel program offset out of encoding");
-                if (usumGt(offset, size, encEntryOffset+encEntrySize))
-                    throw Exception("Kernel program offset+size out of encoding");
-                
-                if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0 &&
-                            ULEV(phdr.p_type) == PT_NOTE)
-                {   // get offset
-                    uint32_t calNotesCount = 0;
-                    for (uint32_t pos = 0; pos < size; calNotesCount++)
-                    {
-                        const CALNoteHeader& nhdr =
-                            *reinterpret_cast<const CALNoteHeader*>(binaryCode+offset+pos);
-                        if (ULEV(nhdr.nameSize) != 8)
-                            throw Exception("Wrong name size in Note header!");
-                        if (::memcmp(nhdr.name, "ATI CAL", 8) != 0)
-                            throw Exception("Wrong name in Note header!");
-                        if (usumGt(uint32_t(pos + sizeof(CALNoteHeader)),
-                                    ULEV(nhdr.descSize), size))
-                            throw Exception("CAL Note desc size out of range");
-                        pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
-                    }
-                    
-                    // put CAL Notes
-                    calNotes.resize(calNotesCount);
-                    uint32_t count = 0;
-                    for (uint32_t pos = 0; pos < size; count++)
-                    {
-                        CALNoteHeader* nhdr =
-                            reinterpret_cast<CALNoteHeader*>(binaryCode+offset+pos);
-                        calNotes[count].header = nhdr;
-                        calNotes[count].data = binaryCode + offset + pos +
-                                sizeof(CALNoteHeader);
-                        pos += sizeof(CALNoteHeader) + ULEV(nhdr->descSize);
-                    }
+            const Elf32_Phdr& phdr = getProgramHeader(i);
+            std::vector<CALNote>& calNotes = calNotesTable[encodingIndex];
+            const CALEncodingEntry& encEntry = encodingEntries[encodingIndex];
+            const size_t encEntryOffset = ULEV(encEntry.offset);
+            const size_t encEntrySize = ULEV(encEntry.size);
+            const size_t offset = ULEV(phdr.p_offset);
+            const size_t size = ULEV(phdr.p_filesz);
+            
+            if (offset < encEntryOffset)
+                throw Exception("Kernel program offset out of encoding");
+            if (usumGt(offset, size, encEntryOffset+encEntrySize))
+                throw Exception("Kernel program offset+size out of encoding");
+            
+            if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0 &&
+                        ULEV(phdr.p_type) == PT_NOTE)
+            {   // get offset
+                uint32_t calNotesCount = 0;
+                for (uint32_t pos = 0; pos < size; calNotesCount++)
+                {
+                    const CALNoteHeader& nhdr =
+                        *reinterpret_cast<const CALNoteHeader*>(binaryCode+offset+pos);
+                    if (ULEV(nhdr.nameSize) != 8)
+                        throw Exception("Wrong name size in Note header!");
+                    if (::memcmp(nhdr.name, "ATI CAL", 8) != 0)
+                        throw Exception("Wrong name in Note header!");
+                    if (usumGt(uint32_t(pos + sizeof(CALNoteHeader)),
+                                ULEV(nhdr.descSize), size))
+                        throw Exception("CAL Note desc size out of range");
+                    pos += sizeof(CALNoteHeader) + ULEV(nhdr.descSize);
                 }
-                if (offset+size == encEntryOffset+encEntrySize)
-                {   /* next encoding entry */
-                    encodingIndex++;
-                    if (encodingIndex > encodingEntriesNum)
-                        throw Exception("ProgramHeaders out of encodings!");
+                
+                // put CAL Notes
+                calNotes.resize(calNotesCount);
+                uint32_t count = 0;
+                for (uint32_t pos = 0; pos < size; count++)
+                {
+                    CALNoteHeader* nhdr =
+                        reinterpret_cast<CALNoteHeader*>(binaryCode+offset+pos);
+                    calNotes[count].header = nhdr;
+                    calNotes[count].data = binaryCode + offset + pos +
+                            sizeof(CALNoteHeader);
+                    pos += sizeof(CALNoteHeader) + ULEV(nhdr->descSize);
                 }
             }
-        } /* try */
-        catch(...)
-        {
-            delete[] calNotesTable;
-            throw;
+            if (offset+size == encEntryOffset+encEntrySize)
+            {   /* next encoding entry */
+                encodingIndex++;
+                if (encodingIndex > encodingEntriesNum)
+                    throw Exception("ProgramHeaders out of encodings!");
+            }
         }
     }
 }
