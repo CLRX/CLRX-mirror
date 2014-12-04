@@ -549,7 +549,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
             if (offset+size == encEntryOffset+encEntrySize)
             {   /* next encoding entry */
                 encodingIndex++;
-                if (encodingIndex > encodingEntriesNum)
+                if (i+1 < getProgramHeadersNum() && encodingIndex >= encodingEntriesNum)
                     throw Exception("ProgramHeaders out of encodings!");
             }
         }
