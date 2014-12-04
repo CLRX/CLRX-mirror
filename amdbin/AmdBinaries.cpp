@@ -497,12 +497,12 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
         }
         
         cxuint encodingIndex = 0;
-        calNotesTable.resize(encodingEntriesNum);
+        if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0)
+            calNotesTable.resize(encodingEntriesNum);
         
         for (uint32_t i = 1; i < getProgramHeadersNum(); i++)
         {
             const Elf32_Phdr& phdr = getProgramHeader(i);
-            std::vector<CALNote>& calNotes = calNotesTable[encodingIndex];
             const CALEncodingEntry& encEntry = encodingEntries[encodingIndex];
             const size_t encEntryOffset = ULEV(encEntry.offset);
             const size_t encEntrySize = ULEV(encEntry.size);
@@ -517,6 +517,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
             if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0 &&
                         ULEV(phdr.p_type) == PT_NOTE)
             {   // get offset
+                std::vector<CALNote>& calNotes = calNotesTable[encodingIndex];
                 uint32_t calNotesCount = 0;
                 for (uint32_t pos = 0; pos < size; calNotesCount++)
                 {
