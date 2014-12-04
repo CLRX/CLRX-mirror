@@ -508,7 +508,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
             const size_t encEntrySize = ULEV(encEntry.size);
             const size_t offset = ULEV(phdr.p_offset);
             const size_t size = ULEV(phdr.p_filesz);
-            
+            // check offset and ranges of program header
             if (offset < encEntryOffset)
                 throw Exception("Kernel program offset out of encoding");
             if (usumGt(offset, size, encEntryOffset+encEntrySize))
@@ -516,7 +516,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
             
             if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0 &&
                         ULEV(phdr.p_type) == PT_NOTE)
-            {   // get offset
+            {
                 std::vector<CALNote>& calNotes = calNotesTable[encodingIndex];
                 uint32_t calNotesCount = 0;
                 for (uint32_t pos = 0; pos < size; calNotesCount++)
