@@ -39,7 +39,7 @@
 
 using namespace CLRX;
 
-static const KernelArgType x86ArgTypeTable[]
+static const KernelArgType x86ArgTypeTable[] =
 {
     KernelArgType::VOID,
     KernelArgType::CHAR,
@@ -82,7 +82,7 @@ static const KernelArgType x86ArgTypeTable[]
     KernelArgType::SAMPLER
 };
 
-static const KernelArgType gpuArgTypeTable[]
+static const KernelArgType gpuArgTypeTable[] =
 {
     KernelArgType::UCHAR,
     KernelArgType::UCHAR2,
