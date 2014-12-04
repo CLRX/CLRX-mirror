@@ -60,7 +60,7 @@ struct GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[10] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[11] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -71,10 +71,36 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[10] =
     { 0x405, GPUDeviceType::SPOOKY },
     { 0x406, GPUDeviceType::KALINDI },
     { 0x407, GPUDeviceType::HAINAN },
-    { 0x408, GPUDeviceType::HAWAII }
+    { 0x408, GPUDeviceType::HAWAII },
+    /*{ 0x409, GPUDeviceType::ICELAND },
+    { 0x40a, GPUDeviceType::TONGA },*/
+    { 0x40b, GPUDeviceType::MULLINS }
 };
 
-static const char* gpuDeviceNameTable[11] =
+struct GPUDeviceInnerCodeEntry
+{
+    uint32_t dMachine;
+    GPUDeviceType deviceType;
+};
+
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[11] =
+{
+    { 0x1a, GPUDeviceType::TAHITI },
+    { 0x1b, GPUDeviceType::PITCAIRN },
+    { 0x1c, GPUDeviceType::CAPE_VERDE },
+    { 0x20, GPUDeviceType::OLAND },
+    { 0x21, GPUDeviceType::BONAIRE },
+    { 0x22, GPUDeviceType::SPECTRE },
+    { 0x23, GPUDeviceType::SPOOKY },
+    { 0x24, GPUDeviceType::KALINDI },
+    { 0x25, GPUDeviceType::HAINAN },
+    { 0x27, GPUDeviceType::HAWAII },
+    /*{ 0x29, GPUDeviceType::ICELAND },
+    { 0x2a, GPUDeviceType::TONGA },*/
+    { 0x2b, GPUDeviceType::MULLINS }
+};
+
+static const char* gpuDeviceNameTable[14] =
 {
     "UNDEFINED",
     "CapeVerde",
@@ -86,7 +112,10 @@ static const char* gpuDeviceNameTable[11] =
     "Spooky",
     "Kalindi",
     "Hainan",
-    "Hawaii"
+    "Hawaii",
+    "Iceland",
+    "Tonga",
+    "Mullins"
 };
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const std::string& name)
@@ -170,21 +199,46 @@ static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint
         {   // if innerBinary exists
             bool codeFound = false;
             bool dataFound = false;
-            /* in search in reverse order, because last .text have code from
-             * (older Catalyst drivers) */
-            for (cxint j = innerBin->getSectionHeadersNum()-1; j >= 0; j--)
+            cxuint encEntryIndex = 0;
+            for (encEntryIndex = 0; encEntryIndex < innerBin->getCALEncodingEntriesNum();
+                 encEntryIndex++)
+            {
+                const CALEncodingEntry& encEntry =
+                        innerBin->getCALEncodingEntry(encEntryIndex);
+                /* check gpuDeviceType */
+                const uint32_t dMachine = ULEV(encEntry.machine);
+                for (index = 0; index < entriesNum; index++)
+                    if (gpuDeviceInnerCodeTable[index].dMachine == dMachine)
+                        break;
+                if (entriesNum != index &&
+                    gpuDeviceInnerCodeTable[index].deviceType == input->deviceType)
+                    break; // if found
+            }
+            if (encEntryIndex == innerBin->getCALEncodingEntriesNum())
+                throw Exception("Can't find suitable CALEncodingEntry!");
+            const CALEncodingEntry& encEntry =
+                        innerBin->getCALEncodingEntry(encEntryIndex);
+            const size_t encEntryOffset = ULEV(encEntry.offset);
+            const size_t encEntrySize = ULEV(encEntry.size);
+            /* find suitable sections */
+            for (cxuint j = 0; j < innerBin->getSectionHeadersNum(); j++)
             {
                 const char* secName = innerBin->getSectionName(j);
+                const auto& shdr = innerBin->getSectionHeader(j);
+                const size_t secOffset = ULEV(shdr.sh_offset);
+                const size_t secSize = ULEV(shdr.sh_size);
+                if (secOffset < encEntryOffset ||
+                        usumGt(secOffset, secSize, encEntryOffset+encEntrySize))
+                    continue; // skip this section (not in choosen encoding)
+                
                 if (!codeFound && ::strcmp(secName, ".text") == 0)
-                {   // if found last .text
-                    const auto& shdr = innerBin->getSectionHeader(j);
+                {
                     kernelInput.codeSize = ULEV(shdr.sh_size);
                     kernelInput.code = innerBin->getSectionContent(j);
                     codeFound = true;
                 }
                 else if (!dataFound && ::strcmp(secName, ".data") == 0)
-                {   // if found last .data
-                    const auto& shdr = innerBin->getSectionHeader(j);
+                {
                     kernelInput.dataSize = ULEV(shdr.sh_size);
                     kernelInput.data = innerBin->getSectionContent(j);
                     dataFound = true;
@@ -196,16 +250,18 @@ static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint
             
             if ((flags & DISASM_CALNOTES) != 0)
             {
-                kernelInput.calNotes.resize(innerBin->getCALNotesNum());
+                kernelInput.calNotes.resize(innerBin->getCALNotesNum(encEntryIndex));
                 for (cxuint j = 0; j < kernelInput.calNotes.size(); j++)
                 {
-                    const CALNoteHeader& calNoteHdr = innerBin->getCALNoteHeader(j);
+                    const CALNoteHeader& calNoteHdr =
+                            innerBin->getCALNoteHeader(encEntryIndex, j);
                     AsmCALNote& outCalNote = kernelInput.calNotes[j];
                     outCalNote.header.nameSize = ULEV(calNoteHdr.nameSize);
                     outCalNote.header.type = ULEV(calNoteHdr.type);
                     outCalNote.header.descSize = ULEV(calNoteHdr.descSize);
                     std::copy(calNoteHdr.name, calNoteHdr.name+8, outCalNote.header.name);
-                    outCalNote.data = const_cast<cxbyte*>(innerBin->getCALNoteData(j));
+                    outCalNote.data = const_cast<cxbyte*>(innerBin->getCALNoteData(
+                        encEntryIndex, j));
                 }
             }
         }

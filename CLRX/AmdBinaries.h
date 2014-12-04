@@ -165,6 +165,16 @@ enum : uint32_t
     CALNOTE_ATI_MAXTYPE = CALNOTE_ATI_UAV_OP_MASK
 };
 
+/// CALEncodingEntry
+struct CALEncodingEntry
+{
+    uint32_t machine;   ///< machine type
+    uint32_t type;      ///< type of entry
+    uint32_t offset;    ///< offset in ELF
+    uint32_t size;      ///< size
+    uint32_t flags;     ///< flags
+};
+
 /// ATI CAL Note header
 struct CALNoteHeader
 {
@@ -538,7 +548,9 @@ class AmdInnerGPUBinary32: public ElfBinary32
 {
 private:
     std::string kernelName; ///< kernel name
-    std::vector<CALNote> calNotes;
+    uint32_t encodingEntriesNum;
+    CALEncodingEntry* encodingEntries;
+    std::vector<CALNote>* calNotesTable;
 public:
     AmdInnerGPUBinary32() = default;
     /** constructor
@@ -559,24 +571,36 @@ public:
     const std::string& getKernelName() const
     { return kernelName; }
     
+    /// get CALEncoding entries number
+    uint32_t getCALEncodingEntriesNum() const
+    { return encodingEntriesNum; }
+    
+    /// get CALEncodingDictionaryEntries
+    const CALEncodingEntry& getCALEncodingEntry(cxuint index) const
+    { return encodingEntries[index]; }
+    
+    /// get CALEncodingDictionaryEntries
+    CALEncodingEntry& getCALEncodingEntry(cxuint index)
+    { return encodingEntries[index]; }
+    
     /// get CAL Notes number
-    uint32_t getCALNotesNum() const
-    { return calNotes.size(); }
+    uint32_t getCALNotesNum(cxuint encodingIndex) const
+    { return calNotesTable[encodingIndex].size(); }
     
     /// get CAL Note header
-    const CALNoteHeader& getCALNoteHeader(uint32_t index) const
-    { return *calNotes[index].header; }
+    const CALNoteHeader& getCALNoteHeader(cxuint encodingIndex, uint32_t index) const
+    { return *(calNotesTable[encodingIndex][index]).header; }
     
     /// get CAL Note header
-    CALNoteHeader& getCALNoteHeader(uint32_t index)
-    { return *calNotes[index].header; }
+    CALNoteHeader& getCALNoteHeader(cxuint encodingIndex, uint32_t index)
+    { return *(calNotesTable[encodingIndex][index]).header; }
     
     /// get CAL Note data
-    const cxbyte* getCALNoteData(uint32_t index) const
-    { return calNotes[index].data; }
+    const cxbyte* getCALNoteData(cxuint encodingIndex, uint32_t index) const
+    { return calNotesTable[encodingIndex][index].data; }
     /// get CAL Note data
-    cxbyte* getCALNoteData(uint32_t index)
-    { return calNotes[index].data; }
+    cxbyte* getCALNoteData(cxuint encodingIndex, uint32_t index)
+    { return calNotesTable[encodingIndex][index].data; }
 };
 
 /// AMD inner X86 binary

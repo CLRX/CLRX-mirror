@@ -73,7 +73,10 @@ enum class GPUDeviceType
     KALINDI, ///< ???  GCN1.1
     HAINAN, ///< ????  GCN1.0
     HAWAII, ///< Radeon R9 290
-    GPUDEVICE_MAX = HAWAII,
+    ICELAND, ///<
+    TONGA, ///<
+    MULLINS, //
+    GPUDEVICE_MAX = MULLINS,
     
     RADEON_HD7700 = CAPE_VERDE,
     RADEON_HD7800 = PITCAIRN,
