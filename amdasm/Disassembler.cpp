@@ -233,13 +233,13 @@ static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint
                 
                 if (!codeFound && ::strcmp(secName, ".text") == 0)
                 {
-                    kernelInput.codeSize = ULEV(shdr.sh_size);
+                    kernelInput.codeSize = secSize;
                     kernelInput.code = innerBin->getSectionContent(j);
                     codeFound = true;
                 }
                 else if (!dataFound && ::strcmp(secName, ".data") == 0)
                 {
-                    kernelInput.dataSize = ULEV(shdr.sh_size);
+                    kernelInput.dataSize = secSize;
                     kernelInput.data = innerBin->getSectionContent(j);
                     dataFound = true;
                 }
