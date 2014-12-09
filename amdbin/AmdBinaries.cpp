@@ -642,7 +642,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     bool foundInStaticSymbols = false;
     std::vector<typename Types::Size> argTypeNamesSyms;
     if (choosenSyms.empty())
-    {   /* if not found in symbol */
+    {   /* if not found in symbol: TODO: Fix for driver 1573.4 and newer */
         const size_t symbolsNum = elf.getSymbolsNum();
         for (typename Types::Size i = 0; i < symbolsNum; i++)
         {
