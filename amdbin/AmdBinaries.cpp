@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
+#include <CLRX/MemAccess.h>
 #include <CLRX/AmdBinaries.h>
 
 /* INFO: in this file is used ULEV function for conversion
