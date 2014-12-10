@@ -32,6 +32,7 @@
 #include <vector>
 #include <unordered_map>
 #include <CLRX/AmdBinaries.h>
+#include <CLRX/AmdBinGen.h>
 #include <CLRX/Utilities.h>
 
 /// main namespace
@@ -58,32 +59,6 @@ enum: cxuint
     DISASM_FLOATLITS = 16,  ///< print in comments float literals
     DISASM_HEXCODE = 32,    ///< print on left side hexadecimal code
     DISASM_ALL = 0xff       ///< all disassembler flags
-};
-
-enum class GPUDeviceType
-{
-    UNDEFINED = 0,
-    CAPE_VERDE, ///< Radeon HD7700
-    PITCAIRN, ///< Radeon HD7800
-    TAHITI, ///< Radeon HD7900
-    OLAND, ///< Radeon R7 250
-    BONAIRE, ///< Radeon R7 260
-    SPECTRE, ///< Kaveri
-    SPOOKY, ///< Kaveri
-    KALINDI, ///< ???  GCN1.1
-    HAINAN, ///< ????  GCN1.0
-    HAWAII, ///< Radeon R9 290
-    ICELAND, ///<
-    TONGA, ///<
-    MULLINS, //
-    GPUDEVICE_MAX = MULLINS,
-    
-    RADEON_HD7700 = CAPE_VERDE,
-    RADEON_HD7800 = PITCAIRN,
-    RADEON_HD7900 = TAHITI,
-    RADEON_R7_250 = OLAND,
-    RADEON_R7_260 = BONAIRE,
-    RADEON_R9_290 = HAWAII
 };
 
 struct ISAReservedRegister

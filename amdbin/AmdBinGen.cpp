@@ -28,35 +28,67 @@
 
 using namespace CLRX;
 
-std::vector<KernelArg> CLRX::parseAmdKernelArgsFromString( const std::string& argsString)
+std::vector<KernelArg> CLRX::parseAmdKernelArgsFromString(const std::string& argsString)
 {
     return std::vector<KernelArg>();
 }
 
-AmdGPUBinGenerator::AmdGPUBinGenerator()
+AmdGPUBinGenerator::AmdGPUBinGenerator() : binarySize(0), binary(nullptr)
+{ }
+
+AmdGPUBinGenerator::AmdGPUBinGenerator(const AmdInput& amdInput)
+        : binarySize(0), binary(nullptr)
 {
+    setInput(amdInput);
+}
+
+AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
+       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
+       const std::vector<AmdKernelInput>& kernelInputs)
+        : binarySize(0), binary(nullptr)
+{
+    input.is64Bit = _64bitMode;
+    input.deviceType = deviceType;
+    input.driverVersion = driverVersion;
+    input.globalDataSize = globalDataSize;
+    input.globalData = globalData;
+    setKernels(kernelInputs);
 }
 
 AmdGPUBinGenerator::~AmdGPUBinGenerator()
 {
+    delete[] binary;
+}
+
+void AmdGPUBinGenerator::setInput(const AmdInput& amdInput)
+{
+    this->input = input;
+}
+
+void AmdGPUBinGenerator::setKernels(const std::vector<AmdKernelInput>& kernelInputs)
+{
+    input.kernels = kernelInputs;
+}
+
+void AmdGPUBinGenerator::addKernel(const AmdKernelInput& kernelInput)
+{
+    input.kernels.push_back(kernelInput);
 }
 
 void AmdGPUBinGenerator::addKernel(const char* kernelName, size_t codeSize,
-       const cxbyte* code, const AmdGPUBinKernelConfig& config,
+       const cxbyte* code, const AmdKernelConfig& config,
        size_t dataSize, const cxbyte* data)
 {
-}
-
-void AmdGPUBinGenerator::addKernel(const char* kernelName, size_t codeSize,
-       const cxbyte* code, const AmdGPUBinKernelConfig& config,
-       const AmdGPUBinExtKernelConfig& extConfig, size_t dataSize, const cxbyte* data)
-{
+    input.kernels.push_back({ kernelName, dataSize, data, 0, nullptr, 0, nullptr, {},
+                true, config, codeSize, code });
 }
 
 void AmdGPUBinGenerator::addKernel(const char* kernelName, size_t codeSize,
        const cxbyte* code, const std::vector<CALNote>& calNotes, const cxbyte* header,
-       size_t metadataSize, const cxbyte* metadata, size_t dataSize, const cxbyte* data)
+       size_t metadataSize, const char* metadata, size_t dataSize, const cxbyte* data)
 {
+    input.kernels.push_back({ kernelName, dataSize, data, 32, header,
+        metadataSize, metadata, calNotes, false, AmdKernelConfig(), codeSize, code });
 }
 
 void AmdGPUBinGenerator::generate()

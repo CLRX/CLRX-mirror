@@ -33,6 +33,32 @@
 /// main namespace
 namespace CLRX
 {
+    
+enum class GPUDeviceType: cxbyte
+{
+    UNDEFINED = 0,
+    CAPE_VERDE, ///< Radeon HD7700
+    PITCAIRN, ///< Radeon HD7800
+    TAHITI, ///< Radeon HD7900
+    OLAND, ///< Radeon R7 250
+    BONAIRE, ///< Radeon R7 260
+    SPECTRE, ///< Kaveri
+    SPOOKY, ///< Kaveri
+    KALINDI, ///< ???  GCN1.1
+    HAINAN, ///< ????  GCN1.0
+    HAWAII, ///< Radeon R9 290
+    ICELAND, ///<
+    TONGA, ///<
+    MULLINS, //
+    GPUDEVICE_MAX = MULLINS,
+    
+    RADEON_HD7700 = CAPE_VERDE,
+    RADEON_HD7800 = PITCAIRN,
+    RADEON_HD7900 = TAHITI,
+    RADEON_R7_250 = OLAND,
+    RADEON_R7_260 = BONAIRE,
+    RADEON_R9_290 = HAWAII
+};
 
 struct AmdUserData
 {
@@ -42,7 +68,7 @@ struct AmdUserData
     uint32_t regSize;
 };
     
-struct AmdGPUBinKernelConfig
+struct AmdKernelConfig
 {
     std::vector<KernelArg> args;
     uint32_t reqdWorkGroupSize[3];
@@ -52,14 +78,8 @@ struct AmdGPUBinKernelConfig
     uint32_t ieeeMode;
     uint32_t floatMode;
     size_t hwLocalSize;
-    uint32_t scratchBufferSize;
-    cxuint userDataElemsNum;
-    AmdUserData userDatas[16];
-};
-
-struct AmdGPUBinExtKernelConfig
-{
     uint32_t hwRegion;
+    uint32_t scratchBufferSize;
     uint32_t uavPrivate;
     uint32_t uavId;
     bool cbIdEnable;
@@ -68,9 +88,11 @@ struct AmdGPUBinExtKernelConfig
     uint32_t printfId;
     uint32_t privateId;
     bool constDataRequired;
+    cxuint userDataElemsNum;
+    AmdUserData userDatas[16];
 };
 
-struct AmdGPUBinKernelInput
+struct AmdKernelInput
 {
     std::string kernelName; ///< kernel name
     size_t dataSize;
@@ -81,32 +103,38 @@ struct AmdGPUBinKernelInput
     const char* metadata;   ///< kernel's metadata
     std::vector<CALNote> calNotes;
     bool useConfig;
-    bool useExtConfig;
-    AmdGPUBinKernelConfig config;
-    AmdGPUBinExtKernelConfig extConfig;
+    AmdKernelConfig config;
     size_t codeSize;
     const cxbyte* code;
 };
 
-extern std::vector<KernelArg> parseAmdKernelArgsFromString(
-        const std::string& argsString);
-
-class AmdGPUBinGenerator
+struct AmdInput
 {
-private:
     bool is64Bit;
-    uint32_t deviceType;
+    GPUDeviceType deviceType;
     size_t globalDataSize;
     const cxbyte* globalData;
     uint32_t driverVersion;
     std::string compileOptions;
     std::string driverInfo;
-    std::vector<AmdGPUBinKernelInput> kernels;
+    std::vector<AmdKernelInput> kernels;
+};
+
+extern std::vector<KernelArg> parseAmdKernelArgsFromString(const std::string& argsString);
+
+class AmdGPUBinGenerator
+{
+private:
+    AmdInput input;
     
     size_t binarySize;
     cxbyte* binary;
 public:
     AmdGPUBinGenerator();
+    AmdGPUBinGenerator(const AmdInput& amdInput);
+    AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
+           size_t globalDataSize, const cxbyte* globalData, 
+           const std::vector<AmdKernelInput>& kernelInputs);
     ~AmdGPUBinGenerator();
     
     // non-copyable and non-movable
@@ -115,34 +143,34 @@ public:
     AmdGPUBinGenerator(AmdGPUBinGenerator&& c) = delete;
     AmdGPUBinGenerator& operator=(AmdGPUBinGenerator&& c) = delete;
     
+    void setInput(const AmdInput& amdInput);
+    void setKernels(const std::vector<AmdKernelInput>& kernelInputs);
+    
     void set64BitMode(bool _64bitMode)
-    { is64Bit = _64bitMode; }
-    void setDeviceType(uint32_t deviceType)
-    { this->deviceType = deviceType; }
+    { input.is64Bit = _64bitMode; }
+    void setDeviceType(GPUDeviceType deviceType)
+    { input.deviceType = deviceType; }
     
     void setGlobalData(size_t size, const cxbyte* globalData)
     {
-        this->globalDataSize = size;
-        this->globalData = globalData;
+        input.globalDataSize = size;
+        input.globalData = globalData;
     }
     void setDriverInfo(const char* compileOptions, const char* driverInfo)
     {
-        this->compileOptions = compileOptions;
-        this->driverInfo = driverInfo;
+        input.compileOptions = compileOptions;
+        input.driverInfo = driverInfo;
     }
     void setDriverVersion(uint32_t version)
-    { driverVersion = version; }
+    { input.driverVersion = version; }
     
-    void addKernel(const AmdGPUBinKernelInput& kernelInput);
+    void addKernel(const AmdKernelInput& kernelInput);
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
-           const AmdGPUBinKernelConfig& config,
-           size_t dataSize = 0, const cxbyte* data = nullptr);
-    void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
-           const AmdGPUBinKernelConfig& config, const AmdGPUBinExtKernelConfig& extConfig,
-           size_t dataSize = 0, const cxbyte* data = nullptr);
+           const AmdKernelConfig& config, size_t dataSize = 0,
+           const cxbyte* data = nullptr);
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
            const std::vector<CALNote>& calNotes, const cxbyte* header,
-           size_t metadataSize, const cxbyte* metadata,
+           size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
     
     void generate();
