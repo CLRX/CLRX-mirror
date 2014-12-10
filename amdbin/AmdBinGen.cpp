@@ -159,9 +159,11 @@ void AmdGPUBinGenerator::generate()
     binarySize += (sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 + sizeof(Elf32_Shdr)*6 +
             sizeof(CALEncodingEntry) + 2 + 16 + 40 + 32/*header*/)*kernelsNum;
     
+    std::vector<std::string> kmetadatas(input.kernels.size());
     size_t uniqueId = 1025;
-    for (AmdKernelInput& kinput: input.kernels)
+    for (size_t i = 0; i < input.kernels.size(); i++)
     {
+        const AmdKernelInput& kinput = input.kernels[i];
         size_t readOnlyImages = 0;
         size_t uavsNum = 1;
         size_t samplersNum = 0;
@@ -195,38 +197,78 @@ void AmdGPUBinGenerator::generate()
                 2*((isOlderThan1124)?16:kinput.config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
+            
             /* compute metadataSize */
-            binarySize += kinput.kernelName.size()*2 + 27 + 25 /* ARGSTART/ARGEND */ +
-                17 /* version */ +
-                9 + ::strlen(gpuDeviceNameTable[cxuint(input.deviceType)]) /* device */ +
-                11 + countDigits(uniqueId) /* uniqueid */ +
-                20 + countDigits(kinput.config.uavPrivate) /* uavprivate */ +
-                17 + countDigits(kinput.config.hwLocalSize) /* hwlocal */ +
-                18 + countDigits(kinput.config.hwRegion) /* hwregion */ +
-                11 + countDigits(uniqueId) /* function */ +
-                8 + countDigits(kinput.config.uavId) /* uavid */ +
-                12 + countDigits(kinput.config.privateId) /* privateid */;
-            if (input.is64Bit)
-                binarySize += 17;
+            std::string& metadata = kmetadatas[i];
+            metadata.reserve(100);
+            metadata += ";ARGSTART:__OpenCL_";
+            metadata += kinput.kernelName;
+            metadata += "_kernel\n";
+            if (isOlderThan1124)
+                metadata += ";version:3:1:104\n";
+            else
+                metadata += ";version:3:1:111\n";
+            metadata += ";device:";
+            metadata += gpuDeviceNameTable[cxuint(input.deviceType)];
+            char numBuf[21];
+            metadata += "\n;uniqueid:";
+            itocstrCStyle(uniqueId, numBuf, 21);
+            metadata += numBuf;
+            metadata += "\n;memory:uavprivate:";
+            itocstrCStyle(kinput.config.uavPrivate, numBuf, 21);
+            metadata += numBuf;
+            metadata += "\n;memory:hwlocal:";
+            itocstrCStyle(kinput.config.hwLocalSize, numBuf, 21);
+            metadata += numBuf;
+            metadata += "\n;memory:hwregion:";
+            itocstrCStyle(kinput.config.hwRegion, numBuf, 21);
+            metadata += numBuf;
+            metadata.push_back('\n');
+            
             if (kinput.config.constDataRequired)
-                binarySize += 17;
+                metadata += ";memory:datareqd\n";
+            metadata += ";function:1:";
+            itocstrCStyle(uniqueId, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            if (input.is64Bit)
+                metadata += ";memory:64bitABI\n";
+            metadata += ";uavid:";
+            itocstrCStyle(kinput.config.uavId, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
             if (kinput.config.printfIdEnable)
-                binarySize += 11 + countDigits(kinput.config.printfId);
-            if (kinput.config.cbIdEnable)
-                binarySize += 11 + countDigits(kinput.config.cbId);
-            /* compute number sizes */
-            cxuint argNo = 0;
-            for (const AmdKernelArg& arg: kinput.config.args)
             {
-                binarySize += arg.argName.size() + arg.typeName.size() +
-                        15 /*reflection*/;
-                if (arg.ptrAccess & KARG_PTR_CONST) // constarg
-                    binarySize += 12 + arg.argName.size() + countDigits(argNo);
-                if (arg.argType == KernelArgType::SAMPLER)
-                    binarySize += 16 + arg.argName.size();
-                
-                argNo++;
+                metadata += ";printfid:";
+                itocstrCStyle(kinput.config.printfId, numBuf, 21);
+                metadata += numBuf;
+                metadata += '\n';
             }
+            if (kinput.config.cbIdEnable)
+            {
+                metadata += ";cbid:";
+                itocstrCStyle(kinput.config.cbId, numBuf, 21);
+                metadata += numBuf;
+                metadata += '\n';
+            }
+            metadata += ";privateid:";
+            itocstrCStyle(kinput.config.privateId, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            for (size_t k = 0; kinput.config.args.size(); k++)
+            {
+                const AmdKernelArg& arg = kinput.config.args[k];
+                metadata += ";reflection:";
+                itocstrCStyle(k, numBuf, 21);
+                metadata += numBuf;
+                metadata += ':';
+                metadata += arg.typeName;
+                metadata += '\n';
+            }
+            
+            metadata += ";ARGEND:__OpenCL_";
+            metadata += kinput.kernelName;
+            metadata += "_kernel\n";
         }
         else // if defined in calNotes (no config)
         {
