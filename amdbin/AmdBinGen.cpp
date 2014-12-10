@@ -164,11 +164,12 @@ void AmdGPUBinGenerator::generate()
     for (size_t i = 0; i < input.kernels.size(); i++)
     {
         const AmdKernelInput& kinput = input.kernels[i];
+        const AmdKernelConfig& config = kinput.config;
         size_t readOnlyImages = 0;
         size_t uavsNum = 1;
-        size_t samplersNum = 0;
+        size_t samplersNum = config.samplers.size();
         size_t constBuffersNum = 2;
-        for (const AmdKernelArg& arg: kinput.config.args)
+        for (const AmdKernelArg& arg: config.args)
         {
             if (arg.argType >= KernelArgType::MIN_IMAGE &&
                 arg.argType <= KernelArgType::MAX_IMAGE)
@@ -194,7 +195,7 @@ void AmdGPUBinGenerator::generate()
         if (kinput.useConfig)
         {
             binarySize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
-                2*((isOlderThan1124)?16:kinput.config.userDataElemsNum))*8 /* proginfo */ +
+                2*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
             
@@ -215,49 +216,92 @@ void AmdGPUBinGenerator::generate()
             itocstrCStyle(uniqueId, numBuf, 21);
             metadata += numBuf;
             metadata += "\n;memory:uavprivate:";
-            itocstrCStyle(kinput.config.uavPrivate, numBuf, 21);
+            itocstrCStyle(config.uavPrivate, numBuf, 21);
             metadata += numBuf;
             metadata += "\n;memory:hwlocal:";
-            itocstrCStyle(kinput.config.hwLocalSize, numBuf, 21);
+            itocstrCStyle(config.hwLocalSize, numBuf, 21);
             metadata += numBuf;
             metadata += "\n;memory:hwregion:";
-            itocstrCStyle(kinput.config.hwRegion, numBuf, 21);
+            itocstrCStyle(config.hwRegion, numBuf, 21);
             metadata += numBuf;
-            metadata.push_back('\n');
+            metadata += '\n';
+            if (config.reqdWorkGroupSize[0] != 0 || config.reqdWorkGroupSize[1] != 0 ||
+                config.reqdWorkGroupSize[1] != 0)
+            {
+                metadata += ";cws:";
+                itocstrCStyle(config.reqdWorkGroupSize[0], numBuf, 21);
+                metadata += numBuf;
+                metadata += ':';
+                itocstrCStyle(config.reqdWorkGroupSize[1], numBuf, 21);
+                metadata += numBuf;
+                metadata += ':';
+                itocstrCStyle(config.reqdWorkGroupSize[2], numBuf, 21);
+                metadata += numBuf;
+                metadata += '\n';
+            }
             
-            if (kinput.config.constDataRequired)
+            size_t argOffset = 0;
+            for (cxuint k = 0; k < config.args.size(); k++)
+            {
+                const AmdKernelArg& arg = config.args[k];
+                if (arg.argType == KernelArgType::COUNTER32)
+                {
+                }
+                if (arg.ptrAccess & KARG_PTR_CONST)
+                {
+                }
+                argOffset += 16;
+            }
+            
+            if (config.constDataRequired)
                 metadata += ";memory:datareqd\n";
             metadata += ";function:1:";
             itocstrCStyle(uniqueId, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
-            if (input.is64Bit)
-                metadata += ";memory:64bitABI\n";
-            metadata += ";uavid:";
-            itocstrCStyle(kinput.config.uavId, numBuf, 21);
-            metadata += numBuf;
-            metadata += '\n';
-            if (kinput.config.printfIdEnable)
-            {
-                metadata += ";printfid:";
-                itocstrCStyle(kinput.config.printfId, numBuf, 21);
+            
+            for (cxuint k = 0; k < config.samplers.size(); k++)
+            {   /* constant samplers */
+                const cxuint samp = config.samplers[k];
+                metadata += ";sampler:unknown_";
+                itocstrCStyle(samp, numBuf, 21);
+                metadata += numBuf;
+                metadata += ':';
+                itocstrCStyle(k, numBuf, 21);
+                metadata += numBuf;
+                metadata += ":1:";
+                itocstrCStyle(samp, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
-            if (kinput.config.cbIdEnable)
+            
+            if (input.is64Bit)
+                metadata += ";memory:64bitABI\n";
+            metadata += ";uavid:";
+            itocstrCStyle(config.uavId, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            if (config.printfIdEnable)
+            {
+                metadata += ";printfid:";
+                itocstrCStyle(config.printfId, numBuf, 21);
+                metadata += numBuf;
+                metadata += '\n';
+            }
+            if (config.cbIdEnable)
             {
                 metadata += ";cbid:";
-                itocstrCStyle(kinput.config.cbId, numBuf, 21);
+                itocstrCStyle(config.cbId, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
             metadata += ";privateid:";
-            itocstrCStyle(kinput.config.privateId, numBuf, 21);
+            itocstrCStyle(config.privateId, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
-            for (size_t k = 0; kinput.config.args.size(); k++)
+            for (size_t k = 0; config.args.size(); k++)
             {
-                const AmdKernelArg& arg = kinput.config.args[k];
+                const AmdKernelArg& arg = config.args[k];
                 metadata += ";reflection:";
                 itocstrCStyle(k, numBuf, 21);
                 metadata += numBuf;

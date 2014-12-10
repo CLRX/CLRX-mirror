@@ -82,6 +82,7 @@ struct AmdUserData
 struct AmdKernelConfig
 {
     std::vector<AmdKernelArg> args;
+    std::vector<cxuint> samplers;
     uint32_t reqdWorkGroupSize[3];
     uint32_t usedVGPRsNum;
     uint32_t usedSGPRsNum;
