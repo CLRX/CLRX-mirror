@@ -1136,27 +1136,68 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             
             // extract arg name
             InitKernelArgMap::iterator argIt;
-            {
-                InitKernelArgMapEntry entry;
-                entry.index = argIndex++;
-                entry.namePos = pos;
-                entry.ptrSpace = KernelPtrSpace::GLOBAL;
-                entry.argType = KernelArgType::IMAGE; // set as image
-                std::pair<InitKernelArgMap::iterator, bool> result = 
-                    initKernelArgs.insert(std::make_pair(
-                        std::string(kernelDesc+pos, tokPos-pos), entry));
-                if (!result.second)
-                    throw ParseException(lineNo, "Argument has been duplicated");
-                argIt = result.first;
-            }
-            
-            pos = ++tokPos; // skip next field
-            while (tokPos < metadataSize && kernelDesc[tokPos] != ':' &&
-                kernelDesc[tokPos] != '\n') tokPos++;
-            if (tokPos >= metadataSize || kernelDesc[tokPos] == '\n')
-                throw ParseException(lineNo, "No separator after field");
+            InitKernelArgMapEntry entry;
+            entry.index = argIndex++;
+            entry.namePos = pos;
+            entry.ptrSpace = KernelPtrSpace::GLOBAL;
+            std::string name = std::string(kernelDesc+pos, tokPos-pos);
             
             pos = ++tokPos;
+            if (pos+3 < metadataSize)
+            {
+                if (kernelDesc[pos+1] != 'D')
+                    throw ParseException("Unknown image type");
+                if (kernelDesc[pos] == '1')
+                {
+                    if (kernelDesc[pos+2] == 'A')
+                    {
+                        entry.argType = KernelArgType::IMAGE1D_ARRAY;
+                        pos += 3;
+                    }
+                    else if (kernelDesc[pos+2] == 'B')
+                    {
+                        entry.argType = KernelArgType::IMAGE1D_BUFFER;
+                        pos += 3;
+                    }
+                    else
+                    {
+                        entry.argType = KernelArgType::IMAGE1D;
+                        pos += 2;
+                    }
+                }
+                else if (kernelDesc[pos] == '2')
+                {
+                    if (kernelDesc[pos+2] == 'A')
+                    {
+                        entry.argType = KernelArgType::IMAGE2D_ARRAY;
+                        pos += 3;
+                    }
+                    else
+                    {
+                        entry.argType = KernelArgType::IMAGE2D;
+                        pos += 2;
+                    }
+                }
+                else if (kernelDesc[pos] == '3')
+                {
+                    entry.argType = KernelArgType::IMAGE3D;
+                    pos += 2;
+                }
+                else
+                    throw ParseException("Unknown image type");
+                if (pos >= metadataSize || kernelDesc[pos] != ':')
+                    throw ParseException("No separator after field");
+            }
+            else
+                throw ParseException(lineNo, "No separator after field");
+            
+            std::pair<InitKernelArgMap::iterator, bool> result = 
+                initKernelArgs.insert(std::make_pair(name, entry));
+            if (!result.second)
+                throw ParseException(lineNo, "Argument has been duplicated");
+            argIt = result.first;
+            
+            ++pos;
             if (pos+3 > metadataSize || kernelDesc[pos+2] != ':')
                 throw ParseException(lineNo, "Can't parse image access qualifier");
             

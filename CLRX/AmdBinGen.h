@@ -26,6 +26,7 @@
 #include <CLRX/Config.h>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 #include <CLRX/AmdBinaries.h>
 
@@ -40,47 +41,10 @@ struct AmdUserData
     uint32_t regStart;
     uint32_t regSize;
 };
-
-enum class AmdKernelArgType: cxuint
-{
-    UCHAR = 0,
-    CHAR,
-    USHORT,
-    SHORT,
-    UINT,
-    INT,
-    ULONG,
-    LONG,
-    STRUCTURE,
-    FLOAT,
-    DOUBLE,
-    POINTER,
-    IMAGE1D,
-    IMAGE1D_BUFFEr,
-    IMAGE1D_ARRAY,
-    IMAGE2D,
-    IMAGE2D_ARRAY,
-    IMAGE3D,
-    SAMPLER,
-    COUNTER32
-};
-
-struct AmdKernelArg
-{
-    std::string typeName;
-    std::string argName;
-    AmdKernelArgType argType;  ///< argument type
-    cxbyte vectorSize;
-    size_t typeSize;
-    KernelPtrSpace ptrSpace;///< pointer space for argument
-    uint8_t ptrAccess;  ///< pointer access flags
-    uint32_t argOffset;
-    uint32_t uavId;
-};
     
 struct AmdGPUBinKernelConfig
 {
-    std::vector<AmdKernelArg> args;
+    std::vector<KernelArg> args;
     uint32_t reqdWorkGroupSize[3];
     uint32_t usedVGPRsNum;
     uint32_t usedSGPRsNum;
@@ -98,6 +62,8 @@ struct AmdGPUBinExtKernelConfig
     uint32_t hwRegion;
     uint32_t uavPrivate;
     uint32_t uavId;
+    bool cbIdEnable;
+    bool printfIdEnable;
     uint32_t cbId;
     uint32_t printfId;
     uint32_t privateId;
@@ -122,7 +88,7 @@ struct AmdGPUBinKernelInput
     const cxbyte* code;
 };
 
-extern std::vector<AmdKernelArg> parseAmdKernelArgsFromString(
+extern std::vector<KernelArg> parseAmdKernelArgsFromString(
         const std::string& argsString);
 
 class AmdGPUBinGenerator
@@ -167,6 +133,7 @@ public:
     void setDriverVersion(uint32_t version)
     { driverVersion = version; }
     
+    void addKernel(const AmdGPUBinKernelInput& kernelInput);
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
            const AmdGPUBinKernelConfig& config,
            size_t dataSize = 0, const cxbyte* data = nullptr);

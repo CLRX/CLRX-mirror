@@ -18,18 +18,19 @@
  */
 
 #include <CLRX/Config.h>
+#include <elf.h>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
 #include <CLRX/AmdBinGen.h>
 
 using namespace CLRX;
 
-std::vector<AmdKernelArg> CLRX::parseAmdKernelArgsFromString(
-                const std::string& argsString)
+std::vector<KernelArg> CLRX::parseAmdKernelArgsFromString( const std::string& argsString)
 {
-    return std::vector<AmdKernelArg>();
+    return std::vector<KernelArg>();
 }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator()
