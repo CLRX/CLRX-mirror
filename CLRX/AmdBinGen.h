@@ -60,6 +60,17 @@ enum class GPUDeviceType: cxbyte
     RADEON_R9_290 = HAWAII
 };
 
+struct AmdKernelArg
+{
+    std::string argName;    ///< argument name
+    std::string typeName;   ///< name of type of argument
+    KernelArgType argType;  ///< argument type
+    KernelArgType pointerType;  ///< pointer type
+    KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
+    uint8_t ptrAccess;  ///< pointer access flags
+    cxuint structSize; ///< structure size (if structure)
+};
+
 struct AmdUserData
 {
     uint32_t dataClass;
@@ -70,7 +81,7 @@ struct AmdUserData
     
 struct AmdKernelConfig
 {
-    std::vector<KernelArg> args;
+    std::vector<AmdKernelArg> args;
     uint32_t reqdWorkGroupSize[3];
     uint32_t usedVGPRsNum;
     uint32_t usedSGPRsNum;
@@ -92,16 +103,23 @@ struct AmdKernelConfig
     AmdUserData userDatas[16];
 };
 
+struct BinCALNote
+{
+    CALNoteHeader header;  ///< header of CAL note
+    const cxbyte* data;   ///< data of CAL note
+};
+
+
 struct AmdKernelInput
 {
     std::string kernelName; ///< kernel name
     size_t dataSize;
-    const cxbyte* dataCode;
+    const cxbyte* data;
     size_t headerSize;  ///< kernel header size
     const cxbyte* header;   ///< kernel header size
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< kernel's metadata
-    std::vector<CALNote> calNotes;
+    std::vector<BinCALNote> calNotes;
     bool useConfig;
     AmdKernelConfig config;
     size_t codeSize;
@@ -120,7 +138,8 @@ struct AmdInput
     std::vector<AmdKernelInput> kernels;
 };
 
-extern std::vector<KernelArg> parseAmdKernelArgsFromString(const std::string& argsString);
+extern std::vector<AmdKernelArg> parseAmdKernelArgsFromString(
+        const std::string& argsString);
 
 class AmdGPUBinGenerator
 {
@@ -169,7 +188,7 @@ public:
            const AmdKernelConfig& config, size_t dataSize = 0,
            const cxbyte* data = nullptr);
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
-           const std::vector<CALNote>& calNotes, const cxbyte* header,
+           const std::vector<BinCALNote>& calNotes, const cxbyte* header,
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
     

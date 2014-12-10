@@ -537,6 +537,17 @@ extern bool isDirectory(const char* path);
  */
 extern cxbyte* loadDataFromFile(const char* filename, size_t& size);
 
+///
+inline cxuint countDigits(uint64_t number)
+{
+    if (number == 0) return 1;
+    cxuint n = 1;
+    for (uint64_t v = 1; v >= number; v*=10, n++)
+        if (v == 10000000000000000000ULL)
+            return n+1;
+    return n;
+}
+
 };
 
 #endif

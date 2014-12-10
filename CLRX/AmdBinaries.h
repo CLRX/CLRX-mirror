@@ -108,6 +108,7 @@ enum : uint8_t
     KARG_PTR_READ_ONLY = 1, ///< read only image
     KARG_PTR_WRITE_ONLY = 2,    ///< write only image
     KARG_PTR_READ_WRITE = 3,    ///< read-write image (???)
+    KARG_PTR_ACCESS_MASK = 3,
     KARG_PTR_CONST = 4,     ///< constant buffer
     KARG_PTR_RESTRICT = 8,  ///< buffer is restrict specifier
     KARG_PTR_VOLATILE = 16  ///< volatile buffer
