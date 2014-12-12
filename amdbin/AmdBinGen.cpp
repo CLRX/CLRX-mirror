@@ -111,6 +111,63 @@ static const char* gpuDeviceNameTable[14] =
     "mullins"
 };
 
+static const char* imgTypeNamesTable[] = { "2D", "1D", "1DA", "1DB", "2D", "2DA", "3D" };
+
+
+enum KindOfType : cxbyte
+{
+    KT_UNSIGNED = 0,
+    KT_SIGNED,
+    KT_FLOAT,
+    KT_DOUBLE,
+    KT_OPAQUE,
+    KT_UNKNOWN,
+};
+
+struct TypeNameVecSize
+{
+    KindOfType kindOfType;
+    cxbyte elemSize;
+    cxbyte vecSize;
+};
+
+static const TypeNameVecSize argTypeNamesTable[] =
+{
+    { KT_UNSIGNED, 1, 1 }, { KT_SIGNED, 1, 1 }, { KT_UNSIGNED, 2, 1 }, { KT_SIGNED, 2, 1 },
+    { KT_UNSIGNED, 4, 1 }, { KT_SIGNED, 4, 1 }, { KT_UNSIGNED, 8, 1 }, { KT_SIGNED, 8, 1 },
+    { KT_FLOAT, 4, 1 }, { KT_DOUBLE, 8, 1 },
+    { KT_UNKNOWN, 1, 1 }, // POINTER
+    { KT_UNKNOWN, 1, 1 }, // IMAGE
+    { KT_UNKNOWN, 1, 1 }, // IMAGE1D
+    { KT_UNKNOWN, 1, 1 }, // IMAGE1D_ARRAY
+    { KT_UNKNOWN, 1, 1 }, // IMAGE1D_BUFFER
+    { KT_UNKNOWN, 1, 1 }, // IMAGE2D
+    { KT_UNKNOWN, 1, 1 }, // IMAGE1D_ARRAY
+    { KT_UNKNOWN, 1, 1 }, // IMAGE3D
+    { KT_UNSIGNED, 1, 2 }, { KT_UNSIGNED, 1, 3 }, { KT_UNSIGNED, 1, 4 },
+    { KT_UNSIGNED, 1, 8 }, { KT_UNSIGNED, 1, 16 },
+    { KT_SIGNED, 1, 2 }, { KT_SIGNED, 1, 3 }, { KT_SIGNED, 1, 4 },
+    { KT_SIGNED, 1, 8 }, { KT_SIGNED, 1, 16 },
+    { KT_UNSIGNED, 2, 2 }, { KT_UNSIGNED, 2, 3 }, { KT_UNSIGNED, 2, 4 },
+    { KT_UNSIGNED, 2, 8 }, { KT_UNSIGNED, 2, 16 },
+    { KT_SIGNED, 2, 2 }, { KT_SIGNED, 2, 3 }, { KT_SIGNED, 2, 4 },
+    { KT_SIGNED, 2, 8 }, { KT_SIGNED, 2, 16 },
+    { KT_UNSIGNED, 4, 2 }, { KT_UNSIGNED, 4, 3 }, { KT_UNSIGNED, 4, 4 },
+    { KT_UNSIGNED, 4, 8 }, { KT_UNSIGNED, 4, 16 },
+    { KT_SIGNED, 4, 2 }, { KT_SIGNED, 4, 3 }, { KT_SIGNED, 4, 4 },
+    { KT_SIGNED, 4, 8 }, { KT_SIGNED, 4, 16 },
+    { KT_UNSIGNED, 8, 2 }, { KT_UNSIGNED, 8, 3 }, { KT_UNSIGNED, 8, 4 },
+    { KT_UNSIGNED, 8, 8 }, { KT_UNSIGNED, 8, 16 },
+    { KT_SIGNED, 8, 2 }, { KT_SIGNED, 8, 3 }, { KT_SIGNED, 8, 4 },
+    { KT_SIGNED, 8, 8 }, { KT_SIGNED, 8, 16 },
+    { KT_FLOAT, 4, 2 }, { KT_FLOAT, 4, 3 }, { KT_FLOAT, 4, 4 },
+    { KT_FLOAT, 4, 8 }, { KT_FLOAT, 4, 16 },
+    { KT_DOUBLE, 4, 2 }, { KT_DOUBLE, 4, 3 }, { KT_DOUBLE, 4, 4 },
+    { KT_DOUBLE, 4, 8 }, { KT_DOUBLE, 4, 16 },
+    { KT_UNSIGNED, 4, 1 }, /* SAMPLER */ { KT_OPAQUE, 0, 1 },
+    { KT_UNKNOWN, 1, 1 }, /* COUNTER32 */ { KT_UNKNOWN, 1, 1 } // COUNTER64
+};
+
 void AmdGPUBinGenerator::generate()
 {
     const size_t kernelsNum = input.kernels.size();
@@ -241,16 +298,161 @@ void AmdGPUBinGenerator::generate()
             }
             
             size_t argOffset = 0;
+            cxuint readOnlyImageCount = 0;
+            cxuint writeOnlyImageCount = 0;
+            cxuint uavId = config.uavId+1;
             for (cxuint k = 0; k < config.args.size(); k++)
             {
                 const AmdKernelArg& arg = config.args[k];
-                if (arg.argType == KernelArgType::COUNTER32)
+                if (arg.argType == KernelArgType::STRUCTURE)
                 {
+                    metadata += ";value:";
+                    metadata += arg.argName;
+                    metadata += ":struct:";
+                    itocstrCStyle(arg.structSize, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ":1:";
+                    itocstrCStyle(argOffset, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += '\n';
+                    argOffset += (arg.structSize+15)>>4;
                 }
+                else if (arg.argType == KernelArgType::POINTER)
+                {
+                    metadata += ";pointer:";
+                    metadata += arg.argName;
+                    metadata += ':';
+                    const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
+                    if (tp.kindOfType == KT_UNKNOWN)
+                        throw Exception("Type not supported!");
+                    const cxuint typeSize = cxuint(tp.elemSize)*tp.vecSize;
+                    if (tp.kindOfType == KT_UNSIGNED)
+                    {
+                        metadata += 'u';
+                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
+                        metadata += numBuf;
+                    }
+                    else if (tp.kindOfType == KT_SIGNED)
+                    {
+                        metadata += 'i';
+                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
+                        metadata += numBuf;
+                    }
+                    else if (tp.kindOfType == KT_FLOAT)
+                        metadata += "float";
+                    else if (tp.kindOfType == KT_DOUBLE)
+                        metadata += "double";
+                    else if (tp.kindOfType == KT_OPAQUE)
+                        metadata += "opaque";
+                    metadata += ":1:1:";
+                    itocstrCStyle(argOffset, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ':';
+                    if (arg.ptrSpace == KernelPtrSpace::LOCAL)
+                        metadata += "hl";
+                    if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                        metadata += (isOlderThan1384)?"hc":"c";
+                    if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                        metadata += "uav";
+                    metadata += ':';
+                    itocstrCStyle(uavId++, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ':';
+                    const size_t elemSize = (arg.pointerType==KernelArgType::STRUCTURE)?
+                        ((arg.structSize!=0)?arg.structSize:4) :
+                        cxuint(tp.elemSize)*tp.vecSize;
+                    itocstrCStyle(elemSize, numBuf, 21);
+                    metadata += ':';
+                    metadata += (arg.ptrAccess & KARG_PTR_CONST)?"RO":"RW";
+                    metadata += ':';
+                    metadata += (arg.ptrAccess & KARG_PTR_VOLATILE)?'1':'0';
+                    metadata += ':';
+                    metadata += (arg.ptrAccess & KARG_PTR_RESTRICT)?'1':'0';
+                    metadata += '\n';
+                    argOffset += 32;
+                }
+                else if ((arg.argType >= KernelArgType::MIN_IMAGE) ||
+                    (arg.argType <= KernelArgType::MAX_IMAGE))
+                {
+                    metadata += ";image:";
+                    metadata += arg.argName;
+                    metadata += ':';
+                    metadata += imgTypeNamesTable[
+                            cxuint(arg.argType)-cxuint(KernelArgType::IMAGE)];
+                    metadata += ':';
+                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                        metadata += "RO";
+                    else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                        metadata += "WO";
+                    else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_WRITE)
+                        metadata += "RW";
+                    else
+                        throw Exception("Invalid image access qualifier!");
+                    metadata += ':';
+                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                        itocstrCStyle(readOnlyImageCount++, numBuf, 21);
+                    else // write only
+                        itocstrCStyle(writeOnlyImageCount++, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ":1:";
+                    itocstrCStyle(argOffset, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += '\n';
+                    argOffset += 32;
+                }
+                else if (arg.argType == KernelArgType::COUNTER32)
+                {
+                    metadata += ";counter:";
+                    metadata += arg.argName;
+                    metadata += ":32:0:1:";
+                    itocstrCStyle(argOffset, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += '\n';
+                    argOffset += 16;
+                }
+                else
+                {
+                    metadata += ";value:";
+                    metadata += arg.argName;
+                    const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
+                    if (tp.kindOfType == KT_UNKNOWN)
+                        throw Exception("Type not supported!");
+                    const cxuint typeSize = cxuint(tp.elemSize)*tp.vecSize;
+                    if (tp.kindOfType == KT_UNSIGNED)
+                    {
+                        metadata += 'u';
+                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
+                        metadata += numBuf;
+                    }
+                    else if (tp.kindOfType == KT_SIGNED)
+                    {
+                        metadata += 'i';
+                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
+                        metadata += numBuf;
+                    }
+                    else if (tp.kindOfType == KT_FLOAT)
+                        metadata += "float";
+                    else if (tp.kindOfType == KT_DOUBLE)
+                        metadata += "double";
+                    metadata += ':';
+                    itocstrCStyle(tp.vecSize, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ':';
+                    itocstrCStyle(argOffset, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += '\n';
+                    argOffset += (typeSize+15)>>4;
+                }
+                
                 if (arg.ptrAccess & KARG_PTR_CONST)
                 {
+                    metadata += ";constant:";
+                    itocstrCStyle(k, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ':';
+                    metadata += arg.argName;
+                    metadata += '\n';
                 }
-                argOffset += 16;
             }
             
             if (config.constDataRequired)
@@ -281,14 +483,14 @@ void AmdGPUBinGenerator::generate()
             itocstrCStyle(config.uavId, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
-            if (config.printfIdEnable)
+            if (config.printfId != AMDBIN_NOTSUPPLIED)
             {
                 metadata += ";printfid:";
                 itocstrCStyle(config.printfId, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
-            if (config.cbIdEnable)
+            if (config.cbId != AMDBIN_NOTSUPPLIED)
             {
                 metadata += ";cbid:";
                 itocstrCStyle(config.cbId, numBuf, 21);

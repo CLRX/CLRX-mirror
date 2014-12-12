@@ -60,6 +60,11 @@ enum class GPUDeviceType: cxbyte
     RADEON_R9_290 = HAWAII
 };
 
+enum: cxuint {
+    AMDBIN_DEFAULT = 0xfffffffU,    ///< if set in field then field has been filled later
+    AMDBIN_NOTSUPPLIED  = 0xffffffeU ///< if set in field then field has been ignored
+};
+
 struct AmdKernelArg
 {
     std::string argName;    ///< argument name
@@ -94,8 +99,6 @@ struct AmdKernelConfig
     uint32_t scratchBufferSize;
     uint32_t uavPrivate;
     uint32_t uavId;
-    bool cbIdEnable;
-    bool printfIdEnable;
     uint32_t cbId;
     uint32_t printfId;
     uint32_t privateId;
