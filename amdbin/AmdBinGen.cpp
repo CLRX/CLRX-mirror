@@ -126,6 +126,7 @@ enum KindOfType : cxbyte
 
 struct TypeNameVecSize
 {
+    const char* name;
     KindOfType kindOfType;
     cxbyte elemSize;
     cxbyte vecSize;
@@ -133,39 +134,50 @@ struct TypeNameVecSize
 
 static const TypeNameVecSize argTypeNamesTable[] =
 {
-    { KT_UNSIGNED, 1, 1 }, { KT_SIGNED, 1, 1 }, { KT_UNSIGNED, 2, 1 }, { KT_SIGNED, 2, 1 },
-    { KT_UNSIGNED, 4, 1 }, { KT_SIGNED, 4, 1 }, { KT_UNSIGNED, 8, 1 }, { KT_SIGNED, 8, 1 },
-    { KT_FLOAT, 4, 1 }, { KT_DOUBLE, 8, 1 },
-    { KT_UNKNOWN, 1, 1 }, // POINTER
-    { KT_UNKNOWN, 1, 1 }, // IMAGE
-    { KT_UNKNOWN, 1, 1 }, // IMAGE1D
-    { KT_UNKNOWN, 1, 1 }, // IMAGE1D_ARRAY
-    { KT_UNKNOWN, 1, 1 }, // IMAGE1D_BUFFER
-    { KT_UNKNOWN, 1, 1 }, // IMAGE2D
-    { KT_UNKNOWN, 1, 1 }, // IMAGE1D_ARRAY
-    { KT_UNKNOWN, 1, 1 }, // IMAGE3D
-    { KT_UNSIGNED, 1, 2 }, { KT_UNSIGNED, 1, 3 }, { KT_UNSIGNED, 1, 4 },
-    { KT_UNSIGNED, 1, 8 }, { KT_UNSIGNED, 1, 16 },
-    { KT_SIGNED, 1, 2 }, { KT_SIGNED, 1, 3 }, { KT_SIGNED, 1, 4 },
-    { KT_SIGNED, 1, 8 }, { KT_SIGNED, 1, 16 },
-    { KT_UNSIGNED, 2, 2 }, { KT_UNSIGNED, 2, 3 }, { KT_UNSIGNED, 2, 4 },
-    { KT_UNSIGNED, 2, 8 }, { KT_UNSIGNED, 2, 16 },
-    { KT_SIGNED, 2, 2 }, { KT_SIGNED, 2, 3 }, { KT_SIGNED, 2, 4 },
-    { KT_SIGNED, 2, 8 }, { KT_SIGNED, 2, 16 },
-    { KT_UNSIGNED, 4, 2 }, { KT_UNSIGNED, 4, 3 }, { KT_UNSIGNED, 4, 4 },
-    { KT_UNSIGNED, 4, 8 }, { KT_UNSIGNED, 4, 16 },
-    { KT_SIGNED, 4, 2 }, { KT_SIGNED, 4, 3 }, { KT_SIGNED, 4, 4 },
-    { KT_SIGNED, 4, 8 }, { KT_SIGNED, 4, 16 },
-    { KT_UNSIGNED, 8, 2 }, { KT_UNSIGNED, 8, 3 }, { KT_UNSIGNED, 8, 4 },
-    { KT_UNSIGNED, 8, 8 }, { KT_UNSIGNED, 8, 16 },
-    { KT_SIGNED, 8, 2 }, { KT_SIGNED, 8, 3 }, { KT_SIGNED, 8, 4 },
-    { KT_SIGNED, 8, 8 }, { KT_SIGNED, 8, 16 },
-    { KT_FLOAT, 4, 2 }, { KT_FLOAT, 4, 3 }, { KT_FLOAT, 4, 4 },
-    { KT_FLOAT, 4, 8 }, { KT_FLOAT, 4, 16 },
-    { KT_DOUBLE, 4, 2 }, { KT_DOUBLE, 4, 3 }, { KT_DOUBLE, 4, 4 },
-    { KT_DOUBLE, 4, 8 }, { KT_DOUBLE, 4, 16 },
-    { KT_UNSIGNED, 4, 1 }, /* SAMPLER */ { KT_OPAQUE, 0, 1 },
-    { KT_UNKNOWN, 1, 1 }, /* COUNTER32 */ { KT_UNKNOWN, 1, 1 } // COUNTER64
+    { "u8", KT_UNSIGNED, 1, 1 }, { "i8", KT_SIGNED, 1, 1 },
+    { "u16", KT_UNSIGNED, 2, 1 }, { "i16", KT_SIGNED, 2, 1 },
+    { "u32", KT_UNSIGNED, 4, 1 }, { "i32", KT_SIGNED, 4, 1 },
+    { "u64", KT_UNSIGNED, 8, 1 }, { "i64", KT_SIGNED, 8, 1 },
+    { "float", KT_FLOAT, 4, 1 }, { "double", KT_DOUBLE, 8, 1 },
+    { nullptr, KT_UNKNOWN, 1, 1 }, // POINTER
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE1D
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE1D_ARRAY
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE1D_BUFFER
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE2D
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE1D_ARRAY
+    { nullptr, KT_UNKNOWN, 1, 1 }, // IMAGE3D
+    { "u8", KT_UNSIGNED, 1, 2 }, { "u8", KT_UNSIGNED, 1, 3 }, { "u8", KT_UNSIGNED, 1, 4 },
+    { "u8",KT_UNSIGNED, 1, 8 }, { "u8", KT_UNSIGNED, 1, 16 },
+    { "i8", KT_SIGNED, 1, 2 }, { "i8", KT_SIGNED, 1, 3 }, { "i8", KT_SIGNED, 1, 4 },
+    { "i8", KT_SIGNED, 1, 8 }, { "i8", KT_SIGNED, 1, 16 },
+    { "u16", KT_UNSIGNED, 2, 2 }, { "u16", KT_UNSIGNED, 2, 3 },
+    { "u16", KT_UNSIGNED, 2, 4 }, { "u16", KT_UNSIGNED, 2, 8 },
+    { "u16", KT_UNSIGNED, 2, 16 },
+    { "i16", KT_SIGNED, 2, 2 }, { "i16", KT_SIGNED, 2, 3 },
+    { "i16", KT_SIGNED, 2, 4 }, { "i16", KT_SIGNED, 2, 8 },
+    { "i16", KT_SIGNED, 2, 16 },
+    { "u32", KT_UNSIGNED, 4, 2 }, { "u32", KT_UNSIGNED, 4, 3 },
+    { "u32", KT_UNSIGNED, 4, 4 }, { "u32", KT_UNSIGNED, 4, 8 },
+    { "u32", KT_UNSIGNED, 4, 16 },
+    { "i16", KT_SIGNED, 4, 2 }, { "i32", KT_SIGNED, 4, 3 },
+    { "i32", KT_SIGNED, 4, 4 }, { "i32", KT_SIGNED, 4, 8 },
+    { "i32", KT_SIGNED, 4, 16 },
+    { "u64", KT_UNSIGNED, 8, 2 }, { "u64", KT_UNSIGNED, 8, 3 },
+    { "u64", KT_UNSIGNED, 8, 4 }, { "u64", KT_UNSIGNED, 8, 8 },
+    { "u64", KT_UNSIGNED, 8, 16 },
+    { "i64", KT_SIGNED, 8, 2 }, { "i64", KT_SIGNED, 8, 3 },
+    { "i64", KT_SIGNED, 8, 4 }, { "i64", KT_SIGNED, 8, 8 },
+    { "i64", KT_SIGNED, 8, 16 },
+    { "float", KT_FLOAT, 4, 2 }, { "float", KT_FLOAT, 4, 3 },
+    { "float", KT_FLOAT, 4, 4 }, { "float", KT_FLOAT, 4, 8 },
+    { "float", KT_FLOAT, 4, 16 },
+    { "double", KT_DOUBLE, 4, 2 }, { "double", KT_DOUBLE, 4, 3 },
+    { "double", KT_DOUBLE, 4, 4 }, { "double", KT_DOUBLE, 4, 8 },
+    { "double", KT_DOUBLE, 4, 16 },
+    { "u32", KT_UNSIGNED, 4, 1 }, /* SAMPLER */ { "opaque", KT_OPAQUE, 0, 1 },
+    { nullptr, KT_UNKNOWN, 1, 1 }, /* COUNTER32 */
+    { nullptr, KT_UNKNOWN, 1, 1 } // COUNTER64
 };
 
 void AmdGPUBinGenerator::generate()
@@ -325,25 +337,7 @@ void AmdGPUBinGenerator::generate()
                     const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
                     if (tp.kindOfType == KT_UNKNOWN)
                         throw Exception("Type not supported!");
-                    const cxuint typeSize = cxuint(tp.elemSize)*tp.vecSize;
-                    if (tp.kindOfType == KT_UNSIGNED)
-                    {
-                        metadata += 'u';
-                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
-                        metadata += numBuf;
-                    }
-                    else if (tp.kindOfType == KT_SIGNED)
-                    {
-                        metadata += 'i';
-                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
-                        metadata += numBuf;
-                    }
-                    else if (tp.kindOfType == KT_FLOAT)
-                        metadata += "float";
-                    else if (tp.kindOfType == KT_DOUBLE)
-                        metadata += "double";
-                    else if (tp.kindOfType == KT_OPAQUE)
-                        metadata += "opaque";
+                    metadata += tp.name;
                     metadata += ":1:1:";
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
@@ -418,22 +412,7 @@ void AmdGPUBinGenerator::generate()
                     if (tp.kindOfType == KT_UNKNOWN)
                         throw Exception("Type not supported!");
                     const cxuint typeSize = cxuint(tp.elemSize)*tp.vecSize;
-                    if (tp.kindOfType == KT_UNSIGNED)
-                    {
-                        metadata += 'u';
-                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
-                        metadata += numBuf;
-                    }
-                    else if (tp.kindOfType == KT_SIGNED)
-                    {
-                        metadata += 'i';
-                        itocstrCStyle(tp.elemSize<<3, numBuf, 21);
-                        metadata += numBuf;
-                    }
-                    else if (tp.kindOfType == KT_FLOAT)
-                        metadata += "float";
-                    else if (tp.kindOfType == KT_DOUBLE)
-                        metadata += "double";
+                    metadata += tp.name;
                     metadata += ':';
                     itocstrCStyle(tp.vecSize, numBuf, 21);
                     metadata += numBuf;
