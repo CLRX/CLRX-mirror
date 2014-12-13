@@ -577,6 +577,12 @@ void Disassembler::disassemble()
                     output.write(buf, len);
                 }
                 
+                if (calNote.data == nullptr || calNote.header.descSize==0)
+                {
+                    output.put('\n');
+                    continue; // skip if no data
+                }
+                
                 switch(calNote.header.type)
                 {   // handle CAL note types
                     case CALNOTE_ATI_PROGINFO:

@@ -74,6 +74,7 @@ struct AmdKernelArg
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
     uint8_t ptrAccess;  ///< pointer access flags
     cxuint structSize; ///< structure size (if structure)
+    bool used; ///< used by kernel
 };
 
 struct AmdUserData
@@ -83,6 +84,22 @@ struct AmdUserData
     uint32_t regStart;
     uint32_t regSize;
 };
+
+struct PgmRsrc2
+{
+    cxuint isScratch : 1;
+    cxuint userSGRP : 5;
+    cxuint trapPresent : 1;
+    cxuint isTgidX : 1;
+    cxuint isTgidY : 1;
+    cxuint isTgidZ : 1;
+    cxuint tgSize : 1;
+    cxuint tidigCompCnt : 2;
+    cxuint excpEnMsb : 2;
+    cxuint ldsSize : 9;
+    cxuint excpEn : 7;
+    cxuint : 1;
+};
     
 struct AmdKernelConfig
 {
@@ -91,7 +108,7 @@ struct AmdKernelConfig
     uint32_t reqdWorkGroupSize[3];
     uint32_t usedVGPRsNum;
     uint32_t usedSGPRsNum;
-    uint32_t pgmRSRC2;
+    PgmRsrc2 pgmRSRC2;
     uint32_t ieeeMode;
     uint32_t floatMode;
     size_t hwLocalSize;
@@ -99,7 +116,7 @@ struct AmdKernelConfig
     uint32_t scratchBufferSize;
     uint32_t uavPrivate;
     uint32_t uavId;
-    uint32_t cbId;
+    uint32_t constBufferId;
     uint32_t printfId;
     uint32_t privateId;
     bool constDataRequired;

@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
+#include <CLRX/MemAccess.h>
 #include <CLRX/AmdBinGen.h>
 
 using namespace CLRX;
@@ -112,7 +113,6 @@ static const char* gpuDeviceNameTable[14] =
 };
 
 static const char* imgTypeNamesTable[] = { "2D", "1D", "1DA", "1DB", "2D", "2DA", "3D" };
-
 
 enum KindOfType : cxbyte
 {
@@ -210,8 +210,67 @@ void AmdGPUBinGenerator::generate()
         catch(const ParseException& ex)
         { input.driverVersion = 99999909U; /* newest possible */ }
     }
+    
     const bool isOlderThan1124 = input.driverVersion < 112402;
     const bool isOlderThan1384 = input.driverVersion < 138405;
+    const bool isOlderThan1598 = input.driverVersion < 159805;
+    /* checking input */
+    if (input.deviceType == GPUDeviceType::UNDEFINED ||
+        cxuint(input.deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+        throw Exception("Undefined GPU device type");
+    
+    for (AmdKernelInput& kinput: input.kernels)
+    {
+        if (!kinput.useConfig)
+            continue;
+        AmdKernelConfig& config = kinput.config;
+        if (config.userDataElemsNum > 16)
+            throw Exception("UserDataElemsNum must not be greater than 16");
+        /* filling input */
+        if (config.hwRegion == AMDBIN_DEFAULT)
+            config.hwRegion = 0;
+        if (config.uavPrivate == AMDBIN_DEFAULT)
+        {   /* compute uavPrivate */
+            bool hasStructures = false;
+            uint32_t amountOfArgs = 0;
+            for (const AmdKernelArg arg: config.args)
+            {
+                if (arg.argType != KernelArgType::STRUCTURE)
+                    hasStructures = true;
+                if (!isOlderThan1598 && arg.argType != KernelArgType::STRUCTURE)
+                    continue; // no older driver and no structure
+                if (arg.argType == KernelArgType::POINTER)
+                    amountOfArgs += 32;
+                else if (arg.argType == KernelArgType::STRUCTURE)
+                {
+                    if (isOlderThan1598)
+                        amountOfArgs += (arg.structSize+15)&~15;
+                    else // bug in older drivers
+                        amountOfArgs += 32;
+                }
+                else
+                {
+                    const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
+                    const size_t typeSize = cxuint(tp.vecSize==3?4:tp.vecSize)*tp.elemSize;
+                    amountOfArgs += ((typeSize+15)>>4)<<5;
+                }
+            }
+            if (hasStructures || config.scratchBufferSize != 0)
+                config.uavPrivate = config.scratchBufferSize + amountOfArgs;
+            else
+                config.uavPrivate = 0;
+        }
+        if (config.uavId == AMDBIN_DEFAULT)
+        {
+        }
+        if (config.constBufferId == AMDBIN_DEFAULT)
+        {
+        }
+        if (config.printfId == AMDBIN_DEFAULT)
+        {
+            config.printfId = 9;
+        }
+    }
     /* count number of bytes required to save */
     if (!input.is64Bit)
         binarySize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Shdr)*7 +
@@ -236,6 +295,7 @@ void AmdGPUBinGenerator::generate()
         const AmdKernelConfig& config = kinput.config;
         size_t readOnlyImages = 0;
         size_t uavsNum = 1;
+        bool notUsedUav = false;
         size_t samplersNum = config.samplers.size();
         size_t constBuffersNum = 2;
         for (const AmdKernelArg& arg: config.args)
@@ -251,13 +311,22 @@ void AmdGPUBinGenerator::generate()
             else if (arg.argType == KernelArgType::POINTER)
             {
                 if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                    uavsNum++;
+                {   // only global pointers are defined in uav table
+                    if (arg.used)
+                        uavsNum++;
+                    else
+                        notUsedUav = true;
+                }
                 if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     constBuffersNum++;
             }
            else if (arg.argType == KernelArgType::SAMPLER)
                samplersNum++;
         }
+        
+        if (notUsedUav)
+            uavsNum++; // adds uav for not used
+        
         binarySize += (kinput.data != nullptr) ? kinput.dataSize : 4736;
         binarySize += kinput.codeSize;
         // CAL notes size
@@ -313,6 +382,7 @@ void AmdGPUBinGenerator::generate()
             cxuint readOnlyImageCount = 0;
             cxuint writeOnlyImageCount = 0;
             cxuint uavId = config.uavId+1;
+            cxuint constantId = 2;
             for (cxuint k = 0; k < config.args.size(); k++)
             {
                 const AmdKernelArg& arg = config.args[k];
@@ -337,24 +407,38 @@ void AmdGPUBinGenerator::generate()
                     const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
                     if (tp.kindOfType == KT_UNKNOWN)
                         throw Exception("Type not supported!");
+                    const cxuint typeSize =
+                        cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
                     metadata += tp.name;
                     metadata += ":1:1:";
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
                     metadata += ':';
                     if (arg.ptrSpace == KernelPtrSpace::LOCAL)
-                        metadata += "hl";
+                        metadata += "hl:1";
                     if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    {
                         metadata += (isOlderThan1384)?"hc":"c";
+                        if (isOlderThan1384)
+                            itocstrCStyle(constantId++, numBuf, 21);
+                        else
+                        {
+                            if (arg.used)
+                                itocstrCStyle(uavId++, numBuf, 21);
+                            else // if has not been used in kernel
+                                itocstrCStyle(config.uavId, numBuf, 21);
+                        }
+                        metadata += numBuf;
+                    }
                     if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                        metadata += "uav";
-                    metadata += ':';
-                    itocstrCStyle(uavId++, numBuf, 21);
-                    metadata += numBuf;
+                    {
+                        metadata += "uav:";
+                        itocstrCStyle(uavId++, numBuf, 21);
+                        metadata += numBuf;
+                    }
                     metadata += ':';
                     const size_t elemSize = (arg.pointerType==KernelArgType::STRUCTURE)?
-                        ((arg.structSize!=0)?arg.structSize:4) :
-                        cxuint(tp.elemSize)*tp.vecSize;
+                        ((arg.structSize!=0)?arg.structSize:4) : typeSize;
                     itocstrCStyle(elemSize, numBuf, 21);
                     metadata += ':';
                     metadata += (arg.ptrAccess & KARG_PTR_CONST)?"RO":"RW";
@@ -411,7 +495,8 @@ void AmdGPUBinGenerator::generate()
                     const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
                     if (tp.kindOfType == KT_UNKNOWN)
                         throw Exception("Type not supported!");
-                    const cxuint typeSize = cxuint(tp.elemSize)*tp.vecSize;
+                    const cxuint typeSize =
+                        cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
                     metadata += tp.name;
                     metadata += ':';
                     itocstrCStyle(tp.vecSize, numBuf, 21);
@@ -469,10 +554,10 @@ void AmdGPUBinGenerator::generate()
                 metadata += numBuf;
                 metadata += '\n';
             }
-            if (config.cbId != AMDBIN_NOTSUPPLIED)
+            if (config.constBufferId != AMDBIN_NOTSUPPLIED)
             {
                 metadata += ";cbid:";
-                itocstrCStyle(config.cbId, numBuf, 21);
+                itocstrCStyle(config.constBufferId, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
@@ -494,6 +579,7 @@ void AmdGPUBinGenerator::generate()
             metadata += ";ARGEND:__OpenCL_";
             metadata += kinput.kernelName;
             metadata += "_kernel\n";
+            binarySize += metadata.size();
         }
         else // if defined in calNotes (no config)
         {
@@ -504,4 +590,10 @@ void AmdGPUBinGenerator::generate()
         uniqueId++;
     }
     /* writing data */
+    delete[] binary;    // delete of pointer
+    binary = nullptr;
+    binary = new cxbyte[binarySize];
+    size_t offset = 0;
+    { /* main ELF header */
+    }
 }
