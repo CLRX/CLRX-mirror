@@ -175,21 +175,19 @@ class AmdGPUBinGenerator
 {
 private:
     bool manageable;
-    AmdInput* input;
+    const AmdInput* input;
     
     size_t binarySize;
     cxbyte* binary;
 public:
     AmdGPUBinGenerator();
-    AmdGPUBinGenerator(AmdInput& amdInput);
+    AmdGPUBinGenerator(const AmdInput* amdInput);
     AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData, 
            const std::vector<AmdKernelInput>& kernelInputs);
     ~AmdGPUBinGenerator();
     
     const AmdInput* getInput() const
-    { return input; }
-    AmdInput* getInput()
     { return input; }
     
     // non-copyable and non-movable

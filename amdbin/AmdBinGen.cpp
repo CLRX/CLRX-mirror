@@ -99,32 +99,31 @@ void AmdInput::addKernel(const char* kernelName, size_t codeSize,
 AmdGPUBinGenerator::AmdGPUBinGenerator() : binarySize(0), binary(nullptr)
 { }
 
-AmdGPUBinGenerator::AmdGPUBinGenerator(AmdInput& amdInput)
-        : binarySize(0), binary(nullptr)
-{
-    manageable = false;
-    this->input = &amdInput;
-}
+AmdGPUBinGenerator::AmdGPUBinGenerator(const AmdInput* amdInput)
+        : manageable(false), input(amdInput), binarySize(0), binary(nullptr)
+{ }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
        const std::vector<AmdKernelInput>& kernelInputs)
-try
-        : binarySize(0), binary(nullptr), input(nullptr)
+        : manageable(true), input(nullptr), binarySize(0), binary(nullptr)
 {
-    manageable = true;
-    input = new AmdInput;
-    input->is64Bit = _64bitMode;
-    input->deviceType = deviceType;
-    input->driverVersion = driverVersion;
-    input->globalDataSize = globalDataSize;
-    input->globalData = globalData;
-    input->kernels = kernelInputs;
-}
-catch(...)
-{
-    delete input;
-    throw;
+    AmdInput* newInput = new AmdInput;
+    try
+    {
+        newInput->is64Bit = _64bitMode;
+        newInput->deviceType = deviceType;
+        newInput->driverVersion = driverVersion;
+        newInput->globalDataSize = globalDataSize;
+        newInput->globalData = globalData;
+        newInput->kernels = kernelInputs;
+    }
+    catch(...)
+    {
+        delete newInput;
+        throw;
+    }
+    input = newInput;
 }
 
 AmdGPUBinGenerator::~AmdGPUBinGenerator()
@@ -220,17 +219,30 @@ static const TypeNameVecSize argTypeNamesTable[] =
     { nullptr, KT_UNKNOWN, 1, 1 } // COUNTER64
 };
 
+struct TempAmdKernelConfig
+{
+    uint32_t hwRegion;
+    uint32_t uavPrivate;
+    uint32_t uavId;
+    uint32_t constBufferId;
+    uint32_t printfId;
+    uint32_t privateId;
+};
+
 void AmdGPUBinGenerator::generate()
 {
     const size_t kernelsNum = input->kernels.size();
+    std::string driverInfo;
+    uint32_t driverVersion = 99999909U;
     if (input->driverInfo.empty())
     {
-        char drvInfo[100];
-        snprintf(drvInfo, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
+        char drvInfoBuf[100];
+        snprintf(drvInfoBuf, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
                 "Driver version: %u.%u (VM)",
                  input->driverVersion/100U, input->driverVersion%100U,
                  input->driverVersion/100U, input->driverVersion%100U);
-        input->driverInfo = drvInfo;
+        driverInfo = drvInfoBuf;
+        driverVersion = input->driverVersion;
     }
     else if (input->driverVersion == 0)
     {   // parse version
@@ -241,34 +253,42 @@ void AmdGPUBinGenerator::generate()
             {   /* let to parse version number */
                 pos += 8;
                 const char* end;
-                input->driverVersion = cstrtovCStyle<cxuint>(
+                driverVersion = cstrtovCStyle<cxuint>(
                         input->driverInfo.c_str()+pos, nullptr, end)*100;
                 end++;
-                input->driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
+                driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
             }
+            driverInfo = input->driverInfo;
         }
         catch(const ParseException& ex)
-        { input->driverVersion = 99999909U; /* newest possible */ }
+        { driverVersion = 99999909U; /* newest possible */ }
     }
     
-    const bool isOlderThan1124 = input->driverVersion < 112402;
-    const bool isOlderThan1384 = input->driverVersion < 138405;
-    const bool isOlderThan1598 = input->driverVersion < 159805;
+    const bool isOlderThan1124 = driverVersion < 112402;
+    const bool isOlderThan1384 = driverVersion < 138405;
+    const bool isOlderThan1598 = driverVersion < 159805;
     /* checking input */
     if (input->deviceType == GPUDeviceType::UNDEFINED ||
         cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
         throw Exception("Undefined GPU device type");
     
-    for (AmdKernelInput& kinput: input->kernels)
+    std::vector<TempAmdKernelConfig> tempAmdKernelConfigs(input->kernels.size());
+    
+    for (cxuint i = 0; i < input->kernels.size(); i++)
     {
+        const AmdKernelInput& kinput = input->kernels[i];
         if (!kinput.useConfig)
             continue;
-        AmdKernelConfig& config = kinput.config;
+        const AmdKernelConfig& config = kinput.config;
+        TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
         if (config.userDataElemsNum > 16)
             throw Exception("UserDataElemsNum must not be greater than 16");
         /* filling input */
         if (config.hwRegion == AMDBIN_DEFAULT)
-            config.hwRegion = 0;
+            tempConfig.hwRegion = 0;
+        else
+            tempConfig.hwRegion = config.hwRegion;
+        
         if (config.uavPrivate == AMDBIN_DEFAULT)
         {   /* compute uavPrivate */
             bool hasStructures = false;
@@ -296,19 +316,32 @@ void AmdGPUBinGenerator::generate()
                 }
             }
             if (hasStructures || config.scratchBufferSize != 0)
-                config.uavPrivate = config.scratchBufferSize + amountOfArgs;
+                tempConfig.uavPrivate = config.scratchBufferSize + amountOfArgs;
             else
-                config.uavPrivate = 0;
+                tempConfig.uavPrivate = 0;
         }
+        else
+            tempConfig.uavPrivate = config.uavPrivate;
+        
         if (config.uavId == AMDBIN_DEFAULT)
-            config.uavId = (isOlderThan1384)?9:11;
+            tempConfig.uavId = (isOlderThan1384)?9:11;
+        else
+            tempConfig.uavId = config.uavId;
         
         if (config.constBufferId == AMDBIN_DEFAULT)
-            config.constBufferId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 10;
+            tempConfig.constBufferId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 10;
+        else
+            tempConfig.constBufferId = config.constBufferId;
+        
         if (config.printfId == AMDBIN_DEFAULT)
-            config.constBufferId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 9;
+            tempConfig.printfId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 9;
+        else
+            tempConfig.printfId = config.printfId;
+        
         if (config.privateId == AMDBIN_DEFAULT)
-            config.privateId = 8;
+            tempConfig.privateId = 8;
+        else
+            tempConfig.privateId = config.privateId;
     }
     /* count number of bytes required to save */
     if (!input->is64Bit)
@@ -321,7 +354,7 @@ void AmdGPUBinGenerator::generate()
     for (const AmdKernelInput& kinput: input->kernels)
         binarySize += (kinput.kernelName.size())*3;
     binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) + 26/* static strtab size */ +
-            input->driverInfo.size() + input->compileOptions.size() + input->globalDataSize;
+            driverInfo.size() + input->compileOptions.size() + input->globalDataSize;
     /* kernel inner binaries */
     binarySize += (sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 + sizeof(Elf32_Shdr)*6 +
             sizeof(CALEncodingEntry) + 2 + 16 + 40 + 32/*header*/)*kernelsNum;
@@ -376,6 +409,7 @@ void AmdGPUBinGenerator::generate()
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
             
+            const TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
             /* compute metadataSize */
             std::string& metadata = kmetadatas[i];
             metadata.reserve(100);
@@ -393,13 +427,13 @@ void AmdGPUBinGenerator::generate()
             itocstrCStyle(uniqueId, numBuf, 21);
             metadata += numBuf;
             metadata += "\n;memory:uavprivate:";
-            itocstrCStyle(config.uavPrivate, numBuf, 21);
+            itocstrCStyle(tempConfig.uavPrivate, numBuf, 21);
             metadata += numBuf;
             metadata += "\n;memory:hwlocal:";
             itocstrCStyle(config.hwLocalSize, numBuf, 21);
             metadata += numBuf;
             metadata += "\n;memory:hwregion:";
-            itocstrCStyle(config.hwRegion, numBuf, 21);
+            itocstrCStyle(tempConfig.hwRegion, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
             if (config.reqdWorkGroupSize[0] != 0 || config.reqdWorkGroupSize[1] != 0 ||
@@ -420,7 +454,7 @@ void AmdGPUBinGenerator::generate()
             size_t argOffset = 0;
             cxuint readOnlyImageCount = 0;
             cxuint writeOnlyImageCount = 0;
-            cxuint uavId = config.uavId+1;
+            cxuint uavId = tempConfig.uavId+1;
             cxuint constantId = 2;
             for (cxuint k = 0; k < config.args.size(); k++)
             {
@@ -465,7 +499,7 @@ void AmdGPUBinGenerator::generate()
                             if (arg.used)
                                 itocstrCStyle(uavId++, numBuf, 21);
                             else // if has not been used in kernel
-                                itocstrCStyle(config.uavId, numBuf, 21);
+                                itocstrCStyle(tempConfig.uavId, numBuf, 21);
                         }
                         metadata += numBuf;
                     }
@@ -595,25 +629,25 @@ void AmdGPUBinGenerator::generate()
             if (input->is64Bit)
                 metadata += ";memory:64bitABI\n";
             metadata += ";uavid:";
-            itocstrCStyle(config.uavId, numBuf, 21);
+            itocstrCStyle(tempConfig.uavId, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
-            if (config.printfId != AMDBIN_NOTSUPPLIED)
+            if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
             {
                 metadata += ";printfid:";
-                itocstrCStyle(config.printfId, numBuf, 21);
+                itocstrCStyle(tempConfig.printfId, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
-            if (config.constBufferId != AMDBIN_NOTSUPPLIED)
+            if (tempConfig.constBufferId != AMDBIN_NOTSUPPLIED)
             {
                 metadata += ";cbid:";
-                itocstrCStyle(config.constBufferId, numBuf, 21);
+                itocstrCStyle(tempConfig.constBufferId, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
             metadata += ";privateid:";
-            itocstrCStyle(config.privateId, numBuf, 21);
+            itocstrCStyle(tempConfig.privateId, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
             for (size_t k = 0; config.args.size(); k++)
@@ -697,6 +731,11 @@ void AmdGPUBinGenerator::generate()
     sectionOffsets[1] = offset;
     ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
     offset += 26;
+    if (input->globalData != nullptr)
+    {
+        ::memcpy(binary+offset, "__OpenCL_0_global", 18);
+        offset += 18;
+    }
     for (const AmdKernelInput& kernel: input->kernels)
     {
         ::memcpy(binary+offset, "__OpenCL_", 9);
