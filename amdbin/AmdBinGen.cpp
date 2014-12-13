@@ -75,62 +75,63 @@ std::vector<AmdKernelArg> CLRX::parseAmdKernelArgsFromString(
     return std::vector<AmdKernelArg>();
 }
 
+void AmdInput::addKernel(const AmdKernelInput& kernelInput)
+{
+    kernels.push_back(kernelInput);
+}
+
+void AmdInput::addKernel(const char* kernelName, size_t codeSize,
+       const cxbyte* code, const AmdKernelConfig& config,
+       size_t dataSize, const cxbyte* data)
+{
+    kernels.push_back({ kernelName, dataSize, data, 0, nullptr, 0, nullptr, {},
+                true, config, codeSize, code });
+}
+
+void AmdInput::addKernel(const char* kernelName, size_t codeSize,
+       const cxbyte* code, const std::vector<BinCALNote>& calNotes, const cxbyte* header,
+       size_t metadataSize, const char* metadata, size_t dataSize, const cxbyte* data)
+{
+    kernels.push_back({ kernelName, dataSize, data, 32, header,
+        metadataSize, metadata, calNotes, false, AmdKernelConfig(), codeSize, code });
+}
+
 AmdGPUBinGenerator::AmdGPUBinGenerator() : binarySize(0), binary(nullptr)
 { }
 
-AmdGPUBinGenerator::AmdGPUBinGenerator(const AmdInput& amdInput)
+AmdGPUBinGenerator::AmdGPUBinGenerator(AmdInput& amdInput)
         : binarySize(0), binary(nullptr)
 {
-    setInput(amdInput);
+    manageable = false;
+    this->input = &amdInput;
 }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
        const std::vector<AmdKernelInput>& kernelInputs)
-        : binarySize(0), binary(nullptr)
+try
+        : binarySize(0), binary(nullptr), input(nullptr)
 {
-    input.is64Bit = _64bitMode;
-    input.deviceType = deviceType;
-    input.driverVersion = driverVersion;
-    input.globalDataSize = globalDataSize;
-    input.globalData = globalData;
-    setKernels(kernelInputs);
+    manageable = true;
+    input = new AmdInput;
+    input->is64Bit = _64bitMode;
+    input->deviceType = deviceType;
+    input->driverVersion = driverVersion;
+    input->globalDataSize = globalDataSize;
+    input->globalData = globalData;
+    input->kernels = kernelInputs;
+}
+catch(...)
+{
+    delete input;
+    throw;
 }
 
 AmdGPUBinGenerator::~AmdGPUBinGenerator()
 {
+    if (manageable)
+        delete input;
     delete[] binary;
-}
-
-void AmdGPUBinGenerator::setInput(const AmdInput& amdInput)
-{
-    this->input = input;
-}
-
-void AmdGPUBinGenerator::setKernels(const std::vector<AmdKernelInput>& kernelInputs)
-{
-    input.kernels = kernelInputs;
-}
-
-void AmdGPUBinGenerator::addKernel(const AmdKernelInput& kernelInput)
-{
-    input.kernels.push_back(kernelInput);
-}
-
-void AmdGPUBinGenerator::addKernel(const char* kernelName, size_t codeSize,
-       const cxbyte* code, const AmdKernelConfig& config,
-       size_t dataSize, const cxbyte* data)
-{
-    input.kernels.push_back({ kernelName, dataSize, data, 0, nullptr, 0, nullptr, {},
-                true, config, codeSize, code });
-}
-
-void AmdGPUBinGenerator::addKernel(const char* kernelName, size_t codeSize,
-       const cxbyte* code, const std::vector<BinCALNote>& calNotes, const cxbyte* header,
-       size_t metadataSize, const char* metadata, size_t dataSize, const cxbyte* data)
-{
-    input.kernels.push_back({ kernelName, dataSize, data, 32, header,
-        metadataSize, metadata, calNotes, false, AmdKernelConfig(), codeSize, code });
 }
 
 static const char* gpuDeviceNameTable[14] =
@@ -221,44 +222,44 @@ static const TypeNameVecSize argTypeNamesTable[] =
 
 void AmdGPUBinGenerator::generate()
 {
-    const size_t kernelsNum = input.kernels.size();
-    if (input.driverInfo.empty())
+    const size_t kernelsNum = input->kernels.size();
+    if (input->driverInfo.empty())
     {
         char drvInfo[100];
         snprintf(drvInfo, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
                 "Driver version: %u.%u (VM)",
-                 input.driverVersion/100U, input.driverVersion%100U,
-                 input.driverVersion/100U, input.driverVersion%100U);
-        input.driverInfo = drvInfo;
+                 input->driverVersion/100U, input->driverVersion%100U,
+                 input->driverVersion/100U, input->driverVersion%100U);
+        input->driverInfo = drvInfo;
     }
-    else if (input.driverVersion == 0)
+    else if (input->driverVersion == 0)
     {   // parse version
-        size_t pos = input.driverInfo.find("AMD-APP"); // find AMDAPP
+        size_t pos = input->driverInfo.find("AMD-APP"); // find AMDAPP
         try
         {
             if (pos != std::string::npos)
             {   /* let to parse version number */
                 pos += 8;
                 const char* end;
-                input.driverVersion = cstrtovCStyle<cxuint>(
-                        input.driverInfo.c_str()+pos, nullptr, end)*100;
+                input->driverVersion = cstrtovCStyle<cxuint>(
+                        input->driverInfo.c_str()+pos, nullptr, end)*100;
                 end++;
-                input.driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
+                input->driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
             }
         }
         catch(const ParseException& ex)
-        { input.driverVersion = 99999909U; /* newest possible */ }
+        { input->driverVersion = 99999909U; /* newest possible */ }
     }
     
-    const bool isOlderThan1124 = input.driverVersion < 112402;
-    const bool isOlderThan1384 = input.driverVersion < 138405;
-    const bool isOlderThan1598 = input.driverVersion < 159805;
+    const bool isOlderThan1124 = input->driverVersion < 112402;
+    const bool isOlderThan1384 = input->driverVersion < 138405;
+    const bool isOlderThan1598 = input->driverVersion < 159805;
     /* checking input */
-    if (input.deviceType == GPUDeviceType::UNDEFINED ||
-        cxuint(input.deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+    if (input->deviceType == GPUDeviceType::UNDEFINED ||
+        cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
         throw Exception("Undefined GPU device type");
     
-    for (AmdKernelInput& kinput: input.kernels)
+    for (AmdKernelInput& kinput: input->kernels)
     {
         if (!kinput.useConfig)
             continue;
@@ -310,26 +311,26 @@ void AmdGPUBinGenerator::generate()
             config.privateId = 8;
     }
     /* count number of bytes required to save */
-    if (!input.is64Bit)
+    if (!input->is64Bit)
         binarySize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Shdr)*7 +
                 sizeof(Elf32_Sym)*(3*kernelsNum + 2);
     else
         binarySize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Shdr)*7 +
                 sizeof(Elf64_Sym)*(3*kernelsNum + 2);
     
-    for (const AmdKernelInput& kinput: input.kernels)
+    for (const AmdKernelInput& kinput: input->kernels)
         binarySize += (kinput.kernelName.size())*3;
     binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) + 26/* static strtab size */ +
-            input.driverInfo.size() + input.compileOptions.size() + input.globalDataSize;
+            input->driverInfo.size() + input->compileOptions.size() + input->globalDataSize;
     /* kernel inner binaries */
     binarySize += (sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 + sizeof(Elf32_Shdr)*6 +
             sizeof(CALEncodingEntry) + 2 + 16 + 40 + 32/*header*/)*kernelsNum;
     
-    std::vector<std::string> kmetadatas(input.kernels.size());
+    std::vector<std::string> kmetadatas(input->kernels.size());
     size_t uniqueId = 1025;
-    for (size_t i = 0; i < input.kernels.size(); i++)
+    for (size_t i = 0; i < input->kernels.size(); i++)
     {
-        const AmdKernelInput& kinput = input.kernels[i];
+        const AmdKernelInput& kinput = input->kernels[i];
         const AmdKernelConfig& config = kinput.config;
         size_t readOnlyImages = 0;
         size_t uavsNum = 1;
@@ -386,7 +387,7 @@ void AmdGPUBinGenerator::generate()
             else
                 metadata += ";version:3:1:111\n";
             metadata += ";device:";
-            metadata += gpuDeviceNameTable[cxuint(input.deviceType)];
+            metadata += gpuDeviceNameTable[cxuint(input->deviceType)];
             char numBuf[21];
             metadata += "\n;uniqueid:";
             itocstrCStyle(uniqueId, numBuf, 21);
@@ -591,7 +592,7 @@ void AmdGPUBinGenerator::generate()
                     metadata += ":0:0\n";
                 }
             
-            if (input.is64Bit)
+            if (input->is64Bit)
                 metadata += ";memory:64bitABI\n";
             metadata += ";uavid:";
             itocstrCStyle(config.uavId, numBuf, 21);
@@ -645,7 +646,7 @@ void AmdGPUBinGenerator::generate()
     binary = new cxbyte[binarySize];
     size_t offset = 0;
     
-    if (!input.is64Bit)
+    if (!input->is64Bit)
     {
         Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
         static const cxbyte elf32Ident[16] = {
@@ -653,7 +654,7 @@ void AmdGPUBinGenerator::generate()
                 ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
         ::memcpy(mainHdr.e_ident, elf32Ident, 16);
         SULEV(mainHdr.e_type, ET_EXEC);
-        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input.deviceType)]);
+        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input->deviceType)]);
         SULEV(mainHdr.e_version, EV_CURRENT);
         SULEV(mainHdr.e_entry, 0);
         SULEV(mainHdr.e_flags, 0);
@@ -674,7 +675,7 @@ void AmdGPUBinGenerator::generate()
                 ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
         ::memcpy(mainHdr.e_ident, elf64Ident, 16);
         SULEV(mainHdr.e_type, ET_EXEC);
-        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input.deviceType)]);
+        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input->deviceType)]);
         SULEV(mainHdr.e_version, EV_CURRENT);
         SULEV(mainHdr.e_entry, 0);
         SULEV(mainHdr.e_flags, 0);
@@ -696,7 +697,7 @@ void AmdGPUBinGenerator::generate()
     sectionOffsets[1] = offset;
     ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
     offset += 26;
-    for (const AmdKernelInput& kernel: input.kernels)
+    for (const AmdKernelInput& kernel: input->kernels)
     {
         ::memcpy(binary+offset, "__OpenCL_", 9);
         offset += 9;
