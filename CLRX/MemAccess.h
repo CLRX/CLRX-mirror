@@ -88,6 +88,67 @@ inline uint64_t ULEV(const uint64_t& t);
 /// convert from/to little endian value from unaligned memory
 inline int64_t ULEV(const int64_t& t);
 
+/// save from/to big endian value
+inline void SBEV(uint16_t& r, uint16_t v);
+/// save from/to big endian value
+inline void SBEV(int16_t& r, int16_t v);
+
+/// save from/to big endian value
+inline void SBEV(uint32_t& r, uint32_t v);
+/// save from/to big endian value
+inline void SBEV(int32_t& r, int32_t v);
+
+/// save from/to big endian value
+inline void SBEV(uint64_t& r, uint64_t v);
+/// save from/to big endian value
+inline void SBEV(int64_t& r, int64_t v);
+
+/// save from/to big endian value
+inline void SUBEV(uint16_t& r, uint16_t v);
+/// save from/to big endian value
+inline void SUBEV(int16_t& r, int16_t v);
+
+/// save from/to big endian value
+inline void SUBEV(uint32_t& r, uint32_t v);
+/// save from/to big endian value
+inline void SUBEV(int32_t& r, int32_t v);
+
+/// save from/to big endian value
+inline void SUBEV(uint64_t& r, uint64_t v);
+/// save from/to big endian value
+inline void SUBEV(int64_t& r, int64_t v);
+
+/// save from/to little endian value
+inline void SLEV(uint16_t& r, uint16_t v);
+/// save from/to little endian value
+inline void SLEV(int16_t& r, int16_t v);
+
+/// save from/to little endian value
+inline void SLEV(uint32_t& r, uint32_t v);
+/// save from/to little endian value
+inline void SLEV(int32_t& r, int32_t v);
+
+/// save from/to little endian value
+inline void SLEV(uint64_t& r, uint64_t v);
+/// save from/to little endian value
+inline void SLEV(int64_t& r, int64_t v);
+
+/// save from/to little endian value
+inline void SULEV(uint16_t& r, uint16_t v);
+/// save from/to little endian value
+inline void SULEV(int16_t& r, int16_t v);
+
+/// save from/to little endian value
+inline void SULEV(uint32_t& r, uint32_t v);
+/// save from/to little endian value
+inline void SULEV(int32_t& r, int32_t v);
+
+/// save from/to little endian value
+inline void SULEV(uint64_t& r, uint64_t v);
+/// save from/to little endian value
+inline void SULEV(int64_t& r, int64_t v);
+
+
 #ifdef __GNUC__
 inline uint16_t BSWAP16(uint16_t v)
 { return __builtin_bswap16(v); }
@@ -215,6 +276,109 @@ inline int64_t ULEV(const int64_t& t)
 { return t; }
 #  endif
 
+/// save from/to big endian value
+inline void SBEV(uint16_t& r, uint16_t v)
+{ r = BSWAP16(v); }
+/// save from/to big endian value
+inline void SBEV(int16_t& r, int16_t v)
+{ r = BSWAP16(v); }
+
+/// save from/to big endian value
+inline void SBEV(uint32_t& r, uint32_t v)
+{ r = BSWAP32(v); }
+/// save from/to big endian value
+inline void SBEV(int32_t& r, int32_t v)
+{ r = BSWAP32(v); }
+
+/// save from/to big endian value
+inline void SBEV(uint64_t& r, uint64_t v)
+{ r = BSWAP64(v); }
+/// save from/to big endian value
+inline void SBEV(int64_t& r, int64_t v)
+{ r = BSWAP64(v); }
+
+/// save from/to big endian value
+inline void SUBEV(uint16_t& r, uint16_t v)
+{ r = BSWAP16(v); }
+/// save from/to big endian value
+inline void SUBEV(int16_t& r, int16_t v)
+{ r = BSWAP16(v); }
+
+/// save from/to big endian value
+inline void SUBEV(uint32_t& r, uint32_t v)
+{ r = BSWAP32(v); }
+/// save from/to big endian value
+inline void SUBEV(int32_t& r, int32_t v)
+{ r = BSWAP32(v); }
+
+#  ifdef HAVE_ARCH_ARM32
+/// save from/to little endian value
+inline void SUBEV(uint64_t& r, uint64_t v)
+{ ((uint32_t)&r)[0] = BSWAP32((uint32_t)v>>32); ((uint64_t)&r)[1] = BSWAP32(v); }
+/// save from/to little endian value
+inline void SULEV(int64_t& r, int64_t v)
+{ ((uint32_t)&r)[0] = BSWAP32((uint32_t)v>>32); ((uint64_t)&r)[1] = BSWAP32(v); }
+#  else
+/// save from/to little endian value
+inline void SUBEV(uint64_t& r, uint64_t v)
+{ r = BSWAP64(v); }
+/// save from/to little endian value
+inline void SUBEV(int64_t& r, int64_t v)
+{ r = BSWAP64(v); }
+#  endif
+
+
+/// save from/to little endian value
+inline void SLEV(uint16_t& r, uint16_t v)
+{ r = v; }
+/// save from/to little endian value
+inline void SLEV(int16_t& r, int16_t v)
+{ r = v; }
+
+/// save from/to little endian value
+inline void SLEV(uint32_t& r, uint32_t v)
+{ r = v; }
+/// save from/to little endian value
+inline void SLEV(int32_t& r, int32_t v)
+{ r = v; }
+
+/// save from/to little endian value
+inline void SLEV(uint64_t& r, uint64_t v)
+{ r = v; }
+/// save from/to little endian value
+inline void SLEV(int64_t& r, int64_t v)
+{ r = v; }
+
+/// save from/to little endian value
+inline void SULEV(uint16_t& r, uint16_t v)
+{ r = v; }
+/// save from/to little endian value
+inline void SULEV(int16_t& r, int16_t v)
+{ r = v; }
+
+/// save from/to little endian value
+inline void SULEV(uint32_t& r, uint32_t v)
+{ r = v; }
+/// save from/to little endian value
+inline void SULEV(int32_t& r, int32_t v)
+{ r = v; }
+
+#  ifdef HAVE_ARCH_ARM32
+/// save from/to little endian value
+inline void SULEV(uint64_t& r, uint64_t v)
+{ ((uint32_t)&r)[0] = (uint32_t)v; ((uint64_t)&r)[1] = v>>32; }
+/// save from/to little endian value
+inline void SULEV(int64_t& r, int64_t v)
+{ ((uint32_t)&r)[0] = (uint32_t)v; ((uint64_t)&r)[1] = v>>32; }
+#  else
+/// save from/to little endian value
+inline void SULEV(uint64_t& r, uint64_t v)
+{ r = v; }
+/// save from/to little endian value
+inline void SULEV(int64_t& r, int64_t v)
+{ r = v; }
+#  endif
+
 #else // BIG ENDIAN
 
 /// convert from/to big endian value
@@ -322,6 +486,110 @@ inline uint64_t ULEV(const uint64_t& t)
 /// convert from/to little endian value from unaligned memory
 inline int64_t ULEV(const int64_t& t)
 { return BSWAP64(t); }
+#  endif
+
+
+/// save from/to big endian value
+inline void SBEV(uint16_t& r, uint16_t v)
+{ r = v; }
+/// save from/to big endian value
+inline void SBEV(int16_t& r, int16_t v)
+{ r = v; }
+
+/// save from/to big endian value
+inline void SBEV(uint32_t& r, uint32_t v)
+{ r = v; }
+/// save from/to big endian value
+inline void SBEV(int32_t& r, int32_t v)
+{ r = v; }
+
+/// save from/to big endian value
+inline void SBEV(uint64_t& r, uint64_t v)
+{ r = v; }
+/// save from/to big endian value
+inline void SBEV(int64_t& r, int64_t v)
+{ r = v; }
+
+/// save from/to big endian value
+inline void SUBEV(uint16_t& r, uint16_t v)
+{ r = v; }
+/// save from/to big endian value
+inline void SUBEV(int16_t& r, int16_t v)
+{ r = v; }
+
+/// save from/to big endian value
+inline void SUBEV(uint32_t& r, uint32_t v)
+{ r = v; }
+/// save from/to big endian value
+inline void SUBEV(int32_t& r, int32_t v)
+{ r = v; }
+
+#  ifdef HAVE_ARCH_ARM32
+/// save from/to big endian value
+inline void SUBEV(uint64_t& r, uint64_t v)
+{ ((uint32_t)&r)[0] = (uint32_t)v; ((uint64_t)&r)[1] = v>>32; }
+/// save from/to big endian value
+inline void SUBEV(int64_t& r, int64_t v)
+{ ((uint32_t)&r)[0] = (uint32_t)v; ((uint64_t)&r)[1] = v>>32; }
+#  else
+/// save from/to big endian value
+inline void SUBEV(uint64_t& r, uint64_t v)
+{ r = v; }
+/// save from/to big endian value
+inline void SUBEV(int64_t& r, int64_t v)
+{ r = v; }
+#  endif
+
+
+/// save from/to little endian value
+inline void SLEV(uint16_t& r, uint16_t v)
+{ r = BSWAP16(v); }
+/// save from/to little endian value
+inline void SLEV(int16_t& r, int16_t v)
+{ r = BSWAP16(v); }
+
+/// save from/to little endian value
+inline void SLEV(uint32_t& r, uint32_t v)
+{ r = BSWAP32(v); }
+/// save from/to little endian value
+inline void SLEV(int32_t& r, int32_t v)
+{ r = BSWAP32(v); }
+
+/// save from/to little endian value
+inline void SLEV(uint64_t& r, uint64_t v)
+{ r = BSWAP64(v); }
+/// save from/to little endian value
+inline void SLEV(int64_t& r, int64_t v)
+{ r = BSWAP64(v); }
+
+/// save from/to little endian value
+inline void SULEV(uint16_t& r, uint16_t v)
+{ r = BSWAP16(v); }
+/// save from/to little endian value
+inline void SULEV(int16_t& r, int16_t v)
+{ r = BSWAP16(v); }
+
+/// save from/to little endian value
+inline void SULEV(uint32_t& r, uint32_t v)
+{ r = BSWAP32(v); }
+/// save from/to little endian value
+inline void SULEV(int32_t& r, int32_t v)
+{ r = BSWAP32(v); }
+
+#  ifdef HAVE_ARCH_ARM32
+/// save from/to little endian value
+inline void SULEV(uint64_t& r, uint64_t v)
+{ ((uint32_t)&r)[0] = BSWAP32((uint32_t)v>>32); ((uint64_t)&r)[1] = BSWAP32(v); }
+/// save from/to little endian value
+inline void SULEV(int64_t& r, int64_t v)
+{ ((uint32_t)&r)[0] = BSWAP32((uint32_t)v>>32); ((uint64_t)&r)[1] = BSWAP32(v); }
+#  else
+/// save from/to little endian value
+inline void SULEV(uint64_t& r, uint64_t v)
+{ r = BSWAP64(v); }
+/// save from/to little endian value
+inline void SULEV(int64_t& r, int64_t v)
+{ r = BSWAP64(v); }
 #  endif
 
 #endif

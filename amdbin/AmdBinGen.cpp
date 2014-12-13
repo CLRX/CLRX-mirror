@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
@@ -261,15 +262,14 @@ void AmdGPUBinGenerator::generate()
                 config.uavPrivate = 0;
         }
         if (config.uavId == AMDBIN_DEFAULT)
-        {
-        }
+            config.uavId = (isOlderThan1384)?9:11;
+        
         if (config.constBufferId == AMDBIN_DEFAULT)
-        {
-        }
+            config.constBufferId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 10;
         if (config.printfId == AMDBIN_DEFAULT)
-        {
-            config.printfId = 9;
-        }
+            config.constBufferId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 9;
+        if (config.privateId == AMDBIN_DEFAULT)
+            config.privateId = 8;
     }
     /* count number of bytes required to save */
     if (!input.is64Bit)
@@ -526,20 +526,32 @@ void AmdGPUBinGenerator::generate()
             metadata += numBuf;
             metadata += '\n';
             
-            for (cxuint k = 0; k < config.samplers.size(); k++)
+            cxuint sampId = 0;
+            for (sampId = 0; sampId < config.samplers.size(); sampId++)
             {   /* constant samplers */
-                const cxuint samp = config.samplers[k];
+                const cxuint samp = config.samplers[sampId];
                 metadata += ";sampler:unknown_";
                 itocstrCStyle(samp, numBuf, 21);
                 metadata += numBuf;
                 metadata += ':';
-                itocstrCStyle(k, numBuf, 21);
+                itocstrCStyle(sampId, numBuf, 21);
                 metadata += numBuf;
                 metadata += ":1:";
                 itocstrCStyle(samp, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
+            /* kernel argument samplers */
+            for (const AmdKernelArg& arg: config.args)
+                if (arg.argType == KernelArgType::SAMPLER)
+                {
+                    metadata += ";sampler:";
+                    metadata += arg.argName;
+                    metadata += ':';
+                    itocstrCStyle(sampId, numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ":0:0\n";
+                }
             
             if (input.is64Bit)
                 metadata += ";memory:64bitABI\n";
@@ -594,6 +606,44 @@ void AmdGPUBinGenerator::generate()
     binary = nullptr;
     binary = new cxbyte[binarySize];
     size_t offset = 0;
-    { /* main ELF header */
+    if (!input.is64Bit)
+    {
+        Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
+        static const cxbyte elf32Ident[16] = {
+                0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
+                ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
+        ::memcpy(mainHdr.e_ident, elf32Ident, 16);
+        SULEV(mainHdr.e_type, ET_EXEC);
+        SULEV(mainHdr.e_machine, 0x3fe);
+        SULEV(mainHdr.e_version, EV_CURRENT);
+        SULEV(mainHdr.e_entry, 0);
+        SULEV(mainHdr.e_phoff, 0);
+        SULEV(mainHdr.e_ehsize, sizeof(Elf32_Ehdr));
+        SULEV(mainHdr.e_phnum, 0);
+        SULEV(mainHdr.e_phentsize, sizeof(Elf32_Phdr));
+        SULEV(mainHdr.e_shnum, 7);
+        SULEV(mainHdr.e_shentsize, sizeof(Elf32_Shdr));
+        SULEV(mainHdr.e_shstrndx, 1);
+        offset += sizeof(Elf32_Ehdr);
+    }
+    else
+    {
+        Elf64_Ehdr& mainHdr = *reinterpret_cast<Elf64_Ehdr*>(binary);
+        static const cxbyte elf64Ident[16] = {
+                0x7f, 'E', 'L', 'F', ELFCLASS64, ELFDATA2LSB, EV_CURRENT, 
+                ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
+        ::memcpy(mainHdr.e_ident, elf64Ident, 16);
+        SULEV(mainHdr.e_type, ET_EXEC);
+        SULEV(mainHdr.e_machine, 0x3fe);
+        SULEV(mainHdr.e_version, EV_CURRENT);
+        SULEV(mainHdr.e_entry, 0);
+        SULEV(mainHdr.e_phoff, 0);
+        SULEV(mainHdr.e_ehsize, sizeof(Elf64_Ehdr));
+        SULEV(mainHdr.e_phnum, 0);
+        SULEV(mainHdr.e_phentsize, sizeof(Elf64_Phdr));
+        SULEV(mainHdr.e_shnum, 7);
+        SULEV(mainHdr.e_shentsize, sizeof(Elf64_Shdr));
+        SULEV(mainHdr.e_shstrndx, 1);
+        offset += sizeof(Elf64_Ehdr);
     }
 }
