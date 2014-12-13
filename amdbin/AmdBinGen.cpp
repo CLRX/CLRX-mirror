@@ -31,6 +31,44 @@
 
 using namespace CLRX;
 
+/* helpers for main Disassembler class */
+
+static const uint32_t gpuDeviceCodeTable[14] =
+{
+    0, // GPUDeviceType::UNDEFINED
+    0x3ff, // GPUDeviceType::CAPE_VERDE
+    0x3fe, // GPUDeviceType::PITCAIRN
+    0x3fd, // GPUDeviceType::TAHITI
+    0x402, // GPUDeviceType::OLAND
+    0x403, // GPUDeviceType::BONAIRE
+    0x404, // GPUDeviceType::SPECTRE
+    0x405, // GPUDeviceType::SPOOKY
+    0x406, // GPUDeviceType::KALINDI
+    0x407, // GPUDeviceType::HAINAN
+    0x408, // GPUDeviceType::HAWAII
+    0x409, // GPUDeviceType::ICELAND
+    0x40a, // GPUDeviceType::TONGA
+    0x40b // GPUDeviceType::MULLINS
+};
+
+static const uint16_t gpuDeviceInnerCodeTable[14] =
+{
+    0, // GPUDeviceType::UNDEFINED
+    0x1c, // GPUDeviceType::CAPE_VERDE
+    0x1b, // GPUDeviceType::PITCAIRN
+    0x1a, // GPUDeviceType::TAHITI
+    0x20, // GPUDeviceType::OLAND
+    0x21, // GPUDeviceType::BONAIRE
+    0x22, // GPUDeviceType::SPECTRE
+    0x23, // GPUDeviceType::SPOOKY
+    0x24, // GPUDeviceType::KALINDI
+    0x25, // GPUDeviceType::HAINAN
+    0x27, // GPUDeviceType::HAWAII
+    0x29, // GPUDeviceType::ICELAND
+    0x2a, // GPUDeviceType::TONGA
+    0x2b // GPUDeviceType::MULLINS
+};
+
 std::vector<AmdKernelArg> CLRX::parseAmdKernelArgsFromString(
             const std::string& argsString)
 {
@@ -606,6 +644,7 @@ void AmdGPUBinGenerator::generate()
     binary = nullptr;
     binary = new cxbyte[binarySize];
     size_t offset = 0;
+    
     if (!input.is64Bit)
     {
         Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
@@ -614,13 +653,14 @@ void AmdGPUBinGenerator::generate()
                 ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
         ::memcpy(mainHdr.e_ident, elf32Ident, 16);
         SULEV(mainHdr.e_type, ET_EXEC);
-        SULEV(mainHdr.e_machine, 0x3fe);
+        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input.deviceType)]);
         SULEV(mainHdr.e_version, EV_CURRENT);
         SULEV(mainHdr.e_entry, 0);
+        SULEV(mainHdr.e_flags, 0);
         SULEV(mainHdr.e_phoff, 0);
         SULEV(mainHdr.e_ehsize, sizeof(Elf32_Ehdr));
         SULEV(mainHdr.e_phnum, 0);
-        SULEV(mainHdr.e_phentsize, sizeof(Elf32_Phdr));
+        SULEV(mainHdr.e_phentsize, 0);
         SULEV(mainHdr.e_shnum, 7);
         SULEV(mainHdr.e_shentsize, sizeof(Elf32_Shdr));
         SULEV(mainHdr.e_shstrndx, 1);
@@ -634,16 +674,47 @@ void AmdGPUBinGenerator::generate()
                 ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
         ::memcpy(mainHdr.e_ident, elf64Ident, 16);
         SULEV(mainHdr.e_type, ET_EXEC);
-        SULEV(mainHdr.e_machine, 0x3fe);
+        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input.deviceType)]);
         SULEV(mainHdr.e_version, EV_CURRENT);
         SULEV(mainHdr.e_entry, 0);
+        SULEV(mainHdr.e_flags, 0);
         SULEV(mainHdr.e_phoff, 0);
         SULEV(mainHdr.e_ehsize, sizeof(Elf64_Ehdr));
         SULEV(mainHdr.e_phnum, 0);
-        SULEV(mainHdr.e_phentsize, sizeof(Elf64_Phdr));
+        SULEV(mainHdr.e_phentsize, 0);
         SULEV(mainHdr.e_shnum, 7);
         SULEV(mainHdr.e_shentsize, sizeof(Elf64_Shdr));
         SULEV(mainHdr.e_shstrndx, 1);
         offset += sizeof(Elf64_Ehdr);
+    }
+    size_t sectionOffsets[6];
+    sectionOffsets[0] = offset;
+    ::memcpy(binary+offset,
+         "\000.shstrtab\000.strtab\000.symtab\000.comment\000.rodata\000.text", 50);
+    offset += 50;
+    // .strtab
+    sectionOffsets[1] = offset;
+    ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
+    offset += 26;
+    for (const AmdKernelInput& kernel: input.kernels)
+    {
+        ::memcpy(binary+offset, "__OpenCL_", 9);
+        offset += 9;
+        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        offset += kernel.kernelName.size();
+        ::memcpy(binary+offset, "_metadata", 10);
+        offset += 10;
+        ::memcpy(binary+offset, "__OpenCL_", 9);
+        offset += 9;
+        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        offset += kernel.kernelName.size();
+        ::memcpy(binary+offset, "_kernel", 8);
+        offset += 8;
+        ::memcpy(binary+offset, "__OpenCL_", 9);
+        offset += 9;
+        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        offset += kernel.kernelName.size();
+        ::memcpy(binary+offset, "_header", 8);
+        offset += 8;
     }
 }

@@ -33,7 +33,7 @@
 /// main namespace
 namespace CLRX
 {
-    
+
 enum class GPUDeviceType: cxbyte
 {
     UNDEFINED = 0,
