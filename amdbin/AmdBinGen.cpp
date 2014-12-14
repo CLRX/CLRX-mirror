@@ -229,6 +229,75 @@ struct TempAmdKernelConfig
     uint32_t privateId;
 };
 
+template<typename ElfSym>
+static void putMainSymbols(size_t& offset, cxbyte* binary, const AmdInput* input,
+    const std::vector<std::string>& kmetadatas, const std::vector<cxuint>& innerBinSizes)
+{
+    ElfSym* symbolTable = reinterpret_cast<ElfSym*>(binary+offset);
+    ::memset(symbolTable, 0, sizeof(ElfSym));
+    size_t namePos = 1;
+    SULEV(symbolTable[1].st_name, namePos); 
+    SULEV(symbolTable[1].st_value, 0);
+    SULEV(symbolTable[1].st_size, input->compileOptions.size());
+    SULEV(symbolTable[1].st_shndx, 4);
+    symbolTable[1].st_info = 0;
+    symbolTable[1].st_other = 0;
+    namePos += 25;
+    symbolTable += 2;
+    size_t rodataPos = 0;
+    if (input->globalData != nullptr)
+    {
+        SULEV(symbolTable->st_name, namePos); 
+        SULEV(symbolTable->st_value, 0);
+        SULEV(symbolTable->st_size, input->globalDataSize);
+        SULEV(symbolTable->st_shndx, 5);
+        symbolTable->st_info = 0;
+        symbolTable->st_other = 0;
+        symbolTable++;
+        namePos += 18;
+        rodataPos = 32;
+    }
+    size_t textPos = 0;
+    for (cxuint i = 0; i < input->kernels.size(); i++)
+    {
+        const AmdKernelInput& kernel = input->kernels[i];
+        /* kernel metatadata */
+        const size_t metadataSize = (kernel.useConfig) ?
+                kmetadatas[i].size() : kernel.metadataSize;
+        SULEV(symbolTable->st_name, namePos);
+        SULEV(symbolTable->st_value, rodataPos);
+        SULEV(symbolTable->st_size, metadataSize);
+        SULEV(symbolTable->st_shndx, 5);
+        symbolTable->st_info = 0;
+        symbolTable->st_other = 0;
+        symbolTable++;
+        namePos += 19 + kernel.kernelName.size();
+        rodataPos += metadataSize;
+        /* kernel code */
+        SULEV(symbolTable->st_name, namePos);
+        SULEV(symbolTable->st_value, textPos);
+        SULEV(symbolTable->st_size, innerBinSizes[i]);
+        SULEV(symbolTable->st_shndx, 6);
+        symbolTable->st_info = 0;
+        symbolTable->st_other = 0;
+        symbolTable++;
+        namePos += 17 + kernel.kernelName.size();
+        textPos += innerBinSizes[i];
+        /* kernel header */
+        const size_t headerSize = (kernel.useConfig) ?
+                32 : kernel.headerSize;
+        SULEV(symbolTable->st_name, namePos);
+        SULEV(symbolTable->st_value, rodataPos);
+        SULEV(symbolTable->st_size, headerSize);
+        SULEV(symbolTable->st_shndx, 5);
+        symbolTable->st_info = 0;
+        symbolTable->st_other = 0;
+        symbolTable++;
+        namePos += 17 + kernel.kernelName.size();
+        rodataPos += headerSize;
+    }
+}
+
 void AmdGPUBinGenerator::generate()
 {
     const size_t kernelsNum = input->kernels.size();
@@ -355,14 +424,16 @@ void AmdGPUBinGenerator::generate()
         binarySize += (kinput.kernelName.size())*3;
     binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) + 26/* static strtab size */ +
             driverInfo.size() + input->compileOptions.size() + input->globalDataSize;
-    /* kernel inner binaries */
-    binarySize += (sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 + sizeof(Elf32_Shdr)*6 +
-            sizeof(CALEncodingEntry) + 2 + 16 + 40 + 32/*header*/)*kernelsNum;
     
+    std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
     size_t uniqueId = 1025;
     for (size_t i = 0; i < input->kernels.size(); i++)
     {
+        cxuint& innerBinSize = innerBinSizes[i];
+        innerBinSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 + sizeof(Elf32_Shdr)*6 +
+            sizeof(CALEncodingEntry) + 2 + 16 + 40;
+        
         const AmdKernelInput& kinput = input->kernels[i];
         const AmdKernelConfig& config = kinput.config;
         size_t readOnlyImages = 0;
@@ -399,12 +470,12 @@ void AmdGPUBinGenerator::generate()
         if (notUsedUav)
             uavsNum++; // adds uav for not used
         
-        binarySize += (kinput.data != nullptr) ? kinput.dataSize : 4736;
-        binarySize += kinput.codeSize;
+        innerBinSize += (kinput.data != nullptr) ? kinput.dataSize : 4736;
+        innerBinSize += kinput.codeSize;
         // CAL notes size
         if (kinput.useConfig)
         {
-            binarySize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
+            innerBinSize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
                 2*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
@@ -664,15 +735,20 @@ void AmdGPUBinGenerator::generate()
             metadata += ";ARGEND:__OpenCL_";
             metadata += kinput.kernelName;
             metadata += "_kernel\n";
-            binarySize += metadata.size();
+            innerBinSize += metadata.size();
+            innerBinSize += 32; // header size
         }
         else // if defined in calNotes (no config)
         {
             for (const BinCALNote& calNote: kinput.calNotes)
-                binarySize += 20 + calNote.header.descSize;
-            binarySize += kinput.metadataSize;
+                innerBinSize += 20 + calNote.header.descSize;
+            if (kinput.metadata != nullptr)
+                innerBinSize += kinput.metadataSize;
+            if (kinput.header != nullptr)
+                innerBinSize += kinput.headerSize;
         }
         uniqueId++;
+        binarySize += innerBinSize;
     }
     /* writing data */
     delete[] binary;    // delete of pointer
@@ -765,15 +841,57 @@ void AmdGPUBinGenerator::generate()
     // .symtab
     sectionOffsets[2] = offset;
     if (!input->is64Bit)
+        putMainSymbols<Elf32_Sym>(offset, binary, input, kmetadatas, innerBinSizes);
+    else
+        putMainSymbols<Elf64_Sym>(offset, binary, input, kmetadatas, innerBinSizes);
+    // .comment
+    sectionOffsets[3] = offset;
+    ::memcpy(binary+offset, input->compileOptions.c_str(), input->compileOptions.size());
+    offset += input->compileOptions.size();
+    ::memcpy(binary+offset, driverInfo.c_str(), driverInfo.size());
+    offset += driverInfo.size();
+    // .rodata
+    if (input->globalData != nullptr)
     {
-        Elf32_Sym* symbolTable = reinterpret_cast<Elf32_Sym*>(binary+offset);
-        ::memset(symbolTable, 0, sizeof(Elf32_Sym));
-        if (input->globalData != nullptr)
+        ::memcpy(binary+offset, input->globalData, input->globalDataSize);
+        offset += input->globalDataSize;
+    }
+    for (cxuint i = 0; i < input->kernels.size(); i++)
+    {
+        const AmdKernelInput& kernel = input->kernels[i];
+        if (kernel.useConfig)
         {
+            const TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
+            ::memcpy(binary+offset, kmetadatas[i].c_str(), kmetadatas[i].size());
+            offset += kmetadatas[i].size();
+            
+            uint32_t* header = reinterpret_cast<uint32_t*>(binary+offset);
+            SULEV(header[0], (driverVersion >= 164205) ? tempConfig.uavPrivate : 0);
+            SULEV(header[1], 0);
+            SULEV(header[2], tempConfig.uavPrivate);
+            SULEV(header[3], kernel.config.hwLocalSize);
+            SULEV(header[4], input->is64Bit?8:0);
+            SULEV(header[5], 1);
+            SULEV(header[6], 0);
+            SULEV(header[7], 0);
+            offset += 32;
+        }
+        else if (kernel.header != nullptr)
+        {
+            ::memcpy(binary+offset, kernel.metadata, kernel.metadataSize);
+            offset += kernel.metadataSize;
+            ::memcpy(binary+offset, kernel.header, kernel.headerSize);
+            offset += kernel.headerSize;
         }
     }
-    else
+    
+    /* kernel binaries */
+    for (cxuint i = 0; i < input->kernels.size(); i++)
     {
-        Elf64_Sym& symbolTable = *reinterpret_cast<Elf64_Sym*>(binary+offset);
+        Elf32_Ehdr& innerHdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
+        static const cxbyte elf32Ident[16] = {
+                0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
+                0x64, 0, 0, 0, 0, 0, 0, 0, 0 };
+        ::memcpy(innerHdr.e_ident, elf32Ident, 16);
     }
 }
