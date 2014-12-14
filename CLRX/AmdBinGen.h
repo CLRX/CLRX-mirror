@@ -119,6 +119,8 @@ struct AmdKernelConfig
     uint32_t constBufferId;
     uint32_t printfId;
     uint32_t privateId;
+    uint32_t earlyExit;
+    uint32_t condOut;
     bool constDataRequired;
     cxuint userDataElemsNum;
     AmdUserData userDatas[16];

@@ -31,8 +31,6 @@
 
 using namespace CLRX;
 
-/* helpers for main Disassembler class */
-
 static const uint32_t gpuDeviceCodeTable[14] =
 {
     0, // GPUDeviceType::UNDEFINED
@@ -296,6 +294,8 @@ static void putMainSymbols(size_t& offset, cxbyte* binary, const AmdInput* input
         namePos += 17 + kernel.kernelName.size();
         rodataPos += headerSize;
     }
+    offset += sizeof(ElfSym)*(input->kernels.size()*3 + 1 +
+            (input->globalData != nullptr));
 }
 
 void AmdGPUBinGenerator::generate()
@@ -851,6 +851,7 @@ void AmdGPUBinGenerator::generate()
     ::memcpy(binary+offset, driverInfo.c_str(), driverInfo.size());
     offset += driverInfo.size();
     // .rodata
+    sectionOffsets[4] = offset;
     if (input->globalData != nullptr)
     {
         ::memcpy(binary+offset, input->globalData, input->globalDataSize);
@@ -886,12 +887,323 @@ void AmdGPUBinGenerator::generate()
     }
     
     /* kernel binaries */
+    sectionOffsets[4] = offset;
     for (cxuint i = 0; i < input->kernels.size(); i++)
     {
+        const AmdKernelInput& kernel = input->kernels[i];
+        const AmdKernelConfig& config = kernel.config;
+        size_t readOnlyImages = 0;
+        size_t writeOnlyImages = 0;
+        size_t uavsNum = 1;
+        bool notUsedUav = false;
+        size_t samplersNum = config.samplers.size();
+        size_t constBuffersNum = 2;
+        for (const AmdKernelArg& arg: config.args)
+        {
+            if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                arg.argType <= KernelArgType::MAX_IMAGE)
+            {
+                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                    readOnlyImages++;
+                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                {
+                    writeOnlyImages++;
+                    uavsNum++;
+                }
+            }
+            else if (arg.argType == KernelArgType::POINTER)
+            {
+                if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                {   // only global pointers are defined in uav table
+                    if (arg.used)
+                        uavsNum++;
+                    else
+                        notUsedUav = true;
+                }
+                if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    constBuffersNum++;
+            }
+           else if (arg.argType == KernelArgType::SAMPLER)
+               samplersNum++;
+        }
+        
         Elf32_Ehdr& innerHdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
         static const cxbyte elf32Ident[16] = {
                 0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
                 0x64, 0, 0, 0, 0, 0, 0, 0, 0 };
         ::memcpy(innerHdr.e_ident, elf32Ident, 16);
+        SULEV(innerHdr.e_type, ET_EXEC);
+        SULEV(innerHdr.e_machine, 0x7d);
+        SULEV(innerHdr.e_version, EV_CURRENT);
+        SULEV(innerHdr.e_entry, 0);
+        SULEV(innerHdr.e_flags, 1);
+        SULEV(innerHdr.e_ehsize, sizeof(Elf32_Ehdr));
+        SULEV(innerHdr.e_phnum, 3);
+        SULEV(innerHdr.e_phentsize, sizeof(Elf32_Phdr));
+        SULEV(innerHdr.e_shnum, 6);
+        SULEV(innerHdr.e_shentsize, sizeof(Elf32_Shdr));
+        SULEV(innerHdr.e_shstrndx, 1);
+        offset += sizeof(Elf32_Ehdr);
+        
+        /* ??? */
+        Elf32_Phdr* programHdrTable = reinterpret_cast<Elf32_Phdr*>(binary + offset);
+        ::memset(programHdrTable, 0, sizeof(Elf32_Phdr));
+        SULEV(programHdrTable->p_type, 0x70000002U);
+        SULEV(programHdrTable->p_flags, 0);
+        SULEV(programHdrTable->p_offset, 0x94);
+        SULEV(programHdrTable->p_vaddr, 0);
+        SULEV(programHdrTable->p_paddr, 0);
+        SULEV(programHdrTable->p_filesz, sizeof(CALEncodingEntry));
+        SULEV(programHdrTable->p_memsz, 0);
+        SULEV(programHdrTable->p_align, 0);
+        programHdrTable++;
+        SULEV(programHdrTable->p_type, PT_NOTE);
+        SULEV(programHdrTable->p_flags, 0);
+        SULEV(programHdrTable->p_offset, 0x1c0);
+        SULEV(programHdrTable->p_vaddr, 0);
+        SULEV(programHdrTable->p_paddr, 0);
+        SULEV(programHdrTable->p_memsz, 0);
+        SULEV(programHdrTable->p_align, 0);
+        Elf32_Phdr* notePrgHdr = programHdrTable;
+        programHdrTable++;
+        SULEV(programHdrTable->p_type, PT_LOAD);
+        SULEV(programHdrTable->p_flags, 0);
+        SULEV(programHdrTable->p_vaddr, 0);
+        SULEV(programHdrTable->p_paddr, 0);
+        SULEV(programHdrTable->p_align, 0);
+        Elf32_Phdr* loadPrgHdr = programHdrTable;
+        programHdrTable++;
+        
+        offset += sizeof(Elf32_Phdr)*3;
+        /* CALEncodingEntry */
+        CALEncodingEntry& encEntry = *reinterpret_cast<CALEncodingEntry*>(binary + offset);
+        SULEV(encEntry.type, 4);
+        SULEV(encEntry.machine, gpuDeviceInnerCodeTable[cxuint(input->deviceType)]);
+        SULEV(encEntry.flags, 0);
+        SULEV(encEntry.offset, 0x1c0);
+        offset += sizeof(CALEncodingEntry);
+        // shstrtab content
+        ::memcpy(binary + offset,
+                 "\000.shstrtab\000.text\000.data\000.symtab\000.strtab\000", 40);
+        offset += 40;
+        /* section headers */
+        Elf32_Shdr* sectionHdrTable = reinterpret_cast<Elf32_Shdr*>(binary + offset);
+        ::memset(binary+offset, 0, sizeof(Elf32_Shdr));
+        sectionHdrTable++;
+        // .shstrtab
+        SULEV(sectionHdrTable->sh_name, 1);
+        SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
+        SULEV(sectionHdrTable->sh_flags, 0);
+        SULEV(sectionHdrTable->sh_addr, 0);
+        SULEV(sectionHdrTable->sh_addralign, 0);
+        SULEV(sectionHdrTable->sh_offset, 0xa8);
+        SULEV(sectionHdrTable->sh_size, 40);
+        SULEV(sectionHdrTable->sh_link, 0);
+        SULEV(sectionHdrTable->sh_entsize, 0);
+        sectionHdrTable++;
+        
+        offset += sizeof(Elf32_Shdr)*6;
+        if (kernel.useConfig)
+        {
+            // CAL CALNOTE_INPUTS
+            CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_INPUTS);
+            SULEV(noteHdr->descSize, 4*readOnlyImages);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            uint32_t* data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            for (cxuint k = 0; k < readOnlyImages; k++)
+                SULEV(data32[k], (driverVersion == 101602 || driverVersion == 112402) ?
+                        readOnlyImages-k-1 : k);
+            offset += noteHdr->descSize;
+            // CALNOTE_OUTPUTS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_OUTPUTS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            // CALNOTE_UAV
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->type, CALNOTE_ATI_OUTPUTS);
+            SULEV(noteHdr->descSize, 16*uavsNum);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            if (isOlderThan1124)
+            {   // for new drivers
+                for (cxuint k = 0; k < writeOnlyImages; k++)
+                {   /* writeOnlyImages */
+                    SULEV(data32[k<<2], k);
+                    SULEV(data32[(k<<2)+1], 2);
+                    SULEV(data32[(k<<2)+2], 2);
+                    SULEV(data32[(k<<2)+3], 3);
+                }
+                data32 += writeOnlyImages<<2;
+                // global buffers
+                for (cxuint k = 0; k < uavsNum-writeOnlyImages-1; k++)
+                {
+                    SULEV(data32[k<<2], k+config.uavId+1);
+                    SULEV(data32[(k<<2)+1], 4);
+                    SULEV(data32[(k<<2)+2], 0);
+                    SULEV(data32[(k<<2)+3], 5);
+                }
+                data32 += (uavsNum-writeOnlyImages-1)<<2;
+            }
+            else
+            {   /* in argument order */
+                cxuint writeOnlyImagesCount = 0;
+                cxuint uavIdsCount = config.uavId+1;
+                for (const AmdKernelArg& arg: config.args)
+                {
+                    if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                        arg.argType <= KernelArgType::MAX_IMAGE &&
+                        (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                    {   // write_only images
+                        SULEV(data32[0], writeOnlyImagesCount++);
+                        SULEV(data32[1], 2);
+                        SULEV(data32[2], 2);
+                        SULEV(data32[3], 5);
+                    }
+                    else if (arg.argType == KernelArgType::POINTER &&
+                        arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                    {   // uavid
+                        SULEV(data32[0], uavIdsCount);
+                        SULEV(data32[1], 4);
+                        SULEV(data32[2], 0);
+                        SULEV(data32[3], 5);
+                    }
+                }
+            }
+            // privateid or uavid (???)
+            SULEV(data32[0], (isOlderThan1384)?config.privateId:config.uavId);
+            SULEV(data32[1], (isOlderThan1384)?3:4);
+            SULEV(data32[2], 0);
+            SULEV(data32[3], 5);
+            
+            // CALNOTE_CONDOUT
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_CONDOUT);
+            SULEV(noteHdr->descSize, 4);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            SULEV(*data32, config.condOut);
+            offset += 4;
+            // CALNOTE_FLOAT32CONSTS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_FLOAT32CONSTS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            // CALNOTE_INT32CONSTS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_INT32CONSTS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            // CALNOTE_BOOL32CONSTS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_BOOL32CONSTS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            
+            // CALNOTE_EARLYEXIT
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_EARLYEXIT);
+            SULEV(noteHdr->descSize, 4);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            SULEV(*data32, config.earlyExit);
+            offset += 4;
+            
+            // CALNOTE_GLOBAL_BUFFERS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_GLOBAL_BUFFERS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            
+            // CALNOTE_CONSTANT_BUFFERS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_CONSTANT_BUFFERS);
+            SULEV(noteHdr->descSize, 8*constBuffersNum);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            offset += noteHdr->descSize;
+            
+            // CALNOTE_SCRATCH_BUFFERS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_SCRATCH_BUFFERS);
+            SULEV(noteHdr->descSize, 4);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            SULEV(*data32, config.scratchBufferSize);
+            offset += 4;
+            
+            // CALNOTE_PERSISTENT_BUFFERS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_PERSISTENT_BUFFERS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+        }
+        else // from CALNotes array
+            for (const BinCALNote& calNote: kernel.calNotes)
+            {
+                ::memcpy(binary + offset, &calNote.header, sizeof(CALNoteHeader));
+                offset += sizeof(CALNoteHeader);
+                ::memcpy(binary + offset, calNote.data, calNote.header.descSize);
+                offset += calNote.header.descSize;
+            }
+        
+        // .text
+        SULEV(sectionHdrTable->sh_name, 11);
+        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
+        SULEV(sectionHdrTable->sh_flags, 0);
+        SULEV(sectionHdrTable->sh_addr, 0);
+        SULEV(sectionHdrTable->sh_addralign, 0);
+        SULEV(sectionHdrTable->sh_link, 0);
+        SULEV(sectionHdrTable->sh_entsize, 0);
+        sectionHdrTable++;
+        // .data
+        SULEV(sectionHdrTable->sh_name, 17);
+        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
+        SULEV(sectionHdrTable->sh_flags, 0);
+        SULEV(sectionHdrTable->sh_addr, 0);
+        SULEV(sectionHdrTable->sh_addralign, 0);
+        SULEV(sectionHdrTable->sh_link, 0);
+        //SULEV(sectionHdrTable->sh_entsize, 0);
+        sectionHdrTable++;
+        // .symtab
+        SULEV(sectionHdrTable->sh_name, 23);
+        SULEV(sectionHdrTable->sh_type, SHT_SYMTAB);
+        SULEV(sectionHdrTable->sh_flags, 0);
+        SULEV(sectionHdrTable->sh_addr, 0);
+        SULEV(sectionHdrTable->sh_addralign, 0);
+        SULEV(sectionHdrTable->sh_size, sizeof(Elf32_Sym));
+        SULEV(sectionHdrTable->sh_link, 5);
+        SULEV(sectionHdrTable->sh_entsize, sizeof(Elf32_Sym));
+        sectionHdrTable++;
+        // .strtab
+        SULEV(sectionHdrTable->sh_name, 30);
+        SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
+        SULEV(sectionHdrTable->sh_flags, 0);
+        SULEV(sectionHdrTable->sh_addr, 0);
+        SULEV(sectionHdrTable->sh_addralign, 0);
     }
 }
