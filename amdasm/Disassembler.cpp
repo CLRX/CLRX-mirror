@@ -166,7 +166,7 @@ static void getDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
         for (cxuint j = 0; j < innerBin->getSectionHeadersNum(); j++)
         {
             const char* secName = innerBin->getSectionName(j);
-            const auto& shdr = innerBin->getSectionHeader(j);
+            const Elf32_Shdr& shdr = innerBin->getSectionHeader(j);
             const size_t secOffset = ULEV(shdr.sh_offset);
             const size_t secSize = ULEV(shdr.sh_size);
             if (secOffset < encEntryOffset ||

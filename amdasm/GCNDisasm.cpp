@@ -539,6 +539,7 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         {
             const size_t branchPos = pos + int16_t(imm16);
             bufPos = addSpaces(buf, spacesToAdd);
+            buf[bufPos++] = '.';
             buf[bufPos++] = 'L';
             bufPos += itocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
             break;
@@ -739,6 +740,7 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
         const size_t branchPos = pos + int16_t(imm16);
+        buf[bufPos++] = '.';
         buf[bufPos++] = 'L';
         bufPos += itocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
     }
@@ -1880,6 +1882,7 @@ void GCNDisassembler::disassemble()
         {
             if (pos == *curLabel)
             {   // put label
+                buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
                 bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
@@ -1893,12 +1896,12 @@ void GCNDisassembler::disassemble()
             }
             else  if (prevIsTwoWord && pos-1 == *curLabel)
             {   /* if label between words of previous instruction */
-                ::memcpy(buf+bufPos, ".org *-4\nL", 10);
-                bufPos += 10;
+                ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
+                bufPos += 11;
                 bufPos += itocstrCStyle(pos-1, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
-                ::memcpy(buf+bufPos, ".org *+4\n", 9);
+                ::memcpy(buf+bufPos, ".org .+4\n", 9);
                 bufPos += 9;
                 if (bufPos+250 >= maxBufSize)
                 {
@@ -2202,6 +2205,7 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = '\n';
         }
         // put label
+        buf[bufPos++] = '.';
         buf[bufPos++] = 'L';
         bufPos += itocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
         buf[bufPos++] = ':';

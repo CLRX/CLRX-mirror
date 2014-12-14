@@ -766,7 +766,8 @@ void AmdGPUBinGenerator::generate()
     sectionOffsets[2] = offset;
     if (!input->is64Bit)
     {
-        Elf32_Sym& symbolTable = *reinterpret_cast<Elf32_Sym*>(binary+offset);
+        Elf32_Sym* symbolTable = reinterpret_cast<Elf32_Sym*>(binary+offset);
+        ::memset(symbolTable, 0, sizeof(Elf32_Sym));
         if (input->globalData != nullptr)
         {
         }
