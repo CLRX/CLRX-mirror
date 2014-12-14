@@ -727,13 +727,17 @@ void AmdGPUBinGenerator::generate()
     ::memcpy(binary+offset,
          "\000.shstrtab\000.strtab\000.symtab\000.comment\000.rodata\000.text", 50);
     offset += 50;
+    
     // .strtab
     sectionOffsets[1] = offset;
     ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
     offset += 26;
     if (input->globalData != nullptr)
     {
-        ::memcpy(binary+offset, "__OpenCL_0_global", 18);
+        if (!isOlderThan1384)
+            ::memcpy(binary+offset, "__OpenCL_0_global", 18);
+        else
+            ::memcpy(binary+offset, "__OpenCL_2_global", 18);
         offset += 18;
     }
     for (const AmdKernelInput& kernel: input->kernels)
@@ -756,5 +760,19 @@ void AmdGPUBinGenerator::generate()
         offset += kernel.kernelName.size();
         ::memcpy(binary+offset, "_header", 8);
         offset += 8;
+    }
+    
+    // .symtab
+    sectionOffsets[2] = offset;
+    if (!input->is64Bit)
+    {
+        Elf32_Sym& symbolTable = *reinterpret_cast<Elf32_Sym*>(binary+offset);
+        if (input->globalData != nullptr)
+        {
+        }
+    }
+    else
+    {
+        Elf64_Sym& symbolTable = *reinterpret_cast<Elf64_Sym*>(binary+offset);
     }
 }
