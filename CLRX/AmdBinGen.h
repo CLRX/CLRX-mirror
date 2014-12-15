@@ -74,6 +74,7 @@ struct AmdKernelArg
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
     uint8_t ptrAccess;  ///< pointer access flags
     cxuint structSize; ///< structure size (if structure)
+    size_t constSpaceSize;
     bool used; ///< used by kernel
 };
 
@@ -169,9 +170,6 @@ struct AmdInput
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
 };
-
-extern std::vector<AmdKernelArg> parseAmdKernelArgsFromString(
-        const std::string& argsString);
 
 class AmdGPUBinGenerator
 {

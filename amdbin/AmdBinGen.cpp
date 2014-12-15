@@ -23,6 +23,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <algorithm>
 #include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
@@ -66,12 +67,6 @@ static const uint16_t gpuDeviceInnerCodeTable[14] =
     0x2a, // GPUDeviceType::TONGA
     0x2b // GPUDeviceType::MULLINS
 };
-
-std::vector<AmdKernelArg> CLRX::parseAmdKernelArgsFromString(
-            const std::string& argsString)
-{
-    return std::vector<AmdKernelArg>();
-}
 
 void AmdInput::addKernel(const AmdKernelInput& kernelInput)
 {
@@ -225,6 +220,7 @@ struct TempAmdKernelConfig
     uint32_t constBufferId;
     uint32_t printfId;
     uint32_t privateId;
+    uint32_t argsSpace;
 };
 
 template<typename ElfSym>
@@ -306,7 +302,7 @@ void AmdGPUBinGenerator::generate()
     if (input->driverInfo.empty())
     {
         char drvInfoBuf[100];
-        snprintf(drvInfoBuf, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
+        ::snprintf(drvInfoBuf, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
                 "Driver version: %u.%u (VM)",
                  input->driverVersion/100U, input->driverVersion%100U,
                  input->driverVersion/100U, input->driverVersion%100U);
@@ -440,7 +436,8 @@ void AmdGPUBinGenerator::generate()
         size_t uavsNum = 1;
         bool notUsedUav = false;
         size_t samplersNum = config.samplers.size();
-        size_t constBuffersNum = 2;
+        size_t constBuffersNum = 2 + (isOlderThan1384 /* cbid:2 for older drivers*/ &&
+                config.constDataRequired);
         for (const AmdKernelArg& arg: config.args)
         {
             if (arg.argType >= KernelArgType::MIN_IMAGE &&
@@ -662,6 +659,8 @@ void AmdGPUBinGenerator::generate()
                     metadata += '\n';
                 }
             }
+            
+            tempAmdKernelConfigs[i].argsSpace = argOffset;
             
             if (config.constDataRequired)
                 metadata += ";memory:datareqd\n";
@@ -890,42 +889,8 @@ void AmdGPUBinGenerator::generate()
     sectionOffsets[4] = offset;
     for (cxuint i = 0; i < input->kernels.size(); i++)
     {
+        const size_t innerBinOffset = offset;
         const AmdKernelInput& kernel = input->kernels[i];
-        const AmdKernelConfig& config = kernel.config;
-        size_t readOnlyImages = 0;
-        size_t writeOnlyImages = 0;
-        size_t uavsNum = 1;
-        bool notUsedUav = false;
-        size_t samplersNum = config.samplers.size();
-        size_t constBuffersNum = 2;
-        for (const AmdKernelArg& arg: config.args)
-        {
-            if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                arg.argType <= KernelArgType::MAX_IMAGE)
-            {
-                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
-                    readOnlyImages++;
-                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-                {
-                    writeOnlyImages++;
-                    uavsNum++;
-                }
-            }
-            else if (arg.argType == KernelArgType::POINTER)
-            {
-                if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                {   // only global pointers are defined in uav table
-                    if (arg.used)
-                        uavsNum++;
-                    else
-                        notUsedUav = true;
-                }
-                if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                    constBuffersNum++;
-            }
-           else if (arg.argType == KernelArgType::SAMPLER)
-               samplersNum++;
-        }
         
         Elf32_Ehdr& innerHdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
         static const cxbyte elf32Ident[16] = {
@@ -1005,6 +970,41 @@ void AmdGPUBinGenerator::generate()
         offset += sizeof(Elf32_Shdr)*6;
         if (kernel.useConfig)
         {
+            const AmdKernelConfig& config = kernel.config;
+            const TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
+            size_t readOnlyImages = 0;
+            size_t writeOnlyImages = 0;
+            size_t uavsNum = 1;
+            size_t samplersNum = config.samplers.size();
+            size_t constBuffersNum = 2 + (isOlderThan1384 /* cbid:2 for older drivers*/ &&
+                    config.constDataRequired);
+            for (const AmdKernelArg& arg: config.args)
+            {
+                if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                    arg.argType <= KernelArgType::MAX_IMAGE)
+                {
+                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                        readOnlyImages++;
+                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                    {
+                        writeOnlyImages++;
+                        uavsNum++;
+                    }
+                }
+                else if (arg.argType == KernelArgType::POINTER)
+                {
+                    if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                    {   // only global pointers are defined in uav table
+                        if (arg.used)
+                            uavsNum++;
+                    }
+                    if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                        constBuffersNum++;
+                }
+               else if (arg.argType == KernelArgType::SAMPLER)
+                   samplersNum++;
+            }
+            
             // CAL CALNOTE_INPUTS
             CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
             SULEV(noteHdr->nameSize, 8);
@@ -1044,7 +1044,7 @@ void AmdGPUBinGenerator::generate()
                 // global buffers
                 for (cxuint k = 0; k < uavsNum-writeOnlyImages-1; k++)
                 {
-                    SULEV(data32[k<<2], k+config.uavId+1);
+                    SULEV(data32[k<<2], k+tempConfig.uavId+1);
                     SULEV(data32[(k<<2)+1], 4);
                     SULEV(data32[(k<<2)+2], 0);
                     SULEV(data32[(k<<2)+3], 5);
@@ -1054,7 +1054,7 @@ void AmdGPUBinGenerator::generate()
             else
             {   /* in argument order */
                 cxuint writeOnlyImagesCount = 0;
-                cxuint uavIdsCount = config.uavId+1;
+                cxuint uavIdsCount = tempConfig.uavId+1;
                 for (const AmdKernelArg& arg: config.args)
                 {
                     if (arg.argType >= KernelArgType::MIN_IMAGE &&
@@ -1069,7 +1069,10 @@ void AmdGPUBinGenerator::generate()
                     else if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::GLOBAL)
                     {   // uavid
-                        SULEV(data32[0], uavIdsCount);
+                        if (arg.used)
+                            SULEV(data32[0], uavIdsCount++);
+                        else
+                            SULEV(data32[0], tempConfig.uavId);
                         SULEV(data32[1], 4);
                         SULEV(data32[2], 0);
                         SULEV(data32[3], 5);
@@ -1144,6 +1147,93 @@ void AmdGPUBinGenerator::generate()
             data32 = reinterpret_cast<uint32_t*>(binary + offset);
             offset += noteHdr->descSize;
             
+            CALConstantBufferMask* cbufMask =
+                reinterpret_cast<CALConstantBufferMask*>(binary + offset);
+            
+            if (driverVersion == 112402)
+            {
+                SULEV(cbufMask->index, 0);
+                SULEV(cbufMask->size, 0);
+                SULEV(cbufMask[1].index, 1);
+                SULEV(cbufMask[1].size, 0);
+                cbufMask += 2;
+                cxuint cbId = 2 + config.constDataRequired;
+                for (const AmdKernelArg& arg: config.args)
+                    if (arg.argType == KernelArgType::POINTER &&
+                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    {
+                        SULEV(cbufMask->index, cbId++);
+                        SULEV(cbufMask->size, 0);
+                    }
+                if (config.constDataRequired)
+                {
+                    SULEV(cbufMask->index, 2);
+                    SULEV(cbufMask->size, 0);
+                }
+            }
+            else if (isOlderThan1124)
+            {   /* for driver 12.10 */
+                cxuint cbid = constBuffersNum-1;
+                for (cxuint k = config.args.size(); k >= 0; k--)
+                {
+                    const AmdKernelArg& arg = config.args[k-1];
+                    if (arg.argType == KernelArgType::POINTER &&
+                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    {
+                        SULEV(cbufMask->index, cbid--);
+                        SULEV(cbufMask->index, arg.constSpaceSize!=0 ?
+                            ((arg.constSpaceSize+15)>>4) : 4096);
+                    }
+                }
+                if (config.constDataRequired)
+                {
+                    SULEV(cbufMask->index, 2); // ????
+                    SULEV(cbufMask->size, (input->globalDataSize+15)>>4);
+                    cbufMask++;
+                }
+                SULEV(cbufMask->index, 1);
+                SULEV(cbufMask->size, (tempConfig.argsSpace+15)>>4);
+                SULEV(cbufMask[1].index, 0);
+                SULEV(cbufMask[1].size, 15);
+            }
+            else // new drivers
+            {
+                SULEV(cbufMask->index, 0);
+                SULEV(cbufMask->size, 0);
+                SULEV(cbufMask[1].index, 1);
+                SULEV(cbufMask[1].size, 0);
+                cbufMask += 2;
+                cxuint uavId = tempConfig.uavId+1;
+                for (const AmdKernelArg& arg: config.args)
+                    if (arg.argType == KernelArgType::POINTER &&
+                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    {
+                        if (arg.used)
+                            SULEV(cbufMask->index, uavId++);
+                        else
+                            SULEV(cbufMask->index, tempConfig.uavId);
+                        cbufMask++;
+                    }
+            }
+            
+            // CALNOTE_INPUT_SAMPLERS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_INPUT_SAMPLERS);
+            SULEV(noteHdr->descSize, 8*samplersNum);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            offset += noteHdr->descSize;
+            
+            CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
+                        binary + offset);
+            for (cxuint k = 0; k < samplersNum; k++, sampEntry++)
+            {
+                SULEV(sampEntry[k].input, 0);
+                SULEV(sampEntry[k].sampler, k);
+            }
+            
             // CALNOTE_SCRATCH_BUFFERS
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
             SULEV(noteHdr->nameSize, 8);
@@ -1162,6 +1252,101 @@ void AmdGPUBinGenerator::generate()
             SULEV(noteHdr->descSize, 0);
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
+            
+            /* PROGRAM_INFO */
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_PERSISTENT_BUFFERS);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            
+            CALProgramInfoEntry* progInfo = reinterpret_cast<CALProgramInfoEntry*>(
+                        binary + offset);
+            SULEV(progInfo[0].address, 0x80001000U);
+            SULEV(progInfo[0].value, config.userDataElemsNum);
+            cxuint k = 0;
+            for (k = 0; k < config.userDataElemsNum; k++)
+            {
+                SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
+                SULEV(progInfo[1+(k<<2)].value, config.userDatas[k].dataClass);
+                SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
+                SULEV(progInfo[1+(k<<2)+1].value, config.userDatas[k].apiSlot);
+                SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
+                SULEV(progInfo[1+(k<<2)+2].value, config.userDatas[k].regStart);
+                SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
+                SULEV(progInfo[1+(k<<2)+3].value, config.userDatas[k].regSize);
+            }
+            if (isOlderThan1124)
+                for (k =  config.userDataElemsNum; k < 16; k++)
+                {
+                    SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
+                    SULEV(progInfo[1+(k<<2)].value, 0);
+                    SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
+                    SULEV(progInfo[1+(k<<2)+1].value, 0);
+                    SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
+                    SULEV(progInfo[1+(k<<2)+2].value, 0);
+                    SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
+                    SULEV(progInfo[1+(k<<2)+3].value, 0);
+                }
+            k++;
+            SULEV(progInfo[k].address, 0x80001041U);
+            SULEV(progInfo[k++].value, config.usedSGPRsNum);
+            SULEV(progInfo[k].address, 0x80001042U);
+            SULEV(progInfo[k++].value, config.usedVGPRsNum);
+            SULEV(progInfo[k].address, 0x80001863U);
+            SULEV(progInfo[k++].value, 102);
+            SULEV(progInfo[k].address, 0x80001864U);
+            SULEV(progInfo[k++].value, 256);
+            SULEV(progInfo[k].address, 0x80001043U);
+            SULEV(progInfo[k++].value, config.floatMode);
+            SULEV(progInfo[k].address, 0x80001044U);
+            SULEV(progInfo[k++].value, config.ieeeMode);
+            SULEV(progInfo[k].address, 0x80001045U);
+            SULEV(progInfo[k++].value, config.scratchBufferSize);
+            SULEV(progInfo[k].address, 0x00002e13U);
+            SULEV(progInfo[k++].value, *reinterpret_cast<const cxuint*>(&config.pgmRSRC2));
+            SULEV(progInfo[k].address, 0x8000001cU);
+            SULEV(progInfo[k++].value, config.reqdWorkGroupSize[0]);
+            SULEV(progInfo[k].address, 0x8000001dU);
+            SULEV(progInfo[k++].value, config.reqdWorkGroupSize[1]);
+            SULEV(progInfo[k].address, 0x8000001eU);
+            SULEV(progInfo[k++].value, config.reqdWorkGroupSize[2]);
+            SULEV(progInfo[k].address, 0x80001841U);
+            SULEV(progInfo[k++].value, 0);
+            uint32_t uavMask[32];
+            ::memset(uavMask, 0, 32);
+            uavMask[0] = (1U<<writeOnlyImages)-1U;
+            const cxuint globalPointers = uavsNum-1-writeOnlyImages;
+            if (globalPointers>32-tempConfig.uavId-1)
+            {
+                uavMask[0] |= ~((1U<<(tempConfig.uavId+1))-1U);
+                const cxuint uavMaskEnd = globalPointers-(32-tempConfig.uavId-1);
+                const cxuint maxUavVals = uavMaskEnd>>5;
+                std::fill(uavMask+1, uavMask+maxUavVals+1, 0);
+                if (maxUavVals<31)
+                {
+                    const cxuint bits = (uavMaskEnd-(maxUavVals<<5));
+                    uavMask[maxUavVals+1] = (bits!=32)?(1U<<bits)-1U:0xffffffffU;
+                }
+            }
+            else // only single
+                uavMask[0] |= ((1U<<globalPointers)-1U)<<(tempConfig.uavId+1);
+            
+            SULEV(progInfo[k].address, 0x8000001fU);
+            SULEV(progInfo[k++].value, uavMask[0]);
+            for (cxuint p = 0; p < 32; p++)
+            {
+                SULEV(progInfo[k].address, 0x80001843U+p);
+                SULEV(progInfo[k++].value, uavMask[p]);
+            }
+            SULEV(progInfo[k].address, 0x8000000aU);
+            SULEV(progInfo[k++].value, 1);
+            SULEV(progInfo[k].address, 0x80000081U);
+            SULEV(progInfo[k++].value, 32768);
+            SULEV(progInfo[k].address, 0x80000082U);
+            SULEV(progInfo[k++].value, config.hwLocalSize);
+            offset += 8*k;
+            SULEV(noteHdr->descSize, 8*k);
         }
         else // from CALNotes array
             for (const CALNoteInput& calNote: kernel.calNotes)
@@ -1171,6 +1356,10 @@ void AmdGPUBinGenerator::generate()
                 ::memcpy(binary + offset, calNote.data, calNote.header.descSize);
                 offset += calNote.header.descSize;
             }
+        SULEV(notePrgHdr->p_filesz, offset-innerBinOffset);
+        SULEV(loadPrgHdr->p_memsz, offset);
+        SULEV(loadPrgHdr->p_filesz, kernel.codeSize);
+        SULEV(loadPrgHdr->p_memsz, kernel.codeSize);
         
         // .text
         SULEV(sectionHdrTable->sh_name, 11);
@@ -1179,8 +1368,12 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_addr, 0);
         SULEV(sectionHdrTable->sh_addralign, 0);
         SULEV(sectionHdrTable->sh_link, 0);
+        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
+        SULEV(sectionHdrTable->sh_size, kernel.codeSize);
         SULEV(sectionHdrTable->sh_entsize, 0);
         sectionHdrTable++;
+        ::memcpy(binary + offset, kernel.code, kernel.codeSize);
+        offset += kernel.codeSize;
         // .data
         SULEV(sectionHdrTable->sh_name, 17);
         SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
@@ -1188,7 +1381,19 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_addr, 0);
         SULEV(sectionHdrTable->sh_addralign, 0);
         SULEV(sectionHdrTable->sh_link, 0);
-        //SULEV(sectionHdrTable->sh_entsize, 0);
+        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
+        SULEV(sectionHdrTable->sh_offset, (kernel.data!=nullptr)?kernel.dataSize:4736);
+        SULEV(sectionHdrTable->sh_entsize, 0);
+        if (kernel.data != nullptr)
+        {
+            ::memcpy(binary + offset, kernel.data, kernel.dataSize);
+            offset += kernel.dataSize;
+        }
+        else
+        {
+            ::memset(binary + offset, 0, 4736);
+            offset += 4736;
+        }
         sectionHdrTable++;
         // .symtab
         SULEV(sectionHdrTable->sh_name, 23);
@@ -1196,15 +1401,24 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_flags, 0);
         SULEV(sectionHdrTable->sh_addr, 0);
         SULEV(sectionHdrTable->sh_addralign, 0);
+        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
         SULEV(sectionHdrTable->sh_size, sizeof(Elf32_Sym));
         SULEV(sectionHdrTable->sh_link, 5);
         SULEV(sectionHdrTable->sh_entsize, sizeof(Elf32_Sym));
         sectionHdrTable++;
+        ::memset(binary + offset, 0, sizeof(Elf32_Sym));
+        offset += sizeof(Elf32_Sym);
         // .strtab
         SULEV(sectionHdrTable->sh_name, 30);
         SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
         SULEV(sectionHdrTable->sh_flags, 0);
         SULEV(sectionHdrTable->sh_addr, 0);
         SULEV(sectionHdrTable->sh_addralign, 0);
+        SULEV(sectionHdrTable->sh_link, 0);
+        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
+        SULEV(sectionHdrTable->sh_size, 2);
+        SULEV(sectionHdrTable->sh_entsize, 0);
+        offset += 2;
     }
+    /* main sections */
 }
