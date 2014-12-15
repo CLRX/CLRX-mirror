@@ -713,6 +713,7 @@ void Disassembler::disassemble()
                         break;
                     }
                     case CALNOTE_ATI_EARLYEXIT:
+                    case CALNOTE_ATI_CONDOUT:
                     case CALNOTE_ATI_UAV_OP_MASK:
                     case CALNOTE_ATI_UAV_MAILBOX_SIZE:
                         if (calNote.header.descSize == 4)
