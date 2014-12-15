@@ -294,6 +294,86 @@ static void putMainSymbols(size_t& offset, cxbyte* binary, const AmdInput* input
             (input->globalData != nullptr));
 }
 
+template<typename ElfShdr, typename ElfSym>
+static void putMainSections(cxbyte* binary, size_t offset,
+        const size_t* sectionOffsets, size_t alignFix)
+{
+    ElfShdr* sectionHdrTable = reinterpret_cast<ElfShdr*>(binary + offset);
+    ::memset(sectionHdrTable, 0, sizeof(ElfShdr));
+    sectionHdrTable++;
+    // .shstrtab
+    SULEV(sectionHdrTable->sh_name, 1);
+    SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
+    SULEV(sectionHdrTable->sh_flags, SHF_STRINGS);
+    SULEV(sectionHdrTable->sh_addr, 0);
+    SULEV(sectionHdrTable->sh_offset, sectionOffsets[0]);
+    SULEV(sectionHdrTable->sh_size, sectionOffsets[1]-sectionOffsets[0]);
+    SULEV(sectionHdrTable->sh_link, 0);
+    SULEV(sectionHdrTable->sh_info, 0);
+    SULEV(sectionHdrTable->sh_addralign, 1);
+    SULEV(sectionHdrTable->sh_entsize, 0);
+    sectionHdrTable++;
+    // .strtab
+    SULEV(sectionHdrTable->sh_name, 11);
+    SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
+    SULEV(sectionHdrTable->sh_flags, SHF_STRINGS);
+    SULEV(sectionHdrTable->sh_addr, 0);
+    SULEV(sectionHdrTable->sh_offset, sectionOffsets[1]);
+    SULEV(sectionHdrTable->sh_size, sectionOffsets[2]-sectionOffsets[1]-alignFix);
+    SULEV(sectionHdrTable->sh_link, 0);
+    SULEV(sectionHdrTable->sh_info, 0);
+    SULEV(sectionHdrTable->sh_addralign, 1);
+    SULEV(sectionHdrTable->sh_entsize, 0);
+    sectionHdrTable++;
+    // .symtab
+    SULEV(sectionHdrTable->sh_name, 19);
+    SULEV(sectionHdrTable->sh_type, SHT_SYMTAB);
+    SULEV(sectionHdrTable->sh_flags, 0);
+    SULEV(sectionHdrTable->sh_addr, 0);
+    SULEV(sectionHdrTable->sh_offset, sectionOffsets[2]);
+    SULEV(sectionHdrTable->sh_size, sectionOffsets[3]-sectionOffsets[2]);
+    SULEV(sectionHdrTable->sh_link, 2);
+    SULEV(sectionHdrTable->sh_info, 0);
+    SULEV(sectionHdrTable->sh_addralign, 8);
+    SULEV(sectionHdrTable->sh_entsize, sizeof(ElfSym));
+    sectionHdrTable++;
+    // .comment
+    SULEV(sectionHdrTable->sh_name, 27);
+    SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
+    SULEV(sectionHdrTable->sh_flags, 0);
+    SULEV(sectionHdrTable->sh_addr, 0);
+    SULEV(sectionHdrTable->sh_offset, sectionOffsets[3]);
+    SULEV(sectionHdrTable->sh_size, sectionOffsets[4]-sectionOffsets[3]);
+    SULEV(sectionHdrTable->sh_link, 0);
+    SULEV(sectionHdrTable->sh_info, 0);
+    SULEV(sectionHdrTable->sh_addralign, 1);
+    SULEV(sectionHdrTable->sh_entsize, 0);
+    sectionHdrTable++;
+    // .rodata
+    SULEV(sectionHdrTable->sh_name, 35);
+    SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
+    SULEV(sectionHdrTable->sh_flags, SHF_ALLOC);
+    SULEV(sectionHdrTable->sh_addr, 0);
+    SULEV(sectionHdrTable->sh_offset, sectionOffsets[4]);
+    SULEV(sectionHdrTable->sh_size, sectionOffsets[5]-sectionOffsets[4]);
+    SULEV(sectionHdrTable->sh_link, 0);
+    SULEV(sectionHdrTable->sh_info, 0);
+    SULEV(sectionHdrTable->sh_addralign, 1);
+    SULEV(sectionHdrTable->sh_entsize, 0);
+    sectionHdrTable++;
+    // .text
+    SULEV(sectionHdrTable->sh_name, 43);
+    SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
+    SULEV(sectionHdrTable->sh_flags, SHF_ALLOC|SHF_EXECINSTR);
+    SULEV(sectionHdrTable->sh_addr, 0);
+    SULEV(sectionHdrTable->sh_offset, sectionOffsets[5]);
+    SULEV(sectionHdrTable->sh_size, offset-sectionOffsets[5]);
+    SULEV(sectionHdrTable->sh_link, 0);
+    SULEV(sectionHdrTable->sh_info, 0);
+    SULEV(sectionHdrTable->sh_addralign, 1);
+    SULEV(sectionHdrTable->sh_entsize, 0);
+}
+
 void AmdGPUBinGenerator::generate()
 {
     const size_t kernelsNum = input->kernels.size();
@@ -410,16 +490,21 @@ void AmdGPUBinGenerator::generate()
     }
     /* count number of bytes required to save */
     if (!input->is64Bit)
-        binarySize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Shdr)*7 +
-                sizeof(Elf32_Sym)*(3*kernelsNum + 2);
+        binarySize = sizeof(Elf32_Ehdr);
     else
-        binarySize = sizeof(Elf64_Ehdr) + sizeof(Elf64_Shdr)*7 +
-                sizeof(Elf64_Sym)*(3*kernelsNum + 2);
+        binarySize = sizeof(Elf64_Ehdr);
     
     for (const AmdKernelInput& kinput: input->kernels)
         binarySize += (kinput.kernelName.size())*3;
     binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) + 26/* static strtab size */ +
             driverInfo.size() + input->compileOptions.size() + input->globalDataSize;
+    // alignment for symtab!!! check
+    binarySize = ((binarySize&7)!=0) ? 8-(binarySize&7) : 0;
+    
+    if (!input->is64Bit)
+        binarySize += sizeof(Elf32_Shdr)*7 + sizeof(Elf32_Sym)*(3*kernelsNum + 2);
+    else
+        binarySize += sizeof(Elf64_Shdr)*7 + sizeof(Elf64_Sym)*(3*kernelsNum + 2);
     
     std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
@@ -749,7 +834,9 @@ void AmdGPUBinGenerator::generate()
         uniqueId++;
         binarySize += innerBinSize;
     }
-    /* writing data */
+    /********
+     * writing data
+     *********/
     delete[] binary;    // delete of pointer
     binary = nullptr;
     binary = new cxbyte[binarySize];
@@ -837,6 +924,13 @@ void AmdGPUBinGenerator::generate()
         offset += 8;
     }
     
+    size_t alignFix = 0;
+    if ((offset & 7) != 0)
+    {
+        ::memset(binary + offset, 0, 8-(offset&7));
+        offset += 8-(offset&7);
+        alignFix = 8-(offset&7);
+    }
     // .symtab
     sectionOffsets[2] = offset;
     if (!input->is64Bit)
@@ -886,7 +980,7 @@ void AmdGPUBinGenerator::generate()
     }
     
     /* kernel binaries */
-    sectionOffsets[4] = offset;
+    sectionOffsets[5] = offset;
     for (cxuint i = 0; i < input->kernels.size(); i++)
     {
         const size_t innerBinOffset = offset;
@@ -964,6 +1058,7 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_offset, 0xa8);
         SULEV(sectionHdrTable->sh_size, 40);
         SULEV(sectionHdrTable->sh_link, 0);
+        SULEV(sectionHdrTable->sh_info, 0);
         SULEV(sectionHdrTable->sh_entsize, 0);
         sectionHdrTable++;
         
@@ -1370,6 +1465,7 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_link, 0);
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
         SULEV(sectionHdrTable->sh_size, kernel.codeSize);
+        SULEV(sectionHdrTable->sh_info, 0);
         SULEV(sectionHdrTable->sh_entsize, 0);
         sectionHdrTable++;
         ::memcpy(binary + offset, kernel.code, kernel.codeSize);
@@ -1384,6 +1480,7 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
         SULEV(sectionHdrTable->sh_offset, (kernel.data!=nullptr)?kernel.dataSize:4736);
         SULEV(sectionHdrTable->sh_entsize, 0);
+        SULEV(sectionHdrTable->sh_info, 0);
         if (kernel.data != nullptr)
         {
             ::memcpy(binary + offset, kernel.data, kernel.dataSize);
@@ -1404,21 +1501,27 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
         SULEV(sectionHdrTable->sh_size, sizeof(Elf32_Sym));
         SULEV(sectionHdrTable->sh_link, 5);
+        SULEV(sectionHdrTable->sh_info, 1);
         SULEV(sectionHdrTable->sh_entsize, sizeof(Elf32_Sym));
         sectionHdrTable++;
         ::memset(binary + offset, 0, sizeof(Elf32_Sym));
         offset += sizeof(Elf32_Sym);
         // .strtab
-        SULEV(sectionHdrTable->sh_name, 30);
+        SULEV(sectionHdrTable->sh_name, 31);
         SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
         SULEV(sectionHdrTable->sh_flags, 0);
         SULEV(sectionHdrTable->sh_addr, 0);
         SULEV(sectionHdrTable->sh_addralign, 0);
         SULEV(sectionHdrTable->sh_link, 0);
+        SULEV(sectionHdrTable->sh_info, 0);
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
         SULEV(sectionHdrTable->sh_size, 2);
         SULEV(sectionHdrTable->sh_entsize, 0);
         offset += 2;
     }
     /* main sections */
+    if (!input->is64Bit)
+        putMainSections<Elf32_Shdr, Elf32_Sym>(binary, offset, sectionOffsets, alignFix);
+    else
+        putMainSections<Elf64_Shdr, Elf64_Sym>(binary, offset, sectionOffsets, alignFix);
 }
