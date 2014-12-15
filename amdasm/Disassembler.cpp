@@ -569,7 +569,7 @@ void Disassembler::disassemble()
         if ((flags & DISASM_CALNOTES) != 0)
             for (const AsmCALNote& calNote: kinput.calNotes)
             {
-                char buf[64];
+                char buf[80];
                 // calNote.header fields is already in native endian
                 if (calNote.header.type != 0 && calNote.header.type <= CALNOTE_ATI_MAXTYPE)
                 {
@@ -731,6 +731,37 @@ void Disassembler::disassemble()
                                     calNote.data, output, true);
                         }
                         break;
+                    case CALNOTE_ATI_UAV:
+                    {
+                        output.put('\n');
+                        const cxuint uavsNum =
+                                calNote.header.descSize/sizeof(CALUAVEntry);
+                        const CALUAVEntry* uavEntries =
+                            reinterpret_cast<const CALUAVEntry*>(calNote.data);
+                        ::memcpy(buf, "        .uavid ", 15);
+                        for (cxuint k = 0; k < uavsNum; k++)
+                        {
+                            const CALUAVEntry& uavEntry = uavEntries[k];
+                            size_t bufPos = 15 + itocstrCStyle(
+                                        ULEV(uavEntry.uavId), buf + 15, 32);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += itocstrCStyle(ULEV(uavEntry.f1), buf+bufPos, 32);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += itocstrCStyle(ULEV(uavEntry.f2), buf+bufPos, 32);
+                            buf[bufPos++] = ',';
+                            buf[bufPos++] = ' ';
+                            bufPos += itocstrCStyle(ULEV(uavEntry.type), buf+bufPos, 32);
+                            buf[bufPos++] = '\n';
+                            output.write(buf, bufPos);
+                        }
+                        /// rest
+                        printDisasmData(calNote.header.descSize -
+                            uavsNum*sizeof(CALUAVEntry),
+                            calNote.data + uavsNum*sizeof(CALUAVEntry), output, true);
+                        break;
+                    }
                     default:
                         output.put('\n');
                         printDisasmData(calNote.header.descSize, calNote.data,

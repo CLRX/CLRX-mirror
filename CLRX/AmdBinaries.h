@@ -202,6 +202,13 @@ struct CALProgramInfoEntry
     uint32_t value;     ///< value to set
 };
 
+struct CALUAVEntry
+{
+    uint32_t uavId;
+    uint32_t f1, f2;
+    uint32_t type;
+};
+
 struct CALDataSegmentEntry
 {
     uint32_t offset;

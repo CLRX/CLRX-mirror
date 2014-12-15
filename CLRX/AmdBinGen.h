@@ -126,7 +126,7 @@ struct AmdKernelConfig
     AmdUserData userDatas[16];
 };
 
-struct BinCALNote
+struct CALNoteInput
 {
     CALNoteHeader header;  ///< header of CAL note
     const cxbyte* data;   ///< data of CAL note
@@ -142,7 +142,7 @@ struct AmdKernelInput
     const cxbyte* header;   ///< kernel header size
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< kernel's metadata
-    std::vector<BinCALNote> calNotes;
+    std::vector<CALNoteInput> calNotes;
     bool useConfig;
     AmdKernelConfig config;
     size_t codeSize;
@@ -165,7 +165,7 @@ struct AmdInput
            const AmdKernelConfig& config, size_t dataSize = 0,
            const cxbyte* data = nullptr);
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
-           const std::vector<BinCALNote>& calNotes, const cxbyte* header,
+           const std::vector<CALNoteInput>& calNotes, const cxbyte* header,
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
 };

@@ -87,7 +87,7 @@ void AmdInput::addKernel(const char* kernelName, size_t codeSize,
 }
 
 void AmdInput::addKernel(const char* kernelName, size_t codeSize,
-       const cxbyte* code, const std::vector<BinCALNote>& calNotes, const cxbyte* header,
+       const cxbyte* code, const std::vector<CALNoteInput>& calNotes, const cxbyte* header,
        size_t metadataSize, const char* metadata, size_t dataSize, const cxbyte* data)
 {
     kernels.push_back({ kernelName, dataSize, data, 32, header,
@@ -740,7 +740,7 @@ void AmdGPUBinGenerator::generate()
         }
         else // if defined in calNotes (no config)
         {
-            for (const BinCALNote& calNote: kinput.calNotes)
+            for (const CALNoteInput& calNote: kinput.calNotes)
                 innerBinSize += 20 + calNote.header.descSize;
             if (kinput.metadata != nullptr)
                 innerBinSize += kinput.metadataSize;
@@ -1074,6 +1074,7 @@ void AmdGPUBinGenerator::generate()
                         SULEV(data32[2], 0);
                         SULEV(data32[3], 5);
                     }
+                    data32++;
                 }
             }
             // privateid or uavid (???)
@@ -1163,7 +1164,7 @@ void AmdGPUBinGenerator::generate()
             offset += sizeof(CALNoteHeader);
         }
         else // from CALNotes array
-            for (const BinCALNote& calNote: kernel.calNotes)
+            for (const CALNoteInput& calNote: kernel.calNotes)
             {
                 ::memcpy(binary + offset, &calNote.header, sizeof(CALNoteHeader));
                 offset += sizeof(CALNoteHeader);
