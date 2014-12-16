@@ -350,7 +350,7 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     SULEV(sectionHdrTable->sh_entsize, 0);
     sectionHdrTable++;
     // .rodata
-    SULEV(sectionHdrTable->sh_name, 35);
+    SULEV(sectionHdrTable->sh_name, 36);
     SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
     SULEV(sectionHdrTable->sh_flags, SHF_ALLOC);
     SULEV(sectionHdrTable->sh_addr, 0);
@@ -362,7 +362,7 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     SULEV(sectionHdrTable->sh_entsize, 0);
     sectionHdrTable++;
     // .text
-    SULEV(sectionHdrTable->sh_name, 43);
+    SULEV(sectionHdrTable->sh_name, 44);
     SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
     SULEV(sectionHdrTable->sh_flags, SHF_ALLOC|SHF_EXECINSTR);
     SULEV(sectionHdrTable->sh_addr, 0);
@@ -1408,11 +1408,22 @@ void AmdGPUBinGenerator::generate()
             SULEV(progInfo[k].address, 0x00002e13U);
             SULEV(progInfo[k++].value, config.pgmRSRC2Value);
             SULEV(progInfo[k].address, 0x8000001cU);
-            SULEV(progInfo[k++].value, config.reqdWorkGroupSize[0]);
-            SULEV(progInfo[k].address, 0x8000001dU);
-            SULEV(progInfo[k++].value, config.reqdWorkGroupSize[1]);
-            SULEV(progInfo[k].address, 0x8000001eU);
-            SULEV(progInfo[k++].value, config.reqdWorkGroupSize[2]);
+            SULEV(progInfo[k+1].address, 0x8000001dU);
+            SULEV(progInfo[k+2].address, 0x8000001eU);
+            if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&
+                config.reqdWorkGroupSize[2] != 0)
+            {
+                SULEV(progInfo[k].value, config.reqdWorkGroupSize[0]);
+                SULEV(progInfo[k+1].value, config.reqdWorkGroupSize[1]);
+                SULEV(progInfo[k+2].value, config.reqdWorkGroupSize[2]);
+            }
+            else
+            {   /* default */
+                SULEV(progInfo[k].value, 256);
+                SULEV(progInfo[k+1].value, 0);
+                SULEV(progInfo[k+2].value, 0);
+            }
+            k+=3;
             SULEV(progInfo[k].address, 0x80001841U);
             SULEV(progInfo[k++].value, 0);
             uint32_t uavMask[32];

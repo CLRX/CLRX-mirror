@@ -34,6 +34,7 @@
 namespace CLRX
 {
 
+/// type of GPU device
 enum class GPUDeviceType: cxbyte
 {
     UNDEFINED = 0,
@@ -65,6 +66,7 @@ enum: cxuint {
     AMDBIN_NOTSUPPLIED  = 0xffffffeU ///< if set in field then field has been ignored
 };
 
+/// AMD OpenCL kernel argument description
 struct AmdKernelArg
 {
     std::string argName;    ///< argument name
@@ -78,15 +80,16 @@ struct AmdKernelArg
     bool used; ///< used by kernel
 };
 
+/// user data for in CAL PROGINFO
 struct AmdUserData
 {
-    uint32_t dataClass;
-    uint32_t apiSlot;
-    uint32_t regStart;
-    uint32_t regSize;
+    uint32_t dataClass; ///< type of data
+    uint32_t apiSlot;   ///< slot
+    uint32_t regStart;  ///< number of beginning SGPR register
+    uint32_t regSize;   ///< number of used SGPRS registers
 };
 
-struct PgmRsrc2
+struct PgmRSRC2
 {
     cxuint isScratch : 1;
     cxuint userSGRP : 5;
@@ -101,32 +104,33 @@ struct PgmRsrc2
     cxuint excpEn : 7;
     cxuint : 1;
 };
-    
+
+/// kernel configuration
 struct AmdKernelConfig
 {
-    std::vector<AmdKernelArg> args;
-    std::vector<cxuint> samplers;
-    uint32_t reqdWorkGroupSize[3];
-    uint32_t usedVGPRsNum;
-    uint32_t usedSGPRsNum;
+    std::vector<AmdKernelArg> args; ///< arguments
+    std::vector<cxuint> samplers;   ///< defined samplers
+    uint32_t reqdWorkGroupSize[3];  /// reqd_work_group_size
+    uint32_t usedVGPRsNum;  ///< number of used VGPRs
+    uint32_t usedSGPRsNum;  ///< number of used SGPRs
     union {
-        PgmRsrc2 pgmRSRC2;
+        PgmRSRC2 pgmRSRC2;
         uint32_t pgmRSRC2Value;
     };
     uint32_t ieeeMode;
     uint32_t floatMode;
-    size_t hwLocalSize;
+    size_t hwLocalSize; ///< used local size (not local defined in kernel arguments)
     uint32_t hwRegion;
-    uint32_t scratchBufferSize;
-    uint32_t uavPrivate;
-    uint32_t uavId;
+    uint32_t scratchBufferSize; ///< size of scratch buffer
+    uint32_t uavPrivate;    ///< uav private size
+    uint32_t uavId; ///< uavID
     uint32_t constBufferId;
-    uint32_t printfId;
+    uint32_t printfId;  ///< UAV ID for printf
     uint32_t privateId;
-    uint32_t earlyExit;
-    uint32_t condOut;
-    bool constDataRequired;
-    cxuint userDataElemsNum;
+    uint32_t earlyExit; ///< CALNOTE_EARLYEXIT value
+    uint32_t condOut;   ///< CALNOTE_CONDOUT value
+    bool constDataRequired; ///< if const data required
+    cxuint userDataElemsNum;    ///< number of user data
     AmdUserData userDatas[16];
 };
 
@@ -136,44 +140,48 @@ struct CALNoteInput
     const cxbyte* data;   ///< data of CAL note
 };
 
-
 struct AmdKernelInput
 {
     std::string kernelName; ///< kernel name
-    size_t dataSize;
-    const cxbyte* data;
-    size_t headerSize;  ///< kernel header size
-    const cxbyte* header;   ///< kernel header size
-    size_t metadataSize;    ///< metadata size
-    const char* metadata;   ///< kernel's metadata
-    std::vector<CALNoteInput> calNotes;
-    bool useConfig;
-    AmdKernelConfig config;
-    size_t codeSize;
-    const cxbyte* code;
+    size_t dataSize;    ///< data size
+    const cxbyte* data; /// data
+    size_t headerSize;  ///< kernel header size (used if useConfig=false)
+    const cxbyte* header;   ///< kernel header size (used if useConfig=false)
+    size_t metadataSize;    ///< metadata size (used if useConfig=false)
+    const char* metadata;   ///< kernel's metadata (used if useConfig=false)
+    std::vector<CALNoteInput> calNotes; ///< CAL Note array (used if useConfig=false)
+    bool useConfig;         ///< true if configuration has been used to generate binary
+    AmdKernelConfig config; ///< kernel's configuration
+    size_t codeSize;        ///< code size
+    const cxbyte* code;     ///< code
 };
 
+/// main Input for AmdGPUBinGenerator
 struct AmdInput
 {
-    bool is64Bit;
-    GPUDeviceType deviceType;
-    size_t globalDataSize;
-    const cxbyte* globalData;
-    uint32_t driverVersion;
-    std::string compileOptions;
-    std::string driverInfo;
-    std::vector<AmdKernelInput> kernels;
+    bool is64Bit;   ///< is 64-bit binary
+    GPUDeviceType deviceType;   ///< GPU device type
+    size_t globalDataSize;  ///< global constant data size
+    const cxbyte* globalData;   ///< global constant data
+    uint32_t driverVersion;     ///< driver version (majorVersion*100 + minorVersion)
+    std::string compileOptions; ///< compile options
+    std::string driverInfo;     ///< driver info
+    std::vector<AmdKernelInput> kernels;    ///< kernels
     
+    /// add kernel to input
     void addKernel(const AmdKernelInput& kernelInput);
+    /// add kernel to input
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
            const AmdKernelConfig& config, size_t dataSize = 0,
            const cxbyte* data = nullptr);
+    /// add kernel to input
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
            const std::vector<CALNoteInput>& calNotes, const cxbyte* header,
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
 };
 
+/// main AMD GPU Binary generator
 class AmdGPUBinGenerator
 {
 private:
@@ -185,13 +193,19 @@ private:
 public:
     AmdGPUBinGenerator();
     AmdGPUBinGenerator(const AmdInput* amdInput);
+    /// constructor
+    /**
+     * \param _64bitMode true if binary will be 64-bit
+     * \param deviceType GPU device type
+     * \param driverVersion number of driver version (majorVersion*100 + minorVersion)
+     * \param globalDataSize size of constant global data
+     * \param globalData global constant data
+     * \param kernelInputs array of kernel inputs
+     */
     AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData, 
            const std::vector<AmdKernelInput>& kernelInputs);
     ~AmdGPUBinGenerator();
-    
-    const AmdInput* getInput() const
-    { return input; }
     
     // non-copyable and non-movable
     AmdGPUBinGenerator(const AmdGPUBinGenerator& c) = delete;
@@ -199,10 +213,16 @@ public:
     AmdGPUBinGenerator(AmdGPUBinGenerator&& c) = delete;
     AmdGPUBinGenerator& operator=(AmdGPUBinGenerator&& c) = delete;
         
+    const AmdInput* getInput() const
+    { return input; }
+    
+    /// generates binary
     void generate();
     
+    /// get binary size
     size_t getBinarySize() const
     { return binarySize; }
+    /// get binary content
     const cxbyte* getBinary() const
     { return binary; }
 };
