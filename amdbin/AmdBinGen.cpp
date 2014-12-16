@@ -290,7 +290,7 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         namePos += 17 + kernel.kernelName.size();
         rodataPos += headerSize;
     }
-    offset += sizeof(ElfSym)*(input->kernels.size()*3 + 1 +
+    offset += sizeof(ElfSym)*(input->kernels.size()*3 + 2 +
             (input->globalData != nullptr));
 }
 
@@ -511,9 +511,11 @@ void AmdGPUBinGenerator::generate()
     binarySize = ((binarySize&7)!=0) ? 8-(binarySize&7) : 0;
     
     if (!input->is64Bit)
-        binarySize += sizeof(Elf32_Shdr)*7 + sizeof(Elf32_Sym)*(3*kernelsNum + 2);
+        binarySize += sizeof(Elf32_Shdr)*7 + sizeof(Elf32_Sym)*(3*kernelsNum + 2 +
+                (input->globalData != nullptr));
     else
-        binarySize += sizeof(Elf64_Shdr)*7 + sizeof(Elf64_Sym)*(3*kernelsNum + 2);
+        binarySize += sizeof(Elf64_Shdr)*7 + sizeof(Elf64_Sym)*(3*kernelsNum + 2 +
+                (input->globalData != nullptr));
     
     std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
@@ -1132,26 +1134,26 @@ void AmdGPUBinGenerator::generate()
             SULEV(noteHdr->descSize, 16*uavsNum);
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            CALUAVEntry* uavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
             if (isOlderThan1124)
             {   // for new drivers
                 for (cxuint k = 0; k < writeOnlyImages; k++)
                 {   /* writeOnlyImages */
-                    SULEV(data32[k<<2], k);
-                    SULEV(data32[(k<<2)+1], 2);
-                    SULEV(data32[(k<<2)+2], 2);
-                    SULEV(data32[(k<<2)+3], 3);
+                    SULEV(uavEntry[k].uavId, k);
+                    SULEV(uavEntry[k].f1, 2);
+                    SULEV(uavEntry[k].f2, 2);
+                    SULEV(uavEntry[k].type, 3);
                 }
-                data32 += writeOnlyImages<<2;
+                uavEntry += writeOnlyImages;
                 // global buffers
                 for (cxuint k = 0; k < uavsNum-writeOnlyImages-1; k++)
                 {
-                    SULEV(data32[k<<2], k+tempConfig.uavId+1);
-                    SULEV(data32[(k<<2)+1], 4);
-                    SULEV(data32[(k<<2)+2], 0);
-                    SULEV(data32[(k<<2)+3], 5);
+                    SULEV(uavEntry[k].uavId, k+tempConfig.uavId+1);
+                    SULEV(uavEntry[k].f1, 4);
+                    SULEV(uavEntry[k].f2, 0);
+                    SULEV(uavEntry[k].type, 5);
                 }
-                data32 += (uavsNum-writeOnlyImages-1)<<2;
+                uavEntry += (uavsNum-writeOnlyImages-1);
             }
             else
             {   /* in argument order */
@@ -1163,30 +1165,30 @@ void AmdGPUBinGenerator::generate()
                         arg.argType <= KernelArgType::MAX_IMAGE &&
                         (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                     {   // write_only images
-                        SULEV(data32[0], writeOnlyImagesCount++);
-                        SULEV(data32[1], 2);
-                        SULEV(data32[2], 2);
-                        SULEV(data32[3], 5);
+                        SULEV(uavEntry->uavId, writeOnlyImagesCount++);
+                        SULEV(uavEntry->f1, 2);
+                        SULEV(uavEntry->f2, 2);
+                        SULEV(uavEntry->type, 5);
                     }
                     else if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::GLOBAL)
                     {   // uavid
                         if (arg.used)
-                            SULEV(data32[0], uavIdsCount++);
+                            SULEV(uavEntry->uavId, uavIdsCount++);
                         else
-                            SULEV(data32[0], tempConfig.uavId);
-                        SULEV(data32[1], 4);
-                        SULEV(data32[2], 0);
-                        SULEV(data32[3], 5);
+                            SULEV(uavEntry->uavId, tempConfig.uavId);
+                        SULEV(uavEntry->f1, 4);
+                        SULEV(uavEntry->f2, 0);
+                        SULEV(uavEntry->type, 5);
                     }
-                    data32++;
+                    uavEntry++;
                 }
             }
             // privateid or uavid (???)
-            SULEV(data32[0], (isOlderThan1384)?config.privateId:config.uavId);
-            SULEV(data32[1], (isOlderThan1384)?3:4);
-            SULEV(data32[2], 0);
-            SULEV(data32[3], 5);
+            SULEV(uavEntry->uavId, (isOlderThan1384)?config.privateId:config.uavId);
+            SULEV(uavEntry->f1, (isOlderThan1384)?3:4);
+            SULEV(uavEntry->f2, 0);
+            SULEV(uavEntry->type, 5);
             
             // CALNOTE_CONDOUT
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
