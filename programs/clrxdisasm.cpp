@@ -63,8 +63,8 @@ try
     
     if (cli.getArgsNum() == 0)
     {
-        std::cout << "No input files." << std::endl;
-        return 0;
+        std::cerr << "No input files." << std::endl;
+        return 1;
     }
     
     cxuint disasmFlags = DISASM_DUMPCODE;
