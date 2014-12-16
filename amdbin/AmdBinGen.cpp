@@ -1399,7 +1399,7 @@ void AmdGPUBinGenerator::generate()
             SULEV(progInfo[k].address, 0x80001045U);
             SULEV(progInfo[k++].value, config.scratchBufferSize);
             SULEV(progInfo[k].address, 0x00002e13U);
-            SULEV(progInfo[k++].value, *reinterpret_cast<const cxuint*>(&config.pgmRSRC2));
+            SULEV(progInfo[k++].value, config.pgmRSRC2Value);
             SULEV(progInfo[k].address, 0x8000001cU);
             SULEV(progInfo[k++].value, config.reqdWorkGroupSize[0]);
             SULEV(progInfo[k].address, 0x8000001dU);

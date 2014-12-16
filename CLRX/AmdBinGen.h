@@ -109,7 +109,10 @@ struct AmdKernelConfig
     uint32_t reqdWorkGroupSize[3];
     uint32_t usedVGPRsNum;
     uint32_t usedSGPRsNum;
-    PgmRsrc2 pgmRSRC2;
+    union {
+        PgmRsrc2 pgmRSRC2;
+        uint32_t pgmRSRC2Value;
+    };
     uint32_t ieeeMode;
     uint32_t floatMode;
     size_t hwLocalSize;
