@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <elf.h>
+#include <cassert>
 #include <cstdio>
 #include <cstddef>
 #include <cstdint>
@@ -224,7 +225,7 @@ struct TempAmdKernelConfig
 };
 
 template<typename ElfSym>
-static void putMainSymbols(size_t& offset, cxbyte* binary, const AmdInput* input,
+static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input,
     const std::vector<std::string>& kmetadatas, const std::vector<cxuint>& innerBinSizes)
 {
     ElfSym* symbolTable = reinterpret_cast<ElfSym*>(binary+offset);
@@ -295,7 +296,7 @@ static void putMainSymbols(size_t& offset, cxbyte* binary, const AmdInput* input
 }
 
 template<typename ElfShdr, typename ElfSym>
-static void putMainSections(cxbyte* binary, size_t offset,
+static void putMainSections(cxbyte* binary, size_t &offset,
         const size_t* sectionOffsets, size_t alignFix)
 {
     ElfShdr* sectionHdrTable = reinterpret_cast<ElfShdr*>(binary + offset);
@@ -372,6 +373,7 @@ static void putMainSections(cxbyte* binary, size_t offset,
     SULEV(sectionHdrTable->sh_info, 0);
     SULEV(sectionHdrTable->sh_addralign, 1);
     SULEV(sectionHdrTable->sh_entsize, 0);
+    offset += sizeof(ElfShdr)*7;
 }
 
 void AmdGPUBinGenerator::generate()
@@ -934,9 +936,9 @@ void AmdGPUBinGenerator::generate()
     // .symtab
     sectionOffsets[2] = offset;
     if (!input->is64Bit)
-        putMainSymbols<Elf32_Sym>(offset, binary, input, kmetadatas, innerBinSizes);
+        putMainSymbols<Elf32_Sym>(binary, offset, input, kmetadatas, innerBinSizes);
     else
-        putMainSymbols<Elf64_Sym>(offset, binary, input, kmetadatas, innerBinSizes);
+        putMainSymbols<Elf64_Sym>(binary, offset, input, kmetadatas, innerBinSizes);
     // .comment
     sectionOffsets[3] = offset;
     ::memcpy(binary+offset, input->compileOptions.c_str(), input->compileOptions.size());
@@ -1524,4 +1526,5 @@ void AmdGPUBinGenerator::generate()
         putMainSections<Elf32_Shdr, Elf32_Sym>(binary, offset, sectionOffsets, alignFix);
     else
         putMainSections<Elf64_Shdr, Elf64_Sym>(binary, offset, sectionOffsets, alignFix);
+    assert(offset == binarySize);
 }
