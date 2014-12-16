@@ -63,7 +63,7 @@ try
     
     if (cli.getArgsNum() == 0)
     {
-        std::cout << "No output files." << std::endl;
+        std::cout << "No input files." << std::endl;
         return 0;
     }
     
