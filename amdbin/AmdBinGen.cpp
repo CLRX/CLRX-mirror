@@ -279,8 +279,7 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         namePos += 17 + kernel.kernelName.size();
         textPos += innerBinSizes[i];
         /* kernel header */
-        const size_t headerSize = (kernel.useConfig) ?
-                32 : kernel.headerSize;
+        const size_t headerSize = (kernel.useConfig) ? 32 : kernel.headerSize;
         SULEV(symbolTable->st_name, namePos);
         SULEV(symbolTable->st_value, rodataPos);
         SULEV(symbolTable->st_size, headerSize);
@@ -425,7 +424,15 @@ void AmdGPUBinGenerator::generate()
     {
         const AmdKernelInput& kinput = input->kernels[i];
         if (!kinput.useConfig)
-            continue;
+        {
+            if (kinput.metadata == nullptr || kinput.metadataSize == 0)
+                throw Exception("No metadata for kernel");
+            if (kinput.header == nullptr || kinput.headerSize == 0)
+                throw Exception("No header for kernel");
+            if (kinput.code == nullptr)
+                throw Exception("No code for kernel");
+            continue; // and skip
+        }
         const AmdKernelConfig& config = kinput.config;
         TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
         if (config.userDataElemsNum > 16)
@@ -828,10 +835,8 @@ void AmdGPUBinGenerator::generate()
         {
             for (const CALNoteInput& calNote: kinput.calNotes)
                 innerBinSize += 20 + calNote.header.descSize;
-            if (kinput.metadata != nullptr)
-                innerBinSize += kinput.metadataSize;
-            if (kinput.header != nullptr)
-                innerBinSize += kinput.headerSize;
+            innerBinSize += kinput.metadataSize;
+            innerBinSize += kinput.headerSize;
         }
         uniqueId++;
         binarySize += innerBinSize;
@@ -972,7 +977,7 @@ void AmdGPUBinGenerator::generate()
             SULEV(header[7], 0);
             offset += 32;
         }
-        else if (kernel.header != nullptr)
+        else
         {
             ::memcpy(binary+offset, kernel.metadata, kernel.metadataSize);
             offset += kernel.metadataSize;
