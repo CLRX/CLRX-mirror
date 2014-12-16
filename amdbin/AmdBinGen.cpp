@@ -1486,7 +1486,7 @@ void AmdGPUBinGenerator::generate()
             uint32_t uavMask[32];
             ::memset(uavMask, 0, 32);
             uavMask[0] = (1U<<writeOnlyImages)-1U;
-            const cxuint globalPointers = uavIdsCount;
+            const cxuint globalPointers = uavIdsCount-tempConfig.uavId;
             if (globalPointers>32-tempConfig.uavId-1)
             {
                 uavMask[0] |= ~((1U<<(tempConfig.uavId+1))-1U);
