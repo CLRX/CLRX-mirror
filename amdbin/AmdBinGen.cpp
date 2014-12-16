@@ -506,9 +506,11 @@ void AmdGPUBinGenerator::generate()
     for (const AmdKernelInput& kinput: input->kernels)
         binarySize += (kinput.kernelName.size())*3;
     binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) + 26/* static strtab size */ +
-            driverInfo.size() + input->compileOptions.size() + input->globalDataSize;
+            ((input->globalData!=nullptr)?18:0);
     // alignment for symtab!!! check
     binarySize = ((binarySize&7)!=0) ? 8-(binarySize&7) : 0;
+    binarySize += driverInfo.size() + input->compileOptions.size() +
+            input->globalDataSize;
     
     if (!input->is64Bit)
         binarySize += sizeof(Elf32_Shdr)*7 + sizeof(Elf32_Sym)*(3*kernelsNum + 2 +
@@ -529,6 +531,7 @@ void AmdGPUBinGenerator::generate()
         const AmdKernelInput& kinput = input->kernels[i];
         const AmdKernelConfig& config = kinput.config;
         size_t readOnlyImages = 0;
+        size_t writeOnlyImages = 0;
         size_t uavsNum = 0;
         bool notUsedUav = false;
         size_t samplersNum = config.samplers.size();
@@ -542,7 +545,12 @@ void AmdGPUBinGenerator::generate()
                 if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
                     readOnlyImages++;
                 if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                {
                     uavsNum++;
+                    writeOnlyImages++;
+                    if (writeOnlyImages > 8)
+                        throw Exception("Too many write only images");
+                }
             }
             else if (arg.argType == KernelArgType::POINTER)
             {
@@ -1486,7 +1494,7 @@ void AmdGPUBinGenerator::generate()
             uint32_t uavMask[32];
             ::memset(uavMask, 0, 32);
             uavMask[0] = (1U<<writeOnlyImages)-1U;
-            const cxuint globalPointers = uavIdsCount-tempConfig.uavId;
+            const cxuint globalPointers = uavIdsCount-tempConfig.uavId-1;
             if (globalPointers>32-tempConfig.uavId-1)
             {
                 uavMask[0] |= ~((1U<<(tempConfig.uavId+1))-1U);
