@@ -208,12 +208,12 @@ inline int32_t UBEV(const int32_t& t)
 /// convert from/to big endian value from unaligned memory
 inline uint64_t UBEV(const uint64_t& t)
 { return BSWAP64(
-    ((uint64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1])); }
+    ((uint64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0])); }
 
 /// convert from/to big endian value from unaligned memory
 inline int64_t UBEV(const int64_t& t)
 { return BSWAP64(
-    ((int64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1])); }
+    ((int64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0])); }
 #  else
 /// convert from/to big endian value from unaligned memory
 inline uint64_t UBEV(const uint64_t& t)
@@ -420,11 +420,11 @@ inline int32_t UBEV(const int32_t& t)
 #  ifdef HAVE_ARCH_ARM32
 /// convert from/to big endian value from unaligned memory
 inline uint64_t UBEV(const uint64_t& t)
-{ return ((uint64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
+{ return ((uint64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1]); }
 
 /// convert from/to big endian value from unaligned memory
 inline int64_t UBEV(const int64_t& t)
-{ return ((int64_t(((const uint32_t*)&t)[1]))<<32)|(((const uint32_t*)&t)[0]); }
+{ return ((int64_t(((const uint32_t*)&t)[0]))<<32)|(((const uint32_t*)&t)[1]); }
 #  else
 /// convert from/to big endian value from unaligned memory
 inline uint64_t UBEV(const uint64_t& t)
@@ -527,10 +527,10 @@ inline void SUBEV(int32_t& r, int32_t v)
 #  ifdef HAVE_ARCH_ARM32
 /// save from/to big endian value
 inline void SUBEV(uint64_t& r, uint64_t v)
-{ ((uint32_t*)&r)[0] = (uint32_t)v; ((uint32_t*)&r)[1] = v>>32; }
+{ ((uint32_t*)&r)[0] = v>>32; ((uint32_t*)&r)[1] = (uint32_t)v; }
 /// save from/to big endian value
 inline void SUBEV(int64_t& r, int64_t v)
-{ ((uint32_t*)&r)[0] = (uint32_t)v; ((uint32_t*)&r)[1] = v>>32; }
+{ ((uint32_t*)&r)[0] = v>>32; ((uint32_t*)&r)[1] = (uint32_t)v; }
 #  else
 /// save from/to big endian value
 inline void SUBEV(uint64_t& r, uint64_t v)
@@ -579,10 +579,10 @@ inline void SULEV(int32_t& r, int32_t v)
 #  ifdef HAVE_ARCH_ARM32
 /// save from/to little endian value
 inline void SULEV(uint64_t& r, uint64_t v)
-{ ((uint32_t*)&r)[0] = BSWAP32(v>>32); ((uint32_t*)&r)[1] = BSWAP32(v); }
+{ ((uint32_t*)&r)[0] = BSWAP32((uint32_t)v); ((uint32_t*)&r)[1] = BSWAP32(v>>32); }
 /// save from/to little endian value
 inline void SULEV(int64_t& r, int64_t v)
-{ ((uint32_t*)&r)[0] = BSWAP32(v>>32); ((uint32_t*)&r)[1] = BSWAP32(v); }
+{ ((uint32_t*)&r)[0] = BSWAP32((uint32_t)v); ((uint32_t*)&r)[1] = BSWAP32(v>>32); }
 #  else
 /// save from/to little endian value
 inline void SULEV(uint64_t& r, uint64_t v)
