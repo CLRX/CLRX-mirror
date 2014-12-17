@@ -91,8 +91,8 @@ CLRXExtensionEntry clrxExtensionsTable[18] =
 };
 
 /* dispatch structure */
-const CLRXIcdDispatch clrxDispatchRecord = 
-{
+const CLRXIcdDispatch clrxDispatchRecord =
+{ {
     clrxclGetPlatformIDs,
     clrxclGetPlatformInfo,
     clrxclGetDeviceIDs,
@@ -242,7 +242,7 @@ const CLRXIcdDispatch clrxDispatchRecord =
     clrxclSetKernelArgSVMPointer,
     clrxclSetKernelExecInfo
 #endif
-};
+} };
 
 void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
 {

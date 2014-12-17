@@ -1341,7 +1341,7 @@ void AmdGPUBinGenerator::generate()
             else if (isOlderThan1124)
             {   /* for driver 12.10 */
                 cxuint cbid = constBuffersNum-1;
-                for (cxuint k = config.args.size(); k >= 0; k--)
+                for (cxint k = config.args.size(); k >= 0; k--)
                 {
                     const AmdKernelArg& arg = config.args[k-1];
                     if (arg.argType == KernelArgType::POINTER &&
