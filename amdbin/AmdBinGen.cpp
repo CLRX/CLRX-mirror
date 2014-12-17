@@ -419,7 +419,7 @@ void AmdGPUBinGenerator::generate()
     const size_t mainSectionsAlign = (input->is64Bit)?8:4;
     
     const bool isOlderThan1124 = driverVersion < 112402;
-    const bool isOlderThan1384 = driverVersion < 138405;
+    const bool isOlderThan1384 = driverVersion < 134805;
     const bool isOlderThan1598 = driverVersion < 159805;
     /* checking input */
     if (input->deviceType == GPUDeviceType::UNDEFINED ||
