@@ -231,26 +231,32 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
     ElfSym* symbolTable = reinterpret_cast<ElfSym*>(binary+offset);
     ::memset(symbolTable, 0, sizeof(ElfSym));
     size_t namePos = 1;
-    SULEV(symbolTable[1].st_name, namePos); 
-    SULEV(symbolTable[1].st_value, 0);
-    SULEV(symbolTable[1].st_size, input->compileOptions.size());
-    SULEV(symbolTable[1].st_shndx, 4);
-    symbolTable[1].st_info = 0;
-    symbolTable[1].st_other = 0;
-    namePos += 25;
-    symbolTable += 2;
+    if (!input->compileOptions.empty())
+    {
+        SULEV(symbolTable[1].st_name, namePos); 
+        SULEV(symbolTable[1].st_value, 0);
+        SULEV(symbolTable[1].st_size, input->compileOptions.size());
+        SULEV(symbolTable[1].st_shndx, 4);
+        symbolTable[1].st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+        symbolTable[1].st_other = 0;
+        namePos += 25;
+        symbolTable++;
+        offset += sizeof(ElfSym);
+    }
+    symbolTable++;
     size_t rodataPos = 0;
     if (input->globalData != nullptr)
     {
         SULEV(symbolTable->st_name, namePos); 
         SULEV(symbolTable->st_value, 0);
         SULEV(symbolTable->st_size, input->globalDataSize);
-        SULEV(symbolTable->st_shndx, 5);
-        symbolTable->st_info = 0;
+        SULEV(symbolTable->st_shndx, 4);
+        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
         symbolTable->st_other = 0;
         symbolTable++;
         namePos += 18;
         rodataPos = 32;
+        offset += sizeof(ElfSym);
     }
     size_t textPos = 0;
     for (cxuint i = 0; i < input->kernels.size(); i++)
@@ -262,8 +268,8 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         SULEV(symbolTable->st_name, namePos);
         SULEV(symbolTable->st_value, rodataPos);
         SULEV(symbolTable->st_size, metadataSize);
-        SULEV(symbolTable->st_shndx, 5);
-        symbolTable->st_info = 0;
+        SULEV(symbolTable->st_shndx, 4);
+        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
         symbolTable->st_other = 0;
         symbolTable++;
         namePos += 19 + kernel.kernelName.size();
@@ -272,8 +278,8 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         SULEV(symbolTable->st_name, namePos);
         SULEV(symbolTable->st_value, textPos);
         SULEV(symbolTable->st_size, innerBinSizes[i]);
-        SULEV(symbolTable->st_shndx, 6);
-        symbolTable->st_info = 0;
+        SULEV(symbolTable->st_shndx, 5);
+        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
         symbolTable->st_other = 0;
         symbolTable++;
         namePos += 17 + kernel.kernelName.size();
@@ -283,15 +289,14 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         SULEV(symbolTable->st_name, namePos);
         SULEV(symbolTable->st_value, rodataPos);
         SULEV(symbolTable->st_size, headerSize);
-        SULEV(symbolTable->st_shndx, 5);
-        symbolTable->st_info = 0;
+        SULEV(symbolTable->st_shndx, 4);
+        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
         symbolTable->st_other = 0;
         symbolTable++;
         namePos += 17 + kernel.kernelName.size();
         rodataPos += headerSize;
     }
-    offset += sizeof(ElfSym)*(input->kernels.size()*3 + 2 +
-            (input->globalData != nullptr));
+    offset += sizeof(ElfSym)*(input->kernels.size()*3 + 1);
 }
 
 template<typename ElfShdr, typename ElfSym>
@@ -337,10 +342,10 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     SULEV(sectionHdrTable->sh_addralign, 8);
     SULEV(sectionHdrTable->sh_entsize, sizeof(ElfSym));
     sectionHdrTable++;
-    // .comment
+    // .rodata
     SULEV(sectionHdrTable->sh_name, 27);
     SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-    SULEV(sectionHdrTable->sh_flags, 0);
+    SULEV(sectionHdrTable->sh_flags, SHF_ALLOC);
     SULEV(sectionHdrTable->sh_addr, 0);
     SULEV(sectionHdrTable->sh_offset, sectionOffsets[3]);
     SULEV(sectionHdrTable->sh_size, sectionOffsets[4]-sectionOffsets[3]);
@@ -349,10 +354,10 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     SULEV(sectionHdrTable->sh_addralign, 1);
     SULEV(sectionHdrTable->sh_entsize, 0);
     sectionHdrTable++;
-    // .rodata
-    SULEV(sectionHdrTable->sh_name, 36);
+    // .text
+    SULEV(sectionHdrTable->sh_name, 35);
     SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-    SULEV(sectionHdrTable->sh_flags, SHF_ALLOC);
+    SULEV(sectionHdrTable->sh_flags, SHF_ALLOC|SHF_EXECINSTR);
     SULEV(sectionHdrTable->sh_addr, 0);
     SULEV(sectionHdrTable->sh_offset, sectionOffsets[4]);
     SULEV(sectionHdrTable->sh_size, sectionOffsets[5]-sectionOffsets[4]);
@@ -361,17 +366,18 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     SULEV(sectionHdrTable->sh_addralign, 1);
     SULEV(sectionHdrTable->sh_entsize, 0);
     sectionHdrTable++;
-    // .text
-    SULEV(sectionHdrTable->sh_name, 44);
+    // .comment
+    SULEV(sectionHdrTable->sh_name, 41);
     SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-    SULEV(sectionHdrTable->sh_flags, SHF_ALLOC|SHF_EXECINSTR);
+    SULEV(sectionHdrTable->sh_flags, 0);
     SULEV(sectionHdrTable->sh_addr, 0);
     SULEV(sectionHdrTable->sh_offset, sectionOffsets[5]);
-    SULEV(sectionHdrTable->sh_size, offset-sectionOffsets[5]);
+    SULEV(sectionHdrTable->sh_size, sectionOffsets[6]-sectionOffsets[5]);
     SULEV(sectionHdrTable->sh_link, 0);
     SULEV(sectionHdrTable->sh_info, 0);
     SULEV(sectionHdrTable->sh_addralign, 1);
     SULEV(sectionHdrTable->sh_entsize, 0);
+    
     offset += sizeof(ElfShdr)*7;
 }
 
@@ -395,20 +401,22 @@ void AmdGPUBinGenerator::generate()
         size_t pos = input->driverInfo.find("AMD-APP"); // find AMDAPP
         try
         {
+            driverInfo = input->driverInfo;
             if (pos != std::string::npos)
             {   /* let to parse version number */
-                pos += 8;
+                pos += 9;
                 const char* end;
                 driverVersion = cstrtovCStyle<cxuint>(
                         input->driverInfo.c_str()+pos, nullptr, end)*100;
                 end++;
                 driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
             }
-            driverInfo = input->driverInfo;
         }
         catch(const ParseException& ex)
         { driverVersion = 99999909U; /* newest possible */ }
     }
+    
+    const size_t mainSectionsAlign = (input->is64Bit)?8:4;
     
     const bool isOlderThan1124 = driverVersion < 112402;
     const bool isOlderThan1384 = driverVersion < 138405;
@@ -505,19 +513,20 @@ void AmdGPUBinGenerator::generate()
     
     for (const AmdKernelInput& kinput: input->kernels)
         binarySize += (kinput.kernelName.size())*3;
-    binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) + 26/* static strtab size */ +
+    binarySize += 50 /*shstrtab */ + kernelsNum*(19+17+17) +
+            ((!input->compileOptions.empty())?26:1) /* static strtab size */ +
             ((input->globalData!=nullptr)?18:0);
     // alignment for symtab!!! check
-    binarySize = ((binarySize&7)!=0) ? 8-(binarySize&7) : 0;
+    binarySize += ((binarySize&7)!=0) ? 8-(binarySize&7) : 0;
     binarySize += driverInfo.size() + input->compileOptions.size() +
             input->globalDataSize;
     
     if (!input->is64Bit)
-        binarySize += sizeof(Elf32_Shdr)*7 + sizeof(Elf32_Sym)*(3*kernelsNum + 2 +
-                (input->globalData != nullptr));
+        binarySize += sizeof(Elf32_Sym)*(3*kernelsNum + 1 +
+                (!input->compileOptions.empty()) + (input->globalData != nullptr));
     else
-        binarySize += sizeof(Elf64_Shdr)*7 + sizeof(Elf64_Sym)*(3*kernelsNum + 2 +
-                (input->globalData != nullptr));
+        binarySize += sizeof(Elf64_Sym)*(3*kernelsNum + 1 +
+                (!input->compileOptions.empty()) + (input->globalData != nullptr));
     
     std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
@@ -529,55 +538,57 @@ void AmdGPUBinGenerator::generate()
             sizeof(CALEncodingEntry) + 2 + 16 + 40;
         
         const AmdKernelInput& kinput = input->kernels[i];
-        const AmdKernelConfig& config = kinput.config;
-        size_t readOnlyImages = 0;
-        size_t writeOnlyImages = 0;
-        size_t uavsNum = 0;
-        bool notUsedUav = false;
-        size_t samplersNum = config.samplers.size();
-        size_t constBuffersNum = 2 + (isOlderThan1384 /* cbid:2 for older drivers*/ &&
-                config.constDataRequired);
-        for (const AmdKernelArg& arg: config.args)
-        {
-            if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                arg.argType <= KernelArgType::MAX_IMAGE)
-            {
-                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
-                    readOnlyImages++;
-                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-                {
-                    uavsNum++;
-                    writeOnlyImages++;
-                    if (writeOnlyImages > 8)
-                        throw Exception("Too many write only images");
-                }
-            }
-            else if (arg.argType == KernelArgType::POINTER)
-            {
-                if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                {   // only global pointers are defined in uav table
-                    if (arg.used)
-                        uavsNum++;
-                    else
-                        notUsedUav = true;
-                }
-                if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                    constBuffersNum++;
-            }
-           else if (arg.argType == KernelArgType::SAMPLER)
-               samplersNum++;
-        }
-        
-        if (uavsNum!=0)
-            uavsNum++; // uavid 11 or 8
-        if (notUsedUav)
-            uavsNum++; // adds uav for not used
         
         innerBinSize += (kinput.data != nullptr) ? kinput.dataSize : 4736;
         innerBinSize += kinput.codeSize;
-        // CAL notes size
+        size_t metadataSize = 0;
         if (kinput.useConfig)
         {
+            const AmdKernelConfig& config = kinput.config;
+            size_t readOnlyImages = 0;
+            size_t writeOnlyImages = 0;
+            size_t uavsNum = 0;
+            bool notUsedUav = false;
+            size_t samplersNum = config.samplers.size();
+            size_t constBuffersNum = 2 + (isOlderThan1384 /* cbid:2 for older drivers*/ &&
+                    config.constDataRequired);
+            for (const AmdKernelArg& arg: config.args)
+            {
+                if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                    arg.argType <= KernelArgType::MAX_IMAGE)
+                {
+                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                        readOnlyImages++;
+                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                    {
+                        uavsNum++;
+                        writeOnlyImages++;
+                        if (writeOnlyImages > 8)
+                            throw Exception("Too many write only images");
+                    }
+                }
+                else if (arg.argType == KernelArgType::POINTER)
+                {
+                    if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                    {   // only global pointers are defined in uav table
+                        if (arg.used)
+                            uavsNum++;
+                        else
+                            notUsedUav = true;
+                    }
+                    if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                        constBuffersNum++;
+                }
+               else if (arg.argType == KernelArgType::SAMPLER)
+                   samplersNum++;
+            }
+            
+            if (uavsNum!=0)
+                uavsNum++; // uavid 11 or 8
+            if (notUsedUav)
+                uavsNum++; // adds uav for not used
+            
+            
             innerBinSize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
                 2*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
@@ -843,19 +854,25 @@ void AmdGPUBinGenerator::generate()
             metadata += ";ARGEND:__OpenCL_";
             metadata += kinput.kernelName;
             metadata += "_kernel\n";
-            innerBinSize += metadata.size();
-            innerBinSize += 32; // header size
+            metadataSize = metadata.size() + 32 /* header size */;
         }
         else // if defined in calNotes (no config)
         {
             for (const CALNoteInput& calNote: kinput.calNotes)
                 innerBinSize += 20 + calNote.header.descSize;
-            innerBinSize += kinput.metadataSize;
-            innerBinSize += kinput.headerSize;
+            metadataSize = kinput.metadataSize + kinput.headerSize;
         }
         uniqueId++;
-        binarySize += innerBinSize;
+        binarySize += innerBinSize + metadataSize;
     }
+    
+    if ((binarySize & (mainSectionsAlign-1)) != 0) // main section alignment
+        binarySize += mainSectionsAlign - (binarySize & (mainSectionsAlign-1));
+    if (!input->is64Bit)
+        binarySize += sizeof(Elf32_Shdr)*7;
+    else
+        binarySize += sizeof(Elf64_Shdr)*7;
+    
     /********
      * writing data
      *********/
@@ -906,16 +923,22 @@ void AmdGPUBinGenerator::generate()
         SULEV(mainHdr.e_shstrndx, 1);
         offset += sizeof(Elf64_Ehdr);
     }
-    size_t sectionOffsets[6];
+    size_t sectionOffsets[7];
     sectionOffsets[0] = offset;
     ::memcpy(binary+offset,
-         "\000.shstrtab\000.strtab\000.symtab\000.comment\000.rodata\000.text", 50);
+         "\000.shstrtab\000.strtab\000.symtab\000.rodata\000.text\000.comment", 50);
     offset += 50;
     
     // .strtab
     sectionOffsets[1] = offset;
-    ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
-    offset += 26;
+    if (!input->compileOptions.empty())
+    {
+        ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
+        offset += 26;
+    }
+    else // empty compile options
+        binary[offset++] = 0;
+    
     if (input->globalData != nullptr)
     {
         if (!isOlderThan1384)
@@ -950,8 +973,8 @@ void AmdGPUBinGenerator::generate()
     if ((offset & 7) != 0)
     {
         ::memset(binary + offset, 0, 8-(offset&7));
-        offset += 8-(offset&7);
         alignFix = 8-(offset&7);
+        offset += 8-(offset&7);
     }
     // .symtab
     sectionOffsets[2] = offset;
@@ -959,14 +982,8 @@ void AmdGPUBinGenerator::generate()
         putMainSymbols<Elf32_Sym>(binary, offset, input, kmetadatas, innerBinSizes);
     else
         putMainSymbols<Elf64_Sym>(binary, offset, input, kmetadatas, innerBinSizes);
-    // .comment
-    sectionOffsets[3] = offset;
-    ::memcpy(binary+offset, input->compileOptions.c_str(), input->compileOptions.size());
-    offset += input->compileOptions.size();
-    ::memcpy(binary+offset, driverInfo.c_str(), driverInfo.size());
-    offset += driverInfo.size();
     // .rodata
-    sectionOffsets[4] = offset;
+    sectionOffsets[3] = offset;
     if (input->globalData != nullptr)
     {
         ::memcpy(binary+offset, input->globalData, input->globalDataSize);
@@ -1002,7 +1019,7 @@ void AmdGPUBinGenerator::generate()
     }
     
     /* kernel binaries */
-    sectionOffsets[5] = offset;
+    sectionOffsets[4] = offset;
     for (cxuint i = 0; i < input->kernels.size(); i++)
     {
         const size_t innerBinOffset = offset;
@@ -1011,13 +1028,15 @@ void AmdGPUBinGenerator::generate()
         Elf32_Ehdr& innerHdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
         static const cxbyte elf32Ident[16] = {
                 0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
-                0x64, 0, 0, 0, 0, 0, 0, 0, 0 };
+                0x64, 1, 0, 0, 0, 0, 0, 0, 0 };
         ::memcpy(innerHdr.e_ident, elf32Ident, 16);
         SULEV(innerHdr.e_type, ET_EXEC);
         SULEV(innerHdr.e_machine, 0x7d);
         SULEV(innerHdr.e_version, EV_CURRENT);
         SULEV(innerHdr.e_entry, 0);
         SULEV(innerHdr.e_flags, 1);
+        SULEV(innerHdr.e_phoff, sizeof(Elf32_Ehdr));
+        SULEV(innerHdr.e_shoff, 0xd0);
         SULEV(innerHdr.e_ehsize, sizeof(Elf32_Ehdr));
         SULEV(innerHdr.e_phnum, 3);
         SULEV(innerHdr.e_phentsize, sizeof(Elf32_Phdr));
@@ -1085,6 +1104,7 @@ void AmdGPUBinGenerator::generate()
         sectionHdrTable++;
         
         offset += sizeof(Elf32_Shdr)*6;
+        const size_t encOffset = offset;
         if (kernel.useConfig)
         {
             const AmdKernelConfig& config = kernel.config;
@@ -1534,11 +1554,10 @@ void AmdGPUBinGenerator::generate()
                 ::memcpy(binary + offset, calNote.data, calNote.header.descSize);
                 offset += calNote.header.descSize;
             }
-        SULEV(notePrgHdr->p_filesz, offset-innerBinOffset);
-        SULEV(loadPrgHdr->p_memsz, offset);
-        SULEV(loadPrgHdr->p_filesz, kernel.codeSize);
-        SULEV(loadPrgHdr->p_memsz, kernel.codeSize);
+        SULEV(notePrgHdr->p_filesz, offset-innerBinOffset-0x1c0);
+        SULEV(loadPrgHdr->p_offset, offset-innerBinOffset);
         
+        const size_t loadPrgPartOffset = offset;
         // .text
         SULEV(sectionHdrTable->sh_name, 11);
         SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
@@ -1561,8 +1580,8 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_addralign, 0);
         SULEV(sectionHdrTable->sh_link, 0);
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_offset, (kernel.data!=nullptr)?kernel.dataSize:4736);
-        SULEV(sectionHdrTable->sh_entsize, 0);
+        SULEV(sectionHdrTable->sh_size, (kernel.data!=nullptr)?kernel.dataSize:4736);
+        SULEV(sectionHdrTable->sh_entsize, (kernel.data!=nullptr)?kernel.dataSize:4736);
         SULEV(sectionHdrTable->sh_info, 0);
         if (kernel.data != nullptr)
         {
@@ -1601,11 +1620,35 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_size, 2);
         SULEV(sectionHdrTable->sh_entsize, 0);
         offset += 2;
+        SULEV(loadPrgHdr->p_filesz, offset-loadPrgPartOffset);
+        SULEV(loadPrgHdr->p_memsz, offset-loadPrgPartOffset);
+        SULEV(encEntry.size, offset-encOffset);
+    }
+    // .comment
+    sectionOffsets[5] = offset;
+    ::memcpy(binary+offset, input->compileOptions.c_str(), input->compileOptions.size());
+    offset += input->compileOptions.size();
+    ::memcpy(binary+offset, driverInfo.c_str(), driverInfo.size());
+    offset += driverInfo.size();
+    sectionOffsets[6] = offset;
+    if ((offset & (mainSectionsAlign-1)) != 0) // main section alignment
+    {
+        const size_t tofill = mainSectionsAlign - (offset & (mainSectionsAlign-1));
+        ::memset(binary+offset, 0, tofill);
+        offset += tofill;
     }
     /* main sections */
     if (!input->is64Bit)
+    {
+        Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
+        mainHdr.e_shoff = offset;
         putMainSections<Elf32_Shdr, Elf32_Sym>(binary, offset, sectionOffsets, alignFix);
+    }
     else
+    {
+        Elf64_Ehdr& mainHdr = *reinterpret_cast<Elf64_Ehdr*>(binary);
+        mainHdr.e_shoff = offset;
         putMainSections<Elf64_Shdr, Elf64_Sym>(binary, offset, sectionOffsets, alignFix);
+    }
     assert(offset == binarySize);
 }
