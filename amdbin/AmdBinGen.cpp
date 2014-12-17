@@ -380,7 +380,7 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     offset += sizeof(ElfShdr)*7;
 }
 
-size_t AmdGPUBinGenerator::generate(const cxbyte*& outBinary)
+cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
 {
     size_t binarySize;
     const size_t kernelsNum = input->kernels.size();
@@ -1659,6 +1659,6 @@ size_t AmdGPUBinGenerator::generate(const cxbyte*& outBinary)
     }
     assert(offset == binarySize);
     
-    outBinary = binary;
-    return binarySize;
+    outBinarySize = binarySize;
+    return binary;
 }

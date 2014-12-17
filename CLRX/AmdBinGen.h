@@ -214,7 +214,11 @@ public:
     { return input; }
     
     /// generates binary
-    size_t generate(const cxbyte*& binary);
+    /**
+     * \param binarySize reference to binary size variable
+     * \return binary content pointer
+     */
+    cxbyte* generate(size_t& binarySize) const;
 };
 
 };
