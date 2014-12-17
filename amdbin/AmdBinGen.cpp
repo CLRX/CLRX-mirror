@@ -1619,7 +1619,8 @@ void AmdGPUBinGenerator::generate()
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
         SULEV(sectionHdrTable->sh_size, 2);
         SULEV(sectionHdrTable->sh_entsize, 0);
-        offset += 2;
+        binary[offset++] = 0;
+        binary[offset++] = 0;
         SULEV(loadPrgHdr->p_filesz, offset-loadPrgPartOffset);
         SULEV(loadPrgHdr->p_memsz, offset-loadPrgPartOffset);
         SULEV(encEntry.size, offset-encOffset);
