@@ -419,7 +419,7 @@ void AmdGPUBinGenerator::generate()
     const size_t mainSectionsAlign = (input->is64Bit)?8:4;
     
     const bool isOlderThan1124 = driverVersion < 112402;
-    const bool isOlderThan1384 = driverVersion < 134805;
+    const bool isOlderThan1348 = driverVersion < 134805;
     const bool isOlderThan1598 = driverVersion < 159805;
     /* checking input */
     if (input->deviceType == GPUDeviceType::UNDEFINED ||
@@ -486,17 +486,17 @@ void AmdGPUBinGenerator::generate()
             tempConfig.uavPrivate = config.uavPrivate;
         
         if (config.uavId == AMDBIN_DEFAULT)
-            tempConfig.uavId = (isOlderThan1384)?9:11;
+            tempConfig.uavId = (isOlderThan1348)?9:11;
         else
             tempConfig.uavId = config.uavId;
         
         if (config.constBufferId == AMDBIN_DEFAULT)
-            tempConfig.constBufferId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 10;
+            tempConfig.constBufferId = (isOlderThan1348)?AMDBIN_NOTSUPPLIED : 10;
         else
             tempConfig.constBufferId = config.constBufferId;
         
         if (config.printfId == AMDBIN_DEFAULT)
-            tempConfig.printfId = (isOlderThan1384)?AMDBIN_NOTSUPPLIED : 9;
+            tempConfig.printfId = (isOlderThan1348)?AMDBIN_NOTSUPPLIED : 9;
         else
             tempConfig.printfId = config.printfId;
         
@@ -550,7 +550,7 @@ void AmdGPUBinGenerator::generate()
             size_t uavsNum = 0;
             bool notUsedUav = false;
             size_t samplersNum = config.samplers.size();
-            size_t constBuffersNum = 2 + (isOlderThan1384 /* cbid:2 for older drivers*/ &&
+            size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     config.constDataRequired);
             for (const AmdKernelArg& arg: config.args)
             {
@@ -676,8 +676,8 @@ void AmdGPUBinGenerator::generate()
                         metadata += "hl:1";
                     else if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     {
-                        metadata += (isOlderThan1384)?"hc":"c";
-                        if (isOlderThan1384)
+                        metadata += (isOlderThan1348)?"hc":"c";
+                        if (isOlderThan1348)
                             itocstrCStyle(constantId++, numBuf, 21);
                         else
                         {
@@ -941,7 +941,7 @@ void AmdGPUBinGenerator::generate()
     
     if (input->globalData != nullptr)
     {
-        if (!isOlderThan1384)
+        if (!isOlderThan1348)
             ::memcpy(binary+offset, "__OpenCL_0_global", 18);
         else
             ::memcpy(binary+offset, "__OpenCL_2_global", 18);
@@ -1114,7 +1114,7 @@ void AmdGPUBinGenerator::generate()
             size_t uavsNum = 0;
             bool notUsedUav = false;
             size_t samplersNum = config.samplers.size();
-            size_t constBuffersNum = 2 + (isOlderThan1384 /* cbid:2 for older drivers*/ &&
+            size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     config.constDataRequired);
             for (const AmdKernelArg& arg: config.args)
             {
@@ -1239,7 +1239,7 @@ void AmdGPUBinGenerator::generate()
                             SULEV(uavEntry->type, 5);
                         }
                         else if (arg.ptrSpace == KernelPtrSpace::CONSTANT &&
-                                 !isOlderThan1384)
+                                 !isOlderThan1348)
                         {
                             if (arg.used)
                                 uavIdsCount++;
@@ -1247,7 +1247,7 @@ void AmdGPUBinGenerator::generate()
                     }
                     uavEntry++;
                 }
-                if (uavsNum != 0 && notUsedUav && isOlderThan1384)
+                if (uavsNum != 0 && notUsedUav && isOlderThan1348)
                 {
                     SULEV(uavEntry->uavId, 9);
                     SULEV(uavEntry->f1, 4);
@@ -1265,10 +1265,10 @@ void AmdGPUBinGenerator::generate()
                 }
             }
             // privateid or uavid (???)
-            if (uavsNum != 0 && (isOlderThan1384 || notUsedUav))
+            if (uavsNum != 0 && (isOlderThan1348 || notUsedUav))
             {
-                SULEV(uavEntry->uavId, (isOlderThan1384)?config.privateId:config.uavId);
-                SULEV(uavEntry->f1, (isOlderThan1384)?3:4);
+                SULEV(uavEntry->uavId, (isOlderThan1348)?config.privateId:config.uavId);
+                SULEV(uavEntry->f1, (isOlderThan1348)?3:4);
                 SULEV(uavEntry->f2, 0);
                 SULEV(uavEntry->type, 5);
             }
