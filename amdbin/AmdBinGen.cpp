@@ -236,7 +236,7 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         SULEV(symbolTable[1].st_name, namePos); 
         SULEV(symbolTable[1].st_value, 0);
         SULEV(symbolTable[1].st_size, input->compileOptions.size());
-        SULEV(symbolTable[1].st_shndx, 4);
+        SULEV(symbolTable[1].st_shndx, 6);
         symbolTable[1].st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
         symbolTable[1].st_other = 0;
         namePos += 25;
