@@ -255,7 +255,7 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         symbolTable->st_other = 0;
         symbolTable++;
         namePos += 18;
-        rodataPos = 32;
+        rodataPos = input->globalDataSize;
         offset += sizeof(ElfSym);
     }
     size_t textPos = 0;
