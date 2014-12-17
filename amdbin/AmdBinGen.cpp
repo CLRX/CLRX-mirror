@@ -90,17 +90,17 @@ void AmdInput::addKernel(const char* kernelName, size_t codeSize,
         metadataSize, metadata, calNotes, false, AmdKernelConfig(), codeSize, code });
 }
 
-AmdGPUBinGenerator::AmdGPUBinGenerator() : binarySize(0), binary(nullptr)
+AmdGPUBinGenerator::AmdGPUBinGenerator() : manageable(false)
 { }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(const AmdInput* amdInput)
-        : manageable(false), input(amdInput), binarySize(0), binary(nullptr)
+        : manageable(false), input(amdInput)
 { }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
        uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
        const std::vector<AmdKernelInput>& kernelInputs)
-        : manageable(true), input(nullptr), binarySize(0), binary(nullptr)
+        : manageable(true), input(nullptr)
 {
     AmdInput* newInput = new AmdInput;
     try
@@ -124,7 +124,6 @@ AmdGPUBinGenerator::~AmdGPUBinGenerator()
 {
     if (manageable)
         delete input;
-    delete[] binary;
 }
 
 static const char* gpuDeviceNameTable[14] =
@@ -381,8 +380,9 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     offset += sizeof(ElfShdr)*7;
 }
 
-void AmdGPUBinGenerator::generate()
+size_t AmdGPUBinGenerator::generate(const cxbyte*& outBinary)
 {
+    size_t binarySize;
     const size_t kernelsNum = input->kernels.size();
     std::string driverInfo;
     uint32_t driverVersion = 99999909U;
@@ -876,11 +876,11 @@ void AmdGPUBinGenerator::generate()
     /********
      * writing data
      *********/
-    delete[] binary;    // delete of pointer
-    binary = nullptr;
-    binary = new cxbyte[binarySize];
+    cxbyte* binary = new cxbyte[binarySize];
     size_t offset = 0;
     
+    try
+    {
     if (!input->is64Bit)
     {
         Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
@@ -1651,5 +1651,14 @@ void AmdGPUBinGenerator::generate()
         mainHdr.e_shoff = offset;
         putMainSections<Elf64_Shdr, Elf64_Sym>(binary, offset, sectionOffsets, alignFix);
     }
+    } // try
+    catch(...)
+    {
+        delete[] binary;
+        throw;
+    }
     assert(offset == binarySize);
+    
+    outBinary = binary;
+    return binarySize;
 }

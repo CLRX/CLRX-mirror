@@ -187,9 +187,6 @@ class AmdGPUBinGenerator
 private:
     bool manageable;
     const AmdInput* input;
-    
-    size_t binarySize;
-    cxbyte* binary;
 public:
     AmdGPUBinGenerator();
     AmdGPUBinGenerator(const AmdInput* amdInput);
@@ -217,14 +214,7 @@ public:
     { return input; }
     
     /// generates binary
-    void generate();
-    
-    /// get binary size
-    size_t getBinarySize() const
-    { return binarySize; }
-    /// get binary content
-    const cxbyte* getBinary() const
-    { return binary; }
+    size_t generate(const cxbyte*& binary);
 };
 
 };
