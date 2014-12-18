@@ -457,7 +457,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             uint32_t amountOfArgs = 0;
             for (const AmdKernelArg arg: config.args)
             {
-                if (arg.argType != KernelArgType::STRUCTURE)
+                if (arg.argType == KernelArgType::STRUCTURE)
                     hasStructures = true;
                 if (!isOlderThan1598 && arg.argType != KernelArgType::STRUCTURE)
                     continue; // no older driver and no structure
