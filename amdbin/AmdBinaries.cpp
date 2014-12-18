@@ -282,8 +282,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
     if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
         throw Exception("Other than little-endian binaries are not supported!");
     
-    if ((ULEV(ehdr->e_phoff) == 0 && ULEV(ehdr->e_phnum) != 0) ||
-        (ULEV(ehdr->e_phoff) != 0 && ULEV(ehdr->e_phnum) == 0))
+    if ((ULEV(ehdr->e_phoff) == 0 && ULEV(ehdr->e_phnum) != 0))
         throw Exception("Elf invalid phoff and phnum combination");
     if (ULEV(ehdr->e_phoff) != 0)
     {   /* reading and checking program headers */
@@ -305,8 +304,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
         }
     }
     
-    if ((ULEV(ehdr->e_shoff) == 0 && ULEV(ehdr->e_shnum) != 0) ||
-        (ULEV(ehdr->e_shoff) != 0 && ULEV(ehdr->e_shnum) == 0))
+    if ((ULEV(ehdr->e_shoff) == 0 && ULEV(ehdr->e_shnum) != 0))
         throw Exception("Elf invalid shoff and shnum combination");
     if (ULEV(ehdr->e_shoff) != 0 && ULEV(ehdr->e_shstrndx) != SHN_UNDEF)
     {   /* indexing of sections */
