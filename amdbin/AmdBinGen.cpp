@@ -152,7 +152,7 @@ enum KindOfType : cxbyte
     KT_SIGNED,
     KT_FLOAT,
     KT_DOUBLE,
-    KT_OPAQUE,
+    KT_STRUCT,
     KT_UNKNOWN,
 };
 
@@ -207,7 +207,7 @@ static const TypeNameVecSize argTypeNamesTable[] =
     { "double", KT_DOUBLE, 4, 2 }, { "double", KT_DOUBLE, 4, 3 },
     { "double", KT_DOUBLE, 4, 4 }, { "double", KT_DOUBLE, 4, 8 },
     { "double", KT_DOUBLE, 4, 16 },
-    { "u32", KT_UNSIGNED, 4, 1 }, /* SAMPLER */ { "opaque", KT_OPAQUE, 0, 1 },
+    { "u32", KT_UNSIGNED, 4, 1 }, /* SAMPLER */ { "struct", KT_STRUCT, 0, 1 },
     { nullptr, KT_UNKNOWN, 1, 1 }, /* COUNTER32 */
     { nullptr, KT_UNKNOWN, 1, 1 } // COUNTER64
 };
@@ -670,7 +670,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         throw Exception("Type not supported!");
                     const cxuint typeSize =
                         cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
-                    metadata += tp.name;
+                    if (arg.structSize != 0)
+                        metadata += tp.name;
+                    else
+                        metadata += "opaque";
                     metadata += ":1:1:";
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
