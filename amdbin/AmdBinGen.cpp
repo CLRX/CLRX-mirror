@@ -534,7 +534,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     
     std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
-    size_t uniqueId = 1025;
+    size_t uniqueId = 1024;
     for (size_t i = 0; i < input->kernels.size(); i++)
     {
         cxuint& innerBinSize = innerBinSizes[i];
@@ -658,7 +658,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
                     metadata += '\n';
-                    argOffset += (arg.structSize+15)>>4;
+                    argOffset += (arg.structSize+15)&~15;
                 }
                 else if (arg.argType == KernelArgType::POINTER)
                 {
@@ -715,7 +715,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     metadata += ':';
                     metadata += (arg.ptrAccess & KARG_PTR_RESTRICT)?'1':'0';
                     metadata += '\n';
-                    argOffset += 32;
+                    argOffset += 16;
                 }
                 else if ((arg.argType >= KernelArgType::MIN_IMAGE) &&
                     (arg.argType <= KernelArgType::MAX_IMAGE))
@@ -770,16 +770,16 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     metadata += ':';
                     itocstrCStyle(tp.vecSize, numBuf, 21);
                     metadata += numBuf;
-                    metadata += ':';
+                    metadata += ":1:";
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
                     metadata += '\n';
-                    argOffset += (typeSize+15)>>4;
+                    argOffset += (typeSize+15)&~15;
                 }
                 
                 if (arg.ptrAccess & KARG_PTR_CONST)
                 {
-                    metadata += ";constant:";
+                    metadata += ";constarg:";
                     itocstrCStyle(k, numBuf, 21);
                     metadata += numBuf;
                     metadata += ':';
@@ -1225,8 +1225,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         SULEV(uavEntry->f1, 4);
                         SULEV(uavEntry->f2, 0);
                         SULEV(uavEntry->type, 5);
+                        uavEntry++;
                     }
-                    uavEntry++;
                 }
             }
             else
@@ -1242,6 +1242,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         SULEV(uavEntry->f1, 2);
                         SULEV(uavEntry->f2, 2);
                         SULEV(uavEntry->type, 5);
+                        uavEntry++;
                     }
                     else if (arg.argType == KernelArgType::POINTER)
                     {
@@ -1254,6 +1255,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             SULEV(uavEntry->f1, 4);
                             SULEV(uavEntry->f2, 0);
                             SULEV(uavEntry->type, 5);
+                            uavEntry++;
                         }
                         else if (arg.ptrSpace == KernelPtrSpace::CONSTANT &&
                                  !isOlderThan1348)
@@ -1262,7 +1264,6 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                                 uavIdsCount++;
                         }
                     }
-                    uavEntry++;
                 }
                 if (uavsNum != 0 && notUsedUav && isOlderThan1348)
                 {
