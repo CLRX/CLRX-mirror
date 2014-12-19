@@ -1272,7 +1272,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     SULEV(uavEntry->type, 5);
                     uavEntry++;
                 }
-                if (uavsNum != 0 && notUsedUav)
+                if (uavsNum != 0 && !isOlderThan1348)
                 {
                     SULEV(uavEntry->uavId, 11);
                     SULEV(uavEntry->f1, 4);
@@ -1508,9 +1508,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             curPgmRSRC2.pgmRSRC2.userSGRP = pgmUserSGPRsNum;
             
             SULEV(progInfo[k].address, 0x80001041U);
-            SULEV(progInfo[k++].value, config.usedSGPRsNum);
-            SULEV(progInfo[k].address, 0x80001042U);
             SULEV(progInfo[k++].value, config.usedVGPRsNum);
+            SULEV(progInfo[k].address, 0x80001042U);
+            SULEV(progInfo[k++].value, config.usedSGPRsNum);
             SULEV(progInfo[k].address, 0x80001863U);
             SULEV(progInfo[k++].value, 102);
             SULEV(progInfo[k].address, 0x80001864U);
