@@ -166,6 +166,7 @@ struct TypeNameVecSize
 
 static const TypeNameVecSize argTypeNamesTable[] =
 {
+    { nullptr, KT_UNKNOWN, 1, 1 }, // VOID
     { "u8", KT_UNSIGNED, 1, 1 }, { "i8", KT_SIGNED, 1, 1 },
     { "u16", KT_UNSIGNED, 2, 1 }, { "i16", KT_SIGNED, 2, 1 },
     { "u32", KT_UNSIGNED, 4, 1 }, { "i32", KT_SIGNED, 4, 1 },
@@ -591,9 +592,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             if (notUsedUav)
                 uavsNum++; // adds uav for not used
             
-            
             innerBinSize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
-                2*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
+                4*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
             
@@ -670,10 +670,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         throw Exception("Type not supported!");
                     const cxuint typeSize =
                         cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
-                    if (arg.structSize != 0)
-                        metadata += tp.name;
-                    else
+                    if (arg.structSize == 0 && arg.pointerType == KernelArgType::STRUCTURE)
                         metadata += "opaque";
+                    else
+                        metadata += tp.name;
                     metadata += ":1:1:";
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
@@ -682,7 +682,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         metadata += "hl:1";
                     else if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     {
-                        metadata += (isOlderThan1348)?"hc":"c";
+                        metadata += (isOlderThan1348)?"hc:":"c:";
                         if (isOlderThan1348)
                             itocstrCStyle(constantId++, numBuf, 21);
                         else
@@ -707,6 +707,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     const size_t elemSize = (arg.pointerType==KernelArgType::STRUCTURE)?
                         ((arg.structSize!=0)?arg.structSize:4) : typeSize;
                     itocstrCStyle(elemSize, numBuf, 21);
+                    metadata += numBuf;
                     metadata += ':';
                     metadata += (arg.ptrAccess & KARG_PTR_CONST)?"RO":"RW";
                     metadata += ':';
@@ -716,7 +717,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     metadata += '\n';
                     argOffset += 32;
                 }
-                else if ((arg.argType >= KernelArgType::MIN_IMAGE) ||
+                else if ((arg.argType >= KernelArgType::MIN_IMAGE) &&
                     (arg.argType <= KernelArgType::MAX_IMAGE))
                 {
                     metadata += ";image:";
@@ -759,6 +760,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 {
                     metadata += ";value:";
                     metadata += arg.argName;
+                    metadata += ':';
                     const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
                     if (tp.kindOfType == KT_UNKNOWN)
                         throw Exception("Type not supported!");
@@ -846,7 +848,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             itocstrCStyle(tempConfig.privateId, numBuf, 21);
             metadata += numBuf;
             metadata += '\n';
-            for (size_t k = 0; config.args.size(); k++)
+            for (size_t k = 0; k < config.args.size(); k++)
             {
                 const AmdKernelArg& arg = config.args[k];
                 metadata += ";reflection:";
@@ -1174,7 +1176,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             for (cxuint k = 0; k < readOnlyImages; k++)
                 SULEV(data32[k], (driverVersion == 101602 || driverVersion == 112402) ?
                         readOnlyImages-k-1 : k);
-            offset += noteHdr->descSize;
+            offset += 4*readOnlyImages;
             // CALNOTE_OUTPUTS
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
             SULEV(noteHdr->nameSize, 8);
@@ -1184,7 +1186,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             offset += sizeof(CALNoteHeader);
             // CALNOTE_UAV
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->type, CALNOTE_ATI_OUTPUTS);
+            SULEV(noteHdr->type, CALNOTE_ATI_UAV);
+            SULEV(noteHdr->nameSize, 8);
             SULEV(noteHdr->descSize, 16*uavsNum);
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
@@ -1286,6 +1289,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 SULEV(uavEntry->f2, 0);
                 SULEV(uavEntry->type, 5);
             }
+            offset += 16*uavsNum;
             
             // CALNOTE_CONDOUT
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
@@ -1346,10 +1350,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
             data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            offset += noteHdr->descSize;
             
             CALConstantBufferMask* cbufMask =
                 reinterpret_cast<CALConstantBufferMask*>(binary + offset);
+            offset += 8*constBuffersNum;
             
             if (driverVersion == 112402)
             {
@@ -1425,7 +1429,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
             data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            offset += noteHdr->descSize;
+            offset += 8*samplersNum;
             
             CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
                         binary + offset);
@@ -1457,7 +1461,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             /* PROGRAM_INFO */
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
             SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_PERSISTENT_BUFFERS);
+            SULEV(noteHdr->type, CALNOTE_ATI_PROGINFO);
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
             
@@ -1489,7 +1493,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
                     SULEV(progInfo[1+(k<<2)+3].value, 0);
                 }
-            k++;
+            k = (k<<2)+1;
             
             union {
                 PgmRSRC2 pgmRSRC2;
@@ -1498,9 +1502,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             curPgmRSRC2.pgmRSRC2 = config.pgmRSRC2;
             curPgmRSRC2.pgmRSRC2.ldsSize = config.hwLocalSize;
             cxuint pgmUserSGPRsNum = 0;
-            for (cxuint k = 0; k < config.userDataElemsNum; k++)
+            for (cxuint p = 0; p < config.userDataElemsNum; p++)
                 pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
-                         config.userDatas[k].regStart+config.userDatas[k].regSize);
+                         config.userDatas[p].regStart+config.userDatas[p].regSize);
             curPgmRSRC2.pgmRSRC2.userSGRP = pgmUserSGPRsNum;
             
             SULEV(progInfo[k].address, 0x80001041U);
@@ -1539,7 +1543,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             SULEV(progInfo[k].address, 0x80001841U);
             SULEV(progInfo[k++].value, 0);
             uint32_t uavMask[32];
-            ::memset(uavMask, 0, 32);
+            ::memset(uavMask, 0, 128);
             uavMask[0] = (1U<<writeOnlyImages)-1U;
             const cxuint globalPointers = uavIdsCount-tempConfig.uavId-1;
             if (globalPointers>32-tempConfig.uavId-1)
@@ -1566,12 +1570,43 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
             SULEV(progInfo[k].address, 0x8000000aU);
             SULEV(progInfo[k++].value, 1);
+            SULEV(progInfo[k].address, 0x80000078U);
+            SULEV(progInfo[k++].value, 64);
             SULEV(progInfo[k].address, 0x80000081U);
             SULEV(progInfo[k++].value, 32768);
             SULEV(progInfo[k].address, 0x80000082U);
             SULEV(progInfo[k++].value, config.hwLocalSize);
             offset += 8*k;
             SULEV(noteHdr->descSize, 8*k);
+            
+            // CAL_SUBCONSTANT_BUFFERS
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_SUB_CONSTANT_BUFFERS);
+            SULEV(noteHdr->descSize, 0);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            
+            // CAL_UAV_MAILBOX_SIZE
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_UAV_MAILBOX_SIZE);
+            SULEV(noteHdr->descSize, 4);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            data32 = reinterpret_cast<uint32_t*>(binary + offset);
+            SULEV(*data32, 0);
+            offset += 4;
+            
+            // CAL_UAV_OP_MASK
+            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+            SULEV(noteHdr->nameSize, 8);
+            SULEV(noteHdr->type, CALNOTE_ATI_UAV_OP_MASK);
+            SULEV(noteHdr->descSize, 128);
+            ::memcpy(noteHdr->name, "ATI CAL", 8);
+            offset += sizeof(CALNoteHeader);
+            ::memcpy(binary + offset, uavMask, 128);
+            offset += 128;
         }
         else // from CALNotes array
             for (const CALNoteInput& calNote: kernel.calNotes)
