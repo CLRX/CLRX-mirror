@@ -822,6 +822,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     itocstrCStyle(sampId, numBuf, 21);
                     metadata += numBuf;
                     metadata += ":0:0\n";
+                    sampId++;
                 }
             
             if (input->is64Bit)
@@ -1430,16 +1431,15 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             SULEV(noteHdr->descSize, 8*samplersNum);
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            offset += 8*samplersNum;
             
             CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
                         binary + offset);
-            for (cxuint k = 0; k < samplersNum; k++, sampEntry++)
+            for (cxuint k = 0; k < samplersNum; k++)
             {
                 SULEV(sampEntry[k].input, 0);
                 SULEV(sampEntry[k].sampler, k);
             }
+            offset += 8*samplersNum;
             
             // CALNOTE_SCRATCH_BUFFERS
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
