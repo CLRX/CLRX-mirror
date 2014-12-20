@@ -584,12 +584,12 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                         constBuffersNum++;
                 }
-               else if (arg.argType == KernelArgType::SAMPLER)
-                   argSamplersNum++;
+                else if (arg.argType == KernelArgType::SAMPLER)
+                    argSamplersNum++;
             }
             samplersNum += argSamplersNum;
             
-            if (uavsNum!=0)
+            if (uavsNum!=0 || notUsedUav)
                 uavsNum++; // uavid 11 or 8
             if (notUsedUav)
                 uavsNum++; // adds uav for not used
@@ -711,7 +711,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     itocstrCStyle(elemSize, numBuf, 21);
                     metadata += numBuf;
                     metadata += ':';
-                    metadata += (arg.ptrAccess & KARG_PTR_CONST)?"RO":"RW";
+                    metadata += ((arg.ptrAccess & KARG_PTR_CONST) ||
+                            arg.ptrSpace == KernelPtrSpace::CONSTANT)?"RO":"RW";
                     metadata += ':';
                     metadata += (arg.ptrAccess & KARG_PTR_VOLATILE)?'1':'0';
                     metadata += ':';
@@ -1137,6 +1138,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             bool isLocalPointers = false;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     (input->globalData != nullptr));
+            cxuint woUsedImagesMask = 0;
             for (const AmdKernelArg& arg: config.args)
             {
                 if (arg.argType >= KernelArgType::MIN_IMAGE &&
@@ -1146,6 +1148,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         readOnlyImages++;
                     if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                     {
+                        if (arg.used)
+                            woUsedImagesMask |= (1U<<writeOnlyImages);
                         writeOnlyImages++;
                         uavsNum++;
                     }
@@ -1168,7 +1172,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                    argSamplersNum++;
             }
             samplersNum += argSamplersNum;
-            if (uavsNum!=0)
+            if (uavsNum!=0 || notUsedUav)
                 uavsNum++; // uavid 11 or 8
             if (notUsedUav)
                 uavsNum++; // adds uav for not used
@@ -1560,7 +1564,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             SULEV(progInfo[k++].value, 0);
             uint32_t uavMask[32];
             ::memset(uavMask, 0, 128);
-            uavMask[0] = (1U<<writeOnlyImages)-1U;
+            uavMask[0] = woUsedImagesMask;
             const cxuint globalPointers = uavIdsCount-tempConfig.uavId-1;
             if (globalPointers>32-tempConfig.uavId-1)
             {
