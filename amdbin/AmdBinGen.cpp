@@ -554,6 +554,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t uavsNum = 0;
             bool notUsedUav = false;
             size_t samplersNum = config.samplers.size();
+            size_t argSamplersNum = 0;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     config.constDataRequired);
             for (const AmdKernelArg& arg: config.args)
@@ -584,8 +585,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         constBuffersNum++;
                 }
                else if (arg.argType == KernelArgType::SAMPLER)
-                   samplersNum++;
+                   argSamplersNum++;
             }
+            samplersNum += argSamplersNum;
             
             if (uavsNum!=0)
                 uavsNum++; // uavid 11 or 8
@@ -797,21 +799,21 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             metadata += numBuf;
             metadata += '\n';
             
-            cxuint sampId = 0;
-            for (sampId = 0; sampId < config.samplers.size(); sampId++)
+            for (cxuint sampId = 0; sampId < config.samplers.size(); sampId++)
             {   /* constant samplers */
                 const cxuint samp = config.samplers[sampId];
                 metadata += ";sampler:unknown_";
                 itocstrCStyle(samp, numBuf, 21);
                 metadata += numBuf;
                 metadata += ':';
-                itocstrCStyle(sampId, numBuf, 21);
+                itocstrCStyle(sampId+argSamplersNum, numBuf, 21);
                 metadata += numBuf;
                 metadata += ":1:";
                 itocstrCStyle(samp, numBuf, 21);
                 metadata += numBuf;
                 metadata += '\n';
             }
+            cxuint sampId = 0;
             /* kernel argument samplers */
             for (const AmdKernelArg& arg: config.args)
                 if (arg.argType == KernelArgType::SAMPLER)
@@ -1131,6 +1133,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t uavsNum = 0;
             bool notUsedUav = false;
             size_t samplersNum = config.samplers.size();
+            size_t argSamplersNum = 0;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     config.constDataRequired);
             for (const AmdKernelArg& arg: config.args)
@@ -1159,8 +1162,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         constBuffersNum++;
                 }
                else if (arg.argType == KernelArgType::SAMPLER)
-                   samplersNum++;
+                   argSamplersNum++;
             }
+            samplersNum += argSamplersNum;
             if (uavsNum!=0)
                 uavsNum++; // uavid 11 or 8
             if (notUsedUav)
@@ -1434,7 +1438,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             
             CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
                         binary + offset);
-            for (cxuint k = 0; k < samplersNum; k++)
+            for (cxuint k = 0; k < config.samplers.size(); k++)
+            {
+                SULEV(sampEntry[k].input, 0);
+                SULEV(sampEntry[k].sampler, k+argSamplersNum);
+            }
+            sampEntry += config.samplers.size();
+            for (cxuint k = 0; k < argSamplersNum; k++)
             {
                 SULEV(sampEntry[k].input, 0);
                 SULEV(sampEntry[k].sampler, k);
