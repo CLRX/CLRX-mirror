@@ -1418,6 +1418,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             SULEV(cbufMask->index, uavId++);
                         else
                             SULEV(cbufMask->index, tempConfig.uavId);
+                        SULEV(cbufMask->size, 0);
                         cbufMask++;
                     }
             }
