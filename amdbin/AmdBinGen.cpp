@@ -1134,6 +1134,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             bool notUsedUav = false;
             size_t samplersNum = config.samplers.size();
             size_t argSamplersNum = 0;
+            bool isLocalPointers = false;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     config.constDataRequired);
             for (const AmdKernelArg& arg: config.args)
@@ -1158,8 +1159,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         else
                             notUsedUav = true;
                     }
-                    if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    else if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                         constBuffersNum++;
+                    else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
+                        isLocalPointers = true;
                 }
                else if (arg.argType == KernelArgType::SAMPLER)
                    argSamplersNum++;
@@ -1507,12 +1510,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 }
             k = (k<<2)+1;
             
+            const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
             union {
                 PgmRSRC2 pgmRSRC2;
                 uint32_t pgmRSRC2Value;
             } curPgmRSRC2;
             curPgmRSRC2.pgmRSRC2 = config.pgmRSRC2;
-            curPgmRSRC2.pgmRSRC2.ldsSize = config.hwLocalSize;
+            curPgmRSRC2.pgmRSRC2.ldsSize = (localSize+255)>>8;
             cxuint pgmUserSGPRsNum = 0;
             for (cxuint p = 0; p < config.userDataElemsNum; p++)
                 pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
@@ -1572,6 +1576,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
             else // only single
                 uavMask[0] |= ((1U<<globalPointers)-1U)<<(tempConfig.uavId+1);
+            if (!isOlderThan1348 && config.constDataRequired)
+                uavMask[0] |= 1U<<tempConfig.constBufferId;
             
             SULEV(progInfo[k].address, 0x8000001fU);
             SULEV(progInfo[k++].value, uavMask[0]);
@@ -1587,7 +1593,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             SULEV(progInfo[k].address, 0x80000081U);
             SULEV(progInfo[k++].value, 32768);
             SULEV(progInfo[k].address, 0x80000082U);
-            SULEV(progInfo[k++].value, config.hwLocalSize);
+            SULEV(progInfo[k++].value, localSize);
             offset += 8*k;
             SULEV(noteHdr->descSize, 8*k);
             
