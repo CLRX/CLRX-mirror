@@ -556,7 +556,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t samplersNum = config.samplers.size();
             size_t argSamplersNum = 0;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
-                    config.constDataRequired);
+                    (input->globalData != nullptr));
             for (const AmdKernelArg& arg: config.args)
             {
                 if (arg.argType >= KernelArgType::MIN_IMAGE &&
@@ -792,7 +792,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             
             tempAmdKernelConfigs[i].argsSpace = argOffset;
             
-            if (config.constDataRequired)
+            if (input->globalData != nullptr)
                 metadata += ";memory:datareqd\n";
             metadata += ";function:1:";
             itocstrCStyle(uniqueId, numBuf, 21);
@@ -1136,7 +1136,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t argSamplersNum = 0;
             bool isLocalPointers = false;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
-                    config.constDataRequired);
+                    (input->globalData != nullptr));
             for (const AmdKernelArg& arg: config.args)
             {
                 if (arg.argType >= KernelArgType::MIN_IMAGE &&
@@ -1371,7 +1371,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 SULEV(cbufMask[1].index, 1);
                 SULEV(cbufMask[1].size, 0);
                 cbufMask += 2;
-                cxuint cbId = 2 + config.constDataRequired;
+                cxuint cbId = 2 + (input->globalData != nullptr);
                 for (const AmdKernelArg& arg: config.args)
                     if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::CONSTANT)
@@ -1379,7 +1379,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         SULEV(cbufMask->index, cbId++);
                         SULEV(cbufMask->size, 0);
                     }
-                if (config.constDataRequired)
+                if (input->globalData != nullptr)
                 {
                     SULEV(cbufMask->index, 2);
                     SULEV(cbufMask->size, 0);
@@ -1399,7 +1399,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             ((arg.constSpaceSize+15)>>4) : 4096);
                     }
                 }
-                if (config.constDataRequired)
+                if (input->globalData != nullptr)
                 {
                     SULEV(cbufMask->index, 2); // ????
                     SULEV(cbufMask->size, (input->globalDataSize+15)>>4);
@@ -1576,7 +1576,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
             else // only single
                 uavMask[0] |= ((1U<<globalPointers)-1U)<<(tempConfig.uavId+1);
-            if (!isOlderThan1348 && config.constDataRequired)
+            if (!isOlderThan1348 && config.useConstantData)
                 uavMask[0] |= 1U<<tempConfig.constBufferId;
             
             SULEV(progInfo[k].address, 0x8000001fU);

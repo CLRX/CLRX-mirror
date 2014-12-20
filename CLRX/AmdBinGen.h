@@ -129,7 +129,7 @@ struct AmdKernelConfig
     uint32_t privateId;
     uint32_t earlyExit; ///< CALNOTE_EARLYEXIT value
     uint32_t condOut;   ///< CALNOTE_CONDOUT value
-    bool constDataRequired; ///< if const data required
+    bool useConstantData; ///< if const data required
     cxuint userDataElemsNum;    ///< number of user data
     AmdUserData userDatas[16];
 };
