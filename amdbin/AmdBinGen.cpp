@@ -205,9 +205,9 @@ static const TypeNameVecSize argTypeNamesTable[] =
     { "float", KT_FLOAT, 4, 2 }, { "float", KT_FLOAT, 4, 3 },
     { "float", KT_FLOAT, 4, 4 }, { "float", KT_FLOAT, 4, 8 },
     { "float", KT_FLOAT, 4, 16 },
-    { "double", KT_DOUBLE, 4, 2 }, { "double", KT_DOUBLE, 4, 3 },
-    { "double", KT_DOUBLE, 4, 4 }, { "double", KT_DOUBLE, 4, 8 },
-    { "double", KT_DOUBLE, 4, 16 },
+    { "double", KT_DOUBLE, 8, 2 }, { "double", KT_DOUBLE, 8, 3 },
+    { "double", KT_DOUBLE, 8, 4 }, { "double", KT_DOUBLE, 8, 8 },
+    { "double", KT_DOUBLE, 8, 16 },
     { "u32", KT_UNSIGNED, 4, 1 }, /* SAMPLER */ { "struct", KT_STRUCT, 0, 1 },
     { nullptr, KT_UNKNOWN, 1, 1 }, /* COUNTER32 */
     { nullptr, KT_UNKNOWN, 1, 1 } // COUNTER64
@@ -1281,7 +1281,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     SULEV(uavEntry->type, 5);
                     uavEntry++;
                 }
-                if (uavsNum != 0 && !isOlderThan1348)
+                if (uavsNum != 0 && !isOlderThan1348 && !notUsedUav)
                 {
                     SULEV(uavEntry->uavId, 11);
                     SULEV(uavEntry->f1, 4);
@@ -1293,8 +1293,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             // privateid or uavid (???)
             if (uavsNum != 0 && (isOlderThan1348 || notUsedUav))
             {
-                SULEV(uavEntry->uavId, (isOlderThan1348)?config.privateId:config.uavId);
-                SULEV(uavEntry->f1, (isOlderThan1348)?3:4);
+                SULEV(uavEntry->uavId, tempConfig.privateId);
+                SULEV(uavEntry->f1, (isOlderThan1124)?4:3);
                 SULEV(uavEntry->f2, 0);
                 SULEV(uavEntry->type, 5);
             }
