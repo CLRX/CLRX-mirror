@@ -166,7 +166,7 @@ struct TypeNameVecSize
 
 static const TypeNameVecSize argTypeNamesTable[] =
 {
-    { nullptr, KT_UNKNOWN, 1, 1 }, // VOID
+    { "u8", KT_UNSIGNED, 1, 1 }, // VOID
     { "u8", KT_UNSIGNED, 1, 1 }, { "i8", KT_SIGNED, 1, 1 },
     { "u16", KT_UNSIGNED, 2, 1 }, { "i16", KT_SIGNED, 2, 1 },
     { "u32", KT_UNSIGNED, 4, 1 }, { "i32", KT_SIGNED, 4, 1 },
