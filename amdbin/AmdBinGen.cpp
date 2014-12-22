@@ -553,6 +553,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t writeOnlyImages = 0;
             size_t uavsNum = 0;
             bool notUsedUav = false;
+            bool havePointers = false;
+            bool notUsedConstants = false;
             size_t samplersNum = config.samplers.size();
             size_t argSamplersNum = 0;
             size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
@@ -580,19 +582,37 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             uavsNum++;
                         else
                             notUsedUav = true;
+                        havePointers = true;
                     }
                     if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    {
+                        if (!arg.used)
+                            notUsedConstants = true;
                         constBuffersNum++;
+                        havePointers = true;
+                    }
                 }
                 else if (arg.argType == KernelArgType::SAMPLER)
                     argSamplersNum++;
             }
             samplersNum += argSamplersNum;
             
-            if (uavsNum!=0 || notUsedUav)
-                uavsNum++; // uavid 11 or 8
-            if (notUsedUav)
-                uavsNum++; // adds uav for not used
+            if (!isOlderThan1348)
+            {   // newer drivers
+                if ((!notUsedUav && !notUsedConstants && havePointers) || notUsedUav ||
+                    (!havePointers && driverVersion >= 152603))
+                    uavsNum++; // uavid=11
+                if (notUsedUav || notUsedConstants)
+                    uavsNum++; // uavid=8
+            }
+            else
+            {   // older drivers
+                if (notUsedUav || (!havePointers && !isOlderThan1124))
+                    uavsNum++; // uavid=9
+                if (havePointers ||
+                    (!havePointers && !config.args.empty() && isOlderThan1124))
+                    uavsNum++; // uavid=8
+            }
             
             innerBinSize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
                 4*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
@@ -1133,6 +1153,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t writeOnlyImages = 0;
             size_t uavsNum = 0;
             bool notUsedUav = false;
+            bool havePointers = false;
+            bool notUsedConstants = false;
             size_t samplersNum = config.samplers.size();
             size_t argSamplersNum = 0;
             bool isLocalPointers = false;
@@ -1162,9 +1184,15 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             uavsNum++;
                         else
                             notUsedUav = true;
+                        havePointers = true;
                     }
                     else if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    {
+                        if (!arg.used)
+                            notUsedConstants = true;
                         constBuffersNum++;
+                        havePointers = true;
+                    }
                     else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
                         isLocalPointers = true;
                 }
@@ -1172,10 +1200,6 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                    argSamplersNum++;
             }
             samplersNum += argSamplersNum;
-            if (uavsNum!=0 || notUsedUav)
-                uavsNum++; // uavid 11 or 8
-            if (notUsedUav)
-                uavsNum++; // adds uav for not used
             
             // CAL CALNOTE_INPUTS
             CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
@@ -1200,11 +1224,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
             SULEV(noteHdr->type, CALNOTE_ATI_UAV);
             SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->descSize, 16*uavsNum);
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
             
-            CALUAVEntry* uavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
+            CALUAVEntry* startUavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
+            CALUAVEntry* uavEntry = startUavEntry;
             cxuint uavIdsCount = tempConfig.uavId+1;
             if (isOlderThan1124)
             {   // for new drivers
@@ -1212,16 +1236,18 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 {   /* writeOnlyImages */
                     SULEV(uavEntry[k].uavId, k);
                     SULEV(uavEntry[k].f1, 2);
-                    SULEV(uavEntry[k].f2, 2);
+                    SULEV(uavEntry[k].f2, 3);
                     SULEV(uavEntry[k].type, 3);
                 }
                 uavEntry += writeOnlyImages;
+                bool uavId11 = false;
                 if (uavsNum != 0 && notUsedUav)
                 {
-                    SULEV(uavEntry->uavId, 9);
+                    SULEV(uavEntry->uavId, tempConfig.uavId);
                     SULEV(uavEntry->f1, 4);
                     SULEV(uavEntry->f2, 0);
                     SULEV(uavEntry->type, 5);
+                    uavId11 = true;
                     uavEntry++;
                 }
                 // global buffers
@@ -1232,8 +1258,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     {   // uavid
                         if (arg.used)
                             SULEV(uavEntry->uavId, uavIdsCount++);
-                        else
+                        else if (!uavId11)
                             SULEV(uavEntry->uavId, tempConfig.uavId);
+                        else // if uavid=9 already defined
+                            continue;
                         SULEV(uavEntry->f1, 4);
                         SULEV(uavEntry->f2, 0);
                         SULEV(uavEntry->type, 5);
@@ -1244,6 +1272,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             else
             {   /* in argument order */
                 cxuint writeOnlyImagesCount = 0;
+                bool uavId11 = false;
                 for (const AmdKernelArg& arg: config.args)
                 {
                     if (arg.argType >= KernelArgType::MIN_IMAGE &&
@@ -1263,7 +1292,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             if (arg.used)
                                 SULEV(uavEntry->uavId, uavIdsCount++);
                             else
+                            {
                                 SULEV(uavEntry->uavId, tempConfig.uavId);
+                                uavId11 = true;
+                            }
                             SULEV(uavEntry->f1, 4);
                             SULEV(uavEntry->f2, 0);
                             SULEV(uavEntry->type, 5);
@@ -1277,17 +1309,17 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         }
                     }
                 }
-                if (uavsNum != 0 && notUsedUav && isOlderThan1348)
+                
+                bool doUavId11 = false;
+                if (!isOlderThan1348) // newer drivers
+                    doUavId11 = ((!notUsedUav && !notUsedConstants && havePointers) ||
+                        notUsedUav || (!havePointers && driverVersion >= 152603));
+                else
+                    doUavId11 = notUsedUav || (!havePointers && !isOlderThan1124);
+                doUavId11 = !uavId11 && doUavId11;
+                if (doUavId11)
                 {
-                    SULEV(uavEntry->uavId, 9);
-                    SULEV(uavEntry->f1, 4);
-                    SULEV(uavEntry->f2, 0);
-                    SULEV(uavEntry->type, 5);
-                    uavEntry++;
-                }
-                if (uavsNum != 0 && !isOlderThan1348 && !notUsedUav)
-                {
-                    SULEV(uavEntry->uavId, 11);
+                    SULEV(uavEntry->uavId, tempConfig.uavId);
                     SULEV(uavEntry->f1, 4);
                     SULEV(uavEntry->f2, 0);
                     SULEV(uavEntry->type, 5);
@@ -1295,14 +1327,18 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 }
             }
             // privateid or uavid (???)
-            if (uavsNum != 0 && (isOlderThan1348 || notUsedUav))
+            if (((notUsedUav || notUsedConstants) && !isOlderThan1348) ||
+                (isOlderThan1348 && havePointers) ||
+                (!havePointers && !config.args.empty() && isOlderThan1124))
             {
                 SULEV(uavEntry->uavId, tempConfig.privateId);
                 SULEV(uavEntry->f1, (isOlderThan1124)?4:3);
                 SULEV(uavEntry->f2, 0);
                 SULEV(uavEntry->type, 5);
+                uavEntry++;
             }
-            offset += 16*uavsNum;
+            offset += 16*(uavEntry-startUavEntry);
+            SULEV(noteHdr->descSize, 16*(uavEntry-startUavEntry));
             
             // CALNOTE_CONDOUT
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
@@ -1392,7 +1428,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             else if (isOlderThan1124)
             {   /* for driver 12.10 */
                 cxuint cbid = constBuffersNum-1;
-                for (cxint k = config.args.size(); k >= 0; k--)
+                for (cxint k = config.args.size(); k > 0; k--)
                 {
                     const AmdKernelArg& arg = config.args[k-1];
                     if (arg.argType == KernelArgType::POINTER &&
