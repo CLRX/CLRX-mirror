@@ -81,6 +81,9 @@ ENDIF(NOT LIB_INSTALL_DIR)
 
 IF(BUILD_32BIT)
     SET(CMAKE_CXX_FLAGS_DEBUG "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fcoverage")
+    SET(CMAKE_CXX_FLAGS_GCCSAN
+    "-Wall -m32 ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
     SET(CMAKE_CXX_FLAGS_RELEASE "-Wall -m32 ${CPP_STANDARD} -O2 -fomit-frame-pointer")
     SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
         "-Wall -m32 ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
@@ -88,6 +91,9 @@ IF(BUILD_32BIT)
         "-Wall -m32 ${CPP_STANDARD} -g -O2 -pg -funroll-loops")
 ELSE(BUILD_32BIT)
     SET(CMAKE_CXX_FLAGS_DEBUG "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1")
+    SET(CMAKE_CXX_FLAGS_DEBUGCOV "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fcoverage")
+    SET(CMAKE_CXX_FLAGS_GCCSAN
+        "-Wall ${CPP_STANDARD} -g -O0 -DDEBUG=1 -fstack-protector-all -fsanitize=address")
     SET(CMAKE_CXX_FLAGS_RELEASE "-Wall ${CPP_STANDARD} -O2 -fomit-frame-pointer")
     SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO
         "-Wall ${CPP_STANDARD} -g -O2 -funroll-loops -DDEBUG=1")
