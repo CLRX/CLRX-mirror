@@ -490,7 +490,21 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             tempConfig.uavPrivate = config.uavPrivate;
         
         if (config.uavId == AMDBIN_DEFAULT)
-            tempConfig.uavId = (isOlderThan1348)?9:11;
+        {
+            if (driverVersion < 134805 || driverVersion > 144505)
+                tempConfig.uavId = (isOlderThan1348)?9:11;
+            else
+            {
+                bool hasPointer = false;
+                for (const AmdKernelArg arg: config.args)
+                    if (arg.argType == KernelArgType::POINTER &&
+                        (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
+                         arg.ptrSpace == KernelPtrSpace::GLOBAL))
+                        hasPointer = true;
+                    
+                tempConfig.uavId = (hasPointer)?11:AMDBIN_NOTSUPPLIED;
+            }
+        }
         else
             tempConfig.uavId = config.uavId;
         
@@ -850,10 +864,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             
             if (input->is64Bit)
                 metadata += ";memory:64bitABI\n";
-            metadata += ";uavid:";
-            itocstrCStyle(tempConfig.uavId, numBuf, 21);
-            metadata += numBuf;
-            metadata += '\n';
+            if (tempConfig.uavId != AMDBIN_NOTSUPPLIED)
+            {
+                metadata += ";uavid:";
+                itocstrCStyle(tempConfig.uavId, numBuf, 21);
+                metadata += numBuf;
+                metadata += '\n';
+            }
             if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
             {
                 metadata += ";printfid:";
