@@ -1418,6 +1418,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     {
                         SULEV(cbufMask->index, cbId++);
                         SULEV(cbufMask->size, 0);
+                        cbufMask++;
                     }
                 if (input->globalData != nullptr)
                 {
@@ -1561,6 +1562,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             for (cxuint p = 0; p < config.userDataElemsNum; p++)
                 pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
                          config.userDatas[p].regStart+config.userDatas[p].regSize);
+            pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
             curPgmRSRC2.pgmRSRC2.userSGRP = pgmUserSGPRsNum;
             
             SULEV(progInfo[k].address, 0x80001041U);
