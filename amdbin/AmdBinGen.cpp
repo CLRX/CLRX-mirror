@@ -146,6 +146,8 @@ static const char* gpuDeviceNameTable[14] =
 
 static const char* imgTypeNamesTable[] = { "2D", "1D", "1DA", "1DB", "2D", "2DA", "3D" };
 
+static const cxuint imgUavDimTable[] = { 2, 1, 3, 0, 2, 3, 3 };
+
 enum KindOfType : cxbyte
 {
     KT_UNSIGNED = 0,
@@ -1211,8 +1213,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             offset += sizeof(CALNoteHeader);
             uint32_t* data32 = reinterpret_cast<uint32_t*>(binary + offset);
             for (cxuint k = 0; k < readOnlyImages; k++)
-                SULEV(data32[k], (driverVersion == 101602 || driverVersion == 112402) ?
-                        readOnlyImages-k-1 : k);
+                SULEV(data32[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
             offset += 4*readOnlyImages;
             // CALNOTE_OUTPUTS
             noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
@@ -1232,15 +1233,20 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             CALUAVEntry* uavEntry = startUavEntry;
             cxuint uavIdsCount = tempConfig.uavId+1;
             if (isOlderThan1124)
-            {   // for new drivers
-                for (cxuint k = 0; k < writeOnlyImages; k++)
-                {   /* writeOnlyImages */
-                    SULEV(uavEntry[k].uavId, k);
-                    SULEV(uavEntry[k].f1, 2);
-                    SULEV(uavEntry[k].f2, 3);
-                    SULEV(uavEntry[k].type, 3);
-                }
-                uavEntry += writeOnlyImages;
+            {   // for old drivers
+                cxuint wriCount = 0;
+                for (const AmdKernelArg& arg: config.args)
+                    if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                        arg.argType <= KernelArgType::MAX_IMAGE &&
+                        (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                    { /* writeOnlyImages */
+                        SULEV(uavEntry->uavId, wriCount++);
+                        SULEV(uavEntry->f1, 2);
+                        SULEV(uavEntry->f2, imgUavDimTable[
+                            cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)]);
+                        SULEV(uavEntry->type, 3);
+                        uavEntry++;
+                    }
                 bool uavId11 = false;
                 if (uavsNum != 0 && notUsedUav)
                 {
