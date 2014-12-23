@@ -1633,7 +1633,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 uavMask[0] |= ~((1U<<(tempConfig.uavId+1))-1U);
                 const cxuint uavMaskEnd = globalPointers-(32-tempConfig.uavId-1);
                 const cxuint maxUavVals = uavMaskEnd>>5;
-                std::fill(uavMask+1, uavMask+maxUavVals+1, 0);
+                std::fill(uavMask+1, uavMask+maxUavVals+1, 0xffffffffU);
                 if (maxUavVals<31)
                 {
                     const cxuint bits = (uavMaskEnd-(maxUavVals<<5));
