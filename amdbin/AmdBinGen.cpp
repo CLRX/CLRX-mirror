@@ -492,7 +492,21 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             tempConfig.uavPrivate = config.uavPrivate;
         
         if (config.uavId == AMDBIN_DEFAULT)
-            tempConfig.uavId = (isOlderThan1348)?9:11;
+        {
+            if (driverVersion < 134805 || driverVersion > 144505)
+                tempConfig.uavId = (isOlderThan1348)?9:11;
+            else
+            {
+                bool hasPointer = false;
+                for (const AmdKernelArg arg: config.args)
+                    if (arg.argType == KernelArgType::POINTER &&
+                        (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
+                         arg.ptrSpace == KernelPtrSpace::GLOBAL))
+                        hasPointer = true;
+                    
+                tempConfig.uavId = (hasPointer)?11:AMDBIN_NOTSUPPLIED;
+            }
+        }
         else
             tempConfig.uavId = config.uavId;
         
@@ -601,7 +615,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             
             if (!isOlderThan1348)
             {   // newer drivers
-                if ((!notUsedUav && !notUsedConstants && havePointers) || notUsedUav)
+                if ((!notUsedUav && !notUsedConstants && havePointers) || notUsedUav ||
+                    (!havePointers && driverVersion >= 152603))
                     uavsNum++; // uavid=11
                 if (notUsedUav || notUsedConstants)
                     uavsNum++; // uavid=8
@@ -610,7 +625,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             {   // older drivers
                 if (notUsedUav || (!havePointers && !isOlderThan1124))
                     uavsNum++; // uavid=9
-                if (havePointers)
+                if (havePointers ||
+                    (!havePointers && !config.args.empty() && isOlderThan1124))
                     uavsNum++; // uavid=8
             }
             
@@ -1320,7 +1336,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 bool doUavId11 = false;
                 if (!isOlderThan1348) // newer drivers
                     doUavId11 = ((!notUsedUav && !notUsedConstants && havePointers) ||
-                        notUsedUav);
+                        notUsedUav || (!havePointers && driverVersion >= 152603));
                 else
                     doUavId11 = notUsedUav || (!havePointers && !isOlderThan1124);
                 doUavId11 = !uavId11 && doUavId11;
@@ -1335,7 +1351,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
             // privateid or uavid (???)
             if (((notUsedUav || notUsedConstants) && !isOlderThan1348) ||
-                (isOlderThan1348 && havePointers))
+                (isOlderThan1348 && havePointers) ||
+                (!havePointers && !config.args.empty() && isOlderThan1124))
             {
                 SULEV(uavEntry->uavId, tempConfig.privateId);
                 SULEV(uavEntry->f1, (isOlderThan1124)?4:3);
