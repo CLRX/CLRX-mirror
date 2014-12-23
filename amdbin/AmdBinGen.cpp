@@ -490,21 +490,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             tempConfig.uavPrivate = config.uavPrivate;
         
         if (config.uavId == AMDBIN_DEFAULT)
-        {
-            if (driverVersion < 134805 || driverVersion > 144505)
-                tempConfig.uavId = (isOlderThan1348)?9:11;
-            else
-            {
-                bool hasPointer = false;
-                for (const AmdKernelArg arg: config.args)
-                    if (arg.argType == KernelArgType::POINTER &&
-                        (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
-                         arg.ptrSpace == KernelPtrSpace::GLOBAL))
-                        hasPointer = true;
-                    
-                tempConfig.uavId = (hasPointer)?11:AMDBIN_NOTSUPPLIED;
-            }
-        }
+            tempConfig.uavId = (isOlderThan1348)?9:11;
         else
             tempConfig.uavId = config.uavId;
         
@@ -613,8 +599,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             
             if (!isOlderThan1348)
             {   // newer drivers
-                if ((!notUsedUav && !notUsedConstants && havePointers) || notUsedUav ||
-                    (!havePointers && driverVersion >= 152603))
+                if ((!notUsedUav && !notUsedConstants && havePointers) || notUsedUav)
                     uavsNum++; // uavid=11
                 if (notUsedUav || notUsedConstants)
                     uavsNum++; // uavid=8
@@ -623,8 +608,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             {   // older drivers
                 if (notUsedUav || (!havePointers && !isOlderThan1124))
                     uavsNum++; // uavid=9
-                if (havePointers ||
-                    (!havePointers && !config.args.empty() && isOlderThan1124))
+                if (havePointers)
                     uavsNum++; // uavid=8
             }
             
@@ -1330,7 +1314,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 bool doUavId11 = false;
                 if (!isOlderThan1348) // newer drivers
                     doUavId11 = ((!notUsedUav && !notUsedConstants && havePointers) ||
-                        notUsedUav || (!havePointers && driverVersion >= 152603));
+                        notUsedUav);
                 else
                     doUavId11 = notUsedUav || (!havePointers && !isOlderThan1124);
                 doUavId11 = !uavId11 && doUavId11;
@@ -1345,8 +1329,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
             // privateid or uavid (???)
             if (((notUsedUav || notUsedConstants) && !isOlderThan1348) ||
-                (isOlderThan1348 && havePointers) ||
-                (!havePointers && !config.args.empty() && isOlderThan1124))
+                (isOlderThan1348 && havePointers))
             {
                 SULEV(uavEntry->uavId, tempConfig.privateId);
                 SULEV(uavEntry->f1, (isOlderThan1124)?4:3);
@@ -1446,15 +1429,16 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             else if (isOlderThan1124)
             {   /* for driver 12.10 */
                 cxuint cbid = constBuffersNum-1;
-                for (cxint k = config.args.size(); k > 0; k--)
+                for (cxuint k = config.args.size(); k > 0; k--)
                 {
                     const AmdKernelArg& arg = config.args[k-1];
                     if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     {
                         SULEV(cbufMask->index, cbid--);
-                        SULEV(cbufMask->index, arg.constSpaceSize!=0 ?
+                        SULEV(cbufMask->size, arg.constSpaceSize!=0 ?
                             ((arg.constSpaceSize+15)>>4) : 4096);
+                        cbufMask++;
                     }
                 }
                 if (input->globalData != nullptr)
@@ -1760,6 +1744,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         SULEV(sectionHdrTable->sh_entsize, 0);
         binary[offset++] = 0;
         binary[offset++] = 0;
+        // update encodingEntry and Program headers
         SULEV(loadPrgHdr->p_filesz, offset-loadPrgPartOffset);
         SULEV(loadPrgHdr->p_memsz, offset-loadPrgPartOffset);
         SULEV(encEntry.size, offset-encOffset);
