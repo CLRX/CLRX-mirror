@@ -739,7 +739,7 @@ void Disassembler::disassemble()
                                 calNote.header.descSize/sizeof(CALUAVEntry);
                         const CALUAVEntry* uavEntries =
                             reinterpret_cast<const CALUAVEntry*>(calNote.data);
-                        ::memcpy(buf, "        .uavid ", 15);
+                        ::memcpy(buf, "        .entry ", 15);
                         for (cxuint k = 0; k < uavsNum; k++)
                         {
                             const CALUAVEntry& uavEntry = uavEntries[k];
