@@ -1500,15 +1500,19 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 cbufMask += 2;
                 cxuint uavId = tempConfig.uavId+1;
                 for (const AmdKernelArg& arg: config.args)
-                    if (arg.argType == KernelArgType::POINTER &&
-                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    if (arg.argType == KernelArgType::POINTER)
                     {
-                        if (arg.used)
-                            SULEV(cbufMask->index, uavId++);
-                        else
-                            SULEV(cbufMask->index, tempConfig.uavId);
-                        SULEV(cbufMask->size, 0);
-                        cbufMask++;
+                        if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                        {
+                            if (arg.used)
+                                SULEV(cbufMask->index, uavId++);
+                            else
+                                SULEV(cbufMask->index, tempConfig.uavId);
+                            SULEV(cbufMask->size, 0);
+                            cbufMask++;
+                        }
+                        else if (arg.ptrSpace == KernelPtrSpace::GLOBAL && arg.used)
+                            uavId++;
                     }
             }
             
