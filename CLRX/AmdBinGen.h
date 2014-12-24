@@ -123,12 +123,13 @@ struct AmdKernelConfig
     uint32_t hwRegion;
     uint32_t scratchBufferSize; ///< size of scratch buffer
     uint32_t uavPrivate;    ///< uav private size
-    uint32_t uavId; ///< uavID
+    uint32_t uavId; ///< uavid, first uavid for kernel argument minus 1
     uint32_t constBufferId;
     uint32_t printfId;  ///< UAV ID for printf
     uint32_t privateId;
     uint32_t earlyExit; ///< CALNOTE_EARLYEXIT value
     uint32_t condOut;   ///< CALNOTE_CONDOUT value
+    bool usePrintf;     // if kernel uses printf function
     bool useConstantData; ///< if const data required
     cxuint userDataElemsNum;    ///< number of user data
     AmdUserData userDatas[16];

@@ -471,7 +471,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     amountOfArgs += 32;
                 else if (arg.argType == KernelArgType::STRUCTURE)
                 {
-                    if (isOlderThan1598)
+                    if (!isOlderThan1598)
                         amountOfArgs += (arg.structSize+15)&~15;
                     else // bug in older drivers
                         amountOfArgs += 32;
@@ -516,7 +516,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             tempConfig.constBufferId = config.constBufferId;
         
         if (config.printfId == AMDBIN_DEFAULT)
-            tempConfig.printfId = (isOlderThan1348)?AMDBIN_NOTSUPPLIED : 9;
+            tempConfig.printfId = (!isOlderThan1348 &&
+                (driverVersion >= 152603 || config.usePrintf)) ? 9 : AMDBIN_NOTSUPPLIED;
         else
             tempConfig.printfId = config.printfId;
         
@@ -620,14 +621,19 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     uavsNum++; // uavid=11
                 if (notUsedUav || notUsedConstants)
                     uavsNum++; // uavid=8
+                if (config.usePrintf)
+                    uavsNum++;
             }
             else
             {   // older drivers
-                if (notUsedUav || (!havePointers && !isOlderThan1124))
+                if (notUsedUav || (!havePointers && !isOlderThan1124) ||
+                    (config.usePrintf && isOlderThan1124))
                     uavsNum++; // uavid=9
                 if (havePointers ||
                     (!havePointers && !config.args.empty() && isOlderThan1124))
                     uavsNum++; // uavid=8
+                if (!isOlderThan1124 && config.usePrintf)
+                    uavsNum++;
             }
             
             innerBinSize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
@@ -1060,9 +1066,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             uint32_t* header = reinterpret_cast<uint32_t*>(binary+offset);
             SULEV(header[0], (driverVersion >= 164205) ? tempConfig.uavPrivate : 0);
             SULEV(header[1], 0);
-            SULEV(header[2], tempConfig.uavPrivate);
+            SULEV(header[2], (isOlderThan1348)? 0 : tempConfig.uavPrivate);
             SULEV(header[3], kernel.config.hwLocalSize);
-            SULEV(header[4], input->is64Bit?8:0);
+            SULEV(header[4], (input->is64Bit?8:0) | (kernel.config.usePrintf?2:0));
             SULEV(header[5], 1);
             SULEV(header[6], 0);
             SULEV(header[7], 0);
@@ -1264,7 +1270,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         uavEntry++;
                     }
                 bool uavId11 = false;
-                if (uavsNum != 0 && notUsedUav)
+                if ((uavsNum != 0 && notUsedUav) || config.usePrintf)
                 {
                     SULEV(uavEntry->uavId, tempConfig.uavId);
                     SULEV(uavEntry->f1, 4);
@@ -1314,11 +1320,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         {   // uavid
                             if (arg.used)
                                 SULEV(uavEntry->uavId, uavIdsCount++);
-                            else
+                            else if (!uavId11)
                             {
                                 SULEV(uavEntry->uavId, tempConfig.uavId);
                                 uavId11 = true;
                             }
+                            else // if uavid=11 exists
+                                continue;
                             SULEV(uavEntry->f1, 4);
                             SULEV(uavEntry->f2, 0);
                             SULEV(uavEntry->type, 5);
@@ -1344,6 +1352,14 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 {
                     SULEV(uavEntry->uavId, tempConfig.uavId);
                     SULEV(uavEntry->f1, 4);
+                    SULEV(uavEntry->f2, 0);
+                    SULEV(uavEntry->type, 5);
+                    uavEntry++;
+                }
+                if (config.usePrintf)
+                {
+                    SULEV(uavEntry->uavId, tempConfig.uavId);
+                    SULEV(uavEntry->f1, 0);
                     SULEV(uavEntry->f2, 0);
                     SULEV(uavEntry->type, 5);
                     uavEntry++;
@@ -1644,6 +1660,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 uavMask[0] |= ((1U<<globalPointers)-1U)<<(tempConfig.uavId+1);
             if (!isOlderThan1348 && config.useConstantData)
                 uavMask[0] |= 1U<<tempConfig.constBufferId;
+            if (config.usePrintf) //if printf used
+            {
+                if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
+                    uavMask[0] |= 1U<<tempConfig.printfId;
+                else
+                    uavMask[0] |= 1U<<9;
+            }
             
             SULEV(progInfo[k].address, 0x8000001fU);
             SULEV(progInfo[k++].value, uavMask[0]);
