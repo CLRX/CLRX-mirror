@@ -732,7 +732,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         else
                         {
                             if (arg.used)
-                                itocstrCStyle(uavId++, numBuf, 21);
+                            {
+                                const cxuint u = (arg.uavId!=AMDBIN_DEFAULT)?arg.uavId:uavId;
+                                uavId++;
+                                itocstrCStyle(u, numBuf, 21);
+                            }
                             else // if has not been used in kernel
                                 itocstrCStyle(tempConfig.uavId, numBuf, 21);
                         }
@@ -742,7 +746,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     {
                         metadata += "uav:";
                         if (arg.used)
-                            itocstrCStyle(uavId++, numBuf, 21);
+                        {
+                            const cxuint u = (arg.uavId!=AMDBIN_DEFAULT)?arg.uavId:uavId;
+                            uavId++;
+                            itocstrCStyle(u, numBuf, 21);
+                        }
                         else // if has not been used in kernel
                             itocstrCStyle(tempConfig.uavId, numBuf, 21);
                         metadata += numBuf;
@@ -1286,7 +1294,12 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         arg.ptrSpace == KernelPtrSpace::GLOBAL)
                     {   // uavid
                         if (arg.used)
-                            SULEV(uavEntry->uavId, uavIdsCount++);
+                        {
+                            const cxuint u = (arg.uavId != AMDBIN_DEFAULT) ?
+                                     arg.uavId : uavIdsCount;
+                            uavIdsCount++;
+                            SULEV(uavEntry->uavId, u);
+                        }
                         else if (!uavId11)
                             SULEV(uavEntry->uavId, tempConfig.uavId);
                         else // if uavid=9 already defined
@@ -1319,7 +1332,12 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
                         {   // uavid
                             if (arg.used)
-                                SULEV(uavEntry->uavId, uavIdsCount++);
+                            {
+                                const cxuint u = (arg.uavId != AMDBIN_DEFAULT) ?
+                                        arg.uavId : uavIdsCount;
+                                uavIdsCount++;
+                                SULEV(uavEntry->uavId, u);
+                            }
                             else if (!uavId11)
                             {
                                 SULEV(uavEntry->uavId, tempConfig.uavId);
@@ -1498,21 +1516,26 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 SULEV(cbufMask[1].index, 1);
                 SULEV(cbufMask[1].size, 0);
                 cbufMask += 2;
-                cxuint uavId = tempConfig.uavId+1;
+                uavIdsCount = tempConfig.uavId+1;
                 for (const AmdKernelArg& arg: config.args)
                     if (arg.argType == KernelArgType::POINTER)
                     {
                         if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                         {
                             if (arg.used)
-                                SULEV(cbufMask->index, uavId++);
+                            {
+                                const cxuint u = (arg.uavId != AMDBIN_DEFAULT)? arg.uavId :
+                                    uavIdsCount;
+                                uavIdsCount++;
+                                SULEV(cbufMask->index, u);
+                            }
                             else
                                 SULEV(cbufMask->index, tempConfig.uavId);
                             SULEV(cbufMask->size, 0);
                             cbufMask++;
                         }
                         else if (arg.ptrSpace == KernelPtrSpace::GLOBAL && arg.used)
-                            uavId++;
+                            uavIdsCount++;
                     }
             }
             
@@ -1647,21 +1670,17 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             uint32_t uavMask[32];
             ::memset(uavMask, 0, 128);
             uavMask[0] = woUsedImagesMask;
-            const cxuint globalPointers = uavIdsCount-tempConfig.uavId-1;
-            if (globalPointers>32-tempConfig.uavId-1)
-            {
-                uavMask[0] |= ~((1U<<(tempConfig.uavId+1))-1U);
-                const cxuint uavMaskEnd = globalPointers-(32-tempConfig.uavId-1);
-                const cxuint maxUavVals = uavMaskEnd>>5;
-                std::fill(uavMask+1, uavMask+maxUavVals+1, 0xffffffffU);
-                if (maxUavVals<31)
+            uavIdsCount = tempConfig.uavId+1;
+            for (const AmdKernelArg& arg: config.args)
+                if (arg.used && arg.argType == KernelArgType::POINTER &&
+                    (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
+                     (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
                 {
-                    const cxuint bits = (uavMaskEnd-(maxUavVals<<5));
-                    uavMask[maxUavVals+1] = (bits!=32)?(1U<<bits)-1U:0xffffffffU;
+                    const cxuint u = (arg.uavId != AMDBIN_DEFAULT) ? arg.uavId :
+                            uavIdsCount;
+                    uavIdsCount++;
+                    uavMask[u>>5] |= (1U<<(u&31));
                 }
-            }
-            else // only single
-                uavMask[0] |= ((1U<<globalPointers)-1U)<<(tempConfig.uavId+1);
             if (!isOlderThan1348 && config.useConstantData)
                 uavMask[0] |= 1U<<tempConfig.constBufferId;
             if (config.usePrintf) //if printf used
