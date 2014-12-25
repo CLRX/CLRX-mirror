@@ -485,10 +485,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     amountOfArgs += ((typeSize+15)>>4)<<5;
                 }
             }
-            if (hasStructures || config.scratchBufferSize != 0)
-                tempConfig.uavPrivate = config.scratchBufferSize + amountOfArgs;
-            else
-                tempConfig.uavPrivate = 0;
+            
+            tempConfig.uavPrivate = (hasStructures) ? amountOfArgs : 0;
+            if (tempConfig.uavPrivate < config.scratchBufferSize)
+                tempConfig.uavPrivate = config.scratchBufferSize;
         }
         else
             tempConfig.uavPrivate = config.uavPrivate;
@@ -1636,9 +1636,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
             data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            uint32_t scratchBuffer = (!isOlderThan1348) ? ((config.scratchBufferSize+3)>>2) :
-                    (((config.scratchBufferSize+3)>>2) + config.args.size()*8);
-            SULEV(*data32, scratchBuffer);
+            SULEV(*data32, config.scratchBufferSize>>2);
             offset += 4;
             
             // CALNOTE_PERSISTENT_BUFFERS
@@ -1713,7 +1711,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             SULEV(progInfo[k].address, 0x80001044U);
             SULEV(progInfo[k++].value, config.ieeeMode);
             SULEV(progInfo[k].address, 0x80001045U);
-            SULEV(progInfo[k++].value, scratchBuffer);
+            SULEV(progInfo[k++].value, config.scratchBufferSize>>2);
             SULEV(progInfo[k].address, 0x00002e13U);
             SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2Value);
             SULEV(progInfo[k].address, 0x8000001cU);
