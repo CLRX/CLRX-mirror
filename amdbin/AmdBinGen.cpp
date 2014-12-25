@@ -1386,7 +1386,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         if (arg.used)
                             SULEV(uavEntry->uavId, tempConfig.argUavIds[k]);
                         else if (!uavId11)
+                        {
                             SULEV(uavEntry->uavId, tempConfig.uavId);
+                            uavId11 = true;
+                        }
                         else // if uavid=9 already defined
                             continue;
                         SULEV(uavEntry->f1, 4);
