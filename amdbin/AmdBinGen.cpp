@@ -1771,7 +1771,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             SULEV(progInfo[k].address, 0x80000081U);
             SULEV(progInfo[k++].value, 32768);
             SULEV(progInfo[k].address, 0x80000082U);
-            SULEV(progInfo[k++].value, localSize);
+            SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2.ldsSize<<8);
             offset += 8*k;
             SULEV(noteHdr->descSize, 8*k);
             
