@@ -1636,7 +1636,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             ::memcpy(noteHdr->name, "ATI CAL", 8);
             offset += sizeof(CALNoteHeader);
             data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            SULEV(*data32, config.scratchBufferSize);
+            if (!isOlderThan1348)
+                SULEV(*data32, (config.scratchBufferSize+3)>>2);
+            else
+                SULEV(*data32, ((config.scratchBufferSize+3)>>2) + config.args.size()*8);
             offset += 4;
             
             // CALNOTE_PERSISTENT_BUFFERS
