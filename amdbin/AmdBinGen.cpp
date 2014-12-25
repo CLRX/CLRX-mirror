@@ -506,7 +506,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                          arg.ptrSpace == KernelPtrSpace::GLOBAL))
                         hasPointer = true;
                     
-                tempConfig.uavId = (hasPointer)?11:AMDBIN_NOTSUPPLIED;
+                tempConfig.uavId = (hasPointer || config.usePrintf)?11:AMDBIN_NOTSUPPLIED;
             }
         }
         else
@@ -557,7 +557,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     if ((uavId < 9 && arg.used) ||
                         (!arg.used && uavId != tempConfig.uavId) || uavId >= 1024)
                         throw Exception("UavId out of range!");
-                    if (puavMask[uavId])
+                    if (puavMask[uavId] && uavId != tempConfig.uavId)
                         throw Exception("UavId already used!");
                     puavMask.set(uavId);
                 }
