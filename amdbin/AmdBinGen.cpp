@@ -533,7 +533,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         cxuint puavIdsCount = tempConfig.uavId+1;
         std::bitset<1024> puavMask;
         cxuint cntIdsCount = 0;
-        std::bitset<1024> cntIdMask;
+        std::bitset<8> cntIdMask;
         cxuint cbIdsCount = 2 + (input->globalData != nullptr);
         std::bitset<160> cbIdMask;
         cxuint rdImgsCount = 0;
@@ -648,7 +648,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 if (arg.resId != AMDBIN_DEFAULT)
                 {
                     cntId = arg.resId;
-                    if (cntId >= 1024)
+                    if (cntId >= 8)
                         throw Exception("CounterId out of range!");
                     if (cntIdMask[cntId])
                         throw Exception("CounterId already used!");
@@ -656,8 +656,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 }
                 else
                 {
-                    for (; cntIdsCount < 1024 && cntIdMask[cntIdsCount]; cntIdsCount++);
-                    if (cntIdsCount == 1024)
+                    for (; cntIdsCount < 8 && cntIdMask[cntIdsCount]; cntIdsCount++);
+                    if (cntIdsCount == 8)
                         throw Exception("CounterId out of range!");
                     cntId = cntIdsCount++;
                 }
