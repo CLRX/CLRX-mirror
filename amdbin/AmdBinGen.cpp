@@ -26,6 +26,7 @@
 #include <cstring>
 #include <algorithm>
 #include <bitset>
+#include <set>
 #include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
@@ -1430,6 +1431,35 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     offset += 128;
 }
 
+static std::set<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
+{
+    std::set<cxuint> uniqueIds;
+    for (const AmdKernelInput& kernel: input->kernels)
+        if (!kernel.useConfig)
+        {
+            const char* metadata = kernel.metadata;
+            size_t pos = 0;
+            for (pos = 0; pos < kernel.metadataSize-11; pos++)
+                if (::memcmp(metadata+pos, "\n;uniqueid:", 11) == 0)
+                    break;
+            if (pos == kernel.metadataSize-11)
+                continue; // not found
+            const char* outEnd;
+            pos += 11;
+            uniqueIds.insert(cstrtovCStyle<cxuint>(metadata+pos,
+                           metadata+kernel.metadataSize, outEnd));
+            for (; pos < kernel.metadataSize-13; pos++)
+                if (::memcmp(metadata+pos, "\n;functionid:", 13) == 0)
+                    break;
+            if (pos == kernel.metadataSize-13)
+                continue; // not found
+            pos += 13;
+            uniqueIds.insert(cstrtovCStyle<cxuint>(metadata+pos,
+                           metadata+kernel.metadataSize, outEnd));
+        }
+    return uniqueIds;
+}
+
 /*
  * main routine to generate AmdBin for GPU
  */
@@ -1507,7 +1537,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     
     std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
-    size_t uniqueId = 1024;
+    cxuint uniqueId = 1024;
+    std::set<cxuint> uniqueIds = collectUniqueIdsAndFunctionIds(input);
+    
     for (size_t i = 0; i < input->kernels.size(); i++)
     {
         cxuint& innerBinSize = innerBinSizes[i];
@@ -1521,6 +1553,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         size_t metadataSize = 0;
         if (kinput.useConfig)
         {
+            // get new free uniqueId
+            while (uniqueIds.find(uniqueId) != uniqueIds.end()) uniqueId++;
+            
             const AmdKernelConfig& config = kinput.config;
             cxuint readOnlyImages = 0;
             cxuint writeOnlyImages = 0;
@@ -1605,6 +1640,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                      tempAmdKernelConfigs[i], argSamplersNum, uniqueId);
             
             metadataSize = kmetadatas[i].size() + 32 /* header size */;
+            uniqueId++;
         }
         else // if defined in calNotes (no config)
         {
@@ -1612,7 +1648,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 innerBinSize += 20 + calNote.header.descSize;
             metadataSize = kinput.metadataSize + kinput.headerSize;
         }
-        uniqueId++;
+        
         binarySize += innerBinSize + metadataSize;
     }
     
