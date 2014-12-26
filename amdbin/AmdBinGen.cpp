@@ -388,53 +388,11 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     offset += sizeof(ElfShdr)*(5 + (noKernels?0:2));
 }
 
-cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
+static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
+       std::vector<TempAmdKernelConfig>& tempAmdKernelConfigs)
 {
-    size_t binarySize;
-    const size_t kernelsNum = input->kernels.size();
-    std::string driverInfo;
-    uint32_t driverVersion = 99999909U;
-    if (input->driverInfo.empty())
-    {
-        char drvInfoBuf[100];
-        ::snprintf(drvInfoBuf, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
-                "Driver version: %u.%u (VM)",
-                 input->driverVersion/100U, input->driverVersion%100U,
-                 input->driverVersion/100U, input->driverVersion%100U);
-        driverInfo = drvInfoBuf;
-        driverVersion = input->driverVersion;
-    }
-    else if (input->driverVersion == 0)
-    {   // parse version
-        size_t pos = input->driverInfo.find("AMD-APP"); // find AMDAPP
-        try
-        {
-            driverInfo = input->driverInfo;
-            if (pos != std::string::npos)
-            {   /* let to parse version number */
-                pos += 9;
-                const char* end;
-                driverVersion = cstrtovCStyle<cxuint>(
-                        input->driverInfo.c_str()+pos, nullptr, end)*100;
-                end++;
-                driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
-            }
-        }
-        catch(const ParseException& ex)
-        { driverVersion = 99999909U; /* newest possible */ }
-    }
-    
-    const size_t mainSectionsAlign = (input->is64Bit)?8:4;
-    
-    const bool isOlderThan1124 = driverVersion < 112402;
     const bool isOlderThan1348 = driverVersion < 134805;
     const bool isOlderThan1598 = driverVersion < 159805;
-    /* checking input */
-    if (input->deviceType == GPUDeviceType::UNDEFINED ||
-        cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
-        throw Exception("Undefined GPU device type");
-    
-    std::vector<TempAmdKernelConfig> tempAmdKernelConfigs(input->kernels.size());
     
     for (cxuint i = 0; i < input->kernels.size(); i++)
     {
@@ -665,6 +623,865 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
         }
     }
+}
+
+static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
+        const AmdKernelInput& kinput, TempAmdKernelConfig& tempConfig,
+        cxuint argSamplersNum, cxuint uniqueId)
+{
+    const bool isOlderThan1124 = driverVersion < 112402;
+    const bool isOlderThan1348 = driverVersion < 134805;
+    const AmdKernelConfig& config = kinput.config;
+    /* compute metadataSize */
+    std::string metadata;
+    metadata.reserve(100);
+    metadata += ";ARGSTART:__OpenCL_";
+    metadata += kinput.kernelName;
+    metadata += "_kernel\n";
+    if (isOlderThan1124)
+        metadata += ";version:3:1:104\n";
+    else
+        metadata += ";version:3:1:111\n";
+    metadata += ";device:";
+    metadata += gpuDeviceNameTable[cxuint(input->deviceType)];
+    char numBuf[21];
+    metadata += "\n;uniqueid:";
+    itocstrCStyle(uniqueId, numBuf, 21);
+    metadata += numBuf;
+    metadata += "\n;memory:uavprivate:";
+    itocstrCStyle(tempConfig.uavPrivate, numBuf, 21);
+    metadata += numBuf;
+    metadata += "\n;memory:hwlocal:";
+    itocstrCStyle(config.hwLocalSize, numBuf, 21);
+    metadata += numBuf;
+    metadata += "\n;memory:hwregion:";
+    itocstrCStyle(tempConfig.hwRegion, numBuf, 21);
+    metadata += numBuf;
+    metadata += '\n';
+    if (config.reqdWorkGroupSize[0] != 0 || config.reqdWorkGroupSize[1] != 0 ||
+        config.reqdWorkGroupSize[1] != 0)
+    {
+        metadata += ";cws:";
+        itocstrCStyle(config.reqdWorkGroupSize[0], numBuf, 21);
+        metadata += numBuf;
+        metadata += ':';
+        itocstrCStyle(config.reqdWorkGroupSize[1], numBuf, 21);
+        metadata += numBuf;
+        metadata += ':';
+        itocstrCStyle(config.reqdWorkGroupSize[2], numBuf, 21);
+        metadata += numBuf;
+        metadata += '\n';
+    }
+    
+    size_t argOffset = 0;
+    for (cxuint k = 0; k < config.args.size(); k++)
+    {
+        const AmdKernelArg& arg = config.args[k];
+        if (arg.argType == KernelArgType::STRUCTURE)
+        {
+            metadata += ";value:";
+            metadata += arg.argName;
+            metadata += ":struct:";
+            itocstrCStyle(arg.structSize, numBuf, 21);
+            metadata += numBuf;
+            metadata += ":1:";
+            itocstrCStyle(argOffset, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            argOffset += (arg.structSize+15)&~15;
+        }
+        else if (arg.argType == KernelArgType::POINTER)
+        {
+            metadata += ";pointer:";
+            metadata += arg.argName;
+            metadata += ':';
+            const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
+            if (tp.kindOfType == KT_UNKNOWN)
+                throw Exception("Type not supported!");
+            const cxuint typeSize =
+                cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
+            if (arg.structSize == 0 && arg.pointerType == KernelArgType::STRUCTURE)
+                metadata += "opaque";
+            else
+                metadata += tp.name;
+            metadata += ":1:1:";
+            itocstrCStyle(argOffset, numBuf, 21);
+            metadata += numBuf;
+            metadata += ':';
+            if (arg.ptrSpace == KernelPtrSpace::LOCAL)
+                metadata += "hl:1";
+            else if (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
+                     arg.ptrSpace == KernelPtrSpace::GLOBAL)
+            {
+                if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                    metadata += "uav:";
+                else
+                    metadata += (isOlderThan1348)?"hc:":"c:";
+                itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
+                metadata += numBuf;
+            }
+            else
+                throw Exception("Other memory spaces are not supported");
+            metadata += ':';
+            const size_t elemSize = (arg.pointerType==KernelArgType::STRUCTURE)?
+                ((arg.structSize!=0)?arg.structSize:4) : typeSize;
+            itocstrCStyle(elemSize, numBuf, 21);
+            metadata += numBuf;
+            metadata += ':';
+            metadata += ((arg.ptrAccess & KARG_PTR_CONST) ||
+                    arg.ptrSpace == KernelPtrSpace::CONSTANT)?"RO":"RW";
+            metadata += ':';
+            metadata += (arg.ptrAccess & KARG_PTR_VOLATILE)?'1':'0';
+            metadata += ':';
+            metadata += (arg.ptrAccess & KARG_PTR_RESTRICT)?'1':'0';
+            metadata += '\n';
+            argOffset += 16;
+        }
+        else if ((arg.argType >= KernelArgType::MIN_IMAGE) &&
+            (arg.argType <= KernelArgType::MAX_IMAGE))
+        {
+            metadata += ";image:";
+            metadata += arg.argName;
+            metadata += ':';
+            metadata += imgTypeNamesTable[
+                    cxuint(arg.argType)-cxuint(KernelArgType::IMAGE)];
+            metadata += ':';
+            if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                metadata += "RO";
+            else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                metadata += "WO";
+            else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_WRITE)
+                metadata += "RW";
+            else
+                throw Exception("Invalid image access qualifier!");
+            metadata += ':';
+            itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
+            metadata += numBuf;
+            metadata += ":1:";
+            itocstrCStyle(argOffset, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            argOffset += 32;
+        }
+        else if (arg.argType == KernelArgType::COUNTER32)
+        {
+            metadata += ";counter:";
+            metadata += arg.argName;
+            metadata += ":32:";
+            itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
+            metadata += numBuf;
+            metadata += ":1:";
+            itocstrCStyle(argOffset, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            argOffset += 16;
+        }
+        else
+        {
+            metadata += ";value:";
+            metadata += arg.argName;
+            metadata += ':';
+            const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
+            if (tp.kindOfType == KT_UNKNOWN)
+                throw Exception("Type not supported!");
+            const cxuint typeSize =
+                cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
+            metadata += tp.name;
+            metadata += ':';
+            itocstrCStyle(tp.vecSize, numBuf, 21);
+            metadata += numBuf;
+            metadata += ":1:";
+            itocstrCStyle(argOffset, numBuf, 21);
+            metadata += numBuf;
+            metadata += '\n';
+            argOffset += (typeSize+15)&~15;
+        }
+        
+        if (arg.ptrAccess & KARG_PTR_CONST)
+        {
+            metadata += ";constarg:";
+            itocstrCStyle(k, numBuf, 21);
+            metadata += numBuf;
+            metadata += ':';
+            metadata += arg.argName;
+            metadata += '\n';
+        }
+    }
+    
+    tempConfig.argsSpace = argOffset;
+    
+    if (input->globalData != nullptr)
+        metadata += ";memory:datareqd\n";
+    metadata += ";function:1:";
+    itocstrCStyle(uniqueId, numBuf, 21);
+    metadata += numBuf;
+    metadata += '\n';
+    
+    for (cxuint sampId = 0; sampId < config.samplers.size(); sampId++)
+    {   /* constant samplers */
+        const cxuint samp = config.samplers[sampId];
+        metadata += ";sampler:unknown_";
+        itocstrCStyle(samp, numBuf, 21);
+        metadata += numBuf;
+        metadata += ':';
+        itocstrCStyle(sampId+argSamplersNum, numBuf, 21);
+        metadata += numBuf;
+        metadata += ":1:";
+        itocstrCStyle(samp, numBuf, 21);
+        metadata += numBuf;
+        metadata += '\n';
+    }
+    cxuint sampId = 0;
+    /* kernel argument samplers */
+    for (const AmdKernelArg& arg: config.args)
+        if (arg.argType == KernelArgType::SAMPLER)
+        {
+            metadata += ";sampler:";
+            metadata += arg.argName;
+            metadata += ':';
+            itocstrCStyle(sampId, numBuf, 21);
+            metadata += numBuf;
+            metadata += ":0:0\n";
+            sampId++;
+        }
+    
+    if (input->is64Bit)
+        metadata += ";memory:64bitABI\n";
+    if (tempConfig.uavId != AMDBIN_NOTSUPPLIED)
+    {
+        metadata += ";uavid:";
+        itocstrCStyle(tempConfig.uavId, numBuf, 21);
+        metadata += numBuf;
+        metadata += '\n';
+    }
+    if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
+    {
+        metadata += ";printfid:";
+        itocstrCStyle(tempConfig.printfId, numBuf, 21);
+        metadata += numBuf;
+        metadata += '\n';
+    }
+    if (tempConfig.constBufferId != AMDBIN_NOTSUPPLIED)
+    {
+        metadata += ";cbid:";
+        itocstrCStyle(tempConfig.constBufferId, numBuf, 21);
+        metadata += numBuf;
+        metadata += '\n';
+    }
+    metadata += ";privateid:";
+    itocstrCStyle(tempConfig.privateId, numBuf, 21);
+    metadata += numBuf;
+    metadata += '\n';
+    for (cxuint k = 0; k < config.args.size(); k++)
+    {
+        const AmdKernelArg& arg = config.args[k];
+        metadata += ";reflection:";
+        itocstrCStyle(k, numBuf, 21);
+        metadata += numBuf;
+        metadata += ':';
+        metadata += arg.typeName;
+        metadata += '\n';
+    }
+    
+    metadata += ";ARGEND:__OpenCL_";
+    metadata += kinput.kernelName;
+    metadata += "_kernel\n";
+    
+    return metadata;
+}
+
+static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* input,
+         cxuint driverVersion, const AmdKernelInput& kernel,
+         const TempAmdKernelConfig& tempConfig)
+{
+    const bool isOlderThan1124 = driverVersion < 112402;
+    const bool isOlderThan1348 = driverVersion < 134805;
+    const AmdKernelConfig& config = kernel.config;
+    cxuint readOnlyImages = 0;
+    cxuint writeOnlyImages = 0;
+    cxuint uavsNum = 0;
+    bool notUsedUav = false;
+    bool havePointers = false;
+    bool notUsedConstants = false;
+    cxuint samplersNum = config.samplers.size();
+    cxuint argSamplersNum = 0;
+    bool isLocalPointers = false;
+    cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
+            (input->globalData != nullptr));
+    cxuint woUsedImagesMask = 0;
+    for (const AmdKernelArg& arg: config.args)
+    {
+        if (arg.argType >= KernelArgType::MIN_IMAGE &&
+            arg.argType <= KernelArgType::MAX_IMAGE)
+        {
+            if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                readOnlyImages++;
+            if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+            {
+                if (arg.used)
+                    woUsedImagesMask |= (1U<<writeOnlyImages);
+                writeOnlyImages++;
+                uavsNum++;
+            }
+        }
+        else if (arg.argType == KernelArgType::POINTER)
+        {
+            if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+            {   // only global pointers are defined in uav table
+                if (arg.used)
+                    uavsNum++;
+                else
+                    notUsedUav = true;
+                havePointers = true;
+            }
+            else if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+            {
+                if (!arg.used)
+                    notUsedConstants = true;
+                constBuffersNum++;
+                havePointers = true;
+            }
+            else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
+                isLocalPointers = true;
+        }
+       else if (arg.argType == KernelArgType::SAMPLER)
+           argSamplersNum++;
+    }
+    samplersNum += argSamplersNum;
+    
+    // CAL CALNOTE_INPUTS
+    CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_INPUTS);
+    SULEV(noteHdr->descSize, 4*readOnlyImages);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    uint32_t* data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    for (cxuint k = 0; k < readOnlyImages; k++)
+        SULEV(data32[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
+    offset += 4*readOnlyImages;
+    // CALNOTE_OUTPUTS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_OUTPUTS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    // CALNOTE_UAV
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->type, CALNOTE_ATI_UAV);
+    SULEV(noteHdr->nameSize, 8);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    CALUAVEntry* startUavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
+    CALUAVEntry* uavEntry = startUavEntry;
+    if (isOlderThan1124)
+    {   // for old drivers
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArg& arg = config.args[k];
+            if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                arg.argType <= KernelArgType::MAX_IMAGE &&
+                (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+            { /* writeOnlyImages */
+                SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
+                SULEV(uavEntry->f1, 2);
+                SULEV(uavEntry->f2, imgUavDimTable[
+                    cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)]);
+                SULEV(uavEntry->type, 3);
+                uavEntry++;
+            }
+        }
+        bool uavId11 = false;
+        if ((uavsNum != 0 && notUsedUav) || config.usePrintf)
+        {
+            SULEV(uavEntry->uavId, tempConfig.uavId);
+            SULEV(uavEntry->f1, 4);
+            SULEV(uavEntry->f2, 0);
+            SULEV(uavEntry->type, 5);
+            uavId11 = true;
+            uavEntry++;
+        }
+        // global buffers
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArg& arg = config.args[k];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::GLOBAL)
+            {   // uavid
+                if (arg.used)
+                    SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
+                else if (!uavId11)
+                {
+                    SULEV(uavEntry->uavId, tempConfig.uavId);
+                    uavId11 = true;
+                }
+                else // if uavid=9 already defined
+                    continue;
+                SULEV(uavEntry->f1, 4);
+                SULEV(uavEntry->f2, 0);
+                SULEV(uavEntry->type, 5);
+                uavEntry++;
+            }
+        }
+    }
+    else
+    {   /* in argument order */
+        bool uavId11 = false;
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArg& arg = config.args[k];
+            if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                arg.argType <= KernelArgType::MAX_IMAGE &&
+                (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+            {   // write_only images
+                SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
+                SULEV(uavEntry->f1, 2);
+                SULEV(uavEntry->f2, 2);
+                SULEV(uavEntry->type, 5);
+                uavEntry++;
+            }
+            else if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::GLOBAL)
+            {   // uavid
+                if (arg.used)
+                    SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
+                else
+                {
+                    SULEV(uavEntry->uavId, tempConfig.uavId);
+                    uavId11 = true;
+                }
+                SULEV(uavEntry->f1, 4);
+                SULEV(uavEntry->f2, 0);
+                SULEV(uavEntry->type, 5);
+                uavEntry++;
+            }
+        }
+        
+        bool doUavId11 = false;
+        if (!isOlderThan1348) // newer drivers
+            doUavId11 = ((!notUsedUav && !notUsedConstants && havePointers) ||
+                notUsedUav || (!havePointers && driverVersion >= 152603));
+        else
+            doUavId11 = notUsedUav || (!havePointers && !isOlderThan1124);
+        doUavId11 = !uavId11 && doUavId11;
+        if (doUavId11)
+        {
+            SULEV(uavEntry->uavId, tempConfig.uavId);
+            SULEV(uavEntry->f1, 4);
+            SULEV(uavEntry->f2, 0);
+            SULEV(uavEntry->type, 5);
+            uavEntry++;
+        }
+        if (config.usePrintf)
+        {
+            SULEV(uavEntry->uavId, tempConfig.uavId);
+            SULEV(uavEntry->f1, 0);
+            SULEV(uavEntry->f2, 0);
+            SULEV(uavEntry->type, 5);
+            uavEntry++;
+        }
+    }
+    // privateid or uavid (???)
+    if (((notUsedUav || notUsedConstants) && !isOlderThan1348) ||
+        (isOlderThan1348 && havePointers) ||
+        (!havePointers && !config.args.empty() && isOlderThan1124))
+    {
+        SULEV(uavEntry->uavId, tempConfig.privateId);
+        SULEV(uavEntry->f1, (isOlderThan1124)?4:3);
+        SULEV(uavEntry->f2, 0);
+        SULEV(uavEntry->type, 5);
+        uavEntry++;
+    }
+    offset += 16*(uavEntry-startUavEntry);
+    SULEV(noteHdr->descSize, 16*(uavEntry-startUavEntry));
+    
+    // CALNOTE_CONDOUT
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_CONDOUT);
+    SULEV(noteHdr->descSize, 4);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    SULEV(*data32, config.condOut);
+    offset += 4;
+    // CALNOTE_FLOAT32CONSTS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_FLOAT32CONSTS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    // CALNOTE_INT32CONSTS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_INT32CONSTS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    // CALNOTE_BOOL32CONSTS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_BOOL32CONSTS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    // CALNOTE_EARLYEXIT
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_EARLYEXIT);
+    SULEV(noteHdr->descSize, 4);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    SULEV(*data32, config.earlyExit);
+    offset += 4;
+    
+    // CALNOTE_GLOBAL_BUFFERS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_GLOBAL_BUFFERS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    // CALNOTE_CONSTANT_BUFFERS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_CONSTANT_BUFFERS);
+    SULEV(noteHdr->descSize, 8*constBuffersNum);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    
+    CALConstantBufferMask* cbufMask =
+        reinterpret_cast<CALConstantBufferMask*>(binary + offset);
+    offset += 8*constBuffersNum;
+    
+    if (driverVersion == 112402)
+    {
+        SULEV(cbufMask->index, 0);
+        SULEV(cbufMask->size, 0);
+        SULEV(cbufMask[1].index, 1);
+        SULEV(cbufMask[1].size, 0);
+        cbufMask += 2;
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArg& arg = config.args[k];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::CONSTANT)
+            {
+                SULEV(cbufMask->index, tempConfig.argResIds[k]);
+                SULEV(cbufMask->size, 0);
+                cbufMask++;
+            }
+        }
+        if (input->globalData != nullptr)
+        {
+            SULEV(cbufMask->index, 2);
+            SULEV(cbufMask->size, 0);
+        }
+    }
+    else if (isOlderThan1124)
+    {   /* for driver 12.10 */
+        for (cxuint k = config.args.size(); k > 0; k--)
+        {
+            const AmdKernelArg& arg = config.args[k-1];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::CONSTANT)
+            {
+                SULEV(cbufMask->index, tempConfig.argResIds[k-1]);
+                SULEV(cbufMask->size, arg.constSpaceSize!=0 ?
+                    ((arg.constSpaceSize+15)>>4) : 4096);
+                cbufMask++;
+            }
+        }
+        if (input->globalData != nullptr)
+        {
+            SULEV(cbufMask->index, 2); // ????
+            SULEV(cbufMask->size, (input->globalDataSize+15)>>4);
+            cbufMask++;
+        }
+        SULEV(cbufMask->index, 1);
+        SULEV(cbufMask->size, (tempConfig.argsSpace+15)>>4);
+        SULEV(cbufMask[1].index, 0);
+        SULEV(cbufMask[1].size, 15);
+    }
+    else // new drivers
+    {
+        SULEV(cbufMask->index, 0);
+        SULEV(cbufMask->size, 0);
+        SULEV(cbufMask[1].index, 1);
+        SULEV(cbufMask[1].size, 0);
+        cbufMask += 2;
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArg& arg = config.args[k];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::CONSTANT)
+            {
+                SULEV(cbufMask->index, tempConfig.argResIds[k]);
+                SULEV(cbufMask->size, 0);
+                cbufMask++;
+            }
+        }
+    }
+    
+    // CALNOTE_INPUT_SAMPLERS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_INPUT_SAMPLERS);
+    SULEV(noteHdr->descSize, 8*samplersNum);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
+                binary + offset);
+    for (cxuint k = 0; k < config.samplers.size(); k++)
+    {
+        SULEV(sampEntry[k].input, 0);
+        SULEV(sampEntry[k].sampler, k+argSamplersNum);
+    }
+    sampEntry += config.samplers.size();
+    for (cxuint k = 0; k < argSamplersNum; k++)
+    {
+        SULEV(sampEntry[k].input, 0);
+        SULEV(sampEntry[k].sampler, k);
+    }
+    offset += 8*samplersNum;
+    
+    // CALNOTE_SCRATCH_BUFFERS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_SCRATCH_BUFFERS);
+    SULEV(noteHdr->descSize, 4);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    SULEV(*data32, config.scratchBufferSize>>2);
+    offset += 4;
+    
+    // CALNOTE_PERSISTENT_BUFFERS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_PERSISTENT_BUFFERS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    /* PROGRAM_INFO */
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_PROGINFO);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    CALProgramInfoEntry* progInfo = reinterpret_cast<CALProgramInfoEntry*>(
+                binary + offset);
+    SULEV(progInfo[0].address, 0x80001000U);
+    SULEV(progInfo[0].value, config.userDataElemsNum);
+    cxuint k = 0;
+    for (k = 0; k < config.userDataElemsNum; k++)
+    {
+        SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
+        SULEV(progInfo[1+(k<<2)].value, config.userDatas[k].dataClass);
+        SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
+        SULEV(progInfo[1+(k<<2)+1].value, config.userDatas[k].apiSlot);
+        SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
+        SULEV(progInfo[1+(k<<2)+2].value, config.userDatas[k].regStart);
+        SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
+        SULEV(progInfo[1+(k<<2)+3].value, config.userDatas[k].regSize);
+    }
+    if (isOlderThan1124)
+        for (k =  config.userDataElemsNum; k < 16; k++)
+        {
+            SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
+            SULEV(progInfo[1+(k<<2)].value, 0);
+            SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
+            SULEV(progInfo[1+(k<<2)+1].value, 0);
+            SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
+            SULEV(progInfo[1+(k<<2)+2].value, 0);
+            SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
+            SULEV(progInfo[1+(k<<2)+3].value, 0);
+        }
+    k = (k<<2)+1;
+    
+    const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
+    union {
+        PgmRSRC2 pgmRSRC2;
+        uint32_t pgmRSRC2Value;
+    } curPgmRSRC2;
+    curPgmRSRC2.pgmRSRC2 = config.pgmRSRC2;
+    curPgmRSRC2.pgmRSRC2.ldsSize = (localSize+255)>>8;
+    cxuint pgmUserSGPRsNum = 0;
+    for (cxuint p = 0; p < config.userDataElemsNum; p++)
+        pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
+                 config.userDatas[p].regStart+config.userDatas[p].regSize);
+    pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
+    curPgmRSRC2.pgmRSRC2.userSGRP = pgmUserSGPRsNum;
+    
+    SULEV(progInfo[k].address, 0x80001041U);
+    SULEV(progInfo[k++].value, config.usedVGPRsNum);
+    SULEV(progInfo[k].address, 0x80001042U);
+    SULEV(progInfo[k++].value, config.usedSGPRsNum);
+    SULEV(progInfo[k].address, 0x80001863U);
+    SULEV(progInfo[k++].value, 102);
+    SULEV(progInfo[k].address, 0x80001864U);
+    SULEV(progInfo[k++].value, 256);
+    SULEV(progInfo[k].address, 0x80001043U);
+    SULEV(progInfo[k++].value, config.floatMode);
+    SULEV(progInfo[k].address, 0x80001044U);
+    SULEV(progInfo[k++].value, config.ieeeMode);
+    SULEV(progInfo[k].address, 0x80001045U);
+    SULEV(progInfo[k++].value, config.scratchBufferSize>>2);
+    SULEV(progInfo[k].address, 0x00002e13U);
+    SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2Value);
+    SULEV(progInfo[k].address, 0x8000001cU);
+    SULEV(progInfo[k+1].address, 0x8000001dU);
+    SULEV(progInfo[k+2].address, 0x8000001eU);
+    if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&
+        config.reqdWorkGroupSize[2] != 0)
+    {
+        SULEV(progInfo[k].value, config.reqdWorkGroupSize[0]);
+        SULEV(progInfo[k+1].value, config.reqdWorkGroupSize[1]);
+        SULEV(progInfo[k+2].value, config.reqdWorkGroupSize[2]);
+    }
+    else
+    {   /* default */
+        SULEV(progInfo[k].value, 256);
+        SULEV(progInfo[k+1].value, 0);
+        SULEV(progInfo[k+2].value, 0);
+    }
+    k+=3;
+    SULEV(progInfo[k].address, 0x80001841U);
+    SULEV(progInfo[k++].value, 0);
+    uint32_t uavMask[32];
+    ::memset(uavMask, 0, 128);
+    uavMask[0] = woUsedImagesMask;
+    for (cxuint l = 0; l < config.args.size(); l++)
+    {
+        const AmdKernelArg& arg = config.args[l];
+        if (arg.used && arg.argType == KernelArgType::POINTER &&
+            (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
+             (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
+        {
+            const cxuint u = tempConfig.argResIds[l];
+            uavMask[u>>5] |= (1U<<(u&31));
+        }
+    }
+    if (!isOlderThan1348 && config.useConstantData)
+        uavMask[0] |= 1U<<tempConfig.constBufferId;
+    if (config.usePrintf) //if printf used
+    {
+        if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
+            uavMask[0] |= 1U<<tempConfig.printfId;
+        else
+            uavMask[0] |= 1U<<9;
+    }
+    
+    SULEV(progInfo[k].address, 0x8000001fU);
+    SULEV(progInfo[k++].value, uavMask[0]);
+    for (cxuint p = 0; p < 32; p++)
+    {
+        SULEV(progInfo[k].address, 0x80001843U+p);
+        SULEV(progInfo[k++].value, uavMask[p]);
+    }
+    SULEV(progInfo[k].address, 0x8000000aU);
+    SULEV(progInfo[k++].value, 1);
+    SULEV(progInfo[k].address, 0x80000078U);
+    SULEV(progInfo[k++].value, 64);
+    SULEV(progInfo[k].address, 0x80000081U);
+    SULEV(progInfo[k++].value, 32768);
+    SULEV(progInfo[k].address, 0x80000082U);
+    SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2.ldsSize<<8);
+    offset += 8*k;
+    SULEV(noteHdr->descSize, 8*k);
+    
+    // CAL_SUBCONSTANT_BUFFERS
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_SUB_CONSTANT_BUFFERS);
+    SULEV(noteHdr->descSize, 0);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    
+    // CAL_UAV_MAILBOX_SIZE
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_UAV_MAILBOX_SIZE);
+    SULEV(noteHdr->descSize, 4);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    SULEV(*data32, 0);
+    offset += 4;
+    
+    // CAL_UAV_OP_MASK
+    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, CALNOTE_ATI_UAV_OP_MASK);
+    SULEV(noteHdr->descSize, 128);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    offset += sizeof(CALNoteHeader);
+    ::memcpy(binary + offset, uavMask, 128);
+    offset += 128;
+}
+
+/*
+ * main routine to generate AmdBin for GPU
+ */
+
+cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
+{
+    size_t binarySize;
+    const size_t kernelsNum = input->kernels.size();
+    std::string driverInfo;
+    uint32_t driverVersion = 99999909U;
+    if (input->driverInfo.empty())
+    {
+        char drvInfoBuf[100];
+        ::snprintf(drvInfoBuf, 100, "@(#) OpenCL 1.2 AMD-APP (%u.%u).  "
+                "Driver version: %u.%u (VM)",
+                 input->driverVersion/100U, input->driverVersion%100U,
+                 input->driverVersion/100U, input->driverVersion%100U);
+        driverInfo = drvInfoBuf;
+        driverVersion = input->driverVersion;
+    }
+    else if (input->driverVersion == 0)
+    {   // parse version
+        size_t pos = input->driverInfo.find("AMD-APP"); // find AMDAPP
+        try
+        {
+            driverInfo = input->driverInfo;
+            if (pos != std::string::npos)
+            {   /* let to parse version number */
+                pos += 9;
+                const char* end;
+                driverVersion = cstrtovCStyle<cxuint>(
+                        input->driverInfo.c_str()+pos, nullptr, end)*100;
+                end++;
+                driverVersion += cstrtovCStyle<cxuint>(end, nullptr, end);
+            }
+        }
+        catch(const ParseException& ex)
+        { driverVersion = 99999909U; /* newest possible */ }
+    }
+    
+    const size_t mainSectionsAlign = (input->is64Bit)?8:4;
+    
+    const bool isOlderThan1124 = driverVersion < 112402;
+    const bool isOlderThan1348 = driverVersion < 134805;
+    /* checking input */
+    if (input->deviceType == GPUDeviceType::UNDEFINED ||
+        cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+        throw Exception("Undefined GPU device type");
+    
+    std::vector<TempAmdKernelConfig> tempAmdKernelConfigs(input->kernels.size());
+    prepareTempConfigs(driverVersion, input, tempAmdKernelConfigs);
+    
     /* count number of bytes required to save */
     if (!input->is64Bit)
         binarySize = sizeof(Elf32_Ehdr);
@@ -705,15 +1522,15 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         if (kinput.useConfig)
         {
             const AmdKernelConfig& config = kinput.config;
-            size_t readOnlyImages = 0;
-            size_t writeOnlyImages = 0;
-            size_t uavsNum = 0;
+            cxuint readOnlyImages = 0;
+            cxuint writeOnlyImages = 0;
+            cxuint uavsNum = 0;
             cxuint notUsedUav = 0;
             bool havePointers = false;
             bool notUsedConstants = false;
-            size_t samplersNum = config.samplers.size();
-            size_t argSamplersNum = 0;
-            size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
+            cxuint samplersNum = config.samplers.size();
+            cxuint argSamplersNum = 0;
+            cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     (input->globalData != nullptr));
             for (const AmdKernelArg& arg: config.args)
             {
@@ -784,262 +1601,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
             
-            const TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
-            /* compute metadataSize */
-            std::string& metadata = kmetadatas[i];
-            metadata.reserve(100);
-            metadata += ";ARGSTART:__OpenCL_";
-            metadata += kinput.kernelName;
-            metadata += "_kernel\n";
-            if (isOlderThan1124)
-                metadata += ";version:3:1:104\n";
-            else
-                metadata += ";version:3:1:111\n";
-            metadata += ";device:";
-            metadata += gpuDeviceNameTable[cxuint(input->deviceType)];
-            char numBuf[21];
-            metadata += "\n;uniqueid:";
-            itocstrCStyle(uniqueId, numBuf, 21);
-            metadata += numBuf;
-            metadata += "\n;memory:uavprivate:";
-            itocstrCStyle(tempConfig.uavPrivate, numBuf, 21);
-            metadata += numBuf;
-            metadata += "\n;memory:hwlocal:";
-            itocstrCStyle(config.hwLocalSize, numBuf, 21);
-            metadata += numBuf;
-            metadata += "\n;memory:hwregion:";
-            itocstrCStyle(tempConfig.hwRegion, numBuf, 21);
-            metadata += numBuf;
-            metadata += '\n';
-            if (config.reqdWorkGroupSize[0] != 0 || config.reqdWorkGroupSize[1] != 0 ||
-                config.reqdWorkGroupSize[1] != 0)
-            {
-                metadata += ";cws:";
-                itocstrCStyle(config.reqdWorkGroupSize[0], numBuf, 21);
-                metadata += numBuf;
-                metadata += ':';
-                itocstrCStyle(config.reqdWorkGroupSize[1], numBuf, 21);
-                metadata += numBuf;
-                metadata += ':';
-                itocstrCStyle(config.reqdWorkGroupSize[2], numBuf, 21);
-                metadata += numBuf;
-                metadata += '\n';
-            }
+            kmetadatas[i] = generateMetadata(driverVersion, input, kinput,
+                     tempAmdKernelConfigs[i], argSamplersNum, uniqueId);
             
-            size_t argOffset = 0;
-            for (cxuint k = 0; k < config.args.size(); k++)
-            {
-                const AmdKernelArg& arg = config.args[k];
-                if (arg.argType == KernelArgType::STRUCTURE)
-                {
-                    metadata += ";value:";
-                    metadata += arg.argName;
-                    metadata += ":struct:";
-                    itocstrCStyle(arg.structSize, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ":1:";
-                    itocstrCStyle(argOffset, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += '\n';
-                    argOffset += (arg.structSize+15)&~15;
-                }
-                else if (arg.argType == KernelArgType::POINTER)
-                {
-                    metadata += ";pointer:";
-                    metadata += arg.argName;
-                    metadata += ':';
-                    const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
-                    if (tp.kindOfType == KT_UNKNOWN)
-                        throw Exception("Type not supported!");
-                    const cxuint typeSize =
-                        cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
-                    if (arg.structSize == 0 && arg.pointerType == KernelArgType::STRUCTURE)
-                        metadata += "opaque";
-                    else
-                        metadata += tp.name;
-                    metadata += ":1:1:";
-                    itocstrCStyle(argOffset, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ':';
-                    if (arg.ptrSpace == KernelPtrSpace::LOCAL)
-                        metadata += "hl:1";
-                    else if (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
-                             arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                    {
-                        if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                            metadata += "uav:";
-                        else
-                            metadata += (isOlderThan1348)?"hc:":"c:";
-                        itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
-                        metadata += numBuf;
-                    }
-                    else
-                        throw Exception("Other memory spaces are not supported");
-                    metadata += ':';
-                    const size_t elemSize = (arg.pointerType==KernelArgType::STRUCTURE)?
-                        ((arg.structSize!=0)?arg.structSize:4) : typeSize;
-                    itocstrCStyle(elemSize, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ':';
-                    metadata += ((arg.ptrAccess & KARG_PTR_CONST) ||
-                            arg.ptrSpace == KernelPtrSpace::CONSTANT)?"RO":"RW";
-                    metadata += ':';
-                    metadata += (arg.ptrAccess & KARG_PTR_VOLATILE)?'1':'0';
-                    metadata += ':';
-                    metadata += (arg.ptrAccess & KARG_PTR_RESTRICT)?'1':'0';
-                    metadata += '\n';
-                    argOffset += 16;
-                }
-                else if ((arg.argType >= KernelArgType::MIN_IMAGE) &&
-                    (arg.argType <= KernelArgType::MAX_IMAGE))
-                {
-                    metadata += ";image:";
-                    metadata += arg.argName;
-                    metadata += ':';
-                    metadata += imgTypeNamesTable[
-                            cxuint(arg.argType)-cxuint(KernelArgType::IMAGE)];
-                    metadata += ':';
-                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
-                        metadata += "RO";
-                    else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-                        metadata += "WO";
-                    else if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_WRITE)
-                        metadata += "RW";
-                    else
-                        throw Exception("Invalid image access qualifier!");
-                    metadata += ':';
-                    itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ":1:";
-                    itocstrCStyle(argOffset, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += '\n';
-                    argOffset += 32;
-                }
-                else if (arg.argType == KernelArgType::COUNTER32)
-                {
-                    metadata += ";counter:";
-                    metadata += arg.argName;
-                    metadata += ":32:";
-                    itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ":1:";
-                    itocstrCStyle(argOffset, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += '\n';
-                    argOffset += 16;
-                }
-                else
-                {
-                    metadata += ";value:";
-                    metadata += arg.argName;
-                    metadata += ':';
-                    const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
-                    if (tp.kindOfType == KT_UNKNOWN)
-                        throw Exception("Type not supported!");
-                    const cxuint typeSize =
-                        cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
-                    metadata += tp.name;
-                    metadata += ':';
-                    itocstrCStyle(tp.vecSize, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ":1:";
-                    itocstrCStyle(argOffset, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += '\n';
-                    argOffset += (typeSize+15)&~15;
-                }
-                
-                if (arg.ptrAccess & KARG_PTR_CONST)
-                {
-                    metadata += ";constarg:";
-                    itocstrCStyle(k, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ':';
-                    metadata += arg.argName;
-                    metadata += '\n';
-                }
-            }
-            
-            tempAmdKernelConfigs[i].argsSpace = argOffset;
-            
-            if (input->globalData != nullptr)
-                metadata += ";memory:datareqd\n";
-            metadata += ";function:1:";
-            itocstrCStyle(uniqueId, numBuf, 21);
-            metadata += numBuf;
-            metadata += '\n';
-            
-            for (cxuint sampId = 0; sampId < config.samplers.size(); sampId++)
-            {   /* constant samplers */
-                const cxuint samp = config.samplers[sampId];
-                metadata += ";sampler:unknown_";
-                itocstrCStyle(samp, numBuf, 21);
-                metadata += numBuf;
-                metadata += ':';
-                itocstrCStyle(sampId+argSamplersNum, numBuf, 21);
-                metadata += numBuf;
-                metadata += ":1:";
-                itocstrCStyle(samp, numBuf, 21);
-                metadata += numBuf;
-                metadata += '\n';
-            }
-            cxuint sampId = 0;
-            /* kernel argument samplers */
-            for (const AmdKernelArg& arg: config.args)
-                if (arg.argType == KernelArgType::SAMPLER)
-                {
-                    metadata += ";sampler:";
-                    metadata += arg.argName;
-                    metadata += ':';
-                    itocstrCStyle(sampId, numBuf, 21);
-                    metadata += numBuf;
-                    metadata += ":0:0\n";
-                    sampId++;
-                }
-            
-            if (input->is64Bit)
-                metadata += ";memory:64bitABI\n";
-            if (tempConfig.uavId != AMDBIN_NOTSUPPLIED)
-            {
-                metadata += ";uavid:";
-                itocstrCStyle(tempConfig.uavId, numBuf, 21);
-                metadata += numBuf;
-                metadata += '\n';
-            }
-            if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
-            {
-                metadata += ";printfid:";
-                itocstrCStyle(tempConfig.printfId, numBuf, 21);
-                metadata += numBuf;
-                metadata += '\n';
-            }
-            if (tempConfig.constBufferId != AMDBIN_NOTSUPPLIED)
-            {
-                metadata += ";cbid:";
-                itocstrCStyle(tempConfig.constBufferId, numBuf, 21);
-                metadata += numBuf;
-                metadata += '\n';
-            }
-            metadata += ";privateid:";
-            itocstrCStyle(tempConfig.privateId, numBuf, 21);
-            metadata += numBuf;
-            metadata += '\n';
-            for (size_t k = 0; k < config.args.size(); k++)
-            {
-                const AmdKernelArg& arg = config.args[k];
-                metadata += ";reflection:";
-                itocstrCStyle(k, numBuf, 21);
-                metadata += numBuf;
-                metadata += ':';
-                metadata += arg.typeName;
-                metadata += '\n';
-            }
-            
-            metadata += ";ARGEND:__OpenCL_";
-            metadata += kinput.kernelName;
-            metadata += "_kernel\n";
-            metadataSize = metadata.size() + 32 /* header size */;
+            metadataSize = kmetadatas[i].size() + 32 /* header size */;
         }
         else // if defined in calNotes (no config)
         {
@@ -1299,541 +1864,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         offset += sizeof(Elf32_Shdr)*6;
         const size_t encOffset = offset;
         if (kernel.useConfig)
-        {
-            const AmdKernelConfig& config = kernel.config;
-            const TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
-            size_t readOnlyImages = 0;
-            size_t writeOnlyImages = 0;
-            size_t uavsNum = 0;
-            bool notUsedUav = false;
-            bool havePointers = false;
-            bool notUsedConstants = false;
-            size_t samplersNum = config.samplers.size();
-            size_t argSamplersNum = 0;
-            bool isLocalPointers = false;
-            size_t constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
-                    (input->globalData != nullptr));
-            cxuint woUsedImagesMask = 0;
-            for (const AmdKernelArg& arg: config.args)
-            {
-                if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                    arg.argType <= KernelArgType::MAX_IMAGE)
-                {
-                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
-                        readOnlyImages++;
-                    if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-                    {
-                        if (arg.used)
-                            woUsedImagesMask |= (1U<<writeOnlyImages);
-                        writeOnlyImages++;
-                        uavsNum++;
-                    }
-                }
-                else if (arg.argType == KernelArgType::POINTER)
-                {
-                    if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                    {   // only global pointers are defined in uav table
-                        if (arg.used)
-                            uavsNum++;
-                        else
-                            notUsedUav = true;
-                        havePointers = true;
-                    }
-                    else if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                    {
-                        if (!arg.used)
-                            notUsedConstants = true;
-                        constBuffersNum++;
-                        havePointers = true;
-                    }
-                    else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
-                        isLocalPointers = true;
-                }
-               else if (arg.argType == KernelArgType::SAMPLER)
-                   argSamplersNum++;
-            }
-            samplersNum += argSamplersNum;
-            
-            // CAL CALNOTE_INPUTS
-            CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_INPUTS);
-            SULEV(noteHdr->descSize, 4*readOnlyImages);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            uint32_t* data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            for (cxuint k = 0; k < readOnlyImages; k++)
-                SULEV(data32[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
-            offset += 4*readOnlyImages;
-            // CALNOTE_OUTPUTS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_OUTPUTS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            // CALNOTE_UAV
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->type, CALNOTE_ATI_UAV);
-            SULEV(noteHdr->nameSize, 8);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            CALUAVEntry* startUavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
-            CALUAVEntry* uavEntry = startUavEntry;
-            if (isOlderThan1124)
-            {   // for old drivers
-                for (cxuint k = 0; k < config.args.size(); k++)
-                {
-                    const AmdKernelArg& arg = config.args[k];
-                    if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                        arg.argType <= KernelArgType::MAX_IMAGE &&
-                        (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-                    { /* writeOnlyImages */
-                        SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                        SULEV(uavEntry->f1, 2);
-                        SULEV(uavEntry->f2, imgUavDimTable[
-                            cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)]);
-                        SULEV(uavEntry->type, 3);
-                        uavEntry++;
-                    }
-                }
-                bool uavId11 = false;
-                if ((uavsNum != 0 && notUsedUav) || config.usePrintf)
-                {
-                    SULEV(uavEntry->uavId, tempConfig.uavId);
-                    SULEV(uavEntry->f1, 4);
-                    SULEV(uavEntry->f2, 0);
-                    SULEV(uavEntry->type, 5);
-                    uavId11 = true;
-                    uavEntry++;
-                }
-                // global buffers
-                for (cxuint k = 0; k < config.args.size(); k++)
-                {
-                    const AmdKernelArg& arg = config.args[k];
-                    if (arg.argType == KernelArgType::POINTER &&
-                        arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                    {   // uavid
-                        if (arg.used)
-                            SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                        else if (!uavId11)
-                        {
-                            SULEV(uavEntry->uavId, tempConfig.uavId);
-                            uavId11 = true;
-                        }
-                        else // if uavid=9 already defined
-                            continue;
-                        SULEV(uavEntry->f1, 4);
-                        SULEV(uavEntry->f2, 0);
-                        SULEV(uavEntry->type, 5);
-                        uavEntry++;
-                    }
-                }
-            }
-            else
-            {   /* in argument order */
-                bool uavId11 = false;
-                for (cxuint k = 0; k < config.args.size(); k++)
-                {
-                    const AmdKernelArg& arg = config.args[k];
-                    if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                        arg.argType <= KernelArgType::MAX_IMAGE &&
-                        (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-                    {   // write_only images
-                        SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                        SULEV(uavEntry->f1, 2);
-                        SULEV(uavEntry->f2, 2);
-                        SULEV(uavEntry->type, 5);
-                        uavEntry++;
-                    }
-                    else if (arg.argType == KernelArgType::POINTER &&
-                        arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                    {   // uavid
-                        if (arg.used)
-                            SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                        else
-                        {
-                            SULEV(uavEntry->uavId, tempConfig.uavId);
-                            uavId11 = true;
-                        }
-                        SULEV(uavEntry->f1, 4);
-                        SULEV(uavEntry->f2, 0);
-                        SULEV(uavEntry->type, 5);
-                        uavEntry++;
-                    }
-                }
-                
-                bool doUavId11 = false;
-                if (!isOlderThan1348) // newer drivers
-                    doUavId11 = ((!notUsedUav && !notUsedConstants && havePointers) ||
-                        notUsedUav || (!havePointers && driverVersion >= 152603));
-                else
-                    doUavId11 = notUsedUav || (!havePointers && !isOlderThan1124);
-                doUavId11 = !uavId11 && doUavId11;
-                if (doUavId11)
-                {
-                    SULEV(uavEntry->uavId, tempConfig.uavId);
-                    SULEV(uavEntry->f1, 4);
-                    SULEV(uavEntry->f2, 0);
-                    SULEV(uavEntry->type, 5);
-                    uavEntry++;
-                }
-                if (config.usePrintf)
-                {
-                    SULEV(uavEntry->uavId, tempConfig.uavId);
-                    SULEV(uavEntry->f1, 0);
-                    SULEV(uavEntry->f2, 0);
-                    SULEV(uavEntry->type, 5);
-                    uavEntry++;
-                }
-            }
-            // privateid or uavid (???)
-            if (((notUsedUav || notUsedConstants) && !isOlderThan1348) ||
-                (isOlderThan1348 && havePointers) ||
-                (!havePointers && !config.args.empty() && isOlderThan1124))
-            {
-                SULEV(uavEntry->uavId, tempConfig.privateId);
-                SULEV(uavEntry->f1, (isOlderThan1124)?4:3);
-                SULEV(uavEntry->f2, 0);
-                SULEV(uavEntry->type, 5);
-                uavEntry++;
-            }
-            offset += 16*(uavEntry-startUavEntry);
-            SULEV(noteHdr->descSize, 16*(uavEntry-startUavEntry));
-            
-            // CALNOTE_CONDOUT
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_CONDOUT);
-            SULEV(noteHdr->descSize, 4);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            SULEV(*data32, config.condOut);
-            offset += 4;
-            // CALNOTE_FLOAT32CONSTS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_FLOAT32CONSTS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            // CALNOTE_INT32CONSTS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_INT32CONSTS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            // CALNOTE_BOOL32CONSTS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_BOOL32CONSTS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            // CALNOTE_EARLYEXIT
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_EARLYEXIT);
-            SULEV(noteHdr->descSize, 4);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            SULEV(*data32, config.earlyExit);
-            offset += 4;
-            
-            // CALNOTE_GLOBAL_BUFFERS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_GLOBAL_BUFFERS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            // CALNOTE_CONSTANT_BUFFERS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_CONSTANT_BUFFERS);
-            SULEV(noteHdr->descSize, 8*constBuffersNum);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            
-            CALConstantBufferMask* cbufMask =
-                reinterpret_cast<CALConstantBufferMask*>(binary + offset);
-            offset += 8*constBuffersNum;
-            
-            if (driverVersion == 112402)
-            {
-                SULEV(cbufMask->index, 0);
-                SULEV(cbufMask->size, 0);
-                SULEV(cbufMask[1].index, 1);
-                SULEV(cbufMask[1].size, 0);
-                cbufMask += 2;
-                for (cxuint k = 0; k < config.args.size(); k++)
-                {
-                    const AmdKernelArg& arg = config.args[k];
-                    if (arg.argType == KernelArgType::POINTER &&
-                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                    {
-                        SULEV(cbufMask->index, tempConfig.argResIds[k]);
-                        SULEV(cbufMask->size, 0);
-                        cbufMask++;
-                    }
-                }
-                if (input->globalData != nullptr)
-                {
-                    SULEV(cbufMask->index, 2);
-                    SULEV(cbufMask->size, 0);
-                }
-            }
-            else if (isOlderThan1124)
-            {   /* for driver 12.10 */
-                for (cxuint k = config.args.size(); k > 0; k--)
-                {
-                    const AmdKernelArg& arg = config.args[k-1];
-                    if (arg.argType == KernelArgType::POINTER &&
-                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                    {
-                        SULEV(cbufMask->index, tempConfig.argResIds[k-1]);
-                        SULEV(cbufMask->size, arg.constSpaceSize!=0 ?
-                            ((arg.constSpaceSize+15)>>4) : 4096);
-                        cbufMask++;
-                    }
-                }
-                if (input->globalData != nullptr)
-                {
-                    SULEV(cbufMask->index, 2); // ????
-                    SULEV(cbufMask->size, (input->globalDataSize+15)>>4);
-                    cbufMask++;
-                }
-                SULEV(cbufMask->index, 1);
-                SULEV(cbufMask->size, (tempConfig.argsSpace+15)>>4);
-                SULEV(cbufMask[1].index, 0);
-                SULEV(cbufMask[1].size, 15);
-            }
-            else // new drivers
-            {
-                SULEV(cbufMask->index, 0);
-                SULEV(cbufMask->size, 0);
-                SULEV(cbufMask[1].index, 1);
-                SULEV(cbufMask[1].size, 0);
-                cbufMask += 2;
-                for (cxuint k = 0; k < config.args.size(); k++)
-                {
-                    const AmdKernelArg& arg = config.args[k];
-                    if (arg.argType == KernelArgType::POINTER &&
-                        arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                    {
-                        SULEV(cbufMask->index, tempConfig.argResIds[k]);
-                        SULEV(cbufMask->size, 0);
-                        cbufMask++;
-                    }
-                }
-            }
-            
-            // CALNOTE_INPUT_SAMPLERS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_INPUT_SAMPLERS);
-            SULEV(noteHdr->descSize, 8*samplersNum);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
-                        binary + offset);
-            for (cxuint k = 0; k < config.samplers.size(); k++)
-            {
-                SULEV(sampEntry[k].input, 0);
-                SULEV(sampEntry[k].sampler, k+argSamplersNum);
-            }
-            sampEntry += config.samplers.size();
-            for (cxuint k = 0; k < argSamplersNum; k++)
-            {
-                SULEV(sampEntry[k].input, 0);
-                SULEV(sampEntry[k].sampler, k);
-            }
-            offset += 8*samplersNum;
-            
-            // CALNOTE_SCRATCH_BUFFERS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_SCRATCH_BUFFERS);
-            SULEV(noteHdr->descSize, 4);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            SULEV(*data32, config.scratchBufferSize>>2);
-            offset += 4;
-            
-            // CALNOTE_PERSISTENT_BUFFERS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_PERSISTENT_BUFFERS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            /* PROGRAM_INFO */
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_PROGINFO);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            CALProgramInfoEntry* progInfo = reinterpret_cast<CALProgramInfoEntry*>(
-                        binary + offset);
-            SULEV(progInfo[0].address, 0x80001000U);
-            SULEV(progInfo[0].value, config.userDataElemsNum);
-            cxuint k = 0;
-            for (k = 0; k < config.userDataElemsNum; k++)
-            {
-                SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
-                SULEV(progInfo[1+(k<<2)].value, config.userDatas[k].dataClass);
-                SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
-                SULEV(progInfo[1+(k<<2)+1].value, config.userDatas[k].apiSlot);
-                SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
-                SULEV(progInfo[1+(k<<2)+2].value, config.userDatas[k].regStart);
-                SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
-                SULEV(progInfo[1+(k<<2)+3].value, config.userDatas[k].regSize);
-            }
-            if (isOlderThan1124)
-                for (k =  config.userDataElemsNum; k < 16; k++)
-                {
-                    SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
-                    SULEV(progInfo[1+(k<<2)].value, 0);
-                    SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
-                    SULEV(progInfo[1+(k<<2)+1].value, 0);
-                    SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
-                    SULEV(progInfo[1+(k<<2)+2].value, 0);
-                    SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
-                    SULEV(progInfo[1+(k<<2)+3].value, 0);
-                }
-            k = (k<<2)+1;
-            
-            const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
-            union {
-                PgmRSRC2 pgmRSRC2;
-                uint32_t pgmRSRC2Value;
-            } curPgmRSRC2;
-            curPgmRSRC2.pgmRSRC2 = config.pgmRSRC2;
-            curPgmRSRC2.pgmRSRC2.ldsSize = (localSize+255)>>8;
-            cxuint pgmUserSGPRsNum = 0;
-            for (cxuint p = 0; p < config.userDataElemsNum; p++)
-                pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
-                         config.userDatas[p].regStart+config.userDatas[p].regSize);
-            pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
-            curPgmRSRC2.pgmRSRC2.userSGRP = pgmUserSGPRsNum;
-            
-            SULEV(progInfo[k].address, 0x80001041U);
-            SULEV(progInfo[k++].value, config.usedVGPRsNum);
-            SULEV(progInfo[k].address, 0x80001042U);
-            SULEV(progInfo[k++].value, config.usedSGPRsNum);
-            SULEV(progInfo[k].address, 0x80001863U);
-            SULEV(progInfo[k++].value, 102);
-            SULEV(progInfo[k].address, 0x80001864U);
-            SULEV(progInfo[k++].value, 256);
-            SULEV(progInfo[k].address, 0x80001043U);
-            SULEV(progInfo[k++].value, config.floatMode);
-            SULEV(progInfo[k].address, 0x80001044U);
-            SULEV(progInfo[k++].value, config.ieeeMode);
-            SULEV(progInfo[k].address, 0x80001045U);
-            SULEV(progInfo[k++].value, config.scratchBufferSize>>2);
-            SULEV(progInfo[k].address, 0x00002e13U);
-            SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2Value);
-            SULEV(progInfo[k].address, 0x8000001cU);
-            SULEV(progInfo[k+1].address, 0x8000001dU);
-            SULEV(progInfo[k+2].address, 0x8000001eU);
-            if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&
-                config.reqdWorkGroupSize[2] != 0)
-            {
-                SULEV(progInfo[k].value, config.reqdWorkGroupSize[0]);
-                SULEV(progInfo[k+1].value, config.reqdWorkGroupSize[1]);
-                SULEV(progInfo[k+2].value, config.reqdWorkGroupSize[2]);
-            }
-            else
-            {   /* default */
-                SULEV(progInfo[k].value, 256);
-                SULEV(progInfo[k+1].value, 0);
-                SULEV(progInfo[k+2].value, 0);
-            }
-            k+=3;
-            SULEV(progInfo[k].address, 0x80001841U);
-            SULEV(progInfo[k++].value, 0);
-            uint32_t uavMask[32];
-            ::memset(uavMask, 0, 128);
-            uavMask[0] = woUsedImagesMask;
-            for (cxuint l = 0; l < config.args.size(); l++)
-            {
-                const AmdKernelArg& arg = config.args[l];
-                if (arg.used && arg.argType == KernelArgType::POINTER &&
-                    (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
-                     (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
-                {
-                    const cxuint u = tempConfig.argResIds[l];
-                    uavMask[u>>5] |= (1U<<(u&31));
-                }
-            }
-            if (!isOlderThan1348 && config.useConstantData)
-                uavMask[0] |= 1U<<tempConfig.constBufferId;
-            if (config.usePrintf) //if printf used
-            {
-                if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
-                    uavMask[0] |= 1U<<tempConfig.printfId;
-                else
-                    uavMask[0] |= 1U<<9;
-            }
-            
-            SULEV(progInfo[k].address, 0x8000001fU);
-            SULEV(progInfo[k++].value, uavMask[0]);
-            for (cxuint p = 0; p < 32; p++)
-            {
-                SULEV(progInfo[k].address, 0x80001843U+p);
-                SULEV(progInfo[k++].value, uavMask[p]);
-            }
-            SULEV(progInfo[k].address, 0x8000000aU);
-            SULEV(progInfo[k++].value, 1);
-            SULEV(progInfo[k].address, 0x80000078U);
-            SULEV(progInfo[k++].value, 64);
-            SULEV(progInfo[k].address, 0x80000081U);
-            SULEV(progInfo[k++].value, 32768);
-            SULEV(progInfo[k].address, 0x80000082U);
-            SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2.ldsSize<<8);
-            offset += 8*k;
-            SULEV(noteHdr->descSize, 8*k);
-            
-            // CAL_SUBCONSTANT_BUFFERS
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_SUB_CONSTANT_BUFFERS);
-            SULEV(noteHdr->descSize, 0);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            
-            // CAL_UAV_MAILBOX_SIZE
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_UAV_MAILBOX_SIZE);
-            SULEV(noteHdr->descSize, 4);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            data32 = reinterpret_cast<uint32_t*>(binary + offset);
-            SULEV(*data32, 0);
-            offset += 4;
-            
-            // CAL_UAV_OP_MASK
-            noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-            SULEV(noteHdr->nameSize, 8);
-            SULEV(noteHdr->type, CALNOTE_ATI_UAV_OP_MASK);
-            SULEV(noteHdr->descSize, 128);
-            ::memcpy(noteHdr->name, "ATI CAL", 8);
-            offset += sizeof(CALNoteHeader);
-            ::memcpy(binary + offset, uavMask, 128);
-            offset += 128;
-        }
+            generateCALNotes(binary, offset, input, driverVersion, kernel,
+                     tempAmdKernelConfigs[i]);
         else // from CALNotes array
             for (const CALNoteInput& calNote: kernel.calNotes)
             {
