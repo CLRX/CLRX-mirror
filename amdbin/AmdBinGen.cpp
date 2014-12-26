@@ -656,8 +656,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 }
                 else
                 {
-                    for (; cntIdsCount < 128 && cntIdMask[cntIdsCount]; cntIdsCount++);
-                    if (cntIdsCount == 128)
+                    for (; cntIdsCount < 1024 && cntIdMask[cntIdsCount]; cntIdsCount++);
+                    if (cntIdsCount == 1024)
                         throw Exception("CounterId out of range!");
                     cntId = cntIdsCount++;
                 }
