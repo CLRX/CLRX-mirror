@@ -683,7 +683,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             size_t readOnlyImages = 0;
             size_t writeOnlyImages = 0;
             size_t uavsNum = 0;
-            bool notUsedUav = false;
+            cxuint notUsedUav = 0;
             bool havePointers = false;
             bool notUsedConstants = false;
             size_t samplersNum = config.samplers.size();
@@ -712,7 +712,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         if (arg.used)
                             uavsNum++;
                         else
-                            notUsedUav = true;
+                            notUsedUav++;
                         havePointers = true;
                     }
                     if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
@@ -730,7 +730,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             
             if (!isOlderThan1348)
             {   // newer drivers
-                if ((!notUsedUav && !notUsedConstants && havePointers) || notUsedUav ||
+                if (notUsedUav)
+                    uavsNum += notUsedUav;
+                else if ((!notUsedUav && !notUsedConstants && havePointers) ||
                     (!havePointers && driverVersion >= 152603))
                     uavsNum++; // uavid=11
                 if (notUsedUav || notUsedConstants)
@@ -740,7 +742,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             }
             else
             {   // older drivers
-                if (notUsedUav || (!havePointers && !isOlderThan1124) ||
+                if (notUsedUav && !isOlderThan1124)
+                    uavsNum += notUsedUav;
+                else if (notUsedUav || (!havePointers && !isOlderThan1124) ||
                     (config.usePrintf && isOlderThan1124))
                     uavsNum++; // uavid=9
                 if (havePointers ||
@@ -1420,13 +1424,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     {   // uavid
                         if (arg.used)
                             SULEV(uavEntry->uavId, tempConfig.argUavIds[k]);
-                        else if (!uavId11)
+                        else
                         {
                             SULEV(uavEntry->uavId, tempConfig.uavId);
                             uavId11 = true;
                         }
-                        else // if uavid=11 exists
-                            continue;
                         SULEV(uavEntry->f1, 4);
                         SULEV(uavEntry->f2, 0);
                         SULEV(uavEntry->type, 5);
