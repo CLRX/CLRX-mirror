@@ -225,7 +225,7 @@ struct TempAmdKernelConfig
     uint32_t printfId;
     uint32_t privateId;
     uint32_t argsSpace;
-    std::vector<uint16_t> argUavIds;
+    std::vector<uint16_t> argResIds;
 };
 
 template<typename ElfSym>
@@ -465,7 +465,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             uint32_t amountOfArgs = 0;
             for (const AmdKernelArg arg: config.args)
             {
-                if (arg.argType == KernelArgType::STRUCTURE)
+                if (arg.argType == KernelArgType::STRUCTURE ||
+                    arg.argType == KernelArgType::COUNTER32)
                     hasStructures = true;
                 if (!isOlderThan1598 && arg.argType != KernelArgType::STRUCTURE)
                     continue; // no older driver and no structure
@@ -531,6 +532,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         /* fill argUavIds for global/constant pointers */
         cxuint puavIdsCount = tempConfig.uavId+1;
         std::bitset<1024> puavMask;
+        cxuint cntIdsCount = 0;
+        std::bitset<1024> cntIdMask;
         cxuint cbIdsCount = 2 + (input->globalData != nullptr);
         std::bitset<160> cbIdMask;
         cxuint rdImgsCount = 0;
@@ -538,10 +541,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         cxuint wrImgsCount = 0;
         std::bitset<8> wrImgMask;
         puavMask.reset();
+        cntIdMask.reset();
         cbIdMask.reset();
         rdImgMask.reset();
         wrImgMask.reset();
-        tempConfig.argUavIds.resize(config.args.size());
+        tempConfig.argResIds.resize(config.args.size());
         
         for (cxuint k = 0; k < config.args.size(); k++)
         {
@@ -551,9 +555,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                  (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
             {
                 cxuint uavId;
-                if (arg.uavId != AMDBIN_DEFAULT)
+                if (arg.resId != AMDBIN_DEFAULT)
                 {
-                    uavId = arg.uavId;
+                    uavId = arg.resId;
                     if ((uavId < 9 && arg.used) ||
                         (!arg.used && uavId != tempConfig.uavId) || uavId >= 1024)
                         throw Exception("UavId out of range!");
@@ -568,15 +572,15 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         throw Exception("UavId out of range!");
                     uavId = puavIdsCount++;
                 }
-                tempConfig.argUavIds[k] = uavId;
+                tempConfig.argResIds[k] = uavId;
             }
             else if (arg.argType == KernelArgType::POINTER &&
                     arg.ptrSpace == KernelPtrSpace::CONSTANT)
             {   // old constant buffers
                 cxuint cbId;
-                if (arg.uavId != AMDBIN_DEFAULT)
+                if (arg.resId != AMDBIN_DEFAULT)
                 {
-                    cbId = arg.uavId;
+                    cbId = arg.resId;
                     if (cbId < 2 || cbId >= 160)
                         throw Exception("CbId out of range!");
                     if (cbIdMask[cbId])
@@ -590,7 +594,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         throw Exception("CbId out of range!");
                     cbId = cbIdsCount++;
                 }
-                tempConfig.argUavIds[k] = cbId;
+                tempConfig.argResIds[k] = cbId;
             }
             else if (arg.argType >= KernelArgType::MIN_IMAGE &&
                      arg.argType <= KernelArgType::MAX_IMAGE)
@@ -598,9 +602,9 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
                     cxuint imgId;
-                    if (arg.uavId != AMDBIN_DEFAULT)
+                    if (arg.resId != AMDBIN_DEFAULT)
                     {
-                        imgId = arg.uavId;
+                        imgId = arg.resId;
                         if (imgId >= 128)
                             throw Exception("RdImgId out of range!");
                         if (rdImgMask[imgId])
@@ -614,14 +618,14 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             throw Exception("RdImgId out of range!");
                         imgId = rdImgsCount++;
                     }
-                    tempConfig.argUavIds[k] = imgId;
+                    tempConfig.argResIds[k] = imgId;
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
                     cxuint imgId;
-                    if (arg.uavId != AMDBIN_DEFAULT)
+                    if (arg.resId != AMDBIN_DEFAULT)
                     {
-                        imgId = arg.uavId;
+                        imgId = arg.resId;
                         if (imgId >= 8)
                             throw Exception("WrImgId out of range!");
                         if (wrImgMask[imgId])
@@ -635,8 +639,29 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             throw Exception("WrImgId out of range!");
                         imgId = wrImgsCount++;
                     }
-                    tempConfig.argUavIds[k] = imgId;
+                    tempConfig.argResIds[k] = imgId;
                 }
+            }
+            else if (arg.argType == KernelArgType::COUNTER32)
+            {
+                cxuint cntId;
+                if (arg.resId != AMDBIN_DEFAULT)
+                {
+                    cntId = arg.resId;
+                    if (cntId >= 1024)
+                        throw Exception("CounterId out of range!");
+                    if (cntIdMask[cntId])
+                        throw Exception("CounterId already used!");
+                    cntIdMask.set(cntId);
+                }
+                else
+                {
+                    for (; cntIdsCount < 128 && cntIdMask[cntIdsCount]; cntIdsCount++);
+                    if (cntIdsCount == 128)
+                        throw Exception("CounterId out of range!");
+                    cntId = cntIdsCount++;
+                }
+                tempConfig.argResIds[k] = cntId;
             }
         }
     }
@@ -845,7 +870,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                             metadata += "uav:";
                         else
                             metadata += (isOlderThan1348)?"hc:":"c:";
-                        itocstrCStyle(tempConfig.argUavIds[k], numBuf, 21);
+                        itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
                         metadata += numBuf;
                     }
                     else
@@ -883,7 +908,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     else
                         throw Exception("Invalid image access qualifier!");
                     metadata += ':';
-                    itocstrCStyle(tempConfig.argUavIds[k], numBuf, 21);
+                    itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
                     metadata += numBuf;
                     metadata += ":1:";
                     itocstrCStyle(argOffset, numBuf, 21);
@@ -895,7 +920,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                 {
                     metadata += ";counter:";
                     metadata += arg.argName;
-                    metadata += ":32:0:1:";
+                    metadata += ":32:";
+                    itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
+                    metadata += numBuf;
+                    metadata += ":1:";
                     itocstrCStyle(argOffset, numBuf, 21);
                     metadata += numBuf;
                     metadata += '\n';
@@ -1362,7 +1390,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         arg.argType <= KernelArgType::MAX_IMAGE &&
                         (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                     { /* writeOnlyImages */
-                        SULEV(uavEntry->uavId, tempConfig.argUavIds[k]);
+                        SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
                         SULEV(uavEntry->f1, 2);
                         SULEV(uavEntry->f2, imgUavDimTable[
                             cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)]);
@@ -1388,7 +1416,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         arg.ptrSpace == KernelPtrSpace::GLOBAL)
                     {   // uavid
                         if (arg.used)
-                            SULEV(uavEntry->uavId, tempConfig.argUavIds[k]);
+                            SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
                         else if (!uavId11)
                         {
                             SULEV(uavEntry->uavId, tempConfig.uavId);
@@ -1413,7 +1441,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         arg.argType <= KernelArgType::MAX_IMAGE &&
                         (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                     {   // write_only images
-                        SULEV(uavEntry->uavId, tempConfig.argUavIds[k]);
+                        SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
                         SULEV(uavEntry->f1, 2);
                         SULEV(uavEntry->f2, 2);
                         SULEV(uavEntry->type, 5);
@@ -1423,7 +1451,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                         arg.ptrSpace == KernelPtrSpace::GLOBAL)
                     {   // uavid
                         if (arg.used)
-                            SULEV(uavEntry->uavId, tempConfig.argUavIds[k]);
+                            SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
                         else
                         {
                             SULEV(uavEntry->uavId, tempConfig.uavId);
@@ -1551,7 +1579,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     {
-                        SULEV(cbufMask->index, tempConfig.argUavIds[k]);
+                        SULEV(cbufMask->index, tempConfig.argResIds[k]);
                         SULEV(cbufMask->size, 0);
                         cbufMask++;
                     }
@@ -1570,7 +1598,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     {
-                        SULEV(cbufMask->index, tempConfig.argUavIds[k-1]);
+                        SULEV(cbufMask->index, tempConfig.argResIds[k-1]);
                         SULEV(cbufMask->size, arg.constSpaceSize!=0 ?
                             ((arg.constSpaceSize+15)>>4) : 4096);
                         cbufMask++;
@@ -1600,7 +1628,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     if (arg.argType == KernelArgType::POINTER &&
                         arg.ptrSpace == KernelPtrSpace::CONSTANT)
                     {
-                        SULEV(cbufMask->index, tempConfig.argUavIds[k]);
+                        SULEV(cbufMask->index, tempConfig.argResIds[k]);
                         SULEV(cbufMask->size, 0);
                         cbufMask++;
                     }
@@ -1745,7 +1773,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
                     (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
                      (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
                 {
-                    const cxuint u = tempConfig.argUavIds[l];
+                    const cxuint u = tempConfig.argResIds[l];
                     uavMask[u>>5] |= (1U<<(u&31));
                 }
             }

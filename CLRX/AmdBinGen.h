@@ -77,8 +77,7 @@ struct AmdKernelArg
     uint8_t ptrAccess;  ///< pointer access flags
     cxuint structSize; ///< structure size (if structure)
     size_t constSpaceSize;
-    /// uavId for argument (only for globals or constants since 1348.5 driver)
-    uint32_t uavId;
+    uint32_t resId; ///< uavid or cbid or counterId
     bool used; ///< used by kernel
 };
 
