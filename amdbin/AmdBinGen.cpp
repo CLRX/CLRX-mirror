@@ -523,15 +523,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     if (puavMask[uavId] && uavId != tempConfig.uavId)
                         throw Exception("UavId already used!");
                     puavMask.set(uavId);
+                    tempConfig.argResIds[k] = uavId;
                 }
-                else
-                {
-                    for (; puavIdsCount < 1024 && puavMask[puavIdsCount]; puavIdsCount++);
-                    if (puavIdsCount == 1024)
-                        throw Exception("UavId out of range!");
-                    uavId = puavIdsCount++;
-                }
-                tempConfig.argResIds[k] = uavId;
             }
             else if (arg.argType == KernelArgType::POINTER &&
                     arg.ptrSpace == KernelPtrSpace::CONSTANT)
@@ -545,15 +538,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     if (cbIdMask[cbId])
                         throw Exception("CbId already used!");
                     cbIdMask.set(cbId);
+                    tempConfig.argResIds[k] = cbId;
                 }
-                else
-                {
-                    for (; cbIdsCount < 1024 && cbIdMask[cbIdsCount]; cbIdsCount++);
-                    if (cbIdsCount == 160)
-                        throw Exception("CbId out of range!");
-                    cbId = cbIdsCount++;
-                }
-                tempConfig.argResIds[k] = cbId;
             }
             else if (arg.argType >= KernelArgType::MIN_IMAGE &&
                      arg.argType <= KernelArgType::MAX_IMAGE)
@@ -569,15 +555,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                         if (rdImgMask[imgId])
                             throw Exception("RdImgId already used!");
                         rdImgMask.set(imgId);
+                        tempConfig.argResIds[k] = imgId;
                     }
-                    else
-                    {
-                        for (; rdImgsCount < 128 && rdImgMask[rdImgsCount]; rdImgsCount++);
-                        if (rdImgsCount == 128)
-                            throw Exception("RdImgId out of range!");
-                        imgId = rdImgsCount++;
-                    }
-                    tempConfig.argResIds[k] = imgId;
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
@@ -590,15 +569,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                         if (wrImgMask[imgId])
                             throw Exception("WrImgId already used!");
                         wrImgMask.set(imgId);
+                        tempConfig.argResIds[k] = imgId;
                     }
-                    else
-                    {
-                        for (; wrImgsCount < 8 && wrImgMask[wrImgsCount]; wrImgsCount++);
-                        if (wrImgsCount == 8)
-                            throw Exception("WrImgId out of range!");
-                        imgId = wrImgsCount++;
-                    }
-                    tempConfig.argResIds[k] = imgId;
                 }
             }
             else if (arg.argType == KernelArgType::COUNTER32)
@@ -612,15 +584,80 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     if (cntIdMask[cntId])
                         throw Exception("CounterId already used!");
                     cntIdMask.set(cntId);
+                    tempConfig.argResIds[k] = cntId;
                 }
-                else
+            }
+        }
+        
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArg& arg = config.args[k];
+            if (arg.argType == KernelArgType::POINTER &&
+                (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
+                 (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
+            {
+                cxuint uavId;
+                if (arg.resId == AMDBIN_DEFAULT)
+                {
+                    for (; puavIdsCount < 1024 && puavMask[puavIdsCount]; puavIdsCount++);
+                    if (puavIdsCount == 1024)
+                        throw Exception("UavId out of range!");
+                    uavId = puavIdsCount++;
+                    tempConfig.argResIds[k] = uavId;
+                }
+            }
+            else if (arg.argType == KernelArgType::POINTER &&
+                    arg.ptrSpace == KernelPtrSpace::CONSTANT)
+            {   // old constant buffers
+                cxuint cbId;
+                if (arg.resId == AMDBIN_DEFAULT)
+                {
+                    for (; cbIdsCount < 1024 && cbIdMask[cbIdsCount]; cbIdsCount++);
+                    if (cbIdsCount == 160)
+                        throw Exception("CbId out of range!");
+                    cbId = cbIdsCount++;
+                    tempConfig.argResIds[k] = cbId;
+                }
+            }
+            else if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                     arg.argType <= KernelArgType::MAX_IMAGE)
+            {   // images
+                if (arg.ptrAccess & KARG_PTR_READ_ONLY)
+                {
+                    cxuint imgId;
+                    if (arg.resId == AMDBIN_DEFAULT)
+                    {
+                        for (; rdImgsCount < 128 && rdImgMask[rdImgsCount]; rdImgsCount++);
+                        if (rdImgsCount == 128)
+                            throw Exception("RdImgId out of range!");
+                        imgId = rdImgsCount++;
+                        tempConfig.argResIds[k] = imgId;
+                    }
+                }
+                else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
+                {
+                    cxuint imgId;
+                    if (arg.resId == AMDBIN_DEFAULT)
+                    {
+                        for (; wrImgsCount < 8 && wrImgMask[wrImgsCount]; wrImgsCount++);
+                        if (wrImgsCount == 8)
+                            throw Exception("WrImgId out of range!");
+                        imgId = wrImgsCount++;
+                        tempConfig.argResIds[k] = imgId;
+                    }
+                }
+            }
+            else if (arg.argType == KernelArgType::COUNTER32)
+            {
+                cxuint cntId;
+                if (arg.resId == AMDBIN_DEFAULT)
                 {
                     for (; cntIdsCount < 8 && cntIdMask[cntIdsCount]; cntIdsCount++);
                     if (cntIdsCount == 8)
                         throw Exception("CounterId out of range!");
                     cntId = cntIdsCount++;
+                    tempConfig.argResIds[k] = cntId;
                 }
-                tempConfig.argResIds[k] = cntId;
             }
         }
     }

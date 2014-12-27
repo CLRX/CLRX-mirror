@@ -25,6 +25,7 @@
 
 #include <CLRX/Config.h>
 #include <cstddef>
+#include <climits>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -62,8 +63,8 @@ enum class GPUDeviceType: cxbyte
 };
 
 enum: cxuint {
-    AMDBIN_DEFAULT = 0xfffffffU,    ///< if set in field then field has been filled later
-    AMDBIN_NOTSUPPLIED  = 0xffffffeU ///< if set in field then field has been ignored
+    AMDBIN_DEFAULT = UINT_MAX,    ///< if set in field then field has been filled later
+    AMDBIN_NOTSUPPLIED  = UINT_MAX-1 ///< if set in field then field has been ignored
 };
 
 /// AMD OpenCL kernel argument description
