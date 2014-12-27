@@ -128,6 +128,14 @@ AmdGPUBinGenerator::~AmdGPUBinGenerator()
         delete input;
 }
 
+void AmdGPUBinGenerator::setInput(const AmdInput* input)
+{
+    if (manageable)
+        delete input;
+    manageable = false;
+    this->input = input;
+}
+
 static const char* gpuDeviceNameTable[14] =
 {
     "UNDEFINED",
@@ -513,10 +521,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
                  (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
             {
-                cxuint uavId;
                 if (arg.resId != AMDBIN_DEFAULT)
                 {
-                    uavId = arg.resId;
+                    cxuint uavId = arg.resId;
                     if ((uavId < 9 && arg.used) ||
                         (!arg.used && uavId != tempConfig.uavId) || uavId >= 1024)
                         throw Exception("UavId out of range!");
@@ -529,10 +536,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             else if (arg.argType == KernelArgType::POINTER &&
                     arg.ptrSpace == KernelPtrSpace::CONSTANT)
             {   // old constant buffers
-                cxuint cbId;
                 if (arg.resId != AMDBIN_DEFAULT)
                 {
-                    cbId = arg.resId;
+                    cxuint cbId = arg.resId;
                     if (cbId < 2 || cbId >= 160)
                         throw Exception("CbId out of range!");
                     if (cbIdMask[cbId])
@@ -546,10 +552,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
-                    cxuint imgId;
                     if (arg.resId != AMDBIN_DEFAULT)
                     {
-                        imgId = arg.resId;
+                        cxuint imgId = arg.resId;
                         if (imgId >= 128)
                             throw Exception("RdImgId out of range!");
                         if (rdImgMask[imgId])
@@ -560,10 +565,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
-                    cxuint imgId;
                     if (arg.resId != AMDBIN_DEFAULT)
                     {
-                        imgId = arg.resId;
+                        cxuint imgId = arg.resId;
                         if (imgId >= 8)
                             throw Exception("WrImgId out of range!");
                         if (wrImgMask[imgId])
@@ -575,10 +579,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             }
             else if (arg.argType == KernelArgType::COUNTER32)
             {
-                cxuint cntId;
                 if (arg.resId != AMDBIN_DEFAULT)
                 {
-                    cntId = arg.resId;
+                    cxuint cntId = arg.resId;
                     if (cntId >= 8)
                         throw Exception("CounterId out of range!");
                     if (cntIdMask[cntId])

@@ -212,9 +212,12 @@ public:
     AmdGPUBinGenerator& operator=(const AmdGPUBinGenerator& c) = delete;
     AmdGPUBinGenerator(AmdGPUBinGenerator&& c) = delete;
     AmdGPUBinGenerator& operator=(AmdGPUBinGenerator&& c) = delete;
-        
+    
+    /// get input
     const AmdInput* getInput() const
     { return input; }
+    
+    void setInput(const AmdInput* input);
     
     /// generates binary
     /**
