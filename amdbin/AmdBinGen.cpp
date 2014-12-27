@@ -599,10 +599,16 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 cxuint uavId;
                 if (arg.resId == AMDBIN_DEFAULT)
                 {
-                    for (; puavIdsCount < 1024 && puavMask[puavIdsCount]; puavIdsCount++);
-                    if (puavIdsCount == 1024)
-                        throw Exception("UavId out of range!");
-                    uavId = puavIdsCount++;
+                    if (arg.used)
+                    {
+                        for (; puavIdsCount < 1024 && puavMask[puavIdsCount];
+                             puavIdsCount++);
+                        if (puavIdsCount == 1024)
+                            throw Exception("UavId out of range!");
+                        uavId = puavIdsCount++;
+                    }
+                    else // use unused uavId (9 or 11)
+                        uavId = tempConfig.uavId;
                     tempConfig.argResIds[k] = uavId;
                 }
             }
