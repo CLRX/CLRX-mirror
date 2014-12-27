@@ -272,7 +272,7 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         offset += sizeof(ElfSym);
     }
     size_t textPos = 0;
-    for (cxuint i = 0; i < input->kernels.size(); i++)
+    for (size_t i = 0; i < input->kernels.size(); i++)
     {
         const AmdKernelInput& kernel = input->kernels[i];
         /* kernel metatadata */
@@ -403,7 +403,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
     const bool isOlderThan1348 = driverVersion < 134805;
     const bool isOlderThan1598 = driverVersion < 159805;
     
-    for (cxuint i = 0; i < input->kernels.size(); i++)
+    for (size_t i = 0; i < input->kernels.size(); i++)
     {
         const AmdKernelInput& kinput = input->kernels[i];
         if (!kinput.useConfig)
@@ -519,76 +519,57 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             const AmdKernelArg& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
-                 (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
+                 (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)) &&
+               arg.resId != AMDBIN_DEFAULT)
             {
-                if (arg.resId != AMDBIN_DEFAULT)
-                {
-                    cxuint uavId = arg.resId;
-                    if ((uavId < 9 && arg.used) ||
-                        (!arg.used && uavId != tempConfig.uavId) || uavId >= 1024)
-                        throw Exception("UavId out of range!");
-                    if (puavMask[uavId] && uavId != tempConfig.uavId)
-                        throw Exception("UavId already used!");
-                    puavMask.set(uavId);
-                    tempConfig.argResIds[k] = uavId;
-                }
+                if ((arg.resId < 9 && arg.used) ||
+                    (!arg.used && arg.resId != tempConfig.uavId) || arg.resId >= 1024)
+                    throw Exception("UavId out of range!");
+                if (puavMask[arg.resId] && arg.resId != tempConfig.uavId)
+                    throw Exception("UavId already used!");
+                puavMask.set(arg.resId);
+                tempConfig.argResIds[k] = arg.resId;
             }
             else if (arg.argType == KernelArgType::POINTER &&
-                    arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId != AMDBIN_DEFAULT)
             {   // old constant buffers
-                if (arg.resId != AMDBIN_DEFAULT)
-                {
-                    cxuint cbId = arg.resId;
-                    if (cbId < 2 || cbId >= 160)
-                        throw Exception("CbId out of range!");
-                    if (cbIdMask[cbId])
-                        throw Exception("CbId already used!");
-                    cbIdMask.set(cbId);
-                    tempConfig.argResIds[k] = cbId;
-                }
+                if (arg.resId < 2 || arg.resId >= 160)
+                    throw Exception("CbId out of range!");
+                if (cbIdMask[arg.resId])
+                    throw Exception("CbId already used!");
+                cbIdMask.set(arg.resId);
+                tempConfig.argResIds[k] = arg.resId;
             }
             else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                     arg.argType <= KernelArgType::MAX_IMAGE)
+                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId != AMDBIN_DEFAULT)
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
-                    if (arg.resId != AMDBIN_DEFAULT)
-                    {
-                        cxuint imgId = arg.resId;
-                        if (imgId >= 128)
-                            throw Exception("RdImgId out of range!");
-                        if (rdImgMask[imgId])
-                            throw Exception("RdImgId already used!");
-                        rdImgMask.set(imgId);
-                        tempConfig.argResIds[k] = imgId;
-                    }
+                    if (arg.resId >= 128)
+                        throw Exception("RdImgId out of range!");
+                    if (rdImgMask[arg.resId])
+                        throw Exception("RdImgId already used!");
+                    rdImgMask.set(arg.resId);
+                    tempConfig.argResIds[k] = arg.resId;
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
-                    if (arg.resId != AMDBIN_DEFAULT)
-                    {
-                        cxuint imgId = arg.resId;
-                        if (imgId >= 8)
-                            throw Exception("WrImgId out of range!");
-                        if (wrImgMask[imgId])
-                            throw Exception("WrImgId already used!");
-                        wrImgMask.set(imgId);
-                        tempConfig.argResIds[k] = imgId;
-                    }
+                    if (arg.resId >= 8)
+                        throw Exception("WrImgId out of range!");
+                    if (wrImgMask[arg.resId])
+                        throw Exception("WrImgId already used!");
+                    wrImgMask.set(arg.resId);
+                    tempConfig.argResIds[k] = arg.resId;
                 }
             }
-            else if (arg.argType == KernelArgType::COUNTER32)
+            else if (arg.argType == KernelArgType::COUNTER32 && arg.resId != AMDBIN_DEFAULT)
             {
-                if (arg.resId != AMDBIN_DEFAULT)
-                {
-                    cxuint cntId = arg.resId;
-                    if (cntId >= 8)
-                        throw Exception("CounterId out of range!");
-                    if (cntIdMask[cntId])
-                        throw Exception("CounterId already used!");
-                    cntIdMask.set(cntId);
-                    tempConfig.argResIds[k] = cntId;
-                }
+                if (arg.resId >= 8)
+                    throw Exception("CounterId out of range!");
+                if (cntIdMask[arg.resId])
+                    throw Exception("CounterId already used!");
+                cntIdMask.set(arg.resId);
+                tempConfig.argResIds[k] = arg.resId;
             }
         }
         
@@ -597,76 +578,52 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             const AmdKernelArg& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
-                 (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
+                 (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)) &&
+                arg.resId == AMDBIN_DEFAULT)
             {
-                cxuint uavId;
-                if (arg.resId == AMDBIN_DEFAULT)
+                if (arg.used)
                 {
-                    if (arg.used)
-                    {
-                        for (; puavIdsCount < 1024 && puavMask[puavIdsCount];
-                             puavIdsCount++);
-                        if (puavIdsCount == 1024)
-                            throw Exception("UavId out of range!");
-                        uavId = puavIdsCount++;
-                    }
-                    else // use unused uavId (9 or 11)
-                        uavId = tempConfig.uavId;
-                    tempConfig.argResIds[k] = uavId;
+                    for (; puavIdsCount < 1024 && puavMask[puavIdsCount];
+                         puavIdsCount++);
+                    if (puavIdsCount == 1024)
+                        throw Exception("UavId out of range!");
+                    tempConfig.argResIds[k] = puavIdsCount++;
                 }
+                else // use unused uavId (9 or 11)
+                    tempConfig.argResIds[k] = tempConfig.uavId;
             }
             else if (arg.argType == KernelArgType::POINTER &&
-                    arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                    arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId == AMDBIN_DEFAULT)
             {   // old constant buffers
-                cxuint cbId;
-                if (arg.resId == AMDBIN_DEFAULT)
-                {
-                    for (; cbIdsCount < 1024 && cbIdMask[cbIdsCount]; cbIdsCount++);
-                    if (cbIdsCount == 160)
-                        throw Exception("CbId out of range!");
-                    cbId = cbIdsCount++;
-                    tempConfig.argResIds[k] = cbId;
-                }
+                for (; cbIdsCount < 1024 && cbIdMask[cbIdsCount]; cbIdsCount++);
+                if (cbIdsCount == 160)
+                    throw Exception("CbId out of range!");
+                tempConfig.argResIds[k] = cbIdsCount++;
             }
             else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                     arg.argType <= KernelArgType::MAX_IMAGE)
+                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId == AMDBIN_DEFAULT)
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
-                    cxuint imgId;
-                    if (arg.resId == AMDBIN_DEFAULT)
-                    {
-                        for (; rdImgsCount < 128 && rdImgMask[rdImgsCount]; rdImgsCount++);
-                        if (rdImgsCount == 128)
-                            throw Exception("RdImgId out of range!");
-                        imgId = rdImgsCount++;
-                        tempConfig.argResIds[k] = imgId;
-                    }
+                    for (; rdImgsCount < 128 && rdImgMask[rdImgsCount]; rdImgsCount++);
+                    if (rdImgsCount == 128)
+                        throw Exception("RdImgId out of range!");
+                    tempConfig.argResIds[k] = rdImgsCount++;
                 }
                 else if (arg.ptrAccess & KARG_PTR_WRITE_ONLY)
                 {
-                    cxuint imgId;
-                    if (arg.resId == AMDBIN_DEFAULT)
-                    {
-                        for (; wrImgsCount < 8 && wrImgMask[wrImgsCount]; wrImgsCount++);
-                        if (wrImgsCount == 8)
-                            throw Exception("WrImgId out of range!");
-                        imgId = wrImgsCount++;
-                        tempConfig.argResIds[k] = imgId;
-                    }
+                    for (; wrImgsCount < 8 && wrImgMask[wrImgsCount]; wrImgsCount++);
+                    if (wrImgsCount == 8)
+                        throw Exception("WrImgId out of range!");
+                    tempConfig.argResIds[k] = wrImgsCount++;
                 }
             }
-            else if (arg.argType == KernelArgType::COUNTER32)
+            else if (arg.argType == KernelArgType::COUNTER32 && arg.resId == AMDBIN_DEFAULT)
             {
-                cxuint cntId;
-                if (arg.resId == AMDBIN_DEFAULT)
-                {
-                    for (; cntIdsCount < 8 && cntIdMask[cntIdsCount]; cntIdsCount++);
-                    if (cntIdsCount == 8)
-                        throw Exception("CounterId out of range!");
-                    cntId = cntIdsCount++;
-                    tempConfig.argResIds[k] = cntId;
-                }
+                for (; cntIdsCount < 8 && cntIdMask[cntIdsCount]; cntIdsCount++);
+                if (cntIdsCount == 8)
+                    throw Exception("CounterId out of range!");
+                tempConfig.argResIds[k] = cntIdsCount++;
             }
         }
     }
@@ -1840,7 +1797,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         ::memcpy(binary+offset, input->globalData, input->globalDataSize);
         offset += input->globalDataSize;
     }
-    for (cxuint i = 0; i < input->kernels.size(); i++)
+    for (size_t i = 0; i < input->kernels.size(); i++)
     {
         const AmdKernelInput& kernel = input->kernels[i];
         if (kernel.useConfig)
@@ -1871,10 +1828,10 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     
     /* kernel binaries */
     sectionOffsets[4] = offset;
-    for (cxuint i = 0; i < input->kernels.size(); i++)
+    for (size_t i = 0; i < input->kernels.size(); i++)
     {
         const size_t innerBinOffset = offset;
-        const AmdKernelInput& kernel = input->kernels[i];
+        const AmdKernelInput& kinput = input->kernels[i];
         
         Elf32_Ehdr& innerHdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
         static const cxbyte elf32Ident[16] = {
@@ -1956,11 +1913,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         
         offset += sizeof(Elf32_Shdr)*6;
         const size_t encOffset = offset;
-        if (kernel.useConfig)
-            generateCALNotes(binary, offset, input, driverVersion, kernel,
+        if (kinput.useConfig)
+            generateCALNotes(binary, offset, input, driverVersion, kinput,
                      tempAmdKernelConfigs[i]);
         else // from CALNotes array
-            for (const CALNoteInput& calNote: kernel.calNotes)
+            for (const CALNoteInput& calNote: kinput.calNotes)
             {
                 ::memcpy(binary + offset, &calNote.header, sizeof(CALNoteHeader));
                 offset += sizeof(CALNoteHeader);
@@ -1979,12 +1936,12 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         SULEV(sectionHdrTable->sh_addralign, 0);
         SULEV(sectionHdrTable->sh_link, 0);
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_size, kernel.codeSize);
+        SULEV(sectionHdrTable->sh_size, kinput.codeSize);
         SULEV(sectionHdrTable->sh_info, 0);
         SULEV(sectionHdrTable->sh_entsize, 0);
         sectionHdrTable++;
-        ::memcpy(binary + offset, kernel.code, kernel.codeSize);
-        offset += kernel.codeSize;
+        ::memcpy(binary + offset, kinput.code, kinput.codeSize);
+        offset += kinput.codeSize;
         // .data
         SULEV(sectionHdrTable->sh_name, 17);
         SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
@@ -1993,13 +1950,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         SULEV(sectionHdrTable->sh_addralign, 0);
         SULEV(sectionHdrTable->sh_link, 0);
         SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_size, (kernel.data!=nullptr)?kernel.dataSize:4736);
-        SULEV(sectionHdrTable->sh_entsize, (kernel.data!=nullptr)?kernel.dataSize:4736);
+        SULEV(sectionHdrTable->sh_size, (kinput.data!=nullptr)?kinput.dataSize:4736);
+        SULEV(sectionHdrTable->sh_entsize, (kinput.data!=nullptr)?kinput.dataSize:4736);
         SULEV(sectionHdrTable->sh_info, 0);
-        if (kernel.data != nullptr)
+        if (kinput.data != nullptr)
         {
-            ::memcpy(binary + offset, kernel.data, kernel.dataSize);
-            offset += kernel.dataSize;
+            ::memcpy(binary + offset, kinput.data, kinput.dataSize);
+            offset += kinput.dataSize;
         }
         else
         {
