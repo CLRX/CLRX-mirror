@@ -1446,16 +1446,27 @@ static std::set<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
                 continue; // not found
             const char* outEnd;
             pos += 11;
-            uniqueIds.insert(cstrtovCStyle<cxuint>(metadata+pos,
-                           metadata+kernel.metadataSize, outEnd));
-            for (; pos < kernel.metadataSize-13; pos++)
-                if (::memcmp(metadata+pos, "\n;functionid:", 13) == 0)
+            try
+            { uniqueIds.insert(cstrtovCStyle<cxuint>(metadata+pos,
+                               metadata+kernel.metadataSize, outEnd)); }
+            catch(const ParseException& ex)
+            { } // ignore parse exception
+            for (; pos < kernel.metadataSize-11; pos++)
+                if (::memcmp(metadata+pos, "\n;function:", 11) == 0)
                     break;
-            if (pos == kernel.metadataSize-13)
+            if (pos == kernel.metadataSize-11)
                 continue; // not found
-            pos += 13;
-            uniqueIds.insert(cstrtovCStyle<cxuint>(metadata+pos,
-                           metadata+kernel.metadataSize, outEnd));
+            pos += 11;
+            const char* funcIdStr = (const char*)::memchr(metadata+pos, ':',
+                      kernel.metadataSize-pos);
+            if (funcIdStr == nullptr || funcIdStr+1 == metadata+kernel.metadataSize)
+                continue;
+            funcIdStr++;
+            try
+            { uniqueIds.insert(cstrtovCStyle<cxuint>(funcIdStr,
+                           metadata+kernel.metadataSize, outEnd)); }
+            catch(const ParseException& ex)
+            { } // ignore parse exception
         }
     return uniqueIds;
 }
