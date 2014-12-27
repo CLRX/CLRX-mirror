@@ -430,7 +430,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         {   /* compute uavPrivate */
             bool hasStructures = false;
             uint32_t amountOfArgs = 0;
-            for (const AmdKernelArg arg: config.args)
+            for (const AmdKernelArg& arg: config.args)
             {
                 if (arg.argType == KernelArgType::STRUCTURE ||
                     arg.argType == KernelArgType::COUNTER32)
@@ -468,7 +468,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             else
             {
                 bool hasPointer = false;
-                for (const AmdKernelArg arg: config.args)
+                for (const AmdKernelArg& arg: config.args)
                     if (arg.argType == KernelArgType::POINTER &&
                         (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
                          arg.ptrSpace == KernelPtrSpace::GLOBAL))
