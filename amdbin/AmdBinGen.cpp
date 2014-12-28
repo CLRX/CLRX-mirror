@@ -1919,7 +1919,11 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         else // from CALNotes array
             for (const CALNoteInput& calNote: kinput.calNotes)
             {
-                ::memcpy(binary + offset, &calNote.header, sizeof(CALNoteHeader));
+                CALNoteHeader* cnHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+                SULEV(cnHdr->descSize, calNote.header.descSize);
+                SULEV(cnHdr->nameSize, calNote.header.nameSize);
+                SULEV(cnHdr->type, calNote.header.type);
+                ::memcpy(cnHdr->name, &calNote.header.name, 8);
                 offset += sizeof(CALNoteHeader);
                 ::memcpy(binary + offset, calNote.data, calNote.header.descSize);
                 offset += calNote.header.descSize;
