@@ -158,4 +158,8 @@ typedef unsigned long cxulong;
 typedef signed long long cxllong;
 typedef unsigned long long cxullong;
 
+#if __cplusplus < 201103L
+#define __STDC_LIMIT_MACROS 1
+#endif
+
 #endif
