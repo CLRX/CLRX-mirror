@@ -23,7 +23,7 @@
 #include <elf.h>
 #include <algorithm>
 #include <climits>
-#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 #include <map>
 #include <utility>
