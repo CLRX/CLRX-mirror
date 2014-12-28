@@ -1314,18 +1314,14 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     k = (k<<2)+1;
     
     const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
-    union {
-        PgmRSRC2 pgmRSRC2;
-        uint32_t pgmRSRC2Value;
-    } curPgmRSRC2;
-    curPgmRSRC2.pgmRSRC2 = config.pgmRSRC2;
-    curPgmRSRC2.pgmRSRC2.ldsSize = (localSize+255)>>8;
+    uint32_t curPgmRSRC2 = config.pgmRSRC2;
+    curPgmRSRC2 = (curPgmRSRC2 & 0xff007fffU) | ((((localSize+255)>>8)&0x1ff)<<15);
     cxuint pgmUserSGPRsNum = 0;
     for (cxuint p = 0; p < config.userDataElemsNum; p++)
         pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
                  config.userDatas[p].regStart+config.userDatas[p].regSize);
     pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
-    curPgmRSRC2.pgmRSRC2.userSGRP = pgmUserSGPRsNum;
+    curPgmRSRC2 = (curPgmRSRC2 & 0xffffffc1U) | ((pgmUserSGPRsNum&0x1f)<<1);
     
     SULEV(progInfo[k].address, 0x80001041U);
     SULEV(progInfo[k++].value, config.usedVGPRsNum);
@@ -1342,7 +1338,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     SULEV(progInfo[k].address, 0x80001045U);
     SULEV(progInfo[k++].value, config.scratchBufferSize>>2);
     SULEV(progInfo[k].address, 0x00002e13U);
-    SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2Value);
+    SULEV(progInfo[k++].value, curPgmRSRC2);
     SULEV(progInfo[k].address, 0x8000001cU);
     SULEV(progInfo[k+1].address, 0x8000001dU);
     SULEV(progInfo[k+2].address, 0x8000001eU);
@@ -1400,7 +1396,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     SULEV(progInfo[k].address, 0x80000081U);
     SULEV(progInfo[k++].value, 32768);
     SULEV(progInfo[k].address, 0x80000082U);
-    SULEV(progInfo[k++].value, curPgmRSRC2.pgmRSRC2.ldsSize<<8);
+    SULEV(progInfo[k++].value, ((curPgmRSRC2>>15)&0x1ff)<<8);
     offset += 8*k;
     SULEV(noteHdr->descSize, 8*k);
     

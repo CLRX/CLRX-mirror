@@ -91,22 +91,6 @@ struct AmdUserData
     uint32_t regSize;   ///< number of used SGPRS registers
 };
 
-struct PgmRSRC2
-{
-    cxuint isScratch : 1;
-    cxuint userSGRP : 5;
-    cxuint trapPresent : 1;
-    cxuint isTgidX : 1;
-    cxuint isTgidY : 1;
-    cxuint isTgidZ : 1;
-    cxuint tgSize : 1;
-    cxuint tidigCompCnt : 2;
-    cxuint excpEnMsb : 2;
-    cxuint ldsSize : 9;
-    cxuint excpEn : 7;
-    cxuint : 1;
-};
-
 /// kernel configuration
 struct AmdKernelConfig
 {
@@ -115,10 +99,7 @@ struct AmdKernelConfig
     uint32_t reqdWorkGroupSize[3];  /// reqd_work_group_size
     uint32_t usedVGPRsNum;  ///< number of used VGPRs
     uint32_t usedSGPRsNum;  ///< number of used SGPRs
-    union {
-        PgmRSRC2 pgmRSRC2;
-        uint32_t pgmRSRC2Value;
-    };
+    uint32_t pgmRSRC2;
     uint32_t ieeeMode;
     uint32_t floatMode;
     size_t hwLocalSize; ///< used local size (not local defined in kernel arguments)
