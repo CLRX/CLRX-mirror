@@ -165,7 +165,7 @@ enum KindOfType : cxbyte
     KT_FLOAT,
     KT_DOUBLE,
     KT_STRUCT,
-    KT_UNKNOWN,
+    KT_UNKNOWN
 };
 
 struct TypeNameVecSize
