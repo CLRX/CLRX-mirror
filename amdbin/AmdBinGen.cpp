@@ -205,7 +205,7 @@ static const TypeNameVecSize argTypeNamesTable[] =
     { "u32", KT_UNSIGNED, 4, 2 }, { "u32", KT_UNSIGNED, 4, 3 },
     { "u32", KT_UNSIGNED, 4, 4 }, { "u32", KT_UNSIGNED, 4, 8 },
     { "u32", KT_UNSIGNED, 4, 16 },
-    { "i16", KT_SIGNED, 4, 2 }, { "i32", KT_SIGNED, 4, 3 },
+    { "i32", KT_SIGNED, 4, 2 }, { "i32", KT_SIGNED, 4, 3 },
     { "i32", KT_SIGNED, 4, 4 }, { "i32", KT_SIGNED, 4, 8 },
     { "i32", KT_SIGNED, 4, 16 },
     { "u64", KT_UNSIGNED, 8, 2 }, { "u64", KT_UNSIGNED, 8, 3 },
@@ -789,7 +789,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             if (tp.kindOfType == KT_UNKNOWN)
                 throw Exception("Type not supported!");
             const cxuint typeSize =
-                cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
+                cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*std::max(cxbyte(4), tp.elemSize);
             metadata += tp.name;
             metadata += ':';
             itocstrCStyle(tp.vecSize, numBuf, 21);
