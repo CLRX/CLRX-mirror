@@ -1426,7 +1426,9 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     SULEV(noteHdr->descSize, 128);
     ::memcpy(noteHdr->name, "ATI CAL", 8);
     offset += sizeof(CALNoteHeader);
-    ::memcpy(binary + offset, uavMask, 128);
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    for (cxuint k = 0; k < 32; k++)
+        SULEV(data32[k], uavMask[k]);
     offset += 128;
 }
 
