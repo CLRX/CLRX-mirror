@@ -2013,14 +2013,14 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     if (!input->is64Bit)
     {
         Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
-        mainHdr.e_shoff = offset;
+        SULEV(mainHdr.e_shoff, offset);
         putMainSections<Elf32_Shdr, Elf32_Sym>(binary, offset, sectionOffsets, alignFix,
                 input->kernels.empty());
     }
     else
     {
         Elf64_Ehdr& mainHdr = *reinterpret_cast<Elf64_Ehdr*>(binary);
-        mainHdr.e_shoff = offset;
+        SULEV(mainHdr.e_shoff, offset);
         putMainSections<Elf64_Shdr, Elf64_Sym>(binary, offset, sectionOffsets, alignFix,
                 input->kernels.empty());
     }
