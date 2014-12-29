@@ -684,7 +684,6 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 if (!available)
                     amdDevices[k++] = deviceId;
             }
-            
         }
 #endif
         

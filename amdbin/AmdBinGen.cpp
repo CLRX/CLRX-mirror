@@ -473,7 +473,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                         (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
                          arg.ptrSpace == KernelPtrSpace::GLOBAL))
                         hasPointer = true;
-                    
+                
                 tempConfig.uavId = (hasPointer || config.usePrintf)?11:AMDBIN_NOTSUPPLIED;
             }
         }
