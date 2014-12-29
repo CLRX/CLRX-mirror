@@ -155,7 +155,7 @@ static const char* gpuDeviceNameTable[14] =
 };
 
 static const char* imgTypeNamesTable[] = { "2D", "1D", "1DA", "1DB", "2D", "2DA", "3D" };
-/// TODO: check why sometimes is 3 for image1d_array_t and image2d_array_t
+
 static const cxuint imgUavDimTable[] = { 2, 1, 0, 0, 2, 2, 3 };
 
 enum KindOfType : cxbyte
