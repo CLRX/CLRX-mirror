@@ -511,6 +511,30 @@ void clrxWrapperInitialize()
     }
 }
 
+struct ManCLContext
+{
+    cl_context clContext;
+    
+    ManCLContext() : clContext(nullptr) { }
+    ~ManCLContext()
+    {
+        if (clContext != nullptr)
+            if (clContext->dispatch->clReleaseContext(clContext) != CL_SUCCESS)
+            {
+                std::cerr << "Can't release amdOfflineContext!" << std::endl;
+                abort();
+            }
+    }
+    cl_context operator()()
+    { return clContext; }
+    
+    ManCLContext& operator=(cl_context c)
+    {
+        clContext = c;
+        return *this;
+    }
+};
+
 void clrxPlatformInitializeDevices(CLRXPlatform* platform)
 {
     cl_int status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
@@ -531,7 +555,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
     bool isOCL12OrLater = platform->openCLVersionNum >= getOpenCLVersionNum(1, 2);
     //std::cout << "IsOCl12OrLater: " << isOCL12OrLater << std::endl;
     
-    cl_context offlineContext = nullptr;
+    ManCLContext offlineContext;
     cl_uint amdOfflineDevicesNum = 0;
     cl_uint offlineContextDevicesNum = 0;
     /* custom devices not listed in all devices */
@@ -565,14 +589,14 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             offlineContext = platform->amdOclPlatform->dispatch->
                 clCreateContextFromType(clctxprops, CL_DEVICE_TYPE_ALL, NULL, NULL, &status);
             
-            if (offlineContext == nullptr)
+            if (offlineContext() == nullptr)
             {
                 platform->devicesNum = 0;
                 platform->deviceInitStatus = status;
                 return;
             }
             
-            status = offlineContext->dispatch->clGetContextInfo(offlineContext,
+            status = offlineContext()->dispatch->clGetContextInfo(offlineContext(),
                     CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint),
                     &offlineContextDevicesNum, nullptr);
             
@@ -583,15 +607,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                         (platform->devicesNum - customDevicesNum);
                 platform->devicesNum += amdOfflineDevicesNum;
             }
-            else
-            {   // no additional offline devices
+            else // no additional offline devices
                 amdOfflineDevicesNum = 0;
-                if (offlineContext->dispatch->clReleaseContext(offlineContext) != CL_SUCCESS)
-                {
-                    std::cerr << "Can't release amdOfflineContext!" << std::endl;
-                    abort();
-                }
-            }
         }
     }
 #else
@@ -637,9 +654,10 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         if (amdOfflineDevicesNum != 0)
         {
             std::vector<cl_device_id> offlineDevices(offlineContextDevicesNum);
-            status = offlineContext->dispatch->clGetContextInfo(offlineContext,
+            status = offlineContext()->dispatch->clGetContextInfo(offlineContext(),
                     CL_CONTEXT_DEVICES, sizeof(cl_device_id)*offlineContextDevicesNum,
                     offlineDevices.data(), nullptr);
+            
             if (status != CL_SUCCESS)
             {
                 delete[] platform->devicesArray;
@@ -667,11 +685,6 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                     amdDevices[k++] = deviceId;
             }
             
-            if (offlineContext->dispatch->clReleaseContext(offlineContext) != CL_SUCCESS)
-            {
-                std::cerr << "Can't release amdOfflineContext!" << std::endl;
-                abort();
-            }
         }
 #endif
         
