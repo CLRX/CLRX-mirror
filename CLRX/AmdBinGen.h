@@ -191,6 +191,10 @@ struct AmdInput
     std::string compileOptions; ///< compile options
     std::string driverInfo;     ///< driver info
     std::vector<AmdKernelInput> kernels;    ///< kernels
+    size_t sourceCodeSize;  ///< source code size (can be zero)
+    const char* sourceCode; ///< string of source (if size==0 then must be null-terminated)
+    size_t llvmirSize;
+    const cxbyte* llvmir;
     
     /// add kernel to input
     void addKernel(const AmdKernelInput& kernelInput);
