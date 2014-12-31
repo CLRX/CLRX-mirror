@@ -80,6 +80,46 @@ struct AmdKernelArg
     size_t constSpaceSize;
     uint32_t resId; ///< uavid or cbid or counterId
     bool used; ///< used by kernel
+    
+    /// create simple type argument
+    static AmdKernelArg arg(const std::string& argName, const std::string& typeName,
+         KernelArgType argType)
+    {
+        return { argName, typeName, argType, KernelArgType::VOID, KernelPtrSpace::NONE,
+            KARG_PTR_NORMAL, 0, 0, 0, true };
+    }
+    /// create global pointer
+    static AmdKernelArg gptr(const std::string& argName, const std::string& typeName,
+         KernelArgType ptrType, cxuint structSize = 0, uint8_t ptrAccess = KARG_PTR_NORMAL,
+         uint32_t resId = AMDBIN_DEFAULT, bool used = true)
+    {
+        return { argName, typeName, KernelArgType::POINTER, ptrType,
+            KernelPtrSpace::GLOBAL, ptrAccess, structSize, 0, resId, used };
+    }
+    /// create constant pointer
+    static AmdKernelArg cptr(const std::string& argName, const std::string& typeName,
+         KernelArgType ptrType, cxuint structSize = 0, uint8_t ptrAccess = KARG_PTR_NORMAL,
+         size_t constSpaceSize = 0, uint32_t resId = AMDBIN_DEFAULT, bool used = true)
+    {
+        return { argName, typeName, KernelArgType::POINTER, ptrType,
+            KernelPtrSpace::CONSTANT, ptrAccess, structSize, constSpaceSize, resId, used };
+    }
+    /// create local pointer
+    static AmdKernelArg lptr(const std::string& argName, const std::string& typeName,
+         KernelArgType ptrType, cxuint structSize = 0)
+    {
+        return { argName, typeName, KernelArgType::POINTER, ptrType,
+            KernelPtrSpace::LOCAL, KARG_PTR_NORMAL, structSize, 0, 1, true };
+    }
+    
+    /// create image
+    static AmdKernelArg img(const std::string& argName, const std::string& typeName,
+        KernelArgType imgType, uint8_t ptrAccess = KARG_PTR_READ_ONLY,
+        uint32_t resId = AMDBIN_DEFAULT, bool used = true)
+    {
+        return { argName, typeName, imgType, KernelArgType::VOID, KernelPtrSpace::NONE,
+            ptrAccess, 0, 0, resId, used };
+    }
 };
 
 /// user data for in CAL PROGINFO
