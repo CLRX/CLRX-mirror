@@ -1137,31 +1137,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
         reinterpret_cast<CALConstantBufferMask*>(binary + offset);
     offset += 8*constBuffersNum;
     
-    if (driverVersion == 112402)
-    {
-        SULEV(cbufMask->index, 0);
-        SULEV(cbufMask->size, 0);
-        SULEV(cbufMask[1].index, 1);
-        SULEV(cbufMask[1].size, 0);
-        cbufMask += 2;
-        for (cxuint k = 0; k < config.args.size(); k++)
-        {
-            const AmdKernelArg& arg = config.args[k];
-            if (arg.argType == KernelArgType::POINTER &&
-                arg.ptrSpace == KernelPtrSpace::CONSTANT)
-            {
-                SULEV(cbufMask->index, tempConfig.argResIds[k]);
-                SULEV(cbufMask->size, 0);
-                cbufMask++;
-            }
-        }
-        if (input->globalData != nullptr)
-        {
-            SULEV(cbufMask->index, 2);
-            SULEV(cbufMask->size, 0);
-        }
-    }
-    else if (isOlderThan1124)
+    if (isOlderThan1124)
     {   /* for driver 12.10 */
         for (cxuint k = config.args.size(); k > 0; k--)
         {
@@ -1186,7 +1162,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
         SULEV(cbufMask[1].index, 0);
         SULEV(cbufMask[1].size, 15);
     }
-    else // new drivers
+    else 
     {
         SULEV(cbufMask->index, 0);
         SULEV(cbufMask->size, 0);
@@ -1203,6 +1179,11 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
                 SULEV(cbufMask->size, 0);
                 cbufMask++;
             }
+        }
+        if (isOlderThan1348 && input->globalData != nullptr)
+        {
+            SULEV(cbufMask->index, 2);
+            SULEV(cbufMask->size, 0);
         }
     }
     
