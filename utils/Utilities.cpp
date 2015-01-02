@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <mutex>
+#include <cerrno>
 #include <cstring>
 #include <string>
 #include <climits>
@@ -373,8 +374,16 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
 bool CLRX::isDirectory(const char* path)
 {
     struct stat stBuf;
+    errno = 0;
     if (stat(path, &stBuf) != 0)
-        throw Exception("Can't determine whether path refers to directory");
+    {
+        if (errno == ENOENT)
+            throw Exception("File or directory doesn't exists");
+        else if (errno == EACCES)
+            throw Exception("Access to file or directory is not permitted");
+        else
+            throw Exception("Can't determine whether path refers to directory");
+    }
     return S_ISDIR(stBuf.st_mode);
 }
 
