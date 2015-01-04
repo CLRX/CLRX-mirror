@@ -35,6 +35,35 @@
 
 using namespace CLRX;
 
+template<typename ElfSection>
+static void putElfSectionLE(ElfSection* section, size_t shName, uint32_t shType,
+        uint32_t shFlags, size_t offset, size_t size, uint32_t link,
+        uint32_t info = 0, uint32_t addrAlign = 1, size_t addr = 0, uint32_t entSize = 0)
+{
+    SULEV(section->sh_name, shName);
+    SULEV(section->sh_type, shType);
+    SULEV(section->sh_flags, shFlags);
+    SULEV(section->sh_addr, 0);
+    SULEV(section->sh_offset, offset);
+    SULEV(section->sh_size, size);
+    SULEV(section->sh_link, link);
+    SULEV(section->sh_info, info);
+    SULEV(section->sh_addralign, addrAlign);
+    SULEV(section->sh_entsize, entSize);
+}
+
+template<typename ElfSym>
+static void putElfSymbolLE(ElfSym* symbol, size_t symName, size_t value, size_t size,
+        uint16_t shndx, cxbyte info, cxbyte other = 0)
+{
+    SULEV(symbol->st_name, symName); 
+    SULEV(symbol->st_value, value);
+    SULEV(symbol->st_size, size);
+    SULEV(symbol->st_shndx, shndx);
+    symbol->st_info = info;
+    symbol->st_other = other;
+}
+
 static const uint32_t gpuDeviceCodeTable[14] =
 {
     0, // GPUDeviceType::UNDEFINED
@@ -246,12 +275,8 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
     size_t namePos = 1;
     if (!input->compileOptions.empty())
     {
-        SULEV(symbolTable[1].st_name, namePos); 
-        SULEV(symbolTable[1].st_value, 0);
-        SULEV(symbolTable[1].st_size, input->compileOptions.size());
-        SULEV(symbolTable[1].st_shndx, (input->kernels.size()!=0)?6:4);
-        symbolTable[1].st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
-        symbolTable[1].st_other = 0;
+        putElfSymbolLE(symbolTable+1, namePos, 0, input->compileOptions.size(), 
+                (input->kernels.size()!=0)?6:4, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 25;
         symbolTable++;
         offset += sizeof(ElfSym);
@@ -260,13 +285,8 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
     size_t rodataPos = 0;
     if (input->globalData != nullptr)
     {
-        SULEV(symbolTable->st_name, namePos); 
-        SULEV(symbolTable->st_value, 0);
-        SULEV(symbolTable->st_size, input->globalDataSize);
-        SULEV(symbolTable->st_shndx, 4);
-        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
-        symbolTable->st_other = 0;
-        symbolTable++;
+        putElfSymbolLE(symbolTable++, namePos, 0, input->globalDataSize, 4,
+                ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 18;
         rodataPos = input->globalDataSize;
         offset += sizeof(ElfSym);
@@ -278,34 +298,19 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         /* kernel metatadata */
         const size_t metadataSize = (kernel.useConfig) ?
                 kmetadatas[i].size() : kernel.metadataSize;
-        SULEV(symbolTable->st_name, namePos);
-        SULEV(symbolTable->st_value, rodataPos);
-        SULEV(symbolTable->st_size, metadataSize);
-        SULEV(symbolTable->st_shndx, 4);
-        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
-        symbolTable->st_other = 0;
-        symbolTable++;
+        putElfSymbolLE(symbolTable++, namePos, rodataPos, metadataSize, 4,
+                ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 19 + kernel.kernelName.size();
         rodataPos += metadataSize;
         /* kernel code */
-        SULEV(symbolTable->st_name, namePos);
-        SULEV(symbolTable->st_value, textPos);
-        SULEV(symbolTable->st_size, innerBinSizes[i]);
-        SULEV(symbolTable->st_shndx, 5);
-        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
-        symbolTable->st_other = 0;
-        symbolTable++;
+        putElfSymbolLE(symbolTable++, namePos, textPos, innerBinSizes[i], 5,
+                ELF32_ST_INFO(STB_LOCAL, STT_FUNC), 0);
         namePos += 17 + kernel.kernelName.size();
         textPos += innerBinSizes[i];
         /* kernel header */
         const size_t headerSize = (kernel.useConfig) ? 32 : kernel.headerSize;
-        SULEV(symbolTable->st_name, namePos);
-        SULEV(symbolTable->st_value, rodataPos);
-        SULEV(symbolTable->st_size, headerSize);
-        SULEV(symbolTable->st_shndx, 4);
-        symbolTable->st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
-        symbolTable->st_other = 0;
-        symbolTable++;
+        putElfSymbolLE(symbolTable++, namePos, rodataPos, headerSize, 4,
+                ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 17 + kernel.kernelName.size();
         rodataPos += headerSize;
     }
@@ -321,111 +326,37 @@ static void putMainSections(cxbyte* binary, size_t &offset,
     ::memset(sectionHdrTable, 0, sizeof(ElfShdr));
     sectionHdrTable++;
     // .shstrtab
-    SULEV(sectionHdrTable->sh_name, 1);
-    SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
-    SULEV(sectionHdrTable->sh_flags, SHF_STRINGS);
-    SULEV(sectionHdrTable->sh_addr, 0);
-    SULEV(sectionHdrTable->sh_offset, sectionOffsets[0]);
-    SULEV(sectionHdrTable->sh_size, sectionOffsets[1]-sectionOffsets[0]);
-    SULEV(sectionHdrTable->sh_link, 0);
-    SULEV(sectionHdrTable->sh_info, 0);
-    SULEV(sectionHdrTable->sh_addralign, 1);
-    SULEV(sectionHdrTable->sh_entsize, 0);
-    sectionHdrTable++;
+    putElfSectionLE(sectionHdrTable++, 1, SHT_STRTAB, SHF_STRINGS, sectionOffsets[0],
+            sectionOffsets[1]-sectionOffsets[0], 0);
     // .strtab
-    SULEV(sectionHdrTable->sh_name, 11);
-    SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
-    SULEV(sectionHdrTable->sh_flags, SHF_STRINGS);
-    SULEV(sectionHdrTable->sh_addr, 0);
-    SULEV(sectionHdrTable->sh_offset, sectionOffsets[1]);
-    SULEV(sectionHdrTable->sh_size, sectionOffsets[2]-sectionOffsets[1]-alignFix);
-    SULEV(sectionHdrTable->sh_link, 0);
-    SULEV(sectionHdrTable->sh_info, 0);
-    SULEV(sectionHdrTable->sh_addralign, 1);
-    SULEV(sectionHdrTable->sh_entsize, 0);
-    sectionHdrTable++;
+    putElfSectionLE(sectionHdrTable++, 11, SHT_STRTAB, SHF_STRINGS, sectionOffsets[1],
+            sectionOffsets[2]-sectionOffsets[1]-alignFix, 0);
     // .symtab
-    SULEV(sectionHdrTable->sh_name, 19);
-    SULEV(sectionHdrTable->sh_type, SHT_SYMTAB);
-    SULEV(sectionHdrTable->sh_flags, 0);
-    SULEV(sectionHdrTable->sh_addr, 0);
-    SULEV(sectionHdrTable->sh_offset, sectionOffsets[2]);
-    SULEV(sectionHdrTable->sh_size, sectionOffsets[3]-sectionOffsets[2]);
-    SULEV(sectionHdrTable->sh_link, 2);
-    SULEV(sectionHdrTable->sh_info, 0);
-    SULEV(sectionHdrTable->sh_addralign, 8);
-    SULEV(sectionHdrTable->sh_entsize, sizeof(ElfSym));
-    sectionHdrTable++;
+    putElfSectionLE(sectionHdrTable++, 19, SHT_SYMTAB, 0, sectionOffsets[2],
+            sectionOffsets[3]-sectionOffsets[2], 2, 0, 8, 0, sizeof(ElfSym));
     size_t shNamePos = 27;
     if (!noKernels) // .text not emptyu
-    {
-        // .rodata
-        SULEV(sectionHdrTable->sh_name, 27);
-        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-        SULEV(sectionHdrTable->sh_flags, SHF_ALLOC);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_offset, sectionOffsets[3]);
-        SULEV(sectionHdrTable->sh_size, sectionOffsets[4]-sectionOffsets[3]);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_addralign, 1);
-        SULEV(sectionHdrTable->sh_entsize, 0);
-        sectionHdrTable++;
+    {   // .rodata
+        putElfSectionLE(sectionHdrTable++, 27, SHT_PROGBITS, SHF_ALLOC, sectionOffsets[3],
+                sectionOffsets[4]-sectionOffsets[3], 0);
         // .text
-        SULEV(sectionHdrTable->sh_name, 35);
-        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-        SULEV(sectionHdrTable->sh_flags, SHF_ALLOC|SHF_EXECINSTR);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_offset, sectionOffsets[4]);
-        SULEV(sectionHdrTable->sh_size, sectionOffsets[5]-sectionOffsets[4]);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_addralign, 1);
-        SULEV(sectionHdrTable->sh_entsize, 0);
-        sectionHdrTable++;
+        putElfSectionLE(sectionHdrTable++, 35, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
+                sectionOffsets[4], sectionOffsets[5]-sectionOffsets[4], 0);
         shNamePos += 14;
     }
     // .comment
-    SULEV(sectionHdrTable->sh_name, shNamePos);
-    SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-    SULEV(sectionHdrTable->sh_flags, 0);
-    SULEV(sectionHdrTable->sh_addr, 0);
-    SULEV(sectionHdrTable->sh_offset, sectionOffsets[5]);
-    SULEV(sectionHdrTable->sh_size, sectionOffsets[6]-sectionOffsets[5]);
-    SULEV(sectionHdrTable->sh_link, 0);
-    SULEV(sectionHdrTable->sh_info, 0);
-    SULEV(sectionHdrTable->sh_addralign, 1);
-    SULEV(sectionHdrTable->sh_entsize, 0);
-    sectionHdrTable++;
+    putElfSectionLE(sectionHdrTable++, shNamePos, SHT_PROGBITS, 0, sectionOffsets[5],
+            sectionOffsets[6]-sectionOffsets[5], 0);
     shNamePos += 9;
     if (haveSource)
     {
-        SULEV(sectionHdrTable->sh_name, shNamePos);
-        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_offset, sectionOffsets[6]);
-        SULEV(sectionHdrTable->sh_size, sectionOffsets[7]-sectionOffsets[6]);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_addralign, 1);
-        SULEV(sectionHdrTable->sh_entsize, 0);
-        sectionHdrTable++;
+        putElfSectionLE(sectionHdrTable++, shNamePos, SHT_PROGBITS, 0, sectionOffsets[6],
+                sectionOffsets[7]-sectionOffsets[6], 0);
         shNamePos += 8;
     }
     if (haveLLVMIR)
-    {
-        SULEV(sectionHdrTable->sh_name, shNamePos);
-        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_offset, sectionOffsets[7]);
-        SULEV(sectionHdrTable->sh_size, sectionOffsets[8]-sectionOffsets[7]);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_addralign, 1);
-        SULEV(sectionHdrTable->sh_entsize, 0);
-    }
+        putElfSectionLE(sectionHdrTable++, shNamePos, SHT_PROGBITS, 0, sectionOffsets[7],
+                sectionOffsets[8]-sectionOffsets[7], 0);
     
     offset += sizeof(ElfShdr)*(5 + (noKernels?0:2) + haveSource + haveLLVMIR);
 }
@@ -1844,17 +1775,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         ::memset(binary+offset, 0, sizeof(Elf32_Shdr));
         sectionHdrTable++;
         // .shstrtab
-        SULEV(sectionHdrTable->sh_name, 1);
-        SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_addralign, 0);
-        SULEV(sectionHdrTable->sh_offset, 0xa8);
-        SULEV(sectionHdrTable->sh_size, 40);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_entsize, 0);
-        sectionHdrTable++;
+        putElfSectionLE(sectionHdrTable++, 1, SHT_STRTAB, 0, 0xa8, 40, 0, 0, 0);
         
         offset += sizeof(Elf32_Shdr)*6;
         const size_t encOffset = offset;
@@ -1878,30 +1799,14 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         
         const size_t loadPrgPartOffset = offset;
         // .text
-        SULEV(sectionHdrTable->sh_name, 11);
-        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_addralign, 0);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_size, kinput.codeSize);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_entsize, 0);
-        sectionHdrTable++;
+        putElfSectionLE(sectionHdrTable++, 11, SHT_PROGBITS, 0, offset-innerBinOffset,
+                        kinput.codeSize, 0, 0, 0);
         ::memcpy(binary + offset, kinput.code, kinput.codeSize);
         offset += kinput.codeSize;
         // .data
-        SULEV(sectionHdrTable->sh_name, 17);
-        SULEV(sectionHdrTable->sh_type, SHT_PROGBITS);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_addralign, 0);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_size, (kinput.data!=nullptr)?kinput.dataSize:4736);
-        SULEV(sectionHdrTable->sh_entsize, (kinput.data!=nullptr)?kinput.dataSize:4736);
-        SULEV(sectionHdrTable->sh_info, 0);
+        putElfSectionLE(sectionHdrTable++, 17, SHT_PROGBITS, 0, offset-innerBinOffset,
+                        (kinput.data!=nullptr)?kinput.dataSize:4736, 0, 0, 0, 0,
+                        (kinput.data!=nullptr)?kinput.dataSize:4736);
         if (kinput.data != nullptr)
         {
             ::memcpy(binary + offset, kinput.data, kinput.dataSize);
@@ -1912,32 +1817,14 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             ::memset(binary + offset, 0, 4736);
             offset += 4736;
         }
-        sectionHdrTable++;
         // .symtab
-        SULEV(sectionHdrTable->sh_name, 23);
-        SULEV(sectionHdrTable->sh_type, SHT_SYMTAB);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_addralign, 0);
-        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_size, sizeof(Elf32_Sym));
-        SULEV(sectionHdrTable->sh_link, 5);
-        SULEV(sectionHdrTable->sh_info, 1);
-        SULEV(sectionHdrTable->sh_entsize, sizeof(Elf32_Sym));
-        sectionHdrTable++;
+        putElfSectionLE(sectionHdrTable++, 23, SHT_SYMTAB, 0, offset-innerBinOffset,
+                        sizeof(Elf32_Sym), 5, 1, 0, 0, sizeof(Elf32_Sym));
         ::memset(binary + offset, 0, sizeof(Elf32_Sym));
         offset += sizeof(Elf32_Sym);
         // .strtab
-        SULEV(sectionHdrTable->sh_name, 31);
-        SULEV(sectionHdrTable->sh_type, SHT_STRTAB);
-        SULEV(sectionHdrTable->sh_flags, 0);
-        SULEV(sectionHdrTable->sh_addr, 0);
-        SULEV(sectionHdrTable->sh_addralign, 0);
-        SULEV(sectionHdrTable->sh_link, 0);
-        SULEV(sectionHdrTable->sh_info, 0);
-        SULEV(sectionHdrTable->sh_offset, offset-innerBinOffset);
-        SULEV(sectionHdrTable->sh_size, 2);
-        SULEV(sectionHdrTable->sh_entsize, 0);
+        putElfSectionLE(sectionHdrTable, 31, SHT_STRTAB, 0, offset-innerBinOffset,
+                        2, 0, 0, 0);
         binary[offset++] = 0;
         binary[offset++] = 0;
         // update encodingEntry and Program headers
