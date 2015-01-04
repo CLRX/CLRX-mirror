@@ -64,6 +64,23 @@ static void putElfSymbolLE(ElfSym* symbol, size_t symName, size_t value, size_t 
     symbol->st_other = other;
 }
 
+static inline void putCALNoteLE(CALNoteHeader* noteHdr, uint32_t type, uint32_t descSize)
+{
+    SULEV(noteHdr->nameSize, 8);
+    SULEV(noteHdr->type, type);
+    SULEV(noteHdr->descSize, descSize);
+    ::memcpy(noteHdr->name, "ATI CAL", 8);
+}
+
+static inline void putCALUavEntry(CALUAVEntry* uavEntry, uint32_t uavId, uint32_t f1,
+          uint32_t f2, uint32_t type)
+{
+    SULEV(uavEntry->uavId, uavId);
+    SULEV(uavEntry->f1, f1);
+    SULEV(uavEntry->f2, f2);
+    SULEV(uavEntry->type, type);
+}
+
 static const uint32_t gpuDeviceCodeTable[14] =
 {
     0, // GPUDeviceType::UNDEFINED
@@ -901,10 +918,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     
     // CAL CALNOTE_INPUTS
     CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_INPUTS);
-    SULEV(noteHdr->descSize, 4*readOnlyImages);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_INPUTS, 4*readOnlyImages);
     offset += sizeof(CALNoteHeader);
     uint32_t* data32 = reinterpret_cast<uint32_t*>(binary + offset);
     for (cxuint k = 0; k < readOnlyImages; k++)
@@ -912,16 +926,10 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     offset += 4*readOnlyImages;
     // CALNOTE_OUTPUTS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_OUTPUTS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_OUTPUTS, 0);
     offset += sizeof(CALNoteHeader);
     // CALNOTE_UAV
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->type, CALNOTE_ATI_UAV);
-    SULEV(noteHdr->nameSize, 8);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
     offset += sizeof(CALNoteHeader);
     
     CALUAVEntry* startUavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
@@ -934,36 +942,19 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
             if (arg.argType >= KernelArgType::MIN_IMAGE &&
                 arg.argType <= KernelArgType::MAX_IMAGE &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-            { /* writeOnlyImages */
-                SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                SULEV(uavEntry->f1, 2);
-                SULEV(uavEntry->f2, imgUavDimTable[
-                    cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)]);
-                SULEV(uavEntry->type, 3);
-                uavEntry++;
-            }
+                /* writeOnlyImages */
+                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 2, imgUavDimTable[
+                        cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)], 3);
         }
         if (config.usePrintf)
-        {
-            SULEV(uavEntry->uavId, tempConfig.uavId);
-            SULEV(uavEntry->f1, 4);
-            SULEV(uavEntry->f2, 0);
-            SULEV(uavEntry->type, 5);
-            uavEntry++;
-        }
+            putCALUavEntry(uavEntry++, tempConfig.uavId, 4, 0, 5);
         // global buffers
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArg& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
-                arg.ptrSpace == KernelPtrSpace::GLOBAL)
-            {   // uavid
-                SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                SULEV(uavEntry->f1, 4);
-                SULEV(uavEntry->f2, 0);
-                SULEV(uavEntry->type, 5);
-                uavEntry++;
-            }
+                arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
+                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 4, 0, 5);
         }
     }
     else
@@ -974,74 +965,42 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
             if (arg.argType >= KernelArgType::MIN_IMAGE &&
                 arg.argType <= KernelArgType::MAX_IMAGE &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
-            {   // write_only images
-                SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                SULEV(uavEntry->f1, 2);
-                SULEV(uavEntry->f2, 2);
-                SULEV(uavEntry->type, 5);
-                uavEntry++;
-            }
+                // write_only images
+                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 2, 2, 5);
             else if (arg.argType == KernelArgType::POINTER &&
-                arg.ptrSpace == KernelPtrSpace::GLOBAL)
-            {   // uavid
-                SULEV(uavEntry->uavId, tempConfig.argResIds[k]);
-                SULEV(uavEntry->f1, 4);
-                SULEV(uavEntry->f2, 0);
-                SULEV(uavEntry->type, 5);
-                uavEntry++;
-            }
+                arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
+                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 4, 0, 5);
         }
         
         if (config.usePrintf)
-        {
-            SULEV(uavEntry->uavId, tempConfig.uavId);
-            SULEV(uavEntry->f1, 0);
-            SULEV(uavEntry->f2, 0);
-            SULEV(uavEntry->type, 5);
-            uavEntry++;
-        }
+            putCALUavEntry(uavEntry++, tempConfig.uavId, 0, 0, 5);
     }
     offset += 16*(uavEntry-startUavEntry);
-    SULEV(noteHdr->descSize, 16*(uavEntry-startUavEntry));
+    putCALNoteLE(noteHdr, CALNOTE_ATI_UAV, 16*(uavEntry-startUavEntry));
     
     // CALNOTE_CONDOUT
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_CONDOUT);
-    SULEV(noteHdr->descSize, 4);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_CONDOUT, 4);
     offset += sizeof(CALNoteHeader);
     data32 = reinterpret_cast<uint32_t*>(binary + offset);
     SULEV(*data32, config.condOut);
     offset += 4;
     // CALNOTE_FLOAT32CONSTS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_FLOAT32CONSTS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_FLOAT32CONSTS, 0);
     offset += sizeof(CALNoteHeader);
     // CALNOTE_INT32CONSTS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_INT32CONSTS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_INT32CONSTS, 0);
     offset += sizeof(CALNoteHeader);
     // CALNOTE_BOOL32CONSTS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_BOOL32CONSTS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_BOOL32CONSTS, 0);
     offset += sizeof(CALNoteHeader);
     
     // CALNOTE_EARLYEXIT
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_EARLYEXIT);
-    SULEV(noteHdr->descSize, 4);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_EARLYEXIT, 4);
     offset += sizeof(CALNoteHeader);
     data32 = reinterpret_cast<uint32_t*>(binary + offset);
     SULEV(*data32, config.earlyExit);
@@ -1049,18 +1008,12 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     
     // CALNOTE_GLOBAL_BUFFERS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_GLOBAL_BUFFERS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_GLOBAL_BUFFERS, 0);
     offset += sizeof(CALNoteHeader);
     
     // CALNOTE_CONSTANT_BUFFERS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_CONSTANT_BUFFERS);
-    SULEV(noteHdr->descSize, 8*constBuffersNum);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_CONSTANT_BUFFERS, 8*constBuffersNum);
     offset += sizeof(CALNoteHeader);
     data32 = reinterpret_cast<uint32_t*>(binary + offset);
     
@@ -1120,10 +1073,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     
     // CALNOTE_INPUT_SAMPLERS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_INPUT_SAMPLERS);
-    SULEV(noteHdr->descSize, 8*samplersNum);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_INPUT_SAMPLERS, 8*samplersNum);
     offset += sizeof(CALNoteHeader);
     
     CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
@@ -1143,10 +1093,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     
     // CALNOTE_SCRATCH_BUFFERS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_SCRATCH_BUFFERS);
-    SULEV(noteHdr->descSize, 4);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_SCRATCH_BUFFERS, 4);
     offset += sizeof(CALNoteHeader);
     data32 = reinterpret_cast<uint32_t*>(binary + offset);
     SULEV(*data32, config.scratchBufferSize>>2);
@@ -1154,17 +1101,11 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     
     // CALNOTE_PERSISTENT_BUFFERS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_PERSISTENT_BUFFERS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_PERSISTENT_BUFFERS, 0);
     offset += sizeof(CALNoteHeader);
     
     /* PROGRAM_INFO */
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_PROGINFO);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
     offset += sizeof(CALNoteHeader);
     
     CALProgramInfoEntry* progInfo = reinterpret_cast<CALProgramInfoEntry*>(
@@ -1282,22 +1223,16 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     SULEV(progInfo[k].address, 0x80000082U);
     SULEV(progInfo[k++].value, ((curPgmRSRC2>>15)&0x1ff)<<8);
     offset += 8*k;
-    SULEV(noteHdr->descSize, 8*k);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_PROGINFO, 8*k);
     
     // CAL_SUBCONSTANT_BUFFERS
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_SUB_CONSTANT_BUFFERS);
-    SULEV(noteHdr->descSize, 0);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_SUB_CONSTANT_BUFFERS, 0);
     offset += sizeof(CALNoteHeader);
     
     // CAL_UAV_MAILBOX_SIZE
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_UAV_MAILBOX_SIZE);
-    SULEV(noteHdr->descSize, 4);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_UAV_MAILBOX_SIZE, 4);
     offset += sizeof(CALNoteHeader);
     data32 = reinterpret_cast<uint32_t*>(binary + offset);
     SULEV(*data32, 0);
@@ -1305,10 +1240,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     
     // CAL_UAV_OP_MASK
     noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, CALNOTE_ATI_UAV_OP_MASK);
-    SULEV(noteHdr->descSize, 128);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    putCALNoteLE(noteHdr, CALNOTE_ATI_UAV_OP_MASK, 128);
     offset += sizeof(CALNoteHeader);
     data32 = reinterpret_cast<uint32_t*>(binary + offset);
     for (cxuint k = 0; k < 32; k++)
