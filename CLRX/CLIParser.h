@@ -228,6 +228,16 @@ public:
         return static_cast<T>(optionEntries[optionId].v);
     }
     
+    /// get option argument if it provided
+    template<typename T>
+    T getShortOptArg(char shortName) const
+    { return getOptArg<T>(findOption(shortName)); }
+    
+    /// get option argument if it provided
+    template<typename T>
+    T getLongOptArg(const char* longName) const
+    { return getOptArg<T>(findOption(longName)); }
+    
     /// get option argument array  if it provided
     /**
      * \param optionId id of option
@@ -242,6 +252,24 @@ public:
         return static_cast<const T*>(optEntry.v);
     }
     
+    /// get option argument array  if it provided
+    /**
+     * \param shortName short name of option
+     * \param length length of array
+     */
+    template<typename T>
+    const T* getShortOptArgArray(char shortName, size_t& length) const
+    { return getOptArgArray<T>(findOption(shortName), length); }
+    
+    /// get option argument array  if it provided
+    /**
+     * \param longName long name of option
+     * \param length length of array
+     */
+    template<typename T>
+    const T* getLongOptArgArray(const char* longName, size_t& length) const
+    { return getOptArgArray<T>(findOption(longName), length); }
+    
     /// returns true when argument provided for specified option
     bool hasOptArg(cxuint optionId) const
     {
@@ -250,6 +278,14 @@ public:
         return optionEntries[optionId].isArg;
     }
     
+    /// returns true when argument provided for specified option
+    bool hasShortOptArg(char shortName) const
+    { return hasOptArg(findOption(shortName)); }
+    
+    /// returns true when argument provided for specified option
+    bool hasLongOptArg(const char* longName) const
+    { return hasOptArg(findOption(longName)); }
+    
     /// returns true if option included in command line
     bool hasOption(cxuint optionId) const
     { 
@@ -257,6 +293,14 @@ public:
             throw CLIException("No such command line option!");
         return optionEntries[optionId].isSet;
     }
+    
+    /// returns true if option included in command line
+    bool hasShortOption(char shortName) const
+    { return hasShortOption(findOption(shortName)); }
+    
+    /// returns true if option included in command line
+    bool hasLongOption(const char* longName) const
+    { return hasShortOption(findOption(longName)); }
     
     /// get left over arguments number
     cxuint getArgsNum() const

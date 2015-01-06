@@ -143,7 +143,7 @@ public:
     { return binaryCode!=nullptr; }
     
     /// returns true if object is uninitialized
-    bool operator !() const
+    bool operator!() const
     { return binaryCode==nullptr; }
     
     const cxbyte* getBinaryCode() const
