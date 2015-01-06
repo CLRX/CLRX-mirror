@@ -160,7 +160,7 @@ enum : uint32_t
     CALNOTE_ATI_MAXTYPE = CALNOTE_ATI_UAV_OP_MASK
 };
 
-/// CALEncodingEntry
+/// CALEncodingEntry. There are not copied (ULEV must be used)
 struct CALEncodingEntry
 {
     uint32_t machine;   ///< machine type
@@ -170,7 +170,7 @@ struct CALEncodingEntry
     uint32_t flags;     ///< flags
 };
 
-/// ATI CAL Note header
+/// ATI CAL Note header. There are not copied (ULEV must be used)
 struct CALNoteHeader
 {
     uint32_t nameSize;  ///< name size (must be 8)
@@ -179,20 +179,21 @@ struct CALNoteHeader
     char name[8];   ///< name string
 };
 
-/// ATI CAL note
+/// ATI CAL note. There are not copied (ULEV must be used)
 struct CALNote
 {
     CALNoteHeader* header;  ///< header of CAL note
     cxbyte* data;   ///< data of CAL note
 };
 
-/// CAL program info entry
+/// CAL program info entry. There are not copied (ULEV must be used)
 struct CALProgramInfoEntry
 {
     uint32_t address;   ///< address of value
     uint32_t value;     ///< value to set
 };
 
+/// There are not copied (ULEV must be used)
 struct CALUAVEntry
 {
     uint32_t uavId;
@@ -200,18 +201,21 @@ struct CALUAVEntry
     uint32_t type;
 };
 
+/// There are not copied (ULEV must be used)
 struct CALDataSegmentEntry
 {
     uint32_t offset;
     uint32_t size;
 };
 
+/// There are not copied (ULEV must be used)
 struct CALConstantBufferMask
 {
     uint32_t index;
     uint32_t size;
 };
 
+/// There are not copied (ULEV must be used)
 struct CALSamplerMapEntry
 {
     uint32_t input;
@@ -219,6 +223,9 @@ struct CALSamplerMapEntry
 };
 
 /// kernel informations
+/** all fields and all KernelArgInfo datas is in host endian and is aligned. This object
+ * is created from binary data available in ELF binaries
+ */
 struct KernelInfo
 {
     std::string kernelName; ///< kernel name

@@ -37,11 +37,14 @@ namespace CLRX
 {
 
 enum : cxuint {
-    GALLIUM_KERNELSMAP = 0x10,
+    GALLIUM_CREATE_KERNELMAP = 0x10,
     GALLIUM_INNER_CREATE_SECTIONMAP = 0x100, ///< create map of sections for inner binaries
     GALLIUM_INNER_CREATE_SYMBOLMAP = 0x200,  ///< create map of kernels for inner binaries
     /** create map of dynamic kernels for inner binaries */
     GALLIUM_INNER_CREATE_DYNSYMMAP = 0x400,
+    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x400,
+    
+    GALLIUM_ELF_CREATE_PROGINFOMAP = 0x10,
     
     GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xff0, ///< all Gallium binaries flalgs
     GALLIUM_INNER_SHIFT = 8 ///< shift for convert inner binary flags into elf binary flags
@@ -58,7 +61,8 @@ enum class GalliumArgType: cxbyte
     IMAGE2D_WRONLY,
     IMAGE3D_RDONLY,
     IMAGE3D_WRONLY,
-    SAMPLER
+    SAMPLER,
+    MAX_VALUE = SAMPLER
 };
 
 /// Gallium semantic field type
@@ -66,7 +70,8 @@ enum class GalliumArgSemantic: cxbyte
 {
     GENERAL = 0,
     GRID_DIMENSION,
-    GRID_OFFSET
+    GRID_OFFSET,
+    MAX_VALUE = GRID_OFFSET
 };
 
 /// kernel program info entry for Gallium binaries
@@ -74,13 +79,6 @@ struct GalliumProgInfoEntry
 {
     uint32_t address;   ///< address
     uint32_t value;     ///< value
-};
-
-/// kernel program info for Gallium binaries
-struct GalliumProgramInfo
-{
-    cxuint entriesNum;  /// number of entries
-    GalliumProgInfoEntry entries[16];
 };
 
 /// kernel argument (Gallium binaries)
@@ -97,11 +95,11 @@ struct GalliumArg
 /// kernel info structure (Gallium binaries)
 struct GalliumKernel
 {
-    std::string name;   ///< kernel's name
-    uint32_t symId; ///< symbol id
+    std::string kernelName;   ///< kernel's name
+    uint32_t sectionId; ///< section id
     uint32_t offset;    ///< offset in binary
     cxuint argsNum;     ///< arguments number
-    GalliumArg* args;   ///< arguments pointer
+    GalliumArg* argInfos;   ///< arguments pointer
     
     GalliumKernel();
     GalliumKernel(const GalliumKernel& cp);
@@ -110,6 +108,8 @@ struct GalliumKernel
     
     GalliumKernel& operator=(const GalliumKernel& cp);
     GalliumKernel& operator=(GalliumKernel&& cp) noexcept;
+    
+    void allocateArgs(cxuint argsNum);
 };
 
 enum class GalliumSectionType: cxbyte
@@ -135,21 +135,49 @@ struct GalliumSection
  * Please use this function whenever you want to get or set word in ELF binary,
  * because ELF binaries can be unaligned in memory (as inner binaries).
  */
+/// Gallium ELF binary
+/** ULEV function is required to access programInfoEntry fields */
 class GalliumElfBinary: public ElfBinary32
 {
 private:
-    std::vector<GalliumProgramInfo> programInfos;
+    typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
+            CLRX::CStringEqual> ProgInfoEntryIndexMap;
+private:
+    size_t progInfosNum;
+    GalliumProgInfoEntry* progInfoEntries;
+    ProgInfoEntryIndexMap progInfoEntryMap;
 public:
+    GalliumElfBinary();
     GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
-    ~GalliumElfBinary();
+    ~GalliumElfBinary() = default;
     
+    bool hasProgInfoMap() const
+    { return (creationFlags & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0; }
+    
+    /// returns program infos number
     size_t getProgramInfosNum() const
-    { return programInfos.size(); }
+    { return progInfosNum; }
     
-    const GalliumProgramInfo& getProgramInfo(uint32_t index) const
-    { return programInfos[index]; }
-    GalliumProgramInfo& getProgramInfo(uint32_t index)
-    { return programInfos[index]; }
+    /// returns number of program info entries for program info
+    size_t getProgramInfoEntriesNum(uint32_t index) const;
+    
+    /// returns index for programinfo entries index for specified kernel name
+    uint32_t getProgramInfoEntryIndex(const char* name) const;
+    
+    /// returns program info entries for specified kernel name
+    const GalliumProgInfoEntry* getProgramInfo(const char* name) const
+    { return reinterpret_cast<GalliumProgInfoEntry*>(progInfoEntries) +
+        getProgramInfoEntryIndex(name); }
+    
+    /// returns program info entries for specified kernel name
+    GalliumProgInfoEntry* getProgramInfo(const char* name)
+    { return reinterpret_cast<GalliumProgInfoEntry*>(progInfoEntries) +
+        getProgramInfoEntryIndex(name); }
+    
+    /// returns program info entries for specified kernel index
+    const GalliumProgInfoEntry* getProgramInfo(uint32_t index) const;
+    /// returns program info entries for specified kernel index
+    GalliumProgInfoEntry* getProgramInfo(uint32_t index);
 };
 
 /** GalliumBinary object. This object converts to host-endian fields and
@@ -162,10 +190,10 @@ private:
 private:
     size_t binaryCodeSize;
     cxbyte* binaryCode;
+    cxuint creationFlags;
     
     std::vector<GalliumKernel> kernels;
     std::vector<GalliumSection> sections;
-    cxuint creationFlags;
     
     GalliumElfBinary elfBinary;
 public:
@@ -178,7 +206,7 @@ public:
     
     /// returns true if object has a symbol's index map
     bool hasSymbolMap() const
-    { return (creationFlags & GALLIUM_KERNELSMAP) != 0; }
+    { return (creationFlags & GALLIUM_CREATE_KERNELMAP) != 0; }
     
     /// get size of binaries
     size_t getSize() const
