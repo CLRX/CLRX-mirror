@@ -411,7 +411,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         {   /* compute uavPrivate */
             bool hasStructures = false;
             uint32_t amountOfArgs = 0;
-            for (const AmdKernelArg& arg: config.args)
+            for (const AmdKernelArgInput& arg: config.args)
             {
                 if (arg.argType == KernelArgType::STRUCTURE ||
                     arg.argType == KernelArgType::COUNTER32)
@@ -449,7 +449,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             else
             {
                 bool hasPointer = false;
-                for (const AmdKernelArg& arg: config.args)
+                for (const AmdKernelArgInput& arg: config.args)
                     if (arg.argType == KernelArgType::POINTER &&
                         (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
                          arg.ptrSpace == KernelPtrSpace::GLOBAL))
@@ -497,7 +497,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         
         for (cxuint k = 0; k < config.args.size(); k++)
         {
-            const AmdKernelArg& arg = config.args[k];
+            const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
                  (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)) &&
@@ -556,7 +556,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         
         for (cxuint k = 0; k < config.args.size(); k++)
         {
-            const AmdKernelArg& arg = config.args[k];
+            const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
                  (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)) &&
@@ -661,7 +661,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     size_t argOffset = 0;
     for (cxuint k = 0; k < config.args.size(); k++)
     {
-        const AmdKernelArg& arg = config.args[k];
+        const AmdKernelArgInput& arg = config.args[k];
         if (arg.argType == KernelArgType::STRUCTURE)
         {
             metadata += ";value:";
@@ -818,7 +818,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     }
     cxuint sampId = 0;
     /* kernel argument samplers */
-    for (const AmdKernelArg& arg: config.args)
+    for (const AmdKernelArgInput& arg: config.args)
         if (arg.argType == KernelArgType::SAMPLER)
         {
             metadata += ";sampler:";
@@ -859,7 +859,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     metadata += '\n';
     for (cxuint k = 0; k < config.args.size(); k++)
     {
-        const AmdKernelArg& arg = config.args[k];
+        const AmdKernelArgInput& arg = config.args[k];
         metadata += ";reflection:";
         itocstrCStyle(k, numBuf, 21);
         metadata += numBuf;
@@ -890,7 +890,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
             (input->globalData != nullptr));
     cxuint woUsedImagesMask = 0;
-    for (const AmdKernelArg& arg: config.args)
+    for (const AmdKernelArgInput& arg: config.args)
     {
         if (arg.argType >= KernelArgType::MIN_IMAGE &&
             arg.argType <= KernelArgType::MAX_IMAGE)
@@ -938,7 +938,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     {   // for old drivers
         for (cxuint k = 0; k < config.args.size(); k++)
         {
-            const AmdKernelArg& arg = config.args[k];
+            const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType >= KernelArgType::MIN_IMAGE &&
                 arg.argType <= KernelArgType::MAX_IMAGE &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
@@ -951,7 +951,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
         // global buffers
         for (cxuint k = 0; k < config.args.size(); k++)
         {
-            const AmdKernelArg& arg = config.args[k];
+            const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
                 putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 4, 0, 5);
@@ -961,7 +961,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     {   /* in argument order */
         for (cxuint k = 0; k < config.args.size(); k++)
         {
-            const AmdKernelArg& arg = config.args[k];
+            const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType >= KernelArgType::MIN_IMAGE &&
                 arg.argType <= KernelArgType::MAX_IMAGE &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
@@ -1025,7 +1025,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     {   /* for driver 12.10 */
         for (cxuint k = config.args.size(); k > 0; k--)
         {
-            const AmdKernelArg& arg = config.args[k-1];
+            const AmdKernelArgInput& arg = config.args[k-1];
             if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::CONSTANT)
             {
@@ -1055,7 +1055,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
         cbufMask += 2;
         for (cxuint k = 0; k < config.args.size(); k++)
         {
-            const AmdKernelArg& arg = config.args[k];
+            const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::CONSTANT)
             {
@@ -1188,7 +1188,7 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     uavMask[0] = woUsedImagesMask;
     for (cxuint l = 0; l < config.args.size(); l++)
     {
-        const AmdKernelArg& arg = config.args[l];
+        const AmdKernelArgInput& arg = config.args[l];
         if (arg.used && arg.argType == KernelArgType::POINTER &&
             (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
              (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
@@ -1395,7 +1395,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             cxuint argSamplersNum = 0;
             cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
                     (input->globalData != nullptr));
-            for (const AmdKernelArg& arg: config.args)
+            for (const AmdKernelArgInput& arg: config.args)
             {
                 if (arg.argType >= KernelArgType::MIN_IMAGE &&
                     arg.argType <= KernelArgType::MAX_IMAGE)

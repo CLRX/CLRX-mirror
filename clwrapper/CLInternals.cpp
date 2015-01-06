@@ -1313,7 +1313,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 std::vector<bool> kernelFlags(kernelInfo.argsNum<<1);
                 for (cxuint k = 0; k < kernelInfo.argsNum; k++)
                 {
-                    const KernelArg& karg = kernelInfo.argInfos[k];
+                    const AmdKernelArg& karg = kernelInfo.argInfos[k];
                     // if mem object (image or
                     kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
                             (karg.ptrSpace == KernelPtrSpace::GLOBAL ||

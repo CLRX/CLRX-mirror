@@ -165,7 +165,7 @@ KernelInfo::KernelInfo(const KernelInfo& cp)
 {
     kernelName = cp.kernelName;
     argsNum = cp.argsNum;
-    argInfos = new KernelArg[argsNum];
+    argInfos = new AmdKernelArg[argsNum];
     std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
 }
 
@@ -184,7 +184,7 @@ KernelInfo& KernelInfo::operator=(const KernelInfo& cp)
     argInfos = nullptr;
     kernelName = cp.kernelName;
     argsNum = cp.argsNum;
-    argInfos = new KernelArg[argsNum];
+    argInfos = new AmdKernelArg[argsNum];
     std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
     return *this;
 }
@@ -206,14 +206,14 @@ void KernelInfo::allocateArgs(cxuint argsNum)
     delete[] argInfos;
     argInfos = nullptr;
     this->argsNum = argsNum;
-    argInfos = new KernelArg[argsNum];
+    argInfos = new AmdKernelArg[argsNum];
 }
 
 void KernelInfo::reallocateArgs(cxuint newArgsNum)
 {
     if (newArgsNum == argsNum)
         return; // do nothing
-    KernelArg* newArgInfos = new KernelArg[newArgsNum];
+    AmdKernelArg* newArgInfos = new AmdKernelArg[newArgsNum];
     if (argInfos != nullptr)
         std::copy(argInfos, argInfos + std::min(newArgsNum, argsNum), newArgInfos);
     delete[] argInfos;
@@ -521,7 +521,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 ai++;
             const typename Types::KernelArgSym& argTypeSym = argDescTable[ai];
             
-            KernelArg& karg = kernelInfo.argInfos[realArgsNum++];
+            AmdKernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
             const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
             if (!foundInStaticSymbols)
@@ -1073,7 +1073,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
     
     for (const auto& e: initKernelArgs)
     {   /* initialize kernel arguments before set argument type from reflections */
-        KernelArg& karg = kernelInfo.argInfos[e.second.index];
+        AmdKernelArg& karg = kernelInfo.argInfos[e.second.index];
         karg.argType = e.second.argType;
         karg.ptrSpace = e.second.ptrSpace;
         karg.ptrAccess = e.second.ptrAccess;
@@ -1120,7 +1120,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 throw ParseException(lineNo, "Argument index out of range");
             pos = tokPos+1;
             
-            KernelArg& argInfo = kernelInfo.argInfos[argIndex];
+            AmdKernelArg& argInfo = kernelInfo.argInfos[argIndex];
             argInfo.typeName = stringFromCStringDelim(
                 kernelDesc+pos, metadataSize-pos, '\n');
             

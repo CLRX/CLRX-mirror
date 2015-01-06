@@ -19,7 +19,7 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-SET(LIBAMDBINSRC AmdBinaries.cpp AmdBinGen.cpp ElfBinaries.cpp)
+SET(LIBAMDBINSRC AmdBinaries.cpp AmdBinGen.cpp ElfBinaries.cpp GalliumBinaries.cpp)
 
 SET(LINK_LIBRARIES CLRXUtils)
 

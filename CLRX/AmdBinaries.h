@@ -106,7 +106,7 @@ enum : uint8_t
 };
 
 /// kernel argument info structure
-struct KernelArg
+struct AmdKernelArg
 {
     KernelArgType argType;  ///< argument type
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
@@ -223,7 +223,7 @@ struct KernelInfo
 {
     std::string kernelName; ///< kernel name
     cxuint argsNum; ///< number of arguments
-    KernelArg* argInfos;    ///< array of argument informations
+    AmdKernelArg* argInfos;    ///< array of argument informations
     
     KernelInfo();
     KernelInfo(const KernelInfo& cp);

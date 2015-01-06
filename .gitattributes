@@ -6,6 +6,7 @@ CLRX/CLIParser.h -text
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
 CLRX/ElfBinaries.h -text
+CLRX/GalliumBinaries.h -text
 CLRX/MemAccess.h -text
 CLRX/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
@@ -21,6 +22,7 @@ amdbin/AmdBinGen.cpp -text
 amdbin/AmdBinaries.cpp -text
 amdbin/CMakeLists.txt -text svneol=unset#text/plain
 amdbin/ElfBinaries.cpp -text
+amdbin/GalliumBinaries.cpp -text
 clwrapper/CLFunctions1.cpp -text
 clwrapper/CLFunctions2.cpp -text
 clwrapper/CLFunctions3.cpp -text
