@@ -19,10 +19,10 @@
 
 #include <CLRX/Config.h>
 #include <elf.h>
-#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <CLRX/Utilities.h>
 #include <CLRX/MemAccess.h>
 #include <CLRX/GalliumBinaries.h>

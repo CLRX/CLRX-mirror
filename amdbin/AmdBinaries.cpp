@@ -21,7 +21,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <elf.h>
-#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <unordered_map>
