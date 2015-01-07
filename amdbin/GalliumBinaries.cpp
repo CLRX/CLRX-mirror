@@ -159,7 +159,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         
         for (uint32_t j = 0; j < argsNum; j++)
         {
-            GalliumArg& argInfo = kernel.argInfos[j];
+            GalliumArgInfo& argInfo = kernel.argInfos[j];
             const cxuint type = ULEV(data32[0]);
             if (type > cxuint(GalliumArgType::MAX_VALUE))
                 throw Exception("Wrong type of kernel argument");
@@ -167,7 +167,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             argInfo.size = ULEV(data32[1]);
             argInfo.targetSize = ULEV(data32[2]);
             argInfo.targetAlign = ULEV(data32[3]);
-            argInfo.signExtented = ULEV(data32[4])!=0;
+            argInfo.signExtended = ULEV(data32[4])!=0;
             const cxuint semType = ULEV(data32[5]);
             if (type > cxuint(GalliumArgSemantic::MAX_VALUE))
                 throw Exception("Wrong semantic of kernel argument");
@@ -227,7 +227,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             const Elf32_Sym& sym = elfBinary.getSymbol(symIndex);
             const char* symName = elfBinary.getSymbolName(symIndex);
             if (*symName != 0 && ::strcmp(symName, "EndOfTextLabel") != 0 &&
-                ULEV(sym.st_shndx) != textIndex)
+                ULEV(sym.st_shndx) == textIndex)
             {
                 if (kernel.kernelName != symName)
                     throw Exception("Kernel symbols out of order!");
@@ -238,6 +238,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         }
         if (symIndex >= symsNum)
             throw Exception("Number of kernels in ElfBinary and MainBinary doesn't match");
+        symIndex++;
     }
 }
 

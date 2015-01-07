@@ -82,10 +82,10 @@ struct GalliumProgInfoEntry
 };
 
 /// kernel argument (Gallium binaries)
-struct GalliumArg
+struct GalliumArgInfo
 {
     GalliumArgType type;    ///< type of argument
-    bool signExtented;  ///< is signed extended
+    bool signExtended;  ///< is signed extended
     GalliumArgSemantic semantic;    ///< semantic of array
     uint32_t size;  ///< size of argument
     uint32_t targetSize;    ///< target size
@@ -98,7 +98,7 @@ struct GalliumKernel
     std::string kernelName;   ///< kernel's name
     uint32_t sectionId; ///< section id
     uint32_t offset;    ///< offset in ElfBinary
-    std::vector<GalliumArg> argInfos;   ///< arguments
+    std::vector<GalliumArgInfo> argInfos;   ///< arguments
 };
 
 enum class GalliumSectionType: cxbyte
@@ -108,7 +108,7 @@ enum class GalliumSectionType: cxbyte
     DATA_GLOBAL,
     DATA_LOCAL,
     DATA_PRIVATE,
-    MAX_VALUE
+    MAX_VALUE = DATA_PRIVATE
 };
 
 /// Gallium binarie's Section
