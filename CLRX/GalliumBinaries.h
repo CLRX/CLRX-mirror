@@ -42,11 +42,11 @@ enum : cxuint {
     GALLIUM_INNER_CREATE_SYMBOLMAP = 0x200,  ///< create map of kernels for inner binaries
     /** create map of dynamic kernels for inner binaries */
     GALLIUM_INNER_CREATE_DYNSYMMAP = 0x400,
-    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x400,
+    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x1000,
     
     GALLIUM_ELF_CREATE_PROGINFOMAP = 0x10,
     
-    GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xff0, ///< all Gallium binaries flalgs
+    GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all Gallium binaries flalgs
     GALLIUM_INNER_SHIFT = 8 ///< shift for convert inner binary flags into elf binary flags
 };
 
