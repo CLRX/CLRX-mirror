@@ -122,6 +122,8 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         throw Exception("GalliumBinary is too small!!!");
     uint32_t* data32 = reinterpret_cast<uint32_t*>(binaryCode);
     const uint32_t kernelsNum = ULEV(*data32);
+    if (binaryCodeSize < uint64_t(kernelsNum)*16U)
+        throw Exception("Kernels number is too big!");
     kernels.resize(kernelsNum);
     cxbyte* data = binaryCode + 4;
     // parse kernels symbol info and their arguments
@@ -181,10 +183,15 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         throw Exception("GalliumBinary is too small!!!");
     
     const uint32_t sectionsNum = ULEV(data32[0]);
+    if (binaryCodeSize-(data-binaryCode) < uint64_t(sectionsNum)*20U)
+        throw Exception("Sections number is too big!");
     sections.resize(sectionsNum);
     // parse sections and their content
     data32++;
     data += 4;
+    
+    uint32_t elfSectionId;
+    
     for (GalliumSection& section: sections)
     {
         if (usumGt(uint32_t(data-binaryCode), 20U, binaryCodeSize))
@@ -208,14 +215,20 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         section.offset = data-binaryCode;
         
         if (!elfBinary && section.type == GalliumSectionType::TEXT)
+        {
+            elfSectionId = section.sectionId;
             elfBinary = GalliumElfBinary(section.size, data,
                              creationFlags>>GALLIUM_INNER_SHIFT);
+        }
         data += section.size;
         data32 = reinterpret_cast<uint32_t*>(data);
     }
     
     if (!elfBinary)
         throw Exception("Gallium Elf binary not found!");
+    for (const GalliumKernel& kernel: kernels)
+        if (kernel.sectionId != elfSectionId)
+            throw Exception("Kernel not in text section!");
     // verify kernel offsets
     cxuint symIndex = 0;
     const cxuint symsNum = elfBinary.getSymbolsNum();
