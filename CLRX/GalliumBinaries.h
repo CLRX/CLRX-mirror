@@ -97,7 +97,7 @@ struct GalliumKernel
 {
     std::string kernelName;   ///< kernel's name
     uint32_t sectionId; ///< section id
-    uint32_t offset;    ///< offset in binary
+    uint32_t offset;    ///< offset in ElfBinary
     std::vector<GalliumArg> argInfos;   ///< arguments
 };
 
@@ -107,7 +107,8 @@ enum class GalliumSectionType: cxbyte
     DATA_CONSTANT,
     DATA_GLOBAL,
     DATA_LOCAL,
-    DATA_PRIVATE
+    DATA_PRIVATE,
+    MAX_VALUE
 };
 
 /// Gallium binarie's Section
@@ -115,7 +116,7 @@ struct GalliumSection
 {
     uint32_t sectionId; ///< section id
     GalliumSectionType type;    ///< type of section
-    uint32_t offset;    ///< section offset
+    uint32_t offset;    ///< offset in binary
     uint32_t size;      ///< size of section
 };
 
@@ -175,7 +176,7 @@ class GalliumBinary
 {
 private:
     /// symbol index map
-    typedef std::unordered_multimap<std::string, size_t> SymbolIndexMap;
+    typedef std::unordered_multimap<std::string, size_t> KernelIndexMap;
 private:
     size_t binaryCodeSize;
     cxbyte* binaryCode;
@@ -183,6 +184,8 @@ private:
     
     std::vector<GalliumKernel> kernels;
     std::vector<GalliumSection> sections;
+    
+    KernelIndexMap kernelIndexMap;
     
     GalliumElfBinary elfBinary;
 public:
@@ -194,7 +197,7 @@ public:
     { return creationFlags; }
     
     /// returns true if object has a symbol's index map
-    bool hasSymbolMap() const
+    bool hasKernelMap() const
     { return (creationFlags & GALLIUM_CREATE_KERNELMAP) != 0; }
     
     /// get size of binaries
@@ -250,7 +253,7 @@ public:
     { return kernels.size(); }
     
     /// returns kernel index
-    uint32_t& getKernelIndex(const char* name) const;
+    uint32_t getKernelIndex(const char* name) const;
     
     /// get kernel by index
     const GalliumKernel& getKernel(uint32_t index) const
