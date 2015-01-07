@@ -148,78 +148,7 @@ static const KernelArgType gpuArgTypeTable[] =
     KernelArgType::DOUBLE16
 };
 
-
 static const uint32_t elfMagicValue = 0x464c457fU;
-
-/* kernel info class */
-
-KernelInfo::KernelInfo() : argsNum(0), argInfos(nullptr)
-{ }
-
-KernelInfo::~KernelInfo()
-{
-    delete[] argInfos;
-}
-
-KernelInfo::KernelInfo(const KernelInfo& cp)
-{
-    kernelName = cp.kernelName;
-    argsNum = cp.argsNum;
-    argInfos = new AmdKernelArg[argsNum];
-    std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
-}
-
-KernelInfo::KernelInfo(KernelInfo&& cp) noexcept
-{
-    kernelName = std::move(cp.kernelName);
-    argsNum = cp.argsNum;
-    argInfos = cp.argInfos;
-    cp.argsNum = 0;
-    cp.argInfos = nullptr; // reset pointer
-}
-
-KernelInfo& KernelInfo::operator=(const KernelInfo& cp)
-{
-    delete[] argInfos;
-    argInfos = nullptr;
-    kernelName = cp.kernelName;
-    argsNum = cp.argsNum;
-    argInfos = new AmdKernelArg[argsNum];
-    std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
-    return *this;
-}
-
-KernelInfo& KernelInfo::operator=(KernelInfo&& cp) noexcept
-{
-    delete[] argInfos;
-    argInfos = nullptr;
-    kernelName = std::move(cp.kernelName);
-    argsNum = cp.argsNum;
-    argInfos = cp.argInfos;
-    cp.argsNum = 0;
-    cp.argInfos = nullptr; // reset pointer
-    return *this;
-}
-
-void KernelInfo::allocateArgs(cxuint argsNum)
-{
-    delete[] argInfos;
-    argInfos = nullptr;
-    this->argsNum = argsNum;
-    argInfos = new AmdKernelArg[argsNum];
-}
-
-void KernelInfo::reallocateArgs(cxuint newArgsNum)
-{
-    if (newArgsNum == argsNum)
-        return; // do nothing
-    AmdKernelArg* newArgInfos = new AmdKernelArg[newArgsNum];
-    if (argInfos != nullptr)
-        std::copy(argInfos, argInfos + std::min(newArgsNum, argsNum), newArgInfos);
-    delete[] argInfos;
-    argInfos = newArgInfos;
-    argsNum = newArgsNum;
-}
 
 /* determine unfinished strings region in string table for checking further consistency */
 static size_t unfinishedRegionOfStringTable(const cxbyte* table, size_t size)
@@ -501,7 +430,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 elf.getSymbolName(i);
         const size_t len = ::strlen(symName);
         kernelInfo.kernelName.assign(symName+9, len-18);
-        kernelInfo.allocateArgs(argDescsNum>>1);
+        kernelInfo.argInfos.resize(argDescsNum>>1);
         
         /* get argument info */
         const typename Types::KernelArgSym* argDescTable =
@@ -586,7 +515,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             karg.ptrSpace = static_cast<KernelPtrSpace>(ULEV(argNameSym.ptrType));
             karg.ptrAccess = ULEV(argNameSym.ptrAccess);
         }
-        kernelInfo.reallocateArgs(realArgsNum);
+        kernelInfo.argInfos.resize(realArgsNum);
     }
     }
     catch(...) // if exception happens
@@ -1069,7 +998,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
     }
     
     kernelInfo.kernelName.assign(symName+9, ::strlen(symName)-18);
-    kernelInfo.allocateArgs(argIndex);
+    kernelInfo.argInfos.resize(argIndex);
     
     for (const auto& e: initKernelArgs)
     {   /* initialize kernel arguments before set argument type from reflections */
@@ -1116,7 +1045,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             
             if (outEnd != kernelDesc + tokPos)
                 throw ParseException(lineNo, "Garbages after integer");
-            if (argIndex >= kernelInfo.argsNum)
+            if (argIndex >= kernelInfo.argInfos.size())
                 throw ParseException(lineNo, "Argument index out of range");
             pos = tokPos+1;
             

@@ -1310,8 +1310,8 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             for (size_t i = 0; i < kernelsNum; i++)
             {
                 const KernelInfo& kernelInfo = kernelInfos[i];
-                std::vector<bool> kernelFlags(kernelInfo.argsNum<<1);
-                for (cxuint k = 0; k < kernelInfo.argsNum; k++)
+                std::vector<bool> kernelFlags(kernelInfo.argInfos.size()<<1);
+                for (cxuint k = 0; k < kernelInfo.argInfos.size(); k++)
                 {
                     const AmdKernelArg& karg = kernelInfo.argInfos[k];
                     // if mem object (image or

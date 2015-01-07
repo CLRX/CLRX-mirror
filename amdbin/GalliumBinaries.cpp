@@ -31,72 +31,6 @@
 
 using namespace CLRX;
 
-/* GalliumKernel class */
-
-GalliumKernel::GalliumKernel(): sectionId(0), offset(0), argsNum(0), argInfos(nullptr)
-{ }
-
-GalliumKernel::GalliumKernel(const GalliumKernel& cp)
-{
-    kernelName = cp.kernelName;
-    sectionId = cp.sectionId;
-    offset = cp.offset;
-    argsNum = cp.argsNum;
-    argInfos = new GalliumArg[argsNum];
-    std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
-}
-
-GalliumKernel::GalliumKernel(GalliumKernel&& cp) noexcept
-{
-    kernelName = std::move(cp.kernelName);
-    argsNum = cp.argsNum;
-    argInfos = cp.argInfos;
-    offset = cp.offset;
-    argsNum = cp.argsNum;
-    cp.argsNum = 0;
-    cp.argInfos = nullptr; // reset pointer
-}
-
-GalliumKernel::~GalliumKernel()
-{
-    delete[] argInfos;
-}
-
-GalliumKernel& GalliumKernel::operator=(const GalliumKernel& cp)
-{
-    delete[] argInfos;
-    argInfos = nullptr;
-    kernelName = cp.kernelName;
-    sectionId = cp.sectionId;
-    offset = cp.offset;
-    argsNum = cp.argsNum;
-    argInfos = new GalliumArg[argsNum];
-    std::copy(cp.argInfos, cp.argInfos + argsNum, argInfos);
-    return *this;
-}
-
-GalliumKernel& GalliumKernel::operator=(GalliumKernel&& cp) noexcept
-{
-    delete[] argInfos;
-    argInfos = nullptr;
-    kernelName = std::move(cp.kernelName);
-    sectionId = cp.sectionId;
-    offset = cp.offset;
-    argsNum = cp.argsNum;
-    argInfos = cp.argInfos;
-    cp.argsNum = 0;
-    cp.argInfos = nullptr; // reset pointer
-    return *this;
-}
-
-void GalliumKernel::allocateArgs(cxuint argsNum)
-{
-    delete[] argInfos;
-    argInfos = nullptr;
-    this->argsNum = argsNum;
-    argInfos = new GalliumArg[argsNum];
-}
-
 /* Gallium ELF binary */
 
 GalliumElfBinary::GalliumElfBinary()
@@ -195,7 +129,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         kernel.sectionId = ULEV(data32[0]);
         kernel.offset = ULEV(data32[1]);
         const uint32_t argsNum = ULEV(data32[2]);
-        kernel.allocateArgs(argsNum);
+        kernel.argInfos.resize(argsNum);
         data32 += 3;
         for (uint32_t j = 0; j < argsNum; j++)
         {
@@ -216,4 +150,5 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         }
     }
     // parse sections and their content
+    //const uint32_t sectionsNum = 
 }

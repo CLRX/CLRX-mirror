@@ -98,18 +98,7 @@ struct GalliumKernel
     std::string kernelName;   ///< kernel's name
     uint32_t sectionId; ///< section id
     uint32_t offset;    ///< offset in binary
-    cxuint argsNum;     ///< arguments number
-    GalliumArg* argInfos;   ///< arguments pointer
-    
-    GalliumKernel();
-    GalliumKernel(const GalliumKernel& cp);
-    GalliumKernel(GalliumKernel&& cp) noexcept;
-    ~GalliumKernel();
-    
-    GalliumKernel& operator=(const GalliumKernel& cp);
-    GalliumKernel& operator=(GalliumKernel&& cp) noexcept;
-    
-    void allocateArgs(cxuint argsNum);
+    std::vector<GalliumArg> argInfos;   ///< arguments
 };
 
 enum class GalliumSectionType: cxbyte

@@ -229,21 +229,7 @@ struct CALSamplerMapEntry
 struct KernelInfo
 {
     std::string kernelName; ///< kernel name
-    cxuint argsNum; ///< number of arguments
-    AmdKernelArg* argInfos;    ///< array of argument informations
-    
-    KernelInfo();
-    KernelInfo(const KernelInfo& cp);
-    KernelInfo(KernelInfo&& cp) noexcept;
-    ~KernelInfo();
-    
-    KernelInfo& operator=(const KernelInfo& cp);
-    KernelInfo& operator=(KernelInfo&& cp) noexcept;
-    
-    /// allocate arguments to specified size
-    void allocateArgs(cxuint argsNum);
-    
-    void reallocateArgs(cxuint argsNum);
+    std::vector<AmdKernelArg> argInfos;    ///< array of argument informations
 };
 
 /// AMD inner binary for GPU binaries that represent a single kernel
