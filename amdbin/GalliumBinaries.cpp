@@ -136,11 +136,11 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         if (usumGt(uint32_t(data-binaryCode), symNameLen, binaryCodeSize))
             throw Exception("Kernel name length is too long!");
         
-        kernel.kernelName.assign((const char*)data + 4, symNameLen);
+        kernel.kernelName.assign((const char*)data, symNameLen);
         if (hasKernelMap())
             kernelIndexMap.insert(std::make_pair(kernel.kernelName, i));
         
-        data += 4 + symNameLen;
+        data += symNameLen;
         if (usumGt(uint32_t(data-binaryCode), 12U, binaryCodeSize))
             throw Exception("GalliumBinary is too small!!!");
         
