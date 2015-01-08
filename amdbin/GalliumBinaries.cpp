@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <elf.h>
+#include <cassert>
 #include <climits>
 #include <cstdint>
 #include <string>
@@ -157,6 +158,10 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         if (hasKernelMap())
             kernelIndexMap.insert(std::make_pair(kernel.kernelName, i));
         
+        /// check kernel name order (sorted order is required by Mesa3D radeon driver)
+        if (i != 0 && kernel.kernelName <= kernels[i-1].kernelName)
+            throw Exception("Unsorted kernel table!");
+        
         data += symNameLen;
         if (usumGt(uint32_t(data-binaryCode), 12U, binaryCodeSize))
             throw Exception("GalliumBinary is too small!!!");
@@ -276,4 +281,59 @@ uint32_t GalliumBinary::getKernelIndex(const char* name) const
     if (it == kernelIndexMap.end())
         throw Exception("Can't find Gallium Kernel Index");
     return it->second;
+}
+
+/*
+ * GalliumBinGenerator 
+ */
+
+GalliumBinGenerator::GalliumBinGenerator() : manageable(false), input(nullptr)
+{ }
+
+GalliumBinGenerator::GalliumBinGenerator(const GalliumInput* galliumInput)
+        : manageable(false), input(galliumInput)
+{ }
+
+GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+        size_t globalDataSize, const cxbyte* globalData,
+        const std::vector<GalliumKernelInput>& kernels, const char* disassembly)
+        : manageable(true), input(nullptr)
+{
+    GalliumInput* newInput = new GalliumInput;
+    try
+    {
+        newInput->globalDataSize = globalDataSize;
+        newInput->globalData = globalData;
+        newInput->codeSize = codeSize;
+        newInput->code = code;
+        newInput->kernels = kernels;
+        newInput->disassembly = disassembly;
+    }
+    catch(...)
+    {
+         delete newInput;
+         throw;
+    }
+    input = newInput;
+}
+
+GalliumBinGenerator::~GalliumBinGenerator()
+{
+    if (manageable)
+        delete input;
+}
+
+void GalliumBinGenerator::setInput(const GalliumInput* input)
+{
+    if (manageable)
+        delete input;
+    manageable = false;
+    this->input = input;
+}
+
+cxbyte* GalliumBinGenerator::generate(size_t& binarySize) const
+{
+    /* compute size of binary */
+    /* write out */
+    return nullptr;
 }

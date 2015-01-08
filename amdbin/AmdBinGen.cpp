@@ -21,8 +21,6 @@
 #include <elf.h>
 #include <cassert>
 #include <cstdio>
-#include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <algorithm>
 #include <bitset>

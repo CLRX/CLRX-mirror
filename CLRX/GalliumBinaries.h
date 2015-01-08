@@ -310,7 +310,8 @@ private:
 public:
     GalliumBinGenerator();
     GalliumBinGenerator(const GalliumInput* galliumInput);
-    GalliumBinGenerator(size_t globalDataSize, const cxbyte* globalData,
+    GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+            size_t globalDataSize, const cxbyte* globalData,
             const std::vector<GalliumKernelInput>& kernels, const char* disassembly);
     ~GalliumBinGenerator();
     
