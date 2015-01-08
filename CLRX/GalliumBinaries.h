@@ -133,9 +133,11 @@ public:
     typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
             CLRX::CStringEqual> ProgInfoEntryIndexMap;
 private:
-    size_t progInfosNum;
+    uint32_t progInfosNum;
     GalliumProgInfoEntry* progInfoEntries;
     ProgInfoEntryIndexMap progInfoEntryMap;
+    uint32_t disasmSize;
+    uint32_t disasmOffset;
 public:
     GalliumElfBinary();
     GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
@@ -145,11 +147,11 @@ public:
     { return (creationFlags & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0; }
     
     /// returns program infos number
-    size_t getProgramInfosNum() const
+    uint32_t getProgramInfosNum() const
     { return progInfosNum; }
     
     /// returns number of program info entries for program info
-    size_t getProgramInfoEntriesNum(uint32_t index) const;
+    uint32_t getProgramInfoEntriesNum(uint32_t index) const;
     
     /// returns index for programinfo entries index for specified kernel name
     uint32_t getProgramInfoEntryIndex(const char* name) const;
@@ -168,6 +170,12 @@ public:
     const GalliumProgInfoEntry* getProgramInfo(uint32_t index) const;
     /// returns program info entries for specified kernel index
     GalliumProgInfoEntry* getProgramInfo(uint32_t index);
+    
+    bool hasDisassembly() const
+    { return disasmOffset != 0; }
+    
+    const char* getDisassemblySize() const
+    { return reinterpret_cast<const char*>(binaryCode + disasmOffset); }
 };
 
 /** GalliumBinary object. This object converts to host-endian fields and
@@ -270,6 +278,57 @@ public:
     /// get kernel with specified name
     GalliumKernel& getKernel(const char* name)
     { return kernels[getKernelIndex(name)]; }
+};
+
+/*
+ * Gallium Binary generator
+ */
+/// kernel info structure (Gallium binaries)
+struct GalliumKernelInput
+{
+    std::string kernelName;   ///< kernel's name
+    std::vector<GalliumArgInfo> argInfos;   ///< arguments
+};
+
+struct GalliumInput
+{
+    size_t globalDataSize;  ///< global constant data size
+    const cxbyte* globalData;   ///< global constant data
+    std::vector<GalliumKernelInput> kernels;
+    const char* disassembly;    ///< program disasembly
+};
+
+class GalliumBinGenerator
+{
+private:
+    bool manageable;
+    const GalliumInput* input;
+public:
+    GalliumBinGenerator();
+    GalliumBinGenerator(const GalliumInput* galliumInput);
+    GalliumBinGenerator(size_t globalDataSize, const cxbyte* globalData,
+            const std::vector<GalliumKernelInput>& kernels, const char* disassembly);
+    ~GalliumBinGenerator();
+    
+    // non-copyable and non-movable
+    GalliumBinGenerator(const GalliumBinGenerator& c) = delete;
+    GalliumBinGenerator& operator=(const GalliumBinGenerator& c) = delete;
+    GalliumBinGenerator(GalliumBinGenerator&& c) = delete;
+    GalliumBinGenerator& operator=(GalliumBinGenerator&& c) = delete;
+    
+    /// get input
+    const GalliumInput* getInput() const
+    { return input; }
+    
+    /// set input
+    void setInput(const GalliumInput* input);
+    
+    /// generates binary
+    /**
+     * \param binarySize reference to binary size variable
+     * \return binary content pointer
+     */
+    cxbyte* generate(size_t& binarySize) const;
 };
 
 };

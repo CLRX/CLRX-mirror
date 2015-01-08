@@ -242,6 +242,7 @@ public:
     const AmdInput* getInput() const
     { return input; }
     
+    /// set input
     void setInput(const AmdInput* input);
     
     /// generates binary

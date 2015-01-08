@@ -138,7 +138,7 @@ void AmdInput::addKernel(const char* kernelName, size_t codeSize,
         metadataSize, metadata, calNotes, false, AmdKernelConfig(), codeSize, code });
 }
 
-AmdGPUBinGenerator::AmdGPUBinGenerator() : manageable(false)
+AmdGPUBinGenerator::AmdGPUBinGenerator() : manageable(false), input(nullptr)
 { }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(const AmdInput* amdInput)

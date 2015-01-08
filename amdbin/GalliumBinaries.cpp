@@ -31,18 +31,35 @@ using namespace CLRX;
 
 /* Gallium ELF binary */
 
-GalliumElfBinary::GalliumElfBinary()
+GalliumElfBinary::GalliumElfBinary() :
+        progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0)
 { }
 
 GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-               cxuint creationFlags) :
-       ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
+               cxuint creationFlags) : 
+       ElfBinary32(binaryCodeSize, binaryCode, creationFlags),
+       progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0)
+       
 {
     uint16_t amdGpuConfigIndex = SHN_UNDEF;
     try
     { amdGpuConfigIndex = getSectionIndex(".AMDGPU.config"); }
     catch(const Exception& ex)
     { }
+    
+    uint16_t amdGpuDisasmIndex = SHN_UNDEF;
+    try
+    { amdGpuDisasmIndex = getSectionIndex(".AMDGPU.disasm"); }
+    catch(const Exception& ex)
+    { }
+    if (amdGpuDisasmIndex != SHN_UNDEF)
+    {
+        const Elf32_Shdr& shdr = getSectionHeader(amdGpuDisasmIndex);
+        disasmOffset = ULEV(shdr.sh_offset);
+        disasmSize = ULEV(shdr.sh_size);
+        if (usumGt(disasmOffset, disasmSize, binaryCodeSize))
+            throw Exception("Disasm section offset/size out of range!");
+    }
     
     uint16_t textIndex = SHN_UNDEF;
     uint32_t textSize = 0;
@@ -60,6 +77,8 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     const Elf32_Shdr& shdr = getSectionHeader(amdGpuConfigIndex);
     if ((ULEV(shdr.sh_size) % 24U) != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
+    if (usumGt(ULEV(shdr.sh_offset), ULEV(shdr.sh_size), binaryCodeSize))
+        throw Exception("AMDGPUConfig section offset/size out of range!");
     
     /* check symbols */
     const cxuint symbolsNum = getSymbolsNum();
@@ -84,7 +103,7 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
                 ULEV(shdr.sh_offset));
 }
 
-size_t GalliumElfBinary::getProgramInfoEntriesNum(uint32_t index) const
+uint32_t GalliumElfBinary::getProgramInfoEntriesNum(uint32_t index) const
 { return 3; }
 
 uint32_t GalliumElfBinary::getProgramInfoEntryIndex(const char* name) const
@@ -107,7 +126,7 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 
 /* main GalliumBinary */
 
-GalliumBinary::GalliumBinary()
+GalliumBinary::GalliumBinary() : binaryCodeSize(0), binaryCode(nullptr), creationFlags(0)
 { }
 
 GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
