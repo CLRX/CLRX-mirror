@@ -71,10 +71,10 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         if (*symName != 0 && ::strcmp(symName, "EndOfTextLabel") != 0 &&
             ULEV(sym.st_shndx) == textIndex)
         {
-            if (hasProgInfoMap())
-                progInfoEntryMap.insert(std::make_pair(symName, 3*progInfosNum));
             if (ULEV(sym.st_value) >= textSize)
                 throw Exception("kernel symbol offset out of range");
+            if (hasProgInfoMap())
+                progInfoEntryMap.insert(std::make_pair(symName, 3*progInfosNum));
             progInfosNum++;
         }
     }
