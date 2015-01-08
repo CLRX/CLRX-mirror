@@ -158,6 +158,11 @@ catch(const Exception& ex)
     std::cerr << ex.what() << std::endl;
     return 1;
 }
+catch(const std::bad_alloc& ex)
+{
+    std::cerr << "Out of memory" << std::endl;
+    return 1;
+}
 catch(const std::exception& ex)
 {
     std::cerr << "System exception: " << ex.what() << std::endl;
