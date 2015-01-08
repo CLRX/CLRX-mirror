@@ -129,7 +129,7 @@ struct GalliumSection
 /** ULEV function is required to access programInfoEntry fields */
 class GalliumElfBinary: public ElfBinary32
 {
-private:
+public:
     typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
             CLRX::CStringEqual> ProgInfoEntryIndexMap;
 private:
@@ -174,7 +174,7 @@ public:
   * ULEV is not needed to access to fields of kernels and sections */
 class GalliumBinary
 {
-private:
+public:
     /// symbol index map
     typedef std::unordered_multimap<std::string, size_t> KernelIndexMap;
 private:
