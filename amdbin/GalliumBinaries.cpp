@@ -206,7 +206,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         const uint32_t sizeOfData = ULEV(data32[3]);
         const uint32_t sizeFromHeader = ULEV(data32[4]); // from LLVM binary
         if (section.size != sizeOfData-4 || section.size != sizeFromHeader)
-            throw Exception("Section size fields doesn't match to itself!");
+            throw Exception("Section size fields doesn't match itself!");
         
         data = reinterpret_cast<cxbyte*>(data32+5);
         if (usumGt(uint32_t(data-binaryCode), section.size, binaryCodeSize))

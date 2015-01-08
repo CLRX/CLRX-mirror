@@ -270,22 +270,6 @@ public:
     /// get kernel with specified name
     GalliumKernel& getKernel(const char* name)
     { return kernels[getKernelIndex(name)]; }
-    
-    /// get content of kernel with specified index
-    const cxbyte* getKernelContent(uint32_t index) const
-    { return binaryCode + kernels[index].offset; }
-    
-    /// get content of kernel with specified index
-    cxbyte* getKernelContent(uint32_t index)
-    { return binaryCode + kernels[index].offset; }
-    
-    /// get content of kernel with specified name
-    const cxbyte* getKernelContent(const char* name) const
-    { return binaryCode + kernels[getKernelIndex(name)].offset; }
-    
-    /// get content of kernel with specified name
-    cxbyte* getKernelContent(const char* name)
-    { return binaryCode + kernels[getKernelIndex(name)].offset; }
 };
 
 };
