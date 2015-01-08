@@ -150,7 +150,6 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         kernel.sectionId = ULEV(data32[0]);
         kernel.offset = ULEV(data32[1]);
         const uint32_t argsNum = ULEV(data32[2]);
-        kernel.argInfos.resize(argsNum);
         data32 += 3;
         data = reinterpret_cast<cxbyte*>(data32);
         
@@ -159,6 +158,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         if (usumGt(uint32_t(data-binaryCode), 24U*argsNum, binaryCodeSize))
             throw Exception("GalliumBinary is too small!!!");
         
+        kernel.argInfos.resize(argsNum);
         for (uint32_t j = 0; j < argsNum; j++)
         {
             GalliumArgInfo& argInfo = kernel.argInfos[j];
