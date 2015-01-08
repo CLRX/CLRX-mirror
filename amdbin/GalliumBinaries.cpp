@@ -45,7 +45,7 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     { }
     
     uint16_t textIndex = SHN_UNDEF;
-    uint32_t textSize;
+    uint32_t textSize = 0;
     try
     {
         textIndex = getSectionIndex(".text");
