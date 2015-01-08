@@ -21,6 +21,7 @@
 #include <elf.h>
 #include <cassert>
 #include <climits>
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -331,9 +332,92 @@ void GalliumBinGenerator::setInput(const GalliumInput* input)
     this->input = input;
 }
 
-cxbyte* GalliumBinGenerator::generate(size_t& binarySize) const
+cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
 {
+    const uint32_t kernelsNum = input->kernels.size();
     /* compute size of binary */
+    size_t elfSize = 0;
+    size_t binarySize = 8 + kernelsNum*16U + 20U /* sectionsNum */;
+    for (const GalliumKernelInput& kernel: input->kernels)
+        binarySize += kernel.argInfos.size() + kernel.kernelName.size();
+    /* ELF binary */
+    elfSize = 0x100 /* header */ + input->codeSize +
+            28 /* comment */ + 0x54 /* shstrtab */;
+    if ((elfSize& 3) != 0) // alignment
+        elfSize += 4-(elfSize&3);
+    elfSize += sizeof(Elf32_Sym) * (kernelsNum + 8 +
+            (input->globalData!=nullptr));
+    /* strtab */
+    for (const GalliumKernelInput& kernel: input->kernels)
+        elfSize += kernel.kernelName.size() + 1 + 8*kernel.progInfo.size();
+    elfSize++; // first byte of strtab
+    if ((elfSize & 3) != 0) // alignment
+        elfSize += 4-(elfSize&3);
+    elfSize += sizeof(Elf32_Shdr) * (10 + (input->globalData!=nullptr));
+    binarySize += elfSize;
+    
+    // sort kernels by name (for correct order in binary file) */
+    std::vector<uint32_t> kernelsOrder(kernelsNum);
+    for (cxuint i = 0; i < kernelsNum; i++)
+        kernelsOrder[i] = i;
+    std::sort(kernelsOrder.begin(), kernelsOrder.end(),
+          [this](const uint32_t& a,const uint32_t& b)
+          { return input->kernels[a].kernelName < input->kernels[b].kernelName; });
     /* write out */
-    return nullptr;
+    cxbyte* binary = new cxbyte[binarySize];
+    size_t offset = 0;
+    
+    try
+    {
+    uint32_t* data32 = reinterpret_cast<uint32_t*>(binary);
+    SULEV(*data32, kernelsNum);
+    offset += 4;
+    for (uint32_t korder: kernelsOrder)
+    {
+        const GalliumKernelInput& kernel = input->kernels[korder];
+        data32 = reinterpret_cast<uint32_t*>(binary + offset);
+        SULEV(data32[0], kernel.kernelName.size());
+        offset += 4;
+        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        offset += kernel.kernelName.size();
+        data32 = reinterpret_cast<uint32_t*>(binary + offset);
+        offset += 12 + kernel.argInfos.size()*24U;
+        SULEV(data32[0], 0);
+        SULEV(data32[1], kernel.offset);
+        SULEV(data32[2], kernel.argInfos.size());
+        data32 += 3;
+        for (const GalliumArgInfo arg: kernel.argInfos)
+        {
+            SULEV(data32[0], cxuint(arg.type));
+            SULEV(data32[1], arg.size);
+            SULEV(data32[2], arg.targetSize);
+            SULEV(data32[3], arg.targetAlign);
+            SULEV(data32[4], arg.signExtended);
+            SULEV(data32[5], cxuint(arg.semantic));
+            data32 += 6;
+        }
+    }
+    /* section */
+    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    offset += 24U;
+    SULEV(data32[0], 1);
+    SULEV(data32[1], 0); // resid
+    SULEV(data32[2], 0); // section type
+    SULEV(data32[3], elfSize); // sizes
+    SULEV(data32[4], elfSize+4);
+    SULEV(data32[5], elfSize);
+    /* put this ELF binary */
+    Elf32_Ehdr* ehdr = reinterpret_cast<Elf32_Ehdr*>(binary + offset);
+    ::memset(binary + offset + sizeof(Elf32_Ehdr), 0, 256-sizeof(Elf32_Ehdr));
+    offset += 256;
+    } // try
+    catch(...)
+    {
+        delete[] binary;
+        throw;
+    }
+    assert(offset == binarySize);
+    
+    outBinarySize = binarySize;
+    return binary;
 }
