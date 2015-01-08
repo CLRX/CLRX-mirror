@@ -57,8 +57,6 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
         const Elf32_Shdr& shdr = getSectionHeader(amdGpuDisasmIndex);
         disasmOffset = ULEV(shdr.sh_offset);
         disasmSize = ULEV(shdr.sh_size);
-        if (usumGt(disasmOffset, disasmSize, binaryCodeSize))
-            throw Exception("Disasm section offset/size out of range!");
     }
     
     uint16_t textIndex = SHN_UNDEF;
@@ -77,8 +75,6 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     const Elf32_Shdr& shdr = getSectionHeader(amdGpuConfigIndex);
     if ((ULEV(shdr.sh_size) % 24U) != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
-    if (usumGt(ULEV(shdr.sh_offset), ULEV(shdr.sh_size), binaryCodeSize))
-        throw Exception("AMDGPUConfig section offset/size out of range!");
     
     /* check symbols */
     const cxuint symbolsNum = getSymbolsNum();

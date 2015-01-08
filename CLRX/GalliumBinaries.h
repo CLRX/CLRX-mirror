@@ -287,6 +287,8 @@ public:
 struct GalliumKernelInput
 {
     std::string kernelName;   ///< kernel's name
+    std::vector<GalliumProgInfoEntry> progInfo;
+    uint32_t offset;
     std::vector<GalliumArgInfo> argInfos;   ///< arguments
 };
 
@@ -296,6 +298,8 @@ struct GalliumInput
     const cxbyte* globalData;   ///< global constant data
     std::vector<GalliumKernelInput> kernels;
     const char* disassembly;    ///< program disasembly
+    size_t codeSize;        ///< code size
+    const cxbyte* code;     ///< code
 };
 
 class GalliumBinGenerator
