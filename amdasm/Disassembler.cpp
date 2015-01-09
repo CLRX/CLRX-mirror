@@ -193,17 +193,16 @@ static void getDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
         if ((flags & DISASM_CALNOTES) != 0)
         {
             kernelInput.calNotes.resize(innerBin->getCALNotesNum(encEntryIndex));
-            for (cxuint j = 0; j < kernelInput.calNotes.size(); j++)
+            cxuint j = 0;
+            for (const CALNote& calNote: innerBin->getCALNotes(encEntryIndex))
             {
-                const CALNoteHeader& calNoteHdr =
-                        innerBin->getCALNoteHeader(encEntryIndex, j);
-                AsmCALNote& outCalNote = kernelInput.calNotes[j];
-                outCalNote.header.nameSize = ULEV(calNoteHdr.nameSize);
-                outCalNote.header.type = ULEV(calNoteHdr.type);
-                outCalNote.header.descSize = ULEV(calNoteHdr.descSize);
-                std::copy(calNoteHdr.name, calNoteHdr.name+8, outCalNote.header.name);
-                outCalNote.data = const_cast<cxbyte*>(innerBin->getCALNoteData(
-                    encEntryIndex, j));
+                AsmCALNote& outCalNote = kernelInput.calNotes[j++];
+                outCalNote.header.nameSize = ULEV(calNote.header->nameSize);
+                outCalNote.header.type = ULEV(calNote.header->type);
+                outCalNote.header.descSize = ULEV(calNote.header->descSize);
+                std::copy(calNote.header->name, calNote.header->name+8,
+                          outCalNote.header.name);
+                outCalNote.data = calNote.data;
             }
         }
     }

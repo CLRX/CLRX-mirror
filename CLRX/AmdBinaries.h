@@ -296,6 +296,18 @@ public:
     /// get CAL Note data
     cxbyte* getCALNoteData(cxuint encodingIndex, uint32_t index)
     { return calNotesTable[encodingIndex][index].data; }
+    
+    const CALNote& getCALNote(cxuint encodingIndex, uint32_t index) const
+    { return calNotesTable[encodingIndex][index]; }
+
+    CALNote& getCALNote(cxuint encodingIndex, uint32_t index)
+    { return calNotesTable[encodingIndex][index]; }
+    
+    const std::vector<CALNote>& getCALNotes(cxuint encodingIndex) const
+    { return calNotesTable[encodingIndex]; }
+    
+    std::vector<CALNote>& getCALNotes(cxuint encodingIndex)
+    { return calNotesTable[encodingIndex]; }
 };
 
 /// AMD inner X86 binary
