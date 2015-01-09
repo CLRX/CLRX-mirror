@@ -256,6 +256,9 @@ public:
     const GalliumSection& getSection(uint32_t index) const
     { return sections[index]; }
     
+    const std::vector<GalliumSection>& getSections() const
+    { return sections; }
+    
     /// returns kernels number
     uint32_t getKernelsNum() const
     { return kernels.size(); }
@@ -267,17 +270,12 @@ public:
     const GalliumKernel& getKernel(uint32_t index) const
     { return kernels[index]; }
     
-    /// get kernel by index
-    GalliumKernel& getKernel(uint32_t index)
-    { return kernels[index]; }
-    
     /// get kernel with speciified name
     const GalliumKernel& getKernel(const char* name) const
     { return kernels[getKernelIndex(name)]; }
     
-    /// get kernel with specified name
-    GalliumKernel& getKernel(const char* name)
-    { return kernels[getKernelIndex(name)]; }
+    const std::vector<GalliumKernel>& getKernels() const
+    { return kernels; }
 };
 
 /*
