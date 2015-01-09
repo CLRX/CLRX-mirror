@@ -469,16 +469,22 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
         data32 = reinterpret_cast<uint32_t*>(binary + offset);
         offset += 12 + kernel.argInfos.size()*24U;
         SULEV(data32[0], 0);
+        if (kernel.offset >= input->codeSize)
+            throw Exception("Kernel offset out of range");
         SULEV(data32[1], kernel.offset);
         SULEV(data32[2], kernel.argInfos.size());
         data32 += 3;
         for (const GalliumArgInfo arg: kernel.argInfos)
         {
+            if (arg.type > GalliumArgType::MAX_VALUE)
+                throw Exception("Wrong argument type");
             SULEV(data32[0], cxuint(arg.type));
             SULEV(data32[1], arg.size);
             SULEV(data32[2], arg.targetSize);
             SULEV(data32[3], arg.targetAlign);
-            SULEV(data32[4], arg.signExtended);
+            SULEV(data32[4], arg.signExtended?1:0);
+            if (arg.semantic > GalliumArgSemantic::MAX_VALUE)
+                throw Exception("Wrong argument type");
             SULEV(data32[5], cxuint(arg.semantic));
             data32 += 6;
         }

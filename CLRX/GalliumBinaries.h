@@ -37,17 +37,17 @@ namespace CLRX
 {
 
 enum : cxuint {
-    GALLIUM_CREATE_KERNELMAP = 0x10,
-    GALLIUM_INNER_CREATE_SECTIONMAP = 0x100, ///< create map of sections for inner binaries
-    GALLIUM_INNER_CREATE_SYMBOLMAP = 0x200,  ///< create map of kernels for inner binaries
+    GALLIUM_CREATE_KERNELMAP = 1,
+    GALLIUM_INNER_CREATE_SECTIONMAP = 0x10, ///< create map of sections for inner binaries
+    GALLIUM_INNER_CREATE_SYMBOLMAP = 0x20,  ///< create map of kernels for inner binaries
     /** create map of dynamic kernels for inner binaries */
-    GALLIUM_INNER_CREATE_DYNSYMMAP = 0x400,
-    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x1000,
+    GALLIUM_INNER_CREATE_DYNSYMMAP = 0x40,
+    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x100,
     
     GALLIUM_ELF_CREATE_PROGINFOMAP = 0x10,
     
     GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all Gallium binaries flalgs
-    GALLIUM_INNER_SHIFT = 8 ///< shift for convert inner binary flags into elf binary flags
+    GALLIUM_INNER_SHIFT = 4 ///< shift for convert inner binary flags into elf binary flags
 };
 
 /// GalliumCompute Kernel Arg type
