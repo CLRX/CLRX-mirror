@@ -297,7 +297,9 @@ GalliumBinGenerator::GalliumBinGenerator(const GalliumInput* galliumInput)
 
 GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
-        const std::vector<GalliumKernelInput>& kernels, const char* disassembly)
+        const std::vector<GalliumKernelInput>& kernels,
+        size_t disassemblySize, const char* disassembly,
+        size_t commentSize, const char* comment)
         : manageable(true), input(nullptr)
 {
     GalliumInput* newInput = new GalliumInput;
@@ -308,7 +310,10 @@ GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
         newInput->codeSize = codeSize;
         newInput->code = code;
         newInput->kernels = kernels;
+        newInput->disassemblySize = disassemblySize;
         newInput->disassembly = disassembly;
+        newInput->commentSize = commentSize;
+        newInput->comment = comment;
     }
     catch(...)
     {
@@ -332,30 +337,103 @@ void GalliumBinGenerator::setInput(const GalliumInput* input)
     this->input = input;
 }
 
+static void putElfSectionLE(Elf32_Shdr* section, uint32_t shName, uint32_t shType,
+        uint32_t shFlags, uint32_t offset, uint32_t size, uint32_t link,
+        uint32_t info = 0, uint32_t addrAlign = 1, uint32_t addr = 0, uint32_t entSize = 0)
+{
+    SULEV(section->sh_name, shName);
+    SULEV(section->sh_type, shType);
+    SULEV(section->sh_flags, shFlags);
+    SULEV(section->sh_addr, 0);
+    SULEV(section->sh_offset, offset);
+    SULEV(section->sh_size, size);
+    SULEV(section->sh_link, link);
+    SULEV(section->sh_info, info);
+    SULEV(section->sh_addralign, addrAlign);
+    SULEV(section->sh_entsize, entSize);
+}
+
+static void putElfSymbolLE(Elf32_Sym* symbol, uint32_t symName, uint32_t value,
+        uint32_t size, uint16_t shndx, cxbyte info, cxbyte other = 0)
+{
+    SULEV(symbol->st_name, symName); 
+    SULEV(symbol->st_value, value);
+    SULEV(symbol->st_size, size);
+    SULEV(symbol->st_shndx, shndx);
+    symbol->st_info = info;
+    symbol->st_other = other;
+}
+
+static inline void fixAlignment(cxbyte* binary, size_t& offset, size_t elfOffset,
+            cxuint align)
+{
+    if (((offset-elfOffset) & 3) != 0)
+    {   // fix alignment
+        const cxuint alignFix = 4-((offset-elfOffset)&3);
+        ::memset(binary + offset, 0, alignFix);
+        offset += alignFix;
+    }
+}
+
 cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
 {
     const uint32_t kernelsNum = input->kernels.size();
     /* compute size of binary */
-    size_t elfSize = 0;
-    size_t binarySize = 8 + kernelsNum*16U + 20U /* sectionsNum */;
+    uint64_t elfSize = 0;
+    uint64_t binarySize = 8 + kernelsNum*16U + 20U /* sectionsNum */;
     for (const GalliumKernelInput& kernel: input->kernels)
         binarySize += kernel.argInfos.size() + kernel.kernelName.size();
+    
+    // elf extra data
+    uint32_t commentSize = 28;
+    const char* comment = "CLRX GalliumBinGenerator 0.1";
+    if (input->comment!=nullptr)
+    {
+        comment = input->comment;
+        commentSize = input->commentSize;
+        if (commentSize==0)
+            commentSize = ::strlen(comment);
+    }
+    uint32_t disassemblySize = input->disassemblySize;
+    const char* disassembly = input->disassembly;
+    if (input->disassembly!=nullptr)
+    {
+        if (disassemblySize==0)
+            disassemblySize = ::strlen(disassembly);
+    }
+    else
+        disassemblySize = 0;
+    
     /* ELF binary */
-    elfSize = 0x100 /* header */ + input->codeSize +
-            28 /* comment */ + 0x54 /* shstrtab */;
+    const cxuint elfSectionsNum = (input->globalData!=nullptr)?11:10;
+    elfSize = 0x100 /* header */ + input->codeSize;
     if ((elfSize& 3) != 0) // alignment
         elfSize += 4-(elfSize&3);
-    elfSize += sizeof(Elf32_Sym) * (kernelsNum + 8 +
-            (input->globalData!=nullptr));
-    /* strtab */
-    for (const GalliumKernelInput& kernel: input->kernels)
-        elfSize += kernel.kernelName.size() + 1 + 8*kernel.progInfo.size();
-    elfSize++; // first byte of strtab
+    elfSize += uint64_t(24U)*kernelsNum; // AMDGPU.config
+    elfSize += disassemblySize; // AMDGPU.disasm
     if ((elfSize & 3) != 0) // alignment
         elfSize += 4-(elfSize&3);
-    elfSize += sizeof(Elf32_Shdr) * (10 + (input->globalData!=nullptr));
-    binarySize += elfSize;
+    if (input->globalData!=nullptr) // .rodata
+        elfSize += input->globalDataSize;
+    elfSize += commentSize;  // .comment
+    /// .shstrtab
+    elfSize += 78 + ((input->globalData!=nullptr)?8:0) +
+            ((disassembly!=nullptr)?16:0);
+    if ((elfSize & 3) != 0) // alignment
+        elfSize += 4-(elfSize&3);
+    // .symtab
+    elfSize += sizeof(Elf32_Sym) * (kernelsNum + 8 +
+            (input->globalData!=nullptr));
+    elfSize += sizeof(Elf32_Shdr) * elfSectionsNum; // section table
+    /* strtab */
+    for (const GalliumKernelInput& kernel: input->kernels)
+        elfSize += kernel.kernelName.size() + 1;
+    elfSize += 16; // enf of label and zero byte
     
+    if (elfSize > UINT32_MAX)
+        throw Exception("Elf binary size is too big!");
+    
+    binarySize += elfSize;
     // sort kernels by name (for correct order in binary file) */
     std::vector<uint32_t> kernelsOrder(kernelsNum);
     for (cxuint i = 0; i < kernelsNum; i++)
@@ -363,7 +441,15 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     std::sort(kernelsOrder.begin(), kernelsOrder.end(),
           [this](const uint32_t& a,const uint32_t& b)
           { return input->kernels[a].kernelName < input->kernels[b].kernelName; });
-    /* write out */
+    
+#ifdef HAVE_32BIT
+    if (binarySize > UINT32_MAX)
+        throw Exception("Binary size is too big!");
+#endif
+    
+    /****
+     * write binary to output
+     ****/
     cxbyte* binary = new cxbyte[binarySize];
     size_t offset = 0;
     
@@ -406,10 +492,183 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     SULEV(data32[3], elfSize); // sizes
     SULEV(data32[4], elfSize+4);
     SULEV(data32[5], elfSize);
-    /* put this ELF binary */
-    Elf32_Ehdr* ehdr = reinterpret_cast<Elf32_Ehdr*>(binary + offset);
+    size_t elfOffset = offset;
+    
+    /****
+     * put this ELF binary
+     ****/
+    Elf32_Ehdr& ehdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
+    static const cxbyte elf32Ident[16] = {
+            0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
+            ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
+    ::memcpy(ehdr.e_ident, elf32Ident, 16);
+    SULEV(ehdr.e_type, ET_REL);
+    SULEV(ehdr.e_machine, 0);
+    SULEV(ehdr.e_version, EV_CURRENT);
+    SULEV(ehdr.e_entry, 0);
+    SULEV(ehdr.e_flags, 0);
+    SULEV(ehdr.e_phoff, 0);
+    SULEV(ehdr.e_ehsize, sizeof(Elf32_Ehdr));
+    SULEV(ehdr.e_phnum, 0);
+    SULEV(ehdr.e_phentsize, 0);
+    SULEV(ehdr.e_shnum, (input->globalData!=nullptr)?11:10);
+    SULEV(ehdr.e_shentsize, sizeof(Elf32_Shdr));
+    SULEV(ehdr.e_shstrndx, (input->globalData!=nullptr)?8:7);
     ::memset(binary + offset + sizeof(Elf32_Ehdr), 0, 256-sizeof(Elf32_Ehdr));
     offset += 256;
+    
+    size_t sectionOffsets[7];
+    /* text */
+    ::memcpy(binary + offset, input->code, input->codeSize);
+    fixAlignment(binary, offset, elfOffset, 4);
+    sectionOffsets[0] = offset-elfOffset;
+    /* .AMDGPU.config */
+    for (uint32_t korder: kernelsOrder)
+    {
+        const GalliumKernelInput& kernel = input->kernels[korder];
+        if (kernel.progInfo.size() != 3)
+            throw Exception("Invalid size of prog info");
+        GalliumProgInfoEntry* progInfoEntries =
+                    reinterpret_cast<GalliumProgInfoEntry*>(binary + offset);
+        for (const GalliumProgInfoEntry& entry: kernel.progInfo)
+        {
+            SULEV(progInfoEntries->address, entry.address);
+            SULEV(progInfoEntries->value, entry.value);
+            progInfoEntries++;
+        }
+        offset += 24U;
+    }
+    sectionOffsets[1] = offset-elfOffset;
+    // .AMDGPU.disasm
+    if (disassembly!=nullptr)
+    {
+        ::memcpy(binary + offset, disassembly, disassemblySize);
+        offset += disassemblySize;
+    }
+    // .rodata
+    if (input->globalData!=nullptr)
+    {
+        fixAlignment(binary, offset, elfOffset, 4);
+        sectionOffsets[2] = offset-elfOffset;
+        ::memcpy(binary + offset, input->globalData, input->globalDataSize);
+        offset += input->globalDataSize;
+    }
+    else // no global data
+        sectionOffsets[2] = offset-elfOffset;
+    
+    sectionOffsets[3] = offset-elfOffset;
+    // .comment
+    ::memcpy(binary + offset, comment, commentSize);
+    offset += commentSize;
+    sectionOffsets[4] = offset-elfOffset;
+    // .shstrtab
+    ::memcpy(binary + offset, "\000.text\000.data\000.bss\000.AMDGPU.config", 33);
+    offset += 33;
+    if (disassembly!=nullptr)
+    {
+        ::memcpy(binary + offset, ".AMDGPU.disasm", 15);
+        offset += 15;
+    }
+    if (input->globalData!=nullptr)
+    {
+        ::memcpy(binary + offset, ".rodata", 8);
+        offset += 8;
+    }
+    ::memcpy(binary + offset, ".comment\000.note.GNU-stack\000.shstrtab\000"
+            ".symtab\000.strtab", 35+16);
+    offset += 35+16;
+    fixAlignment(binary, offset, elfOffset, 4);
+    sectionOffsets[5] = offset-elfOffset;
+    
+    // .symtab
+    Elf32_Sym* symTableStart = reinterpret_cast<Elf32_Sym*>(binary + offset);
+    Elf32_Sym* symTable = symTableStart;
+    ::memset(symTable, 0, sizeof(Elf32_Sym));
+    symTable++;
+    putElfSymbolLE(symTable++, 1, input->codeSize, 0, 1,
+           ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
+    const cxuint sectSymsNum = (input->globalData!=nullptr)?7:6;
+    // local symbols for sections
+    for (cxuint i = 0; i < sectSymsNum; i++)
+        putElfSymbolLE(symTable++, 0, 0, 0, i+1, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
+    uint32_t kernelNameOffset = 16;
+    
+    // put kernel symbols
+    for (uint32_t korder: kernelsOrder)
+    {
+        const GalliumKernelInput& kernel = input->kernels[korder];
+        putElfSymbolLE(symTable++, kernelNameOffset, kernel.offset, 0, 1,
+                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0);
+        kernelNameOffset += kernel.kernelName.size()+1;
+    }
+    offset += sizeof(Elf32_Sym) * (symTable-symTableStart);
+    
+    /*
+     * put section table
+     */
+    cxuint sectionName = 1;
+    SULEV(ehdr.e_shoff, offset-elfOffset);
+    Elf32_Shdr* sectionTable = reinterpret_cast<Elf32_Shdr*>(binary + offset);
+    ::memset(sectionTable, 0, sizeof(Elf32_Shdr));
+    sectionTable++;
+    // .text
+    putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
+            0x100, input->codeSize, 0, 256, 0, 0);
+    sectionName += 6;
+    // .data
+    putElfSectionLE(sectionTable++, sectionName,
+            SHT_PROGBITS, SHF_ALLOC|SHF_WRITE, sectionOffsets[0], 0, 0, 0, 4);
+    sectionName += 6;
+    // .bss
+    putElfSectionLE(sectionTable++, sectionName, 8, SHF_ALLOC|SHF_WRITE,
+            sectionOffsets[1], 0, 0, 0, 4);
+    sectionName += 5;
+    // .AMDGPU.config
+    putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, 0, sectionOffsets[0],
+                    input->kernels.size()*24U, 0, 0, 4);
+    sectionName += 15;
+    if (disassembly!=nullptr) // .AMDGPU.disasm
+    {
+        putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, SHF_ALLOC,
+                sectionOffsets[1], disassemblySize, 0, 0, 1);
+        sectionName += 15;
+    }
+    if (input->globalData!=nullptr) // .rodata
+    {
+        putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, SHF_ALLOC,
+                sectionOffsets[2], input->globalDataSize, 0, 0, 4);
+        sectionName += 8;
+    }
+    // .comment
+    putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, SHF_STRINGS|SHF_MERGE,
+                    sectionOffsets[3], 28, 0, 0, 1, 0, 1);
+    sectionName += 9;
+    // .note.GNU-stack
+    putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, 0, sectionOffsets[4],
+                    0, 0, 0, 1);
+    sectionName += 16;
+    // .shstrtab
+    putElfSectionLE(sectionTable++, sectionName, SHT_STRTAB, 0, sectionOffsets[4],
+                    (input->globalData!=nullptr)?90:84, 0, 0, 1);
+    sectionName += 10;
+    // .symtab
+    putElfSectionLE(sectionTable++, sectionName, SHT_SYMTAB, 0, sectionOffsets[5],
+            symTable-symTableStart, elfSectionsNum, 0, 4, 0, sizeof(Elf32_Sym));
+    sectionName += 8;
+    // .strtab
+    offset += sizeof(Elf32_Shdr)*elfSectionsNum;
+    putElfSectionLE(sectionTable++, sectionName, SHT_STRTAB, 0, offset-elfOffset,
+                    symTable-symTableStart, 0, 0, 4, 0, sizeof(Elf32_Sym));
+    
+    // last section .strtab
+    ::memcpy(binary + offset, "\000EndOfTextLabel", 16);
+    offset += 16;
+    for (uint32_t korder: kernelsOrder)
+    {
+        const GalliumKernelInput& kernel = input->kernels[korder];
+        ::memcpy(binary + offset, kernel.kernelName.c_str(), kernel.kernelName.size()+1);
+        offset += kernel.kernelName.size()+1;
+    }
     } // try
     catch(...)
     {

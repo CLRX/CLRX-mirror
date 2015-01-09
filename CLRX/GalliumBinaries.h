@@ -297,7 +297,10 @@ struct GalliumInput
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     std::vector<GalliumKernelInput> kernels;
+    size_t disassemblySize; ///< disassembly size (can be null)
     const char* disassembly;    ///< program disasembly
+    size_t commentSize; ///< comment size (can be null)
+    const char* comment; ///< comment
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
 };
@@ -312,7 +315,9 @@ public:
     GalliumBinGenerator(const GalliumInput* galliumInput);
     GalliumBinGenerator(size_t codeSize, const cxbyte* code,
             size_t globalDataSize, const cxbyte* globalData,
-            const std::vector<GalliumKernelInput>& kernels, const char* disassembly);
+            const std::vector<GalliumKernelInput>& kernels,
+            size_t disassemblySize = 0, const char* disassembly = nullptr,
+            size_t commentSize = 0, const char* comment= nullptr);
     ~GalliumBinGenerator();
     
     // non-copyable and non-movable

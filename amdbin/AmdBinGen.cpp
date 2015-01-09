@@ -22,6 +22,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <cstdint>
 #include <algorithm>
 #include <bitset>
 #include <set>
@@ -1316,7 +1317,7 @@ static std::set<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
 
 cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
 {
-    size_t binarySize;
+    uint64_t binarySize;
     const size_t kernelsNum = input->kernels.size();
     std::string driverInfo;
     uint32_t driverVersion = 99999909U;
@@ -1395,9 +1396,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     
     for (size_t i = 0; i < input->kernels.size(); i++)
     {
-        cxuint& innerBinSize = innerBinSizes[i];
-        innerBinSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 + sizeof(Elf32_Shdr)*6 +
-            sizeof(CALEncodingEntry) + 2 + 16 + 40;
+        uint64_t innerBinSize = sizeof(Elf32_Ehdr) + sizeof(Elf32_Phdr)*3 +
+                sizeof(Elf32_Shdr)*6 + sizeof(CALEncodingEntry) + 2 + 16 + 40;
         
         const AmdKernelInput& kinput = input->kernels[i];
         
@@ -1448,7 +1448,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             if (config.usePrintf)
                 uavsNum++;
             
-            innerBinSize += 20*17 /*calNoteHeaders*/ + 16 + 128 + (18+32 +
+            innerBinSize += uint64_t(20*17) /*calNoteHeaders*/ + 16 + 128 + (18+32 +
                 4*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
@@ -1462,10 +1462,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         else // if defined in calNotes (no config)
         {
             for (const CALNoteInput& calNote: kinput.calNotes)
-                innerBinSize += 20 + calNote.header.descSize;
+                innerBinSize += uint64_t(20) + calNote.header.descSize;
             metadataSize = kinput.metadataSize + kinput.headerSize;
         }
         
+        if (innerBinSize > UINT32_MAX)
+            throw Exception("Inner binary size is too big!");
+        innerBinSizes[i] = innerBinSize;
         binarySize += innerBinSize + metadataSize;
     }
     
@@ -1490,6 +1493,12 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         binarySize += sizeof(Elf64_Shdr)*(5 + (input->kernels.empty()?0:2) +
                 (input->sourceCode != nullptr) + (input->llvmir != nullptr));
     
+    if (
+#ifdef HAVE_64BIT
+        input->is64Bit &&
+#endif
+        binarySize > UINT32_MAX)
+        throw Exception("Binary size is too big!");
     /********
      * writing data
      *********/
