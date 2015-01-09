@@ -399,11 +399,35 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
         if (config.userDataElemsNum > 16)
             throw Exception("UserDataElemsNum must not be greater than 16");
+        if (config.usedVGPRsNum > 256)
+            throw Exception("Used VGPRs number out of range");
+        if (config.usedSGPRsNum > 102)
+            throw Exception("Used SGPRs number out of range");
+        
         /* filling input */
         if (config.hwRegion == AMDBIN_DEFAULT)
             tempConfig.hwRegion = 0;
         else
             tempConfig.hwRegion = config.hwRegion;
+        
+        /* checking arg types */
+        for (const AmdKernelArgInput& arg: config.args)
+            if (arg.argType > KernelArgType::MAX_VALUE)
+                throw Exception("Unknown argument type");
+            else if (arg.argType == KernelArgType::POINTER)
+            {
+                if (arg.pointerType > KernelArgType::MAX_VALUE)
+                    throw Exception("Unknown argument's pointer type");
+                if (arg.ptrSpace > KernelPtrSpace::MAX_VALUE ||
+                    arg.ptrSpace == KernelPtrSpace::NONE)
+                    throw Exception("Wrong pointer space type");
+            }
+            else if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                arg.argType <= KernelArgType::MAX_IMAGE)
+            {
+                if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == 0)
+                    throw Exception("Invalid access qualifier for image");
+            }
         
         if (config.uavPrivate == AMDBIN_DEFAULT)
         {   /* compute uavPrivate */

@@ -90,7 +90,8 @@ enum class KernelPtrSpace : uint8_t
     NONE = 0,   ///< no pointer
     LOCAL,      ///< pointer to local memory
     CONSTANT,   ///< pointer to constant memory
-    GLOBAL      ///< pointer to global memory
+    GLOBAL,      ///< pointer to global memory
+    MAX_VALUE = GLOBAL
 };
 
 enum : uint8_t
