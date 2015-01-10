@@ -419,7 +419,8 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
         disassemblySize = 0;
     
     /* ELF binary */
-    const cxuint elfSectionsNum = (input->globalData!=nullptr)?11:10;
+    const cxuint elfSectionsNum = 10 + (input->globalData!=nullptr) +
+            (disassembly!=nullptr);
     elfSize = 0x100 /* header */ + input->codeSize;
     if ((elfSize& 3) != 0) // alignment
         elfSize += 4-(elfSize&3);
@@ -432,14 +433,14 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     elfSize += commentSize;  // .comment
     /// .shstrtab
     const cxuint shstrtabSize = 84 + ((input->globalData!=nullptr)?8:0) +
-            ((disassembly!=nullptr)?16:0);
+            ((disassembly!=nullptr)?15:0);
     elfSize += shstrtabSize;
     if ((elfSize & 3) != 0) // alignment
         elfSize += 4-(elfSize&3);
     elfSize += sizeof(Elf32_Shdr) * elfSectionsNum; // section table
     // .symtab
     elfSize += sizeof(Elf32_Sym) * (kernelsNum + 8 +
-            (input->globalData!=nullptr));
+            (input->globalData!=nullptr) + (disassembly!=nullptr));
     /* strtab */
     uint64_t strtabSize = 0;
     for (const GalliumKernelInput& kernel: input->kernels)
@@ -534,9 +535,9 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     SULEV(ehdr.e_ehsize, sizeof(Elf32_Ehdr));
     SULEV(ehdr.e_phnum, 0);
     SULEV(ehdr.e_phentsize, 0);
-    SULEV(ehdr.e_shnum, (input->globalData!=nullptr)?11:10);
+    SULEV(ehdr.e_shnum, elfSectionsNum);
     SULEV(ehdr.e_shentsize, sizeof(Elf32_Shdr));
-    SULEV(ehdr.e_shstrndx, (input->globalData!=nullptr)?8:7);
+    SULEV(ehdr.e_shstrndx, elfSectionsNum-3);
     ::memset(binary + offset + sizeof(Elf32_Ehdr), 0, 256-sizeof(Elf32_Ehdr));
     offset += 256;
     
@@ -659,7 +660,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     symTable++;
     putElfSymbolLE(symTable++, 1, input->codeSize, 0, 1,
            ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE), 0);
-    const cxuint sectSymsNum = (input->globalData!=nullptr)?7:6;
+    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr) + (disassembly!=nullptr);
     // local symbols for sections
     for (cxuint i = 0; i < sectSymsNum; i++)
         putElfSymbolLE(symTable++, 0, 0, 0, i+1, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0);
