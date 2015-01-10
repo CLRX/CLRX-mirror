@@ -128,7 +128,7 @@ public:
         if (this == &cp)
             return *this;
         const size_t N = cp.ptrEnd-cp.ptr;
-        if (N != ptrEnd-ptr)
+        if (N != size_t(ptrEnd-ptr))
         {
             if (ptr != nullptr)
                 delete[] ptr;
@@ -172,7 +172,7 @@ public:
     
     void resize(size_t N)
     {
-        if (ptr-ptrEnd == N)
+        if (size_t(ptr-ptrEnd) == N)
             return;
         T* newPtr = nullptr;
         if (N != 0)
@@ -195,7 +195,7 @@ public:
     void assign(It b, It e)
     {
         const size_t N = e-b;
-        if (ptr-ptrEnd == N)
+        if (size_t(ptr-ptrEnd) == N)
         {
             delete[] ptr;
             ptr = nullptr;
