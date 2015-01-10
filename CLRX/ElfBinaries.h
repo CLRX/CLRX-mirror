@@ -342,6 +342,14 @@ public:
         typename Types::Shdr& shdr = getSectionHeader(index);
         return binaryCode + ULEV(shdr.sh_offset);
     }
+    
+    /// get section content pointer
+    const cxbyte* getSectionContent(const char* name) const
+    {  return getSectionContent(getSectionIndex(name)); }
+    
+    /// get section content pointer
+    cxbyte* getSectionContent(const char* name)
+    {  return getSectionContent(getSectionIndex(name)); }
 };
 
 extern template class ElfBinaryTemplate<Elf32Types>;

@@ -230,7 +230,7 @@ struct CALSamplerMapEntry
 struct KernelInfo
 {
     std::string kernelName; ///< kernel name
-    std::vector<AmdKernelArg> argInfos;    ///< array of argument informations
+    Array<AmdKernelArg> argInfos;    ///< array of argument informations
 };
 
 /// AMD inner binary for GPU binaries that represent a single kernel
@@ -245,7 +245,7 @@ private:
     std::string kernelName; ///< kernel name
     uint32_t encodingEntriesNum;
     CALEncodingEntry* encodingEntries;
-    std::vector<std::vector<CALNote> > calNotesTable;
+    Array<Array<CALNote> > calNotesTable;
 public:
     AmdInnerGPUBinary32() = default;
     /** constructor
@@ -303,10 +303,10 @@ public:
     CALNote& getCALNote(cxuint encodingIndex, uint32_t index)
     { return calNotesTable[encodingIndex][index]; }
     
-    const std::vector<CALNote>& getCALNotes(cxuint encodingIndex) const
+    const Array<CALNote>& getCALNotes(cxuint encodingIndex) const
     { return calNotesTable[encodingIndex]; }
     
-    std::vector<CALNote>& getCALNotes(cxuint encodingIndex)
+    Array<CALNote>& getCALNotes(cxuint encodingIndex)
     { return calNotesTable[encodingIndex]; }
 };
 
@@ -359,7 +359,7 @@ enum class AmdMainType
 };
 
 /// main AMD binary base class
-class AmdMainBinaryBase
+class AmdMainBinaryBase: public NonCopyableAndMovable
 {
 public:
     /// Kernel info map
@@ -375,11 +375,6 @@ protected:
     
     explicit AmdMainBinaryBase(AmdMainType type);
 public:
-    // no copyable and no movable
-    AmdMainBinaryBase(const AmdMainBinaryBase&) = delete;
-    AmdMainBinaryBase(AmdMainBinaryBase&&) = delete;
-    AmdMainBinaryBase& operator=(const AmdMainBinaryBase&) = delete;
-    AmdMainBinaryBase& operator=(AmdMainBinaryBase&&) = delete;
     virtual ~AmdMainBinaryBase();
     
     /// get binary type

@@ -98,7 +98,7 @@ struct GalliumKernel
     std::string kernelName;   ///< kernel's name
     uint32_t sectionId; ///< section id
     uint32_t offset;    ///< offset in ElfBinary
-    std::vector<GalliumArgInfo> argInfos;   ///< arguments
+    Array<GalliumArgInfo> argInfos;   ///< arguments
 };
 
 enum class GalliumSectionType: cxbyte
@@ -180,7 +180,7 @@ public:
 
 /** GalliumBinary object. This object converts to host-endian fields and
   * ULEV is not needed to access to fields of kernels and sections */
-class GalliumBinary
+class GalliumBinary: public NonCopyableAndMovable
 {
 public:
     /// symbol index map
@@ -200,12 +200,6 @@ private:
 public:
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
     ~GalliumBinary();
-    
-    // no copyable and no movable
-    GalliumBinary(const GalliumBinary&) = delete;
-    GalliumBinary(GalliumBinary&&) = delete;
-    GalliumBinary& operator=(const GalliumBinary&) = delete;
-    GalliumBinary& operator=(GalliumBinary&&) = delete;
     
     /// get creation flags
     cxuint getCreationFlags()
@@ -286,7 +280,7 @@ public:
 struct GalliumKernelInput
 {
     std::string kernelName;   ///< kernel's name
-    std::vector<GalliumProgInfoEntry> progInfo;
+    GalliumProgInfoEntry progInfo[3];
     uint32_t offset;
     std::vector<GalliumArgInfo> argInfos;   ///< arguments
 };
@@ -304,7 +298,7 @@ struct GalliumInput
     const cxbyte* code;     ///< code
 };
 
-class GalliumBinGenerator
+class GalliumBinGenerator: public NonCopyableAndMovable
 {
 private:
     bool manageable;
@@ -318,12 +312,6 @@ public:
             size_t disassemblySize = 0, const char* disassembly = nullptr,
             size_t commentSize = 0, const char* comment= nullptr);
     ~GalliumBinGenerator();
-    
-    // non-copyable and non-movable
-    GalliumBinGenerator(const GalliumBinGenerator& c) = delete;
-    GalliumBinGenerator& operator=(const GalliumBinGenerator& c) = delete;
-    GalliumBinGenerator(GalliumBinGenerator&& c) = delete;
-    GalliumBinGenerator& operator=(GalliumBinGenerator&& c) = delete;
     
     /// get input
     const GalliumInput* getInput() const

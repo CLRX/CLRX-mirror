@@ -210,7 +210,7 @@ struct AmdInput
 };
 
 /// main AMD GPU Binary generator
-class AmdGPUBinGenerator
+class AmdGPUBinGenerator: public NonCopyableAndMovable
 {
 private:
     bool manageable;
@@ -231,12 +231,6 @@ public:
            size_t globalDataSize, const cxbyte* globalData, 
            const std::vector<AmdKernelInput>& kernelInputs);
     ~AmdGPUBinGenerator();
-    
-    // non-copyable and non-movable
-    AmdGPUBinGenerator(const AmdGPUBinGenerator& c) = delete;
-    AmdGPUBinGenerator& operator=(const AmdGPUBinGenerator& c) = delete;
-    AmdGPUBinGenerator(AmdGPUBinGenerator&& c) = delete;
-    AmdGPUBinGenerator& operator=(AmdGPUBinGenerator&& c) = delete;
     
     /// get input
     const AmdInput* getInput() const

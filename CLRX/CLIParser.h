@@ -107,7 +107,7 @@ public:
  * while whole lifecycle of this CLIParser. For whole lifecycle of any option argument or
  * left over argument, a CLIParser must be alive.
  * (because it keeps values of these arguments). */
-class CLIParser
+class CLIParser: public NonCopyableAndMovable
 {
 private:
     template<typename T>
@@ -183,7 +183,7 @@ private:
     const char** argv;
     std::vector<const char*> leftOverArgs;
     
-    std::vector<OptionEntry> optionEntries;
+    Array<OptionEntry> optionEntries;
     LongNameMap longNameMap;
     cxuint* shortNameMap;
     
@@ -191,12 +191,6 @@ private:
     void parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName);
         
 public:
-    // non-copyable and non-movable
-    CLIParser(const CLIParser&) = delete;
-    CLIParser(CLIParser&&) = delete;
-    CLIParser& operator=(const CLIParser&) = delete;
-    CLIParser& operator=(CLIParser&&) = delete;
-    
     /// constructor
     /**
      * \param programName name of program

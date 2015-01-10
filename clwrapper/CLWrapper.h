@@ -145,7 +145,7 @@ CLRX_INTERNAL extern CLRXExtensionEntry clrxExtensionsTable[18];
 
 struct CLRXPlatform;
 
-struct CLRX_INTERNAL CLRXDevice: _cl_device_id
+struct CLRX_INTERNAL CLRXDevice: _cl_device_id, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_device_id amdOclDevice;
@@ -166,12 +166,6 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
         parent = nullptr;
     }
     
-    // non-copyable and non-movable
-    CLRXDevice(const CLRXDevice&) = delete;
-    CLRXDevice(CLRXDevice&&) = delete;
-    CLRXDevice& operator=(const CLRXDevice&) = delete;
-    CLRXDevice& operator=(CLRXDevice&&) = delete;
-    
     ~CLRXDevice()
     {
         delete[] version;
@@ -182,7 +176,7 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id
 static inline uint32_t getOpenCLVersionNum(uint16_t major, uint16_t minor)
 { return (cxuint(major)<<16) | minor; }
 
-struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
+struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndMovable
 {
     cl_platform_id amdOclPlatform;
     std::once_flag onceFlag; // for synchronization
@@ -212,12 +206,6 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
         openCLVersionNum = 0;
     }
     
-    // non-copyable and non-movable
-    CLRXPlatform(const CLRXPlatform&) = delete;
-    CLRXPlatform(CLRXPlatform&&) = delete;
-    CLRXPlatform& operator=(const CLRXPlatform&) = delete;
-    CLRXPlatform& operator=(CLRXPlatform&&) = delete;
-    
     ~CLRXPlatform()
     { 
         delete[] extensions;
@@ -229,7 +217,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id
     }
 };
 
-struct CLRX_INTERNAL CLRXContext: _cl_context
+struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_context amdOclContext;
@@ -248,12 +236,6 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
         openCLVersionNum = 0;
     }
     
-    // non-copyable and non-movable
-    CLRXContext(const CLRXContext&) = delete;
-    CLRXContext(CLRXContext&&) = delete;
-    CLRXContext& operator=(const CLRXContext&) = delete;
-    CLRXContext& operator=(CLRXContext&&) = delete;
-    
     ~CLRXContext()
     {
         delete[] properties;
@@ -261,7 +243,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context
     }
 };
 
-struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue
+struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_command_queue amdOclCommandQueue;
@@ -273,15 +255,9 @@ struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue
         context = nullptr;
         device = nullptr;
     }
-    
-    // non-copyable and non-movable
-    CLRXCommandQueue(const CLRXCommandQueue&) = delete;
-    CLRXCommandQueue(CLRXCommandQueue&&) = delete;
-    CLRXCommandQueue& operator=(const CLRXCommandQueue&) = delete;
-    CLRXCommandQueue& operator=(CLRXCommandQueue&&) = delete;
 };
 
-struct CLRX_INTERNAL CLRXMemObject: _cl_mem
+struct CLRX_INTERNAL CLRXMemObject: _cl_mem, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_mem amdOclMemObject;
@@ -295,12 +271,6 @@ struct CLRX_INTERNAL CLRXMemObject: _cl_mem
         parent = nullptr;
         buffer = nullptr; // for image
     }
-    
-    // non-copyable and non-movable
-    CLRXMemObject(const CLRXMemObject&) = delete;
-    CLRXMemObject(CLRXMemObject&&) = delete;
-    CLRXMemObject& operator=(const CLRXMemObject&) = delete;
-    CLRXMemObject& operator=(CLRXMemObject&&) = delete;
 };
 
 struct CLRX_INTERNAL CLRXMemDtorCallbackUserData
@@ -314,7 +284,7 @@ typedef std::map<cl_device_id, cl_device_id> CLRXProgramDevicesMap;
 
 typedef std::unordered_map<std::string, std::vector<bool> > CLRXKernelArgFlagMap;
 
-struct CLRX_INTERNAL CLRXProgram: _cl_program
+struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     std::mutex mutex; // for thread-safe updating assoc devices
@@ -338,12 +308,6 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program
         concurrentBuilds = 0;
         transDevicesMap = nullptr;
     }
-    
-    // non-copyable and non-movable
-    CLRXProgram(const CLRXProgram&) = delete;
-    CLRXProgram(CLRXProgram&&) = delete;
-    CLRXProgram& operator=(const CLRXProgram&) = delete;
-    CLRXProgram& operator=(CLRXProgram&&) = delete;
     
     ~CLRXProgram()
     {
@@ -371,7 +335,7 @@ struct CLRX_INTERNAL CLRXLinkProgramUserData
     void* realUserData;
 };
 
-struct CLRX_INTERNAL CLRXKernel: _cl_kernel
+struct CLRX_INTERNAL CLRXKernel: _cl_kernel, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_kernel amdOclKernel;
@@ -381,15 +345,9 @@ struct CLRX_INTERNAL CLRXKernel: _cl_kernel
     CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
             argTypes(_argTypes)
     { program = nullptr; }
-    
-    // non-copyable and non-movable
-    CLRXKernel(const CLRXKernel&) = delete;
-    CLRXKernel(CLRXKernel&&) = delete;
-    CLRXKernel& operator=(const CLRXKernel&) = delete;
-    CLRXKernel& operator=(CLRXKernel&&) = delete;
 };
 
-struct CLRX_INTERNAL CLRXEvent: _cl_event
+struct CLRX_INTERNAL CLRXEvent: _cl_event, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_event amdOclEvent;
@@ -401,12 +359,6 @@ struct CLRX_INTERNAL CLRXEvent: _cl_event
         context = nullptr;
         commandQueue = nullptr;
     }
-    
-    // non-copyable and non-movable
-    CLRXEvent(const CLRXEvent&) = delete;
-    CLRXEvent(CLRXEvent&&) = delete;
-    CLRXEvent& operator=(const CLRXEvent&) = delete;
-    CLRXEvent& operator=(CLRXEvent&&) = delete;
 };
 
 struct CLRX_INTERNAL CLRXEventCallbackUserData
@@ -416,7 +368,7 @@ struct CLRX_INTERNAL CLRXEventCallbackUserData
     void* realUserData;
 };
 
-struct CLRX_INTERNAL CLRXSampler: _cl_sampler
+struct CLRX_INTERNAL CLRXSampler: _cl_sampler, CLRX::NonCopyableAndMovable
 {
     std::atomic<size_t> refCount;
     cl_sampler amdOclSampler;

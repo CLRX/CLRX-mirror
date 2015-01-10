@@ -26,6 +26,7 @@
 #include <CLRX/Config.h>
 #include <exception>
 #include <string>
+#include <initializer_list>
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>
@@ -34,6 +35,187 @@
 /// main namespace
 namespace CLRX
 {
+
+struct NonCopyableAndMovable
+{
+    NonCopyableAndMovable() { }
+    NonCopyableAndMovable(const NonCopyableAndMovable&) = delete;
+    NonCopyableAndMovable(NonCopyableAndMovable&&) = delete;
+    NonCopyableAndMovable& operator=(const NonCopyableAndMovable&) = delete;
+    NonCopyableAndMovable& operator=(NonCopyableAndMovable&&) = delete;
+};
+
+template<typename T>
+class Array
+{
+private:
+    T* ptr, *ptrEnd;
+public:
+    Array(): ptr(nullptr), ptrEnd(nullptr)
+    { }
+    Array(size_t N)
+    {
+        ptr = nullptr;
+        if (N != 0)
+            ptr = new T[N];
+        ptrEnd = ptr+N;
+    }
+    
+    template<typename It>
+    Array(It b, It e)
+    try
+    {
+        ptr = nullptr;
+        const size_t N = e-b;
+        if (N != 0)
+            ptr = new T[N];
+        ptrEnd = ptr+N;
+        std::copy(b, e, ptr);
+    }
+    catch(...)
+    { 
+        delete[] ptr;
+        throw;
+    }
+    
+    Array(const Array& cp)
+    try
+    {
+        ptr = ptrEnd = nullptr;
+        if (cp.ptr != nullptr)
+        {
+            const size_t N = cp.ptrEnd-cp.ptr;
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr+N;
+            std::copy(cp.ptr, cp.ptrEnd, ptr);
+        }
+    }
+    catch(...)
+    {
+        delete[] ptr;
+        throw;
+    }
+    
+    Array(Array&& cp) noexcept
+    {
+        ptr = cp.ptr;
+        ptrEnd = cp.ptrEnd;
+        cp.ptr = cp.ptrEnd = nullptr;
+    }
+    
+    Array(std::initializer_list<T> list)
+    try
+    {
+        ptr = nullptr;
+        const size_t N = list.size();
+        if (N != 0)
+            ptr = new T[N];
+        ptrEnd = ptr+N;
+        std::copy(list.begin(), list.end(), ptr);
+    }
+    catch(...)
+    {
+        delete[] ptr;
+        throw;
+    }
+    
+    ~Array()
+    { delete[] ptr; }
+    
+    Array& operator=(const Array& cp)
+    {
+        if (this == &cp)
+            return *this;
+        const size_t N = cp.ptrEnd-cp.ptr;
+        if (N != ptrEnd-ptr)
+        {
+            if (ptr != nullptr)
+                delete[] ptr;
+            ptr = nullptr;
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr+N;
+        }
+        std::copy(cp.ptr, cp.ptrEnd, ptr);
+        return *this;
+    }
+    
+    Array& operator=(const Array&& cp) noexcept
+    {
+        if (this == &cp)
+            return *this;
+        if (ptr != nullptr)
+            delete[] ptr;
+        ptr = cp.ptr;
+        ptrEnd = cp.ptrEnd;
+        cp.ptr = cp.ptrEnd = nullptr;
+        return *this;
+    }
+    
+    const T& operator[] (size_t i) const
+    { return ptr[i]; }
+    T& operator[] (size_t i)
+    { return ptr[i]; }
+    
+    size_t size() const
+    { return ptrEnd-ptr; }
+    
+    void allocate(size_t N)
+    {
+        delete[] ptr;
+        ptr = nullptr;
+        if (N != 0)
+            ptr = new T[N];
+        ptrEnd = ptr + N;
+    }
+    
+    void resize(size_t N)
+    {
+        if (ptr-ptrEnd == N)
+            return;
+        T* newPtr = nullptr;
+        if (N != 0)
+            newPtr = new T[N];
+        try
+        {
+            std::copy(ptr, ptrEnd, newPtr);
+            delete[] ptr;
+            ptr = newPtr;
+            ptrEnd = ptr + N;
+        }
+        catch(...)
+        {
+            delete[] newPtr;
+            throw;
+        }
+    }
+    
+    template<typename It>
+    void assign(It b, It e)
+    {
+        const size_t N = e-b;
+        if (ptr-ptrEnd == N)
+        {
+            delete[] ptr;
+            ptr = nullptr;
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr + N;
+        }
+        std::copy(b, e, ptr);
+    }
+    
+    const T* begin() const
+    { return ptr; }
+    T* begin()
+    { return ptr; }
+    
+    const T* end() const
+    { return ptrEnd; }
+    T* end()
+    { return ptrEnd; }
+};
 
 /// exception class
 class Exception: public std::exception
@@ -69,7 +251,7 @@ enum {
 };
 
 /// dynamic library class
-class DynLibrary
+class DynLibrary: public NonCopyableAndMovable
 {
 private:
     void* handle;
@@ -82,11 +264,6 @@ public:
      */
     DynLibrary(const char* filename, cxuint flags = 0);
     ~DynLibrary();
-    
-    DynLibrary(const DynLibrary&) = delete;
-    DynLibrary(DynLibrary&&) = delete;
-    DynLibrary& operator=(const DynLibrary&) = delete;
-    DynLibrary& operator=(DynLibrary&&) = delete;
     
     /** loads library
      * \param filename library filename

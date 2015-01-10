@@ -394,9 +394,9 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     const uint32_t kernelsNum = input->kernels.size();
     /* compute size of binary */
     uint64_t elfSize = 0;
-    uint64_t binarySize = 8 + kernelsNum*16U + 20U /* sectionsNum */;
+    uint64_t binarySize = uint64_t(8) + kernelsNum*16U + 20U /* section */;
     for (const GalliumKernelInput& kernel: input->kernels)
-        binarySize += kernel.argInfos.size() + kernel.kernelName.size();
+        binarySize += uint64_t(kernel.argInfos.size())*24U + kernel.kernelName.size();
     
     // elf extra data
     uint32_t commentSize = 28;
@@ -546,8 +546,6 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     for (uint32_t korder: kernelsOrder)
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
-        if (kernel.progInfo.size() != 3)
-            throw Exception("Invalid size of prog info");
         GalliumProgInfoEntry* progInfoEntries =
                     reinterpret_cast<GalliumProgInfoEntry*>(binary + offset);
         for (const GalliumProgInfoEntry& entry: kernel.progInfo)

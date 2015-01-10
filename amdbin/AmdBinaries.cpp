@@ -215,7 +215,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
             if ((creationFlags & AMDBIN_CREATE_CALNOTES) != 0 &&
                         ULEV(phdr.p_type) == PT_NOTE)
             {
-                std::vector<CALNote>& calNotes = calNotesTable[encodingIndex];
+                Array<CALNote>& calNotes = calNotesTable[encodingIndex];
                 uint32_t calNotesCount = 0;
                 for (uint32_t pos = 0; pos < size; calNotesCount++)
                 {
