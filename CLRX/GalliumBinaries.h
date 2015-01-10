@@ -189,9 +189,10 @@ private:
     size_t binaryCodeSize;
     cxbyte* binaryCode;
     cxuint creationFlags;
-    
-    std::vector<GalliumKernel> kernels;
-    std::vector<GalliumSection> sections;
+    uint32_t kernelsNum;
+    uint32_t sectionsNum;
+    GalliumKernel* kernels;
+    GalliumSection* sections;
     
     KernelIndexMap kernelIndexMap;
     
@@ -199,6 +200,13 @@ private:
 public:
     GalliumBinary();
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
+    ~GalliumBinary();
+    
+    // no copyable and no movable
+    GalliumBinary(const GalliumBinary&) = delete;
+    GalliumBinary(GalliumBinary&&) = delete;
+    GalliumBinary& operator=(const GalliumBinary&) = delete;
+    GalliumBinary& operator=(GalliumBinary&&) = delete;
     
     /// get creation flags
     cxuint getCreationFlags()
@@ -238,7 +246,7 @@ public:
     
     /// get sections number
     uint32_t getSectionsNum() const
-    { return sections.size(); }
+    { return sectionsNum; }
     
     /// get size of section with specified index
     uint32_t getSectionSize(uint32_t index) const
@@ -256,12 +264,9 @@ public:
     const GalliumSection& getSection(uint32_t index) const
     { return sections[index]; }
     
-    const std::vector<GalliumSection>& getSections() const
-    { return sections; }
-    
     /// returns kernels number
     uint32_t getKernelsNum() const
-    { return kernels.size(); }
+    { return kernelsNum;; }
     
     /// returns kernel index
     uint32_t getKernelIndex(const char* name) const;
@@ -273,9 +278,6 @@ public:
     /// get kernel with speciified name
     const GalliumKernel& getKernel(const char* name) const
     { return kernels[getKernelIndex(name)]; }
-    
-    const std::vector<GalliumKernel>& getKernels() const
-    { return kernels; }
 };
 
 /*
