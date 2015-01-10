@@ -431,18 +431,21 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
         elfSize += input->globalDataSize;
     elfSize += commentSize;  // .comment
     /// .shstrtab
-    elfSize += 78 + ((input->globalData!=nullptr)?8:0) +
+    const cxuint shstrtabSize = 84 + ((input->globalData!=nullptr)?8:0) +
             ((disassembly!=nullptr)?16:0);
+    elfSize += shstrtabSize;
     if ((elfSize & 3) != 0) // alignment
         elfSize += 4-(elfSize&3);
+    elfSize += sizeof(Elf32_Shdr) * elfSectionsNum; // section table
     // .symtab
     elfSize += sizeof(Elf32_Sym) * (kernelsNum + 8 +
             (input->globalData!=nullptr));
-    elfSize += sizeof(Elf32_Shdr) * elfSectionsNum; // section table
     /* strtab */
+    uint64_t strtabSize = 0;
     for (const GalliumKernelInput& kernel: input->kernels)
-        elfSize += kernel.kernelName.size() + 1;
-    elfSize += 16; // enf of label and zero byte
+        strtabSize += kernel.kernelName.size() + 1;
+    strtabSize += 16; // enf of label and zero byte
+    elfSize += strtabSize;
     
     if (elfSize > UINT32_MAX)
         throw Exception("Elf binary size is too big!");
@@ -540,6 +543,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     size_t sectionOffsets[7];
     /* text */
     ::memcpy(binary + offset, input->code, input->codeSize);
+    offset += input->codeSize;
     fixAlignment(binary, offset, elfOffset, 4);
     sectionOffsets[0] = offset-elfOffset;
     /* .AMDGPU.config */
@@ -596,30 +600,6 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
             ".symtab\000.strtab", 35+16);
     offset += 35+16;
     fixAlignment(binary, offset, elfOffset, 4);
-    sectionOffsets[5] = offset-elfOffset;
-    
-    // .symtab
-    Elf32_Sym* symTableStart = reinterpret_cast<Elf32_Sym*>(binary + offset);
-    Elf32_Sym* symTable = symTableStart;
-    ::memset(symTable, 0, sizeof(Elf32_Sym));
-    symTable++;
-    putElfSymbolLE(symTable++, 1, input->codeSize, 0, 1,
-           ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
-    const cxuint sectSymsNum = (input->globalData!=nullptr)?7:6;
-    // local symbols for sections
-    for (cxuint i = 0; i < sectSymsNum; i++)
-        putElfSymbolLE(symTable++, 0, 0, 0, i+1, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
-    uint32_t kernelNameOffset = 16;
-    
-    // put kernel symbols
-    for (uint32_t korder: kernelsOrder)
-    {
-        const GalliumKernelInput& kernel = input->kernels[korder];
-        putElfSymbolLE(symTable++, kernelNameOffset, kernel.offset, 0, 1,
-                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0);
-        kernelNameOffset += kernel.kernelName.size()+1;
-    }
-    offset += sizeof(Elf32_Sym) * (symTable-symTableStart);
     
     /*
      * put section table
@@ -631,7 +611,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     sectionTable++;
     // .text
     putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
-            0x100, input->codeSize, 0, 256, 0, 0);
+            0x100, input->codeSize, 0, 0, 256, 0);
     sectionName += 6;
     // .data
     putElfSectionLE(sectionTable++, sectionName,
@@ -639,11 +619,11 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     sectionName += 6;
     // .bss
     putElfSectionLE(sectionTable++, sectionName, 8, SHF_ALLOC|SHF_WRITE,
-            sectionOffsets[1], 0, 0, 0, 4);
+            sectionOffsets[0], 0, 0, 0, 4);
     sectionName += 5;
     // .AMDGPU.config
     putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, 0, sectionOffsets[0],
-                    input->kernels.size()*24U, 0, 0, 4);
+                    input->kernels.size()*24U, 0, 0, 1);
     sectionName += 15;
     if (disassembly!=nullptr) // .AMDGPU.disasm
     {
@@ -659,7 +639,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     }
     // .comment
     putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, SHF_STRINGS|SHF_MERGE,
-                    sectionOffsets[3], 28, 0, 0, 1, 0, 1);
+                    sectionOffsets[3], commentSize, 0, 0, 1, 0, 1);
     sectionName += 9;
     // .note.GNU-stack
     putElfSectionLE(sectionTable++, sectionName, SHT_PROGBITS, 0, sectionOffsets[4],
@@ -667,16 +647,43 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     sectionName += 16;
     // .shstrtab
     putElfSectionLE(sectionTable++, sectionName, SHT_STRTAB, 0, sectionOffsets[4],
-                    (input->globalData!=nullptr)?90:84, 0, 0, 1);
+                    shstrtabSize, 0, 0, 1);
     sectionName += 10;
+    offset += sizeof(Elf32_Shdr)*elfSectionsNum;
+    
+    sectionOffsets[5] = offset-elfOffset;
+    // .symtab
+    Elf32_Sym* symTableStart = reinterpret_cast<Elf32_Sym*>(binary + offset);
+    Elf32_Sym* symTable = symTableStart;
+    ::memset(symTable, 0, sizeof(Elf32_Sym));
+    symTable++;
+    putElfSymbolLE(symTable++, 1, input->codeSize, 0, 1,
+           ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE), 0);
+    const cxuint sectSymsNum = (input->globalData!=nullptr)?7:6;
+    // local symbols for sections
+    for (cxuint i = 0; i < sectSymsNum; i++)
+        putElfSymbolLE(symTable++, 0, 0, 0, i+1, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0);
+    uint32_t kernelNameOffset = 16;
+    
+    // put kernel symbols
+    for (uint32_t korder: kernelsOrder)
+    {
+        const GalliumKernelInput& kernel = input->kernels[korder];
+        putElfSymbolLE(symTable++, kernelNameOffset, kernel.offset, 0, 1,
+                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0);
+        kernelNameOffset += kernel.kernelName.size()+1;
+    }
+    offset += sizeof(Elf32_Sym) * (symTable-symTableStart);
+    
+    // finish section table
     // .symtab
     putElfSectionLE(sectionTable++, sectionName, SHT_SYMTAB, 0, sectionOffsets[5],
-            symTable-symTableStart, elfSectionsNum, 0, 4, 0, sizeof(Elf32_Sym));
+            sizeof(Elf32_Sym)*(symTable-symTableStart), elfSectionsNum-1, 0, 4, 0,
+            sizeof(Elf32_Sym));
     sectionName += 8;
     // .strtab
-    offset += sizeof(Elf32_Shdr)*elfSectionsNum;
     putElfSectionLE(sectionTable++, sectionName, SHT_STRTAB, 0, offset-elfOffset,
-                    symTable-symTableStart, 0, 0, 4, 0, sizeof(Elf32_Sym));
+                    strtabSize, 0, 0, 1, 0, 0);
     
     // last section .strtab
     ::memcpy(binary + offset, "\000EndOfTextLabel", 16);
