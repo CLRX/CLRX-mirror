@@ -201,6 +201,11 @@ public:
         std::copy(b, e, ptr);
     }
     
+    const T* data() const
+    { return ptr; }
+    T* data()
+    { return ptr; }
+    
     const T* begin() const
     { return ptr; }
     T* begin()
