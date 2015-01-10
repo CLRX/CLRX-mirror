@@ -36,13 +36,13 @@
 namespace CLRX
 {
 
-struct NonCopyableAndMovable
+struct NonCopyableAndNonMovable
 {
-    NonCopyableAndMovable() { }
-    NonCopyableAndMovable(const NonCopyableAndMovable&) = delete;
-    NonCopyableAndMovable(NonCopyableAndMovable&&) = delete;
-    NonCopyableAndMovable& operator=(const NonCopyableAndMovable&) = delete;
-    NonCopyableAndMovable& operator=(NonCopyableAndMovable&&) = delete;
+    NonCopyableAndNonMovable() { }
+    NonCopyableAndNonMovable(const NonCopyableAndNonMovable&) = delete;
+    NonCopyableAndNonMovable(NonCopyableAndNonMovable&&) = delete;
+    NonCopyableAndNonMovable& operator=(const NonCopyableAndNonMovable&) = delete;
+    NonCopyableAndNonMovable& operator=(NonCopyableAndNonMovable&&) = delete;
 };
 
 template<typename T>
@@ -248,7 +248,7 @@ enum {
 };
 
 /// dynamic library class
-class DynLibrary: public NonCopyableAndMovable
+class DynLibrary: public NonCopyableAndNonMovable
 {
 private:
     void* handle;

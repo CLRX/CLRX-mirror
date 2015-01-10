@@ -180,7 +180,7 @@ public:
 
 /** GalliumBinary object. This object converts to host-endian fields and
   * ULEV is not needed to access to fields of kernels and sections */
-class GalliumBinary: public NonCopyableAndMovable
+class GalliumBinary: public NonCopyableAndNonMovable
 {
 public:
     /// symbol index map
@@ -298,7 +298,7 @@ struct GalliumInput
     const cxbyte* code;     ///< code
 };
 
-class GalliumBinGenerator: public NonCopyableAndMovable
+class GalliumBinGenerator: public NonCopyableAndNonMovable
 {
 private:
     bool manageable;

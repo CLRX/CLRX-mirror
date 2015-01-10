@@ -107,7 +107,7 @@ public:
  * while whole lifecycle of this CLIParser. For whole lifecycle of any option argument or
  * left over argument, a CLIParser must be alive.
  * (because it keeps values of these arguments). */
-class CLIParser: public NonCopyableAndMovable
+class CLIParser: public NonCopyableAndNonMovable
 {
 private:
     template<typename T>

@@ -145,7 +145,7 @@ CLRX_INTERNAL extern CLRXExtensionEntry clrxExtensionsTable[18];
 
 struct CLRXPlatform;
 
-struct CLRX_INTERNAL CLRXDevice: _cl_device_id, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXDevice: _cl_device_id, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_device_id amdOclDevice;
@@ -176,7 +176,7 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id, CLRX::NonCopyableAndMovable
 static inline uint32_t getOpenCLVersionNum(uint16_t major, uint16_t minor)
 { return (cxuint(major)<<16) | minor; }
 
-struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovable
 {
     cl_platform_id amdOclPlatform;
     std::once_flag onceFlag; // for synchronization
@@ -217,7 +217,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndMovable
     }
 };
 
-struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_context amdOclContext;
@@ -243,7 +243,7 @@ struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndMovable
     }
 };
 
-struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_command_queue amdOclCommandQueue;
@@ -257,7 +257,7 @@ struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue, CLRX::NonCopyableAndMo
     }
 };
 
-struct CLRX_INTERNAL CLRXMemObject: _cl_mem, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXMemObject: _cl_mem, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_mem amdOclMemObject;
@@ -284,7 +284,7 @@ typedef std::map<cl_device_id, cl_device_id> CLRXProgramDevicesMap;
 
 typedef std::unordered_map<std::string, std::vector<bool> > CLRXKernelArgFlagMap;
 
-struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     std::mutex mutex; // for thread-safe updating assoc devices
@@ -335,7 +335,7 @@ struct CLRX_INTERNAL CLRXLinkProgramUserData
     void* realUserData;
 };
 
-struct CLRX_INTERNAL CLRXKernel: _cl_kernel, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXKernel: _cl_kernel, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_kernel amdOclKernel;
@@ -347,7 +347,7 @@ struct CLRX_INTERNAL CLRXKernel: _cl_kernel, CLRX::NonCopyableAndMovable
     { program = nullptr; }
 };
 
-struct CLRX_INTERNAL CLRXEvent: _cl_event, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXEvent: _cl_event, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_event amdOclEvent;
@@ -368,7 +368,7 @@ struct CLRX_INTERNAL CLRXEventCallbackUserData
     void* realUserData;
 };
 
-struct CLRX_INTERNAL CLRXSampler: _cl_sampler, CLRX::NonCopyableAndMovable
+struct CLRX_INTERNAL CLRXSampler: _cl_sampler, CLRX::NonCopyableAndNonMovable
 {
     std::atomic<size_t> refCount;
     cl_sampler amdOclSampler;

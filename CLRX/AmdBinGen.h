@@ -210,7 +210,7 @@ struct AmdInput
 };
 
 /// main AMD GPU Binary generator
-class AmdGPUBinGenerator: public NonCopyableAndMovable
+class AmdGPUBinGenerator: public NonCopyableAndNonMovable
 {
 private:
     bool manageable;

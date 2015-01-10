@@ -359,7 +359,7 @@ enum class AmdMainType
 };
 
 /// main AMD binary base class
-class AmdMainBinaryBase: public NonCopyableAndMovable
+class AmdMainBinaryBase: public NonCopyableAndNonMovable
 {
 public:
     /// Kernel info map
