@@ -82,14 +82,11 @@ public:
     try
     {
         ptr = ptrEnd = nullptr;
-        if (cp.ptr != nullptr)
-        {
-            const size_t N = cp.ptrEnd-cp.ptr;
-            if (N != 0)
-                ptr = new T[N];
-            ptrEnd = ptr+N;
-            std::copy(cp.ptr, cp.ptrEnd, ptr);
-        }
+        const size_t N = cp.ptrEnd-cp.ptr;
+        if (N != 0)
+            ptr = new T[N];
+        ptrEnd = ptr+N;
+        std::copy(cp.ptr, cp.ptrEnd, ptr);
     }
     catch(...)
     {
