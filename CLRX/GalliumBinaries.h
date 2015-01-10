@@ -198,7 +198,6 @@ private:
     
     GalliumElfBinary elfBinary;
 public:
-    GalliumBinary();
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
     ~GalliumBinary();
     

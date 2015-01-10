@@ -124,10 +124,6 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 
 /* main GalliumBinary */
 
-GalliumBinary::GalliumBinary() : binaryCodeSize(0), binaryCode(nullptr), creationFlags(0),
-        kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
-{ }
-
 GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
                  cxuint creationFlags)
 try
