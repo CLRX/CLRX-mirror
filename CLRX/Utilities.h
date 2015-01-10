@@ -127,8 +127,7 @@ public:
         const size_t N = cp.ptrEnd-cp.ptr;
         if (N != size_t(ptrEnd-ptr))
         {
-            if (ptr != nullptr)
-                delete[] ptr;
+            delete[] ptr;
             ptr = nullptr;
             if (N != 0)
                 ptr = new T[N];
@@ -142,8 +141,7 @@ public:
     {
         if (this == &cp)
             return *this;
-        if (ptr != nullptr)
-            delete[] ptr;
+        delete[] ptr;
         ptr = cp.ptr;
         ptrEnd = cp.ptrEnd;
         cp.ptr = cp.ptrEnd = nullptr;
