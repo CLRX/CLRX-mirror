@@ -193,6 +193,12 @@ public:
         }
     }
     
+    void clear()
+    {
+        delete[] ptr;
+        ptr = ptrEnd = nullptr;
+    }
+    
     template<typename It>
     void assign(It b, It e)
     {

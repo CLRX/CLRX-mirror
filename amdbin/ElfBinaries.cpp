@@ -22,7 +22,6 @@
 #include <cstring>
 #include <elf.h>
 #include <cstdint>
-#include <unordered_map>
 #include <utility>
 #include <string>
 #include <CLRX/Utilities.h>

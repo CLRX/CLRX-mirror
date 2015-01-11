@@ -1307,6 +1307,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             size_t kernelsNum = amdBin->getKernelInfosNum();
             const KernelInfo* kernelInfos = amdBin->getKernelInfos();
             /* create kernel argsflags map (for setKernelArg) */
+            program->kernelArgFlagsMap.resize(kernelsNum);
             for (size_t i = 0; i < kernelsNum; i++)
             {
                 const KernelInfo& kernelInfo = kernelInfos[i];
@@ -1326,20 +1327,11 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                     kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
                 }
                 
-                auto insertInfo = program->kernelArgFlagsMap.insert(
-                    std::make_pair(kernelInfo.kernelName, kernelFlags));
-                
-                if (!insertInfo.second)
-                { // if not inserted (already exists)
-                    if ((insertInfo.first)->second != kernelFlags)
-                    {   /* if not match!!! */
-                        for (cl_uint x = 0; x < program->assocDevicesNum; x++)
-                            delete[] binaries[x];
-                        delete[] binaries;
-                        return CL_INVALID_KERNEL_DEFINITION;
-                    }
-                }
+                program->kernelArgFlagsMap[i] =
+                        std::make_pair(kernelInfo.kernelName, kernelFlags);
             }
+            CLRX::mapSort(program->kernelArgFlagsMap.begin(),
+                      program->kernelArgFlagsMap.end());
         }
     }
     catch(const std::bad_alloc& ex)

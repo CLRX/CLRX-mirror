@@ -282,7 +282,7 @@ struct CLRX_INTERNAL CLRXMemDtorCallbackUserData
 
 typedef std::map<cl_device_id, cl_device_id> CLRXProgramDevicesMap;
 
-typedef std::unordered_map<std::string, std::vector<bool> > CLRXKernelArgFlagMap;
+typedef CLRX::Array<std::pair<std::string, std::vector<bool> > > CLRXKernelArgFlagMap;
 
 struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
 {

@@ -1528,7 +1528,8 @@ clrxclCreateKernel(cl_program      program,
         }
         
         CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
-                p->kernelArgFlagsMap.find(kernel_name);
+            CLRX::binaryMapFind(p->kernelArgFlagsMap.begin(), p->kernelArgFlagsMap.end(),
+                              kernel_name);
         if (argFlagMapIt == p->kernelArgFlagsMap.end())
         {
             std::cerr << "Can't find kernel arg flag!" << std::endl;
@@ -1645,7 +1646,8 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 }
                 
                 CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
-                        p->kernelArgFlagsMap.find(kernelName);
+                    CLRX::binaryMapFind(p->kernelArgFlagsMap.begin(),
+                        p->kernelArgFlagsMap.end(), kernelName);
                 if (argFlagMapIt == p->kernelArgFlagsMap.end())
                 {
                     std::cerr << "Can't find kernel arg flag!" << std::endl;
