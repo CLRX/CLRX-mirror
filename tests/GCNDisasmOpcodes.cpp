@@ -3201,7 +3201,7 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
                       GPUDeviceType deviceType)
 {
     std::ostringstream disOss;
-    DisasmInput input;
+    AmdDisasmInput input;
     input.deviceType = deviceType;
     input.is64BitMode = false;
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);

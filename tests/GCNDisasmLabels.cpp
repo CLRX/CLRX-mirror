@@ -71,7 +71,7 @@ static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
                       GPUDeviceType deviceType)
 {
     std::ostringstream disOss;
-    DisasmInput input;
+    AmdDisasmInput input;
     input.deviceType = deviceType;
     input.is64BitMode = false;
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);

@@ -23,7 +23,6 @@
 #include <elf.h>
 #include <climits>
 #include <cstdint>
-#include <unordered_map>
 #include <map>
 #include <utility>
 #include <string>
@@ -559,7 +558,8 @@ AmdMainBinaryBase::~AmdMainBinaryBase()
 
 const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
 {
-    KernelInfoMap::const_iterator it = kernelInfosMap.find(name);
+    KernelInfoMap::const_iterator it = binaryMapFind(
+        kernelInfosMap.begin(), kernelInfosMap.end(), name);
     if (it == kernelInfosMap.end())
         throw Exception("Can't find kernel name");
     return kernelInfos[it->second];
@@ -1211,8 +1211,12 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
                 (creationFlags >> AMDBIN_INNER_SHIFT) & AMDBIN_INNER_INT_CREATE_ALL);
         }
         if ((creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0)
+        {
+            innerBinaryMap.resize(innerBinariesNum);
             for (size_t i = 0; i < innerBinariesNum; i++)
-                innerBinaryMap.insert(std::make_pair(innerBinaries[i].getKernelName(), i));
+                innerBinaryMap[i] = std::make_pair(innerBinaries[i].getKernelName(), i);
+            mapSort(innerBinaryMap.begin(), innerBinaryMap.end());
+        }
     }
     
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
@@ -1222,7 +1226,6 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         metadatas = new AmdGPUKernelMetadata[kernelInfosNum];
         
         typename Types::Size ki = 0;
-        
         for (typename Types::Size it: choosenSymsMetadata)
         {   // read symbol _OpenCL..._metadata
             const typename Types::Sym& sym = mainElf.getSymbol(it);
@@ -1250,9 +1253,12 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         }
         /* maps kernel info */
         if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
+        {
+            kernelInfosMap.resize(kernelInfosNum);
             for (size_t i = 0; i < kernelInfosNum; i++)
-                kernelInfosMap.insert(
-                    std::make_pair(kernelInfos[i].kernelName, i));
+                kernelInfosMap[i] = std::make_pair(kernelInfos[i].kernelName, i);
+            mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
+        }
     }
     if ((creationFlags & AMDBIN_CREATE_KERNELHEADERS) != 0)
     {
@@ -1287,9 +1293,12 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         }
         /* maps kernel headers */
         if ((creationFlags & AMDBIN_CREATE_KERNELHEADERMAP) != 0)
+        {
+            kernelHeaderMap.resize(kernelHeadersNum);
             for (size_t i = 0; i < kernelHeadersNum; i++)
-                kernelHeaderMap.insert(
-                    std::make_pair(kernelHeaders[i].kernelName, i));
+                kernelHeaderMap[i] = std::make_pair(kernelHeaders[i].kernelName, i);
+            mapSort(kernelHeaderMap.begin(), kernelHeaderMap.end());
+        }
     }
     }
     catch(...)
@@ -1308,7 +1317,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
 
 const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name) const
 {
-    InnerBinaryMap::const_iterator it = innerBinaryMap.find(name);
+    InnerBinaryMap::const_iterator it = binaryMapFind(innerBinaryMap.begin(),
+                  innerBinaryMap.end(), name);
     if (it == innerBinaryMap.end())
         throw Exception("Can't find inner binary");
     return innerBinaries[it->second];
@@ -1317,7 +1327,8 @@ const AmdInnerGPUBinary32& AmdMainGPUBinaryBase::getInnerBinary(const char* name
 const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderEntry(
             const char* name) const
 {
-    KernelHeaderMap::const_iterator it = kernelHeaderMap.find(name);
+    KernelHeaderMap::const_iterator it = binaryMapFind(kernelHeaderMap.begin(),
+                   kernelHeaderMap.end(), name);
     if (it == kernelHeaderMap.end())
         throw Exception("Can't find kernel header");
     return kernelHeaders[it->second];
@@ -1347,9 +1358,12 @@ void AmdMainX86Binary32::initKernelInfos(cxuint creationFlags)
 {
     kernelInfosNum = innerBinary.getKernelInfos(kernelInfos);
     if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
+    {
+        kernelInfosMap.resize(kernelInfosNum);
         for (size_t i = 0; i < kernelInfosNum; i++)
-            kernelInfosMap.insert(
-                std::make_pair(kernelInfos[i].kernelName, i));
+            kernelInfosMap[i] = std::make_pair(kernelInfos[i].kernelName, i);
+        mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
+    }
 }
 
 AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -1426,9 +1440,12 @@ void AmdMainX86Binary64::initKernelInfos(cxuint creationFlags)
 {
     kernelInfosNum = innerBinary.getKernelInfos(kernelInfos);
     if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
+    {
+        kernelInfosMap.resize(kernelInfosNum);
         for (size_t i = 0; i < kernelInfosNum; i++)
-            kernelInfosMap.insert(
-                std::make_pair(kernelInfos[i].kernelName, i));
+            kernelInfosMap[i] = std::make_pair(kernelInfos[i].kernelName, i);
+        mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
+    }
 }
 
 AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,

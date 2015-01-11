@@ -28,8 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <vector>
-#include <unordered_map>
+#include <utility>
 #include <CLRX/ElfBinaries.h>
 #include <CLRX/MemAccess.h>
 #include <CLRX/Utilities.h>
@@ -363,7 +362,7 @@ class AmdMainBinaryBase: public NonCopyableAndNonMovable
 {
 public:
     /// Kernel info map
-    typedef std::unordered_map<std::string, size_t> KernelInfoMap;
+    typedef Array<std::pair<std::string, size_t> > KernelInfoMap;
 protected:
     AmdMainType type;   ///< type of binaries
     size_t kernelInfosNum;  ///< number of kernel infos that is number of kernels
@@ -425,8 +424,8 @@ class AmdMainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
     /// inner binary map
-    typedef std::unordered_map<std::string, size_t> InnerBinaryMap;
-    typedef std::unordered_map<std::string, size_t> KernelHeaderMap;
+    typedef Array<std::pair<std::string, size_t> > InnerBinaryMap;
+    typedef Array<std::pair<std::string, size_t> > KernelHeaderMap;
 protected:
     size_t innerBinariesNum;
     AmdInnerGPUBinary32* innerBinaries;

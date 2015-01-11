@@ -28,7 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <unordered_map>
+#include <utility>
 #include <CLRX/MemAccess.h>
 #include <CLRX/Utilities.h>
 
@@ -84,11 +84,9 @@ class ElfBinaryTemplate
 {
 public:
     /// section index map
-    typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
-            CLRX::CStringEqual> SectionIndexMap;
+    typedef Array<std::pair<const char*, size_t> > SectionIndexMap;
     /// symbol index map
-    typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
-            CLRX::CStringEqual> SymbolIndexMap;
+    typedef Array<std::pair<const char*, size_t> > SymbolIndexMap;
 protected:
     cxuint creationFlags;   ///< creation flags holder
     size_t binaryCodeSize;  ///< binary code size
@@ -264,7 +262,8 @@ public:
     /// get section iterator with specified name (requires section index map)
     SectionIndexMap::const_iterator getSectionIter(const char* name) const
     {
-        SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
+        SectionIndexMap::const_iterator it = binaryMapFind(
+                    sectionIndexMap.begin(), sectionIndexMap.end(), name, CStringLess());
         if (it == sectionIndexMap.end())
             throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
         return it;
@@ -290,7 +289,8 @@ public:
     /// get symbol iterator with specified name (requires symbol index map)
     SymbolIndexMap::const_iterator getSymbolIter(const char* name) const
     {
-        SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
+        SymbolIndexMap::const_iterator it = binaryMapFind(
+                    symbolIndexMap.begin(), symbolIndexMap.end(), name, CStringLess());
         if (it == symbolIndexMap.end())
             throw Exception(std::string("Can't find Elf")+Types::bitName+" Symbol");
         return it;
@@ -299,7 +299,8 @@ public:
     /// get dynamic symbol iterator with specified name (requires dynamic symbol index map)
     SymbolIndexMap::const_iterator getDynSymbolIter(const char* name) const
     {
-        SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
+        SymbolIndexMap::const_iterator it = binaryMapFind(
+                    dynSymIndexMap.begin(), dynSymIndexMap.end(), name, CStringLess());
         if (it == dynSymIndexMap.end())
             throw Exception(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
         return it;

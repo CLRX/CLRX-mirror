@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <utility>
 #include <CLRX/ElfBinaries.h>
 #include <CLRX/MemAccess.h>
 #include <CLRX/Utilities.h>
@@ -37,7 +38,6 @@ namespace CLRX
 {
 
 enum : cxuint {
-    GALLIUM_CREATE_KERNELMAP = 1,
     GALLIUM_INNER_CREATE_SECTIONMAP = 0x10, ///< create map of sections for inner binaries
     GALLIUM_INNER_CREATE_SYMBOLMAP = 0x20,  ///< create map of kernels for inner binaries
     /** create map of dynamic kernels for inner binaries */
@@ -130,8 +130,7 @@ struct GalliumSection
 class GalliumElfBinary: public ElfBinary32
 {
 public:
-    typedef std::unordered_multimap<const char*, size_t, CLRX::CStringHash,
-            CLRX::CStringEqual> ProgInfoEntryIndexMap;
+    typedef Array<std::pair<const char*, size_t> > ProgInfoEntryIndexMap;
 private:
     uint32_t progInfosNum;
     GalliumProgInfoEntry* progInfoEntries;
@@ -182,9 +181,6 @@ public:
   * ULEV is not needed to access to fields of kernels and sections */
 class GalliumBinary: public NonCopyableAndNonMovable
 {
-public:
-    /// symbol index map
-    typedef std::unordered_multimap<std::string, size_t> KernelIndexMap;
 private:
     size_t binaryCodeSize;
     cxbyte* binaryCode;
@@ -194,8 +190,6 @@ private:
     GalliumKernel* kernels;
     GalliumSection* sections;
     
-    KernelIndexMap kernelIndexMap;
-    
     GalliumElfBinary elfBinary;
 public:
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
@@ -204,10 +198,6 @@ public:
     /// get creation flags
     cxuint getCreationFlags()
     { return creationFlags; }
-    
-    /// returns true if object has a symbol's index map
-    bool hasKernelMap() const
-    { return (creationFlags & GALLIUM_CREATE_KERNELMAP) != 0; }
     
     /// get size of binaries
     size_t getSize() const

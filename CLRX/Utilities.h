@@ -26,6 +26,8 @@
 #include <CLRX/Config.h>
 #include <exception>
 #include <string>
+#include <iterator>
+#include <algorithm>
 #include <initializer_list>
 #include <cstdlib>
 #include <cstring>
@@ -48,12 +50,16 @@ struct NonCopyableAndNonMovable
 template<typename T>
 class Array
 {
+public:
+    typedef T* iterator;
+    typedef const T* const_iterator;
+    typedef T element_type;
 private:
     T* ptr, *ptrEnd;
 public:
     Array(): ptr(nullptr), ptrEnd(nullptr)
     { }
-    Array(size_t N)
+    explicit Array(size_t N)
     {
         ptr = nullptr;
         if (N != 0)
@@ -174,7 +180,8 @@ public:
             newPtr = new T[N];
         try
         {
-            std::copy(ptr, ptrEnd, newPtr);
+            size_t toCopy = std::min(N, size_t(ptr-ptrEnd));
+            std::copy(ptr, ptr+toCopy, newPtr);
             delete[] ptr;
             ptr = newPtr;
             ptrEnd = ptr + N;
@@ -216,6 +223,104 @@ public:
     T* end()
     { return ptrEnd; }
 };
+
+/// binary find helper
+template<typename Iter>
+Iter binaryFind(Iter begin, Iter end, const
+            typename std::iterator_traits<Iter>::value_type& v);
+
+/// binary find helper
+template<typename Iter, typename Comp =
+        std::less<typename std::iterator_traits<Iter>::value_type> >
+Iter binaryFind(Iter begin, Iter end, const
+        typename std::iterator_traits<Iter>::value_type& v, Comp comp);
+
+/// binary find helper for array-map
+template<typename Iter>
+Iter binaryMapFind(Iter begin, Iter end, const 
+        typename std::iterator_traits<Iter>::value_type::first_type& k);
+
+/// binary find helper for array-map
+template<typename Iter, typename Comp =
+    std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
+Iter binaryMapFind(Iter begin, Iter end, const
+        typename std::iterator_traits<Iter>::value_type::first_type& k, Comp comp);
+
+template<typename Iter>
+void mapSort(Iter begin, Iter end);
+
+template<typename Iter, typename Comp =
+    std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
+void mapSort(Iter begin, Iter end, Comp comp);
+
+template<typename Iter>
+Iter binaryFind(Iter begin, Iter end,
+        const typename std::iterator_traits<Iter>::value_type& v)
+{
+    auto it = std::lower_bound(begin, end, v);
+    if (it == end || v > *it)
+        return end;
+    return it;
+}
+
+template<typename Iter, typename Comp =
+        std::less<typename std::iterator_traits<Iter>::value_type> >
+Iter binaryFind(Iter begin, Iter end,
+        const typename std::iterator_traits<Iter>::value_type& v, Comp comp)
+{
+    auto it = std::lower_bound(begin, end, v, comp);
+    if (it == end || comp(v, *it))
+        return end;
+    return it;
+}
+
+template<typename Iter>
+Iter binaryMapFind(Iter begin, Iter end, const
+            typename std::iterator_traits<Iter>::value_type::first_type& k)
+{
+    typedef typename std::iterator_traits<Iter>::value_type::first_type K;
+    typedef typename std::iterator_traits<Iter>::value_type::second_type V;
+    auto it = std::lower_bound(begin, end, std::make_pair(k, V()),
+               [](const std::pair<K,V>& e1, const std::pair<K,V>& e2) {
+        return e1.first < e2.first; });
+    if (it == end || k > it->first)
+        return end;
+    return it;
+}
+
+template<typename Iter, typename Comp =
+     std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
+Iter binaryMapFind(Iter begin, Iter end, const
+        typename std::iterator_traits<Iter>::value_type::first_type& k, Comp comp)
+{
+    typedef typename std::iterator_traits<Iter>::value_type::first_type K;
+    typedef typename std::iterator_traits<Iter>::value_type::second_type V;
+    auto it = std::lower_bound(begin, end, std::make_pair(k, V()),
+               [&comp](const std::pair<K,V>& e1, const std::pair<K,V>& e2) {
+        return comp(e1.first, e2.first); });
+    if (it == end || comp(k, it->first))
+        return end;
+    return it;
+}
+
+template<typename Iter>
+void mapSort(Iter begin, Iter end)
+{
+    typedef typename std::iterator_traits<Iter>::value_type::first_type K;
+    typedef typename std::iterator_traits<Iter>::value_type::second_type V;
+    std::sort(begin, end, [](const std::pair<K,V>& e1, const std::pair<K,V>& e2) {
+        return e1.first < e2.first; });
+}
+
+template<typename Iter, typename Comp = 
+    std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
+void mapSort(Iter begin, Iter end, Comp comp)
+{
+    typedef typename std::iterator_traits<Iter>::value_type::first_type K;
+    typedef typename std::iterator_traits<Iter>::value_type::second_type V;
+    std::sort(begin, end, [&comp](const std::pair<K,V>& e1, const std::pair<K,V>& e2) {
+       return comp(e1.first, e2.first); });
+}
 
 /// exception class
 class Exception: public std::exception

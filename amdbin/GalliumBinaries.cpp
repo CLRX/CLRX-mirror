@@ -81,6 +81,8 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     /* check symbols */
     const cxuint symbolsNum = getSymbolsNum();
     progInfosNum = 0;
+    if (hasProgInfoMap())
+        progInfoEntryMap.resize(symbolsNum);
     for (cxuint i = 0; i < symbolsNum; i++)
     {
         const Elf32_Sym& sym = getSymbol(i);
@@ -91,9 +93,14 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             if (ULEV(sym.st_value) >= textSize)
                 throw Exception("kernel symbol offset out of range");
             if (hasProgInfoMap())
-                progInfoEntryMap.insert(std::make_pair(symName, 3*progInfosNum));
+                progInfoEntryMap[progInfosNum] = std::make_pair(symName, 3*progInfosNum);
             progInfosNum++;
         }
+    }
+    if (hasProgInfoMap())
+    {
+        progInfoEntryMap.resize(progInfosNum);
+        mapSort(progInfoEntryMap.begin(), progInfoEntryMap.end(), CStringLess());
     }
     if (progInfosNum*24U != ULEV(shdr.sh_size))
         throw Exception("Number of symbol kernels doesn't match progInfos number!");
@@ -106,7 +113,8 @@ uint32_t GalliumElfBinary::getProgramInfoEntriesNum(uint32_t index) const
 
 uint32_t GalliumElfBinary::getProgramInfoEntryIndex(const char* name) const
 {
-    ProgInfoEntryIndexMap::const_iterator it = progInfoEntryMap.find(name);
+    ProgInfoEntryIndexMap::const_iterator it = binaryMapFind(progInfoEntryMap.begin(),
+                         progInfoEntryMap.end(), name, CStringLess());
     if (it == progInfoEntryMap.end())
         throw Exception("Can't find GalliumElf ProgInfoEntry");
     return it->second;
@@ -127,8 +135,7 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
                  cxuint creationFlags)
 try
-         : binaryCodeSize(0), binaryCode(nullptr),
-         creationFlags(0), kernelsNum(0), sectionsNum(0),
+         : kernelsNum(0), sectionsNum(0),
          kernels(nullptr), sections(nullptr)
 {
     this->creationFlags = creationFlags;
@@ -156,8 +163,6 @@ try
             throw Exception("Kernel name length is too long!");
         
         kernel.kernelName.assign((const char*)data, symNameLen);
-        if (hasKernelMap())
-            kernelIndexMap.insert(std::make_pair(kernel.kernelName, i));
         
         /// check kernel name order (sorted order is required by Mesa3D radeon driver)
         if (i != 0 && kernel.kernelName <= kernels[i-1].kernelName)
@@ -292,10 +297,13 @@ GalliumBinary::~GalliumBinary()
 
 uint32_t GalliumBinary::getKernelIndex(const char* name) const
 {
-    KernelIndexMap::const_iterator it = kernelIndexMap.find(name);
-    if (it == kernelIndexMap.end())
+    const GalliumKernel v = { name };
+    const GalliumKernel* it = binaryFind(kernels, kernels+kernelsNum, v,
+       [](const GalliumKernel& k1, const GalliumKernel& k2)
+       { return k1.kernelName < k2.kernelName; });
+    if (it == kernels+kernelsNum || it->kernelName != name)
         throw Exception("Can't find Gallium Kernel Index");
-    return it->second;
+    return it-kernels;
 }
 
 /*

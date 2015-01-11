@@ -145,6 +145,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
         const typename Types::Shdr* dynSymTableHdr = nullptr;
         
         cxuint shnum = ULEV(ehdr->e_shnum);
+        if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
+            sectionIndexMap.resize(shnum);
         for (cxuint i = 0; i < shnum; i++)
         {
             const typename Types::Shdr& shdr = getSectionHeader(i);
@@ -166,13 +168,16 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             const char* shname =
                 reinterpret_cast<const char*>(sectionStringTable + sh_nameindx);
             
-            if (*shname != 0 && (creationFlags & ELF_CREATE_SECTIONMAP) != 0)
-                sectionIndexMap.insert(std::make_pair(shname, i));
+            if (/**shname != 0 &&*/ (creationFlags & ELF_CREATE_SECTIONMAP) != 0)
+                //sectionIndexMap.insert(std::make_pair(shname, i));
+                sectionIndexMap[i] = std::make_pair(shname, i);
             if (ULEV(shdr.sh_type) == SHT_SYMTAB)
                 symTableHdr = &shdr;
             if (ULEV(shdr.sh_type) == SHT_DYNSYM)
                 dynSymTableHdr = &shdr;
         }
+        if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
+            mapSort(sectionIndexMap.begin(), sectionIndexMap.end(), CStringLess());
         
         if (symTableHdr != nullptr)
         {   // indexing symbols
@@ -190,6 +195,8 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             const size_t unfinishedSymstrPos = unfinishedRegionOfStringTable(
                     symbolStringTable, ULEV(symstrShdr.sh_size));
             symbolsNum = ULEV(symTableHdr->sh_size)/ULEV(symTableHdr->sh_entsize);
+            if ((creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
+                symbolIndexMap.resize(symbolsNum);
             
             for (typename Types::Size i = 0; i < symbolsNum; i++)
             {   /* verify symbol names */
@@ -203,9 +210,12 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
                 const char* symname =
                     reinterpret_cast<const char*>(symbolStringTable + symnameindx);
                 // add to symbol map
-                if (*symname != 0 && (creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
-                    symbolIndexMap.insert(std::make_pair(symname, i));
+                if (/**symname != 0 &&*/ (creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
+                    //symbolIndexMap.insert(std::make_pair(symname, i));
+                    symbolIndexMap[i] = std::make_pair(symname, i);
             }
+            if ((creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
+                mapSort(symbolIndexMap.begin(), symbolIndexMap.end(), CStringLess());
         }
         if (dynSymTableHdr != nullptr)
         {   // indexing dynamic symbols
@@ -225,6 +235,9 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             const size_t unfinishedSymstrPos = unfinishedRegionOfStringTable(
                     dynSymStringTable, ULEV(dynSymstrShdr.sh_size));
             
+            if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
+                dynSymIndexMap.resize(dynSymbolsNum);
+            
             for (typename Types::Size i = 0; i < dynSymbolsNum; i++)
             {   /* verify symbol names */
                 const typename Types::Sym& sym = getDynSymbol(i);
@@ -237,9 +250,12 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
                 const char* symname =
                     reinterpret_cast<const char*>(dynSymStringTable + symnameindx);
                 // add to symbol map
-                if (*symname != 0 && (creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
-                    dynSymIndexMap.insert(std::make_pair(symname, i));
+                if (/**symname != 0 &&*/ (creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
+                    //dynSymIndexMap.insert(std::make_pair(symname, i));
+                    dynSymIndexMap[i] = std::make_pair(symname, i);
             }
+            if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
+                mapSort(dynSymIndexMap.begin(), dynSymIndexMap.end(), CStringLess());
         }
     }
 }
@@ -249,7 +265,8 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
 {
     if (hasSectionMap())
     {
-        SectionIndexMap::const_iterator it = sectionIndexMap.find(name);
+        SectionIndexMap::const_iterator it = binaryMapFind(
+                    sectionIndexMap.begin(), sectionIndexMap.end(), name, CStringLess());
         if (it == sectionIndexMap.end())
             throw Exception(std::string("Can't find Elf")+Types::bitName+" Section");
         return it->second;
@@ -268,7 +285,8 @@ uint16_t ElfBinaryTemplate<Types>::getSectionIndex(const char* name) const
 template<typename Types>
 typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) const
 {
-    SymbolIndexMap::const_iterator it = symbolIndexMap.find(name);
+    SymbolIndexMap::const_iterator it = binaryMapFind(
+                    symbolIndexMap.begin(), symbolIndexMap.end(), name, CStringLess());
     if (it == symbolIndexMap.end())
         throw Exception(std::string("Can't find Elf")+Types::bitName+" Symbol");
     return it->second;
@@ -277,7 +295,8 @@ typename Types::Size ElfBinaryTemplate<Types>::getSymbolIndex(const char* name) 
 template<typename Types>
 typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* name) const
 {
-    SymbolIndexMap::const_iterator it = dynSymIndexMap.find(name);
+    SymbolIndexMap::const_iterator it = binaryMapFind(
+                    dynSymIndexMap.begin(), dynSymIndexMap.end(), name, CStringLess());
     if (it == dynSymIndexMap.end())
         throw Exception(std::string("Can't find Elf")+Types::bitName+" DynSymbol");
     return it->second;

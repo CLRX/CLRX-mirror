@@ -32,6 +32,7 @@
 #include <vector>
 #include <unordered_map>
 #include <CLRX/AmdBinaries.h>
+#include <CLRX/GalliumBinaries.h>
 #include <CLRX/AmdBinGen.h>
 #include <CLRX/Utilities.h>
 
@@ -244,7 +245,7 @@ public:
 /// single kernel input for disassembler
 /** all pointer members holds only pointers that should be freed by your routines.
  * No management of data */
-struct DisasmKernelInput
+struct AmdDisasmKernelInput
 {
     std::string kernelName; ///< kernel name
     size_t metadataSize;    ///< metadata size
@@ -258,21 +259,30 @@ struct DisasmKernelInput
     const cxbyte* code; ///< code of kernel
 };
 
-/// whole disassembler input
+/// whole disassembler input (for AMD Catalyst driver GPU binaries)
 /** all pointer members holds only pointers that should be freed by your routines.
  * No management of data */
-struct DisasmInput
+struct AmdDisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
     bool is64BitMode;       ///< true if 64-bit mode of addressing
     AsmGlobalMetadata metadata; ///< global metadata (driver info & compile options)
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
-    std::vector<DisasmKernelInput> kernelInputs;    ///< kernel inputs
+    std::vector<AmdDisasmKernelInput> kernelInputs;    ///< kernel inputs
     
     /// get disassembler input from raw binary data
-    static DisasmInput createFromRawBinary(GPUDeviceType deviceType,
+    static AmdDisasmInput createFromRawBinary(GPUDeviceType deviceType,
                         size_t binarySize, const cxbyte* binaryData);
+};
+
+/// whole disassembler input (for Gallium driver GPU binaries)
+struct GalliumDisasmInput
+{
+    GPUDeviceType deviceType;   ///< GPU device type
+    size_t globalDataSize;  ///< global (constants for kernels) data size
+    const cxbyte* globalData;   ///< global (constants for kernels) data
+    std::vector<GalliumKernelInput> kernels;
 };
 
 /// disassembler class
@@ -281,7 +291,7 @@ class Disassembler
 private:
     ISADisassembler* isaDisassembler;
     bool fromBinary;
-    const DisasmInput* input;
+    const AmdDisasmInput* input;
     std::ostream& output;
     cxuint flags;
 public:
@@ -307,7 +317,7 @@ public:
      * \param output output stream
      * \param flags flags for disassembler
      */
-    Disassembler(const DisasmInput* disasmInput, std::ostream& output,
+    Disassembler(const AmdDisasmInput* disasmInput, std::ostream& output,
                  cxuint flags = 0);
     ~Disassembler();
     
@@ -322,7 +332,7 @@ public:
     { this->flags = flags; }
     
     /// get disassembler input
-    const DisasmInput* getInput() const
+    const AmdDisasmInput* getInput() const
     { return input; }
     
     /// get output stream

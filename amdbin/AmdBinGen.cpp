@@ -25,7 +25,6 @@
 #include <cstdint>
 #include <algorithm>
 #include <bitset>
-#include <set>
 #include <string>
 #include <vector>
 #include <CLRX/Utilities.h>
@@ -1271,9 +1270,9 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     offset += 128;
 }
 
-static std::set<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
+static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
 {
-    std::set<cxuint> uniqueIds;
+    std::vector<cxuint> uniqueIds;
     for (const AmdKernelInput& kernel: input->kernels)
         if (!kernel.useConfig)
         {
@@ -1287,7 +1286,7 @@ static std::set<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
             const char* outEnd;
             pos += 11;
             try
-            { uniqueIds.insert(cstrtovCStyle<cxuint>(metadata+pos,
+            { uniqueIds.push_back(cstrtovCStyle<cxuint>(metadata+pos,
                                metadata+kernel.metadataSize, outEnd)); }
             catch(const ParseException& ex)
             { } // ignore parse exception
@@ -1303,11 +1302,12 @@ static std::set<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
                 continue;
             funcIdStr++;
             try
-            { uniqueIds.insert(cstrtovCStyle<cxuint>(funcIdStr,
+            { uniqueIds.push_back(cstrtovCStyle<cxuint>(funcIdStr,
                            metadata+kernel.metadataSize, outEnd)); }
             catch(const ParseException& ex)
             { } // ignore parse exception
         }
+    std::sort(uniqueIds.begin(), uniqueIds.end());
     return uniqueIds;
 }
 
@@ -1392,7 +1392,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     std::vector<cxuint> innerBinSizes(input->kernels.size());
     std::vector<std::string> kmetadatas(input->kernels.size());
     cxuint uniqueId = 1024;
-    std::set<cxuint> uniqueIds = collectUniqueIdsAndFunctionIds(input);
+    std::vector<cxuint> uniqueIds = collectUniqueIdsAndFunctionIds(input);
     
     for (size_t i = 0; i < input->kernels.size(); i++)
     {
@@ -1407,7 +1407,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         if (kinput.useConfig)
         {
             // get new free uniqueId
-            while (uniqueIds.find(uniqueId) != uniqueIds.end()) uniqueId++;
+            while (std::binary_search(uniqueIds.begin(), uniqueIds.end(), uniqueId))
+                    uniqueId++;
             
             const AmdKernelConfig& config = kinput.config;
             cxuint readOnlyImages = 0;

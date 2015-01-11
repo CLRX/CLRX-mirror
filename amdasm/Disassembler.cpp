@@ -30,7 +30,7 @@
 
 using namespace CLRX;
 
-DisasmInput DisasmInput::createFromRawBinary(GPUDeviceType deviceType,
+AmdDisasmInput AmdDisasmInput::createFromRawBinary(GPUDeviceType deviceType,
                         size_t binarySize, const cxbyte* binaryData)
 {
     return { deviceType,  false, { "", "" }, 0,  nullptr, {
@@ -130,7 +130,7 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const std::string& name)
 }
 
 static void getDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
-        DisasmKernelInput& kernelInput, cxuint flags, GPUDeviceType inputDeviceType)
+        AmdDisasmKernelInput& kernelInput, cxuint flags, GPUDeviceType inputDeviceType)
 {
     const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
     kernelInput.codeSize = kernelInput.dataSize = 0;
@@ -209,9 +209,9 @@ static void getDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
 }
 
 template<typename AmdMainBinary>
-static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint flags)
+static AmdDisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint flags)
 {
-    DisasmInput* input = new DisasmInput;
+    AmdDisasmInput* input = new AmdDisasmInput;
     try
     {   // for free input when exception
     cxuint index = 0;
@@ -246,7 +246,7 @@ static DisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint
             catch(const Exception& ex)
             { innerBin = nullptr; }
         }
-        DisasmKernelInput& kernelInput = input->kernelInputs[i];
+        AmdDisasmKernelInput& kernelInput = input->kernelInputs[i];
         kernelInput.metadataSize = binary.getMetadataSize(i);
         kernelInput.metadata = binary.getMetadata(i);
         
@@ -309,7 +309,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
     }
 }
 
-Disassembler::Disassembler(const DisasmInput* disasmInput, std::ostream& _output,
+Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
             cxuint flags) : fromBinary(false), input(disasmInput), output(_output)
 {
     this->flags = flags;
@@ -537,7 +537,7 @@ void Disassembler::disassemble()
         printDisasmData(input->globalDataSize, input->globalData, output);
     }
     
-    for (const DisasmKernelInput& kinput: input->kernelInputs)
+    for (const AmdDisasmKernelInput& kinput: input->kernelInputs)
     {
         {
             output.write(".kernel \"", 9);
