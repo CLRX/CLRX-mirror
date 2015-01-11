@@ -30,7 +30,6 @@
 #include <ostream>
 #include <iostream>
 #include <cstring>
-#include <map>
 #include <CLRX/Utilities.h>
 
 /// main namespace
@@ -113,7 +112,7 @@ private:
     template<typename T>
     struct OptTypeTrait { static const CLIArgType type; };
     
-    typedef std::map<const char*, cxuint, CLRX::CStringLess> LongNameMap;
+    typedef Array<std::pair<const char*, cxuint> > LongNameMap;
     
     struct OptionEntry
     {
@@ -290,11 +289,11 @@ public:
     
     /// returns true if option included in command line
     bool hasShortOption(char shortName) const
-    { return hasShortOption(findOption(shortName)); }
+    { return hasOption(findOption(shortName)); }
     
     /// returns true if option included in command line
     bool hasLongOption(const char* longName) const
-    { return hasShortOption(findOption(longName)); }
+    { return hasOption(findOption(longName)); }
     
     /// get left over arguments number
     cxuint getArgsNum() const

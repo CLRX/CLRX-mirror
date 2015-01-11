@@ -86,7 +86,14 @@ try
     shortNameMap = new cxuint[256];
     std::fill(shortNameMap, shortNameMap+256, UINT_MAX); // fill as unused
     
+    cxuint longNamesNum = 0;
+    for (cxuint i = 0; options[i].longName != nullptr || options[i].shortName != 0; i++)
+        if (options[i].longName != nullptr)
+            longNamesNum++;
+    
+    longNameMap.resize(longNamesNum);
     cxuint i = 0;
+    cxuint longNameCount = 0;
     for (; options[i].longName != nullptr || options[i].shortName != 0; i++)
     {
         if (options[i].shortName != 0)
@@ -99,17 +106,18 @@ try
         }
         
         if (options[i].longName != nullptr)
-        {
-            if (!longNameMap.insert(std::make_pair(options[i].longName, i)).second)
-                throw CLIException("Duplicate of option", options[i].longName);
-        }
-        
+            longNameMap[longNameCount++] = std::make_pair(options[i].longName, i);
+
         if ((options[i].argType > CLIArgType::SINGLE_MAX && 
              options[i].argType < CLIArgType::BOOL_ARRAY) ||
              options[i].argType > CLIArgType::ARRAY_MAX)
             throw CLIException("Illegal option argument type", options[i],
                        options[i].longName==nullptr);
     }
+    mapSort(longNameMap.begin(), longNameMap.end(), CStringLess());
+    for (cxuint i = 1; i < longNamesNum; i++)
+        if (::strcmp(longNameMap[i].first, longNameMap[i-1].first) == 0)
+            throw CLIException("Duplicate of option", longNameMap[i].first);
     optionEntries.resize(i); // resize to number of options
 }
 catch(...)
@@ -527,7 +535,7 @@ void CLIParser::parse()
                     continue;
                 }
                 /* find option from long name */
-                LongNameMap::const_iterator it;
+                LongNameMap::const_iterator it = longNameMap.end();
                 
                 const char* lastEq = arg+::strlen(arg);
                 size_t optLongNameLen = lastEq-arg-2;
@@ -536,7 +544,9 @@ void CLIParser::parse()
                 {
                     optLongNameLen = lastEq-arg-2;
                     curArgStr.assign(arg+2, optLongNameLen);
-                    it = longNameMap.find(curArgStr.c_str());
+                    //it = longNameMap.find(curArgStr.c_str());
+                    it = binaryMapFind(longNameMap.begin(), longNameMap.end(),
+                            curArgStr.c_str(), CStringLess());
                     if (it != longNameMap.end())
                         break;
                     
@@ -633,7 +643,8 @@ cxuint CLIParser::findOption(char shortName) const
 
 cxuint CLIParser::findOption(const char* longName) const
 {
-    const auto it = longNameMap.find(longName);
+    const auto it = binaryMapFind(longNameMap.begin(), longNameMap.end(), longName,
+                   CStringLess());
     if (it == longNameMap.end())
         throw CLIException("Option not found", longName);
     return it->second;
