@@ -24,7 +24,6 @@
 #include <cstddef>
 #include <string>
 #include <ostream>
-#include <map>
 #include <vector>
 #include <CLRX/Utilities.h>
 #include <CLRX/CLIParser.h>

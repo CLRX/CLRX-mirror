@@ -188,7 +188,7 @@ private:
     
     void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType) const;
     void parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName);
-        
+    
 public:
     /// constructor
     /**
