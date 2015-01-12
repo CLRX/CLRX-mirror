@@ -154,6 +154,21 @@ public:
         return *this;
     }
     
+    Array& operator=(std::initializer_list<T> list)
+    {
+        const size_t N = list.size();
+        if (N != size_t(ptrEnd-ptr))
+        {
+            delete[] ptr;
+            ptr = nullptr;
+            if (N != 0)
+                ptr = new T[N];
+            ptrEnd = ptr+N;
+        }
+        std::copy(list.begin(), list.end(), ptr);
+        return *this;
+    }
+    
     const T& operator[] (size_t i) const
     { return ptr[i]; }
     T& operator[] (size_t i)
@@ -167,6 +182,8 @@ public:
     
     void allocate(size_t N)
     {
+        if (N == size_t(ptrEnd-ptr))
+            return;
         delete[] ptr;
         ptr = nullptr;
         if (N != 0)
