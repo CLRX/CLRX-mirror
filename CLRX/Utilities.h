@@ -176,7 +176,7 @@ public:
     
     void resize(size_t N)
     {
-        if (size_t(ptr-ptrEnd) == N)
+        if (size_t(ptrEnd-ptr) == N)
             return;
         T* newPtr = nullptr;
         if (N != 0)
@@ -206,7 +206,7 @@ public:
     void assign(It b, It e)
     {
         const size_t N = e-b;
-        if (size_t(ptr-ptrEnd) == N)
+        if (size_t(ptrEnd-ptr) == N)
         {
             delete[] ptr;
             ptr = nullptr;
