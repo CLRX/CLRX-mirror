@@ -159,6 +159,9 @@ public:
     T& operator[] (size_t i)
     { return ptr[i]; }
     
+    bool empty() const
+    { return ptrEnd!=ptr; }
+    
     size_t size() const
     { return ptrEnd-ptr; }
     
@@ -180,7 +183,7 @@ public:
             newPtr = new T[N];
         try
         {
-            size_t toCopy = std::min(N, size_t(ptr-ptrEnd));
+            size_t toCopy = std::min(N, size_t(ptrEnd-ptr));
             std::copy(ptr, ptr+toCopy, newPtr);
             delete[] ptr;
             ptr = newPtr;
