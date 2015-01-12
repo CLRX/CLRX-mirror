@@ -284,7 +284,7 @@ Iter binaryFind(Iter begin, Iter end,
         const typename std::iterator_traits<Iter>::value_type& v)
 {
     auto it = std::lower_bound(begin, end, v);
-    if (it == end || v > *it)
+    if (it == end || v < *it)
         return end;
     return it;
 }
@@ -309,7 +309,7 @@ Iter binaryMapFind(Iter begin, Iter end, const
     auto it = std::lower_bound(begin, end, std::make_pair(k, V()),
                [](const std::pair<K,V>& e1, const std::pair<K,V>& e2) {
         return e1.first < e2.first; });
-    if (it == end || k > it->first)
+    if (it == end || k < it->first)
         return end;
     return it;
 }
