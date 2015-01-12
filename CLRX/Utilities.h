@@ -175,7 +175,7 @@ public:
     { return ptr[i]; }
     
     bool empty() const
-    { return ptrEnd!=ptr; }
+    { return ptrEnd==ptr; }
     
     size_t size() const
     { return ptrEnd-ptr; }
