@@ -143,7 +143,7 @@ public:
         return *this;
     }
     
-    Array& operator=(const Array&& cp) noexcept
+    Array& operator=(Array&& cp) noexcept
     {
         if (this == &cp)
             return *this;
@@ -206,7 +206,7 @@ public:
     void assign(It b, It e)
     {
         const size_t N = e-b;
-        if (size_t(ptrEnd-ptr) == N)
+        if (size_t(ptrEnd-ptr) != N)
         {
             delete[] ptr;
             ptr = nullptr;
