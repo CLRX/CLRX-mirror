@@ -167,8 +167,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
             const char* shname =
                 reinterpret_cast<const char*>(sectionStringTable + sh_nameindx);
             
-            if (/**shname != 0 &&*/ (creationFlags & ELF_CREATE_SECTIONMAP) != 0)
-                //sectionIndexMap.insert(std::make_pair(shname, i));
+            if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
                 sectionIndexMap[i] = std::make_pair(shname, i);
             if (ULEV(shdr.sh_type) == SHT_SYMTAB)
                 symTableHdr = &shdr;
@@ -209,8 +208,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
                 const char* symname =
                     reinterpret_cast<const char*>(symbolStringTable + symnameindx);
                 // add to symbol map
-                if (/**symname != 0 &&*/ (creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
-                    //symbolIndexMap.insert(std::make_pair(symname, i));
+                if ((creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
                     symbolIndexMap[i] = std::make_pair(symname, i);
             }
             if ((creationFlags & ELF_CREATE_SYMBOLMAP) != 0)
@@ -249,8 +247,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binar
                 const char* symname =
                     reinterpret_cast<const char*>(dynSymStringTable + symnameindx);
                 // add to symbol map
-                if (/**symname != 0 &&*/ (creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
-                    //dynSymIndexMap.insert(std::make_pair(symname, i));
+                if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
                     dynSymIndexMap[i] = std::make_pair(symname, i);
             }
             if ((creationFlags & ELF_CREATE_DYNSYMMAP) != 0)
