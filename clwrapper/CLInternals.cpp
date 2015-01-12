@@ -1307,7 +1307,8 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             size_t kernelsNum = amdBin->getKernelInfosNum();
             const KernelInfo* kernelInfos = amdBin->getKernelInfos();
             /* create kernel argsflags map (for setKernelArg) */
-            program->kernelArgFlagsMap.resize(kernelsNum);
+            const size_t oldKernelMapSize = program->kernelArgFlagsMap.size();
+            program->kernelArgFlagsMap.resize(oldKernelMapSize+kernelsNum);
             for (size_t i = 0; i < kernelsNum; i++)
             {
                 const KernelInfo& kernelInfo = kernelInfos[i];
@@ -1327,11 +1328,29 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                     kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
                 }
                 
-                program->kernelArgFlagsMap[i] =
+                program->kernelArgFlagsMap[oldKernelMapSize+i] =
                         std::make_pair(kernelInfo.kernelName, kernelFlags);
             }
             CLRX::mapSort(program->kernelArgFlagsMap.begin(),
                       program->kernelArgFlagsMap.end());
+            size_t j = 1;
+            for (size_t k = 1; k < program->kernelArgFlagsMap.size(); k++)
+                if (program->kernelArgFlagsMap[k].first ==
+                    program->kernelArgFlagsMap[k-1].first)
+                {
+                    if (program->kernelArgFlagsMap[k].second !=
+                        program->kernelArgFlagsMap[k-1].second)
+                    {   /* if not match!!! */
+                        for (cl_uint x = 0; x < program->assocDevicesNum; x++)
+                            delete[] binaries[x];
+                        delete[] binaries;
+                        return CL_INVALID_KERNEL_DEFINITION;
+                    }
+                    continue;
+                }
+                else // copy to new place
+                    program->kernelArgFlagsMap[j++] = program->kernelArgFlagsMap[k];
+            program->kernelArgFlagsMap.resize(j);
         }
     }
     catch(const std::bad_alloc& ex)
