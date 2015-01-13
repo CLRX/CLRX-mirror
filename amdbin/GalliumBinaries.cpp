@@ -196,7 +196,7 @@ try
             argInfo.targetAlign = ULEV(data32[3]);
             argInfo.signExtended = ULEV(data32[4])!=0;
             const cxuint semType = ULEV(data32[5]);
-            if (type > cxuint(GalliumArgSemantic::MAX_VALUE))
+            if (semType > cxuint(GalliumArgSemantic::MAX_VALUE))
                 throw Exception("Wrong semantic of kernel argument");
             argInfo.semantic = GalliumArgSemantic(semType);
             data32 += 6;
