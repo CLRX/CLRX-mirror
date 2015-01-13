@@ -113,11 +113,12 @@ try
             throw CLIException("Illegal option argument type", options[i],
                        options[i].longName==nullptr);
     }
+    optionEntries.resize(i); // resize to number of options
+    
     mapSort(longNameMap.begin(), longNameMap.end(), CStringLess());
     for (cxuint i = 1; i < longNamesNum; i++)
         if (::strcmp(longNameMap[i].first, longNameMap[i-1].first) == 0)
             throw CLIException("Duplicate of option", longNameMap[i].first);
-    optionEntries.resize(i); // resize to number of options
 }
 catch(...)
 {
