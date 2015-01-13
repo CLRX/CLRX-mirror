@@ -88,7 +88,7 @@ public:
     try
     {
         ptr = ptrEnd = nullptr;
-        const size_t N = cp.ptrEnd-cp.ptr;
+        const size_t N = cp.size();
         if (N != 0)
             ptr = new T[N];
         ptrEnd = ptr+N;
@@ -130,8 +130,8 @@ public:
     {
         if (this == &cp)
             return *this;
-        const size_t N = cp.ptrEnd-cp.ptr;
-        if (N != size_t(ptrEnd-ptr))
+        const size_t N = cp.size();
+        if (N != size())
         {
             delete[] ptr;
             ptr = nullptr;
@@ -157,7 +157,7 @@ public:
     Array& operator=(std::initializer_list<T> list)
     {
         const size_t N = list.size();
-        if (N != size_t(ptrEnd-ptr))
+        if (N != size())
         {
             delete[] ptr;
             ptr = nullptr;
@@ -182,7 +182,7 @@ public:
     
     void allocate(size_t N)
     {
-        if (N == size_t(ptrEnd-ptr))
+        if (N == size())
             return;
         delete[] ptr;
         ptr = nullptr;
@@ -193,15 +193,14 @@ public:
     
     void resize(size_t N)
     {
-        if (size_t(ptrEnd-ptr) == N)
+        if (N == size())
             return;
         T* newPtr = nullptr;
         if (N != 0)
             newPtr = new T[N];
         try
         {
-            size_t toCopy = std::min(N, size_t(ptrEnd-ptr));
-            std::copy(ptr, ptr+toCopy, newPtr);
+            std::copy(ptr, ptr + std::min(N, size()), newPtr);
             delete[] ptr;
             ptr = newPtr;
             ptrEnd = ptr + N;
@@ -223,7 +222,7 @@ public:
     void assign(It b, It e)
     {
         const size_t N = e-b;
-        if (size_t(ptrEnd-ptr) != N)
+        if (size() != N)
         {
             delete[] ptr;
             ptr = nullptr;
