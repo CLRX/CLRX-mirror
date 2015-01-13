@@ -164,7 +164,7 @@ try
         kernel.kernelName.assign((const char*)data, symNameLen);
         
         /// check kernel name order (sorted order is required by Mesa3D radeon driver)
-        if (i != 0 && kernel.kernelName <= kernels[i-1].kernelName)
+        if (i != 0 && kernel.kernelName < kernels[i-1].kernelName)
             throw Exception("Unsorted kernel table!");
         
         data += symNameLen;
@@ -216,7 +216,6 @@ try
     data += 4;
     
     uint32_t elfSectionId;
-    
     for (uint32_t i = 0; i < sectionsNum; i++)
     {
         GalliumSection& section = sections[i];
