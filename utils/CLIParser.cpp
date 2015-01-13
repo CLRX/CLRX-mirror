@@ -544,7 +544,6 @@ void CLIParser::parse()
                 {
                     optLongNameLen = lastEq-arg-2;
                     curArgStr.assign(arg+2, optLongNameLen);
-                    //it = longNameMap.find(curArgStr.c_str());
                     it = binaryMapFind(longNameMap.begin(), longNameMap.end(),
                             curArgStr.c_str(), CStringLess());
                     if (it != longNameMap.end())
