@@ -87,9 +87,7 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     {
         const Elf32_Sym& sym = getSymbol(i);
         const char* symName = getSymbolName(i);
-        if (*symName != 0 && ::strcmp(symName, "EndOfTextLabel") != 0 &&
-            ULEV(sym.st_shndx) == textIndex &&
-            ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
+        if (ULEV(sym.st_shndx) == textIndex && ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
         {
             if (ULEV(sym.st_value) >= textSize)
                 throw Exception("kernel symbol offset out of range");
@@ -268,9 +266,7 @@ try
         {
             const Elf32_Sym& sym = elfBinary.getSymbol(symIndex);
             const char* symName = elfBinary.getSymbolName(symIndex);
-            if (*symName != 0 && ::strcmp(symName, "EndOfTextLabel") != 0 &&
-                ULEV(sym.st_shndx) == textIndex &&
-                ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
+            if (ULEV(sym.st_shndx) == textIndex && ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
             {
                 if (kernel.kernelName != symName)
                     throw Exception("Kernel symbols out of order!");
