@@ -188,16 +188,16 @@ try
         {
             GalliumArgInfo& argInfo = kernel.argInfos[j];
             const cxuint type = ULEV(data32[0]);
-            if (type > cxuint(GalliumArgType::MAX_VALUE))
-                throw Exception("Wrong type of kernel argument");
+            if (type > 255)
+                throw Exception("Type of kernel argument out of handled range");
             argInfo.type = GalliumArgType(type);
             argInfo.size = ULEV(data32[1]);
             argInfo.targetSize = ULEV(data32[2]);
             argInfo.targetAlign = ULEV(data32[3]);
             argInfo.signExtended = ULEV(data32[4])!=0;
             const cxuint semType = ULEV(data32[5]);
-            if (semType > cxuint(GalliumArgSemantic::MAX_VALUE))
-                throw Exception("Wrong semantic of kernel argument");
+            if (semType > 255)
+                throw Exception("Semantic of kernel argument out of handled range");
             argInfo.semantic = GalliumArgSemantic(semType);
             data32 += 6;
         }
@@ -499,15 +499,11 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
         data32 += 3;
         for (const GalliumArgInfo arg: kernel.argInfos)
         {
-            if (arg.type > GalliumArgType::MAX_VALUE)
-                throw Exception("Wrong argument type");
             SULEV(data32[0], cxuint(arg.type));
             SULEV(data32[1], arg.size);
             SULEV(data32[2], arg.targetSize);
             SULEV(data32[3], arg.targetAlign);
             SULEV(data32[4], arg.signExtended?1:0);
-            if (arg.semantic > GalliumArgSemantic::MAX_VALUE)
-                throw Exception("Wrong argument type");
             SULEV(data32[5], cxuint(arg.semantic));
             data32 += 6;
         }
