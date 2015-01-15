@@ -1496,7 +1496,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     
     if (
 #ifdef HAVE_64BIT
-        input->is64Bit &&
+        !input->is64Bit &&
 #endif
         binarySize > UINT32_MAX)
         throw Exception("Binary size is too big!");
