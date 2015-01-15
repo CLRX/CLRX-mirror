@@ -23,7 +23,7 @@
 #include <cstdint>
 #include <cstring>
 #include <climits>
-#include <CLRX/Utilities.h>
+#include <CLRX/utils/Utilities.h>
 
 using namespace CLRX;
 

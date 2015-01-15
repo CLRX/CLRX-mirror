@@ -25,8 +25,8 @@
 #include <string>
 #include <ostream>
 #include <vector>
-#include <CLRX/Utilities.h>
-#include <CLRX/CLIParser.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/CLIParser.h>
 
 using namespace CLRX;
 

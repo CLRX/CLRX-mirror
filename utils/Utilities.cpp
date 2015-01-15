@@ -30,7 +30,7 @@
 #include <string>
 #include <climits>
 #define __UTILITIES_MODULE__ 1
-#include <CLRX/Utilities.h>
+#include <CLRX/utils/Utilities.h>
 
 using namespace CLRX;
 

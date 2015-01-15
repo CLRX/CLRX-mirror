@@ -29,7 +29,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <CLRX/AmdBinaries.h>
+#include <CLRX/amdbin/AmdBinaries.h>
 
 /// main namespace
 namespace CLRX

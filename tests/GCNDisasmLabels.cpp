@@ -20,9 +20,9 @@
 #include <CLRX/Config.h>
 #include <iostream>
 #include <sstream>
-#include <CLRX/Utilities.h>
-#include <CLRX/Assembler.h>
-#include <CLRX/MemAccess.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/amdasm/Assembler.h>
+#include <CLRX/utils/MemAccess.h>
 
 using namespace CLRX;
 

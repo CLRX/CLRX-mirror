@@ -23,10 +23,10 @@
 #include <ostream>
 #include <vector>
 #include <algorithm>
-#include <CLRX/Utilities.h>
-#include <CLRX/AmdBinaries.h>
-#include <CLRX/Assembler.h>
-#include <CLRX/MemAccess.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/utils/MemAccess.h>
+#include <CLRX/amdasm/Assembler.h>
 
 using namespace CLRX;
 

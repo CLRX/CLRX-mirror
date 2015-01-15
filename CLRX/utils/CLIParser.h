@@ -30,7 +30,7 @@
 #include <ostream>
 #include <iostream>
 #include <cstring>
-#include <CLRX/Utilities.h>
+#include <CLRX/utils/Utilities.h>
 
 /// main namespace
 namespace CLRX

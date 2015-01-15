@@ -21,9 +21,9 @@
 #include <algorithm>
 #include <cstring>
 #include <mutex>
-#include <CLRX/Utilities.h>
-#include <CLRX/Assembler.h>
-#include <CLRX/MemAccess.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/amdasm/Assembler.h>
+#include <CLRX/utils/MemAccess.h>
 #include "AsmInternals.h"
 
 using namespace CLRX;

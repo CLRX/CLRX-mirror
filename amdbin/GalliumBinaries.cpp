@@ -25,9 +25,9 @@
 #include <cstdint>
 #include <string>
 #include <utility>
-#include <CLRX/Utilities.h>
-#include <CLRX/MemAccess.h>
-#include <CLRX/GalliumBinaries.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/MemAccess.h>
+#include <CLRX/amdbin/GalliumBinaries.h>
 
 using namespace CLRX;
 

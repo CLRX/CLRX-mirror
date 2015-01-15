@@ -1,14 +1,14 @@
 * text=auto !eol
-CLRX/AmdBinGen.h -text
-CLRX/AmdBinaries.h -text
-CLRX/Assembler.h -text
-CLRX/CLIParser.h -text
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
-CLRX/ElfBinaries.h -text
-CLRX/GalliumBinaries.h -text
-CLRX/MemAccess.h -text
-CLRX/Utilities.h -text
+CLRX/amdasm/Assembler.h -text
+CLRX/amdbin/AmdBinGen.h -text
+CLRX/amdbin/AmdBinaries.h -text
+CLRX/amdbin/ElfBinaries.h -text
+CLRX/amdbin/GalliumBinaries.h -text
+CLRX/utils/CLIParser.h -text
+CLRX/utils/MemAccess.h -text
+CLRX/utils/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
 /COPYING -text
 /Doxyfile.in -text

@@ -31,8 +31,8 @@
 #include <climits>
 #include <cstdint>
 #include <cstddef>
-#include <CLRX/Utilities.h>
-#include <CLRX/AmdBinaries.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/amdbin/AmdBinaries.h>
 #include "CLWrapper.h"
 
 using namespace CLRX;

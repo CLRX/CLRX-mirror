@@ -29,8 +29,8 @@
 #include <cstdint>
 #include <string>
 #include <utility>
-#include <CLRX/MemAccess.h>
-#include <CLRX/Utilities.h>
+#include <CLRX/utils/MemAccess.h>
+#include <CLRX/utils/Utilities.h>
 
 /* INFO: in this file is used ULEV function for conversion
  * from LittleEndian and unaligned access to other memory access policy and endianness

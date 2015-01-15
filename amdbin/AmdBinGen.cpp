@@ -27,9 +27,9 @@
 #include <bitset>
 #include <string>
 #include <vector>
-#include <CLRX/Utilities.h>
-#include <CLRX/MemAccess.h>
-#include <CLRX/AmdBinGen.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/MemAccess.h>
+#include <CLRX/amdbin/AmdBinGen.h>
 
 using namespace CLRX;
 

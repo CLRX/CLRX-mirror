@@ -19,9 +19,9 @@
 
 #include <CLRX/Config.h>
 #include <iostream>
-#include <CLRX/Utilities.h>
-#include <CLRX/CLIParser.h>
-#include <CLRX/Assembler.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/CLIParser.h>
+#include <CLRX/amdasm/Assembler.h>
 
 using namespace CLRX;
 

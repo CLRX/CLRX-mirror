@@ -24,9 +24,9 @@
 #include <cstdint>
 #include <utility>
 #include <string>
-#include <CLRX/Utilities.h>
-#include <CLRX/MemAccess.h>
-#include <CLRX/AmdBinaries.h>
+#include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/MemAccess.h>
+#include <CLRX/amdbin/AmdBinaries.h>
 
 static const uint32_t elfMagicValue = 0x464c457fU;
 

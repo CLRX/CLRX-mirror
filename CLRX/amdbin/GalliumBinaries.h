@@ -29,9 +29,9 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include <CLRX/ElfBinaries.h>
-#include <CLRX/MemAccess.h>
-#include <CLRX/Utilities.h>
+#include <CLRX/amdbin/ElfBinaries.h>
+#include <CLRX/utils/MemAccess.h>
+#include <CLRX/utils/Utilities.h>
 
 /// main namespace
 namespace CLRX

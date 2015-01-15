@@ -31,10 +31,10 @@
 #include <ostream>
 #include <vector>
 #include <unordered_map>
-#include <CLRX/AmdBinaries.h>
-#include <CLRX/GalliumBinaries.h>
-#include <CLRX/AmdBinGen.h>
-#include <CLRX/Utilities.h>
+#include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/GalliumBinaries.h>
+#include <CLRX/amdbin/AmdBinGen.h>
+#include <CLRX/utils/Utilities.h>
 
 /// main namespace
 namespace CLRX

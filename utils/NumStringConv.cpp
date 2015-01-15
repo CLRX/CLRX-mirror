@@ -31,7 +31,7 @@
 #include <alloca.h>
 #include <climits>
 #include <cstddef>
-#include <CLRX/Utilities.h>
+#include <CLRX/utils/Utilities.h>
 
 using namespace CLRX;
 

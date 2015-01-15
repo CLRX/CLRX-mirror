@@ -26,7 +26,7 @@
 #include <mutex>
 #include <memory>
 #include <cstring>
-#include <CLRX/Utilities.h>
+#include <CLRX/utils/Utilities.h>
 #include "CLWrapper.h"
 
 extern "C"
