@@ -96,15 +96,16 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             progInfosNum++;
         }
     }
+    if (progInfosNum*24U != ULEV(shdr.sh_size))
+        throw Exception("Number of symbol kernels doesn't match progInfos number!");
+    progInfoEntries = reinterpret_cast<GalliumProgInfoEntry*>(binaryCode +
+                ULEV(shdr.sh_offset));
+    
     if (hasProgInfoMap())
     {
         progInfoEntryMap.resize(progInfosNum);
         mapSort(progInfoEntryMap.begin(), progInfoEntryMap.end(), CStringLess());
     }
-    if (progInfosNum*24U != ULEV(shdr.sh_size))
-        throw Exception("Number of symbol kernels doesn't match progInfos number!");
-    progInfoEntries = reinterpret_cast<GalliumProgInfoEntry*>(binaryCode +
-                ULEV(shdr.sh_offset));
 }
 
 uint32_t GalliumElfBinary::getProgramInfoEntriesNum(uint32_t index) const
@@ -134,8 +135,7 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
                  cxuint creationFlags)
 try
-         : kernelsNum(0), sectionsNum(0),
-         kernels(nullptr), sections(nullptr)
+         : kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
 {
     this->creationFlags = creationFlags;
     this->binaryCode = binaryCode;
@@ -224,8 +224,8 @@ try
         
         section.sectionId = ULEV(data32[0]);
         const uint32_t secType = ULEV(data32[1]);
-        if (secType > cxuint(GalliumSectionType::MAX_VALUE))
-            throw Exception("Wrong type of section");
+        if (secType > 255)
+            throw Exception("Type of section out of range");
         section.type = GalliumSectionType(secType);
         section.size = ULEV(data32[2]);
         const uint32_t sizeOfData = ULEV(data32[3]);
@@ -383,8 +383,7 @@ static void putElfSymbolLE(Elf32_Sym* symbol, uint32_t symName, uint32_t value,
     symbol->st_other = other;
 }
 
-static inline void fixAlignment(cxbyte* binary, size_t& offset, size_t elfOffset,
-            cxuint align)
+static inline void fixAlignment(cxbyte* binary, size_t& offset, size_t elfOffset)
 {
     if (((offset-elfOffset) & 3) != 0)
     {   // fix alignment
@@ -546,7 +545,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     /* text */
     ::memcpy(binary + offset, input->code, input->codeSize);
     offset += input->codeSize;
-    fixAlignment(binary, offset, elfOffset, 4);
+    fixAlignment(binary, offset, elfOffset);
     sectionOffsets[0] = offset-elfOffset;
     /* .AMDGPU.config */
     for (uint32_t korder: kernelsOrder)
@@ -572,7 +571,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     // .rodata
     if (input->globalData!=nullptr)
     {
-        fixAlignment(binary, offset, elfOffset, 4);
+        fixAlignment(binary, offset, elfOffset);
         sectionOffsets[2] = offset-elfOffset;
         ::memcpy(binary + offset, input->globalData, input->globalDataSize);
         offset += input->globalDataSize;
@@ -601,7 +600,7 @@ cxbyte* GalliumBinGenerator::generate(size_t& outBinarySize) const
     ::memcpy(binary + offset, ".comment\000.note.GNU-stack\000.shstrtab\000"
             ".symtab\000.strtab", 35+16);
     offset += 35+16;
-    fixAlignment(binary, offset, elfOffset, 4);
+    fixAlignment(binary, offset, elfOffset);
     
     /*
      * put section table

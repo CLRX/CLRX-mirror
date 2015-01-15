@@ -175,7 +175,7 @@ public:
     { return disasmOffset != 0; }
     
     /// returns size of disassembly
-    size_t getDisassemblySize() const
+    uint32_t getDisassemblySize() const
     { return disasmSize; }
     
     /// return disassembly content (without null-character)
