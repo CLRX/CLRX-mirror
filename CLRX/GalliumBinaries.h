@@ -170,10 +170,16 @@ public:
     /// returns program info entries for specified kernel index
     GalliumProgInfoEntry* getProgramInfo(uint32_t index);
     
+    /// returns true if disassembly available
     bool hasDisassembly() const
     { return disasmOffset != 0; }
     
-    const char* getDisassemblySize() const
+    /// returns size of disassembly
+    size_t getDisassemblySize() const
+    { return disasmSize; }
+    
+    /// return disassembly content (without null-character)
+    const char* getDisassembly() const
     { return reinterpret_cast<const char*>(binaryCode + disasmOffset); }
 };
 
