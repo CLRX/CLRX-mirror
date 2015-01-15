@@ -598,7 +598,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             else if (arg.argType == KernelArgType::POINTER &&
                     arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId == AMDBIN_DEFAULT)
             {   // old constant buffers
-                for (; cbIdsCount < 1024 && cbIdMask[cbIdsCount]; cbIdsCount++);
+                for (; cbIdsCount < 160 && cbIdMask[cbIdsCount]; cbIdsCount++);
                 if (cbIdsCount == 160)
                     throw Exception("CbId out of range!");
                 tempConfig.argResIds[k] = cbIdsCount++;
