@@ -109,6 +109,7 @@ GCNDisassembler::~GCNDisassembler()
 
 void GCNDisassembler::beforeDisassemble()
 {
+    startPos >>= 2; // prepare for main process
     labels.clear();
     
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
@@ -143,13 +144,13 @@ void GCNDisassembler::beforeDisassemble()
                         if (opcode == 2 || (opcode >= 4 && opcode <= 9) ||
                             // GCN1.1 opcodes
                             (isGCN11 && (opcode >= 23 && opcode <= 26))) // if jump
-                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back(startPos+pos+int16_t(insnCode&0xffff)+1);
                     }
                     else
                     {   // SOPK
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if (opcode == 17) // if branch fork
-                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back(startPos+pos+int16_t(insnCode&0xffff)+1);
                         else if (opcode == 21)
                             pos++; // additional literal
                     }
@@ -1880,11 +1881,11 @@ void GCNDisassembler::disassemble()
     {   // check label
         if (curLabel != labels.end())
         {
-            if (pos == *curLabel)
+            if (startPos + pos == *curLabel)
             {   // put label
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
-                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(startPos+pos, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 if (bufPos+250 >= maxBufSize)
@@ -1894,11 +1895,11 @@ void GCNDisassembler::disassemble()
                 }
                 curLabel++;
             }
-            else  if (prevIsTwoWord && pos-1 == *curLabel)
+            else  if (prevIsTwoWord && startPos+pos-1 == *curLabel)
             {   /* if label between words of previous instruction */
                 ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
                 bufPos += 11;
-                bufPos += itocstrCStyle(pos-1, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(startPos+pos-1, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 ::memcpy(buf+bufPos, ".org .+4\n", 9);
@@ -2117,7 +2118,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SOPP:
                     bufPos += decodeSOPPEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, pos);
+                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, startPos+pos);
                     break;
                 case GCNENC_SOP1:
                     bufPos += decodeSOP1Encoding(spacesToAdd, curArchMask,
@@ -2129,7 +2130,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SOPK:
                     bufPos += decodeSOPKEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, pos);
+                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, startPos+pos);
                     break;
                 case GCNENC_SMRD:
                     bufPos += decodeSMRDEncoding(spacesToAdd, curArchMask,

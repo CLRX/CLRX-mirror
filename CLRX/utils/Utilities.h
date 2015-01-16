@@ -47,6 +47,7 @@ struct NonCopyableAndNonMovable
     NonCopyableAndNonMovable& operator=(NonCopyableAndNonMovable&&) = delete;
 };
 
+/// an array class
 template<typename T>
 class Array
 {
@@ -162,6 +163,7 @@ public:
     size_t size() const
     { return ptrEnd-ptr; }
     
+    /// only allocating space without keeping previous content
     void allocate(size_t N)
     {
         if (N == size())
@@ -173,6 +175,7 @@ public:
         ptrEnd = ptr + N;
     }
     
+    /// resize space with keeping old content
     void resize(size_t N)
     {
         if (N == size())

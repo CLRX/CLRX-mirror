@@ -46,10 +46,11 @@ ISADisassembler::ISADisassembler(Disassembler& disassembler_)
 ISADisassembler::~ISADisassembler()
 { }
 
-void ISADisassembler::setInput(size_t inputSize, const cxbyte* input)
+void ISADisassembler::setInput(size_t inputSize, const cxbyte* input, size_t startPos)
 {
     this->inputSize = inputSize;
     this->input = input;
+    this->startPos = startPos;
 }
 
 /* helpers for main Disassembler class */
@@ -231,7 +232,7 @@ static AmdDisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxu
     const size_t kernelInfosNum = binary.getKernelInfosNum();
     const size_t kernelHeadersNum = binary.getKernelHeadersNum();
     const size_t innerBinariesNum = binary.getInnerBinariesNum();
-    input->kernelInputs.resize(kernelInfosNum);
+    input->kernels.resize(kernelInfosNum);
     
     for (cxuint i = 0; i < kernelInfosNum; i++)
     {
@@ -246,7 +247,7 @@ static AmdDisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxu
             catch(const Exception& ex)
             { innerBin = nullptr; }
         }
-        AmdDisasmKernelInput& kernelInput = input->kernelInputs[i];
+        AmdDisasmKernelInput& kernelInput = input->kernels[i];
         kernelInput.metadataSize = binary.getMetadataSize(i);
         kernelInput.metadata = binary.getMetadata(i);
         
@@ -537,7 +538,7 @@ void Disassembler::disassemble()
         printDisasmData(input->globalDataSize, input->globalData, output);
     }
     
-    for (const AmdDisasmKernelInput& kinput: input->kernelInputs)
+    for (const AmdDisasmKernelInput& kinput: input->kernels)
     {
         {
             output.write(".kernel \"", 9);

@@ -121,13 +121,14 @@ protected:
     Disassembler& disassembler;
     size_t inputSize;
     const cxbyte* input;
+    size_t startPos;
     std::vector<size_t> labels;
     explicit ISADisassembler(Disassembler& disassembler);
 public:
     virtual ~ISADisassembler();
     
     /// set input code
-    void setInput(size_t inputSize, const cxbyte* input);
+    void setInput(size_t inputSize, const cxbyte* input, size_t startPos = 0);
     /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
     /// disassembles input code
@@ -269,7 +270,7 @@ struct AmdDisasmInput
     AsmGlobalMetadata metadata; ///< global metadata (driver info & compile options)
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
-    std::vector<AmdDisasmKernelInput> kernelInputs;    ///< kernel inputs
+    std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs
     
     /// get disassembler input from raw binary data
     static AmdDisasmInput createFromRawBinary(GPUDeviceType deviceType,
