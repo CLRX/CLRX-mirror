@@ -130,16 +130,7 @@ public:
     {
         if (this == &cp)
             return *this;
-        const size_t N = cp.size();
-        if (N != size())
-        {
-            delete[] ptr;
-            ptr = nullptr;
-            if (N != 0)
-                ptr = new T[N];
-            ptrEnd = ptr+N;
-        }
-        std::copy(cp.ptr, cp.ptrEnd, ptr);
+        assign(cp.begin(), cp.end());
         return *this;
     }
     
@@ -156,16 +147,7 @@ public:
     
     Array& operator=(std::initializer_list<T> list)
     {
-        const size_t N = list.size();
-        if (N != size())
-        {
-            delete[] ptr;
-            ptr = nullptr;
-            if (N != 0)
-                ptr = new T[N];
-            ptrEnd = ptr+N;
-        }
-        std::copy(list.begin(), list.end(), ptr);
+        assign(list.begin(), list.end());
         return *this;
     }
     
@@ -199,17 +181,15 @@ public:
         if (N != 0)
             newPtr = new T[N];
         try
-        {
-            std::copy(ptr, ptr + std::min(N, size()), newPtr);
-            delete[] ptr;
-            ptr = newPtr;
-            ptrEnd = ptr + N;
-        }
+        { std::copy(ptr, ptr + std::min(N, size()), newPtr); }
         catch(...)
         {
             delete[] newPtr;
             throw;
         }
+        delete[] ptr;
+        ptr = newPtr;
+        ptrEnd = ptr + N;
     }
     
     void clear()
@@ -222,15 +202,24 @@ public:
     void assign(It b, It e)
     {
         const size_t N = e-b;
-        if (size() != N)
+        if (N != size())
         {
-            delete[] ptr;
-            ptr = nullptr;
+            T* newPtr = nullptr;
             if (N != 0)
-                ptr = new T[N];
-            ptrEnd = ptr + N;
+                newPtr = new T[N];
+            try
+            { std::copy(b, e, newPtr); }
+            catch(...)
+            {
+                delete[] newPtr;
+                throw;
+            }
+            delete[] ptr;
+            ptr = newPtr;
+            ptrEnd = ptr+N;
         }
-        std::copy(b, e, ptr);
+        else // no size changed only copy
+            std::copy(b, e, ptr);
     }
     
     const T* data() const
