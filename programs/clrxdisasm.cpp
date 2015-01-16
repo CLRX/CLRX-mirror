@@ -79,12 +79,9 @@ try
     
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
     const bool fromRawCode = cli.hasOption(PROGOPT_RAWCODE);
-    if (fromRawCode)
-    {
-        if (cli.hasOption(PROGOPT_GPUTYPE))
-            gpuDeviceType = getGPUDeviceTypeFromName(
-                    cli.getOptArg<const char*>(PROGOPT_GPUTYPE));
-    }
+    if (cli.hasOption(PROGOPT_GPUTYPE))
+        gpuDeviceType = getGPUDeviceTypeFromName(
+                cli.getOptArg<const char*>(PROGOPT_GPUTYPE));
     
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)
