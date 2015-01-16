@@ -130,7 +130,7 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const std::string& name)
     return GPUDeviceType(found);
 }
 
-static void getDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
+static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
         AmdDisasmKernelInput& kernelInput, cxuint flags, GPUDeviceType inputDeviceType)
 {
     const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
@@ -210,7 +210,8 @@ static void getDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
 }
 
 template<typename AmdMainBinary>
-static AmdDisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxuint flags)
+static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
+           cxuint flags)
 {
     AmdDisasmInput* input = new AmdDisasmInput;
     try
@@ -271,7 +272,7 @@ static AmdDisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxu
         }
         
         kernelInput.kernelName = kernelInfo.kernelName;
-        getDisasmKernelInputFromBinary(innerBin, kernelInput, flags, input->deviceType);
+        getAmdDisasmKernelInputFromBinary(innerBin, kernelInput, flags, input->deviceType);
     }
     }
     catch(...)
@@ -282,47 +283,138 @@ static AmdDisasmInput* getDisasmInputFromBinary(const AmdMainBinary& binary, cxu
     return input;
 }
 
+static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
+           const GalliumBinary& binary, cxuint flags)
+{
+    GalliumDisasmInput* input = new GalliumDisasmInput;
+    try
+    {
+    input->deviceType = deviceType;
+    const GalliumElfBinary& elfBin = binary.getElfBinary();
+    uint16_t rodataIndex = SHN_UNDEF;
+    try
+    { rodataIndex = elfBin.getSectionIndex(".rodata"); }
+    catch(const Exception& ex)
+    { }
+    const uint16_t textIndex = elfBin.getSectionIndex(".text");
+    
+    if (rodataIndex != SHN_UNDEF)
+    {
+        input->globalData = elfBin.getSectionContent(rodataIndex);
+        input->globalDataSize = ULEV(elfBin.getSectionHeader(rodataIndex).sh_size);
+    }
+    else
+    {
+        input->globalDataSize = 0;
+        input->globalData = nullptr;
+    }
+    // kernels
+    input->kernels.resize(binary.getKernelsNum());
+    for (cxuint i = 0; i < binary.getKernelsNum(); i++)
+    {
+        const GalliumKernel& kernel = binary.getKernel(i);
+        const GalliumProgInfoEntry* progInfo = elfBin.getProgramInfo(i);
+        GalliumProgInfoEntry outProgInfo[3];
+        for (cxuint k = 0; k < 3; k++)
+        {
+            outProgInfo[k].address = ULEV(progInfo[k].address);
+            outProgInfo[k].value = ULEV(progInfo[k].value);
+        }
+        input->kernels[i] = { kernel.kernelName,
+            {outProgInfo[0],outProgInfo[1],outProgInfo[2]}, kernel.offset,
+            std::vector<GalliumArgInfo>(kernel.argInfos.begin(), kernel.argInfos.end()) };
+    }
+    input->code = elfBin.getSectionContent(textIndex);
+    input->codeSize = ULEV(elfBin.getSectionHeader(textIndex).sh_size);
+    }
+    catch(...)
+    {
+        delete input;
+        throw; // if exception
+    }
+    return input;
+}
+
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
-            cxuint flags) : fromBinary(true), input(nullptr), output(_output)
+            cxuint flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
+            amdInput(nullptr), output(_output)
 {
     this->flags = flags;
-    input = getDisasmInputFromBinary(binary, flags);
+    amdInput = getAmdDisasmInputFromBinary(binary, flags);
     try
     { isaDisassembler = new GCNDisassembler(*this); }
     catch(...)
     {
-        delete input;
+        delete amdInput;
         throw;
     }
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
-            cxuint flags) : fromBinary(true), input(nullptr), output(_output)
+            cxuint flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
+            amdInput(nullptr), output(_output)
 {
     this->flags = flags;
-    input = getDisasmInputFromBinary(binary, flags);
+    amdInput = getAmdDisasmInputFromBinary(binary, flags);
     try
     { isaDisassembler = new GCNDisassembler(*this); }
     catch(...)
     {
-        delete input;
+        delete amdInput;
         throw;
     }
 }
 
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
-            cxuint flags) : fromBinary(false), input(disasmInput), output(_output)
+            cxuint flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
+            amdInput(disasmInput), output(_output)
 {
     this->flags = flags;
-    output.exceptions(std::ios::failbit | std::ios::badbit);
+    isaDisassembler = new GCNDisassembler(*this);
+}
+
+Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
+           std::ostream& _output, cxuint flags) :
+           fromBinary(true), binaryFormat(BinaryFormat::GALLIUM),
+           galliumInput(nullptr), output(_output)
+{
+    this->flags = flags;
+    galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary, flags);
+    try
+    { isaDisassembler = new GCNDisassembler(*this); }
+    catch(...)
+    {
+        delete amdInput;
+        throw;
+    }
+}
+
+Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& _output,
+             cxuint flags) : fromBinary(false), binaryFormat(BinaryFormat::GALLIUM),
+            galliumInput(disasmInput), output(_output)
+{
+    this->flags = flags;
     isaDisassembler = new GCNDisassembler(*this);
 }
 
 Disassembler::~Disassembler()
 {
     if (fromBinary)
-        delete input;
+    {
+        if (binaryFormat == BinaryFormat::AMD)
+            delete amdInput;
+        else // gallium
+            delete galliumInput;
+    }
     delete isaDisassembler;
+}
+
+GPUDeviceType Disassembler::getDeviceType() const
+{
+    if (binaryFormat == BinaryFormat::AMD)
+        return amdInput->deviceType;
+    else // GALLIUM
+        return galliumInput->deviceType;
 }
 
 static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
@@ -498,47 +590,37 @@ static const char* disasmCALNoteNamesTable[] =
     ".uavopmask"
 };
 
-void Disassembler::disassemble()
+void Disassembler::disassembleAmd()
 {
-    const std::ios::iostate oldExceptions = output.exceptions();
-    output.exceptions(std::ios::failbit | std::ios::badbit);
-    try
-    {
-    if (input->deviceType == GPUDeviceType::UNDEFINED ||
-        cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
-        throw Exception("Undefined GPU device type");
-    
-    output.write(".gpu ", 5);
-    const char* gpuName = gpuDeviceNameTable[cxuint(input->deviceType)];
-    output.write(gpuName, ::strlen(gpuName));
-    if (input->is64BitMode)
-        output.write("\n.64bit\n", 8);
+    if (amdInput->is64BitMode)
+        output.write(".64bit\n", 7);
     else
-        output.write("\n.32bit\n", 8);
+        output.write(".32bit\n", 7);
     
     const bool doMetadata = ((flags & DISASM_METADATA) != 0);
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
+    const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     
     if (doMetadata)
     {
         output.write(".compile_options \"", 18);
         const std::string escapedCompileOptions = 
-                escapeStringCStyle(input->metadata.compileOptions);
+                escapeStringCStyle(amdInput->metadata.compileOptions);
         output.write(escapedCompileOptions.c_str(), escapedCompileOptions.size());
         output.write("\"\n.driver_info \"", 16);
         const std::string escapedDriverInfo =
-                escapeStringCStyle(input->metadata.driverInfo);
+                escapeStringCStyle(amdInput->metadata.driverInfo);
         output.write(escapedDriverInfo.c_str(), escapedDriverInfo.size());
         output.write("\"\n", 2);
     }
     
-    if (doDumpData && input->globalData != nullptr && input->globalDataSize != 0)
+    if (doDumpData && amdInput->globalData != nullptr && amdInput->globalDataSize != 0)
     {   //
         output.write(".data\n", 6);
-        printDisasmData(input->globalDataSize, input->globalData, output);
+        printDisasmData(amdInput->globalDataSize, amdInput->globalData, output);
     }
     
-    for (const AmdDisasmKernelInput& kinput: input->kernels)
+    for (const AmdDisasmKernelInput& kinput: amdInput->kernels)
     {
         {
             output.write(".kernel \"", 9);
@@ -771,8 +853,7 @@ void Disassembler::disassemble()
                 }
             }
         
-        if ((flags & DISASM_DUMPCODE) != 0 &&
-            kinput.code != nullptr && kinput.codeSize != 0)
+        if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
         {   // input kernel code (main disassembly)
             output.write("    .text\n", 10);
             isaDisassembler->setInput(kinput.codeSize, kinput.code);
@@ -780,6 +861,171 @@ void Disassembler::disassemble()
             isaDisassembler->disassemble();
         }
     }
+}
+
+static const char* galliumArgTypeNamesTbl[] =
+{
+    "scalar", "constant", "global", "local", "image2d_rd", "image2d_wr", "image3d_rd",
+    "image3d_wr", "sampler"
+};
+
+static const char* galliumArgSemTypeNamesTbl[] =
+{
+    "general", "griddim", "gridoffset"
+};
+
+void Disassembler::disassembleGallium()
+{
+    const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
+    const bool doMetadata = ((flags & DISASM_METADATA) != 0);
+    const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    
+    /* generate kernel sizes */
+    std::vector<std::pair<cxuint,cxuint> > kernelSortedOffsets(
+                    galliumInput->kernels.size());
+    for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
+    {
+        const GalliumKernelInput& kinput = galliumInput->kernels[i];
+        kernelSortedOffsets[i] = { kinput.offset, i };
+    }
+    std::sort(kernelSortedOffsets.begin(), kernelSortedOffsets.end(), []
+            (const std::pair<cxuint,cxuint>& p1, const std::pair<cxuint,cxuint>& p2)
+            { return p1.first < p2.first; });
+    kernelSortedOffsets.push_back({ galliumInput->codeSize, galliumInput->kernels.size()});
+    
+    std::vector<cxuint> kernelSizesTmp(galliumInput->kernels.size());
+    for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
+        kernelSizesTmp[i] = kernelSortedOffsets[i+1].first-kernelSortedOffsets[i].first;
+    std::vector<cxuint> kernelSizes(galliumInput->kernels.size());
+    for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
+        kernelSizes[kernelSortedOffsets[i].second] = kernelSizesTmp[i];
+    
+    if (doDumpData && galliumInput->globalData != nullptr &&
+        galliumInput->globalDataSize != 0)
+    {   //
+        output.write(".data\n", 6);
+        printDisasmData(galliumInput->globalDataSize, galliumInput->globalData, output);
+    }
+    
+    for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
+    {
+        const GalliumKernelInput& kinput = galliumInput->kernels[i];
+        {
+            output.write(".kernel \"", 9);
+            const std::string escapedKernelName =
+                    escapeStringCStyle(kinput.kernelName);
+            output.write(escapedKernelName.c_str(), escapedKernelName.size());
+            output.write("\"\n", 2);
+        }
+        if (doMetadata)
+        {
+            char lineBuf[128];
+            output.write("    .args\n", 10);
+            for (const GalliumArgInfo& arg: kinput.argInfos)
+            {
+                ::memcpy(lineBuf, "        .arg ", 13);
+                size_t pos = 13;
+                if (arg.type <= GalliumArgType::MAX_VALUE)
+                {
+                    const char* typeStr = galliumArgTypeNamesTbl[cxuint(arg.type)];
+                    const size_t len = ::strlen(typeStr);
+                    ::memcpy(lineBuf+pos, typeStr, len);
+                    pos += len;
+                }
+                else
+                    pos += itocstrCStyle<cxuint>(cxuint(arg.type), lineBuf+pos, 16);
+                
+                lineBuf[pos++] = ',';
+                lineBuf[pos++] = ' ';
+                pos += itocstrCStyle<uint32_t>(arg.size, lineBuf+pos, 16);
+                lineBuf[pos++] = ',';
+                lineBuf[pos++] = ' ';
+                pos += itocstrCStyle<uint32_t>(arg.targetSize, lineBuf+pos, 16);
+                lineBuf[pos++] = ',';
+                lineBuf[pos++] = ' ';
+                pos += itocstrCStyle<uint32_t>(arg.targetAlign, lineBuf+pos, 16);
+                if (arg.signExtended)
+                    ::memcpy(lineBuf+pos, ", sext, ", 8);
+                else
+                    ::memcpy(lineBuf+pos, ", zext, ", 8);
+                pos += 8;
+                if (arg.semantic <= GalliumArgSemantic::MAX_VALUE)
+                {
+                    const char* typeStr = galliumArgSemTypeNamesTbl[cxuint(arg.semantic)];
+                    const size_t len = ::strlen(typeStr);
+                    ::memcpy(lineBuf+pos, typeStr, len);
+                    pos += len;
+                }
+                else
+                    pos += itocstrCStyle<cxuint>(cxuint(arg.semantic), lineBuf+pos, 16);
+                lineBuf[pos++] = '\n';
+                output.write(lineBuf, pos);
+            }
+            /// proginfo
+            output.write("    .proginfo\n", 14);
+            for (const GalliumProgInfoEntry& piEntry: kinput.progInfo)
+            {
+                output.write("        .set ", 13);
+                char buf[32];
+                size_t numSize = itocstrCStyle<uint32_t>(ULEV(piEntry.address),
+                             buf, 32, 16, 8);
+                output.write(buf, numSize);
+                output.write(", ", 2);
+                numSize = itocstrCStyle<uint32_t>(ULEV(piEntry.value), buf, 32, 16, 8);
+                output.write(buf, numSize);
+                output.write("\n", 1);
+            }
+        }
+        if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
+        {   // print text
+            char buf[32];
+            output.write("    .text\n", 10);
+            output.write("    .org ", 9);
+            size_t outSize = itocstrCStyle<cxuint>(kinput.offset, buf, 16, 16);
+            output.write(buf, outSize);
+            output.write("\n", 1);
+            
+            isaDisassembler->setInput(kernelSizes[i], galliumInput->code+kinput.offset,
+                  kinput.offset);
+            const size_t newSize = isaDisassembler->determineEndOfCode();
+            isaDisassembler->beforeDisassemble();
+            isaDisassembler->disassemble();
+            if (newSize != kernelSizes[i])
+            {   // fill
+                output.write("        .fill ", 14);
+                outSize = itocstrCStyle<cxuint>(kernelSizes[i]-newSize, buf, 16);
+                output.write(buf, outSize);
+                output.write(", 1, 0\n", 7);
+            }
+        }
+    }
+}
+
+void Disassembler::disassemble()
+{
+    const std::ios::iostate oldExceptions = output.exceptions();
+    output.exceptions(std::ios::failbit | std::ios::badbit);
+    try
+    {
+    if (binaryFormat == BinaryFormat::AMD)
+        output.write(".amd\n", 5);
+    else // gallium
+        output.write(".gallium\n", 9);
+    
+    GPUDeviceType deviceType = getDeviceType();
+    if (deviceType == GPUDeviceType::UNDEFINED ||
+        cxuint(deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+        throw Exception("Undefined GPU device type");
+    
+    output.write(".gpu ", 5);
+    const char* gpuName = gpuDeviceNameTable[cxuint(deviceType)];
+    output.write(gpuName, ::strlen(gpuName));
+    output.write("\n", 1);
+    
+    if (binaryFormat == BinaryFormat::AMD)
+        disassembleAmd();
+    else // Gallium
+        disassembleGallium();
     output.flush();
     } /* try catch */
     catch(...)

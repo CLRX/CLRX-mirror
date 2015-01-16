@@ -43,6 +43,12 @@ namespace CLRX
 class Assembler;
 class Disassembler;
 
+enum class BinaryFormat
+{
+    AMD = 0,
+    GALLIUM
+};
+
 enum: cxuint
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
@@ -133,6 +139,8 @@ public:
     virtual void beforeDisassemble() = 0;
     /// disassembles input code
     virtual void disassemble() = 0;
+    /// determine end of code (fix inputSize). returns new size
+    virtual size_t determineEndOfCode() = 0;
 };
 
 class GCNDisassembler: public ISADisassembler
@@ -145,6 +153,7 @@ public:
     
     void beforeDisassemble();
     void disassemble();
+    size_t determineEndOfCode();
 };
 
 class AsmExpression;
@@ -284,6 +293,8 @@ struct GalliumDisasmInput
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<GalliumKernelInput> kernels;
+    size_t codeSize;    // code size
+    const cxbyte* code; // code
 };
 
 /// disassembler class
@@ -292,9 +303,16 @@ class Disassembler
 private:
     ISADisassembler* isaDisassembler;
     bool fromBinary;
-    const AmdDisasmInput* input;
+    BinaryFormat binaryFormat;
+    union {
+        const AmdDisasmInput* amdInput;
+        const GalliumDisasmInput* galliumInput;
+    };
     std::ostream& output;
     cxuint flags;
+    
+    void disassembleAmd(); // Catalyst format
+    void disassembleGallium(); // Gallium format
 public:
     /// constructor for 32-bit GPU binary
     /**
@@ -312,13 +330,31 @@ public:
      */
     Disassembler(const AmdMainGPUBinary64& binary, std::ostream& output,
                  cxuint flags = 0);
-    /// constructor for disassembler input
+    /// constructor for AMD disassembler input
     /**
      * \param disasmInput disassembler input object
      * \param output output stream
      * \param flags flags for disassembler
      */
     Disassembler(const AmdDisasmInput* disasmInput, std::ostream& output,
+                 cxuint flags = 0);
+    
+    /// constructor for bit GPU binary from Gallium
+    /**
+     * \param binary main GPU binary
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
+    Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
+                 std::ostream& output, cxuint flags = 0);
+    
+    /// constructor for Gallium disassembler input
+    /**
+     * \param disasmInput disassembler input object
+     * \param output output stream
+     * \param flags flags for disassembler
+     */
+    Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& output,
                  cxuint flags = 0);
     ~Disassembler();
     
@@ -332,9 +368,16 @@ public:
     void setFlags(cxuint flags)
     { this->flags = flags; }
     
+    /// get deviceType
+    GPUDeviceType getDeviceType() const;
+    
     /// get disassembler input
-    const AmdDisasmInput* getInput() const
-    { return input; }
+    const AmdDisasmInput* getAmdInput() const
+    { return amdInput; }
+    
+    /// get disassembler input
+    const GalliumDisasmInput* getGalliumInput() const
+    { return galliumInput; }
     
     /// get output stream
     const std::ostream& getOutput() const

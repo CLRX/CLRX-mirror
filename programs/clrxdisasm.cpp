@@ -93,6 +93,7 @@ try
         cxbyte* binaryData = nullptr;
         size_t binarySize = 0;
         AmdMainBinaryBase* base = nullptr;
+        GalliumBinary* galliumBin = nullptr;
         try
         {
             binaryData = loadDataFromFile(*args, binarySize);
@@ -107,8 +108,18 @@ try
                 if ((disasmFlags & DISASM_METADATA) != 0)
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
-                base = createAmdBinaryFromCode(binarySize, binaryData, binFlags);
-                if (base->getType() == AmdMainType::GPU_BINARY)
+                try
+                { base = createAmdBinaryFromCode(binarySize, binaryData, binFlags); }
+                catch(const Exception& ex)
+                {   // check whether is Gallium
+                    galliumBin = new GalliumBinary(binarySize, binaryData, 0);
+                }
+                if (galliumBin != nullptr)
+                {   // if Gallium
+                    Disassembler disasm(gpuDeviceType, *galliumBin, std::cout, disasmFlags);
+                    disasm.disassemble();
+                }
+                else if (base->getType() == AmdMainType::GPU_BINARY)
                 {
                     AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base);
                     Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
@@ -133,6 +144,7 @@ try
             
             delete[] binaryData;
             delete base;
+            delete galliumBin;
         }
         catch(const std::exception& ex)
         {
@@ -147,6 +159,7 @@ try
         {
             delete[] binaryData;
             delete base;
+            delete galliumBin;
             throw;
         }
     }

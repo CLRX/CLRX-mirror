@@ -109,13 +109,13 @@ GCNDisassembler::~GCNDisassembler()
 
 void GCNDisassembler::beforeDisassemble()
 {
-    startPos >>= 2; // prepare for main process
+    const size_t cwPos = startPos>>2;
     labels.clear();
     
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     const size_t codeWordsNum = (inputSize>>2);
     
-    const bool isGCN11 = checkGCN11(disassembler.getInput()->deviceType);
+    const bool isGCN11 = checkGCN11(disassembler.getDeviceType());
     size_t pos;
     for (pos = 0; pos < codeWordsNum; pos++)
     {   /* scan all instructions and get jump addresses */
@@ -144,13 +144,13 @@ void GCNDisassembler::beforeDisassemble()
                         if (opcode == 2 || (opcode >= 4 && opcode <= 9) ||
                             // GCN1.1 opcodes
                             (isGCN11 && (opcode >= 23 && opcode <= 26))) // if jump
-                            labels.push_back(startPos+pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back(cwPos+pos+int16_t(insnCode&0xffff)+1);
                     }
                     else
                     {   // SOPK
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if (opcode == 17) // if branch fork
-                            labels.push_back(startPos+pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back(cwPos+pos+int16_t(insnCode&0xffff)+1);
                         else if (opcode == 21)
                             pos++; // additional literal
                     }
@@ -1854,12 +1854,13 @@ void GCNDisassembler::disassemble()
     auto curLabel = labels.begin();
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
-    const bool isGCN11 = checkGCN11(disassembler.getInput()->deviceType);
+    const bool isGCN11 = checkGCN11(disassembler.getDeviceType());
     const uint16_t curArchMask = isGCN11?ARCH_RX2X0:ARCH_HD7X00;
     std::ostream& output = disassembler.getOutput();
     
     char buf[maxBufSize];
     size_t bufPos = 0;
+    const size_t cwPos = startPos>>2;
     const size_t codeWordsNum = (inputSize>>2);
     
     if ((inputSize&3) != 0)
@@ -1881,11 +1882,11 @@ void GCNDisassembler::disassemble()
     {   // check label
         if (curLabel != labels.end())
         {
-            if (startPos + pos == *curLabel)
+            if (cwPos + pos == *curLabel)
             {   // put label
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
-                bufPos += itocstrCStyle(startPos+pos, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(cwPos+pos, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 if (bufPos+250 >= maxBufSize)
@@ -1895,11 +1896,11 @@ void GCNDisassembler::disassemble()
                 }
                 curLabel++;
             }
-            else  if (prevIsTwoWord && startPos+pos-1 == *curLabel)
+            else  if (prevIsTwoWord && cwPos+pos-1 == *curLabel)
             {   /* if label between words of previous instruction */
                 ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
                 bufPos += 11;
-                bufPos += itocstrCStyle(startPos+pos-1, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(cwPos+pos-1, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 ::memcpy(buf+bufPos, ".org .+4\n", 9);
@@ -2118,7 +2119,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SOPP:
                     bufPos += decodeSOPPEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, startPos+pos);
+                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, cwPos+pos);
                     break;
                 case GCNENC_SOP1:
                     bufPos += decodeSOP1Encoding(spacesToAdd, curArchMask,
@@ -2130,7 +2131,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SOPK:
                     bufPos += decodeSOPKEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, startPos+pos);
+                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, cwPos+pos);
                     break;
                 case GCNENC_SMRD:
                     bufPos += decodeSMRDEncoding(spacesToAdd, curArchMask,
@@ -2220,4 +2221,16 @@ void GCNDisassembler::disassemble()
     output.write(buf, bufPos);
     output.flush();
     labels.clear(); // free labels
+}
+
+size_t GCNDisassembler::determineEndOfCode()
+{
+    const size_t codeWordsNum = (inputSize>>2);
+    const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
+    size_t i;
+    for (i = codeWordsNum; i > 0; i--)
+        if (codeWords[i-1] != 0)
+            break;
+    inputSize = i<<2;
+    return i<<2;
 }
