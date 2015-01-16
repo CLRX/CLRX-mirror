@@ -967,11 +967,10 @@ void Disassembler::disassembleGallium()
             {
                 output.write("        .set ", 13);
                 char buf[32];
-                size_t numSize = itocstrCStyle<uint32_t>(ULEV(piEntry.address),
-                             buf, 32, 16, 8);
+                size_t numSize = itocstrCStyle<uint32_t>(piEntry.address, buf, 32, 16, 8);
                 output.write(buf, numSize);
                 output.write(", ", 2);
-                numSize = itocstrCStyle<uint32_t>(ULEV(piEntry.value), buf, 32, 16, 8);
+                numSize = itocstrCStyle<uint32_t>(piEntry.value, buf, 32, 16, 8);
                 output.write(buf, numSize);
                 output.write("\n", 1);
             }
