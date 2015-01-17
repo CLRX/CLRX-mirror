@@ -55,9 +55,9 @@ void ISADisassembler::setInput(size_t inputSize, const cxbyte* input)
     this->input = input;
 }
 
-void ISADisassembler::addNamedLabel(size_t pos, const char* name)
+void ISADisassembler::addNamedLabel(size_t pos, const std::string& name)
 {
-    namedLabels.push_back(std::make_pair(pos, std::string(name)));
+    namedLabels.push_back(std::make_pair(pos, name));
 }
 
 /* helpers for main Disassembler class */

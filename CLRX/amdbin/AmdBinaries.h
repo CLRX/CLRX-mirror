@@ -31,6 +31,7 @@
 #include <utility>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
+#include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
 
 /// main namespace

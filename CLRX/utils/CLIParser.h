@@ -31,6 +31,7 @@
 #include <iostream>
 #include <cstring>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 
 /// main namespace
 namespace CLRX

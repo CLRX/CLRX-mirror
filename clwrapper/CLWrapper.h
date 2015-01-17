@@ -133,6 +133,7 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 #include <memory>
 #include <map>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 
 struct CLRXExtensionEntry
 {

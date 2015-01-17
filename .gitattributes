@@ -8,6 +8,7 @@ CLRX/amdbin/AmdBinaries.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
 CLRX/utils/CLIParser.h -text
+CLRX/utils/Containers.h -text
 CLRX/utils/MemAccess.h -text
 CLRX/utils/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain

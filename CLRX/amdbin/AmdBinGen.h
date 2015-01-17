@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/utils/Containers.h>
 
 /// main namespace
 namespace CLRX

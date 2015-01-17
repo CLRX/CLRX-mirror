@@ -31,6 +31,7 @@
 #include <utility>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 
 /* INFO: in this file is used ULEV function for conversion
  * from LittleEndian and unaligned access to other memory access policy and endianness

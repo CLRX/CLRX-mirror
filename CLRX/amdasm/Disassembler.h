@@ -24,8 +24,6 @@
 #define __CLRX_DISASSEMBLER_H__
 
 #include <CLRX/Config.h>
-#include <cstddef>
-#include <cstdint>
 #include <string>
 #include <istream>
 #include <ostream>
@@ -79,7 +77,7 @@ public:
     /// disassembles input code
     virtual void disassemble() = 0;
     
-    void addNamedLabel(size_t pos, const char* name);
+    void addNamedLabel(size_t pos, const std::string& name);
 };
 
 class GCNDisassembler: public ISADisassembler
