@@ -36,8 +36,7 @@ namespace CLRX
 /// type of GPU device
 enum class GPUDeviceType: cxbyte
 {
-    UNDEFINED = 0,
-    CAPE_VERDE, ///< Radeon HD7700
+    CAPE_VERDE = 0, ///< Radeon HD7700
     PITCAIRN, ///< Radeon HD7800
     TAHITI, ///< Radeon HD7900
     OLAND, ///< Radeon R7 250
@@ -62,8 +61,7 @@ enum class GPUDeviceType: cxbyte
 
 enum class GPUArchitecture: cxbyte
 {
-    UNDEFINED = 0,
-    GCN1_0,
+    GCN1_0 = 0,
     GCN1_1,
     GCN1_2
 };
@@ -73,6 +71,9 @@ extern GPUDeviceType getGPUDeviceTypeFromName(const char* name);
 
 /// get GPU device type name
 extern const char* getGPUDeviceTypeName(GPUDeviceType deviceType);
+
+/// get GPU architecture from name
+extern GPUArchitecture getGPUArchitectureFromName(const char* name);
 
 /// get GPUArchitecture from GPU device type
 extern GPUArchitecture getGPUArchitectureFromDeviceType(GPUDeviceType deviceType);

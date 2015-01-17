@@ -24,9 +24,8 @@
 
 using namespace CLRX;
 
-static const char* gpuDeviceNameTable[14] =
+static const char* gpuDeviceNameTable[13] =
 {
-    "UNDEFINED",
     "CapeVerde",
     "Pitcairn",
     "Tahiti",
@@ -42,9 +41,8 @@ static const char* gpuDeviceNameTable[14] =
     "Mullins"
 };
 
-static const GPUArchitecture gpuDeviceArchTable[14] =
+static const GPUArchitecture gpuDeviceArchTable[13] =
 {
-    GPUArchitecture::UNDEFINED,
     GPUArchitecture::GCN1_0, // CapeVerde
     GPUArchitecture::GCN1_0, // Pitcairn
     GPUArchitecture::GCN1_0, // Tahiti
@@ -60,9 +58,8 @@ static const GPUArchitecture gpuDeviceArchTable[14] =
     GPUArchitecture::GCN1_1 // Mullins
 };
 
-static const char* gpuArchitectureNameTable[4] =
+static const char* gpuArchitectureNameTable[3] =
 {
-    "UNDEFINED",
     "GCN 1.0",
     "GCN 1.1",
     "GCN 1.2"
@@ -77,6 +74,17 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
     if (found == sizeof(gpuDeviceNameTable) / sizeof(const char*))
         throw Exception("Unknown GPU device type");
     return GPUDeviceType(found);
+}
+
+GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
+{
+    cxuint found = 1;
+    for (; found < sizeof gpuArchitectureNameTable / sizeof(const char*); found++)
+        if (::strcmp(name, gpuArchitectureNameTable[found]) == 0)
+            break;
+    if (found == sizeof(gpuArchitectureNameTable) / sizeof(const char*))
+        throw Exception("Unknown GPU architecture");
+    return GPUArchitecture(found);
 }
 
 GPUArchitecture CLRX::getGPUArchitectureFromDeviceType(GPUDeviceType deviceType)

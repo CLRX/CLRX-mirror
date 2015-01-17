@@ -79,9 +79,8 @@ static inline void putCALUavEntry(CALUAVEntry* uavEntry, uint32_t uavId, uint32_
     SULEV(uavEntry->type, type);
 }
 
-static const uint32_t gpuDeviceCodeTable[14] =
+static const uint32_t gpuDeviceCodeTable[13] =
 {
-    0, // GPUDeviceType::UNDEFINED
     0x3ff, // GPUDeviceType::CAPE_VERDE
     0x3fe, // GPUDeviceType::PITCAIRN
     0x3fd, // GPUDeviceType::TAHITI
@@ -97,9 +96,8 @@ static const uint32_t gpuDeviceCodeTable[14] =
     0x40b // GPUDeviceType::MULLINS
 };
 
-static const uint16_t gpuDeviceInnerCodeTable[14] =
+static const uint16_t gpuDeviceInnerCodeTable[13] =
 {
-    0, // GPUDeviceType::UNDEFINED
     0x1c, // GPUDeviceType::CAPE_VERDE
     0x1b, // GPUDeviceType::PITCAIRN
     0x1a, // GPUDeviceType::TAHITI
@@ -179,24 +177,6 @@ void AmdGPUBinGenerator::setInput(const AmdInput* input)
     manageable = false;
     this->input = input;
 }
-
-static const char* gpuDeviceNameTable[14] =
-{
-    "UNDEFINED",
-    "capeverde",
-    "pitcairn",
-    "tahiti",
-    "oland",
-    "bonaire",
-    "spectre",
-    "spooky",
-    "kalindi",
-    "hainan",
-    "hawaii",
-    "iceland",
-    "tonga",
-    "mullins"
-};
 
 static const char* imgTypeNamesTable[] = { "2D", "1D", "1DA", "1DB", "2D", "2DA", "3D" };
 
@@ -650,7 +630,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     else
         metadata += ";version:3:1:111\n";
     metadata += ";device:";
-    metadata += gpuDeviceNameTable[cxuint(input->deviceType)];
+    metadata += getGPUDeviceTypeName(input->deviceType);
     char numBuf[21];
     metadata += "\n;uniqueid:";
     itocstrCStyle(uniqueId, numBuf, 21);
@@ -1356,9 +1336,8 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     const bool isOlderThan1124 = driverVersion < 112402;
     const bool isOlderThan1348 = driverVersion < 134805;
     /* checking input */
-    if (input->deviceType == GPUDeviceType::UNDEFINED ||
-        cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
-        throw Exception("Undefined GPU device type");
+    if (cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+        throw Exception("Unknown GPU device type");
     
     std::vector<TempAmdKernelConfig> tempAmdKernelConfigs(input->kernels.size());
     prepareTempConfigs(driverVersion, input, tempAmdKernelConfigs);
