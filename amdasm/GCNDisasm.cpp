@@ -1887,6 +1887,13 @@ void GCNDisassembler::disassemble()
     {   
         if (curNamedLabel != namedLabels.end())
         {
+            if (prevIsTwoWord && pos-1 == curNamedLabel->first)
+            {   // fir for unalignment
+                pos--;
+                prevIsTwoWord = false;
+                ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
+                bufPos += 11;
+            }
             if (pos == curNamedLabel->first)
             {
                 buf[bufPos++] = '\n';
