@@ -31,37 +31,11 @@
 #include <vector>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/GPUId.h>
 
 /// main namespace
 namespace CLRX
 {
-
-/// type of GPU device
-enum class GPUDeviceType: cxbyte
-{
-    UNDEFINED = 0,
-    CAPE_VERDE, ///< Radeon HD7700
-    PITCAIRN, ///< Radeon HD7800
-    TAHITI, ///< Radeon HD7900
-    OLAND, ///< Radeon R7 250
-    BONAIRE, ///< Radeon R7 260
-    SPECTRE, ///< Kaveri
-    SPOOKY, ///< Kaveri
-    KALINDI, ///< ???  GCN1.1
-    HAINAN, ///< ????  GCN1.0
-    HAWAII, ///< Radeon R9 290
-    ICELAND, ///<
-    TONGA, ///<
-    MULLINS, //
-    GPUDEVICE_MAX = MULLINS,
-    
-    RADEON_HD7700 = CAPE_VERDE,
-    RADEON_HD7800 = PITCAIRN,
-    RADEON_HD7900 = TAHITI,
-    RADEON_R7_250 = OLAND,
-    RADEON_R7_260 = BONAIRE,
-    RADEON_R9_290 = HAWAII
-};
 
 enum: cxuint {
     AMDBIN_DEFAULT = UINT_MAX,    ///< if set in field then field has been filled later

@@ -28,6 +28,7 @@
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/utils/MemAccess.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/Disassembler.h>
 
@@ -107,35 +108,6 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[11] =
     { 0x2a, GPUDeviceType::TONGA },*/
     { 0x2b, GPUDeviceType::MULLINS }
 };
-
-static const char* gpuDeviceNameTable[14] =
-{
-    "UNDEFINED",
-    "CapeVerde",
-    "Pitcairn",
-    "Tahiti",
-    "Oland",
-    "Bonaire",
-    "Spectre",
-    "Spooky",
-    "Kalindi",
-    "Hainan",
-    "Hawaii",
-    "Iceland",
-    "Tonga",
-    "Mullins"
-};
-
-GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
-{
-    cxuint found = 1;
-    for (; found < sizeof gpuDeviceNameTable / sizeof(const char*); found++)
-        if (::strcmp(name, gpuDeviceNameTable[found]) == 0)
-            break;
-    if (found == sizeof(gpuDeviceNameTable) / sizeof(const char*))
-        throw Exception("Unknown GPU device type");
-    return GPUDeviceType(found);
-}
 
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
         AmdDisasmKernelInput& kernelInput, cxuint flags, GPUDeviceType inputDeviceType)
@@ -1014,7 +986,7 @@ void Disassembler::disassemble()
         throw Exception("Undefined GPU device type");
     
     output.write(".gpu ", 5);
-    const char* gpuName = gpuDeviceNameTable[cxuint(deviceType)];
+    const char* gpuName = getGPUDeviceTypeName(deviceType);
     output.write(gpuName, ::strlen(gpuName));
     output.write("\n", 1);
     

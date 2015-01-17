@@ -22,6 +22,7 @@
 #include <cstring>
 #include <mutex>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Disassembler.h>
 #include <CLRX/utils/MemAccess.h>
 #include "AsmInternals.h"
@@ -32,7 +33,7 @@ static std::once_flag clrxGCNDisasmOnceFlag;
 static GCNInstruction* gcnInstrTableByCode = nullptr;
 
 static bool checkGCN11(GPUDeviceType deviceType)
-{ return deviceType >= GPUDeviceType::BONAIRE && deviceType != GPUDeviceType::HAINAN; }
+{ return getGPUArchitectureFromDeviceType(deviceType) == GPUArchitecture::GCN1_1; };
 
 struct GCNEncodingSpace
 {

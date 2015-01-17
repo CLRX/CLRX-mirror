@@ -9,6 +9,7 @@ CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
 CLRX/utils/CLIParser.h -text
 CLRX/utils/Containers.h -text
+CLRX/utils/GPUId.h -text
 CLRX/utils/MemAccess.h -text
 CLRX/utils/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
@@ -41,5 +42,6 @@ tests/GCNDisasmOpcodes.cpp -text
 tests/cstrtofXTest.cpp -text
 utils/CLIParser.cpp -text
 utils/CMakeLists.txt -text svneol=unset#text/plain
+utils/GPUId.cpp -text
 utils/NumStringConv.cpp -text
 utils/Utilities.cpp -text
