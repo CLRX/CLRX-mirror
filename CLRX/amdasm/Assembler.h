@@ -30,6 +30,7 @@
 #include <istream>
 #include <ostream>
 #include <vector>
+#include <utility>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
@@ -127,20 +128,20 @@ protected:
     Disassembler& disassembler;
     size_t inputSize;
     const cxbyte* input;
-    size_t startPos;
     std::vector<size_t> labels;
+    std::vector<std::pair<size_t, std::string> > namedLabels;
     explicit ISADisassembler(Disassembler& disassembler);
 public:
     virtual ~ISADisassembler();
     
     /// set input code
-    void setInput(size_t inputSize, const cxbyte* input, size_t startPos = 0);
+    void setInput(size_t inputSize, const cxbyte* input);
     /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
     /// disassembles input code
     virtual void disassemble() = 0;
-    /// determine end of code (fix inputSize). returns new size
-    virtual size_t determineEndOfCode() = 0;
+    
+    void addNamedLabel(size_t pos, const char* name);
 };
 
 class GCNDisassembler: public ISADisassembler
@@ -388,7 +389,7 @@ public:
 };
 
 /// get GPU device type from name
-extern GPUDeviceType getGPUDeviceTypeFromName(const std::string& name);
+extern GPUDeviceType getGPUDeviceTypeFromName(const char* name);
 
 };
 

@@ -22,9 +22,11 @@
 #include <cstring>
 #include <ostream>
 #include <vector>
+#include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdasm/Assembler.h>
 
@@ -46,11 +48,15 @@ ISADisassembler::ISADisassembler(Disassembler& disassembler_)
 ISADisassembler::~ISADisassembler()
 { }
 
-void ISADisassembler::setInput(size_t inputSize, const cxbyte* input, size_t startPos)
+void ISADisassembler::setInput(size_t inputSize, const cxbyte* input)
 {
     this->inputSize = inputSize;
     this->input = input;
-    this->startPos = startPos;
+}
+
+void ISADisassembler::addNamedLabel(size_t pos, const char* name)
+{
+    namedLabels.push_back(std::make_pair(pos, std::string(name)));
 }
 
 /* helpers for main Disassembler class */
@@ -119,11 +125,11 @@ static const char* gpuDeviceNameTable[14] =
     "Mullins"
 };
 
-GPUDeviceType CLRX::getGPUDeviceTypeFromName(const std::string& name)
+GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 {
     cxuint found = 1;
     for (; found < sizeof gpuDeviceNameTable / sizeof(const char*); found++)
-        if (name == gpuDeviceNameTable[found])
+        if (::strcmp(name, gpuDeviceNameTable[found]) == 0)
             break;
     if (found == sizeof(gpuDeviceNameTable) / sizeof(const char*))
         throw Exception("Unknown GPU device type");
@@ -979,28 +985,14 @@ void Disassembler::disassembleGallium()
                 output.write("\n", 1);
             }
         }
-        if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
-        {   // print text
-            char buf[32];
-            output.write("    .text\n", 10);
-            output.write("    .org ", 9);
-            size_t outSize = itocstrCStyle<cxuint>(kinput.offset, buf, 16, 16);
-            output.write(buf, outSize);
-            output.write("\n", 1);
-            
-            isaDisassembler->setInput(kernelSizes[i], galliumInput->code+kinput.offset,
-                  kinput.offset);
-            const size_t newSize = isaDisassembler->determineEndOfCode();
-            isaDisassembler->beforeDisassemble();
-            isaDisassembler->disassemble();
-            if (newSize != kernelSizes[i])
-            {   // fill
-                output.write("        .fill ", 14);
-                outSize = itocstrCStyle<cxuint>(kernelSizes[i]-newSize, buf, 16);
-                output.write(buf, outSize);
-                output.write(", 1, 0\n", 7);
-            }
-        }
+        isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName.c_str());
+    }
+    if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
+    {   // print text
+        output.write(".text\n", 6);
+        isaDisassembler->setInput(galliumInput->codeSize, galliumInput->code);
+        isaDisassembler->beforeDisassemble();
+        isaDisassembler->disassemble();
     }
 }
 

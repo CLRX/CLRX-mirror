@@ -109,7 +109,6 @@ GCNDisassembler::~GCNDisassembler()
 
 void GCNDisassembler::beforeDisassemble()
 {
-    const size_t cwPos = startPos>>2;
     labels.clear();
     
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
@@ -144,13 +143,13 @@ void GCNDisassembler::beforeDisassemble()
                         if (opcode == 2 || (opcode >= 4 && opcode <= 9) ||
                             // GCN1.1 opcodes
                             (isGCN11 && (opcode >= 23 && opcode <= 26))) // if jump
-                            labels.push_back(cwPos+pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
                     }
                     else
                     {   // SOPK
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if (opcode == 17) // if branch fork
-                            labels.push_back(cwPos+pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
                         else if (opcode == 21)
                             pos++; // additional literal
                     }
@@ -200,6 +199,12 @@ void GCNDisassembler::beforeDisassemble()
     std::sort(labels.begin(), labels.end());
     const auto newEnd = std::unique(labels.begin(), labels.end());
     labels.resize(newEnd-labels.begin());
+    std::sort(namedLabels.begin(), namedLabels.end(), [](
+                const std::pair<size_t, std::string>& a1,
+                const std::pair<size_t, std::string>& a2) 
+        { return a1.first < a2.first; });
+    for (auto& l: namedLabels)
+        l.first >>= 2;
 }
 
 static const cxbyte gcnEncoding11Table[16] =
@@ -1852,6 +1857,7 @@ static const size_t maxBufSize = 512;
 void GCNDisassembler::disassemble()
 {
     auto curLabel = labels.begin();
+    auto curNamedLabel = namedLabels.begin();
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
     const bool isGCN11 = checkGCN11(disassembler.getDeviceType());
@@ -1860,7 +1866,6 @@ void GCNDisassembler::disassemble()
     
     char buf[maxBufSize];
     size_t bufPos = 0;
-    const size_t cwPos = startPos>>2;
     const size_t codeWordsNum = (inputSize>>2);
     
     if ((inputSize&3) != 0)
@@ -1879,14 +1884,27 @@ void GCNDisassembler::disassemble()
     bool prevIsTwoWord = false;
     
     for (size_t pos = 0; pos < codeWordsNum;)
-    {   // check label
+    {   
+        if (curNamedLabel != namedLabels.end())
+        {
+            if (pos == curNamedLabel->first)
+            {
+                buf[bufPos++] = '\n';
+                output.write(buf, bufPos);
+                bufPos = 0;
+                output.write(curNamedLabel->second.c_str(), curNamedLabel->second.size());
+                output.write(":\n", 2);
+                curNamedLabel++;
+            }
+        }
+        // check label
         if (curLabel != labels.end())
         {
-            if (cwPos + pos == *curLabel)
+            if (pos == *curLabel)
             {   // put label
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
-                bufPos += itocstrCStyle(cwPos+pos, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 if (bufPos+250 >= maxBufSize)
@@ -1896,11 +1914,11 @@ void GCNDisassembler::disassemble()
                 }
                 curLabel++;
             }
-            else  if (prevIsTwoWord && cwPos+pos-1 == *curLabel)
+            else  if (prevIsTwoWord && pos-1 == *curLabel)
             {   /* if label between words of previous instruction */
                 ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
                 bufPos += 11;
-                bufPos += itocstrCStyle(cwPos+pos-1, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(pos-1, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 ::memcpy(buf+bufPos, ".org .+4\n", 9);
@@ -2119,7 +2137,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SOPP:
                     bufPos += decodeSOPPEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, cwPos+pos);
+                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, pos);
                     break;
                 case GCNENC_SOP1:
                     bufPos += decodeSOP1Encoding(spacesToAdd, curArchMask,
@@ -2131,7 +2149,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SOPK:
                     bufPos += decodeSOPKEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, cwPos+pos);
+                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, pos);
                     break;
                 case GCNENC_SMRD:
                     bufPos += decodeSMRDEncoding(spacesToAdd, curArchMask,
@@ -2221,16 +2239,4 @@ void GCNDisassembler::disassemble()
     output.write(buf, bufPos);
     output.flush();
     labels.clear(); // free labels
-}
-
-size_t GCNDisassembler::determineEndOfCode()
-{
-    const size_t codeWordsNum = (inputSize>>2);
-    const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
-    size_t i;
-    for (i = codeWordsNum; i > 0; i--)
-        if (codeWords[i-1] != 0)
-            break;
-    inputSize = i<<2;
-    return i<<2;
 }
