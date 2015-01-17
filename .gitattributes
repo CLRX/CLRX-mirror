@@ -2,6 +2,7 @@
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
 CLRX/amdasm/Assembler.h -text
+CLRX/amdasm/Disassembler.h -text
 CLRX/amdbin/AmdBinGen.h -text
 CLRX/amdbin/AmdBinaries.h -text
 CLRX/amdbin/ElfBinaries.h -text

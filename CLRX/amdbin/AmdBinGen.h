@@ -158,12 +158,6 @@ struct AmdKernelConfig
     AmdUserData userDatas[16];
 };
 
-struct CALNoteInput
-{
-    CALNoteHeader header;  ///< header of CAL note
-    const cxbyte* data;   ///< data of CAL note
-};
-
 struct AmdKernelInput
 {
     std::string kernelName; ///< kernel name

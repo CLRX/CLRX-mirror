@@ -21,7 +21,7 @@
 #include <iostream>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/CLIParser.h>
-#include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/Disassembler.h>
 
 using namespace CLRX;
 

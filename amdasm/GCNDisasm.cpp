@@ -22,7 +22,7 @@
 #include <cstring>
 #include <mutex>
 #include <CLRX/utils/Utilities.h>
-#include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/Disassembler.h>
 #include <CLRX/utils/MemAccess.h>
 #include "AsmInternals.h"
 

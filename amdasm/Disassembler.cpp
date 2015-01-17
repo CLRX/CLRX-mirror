@@ -29,13 +29,14 @@
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdasm/Assembler.h>
+#include <CLRX/amdasm/Disassembler.h>
 
 using namespace CLRX;
 
 AmdDisasmInput AmdDisasmInput::createFromRawBinary(GPUDeviceType deviceType,
                         size_t binarySize, const cxbyte* binaryData)
 {
-    return { deviceType,  false, { "", "" }, 0,  nullptr, {
+    return { deviceType,  false, "", "", 0,  nullptr, {
         { "binaryKernel", 0, nullptr, 0, nullptr, { }, 0, nullptr,
             binarySize, binaryData }
     } };
@@ -203,7 +204,7 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
             cxuint j = 0;
             for (const CALNote& calNote: innerBin->getCALNotes(encEntryIndex))
             {
-                AsmCALNote& outCalNote = kernelInput.calNotes[j++];
+                CALNoteInput& outCalNote = kernelInput.calNotes[j++];
                 outCalNote.header.nameSize = ULEV(calNote.header->nameSize);
                 outCalNote.header.type = ULEV(calNote.header->type);
                 outCalNote.header.descSize = ULEV(calNote.header->descSize);
@@ -232,8 +233,8 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
     if (entriesNum == index)
         throw Exception("Cant determine GPU device type");
     input->deviceType = gpuDeviceCodeTable[index].deviceType;
-    input->metadata.compileOptions = binary.getCompileOptions();
-    input->metadata.driverInfo = binary.getDriverInfo();
+    input->compileOptions = binary.getCompileOptions();
+    input->driverInfo = binary.getDriverInfo();
     input->globalDataSize = binary.getGlobalDataSize();
     input->globalData = binary.getGlobalData();
     const size_t kernelInfosNum = binary.getKernelInfosNum();
@@ -611,11 +612,11 @@ void Disassembler::disassembleAmd()
     {
         output.write(".compile_options \"", 18);
         const std::string escapedCompileOptions = 
-                escapeStringCStyle(amdInput->metadata.compileOptions);
+                escapeStringCStyle(amdInput->compileOptions);
         output.write(escapedCompileOptions.c_str(), escapedCompileOptions.size());
         output.write("\"\n.driver_info \"", 16);
         const std::string escapedDriverInfo =
-                escapeStringCStyle(amdInput->metadata.driverInfo);
+                escapeStringCStyle(amdInput->driverInfo);
         output.write(escapedDriverInfo.c_str(), escapedDriverInfo.size());
         output.write("\"\n", 2);
     }
@@ -655,7 +656,7 @@ void Disassembler::disassembleAmd()
         }
         
         if ((flags & DISASM_CALNOTES) != 0)
-            for (const AsmCALNote& calNote: kinput.calNotes)
+            for (const CALNoteInput& calNote: kinput.calNotes)
             {
                 char buf[80];
                 // calNote.header fields is already in native endian

@@ -186,6 +186,12 @@ struct CALNote
     cxbyte* data;   ///< data of CAL note
 };
 
+struct CALNoteInput
+{
+    CALNoteHeader header;  ///< header of CAL note
+    const cxbyte* data;   ///< data of CAL note
+};
+
 /// CAL program info entry. There are not copied (ULEV must be used)
 struct CALProgramInfoEntry
 {
