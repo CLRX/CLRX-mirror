@@ -57,8 +57,6 @@ protected:
 /// array stream buffer that holds external static array for memory saving
 class ArrayStreamBuf: public MemoryStreamBuf
 {
-private:
-    std::ios_base::openmode openMode;
 public:
     ArrayStreamBuf(size_t size, char* buffer, std::ios_base::openmode openMode);
     
@@ -68,6 +66,8 @@ public:
     /// get a held array content
     char* getArray() const
     { return eback(); }
+protected:
+    std::streambuf* setbuf(char_type* buffer, std::streamsize size);
 };
 
 /// string stream buffer that holds external string for memory saving
@@ -86,6 +86,7 @@ public:
     { return string; }
 protected:
     int_type overflow(int_type ch);
+    std::streambuf* setbuf(char_type* buffer, std::streamsize size);
 };
 
 /// vector char stream buffer external char-vector for memory saving
@@ -104,6 +105,7 @@ public:
     { return vector; }
 protected:
     int_type overflow(int_type ch);
+    std::streambuf* setbuf(char_type* buffer, std::streamsize size);
 };
 
 /// specialized input stream that holds external array for memory saving

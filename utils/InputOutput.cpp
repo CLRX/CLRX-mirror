@@ -116,6 +116,19 @@ ArrayStreamBuf::ArrayStreamBuf(size_t size, char* buffer,
     setp(buffer, buffer+size);
 }
 
+std::streambuf* ArrayStreamBuf::setbuf(std::streambuf::char_type* buffer,
+                   std::streamsize size)
+{
+    if (buffer != nullptr && size != 0)
+    {
+        if (openMode & std::ios_base::in)
+            setg(buffer, buffer, buffer+size);
+        if (openMode & std::ios_base::out)
+            setp(buffer, buffer+size);
+    }
+    return this;
+}
+
 StringStreamBuf::StringStreamBuf(std::string& _string, std::ios_base::openmode openMode)
         : MemoryStreamBuf(openMode), string(_string)
 {
@@ -154,6 +167,20 @@ std::streambuf::int_type StringStreamBuf::overflow(std::streambuf::int_type ch)
     return ch;
 }
 
+std::streambuf* StringStreamBuf::setbuf(std::streambuf::char_type* buffer,
+           std::streamsize size)
+{
+    if (buffer != nullptr && size != 0)
+    {
+        string.clear();
+        if (openMode & std::ios_base::in)
+            setg(buffer, buffer, buffer+size);
+        if (openMode & std::ios_base::out)
+            setp(buffer, buffer+size);
+    }
+    return this;
+}
+
 VectorStreamBuf::VectorStreamBuf(std::vector<char>& _vector,
          std::ios_base::openmode openMode) : MemoryStreamBuf(openMode), vector(_vector)
 {
@@ -190,6 +217,20 @@ std::streambuf::int_type VectorStreamBuf::overflow(std::streambuf::int_type ch)
     
     this->pbump(1);
     return ch;
+}
+
+std::streambuf* VectorStreamBuf::setbuf(std::streambuf::char_type* buffer,
+           std::streamsize size)
+{
+    if (buffer != nullptr && size != 0)
+    {
+        vector.clear();
+        if (openMode & std::ios_base::in)
+            setg(buffer, buffer, buffer+size);
+        if (openMode & std::ios_base::out)
+            setp(buffer, buffer+size);
+    }
+    return this;
 }
 
 /*
