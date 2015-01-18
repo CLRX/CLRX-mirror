@@ -26,6 +26,7 @@
 #include <CLRX/Config.h>
 #include <exception>
 #include <string>
+#include <vector>
 #include <cstdlib>
 #include <cstring>
 #include <cstdint>

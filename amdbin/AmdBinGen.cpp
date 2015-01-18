@@ -1336,7 +1336,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
     const bool isOlderThan1124 = driverVersion < 112402;
     const bool isOlderThan1348 = driverVersion < 134805;
     /* checking input */
-    if (cxuint(input->deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
+    if (input->deviceType > GPUDeviceType::GPUDEVICE_MAX)
         throw Exception("Unknown GPU device type");
     
     std::vector<TempAmdKernelConfig> tempAmdKernelConfigs(input->kernels.size());

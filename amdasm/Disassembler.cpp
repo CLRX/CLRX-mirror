@@ -981,9 +981,6 @@ void Disassembler::disassemble()
         output.write(".gallium\n", 9);
     
     GPUDeviceType deviceType = getDeviceType();
-    if (cxuint(deviceType) > cxuint(GPUDeviceType::GPUDEVICE_MAX))
-        throw Exception("Unknown GPU device type");
-    
     output.write(".gpu ", 5);
     const char* gpuName = getGPUDeviceTypeName(deviceType);
     output.write(gpuName, ::strlen(gpuName));

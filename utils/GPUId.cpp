@@ -89,15 +89,21 @@ GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
 
 GPUArchitecture CLRX::getGPUArchitectureFromDeviceType(GPUDeviceType deviceType)
 {
+    if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
+        throw Exception("Unknown GPU device type");
     return gpuDeviceArchTable[cxuint(deviceType)];
 }
 
 const char* CLRX::getGPUDeviceTypeName(GPUDeviceType deviceType)
 {
+    if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
+        throw Exception("Unknown GPU device type");
     return gpuDeviceNameTable[cxuint(deviceType)];
 }
 
 const char* CLRX::getGPUArchitectureName(GPUArchitecture architecture)
 {
+    if (architecture > GPUArchitecture::GPUARCH_MAX)
+        throw Exception("Unknown GPU architecture");
     return gpuArchitectureNameTable[cxuint(architecture)];
 }

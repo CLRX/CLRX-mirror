@@ -63,7 +63,8 @@ enum class GPUArchitecture: cxbyte
 {
     GCN1_0 = 0,
     GCN1_1,
-    GCN1_2
+    GCN1_2,
+    GPUARCH_MAX = GCN1_2
 };
 
 /// get GPU device type from name
