@@ -50,6 +50,8 @@ protected:
     pos_type seekpos(pos_type pos, std::ios_base::openmode which);
     std::streamsize showmanyc();
     int_type pbackfail(int_type ch);
+    
+    void safePBump(ssize_t offset);
 };
 
 /// array stream buffer that holds external static array for memory saving

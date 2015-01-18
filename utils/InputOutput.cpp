@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <algorithm>
 #include <cstring>
+#include <climits>
 #include <string>
 #include <istream>
 #include <ostream>
@@ -57,7 +58,7 @@ std::streambuf::pos_type MemoryStreamBuf::seekpos(std::streambuf::pos_type pos,
     if (which & std::ios_base::in)
         setg(eback(), eback()+pos, epptr());
     if (which & std::ios_base::out)
-        pbump(pos-(pptr()-pbase()));
+        safePBump(pos-(pptr()-pbase()));
     return pos;
 }
 
@@ -89,6 +90,25 @@ std::streambuf::int_type MemoryStreamBuf::pbackfail(std::streambuf::int_type ch)
     return traits_type::eof();;
 }
 
+void MemoryStreamBuf::safePBump(ssize_t offset)
+{
+#ifdef HAVE_64BIT
+    if (offset > 0)
+        while (offset > INT_MAX)
+        {
+            pbump(INT_MAX);
+            offset -= ssize_t(INT_MAX);
+        }
+    else
+        while (offset < INT_MIN)
+        {
+            pbump(INT_MIN);
+            offset -= size_t(INT_MIN);
+        }
+#endif
+    pbump(offset);
+}
+
 ArrayStreamBuf::ArrayStreamBuf(size_t size, char* buffer,
            std::ios_base::openmode openMode) : MemoryStreamBuf(openMode)
 {
@@ -104,7 +124,7 @@ StringStreamBuf::StringStreamBuf(std::string& _string, std::ios_base::openmode o
     setg(data, data, data+size);
     setp(data, data+size);
     if (openMode & std::ios_base::ate)
-        pbump(size);
+        safePBump(size);
 }
 
 std::streambuf::int_type StringStreamBuf::overflow(std::streambuf::int_type ch)
@@ -125,7 +145,7 @@ std::streambuf::int_type StringStreamBuf::overflow(std::streambuf::int_type ch)
         const size_t writePos = pptr()-pbase();
         setg(data, data+readPos, data+size);
         setp(data, data+size);
-        pbump(writePos);
+        safePBump(writePos);
     }
     else
         *pptr() = c;
@@ -163,7 +183,7 @@ std::streambuf::int_type VectorStreamBuf::overflow(std::streambuf::int_type ch)
         const size_t writePos = pptr()-pbase();
         setg(data, data+readPos, data+size);
         setp(data, data+size);
-        pbump(writePos);
+        safePBump(writePos);
     }
     else
         *pptr() = c;
