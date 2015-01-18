@@ -58,7 +58,7 @@ std::streambuf::pos_type MemoryStreamBuf::seekpos(std::streambuf::pos_type pos,
     if (which & std::ios_base::in)
         setg(eback(), eback()+pos, epptr());
     if (which & std::ios_base::out)
-        safePBump(pos-(pptr()-pbase()));
+        safePBump(ssize_t(pos)-(pptr()-pbase()));
     return pos;
 }
 
