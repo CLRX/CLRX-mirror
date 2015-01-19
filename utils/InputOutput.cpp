@@ -103,7 +103,7 @@ void MemoryStreamBuf::safePBump(ssize_t offset)
         while (offset < INT_MIN)
         {
             pbump(INT_MIN);
-            offset -= size_t(INT_MIN);
+            offset -= ssize_t(INT_MIN);
         }
 #endif
     pbump(offset);
