@@ -248,6 +248,32 @@ public:
     { return buffer.getVector(); }
 };
 
+/*
+ * adaptor
+ */
+
+struct BinaryOStream
+{
+private:
+    std::ostream& os;
+public:
+    BinaryOStream(std::ostream& _os) : os(_os)
+    { }
+    
+    template<typename T>
+    void writeObject(const T& t)
+    { os.write(reinterpret_cast<const char*>(&t), sizeof(T)); }
+    
+    template<typename T>
+    void writeArray(size_t size, const T* t)
+    { os.write(reinterpret_cast<const char*>(t), sizeof(T)*size); }
+    
+    const std::ostream& getOStream() const
+    { return os; }
+    std::ostream& getOStream()
+    { return os; }
+};
+
 };
 
 #endif

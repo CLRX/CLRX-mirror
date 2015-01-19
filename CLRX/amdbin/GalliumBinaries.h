@@ -33,6 +33,7 @@
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/InputOutput.h>
 
 /// main namespace
 namespace CLRX
@@ -300,6 +301,9 @@ class GalliumBinGenerator: public NonCopyableAndNonMovable
 private:
     bool manageable;
     const GalliumInput* input;
+    
+    cxbyte* generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             size_t* outSize) const;
 public:
     GalliumBinGenerator();
     GalliumBinGenerator(const GalliumInput* galliumInput);
@@ -323,6 +327,20 @@ public:
      * \return binary content pointer
      */
     cxbyte* generate(size_t& binarySize) const;
+    
+    /// generates binary
+    /**
+     * \param os output stream
+     * \return binary content pointer
+     */
+    void generate(std::ostream& os) const;
+    
+    /// generates binary
+    /**
+     * \param vector output vector
+     * \return binary content pointer
+     */
+    void generate(std::vector<char>& vector) const;
 };
 
 };
