@@ -1884,7 +1884,8 @@ void GCNDisassembler::disassemble()
     
     bool prevIsTwoWord = false;
     
-    for (size_t pos = 0; pos < codeWordsNum;)
+    size_t pos = 0;
+    while (true)
     {   
         if (curNamedLabel != namedLabels.end())
         {
@@ -1905,6 +1906,8 @@ void GCNDisassembler::disassemble()
                 curNamedLabel++;
             }
         }
+        if (pos >= codeWordsNum)
+            break;
         // check label
         if (curLabel != labels.end())
         {
