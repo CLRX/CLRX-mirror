@@ -52,6 +52,8 @@ protected:
     int_type pbackfail(int_type ch);
     
     void safePBump(ssize_t offset);
+public:
+    ~MemoryStreamBuf() = default;
 };
 
 /// array stream buffer that holds external static array for memory saving
@@ -59,6 +61,7 @@ class ArrayStreamBuf: public MemoryStreamBuf
 {
 public:
     ArrayStreamBuf(size_t size, char* buffer, std::ios_base::openmode openMode);
+    ~ArrayStreamBuf() = default;
     
     /// get a held array size
     size_t getArraySize() const
@@ -77,6 +80,7 @@ private:
     std::string& string;
 public:
     StringStreamBuf(std::string& string, std::ios_base::openmode openMode);
+    ~StringStreamBuf() = default;
     
     /// get a held string
     std::string& getString() const
@@ -96,6 +100,7 @@ private:
     std::vector<char>& vector;
 public:
     VectorStreamBuf(std::vector<char>& vector, std::ios_base::openmode openMode);
+    ~VectorStreamBuf() = default;
     
     /// get a held char vector
     std::vector<char>& getVector() const
@@ -115,6 +120,7 @@ private:
     ArrayStreamBuf buffer;
 public:
     ArrayIStream(size_t size, const char* array);
+    ~ArrayIStream() = default;
     
     /// get a held array size
     size_t getArraySize() const
@@ -131,6 +137,7 @@ private:
     ArrayStreamBuf buffer;
 public:
     ArrayIOStream(size_t size, char* array);
+    ~ArrayIOStream() = default;
     
     /// get a held array size
     size_t getArraySize() const
@@ -147,6 +154,7 @@ private:
     ArrayStreamBuf buffer;
 public:
     ArrayOStream(size_t size, char* array);
+    ~ArrayOStream() = default;
     
     /// get a held array size
     size_t getArraySize() const
@@ -163,6 +171,7 @@ private:
     StringStreamBuf buffer;
 public:
     StringIStream(const std::string& string);
+    ~StringIStream() = default;
     
     /// get a held string
     const std::string& getString() const
@@ -176,6 +185,7 @@ private:
     StringStreamBuf buffer;
 public:
     StringIOStream(std::string& string);
+    ~StringIOStream() = default;
     
     /// get a held string
     std::string& getString() const
@@ -189,6 +199,7 @@ private:
     StringStreamBuf buffer;
 public:
     StringOStream(std::string& string);
+    ~StringOStream() = default;
     
     /// get a held string
     std::string& getString() const
@@ -202,6 +213,7 @@ private:
     VectorStreamBuf buffer;
 public:
     VectorIStream(const std::vector<char>& string);
+    ~VectorIStream() = default;
     
     /// get a held char vector
     const std::vector<char>& getVector() const
@@ -215,6 +227,7 @@ private:
     VectorStreamBuf buffer;
 public:
     VectorIOStream(std::vector<char>& string);
+    ~VectorIOStream() = default;
     
     /// get a held char vector
     std::vector<char>& getVector() const
@@ -228,6 +241,7 @@ private:
     VectorStreamBuf buffer;
 public:
     VectorOStream(std::vector<char>& string);
+    ~VectorOStream() = default;
     
     /// get a held char vector
     std::vector<char>& getVector() const
