@@ -376,7 +376,7 @@ static void putElfSymbolLE(BinaryOStream& bos, uint32_t symName, uint32_t value,
 
 static inline void fixAlignment(std::ostream& os, size_t elfOffset)
 {
-    char zeroes[4] = { 0, 0, 0, 0 };
+    const char zeroes[4] = { 0, 0, 0, 0 };
     size_t offset = os.tellp();
     if (((offset-elfOffset) & 3) != 0)
     {   // fix alignment
@@ -483,8 +483,10 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
     else // from argument
         os = osPtr;
     
+    const std::ios::iostate oldExceptions = os->exceptions();
     try
     {
+    os->exceptions(std::ios::failbit | std::ios::badbit);
     /****
      * prepare for write binary to output
      ****/
@@ -663,7 +665,6 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
         kernelNameOffset += kernel.kernelName.size()+1;
     }
     
-    
     // last section .strtab
     os->write("\000EndOfTextLabel", 16);
     for (uint32_t korder: kernelsOrder)
@@ -675,11 +676,13 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
     }
     catch(...)
     {
+        os->exceptions(oldExceptions);
         delete[] binary;
         if (os != osPtr) // not from argument
             delete os;
         throw;
     }
+    os->exceptions(oldExceptions);
     assert(size_t(os->tellp()) == binarySize);
     if (os != osPtr) // not from argument
         delete os;
