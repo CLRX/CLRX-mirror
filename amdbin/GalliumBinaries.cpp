@@ -374,14 +374,14 @@ static void putElfSymbolLE(BinaryOStream& bos, uint32_t symName, uint32_t value,
 }
 
 
-static inline void fixAlignment(std::ostream& os, size_t elfOffset)
+static inline void fixAlignment(std::ostream& os, size_t& offset, size_t elfOffset)
 {
     const char zeroes[4] = { 0, 0, 0, 0 };
-    size_t offset = os.tellp();
     if (((offset-elfOffset) & 3) != 0)
     {   // fix alignment
         const cxuint alignFix = 4-((offset-elfOffset)&3);
         os.write(zeroes, alignFix);
+        offset += alignFix;
     }
 }
 
@@ -484,6 +484,7 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
         os = osPtr;
     
     const std::ios::iostate oldExceptions = os->exceptions();
+    size_t offset = 0;
     try
     {
     os->exceptions(std::ios::failbit | std::ios::badbit);
@@ -492,6 +493,7 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
      ****/
     BinaryOStream bos(*os);
     bos.writeObject<uint32_t>(LEV(kernelsNum));
+    offset += 4;
     for (uint32_t korder: kernelsOrder)
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
@@ -503,6 +505,7 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
         const uint32_t other[3] = { 0, LEV(kernel.offset),
             LEV(cxuint(kernel.argInfos.size())) };
         bos.writeArray(3, other);
+        offset += kernel.kernelName.size() + 16;
         
         for (const GalliumArgInfo arg: kernel.argInfos)
         {
@@ -511,14 +514,16 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
                 LEV(arg.signExtended?1U:0U), LEV(cxuint(arg.semantic)) };
             bos.writeArray(6, argData);
         }
+        offset += kernel.argInfos.size()*24U;
     }
     /* section */
     {
         const uint32_t section[6] = { LEV(1U), LEV(0U), LEV(0U), LEV(uint32_t(elfSize)),
             LEV(uint32_t(elfSize+4)), LEV(uint32_t(elfSize)) };
         bos.writeArray(6, section);
+        offset += 24;
     }
-    const size_t elfOffset = os->tellp();
+    const size_t elfOffset = offset;
     /****
      * put this ELF binary
      ****/
@@ -532,13 +537,15 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
         cxbyte fillup[256-sizeof(Elf32_Ehdr)];
         std::fill(fillup, fillup+sizeof(fillup), cxbyte(0));
         bos.writeArray(sizeof(fillup), fillup);
+        offset += 256;
     }
     
     size_t sectionOffsets[7];
     /* text */
     bos.writeArray(input->codeSize, input->code);
-    fixAlignment(*os, elfOffset);
-    sectionOffsets[0] = size_t(os->tellp())-elfOffset;
+    offset += input->codeSize;
+    fixAlignment(*os, offset, elfOffset);
+    sectionOffsets[0] = offset-elfOffset;
     /* .AMDGPU.config */
     for (uint32_t korder: kernelsOrder)
     {
@@ -551,24 +558,30 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
         }
         bos.writeArray(3, outEntries);
     }
-    sectionOffsets[1] = size_t(os->tellp())-elfOffset;
+    offset += kernelsNum*24U;
+    sectionOffsets[1] = offset-elfOffset;
     // .AMDGPU.disasm
     if (disassembly!=nullptr)
+    {
         bos.writeArray(disassemblySize, disassembly);
+        offset += disassemblySize;
+    }
     // .rodata
     if (input->globalData!=nullptr)
     {
-        fixAlignment(*os, elfOffset);
-        sectionOffsets[2] = size_t(os->tellp())-elfOffset;
+        fixAlignment(*os, offset, elfOffset);
+        sectionOffsets[2] = offset-elfOffset;
         bos.writeArray(input->globalDataSize, input->globalData);
+        offset += input->globalDataSize;
     }
     else // no global data
-        sectionOffsets[2] = size_t(os->tellp())-elfOffset;
+        sectionOffsets[2] = offset-elfOffset;
     
-    sectionOffsets[3] = size_t(os->tellp())-elfOffset;
+    sectionOffsets[3] = offset-elfOffset;
     // .comment
     bos.writeArray(commentSize, comment);
-    sectionOffsets[4] = size_t(os->tellp())-elfOffset;
+    offset += commentSize;
+    sectionOffsets[4] = offset-elfOffset;
     // .shstrtab
     {
         char shstrtab[128];
@@ -589,7 +602,8 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
                 ".symtab\000.strtab", 35+16);
         shoffset += 35+16;
         bos.writeArray(shoffset, shstrtab);
-        fixAlignment(*os, elfOffset);
+        offset += shoffset;
+        fixAlignment(*os, offset, elfOffset);
     }
     
     /*
@@ -637,7 +651,8 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
                     shstrtabSize, 0, 0, 1);
     sectionName += 10;
     // finish section table
-    sectionOffsets[5] = size_t(os->tellp())-elfOffset+(sizeof(Elf32_Shdr)*2);
+    offset += sizeof(Elf32_Shdr)*elfSectionsNum;
+    sectionOffsets[5] = offset-elfOffset;
     // .symtab
     putElfSectionLE(bos, sectionName, SHT_SYMTAB, 0, sectionOffsets[5],
             symTabsSize, elfSectionsNum-1, 0, 4, 0, sizeof(Elf32_Sym));
@@ -664,13 +679,16 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
                 ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0);
         kernelNameOffset += kernel.kernelName.size()+1;
     }
+    offset += symTabsSize;
     
     // last section .strtab
     os->write("\000EndOfTextLabel", 16);
+    offset += 16;
     for (uint32_t korder: kernelsOrder)
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
         bos.writeArray(kernel.kernelName.size()+1, kernel.kernelName.c_str());
+        offset += kernel.kernelName.size()+1;
     }
     os->flush();
     }
@@ -683,7 +701,7 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
         throw;
     }
     os->exceptions(oldExceptions);
-    assert(size_t(os->tellp()) == binarySize);
+    assert(offset == binarySize);
     if (os != osPtr) // not from argument
         delete os;
     
