@@ -108,15 +108,15 @@ static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
 
 static const uint32_t unalignedNamedLabelCode[] =
 {
-    0x90153d04U,
-    0x0934d6ffU, 0x11110000U,
-    0x90153d02U
+    LEV(0x90153d04U),
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    LEV(0x90153d02U)
 };
 
 static const uint32_t unalignedNamedLabelCode2[] =
 {
-    0x90153d04U,
-    0x0934d6ffU, 0x11110000U
+    LEV(0x90153d04U),
+    LEV(0x0934d6ffU), LEV(0x11110000U)
 };
 
 static void testUnalignedNamedLabel()
