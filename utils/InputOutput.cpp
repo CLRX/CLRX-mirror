@@ -75,8 +75,7 @@ std::streambuf::int_type MemoryStreamBuf::pbackfail(std::streambuf::int_type ch)
         if (ch != ret) // not eof
         {
             const std::streambuf::char_type c = traits_type::to_char_type(ch);
-            char oldPrev = gptr()[-1];
-            if ((openMode & std::ios_base::out)!=0 || c != oldPrev)
+            if ((openMode & std::ios_base::out)!=0 || c != gptr()[-1])
             {
                 gbump(-1);
                 *gptr() = c;
@@ -87,7 +86,7 @@ std::streambuf::int_type MemoryStreamBuf::pbackfail(std::streambuf::int_type ch)
             gbump(-1);
         return ret;
     }
-    return traits_type::eof();;
+    return traits_type::eof();
 }
 
 void MemoryStreamBuf::safePBump(ssize_t offset)
