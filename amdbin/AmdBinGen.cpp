@@ -21,6 +21,7 @@
 #include <elf.h>
 #include <cassert>
 #include <cstdio>
+#include <cctype>
 #include <cstring>
 #include <cstdint>
 #include <algorithm>
@@ -1701,7 +1702,7 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         {
             char fillup[64];
             std::fill(fillup, fillup+64, char(0));
-            for (cxuint written = 0; written < 4736; written++)
+            for (cxuint written = 0; written < 4736; written += 64)
                 os->write(fillup, 64);
             offset += 4736;
         }
