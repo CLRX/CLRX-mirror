@@ -109,7 +109,7 @@ static inline void putProgInfoEntryLE(BinaryOStream& bos, uint32_t address, uint
 }
 
 
-static const uint32_t gpuDeviceCodeTable[13] =
+static const uint16_t gpuDeviceCodeTable[13] =
 {
     0x3ff, // GPUDeviceType::CAPE_VERDE
     0x3fe, // GPUDeviceType::PITCAIRN
@@ -126,7 +126,7 @@ static const uint32_t gpuDeviceCodeTable[13] =
     0x40b // GPUDeviceType::MULLINS
 };
 
-static const uint16_t gpuDeviceInnerCodeTable[13] =
+static const uint32_t gpuDeviceInnerCodeTable[13] =
 {
     0x1c, // GPUDeviceType::CAPE_VERDE
     0x1b, // GPUDeviceType::PITCAIRN
@@ -1619,7 +1619,7 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         const Elf32_Ehdr innerHdr = { {
                 0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
                 0x64, 1, 0, 0, 0, 0, 0, 0, 0 }, LEV(uint16_t(ET_EXEC)), 
-                LEV(uint16_t(0x7dU)), LEV(uint16_t(EV_CURRENT)), 0U,
+                LEV(uint16_t(0x7dU)), LEV(uint32_t(EV_CURRENT)), 0U,
                 LEV(uint32_t(sizeof(Elf32_Ehdr))), LEV(0xd0U), LEV(1U),
                 LEV(uint16_t(sizeof(Elf32_Ehdr))),
                 LEV(uint16_t(sizeof(Elf32_Phdr))), LEV(uint16_t(3U)),
