@@ -108,7 +108,7 @@ static inline void putProgInfoEntryLE(BinaryOStream& bos, uint32_t address, uint
     bos.writeObject(piEntry);
 }
 
-
+// e_type (16-bit)
 static const uint16_t gpuDeviceCodeTable[13] =
 {
     0x3ff, // GPUDeviceType::CAPE_VERDE
@@ -126,6 +126,7 @@ static const uint16_t gpuDeviceCodeTable[13] =
     0x40b // GPUDeviceType::MULLINS
 };
 
+/// CALNoteEntry (32-bit)
 static const uint32_t gpuDeviceInnerCodeTable[13] =
 {
     0x1c, // GPUDeviceType::CAPE_VERDE
@@ -1645,7 +1646,7 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                 sizeof(Elf32_Shdr)*6;
         {   /* CALEncodingEntry */
             const CALEncodingEntry encEntry = {
-                LEV(gpuDeviceInnerCodeTable[cxuint(input->deviceType)]), LEV(4U), 
+                LEV(uint32_t(gpuDeviceInnerCodeTable[cxuint(input->deviceType)])), LEV(4U), 
                 LEV(0x1c0U), LEV(uint32_t(innerBinSizes[i]-(encOffset-innerBinOffset))) };
             bos.writeObject(encEntry);
             offset += sizeof(CALEncodingEntry);
