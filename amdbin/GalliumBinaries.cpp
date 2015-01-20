@@ -373,7 +373,6 @@ static void putElfSymbolLE(BinaryOStream& bos, uint32_t symName, uint32_t value,
     bos.writeObject(sym);
 }
 
-
 static inline void fixAlignment(std::ostream& os, size_t& offset, size_t elfOffset)
 {
     const char zeroes[4] = { 0, 0, 0, 0 };
@@ -489,7 +488,7 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
     {
     os->exceptions(std::ios::failbit | std::ios::badbit);
     /****
-     * prepare for write binary to output
+     * write binary to output
      ****/
     BinaryOStream bos(*os);
     bos.writeObject<uint32_t>(LEV(kernelsNum));

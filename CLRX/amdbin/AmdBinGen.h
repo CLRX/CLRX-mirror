@@ -28,10 +28,12 @@
 #include <climits>
 #include <cstdint>
 #include <string>
+#include <ostream>
 #include <vector>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/GPUId.h>
+#include <CLRX/utils/InputOutput.h>
 
 /// main namespace
 namespace CLRX
@@ -184,6 +186,9 @@ class AmdGPUBinGenerator: public NonCopyableAndNonMovable
 private:
     bool manageable;
     const AmdInput* input;
+    
+    cxbyte* generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             size_t* outSize) const;
 public:
     AmdGPUBinGenerator();
     AmdGPUBinGenerator(const AmdInput* amdInput);
@@ -214,6 +219,20 @@ public:
      * \return binary content pointer
      */
     cxbyte* generate(size_t& binarySize) const;
+    
+    /// generates binary
+    /**
+     * \param os output stream
+     * \return binary content pointer
+     */
+    void generate(std::ostream& os) const;
+    
+    /// generates binary
+    /**
+     * \param vector output vector
+     * \return binary content pointer
+     */
+    void generate(std::vector<char>& vector) const;
 };
 
 };

@@ -29,55 +29,85 @@
 #include <vector>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
+#include <CLRX/utils/InputOutput.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 
 using namespace CLRX;
 
 template<typename ElfSection>
-static void putElfSectionLE(ElfSection* section, size_t shName, uint32_t shType,
+static void putElfSectionLE(BinaryOStream& bos, size_t shName, uint32_t shType,
         uint32_t shFlags, size_t offset, size_t size, uint32_t link,
         uint32_t info = 0, uint32_t addrAlign = 1, size_t addr = 0, uint32_t entSize = 0)
 {
-    SULEV(section->sh_name, shName);
-    SULEV(section->sh_type, shType);
-    SULEV(section->sh_flags, shFlags);
-    SULEV(section->sh_addr, 0);
-    SULEV(section->sh_offset, offset);
-    SULEV(section->sh_size, size);
-    SULEV(section->sh_link, link);
-    SULEV(section->sh_info, info);
-    SULEV(section->sh_addralign, addrAlign);
-    SULEV(section->sh_entsize, entSize);
+    ElfSection shdr;
+    SLEV(shdr.sh_name, shName);
+    SLEV(shdr.sh_type, shType);
+    SLEV(shdr.sh_flags, shFlags);
+    SLEV(shdr.sh_addr, addr);
+    SLEV(shdr.sh_offset, offset);
+    SLEV(shdr.sh_size, size);
+    SLEV(shdr.sh_link, link);
+    SLEV(shdr.sh_info, info);
+    SLEV(shdr.sh_addralign, addrAlign);
+    SLEV(shdr.sh_entsize, entSize);
+    bos.writeObject(shdr);
 }
 
 template<typename ElfSym>
-static void putElfSymbolLE(ElfSym* symbol, size_t symName, size_t value, size_t size,
-        uint16_t shndx, cxbyte info, cxbyte other = 0)
+static void putElfSymbolLE(BinaryOStream& bos, uint32_t symName, uint32_t value,
+        uint32_t size, uint16_t shndx, cxbyte info, cxbyte other = 0)
 {
-    SULEV(symbol->st_name, symName); 
-    SULEV(symbol->st_value, value);
-    SULEV(symbol->st_size, size);
-    SULEV(symbol->st_shndx, shndx);
-    symbol->st_info = info;
-    symbol->st_other = other;
+    ElfSym sym;
+    SLEV(sym.st_name, symName); 
+    SLEV(sym.st_value, value);
+    SLEV(sym.st_size, size);
+    SLEV(sym.st_shndx, shndx);
+    sym.st_info = info;
+    sym.st_other = other;
+    bos.writeObject(sym);
 }
 
-static inline void putCALNoteLE(CALNoteHeader* noteHdr, uint32_t type, uint32_t descSize)
+static void putElfProgramHeader32LE(BinaryOStream& bos, uint32_t type, uint32_t offset,
+        uint32_t filesz, uint32_t flags, uint32_t align, uint32_t memsz = 0,
+        uint32_t vaddr = 0, uint32_t paddr = 0)
 {
-    SULEV(noteHdr->nameSize, 8);
-    SULEV(noteHdr->type, type);
-    SULEV(noteHdr->descSize, descSize);
-    ::memcpy(noteHdr->name, "ATI CAL", 8);
+    const Elf32_Phdr phdr = { LEV(type), LEV(offset), LEV(vaddr), LEV(paddr), LEV(filesz),
+        LEV(memsz), LEV(flags), LEV(align) };
+    bos.writeObject(phdr);
 }
 
-static inline void putCALUavEntry(CALUAVEntry* uavEntry, uint32_t uavId, uint32_t f1,
+static inline void putCALNoteLE(BinaryOStream& bos, uint32_t type, uint32_t descSize)
+{
+    const CALNoteHeader nhdr = { LEV(8U), LEV(descSize), LEV(type),
+        { 'A', 'T', 'I', ' ', 'C', 'A', 'L', 0 } };
+    bos.writeObject(nhdr);
+}
+
+static inline void putCALUavEntryLE(BinaryOStream& bos, uint32_t uavId, uint32_t f1,
           uint32_t f2, uint32_t type)
 {
-    SULEV(uavEntry->uavId, uavId);
-    SULEV(uavEntry->f1, f1);
-    SULEV(uavEntry->f2, f2);
-    SULEV(uavEntry->type, type);
+    const CALUAVEntry uavEntry = { LEV(uavId), LEV(f1), LEV(f2), LEV(type) };
+    bos.writeObject(uavEntry);
 }
+
+static inline void putCBMaskLE(BinaryOStream& bos, uint32_t index, uint32_t size)
+{
+    const CALConstantBufferMask cbMask = { LEV(index), LEV(size) };
+    bos.writeObject(cbMask);
+}
+
+static inline void putSamplerEntryLE(BinaryOStream& bos, uint32_t input, uint32_t sampler)
+{
+    const CALSamplerMapEntry samplerEntry = { LEV(input), LEV(sampler) };
+    bos.writeObject(samplerEntry);
+}
+
+static inline void putProgInfoEntryLE(BinaryOStream& bos, uint32_t address, uint32_t value)
+{
+    const CALProgramInfoEntry piEntry = { LEV(address), LEV(value) };
+    bos.writeObject(piEntry);
+}
+
 
 static const uint32_t gpuDeviceCodeTable[13] =
 {
@@ -259,28 +289,27 @@ struct TempAmdKernelConfig
     uint32_t privateId;
     uint32_t argsSpace;
     std::vector<uint16_t> argResIds;
+    uint32_t uavsNum;
+    uint32_t calNotesSize;
 };
 
 template<typename ElfSym>
-static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input,
+static void putMainSymbols(BinaryOStream& bos, size_t& offset, const AmdInput* input,
     const std::vector<std::string>& kmetadatas, const std::vector<cxuint>& innerBinSizes)
 {
-    ElfSym* symbolTable = reinterpret_cast<ElfSym*>(binary+offset);
-    ::memset(symbolTable, 0, sizeof(ElfSym));
+    putElfSymbolLE<ElfSym>(bos, 0, 0, 0, 0, 0, 0);
     size_t namePos = 1;
     if (!input->compileOptions.empty())
     {
-        putElfSymbolLE(symbolTable+1, namePos, 0, input->compileOptions.size(), 
+        putElfSymbolLE<ElfSym>(bos, namePos, 0, input->compileOptions.size(), 
                 (input->kernels.size()!=0)?6:4, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 25;
-        symbolTable++;
         offset += sizeof(ElfSym);
     }
-    symbolTable++;
     size_t rodataPos = 0;
     if (input->globalData != nullptr)
     {
-        putElfSymbolLE(symbolTable++, namePos, 0, input->globalDataSize, 4,
+        putElfSymbolLE<ElfSym>(bos, namePos, 0, input->globalDataSize, 4,
                 ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 18;
         rodataPos = input->globalDataSize;
@@ -293,18 +322,18 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
         /* kernel metatadata */
         const size_t metadataSize = (kernel.useConfig) ?
                 kmetadatas[i].size() : kernel.metadataSize;
-        putElfSymbolLE(symbolTable++, namePos, rodataPos, metadataSize, 4,
+        putElfSymbolLE<ElfSym>(bos, namePos, rodataPos, metadataSize, 4,
                 ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 19 + kernel.kernelName.size();
         rodataPos += metadataSize;
         /* kernel code */
-        putElfSymbolLE(symbolTable++, namePos, textPos, innerBinSizes[i], 5,
+        putElfSymbolLE<ElfSym>(bos, namePos, textPos, innerBinSizes[i], 5,
                 ELF32_ST_INFO(STB_LOCAL, STT_FUNC), 0);
         namePos += 17 + kernel.kernelName.size();
         textPos += innerBinSizes[i];
         /* kernel header */
         const size_t headerSize = (kernel.useConfig) ? 32 : kernel.headerSize;
-        putElfSymbolLE(symbolTable++, namePos, rodataPos, headerSize, 4,
+        putElfSymbolLE<ElfSym>(bos, namePos, rodataPos, headerSize, 4,
                 ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0);
         namePos += 17 + kernel.kernelName.size();
         rodataPos += headerSize;
@@ -313,44 +342,42 @@ static void putMainSymbols(cxbyte* binary, size_t& offset, const AmdInput* input
 }
 
 template<typename ElfShdr, typename ElfSym>
-static void putMainSections(cxbyte* binary, size_t &offset,
+static void putMainSections(BinaryOStream& bos, size_t &offset,
         const size_t* sectionOffsets, size_t alignFix, bool noKernels, bool haveSource,
         bool haveLLVMIR)
 {
-    ElfShdr* sectionHdrTable = reinterpret_cast<ElfShdr*>(binary + offset);
-    ::memset(sectionHdrTable, 0, sizeof(ElfShdr));
-    sectionHdrTable++;
+    putElfSectionLE<ElfShdr>(bos, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     // .shstrtab
-    putElfSectionLE(sectionHdrTable++, 1, SHT_STRTAB, SHF_STRINGS, sectionOffsets[0],
+    putElfSectionLE<ElfShdr>(bos, 1, SHT_STRTAB, SHF_STRINGS, sectionOffsets[0],
             sectionOffsets[1]-sectionOffsets[0], 0);
     // .strtab
-    putElfSectionLE(sectionHdrTable++, 11, SHT_STRTAB, SHF_STRINGS, sectionOffsets[1],
+    putElfSectionLE<ElfShdr>(bos, 11, SHT_STRTAB, SHF_STRINGS, sectionOffsets[1],
             sectionOffsets[2]-sectionOffsets[1]-alignFix, 0);
     // .symtab
-    putElfSectionLE(sectionHdrTable++, 19, SHT_SYMTAB, 0, sectionOffsets[2],
+    putElfSectionLE<ElfShdr>(bos, 19, SHT_SYMTAB, 0, sectionOffsets[2],
             sectionOffsets[3]-sectionOffsets[2], 2, 0, 8, 0, sizeof(ElfSym));
     size_t shNamePos = 27;
     if (!noKernels) // .text not emptyu
     {   // .rodata
-        putElfSectionLE(sectionHdrTable++, 27, SHT_PROGBITS, SHF_ALLOC, sectionOffsets[3],
+        putElfSectionLE<ElfShdr>(bos, 27, SHT_PROGBITS, SHF_ALLOC, sectionOffsets[3],
                 sectionOffsets[4]-sectionOffsets[3], 0);
         // .text
-        putElfSectionLE(sectionHdrTable++, 35, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
+        putElfSectionLE<ElfShdr>(bos, 35, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
                 sectionOffsets[4], sectionOffsets[5]-sectionOffsets[4], 0);
         shNamePos += 14;
     }
     // .comment
-    putElfSectionLE(sectionHdrTable++, shNamePos, SHT_PROGBITS, 0, sectionOffsets[5],
+    putElfSectionLE<ElfShdr>(bos, shNamePos, SHT_PROGBITS, 0, sectionOffsets[5],
             sectionOffsets[6]-sectionOffsets[5], 0);
     shNamePos += 9;
     if (haveSource)
     {
-        putElfSectionLE(sectionHdrTable++, shNamePos, SHT_PROGBITS, 0, sectionOffsets[6],
+        putElfSectionLE<ElfShdr>(bos, shNamePos, SHT_PROGBITS, 0, sectionOffsets[6],
                 sectionOffsets[7]-sectionOffsets[6], 0);
         shNamePos += 8;
     }
     if (haveLLVMIR)
-        putElfSectionLE(sectionHdrTable++, shNamePos, SHT_PROGBITS, 0, sectionOffsets[7],
+        putElfSectionLE<ElfShdr>(bos, shNamePos, SHT_PROGBITS, 0, sectionOffsets[7],
                 sectionOffsets[8]-sectionOffsets[7], 0);
     
     offset += sizeof(ElfShdr)*(5 + (noKernels?0:2) + haveSource + haveLLVMIR);
@@ -630,7 +657,9 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     else
         metadata += ";version:3:1:111\n";
     metadata += ";device:";
-    metadata += getGPUDeviceTypeName(input->deviceType);
+    const char* devName = getGPUDeviceTypeName(input->deviceType);
+    while (*devName != 0) // dev name must be in lower letter
+        metadata += ::tolower(*devName++);
     char numBuf[21];
     metadata += "\n;uniqueid:";
     itocstrCStyle(uniqueId, numBuf, 21);
@@ -877,7 +906,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     return metadata;
 }
 
-static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* input,
+static void generateCALNotes(BinaryOStream& bos, size_t& offset, const AmdInput* input,
          cxuint driverVersion, const AmdKernelInput& kernel,
          const TempAmdKernelConfig& tempConfig)
 {
@@ -919,23 +948,22 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     samplersNum += argSamplersNum;
     
     // CAL CALNOTE_INPUTS
-    CALNoteHeader* noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_INPUTS, 4*readOnlyImages);
+    putCALNoteLE(bos, CALNOTE_ATI_INPUTS, 4*readOnlyImages);
     offset += sizeof(CALNoteHeader);
-    uint32_t* data32 = reinterpret_cast<uint32_t*>(binary + offset);
-    for (cxuint k = 0; k < readOnlyImages; k++)
-        SULEV(data32[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
-    offset += 4*readOnlyImages;
+    {
+        uint32_t rdimgIds[8];
+        for (cxuint k = 0; k < readOnlyImages; k++)
+            SLEV(rdimgIds[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
+        bos.writeArray(readOnlyImages, rdimgIds);
+        offset += 4*readOnlyImages;
+    }
     // CALNOTE_OUTPUTS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_OUTPUTS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_OUTPUTS, 0);
     offset += sizeof(CALNoteHeader);
     // CALNOTE_UAV
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    putCALNoteLE(bos, CALNOTE_ATI_UAV, 16*tempConfig.uavsNum);
     offset += sizeof(CALNoteHeader);
     
-    CALUAVEntry* startUavEntry = reinterpret_cast<CALUAVEntry*>(binary + offset);
-    CALUAVEntry* uavEntry = startUavEntry;
     if (isOlderThan1124)
     {   // for old drivers
         for (cxuint k = 0; k < config.args.size(); k++)
@@ -945,18 +973,18 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
                 arg.argType <= KernelArgType::MAX_IMAGE &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                 /* writeOnlyImages */
-                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 2, imgUavDimTable[
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 2, imgUavDimTable[
                         cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)], 3);
         }
         if (config.usePrintf)
-            putCALUavEntry(uavEntry++, tempConfig.uavId, 4, 0, 5);
+            putCALUavEntryLE(bos, tempConfig.uavId, 4, 0, 5);
         // global buffers
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
-                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 4, 0, 5);
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 4, 0, 5);
         }
     }
     else
@@ -968,60 +996,43 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
                 arg.argType <= KernelArgType::MAX_IMAGE &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                 // write_only images
-                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 2, 2, 5);
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 2, 2, 5);
             else if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
-                putCALUavEntry(uavEntry++, tempConfig.argResIds[k], 4, 0, 5);
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 4, 0, 5);
         }
         
         if (config.usePrintf)
-            putCALUavEntry(uavEntry++, tempConfig.uavId, 0, 0, 5);
+            putCALUavEntryLE(bos, tempConfig.uavId, 0, 0, 5);
     }
-    offset += 16*(uavEntry-startUavEntry);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_UAV, 16*(uavEntry-startUavEntry));
+    offset += 16*tempConfig.uavsNum;
     
     // CALNOTE_CONDOUT
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_CONDOUT, 4);
-    offset += sizeof(CALNoteHeader);
-    data32 = reinterpret_cast<uint32_t*>(binary + offset);
-    SULEV(*data32, config.condOut);
-    offset += 4;
+    putCALNoteLE(bos, CALNOTE_ATI_CONDOUT, 4);
+    bos.writeObject(LEV(uint32_t(config.condOut)));
+    offset += sizeof(CALNoteHeader) + 4;
     // CALNOTE_FLOAT32CONSTS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_FLOAT32CONSTS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_FLOAT32CONSTS, 0);
     offset += sizeof(CALNoteHeader);
     // CALNOTE_INT32CONSTS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_INT32CONSTS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_INT32CONSTS, 0);
     offset += sizeof(CALNoteHeader);
     // CALNOTE_BOOL32CONSTS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_BOOL32CONSTS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_BOOL32CONSTS, 0);
     offset += sizeof(CALNoteHeader);
     
     // CALNOTE_EARLYEXIT
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_EARLYEXIT, 4);
-    offset += sizeof(CALNoteHeader);
-    data32 = reinterpret_cast<uint32_t*>(binary + offset);
-    SULEV(*data32, config.earlyExit);
-    offset += 4;
+    putCALNoteLE(bos, CALNOTE_ATI_EARLYEXIT, 4);
+    bos.writeObject(LEV(uint32_t(config.earlyExit)));
+    offset += sizeof(CALNoteHeader) + 4;
     
     // CALNOTE_GLOBAL_BUFFERS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_GLOBAL_BUFFERS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_GLOBAL_BUFFERS, 0);
     offset += sizeof(CALNoteHeader);
     
     // CALNOTE_CONSTANT_BUFFERS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_CONSTANT_BUFFERS, 8*constBuffersNum);
+    putCALNoteLE(bos, CALNOTE_ATI_CONSTANT_BUFFERS, 8*constBuffersNum);
     offset += sizeof(CALNoteHeader);
-    data32 = reinterpret_cast<uint32_t*>(binary + offset);
-    
-    CALConstantBufferMask* cbufMask =
-        reinterpret_cast<CALConstantBufferMask*>(binary + offset);
-    offset += 8*constBuffersNum;
     
     if (isOlderThan1124)
     {   /* for driver 12.10 */
@@ -1030,115 +1041,72 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
             const AmdKernelArgInput& arg = config.args[k-1];
             if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::CONSTANT)
-            {
-                SULEV(cbufMask->index, tempConfig.argResIds[k-1]);
-                SULEV(cbufMask->size, arg.constSpaceSize!=0 ?
+                putCBMaskLE(bos, tempConfig.argResIds[k-1], arg.constSpaceSize!=0 ?
                     ((arg.constSpaceSize+15)>>4) : 4096);
-                cbufMask++;
-            }
         }
         if (input->globalData != nullptr)
-        {
-            SULEV(cbufMask->index, 2); // ????
-            SULEV(cbufMask->size, (input->globalDataSize+15)>>4);
-            cbufMask++;
-        }
-        SULEV(cbufMask->index, 1);
-        SULEV(cbufMask->size, (tempConfig.argsSpace+15)>>4);
-        SULEV(cbufMask[1].index, 0);
-        SULEV(cbufMask[1].size, 15);
+            putCBMaskLE(bos, 2, (input->globalDataSize+15)>>4);
+        putCBMaskLE(bos, 1, (tempConfig.argsSpace+15)>>4);
+        putCBMaskLE(bos, 0, 15);
     }
     else 
     {
-        SULEV(cbufMask->index, 0);
-        SULEV(cbufMask->size, 0);
-        SULEV(cbufMask[1].index, 1);
-        SULEV(cbufMask[1].size, 0);
-        cbufMask += 2;
+        putCBMaskLE(bos, 0, 0);
+        putCBMaskLE(bos, 1, 0);
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
             if (arg.argType == KernelArgType::POINTER &&
                 arg.ptrSpace == KernelPtrSpace::CONSTANT)
-            {
-                SULEV(cbufMask->index, tempConfig.argResIds[k]);
-                SULEV(cbufMask->size, 0);
-                cbufMask++;
-            }
+                putCBMaskLE(bos, tempConfig.argResIds[k], 0);
         }
         if (isOlderThan1348 && input->globalData != nullptr)
-        {
-            SULEV(cbufMask->index, 2);
-            SULEV(cbufMask->size, 0);
-        }
+            putCBMaskLE(bos, 2, 0);
     }
+    offset += 8*constBuffersNum;
     
     // CALNOTE_INPUT_SAMPLERS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_INPUT_SAMPLERS, 8*samplersNum);
+    putCALNoteLE(bos, CALNOTE_ATI_INPUT_SAMPLERS, 8*samplersNum);
     offset += sizeof(CALNoteHeader);
     
-    CALSamplerMapEntry* sampEntry = reinterpret_cast<CALSamplerMapEntry*>(
-                binary + offset);
     for (cxuint k = 0; k < config.samplers.size(); k++)
-    {
-        SULEV(sampEntry[k].input, 0);
-        SULEV(sampEntry[k].sampler, k+argSamplersNum);
-    }
-    sampEntry += config.samplers.size();
+        putSamplerEntryLE(bos, 0, k+argSamplersNum);
     for (cxuint k = 0; k < argSamplersNum; k++)
-    {
-        SULEV(sampEntry[k].input, 0);
-        SULEV(sampEntry[k].sampler, k);
-    }
+        putSamplerEntryLE(bos, 0, k);
     offset += 8*samplersNum;
     
     // CALNOTE_SCRATCH_BUFFERS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_SCRATCH_BUFFERS, 4);
-    offset += sizeof(CALNoteHeader);
-    data32 = reinterpret_cast<uint32_t*>(binary + offset);
-    SULEV(*data32, config.scratchBufferSize>>2);
-    offset += 4;
+    putCALNoteLE(bos, CALNOTE_ATI_SCRATCH_BUFFERS, 4);
+    bos.writeObject<uint32_t>(LEV(config.scratchBufferSize>>2));
+    offset += sizeof(CALNoteHeader) + 4;
     
     // CALNOTE_PERSISTENT_BUFFERS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_PERSISTENT_BUFFERS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_PERSISTENT_BUFFERS, 0);
     offset += sizeof(CALNoteHeader);
     
     /* PROGRAM_INFO */
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
+    const cxuint progInfoSize = (18+32 +
+            4*((isOlderThan1124)?16:config.userDataElemsNum))*8;
+    putCALNoteLE(bos, CALNOTE_ATI_PROGINFO, progInfoSize);
     offset += sizeof(CALNoteHeader);
     
-    CALProgramInfoEntry* progInfo = reinterpret_cast<CALProgramInfoEntry*>(
-                binary + offset);
-    SULEV(progInfo[0].address, 0x80001000U);
-    SULEV(progInfo[0].value, config.userDataElemsNum);
+    putProgInfoEntryLE(bos, 0x80001000U, config.userDataElemsNum);
     cxuint k = 0;
     for (k = 0; k < config.userDataElemsNum; k++)
     {
-        SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
-        SULEV(progInfo[1+(k<<2)].value, config.userDatas[k].dataClass);
-        SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
-        SULEV(progInfo[1+(k<<2)+1].value, config.userDatas[k].apiSlot);
-        SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
-        SULEV(progInfo[1+(k<<2)+2].value, config.userDatas[k].regStart);
-        SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
-        SULEV(progInfo[1+(k<<2)+3].value, config.userDatas[k].regSize);
+        putProgInfoEntryLE(bos, 0x80001001U+(k<<2), config.userDatas[k].dataClass);
+        putProgInfoEntryLE(bos, 0x80001002U+(k<<2), config.userDatas[k].apiSlot);
+        putProgInfoEntryLE(bos, 0x80001003U+(k<<2), config.userDatas[k].regStart);
+        putProgInfoEntryLE(bos, 0x80001004U+(k<<2), config.userDatas[k].regSize);
     }
     if (isOlderThan1124)
         for (k =  config.userDataElemsNum; k < 16; k++)
         {
-            SULEV(progInfo[1+(k<<2)].address, 0x80001001U+(k<<2));
-            SULEV(progInfo[1+(k<<2)].value, 0);
-            SULEV(progInfo[1+(k<<2)+1].address, 0x80001002U+(k<<2));
-            SULEV(progInfo[1+(k<<2)+1].value, 0);
-            SULEV(progInfo[1+(k<<2)+2].address, 0x80001003U+(k<<2));
-            SULEV(progInfo[1+(k<<2)+2].value, 0);
-            SULEV(progInfo[1+(k<<2)+3].address, 0x80001004U+(k<<2));
-            SULEV(progInfo[1+(k<<2)+3].value, 0);
+            putProgInfoEntryLE(bos, 0x80001001U+(k<<2), 0);
+            putProgInfoEntryLE(bos, 0x80001002U+(k<<2), 0);
+            putProgInfoEntryLE(bos, 0x80001003U+(k<<2), 0);
+            putProgInfoEntryLE(bos, 0x80001004U+(k<<2), 0);
         }
-    k = (k<<2)+1;
     
     const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
     uint32_t curPgmRSRC2 = config.pgmRSRC2;
@@ -1150,41 +1118,29 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
     pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
     curPgmRSRC2 = (curPgmRSRC2 & 0xffffffc1U) | ((pgmUserSGPRsNum&0x1f)<<1);
     
-    SULEV(progInfo[k].address, 0x80001041U);
-    SULEV(progInfo[k++].value, config.usedVGPRsNum);
-    SULEV(progInfo[k].address, 0x80001042U);
-    SULEV(progInfo[k++].value, config.usedSGPRsNum);
-    SULEV(progInfo[k].address, 0x80001863U);
-    SULEV(progInfo[k++].value, 102);
-    SULEV(progInfo[k].address, 0x80001864U);
-    SULEV(progInfo[k++].value, 256);
-    SULEV(progInfo[k].address, 0x80001043U);
-    SULEV(progInfo[k++].value, config.floatMode);
-    SULEV(progInfo[k].address, 0x80001044U);
-    SULEV(progInfo[k++].value, config.ieeeMode);
-    SULEV(progInfo[k].address, 0x80001045U);
-    SULEV(progInfo[k++].value, config.scratchBufferSize>>2);
-    SULEV(progInfo[k].address, 0x00002e13U);
-    SULEV(progInfo[k++].value, curPgmRSRC2);
-    SULEV(progInfo[k].address, 0x8000001cU);
-    SULEV(progInfo[k+1].address, 0x8000001dU);
-    SULEV(progInfo[k+2].address, 0x8000001eU);
+    putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
+    putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);
+    putProgInfoEntryLE(bos, 0x80001863U, 102);
+    putProgInfoEntryLE(bos, 0x80001864U, 256);
+    putProgInfoEntryLE(bos, 0x80001043U, config.floatMode);
+    putProgInfoEntryLE(bos, 0x80001044U, config.ieeeMode);
+    putProgInfoEntryLE(bos, 0x80001045U, config.scratchBufferSize>>2);
+    putProgInfoEntryLE(bos, 0x00002e13U, curPgmRSRC2);
+    
     if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&
         config.reqdWorkGroupSize[2] != 0)
     {
-        SULEV(progInfo[k].value, config.reqdWorkGroupSize[0]);
-        SULEV(progInfo[k+1].value, config.reqdWorkGroupSize[1]);
-        SULEV(progInfo[k+2].value, config.reqdWorkGroupSize[2]);
+        putProgInfoEntryLE(bos, 0x8000001cU, config.reqdWorkGroupSize[0]);
+        putProgInfoEntryLE(bos, 0x8000001dU, config.reqdWorkGroupSize[1]);
+        putProgInfoEntryLE(bos, 0x8000001eU, config.reqdWorkGroupSize[2]);
     }
     else
     {   /* default */
-        SULEV(progInfo[k].value, 256);
-        SULEV(progInfo[k+1].value, 0);
-        SULEV(progInfo[k+2].value, 0);
+        putProgInfoEntryLE(bos, 0x8000001cU, 256);
+        putProgInfoEntryLE(bos, 0x8000001dU, 0);
+        putProgInfoEntryLE(bos, 0x8000001eU, 0);
     }
-    k+=3;
-    SULEV(progInfo[k].address, 0x80001841U);
-    SULEV(progInfo[k++].value, 0);
+    putProgInfoEntryLE(bos, 0x80001841U, 0);
     uint32_t uavMask[32];
     ::memset(uavMask, 0, 128);
     uavMask[0] = woUsedImagesMask;
@@ -1209,45 +1165,30 @@ static void generateCALNotes(cxbyte* binary, size_t& offset, const AmdInput* inp
             uavMask[0] |= 1U<<9;
     }
     
-    SULEV(progInfo[k].address, 0x8000001fU);
-    SULEV(progInfo[k++].value, uavMask[0]);
+    putProgInfoEntryLE(bos, 0x8000001fU, uavMask[0]);
     for (cxuint p = 0; p < 32; p++)
-    {
-        SULEV(progInfo[k].address, 0x80001843U+p);
-        SULEV(progInfo[k++].value, uavMask[p]);
-    }
-    SULEV(progInfo[k].address, 0x8000000aU);
-    SULEV(progInfo[k++].value, 1);
-    SULEV(progInfo[k].address, 0x80000078U);
-    SULEV(progInfo[k++].value, 64);
-    SULEV(progInfo[k].address, 0x80000081U);
-    SULEV(progInfo[k++].value, 32768);
-    SULEV(progInfo[k].address, 0x80000082U);
-    SULEV(progInfo[k++].value, ((curPgmRSRC2>>15)&0x1ff)<<8);
-    offset += 8*k;
-    putCALNoteLE(noteHdr, CALNOTE_ATI_PROGINFO, 8*k);
+        putProgInfoEntryLE(bos, 0x80001843U+p, uavMask[p]);
+    putProgInfoEntryLE(bos, 0x8000000aU, 1);
+    putProgInfoEntryLE(bos, 0x80000078U, 64);
+    putProgInfoEntryLE(bos, 0x80000081U, 32768);
+    putProgInfoEntryLE(bos, 0x80000082U, ((curPgmRSRC2>>15)&0x1ff)<<8);
+    offset += progInfoSize;
     
     // CAL_SUBCONSTANT_BUFFERS
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_SUB_CONSTANT_BUFFERS, 0);
+    putCALNoteLE(bos, CALNOTE_ATI_SUB_CONSTANT_BUFFERS, 0);
     offset += sizeof(CALNoteHeader);
     
     // CAL_UAV_MAILBOX_SIZE
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_UAV_MAILBOX_SIZE, 4);
-    offset += sizeof(CALNoteHeader);
-    data32 = reinterpret_cast<uint32_t*>(binary + offset);
-    SULEV(*data32, 0);
-    offset += 4;
+    putCALNoteLE(bos, CALNOTE_ATI_UAV_MAILBOX_SIZE, 4);
+    bos.writeObject<uint32_t>(0);
+    offset += sizeof(CALNoteHeader) + 4;
     
     // CAL_UAV_OP_MASK
-    noteHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-    putCALNoteLE(noteHdr, CALNOTE_ATI_UAV_OP_MASK, 128);
-    offset += sizeof(CALNoteHeader);
-    data32 = reinterpret_cast<uint32_t*>(binary + offset);
+    putCALNoteLE(bos, CALNOTE_ATI_UAV_OP_MASK, 128);
     for (cxuint k = 0; k < 32; k++)
-        SULEV(data32[k], uavMask[k]);
-    offset += 128;
+        uavMask[k] = LEV(uavMask[k]);
+    bos.writeArray(32, uavMask);
+    offset += sizeof(CALNoteHeader) + 128;
 }
 
 static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
@@ -1295,7 +1236,8 @@ static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
  * main routine to generate AmdBin for GPU
  */
 
-cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
+cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             size_t* outBinarySize) const
 {
     uint64_t binarySize;
     const size_t kernelsNum = input->kernels.size();
@@ -1383,6 +1325,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         innerBinSize += (kinput.data != nullptr) ? kinput.dataSize : 4736;
         innerBinSize += kinput.codeSize;
         size_t metadataSize = 0;
+        uint64_t calNotesSize = 0;
         if (kinput.useConfig)
         {
             // get new free uniqueId
@@ -1428,10 +1371,13 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
             if (config.usePrintf)
                 uavsNum++;
             
-            innerBinSize += uint64_t(20*17) /*calNoteHeaders*/ + 16 + 128 + (18+32 +
+            tempAmdKernelConfigs[i].uavsNum = uavsNum;
+            
+            calNotesSize = uint64_t(20*17) /*calNoteHeaders*/ + 16 + 128 + (18+32 +
                 4*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
+            innerBinSize += calNotesSize;
             
             kmetadatas[i] = generateMetadata(driverVersion, input, kinput,
                      tempAmdKernelConfigs[i], argSamplersNum, uniqueId);
@@ -1442,9 +1388,12 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         else // if defined in calNotes (no config)
         {
             for (const CALNoteInput& calNote: kinput.calNotes)
-                innerBinSize += uint64_t(20) + calNote.header.descSize;
+                calNotesSize += uint64_t(20) + calNote.header.descSize;
+            innerBinSize += calNotesSize;
             metadataSize = kinput.metadataSize + kinput.headerSize;
         }
+        
+        tempAmdKernelConfigs[i].calNotesSize = calNotesSize;
         
         if (innerBinSize > UINT32_MAX)
             throw Exception("Inner binary size is too big!");
@@ -1466,6 +1415,7 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         binarySize += input->llvmirSize;
     if ((binarySize & (mainSectionsAlign-1)) != 0) // main section alignment
         binarySize += mainSectionsAlign - (binarySize & (mainSectionsAlign-1));
+    const size_t mainSectionsOffset = binarySize;
     if (!input->is64Bit)
         binarySize += sizeof(Elf32_Shdr)*(5 + (input->kernels.empty()?0:2) +
                 (input->sourceCode != nullptr) + (input->llvmir != nullptr));
@@ -1479,141 +1429,157 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
 #endif
         binarySize > UINT32_MAX)
         throw Exception("Binary size is too big!");
+        
+    /****
+     * prepare for write binary to output
+     ****/
+    cxbyte* binary = nullptr;
+    std::ostream* os = nullptr;
+    if (vPtr==nullptr && osPtr==nullptr)
+    {
+        binary = new cxbyte[binarySize];
+        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(binary));
+    }
+    else if (vPtr != nullptr)
+    {
+        vPtr->resize(binarySize);
+        os = new VectorOStream(*vPtr);
+    }
+    else // from argument
+        os = osPtr;
+    
+    const std::ios::iostate oldExceptions = os->exceptions();
+    size_t offset = 0;
+    try
+    {
+    os->exceptions(std::ios::failbit | std::ios::badbit);
     /********
      * writing data
      *********/
-    cxbyte* binary = new cxbyte[binarySize];
-    size_t offset = 0;
+    BinaryOStream bos(*os);
     
-    try
-    {
     const cxuint mainSectionsNum = ((input->kernels.empty())?5:7) +
             (input->sourceCode!=nullptr) + (input->llvmir!=nullptr);
     if (!input->is64Bit)
     {
-        Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
-        static const cxbyte elf32Ident[16] = {
+        const Elf32_Ehdr mainHdr = { {
                 0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
-                ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
-        ::memcpy(mainHdr.e_ident, elf32Ident, 16);
-        SULEV(mainHdr.e_type, ET_EXEC);
-        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input->deviceType)]);
-        SULEV(mainHdr.e_version, EV_CURRENT);
-        SULEV(mainHdr.e_entry, 0);
-        SULEV(mainHdr.e_flags, 0);
-        SULEV(mainHdr.e_phoff, 0);
-        SULEV(mainHdr.e_ehsize, sizeof(Elf32_Ehdr));
-        SULEV(mainHdr.e_phnum, 0);
-        SULEV(mainHdr.e_phentsize, 0);
-        SULEV(mainHdr.e_shnum, mainSectionsNum);
-        SULEV(mainHdr.e_shentsize, sizeof(Elf32_Shdr));
-        SULEV(mainHdr.e_shstrndx, 1);
+                ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 }, LEV(uint16_t(ET_EXEC)),
+                LEV(uint16_t(gpuDeviceCodeTable[cxuint(input->deviceType)])),
+                LEV(uint32_t(EV_CURRENT)), 0U, 0U, LEV(uint32_t(mainSectionsOffset)),
+                0U, LEV(uint16_t(sizeof(Elf32_Ehdr))), 0U, 0U,
+                LEV(uint16_t(sizeof(Elf32_Shdr))), LEV(uint16_t(mainSectionsNum)),
+                LEV(uint16_t(1U)) };
+        bos.writeObject(mainHdr);
         offset += sizeof(Elf32_Ehdr);
     }
     else
     {
-        Elf64_Ehdr& mainHdr = *reinterpret_cast<Elf64_Ehdr*>(binary);
-        static const cxbyte elf64Ident[16] = {
+        const Elf64_Ehdr mainHdr = { {
                 0x7f, 'E', 'L', 'F', ELFCLASS64, ELFDATA2LSB, EV_CURRENT, 
-                ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 };
-        ::memcpy(mainHdr.e_ident, elf64Ident, 16);
-        SULEV(mainHdr.e_type, ET_EXEC);
-        SULEV(mainHdr.e_machine, gpuDeviceCodeTable[cxuint(input->deviceType)]);
-        SULEV(mainHdr.e_version, EV_CURRENT);
-        SULEV(mainHdr.e_entry, 0);
-        SULEV(mainHdr.e_flags, 0);
-        SULEV(mainHdr.e_phoff, 0);
-        SULEV(mainHdr.e_ehsize, sizeof(Elf64_Ehdr));
-        SULEV(mainHdr.e_phnum, 0);
-        SULEV(mainHdr.e_phentsize, 0);
-        SULEV(mainHdr.e_shnum, mainSectionsNum);
-        SULEV(mainHdr.e_shentsize, sizeof(Elf64_Shdr));
-        SULEV(mainHdr.e_shstrndx, 1);
+                ELFOSABI_SYSV, 0, 0, 0, 0, 0, 0, 0, 0 }, LEV(uint16_t(ET_EXEC)),
+                LEV(uint16_t(gpuDeviceCodeTable[cxuint(input->deviceType)])),
+                LEV(uint32_t(EV_CURRENT)), 0U, 0U, LEV(uint64_t(mainSectionsOffset)),
+                0U, LEV(uint16_t(sizeof(Elf64_Ehdr))), 0U, 0U,
+                LEV(uint16_t(sizeof(Elf64_Shdr))), LEV(uint16_t(mainSectionsNum)),
+                LEV(uint16_t(1U)) };
+        bos.writeObject(mainHdr);
         offset += sizeof(Elf64_Ehdr);
     }
     size_t sectionOffsets[9];
     sectionOffsets[0] = offset;
-    if (!input->kernels.empty())
     {
-        ::memcpy(binary+offset,
-             "\000.shstrtab\000.strtab\000.symtab\000.rodata\000.text\000.comment", 50);
-        offset += 50;
-    }
-    else
-    {
-        ::memcpy(binary+offset, "\000.shstrtab\000.strtab\000.symtab\000.comment", 36);
-        offset += 36;
-    }
-    /* additional sections names */
-    if (input->sourceCode!=nullptr)
-    {
-        ::memcpy(binary+offset, ".source", 8);
-        offset += 8;
-    }
-    if (input->llvmir!=nullptr)
-    {
-        ::memcpy(binary+offset, ".llvmir", 8);
-        offset += 8;
+        char shstrtab[128];
+        size_t shoffset = 0;
+        if (!input->kernels.empty())
+        {
+            ::memcpy(shstrtab+shoffset,
+                 "\000.shstrtab\000.strtab\000.symtab\000.rodata\000.text\000.comment", 50);
+            shoffset += 50;
+        }
+        else
+        {
+            ::memcpy(shstrtab+shoffset,
+                     "\000.shstrtab\000.strtab\000.symtab\000.comment", 36);
+            shoffset += 36;
+        }
+        /* additional sections names */
+        if (input->sourceCode!=nullptr)
+        {
+            ::memcpy(shstrtab+shoffset, ".source", 8);
+            shoffset += 8;
+        }
+        if (input->llvmir!=nullptr)
+        {
+            ::memcpy(shstrtab+shoffset, ".llvmir", 8);
+            shoffset += 8;
+        }
+        os->write(shstrtab, shoffset);
+        offset += shoffset;
     }
     
     // .strtab
     sectionOffsets[1] = offset;
     if (!input->compileOptions.empty())
     {
-        ::memcpy(binary+offset, "\000__OpenCL_compile_options", 26);
+        os->write("\000__OpenCL_compile_options", 26);
         offset += 26;
     }
     else // empty compile options
-        binary[offset++] = 0;
+    {
+        os->write("\000", 1);
+        offset++;
+    }
     
     if (input->globalData != nullptr)
     {
         if (!isOlderThan1348)
-            ::memcpy(binary+offset, "__OpenCL_0_global", 18);
+            os->write("__OpenCL_0_global", 18);
         else
-            ::memcpy(binary+offset, "__OpenCL_2_global", 18);
+            os->write("__OpenCL_2_global", 18);
         offset += 18;
     }
     for (const AmdKernelInput& kernel: input->kernels)
     {
-        ::memcpy(binary+offset, "__OpenCL_", 9);
+        os->write("__OpenCL_", 9);
         offset += 9;
-        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        os->write(kernel.kernelName.c_str(), kernel.kernelName.size());
         offset += kernel.kernelName.size();
-        ::memcpy(binary+offset, "_metadata", 10);
+        os->write("_metadata", 10);
         offset += 10;
-        ::memcpy(binary+offset, "__OpenCL_", 9);
+        os->write("__OpenCL_", 9);
         offset += 9;
-        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        os->write(kernel.kernelName.c_str(), kernel.kernelName.size());
         offset += kernel.kernelName.size();
-        ::memcpy(binary+offset, "_kernel", 8);
+        os->write("_kernel", 8);
         offset += 8;
-        ::memcpy(binary+offset, "__OpenCL_", 9);
+        os->write("__OpenCL_", 9);
         offset += 9;
-        ::memcpy(binary+offset, kernel.kernelName.c_str(), kernel.kernelName.size());
+        os->write(kernel.kernelName.c_str(), kernel.kernelName.size());
         offset += kernel.kernelName.size();
-        ::memcpy(binary+offset, "_header", 8);
+        os->write("_header", 8);
         offset += 8;
     }
     
+    const char zeroes[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
     size_t alignFix = 0;
     if ((offset & 7) != 0)
     {
-        ::memset(binary + offset, 0, 8-(offset&7));
         alignFix = 8-(offset&7);
-        offset += 8-(offset&7);
+        os->write(zeroes, alignFix);
+        offset += alignFix;
     }
     // .symtab
     sectionOffsets[2] = offset;
     if (!input->is64Bit)
-        putMainSymbols<Elf32_Sym>(binary, offset, input, kmetadatas, innerBinSizes);
+        putMainSymbols<Elf32_Sym>(bos, offset, input, kmetadatas, innerBinSizes);
     else
-        putMainSymbols<Elf64_Sym>(binary, offset, input, kmetadatas, innerBinSizes);
+        putMainSymbols<Elf64_Sym>(bos, offset, input, kmetadatas, innerBinSizes);
     // .rodata
     sectionOffsets[3] = offset;
     if (input->globalData != nullptr)
     {
-        ::memcpy(binary+offset, input->globalData, input->globalDataSize);
+        bos.writeArray(input->globalDataSize, input->globalData);
         offset += input->globalDataSize;
     }
     for (size_t i = 0; i < input->kernels.size(); i++)
@@ -1622,25 +1588,23 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         if (kernel.useConfig)
         {
             const TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
-            ::memcpy(binary+offset, kmetadatas[i].c_str(), kmetadatas[i].size());
+            os->write(kmetadatas[i].c_str(), kmetadatas[i].size());
             offset += kmetadatas[i].size();
             
-            uint32_t* header = reinterpret_cast<uint32_t*>(binary+offset);
-            SULEV(header[0], (driverVersion >= 164205) ? tempConfig.uavPrivate : 0);
-            SULEV(header[1], 0);
-            SULEV(header[2], (isOlderThan1348)? 0 : tempConfig.uavPrivate);
-            SULEV(header[3], kernel.config.hwLocalSize);
-            SULEV(header[4], (input->is64Bit?8:0) | (kernel.config.usePrintf?2:0));
-            SULEV(header[5], 1);
-            SULEV(header[6], 0);
-            SULEV(header[7], 0);
+            const uint32_t header[8] = {
+                LEV((driverVersion >= 164205) ? tempConfig.uavPrivate : 0), 0U,
+                LEV((isOlderThan1348)? 0 : tempConfig.uavPrivate),
+                LEV(uint32_t(kernel.config.hwLocalSize)),
+                LEV(uint32_t((input->is64Bit?8:0) | (kernel.config.usePrintf?2:0))),
+                LEV(1U), 0U, 0U };
+            bos.writeArray(8, header);
             offset += 32;
         }
         else
         {
-            ::memcpy(binary+offset, kernel.metadata, kernel.metadataSize);
+            os->write(kernel.metadata, kernel.metadataSize);
             offset += kernel.metadataSize;
-            ::memcpy(binary+offset, kernel.header, kernel.headerSize);
+            bos.writeArray(kernel.headerSize, kernel.header);
             offset += kernel.headerSize;
         }
     }
@@ -1652,179 +1616,167 @@ cxbyte* AmdGPUBinGenerator::generate(size_t& outBinarySize) const
         const size_t innerBinOffset = offset;
         const AmdKernelInput& kinput = input->kernels[i];
         
-        Elf32_Ehdr& innerHdr = *reinterpret_cast<Elf32_Ehdr*>(binary + offset);
-        static const cxbyte elf32Ident[16] = {
+        const Elf32_Ehdr innerHdr = { {
                 0x7f, 'E', 'L', 'F', ELFCLASS32, ELFDATA2LSB, EV_CURRENT, 
-                0x64, 1, 0, 0, 0, 0, 0, 0, 0 };
-        ::memcpy(innerHdr.e_ident, elf32Ident, 16);
-        SULEV(innerHdr.e_type, ET_EXEC);
-        SULEV(innerHdr.e_machine, 0x7d);
-        SULEV(innerHdr.e_version, EV_CURRENT);
-        SULEV(innerHdr.e_entry, 0);
-        SULEV(innerHdr.e_flags, 1);
-        SULEV(innerHdr.e_phoff, sizeof(Elf32_Ehdr));
-        SULEV(innerHdr.e_shoff, 0xd0);
-        SULEV(innerHdr.e_ehsize, sizeof(Elf32_Ehdr));
-        SULEV(innerHdr.e_phnum, 3);
-        SULEV(innerHdr.e_phentsize, sizeof(Elf32_Phdr));
-        SULEV(innerHdr.e_shnum, 6);
-        SULEV(innerHdr.e_shentsize, sizeof(Elf32_Shdr));
-        SULEV(innerHdr.e_shstrndx, 1);
+                0x64, 1, 0, 0, 0, 0, 0, 0, 0 }, LEV(uint16_t(ET_EXEC)), 
+                LEV(uint16_t(0x7dU)), LEV(uint16_t(EV_CURRENT)), 0U,
+                LEV(uint32_t(sizeof(Elf32_Ehdr))), LEV(0xd0U), LEV(1U),
+                LEV(uint16_t(sizeof(Elf32_Ehdr))),
+                LEV(uint16_t(sizeof(Elf32_Phdr))), LEV(uint16_t(3U)),
+                LEV(uint16_t(sizeof(Elf32_Shdr))), LEV(uint16_t(6U)),
+                LEV(uint16_t(1U)) };
+        bos.writeObject(innerHdr);
         offset += sizeof(Elf32_Ehdr);
         
         /* ??? */
-        Elf32_Phdr* programHdrTable = reinterpret_cast<Elf32_Phdr*>(binary + offset);
-        ::memset(programHdrTable, 0, sizeof(Elf32_Phdr));
-        SULEV(programHdrTable->p_type, 0x70000002U);
-        SULEV(programHdrTable->p_flags, 0);
-        SULEV(programHdrTable->p_offset, 0x94);
-        SULEV(programHdrTable->p_vaddr, 0);
-        SULEV(programHdrTable->p_paddr, 0);
-        SULEV(programHdrTable->p_filesz, sizeof(CALEncodingEntry));
-        SULEV(programHdrTable->p_memsz, 0);
-        SULEV(programHdrTable->p_align, 0);
-        programHdrTable++;
-        SULEV(programHdrTable->p_type, PT_NOTE);
-        SULEV(programHdrTable->p_flags, 0);
-        SULEV(programHdrTable->p_offset, 0x1c0);
-        SULEV(programHdrTable->p_vaddr, 0);
-        SULEV(programHdrTable->p_paddr, 0);
-        SULEV(programHdrTable->p_memsz, 0);
-        SULEV(programHdrTable->p_align, 0);
-        Elf32_Phdr* notePrgHdr = programHdrTable;
-        programHdrTable++;
-        SULEV(programHdrTable->p_type, PT_LOAD);
-        SULEV(programHdrTable->p_flags, 0);
-        SULEV(programHdrTable->p_vaddr, 0);
-        SULEV(programHdrTable->p_paddr, 0);
-        SULEV(programHdrTable->p_align, 0);
-        Elf32_Phdr* loadPrgHdr = programHdrTable;
-        programHdrTable++;
-        
         offset += sizeof(Elf32_Phdr)*3;
-        /* CALEncodingEntry */
-        CALEncodingEntry& encEntry = *reinterpret_cast<CALEncodingEntry*>(binary + offset);
-        SULEV(encEntry.type, 4);
-        SULEV(encEntry.machine, gpuDeviceInnerCodeTable[cxuint(input->deviceType)]);
-        SULEV(encEntry.flags, 0);
-        SULEV(encEntry.offset, 0x1c0);
-        offset += sizeof(CALEncodingEntry);
-        // shstrtab content
-        ::memcpy(binary + offset,
-                 "\000.shstrtab\000.text\000.data\000.symtab\000.strtab\000", 40);
-        offset += 40;
-        /* section headers */
-        Elf32_Shdr* sectionHdrTable = reinterpret_cast<Elf32_Shdr*>(binary + offset);
-        ::memset(binary+offset, 0, sizeof(Elf32_Shdr));
-        sectionHdrTable++;
-        // .shstrtab
-        putElfSectionLE(sectionHdrTable++, 1, SHT_STRTAB, 0, 0xa8, 40, 0, 0, 0);
+        size_t sectionOffset = offset + sizeof(CALEncodingEntry) + 40 +
+                sizeof(Elf32_Shdr)*6 + tempAmdKernelConfigs[i].calNotesSize -
+                innerBinOffset;
+        putElfProgramHeader32LE(bos, 0x70000002U, 0x94, sizeof(CALEncodingEntry), 0,
+                0, 0, 0, 0);
+        putElfProgramHeader32LE(bos, PT_NOTE, 0x1c0, sectionOffset-0x1c0, 0, 0);
+        putElfProgramHeader32LE(bos, PT_LOAD, sectionOffset,
+                    innerBinSizes[i]-sectionOffset, 0, 0,
+                    innerBinSizes[i]-sectionOffset);
+        //SULEV(encEntry.size, offset-encOffset);
         
+        const size_t encOffset = offset + sizeof(CALEncodingEntry) + 40 +
+                sizeof(Elf32_Shdr)*6;
+        {   /* CALEncodingEntry */
+            const CALEncodingEntry encEntry = {
+                LEV(gpuDeviceInnerCodeTable[cxuint(input->deviceType)]), LEV(4U), 
+                LEV(0x1c0U), LEV(uint32_t(innerBinSizes[i]-(encOffset-innerBinOffset))) };
+            bos.writeObject(encEntry);
+            offset += sizeof(CALEncodingEntry);
+        }
+        os->write("\000.shstrtab\000.text\000.data\000.symtab\000.strtab\000", 40);
+        offset += 40;
+        /* sections */
+        putElfSectionLE<Elf32_Shdr>(bos, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        /// shstrtab
+        putElfSectionLE<Elf32_Shdr>(bos, 1, SHT_STRTAB, 0, 0xa8, 40, 0, 0, 0);
+        // .text
+        putElfSectionLE<Elf32_Shdr>(bos, 11, SHT_PROGBITS, 0, sectionOffset,
+                        kinput.codeSize, 0, 0, 0);
+        sectionOffset += kinput.codeSize;
+        const size_t dataSize = (kinput.data!=nullptr)?kinput.dataSize:4736;
+        // .data
+        putElfSectionLE<Elf32_Shdr>(bos, 17, SHT_PROGBITS, 0, sectionOffset,
+                        dataSize, 0, 0, 0, 0, dataSize);
+        sectionOffset += dataSize;
+        // .symtab
+        putElfSectionLE<Elf32_Shdr>(bos, 23, SHT_SYMTAB, 0, sectionOffset,
+                        sizeof(Elf32_Sym), 5, 1, 0, 0, sizeof(Elf32_Sym));
+        sectionOffset += sizeof(Elf32_Sym);
+        // .strtab
+        putElfSectionLE<Elf32_Shdr>(bos, 31, SHT_STRTAB, 0, sectionOffset, 2, 0, 0, 0);
+        
+        // CALnotes
         offset += sizeof(Elf32_Shdr)*6;
-        const size_t encOffset = offset;
         if (kinput.useConfig)
-            generateCALNotes(binary, offset, input, driverVersion, kinput,
+            generateCALNotes(bos, offset, input, driverVersion, kinput,
                      tempAmdKernelConfigs[i]);
         else // from CALNotes array
             for (const CALNoteInput& calNote: kinput.calNotes)
-            {
-                CALNoteHeader* cnHdr = reinterpret_cast<CALNoteHeader*>(binary + offset);
-                SULEV(cnHdr->descSize, calNote.header.descSize);
-                SULEV(cnHdr->nameSize, calNote.header.nameSize);
-                SULEV(cnHdr->type, calNote.header.type);
-                ::memcpy(cnHdr->name, &calNote.header.name, 8);
-                offset += sizeof(CALNoteHeader);
-                ::memcpy(binary + offset, calNote.data, calNote.header.descSize);
-                offset += calNote.header.descSize;
+            {   // all fields of CALNote
+                CALNoteHeader cnHdr = { LEV(calNote.header.nameSize),
+                    LEV(calNote.header.descSize), LEV(calNote.header.type) };
+                ::memcpy(cnHdr.name, &calNote.header.name, 8);
+                bos.writeObject(cnHdr);
+                bos.writeArray(calNote.header.descSize, calNote.data);
+                offset += sizeof(CALNoteHeader) + calNote.header.descSize;
             }
-        SULEV(notePrgHdr->p_filesz, offset-innerBinOffset-0x1c0);
-        SULEV(loadPrgHdr->p_offset, offset-innerBinOffset);
-        
-        const size_t loadPrgPartOffset = offset;
         // .text
-        putElfSectionLE(sectionHdrTable++, 11, SHT_PROGBITS, 0, offset-innerBinOffset,
-                        kinput.codeSize, 0, 0, 0);
-        ::memcpy(binary + offset, kinput.code, kinput.codeSize);
+        bos.writeArray(kinput.codeSize, kinput.code);
         offset += kinput.codeSize;
         // .data
-        putElfSectionLE(sectionHdrTable++, 17, SHT_PROGBITS, 0, offset-innerBinOffset,
-                        (kinput.data!=nullptr)?kinput.dataSize:4736, 0, 0, 0, 0,
-                        (kinput.data!=nullptr)?kinput.dataSize:4736);
         if (kinput.data != nullptr)
         {
-            ::memcpy(binary + offset, kinput.data, kinput.dataSize);
+            bos.writeArray(kinput.dataSize, kinput.data);
             offset += kinput.dataSize;
         }
         else
         {
-            ::memset(binary + offset, 0, 4736);
+            char fillup[64];
+            std::fill(fillup, fillup+64, char(0));
+            for (cxuint written = 0; written < 4736; written++)
+                os->write(fillup, 64);
             offset += 4736;
         }
         // .symtab
-        putElfSectionLE(sectionHdrTable++, 23, SHT_SYMTAB, 0, offset-innerBinOffset,
-                        sizeof(Elf32_Sym), 5, 1, 0, 0, sizeof(Elf32_Sym));
-        ::memset(binary + offset, 0, sizeof(Elf32_Sym));
+        putElfSymbolLE<Elf32_Sym>(bos, 0, 0, 0, 0, 0, 0);
         offset += sizeof(Elf32_Sym);
         // .strtab
-        putElfSectionLE(sectionHdrTable, 31, SHT_STRTAB, 0, offset-innerBinOffset,
-                        2, 0, 0, 0);
-        binary[offset++] = 0;
-        binary[offset++] = 0;
-        // update encodingEntry and Program headers
-        SULEV(loadPrgHdr->p_filesz, offset-loadPrgPartOffset);
-        SULEV(loadPrgHdr->p_memsz, offset-loadPrgPartOffset);
-        SULEV(encEntry.size, offset-encOffset);
+        bos.writeObject<uint16_t>(0);
+        offset += 2;
     }
     // .comment
     sectionOffsets[5] = offset;
-    ::memcpy(binary+offset, input->compileOptions.c_str(), input->compileOptions.size());
+    os->write(input->compileOptions.c_str(), input->compileOptions.size());
     offset += input->compileOptions.size();
-    ::memcpy(binary+offset, driverInfo.c_str(), driverInfo.size());
+    os->write(driverInfo.c_str(), driverInfo.size());
     offset += driverInfo.size();
     sectionOffsets[6] = offset;
     // .source
     if (input->sourceCode!=nullptr)
     {
-        ::memcpy(binary+offset, input->sourceCode, sourceCodeSize);
+        os->write(input->sourceCode, sourceCodeSize);
         offset += sourceCodeSize;
     }
     sectionOffsets[7] = offset;
     // .source
     if (input->llvmir!=nullptr)
     {
-        ::memcpy(binary+offset, input->llvmir, input->llvmirSize);
+        bos.writeArray(input->llvmirSize, input->llvmir);
         offset += input->llvmirSize;
     }
     sectionOffsets[8] = offset;
     if ((offset & (mainSectionsAlign-1)) != 0) // main section alignment
     {
         const size_t tofill = mainSectionsAlign - (offset & (mainSectionsAlign-1));
-        ::memset(binary+offset, 0, tofill);
+        os->write(zeroes, tofill);
         offset += tofill;
     }
     /* main sections */
     if (!input->is64Bit)
-    {
-        Elf32_Ehdr& mainHdr = *reinterpret_cast<Elf32_Ehdr*>(binary);
-        SULEV(mainHdr.e_shoff, offset);
-        putMainSections<Elf32_Shdr, Elf32_Sym>(binary, offset, sectionOffsets, alignFix,
+        putMainSections<Elf32_Shdr, Elf32_Sym>(bos, offset, sectionOffsets, alignFix,
                 input->kernels.empty(), input->sourceCode!=nullptr, input->llvmir!=nullptr);
-    }
     else
-    {
-        Elf64_Ehdr& mainHdr = *reinterpret_cast<Elf64_Ehdr*>(binary);
-        SULEV(mainHdr.e_shoff, offset);
-        putMainSections<Elf64_Shdr, Elf64_Sym>(binary, offset, sectionOffsets, alignFix,
+        putMainSections<Elf64_Shdr, Elf64_Sym>(bos, offset, sectionOffsets, alignFix,
                 input->kernels.empty(), input->sourceCode!=nullptr, input->llvmir!=nullptr);
+    os->flush();
     }
-    } // try
     catch(...)
     {
+        os->exceptions(oldExceptions);
         delete[] binary;
+        if (os != osPtr) // not from argument
+            delete os;
         throw;
     }
+    os->exceptions(oldExceptions);
     assert(offset == binarySize);
+    if (os != osPtr) // not from argument
+        delete os;
     
-    outBinarySize = binarySize;
+    if (outBinarySize!=nullptr)
+        *outBinarySize = binarySize;
     return binary;
+}
+
+
+cxbyte* AmdGPUBinGenerator::generate(size_t& binarySize) const
+{
+    return generateInternal(nullptr, nullptr, &binarySize);
+}
+
+void AmdGPUBinGenerator::generate(std::ostream& os) const
+{
+    generateInternal(&os, nullptr, nullptr);
+}
+
+void AmdGPUBinGenerator::generate(std::vector<char>& v) const
+{
+    generateInternal(nullptr, &v, nullptr);
 }
