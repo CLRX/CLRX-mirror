@@ -412,6 +412,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             throw Exception("Used VGPRs number out of range");
         if (config.usedSGPRsNum > 102)
             throw Exception("Used SGPRs number out of range");
+        if (config.hwLocalSize > 32768)
+            throw Exception("HWLocalSize out of range");
         
         /* filling input */
         if (config.hwRegion == AMDBIN_DEFAULT)
@@ -507,6 +509,16 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             tempConfig.privateId = 8;
         else
             tempConfig.privateId = config.privateId;
+        
+        if (tempConfig.uavId != AMDBIN_NOTSUPPLIED && tempConfig.uavId >= 1024)
+            throw Exception("UavId out of range");
+        if (tempConfig.constBufferId != AMDBIN_NOTSUPPLIED &&
+            tempConfig.constBufferId >= 1024)
+            throw Exception("ConstBufferId out of range");
+        if (tempConfig.printfId != AMDBIN_NOTSUPPLIED && tempConfig.printfId >= 1024)
+            throw Exception("PrintfId out of range");
+        if (tempConfig.privateId != AMDBIN_NOTSUPPLIED && tempConfig.privateId >= 1024)
+            throw Exception("PrivateId out of range");
         
         /* fill argUavIds for global/constant pointers */
         cxuint puavIdsCount = tempConfig.uavId+1;
@@ -886,10 +898,13 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         metadata += numBuf;
         metadata += '\n';
     }
-    metadata += ";privateid:";
-    itocstrCStyle(tempConfig.privateId, numBuf, 21);
-    metadata += numBuf;
-    metadata += '\n';
+    if (tempConfig.privateId != AMDBIN_NOTSUPPLIED)
+    {
+        metadata += ";privateid:";
+        itocstrCStyle(tempConfig.privateId, numBuf, 21);
+        metadata += numBuf;
+        metadata += '\n';
+    }
     for (cxuint k = 0; k < config.args.size(); k++)
     {
         const AmdKernelArgInput& arg = config.args[k];
