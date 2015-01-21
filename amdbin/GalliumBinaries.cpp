@@ -500,7 +500,7 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
             throw Exception("Kernel offset out of range");
         
         bos.writeObject<uint32_t>(LEV(uint32_t(kernel.kernelName.size())));
-        bos.writeArray<char>(kernel.kernelName.size(), kernel.kernelName.c_str());
+        bos.writeArray(kernel.kernelName.size(), kernel.kernelName.c_str());
         const uint32_t other[3] = { 0, LEV(kernel.offset),
             LEV(cxuint(kernel.argInfos.size())) };
         bos.writeArray(3, other);
