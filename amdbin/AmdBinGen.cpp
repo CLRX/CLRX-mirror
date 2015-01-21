@@ -953,7 +953,7 @@ static void generateCALNotes(BinaryOStream& bos, size_t& offset, const AmdInput*
     putCALNoteLE(bos, CALNOTE_ATI_INPUTS, 4*readOnlyImages);
     offset += sizeof(CALNoteHeader);
     {
-        uint32_t rdimgIds[8];
+        uint32_t rdimgIds[128];
         for (cxuint k = 0; k < readOnlyImages; k++)
             SLEV(rdimgIds[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
         bos.writeArray(readOnlyImages, rdimgIds);
@@ -1639,9 +1639,7 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                 0, 0, 0, 0);
         putElfProgramHeader32LE(bos, PT_NOTE, 0x1c0, sectionOffset-0x1c0, 0, 0);
         putElfProgramHeader32LE(bos, PT_LOAD, sectionOffset,
-                    innerBinSizes[i]-sectionOffset, 0, 0,
-                    innerBinSizes[i]-sectionOffset);
-        //SULEV(encEntry.size, offset-encOffset);
+                    innerBinSizes[i]-sectionOffset, 0, 0, innerBinSizes[i]-sectionOffset);
         
         const size_t encOffset = offset + sizeof(CALEncodingEntry) + 40 +
                 sizeof(Elf32_Shdr)*6;
