@@ -1893,8 +1893,8 @@ void GCNDisassembler::disassemble()
             {   // fir for unalignment
                 pos--;
                 prevIsTwoWord = false;
-                ::memcpy(buf+bufPos, ".offset .-4\n", 12);
-                bufPos += 12;
+                ::memcpy(buf+bufPos, ".org .-4\n", 9);
+                bufPos += 9;
             }
             if (pos == curNamedLabel->first)
             {
@@ -1927,13 +1927,13 @@ void GCNDisassembler::disassemble()
             }
             else  if (prevIsTwoWord && pos-1 == *curLabel)
             {   /* if label between words of previous instruction */
-                ::memcpy(buf+bufPos, ".offset .-4\n.L", 14);
-                bufPos += 14;
+                ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
+                bufPos += 11;
                 bufPos += itocstrCStyle(pos-1, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
-                ::memcpy(buf+bufPos, ".offset .+4\n", 12);
-                bufPos += 12;
+                ::memcpy(buf+bufPos, ".org .+4\n", 9);
+                bufPos += 9;
                 if (bufPos+250 >= maxBufSize)
                 {
                     output.write(buf, bufPos);
@@ -2227,8 +2227,11 @@ void GCNDisassembler::disassemble()
     {   // put .org directory
         if (codeWordsNum != *curLabel)
         {
-            ::memcpy(buf+bufPos, ".offset ", 8);
-            bufPos += 8;
+            buf[bufPos++] = '.';
+            buf[bufPos++] = 'o';
+            buf[bufPos++] = 'r';
+            buf[bufPos++] = 'g';
+            buf[bufPos++] = ' ';
             bufPos += itocstrCStyle(*curLabel, buf+bufPos, 20, 16);
             buf[bufPos++] = '\n';
         }
