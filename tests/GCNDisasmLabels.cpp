@@ -45,7 +45,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         3, code1tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
-        ".org .-4\n.L1:\n.org .+4\n        s_branch        .L1\n"
+        ".offset .-4\n.L1:\n.offset .+4\n        s_branch        .L1\n"
     },
     {
         1, code2tbl,
@@ -55,7 +55,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         8, code3tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
-        ".org .-4\n.L1:\n.org .+4\n        s_branch        .L1\n"
+        ".offset .-4\n.L1:\n.offset .+4\n        s_branch        .L1\n"
         "        s_branch        .L6\n"
         "        tbuffer_load_format_x v[61:62], v[18:19], s[80:83], s35"
         " offen idxen offset:2004 glc slc addr64 tfe format:[8,sint]\n"
@@ -63,7 +63,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     },
     {
         3, code4tbl, "        s_branch        .L580\n        s_branch        .L264\n"
-        "        s_branch        .L264\n.org 0x108\n.L264:\n.org 0x244\n.L580:\n"
+        "        s_branch        .L264\n.offset 0x108\n.L264:\n.offset 0x244\n.L580:\n"
     }
 };
 
@@ -135,7 +135,7 @@ static void testUnalignedNamedLabel()
     std::string outStr = disOss.str();
     if (outStr != "        s_lshr_b32      s21, s4, s61\n"
         "        v_sub_f32       v154, 0x11110000, v107\n"
-        ".org .-4\n"
+        ".offset .-4\n"
         "\n"
         "MyKernel0:\n"
         "        v_mul_f32       v136, s0, v128\n"
@@ -152,7 +152,7 @@ static void testUnalignedNamedLabel()
     outStr = disOss.str();
     if (outStr != "        s_lshr_b32      s21, s4, s61\n"
         "        v_sub_f32       v154, 0x11110000, v107\n"
-        ".org .-4\n"
+        ".offset .-4\n"
         "\n"
         "MyKernel0:\n"
         "        v_mul_f32       v136, s0, v128\n")

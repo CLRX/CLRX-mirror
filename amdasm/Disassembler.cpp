@@ -980,7 +980,7 @@ void Disassembler::disassemble()
     else // gallium
         output.write(".gallium\n", 9);
     
-    GPUDeviceType deviceType = getDeviceType();
+    const GPUDeviceType deviceType = getDeviceType();
     output.write(".gpu ", 5);
     const char* gpuName = getGPUDeviceTypeName(deviceType);
     output.write(gpuName, ::strlen(gpuName));
