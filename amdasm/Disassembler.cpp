@@ -660,12 +660,12 @@ void Disassembler::disassembleAmd()
                                 calNote.header.descSize/sizeof(CALProgramInfoEntry);
                         const CALProgramInfoEntry* progInfos =
                             reinterpret_cast<const CALProgramInfoEntry*>(calNote.data);
-                        ::memcpy(buf, "        .set ", 13);
+                        ::memcpy(buf, "        .entry ", 15);
                         for (cxuint k = 0; k < progInfosNum; k++)
                         {
                             const CALProgramInfoEntry& progInfo = progInfos[k];
-                            size_t bufPos = 13 + itocstrCStyle(ULEV(progInfo.address),
-                                         buf+13, 32, 16, 8);
+                            size_t bufPos = 15 + itocstrCStyle(ULEV(progInfo.address),
+                                         buf+15, 32, 16, 8);
                             buf[bufPos++] = ',';
                             buf[bufPos++] = ' ';
                             bufPos += itocstrCStyle(ULEV(progInfo.value),
@@ -948,7 +948,7 @@ void Disassembler::disassembleGallium()
             output.write("    .proginfo\n", 14);
             for (const GalliumProgInfoEntry& piEntry: kinput.progInfo)
             {
-                output.write("        .set ", 13);
+                output.write("        .entry ", 15);
                 char buf[32];
                 size_t numSize = itocstrCStyle<uint32_t>(piEntry.address, buf, 32, 16, 8);
                 output.write(buf, numSize);
