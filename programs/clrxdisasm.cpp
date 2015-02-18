@@ -147,6 +147,7 @@ try
         {
             delete[] binaryData;
             delete base;
+            delete galliumBin;
             ret = 1;
             std::cout << "// ERROR for '" << *args << '\'' << std::endl;
             std::cerr << "Error at disassembling '" << *args << "': " <<
