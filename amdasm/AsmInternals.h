@@ -166,6 +166,6 @@ struct CLRX_INTERNAL GCNInstruction
 
 CLRX_INTERNAL extern const GCNInstruction gcnInstrsTable[];
 
-};
+}
 
 #endif

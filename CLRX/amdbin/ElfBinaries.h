@@ -362,6 +362,6 @@ typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
 /// type for 64-bit ELF binary
 typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 
-};
+}
 
 #endif

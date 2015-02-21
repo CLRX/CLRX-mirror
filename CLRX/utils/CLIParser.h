@@ -391,6 +391,6 @@ template<>
 struct CLIParser::OptTypeTrait<const char**> {
 static const CLIArgType type = CLIArgType::STRING_ARRAY; };
 
-};
+}
 
 #endif

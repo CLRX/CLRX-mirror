@@ -235,6 +235,6 @@ public:
     void generate(std::vector<char>& vector) const;
 };
 
-};
+}
 
 #endif

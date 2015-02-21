@@ -192,6 +192,6 @@ public:
     { return kernelMap; }
 };
 
-};
+}
 
 #endif

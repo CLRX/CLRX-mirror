@@ -324,6 +324,6 @@ void mapSort(Iter begin, Iter end, Comp comp)
        return comp(e1.first, e2.first); });
 }
 
-};
+}
 
 #endif

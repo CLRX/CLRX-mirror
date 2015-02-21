@@ -274,6 +274,6 @@ public:
     { return os; }
 };
 
-};
+}
 
 #endif

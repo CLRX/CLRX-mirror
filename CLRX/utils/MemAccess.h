@@ -594,6 +594,6 @@ inline void SULEV(int64_t& r, int64_t v)
 
 #endif
 
-};
+}
 
 #endif

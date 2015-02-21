@@ -542,6 +542,6 @@ extern bool isDirectory(const char* path);
  */
 extern cxbyte* loadDataFromFile(const char* filename, size_t& size);
 
-};
+}
 
 #endif

@@ -232,6 +232,6 @@ public:
 /// get GPU device type from name
 extern GPUDeviceType getGPUDeviceTypeFromName(const char* name);
 
-};
+}
 
 #endif

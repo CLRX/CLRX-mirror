@@ -698,6 +698,6 @@ extern AmdMainBinaryBase* createAmdBinaryFromCode(
             size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
 
-};
+}
 
 #endif
