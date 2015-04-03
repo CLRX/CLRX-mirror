@@ -87,13 +87,12 @@ try
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)
     {
         std::cout << "// Disassembling '" << *args << '\'' << std::endl;
-        cxbyte* binaryData = nullptr;
-        size_t binarySize = 0;
+        Array<cxbyte> binaryData;
         AmdMainBinaryBase* base = nullptr;
         GalliumBinary* galliumBin = nullptr;
         try
         {
-            binaryData = loadDataFromFile(*args, binarySize);
+            binaryData = loadDataFromFile(*args);
             
             if (!fromRawCode)
             {
@@ -106,10 +105,12 @@ try
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
                 try
-                { base = createAmdBinaryFromCode(binarySize, binaryData, binFlags); }
+                { base = createAmdBinaryFromCode(binaryData.size(),
+                            binaryData.data(), binFlags); }
                 catch(const Exception& ex)
                 {   // check whether is Gallium
-                    galliumBin = new GalliumBinary(binarySize, binaryData, 0);
+                    galliumBin = new GalliumBinary(binaryData.size(),
+                                   binaryData.data(), 0);
                 }
                 if (galliumBin != nullptr)
                 {   // if Gallium
@@ -134,18 +135,16 @@ try
             else
             {   /* raw binaries */
                 const AmdDisasmInput disasmInput = AmdDisasmInput::createFromRawBinary(
-                        gpuDeviceType, binarySize, binaryData);
+                        gpuDeviceType, binaryData.size(), binaryData.data());
                 Disassembler disasm(&disasmInput, std::cout, disasmFlags);
                 disasm.disassemble();
             }
             
-            delete[] binaryData;
             delete base;
             delete galliumBin;
         }
         catch(const std::exception& ex)
         {
-            delete[] binaryData;
             delete base;
             delete galliumBin;
             ret = 1;
@@ -155,7 +154,6 @@ try
         }
         catch(...)
         {
-            delete[] binaryData;
             delete base;
             delete galliumBin;
             throw;

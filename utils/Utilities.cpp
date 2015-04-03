@@ -387,8 +387,9 @@ bool CLRX::isDirectory(const char* path)
     return S_ISDIR(stBuf.st_mode);
 }
 
-cxbyte* CLRX::loadDataFromFile(const char* filename, size_t& size)
+extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
 {
+    size_t size;
     if (isDirectory(filename))
         throw Exception("This is directory!");
     
@@ -405,53 +406,34 @@ cxbyte* CLRX::loadDataFromFile(const char* filename, size_t& size)
         seekingIsWorking = false;
         ifs.clear();
     }
-    cxbyte* buf = nullptr;
+    Array<cxbyte> buf;
     if (seekingIsWorking)
     {
         size = ifs.tellg();
         ifs.seekg(0, std::ios::beg);
-        try
-        {
-            buf = new cxbyte[size];
-            ifs.read((char*)buf, size);
-            if (ifs.gcount() != std::streamsize(size))
-                throw Exception("Can't read whole file");
-        }
-        catch(...)
-        {
-            delete[] buf;
-            throw;
-        }
+        buf.resize(size);
+        ifs.read((char*)buf.data(), size);
+        if (ifs.gcount() != std::streamsize(size))
+            throw Exception("Can't read whole file");
     }
     else
     {   /* growing, growing... */
         ifs.exceptions(std::ifstream::badbit); // ignore failbit for read
         size_t prevBufSize = 0;
         size_t readBufSize = 256;
-        buf = new cxbyte[readBufSize];
-        try
+        buf.resize(readBufSize);
+        while(true)
         {
-            while(true)
-            {
-                ifs.read((char*)(buf+prevBufSize), readBufSize-prevBufSize);
-                const size_t readed = ifs.gcount();
-                if (readed < readBufSize-prevBufSize)
-                {   /* final */
-                    size = prevBufSize + readed;
-                    break;
-                }
-                prevBufSize = readBufSize;
-                readBufSize = prevBufSize+(prevBufSize>>1);
-                cxbyte* newBuf = new cxbyte[readBufSize];
-                std::copy(buf, buf + prevBufSize, newBuf);
-                delete[] buf;
-                buf = newBuf;
+            ifs.read((char*)(buf.data()+prevBufSize), readBufSize-prevBufSize);
+            const size_t readed = ifs.gcount();
+            if (readed < readBufSize-prevBufSize)
+            {   /* final */
+                buf.resize(prevBufSize + readed);
+                break;
             }
-        }
-        catch(...)
-        {
-            delete[] buf;
-            throw;
+            prevBufSize = readBufSize;
+            readBufSize = prevBufSize+(prevBufSize>>1);
+            buf.resize(readBufSize);
         }
     }
     return buf;

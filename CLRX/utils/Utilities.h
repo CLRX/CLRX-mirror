@@ -31,6 +31,7 @@
 #include <cstring>
 #include <cstdint>
 #include <mutex>
+#include <CLRX/utils/Containers.h>
 
 /// main namespace
 namespace CLRX
@@ -537,10 +538,9 @@ extern bool isDirectory(const char* path);
 /// load data from file (any regular or pipe or device)
 /**
  * \param filename filename
- * \param size reference to size
  * \return array of data (can be greater than size of data from file)
  */
-extern cxbyte* loadDataFromFile(const char* filename, size_t& size);
+extern Array<cxbyte> loadDataFromFile(const char* filename);
 
 }
 
