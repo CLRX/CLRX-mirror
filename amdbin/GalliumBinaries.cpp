@@ -28,6 +28,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/InputOutput.h>
+#include <CLRX/utils/Containers.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 
 using namespace CLRX;
@@ -384,8 +385,8 @@ static inline void fixAlignment(std::ostream& os, size_t& offset, size_t elfOffs
     }
 }
 
-cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
-          std::vector<char>* vPtr, size_t* outBinarySize) const
+void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr) const
 {
     const uint32_t kernelsNum = input->kernels.size();
     /* compute size of binary */
@@ -467,12 +468,11 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
     /****
      * prepare for write binary to output
      ****/
-    cxbyte* binary = nullptr;
     std::ostream* os = nullptr;
-    if (vPtr==nullptr && osPtr==nullptr)
+    if (aPtr != nullptr)
     {
-        binary = new cxbyte[binarySize];
-        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(binary));
+        aPtr->resize(binarySize);
+        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data()));
     }
     else if (vPtr != nullptr)
     {
@@ -694,7 +694,6 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
     catch(...)
     {
         os->exceptions(oldExceptions);
-        delete[] binary;
         if (os != osPtr) // not from argument
             delete os;
         throw;
@@ -703,15 +702,11 @@ cxbyte* GalliumBinGenerator::generateInternal(std::ostream* osPtr,
     assert(offset == binarySize);
     if (os != osPtr) // not from argument
         delete os;
-    
-    if (outBinarySize!=nullptr)
-        *outBinarySize = binarySize;
-    return binary;
 }
 
-cxbyte* GalliumBinGenerator::generate(size_t& binarySize) const
+void GalliumBinGenerator::generate(Array<cxbyte>& array) const
 {
-    return generateInternal(nullptr, nullptr, &binarySize);
+    generateInternal(nullptr, nullptr, &array);
 }
 
 void GalliumBinGenerator::generate(std::ostream& os) const

@@ -222,7 +222,6 @@ public:
     /// generates binary
     /**
      * \param os output stream
-     * \return binary content pointer
      */
     void generate(std::ostream& os) const;
     

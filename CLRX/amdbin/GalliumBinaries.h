@@ -303,8 +303,8 @@ private:
     bool manageable;
     const GalliumInput* input;
     
-    cxbyte* generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
-             size_t* outSize) const;
+    void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr) const;
 public:
     GalliumBinGenerator();
     GalliumBinGenerator(const GalliumInput* galliumInput);
@@ -324,22 +324,19 @@ public:
     
     /// generates binary
     /**
-     * \param binarySize reference to binary size variable
-     * \return binary content pointer
+     * \param array output array
      */
-    cxbyte* generate(size_t& binarySize) const;
+    void generate(Array<cxbyte>& binarySize) const;
     
     /// generates binary
     /**
      * \param os output stream
-     * \return binary content pointer
      */
     void generate(std::ostream& os) const;
     
     /// generates binary
     /**
      * \param vector output vector
-     * \return binary content pointer
      */
     void generate(std::vector<char>& vector) const;
 };
