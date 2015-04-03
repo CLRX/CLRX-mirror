@@ -187,8 +187,8 @@ private:
     bool manageable;
     const AmdInput* input;
     
-    cxbyte* generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
-             size_t* outSize) const;
+    void generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr) const;
 public:
     AmdGPUBinGenerator();
     AmdGPUBinGenerator(const AmdInput* amdInput);
@@ -215,10 +215,9 @@ public:
     
     /// generates binary
     /**
-     * \param binarySize reference to binary size variable
-     * \return binary content pointer
+     * \return binary content array
      */
-    cxbyte* generate(size_t& binarySize) const;
+    void generate(Array<cxbyte>& array) const;
     
     /// generates binary
     /**
@@ -229,8 +228,7 @@ public:
     
     /// generates binary
     /**
-     * \param vector output vector
-     * \return binary content pointer
+     * \return binary content vector
      */
     void generate(std::vector<char>& vector) const;
 };

@@ -1253,8 +1253,8 @@ static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
  * main routine to generate AmdBin for GPU
  */
 
-cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
-             size_t* outBinarySize) const
+void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
+             Array<cxbyte>* aPtr) const
 {
     uint64_t binarySize;
     const size_t kernelsNum = input->kernels.size();
@@ -1450,12 +1450,11 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     /****
      * prepare for write binary to output
      ****/
-    cxbyte* binary = nullptr;
     std::ostream* os = nullptr;
-    if (vPtr==nullptr && osPtr==nullptr)
+    if (aPtr != nullptr)
     {
-        binary = new cxbyte[binarySize];
-        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(binary));
+        aPtr->resize(binarySize);
+        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data()));
     }
     else if (vPtr != nullptr)
     {
@@ -1765,7 +1764,6 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     catch(...)
     {
         os->exceptions(oldExceptions);
-        delete[] binary;
         if (os != osPtr) // not from argument
             delete os;
         throw;
@@ -1774,16 +1772,12 @@ cxbyte* AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     assert(offset == binarySize);
     if (os != osPtr) // not from argument
         delete os;
-    
-    if (outBinarySize!=nullptr)
-        *outBinarySize = binarySize;
-    return binary;
 }
 
 
-cxbyte* AmdGPUBinGenerator::generate(size_t& binarySize) const
+void AmdGPUBinGenerator::generate(Array<cxbyte>& array) const
 {
-    return generateInternal(nullptr, nullptr, &binarySize);
+    generateInternal(nullptr, nullptr, &array);
 }
 
 void AmdGPUBinGenerator::generate(std::ostream& os) const
@@ -1791,7 +1785,7 @@ void AmdGPUBinGenerator::generate(std::ostream& os) const
     generateInternal(&os, nullptr, nullptr);
 }
 
-void AmdGPUBinGenerator::generate(std::vector<char>& v) const
+void AmdGPUBinGenerator::generate(std::vector<char>& vector) const
 {
-    generateInternal(nullptr, &v, nullptr);
+    generateInternal(nullptr, &vector, nullptr);
 }
