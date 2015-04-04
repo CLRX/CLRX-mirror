@@ -231,9 +231,6 @@ struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndNonMovable
         devicesNum = 0;
         openCLVersionNum = 0;
     }
-    
-    ~CLRXContext()
-    { }
 };
 
 struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue, CLRX::NonCopyableAndNonMovable
@@ -284,7 +281,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
     cl_program amdOclProgram;
     CLRXContext* context;
     cl_uint assocDevicesNum;
-    CLRXDevice** assocDevices;
+    std::unique_ptr<CLRXDevice*[]> assocDevices;
     cl_ulong concurrentBuilds;
     CLRXProgramDevicesMap* transDevicesMap;
     size_t kernelsAttached;
@@ -300,11 +297,6 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
         assocDevices = nullptr;
         concurrentBuilds = 0;
         transDevicesMap = nullptr;
-    }
-    
-    ~CLRXProgram()
-    {
-        delete[] assocDevices;
     }
 };
 

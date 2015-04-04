@@ -1439,7 +1439,7 @@ clrxclGetProgramInfo(cl_program         program,
             {
                 if (param_value_size < sizeof(cl_device_id)*p->assocDevicesNum)
                     return CL_INVALID_VALUE;
-                std::copy(p->assocDevices, p->assocDevices + p->assocDevicesNum,
+                std::copy(p->assocDevices.get(), p->assocDevices.get() + p->assocDevicesNum,
                         static_cast<cl_device_id*>(param_value));
             }
             if (param_value_size_ret != nullptr)

@@ -886,34 +886,30 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
 cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
 {
     size_t amdAssocDevicesNum;
-    cl_device_id* amdAssocDevices = nullptr;
     try
     {
         cl_uint totalDevicesNum = (p->transDevicesMap != nullptr) ?
                     p->transDevicesMap->size() : p->context->devicesNum;
         
-        amdAssocDevices = new cl_device_id[totalDevicesNum];
+        std::unique_ptr<cl_device_id[]> amdAssocDevices(new cl_device_id[totalDevicesNum]);
         // single OpenCL call should be atomic:
         // reason: can be called between clBuildProgram which changes associated devices
         const cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(
             p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*totalDevicesNum,
-                      amdAssocDevices, &amdAssocDevicesNum);
+                      amdAssocDevices.get(), &amdAssocDevicesNum);
         
         if (status != CL_SUCCESS)
-        {
-            delete[] amdAssocDevices;
             return status;
-        }
         
         amdAssocDevicesNum /= sizeof(cl_device_id); // number of amd devices
         
         if (totalDevicesNum != amdAssocDevicesNum)
         {   /* reallocate amdAssocDevices */
-            cl_device_id* tmpAmdAssocDevices = new cl_device_id[amdAssocDevicesNum];
-            std::copy(amdAssocDevices, amdAssocDevices+amdAssocDevicesNum,
-                      tmpAmdAssocDevices);
-            delete[] amdAssocDevices;
-            amdAssocDevices = tmpAmdAssocDevices;
+            std::unique_ptr<cl_device_id[]> tmpAmdAssocDevices(
+                        new cl_device_id[amdAssocDevicesNum]);
+            std::copy(amdAssocDevices.get(), amdAssocDevices.get()+amdAssocDevicesNum,
+                      tmpAmdAssocDevices.get());
+            amdAssocDevices = std::move(tmpAmdAssocDevices);
         }
         
         /* compare with previous assocDevices */
@@ -927,11 +923,8 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
                     haveDiffs = true;
                     break;
                 }
-            if (!haveDiffs)
-            {   // no differences between calls
-                delete[] amdAssocDevices;
+            if (!haveDiffs) // no differences between calls
                 return CL_SUCCESS;
-            }
         }
         
         if (p->transDevicesMap != nullptr)
@@ -949,17 +942,14 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         else
             translateAMDDevicesIntoCLRXDevices(p->context->devicesNum,
                    const_cast<const CLRXDevice**>(p->context->devices.get()),
-                   amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
+                   amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices.get()));
         
-        delete[] p->assocDevices;
         p->assocDevicesNum = amdAssocDevicesNum;
-        p->assocDevices = reinterpret_cast<CLRXDevice**>(amdAssocDevices);
+        p->assocDevices = std::unique_ptr<CLRXDevice*[]>(
+            reinterpret_cast<CLRXDevice**>(amdAssocDevices.release()));
     }
     catch(const std::bad_alloc& ex)
-    {
-        delete[] amdAssocDevices;
-        return CL_OUT_OF_HOST_MEMORY;
-    }
+    { return CL_OUT_OF_HOST_MEMORY; }
     return CL_SUCCESS;
 }
 
