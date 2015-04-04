@@ -27,6 +27,7 @@
 #include <memory>
 #include <cstring>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 #include "CLWrapper.h"
 
 extern "C"

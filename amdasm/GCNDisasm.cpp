@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cstring>
 #include <mutex>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Disassembler.h>
@@ -30,7 +31,7 @@
 using namespace CLRX;
 
 static std::once_flag clrxGCNDisasmOnceFlag; 
-static GCNInstruction* gcnInstrTableByCode = nullptr;
+static std::unique_ptr<GCNInstruction[]> gcnInstrTableByCode = nullptr;
 
 static bool checkGCN11(GPUDeviceType deviceType)
 { return getGPUArchitectureFromDeviceType(deviceType) == GPUArchitecture::GCN1_1; };
@@ -76,7 +77,8 @@ static const size_t gcnInstrTableByCodeLength = 0x0c2d;
 
 static void initializeGCNDisassembler()
 {
-    gcnInstrTableByCode = new GCNInstruction[gcnInstrTableByCodeLength];
+    gcnInstrTableByCode = std::unique_ptr<GCNInstruction[]>(
+                new GCNInstruction[gcnInstrTableByCodeLength]);
     for (cxuint i = 0; i < gcnInstrTableByCodeLength; i++)
     {
         gcnInstrTableByCode[i].mnemonic = nullptr;
@@ -2090,7 +2092,8 @@ void GCNDisassembler::disassemble()
             
             /* decode instruction and put to output */
             const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[gcnEncoding];
-            const GCNInstruction* gcnInsn = gcnInstrTableByCode + encSpace.offset + opcode;
+            const GCNInstruction* gcnInsn = gcnInstrTableByCode.get() +
+                    encSpace.offset + opcode;
             
             const GCNInstruction defaultInsn = { nullptr, gcnInsn->encoding, GCN_STDMODE,
                         0, 0 };
@@ -2102,7 +2105,7 @@ void GCNDisassembler::disassemble()
             {    /* new overrides */
                 const GCNEncodingSpace& encSpace2 =
                         gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
-                gcnInsn = gcnInstrTableByCode + encSpace2.offset + opcode;
+                gcnInsn = gcnInstrTableByCode.get() + encSpace2.offset + opcode;
                 if (gcnInsn->mnemonic == nullptr ||
                         (curArchMask & gcnInsn->archMask) == 0)
                         // illegal

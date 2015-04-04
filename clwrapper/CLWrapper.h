@@ -188,7 +188,6 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
     cl_uint devicesNum;
     CLRXDevice* devicesArray;
     CLRXDevice** devicePtrs;
-    //CLRXExtensionEntry extEntries[sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry)];
     CLRXExtensionEntry* extEntries;
     uint32_t openCLVersionNum; /* major - upper half, minor - lower half */
     cl_int deviceInitStatus;
@@ -204,6 +203,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
         devicePtrs = nullptr;
         deviceInitStatus = CL_SUCCESS;
         openCLVersionNum = 0;
+        extEntries = nullptr;
     }
     
     ~CLRXPlatform()
@@ -223,22 +223,18 @@ struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndNonMovable
     cl_context amdOclContext;
     cl_uint devicesNum;
     CLRXDevice** devices;
-    size_t propertiesNum;
-    cl_context_properties* properties;
+    CLRX::Array<cl_context_properties> properties;
     uint32_t openCLVersionNum;
     
     CLRXContext() : refCount(1)
     {
         devicesNum = 0;
         devices = nullptr;
-        propertiesNum = 0;
-        properties = nullptr;
         openCLVersionNum = 0;
     }
     
     ~CLRXContext()
     {
-        delete[] properties;
         delete[] devices;
     }
 };
@@ -396,7 +392,7 @@ CLRX_INTERNAL extern CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs;
 CLRX_INTERNAL extern CLRXpfn_clUnloadCompiler amdOclUnloadCompiler;
 CLRX_INTERNAL extern cl_int clrxWrapperInitStatus;
 
-CLRX_INTERNAL extern CLRXPlatform* clrxPlatforms;
+CLRX_INTERNAL extern std::unique_ptr<CLRXPlatform[]> clrxPlatforms;
 
 #ifdef CL_VERSION_1_2
 CLRX_INTERNAL extern clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD;

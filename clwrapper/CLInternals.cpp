@@ -39,13 +39,13 @@ using namespace CLRX;
 
 std::once_flag clrxOnceFlag;
 bool useCLRXWrapper = true;
-static DynLibrary* amdOclLibrary = nullptr;
+static std::unique_ptr<DynLibrary> amdOclLibrary = nullptr;
 cl_uint amdOclNumPlatforms = 0;
 CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs = nullptr;
 CLRXpfn_clUnloadCompiler amdOclUnloadCompiler = nullptr;
 cl_int clrxWrapperInitStatus = CL_SUCCESS;
 
-CLRXPlatform* clrxPlatforms = nullptr;
+std::unique_ptr<CLRXPlatform[]> clrxPlatforms = nullptr;
 
 #ifdef CL_VERSION_1_2
 clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD = nullptr;
@@ -279,13 +279,14 @@ void clrxReleaseOnlyCLRXMemObject(CLRXMemObject* memObject)
 
 void clrxWrapperInitialize()
 {
-    DynLibrary* tmpAmdOclLibrary = nullptr;
+    std::unique_ptr<DynLibrary> tmpAmdOclLibrary = nullptr;
     try
     {
         useCLRXWrapper = !parseEnvVariable<bool>("CLRX_FORCE_ORIGINAL_AMDOCL", false);
         std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
                            DEFAULT_AMDOCLPATH);
-        DynLibrary* tmpAmdOclLibrary = new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW);
+        tmpAmdOclLibrary = std::unique_ptr<DynLibrary>(
+                new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW));
         
         amdOclGetPlatformIDs = (CLRXpfn_clGetPlatformIDs)
                 tmpAmdOclLibrary->getSymbol("clGetPlatformIDs");
@@ -330,15 +331,11 @@ void clrxWrapperInitialize()
         if (status != CL_SUCCESS)
         {
             clrxWrapperInitStatus = status;
-            delete tmpAmdOclLibrary;
             return;
         }
         
         if (platformCount == 0)
-        {
-            delete tmpAmdOclLibrary;
             return;
-        }
         
         std::vector<cl_platform_id> amdOclPlatforms(platformCount);
         std::fill(amdOclPlatforms.begin(), amdOclPlatforms.end(), nullptr);
@@ -347,7 +344,6 @@ void clrxWrapperInitialize()
         if (status != CL_SUCCESS)
         {
             clrxWrapperInitStatus = status;
-            delete tmpAmdOclLibrary;
             return;
         }
         
@@ -356,7 +352,8 @@ void clrxWrapperInitialize()
             const cxuint clrxExtEntriesNum =
                     sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
             
-            clrxPlatforms = new CLRXPlatform[platformCount];
+            clrxPlatforms = std::unique_ptr<CLRXPlatform[]>(
+                        new CLRXPlatform[platformCount]);
             for (cl_uint i = 0; i < platformCount; i++)
             {
                 if (amdOclPlatforms[i] == nullptr)
@@ -486,26 +483,21 @@ void clrxWrapperInitialize()
             }
         }
         
-        amdOclLibrary = tmpAmdOclLibrary;
-        tmpAmdOclLibrary = nullptr;
+        amdOclLibrary = std::move(tmpAmdOclLibrary);
         amdOclNumPlatforms = platformCount;
     }
     catch(const std::bad_alloc& ex)
     { 
-        delete[] clrxPlatforms;
-        clrxPlatforms = nullptr;
-        delete amdOclLibrary;
-        delete tmpAmdOclLibrary;
+        clrxPlatforms.release();
+        amdOclLibrary.release();
         amdOclNumPlatforms = 0;
         clrxWrapperInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
     }
     catch(...)
     { 
-        delete[] clrxPlatforms;
-        clrxPlatforms = nullptr;
-        delete amdOclLibrary;
-        delete tmpAmdOclLibrary;
+        clrxPlatforms.release();
+        amdOclLibrary.release();
         amdOclNumPlatforms = 0;
         throw; // fatal exception
     }

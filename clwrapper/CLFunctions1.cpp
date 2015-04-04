@@ -110,7 +110,7 @@ clrxclGetPlatformIDs(cl_uint          num_entries,
     {
         cl_uint toCopy = std::min(num_entries, amdOclNumPlatforms);
         for (cl_uint i = 0; i < toCopy; i++)
-            platforms[i] = clrxPlatforms + i;
+            platforms[i] = clrxPlatforms.get() + i;
     }
     
     return CL_SUCCESS;
@@ -345,7 +345,7 @@ clrxclCreateContext(const cl_context_properties * properties,
         return nullptr;
     }
     
-    CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
+    CLRXPlatform* platform = clrxPlatforms.get(); // choose first AMD platform
     bool doTranslateProps = false;
     size_t propNums = 0;
     
@@ -391,7 +391,7 @@ clrxclCreateContext(const cl_context_properties * properties,
         if (doTranslateProps) // replace by original
             amdPropsPtr = amdProps.data();
         if (platform == nullptr) // fallback
-            platform = clrxPlatforms;
+            platform = clrxPlatforms.get();
     
         /* get amdocl devices */
         std::vector<cl_device_id> amdDevices(num_devices);
@@ -433,9 +433,8 @@ clrxclCreateContext(const cl_context_properties * properties,
         error = clrxSetContextDevices(outContext, num_devices, devices);
         if (error == CL_SUCCESS)
         {
-            outContext->propertiesNum = propNums>>1;
             if (properties != nullptr)
-                outContext->properties = new cl_context_properties[propNums+1];
+                outContext->properties.resize(propNums+1);
         }
     }
     catch(const std::bad_alloc& ex)
@@ -456,7 +455,7 @@ clrxclCreateContext(const cl_context_properties * properties,
     }
     
     if (properties != nullptr)
-        std::copy(properties, properties + propNums+1, outContext->properties);
+        std::copy(properties, properties + propNums+1, outContext->properties.begin());
     
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
         clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
@@ -473,7 +472,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
 {
     CLRX_INITIALIZE_OBJ
     
-    CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
+    CLRXPlatform* platform = clrxPlatforms.get(); // choose first AMD platform
     
     bool doTranslateProps = false;
     size_t propNums = 0;
@@ -519,7 +518,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             amdPropsPtr = amdProps.data();
     
         if (platform == nullptr) // fallback
-            platform = clrxPlatforms;
+            platform = clrxPlatforms.get();
     
         amdContext = platform->amdOclPlatform->dispatch->clCreateContextFromType(
                     amdPropsPtr, device_type, pfn_notify, user_data, errcode_ret);
@@ -562,9 +561,8 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             error = clrxSetContextDevices(outContext, platform);
         if (error == CL_SUCCESS)
         {
-            outContext->propertiesNum = propNums>>1;
             if (properties != nullptr)
-                outContext->properties = new cl_context_properties[propNums+1];
+                outContext->properties.resize(propNums+1);
         }
     }
     catch(const std::bad_alloc& ex)
@@ -585,7 +583,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     }
     
     if (properties != nullptr)
-        std::copy(properties, properties + propNums+1, outContext->properties);
+        std::copy(properties, properties + propNums+1, outContext->properties.begin());
     
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
         clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
@@ -658,19 +656,19 @@ clrxclGetContextInfo(cl_context         context,
                 *param_value_size_ret = sizeof(cl_device_id)*c->devicesNum;
             break;
         case CL_CONTEXT_PROPERTIES:
-            if (c->properties == nullptr)
+            if (c->properties.empty())
             {
                 if (param_value_size_ret != nullptr)
                     *param_value_size_ret = 0;
             }
             else
             {
-                const size_t propElems = c->propertiesNum*2+1;
+                const size_t propElems = c->properties.size();
                 if (param_value != nullptr)
                 {
                     if (param_value_size < sizeof(cl_context_properties)*propElems)
                         return CL_INVALID_VALUE;
-                    std::copy(c->properties, c->properties + propElems,
+                    std::copy(c->properties.begin(), c->properties.end(),
                               static_cast<cl_context_properties*>(param_value));
                 }
                 if (param_value_size_ret != nullptr)
@@ -1582,7 +1580,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
     /* replaces original kernels by our (CLRXKernels) */
     cl_uint kernelsToCreate = 0;
     cl_uint kp = 0; // kernel already processed
-    char* kernelName = nullptr;
+    std::unique_ptr<char[]> kernelName = nullptr;
     size_t maxKernelNameSize = 0;
     try
     {
@@ -1632,13 +1630,12 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 if (kernelName == nullptr ||
                     (kernelName != nullptr && kernelNameSize > maxKernelNameSize))
                 {
-                    delete[] kernelName;
-                    kernelName = new char[kernelNameSize];
+                    kernelName = std::unique_ptr<char[]>(new char[kernelNameSize]);
                     maxKernelNameSize = kernelNameSize;
                 }
                 
                 status = kernels[kp]->dispatch->clGetKernelInfo(kernels[kp],
-                            CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName, nullptr);
+                        CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName.get(), nullptr);
                 if (status != CL_SUCCESS)
                 {
                     std::cerr << "Can't get kernel function name" << std::endl;
@@ -1647,7 +1644,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 
                 CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
                     CLRX::binaryMapFind(p->kernelArgFlagsMap.begin(),
-                        p->kernelArgFlagsMap.end(), kernelName);
+                        p->kernelArgFlagsMap.end(), kernelName.get());
                 if (argFlagMapIt == p->kernelArgFlagsMap.end())
                 {
                     std::cerr << "Can't find kernel arg flag!" << std::endl;
@@ -1667,7 +1664,6 @@ clrxclCreateKernelsInProgram(cl_program     program,
     {
         if (kernels != nullptr)
         {   // already processed kernels
-            delete[] kernelName;
             for (cl_uint i = 0; i < kp; i++)
             {
                 CLRXKernel* outKernel = static_cast<CLRXKernel*>(kernels[i]);
@@ -1691,7 +1687,6 @@ clrxclCreateKernelsInProgram(cl_program     program,
                     ex.what() << std::endl;
         abort();
     }
-    delete[] kernelName;
     
     if (num_kernels_ret != nullptr)
         *num_kernels_ret = numKernelsOut;
