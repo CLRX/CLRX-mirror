@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <memory>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Containers.h>
@@ -331,7 +332,7 @@ public:
     ~AmdInnerX86Binary32() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
-    uint32_t getKernelInfos(KernelInfo*& kernelInfos) const;
+    void getKernelInfos(Array<KernelInfo>& kernelInfos) const;
 };
 
 /// AMD inner binary for X86-64 binaries
@@ -352,7 +353,7 @@ public:
     ~AmdInnerX86Binary64() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
-    size_t getKernelInfos(KernelInfo*& kernelInfos) const;
+    void getKernelInfos(Array<KernelInfo>& kernelInfos) const;
 };
 
 /// AMD main binary type
@@ -372,8 +373,7 @@ public:
     typedef Array<std::pair<std::string, size_t> > KernelInfoMap;
 protected:
     AmdMainType type;   ///< type of binaries
-    size_t kernelInfosNum;  ///< number of kernel infos that is number of kernels
-    KernelInfo* kernelInfos;    ///< kernel informations
+    Array<KernelInfo> kernelInfos;    ///< kernel informations
     KernelInfoMap kernelInfosMap;   ///< kernel informations map
     
     std::string driverInfo;
@@ -389,11 +389,11 @@ public:
     
     /// get kernel informations number
     size_t getKernelInfosNum() const
-    { return kernelInfosNum; }
+    { return kernelInfos.size(); }
     
     /// get kernel informations array
     const KernelInfo* getKernelInfos() const
-    { return kernelInfos; }
+    { return kernelInfos.data(); }
     
     /// get kernel information with specified index
     const KernelInfo& getKernelInfo(size_t index) const
@@ -434,12 +434,10 @@ public:
     typedef Array<std::pair<std::string, size_t> > InnerBinaryMap;
     typedef Array<std::pair<std::string, size_t> > KernelHeaderMap;
 protected:
-    size_t innerBinariesNum;
-    AmdInnerGPUBinary32* innerBinaries;
+    Array<AmdInnerGPUBinary32> innerBinaries;
     InnerBinaryMap innerBinaryMap;
-    AmdGPUKernelMetadata* metadatas;
-    size_t kernelHeadersNum;
-    AmdGPUKernelHeader* kernelHeaders;
+    std::unique_ptr<AmdGPUKernelMetadata[]> metadatas;
+    Array<AmdGPUKernelHeader> kernelHeaders;
     KernelHeaderMap kernelHeaderMap;
     size_t globalDataSize;
     cxbyte* globalData;
@@ -453,7 +451,7 @@ public:
     
     /// get number of inner binaries
     size_t getInnerBinariesNum() const
-    { return innerBinariesNum; }
+    { return innerBinaries.size(); }
     
     /// get inner binary with specified index
     AmdInnerGPUBinary32& getInnerBinary(size_t index)
@@ -491,7 +489,7 @@ public:
     
     /// get kernel header number
     size_t getKernelHeadersNum() const
-    { return kernelHeadersNum; }
+    { return kernelHeaders.size(); }
     
     /// get kernel header entry for specified index
     const AmdGPUKernelHeader& getKernelHeaderEntry(size_t index) const

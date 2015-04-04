@@ -74,7 +74,6 @@ CLIException::CLIException(const std::string& message, const CLIOption& option,
 
 CLIParser::CLIParser(const char* programName, const CLIOption* options,
         cxuint argc, const char** argv)
-try
 {
     shortNameMap = nullptr;
     this->programName = programName;
@@ -82,8 +81,8 @@ try
     this->argc = argc;
     this->argv = argv;
     
-    shortNameMap = new cxuint[256];
-    std::fill(shortNameMap, shortNameMap+256, UINT_MAX); // fill as unused
+    shortNameMap = std::unique_ptr<cxuint[]>(new cxuint[256]);
+    std::fill(shortNameMap.get(), shortNameMap.get()+256, UINT_MAX); // fill as unused
     
     cxuint longNamesNum = 0;
     for (cxuint i = 0; options[i].longName != nullptr || options[i].shortName != 0; i++)
@@ -119,11 +118,6 @@ try
     for (cxuint i = 1; i < longNamesNum; i++)
         if (::strcmp(longNameMap[i].first, longNameMap[i-1].first) == 0)
             throw CLIException("Duplicate of option", longNameMap[i].first);
-}
-catch(...)
-{
-    delete[] shortNameMap;
-    throw;
 }
 
 CLIParser::~CLIParser()
@@ -172,8 +166,6 @@ CLIParser::~CLIParser()
                 break;
         }
     }
-            
-    delete[] shortNameMap;
 }
 
 void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType) const

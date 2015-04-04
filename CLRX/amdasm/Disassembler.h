@@ -29,6 +29,7 @@
 #include <ostream>
 #include <vector>
 #include <utility>
+#include <memory>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
@@ -143,7 +144,7 @@ struct GalliumDisasmInput
 class Disassembler
 {
 private:
-    ISADisassembler* isaDisassembler;
+    std::unique_ptr<ISADisassembler> isaDisassembler;
     bool fromBinary;
     BinaryFormat binaryFormat;
     union {

@@ -30,6 +30,7 @@
 #include <ostream>
 #include <iostream>
 #include <cstring>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
 
@@ -40,7 +41,7 @@ namespace CLRX
 #define CLRX_CLI_AUTOHELP \
     { "help", '?', CLIArgType::NONE, false, "print help", nullptr }, \
     { "usage", 0, CLIArgType::NONE, false, "print usage", nullptr },
-    
+
 /*
  * CommandLine Interface
  */
@@ -185,7 +186,7 @@ private:
     
     Array<OptionEntry> optionEntries;
     LongNameMap longNameMap;
-    cxuint* shortNameMap;
+    std::unique_ptr<cxuint[]> shortNameMap;
     
     void handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType) const;
     void parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName);

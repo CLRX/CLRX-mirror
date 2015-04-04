@@ -874,11 +874,11 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     
     maxSize++; // increase by 1 elem (64-bit) for accuracy
     const cxuint absPower = std::abs(power);
-    uint64_t* heap = new uint64_t[maxSize<<3]; // four (maxSize<<1)
-    uint64_t* curPow2Pow = heap;
-    uint64_t* prevPow2Pow = heap + (maxSize<<1);
-    uint64_t* curPow = heap + (maxSize<<1)*2;
-    uint64_t* prevPow = heap + (maxSize<<1)*3;
+    Array<uint64_t> heap = Array<uint64_t>(maxSize<<3); // four (maxSize<<1)
+    uint64_t* curPow2Pow = heap.data();
+    uint64_t* prevPow2Pow = heap.data() + (maxSize<<1);
+    uint64_t* curPow = heap.data() + (maxSize<<1)*2;
+    uint64_t* prevPow = heap.data() + (maxSize<<1)*3;
     
     cxuint pow2PowSize, pow2PowBits, powBits;
     cxint pow2PowExp;
@@ -947,8 +947,6 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
     }
     // copy result to output
     std::copy(curPow, curPow + powSize, outPow);
-    
-    delete[] heap;
 }
 
 /*
@@ -1397,7 +1395,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             
             const cxuint maxBigSize = (log10ByLog2Ceil(maxDigits+3)+63)>>6;
             // using vector for prevents memory leaks (function can throw exception)
-            std::vector<uint64_t> heap = std::vector<uint64_t>(maxBigSize*5 + 5);
+            Array<uint64_t> heap = Array<uint64_t>(maxBigSize*5 + 5);
             uint64_t* bigDecFactor = heap.data();
             uint64_t* curBigValue = heap.data()+maxBigSize;
             uint64_t* prevBigValue = heap.data()+maxBigSize*2 + 2;

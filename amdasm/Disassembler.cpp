@@ -319,14 +319,8 @@ Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _outp
             amdInput(nullptr), output(_output)
 {
     this->flags = flags;
+    isaDisassembler = std::unique_ptr<ISADisassembler>(new GCNDisassembler(*this));
     amdInput = getAmdDisasmInputFromBinary(binary, flags);
-    try
-    { isaDisassembler = new GCNDisassembler(*this); }
-    catch(...)
-    {
-        delete amdInput;
-        throw;
-    }
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
@@ -334,14 +328,8 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
             amdInput(nullptr), output(_output)
 {
     this->flags = flags;
+    isaDisassembler = std::unique_ptr<ISADisassembler>(new GCNDisassembler(*this));
     amdInput = getAmdDisasmInputFromBinary(binary, flags);
-    try
-    { isaDisassembler = new GCNDisassembler(*this); }
-    catch(...)
-    {
-        delete amdInput;
-        throw;
-    }
 }
 
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
@@ -349,7 +337,7 @@ Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _out
             amdInput(disasmInput), output(_output)
 {
     this->flags = flags;
-    isaDisassembler = new GCNDisassembler(*this);
+    isaDisassembler = std::unique_ptr<ISADisassembler>(new GCNDisassembler(*this));
 }
 
 Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
@@ -358,14 +346,8 @@ Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary
            galliumInput(nullptr), output(_output)
 {
     this->flags = flags;
+    isaDisassembler = std::unique_ptr<ISADisassembler>(new GCNDisassembler(*this));
     galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary, flags);
-    try
-    { isaDisassembler = new GCNDisassembler(*this); }
-    catch(...)
-    {
-        delete amdInput;
-        throw;
-    }
 }
 
 Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& _output,
@@ -373,7 +355,7 @@ Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& 
             galliumInput(disasmInput), output(_output)
 {
     this->flags = flags;
-    isaDisassembler = new GCNDisassembler(*this);
+    isaDisassembler = std::unique_ptr<ISADisassembler>(new GCNDisassembler(*this));
 }
 
 Disassembler::~Disassembler()
@@ -385,7 +367,6 @@ Disassembler::~Disassembler()
         else // gallium
             delete galliumInput;
     }
-    delete isaDisassembler;
 }
 
 GPUDeviceType Disassembler::getDeviceType() const

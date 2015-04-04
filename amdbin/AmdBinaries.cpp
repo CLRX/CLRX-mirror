@@ -302,11 +302,8 @@ const size_t AmdInnerX86_64Types::argDescTableOffset = 64;
 
 template<typename Types>
 static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
-             KernelInfo*& kernelInfos)
+             Array<KernelInfo>& kernelInfos)
 {
-    delete[] kernelInfos;
-    kernelInfos = nullptr;
-    
     if (!elf) return 0;
     
     cxuint rodataIndex = SHN_UNDEF;
@@ -394,9 +391,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         foundInStaticSymbols = true;
     }
     
-    try
-    {
-    kernelInfos = new KernelInfo[choosenSyms.size()];
+    kernelInfos.resize(choosenSyms.size());
     
     size_t argNameTypeNameIdx = 0;
     size_t ki = 0;
@@ -515,13 +510,6 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
         }
         kernelInfo.argInfos.resize(realArgsNum);
     }
-    }
-    catch(...) // if exception happens
-    {
-        delete[] kernelInfos;
-        kernelInfos = nullptr;
-        throw;
-    }
     return choosenSyms.size();
 }
 
@@ -530,9 +518,9 @@ AmdInnerX86Binary32::AmdInnerX86Binary32(
             ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 { }
 
-uint32_t AmdInnerX86Binary32::getKernelInfos(KernelInfo*& kernelInfos) const
+void AmdInnerX86Binary32::getKernelInfos(Array<KernelInfo>& kernelInfos) const
 {
-    return getKernelInfosInternal<AmdInnerX86Types>(*this, kernelInfos);
+    getKernelInfosInternal<AmdInnerX86Types>(*this, kernelInfos);
 }
 
 AmdInnerX86Binary64::AmdInnerX86Binary64(
@@ -540,21 +528,18 @@ AmdInnerX86Binary64::AmdInnerX86Binary64(
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 { }
 
-size_t AmdInnerX86Binary64::getKernelInfos(KernelInfo*& kernelInfos) const
+void AmdInnerX86Binary64::getKernelInfos(Array<KernelInfo>& kernelInfos) const
 {
-    return getKernelInfosInternal<AmdInnerX86_64Types>(*this, kernelInfos);
+    getKernelInfosInternal<AmdInnerX86_64Types>(*this, kernelInfos);
 }
 
 /* AmdMaiBinaryBase */
 
-AmdMainBinaryBase::AmdMainBinaryBase(AmdMainType _type) : type(_type),
-        kernelInfosNum(0), kernelInfos(nullptr)
+AmdMainBinaryBase::AmdMainBinaryBase(AmdMainType _type) : type(_type)
 { }
 
 AmdMainBinaryBase::~AmdMainBinaryBase()
-{
-    delete[] kernelInfos;
-}
+{ }
 
 const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
 {
@@ -1082,17 +1067,11 @@ struct AmdGPU64Types: Elf64Types
 };
 
 AmdMainGPUBinaryBase::AmdMainGPUBinaryBase(AmdMainType type)
-        : AmdMainBinaryBase(type), innerBinariesNum(0),
-          innerBinaries(nullptr), metadatas(nullptr),
-          kernelHeadersNum(0), kernelHeaders(nullptr), globalDataSize(0), globalData(0)
+        : AmdMainBinaryBase(type), metadatas(nullptr), globalDataSize(0), globalData(0)
 { }
 
 AmdMainGPUBinaryBase::~AmdMainGPUBinaryBase()
-{
-    delete[] innerBinaries;
-    delete[] metadatas;
-    delete[] kernelHeaders;
-}
+{ }
 
 template<typename Types>
 void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
@@ -1162,8 +1141,6 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             choosenSymsHeaders.push_back(i);
     }
     
-    try
-    {
     if (doInfoStrings)
     {   // put driver info
         uint16_t commentShIndex = SHN_UNDEF;
@@ -1183,7 +1160,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         }
     }
     
-    innerBinariesNum = choosenSyms.size();
+    innerBinaries.resize(choosenSyms.size());
     
     if (textIndex != SHN_UNDEF) /* if have ".text" */
     {
@@ -1191,7 +1168,6 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         cxbyte* textContent = mainElf.getBinaryCode() + ULEV(textHdr.sh_offset);
         
         /* create table of innerBinaries */
-        innerBinaries = new AmdInnerGPUBinary32[innerBinariesNum];
         size_t ki = 0;
         for (auto it: choosenSyms)
         {
@@ -1212,8 +1188,8 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         }
         if ((creationFlags & AMDBIN_CREATE_INNERBINMAP) != 0)
         {
-            innerBinaryMap.resize(innerBinariesNum);
-            for (size_t i = 0; i < innerBinariesNum; i++)
+            innerBinaryMap.resize(innerBinaries.size());
+            for (size_t i = 0; i < innerBinaries.size(); i++)
                 innerBinaryMap[i] = std::make_pair(innerBinaries[i].getKernelName(), i);
             mapSort(innerBinaryMap.begin(), innerBinaryMap.end());
         }
@@ -1221,9 +1197,9 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
     
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
     {
-        kernelInfosNum = choosenSymsMetadata.size();
-        kernelInfos = new KernelInfo[kernelInfosNum];
-        metadatas = new AmdGPUKernelMetadata[kernelInfosNum];
+        kernelInfos.resize(choosenSymsMetadata.size());
+        metadatas = std::unique_ptr<AmdGPUKernelMetadata[]>(
+                new AmdGPUKernelMetadata[kernelInfos.size()]);
         
         typename Types::Size ki = 0;
         for (typename Types::Size it: choosenSymsMetadata)
@@ -1254,16 +1230,15 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         /* maps kernel info */
         if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
         {
-            kernelInfosMap.resize(kernelInfosNum);
-            for (size_t i = 0; i < kernelInfosNum; i++)
+            kernelInfosMap.resize(kernelInfos.size());
+            for (size_t i = 0; i < kernelInfos.size(); i++)
                 kernelInfosMap[i] = std::make_pair(kernelInfos[i].kernelName, i);
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
         }
     }
     if ((creationFlags & AMDBIN_CREATE_KERNELHEADERS) != 0)
     {
-        kernelHeadersNum = choosenSymsHeaders.size();
-        kernelHeaders = new AmdGPUKernelHeader[kernelHeadersNum];
+        kernelHeaders.resize(choosenSymsHeaders.size());
         
         typename Types::Size ki = 0;
         
@@ -1294,24 +1269,11 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         /* maps kernel headers */
         if ((creationFlags & AMDBIN_CREATE_KERNELHEADERMAP) != 0)
         {
-            kernelHeaderMap.resize(kernelHeadersNum);
-            for (size_t i = 0; i < kernelHeadersNum; i++)
+            kernelHeaderMap.resize(kernelHeaders.size());
+            for (size_t i = 0; i < kernelHeaders.size(); i++)
                 kernelHeaderMap[i] = std::make_pair(kernelHeaders[i].kernelName, i);
             mapSort(kernelHeaderMap.begin(), kernelHeaderMap.end());
         }
-    }
-    }
-    catch(...)
-    {   /* free arrays */
-        delete[] innerBinaries;
-        delete[] kernelInfos;
-        delete[] metadatas;
-        delete[] kernelHeaders;
-        innerBinaries = nullptr;
-        kernelInfos = nullptr;
-        metadatas = nullptr;
-        kernelHeaders = nullptr;
-        throw;
     }
 }
 
@@ -1356,11 +1318,11 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
 
 void AmdMainX86Binary32::initKernelInfos(cxuint creationFlags)
 {
-    kernelInfosNum = innerBinary.getKernelInfos(kernelInfos);
+    innerBinary.getKernelInfos(kernelInfos);
     if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
     {
-        kernelInfosMap.resize(kernelInfosNum);
-        for (size_t i = 0; i < kernelInfosNum; i++)
+        kernelInfosMap.resize(kernelInfos.size());
+        for (size_t i = 0; i < kernelInfos.size(); i++)
             kernelInfosMap[i] = std::make_pair(kernelInfos[i].kernelName, i);
         mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
     }
@@ -1438,11 +1400,11 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
 
 void AmdMainX86Binary64::initKernelInfos(cxuint creationFlags)
 {
-    kernelInfosNum = innerBinary.getKernelInfos(kernelInfos);
+    innerBinary.getKernelInfos(kernelInfos);
     if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
     {
-        kernelInfosMap.resize(kernelInfosNum);
-        for (size_t i = 0; i < kernelInfosNum; i++)
+        kernelInfosMap.resize(kernelInfos.size());
+        for (size_t i = 0; i < kernelInfos.size(); i++)
             kernelInfosMap[i] = std::make_pair(kernelInfos[i].kernelName, i);
         mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
     }

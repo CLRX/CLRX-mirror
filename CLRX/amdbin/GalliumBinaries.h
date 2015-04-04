@@ -30,6 +30,7 @@
 #include <vector>
 #include <ostream>
 #include <utility>
+#include <memory>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
@@ -196,8 +197,8 @@ private:
     cxuint creationFlags;
     uint32_t kernelsNum;
     uint32_t sectionsNum;
-    GalliumKernel* kernels;
-    GalliumSection* sections;
+    std::unique_ptr<GalliumKernel[]> kernels;
+    std::unique_ptr<GalliumSection[]> sections;
     
     GalliumElfBinary elfBinary;
 public:

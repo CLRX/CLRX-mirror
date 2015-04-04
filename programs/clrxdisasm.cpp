@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <iostream>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/CLIParser.h>
 #include <CLRX/amdasm/Disassembler.h>
@@ -88,8 +89,8 @@ try
     {
         std::cout << "// Disassembling '" << *args << '\'' << std::endl;
         Array<cxbyte> binaryData;
-        AmdMainBinaryBase* base = nullptr;
-        GalliumBinary* galliumBin = nullptr;
+        std::unique_ptr<AmdMainBinaryBase> base = nullptr;
+        std::unique_ptr<GalliumBinary> galliumBin = nullptr;
         try
         {
             binaryData = loadDataFromFile(*args);
@@ -105,12 +106,13 @@ try
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
                 try
-                { base = createAmdBinaryFromCode(binaryData.size(),
-                            binaryData.data(), binFlags); }
+                { base = std::unique_ptr<AmdMainBinaryBase>(
+                        createAmdBinaryFromCode(binaryData.size(),
+                            binaryData.data(), binFlags)); }
                 catch(const Exception& ex)
                 {   // check whether is Gallium
-                    galliumBin = new GalliumBinary(binaryData.size(),
-                                   binaryData.data(), 0);
+                    galliumBin = std::unique_ptr<GalliumBinary>(
+                            new GalliumBinary(binaryData.size(), binaryData.data(), 0));
                 }
                 if (galliumBin != nullptr)
                 {   // if Gallium
@@ -119,13 +121,15 @@ try
                 }
                 else if (base->getType() == AmdMainType::GPU_BINARY)
                 {
-                    AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base);
+                    AmdMainGPUBinary32* amdGpuBin =
+                            static_cast<AmdMainGPUBinary32*>(base.get());
                     Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
                     disasm.disassemble();
                 }
                 else if (base->getType() == AmdMainType::GPU_64_BINARY)
                 {
-                    AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base);
+                    AmdMainGPUBinary64* amdGpuBin =
+                            static_cast<AmdMainGPUBinary64*>(base.get());
                     Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
                     disasm.disassemble();
                 }
@@ -139,24 +143,13 @@ try
                 Disassembler disasm(&disasmInput, std::cout, disasmFlags);
                 disasm.disassemble();
             }
-            
-            delete base;
-            delete galliumBin;
         }
         catch(const std::exception& ex)
         {
-            delete base;
-            delete galliumBin;
             ret = 1;
             std::cout << "// ERROR for '" << *args << '\'' << std::endl;
             std::cerr << "Error at disassembling '" << *args << "': " <<
                     ex.what() << std::endl;
-        }
-        catch(...)
-        {
-            delete base;
-            delete galliumBin;
-            throw;
         }
     }
     

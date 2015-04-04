@@ -76,34 +76,24 @@ static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
     input.is64BitMode = false;
     Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
     GCNDisassembler gcnDisasm(disasm);
-    uint32_t* code = nullptr;
-    try
+    Array<uint32_t> code(testCase.wordsNum);
+    for (cxuint i = 0; i < testCase.wordsNum; i++)
+        code[i] = LEV(testCase.words[i]);
+    
+    gcnDisasm.setInput(testCase.wordsNum<<2,
+           reinterpret_cast<const cxbyte*>(code.data()));
+    gcnDisasm.beforeDisassemble();
+    gcnDisasm.disassemble();
+    std::string outStr = disOss.str();
+    if (outStr != testCase.expected)
     {
-        code = new uint32_t[testCase.wordsNum];
-        for (cxuint i = 0; i < testCase.wordsNum; i++)
-            code[i] = LEV(testCase.words[i]);
-        
-        gcnDisasm.setInput(testCase.wordsNum<<2,
-               reinterpret_cast<const cxbyte*>(code));
-        gcnDisasm.beforeDisassemble();
-        gcnDisasm.disassemble();
-        std::string outStr = disOss.str();
-        if (outStr != testCase.expected)
-        {
-            std::ostringstream oss;
-            oss << "FAILED for " <<
-                (deviceType==GPUDeviceType::HAWAII?"Hawaii":"Pitcairn") <<
-                " decGCNCase#" << i << ": size=" << (testCase.wordsNum) << std::endl;
-            oss << "\nExpected: " << testCase.expected << ", Result: " << outStr;
-            throw Exception(oss.str());
-        }
+        std::ostringstream oss;
+        oss << "FAILED for " <<
+            (deviceType==GPUDeviceType::HAWAII?"Hawaii":"Pitcairn") <<
+            " decGCNCase#" << i << ": size=" << (testCase.wordsNum) << std::endl;
+        oss << "\nExpected: " << testCase.expected << ", Result: " << outStr;
+        throw Exception(oss.str());
     }
-    catch(...)
-    {
-        delete[] code;
-        throw;
-    }
-    delete[] code;
 }
 
 static const uint32_t unalignedNamedLabelCode[] =

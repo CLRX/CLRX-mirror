@@ -28,6 +28,7 @@
 #include <bitset>
 #include <string>
 #include <vector>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/InputOutput.h>
@@ -1450,16 +1451,20 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     /****
      * prepare for write binary to output
      ****/
+    std::unique_ptr<std::ostream> outStreamHolder;
     std::ostream* os = nullptr;
     if (aPtr != nullptr)
     {
         aPtr->resize(binarySize);
-        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data()));
+        outStreamHolder = std::unique_ptr<std::ostream>(
+            new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data())));
+        os = outStreamHolder.get();
     }
     else if (vPtr != nullptr)
     {
         vPtr->resize(binarySize);
-        os = new VectorOStream(*vPtr);
+        outStreamHolder = std::unique_ptr<std::ostream>(new VectorOStream(*vPtr));
+        os = outStreamHolder.get();
     }
     else // from argument
         os = osPtr;
@@ -1764,14 +1769,10 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     catch(...)
     {
         os->exceptions(oldExceptions);
-        if (os != osPtr) // not from argument
-            delete os;
         throw;
     }
     os->exceptions(oldExceptions);
     assert(offset == binarySize);
-    if (os != osPtr) // not from argument
-        delete os;
 }
 
 

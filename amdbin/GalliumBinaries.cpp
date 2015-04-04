@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/InputOutput.h>
@@ -136,7 +137,6 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 
 GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
                  cxuint creationFlags)
-try
          : kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
 {
     this->creationFlags = creationFlags;
@@ -149,7 +149,7 @@ try
     kernelsNum = ULEV(*data32);
     if (binaryCodeSize < uint64_t(kernelsNum)*16U)
         throw Exception("Kernels number is too big!");
-    kernels = new GalliumKernel[kernelsNum];
+    kernels = std::unique_ptr<GalliumKernel[]>(new GalliumKernel[kernelsNum]);
     cxbyte* data = binaryCode + 4;
     // parse kernels symbol info and their arguments
     for (cxuint i = 0; i < kernelsNum; i++)
@@ -212,7 +212,7 @@ try
     sectionsNum = ULEV(data32[0]);
     if (binaryCodeSize-(data-binaryCode) < uint64_t(sectionsNum)*20U)
         throw Exception("Sections number is too big!");
-    sections = new GalliumSection[sectionsNum];
+    sections = std::unique_ptr<GalliumSection[]>(new GalliumSection[sectionsNum]);
     // parse sections and their content
     data32++;
     data += 4;
@@ -281,28 +281,19 @@ try
         symIndex++;
     }
 }
-catch(...)
-{
-    delete[] kernels;
-    delete[] sections;
-    throw;
-}
 
 GalliumBinary::~GalliumBinary()
-{
-    delete[] kernels;
-    delete[] sections;
-}
+{ }
 
 uint32_t GalliumBinary::getKernelIndex(const char* name) const
 {
     const GalliumKernel v = { name };
-    const GalliumKernel* it = binaryFind(kernels, kernels+kernelsNum, v,
+    const GalliumKernel* it = binaryFind(kernels.get(), kernels.get()+kernelsNum, v,
        [](const GalliumKernel& k1, const GalliumKernel& k2)
        { return k1.kernelName < k2.kernelName; });
-    if (it == kernels+kernelsNum || it->kernelName != name)
+    if (it == kernels.get()+kernelsNum || it->kernelName != name)
         throw Exception("Can't find Gallium Kernel Index");
-    return it-kernels;
+    return it-kernels.get();
 }
 
 /*
@@ -468,16 +459,20 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     /****
      * prepare for write binary to output
      ****/
+    std::unique_ptr<std::ostream> outStreamHolder;
     std::ostream* os = nullptr;
     if (aPtr != nullptr)
     {
         aPtr->resize(binarySize);
-        os = new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data()));
+        outStreamHolder = std::unique_ptr<std::ostream>(
+                new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data())));
+        os = outStreamHolder.get();
     }
     else if (vPtr != nullptr)
     {
         vPtr->resize(binarySize);
-        os = new VectorOStream(*vPtr);
+        outStreamHolder = std::unique_ptr<std::ostream>(new VectorOStream(*vPtr));
+        os = outStreamHolder.get();
     }
     else // from argument
         os = osPtr;
@@ -694,14 +689,10 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     catch(...)
     {
         os->exceptions(oldExceptions);
-        if (os != osPtr) // not from argument
-            delete os;
         throw;
     }
     os->exceptions(oldExceptions);
     assert(offset == binarySize);
-    if (os != osPtr) // not from argument
-        delete os;
 }
 
 void GalliumBinGenerator::generate(Array<cxbyte>& array) const
