@@ -488,16 +488,16 @@ void clrxWrapperInitialize()
     }
     catch(const std::bad_alloc& ex)
     { 
-        clrxPlatforms.release();
-        amdOclLibrary.release();
+        clrxPlatforms = nullptr;
+        amdOclLibrary = nullptr;
         amdOclNumPlatforms = 0;
         clrxWrapperInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
     }
     catch(...)
     { 
-        clrxPlatforms.release();
-        amdOclLibrary.release();
+        clrxPlatforms = nullptr;
+        amdOclLibrary = nullptr;
         amdOclNumPlatforms = 0;
         throw; // fatal exception
     }
@@ -831,41 +831,33 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
 cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
 {
     cl_uint amdDevicesNum;
-    cl_device_id* amdDevices = nullptr;
-    
     cl_int status = c->amdOclContext->dispatch->clGetContextInfo(c->amdOclContext,
         CL_CONTEXT_NUM_DEVICES, sizeof(cl_uint), &amdDevicesNum, nullptr);
     if (status != CL_SUCCESS)
         return status;
     
-    amdDevices = new cl_device_id[amdDevicesNum];
+    std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[amdDevicesNum]);
     status = c->amdOclContext->dispatch->clGetContextInfo(c->amdOclContext,
             CL_CONTEXT_DEVICES, sizeof(cl_device_id)*amdDevicesNum,
-            amdDevices, nullptr);
+            amdDevices.get(), nullptr);
     if (status == CL_OUT_OF_HOST_MEMORY)
-    {
-        delete[] amdDevices;
         return status;
-    }
     if (status != CL_SUCCESS)
-    {
-        delete[] amdDevices;
         return status;
-    }
     
     try
     {
         translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-               (const CLRXDevice**)(platform->devicePtrs), amdDevicesNum, amdDevices);
+               (const CLRXDevice**)(platform->devicePtrs), amdDevicesNum,
+               amdDevices.get());
         // now is ours devices
         c->devicesNum = amdDevicesNum;
-        c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
+        c->devices = std::unique_ptr<CLRXDevice*[]>(
+                    reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+        
     }
     catch(const std::bad_alloc& ex)
-    {
-        delete[] amdDevices;
-        return CL_OUT_OF_HOST_MEMORY;
-    }
+    { return CL_OUT_OF_HOST_MEMORY; }
     return CL_SUCCESS;
 }
 
@@ -901,7 +893,8 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
                        amdDevicesNum, amdDevices);
         // now is ours devices
         c->devicesNum = amdDevicesNum;
-        c->devices = reinterpret_cast<CLRXDevice**>(amdDevices);
+        c->devices = std::unique_ptr<CLRXDevice*[]>(
+                reinterpret_cast<CLRXDevice**>(amdDevices));
     }
     catch(const std::bad_alloc& ex)
     {
@@ -976,7 +969,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
             }
         else
             translateAMDDevicesIntoCLRXDevices(p->context->devicesNum,
-                   const_cast<const CLRXDevice**>(p->context->devices),
+                   const_cast<const CLRXDevice**>(p->context->devices.get()),
                    amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices));
         
         delete[] p->assocDevices;

@@ -222,21 +222,18 @@ struct CLRX_INTERNAL CLRXContext: _cl_context, CLRX::NonCopyableAndNonMovable
     std::atomic<size_t> refCount;
     cl_context amdOclContext;
     cl_uint devicesNum;
-    CLRXDevice** devices;
+    std::unique_ptr<CLRXDevice*[]> devices;
     CLRX::Array<cl_context_properties> properties;
     uint32_t openCLVersionNum;
     
     CLRXContext() : refCount(1)
     {
         devicesNum = 0;
-        devices = nullptr;
         openCLVersionNum = 0;
     }
     
     ~CLRXContext()
-    {
-        delete[] devices;
-    }
+    { }
 };
 
 struct CLRX_INTERNAL CLRXCommandQueue: _cl_command_queue, CLRX::NonCopyableAndNonMovable

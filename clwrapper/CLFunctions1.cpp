@@ -649,7 +649,7 @@ clrxclGetContextInfo(cl_context         context,
             {
                 if (param_value_size < sizeof(cl_device_id)*c->devicesNum)
                     return CL_INVALID_VALUE;
-                std::copy(c->devices, c->devices + c->devicesNum,
+                std::copy(c->devices.get(), c->devices.get() + c->devicesNum,
                           static_cast<cl_device_id*>(param_value));
             }
             if (param_value_size_ret != nullptr)
