@@ -217,7 +217,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     data32++;
     data += 4;
     
-    uint32_t elfSectionId;
+    uint32_t elfSectionId = 0; // initialize warning
     for (uint32_t i = 0; i < sectionsNum; i++)
     {
         GalliumSection& section = sections[i];
