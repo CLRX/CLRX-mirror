@@ -265,8 +265,7 @@ Iter binaryFind(Iter begin, Iter end,
     return it;
 }
 
-template<typename Iter, typename Comp =
-        std::less<typename std::iterator_traits<Iter>::value_type> >
+template<typename Iter, typename Comp>
 Iter binaryFind(Iter begin, Iter end,
         const typename std::iterator_traits<Iter>::value_type& v, Comp comp)
 {
@@ -290,8 +289,7 @@ Iter binaryMapFind(Iter begin, Iter end, const
     return it;
 }
 
-template<typename Iter, typename Comp =
-     std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
+template<typename Iter, typename Comp>
 Iter binaryMapFind(Iter begin, Iter end, const
         typename std::iterator_traits<Iter>::value_type::first_type& k, Comp comp)
 {
@@ -314,8 +312,7 @@ void mapSort(Iter begin, Iter end)
         return e1.first < e2.first; });
 }
 
-template<typename Iter, typename Comp = 
-    std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
+template<typename Iter, typename Comp>
 void mapSort(Iter begin, Iter end, Comp comp)
 {
     typedef typename std::iterator_traits<Iter>::value_type::first_type K;
