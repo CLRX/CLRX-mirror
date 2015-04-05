@@ -1198,8 +1198,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
     if ((creationFlags & AMDBIN_CREATE_KERNELINFO) != 0)
     {
         kernelInfos.resize(choosenSymsMetadata.size());
-        metadatas = std::unique_ptr<AmdGPUKernelMetadata[]>(
-                new AmdGPUKernelMetadata[kernelInfos.size()]);
+        metadatas.reset(new AmdGPUKernelMetadata[kernelInfos.size()]);
         
         typename Types::Size ki = 0;
         for (typename Types::Size it: choosenSymsMetadata)

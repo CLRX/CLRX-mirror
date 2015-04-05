@@ -149,7 +149,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     kernelsNum = ULEV(*data32);
     if (binaryCodeSize < uint64_t(kernelsNum)*16U)
         throw Exception("Kernels number is too big!");
-    kernels = std::unique_ptr<GalliumKernel[]>(new GalliumKernel[kernelsNum]);
+    kernels.reset(new GalliumKernel[kernelsNum]);
     cxbyte* data = binaryCode + 4;
     // parse kernels symbol info and their arguments
     for (cxuint i = 0; i < kernelsNum; i++)
@@ -212,7 +212,7 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     sectionsNum = ULEV(data32[0]);
     if (binaryCodeSize-(data-binaryCode) < uint64_t(sectionsNum)*20U)
         throw Exception("Sections number is too big!");
-    sections = std::unique_ptr<GalliumSection[]>(new GalliumSection[sectionsNum]);
+    sections.reset(new GalliumSection[sectionsNum]);
     // parse sections and their content
     data32++;
     data += 4;
@@ -464,14 +464,14 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     if (aPtr != nullptr)
     {
         aPtr->resize(binarySize);
-        outStreamHolder = std::unique_ptr<std::ostream>(
+        outStreamHolder.reset(
                 new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data())));
         os = outStreamHolder.get();
     }
     else if (vPtr != nullptr)
     {
         vPtr->resize(binarySize);
-        outStreamHolder = std::unique_ptr<std::ostream>(new VectorOStream(*vPtr));
+        outStreamHolder.reset(new VectorOStream(*vPtr));
         os = outStreamHolder.get();
     }
     else // from argument

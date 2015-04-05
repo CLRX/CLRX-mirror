@@ -1116,12 +1116,12 @@ clrxclGetExtensionFunctionAddressForPlatform(cl_platform_id platform,
     const CLRXPlatform* p = static_cast<CLRXPlatform*>(platform);
     const CLRXExtensionEntry tmp = {func_name, nullptr};
     const size_t length = sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
-    const CLRXExtensionEntry* entry = std::lower_bound(p->extEntries,
-           p->extEntries + length,
+    const CLRXExtensionEntry* entry = std::lower_bound(p->extEntries.get(),
+           p->extEntries.get() + length,
            tmp, [](const CLRXExtensionEntry& l, const CLRXExtensionEntry& r) -> bool
            { return ::strcmp(l.funcname, r.funcname)<0; });
     
-    if (entry == p->extEntries + length)
+    if (entry == p->extEntries.get() + length)
         return nullptr;
     if (::strcmp(func_name, entry->funcname)!=0)
         return nullptr;

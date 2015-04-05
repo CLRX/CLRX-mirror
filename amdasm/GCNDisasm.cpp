@@ -77,8 +77,7 @@ static const size_t gcnInstrTableByCodeLength = 0x0c2d;
 
 static void initializeGCNDisassembler()
 {
-    gcnInstrTableByCode = std::unique_ptr<GCNInstruction[]>(
-                new GCNInstruction[gcnInstrTableByCodeLength]);
+    gcnInstrTableByCode.reset(new GCNInstruction[gcnInstrTableByCodeLength]);
     for (cxuint i = 0; i < gcnInstrTableByCodeLength; i++)
     {
         gcnInstrTableByCode[i].mnemonic = nullptr;

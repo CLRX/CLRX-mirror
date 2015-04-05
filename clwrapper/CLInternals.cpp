@@ -285,8 +285,7 @@ void clrxWrapperInitialize()
         useCLRXWrapper = !parseEnvVariable<bool>("CLRX_FORCE_ORIGINAL_AMDOCL", false);
         std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
                            DEFAULT_AMDOCLPATH);
-        tmpAmdOclLibrary = std::unique_ptr<DynLibrary>(
-                new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW));
+        tmpAmdOclLibrary.reset(new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW));
         
         amdOclGetPlatformIDs = (CLRXpfn_clGetPlatformIDs)
                 tmpAmdOclLibrary->getSymbol("clGetPlatformIDs");
@@ -352,8 +351,7 @@ void clrxWrapperInitialize()
             const cxuint clrxExtEntriesNum =
                     sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
             
-            clrxPlatforms = std::unique_ptr<CLRXPlatform[]>(
-                        new CLRXPlatform[platformCount]);
+            clrxPlatforms.reset(new CLRXPlatform[platformCount]);
             for (cl_uint i = 0; i < platformCount; i++)
             {
                 if (amdOclPlatforms[i] == nullptr)
@@ -426,9 +424,9 @@ void clrxWrapperInitialize()
                         openCLmajor << "." << openCLminor << std::endl;*/
                 
                 /* initialize extTable */
-                clrxPlatform.extEntries = new CLRXExtensionEntry[clrxExtEntriesNum];
+                clrxPlatform.extEntries.reset(new CLRXExtensionEntry[clrxExtEntriesNum]);
                 std::copy(clrxExtensionsTable, clrxExtensionsTable + clrxExtEntriesNum,
-                          clrxPlatform.extEntries);
+                          clrxPlatform.extEntries.get());
                 
                 if (clrxPlatform.openCLVersionNum >= getOpenCLVersionNum(1, 2))
                 {   /* update p->extEntries for platform */
@@ -839,8 +837,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
            amdDevices.get());
     // now is ours devices
     c->devicesNum = amdDevicesNum;
-    c->devices = std::unique_ptr<CLRXDevice*[]>(
-                reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+    c->devices.reset(reinterpret_cast<CLRXDevice**>(amdDevices.release()));
     return CL_SUCCESS;
 }
 
@@ -867,8 +864,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
                    amdDevicesNum, amdDevices.get());
     // now is ours devices
     c->devicesNum = amdDevicesNum;
-    c->devices = std::unique_ptr<CLRXDevice*[]>(
-            reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+    c->devices.reset(reinterpret_cast<CLRXDevice**>(amdDevices.release()));
     return CL_SUCCESS;
 }
 
@@ -934,8 +930,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
                    amdAssocDevicesNum, static_cast<cl_device_id*>(amdAssocDevices.get()));
         
         p->assocDevicesNum = amdAssocDevicesNum;
-        p->assocDevices = std::unique_ptr<CLRXDevice*[]>(
-            reinterpret_cast<CLRXDevice**>(amdAssocDevices.release()));
+        p->assocDevices.reset(reinterpret_cast<CLRXDevice**>(amdAssocDevices.release()));
     }
     catch(const std::bad_alloc& ex)
     { return CL_OUT_OF_HOST_MEMORY; }
@@ -1113,13 +1108,13 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
             if (d->extensionsSize != 0)
             {
                 device->extensionsSize = d->extensionsSize;
-                device->extensions = std::unique_ptr<char[]>(new char[d->extensionsSize]);
+                device->extensions.reset(new char[d->extensionsSize]);
                 ::memcpy(device->extensions.get(), d->extensions.get(), d->extensionsSize);
             }
             if (d->versionSize != 0)
             {
                 device->versionSize = d->versionSize;
-                device->version = std::unique_ptr<char[]>(new char[d->versionSize]);
+                device->version.reset(new char[d->versionSize]);
                 ::memcpy(device->version.get(), d->version.get(), d->versionSize);
             }
             out_devices[dp] = device;
@@ -1208,7 +1203,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     cl_int status = 0;
 #endif
     
-    unsigned char** binaries = nullptr;
+    std::unique_ptr<std::unique_ptr<unsigned char[]>[]> binaries = nullptr;
     try
     {
         std::vector<size_t> binarySizes(program->assocDevicesNum);
@@ -1222,16 +1217,16 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             abort();
         }
         
-        binaries = new unsigned char*[program->assocDevicesNum];
-        std::fill(binaries, binaries + program->assocDevicesNum, nullptr);
+        binaries.reset(new std::unique_ptr<unsigned char[]>[program->assocDevicesNum]);
         
         for (cl_uint i = 0; i < program->assocDevicesNum; i++)
             if (binarySizes[i] != 0) // if available
-                binaries[i] = new unsigned char[binarySizes[i]];
+                binaries[i].reset(new unsigned char[binarySizes[i]]);
         
         status = program->amdOclProgram->dispatch->clGetProgramInfo(
                 program->amdOclProgram, CL_PROGRAM_BINARIES,
-                sizeof(char*)*program->assocDevicesNum, binaries, nullptr);
+                sizeof(char*)*program->assocDevicesNum,
+                (unsigned char**)binaries.get(), nullptr);
         if (status != CL_SUCCESS)
         {
             std::cerr << "Can't get program binaries!" << std::endl;
@@ -1244,7 +1239,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 continue; // skip if not built for this device
             
             std::unique_ptr<AmdMainBinaryBase> amdBin(
-                createAmdBinaryFromCode(binarySizes[i], binaries[i],
+                createAmdBinaryFromCode(binarySizes[i], binaries[i].get(),
                              AMDBIN_CREATE_KERNELINFO));
             
             size_t kernelsNum = amdBin->getKernelInfosNum();
@@ -1282,13 +1277,8 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                     program->kernelArgFlagsMap[k-1].first)
                 {
                     if (program->kernelArgFlagsMap[k].second !=
-                        program->kernelArgFlagsMap[k-1].second)
-                    {   /* if not match!!! */
-                        for (cl_uint x = 0; x < program->assocDevicesNum; x++)
-                            delete[] binaries[x];
-                        delete[] binaries;
+                        program->kernelArgFlagsMap[k-1].second) /* if not match!!! */
                         return CL_INVALID_KERNEL_DEFINITION;
-                    }
                     continue;
                 }
                 else // copy to new place
@@ -1297,15 +1287,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
         }
     }
     catch(const std::bad_alloc& ex)
-    {
-        if (binaries != nullptr)
-        {
-            for (cl_uint x = 0; x < program->assocDevicesNum; x++)
-                delete[] binaries[x];
-            delete[] binaries;
-        }
-        return CL_OUT_OF_HOST_MEMORY;
-    }
+    { return CL_OUT_OF_HOST_MEMORY; }
     catch(const std::exception& ex)
     {
         std::cerr << "Fatal error at kernelArgFlagsMap creation: " <<
@@ -1313,12 +1295,6 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
         abort();
     }
     
-    if (binaries != nullptr)
-    {
-        for (cl_uint x = 0; x < program->assocDevicesNum; x++)
-            delete[] binaries[x];
-        delete[] binaries;
-    }
     program->kernelArgFlagsInitialized = true;
     return CL_SUCCESS;
 }

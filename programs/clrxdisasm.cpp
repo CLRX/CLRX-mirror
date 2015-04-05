@@ -106,13 +106,12 @@ try
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
                 try
-                { base = std::unique_ptr<AmdMainBinaryBase>(
-                        createAmdBinaryFromCode(binaryData.size(),
+                { base.reset(createAmdBinaryFromCode(binaryData.size(),
                             binaryData.data(), binFlags)); }
                 catch(const Exception& ex)
                 {   // check whether is Gallium
-                    galliumBin = std::unique_ptr<GalliumBinary>(
-                            new GalliumBinary(binaryData.size(), binaryData.data(), 0));
+                    galliumBin.reset(new GalliumBinary(binaryData.size(),
+                           binaryData.data(), 0));
                 }
                 if (galliumBin != nullptr)
                 {   // if Gallium

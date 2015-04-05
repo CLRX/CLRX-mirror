@@ -1456,14 +1456,14 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     if (aPtr != nullptr)
     {
         aPtr->resize(binarySize);
-        outStreamHolder = std::unique_ptr<std::ostream>(
+        outStreamHolder.reset(
             new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data())));
         os = outStreamHolder.get();
     }
     else if (vPtr != nullptr)
     {
         vPtr->resize(binarySize);
-        outStreamHolder = std::unique_ptr<std::ostream>(new VectorOStream(*vPtr));
+        outStreamHolder.reset(new VectorOStream(*vPtr));
         os = outStreamHolder.get();
     }
     else // from argument

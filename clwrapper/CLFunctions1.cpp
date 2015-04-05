@@ -1630,7 +1630,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 if (kernelName == nullptr ||
                     (kernelName != nullptr && kernelNameSize > maxKernelNameSize))
                 {
-                    kernelName = std::unique_ptr<char[]>(new char[kernelNameSize]);
+                    kernelName.reset(new char[kernelNameSize]);
                     maxKernelNameSize = kernelNameSize;
                 }
                 

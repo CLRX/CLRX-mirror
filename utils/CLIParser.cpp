@@ -81,7 +81,7 @@ CLIParser::CLIParser(const char* programName, const CLIOption* options,
     this->argc = argc;
     this->argv = argv;
     
-    shortNameMap = std::unique_ptr<cxuint[]>(new cxuint[256]);
+    shortNameMap.reset(new cxuint[256]);
     std::fill(shortNameMap.get(), shortNameMap.get()+256, UINT_MAX); // fill as unused
     
     cxuint longNamesNum = 0;

@@ -180,7 +180,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
     cl_uint devicesNum;
     CLRXDevice* devicesArray;
     CLRXDevice** devicePtrs;
-    CLRXExtensionEntry* extEntries;
+    std::unique_ptr<CLRXExtensionEntry[]> extEntries;
     uint32_t openCLVersionNum; /* major - upper half, minor - lower half */
     cl_int deviceInitStatus;
     
@@ -193,14 +193,12 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
         devicePtrs = nullptr;
         deviceInitStatus = CL_SUCCESS;
         openCLVersionNum = 0;
-        extEntries = nullptr;
     }
     
     ~CLRXPlatform()
     { 
         delete[] devicesArray;
         delete[] devicePtrs;
-        delete[] extEntries;
         delete dispatch; // allocated in CLRXPlatform
     }
 };
