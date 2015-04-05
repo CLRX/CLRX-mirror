@@ -732,27 +732,23 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             return;
         }
         // init device pointers
-        platform->devicePtrs = new CLRXDevice*[platform->devicesNum];
+        platform->devicePtrs.reset(new CLRXDevice*[platform->devicesNum]);
         for (cl_uint i = 0; i < platform->devicesNum; i++)
             platform->devicePtrs[i] = platform->devicesArray + i;
     }
     catch(const std::bad_alloc& ex)
     {
         delete[] platform->devicesArray;
-        delete[] platform->devicePtrs;
         platform->devicesNum = 0;
         platform->devicesArray = nullptr;
-        platform->devicePtrs = nullptr;
         platform->deviceInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
     }
     catch(...)
     {
         delete[] platform->devicesArray;
-        delete[] platform->devicePtrs;
         platform->devicesNum = 0;
         platform->devicesArray = nullptr;
-        platform->devicePtrs = nullptr;
         throw;
     }
 }
@@ -833,7 +829,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
         return status;
 
     translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-           (const CLRXDevice**)(platform->devicePtrs), amdDevicesNum,
+           (const CLRXDevice**)(platform->devicePtrs.get()), amdDevicesNum,
            amdDevices.get());
     // now is ours devices
     c->devicesNum = amdDevicesNum;

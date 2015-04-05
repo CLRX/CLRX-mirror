@@ -528,11 +528,11 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
     void* output = nullptr;
     
-    CLRXEvent* outEvent = nullptr;
+    std::unique_ptr<CLRXEvent> outEvent;
     if (event != nullptr)
         try // allocate our event object
         {
-            outEvent = new CLRXEvent;
+            outEvent.reset(new CLRXEvent);
             outEvent->dispatch = q->dispatch;
             outEvent->commandQueue = q;
             outEvent->context = q->context;
@@ -555,7 +555,6 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                 {
                     if (errcode_ret != nullptr)
                         *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
-                    delete outEvent;
                     return nullptr;
                 }
                 amdWaitList[i] =
@@ -577,7 +576,6 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
                     {
                         if (errcode_ret != nullptr)
                             *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
-                        delete outEvent;
                         return nullptr;
                     }
                     amdWaitList[i] =
@@ -593,7 +591,6 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
             { 
                 if (errcode_ret != nullptr)
                     *errcode_ret = CL_OUT_OF_HOST_MEMORY;
-                delete outEvent;
                 return nullptr;
             }
     }
@@ -605,12 +602,10 @@ clrxclEnqueueMapBuffer(cl_command_queue command_queue,
     if (amdEvent != nullptr)
     {   // if amd event has been set
         outEvent->amdOclEvent = amdEvent;
-        *event = outEvent;
+        *event = outEvent.release();
         clrxRetainOnlyCLRXContext(q->context);
         clrxRetainOnlyCLRXCommandQueue(q);
     }
-    else // free outEvent
-        delete outEvent;
     return output;
 }
 
@@ -656,11 +651,11 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
     cl_event* amdEventPtr = (event != nullptr) ? &amdEvent : nullptr;
     void* output = nullptr;
     
-    CLRXEvent* outEvent = nullptr;
+    std::unique_ptr<CLRXEvent> outEvent;
     if (event != nullptr)
         try // allocate our event object
         {
-            outEvent = new CLRXEvent;
+            outEvent.reset(new CLRXEvent);
             outEvent->dispatch = q->dispatch;
             outEvent->commandQueue = q;
             outEvent->context = q->context;
@@ -683,7 +678,6 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
                 {
                     if (errcode_ret != nullptr)
                         *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
-                    delete outEvent;
                     return nullptr;
                 }
                 amdWaitList[i] =
@@ -705,7 +699,6 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
                     {
                         if (errcode_ret != nullptr)
                             *errcode_ret = CL_INVALID_EVENT_WAIT_LIST;
-                        delete outEvent;
                         return nullptr;
                     }
                     amdWaitList[i] =
@@ -721,7 +714,6 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
             { 
                 if (errcode_ret != nullptr)
                     *errcode_ret = CL_OUT_OF_HOST_MEMORY;
-                delete outEvent;
                 return nullptr;
             }
     }
@@ -734,12 +726,10 @@ clrxclEnqueueMapImage(cl_command_queue  command_queue,
     if (amdEvent != nullptr)
     {   // if amd event has been set
         outEvent->amdOclEvent = amdEvent;
-        *event = outEvent;
+        *event = outEvent.release();
         clrxRetainOnlyCLRXContext(q->context);
         clrxRetainOnlyCLRXCommandQueue(q);
     }
-    else // free outEvent
-        delete outEvent;
     return output;
 }
 
@@ -1325,7 +1315,7 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
             (param_name == CL_CURRENT_DEVICE_FOR_GL_CONTEXT_KHR ||
             param_name == CL_DEVICES_FOR_GL_CONTEXT_KHR))
             translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-                   (const CLRXDevice**)(platform->devicePtrs),
+                   (const CLRXDevice**)(platform->devicePtrs.get()),
                    myParamValueSize/sizeof(cl_device_id), (cl_device_id*)param_value);
         
         if (param_value_size_ret != nullptr)

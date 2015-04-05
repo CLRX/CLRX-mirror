@@ -231,7 +231,7 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     
     if (devices != nullptr)
         translateAMDDevicesIntoCLRXDevices(p->devicesNum,
-                const_cast<const CLRXDevice**>(p->devicePtrs),
+                const_cast<const CLRXDevice**>(p->devicePtrs.get()),
                 std::min(myNumDevices, num_entries), devices);
     
     if (num_devices != nullptr)
@@ -422,15 +422,15 @@ clrxclCreateContext(const cl_context_properties * properties,
     
     cl_int error = CL_SUCCESS;
     /* create own context */
-    CLRXContext* outContext = nullptr;
+    std::unique_ptr<CLRXContext> outContext;
     try
     {
-        outContext = new CLRXContext;
+        outContext.reset(new CLRXContext);
         outContext->dispatch = platform->dispatch;
         outContext->amdOclContext = amdContext;
         outContext->openCLVersionNum = platform->openCLVersionNum;
         
-        error = clrxSetContextDevices(outContext, num_devices, devices);
+        error = clrxSetContextDevices(outContext.get(), num_devices, devices);
         if (error == CL_SUCCESS)
         {
             if (properties != nullptr)
@@ -441,9 +441,7 @@ clrxclCreateContext(const cl_context_properties * properties,
     { error = CL_OUT_OF_HOST_MEMORY; }
     
     if (error != CL_SUCCESS)
-    {
-        delete outContext; // and deletes devices and properties
-        // release context
+    {   // release context
         if (d->amdOclDevice->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
         {
             std::cerr << "Fatal Error at handling error at context creation!" << std::endl;
@@ -460,7 +458,7 @@ clrxclCreateContext(const cl_context_properties * properties,
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
         clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
     
-    return outContext;
+    return outContext.release();
 }
 
 CL_API_ENTRY cl_context CL_API_CALL
@@ -534,11 +532,11 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     }
     
     /* create own context */
-    CLRXContext* outContext = nullptr;
+    std::unique_ptr<CLRXContext> outContext;
     cl_int error = CL_SUCCESS;
     try
     { 
-        outContext = new CLRXContext;
+        outContext.reset(new CLRXContext);
         outContext->dispatch = platform->dispatch;
         outContext->amdOclContext = amdContext;
         outContext->openCLVersionNum = platform->openCLVersionNum;
@@ -558,7 +556,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
         error = platform->deviceInitStatus;
         
         if (error == CL_SUCCESS)
-            error = clrxSetContextDevices(outContext, platform);
+            error = clrxSetContextDevices(outContext.get(), platform);
         if (error == CL_SUCCESS)
         {
             if (properties != nullptr)
@@ -569,9 +567,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     { error = CL_OUT_OF_HOST_MEMORY; }
     
     if (error != CL_SUCCESS)
-    {
-        delete outContext; // and deletes devices and properties
-        // release context
+    {   // release context
         if (platform->amdOclPlatform->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
         {
             std::cerr << "Fatal Error at handling error at context creation!" << std::endl;
@@ -588,7 +584,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     for (cl_uint i = 0; i < outContext->devicesNum; i++)
         clrxRetainOnlyCLRXDevice(static_cast<CLRXDevice*>(outContext->devices[i]));
     
-    return outContext;
+    return outContext.release();
 }
 
 CL_API_ENTRY cl_int CL_API_CALL
