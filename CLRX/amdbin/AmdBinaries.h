@@ -447,8 +447,6 @@ protected:
     template<typename Types>
     void initMainGPUBinary(typename Types::ElfBinary& binary);
 public:
-    ~AmdMainGPUBinaryBase();
-    
     /// get number of inner binaries
     size_t getInnerBinariesNum() const
     { return innerBinaries.size(); }

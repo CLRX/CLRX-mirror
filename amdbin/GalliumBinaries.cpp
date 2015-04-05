@@ -282,9 +282,6 @@ GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     }
 }
 
-GalliumBinary::~GalliumBinary()
-{ }
-
 uint32_t GalliumBinary::getKernelIndex(const char* name) const
 {
     const GalliumKernel v = { name };

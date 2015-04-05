@@ -1070,9 +1070,6 @@ AmdMainGPUBinaryBase::AmdMainGPUBinaryBase(AmdMainType type)
         : AmdMainBinaryBase(type), metadatas(nullptr), globalDataSize(0), globalData(0)
 { }
 
-AmdMainGPUBinaryBase::~AmdMainGPUBinaryBase()
-{ }
-
 template<typename Types>
 void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
 {

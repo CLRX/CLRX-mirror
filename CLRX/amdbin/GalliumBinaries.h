@@ -203,7 +203,7 @@ private:
     GalliumElfBinary elfBinary;
 public:
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
-    ~GalliumBinary();
+    ~GalliumBinary() = default;
     
     /// get creation flags
     cxuint getCreationFlags()
