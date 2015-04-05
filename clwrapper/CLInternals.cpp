@@ -828,12 +828,17 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
     if (status != CL_SUCCESS)
         return status;
 
-    translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
-           (const CLRXDevice**)(platform->devicePtrs.get()), amdDevicesNum,
-           amdDevices.get());
-    // now is ours devices
-    c->devicesNum = amdDevicesNum;
-    c->devices.reset(reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+    try
+    {
+        translateAMDDevicesIntoCLRXDevices(platform->devicesNum,
+               (const CLRXDevice**)(platform->devicePtrs.get()), amdDevicesNum,
+               amdDevices.get());
+        // now is ours devices
+        c->devicesNum = amdDevicesNum;
+        c->devices.reset(reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+    }
+    catch(const std::bad_alloc& ex)
+    { return CL_OUT_OF_HOST_MEMORY; }
     return CL_SUCCESS;
 }
 
@@ -855,12 +860,17 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
         return status;
     if (status != CL_SUCCESS)
         return status;
-
-    translateAMDDevicesIntoCLRXDevices(inDevicesNum, (const CLRXDevice**)inDevices,
-                   amdDevicesNum, amdDevices.get());
-    // now is ours devices
-    c->devicesNum = amdDevicesNum;
-    c->devices.reset(reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+    
+    try
+    {
+        translateAMDDevicesIntoCLRXDevices(inDevicesNum, (const CLRXDevice**)inDevices,
+                       amdDevicesNum, amdDevices.get());
+        // now is ours devices
+        c->devicesNum = amdDevicesNum;
+        c->devices.reset(reinterpret_cast<CLRXDevice**>(amdDevices.release()));
+    }
+    catch(const std::bad_alloc& ex)
+    { return CL_OUT_OF_HOST_MEMORY; }
     return CL_SUCCESS;
 }
 
