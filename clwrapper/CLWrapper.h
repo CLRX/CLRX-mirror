@@ -151,25 +151,17 @@ struct CLRX_INTERNAL CLRXDevice: _cl_device_id, CLRX::NonCopyableAndNonMovable
     cl_device_id amdOclDevice;
     CLRXPlatform* platform;
     CLRXDevice* parent;
-    const char* extensions;
+    std::unique_ptr<char[]> extensions;
     size_t extensionsSize;
-    const char* version;
+    std::unique_ptr<char[]> version;
     size_t versionSize;
     
     CLRXDevice() : refCount(1)
     {
         platform = nullptr;
-        extensions = nullptr;
         extensionsSize = 0;
-        version = nullptr;
         versionSize = 0;
         parent = nullptr;
-    }
-    
-    ~CLRXDevice()
-    {
-        delete[] version;
-        delete[] extensions;
     }
 };
 
@@ -180,9 +172,9 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
 {
     cl_platform_id amdOclPlatform;
     std::once_flag onceFlag; // for synchronization
-    const char* extensions;
+    std::unique_ptr<char[]> extensions;
     size_t extensionsSize;
-    const char* version;
+    std::unique_ptr<char[]> version;
     size_t versionSize;
     
     cl_uint devicesNum;
@@ -194,9 +186,7 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
     
     CLRXPlatform()
     {
-        extensions = nullptr;
         extensionsSize = 0;
-        version = nullptr;
         versionSize = 0;
         devicesNum = 0;
         devicesArray = nullptr;
@@ -208,8 +198,6 @@ struct CLRX_INTERNAL CLRXPlatform: _cl_platform_id, CLRX::NonCopyableAndNonMovab
     
     ~CLRXPlatform()
     { 
-        delete[] extensions;
-        delete[] version;
         delete[] devicesArray;
         delete[] devicePtrs;
         delete[] extEntries;

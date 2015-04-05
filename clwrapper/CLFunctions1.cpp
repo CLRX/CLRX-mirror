@@ -160,13 +160,13 @@ clrxclGetPlatformInfo(cl_platform_id   platform,
             {
                 if (param_value_size < p->extensionsSize)
                     return CL_INVALID_VALUE;
-                ::memcpy(param_value, p->extensions, p->extensionsSize);
+                ::memcpy(param_value, p->extensions.get(), p->extensionsSize);
             }
             else // CL_PLATFORM_VERSION
             {
                 if (param_value_size < p->versionSize)
                     return CL_INVALID_VALUE;
-                ::memcpy(param_value, p->version, p->versionSize);
+                ::memcpy(param_value, p->version.get(), p->versionSize);
             }
         }
         
@@ -263,7 +263,7 @@ clrxclGetDeviceInfo(cl_device_id    device,
                 {
                     if (param_value_size < d->extensionsSize)
                         return CL_INVALID_VALUE;
-                    ::memcpy(param_value, d->extensions, d->extensionsSize);
+                    ::memcpy(param_value, d->extensions.get(), d->extensionsSize);
                 }
                 if (param_value_size_ret != nullptr)
                     *param_value_size_ret = d->extensionsSize;
@@ -280,7 +280,7 @@ clrxclGetDeviceInfo(cl_device_id    device,
                 {
                     if (param_value_size < d->versionSize)
                         return CL_INVALID_VALUE;
-                    ::memcpy(param_value, d->version, d->versionSize);
+                    ::memcpy(param_value, d->version.get(), d->versionSize);
                 }
                 if (param_value_size_ret != nullptr)
                     *param_value_size_ret = d->versionSize;

@@ -373,47 +373,42 @@ void clrxWrapperInitialize()
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                             CL_PLATFORM_EXTENSIONS, 0, nullptr, &extsSize) != CL_SUCCESS)
                     continue;
-                char* extsBuffer = new char[extsSize + 19];
+                std::unique_ptr<char[]> extsBuffer(new char[extsSize + 19]);
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
-                        CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer,
+                        CL_PLATFORM_EXTENSIONS, extsSize, extsBuffer.get(),
                         nullptr) != CL_SUCCESS)
-                {
-                    delete[] extsBuffer;
                     continue;
-                }
                 if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
-                    ::strcat(extsBuffer, " cl_radeon_extender");
+                    ::strcat(extsBuffer.get(), " cl_radeon_extender");
                 else
-                    ::strcat(extsBuffer, "cl_radeon_extender");
-                clrxPlatform.extensions = extsBuffer;
-                clrxPlatform.extensionsSize = ::strlen(extsBuffer)+1;
+                    ::strcat(extsBuffer.get(), "cl_radeon_extender");
+                clrxPlatform.extensionsSize = ::strlen(extsBuffer.get())+1;
+                clrxPlatform.extensions = std::move(extsBuffer);
                 
                 // add to version " (clrx 0.0)"
                 size_t versionSize;
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                             CL_PLATFORM_VERSION, 0, nullptr, &versionSize) != CL_SUCCESS)
                     continue;
-                char* versionBuffer = new char[versionSize+20];
+                std::unique_ptr<char[]> versionBuffer(new char[versionSize+20]);
                 if (amdOclPlatform->dispatch->clGetPlatformInfo(amdOclPlatform,
                         CL_PLATFORM_VERSION, versionSize,
-                        versionBuffer, nullptr) != CL_SUCCESS)
-                {
-                    delete[] versionBuffer;
+                        versionBuffer.get(), nullptr) != CL_SUCCESS)
                     continue;
-                }
-                ::strcat(versionBuffer, " (clrx 0.0)");
-                clrxPlatform.version = versionBuffer;
-                clrxPlatform.versionSize = ::strlen(versionBuffer)+1;
+                ::strcat(versionBuffer.get(), " (clrx 0.0)");
+                clrxPlatform.versionSize = ::strlen(versionBuffer.get())+1;
+                clrxPlatform.version = std::move(versionBuffer);
                 
                 /* parse OpenCL version */
                 cxuint openCLmajor = 0;
                 cxuint openCLminor = 0;
                 const char* verEnd = nullptr;
-                if (::strncmp(versionBuffer, "OpenCL ", 7) == 0)
+                if (::strncmp(clrxPlatform.version.get(), "OpenCL ", 7) == 0)
                 {
                     try
                     {
-                        openCLmajor = CLRX::cstrtoui(versionBuffer + 7, nullptr, verEnd);
+                        openCLmajor = CLRX::cstrtoui(
+                                clrxPlatform.version.get() + 7, nullptr, verEnd);
                         if (verEnd != nullptr && *verEnd == '.')
                         {
                             const char* verEnd2 = nullptr;
@@ -487,7 +482,7 @@ void clrxWrapperInitialize()
         amdOclNumPlatforms = platformCount;
     }
     catch(const std::bad_alloc& ex)
-    { 
+    {
         clrxPlatforms = nullptr;
         amdOclLibrary = nullptr;
         amdOclNumPlatforms = 0;
@@ -495,7 +490,7 @@ void clrxWrapperInitialize()
         return;
     }
     catch(...)
-    { 
+    {
         clrxPlatforms = nullptr;
         amdOclLibrary = nullptr;
         amdOclNumPlatforms = 0;
@@ -570,7 +565,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         else // status == CL_DEVICE_NOT_FOUND
             customDevicesNum = 0;
         
-        if (::strstr(platform->extensions, "cl_amd_offline_devices") != nullptr)
+        if (::strstr(platform->extensions.get(), "cl_amd_offline_devices") != nullptr)
         {   // if amd offline devices is available
             cl_context_properties clctxprops[5];
             clctxprops[0] = CL_CONTEXT_PLATFORM;
@@ -702,20 +697,17 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             
             if (status != CL_SUCCESS)
                 break;
-            char* extsBuffer = new char[extsSize+19];
+            std::unique_ptr<char[]> extsBuffer(new char[extsSize+19]);
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
-                  CL_DEVICE_EXTENSIONS, extsSize, extsBuffer, nullptr);
+                  CL_DEVICE_EXTENSIONS, extsSize, extsBuffer.get(), nullptr);
             if (status != CL_SUCCESS)
-            {
-                delete[] extsBuffer;
                 break;
-            }
             if (extsSize > 2 && extsBuffer[extsSize-2] != ' ')
-                strcat(extsBuffer, " cl_radeon_extender");
+                strcat(extsBuffer.get(), " cl_radeon_extender");
             else
-                strcat(extsBuffer, "cl_radeon_extender");
-            clrxDevice.extensionsSize = ::strlen(extsBuffer)+1;
-            clrxDevice.extensions = extsBuffer;
+                strcat(extsBuffer.get(), "cl_radeon_extender");
+            clrxDevice.extensionsSize = ::strlen(extsBuffer.get())+1;
+            clrxDevice.extensions = std::move(extsBuffer);
             
             // add to version " (clrx 0.0)"
             size_t versionSize;
@@ -723,17 +715,14 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                       CL_DEVICE_VERSION, 0, nullptr, &versionSize);
             if (status != CL_SUCCESS)
                 break;
-            char* versionBuffer = new char[versionSize+20];
+            std::unique_ptr<char[]> versionBuffer(new char[versionSize+20]);
             status = amdDevices[i]->dispatch->clGetDeviceInfo(amdDevices[i],
-                      CL_DEVICE_VERSION, versionSize, versionBuffer, nullptr);
+                      CL_DEVICE_VERSION, versionSize, versionBuffer.get(), nullptr);
             if (status != CL_SUCCESS)
-            {
-                delete[] versionBuffer;
                 break;
-            }
-            ::strcat(versionBuffer, " (clrx 0.0)");
-            clrxDevice.version = versionBuffer;
-            clrxDevice.versionSize = ::strlen(versionBuffer)+1;
+            ::strcat(versionBuffer.get(), " (clrx 0.0)");
+            clrxDevice.versionSize = ::strlen(versionBuffer.get())+1;
+            clrxDevice.version = std::move(versionBuffer);
         }
         
         if (status != CL_SUCCESS)
@@ -1124,14 +1113,14 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
             if (d->extensionsSize != 0)
             {
                 device->extensionsSize = d->extensionsSize;
-                device->extensions = new char[d->extensionsSize];
-                ::memcpy((char*)device->extensions, d->extensions, d->extensionsSize);
+                device->extensions = std::unique_ptr<char[]>(new char[d->extensionsSize]);
+                ::memcpy(device->extensions.get(), d->extensions.get(), d->extensionsSize);
             }
             if (d->versionSize != 0)
             {
                 device->versionSize = d->versionSize;
-                device->version = new char[d->versionSize];
-                ::memcpy((char*)device->version, d->version, d->versionSize);
+                device->version = std::unique_ptr<char[]>(new char[d->versionSize]);
+                ::memcpy(device->version.get(), d->version.get(), d->versionSize);
             }
             out_devices[dp] = device;
         }
