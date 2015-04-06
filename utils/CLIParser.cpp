@@ -337,6 +337,8 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             break;
         case CLIArgType::BOOL_ARRAY:
         {
+            if (optEntry.v.bArr != nullptr)
+            { delete[] optEntry.v.bArr; optEntry.v.bArr = nullptr; }
             optEntry.arrSize = 0;
             std::vector<bool> bVec;
             while (*optArg != 0)
@@ -394,42 +396,56 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             break;
         }
         case CLIArgType::UINT_ARRAY:
+            if (optEntry.v.u32Arr != nullptr)
+            { delete[] optEntry.v.u32Arr; optEntry.v.u32Arr = nullptr; }
             try
             { optEntry.v.u32Arr = parseOptArgList<uint32_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::INT_ARRAY:
+            if (optEntry.v.i32Arr != nullptr)
+            { delete[] optEntry.v.i32Arr; optEntry.v.i32Arr = nullptr; }
             try
             { optEntry.v.i32Arr = parseOptArgList<int32_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::UINT64_ARRAY:
+            if (optEntry.v.u64Arr != nullptr)
+            { delete[] optEntry.v.u64Arr; optEntry.v.u64Arr = nullptr; }
             try
             { optEntry.v.u64Arr = parseOptArgList<uint64_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::INT64_ARRAY:
+            if (optEntry.v.i64Arr != nullptr)
+            { delete[] optEntry.v.i64Arr; optEntry.v.i64Arr = nullptr; }
             try
             { optEntry.v.i64Arr = parseOptArgList<int64_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::SIZE_ARRAY:
+            if (optEntry.v.sizeArr != nullptr)
+            { delete[] optEntry.v.sizeArr; optEntry.v.sizeArr = nullptr; }
             try
             { optEntry.v.sizeArr = parseOptArgList<size_t>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::FLOAT_ARRAY:
+            if (optEntry.v.fArr != nullptr)
+            { delete[] optEntry.v.fArr; optEntry.v.fArr = nullptr; }
             try
             { optEntry.v.fArr = parseOptArgList<float>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::DOUBLE_ARRAY:
+            if (optEntry.v.dArr != nullptr)
+            { delete[] optEntry.v.dArr; optEntry.v.dArr = nullptr; }
             try
             { optEntry.v.dArr = parseOptArgList<double>(optArg, optEntry.arrSize); }
             catch(const ParseException& ex)
@@ -438,6 +454,14 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
         case CLIArgType::STRING_ARRAY:
         case CLIArgType::TRIMMED_STRING_ARRAY:
         {
+            if (optEntry.v.sArr != nullptr)
+            {
+                for (size_t k = 0; k < optEntry.arrSize; k++)
+                    delete[] optEntry.v.sArr[k];
+                delete[] optEntry.v.sArr;
+                optEntry.v.sArr = nullptr;
+            }
+            
             optEntry.arrSize = 0;
             std::vector<char*> sVec;
             const bool doTrim = (option.argType == CLIArgType::TRIMMED_STRING_ARRAY);

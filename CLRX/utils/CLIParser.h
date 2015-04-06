@@ -175,7 +175,7 @@ private:
             operator const char**() const { return sArr; }
         } v;
         size_t arrSize;
-        OptionEntry() : isSet(false), isArg(false) { }
+        OptionEntry() : isSet(false), isArg(false) { ::memset(&v, 0, sizeof v); }
     };
     
     const CLIOption* options;
