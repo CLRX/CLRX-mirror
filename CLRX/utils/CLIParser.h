@@ -39,8 +39,8 @@ namespace CLRX
 {
 
 #define CLRX_CLI_AUTOHELP \
-    { "help", '?', CLIArgType::NONE, false, "print help", nullptr }, \
-    { "usage", 0, CLIArgType::NONE, false, "print usage", nullptr },
+    { "help", '?', CLIArgType::NONE, false, false, "print help", nullptr }, \
+    { "usage", 0, CLIArgType::NONE, false, false, "print usage", nullptr },
 
 /*
  * CommandLine Interface
@@ -67,6 +67,10 @@ struct CLIOption
     char shortName;         ///< short name of option (single character)
     CLIArgType argType;     ///< type of argument of option (or none)
     bool argIsOptional;     ///< if true then option argument is optional
+    
+    /// construct argument array from any occurrence of option argument
+    bool arrayFromOccurrences; 
+    
     const char* description;    ///< description of option
     const char* argName;    ///< name of argument of option
 };
@@ -175,7 +179,8 @@ private:
             operator const char**() const { return sArr; }
         } v;
         size_t arrSize;
-        OptionEntry() : isSet(false), isArg(false) { ::memset(&v, 0, sizeof v); }
+        OptionEntry() : isSet(false), isArg(false), arrSize(0)
+        { ::memset(&v, 0, sizeof v); }
     };
     
     const CLIOption* options;

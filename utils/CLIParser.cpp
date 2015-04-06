@@ -111,6 +111,9 @@ CLIParser::CLIParser(const char* programName, const CLIOption* options,
              options[i].argType > CLIArgType::ARRAY_MAX)
             throw CLIException("Illegal option argument type", options[i],
                        options[i].longName==nullptr);
+        if (options[i].arrayFromOccurrences &&
+            options[i].argType <= CLIArgType::SINGLE_MAX)
+            throw CLIException("Array of occurrences flag can be only for arrays");
     }
     optionEntries.resize(i); // resize to number of options
     
@@ -234,6 +237,42 @@ static T parseOptArg(const char* optArg)
     return value;
 }
 
+static bool parseBoolOptArg(const char* optArg)
+{
+    optArg = skipSpaces(optArg);
+    bool value = false;
+    for (const char* v: { "1", "true", "t", "on", "yes", "y"})
+    {
+        const size_t vlen = ::strlen(v);
+        if (::strncasecmp(optArg, v, vlen) == 0)
+        {
+            optArg += vlen;
+            value = true;
+            break;
+        }
+    }
+    if (!value)
+    {
+        bool isFalse = false;
+        for (const char* v: { "0", "false", "f", "off", "no", "n"})
+        {
+            const size_t vlen = ::strlen(v);
+            if (::strncasecmp(optArg, v, vlen) == 0)
+            {
+                optArg += vlen;
+                isFalse = true;
+                break;
+            }
+        }
+        if (!isFalse)
+            throw ParseException("Can't parse bool argument for option");
+    }
+    optArg = skipSpaces(optArg);
+    if (*optArg != 0)
+        throw ParseException("Garbages at end of argument");
+    return value;
+}
+
 void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseShortName)
 {
     const CLIOption& option = options[optionId];
@@ -242,39 +281,10 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
     switch(option.argType)
     {
         case CLIArgType::BOOL:
-            optArg = skipSpaces(optArg);
-            optEntry.v.b = false;
-            for (const char* v: { "1", "true", "t", "on", "yes", "y"})
-            {
-                const size_t vlen = ::strlen(v);
-                if (::strncasecmp(optArg, v, vlen) == 0)
-                {
-                    optArg += vlen;
-                    optEntry.v.b = true;
-                    break;
-                }
-            }
-            if (!optEntry.v.b)
-            {
-                bool isFalse = false;
-                for (const char* v: { "0", "false", "f", "off", "no", "n"})
-                {
-                    const size_t vlen = ::strlen(v);
-                    if (::strncasecmp(optArg, v, vlen) == 0)
-                    {
-                        optArg += vlen;
-                        isFalse = true;
-                        break;
-                    }
-                }
-                if (!isFalse)
-                    throw CLIException("Can't parse bool argument for option",
-                               option, chooseShortName);
-            }
-            optArg = skipSpaces(optArg);
-            if (*optArg != 0)
-                throw CLIException("Garbages at end of argument",
-                               option, chooseShortName);
+            try
+            { optEntry.v.u32 = parseBoolOptArg(optArg); }
+            catch(const ParseException& ex)
+            { throw CLIException(ex.what(), option, chooseShortName); }
             break;
         case CLIArgType::UINT:
             try
@@ -336,196 +346,412 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             optEntry.v.s = optArg;
             break;
         case CLIArgType::BOOL_ARRAY:
-        {
-            if (optEntry.v.bArr != nullptr)
-            { delete[] optEntry.v.bArr; optEntry.v.bArr = nullptr; }
-            optEntry.arrSize = 0;
-            std::vector<bool> bVec;
-            while (*optArg != 0)
+            if (!option.arrayFromOccurrences)
             {
-                optArg = skipSpaces(optArg);
-                if (*optArg == 0) break;
-                
-                const char* oldOptArg = optArg;
-                bool entryVal = false;
-                for (const char* v: { "1", "true", "t", "on", "yes", "y"})
+                if (optEntry.v.bArr != nullptr)
+                optEntry.arrSize = 0;
+                { delete[] optEntry.v.bArr; optEntry.v.bArr = nullptr; }
+                std::vector<bool> bVec;
+                while (*optArg != 0)
                 {
-                    const size_t vlen = ::strlen(v);
-                    if (::strncasecmp(optArg, v, vlen) == 0)
-                    {
-                        optArg += vlen;
-                        entryVal = true;
-                        break;
-                    }
-                }
-                
-                if (!entryVal)
-                {
-                    bool isFalse = false;
-                    for (const char* v: { "0", "false", "f", "off", "no", "n"})
+                    optArg = skipSpaces(optArg);
+                    if (*optArg == 0) break;
+                    
+                    const char* oldOptArg = optArg;
+                    bool entryVal = false;
+                    for (const char* v: { "1", "true", "t", "on", "yes", "y"})
                     {
                         const size_t vlen = ::strlen(v);
                         if (::strncasecmp(optArg, v, vlen) == 0)
                         {
                             optArg += vlen;
-                            isFalse = true;
+                            entryVal = true;
                             break;
                         }
                     }
                     
-                    if (!isFalse)
-                        throw CLIException(
-                            "Can't parse array of boolean argument for option",
-                                   option, chooseShortName);
+                    if (!entryVal)
+                    {
+                        bool isFalse = false;
+                        for (const char* v: { "0", "false", "f", "off", "no", "n"})
+                        {
+                            const size_t vlen = ::strlen(v);
+                            if (::strncasecmp(optArg, v, vlen) == 0)
+                            {
+                                optArg += vlen;
+                                isFalse = true;
+                                break;
+                            }
+                        }
+                        
+                        if (!isFalse)
+                            throw CLIException(
+                                "Can't parse array of boolean argument for option",
+                                       option, chooseShortName);
+                    }
+                    bVec.push_back(entryVal);
+                    
+                    const char* afterVal = optArg;
+                    /* is not single character */
+                    optArg = skipSpaces(optArg);
+                    if (*optArg == ',')
+                        optArg++;
+                    else if (*optArg != 0 && oldOptArg+1 != afterVal)
+                        throw CLIException("Garbages at end of argument",
+                               option, chooseShortName);
                 }
-                bVec.push_back(entryVal);
-                
-                const char* afterVal = optArg;
-                /* is not single character */
-                optArg = skipSpaces(optArg);
-                if (*optArg == ',')
-                    optArg++;
-                else if (*optArg != 0 && oldOptArg+1 != afterVal)
-                    throw CLIException("Garbages at end of argument",
-                           option, chooseShortName);
+                // copy to option entry
+                optEntry.v.bArr = new bool[bVec.size()];
+                optEntry.arrSize = bVec.size();
+                std::copy(bVec.begin(), bVec.end(), optEntry.v.bArr);
             }
-            // copy to option entry
-            optEntry.v.bArr = new bool[bVec.size()];
-            optEntry.arrSize = bVec.size();
-            std::copy(bVec.begin(), bVec.end(), optEntry.v.bArr);
+            else
+            {
+                bool value;
+                try
+                { value = parseBoolOptArg(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const bool* oldArr = optEntry.v.bArr;
+                    optEntry.v.bArr = new bool[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.bArr);
+                    delete[] oldArr;
+                }
+                optEntry.v.bArr[optEntry.arrSize++] = value;
+            }
             break;
-        }
         case CLIArgType::UINT_ARRAY:
-            if (optEntry.v.u32Arr != nullptr)
-            { delete[] optEntry.v.u32Arr; optEntry.v.u32Arr = nullptr; }
-            try
-            { optEntry.v.u32Arr = parseOptArgList<uint32_t>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {   // parse array from single argument
+                if (optEntry.v.u32Arr != nullptr)
+                { delete[] optEntry.v.u32Arr; optEntry.v.u32Arr = nullptr; }
+                try
+                {
+                    optEntry.v.u32Arr = parseOptArgList<uint32_t>(
+                            optArg, optEntry.arrSize);
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                uint32_t value;
+                try
+                { value = parseOptArg<uint32_t>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const uint32_t* oldArr = optEntry.v.u32Arr;
+                    optEntry.v.u32Arr = new uint32_t[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.u32Arr);
+                    delete[] oldArr;
+                }
+                optEntry.v.u32Arr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::INT_ARRAY:
-            if (optEntry.v.i32Arr != nullptr)
-            { delete[] optEntry.v.i32Arr; optEntry.v.i32Arr = nullptr; }
-            try
-            { optEntry.v.i32Arr = parseOptArgList<int32_t>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {
+                if (optEntry.v.i32Arr != nullptr)
+                { delete[] optEntry.v.i32Arr; optEntry.v.i32Arr = nullptr; }
+                try
+                {
+                    optEntry.v.i32Arr = parseOptArgList<int32_t>(
+                            optArg, optEntry.arrSize);
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                int32_t value;
+                try
+                { value = parseOptArg<int32_t>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const int32_t* oldArr = optEntry.v.i32Arr;
+                    optEntry.v.i32Arr = new int32_t[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.i32Arr);
+                    delete[] oldArr;
+                }
+                optEntry.v.i32Arr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::UINT64_ARRAY:
-            if (optEntry.v.u64Arr != nullptr)
-            { delete[] optEntry.v.u64Arr; optEntry.v.u64Arr = nullptr; }
-            try
-            { optEntry.v.u64Arr = parseOptArgList<uint64_t>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {
+                if (optEntry.v.u64Arr != nullptr)
+                { delete[] optEntry.v.u64Arr; optEntry.v.u64Arr = nullptr; }
+                try
+                {
+                    optEntry.v.u64Arr = parseOptArgList<uint64_t>(
+                                optArg, optEntry.arrSize);
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                uint64_t value;
+                try
+                { value = parseOptArg<uint64_t>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const uint64_t* oldArr = optEntry.v.u64Arr;
+                    optEntry.v.u64Arr = new uint64_t[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.u64Arr);
+                    delete[] oldArr;
+                }
+                optEntry.v.u64Arr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::INT64_ARRAY:
-            if (optEntry.v.i64Arr != nullptr)
-            { delete[] optEntry.v.i64Arr; optEntry.v.i64Arr = nullptr; }
-            try
-            { optEntry.v.i64Arr = parseOptArgList<int64_t>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {
+                if (optEntry.v.i64Arr != nullptr)
+                { delete[] optEntry.v.i64Arr; optEntry.v.i64Arr = nullptr; }
+                try
+                {
+                    optEntry.v.i64Arr = parseOptArgList<int64_t>(
+                                optArg, optEntry.arrSize);
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                int64_t value;
+                try
+                { value = parseOptArg<int64_t>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const int64_t* oldArr = optEntry.v.i64Arr;
+                    optEntry.v.i64Arr = new int64_t[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.i64Arr);
+                    delete[] oldArr;
+                }
+                optEntry.v.i64Arr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::SIZE_ARRAY:
-            if (optEntry.v.sizeArr != nullptr)
-            { delete[] optEntry.v.sizeArr; optEntry.v.sizeArr = nullptr; }
-            try
-            { optEntry.v.sizeArr = parseOptArgList<size_t>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {
+                if (optEntry.v.sizeArr != nullptr)
+                { delete[] optEntry.v.sizeArr; optEntry.v.sizeArr = nullptr; }
+                try
+                {
+                    optEntry.v.sizeArr = parseOptArgList<size_t>(
+                            optArg, optEntry.arrSize);
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                size_t value;
+                try
+                { value = parseOptArg<size_t>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const size_t* oldArr = optEntry.v.sizeArr;
+                    optEntry.v.sizeArr = new size_t[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.sizeArr);
+                    delete[] oldArr;
+                }
+                optEntry.v.sizeArr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::FLOAT_ARRAY:
-            if (optEntry.v.fArr != nullptr)
-            { delete[] optEntry.v.fArr; optEntry.v.fArr = nullptr; }
-            try
-            { optEntry.v.fArr = parseOptArgList<float>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {
+                if (optEntry.v.fArr != nullptr)
+                { delete[] optEntry.v.fArr; optEntry.v.fArr = nullptr; }
+                try
+                {
+                    optEntry.v.fArr = parseOptArgList<float>(
+                            optArg, optEntry.arrSize);
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                float value;
+                try
+                { value = parseOptArg<float>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const float* oldArr = optEntry.v.fArr;
+                    optEntry.v.fArr = new float[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.fArr);
+                    delete[] oldArr;
+                }
+                optEntry.v.fArr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::DOUBLE_ARRAY:
-            if (optEntry.v.dArr != nullptr)
-            { delete[] optEntry.v.dArr; optEntry.v.dArr = nullptr; }
-            try
-            { optEntry.v.dArr = parseOptArgList<double>(optArg, optEntry.arrSize); }
-            catch(const ParseException& ex)
-            { throw CLIException(ex.what(), option, chooseShortName); }
+            if (!option.arrayFromOccurrences)
+            {
+                if (optEntry.v.dArr != nullptr)
+                { delete[] optEntry.v.dArr; optEntry.v.dArr = nullptr; }
+                try
+                { optEntry.v.dArr = parseOptArgList<double>(optArg, optEntry.arrSize); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+            }
+            else
+            {
+                double value;
+                try
+                { value = parseOptArg<double>(optArg); }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const double* oldArr = optEntry.v.dArr;
+                    optEntry.v.dArr = new double[optEntry.arrSize+8];
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.dArr);
+                    delete[] oldArr;
+                }
+                optEntry.v.dArr[optEntry.arrSize++] = value;
+            }
             break;
         case CLIArgType::STRING_ARRAY:
         case CLIArgType::TRIMMED_STRING_ARRAY:
-        {
-            if (optEntry.v.sArr != nullptr)
+            if (!option.arrayFromOccurrences)
             {
-                for (size_t k = 0; k < optEntry.arrSize; k++)
-                    delete[] optEntry.v.sArr[k];
-                delete[] optEntry.v.sArr;
-                optEntry.v.sArr = nullptr;
-            }
-            
-            optEntry.arrSize = 0;
-            std::vector<char*> sVec;
-            const bool doTrim = (option.argType == CLIArgType::TRIMMED_STRING_ARRAY);
-            
-            try
-            {
-            while (true)
-            {
-                if (doTrim)
-                    optArg = skipSpaces(optArg);
-                
-                size_t elemLength = 0;
-                const char* elemEnd;
-                for (elemEnd = optArg, elemLength = 0;
-                     *elemEnd != ',' && *elemEnd != 0; ++elemEnd, ++elemLength)
-                     if (*elemEnd == '\\')
-                     {
-                         if (elemEnd[1] == ',' || elemEnd[1] == '\\')
-                             elemEnd++; // escape of ','
-                         else // bad escape
-                             throw CLIException("Incorrect escape of string",
-                                        option, chooseShortName);
-                     }
-                if (doTrim)
+                if (optEntry.v.sArr != nullptr)
                 {
-                    const char* trimmedEnd = skipSpacesAtEnd(optArg, elemEnd-optArg);
-                    elemLength += trimmedEnd-elemEnd; // subtract length to trimmed
+                    for (size_t k = 0; k < optEntry.arrSize; k++)
+                        delete[] optEntry.v.sArr[k];
+                    delete[] optEntry.v.sArr;
+                    optEntry.v.sArr = nullptr;
                 }
                 
-                char* strElem = new char[elemLength+1];
-                // copy
-                for (size_t l = 0; l < elemLength; ++optArg, ++l)
-                    if (*optArg == '\\' && (optArg[1] == ',' || optArg[1] == '\\'))
+                optEntry.arrSize = 0;
+                std::vector<char*> sVec;
+                const bool doTrim = (option.argType == CLIArgType::TRIMMED_STRING_ARRAY);
+                
+                try
+                {
+                while (true)
+                {
+                    if (doTrim)
+                        optArg = skipSpaces(optArg);
+                    
+                    size_t elemLength = 0;
+                    const char* elemEnd;
+                    for (elemEnd = optArg, elemLength = 0;
+                         *elemEnd != ',' && *elemEnd != 0; ++elemEnd, ++elemLength)
+                         if (*elemEnd == '\\')
+                         {
+                             if (elemEnd[1] == ',' || elemEnd[1] == '\\')
+                                 elemEnd++; // escape of ','
+                             else // bad escape
+                                 throw CLIException("Incorrect escape of string",
+                                            option, chooseShortName);
+                         }
+                    if (doTrim)
                     {
-                        ++optArg;
-                        strElem[l] = *optArg;
+                        const char* trimmedEnd = skipSpacesAtEnd(optArg, elemEnd-optArg);
+                        elemLength += trimmedEnd-elemEnd; // subtract length to trimmed
                     }
+                    
+                    char* strElem = new char[elemLength+1];
+                    // copy
+                    for (size_t l = 0; l < elemLength; ++optArg, ++l)
+                        if (*optArg == '\\' && (optArg[1] == ',' || optArg[1] == '\\'))
+                        {
+                            ++optArg;
+                            strElem[l] = *optArg;
+                        }
+                        else
+                            strElem[l] = *optArg;
+                    
+                    optArg = elemEnd;
+                    strElem[elemLength] = 0;
+                    sVec.push_back(strElem);
+                    
+                    if (*optArg == ',')
+                        optArg++;
+                    else if (*optArg != 0)
+                        throw CLIException("Garbages at end of argument", option,
+                                   chooseShortName);
                     else
-                        strElem[l] = *optArg;
-                
-                optArg = elemEnd;
-                strElem[elemLength] = 0;
-                sVec.push_back(strElem);
-                
-                if (*optArg == ',')
-                    optArg++;
-                else if (*optArg != 0)
-                    throw CLIException("Garbages at end of argument", option,
-                               chooseShortName);
-                else
-                    break;
+                        break;
+                }
+                optEntry.v.sArr = new const char*[sVec.size()];
+                optEntry.arrSize = sVec.size();
+                std::copy(sVec.begin(), sVec.end(), optEntry.v.sArr);
+                }
+                catch(...)
+                {   // delete previously parsed strings
+                    for (const char* v: sVec)
+                        delete[] v;
+                    throw;
+                }
             }
-            optEntry.v.sArr = new const char*[sVec.size()];
-            optEntry.arrSize = sVec.size();
-            std::copy(sVec.begin(), sVec.end(), optEntry.v.sArr);
-            }
-            catch(...)
-            {   // delete previously parsed strings
-                for (const char* v: sVec)
-                    delete[] v;
-                throw;
+            else
+            {
+                char* value = nullptr;
+                try
+                {
+                    if (option.argType == CLIArgType::TRIMMED_STRING_ARRAY)
+                    {   // trimmed string
+                        optArg = skipSpaces(optArg);
+                        const char* end;
+                        if (*optArg != 0)
+                            end = skipSpacesAtEnd(optArg, ::strlen(optArg));
+                        else
+                            end = optArg;
+                        value = new char[end-optArg+1];
+                        std::copy(optArg, end, value);
+                        value[end-optArg] = 0;
+                    }
+                    else // normal string
+                    {
+                        size_t length = ::strlen(optArg)+1;
+                        value = new char[length+1];
+                        ::std::copy(optArg, optArg + length+1, value);
+                    }
+                }
+                catch(const ParseException& ex)
+                { throw CLIException(ex.what(), option, chooseShortName); }
+                
+                if ((optEntry.arrSize&7) == 0)
+                {
+                    const char** oldArr = optEntry.v.sArr;
+                    try
+                    { optEntry.v.sArr = new const char*[optEntry.arrSize+8]; }
+                    catch(...)
+                    { delete[] value; }
+                    std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.sArr);
+                    delete[] oldArr;
+                }
+                optEntry.v.sArr[optEntry.arrSize++] = value;
             }
             break;
-        }
         default:
             throw CLIException("Unknown option argument type", option, chooseShortName);
             break;

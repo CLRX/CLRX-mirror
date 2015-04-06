@@ -39,16 +39,16 @@ enum {
 
 static const CLIOption programOptions[] =
 {
-    { "metadata", 'm', CLIArgType::NONE, false, "dump object metadata", nullptr },
-    { "data", 'd', CLIArgType::NONE, false, "dump global data", nullptr },
-    { "calNotes", 'c', CLIArgType::NONE, false, "dump ATI CAL notes", nullptr },
-    { "floats", 'f', CLIArgType::NONE, false, "display float literals", nullptr },
-    { "hexcode", 'h', CLIArgType::NONE, false,
+    { "metadata", 'm', CLIArgType::NONE, false, false, "dump object metadata", nullptr },
+    { "data", 'd', CLIArgType::NONE, false, false, "dump global data", nullptr },
+    { "calNotes", 'c', CLIArgType::NONE, false, false, "dump ATI CAL notes", nullptr },
+    { "floats", 'f', CLIArgType::NONE, false, false, "display float literals", nullptr },
+    { "hexcode", 'h', CLIArgType::NONE, false, false,
         "display hexadecimal instr. codes", nullptr },
-    { "all", 'a', CLIArgType::NONE, false,
+    { "all", 'a', CLIArgType::NONE, false, false,
         "dump all (including hexcode and float literals)", nullptr },
-    { "raw", 'r', CLIArgType::NONE, false, "treat input as raw GCN code", nullptr },
-    { "gpuType", 'g', CLIArgType::TRIMMED_STRING, false,
+    { "raw", 'r', CLIArgType::NONE, false, false, "treat input as raw GCN code", nullptr },
+    { "gpuType", 'g', CLIArgType::TRIMMED_STRING, false, false,
         "set GPU type for raw binaries", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
