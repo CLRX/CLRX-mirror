@@ -28,6 +28,7 @@
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/GPUId.h>
+#include <CLRX/utils/InputOutput.h>
 #include <CLRX/amdasm/Assembler.h>
 
 using namespace CLRX;
@@ -69,8 +70,11 @@ AsmExpression* Assembler::parseExpression(size_t lineNo, size_t colNo, size_t st
     return nullptr;
 }
 
-void Assembler::assemble(const char* inputString, std::ostream& msgStream)
+void Assembler::assemble(size_t inputSize, const char* inputString,
+             std::ostream& msgStream)
 {
+    ArrayIStream is(inputSize, inputString);
+    assemble(is, msgStream);
 }
 
 void Assembler::assemble(std::istream& inputStream, std::ostream& msgStream)

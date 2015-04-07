@@ -196,7 +196,8 @@ public:
     const GalliumInput* getGalliumOutput() const
     { return galliumOutput; }
     
-    void assemble(const char* inputString, std::ostream& msgStream = std::cerr);
+    void assemble(size_t inputSize, const char* inputString,
+                  std::ostream& msgStream = std::cerr);
     void assemble(std::istream& inputStream, std::ostream& msgStream = std::cerr);
 };
 
