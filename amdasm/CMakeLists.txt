@@ -19,7 +19,8 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-SET(LIBAMDASMSRC Disassembler.cpp
+SET(LIBAMDASMSRC Assembler.cpp
+        Disassembler.cpp
         GCNDisasm.cpp
         GCNInstructions.cpp)
 

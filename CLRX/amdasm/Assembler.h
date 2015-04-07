@@ -29,6 +29,7 @@
 #include <string>
 #include <istream>
 #include <ostream>
+#include <iostream>
 #include <vector>
 #include <utility>
 #include <unordered_map>
@@ -46,26 +47,21 @@ class Assembler;
 enum: cxuint
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
-    ASM_WARN_SIGNED_OVERFLOW = 2,   ///< warn about signed overflow
-    ASM_64BIT_MODE = 4, ///< assemble to 64-bit addressing mode
+    ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
     ASM_ALL = 0xff  ///< all flags
 };
 
 class ISAAssembler
 {
-private:
+protected:
     Assembler& assembler;
-    
+    explicit ISAAssembler(Assembler& assembler);
     size_t outputSize;
     char* output;
-    
-    explicit ISAAssembler(Assembler& assembler);
-protected:
     void reallocateOutput(size_t newSize);
 public:
     virtual ~ISAAssembler();
     
-    virtual size_t getMaxOutputSize() const = 0;
     virtual size_t assemble(size_t lineNo, const char* line) = 0;
     virtual void finish() = 0;
     
@@ -82,66 +78,89 @@ public:
     explicit GCNAssembler(Assembler& assembler);
     ~GCNAssembler();
     
-    size_t getMaxOutputSize() const;
     size_t assemble(size_t lineNo, const char* line);
     void finish();
 };
 
-class AsmExpression;
+enum class AsmExprOp : cxbyte
+{
+    ADDITION = 0,
+    SUBTRACT,
+    NEGATE,
+    MULTIPLY,
+    DIVISION,
+    SIGNED_DIVISION,
+    REMAINDER,
+    SIGNED_REMAINDER,
+    BIT_AND,
+    BIT_OR,
+    BIT_XOR,
+    BIT_NOT,
+    SHIFT_LEFT,
+    SHIFT_RIGHT,
+    SIGNED_SHIFT_RIGHT,
+    LOGIC_AND,
+    LOGIC_OR,
+    LOGIC_NOT,
+    SELECTION,  ///< a ? b : c
+    COMPARE_EQUAL,
+    COMPARE_NOT_EQUAL,
+    COMPARE_LESS,
+    COMPARE_LESS_EQ,
+    COMPARE_GREATER,
+    COMPARE_GREATER_EQ,
+    END = 0xff
+};
+
+union AsmExprTerm;
+
+typedef AsmExprTerm* AsmExpression;
 
 struct AsmSymbol
 {
     cxuint sectionId;
     bool isDefined;
     uint64_t value;
-    AsmExpression* resolvingExpression;
+    AsmExpression resolvingExpression;
+    std::vector<AsmExpression> pendingExpressions;
+};
+
+union AsmExprTerm
+{
+    AsmExprOp op;
+    struct
+    {
+        bool isValue;
+        union {
+            AsmSymbol* symbol;
+            uint64_t value;
+        };
+    };
 };
 
 typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
-
-/// assembler global metadata's
-struct AsmGlobalMetadata
-{
-    std::string driverInfo; ///< driver info (for AMD Catalyst drivers)
-    std::string compileOptions; ///< compile options which used by in clBuildProgram
-};
-
-struct AsmKernelMetadata
-{
-    std::string metadata;
-    cxbyte header[32];
-    std::vector<CALNoteInput> calNotes;
-};
-
-struct AsmKernel
-{
-    AsmKernelMetadata metadata;
-    std::vector<cxbyte> execData;
-    std::vector<cxbyte> code;
-};
 
 class Assembler
 {
 public:
     typedef std::unordered_map<std::string, std::string> DefSymMap;
     typedef std::unordered_map<std::string, std::string> MacroMap;
-    typedef std::unordered_map<std::string, AsmKernel> KernelMap;
 private:
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;
     std::vector<std::string> includeDirs;
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
+    std::vector<AsmExpression> pendingExpressions;
     cxuint flags;
     
-    AsmGlobalMetadata globalMetadata;
-    std::vector<cxbyte> globalData; // 
-    KernelMap kernelMap;
+    union {
+        AmdInput* amdOutput;
+        GalliumInput* galliumOutput;
+    };
 public:
     explicit Assembler(std::istream& input, cxuint flags);
     ~Assembler();
-    
-    void assemble();
     
     GPUDeviceType getDeviceType() const
     { return deviceType; }
@@ -157,6 +176,10 @@ public:
     const std::vector<std::string>& getIncludeDirs() const
     { return includeDirs; }
     
+    void addIncludeDir(const char* includeDir);
+    
+    void setIncludeDirs(const char** includeDirs);
+    
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
     
@@ -164,16 +187,17 @@ public:
     
     void addInitialDefSym(const std::string& symName, const std::string& symExpr);
     
-    uint64_t parseExpression(size_t stringSize, const char* string) const;
+    AsmExpression* parseExpression(size_t lineNo, size_t colNo, size_t stringSize,
+             const char* string, uint64_t& outValue) const;
     
-    const AsmGlobalMetadata& getGlobalMetadata() const
-    { return globalMetadata; }
-    const cxbyte* getGlobalData() const
-    { return globalData.data(); }
-    const AsmKernel& getKernel(const std::string& kernelName) const;
+    const AmdInput* getAmdOutput() const
+    { return amdOutput; }
     
-    const KernelMap& getKernelMap() const
-    { return kernelMap; }
+    const GalliumInput* getGalliumOutput() const
+    { return galliumOutput; }
+    
+    void assemble(const char* inputString, std::ostream& msgStream = std::cerr);
+    void assemble(std::istream& inputStream, std::ostream& msgStream = std::cerr);
 };
 
 }

@@ -29,7 +29,6 @@
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/GPUId.h>
-#include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdasm/Disassembler.h>
 
 using namespace CLRX;
