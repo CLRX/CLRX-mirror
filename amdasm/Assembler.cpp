@@ -50,7 +50,7 @@ Assembler::~Assembler()
 void Assembler::addIncludeDir(const char* includeDir)
 {
 }
-    
+
 void Assembler::setIncludeDirs(const char** includeDirs)
 {
 }
