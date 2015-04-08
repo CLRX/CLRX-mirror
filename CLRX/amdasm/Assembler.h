@@ -32,23 +32,71 @@
 #include <iostream>
 #include <vector>
 #include <utility>
+#include <stack>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Reference.h>
 
 /// main namespace
 namespace CLRX
 {
+    
+enum class AsmFormat: cxbyte
+{
+    CATALYST = 0,
+    GALLIUM
+};
+
+enum class AsmSectionType: cxbyte
+{
+    AMD_GLOBAL_DATA = 0,
+    AMD_KERNEL_CODE,
+    AMD_KERNEL_DATA,
+    AMD_KERNEL_HEADER,
+    AMD_KERNEL_METADATA,
+    
+    GALLIUM_GLOBAL_DATA = 64,
+    GALLIUM_COMMENT,
+    GALLIUM_DISASSEMBLY,
+    GALLIUM_CODE
+};
 
 class Assembler;
 
-enum: cxuint
+// assembler input layout parser
+/** parser that skips all spaces and comments, counts line number and column number.
+ * Method get returns character which is not space or comment part. */
+class AsmParser
 {
-    ASM_WARNINGS = 1,   ///< enable all warnings for assembler
-    ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
-    ASM_ALL = 0xff  ///< all flags
+private:
+    std::istream& stream;
+    size_t pos;
+    Array<char> input;
+    size_t lineNo;
+    size_t asmLineNo;
+    size_t colNo;
+    
+    void readInput();
+    void keepAndReadInput();
+public:
+    explicit AsmParser(std::istream& is);
+    
+    bool skipSpacesAndComments();
+    
+    const char* getWord(size_t& size);
+    
+    size_t getLineNo() const
+    { return lineNo; }
+    size_t getAsmLineNo() const
+    { return asmLineNo; }
+    size_t getColNo() const
+    { return colNo; }
+    
+    void setAsmLineNo(size_t lineNo)
+    { asmLineNo = lineNo; }
 };
 
 class ISAAssembler
@@ -112,52 +160,131 @@ enum class AsmExprOp : cxbyte
     END = 0xff
 };
 
-union AsmExprTerm;
+union AsmExprArg;
 
-typedef AsmExprTerm* AsmExpression;
+struct AsmExpression {
+    AsmExprOp* ops;
+    bool* argTypes;
+    AsmExprArg* args;
+};
+
+struct AsmExprTarget;
+
+enum: cxuint
+{
+    ASM_WARNINGS = 1,   ///< enable all warnings for assembler
+    ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
+    ASM_ALL = 0xff  ///< all flags
+};
+
+enum : cxbyte
+{
+    ASMXTGT_SYMBOL = 0,
+    ASMXTGT_DATA
+};
+
+struct AsmInclusion: public RefCountable
+{
+    RefPtr<AsmInclusion> parent;
+    size_t lineNo;
+    std::string file;
+};
+
+struct AsmMacroSubst: public RefCountable
+{
+    RefPtr<AsmMacroSubst> parent;
+    RefPtr<AsmInclusion> inclusion;
+    size_t lineNo;
+    size_t colNo;
+    std::string macro;
+};
+
+struct AsmInstantation
+{
+    bool macro;
+    RefPtr<AsmInclusion> inclusion;
+    RefPtr<AsmMacroSubst> macroSubst;
+};
+
+struct AsmSourcePos
+{
+    AsmInstantation instantation;
+    size_t lineNo;
+    size_t colNo;
+};
 
 struct AsmSymbol
 {
     cxuint sectionId;
     bool isDefined;
     uint64_t value;
+    std::vector<AsmSourcePos> occurrences;
     AsmExpression resolvingExpression;
-    std::vector<AsmExpression> pendingExpressions;
+    std::vector<std::pair<AsmExprTarget, AsmExpression> > pendingExpressions;
 };
 
-union AsmExprTerm
+union AsmExprArg
 {
-    AsmExprOp op;
-    struct
+    AsmSymbol* symbol;
+    uint64_t value;
+};
+
+struct AsmSection
+{
+    cxuint kernelId;
+    AsmSectionType type;
+    std::vector<cxbyte> content;
+};
+
+struct AsmExprTarget
+{
+    cxbyte type;
+    union
     {
-        bool isValue;
-        union {
-            AsmSymbol* symbol;
-            uint64_t value;
+        AsmSymbol* symbol;
+        struct {
+            cxuint sectionId;
+            cxuint size;
+            size_t offset;
         };
     };
 };
 
-typedef std::unordered_map<std::string, uint64_t> AsmSymbolMap;
+typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
+
 
 class Assembler
 {
 public:
-    typedef std::unordered_map<std::string, std::string> DefSymMap;
+    typedef std::pair<std::string, uint64_t> DefSym;
     typedef std::unordered_map<std::string, std::string> MacroMap;
+    typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
+    AsmFormat format;
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;
+    std::vector<DefSym> defSyms;
     std::vector<std::string> includeDirs;
+    std::vector<AsmSection> sections;
+    std::vector<char> symNames;
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
+    KernelMap kernelMap;
     std::vector<AsmExpression> pendingExpressions;
     cxuint flags;
+    
+    std::stack<std::string> includeFileStack;
     
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
     };
+    
+    bool inGlobal;
+    bool isInAmdConfig;
+    cxuint currentKernel;
+    cxuint currentSection;
+    
 public:
     explicit Assembler(std::istream& input, cxuint flags);
     ~Assembler();
@@ -176,16 +303,12 @@ public:
     const std::vector<std::string>& getIncludeDirs() const
     { return includeDirs; }
     
-    void addIncludeDir(const char* includeDir);
-    
-    void setIncludeDirs(const char** includeDirs);
+    void addIncludeDir(const std::string& includeDir);
     
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
     
-    void setInitialDefSyms(const DefSymMap& defsyms);
-    
-    void addInitialDefSym(const std::string& symName, const std::string& symExpr);
+    void addInitialDefSym(const std::string& symName, uint64_t name);
     
     AsmExpression* parseExpression(size_t lineNo, size_t colNo, size_t stringSize,
              const char* string, uint64_t& outValue) const;
