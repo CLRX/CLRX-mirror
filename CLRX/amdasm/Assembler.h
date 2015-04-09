@@ -38,7 +38,6 @@
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/utils/Utilities.h>
-#include <CLRX/utils/Reference.h>
 
 /// main namespace
 namespace CLRX
@@ -74,10 +73,12 @@ class AsmParser
 private:
     std::istream& stream;
     size_t pos;
+    size_t lastNoSpaceEndPos;
     Array<char> input;
     size_t lineNo;
     size_t asmLineNo;
     size_t colNo;
+    bool insideString;
     
     void readInput();
     void keepAndReadInput();
@@ -87,6 +88,14 @@ public:
     bool skipSpacesAndComments();
     
     const char* getWord(size_t& size);
+    
+    const char* getStringLiteral(size_t& size);
+    
+    void back(size_t backSize)
+    {
+        colNo -= backSize;
+        pos -= backSize;
+    }
     
     size_t getLineNo() const
     { return lineNo; }
@@ -195,7 +204,6 @@ struct AsmMacroSubst: public RefCountable
     RefPtr<AsmMacroSubst> parent;
     RefPtr<AsmInclusion> inclusion;
     size_t lineNo;
-    size_t colNo;
     std::string macro;
 };
 
@@ -273,7 +281,10 @@ private:
     std::vector<AsmExpression> pendingExpressions;
     cxuint flags;
     
-    std::stack<std::string> includeFileStack;
+    cxuint inclusionLevel;
+    cxuint macroSubstLevel;
+    RefPtr<AsmInclusion> topInclusion;
+    RefPtr<AsmMacroSubst> topMacroSubst;
     
     union {
         AmdInput* amdOutput;

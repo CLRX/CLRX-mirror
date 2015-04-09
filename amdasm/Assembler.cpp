@@ -43,12 +43,17 @@ ISAAssembler::~ISAAssembler()
 static const uint32_t spacesCharBitMask = 0x3c00; // "\t\n\v\f\r"
 
 AsmParser::AsmParser(std::istream& is)
-        : stream(is), pos(0), input(200), lineNo(1), asmLineNo(1), colNo(1)
+        : stream(is), pos(0), lastNoSpaceEndPos(0), input(200), insideString(false),
+          lineNo(1), asmLineNo(1), colNo(1)
 { }
 
 void AsmParser::readInput()
 {
-    pos = 0;
+    if (input.size() >= 400)
+    {
+        input.clear();
+        input.resize(200);
+    }
     stream.read(input.data(), input.size());
     const size_t readed = stream.gcount();
     if (readed < input.size())
@@ -68,6 +73,8 @@ void AsmParser::keepAndReadInput()
 
 bool AsmParser::skipSpacesAndComments()
 {
+    if (insideString) return true;
+    lastNoSpaceEndPos = 0;
     bool inLineComment = false;
     bool inLongComment = false;
     while (true)
@@ -219,10 +226,16 @@ bool AsmParser::skipSpacesAndComments()
 const char* AsmParser::getWord(size_t& size)
 {
     size_t oldPos = pos;
+    if (lastNoSpaceEndPos > pos)
+    {
+        pos = lastNoSpaceEndPos;
+        size = pos - oldPos;
+        return input.data() + oldPos;
+    }
     while (true)
     {
-        while (input[pos] < 0 || input[pos] > 32 ||
-            (spacesCharBitMask & (1U<<input[pos])) == 0)
+        while (pos < input.size() && (input[pos] < 0 || input[pos] > 32 ||
+            (spacesCharBitMask & (1U<<input[pos])) == 0))
         { colNo++; pos++; }
         if (pos == input.size())
         {
@@ -245,8 +258,63 @@ const char* AsmParser::getWord(size_t& size)
                     break;
             }
         }
+        else break;
     }
     size = pos - oldPos;
+    lastNoSpaceEndPos = pos;
+    if (pos == oldPos)
+        return nullptr;
+    return input.data() + oldPos;
+}
+
+const char* AsmParser::getStringLiteral(size_t& size)
+{
+    size_t oldPos = pos;
+    if (lastNoSpaceEndPos > pos)
+    {
+        pos = lastNoSpaceEndPos;
+        size = pos - oldPos;
+        return input.data() + oldPos;
+    }
+    if (input[pos] != '\"')
+        throw ParseException(lineNo, colNo, "Expected string literal!");
+    pos++;
+    while (true)
+    {
+        while (pos < input.size() && (input[pos] != '\"' && input[pos] != '\n' &&
+            input[pos] != '\\'))
+        { colNo++; pos++; }
+        if (pos == input.size())
+        {
+            if (oldPos != 0)
+            {
+                pos = oldPos;
+                keepAndReadInput();
+                oldPos = 0;
+                if (pos == input.size())
+                    break;
+            }
+            else
+            {   // resize same input and read data
+                input.resize(input.size() + (input.size()>>1));
+                stream.read(input.data() + pos, input.size() - pos);
+                const size_t readed = stream.gcount();
+                if (pos + readed < input.size())
+                    input.resize(pos + readed);
+                if (readed == 0)
+                    break;
+            }
+        }
+        else if (input[pos] == '\n') // newline
+        {
+            lineNo++;
+            colNo = 1;
+        }
+        else break; // end of string
+    }
+    pos++; // end of string
+    size = pos - oldPos;
+    lastNoSpaceEndPos = pos;
     if (pos == oldPos)
         return nullptr;
     return input.data() + oldPos;

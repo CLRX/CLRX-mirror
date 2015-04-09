@@ -31,6 +31,7 @@
 #include <cstring>
 #include <cstdint>
 #include <mutex>
+#include <atomic>
 #include <CLRX/utils/Containers.h>
 
 /// main namespace
@@ -541,6 +542,107 @@ extern bool isDirectory(const char* path);
  * \return array of data (can be greater than size of data from file)
  */
 extern Array<cxbyte> loadDataFromFile(const char* filename);
+
+/*
+ * Reference support
+ */
+
+/// reference countable object
+class RefCountable
+{
+private:
+    std::atomic<size_t> refCount;
+public:
+    /// constructor
+    RefCountable() : refCount(1)
+    { }
+    virtual ~RefCountable();
+    
+    /// reference object
+    void reference()
+    {
+        refCount.fetch_add(1);
+    }
+    
+    /// unreference object (and delete object when no references)
+    void unreference()
+    {
+        if (refCount.fetch_sub(1) == 1)
+            delete this; /* delete this object */
+    }
+};
+
+/// reference pointer based on Glibmm refptr
+template<typename T>
+class RefPtr
+{
+private:
+    T* ptr;
+public:
+    RefPtr(): ptr(nullptr)
+    { }
+    
+    explicit RefPtr(T* inputPtr) : ptr(inputPtr)
+    { }
+    
+    RefPtr(const RefPtr<T>& refPtr)
+        : ptr(refPtr.ptr)
+    {
+        if (ptr != nullptr)
+            ptr->reference();
+    }
+    
+    RefPtr(RefPtr<T>&& refPtr)
+        : ptr(refPtr.ptr)
+    { refPtr.ptr = nullptr; }
+    
+    ~RefPtr()
+    {
+        if (ptr != nullptr)
+            ptr->unreference();
+    }
+    
+    RefPtr<T>& operator=(const RefPtr<T>& refPtr)
+    {
+        if (ptr != nullptr)
+            ptr->unreference();
+        if (refPtr.ptr != nullptr)
+            refPtr.ptr->reference();
+        ptr = refPtr.ptr;
+    }
+    RefPtr<T>& operator=(RefPtr<T>&& refPtr)
+    {
+        if (ptr != nullptr)
+            ptr->unreference();
+        ptr = refPtr.ptr;
+        refPtr.ptr = nullptr;
+    }
+    
+    bool operator==(const RefPtr<T>& refPtr) const
+    { return ptr == refPtr.ptr; }
+    bool operator!=(const RefPtr<T>& refPtr) const
+    { return ptr != refPtr.ptr; }
+    
+    operator bool() const
+    { return ptr!=nullptr; }
+    
+    T* operator->() const
+    { return ptr; }
+    
+    void reset()
+    {
+        if (ptr != nullptr)
+            ptr->unreference();
+        ptr = nullptr;
+    }
+    
+    void swap(RefPtr<T>& refPtr)
+    {
+        T* tmp = ptr;
+        ptr = refPtr.ptr;
+        refPtr.ptr = tmp;
+    }
+};
 
 }
 

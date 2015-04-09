@@ -12,7 +12,6 @@ CLRX/utils/Containers.h -text
 CLRX/utils/GPUId.h -text
 CLRX/utils/InputOutput.h -text
 CLRX/utils/MemAccess.h -text
-CLRX/utils/Reference.h -text
 CLRX/utils/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
 /COPYING -text
