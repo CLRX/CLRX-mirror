@@ -354,7 +354,7 @@ static void bigMulPow2(cxuint size, const uint64_t* biga, const uint64_t* bigb,
         mul64Full(suma, sumb, mx); /* (a0+a1)*(b0+b1)  */
         bool sumaLast = suma < biga[0]; // last bit of suma
         bool sumbLast = sumb < bigb[0]; // last bit of sumb
-        mx[2] = sumaLast&sumbLast; // zeroing last elem
+        mx[2] = sumaLast&sumbLast;
         if (sumaLast) // last bit in a0+a1 is set
         {   // add (1<<64)*sumb
             mx[1] += sumb;

@@ -71,41 +71,40 @@ class Assembler;
 class AsmParser
 {
 private:
-    std::istream& stream;
-    size_t pos;
-    size_t lastNoSpaceEndPos;
-    Array<char> input;
-    size_t lineNo;
-    size_t asmLineNo;
-    size_t colNo;
-    bool insideString;
+    Assembler& assembler;
     
-    void readInput();
-    void keepAndReadInput();
-public:
-    explicit AsmParser(std::istream& is);
-    
-    bool skipSpacesAndComments();
-    
-    const char* getWord(size_t& size);
-    
-    const char* getStringLiteral(size_t& size);
-    
-    void back(size_t backSize)
+    enum class LineMode: cxbyte
     {
-        colNo -= backSize;
-        pos -= backSize;
-    }
+        NORMAL = 0,
+        LSTRING,
+        STRING,
+        LONG_COMMENT,
+        LINE_COMMENT
+    };
+    
+    struct LineCol
+    {
+        size_t position;
+        size_t lineNo;
+    };
+    
+    std::istream& stream;
+    LineMode mode;
+    size_t lineStart;
+    size_t pos;
+    std::vector<char> buffer;
+    std::vector<LineCol> colTranslations;
+    size_t lineNo;
+public:
+    explicit AsmParser(Assembler& assembler, std::istream& is);
+    
+    /// read line and returns line except newline
+    const char* readLine(size_t& lineSize);
     
     size_t getLineNo() const
     { return lineNo; }
-    size_t getAsmLineNo() const
-    { return asmLineNo; }
-    size_t getColNo() const
-    { return colNo; }
     
-    void setAsmLineNo(size_t lineNo)
-    { asmLineNo = lineNo; }
+    size_t toColNo(size_t colNo) const;
 };
 
 class ISAAssembler
@@ -268,6 +267,7 @@ public:
     typedef std::unordered_map<std::string, std::string> MacroMap;
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
+    friend class AsmParser;
     AsmFormat format;
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;
@@ -296,6 +296,8 @@ private:
     cxuint currentKernel;
     cxuint currentSection;
     
+    void addWarning(size_t lineNo, size_t colNo, const std::string& message);
+    void addError(size_t lineNo, size_t colNo, const std::string& message);
 public:
     explicit Assembler(std::istream& input, cxuint flags);
     ~Assembler();
@@ -333,6 +335,7 @@ public:
     void assemble(size_t inputSize, const char* inputString,
                   std::ostream& msgStream = std::cerr);
     void assemble(std::istream& inputStream, std::ostream& msgStream = std::cerr);
+    
 };
 
 }

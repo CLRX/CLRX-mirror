@@ -40,284 +40,262 @@ ISAAssembler::~ISAAssembler()
  * AsmLayoutParser
  */
 
-static const uint32_t spacesCharBitMask = 0x3c00; // "\t\n\v\f\r"
-
-AsmParser::AsmParser(std::istream& is)
-        : stream(is), pos(0), lastNoSpaceEndPos(0), input(200), insideString(false),
-          lineNo(1), asmLineNo(1), colNo(1)
-{ }
-
-void AsmParser::readInput()
+AsmParser::AsmParser(Assembler& inAssembler, std::istream& is) :
+        assembler(inAssembler), stream(is), mode(LineMode::NORMAL),
+        lineStart(0), pos(0), lineNo(1)
 {
-    if (input.size() >= 400)
-    {
-        input.clear();
-        input.resize(200);
-    }
-    stream.read(input.data(), input.size());
-    const size_t readed = stream.gcount();
-    if (readed < input.size())
-        input.resize(readed);
+    buffer.reserve(300);
 }
 
-void AsmParser::keepAndReadInput()
+const char* AsmParser::readLine(size_t& lineSize)
 {
-    std::copy_backward(input.begin()+pos, input.end(), input.begin());
-    const size_t kept = input.size()-pos;
-    stream.read(input.data() + kept, pos);
-    pos = kept;
-    const size_t readed = stream.gcount();
-    if (kept + readed < input.size())
-        input.resize(kept + readed);
-}
-
-bool AsmParser::skipSpacesAndComments()
-{
-    if (insideString) return true;
-    lastNoSpaceEndPos = 0;
-    bool inLineComment = false;
-    bool inLongComment = false;
-    while (true)
+    colTranslations.clear();
+    bool endOfLine = false;
+    lineStart = pos;
+    size_t joinStart = pos;
+    size_t destPos = pos;
+    bool slash = false;
+    bool backslash = false;
+    bool asterisk = false;
+    while (!endOfLine)
     {
-        if (inLineComment)
+        switch(mode)
         {
-            while (pos < input.size() && input[pos] != '\n' && input[pos] != '\\')
-            { colNo++; pos++; }
-            if (pos < input.size())
+            case LineMode::NORMAL:
             {
-                if (input[pos] == '\n')
-                {
-                    inLineComment = false;
-                    colNo = 1;
-                    lineNo++;
-                    asmLineNo++;
-                    pos++;
+                if (pos < buffer.size() && buffer[pos] != '\n' &&
+                    buffer[pos] != ' ' && buffer[pos] != '\t' && buffer[pos] != '\v' &&
+                    buffer[pos] != '\f' && buffer[pos] != '\r')
+                {   // putting regular string (no spaces)
+                    do {
+                        backslash = (buffer[pos] == '\\');
+                        if (slash)
+                        {
+                            if (buffer[pos] == '*') // longComment
+                            {
+                                buffer[destPos-1] = ' ';
+                                buffer[destPos++] = ' ';
+                                mode = LineMode::LONG_COMMENT;
+                                pos++;
+                                break;
+                            }
+                            else if (buffer[pos] == '/') // line comment
+                            {
+                                buffer[destPos-1] = ' ';
+                                buffer[destPos++] = ' ';
+                                mode = LineMode::LINE_COMMENT;
+                                pos++;
+                                break;
+                            }
+                            slash = false;
+                        }
+                        else
+                            slash = (buffer[pos] == '/');
+                        
+                        const char old = buffer[pos];
+                        buffer[destPos++] = buffer[pos++];
+                        
+                        if (old == '"') // if string opened
+                        {
+                            mode = LineMode::STRING;
+                            break;
+                        }
+                        else if (old == '\'') // if string opened
+                        {
+                            mode = LineMode::LSTRING;
+                            break;
+                        }
+                        
+                    } while (pos < buffer.size() && buffer[pos] != '\n' &&
+                        (buffer[pos] != ' ' && buffer[pos] != '\t' &&
+                        buffer[pos] != '\v' && buffer[pos] != '\f' &&
+                        buffer[pos] != '\r'));
                 }
-                else // backslash
+                if (pos < buffer.size())
                 {
-                    colNo++;
-                    pos++;
-                    if (pos >= input.size())
-                    {   // read and keep old
-                        pos--;
-                        keepAndReadInput();
-                        pos++;
-                        if (pos == input.size())
-                            return false;
-                    }
-                    if (input[pos] == '\n')
-                    {   // increment only lineNo (not joinedLineNo)
-                        pos++;
-                        colNo = 1;
-                        lineNo++;
-                    }
-                }
-            }
-            else
-            {
-                readInput();
-                if (input.empty())
-                    return false; // no more word or other text
-            }
-        }
-        else if (inLongComment)
-        {
-            while (pos < input.size() && input[pos] != '*' && input[pos] != '\n' &&
-                         input[pos] != '\\')
-            { colNo++; pos++; }
-            if (pos < input.size())
-            {
-                if (input[pos] == '*')
-                {
-                    if (pos+1 < input.size())
-                        pos++;
-                    else
-                    { // read next
-                        readInput();
-                        if (input.empty())
-                            throw ParseException(lineNo, colNo,
-                                     "Unterminated long comment");
-                    }
-                    if (input[pos] == '/')
+                    if (buffer[pos] == '\n')
                     {
-                        inLongComment = false;
-                        colNo++;
-                        pos++;
-                    }
-                }
-                else if (input[pos] == '\n')
-                {
-                    pos++;
-                    colNo = 1;
-                    lineNo++;
-                    asmLineNo++;
-                }
-                else // backslash
-                {
-                    colNo++;
-                    pos++;
-                    if (pos >= input.size())
-                    {   // read and keep old
-                        pos--;
-                        keepAndReadInput();
-                        pos++;
-                        if (pos == input.size())
-                            return false;
-                    }
-                    if (input[pos] == '\n')
-                    {   // increment only lineNo (not joinedLineNo)
-                        pos++;
-                        colNo = 1;
                         lineNo++;
-                    }
-                }
-            }
-        }
-        else
-        {
-            while (pos < input.size() && input[pos] >= 0 && input[pos] <= 32 &&
-                (input[pos] == 32 || (spacesCharBitMask & (1U<<input[pos])) != 0) &&
-                input[pos+1] != '\\')
-            { colNo++; pos++; }
-            if (pos < input.size())
-            {
-                if (input[pos] == '\n')
-                {
-                    pos++;
-                    colNo = 1;
-                    lineNo++;
-                    asmLineNo++;
-                }
-                else if (input[pos] == '\\')
-                {
-                    colNo++;
-                    pos++;
-                    if (pos >= input.size())
-                    {   // read and keep old
-                        pos--;
-                        keepAndReadInput();
+                        endOfLine = (!backslash);
+                        if (backslash) 
+                        {
+                            destPos--;
+                            colTranslations.push_back({destPos-lineStart, lineNo});
+                        }
                         pos++;
-                        if (pos == input.size())
-                            return false;
+                        joinStart = pos;
+                        break;
                     }
-                    if (input[pos] != '\n')
-                        return true;
+                    else if (mode == LineMode::NORMAL)
+                    {   /* spaces */
+                        do {
+                            buffer[destPos++] = ' ';
+                            backslash = (buffer[pos] == '\\');
+                            pos++;
+                        } while (pos < buffer.size() && buffer[pos] != '\n' &&
+                            (buffer[pos] == ' ' || buffer[pos] == '\t' ||
+                            buffer[pos] == '\v' || buffer[pos] == '\f' ||
+                            buffer[pos] == '\r'));
+                    }
+                }
+                break;
+            }
+            case LineMode::LINE_COMMENT:
+            {
+                while (pos < buffer.size() && buffer[pos] != '\n')
+                {
+                    backslash = (buffer[pos] == '\\');
+                    pos++;
+                    buffer[destPos++] = ' ';
+                }
+                if (pos < buffer.size())
+                {
+                    lineNo++;
+                    endOfLine = (!backslash);
+                    if (backslash)
+                    {
+                        destPos--;
+                        colTranslations.push_back({destPos-lineStart, lineNo});
+                    }
                     else
-                    {   // increment only lineNo (not joinedLineNo)
+                        mode = LineMode::NORMAL;
+                    pos++;
+                    joinStart = pos;
+                }
+                break;
+            }
+            case LineMode::LONG_COMMENT:
+            {
+                while (pos < buffer.size() && buffer[pos] != '\n' &&
+                    (!asterisk || buffer[pos] != '/'))
+                {
+                    backslash = (buffer[pos] == '\\');
+                    asterisk = (buffer[pos] == '*');
+                    pos++;
+                    buffer[destPos++] = ' ';
+                }
+                if (pos < buffer.size())
+                {
+                    if ((asterisk && buffer[pos] == '/'))
+                    {
                         pos++;
-                        colNo = 1;
+                        buffer[destPos++] = ' ';
+                        mode = LineMode::NORMAL;
+                    }
+                    else // newline
+                    {
                         lineNo++;
+                        endOfLine = (!backslash);
+                        if (backslash) 
+                        {
+                            destPos--;
+                            colTranslations.push_back({destPos-lineStart, lineNo});
+                        }
+                        pos++;
+                        joinStart = pos;
                     }
                 }
-                else // found no content that is not space or comment
-                    return true;
+                break;
             }
-            else if (pos == input.size())
+            case LineMode::STRING:
+                while (pos < buffer.size() && buffer[pos] != '\n' &&
+                    (backslash || buffer[pos] != '"'))
+                {
+                    backslash = (buffer[pos] == '\\');
+                    buffer[destPos++] = buffer[pos];
+                    pos++;
+                }
+                if (pos < buffer.size())
+                {
+                    if (!backslash && buffer[pos] == '"')
+                    {
+                        pos++;
+                        mode = LineMode::NORMAL;
+                        buffer[destPos++] = '"';
+                    }
+                    else
+                    {
+                        lineNo++;
+                        endOfLine = (!backslash);
+                        if (backslash)
+                            colTranslations.push_back({destPos-lineStart, lineNo});
+                        else
+                            assembler.addWarning(lineNo, pos-joinStart+1,
+                                         "Unterminated string: newline inserted");
+                        pos++;
+                        joinStart = pos;
+                    }
+                }
+                break;
+            case LineMode::LSTRING:
+                while (pos < buffer.size() && buffer[pos] != '\n' &&
+                    (backslash || buffer[pos] != '\''))
+                {
+                    backslash = (buffer[pos] == '\\');
+                    buffer[destPos++] = buffer[pos];
+                    pos++;
+                }
+                if (pos < buffer.size())
+                {
+                    if (!backslash && buffer[pos] == '\'')
+                    {
+                        pos++;
+                        mode = LineMode::NORMAL;
+                        buffer[destPos++] = '\'';
+                    }
+                    else
+                    {
+                        lineNo++;
+                        endOfLine = (!backslash);
+                        if (backslash)
+                            colTranslations.push_back({destPos-lineStart, lineNo});
+                        else
+                            assembler.addWarning(lineNo, pos-joinStart+1,
+                                         "Unterminated string: newline inserted");
+                        pos++;
+                        joinStart = pos;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        
+        if (endOfLine)
+            break;
+        
+        if (pos >= buffer.size())
+        {   /* get from buffer */
+            if (lineStart != 0)
             {
-                readInput();
-                if (input.empty())
-                    return false;
+                std::copy_backward(buffer.begin()+lineStart, buffer.begin()+pos,
+                       buffer.begin() + pos-lineStart);
+                destPos -= lineStart;
+                pos = destPos;
+                lineStart = 0;
+            }
+            if (pos == buffer.size())
+                buffer.resize(std::max(size_t(300), pos<<1));
+            
+            stream.read(buffer.data()+pos, buffer.size()-pos);
+            const size_t readed = stream.gcount();
+            buffer.resize(pos+readed);
+            if (readed == 0)
+            {   // end of file. check comments
+                if (mode == LineMode::LONG_COMMENT)
+                    assembler.addError(lineNo, pos-joinStart+1,
+                           "Unterminated multi-line comment");
+                if (destPos-lineStart == 0)
+                {
+                    lineSize = 0;
+                    return nullptr;
+                }
+                break;
             }
         }
     }
-    return false;
-}
-
-const char* AsmParser::getWord(size_t& size)
-{
-    size_t oldPos = pos;
-    if (lastNoSpaceEndPos > pos)
-    {
-        pos = lastNoSpaceEndPos;
-        size = pos - oldPos;
-        return input.data() + oldPos;
-    }
-    while (true)
-    {
-        while (pos < input.size() && (input[pos] < 0 || input[pos] > 32 ||
-            (spacesCharBitMask & (1U<<input[pos])) == 0))
-        { colNo++; pos++; }
-        if (pos == input.size())
-        {
-            if (oldPos != 0)
-            {
-                pos = oldPos;
-                keepAndReadInput();
-                oldPos = 0;
-                if (pos == input.size())
-                    break;
-            }
-            else
-            {   // resize same input and read data
-                input.resize(input.size() + (input.size()>>1));
-                stream.read(input.data() + pos, input.size() - pos);
-                const size_t readed = stream.gcount();
-                if (pos + readed < input.size())
-                    input.resize(pos + readed);
-                if (readed == 0)
-                    break;
-            }
-        }
-        else break;
-    }
-    size = pos - oldPos;
-    lastNoSpaceEndPos = pos;
-    if (pos == oldPos)
-        return nullptr;
-    return input.data() + oldPos;
-}
-
-const char* AsmParser::getStringLiteral(size_t& size)
-{
-    size_t oldPos = pos;
-    if (lastNoSpaceEndPos > pos)
-    {
-        pos = lastNoSpaceEndPos;
-        size = pos - oldPos;
-        return input.data() + oldPos;
-    }
-    if (input[pos] != '\"')
-        throw ParseException(lineNo, colNo, "Expected string literal!");
-    pos++;
-    while (true)
-    {
-        while (pos < input.size() && (input[pos] != '\"' && input[pos] != '\n' &&
-            input[pos] != '\\'))
-        { colNo++; pos++; }
-        if (pos == input.size())
-        {
-            if (oldPos != 0)
-            {
-                pos = oldPos;
-                keepAndReadInput();
-                oldPos = 0;
-                if (pos == input.size())
-                    break;
-            }
-            else
-            {   // resize same input and read data
-                input.resize(input.size() + (input.size()>>1));
-                stream.read(input.data() + pos, input.size() - pos);
-                const size_t readed = stream.gcount();
-                if (pos + readed < input.size())
-                    input.resize(pos + readed);
-                if (readed == 0)
-                    break;
-            }
-        }
-        else if (input[pos] == '\n') // newline
-        {
-            lineNo++;
-            colNo = 1;
-        }
-        else break; // end of string
-    }
-    pos++; // end of string
-    size = pos - oldPos;
-    lastNoSpaceEndPos = pos;
-    if (pos == oldPos)
-        return nullptr;
-    return input.data() + oldPos;
+    lineSize = destPos-lineStart;
+    return buffer.data()+lineStart;
 }
 
 /*
@@ -329,6 +307,14 @@ Assembler::Assembler(std::istream& input, cxuint flags)
 }
 
 Assembler::~Assembler()
+{
+}
+
+void Assembler::addWarning(size_t lineNo, size_t colNo, const std::string& message)
+{
+}
+
+void Assembler::addError(size_t lineNo, size_t colNo, const std::string& message)
 {
 }
 
@@ -362,13 +348,12 @@ void Assembler::assemble(std::istream& inputStream, std::ostream& msgStream)
     
     try
     {
-        AsmParser parser(inputStream);
+        /*AsmParser parser(inputStream);
         // first line
         parser.skipSpacesAndComments();
         size_t lineNo = parser.getLineNo();
-        size_t joinedLineNo = parser.getAsmLineNo();
         size_t wordSize = 0;
-        const char* word = parser.getWord(wordSize);
+        const char* word = parser.getWord(wordSize);*/
         
     }
     catch(...)
