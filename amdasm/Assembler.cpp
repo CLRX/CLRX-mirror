@@ -57,7 +57,7 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
     size_t joinStart = pos;
     size_t destPos = pos;
     bool slash = false;
-    bool backslash = false;
+    size_t backslash = false;
     bool asterisk = false;
     colTranslations.push_back({0, lineNo});
     while (!endOfLine)
@@ -210,15 +210,18 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
                 slash = false;
                 const char quoteChar = (mode == LineMode::STRING)?'"':'\'';
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
-                    (backslash || buffer[pos] != quoteChar))
+                    ((backslash&1) || buffer[pos] != quoteChar))
                 {
-                    backslash = (buffer[pos] == '\\');
+                    if (buffer[pos] == '\\')
+                        backslash++;
+                    else
+                        backslash = 0;
                     buffer[destPos++] = buffer[pos];
                     pos++;
                 }
                 if (pos < buffer.size())
                 {
-                    if (!backslash && buffer[pos] == quoteChar)
+                    if ((backslash&1)==0 && buffer[pos] == quoteChar)
                     {
                         pos++;
                         mode = LineMode::NORMAL;
@@ -227,8 +230,8 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
                     else
                     {
                         lineNo++;
-                        endOfLine = (!backslash);
-                        if (backslash)
+                        endOfLine = ((backslash&1)==0);
+                        if (backslash&1)
                             colTranslations.push_back({destPos-lineStart, lineNo});
                         else
                             assembler.addWarning(lineNo, pos-joinStart+1,
