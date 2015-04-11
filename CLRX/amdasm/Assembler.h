@@ -66,8 +66,9 @@ enum class AsmSectionType: cxbyte
 class Assembler;
 
 /// assembler input layout filter
-/** filters input from comments and join splitted lines.
- * readLine returns prepared line which have only space (' ') and non-space characters.  */
+/** filters input from comments and join splitted lines by backslash.
+ * readLine returns prepared line which have only space (' ') and
+ * non-space characters. */
 class AsmInputFilter
 {
 public:
@@ -90,7 +91,6 @@ private:
     
     std::istream& stream;
     LineMode mode;
-    size_t lineStart;
     size_t pos;
     std::vector<char> buffer;
     std::vector<LineTrans> colTranslations;
@@ -101,7 +101,7 @@ public:
     /// read line and returns line except newline character
     const char* readLine(size_t& lineSize);
     
-    /// line number
+    /// get current line number before reading line
     size_t getLineNo() const
     { return lineNo; }
     

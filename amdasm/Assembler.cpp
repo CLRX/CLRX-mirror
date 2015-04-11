@@ -44,7 +44,7 @@ static const size_t AsmParserLineMaxSize = 300;
 
 AsmInputFilter::AsmInputFilter(Assembler& inAssembler, std::istream& is) :
         assembler(inAssembler), stream(is), mode(LineMode::NORMAL),
-        lineStart(0), pos(0), lineNo(1)
+        pos(0), lineNo(1)
 {
     buffer.reserve(AsmParserLineMaxSize);
 }
@@ -53,7 +53,7 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
 {
     colTranslations.clear();
     bool endOfLine = false;
-    lineStart = pos;
+    size_t lineStart = pos;
     size_t joinStart = pos;
     size_t destPos = pos;
     bool slash = false;
