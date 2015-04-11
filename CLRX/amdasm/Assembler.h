@@ -65,11 +65,17 @@ enum class AsmSectionType: cxbyte
 
 class Assembler;
 
-// assembler input layout parser
-/** parser that skips all spaces and comments, counts line number and column number.
- * Method get returns character which is not space or comment part. */
-class AsmParser
+/// assembler input layout filter
+/** filters input from comments and join splitted lines.
+ * readLine returns prepared line which have only space (' ') and non-space characters.  */
+class AsmInputFilter
 {
+public:
+    struct LineTrans
+    {
+        size_t position;
+        size_t lineNo;
+    };
 private:
     Assembler& assembler;
     
@@ -82,29 +88,34 @@ private:
         LINE_COMMENT
     };
     
-    struct LineCol
-    {
-        size_t position;
-        size_t lineNo;
-    };
-    
     std::istream& stream;
     LineMode mode;
     size_t lineStart;
     size_t pos;
     std::vector<char> buffer;
-    std::vector<LineCol> colTranslations;
+    std::vector<LineTrans> colTranslations;
     size_t lineNo;
 public:
-    explicit AsmParser(Assembler& assembler, std::istream& is);
+    explicit AsmInputFilter(Assembler& assembler, std::istream& is);
     
-    /// read line and returns line except newline
+    /// read line and returns line except newline character
     const char* readLine(size_t& lineSize);
     
+    /// line number
     size_t getLineNo() const
     { return lineNo; }
     
-    size_t toColNo(size_t colNo) const;
+    /// translate position to line number and column number
+    /**
+     * \param position position in line (from zero)
+     * \param outLineNo output line number
+     * \param outColNo output column number
+     */
+    void translatePos(size_t position, size_t& outLineNo, size_t& outColNo) const;
+    
+    /// returns column translations
+    const std::vector<LineTrans> getColTranslations() const
+    { return colTranslations; }
 };
 
 class ISAAssembler
@@ -267,7 +278,7 @@ public:
     typedef std::unordered_map<std::string, std::string> MacroMap;
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
-    friend class AsmParser;
+    friend class AsmInputFilter;
     AsmFormat format;
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;

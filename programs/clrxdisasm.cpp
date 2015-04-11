@@ -22,6 +22,8 @@
 #include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/CLIParser.h>
+#include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdasm/Disassembler.h>
 
 using namespace CLRX;

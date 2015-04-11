@@ -40,14 +40,16 @@ ISAAssembler::~ISAAssembler()
  * AsmLayoutParser
  */
 
-AsmParser::AsmParser(Assembler& inAssembler, std::istream& is) :
+static const size_t AsmParserLineMaxSize = 300;
+
+AsmInputFilter::AsmInputFilter(Assembler& inAssembler, std::istream& is) :
         assembler(inAssembler), stream(is), mode(LineMode::NORMAL),
         lineStart(0), pos(0), lineNo(1)
 {
-    buffer.reserve(300);
+    buffer.reserve(AsmParserLineMaxSize);
 }
 
-const char* AsmParser::readLine(size_t& lineSize)
+const char* AsmInputFilter::readLine(size_t& lineSize)
 {
     colTranslations.clear();
     bool endOfLine = false;
@@ -57,6 +59,7 @@ const char* AsmParser::readLine(size_t& lineSize)
     bool slash = false;
     bool backslash = false;
     bool asterisk = false;
+    colTranslations.push_back({0, lineNo});
     while (!endOfLine)
     {
         switch(mode)
@@ -128,9 +131,10 @@ const char* AsmParser::readLine(size_t& lineSize)
                     }
                     else if (mode == LineMode::NORMAL)
                     {   /* spaces */
+                        backslash = false;
+                        slash = false;
                         do {
                             buffer[destPos++] = ' ';
-                            backslash = (buffer[pos] == '\\');
                             pos++;
                         } while (pos < buffer.size() && buffer[pos] != '\n' &&
                             (buffer[pos] == ' ' || buffer[pos] == '\t' ||
@@ -142,6 +146,7 @@ const char* AsmParser::readLine(size_t& lineSize)
             }
             case LineMode::LINE_COMMENT:
             {
+                slash = false;
                 while (pos < buffer.size() && buffer[pos] != '\n')
                 {
                     backslash = (buffer[pos] == '\\');
@@ -166,6 +171,7 @@ const char* AsmParser::readLine(size_t& lineSize)
             }
             case LineMode::LONG_COMMENT:
             {
+                slash = false;
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
                     (!asterisk || buffer[pos] != '/'))
                 {
@@ -198,38 +204,12 @@ const char* AsmParser::readLine(size_t& lineSize)
                 break;
             }
             case LineMode::STRING:
-                while (pos < buffer.size() && buffer[pos] != '\n' &&
-                    (backslash || buffer[pos] != '"'))
-                {
-                    backslash = (buffer[pos] == '\\');
-                    buffer[destPos++] = buffer[pos];
-                    pos++;
-                }
-                if (pos < buffer.size())
-                {
-                    if (!backslash && buffer[pos] == '"')
-                    {
-                        pos++;
-                        mode = LineMode::NORMAL;
-                        buffer[destPos++] = '"';
-                    }
-                    else
-                    {
-                        lineNo++;
-                        endOfLine = (!backslash);
-                        if (backslash)
-                            colTranslations.push_back({destPos-lineStart, lineNo});
-                        else
-                            assembler.addWarning(lineNo, pos-joinStart+1,
-                                         "Unterminated string: newline inserted");
-                        pos++;
-                        joinStart = pos;
-                    }
-                }
-                break;
             case LineMode::LSTRING:
+            {
+                slash = false;
+                const char quoteChar = (mode == LineMode::STRING)?'"':'\'';
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
-                    (backslash || buffer[pos] != '\''))
+                    (backslash || buffer[pos] != quoteChar))
                 {
                     backslash = (buffer[pos] == '\\');
                     buffer[destPos++] = buffer[pos];
@@ -237,11 +217,11 @@ const char* AsmParser::readLine(size_t& lineSize)
                 }
                 if (pos < buffer.size())
                 {
-                    if (!backslash && buffer[pos] == '\'')
+                    if (!backslash && buffer[pos] == quoteChar)
                     {
                         pos++;
                         mode = LineMode::NORMAL;
-                        buffer[destPos++] = '\'';
+                        buffer[destPos++] = quoteChar;
                     }
                     else
                     {
@@ -257,6 +237,7 @@ const char* AsmParser::readLine(size_t& lineSize)
                     }
                 }
                 break;
+            }
             default:
                 break;
         }
@@ -275,7 +256,7 @@ const char* AsmParser::readLine(size_t& lineSize)
                 lineStart = 0;
             }
             if (pos == buffer.size())
-                buffer.resize(std::max(size_t(300), pos<<1));
+                buffer.resize(std::max(AsmParserLineMaxSize, (pos>>1)+pos));
             
             stream.read(buffer.data()+pos, buffer.size()-pos);
             const size_t readed = stream.gcount();
@@ -296,6 +277,17 @@ const char* AsmParser::readLine(size_t& lineSize)
     }
     lineSize = destPos-lineStart;
     return buffer.data()+lineStart;
+}
+
+void AsmInputFilter::translatePos(size_t colNo, size_t& outLineNo, size_t& outColNo) const
+{
+    auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
+         LineTrans({ colNo-1, 0 }),
+         [](const LineTrans& t1, const LineTrans& t2)
+         { return t1.position < t2.position; });
+    
+    outLineNo = found->lineNo;
+    outColNo = colNo-found->position;
 }
 
 /*
