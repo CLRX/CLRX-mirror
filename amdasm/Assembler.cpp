@@ -76,6 +76,7 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
                         {
                             if (buffer[pos] == '*') // longComment
                             {
+                                asterisk = false;
                                 buffer[destPos-1] = ' ';
                                 buffer[destPos++] = ' ';
                                 mode = LineMode::LONG_COMMENT;
