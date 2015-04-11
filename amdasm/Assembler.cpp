@@ -263,7 +263,7 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
             buffer.resize(pos+readed);
             if (readed == 0)
             {   // end of file. check comments
-                if (mode == LineMode::LONG_COMMENT)
+                if (mode == LineMode::LONG_COMMENT && lineStart!=pos)
                     assembler.addError(lineNo, pos-joinStart+1,
                            "Unterminated multi-line comment");
                 if (destPos-lineStart == 0)
