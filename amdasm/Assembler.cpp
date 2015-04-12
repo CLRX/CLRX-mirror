@@ -295,6 +295,195 @@ void AsmInputFilter::translatePos(size_t colNo, size_t& outLineNo, size_t& outCo
 }
 
 /*
+ * source pos
+ */
+
+void AsmSourcePos::print(std::ostream& os) const
+{
+    if (macro)
+    {
+        char numBuf[64];
+        RefPtr<AsmMacroSubst> curMacro = macro;
+        if (curMacro->parent)
+        {
+            RefPtr<AsmMacroSubst> parentMacro = curMacro->parent;
+            os.write("In macro substituted from\n", 26);
+            
+            RefPtr<AsmFile> curFile = curMacro->file;
+            if (curFile->parent)
+            {
+                RefPtr<AsmFile> parentFile = curFile->parent;
+                os.write("    In file included from ", 26);
+                if (!parentFile->file.empty())
+                    os.write(parentFile->file.c_str(), parentFile->file.size());
+                else // stdin
+                    os.write("<stdin>", 7);
+                
+                numBuf[0] = ':';
+                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+                curFile = parentFile;
+                numBuf[size++] = (curFile->parent) ? ',' : ':';
+                numBuf[size++] = '\n';
+                os.write(numBuf, size);
+                
+                while (curFile->parent)
+                {
+                    parentFile = curFile->parent;
+                    os.write("                          ", 26);
+                    if (!parentFile->file.empty())
+                        os.write(parentFile->file.c_str(), parentFile->file.size());
+                    else // stdin
+                        os.write("<stdin>", 7);
+                    
+                    numBuf[0] = ':';
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+                    curFile = curFile->parent;
+                    numBuf[size++] = (curFile->parent) ? ',' : ':';
+                    numBuf[size++] = '\n';
+                    os.write(numBuf, size);
+                }
+            }
+            // leaf
+            if (!file->file.empty())
+                os.write(file->file.c_str(), file->file.size());
+            else // stdin
+                os.write("<stdin>", 7);
+            numBuf[0] = ':';
+            size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 63);
+            numBuf[size++] = ':';
+            size += itocstrCStyle<size_t>(colNo, numBuf+size, 64-size);
+            numBuf[size++] = ':';
+            numBuf[size++] = '\n';
+            os.write(numBuf, size);
+            
+            curMacro = parentMacro;
+            
+            while(curMacro->parent)
+            {
+                parentMacro = curMacro->parent;
+                os.write("In macro substituted from\n", 26);
+                
+                curFile = curMacro->file;
+                if (curFile->parent)
+                {
+                    RefPtr<AsmFile> parentFile = curFile->parent;
+                    os.write("    In file included from ", 26);
+                    if (!parentFile->file.empty())
+                        os.write(parentFile->file.c_str(), parentFile->file.size());
+                    else // stdin
+                        os.write("<stdin>", 7);
+                    
+                    numBuf[0] = ':';
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+                    curFile = parentFile;
+                    numBuf[size++] = (curFile->parent) ? ',' : ':';
+                    numBuf[size++] = '\n';
+                    os.write(numBuf, size);
+                    
+                    while (curFile->parent)
+                    {
+                        parentFile = curFile->parent;
+                        os.write("                          ", 26);
+                        if (!parentFile->file.empty())
+                            os.write(parentFile->file.c_str(), parentFile->file.size());
+                        else // stdin
+                            os.write("<stdin>", 7);
+                        
+                        numBuf[0] = ':';
+                        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo,
+                                      numBuf+1, 63);
+                        curFile = curFile->parent;
+                        numBuf[size++] = (curFile->parent) ? ',' : ':';
+                        numBuf[size++] = '\n';
+                        os.write(numBuf, size);
+                    }
+                }
+                // leaf
+                os.write("    ", 4);
+                if (!file->file.empty())
+                    os.write(file->file.c_str(), file->file.size());
+                else // stdin
+                    os.write("<stdin>", 7);
+                numBuf[0] = ':';
+                size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 63);
+                numBuf[size++] = ':';
+                size += itocstrCStyle<size_t>(colNo, numBuf+size, 64-size);
+                numBuf[size++] = ':';
+                numBuf[size++] = '\n';
+                os.write(numBuf, size);
+                
+                curMacro = parentMacro;
+            }
+        }
+    }
+    char numBuf[64];
+    RefPtr<AsmFile> curFile = file;
+    if (curFile->parent)
+    {
+        RefPtr<AsmFile> parentFile = curFile->parent;
+        os.write("In file included from ", 22);
+        if (!parentFile->file.empty())
+            os.write(parentFile->file.c_str(), parentFile->file.size());
+        else // stdin
+            os.write("<stdin>", 7);
+        
+        numBuf[0] = ':';
+        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+        curFile = parentFile;
+        numBuf[size++] = (curFile->parent) ? ',' : ':';
+        numBuf[size++] = '\n';
+        os.write(numBuf, size);
+        
+        while (curFile->parent)
+        {
+            parentFile = curFile->parent;
+            os.write("                      ", 22);
+            if (!parentFile->file.empty())
+                os.write(parentFile->file.c_str(), parentFile->file.size());
+            else // stdin
+                os.write("<stdin>", 7);
+            
+            numBuf[0] = ':';
+            size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+            curFile = curFile->parent;
+            numBuf[size++] = (curFile->parent) ? ',' : ':';
+            numBuf[size++] = '\n';
+            os.write(numBuf, size);
+        }
+    }
+    // leaf
+    if (!file->file.empty())
+        os.write(file->file.c_str(), file->file.size());
+    else // stdin
+        os.write("<stdin>", 7);
+    numBuf[0] = ':';
+    size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 63);
+    numBuf[size++] = ':';
+    size += itocstrCStyle<size_t>(colNo, numBuf+size, 64-size);
+    numBuf[size++] = ':';
+    numBuf[size++] = ' ';
+    os.write(numBuf, size);
+}
+
+void AsmMessage::print(std::ostream& os) const
+{
+    if (error)
+        os.write("Error: ", 7);
+    else
+        os.write("Warning: ", 9);
+    os.write(message.c_str(), message.size());
+    os.put('\n');
+}
+
+/*
+ * expressions
+ */
+
+AsmExpression::~AsmExpression()
+{
+}
+
+/*
  * Assembler
  */
 

@@ -609,6 +609,7 @@ public:
         if (refPtr.ptr != nullptr)
             refPtr.ptr->reference();
         ptr = refPtr.ptr;
+        return *this;
     }
     RefPtr<T>& operator=(RefPtr<T>&& refPtr)
     {
@@ -616,6 +617,7 @@ public:
             ptr->unreference();
         ptr = refPtr.ptr;
         refPtr.ptr = nullptr;
+        return *this;
     }
     
     bool operator==(const RefPtr<T>& refPtr) const

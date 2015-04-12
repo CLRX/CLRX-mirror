@@ -42,6 +42,14 @@
 /// main namespace
 namespace CLRX
 {
+
+enum: cxuint
+{
+    ASM_WARNINGS = 1,   ///< enable all warnings for assembler
+    ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
+    ASM_GNU_AS_COMPAT = 4, ///< compatibility with GNU as (expressions)
+    ASM_ALL = 0xff  ///< all flags
+};
     
 enum class AsmFormat: cxbyte
 {
@@ -149,16 +157,60 @@ public:
     void finish();
 };
 
+/*
+ * assembler source position
+ */
+
+struct AsmFile: public RefCountable
+{
+    RefPtr<AsmFile> parent; ///< parent file (or null if root)
+    size_t lineNo; // place where file is included (0 if root)
+    std::string file; // file path
+};
+
+struct AsmMacroSubst: public RefCountable
+{
+    RefPtr<AsmMacroSubst> parent;   ///< parent macro (null if global scope)
+    RefPtr<AsmFile> file; ///< file where macro substituted
+    size_t lineNo;  ///< place where macro substituted
+    std::string macro;  ///< a substituting macro
+};
+
+struct AsmSourcePos
+{
+    RefPtr<AsmFile> file;   ///< file in which message occurred
+    RefPtr<AsmMacroSubst> macro; ///< macro substitution in which message occurred
+    
+    size_t lineNo;
+    size_t colNo;
+    
+    void print(std::ostream& os) const;
+};
+
+struct AsmMessage
+{
+    bool error;
+    std::string message;
+    
+    void print(std::ostream& os) const;
+};
+
+/*
+ * assembler expressions
+ */
+
 enum class AsmExprOp : cxbyte
 {
-    ADDITION = 0,
+    ARG_VALUE = 0,  ///< is value not operator
+    ARG_SYMBOL = 1,  ///< is value not operator
+    ADDITION = 2,
     SUBTRACT,
     NEGATE,
     MULTIPLY,
     DIVISION,
     SIGNED_DIVISION,
-    REMAINDER,
-    SIGNED_REMAINDER,
+    MODULO,
+    SIGNED_MODUL0,
     BIT_AND,
     BIT_OR,
     BIT_XOR,
@@ -166,69 +218,46 @@ enum class AsmExprOp : cxbyte
     SHIFT_LEFT,
     SHIFT_RIGHT,
     SIGNED_SHIFT_RIGHT,
-    LOGIC_AND,
-    LOGIC_OR,
-    LOGIC_NOT,
-    SELECTION,  ///< a ? b : c
-    COMPARE_EQUAL,
-    COMPARE_NOT_EQUAL,
-    COMPARE_LESS,
-    COMPARE_LESS_EQ,
-    COMPARE_GREATER,
-    COMPARE_GREATER_EQ,
-    END = 0xff
-};
-
-union AsmExprArg;
-
-struct AsmExpression {
-    AsmExprOp* ops;
-    bool* argTypes;
-    AsmExprArg* args;
+    LOGICAL_AND,
+    LOGICAL_OR,
+    LOGICAL_NOT,
+    CHOICE,  ///< a ? b : c
+    EQUAL,
+    NOT_EQUAL,
+    LESS,
+    LESS_EQ,
+    GREATER,
+    GREATER_EQ
 };
 
 struct AsmExprTarget;
 
-enum: cxuint
-{
-    ASM_WARNINGS = 1,   ///< enable all warnings for assembler
-    ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
-    ASM_ALL = 0xff  ///< all flags
-};
-
 enum : cxbyte
 {
     ASMXTGT_SYMBOL = 0,
-    ASMXTGT_DATA
+    ASMXTGT_DATA8,
+    ASMXTGT_DATA16,
+    ASMXTGT_DATA32,
+    ASMXTGT_DATA64
 };
 
-struct AsmInclusion: public RefCountable
+union AsmExprArg;
+
+struct AsmExpression
 {
-    RefPtr<AsmInclusion> parent;
-    size_t lineNo;
-    std::string file;
+    size_t symOccursNum;
+    AsmExprOp* ops;
+    AsmExprArg* args;
+    
+    ~AsmExpression();
+    
+    uint64_t operator()() const;
 };
 
-struct AsmMacroSubst: public RefCountable
+struct AsmExprSymbolOccurence
 {
-    RefPtr<AsmMacroSubst> parent;
-    RefPtr<AsmInclusion> inclusion;
-    size_t lineNo;
-    std::string macro;
-};
-
-struct AsmInstantation
-{
-    bool macro;
-    RefPtr<AsmInclusion> inclusion;
-    RefPtr<AsmMacroSubst> macroSubst;
-};
-
-struct AsmSourcePos
-{
-    AsmInstantation instantation;
-    size_t lineNo;
-    size_t colNo;
+    AsmExpression* expression;
+    size_t argIndex;
 };
 
 struct AsmSymbol
@@ -238,7 +267,7 @@ struct AsmSymbol
     uint64_t value;
     std::vector<AsmSourcePos> occurrences;
     AsmExpression resolvingExpression;
-    std::vector<std::pair<AsmExprTarget, AsmExpression> > pendingExpressions;
+    std::vector<std::pair<AsmExprTarget, AsmExprSymbolOccurence> > occurrencesInExprs;
 };
 
 union AsmExprArg
@@ -289,18 +318,20 @@ private:
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
     KernelMap kernelMap;
-    std::vector<AsmExpression> pendingExpressions;
+    std::vector<AsmExpression*> pendingExpressions;
     cxuint flags;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
-    RefPtr<AsmInclusion> topInclusion;
+    RefPtr<AsmFile> topInclusion;
     RefPtr<AsmMacroSubst> topMacroSubst;
     
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
     };
+    
+    std::vector<std::pair<AsmSourcePos, AsmMessage> > messages;
     
     bool inGlobal;
     bool isInAmdConfig;
@@ -346,7 +377,6 @@ public:
     void assemble(size_t inputSize, const char* inputString,
                   std::ostream& msgStream = std::cerr);
     void assemble(std::istream& inputStream, std::ostream& msgStream = std::cerr);
-    
 };
 
 }
