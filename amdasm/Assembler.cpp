@@ -307,11 +307,11 @@ void AsmSourcePos::print(std::ostream& os) const
         if (curMacro)
         {
             RefPtr<const AsmMacroSubst> parentMacro = curMacro->parent;
-            os.write("In macro substituted from\n", 26);
             
             RefPtr<const AsmFile> curFile = curMacro->file;
             if (curFile->parent)
             {
+                os.write("In macro substituted from\n", 26);
                 RefPtr<const AsmFile> parentFile = curFile->parent;
                 os.write("    In file included from ", 26);
                 if (!parentFile->file.empty())
@@ -342,10 +342,12 @@ void AsmSourcePos::print(std::ostream& os) const
                     numBuf[size++] = '\n';
                     os.write(numBuf, size);
                 }
+                os.write("    ", 4);
             }
+            else
+                os.write("In macro substituted from ", 26);
             // leaf
             curFile = curMacro->file;
-            os.write("    ", 4);
             if (!curFile->file.empty())
                 os.write(curFile->file.c_str(), curFile->file.size());
             else // stdin
@@ -361,7 +363,7 @@ void AsmSourcePos::print(std::ostream& os) const
             while(curMacro)
             {
                 parentMacro = curMacro->parent;
-                os.write("In macro substituted from\n", 26);
+                //os.write("In macro substituted from\n", 26);
                 
                 curFile = curMacro->file;
                 if (curFile->parent)
@@ -397,10 +399,12 @@ void AsmSourcePos::print(std::ostream& os) const
                         numBuf[size++] = '\n';
                         os.write(numBuf, size);
                     }
+                    os.write("    ", 4);
                 }
+                else
+                    os.write("                          ", 26);
                 // leaf
                 curFile = curMacro->file;
-                os.write("    ", 4);
                 if (!curFile->file.empty())
                     os.write(curFile->file.c_str(), curFile->file.size());
                 else // stdin
