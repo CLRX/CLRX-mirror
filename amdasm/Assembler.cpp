@@ -303,16 +303,16 @@ void AsmSourcePos::print(std::ostream& os) const
     if (macro)
     {
         char numBuf[64];
-        RefPtr<AsmMacroSubst> curMacro = macro;
+        RefPtr<const AsmMacroSubst> curMacro = macro;
         if (curMacro->parent)
         {
-            RefPtr<AsmMacroSubst> parentMacro = curMacro->parent;
+            RefPtr<const AsmMacroSubst> parentMacro = curMacro->parent;
             os.write("In macro substituted from\n", 26);
             
-            RefPtr<AsmFile> curFile = curMacro->file;
+            RefPtr<const AsmFile> curFile = curMacro->file;
             if (curFile->parent)
             {
-                RefPtr<AsmFile> parentFile = curFile->parent;
+                RefPtr<const AsmFile> parentFile = curFile->parent;
                 os.write("    In file included from ", 26);
                 if (!parentFile->file.empty())
                     os.write(parentFile->file.c_str(), parentFile->file.size());
@@ -366,7 +366,7 @@ void AsmSourcePos::print(std::ostream& os) const
                 curFile = curMacro->file;
                 if (curFile->parent)
                 {
-                    RefPtr<AsmFile> parentFile = curFile->parent;
+                    RefPtr<const AsmFile> parentFile = curFile->parent;
                     os.write("    In file included from ", 26);
                     if (!parentFile->file.empty())
                         os.write(parentFile->file.c_str(), parentFile->file.size());
@@ -417,10 +417,10 @@ void AsmSourcePos::print(std::ostream& os) const
         }
     }
     char numBuf[64];
-    RefPtr<AsmFile> curFile = file;
+    RefPtr<const AsmFile> curFile = file;
     if (curFile->parent)
     {
-        RefPtr<AsmFile> parentFile = curFile->parent;
+        RefPtr<const AsmFile> parentFile = curFile->parent;
         os.write("In file included from ", 22);
         if (!parentFile->file.empty())
             os.write(parentFile->file.c_str(), parentFile->file.size());

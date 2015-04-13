@@ -551,24 +551,22 @@ extern Array<cxbyte> loadDataFromFile(const char* filename);
 class RefCountable
 {
 private:
-    std::atomic<size_t> refCount;
+    mutable std::atomic<size_t> refCount;
 public:
     /// constructor
     RefCountable() : refCount(1)
     { }
-    virtual ~RefCountable();
     
     /// reference object
-    void reference()
+    void reference() const
     {
         refCount.fetch_add(1);
     }
     
     /// unreference object (and delete object when no references)
-    void unreference()
+    bool unreference() const
     {
-        if (refCount.fetch_sub(1) == 1)
-            delete this; /* delete this object */
+        return (refCount.fetch_sub(1) == 1);
     }
 };
 
@@ -585,27 +583,27 @@ public:
     explicit RefPtr(T* inputPtr) : ptr(inputPtr)
     { }
     
-    RefPtr(const RefPtr<T>& refPtr)
-        : ptr(refPtr.ptr)
+    RefPtr(const RefPtr<T>& refPtr) : ptr(refPtr.ptr)
     {
         if (ptr != nullptr)
             ptr->reference();
     }
     
-    RefPtr(RefPtr<T>&& refPtr)
-        : ptr(refPtr.ptr)
+    RefPtr(RefPtr<T>&& refPtr) : ptr(refPtr.ptr)
     { refPtr.ptr = nullptr; }
     
     ~RefPtr()
     {
         if (ptr != nullptr)
-            ptr->unreference();
+            if (ptr->unreference())
+                delete ptr;
     }
     
     RefPtr<T>& operator=(const RefPtr<T>& refPtr)
     {
         if (ptr != nullptr)
-            ptr->unreference();
+            if (ptr->unreference())
+                delete ptr;
         if (refPtr.ptr != nullptr)
             refPtr.ptr->reference();
         ptr = refPtr.ptr;
@@ -614,7 +612,8 @@ public:
     RefPtr<T>& operator=(RefPtr<T>&& refPtr)
     {
         if (ptr != nullptr)
-            ptr->unreference();
+            if (ptr->unreference())
+                delete ptr;
         ptr = refPtr.ptr;
         refPtr.ptr = nullptr;
         return *this;
@@ -628,13 +627,17 @@ public:
     operator bool() const
     { return ptr!=nullptr; }
     
+    bool operator!() const
+    { return ptr==nullptr; }
+    
     T* operator->() const
     { return ptr; }
     
     void reset()
     {
         if (ptr != nullptr)
-            ptr->unreference();
+            if (ptr->unreference())
+                delete ptr;
         ptr = nullptr;
     }
     
@@ -643,6 +646,31 @@ public:
         T* tmp = ptr;
         ptr = refPtr.ptr;
         refPtr.ptr = tmp;
+    }
+    
+    template<typename DestType>
+    RefPtr<DestType> constCast() const
+    {
+        DestType* p = const_cast<DestType*>(ptr);
+        if (p != nullptr)
+            p->reference();
+        return RefPtr<DestType>(p);
+    }
+    template<typename DestType>
+    RefPtr<DestType> staticCast() const
+    {
+        DestType* p = static_cast<DestType*>(ptr);
+        if (p != nullptr)
+            p->reference();
+        return RefPtr<DestType>(p);
+    }
+    template<typename DestType>
+    RefPtr<DestType> dynamicCast() const
+    {
+        DestType* p = dynamic_cast<DestType*>(ptr);
+        if (p != nullptr)
+            p->reference();
+        return RefPtr<DestType>(p);
     }
 };
 

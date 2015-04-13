@@ -163,23 +163,23 @@ public:
 
 struct AsmFile: public RefCountable
 {
-    RefPtr<AsmFile> parent; ///< parent file (or null if root)
+    RefPtr<const AsmFile> parent; ///< parent file (or null if root)
     size_t lineNo; // place where file is included (0 if root)
-    std::string file; // file path
+    const std::string file; // file path
 };
 
 struct AsmMacroSubst: public RefCountable
 {
-    RefPtr<AsmMacroSubst> parent;   ///< parent macro (null if global scope)
-    RefPtr<AsmFile> file; ///< file where macro substituted
+    RefPtr<const AsmMacroSubst> parent;   ///< parent macro (null if global scope)
+    RefPtr<const AsmFile> file; ///< file where macro substituted
     size_t lineNo;  ///< place where macro substituted
     std::string macro;  ///< a substituting macro
 };
 
 struct AsmSourcePos
 {
-    RefPtr<AsmFile> file;   ///< file in which message occurred
-    RefPtr<AsmMacroSubst> macro; ///< macro substitution in which message occurred
+    RefPtr<const AsmFile> file;   ///< file in which message occurred
+    RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     
     size_t lineNo;
     size_t colNo;

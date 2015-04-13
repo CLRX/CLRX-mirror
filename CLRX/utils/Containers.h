@@ -224,6 +224,15 @@ public:
     { return ptrEnd; }
     T* end()
     { return ptrEnd; }
+    
+    const T& front() const
+    { return *ptr; }
+    T& front()
+    { return *ptr; }
+    const T& back() const
+    { return ptrEnd[-1]; }
+    T& back()
+    { return ptrEnd[-1]; }
 };
 
 /// binary find helper
