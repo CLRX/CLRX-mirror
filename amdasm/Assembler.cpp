@@ -37,7 +37,7 @@ ISAAssembler::~ISAAssembler()
 { }
 
 /*
- * AsmLayoutParser
+ * AsmInputFilter
  */
 
 static const size_t AsmParserLineMaxSize = 300;
@@ -484,6 +484,163 @@ void AsmMessage::print(std::ostream& os) const
 
 AsmExpression::~AsmExpression()
 {
+    delete[] ops;
+}
+
+uint64_t AsmExpression::operator()() const
+{
+    struct ExprStackEntry
+    {
+        AsmExprOp op;
+        cxbyte filledArgs;
+        uint64_t value;
+    };
+    
+    size_t argPos = 0;
+    size_t opPos = 0;
+    uint64_t value;
+    std::stack<ExprStackEntry> stack;
+    
+    do {
+        AsmExprOp op = ops[opPos++];
+        if (op != AsmExprOp::ARG_VALUE)
+        {    // push to stack
+            stack.push({ op, 0, 0 });
+            continue;
+        }
+        bool evaluated;
+        value = args[argPos++].value;
+        do {
+            ExprStackEntry& entry = stack.top();
+            op = entry.op;
+            evaluated = false;
+            if (entry.filledArgs == 0)
+            {
+                if (op == AsmExprOp::NEGATE || op == AsmExprOp::BIT_NOT ||
+                    op == AsmExprOp::LOGICAL_NOT)
+                {   // unary operator
+                    if (op == AsmExprOp::NEGATE)
+                        value = -value;
+                    else if (op == AsmExprOp::BIT_NOT)
+                        value = ~value;
+                    else if (op == AsmExprOp::LOGICAL_NOT)
+                        value = !value;
+                    
+                    evaluated = true;
+                    stack.pop();
+                }
+                else
+                {   // binary operator (first operand)
+                    entry.filledArgs++;
+                    entry.value = value;
+                }
+            }
+            else if (entry.filledArgs == 1)
+            {   // binary operators
+                evaluated = true;
+                switch(op)
+                {
+                    case AsmExprOp::ADDITION:
+                        value = entry.value + value;
+                        break;
+                    case AsmExprOp::SUBTRACT:
+                        value = entry.value - value;
+                        break;
+                    case AsmExprOp::MULTIPLY:
+                        value = entry.value * value;
+                        break;
+                    case AsmExprOp::DIVISION:
+                        if (value != 0)
+                            value = entry.value / value;
+                        else
+                            ; // error!
+                        break;
+                    case AsmExprOp::SIGNED_DIVISION:
+                        if (value != 0)
+                            value = int64_t(entry.value) / int64_t(value);
+                        else
+                            ; // error!
+                        break;
+                    case AsmExprOp::MODULO:
+                        if (value != 0)
+                            value = entry.value % value;
+                        else
+                            ; // error!
+                        break;
+                    case AsmExprOp::SIGNED_MODULO:
+                        if (value != 0)
+                            value = int64_t(entry.value) % int64_t(value);
+                        else
+                            ; // error!
+                        break;
+                    case AsmExprOp::BIT_AND:
+                        value = entry.value & value;
+                        break;
+                    case AsmExprOp::BIT_OR:
+                        value = entry.value | value;
+                        break;
+                    case AsmExprOp::BIT_XOR:
+                        value = entry.value ^ value;
+                        break;
+                    case AsmExprOp::SHIFT_LEFT:
+                        value = entry.value << value;
+                        break;
+                    case AsmExprOp::SHIFT_RIGHT:
+                        value = entry.value >> value;
+                        break;
+                    case AsmExprOp::SIGNED_SHIFT_RIGHT:
+                        value = int64_t(entry.value) >> value;
+                        break;
+                    case AsmExprOp::LOGICAL_AND:
+                        value = entry.value && value;
+                        break;
+                    case AsmExprOp::LOGICAL_OR:
+                        value = entry.value || value;
+                        break;
+                    case AsmExprOp::CHOICE:
+                        if (entry.value)
+                        {   // choose second argument, ignore last argument
+                            entry.value = value;
+                            entry.filledArgs = 2;
+                        }
+                        else    // choose last argument
+                            entry.filledArgs = 3;
+                        evaluated = false;
+                        break;
+                    case AsmExprOp::EQUAL:
+                        value = entry.value == value;
+                        break;
+                    case AsmExprOp::LESS:
+                        value = entry.value < value;
+                        break;
+                    case AsmExprOp::LESS_EQ:
+                        value = entry.value <= value;
+                        break;
+                    case AsmExprOp::GREATER:
+                        value = entry.value > value;
+                        break;
+                    case AsmExprOp::GREATER_EQ:
+                        value = entry.value >= value;
+                        break;
+                    default:
+                        break;
+                }
+                if (evaluated)
+                    stack.pop();
+            }
+            else if (entry.filledArgs == 2)
+            {   // choice second
+                value = entry.value;
+                evaluated = true;
+            }
+            else if (entry.filledArgs == 3) // choice last choice
+                evaluated = true;
+            
+        } while (evaluated && !stack.empty());
+        
+    } while (!stack.empty());
+    
+    return value;
 }
 
 /*

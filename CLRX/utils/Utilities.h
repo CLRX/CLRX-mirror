@@ -543,6 +543,9 @@ extern bool isDirectory(const char* path);
  */
 extern Array<cxbyte> loadDataFromFile(const char* filename);
 
+/// convert to filesystem from unified path (with slashes)
+extern void filesystemPath(char* path);
+
 /*
  * Reference support
  */

@@ -224,7 +224,7 @@ enum class AsmExprOp : cxbyte
     DIVISION,
     SIGNED_DIVISION,
     MODULO,
-    SIGNED_MODUL0,
+    SIGNED_MODULO,
     BIT_AND,
     BIT_OR,
     BIT_XOR,
@@ -280,13 +280,26 @@ struct AsmSymbol
     bool isDefined;
     uint64_t value;
     std::vector<AsmSourcePos> occurrences;
-    AsmExpression resolvingExpression;
+    AsmExpression* expression;
     std::vector<std::pair<AsmExprTarget, AsmExprSymbolOccurence> > occurrencesInExprs;
+    
+    AsmSymbol() : sectionId(0), isDefined(false), value(0), expression(nullptr)
+    { }
+    
+    AsmSymbol(cxuint inSectionId, uint64_t inValue) : sectionId(inSectionId),
+            isDefined(true), value(inValue), expression(nullptr)
+    { }
+    
+    AsmSymbol(cxuint inSectionId, AsmExpression* expr) : sectionId(inSectionId),
+            isDefined(false), value(0), expression(expr)
+    { }
 };
+
+typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
 
 union AsmExprArg
 {
-    AsmSymbol* symbol;
+    AsmSymbolMap::value_type* symbol;
     uint64_t value;
 };
 
@@ -302,7 +315,7 @@ struct AsmExprTarget
     cxbyte type;
     union
     {
-        AsmSymbol* symbol;
+        AsmSymbolMap::value_type* symbol;
         struct {
             cxuint sectionId;
             cxuint size;
@@ -310,9 +323,6 @@ struct AsmExprTarget
         };
     };
 };
-
-typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
-
 
 class Assembler
 {
@@ -328,7 +338,6 @@ private:
     std::vector<DefSym> defSyms;
     std::vector<std::string> includeDirs;
     std::vector<AsmSection> sections;
-    std::vector<char> symNames;
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
     KernelMap kernelMap;

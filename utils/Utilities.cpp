@@ -438,3 +438,6 @@ extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
     }
     return buf;
 }
+
+void CLRX::filesystemPath(char* path)
+{ }
