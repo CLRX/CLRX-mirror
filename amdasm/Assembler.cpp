@@ -304,7 +304,7 @@ void AsmSourcePos::print(std::ostream& os) const
     {
         char numBuf[64];
         RefPtr<const AsmMacroSubst> curMacro = macro;
-        if (curMacro->parent)
+        if (curMacro)
         {
             RefPtr<const AsmMacroSubst> parentMacro = curMacro->parent;
             os.write("In macro substituted from\n", 26);
@@ -344,21 +344,21 @@ void AsmSourcePos::print(std::ostream& os) const
                 }
             }
             // leaf
-            if (!file->file.empty())
-                os.write(file->file.c_str(), file->file.size());
+            curFile = curMacro->file;
+            os.write("    ", 4);
+            if (!curFile->file.empty())
+                os.write(curFile->file.c_str(), curFile->file.size());
             else // stdin
                 os.write("<stdin>", 7);
             numBuf[0] = ':';
-            size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 63);
-            numBuf[size++] = ':';
-            size += itocstrCStyle<size_t>(colNo, numBuf+size, 64-size);
-            numBuf[size++] = ':';
+            size_t size = 1+itocstrCStyle<size_t>(macro->lineNo, numBuf+1, 63);
+            numBuf[size++] = (parentMacro) ? ';' : ':';
             numBuf[size++] = '\n';
             os.write(numBuf, size);
             
             curMacro = parentMacro;
             
-            while(curMacro->parent)
+            while(curMacro)
             {
                 parentMacro = curMacro->parent;
                 os.write("In macro substituted from\n", 26);
@@ -399,16 +399,15 @@ void AsmSourcePos::print(std::ostream& os) const
                     }
                 }
                 // leaf
+                curFile = curMacro->file;
                 os.write("    ", 4);
-                if (!file->file.empty())
-                    os.write(file->file.c_str(), file->file.size());
+                if (!curFile->file.empty())
+                    os.write(curFile->file.c_str(), curFile->file.size());
                 else // stdin
                     os.write("<stdin>", 7);
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 63);
-                numBuf[size++] = ':';
-                size += itocstrCStyle<size_t>(colNo, numBuf+size, 64-size);
-                numBuf[size++] = ':';
+                size_t size = 1+itocstrCStyle<size_t>(curMacro->lineNo, numBuf+1, 63);
+                numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
                 

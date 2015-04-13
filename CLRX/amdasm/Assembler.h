@@ -166,6 +166,13 @@ struct AsmFile: public RefCountable
     RefPtr<const AsmFile> parent; ///< parent file (or null if root)
     size_t lineNo; // place where file is included (0 if root)
     const std::string file; // file path
+    
+    explicit AsmFile(const std::string& _file) : file(_file)
+    { }
+    
+    AsmFile(const RefPtr<const AsmFile> pparent, size_t plineNo, const std::string& pfile)
+        : parent(pparent), lineNo(plineNo), file(pfile)
+    { }
 };
 
 struct AsmMacroSubst: public RefCountable
@@ -173,7 +180,14 @@ struct AsmMacroSubst: public RefCountable
     RefPtr<const AsmMacroSubst> parent;   ///< parent macro (null if global scope)
     RefPtr<const AsmFile> file; ///< file where macro substituted
     size_t lineNo;  ///< place where macro substituted
-    std::string macro;  ///< a substituting macro
+    
+    AsmMacroSubst(RefPtr<const AsmFile> pfile, size_t plineNo)
+            : file(pfile), lineNo(plineNo)
+    { }
+    
+    AsmMacroSubst(RefPtr<const AsmMacroSubst> pparent, RefPtr<const AsmFile> pfile,
+              size_t plineNo) : parent(pparent), file(pfile), lineNo(plineNo)
+    { }
 };
 
 struct AsmSourcePos
