@@ -46,6 +46,7 @@ AsmInputFilter::AsmInputFilter(Assembler& inAssembler, std::istream& is) :
         assembler(inAssembler), stream(is), mode(LineMode::NORMAL),
         pos(0), lineNo(1)
 {
+    charCount = assembler.charCount;
     buffer.reserve(AsmParserLineMaxSize);
 }
 
@@ -234,8 +235,9 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
                         if (backslash&1)
                             colTranslations.push_back({destPos-lineStart, lineNo});
                         else
-                            assembler.addWarning(lineNo, pos-joinStart+1,
-                                         "Unterminated string: newline inserted");
+                            assembler.addWarning({charCount+destPos-lineStart,
+                                        lineNo, pos-joinStart+1},
+                                        "Unterminated string: newline inserted");
                         pos++;
                         joinStart = pos;
                     }
@@ -268,7 +270,7 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
             if (readed == 0)
             {   // end of file. check comments
                 if (mode == LineMode::LONG_COMMENT && lineStart!=pos)
-                    assembler.addError(lineNo, pos-joinStart+1,
+                    assembler.addError({charCount+pos-lineStart, lineNo, pos-joinStart+1},
                            "Unterminated multi-line comment");
                 if (destPos-lineStart == 0)
                 {
@@ -280,6 +282,7 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
         }
     }
     lineSize = destPos-lineStart;
+    charCount += lineSize+1;
     return buffer.data()+lineStart;
 }
 
@@ -470,6 +473,7 @@ void AsmSourcePos::print(std::ostream& os) const
 
 void AsmMessage::print(std::ostream& os) const
 {
+    pos.print(os);
     if (error)
         os.write("Error: ", 7);
     else
@@ -487,7 +491,7 @@ AsmExpression::~AsmExpression()
     delete[] ops;
 }
 
-uint64_t AsmExpression::operator()() const
+bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
 {
     struct ExprStackEntry
     {
@@ -496,9 +500,12 @@ uint64_t AsmExpression::operator()() const
         uint64_t value;
     };
     
+    if (symOccursNum != 0)
+        throw Exception("Expression can't be evaluated if symbols still are unresolved!");
+    
     size_t argPos = 0;
     size_t opPos = 0;
-    uint64_t value;
+    value = 0;
     std::stack<ExprStackEntry> stack;
     
     do {
@@ -640,7 +647,7 @@ uint64_t AsmExpression::operator()() const
         
     } while (!stack.empty());
     
-    return value;
+    return true;
 }
 
 /*
@@ -655,12 +662,47 @@ Assembler::~Assembler()
 {
 }
 
-void Assembler::addWarning(size_t lineNo, size_t colNo, const std::string& message)
+AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char* string)
 {
+    AsmSymbolEntry* entry = nullptr;
+    size_t p = 0;
+    if (0 < size && ((string[0] >= 'a' && string[0] <= 'z') ||
+        (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' || string[0] == '.' ||
+         string[0] == '$'))
+        for (p = 1; p < size && ((string[p] >= '0' && string[p] <= '9') ||
+            (string[p] >= 'a' && string[p] <= 'z') ||
+            (string[p] >= 'A' && string[p] <= 'Z') || string[p] == '_' ||
+             string[p] == '.' || string[p] == '$') ; p++);
+    if (p == 0) // not parsed
+        return nullptr;
+    
+    std::string symName(string, string + p);
+    std::pair<AsmSymbolMap::iterator, bool> res = symbolMap.insert({ symName, AsmSymbol()});
+    if (!res.second)
+    {   // if found
+        AsmSymbolMap::iterator it = res.first;
+        AsmSymbol& sym = it->second;
+        sym.occurrences.push_back({ lineCol.charCount,
+            { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }});
+        entry = &*it;
+    }
+    else // if new symbol has been put
+        entry = &*res.first;
+    return entry;
 }
 
-void Assembler::addError(size_t lineNo, size_t colNo, const std::string& message)
+void Assembler::addWarning(LineCol lineCol, const std::string& message)
 {
+    messages.push_back({lineCol.charCount, { 
+        { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo },
+        false, message }});
+}
+
+void Assembler::addError(LineCol lineCol, const std::string& message)
+{
+    messages.push_back({lineCol.charCount, { 
+        { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo },
+        true, message }});
 }
 
 void Assembler::addIncludeDir(const std::string& includeDir)
@@ -673,8 +715,8 @@ void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
     defSyms.push_back({symName, value});
 }
 
-AsmExpression* Assembler::parseExpression(size_t lineNo, size_t colNo, size_t stringSize,
-             const char* string, uint64_t& outValue) const
+AsmExpression* Assembler::parseExpression(LineCol lineCol, size_t stringSize,
+             const char* string, size_t& outValue) const
 {
     return nullptr;
 }
@@ -700,6 +742,9 @@ void Assembler::assemble(std::istream& inputStream, std::ostream& msgStream)
         size_t wordSize = 0;
         const char* word = parser.getWord(wordSize);*/
         
+        mapSort(messages.begin(), messages.end());
+        for (const auto& msgEntry: messages)
+            msgEntry.second.print(msgStream);
     }
     catch(...)
     {

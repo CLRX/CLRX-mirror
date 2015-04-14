@@ -232,7 +232,7 @@ size_t CStringHash::operator()(const char* c) const
     size_t hash = 0;
     
     for (const char* p = c; *p != 0; p++)
-        hash = ((hash<<8)^(uint8_t)*p)*size_t(0x93cda145bf146a3dULL);
+        hash = ((hash<<8)^(cxbyte)*p)*size_t(0x93cda145bf146a3dULL);
     return hash;
 }
 

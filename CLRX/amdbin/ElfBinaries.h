@@ -58,7 +58,7 @@ struct Elf32Types
     typedef Elf32_Shdr Shdr;
     typedef Elf32_Phdr Phdr;
     typedef Elf32_Sym Sym;
-    static const uint8_t ELFCLASS;
+    static const cxbyte ELFCLASS;
     static const cxuint bitness;
     static const char* bitName;
 };
@@ -71,7 +71,7 @@ struct Elf64Types
     typedef Elf64_Shdr Shdr;
     typedef Elf64_Phdr Phdr;
     typedef Elf64_Sym Sym;
-    static const uint8_t ELFCLASS;
+    static const cxbyte ELFCLASS;
     static const cxuint bitness;
     static const char* bitName;
 };

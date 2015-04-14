@@ -51,13 +51,13 @@ static size_t unfinishedRegionOfStringTable(const cxbyte* table, size_t size)
 
 /* elf32 types */
 
-const uint8_t CLRX::Elf32Types::ELFCLASS = ELFCLASS32;
+const cxbyte CLRX::Elf32Types::ELFCLASS = ELFCLASS32;
 const uint32_t CLRX::Elf32Types::bitness = 32;
 const char* CLRX::Elf32Types::bitName = "32";
 
 /* elf64 types */
 
-const uint8_t CLRX::Elf64Types::ELFCLASS = ELFCLASS64;
+const cxbyte CLRX::Elf64Types::ELFCLASS = ELFCLASS64;
 const cxuint CLRX::Elf64Types::bitness = 64;
 const char* CLRX::Elf64Types::bitName = "64";
 

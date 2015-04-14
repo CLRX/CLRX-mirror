@@ -379,7 +379,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     const uint32_t kernelsNum = input->kernels.size();
     /* compute size of binary */
     uint64_t elfSize = 0;
-    uint64_t binarySize = uint64_t(8) + kernelsNum*16U + 20U /* section */;
+    uint64_t binarySize = uint64_t(8) + size_t(kernelsNum)*16U + 20U /* section */;
     for (const GalliumKernelInput& kernel: input->kernels)
         binarySize += uint64_t(kernel.argInfos.size())*24U + kernel.kernelName.size();
     

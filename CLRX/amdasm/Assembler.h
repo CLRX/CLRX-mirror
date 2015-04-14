@@ -73,6 +73,13 @@ enum class AsmSectionType: cxbyte
 
 class Assembler;
 
+struct LineCol
+{
+    uint64_t charCount;
+    uint64_t lineNo;
+    size_t colNo;
+};
+
 /// assembler input layout filter
 /** filters input from comments and join splitted lines by backslash.
  * readLine returns prepared line which have only space (' ') and
@@ -83,7 +90,7 @@ public:
     struct LineTrans
     {
         size_t position;
-        size_t lineNo;
+        uint64_t lineNo;
     };
 private:
     Assembler& assembler;
@@ -98,11 +105,12 @@ private:
     };
     
     std::istream& stream;
+    uint64_t charCount;
     LineMode mode;
     size_t pos;
     std::vector<char> buffer;
     std::vector<LineTrans> colTranslations;
-    size_t lineNo;
+    uint64_t lineNo;
 public:
     explicit AsmInputFilter(Assembler& assembler, std::istream& is);
     
@@ -110,8 +118,11 @@ public:
     const char* readLine(size_t& lineSize);
     
     /// get current line number before reading line
-    size_t getLineNo() const
+    uint64_t getLineNo() const
     { return lineNo; }
+    
+    uint64_t getCharCount() const
+    { return charCount; }
     
     /// translate position to line number and column number
     /**
@@ -119,7 +130,7 @@ public:
      * \param outLineNo output line number
      * \param outColNo output column number
      */
-    void translatePos(size_t position, size_t& outLineNo, size_t& outColNo) const;
+    void translatePos(size_t position, uint64_t& outLineNo, size_t& outColNo) const;
     
     /// returns column translations
     const std::vector<LineTrans> getColTranslations() const
@@ -137,7 +148,7 @@ protected:
 public:
     virtual ~ISAAssembler();
     
-    virtual size_t assemble(size_t lineNo, const char* line) = 0;
+    virtual size_t assemble(uint64_t lineNo, const char* line) = 0;
     virtual void finish() = 0;
     
     size_t getOutputSize() const
@@ -153,7 +164,7 @@ public:
     explicit GCNAssembler(Assembler& assembler);
     ~GCNAssembler();
     
-    size_t assemble(size_t lineNo, const char* line);
+    size_t assemble(uint64_t lineNo, const char* line);
     void finish();
 };
 
@@ -164,13 +175,13 @@ public:
 struct AsmFile: public RefCountable
 {
     RefPtr<const AsmFile> parent; ///< parent file (or null if root)
-    size_t lineNo; // place where file is included (0 if root)
+    uint64_t lineNo; // place where file is included (0 if root)
     const std::string file; // file path
     
     explicit AsmFile(const std::string& _file) : file(_file)
     { }
     
-    AsmFile(const RefPtr<const AsmFile> pparent, size_t plineNo, const std::string& pfile)
+    AsmFile(const RefPtr<const AsmFile> pparent, uint64_t plineNo, const std::string& pfile)
         : parent(pparent), lineNo(plineNo), file(pfile)
     { }
 };
@@ -179,9 +190,9 @@ struct AsmMacroSubst: public RefCountable
 {
     RefPtr<const AsmMacroSubst> parent;   ///< parent macro (null if global scope)
     RefPtr<const AsmFile> file; ///< file where macro substituted
-    size_t lineNo;  ///< place where macro substituted
+    uint64_t lineNo;  ///< place where macro substituted
     
-    AsmMacroSubst(RefPtr<const AsmFile> pfile, size_t plineNo)
+    AsmMacroSubst(RefPtr<const AsmFile> pfile, uint64_t plineNo)
             : file(pfile), lineNo(plineNo)
     { }
     
@@ -195,7 +206,7 @@ struct AsmSourcePos
     RefPtr<const AsmFile> file;   ///< file in which message occurred
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     
-    size_t lineNo;
+    uint64_t lineNo;
     size_t colNo;
     
     void print(std::ostream& os) const;
@@ -203,6 +214,7 @@ struct AsmSourcePos
 
 struct AsmMessage
 {
+    AsmSourcePos pos;
     bool error;
     std::string message;
     
@@ -259,13 +271,18 @@ union AsmExprArg;
 
 struct AsmExpression
 {
+    AsmSourcePos sourcePos;
     size_t symOccursNum;
     AsmExprOp* ops;
+    LineCol* divsAndModsPos;    ///< for every for div/mod operation
     AsmExprArg* args;
     
     ~AsmExpression();
     
-    uint64_t operator()() const;
+    bool evaluate(Assembler& assembler, uint64_t& value) const;
+    
+    static AsmExpression* parseExpression(Assembler& assembler,
+                  size_t size, const char* line, size_t& endPos);
 };
 
 struct AsmExprSymbolOccurence
@@ -279,7 +296,7 @@ struct AsmSymbol
     cxuint sectionId;
     bool isDefined;
     uint64_t value;
-    std::vector<AsmSourcePos> occurrences;
+    std::vector<std::pair<uint64_t, AsmSourcePos>> occurrences;
     AsmExpression* expression;
     std::vector<std::pair<AsmExprTarget, AsmExprSymbolOccurence> > occurrencesInExprs;
     
@@ -296,6 +313,7 @@ struct AsmSymbol
 };
 
 typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
+typedef AsmSymbolMap::value_type AsmSymbolEntry;
 
 union AsmExprArg
 {
@@ -343,26 +361,34 @@ private:
     KernelMap kernelMap;
     std::vector<AsmExpression*> pendingExpressions;
     cxuint flags;
+    uint64_t charCount; // for source
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
-    RefPtr<AsmFile> topInclusion;
-    RefPtr<AsmMacroSubst> topMacroSubst;
+    RefPtr<const AsmFile> topFile;
+    RefPtr<const AsmMacroSubst> topMacroSubst;
+    
+    uint64_t lineNo;
     
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
     };
     
-    std::vector<std::pair<AsmSourcePos, AsmMessage> > messages;
+    /* element:
+     *   first - character counter value
+     *   second - message */
+    std::vector<std::pair<uint64_t, AsmMessage> > messages;
     
     bool inGlobal;
     bool isInAmdConfig;
     cxuint currentKernel;
     cxuint currentSection;
     
-    void addWarning(size_t lineNo, size_t colNo, const std::string& message);
-    void addError(size_t lineNo, size_t colNo, const std::string& message);
+    void addWarning(LineCol pos, const std::string& message);
+    void addError(LineCol pos, const std::string& message);
+    
+    AsmSymbolEntry* parseSymbol(LineCol lineCol, size_t size, const char* string);
 public:
     explicit Assembler(std::istream& input, cxuint flags);
     ~Assembler();
@@ -388,8 +414,8 @@ public:
     
     void addInitialDefSym(const std::string& symName, uint64_t name);
     
-    AsmExpression* parseExpression(size_t lineNo, size_t colNo, size_t stringSize,
-             const char* string, uint64_t& outValue) const;
+    AsmExpression* parseExpression(LineCol lineCol, size_t stringSize,
+             const char* string,  size_t& endPos) const;
     
     const AmdInput* getAmdOutput() const
     { return amdOutput; }
