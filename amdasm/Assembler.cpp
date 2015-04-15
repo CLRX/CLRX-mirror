@@ -71,7 +71,6 @@ AsmInputFilter::AsmInputFilter(std::istream& is) :
 
 const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
-    charCount = assembler.charCount;
     colTranslations.clear();
     bool endOfLine = false;
     size_t lineStart = pos;
@@ -255,8 +254,7 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                         if (backslash&1)
                             colTranslations.push_back({destPos-lineStart, lineNo});
                         else
-                            assembler.addWarning({charCount+destPos-lineStart,
-                                        lineNo, pos-joinStart+1},
+                            assembler.printWarning({lineNo, pos-joinStart+1},
                                         "Unterminated string: newline inserted");
                         pos++;
                         joinStart = pos;
@@ -290,7 +288,7 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
             if (readed == 0)
             {   // end of file. check comments
                 if (mode == LineMode::LONG_COMMENT && lineStart!=pos)
-                    assembler.addError({charCount+pos-lineStart, lineNo, pos-joinStart+1},
+                    assembler.printError({lineNo, pos-joinStart+1},
                            "Unterminated multi-line comment");
                 if (destPos-lineStart == 0)
                 {
@@ -302,7 +300,6 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         }
     }
     lineSize = destPos-lineStart;
-    charCount += lineSize+1;
     return buffer.data()+lineStart;
 }
 
@@ -480,17 +477,6 @@ void AsmSourcePos::print(std::ostream& os) const
     os.write(numBuf, size);
 }
 
-void AsmMessage::print(std::ostream& os) const
-{
-    pos.print(os);
-    if (error)
-        os.write("Error: ", 7);
-    else
-        os.write("Warning: ", 9);
-    os.write(message.c_str(), message.size());
-    os.put('\n');
-}
-
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
         const Array<std::pair<std::string, std::string> >& inArgMap)
         : macro(inMacro), argMap(inArgMap), exit(false)
@@ -600,7 +586,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value / value;
                         else // error
                         {
-                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(divsAndModsPos[modAndDivsPos],
                                    "Divide by zero");
                             failed = true;
                             value = 0;
@@ -612,7 +598,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = int64_t(entry.value) / int64_t(value);
                         else // error
                         {
-                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(divsAndModsPos[modAndDivsPos],
                                    "Divide by zero");
                             failed = true;
                             value = 0;
@@ -624,7 +610,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value % value;
                         else // error
                         {
-                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(divsAndModsPos[modAndDivsPos],
                                    "Divide by zero");
                             failed = true;
                             value = 0;
@@ -636,7 +622,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = int64_t(entry.value) % int64_t(value);
                         else // error
                         {
-                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(divsAndModsPos[modAndDivsPos],
                                    "Divide by zero");
                             failed = true;
                             value = 0;
@@ -815,8 +801,7 @@ AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char*
     {   // if found
         AsmSymbolMap::iterator it = res.first;
         AsmSymbol& sym = it->second;
-        sym.occurrences.push_back({ lineCol.charCount,
-            { lineCol.charCount, topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }});
+        sym.occurrences.push_back({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo });
         entry = &*it;
     }
     else // if new symbol has been put
@@ -824,16 +809,22 @@ AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char*
     return entry;
 }
 
-void Assembler::addWarning(LineCol lineCol, const std::string& message)
+void Assembler::printWarning(LineCol lineCol, const std::string& message)
 {
-    messages.push_back({ { lineCol.charCount, topFile, topMacroSubst,
-        lineCol.lineNo, lineCol.colNo }, false, message });
+    AsmSourcePos pos = { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    pos.print(*messageStream);
+    messageStream->write("Warning: ", 9);
+    messageStream->write(message.c_str(), message.size());
+    messageStream->put('\n');
 }
 
-void Assembler::addError(LineCol lineCol, const std::string& message)
+void Assembler::printError(LineCol lineCol, const std::string& message)
 {
-    messages.push_back({ { lineCol.charCount, topFile, topMacroSubst,
-        lineCol.lineNo, lineCol.colNo }, true, message });
+    AsmSourcePos pos = { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    pos.print(*messageStream);
+    messageStream->write("Error: ", 7);
+    messageStream->write(message.c_str(), message.size());
+    messageStream->put('\n');
 }
 
 void Assembler::addIncludeDir(const std::string& includeDir)
@@ -872,12 +863,6 @@ void Assembler::assemble(std::istream& inputStream, std::ostream& msgStream)
         size_t lineNo = parser.getLineNo();
         size_t wordSize = 0;
         const char* word = parser.getWord(wordSize);*/
-        
-        std::sort(messages.begin(), messages.end(),
-              [](const AsmMessage& m1, const AsmMessage& m2)
-              { return m1.pos.charCount < m2.pos.charCount; });
-        for (const auto& msgEntry: messages)
-            msgEntry.print(msgStream);
     }
     catch(...)
     {

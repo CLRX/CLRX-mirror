@@ -75,7 +75,6 @@ class Assembler;
 
 struct LineCol
 {
-    uint64_t charCount;
     uint64_t lineNo;
     size_t colNo;
 };
@@ -115,7 +114,6 @@ struct AsmMacroSubst: public RefCountable
 
 struct AsmSourcePos
 {
-    uint64_t charCount;
     RefPtr<const AsmFile> file;   ///< file in which message occurred
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     
@@ -154,7 +152,6 @@ struct AsmMacro
 class AsmSourceFilter
 {
 protected:
-    uint64_t charCount;
     size_t pos;
     std::vector<char> buffer;
     std::vector<LineTrans> colTranslations;
@@ -171,9 +168,6 @@ public:
     /// get current line number before reading line
     uint64_t getLineNo() const
     { return lineNo; }
-    
-    uint64_t getCharCount() const
-    { return charCount; }
     
     /// translate position to line number and column number
     /**
@@ -261,15 +255,6 @@ public:
     void finish();
 };
 
-struct AsmMessage
-{
-    AsmSourcePos pos;
-    bool error;
-    std::string message;
-    
-    void print(std::ostream& os) const;
-};
-
 /*
  * assembler expressions
  */
@@ -347,7 +332,7 @@ struct AsmSymbol
     cxuint sectionId;
     bool isDefined;
     uint64_t value;
-    std::vector<std::pair<uint64_t, AsmSourcePos>> occurrences;
+    std::vector<AsmSourcePos> occurrences;
     AsmExpression* expression;
     std::vector<std::pair<AsmExprTarget, AsmExprSymbolOccurence> > occurrencesInExprs;
     
@@ -431,27 +416,25 @@ private:
     
     std::stack<AsmSourceFilter*> asmInputFilters;
     
+    std::ostream* messageStream;
+    
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
     };
     
     std::stack<AsmCondClause> condClauses;
-    /* element:
-     *   first - character counter value
-     *   second - message */
-    std::vector<AsmMessage> messages;
     
     bool inGlobal;
     bool isInAmdConfig;
     cxuint currentKernel;
     cxuint currentSection;
     
-    void addWarning(LineCol pos, const std::string& message);
-    void addError(LineCol pos, const std::string& message);
+    void printWarning(LineCol pos, const std::string& message);
+    void printError(LineCol pos, const std::string& message);
     
-    void addWarning(const AsmSourcePos& pos, const std::string& message);
-    void addError(const AsmSourcePos& pos, const std::string& message);
+    void printWarning(const AsmSourcePos& pos, const std::string& message);
+    void printError(const AsmSourcePos& pos, const std::string& message);
     
     AsmSymbolEntry* parseSymbol(LineCol lineCol, size_t size, const char* string);
 public:
