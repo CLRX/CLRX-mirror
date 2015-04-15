@@ -33,8 +33,29 @@
 
 using namespace CLRX;
 
+static inline const char* skipSpacesToEnd(const char* string, const char* end)
+{
+    while (string!=end && *string == ' ') string++;
+    return string;
+}
+
 ISAAssembler::~ISAAssembler()
 { }
+
+
+AsmSourceFilter::~AsmSourceFilter()
+{ }
+
+void AsmSourceFilter::translatePos(size_t colNo, size_t& outLineNo, size_t& outColNo) const
+{
+    auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
+         LineTrans({ colNo-1, 0 }),
+         [](const LineTrans& t1, const LineTrans& t2)
+         { return t1.position < t2.position; });
+    
+    outLineNo = found->lineNo;
+    outColNo = colNo-found->position;
+}
 
 /*
  * AsmInputFilter
@@ -42,16 +63,15 @@ ISAAssembler::~ISAAssembler()
 
 static const size_t AsmParserLineMaxSize = 300;
 
-AsmInputFilter::AsmInputFilter(Assembler& inAssembler, std::istream& is) :
-        assembler(inAssembler), stream(is), mode(LineMode::NORMAL),
-        pos(0), lineNo(1)
+AsmInputFilter::AsmInputFilter(std::istream& is) :
+        stream(is), mode(LineMode::NORMAL)
 {
-    charCount = assembler.charCount;
     buffer.reserve(AsmParserLineMaxSize);
 }
 
-const char* AsmInputFilter::readLine(size_t& lineSize)
+const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
+    charCount = assembler.charCount;
     colTranslations.clear();
     bool endOfLine = false;
     size_t lineStart = pos;
@@ -286,17 +306,6 @@ const char* AsmInputFilter::readLine(size_t& lineSize)
     return buffer.data()+lineStart;
 }
 
-void AsmInputFilter::translatePos(size_t colNo, size_t& outLineNo, size_t& outColNo) const
-{
-    auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
-         LineTrans({ colNo-1, 0 }),
-         [](const LineTrans& t1, const LineTrans& t2)
-         { return t1.position < t2.position; });
-    
-    outLineNo = found->lineNo;
-    outColNo = colNo-found->position;
-}
-
 /*
  * source pos
  */
@@ -482,6 +491,34 @@ void AsmMessage::print(std::ostream& os) const
     os.put('\n');
 }
 
+AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
+        const Array<std::pair<std::string, std::string> >& inArgMap)
+        : macro(inMacro), argMap(inArgMap), exit(false)
+{
+    buffer.reserve(300);
+    lineNo = macro.pos.lineNo+1;
+}
+
+const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+{
+    if (exit)
+    {   // early exit from macro
+        lineSize = 0;
+        return nullptr;
+    }
+    const LineTrans* colTrans = macro.colTranslations.get();
+    
+    const size_t contentSize = macro.content.size();
+    const char* content = macro.content.c_str();\
+    while (pos < contentSize && content[pos] != '\n')
+    {
+        if (content[pos] == '\\')
+        {   // backslash
+        }
+    }
+    return nullptr;
+}
+
 /*
  * expressions
  */
@@ -507,7 +544,9 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
     size_t opPos = 0;
     value = 0;
     std::stack<ExprStackEntry> stack;
+    size_t modAndDivsPos = 0;
     
+    bool failed = false;
     do {
         AsmExprOp op = ops[opPos++];
         if (op != AsmExprOp::ARG_VALUE)
@@ -559,26 +598,50 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                     case AsmExprOp::DIVISION:
                         if (value != 0)
                             value = entry.value / value;
-                        else
-                            ; // error!
+                        else // error
+                        {
+                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                                   "Divide by zero");
+                            failed = true;
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::SIGNED_DIVISION:
                         if (value != 0)
                             value = int64_t(entry.value) / int64_t(value);
-                        else
-                            ; // error!
+                        else // error
+                        {
+                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                                   "Divide by zero");
+                            failed = true;
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::MODULO:
                         if (value != 0)
                             value = entry.value % value;
-                        else
-                            ; // error!
+                        else // error
+                        {
+                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                                   "Divide by zero");
+                            failed = true;
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::SIGNED_MODULO:
                         if (value != 0)
                             value = int64_t(entry.value) % int64_t(value);
-                        else
-                            ; // error!
+                        else // error
+                        {
+                            assembler.addError(divsAndModsPos[modAndDivsPos],
+                                   "Divide by zero");
+                            failed = true;
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::BIT_AND:
                         value = entry.value & value;
@@ -647,7 +710,77 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
         
     } while (!stack.empty());
     
-    return true;
+    return !failed;
+}
+
+static const cxbyte asmOpPrioritiesTbl[] =
+{
+    0, // ARG_VALUE
+    0, // ARG_SYMBOL
+    3, // ADDITION
+    3, // SUBTRACT
+    1, // NEGATE
+    2, // MULTIPLY
+    2, // DIVISION
+    2, // SIGNED_DIVISION
+    2, // MODULO
+    2, // SIGNED_MODULO
+    7, // BIT_AND
+    9, // BIT_OR
+    8, // BIT_XOR
+    1, // BIT_NOT
+    4, // SHIFT_LEFT
+    4, // SHIFT_RIGHT
+    4, // SIGNED_SHIFT_RIGHT
+    10, // LOGICAL_AND
+    11, // LOGICAL_OR
+    1, // LOGICAL_NOT
+    12, // CHOICE
+    6, // EQUAL
+    6, // NOT_EQUAL
+    5, // LESS
+    5, // LESS_EQ
+    5, // GREATER
+    5  // GREATER_EQ
+};
+
+AsmExpression* AsmExpression::parseExpression(Assembler& assembler,
+                  size_t size, const char* string, size_t& endPos)
+{
+    struct ConExprEntry
+    {
+        size_t parethesisCount;
+        cxbyte priority;
+        AsmExprOp op;
+    };
+    std::vector<std::pair<size_t, AsmExprOp> > exprOps;
+    std::vector<AsmExprArg> exprArgs;
+    std::stack<AsmExprOp> opStack;
+    
+    const char* end = string + size;
+    size_t parenthesisCount = 0;
+    cxuint priority = 0;
+    AsmExprOp curOp = AsmExprOp::NONE;
+    bool emptyParen = false;
+    
+    while (string != end)
+    {
+        string = skipSpacesToEnd(string, end);
+        if (string == end) break;
+        
+        if (*string == '(')
+        {
+            if (curOp == AsmExprOp::ARG_SYMBOL && curOp == AsmExprOp::ARG_VALUE)
+            {   // error
+                /*assembler.addError(assembler.cur,
+                                   "Divide by zero");*/
+            }
+        }
+        else if (*string == ')')
+        {
+        }
+    }
+    return nullptr;
 }
 
 /*
@@ -683,7 +816,7 @@ AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char*
         AsmSymbolMap::iterator it = res.first;
         AsmSymbol& sym = it->second;
         sym.occurrences.push_back({ lineCol.charCount,
-            { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }});
+            { lineCol.charCount, topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }});
         entry = &*it;
     }
     else // if new symbol has been put
@@ -693,16 +826,14 @@ AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char*
 
 void Assembler::addWarning(LineCol lineCol, const std::string& message)
 {
-    messages.push_back({lineCol.charCount, { 
-        { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo },
-        false, message }});
+    messages.push_back({ { lineCol.charCount, topFile, topMacroSubst,
+        lineCol.lineNo, lineCol.colNo }, false, message });
 }
 
 void Assembler::addError(LineCol lineCol, const std::string& message)
 {
-    messages.push_back({lineCol.charCount, { 
-        { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo },
-        true, message }});
+    messages.push_back({ { lineCol.charCount, topFile, topMacroSubst,
+        lineCol.lineNo, lineCol.colNo }, true, message });
 }
 
 void Assembler::addIncludeDir(const std::string& includeDir)
@@ -742,9 +873,11 @@ void Assembler::assemble(std::istream& inputStream, std::ostream& msgStream)
         size_t wordSize = 0;
         const char* word = parser.getWord(wordSize);*/
         
-        mapSort(messages.begin(), messages.end());
+        std::sort(messages.begin(), messages.end(),
+              [](const AsmMessage& m1, const AsmMessage& m2)
+              { return m1.pos.charCount < m2.pos.charCount; });
         for (const auto& msgEntry: messages)
-            msgEntry.second.print(msgStream);
+            msgEntry.print(msgStream);
     }
     catch(...)
     {

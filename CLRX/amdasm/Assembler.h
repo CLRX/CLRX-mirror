@@ -80,94 +80,6 @@ struct LineCol
     size_t colNo;
 };
 
-/// assembler input layout filter
-/** filters input from comments and join splitted lines by backslash.
- * readLine returns prepared line which have only space (' ') and
- * non-space characters. */
-class AsmInputFilter
-{
-public:
-    struct LineTrans
-    {
-        size_t position;
-        uint64_t lineNo;
-    };
-private:
-    Assembler& assembler;
-    
-    enum class LineMode: cxbyte
-    {
-        NORMAL = 0,
-        LSTRING,
-        STRING,
-        LONG_COMMENT,
-        LINE_COMMENT
-    };
-    
-    std::istream& stream;
-    uint64_t charCount;
-    LineMode mode;
-    size_t pos;
-    std::vector<char> buffer;
-    std::vector<LineTrans> colTranslations;
-    uint64_t lineNo;
-public:
-    explicit AsmInputFilter(Assembler& assembler, std::istream& is);
-    
-    /// read line and returns line except newline character
-    const char* readLine(size_t& lineSize);
-    
-    /// get current line number before reading line
-    uint64_t getLineNo() const
-    { return lineNo; }
-    
-    uint64_t getCharCount() const
-    { return charCount; }
-    
-    /// translate position to line number and column number
-    /**
-     * \param position position in line (from zero)
-     * \param outLineNo output line number
-     * \param outColNo output column number
-     */
-    void translatePos(size_t position, uint64_t& outLineNo, size_t& outColNo) const;
-    
-    /// returns column translations
-    const std::vector<LineTrans> getColTranslations() const
-    { return colTranslations; }
-};
-
-class ISAAssembler
-{
-protected:
-    Assembler& assembler;
-    explicit ISAAssembler(Assembler& assembler);
-    size_t outputSize;
-    char* output;
-    void reallocateOutput(size_t newSize);
-public:
-    virtual ~ISAAssembler();
-    
-    virtual size_t assemble(uint64_t lineNo, const char* line) = 0;
-    virtual void finish() = 0;
-    
-    size_t getOutputSize() const
-    { return outputSize; }
-    
-    const char* getOutput() const
-    { return output; }
-};
-
-class GCNAssembler: public ISAAssembler
-{
-public:
-    explicit GCNAssembler(Assembler& assembler);
-    ~GCNAssembler();
-    
-    size_t assemble(uint64_t lineNo, const char* line);
-    void finish();
-};
-
 /*
  * assembler source position
  */
@@ -203,6 +115,7 @@ struct AsmMacroSubst: public RefCountable
 
 struct AsmSourcePos
 {
+    uint64_t charCount;
     RefPtr<const AsmFile> file;   ///< file in which message occurred
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     
@@ -210,6 +123,142 @@ struct AsmSourcePos
     size_t colNo;
     
     void print(std::ostream& os) const;
+};
+
+struct LineTrans
+{
+    size_t position;
+    uint64_t lineNo;
+};
+
+struct AsmMacroArg
+{
+    std::string name;
+    std::string defaultValue;
+    bool vararg;
+    bool required;
+};
+
+struct AsmMacro
+{
+    AsmSourcePos pos;
+    uint64_t contentLineNo;
+    Array<AsmMacroArg> args;
+    std::string content;
+    std::unique_ptr<LineTrans[]> colTranslations;
+    
+    AsmMacro(const AsmSourcePos& pos, uint64_t contentLineNo,
+             const Array<AsmMacroArg>& args, std::string& content);
+};
+
+class AsmSourceFilter
+{
+protected:
+    uint64_t charCount;
+    size_t pos;
+    std::vector<char> buffer;
+    std::vector<LineTrans> colTranslations;
+    uint64_t lineNo;
+    
+    AsmSourceFilter():  pos(0), lineNo(1)
+    { }
+public:
+    virtual ~AsmSourceFilter();
+    
+    /// read line and returns line except newline character
+    virtual const char* readLine(Assembler& assembler, size_t& lineSize) = 0;
+    
+    /// get current line number before reading line
+    uint64_t getLineNo() const
+    { return lineNo; }
+    
+    uint64_t getCharCount() const
+    { return charCount; }
+    
+    /// translate position to line number and column number
+    /**
+     * \param position position in line (from zero)
+     * \param outLineNo output line number
+     * \param outColNo output column number
+     */
+    void translatePos(size_t position, uint64_t& outLineNo, size_t& outColNo) const;
+    
+    /// returns column translations
+    const std::vector<LineTrans> getColTranslations() const
+    { return colTranslations; }
+};
+
+/// assembler input layout filter
+/** filters input from comments and join splitted lines by backslash.
+ * readLine returns prepared line which have only space (' ') and
+ * non-space characters. */
+class AsmInputFilter: AsmSourceFilter
+{
+private:
+    enum class LineMode: cxbyte
+    {
+        NORMAL = 0,
+        LSTRING,
+        STRING,
+        LONG_COMMENT,
+        LINE_COMMENT
+    };
+    
+    std::istream& stream;
+    LineMode mode;
+public:
+    explicit AsmInputFilter(std::istream& is);
+    
+    /// read line and returns line except newline character
+    const char* readLine(Assembler& assembler, size_t& lineSize);
+};
+
+class AsmMacroInputFilter: AsmSourceFilter
+{
+private:
+    const AsmMacro& macro;
+    Array<std::pair<std::string, std::string> > argMap;
+    bool exit;
+public:
+    AsmMacroInputFilter(const AsmMacro& macro,
+        const Array<std::pair<std::string, std::string> >& argMap);
+    
+    /// read line and returns line except newline character
+    const char* readLine(Assembler& assembler, size_t& lineSize);
+    
+    void setExit()
+    { exit = true; }
+};
+
+class ISAAssembler
+{
+protected:
+    Assembler& assembler;
+    explicit ISAAssembler(Assembler& assembler);
+    size_t outputSize;
+    char* output;
+    void reallocateOutput(size_t newSize);
+public:
+    virtual ~ISAAssembler();
+    
+    virtual size_t assemble(uint64_t lineNo, const char* line) = 0;
+    virtual void finish() = 0;
+    
+    size_t getOutputSize() const
+    { return outputSize; }
+    
+    const char* getOutput() const
+    { return output; }
+};
+
+class GCNAssembler: public ISAAssembler
+{
+public:
+    explicit GCNAssembler(Assembler& assembler);
+    ~GCNAssembler();
+    
+    size_t assemble(uint64_t lineNo, const char* line);
+    void finish();
 };
 
 struct AsmMessage
@@ -253,7 +302,9 @@ enum class AsmExprOp : cxbyte
     LESS,
     LESS_EQ,
     GREATER,
-    GREATER_EQ
+    GREATER_EQ,
+    CHOICE_SECOND = 0xfd,
+    NONE = 0xfe
 };
 
 struct AsmExprTarget;
@@ -317,7 +368,7 @@ typedef AsmSymbolMap::value_type AsmSymbolEntry;
 
 union AsmExprArg
 {
-    AsmSymbolMap::value_type* symbol;
+    AsmSymbolEntry* symbol;
     uint64_t value;
 };
 
@@ -333,13 +384,19 @@ struct AsmExprTarget
     cxbyte type;
     union
     {
-        AsmSymbolMap::value_type* symbol;
+        AsmSymbolEntry* symbol;
         struct {
             cxuint sectionId;
             cxuint size;
             size_t offset;
         };
     };
+};
+
+struct AsmCondClause
+{
+    RefPtr<AsmMacroSubst> macroSubst;
+    std::vector<std::pair<AsmSourcePos, uint64_t> > positions;
 };
 
 class Assembler
@@ -350,6 +407,7 @@ public:
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
     friend class AsmInputFilter;
+    friend class AsmExpression;
     AsmFormat format;
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;
@@ -369,16 +427,20 @@ private:
     RefPtr<const AsmMacroSubst> topMacroSubst;
     
     uint64_t lineNo;
+    size_t linePos;
+    
+    std::stack<AsmSourceFilter*> asmInputFilters;
     
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
     };
     
+    std::stack<AsmCondClause> condClauses;
     /* element:
      *   first - character counter value
      *   second - message */
-    std::vector<std::pair<uint64_t, AsmMessage> > messages;
+    std::vector<AsmMessage> messages;
     
     bool inGlobal;
     bool isInAmdConfig;
@@ -387,6 +449,9 @@ private:
     
     void addWarning(LineCol pos, const std::string& message);
     void addError(LineCol pos, const std::string& message);
+    
+    void addWarning(const AsmSourcePos& pos, const std::string& message);
+    void addError(const AsmSourcePos& pos, const std::string& message);
     
     AsmSymbolEntry* parseSymbol(LineCol lineCol, size_t size, const char* string);
 public:
