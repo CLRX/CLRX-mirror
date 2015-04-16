@@ -213,14 +213,7 @@ private:
     const AsmMacro& macro;
     Array<std::pair<std::string, std::string> > argMap;
     
-    enum class LineMode: cxbyte
-    {
-        NORMAL = 0,
-        LSTRING,
-        STRING
-    };
     const LineTrans* curColTrans;
-    LineMode mode;
     bool exit;
 public:
     AsmMacroInputFilter(const AsmMacro& macro,
@@ -401,6 +394,7 @@ public:
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
     friend class AsmInputFilter;
+    friend class AsmMacroInputFilter;
     friend class AsmExpression;
     AsmFormat format;
     GPUDeviceType deviceType;
@@ -413,7 +407,7 @@ private:
     KernelMap kernelMap;
     std::vector<AsmExpression*> pendingExpressions;
     cxuint flags;
-    uint64_t charCount; // for source
+    uint64_t macroCount;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;

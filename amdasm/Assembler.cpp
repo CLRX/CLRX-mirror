@@ -167,6 +167,8 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                         if (backslash) 
                         {
                             destPos--;
+                            if (destPos-lineStart == colTranslations.back().position)
+                                colTranslations.pop_back();
                             colTranslations.push_back({destPos-lineStart, lineNo});
                         }
                         pos++;
@@ -204,6 +206,8 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                     if (backslash)
                     {
                         destPos--;
+                        if (destPos-lineStart == colTranslations.back().position)
+                            colTranslations.pop_back();
                         colTranslations.push_back({destPos-lineStart, lineNo});
                     }
                     else
@@ -239,6 +243,8 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                         if (backslash) 
                         {
                             destPos--;
+                            if (destPos-lineStart == colTranslations.back().position)
+                                colTranslations.pop_back();
                             colTranslations.push_back({destPos-lineStart, lineNo});
                         }
                         pos++;
@@ -328,7 +334,7 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
         const Array<std::pair<std::string, std::string> >& inArgMap)
-        : macro(inMacro), argMap(inArgMap), mode(LineMode::NORMAL), exit(false)
+        : macro(inMacro), argMap(inArgMap), exit(false)
 {
     curColTrans = macro.colTranslations.data();
     buffer.reserve(300);
@@ -358,34 +364,20 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     
     while (pos < contentSize && content[pos] != '\n')
     {
-        if (content[pos] != '\\' || mode != LineMode::NORMAL)
+        if (content[pos] != '\\')
         {
-            while (pos >= colTransThreshold)
+            if (pos >= colTransThreshold)
             {
                 curColTrans++;
                 colTranslations.push_back({destPos + pos-toCopyPos, curColTrans->lineNo});
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         curColTrans[1].position : SIZE_MAX;
             }
-            if (content[pos] == '"')
-            {
-                if (mode == LineMode::STRING)
-                    mode = LineMode::NORMAL;
-                else
-                    mode = LineMode::STRING;
-            }
-            else if (content[pos] == '\'')
-            {
-                if (mode == LineMode::LSTRING)
-                    mode = LineMode::NORMAL;
-                else
-                    mode = LineMode::LSTRING;
-            }
             pos++;
         }
         else
         {   // backslash
-            while (pos >= colTransThreshold)
+            if (pos >= colTransThreshold)
             {
                 curColTrans++;
                 colTranslations.push_back({destPos + pos-toCopyPos, curColTrans->lineNo});
@@ -404,7 +396,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             {
                 if (content[pos] == '\\')
                     buffer.push_back('\\');
-                else if (content[pos] == '(' && pos+1 < contentSize && content[pos]==')')
+                else if (content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
                     pos += 2;   // skip this separator
                 else
                 { // extract argName
@@ -418,6 +410,17 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         std::copy(it->second.begin(), it->second.end(),
                                   buffer.begin()+destPos);
                         destPos += it->second.size();
+                        pos += symName.size();
+                    }
+                    else if (content[pos] == '@')
+                    {
+                        char numBuf[32];
+                        const size_t numLen = itocstrCStyle(assembler.macroCount,
+                                numBuf, 32);
+                        pos++;
+                        buffer.resize(destPos + numLen);
+                        std::copy(numBuf, numBuf+numLen, buffer.begin()+destPos);
+                        destPos += numLen;
                     }
                     else
                     {   // copy its name to buffer
@@ -425,11 +428,18 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         std::copy(content+pos-1, content+pos+symName.size(),
                                       buffer.begin()+destPos);
                         destPos += symName.size()+1;
+                        pos += symName.size();
                     }
-                    pos += symName.size();
                 }
             }
             toCopyPos = pos;
+            // skip colTrans between macroarg or separator
+            while (pos >= colTransThreshold)
+            {
+                curColTrans++;
+                colTransThreshold = (curColTrans+1 != colTransEnd) ?
+                        curColTrans[1].position : SIZE_MAX;
+            }
         }
     }
     if (pos > toCopyPos)
@@ -892,6 +902,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler,
  */
 
 Assembler::Assembler(std::istream& input, cxuint flags)
+        : macroCount(0)
 {
 }
 
