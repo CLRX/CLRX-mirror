@@ -143,10 +143,10 @@ struct AsmMacro
     uint64_t contentLineNo;
     Array<AsmMacroArg> args;
     std::string content;
-    std::unique_ptr<LineTrans[]> colTranslations;
+    std::vector<LineTrans> colTranslations;
     
     AsmMacro(const AsmSourcePos& pos, uint64_t contentLineNo,
-             const Array<AsmMacroArg>& args, std::string& content);
+             const Array<AsmMacroArg>& args, const std::string& content);
 };
 
 class AsmSourceFilter
@@ -186,7 +186,7 @@ public:
 /** filters input from comments and join splitted lines by backslash.
  * readLine returns prepared line which have only space (' ') and
  * non-space characters. */
-class AsmInputFilter: AsmSourceFilter
+class AsmInputFilter: public AsmSourceFilter
 {
 private:
     enum class LineMode: cxbyte
@@ -207,11 +207,19 @@ public:
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
-class AsmMacroInputFilter: AsmSourceFilter
+class AsmMacroInputFilter: public AsmSourceFilter
 {
 private:
     const AsmMacro& macro;
     Array<std::pair<std::string, std::string> > argMap;
+    
+    enum class LineMode: cxbyte
+    {
+        NORMAL = 0,
+        LSTRING,
+        STRING
+    };
+    LineMode mode;
     bool exit;
 public:
     AsmMacroInputFilter(const AsmMacro& macro,

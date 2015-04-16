@@ -39,7 +39,29 @@ static inline const char* skipSpacesToEnd(const char* string, const char* end)
     return string;
 }
 
+// extract sybol name or argument name or other identifier
+static inline const std::string extractSymName(size_t size, const char* string)
+{
+    AsmSymbolEntry* entry = nullptr;
+    size_t p = 0;
+    if (0 < size && ((string[0] >= 'a' && string[0] <= 'z') ||
+        (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' || string[0] == '.' ||
+         string[0] == '$'))
+        for (p = 1; p < size && ((string[p] >= '0' && string[p] <= '9') ||
+            (string[p] >= 'a' && string[p] <= 'z') ||
+            (string[p] >= 'A' && string[p] <= 'Z') || string[p] == '_' ||
+             string[p] == '.' || string[p] == '$') ; p++);
+    if (p == 0) // not parsed
+        return std::string();
+    
+    return std::string(string, string + p);
+}
+
 ISAAssembler::~ISAAssembler()
+{ }
+
+AsmMacro::AsmMacro(const AsmSourcePos& pos, uint64_t contentLineNo,
+             const Array<AsmMacroArg>& args, const std::string& content)
 { }
 
 
@@ -303,6 +325,115 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     return buffer.data()+lineStart;
 }
 
+AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
+        const Array<std::pair<std::string, std::string> >& inArgMap)
+        : macro(inMacro), argMap(inArgMap), mode(LineMode::NORMAL), exit(false)
+{
+    buffer.reserve(300);
+    lineNo = macro.contentLineNo;
+}
+
+const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+{
+    if (exit)
+    {   // early exit from macro
+        lineSize = 0;
+        return nullptr;
+    }
+    const LineTrans* colTrans = macro.colTranslations.data();
+    const LineTrans* colTransEnd = macro.colTranslations.data()+macro.colTranslations.size();
+    buffer.clear();
+    
+    const size_t contentSize = macro.content.size();
+    const char* content = macro.content.c_str();
+    
+    size_t destPos = 0;
+    size_t toCopyPos = 0;
+    colTranslations.push_back({0, colTrans->lineNo});
+    size_t colTransThreshold = (colTrans+1 != colTransEnd) ?
+            colTrans[0].position : SIZE_MAX;
+    
+    while (pos < contentSize && content[pos] != '\n')
+    {
+        if (content[pos] != '\\' || mode != LineMode::NORMAL)
+        {
+            toCopyPos++;
+            if (pos >= colTransThreshold)
+            {
+                colTranslations.push_back({destPos, colTrans->lineNo});
+                colTrans++;
+                colTransThreshold = (colTrans+1 != colTransEnd) ?
+                        colTrans[0].position : SIZE_MAX;
+            }
+            if (content[pos] == '"')
+            {
+                if (mode == LineMode::STRING)
+                    mode = LineMode::NORMAL;
+                else
+                    mode = LineMode::STRING;
+            }
+            else if (content[pos] == '\'')
+            {
+                if (mode == LineMode::LSTRING)
+                    mode = LineMode::NORMAL;
+                else
+                    mode = LineMode::LSTRING;
+            }
+        }
+        else
+        {   // backslash
+            // copy chars to buffer
+            if (pos > toCopyPos)
+            {
+                buffer.resize(destPos + toCopyPos-pos);
+                std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
+                destPos += toCopyPos-pos;
+            }
+            pos++;
+            if (pos < contentSize)
+            {
+                if (content[pos] == '\\')
+                    buffer.push_back('\\');
+                else if (content[pos] == '(' && pos+1 < contentSize && content[pos]==')')
+                    pos += 2;   // skip this separator
+                else
+                { // extract argName
+                    //ile (content[pos] >= '0'
+                    const std::string symName = extractSymName(
+                                contentSize-pos, content+pos);
+                    pos += symName.size();
+                    auto it = binaryMapFind(argMap.begin(), argMap.end(), symName);
+                    if (it != argMap.end())
+                    {   // if found
+                        buffer.resize(destPos + it->second.size());
+                        std::copy(it->second.begin(), it->second.end(),
+                                  buffer.begin()+destPos);
+                        destPos += it->second.size();
+                    }
+                    else
+                    {   // copy its name to buffer
+                        buffer.resize(destPos + symName.size()+1);
+                        std::copy(content+pos-1, content+pos+symName.size(),
+                                      buffer.begin()+destPos);
+                        destPos += symName.size()+1;
+                    }
+                }
+            }
+            toCopyPos = pos;
+        }
+    }
+    if (pos < contentSize)
+        pos++; // skip newline
+    if (pos > toCopyPos)
+    {
+        buffer.resize(destPos + toCopyPos-pos);
+        std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
+        destPos += toCopyPos-pos;
+    }
+    lineSize += buffer.size();
+    return buffer.data();
+}
+
 /*
  * source pos
  */
@@ -475,34 +606,6 @@ void AsmSourcePos::print(std::ostream& os) const
     numBuf[size++] = ':';
     numBuf[size++] = ' ';
     os.write(numBuf, size);
-}
-
-AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
-        const Array<std::pair<std::string, std::string> >& inArgMap)
-        : macro(inMacro), argMap(inArgMap), exit(false)
-{
-    buffer.reserve(300);
-    lineNo = macro.pos.lineNo+1;
-}
-
-const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
-{
-    if (exit)
-    {   // early exit from macro
-        lineSize = 0;
-        return nullptr;
-    }
-    const LineTrans* colTrans = macro.colTranslations.get();
-    
-    const size_t contentSize = macro.content.size();
-    const char* content = macro.content.c_str();\
-    while (pos < contentSize && content[pos] != '\n')
-    {
-        if (content[pos] == '\\')
-        {   // backslash
-        }
-    }
-    return nullptr;
 }
 
 /*
@@ -784,18 +887,7 @@ Assembler::~Assembler()
 AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char* string)
 {
     AsmSymbolEntry* entry = nullptr;
-    size_t p = 0;
-    if (0 < size && ((string[0] >= 'a' && string[0] <= 'z') ||
-        (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' || string[0] == '.' ||
-         string[0] == '$'))
-        for (p = 1; p < size && ((string[p] >= '0' && string[p] <= '9') ||
-            (string[p] >= 'a' && string[p] <= 'z') ||
-            (string[p] >= 'A' && string[p] <= 'Z') || string[p] == '_' ||
-             string[p] == '.' || string[p] == '$') ; p++);
-    if (p == 0) // not parsed
-        return nullptr;
-    
-    std::string symName(string, string + p);
+    const std::string symName = extractSymName(size, string);
     std::pair<AsmSymbolMap::iterator, bool> res = symbolMap.insert({ symName, AsmSymbol()});
     if (!res.second)
     {   // if found
