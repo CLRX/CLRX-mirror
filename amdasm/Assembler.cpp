@@ -68,7 +68,7 @@ AsmMacro::AsmMacro(const AsmSourcePos& pos, uint64_t contentLineNo,
 AsmSourceFilter::~AsmSourceFilter()
 { }
 
-void AsmSourceFilter::translatePos(size_t colNo, size_t& outLineNo, size_t& outColNo) const
+void AsmSourceFilter::translatePos(size_t colNo, uint64_t& outLineNo, size_t& outColNo) const
 {
     auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
          LineTrans({ colNo-1, 0 }),
