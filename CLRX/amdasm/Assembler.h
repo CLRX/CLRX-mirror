@@ -219,6 +219,7 @@ private:
         LSTRING,
         STRING
     };
+    const LineTrans* curColTrans;
     LineMode mode;
     bool exit;
 public:
