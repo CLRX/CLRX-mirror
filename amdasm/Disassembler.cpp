@@ -503,11 +503,11 @@ static void printDisasmLongString(size_t size, const char* data, std::ostream& o
             bool secondAlign = false)
 {
     
-    const char* linePrefix = "    .string \"";
-    size_t prefixSize = 13;
+    const char* linePrefix = "    .ascii \"";
+    size_t prefixSize = 12;
     if (secondAlign)
     {
-        linePrefix = "        .string \"";
+        linePrefix = "        .ascii \"";
         prefixSize += 4;
     }
     char buffer[96];
