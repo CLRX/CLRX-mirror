@@ -392,10 +392,16 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 destPos += pos-toCopyPos;
             }
             pos++;
+            bool skipColTransBetweenMacroArg = true;
             if (pos < contentSize)
             {
                 if (content[pos] == '\\')
+                {
                     buffer.push_back('\\');
+                    destPos++;
+                    pos++;
+                    skipColTransBetweenMacroArg = false;
+                }
                 else if (content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
                     pos += 2;   // skip this separator
                 else
@@ -423,22 +429,23 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         destPos += numLen;
                     }
                     else
-                    {   // copy its name to buffer
-                        buffer.resize(destPos + symName.size()+1);
-                        std::copy(content+pos-1, content+pos+symName.size(),
-                                      buffer.begin()+destPos);
-                        destPos += symName.size()+1;
-                        pos += symName.size();
+                    {
+                        buffer.push_back('\\');
+                        destPos++;
+                        skipColTransBetweenMacroArg = false;
                     }
                 }
             }
             toCopyPos = pos;
             // skip colTrans between macroarg or separator
-            while (pos >= colTransThreshold)
+            if (skipColTransBetweenMacroArg)
             {
-                curColTrans++;
-                colTransThreshold = (curColTrans+1 != colTransEnd) ?
-                        curColTrans[1].position : SIZE_MAX;
+                while (pos >= colTransThreshold)
+                {
+                    curColTrans++;
+                    colTransThreshold = (curColTrans+1 != colTransEnd) ?
+                            curColTrans[1].position : SIZE_MAX;
+                }
             }
         }
     }
@@ -465,9 +472,9 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
 
 void AsmSourcePos::print(std::ostream& os) const
 {
+    char numBuf[32];
     if (macro)
     {
-        char numBuf[64];
         RefPtr<const AsmMacroSubst> curMacro = macro;
         if (curMacro)
         {
@@ -485,7 +492,7 @@ void AsmSourcePos::print(std::ostream& os) const
                     os.write("<stdin>", 7);
                 
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
                 curFile = parentFile;
                 numBuf[size++] = (curFile->parent) ? ',' : ':';
                 numBuf[size++] = '\n';
@@ -501,7 +508,7 @@ void AsmSourcePos::print(std::ostream& os) const
                         os.write("<stdin>", 7);
                     
                     numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
                     curFile = curFile->parent;
                     numBuf[size++] = (curFile->parent) ? ',' : ':';
                     numBuf[size++] = '\n';
@@ -518,7 +525,7 @@ void AsmSourcePos::print(std::ostream& os) const
             else // stdin
                 os.write("<stdin>", 7);
             numBuf[0] = ':';
-            size_t size = 1+itocstrCStyle<size_t>(macro->lineNo, numBuf+1, 63);
+            size_t size = 1+itocstrCStyle<size_t>(macro->lineNo, numBuf+1, 32);
             numBuf[size++] = (parentMacro) ? ';' : ':';
             numBuf[size++] = '\n';
             os.write(numBuf, size);
@@ -541,7 +548,7 @@ void AsmSourcePos::print(std::ostream& os) const
                         os.write("<stdin>", 7);
                     
                     numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
                     curFile = parentFile;
                     numBuf[size++] = (curFile->parent) ? ',' : ':';
                     numBuf[size++] = '\n';
@@ -558,7 +565,7 @@ void AsmSourcePos::print(std::ostream& os) const
                         
                         numBuf[0] = ':';
                         size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo,
-                                      numBuf+1, 63);
+                                      numBuf+1, 32);
                         curFile = curFile->parent;
                         numBuf[size++] = (curFile->parent) ? ',' : ':';
                         numBuf[size++] = '\n';
@@ -575,7 +582,7 @@ void AsmSourcePos::print(std::ostream& os) const
                 else // stdin
                     os.write("<stdin>", 7);
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curMacro->lineNo, numBuf+1, 63);
+                size_t size = 1+itocstrCStyle<size_t>(curMacro->lineNo, numBuf+1, 32);
                 numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
@@ -584,7 +591,6 @@ void AsmSourcePos::print(std::ostream& os) const
             }
         }
     }
-    char numBuf[64];
     RefPtr<const AsmFile> curFile = file;
     if (curFile->parent)
     {
@@ -596,7 +602,7 @@ void AsmSourcePos::print(std::ostream& os) const
             os.write("<stdin>", 7);
         
         numBuf[0] = ':';
-        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
         curFile = parentFile;
         numBuf[size++] = (curFile->parent) ? ',' : ':';
         numBuf[size++] = '\n';
@@ -612,7 +618,7 @@ void AsmSourcePos::print(std::ostream& os) const
                 os.write("<stdin>", 7);
             
             numBuf[0] = ':';
-            size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 63);
+            size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
             curFile = curFile->parent;
             numBuf[size++] = (curFile->parent) ? ',' : ':';
             numBuf[size++] = '\n';
@@ -625,9 +631,10 @@ void AsmSourcePos::print(std::ostream& os) const
     else // stdin
         os.write("<stdin>", 7);
     numBuf[0] = ':';
-    size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 63);
-    numBuf[size++] = ':';
-    size += itocstrCStyle<size_t>(colNo, numBuf+size, 64-size);
+    size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 32);
+    os.write(numBuf, size);
+    numBuf[0] = ':';
+    size = itocstrCStyle<size_t>(colNo, numBuf+size, 32);
     numBuf[size++] = ':';
     numBuf[size++] = ' ';
     os.write(numBuf, size);
@@ -792,19 +799,22 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         evaluated = false;
                         break;
                     case AsmExprOp::EQUAL:
-                        value = entry.value == value;
+                        value = (entry.value == value) ? UINT64_MAX : 0;
+                        break;
+                    case AsmExprOp::NOT_EQUAL:
+                        value = (entry.value != value) ? UINT64_MAX : 0;
                         break;
                     case AsmExprOp::LESS:
-                        value = entry.value < value;
+                        value = (entry.value < value)? UINT64_MAX: 0;
                         break;
                     case AsmExprOp::LESS_EQ:
-                        value = entry.value <= value;
+                        value = (entry.value <= value) ? UINT64_MAX : 0;
                         break;
                     case AsmExprOp::GREATER:
-                        value = entry.value > value;
+                        value = (entry.value > value) ? UINT64_MAX : 0;
                         break;
                     case AsmExprOp::GREATER_EQ:
-                        value = entry.value >= value;
+                        value = (entry.value >= value) ? UINT64_MAX : 0;
                         break;
                     default:
                         break;

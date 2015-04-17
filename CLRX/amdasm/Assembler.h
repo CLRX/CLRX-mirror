@@ -390,7 +390,7 @@ class Assembler
 {
 public:
     typedef std::pair<std::string, uint64_t> DefSym;
-    typedef std::unordered_map<std::string, std::string> MacroMap;
+    typedef std::unordered_map<std::string, AsmMacro> MacroMap;
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
     friend class AsmInputFilter;
