@@ -395,14 +395,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             bool skipColTransBetweenMacroArg = true;
             if (pos < contentSize)
             {
-                if (content[pos] == '\\')
-                {
-                    buffer.push_back('\\');
-                    destPos++;
-                    pos++;
-                    skipColTransBetweenMacroArg = false;
-                }
-                else if (content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
+                if (content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
                     pos += 2;   // skip this separator
                 else
                 { // extract argName
@@ -734,7 +727,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         else // error
                         {
                             assembler.printError(divsAndModsPos[modAndDivsPos],
-                                   "Divide by zero");
+                                   "Division by zero");
                             failed = true;
                             value = 0;
                         }
@@ -746,7 +739,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         else // error
                         {
                             assembler.printError(divsAndModsPos[modAndDivsPos],
-                                   "Divide by zero");
+                                   "Division by zero");
                             failed = true;
                             value = 0;
                         }
@@ -758,7 +751,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         else // error
                         {
                             assembler.printError(divsAndModsPos[modAndDivsPos],
-                                   "Divide by zero");
+                                   "Division by zero");
                             failed = true;
                             value = 0;
                         }
@@ -774,13 +767,37 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         value = entry.value ^ value;
                         break;
                     case AsmExprOp::SHIFT_LEFT:
-                        value = entry.value << value;
+                        if (value > 63)
+                            value = entry.value << value;
+                        else
+                        {
+                            assembler.printWarning(divsAndModsPos[modAndDivsPos],
+                                   "shift count out of range (between 0 and 63)");
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::SHIFT_RIGHT:
-                        value = entry.value >> value;
+                        if (value > 63)
+                            value = entry.value >> value;
+                        else
+                        {
+                            assembler.printWarning(divsAndModsPos[modAndDivsPos],
+                                   "shift count out of range (between 0 and 63)");
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::SIGNED_SHIFT_RIGHT:
-                        value = int64_t(entry.value) >> value;
+                        if (value > 63)
+                            value = int64_t(entry.value) >> value;
+                        else
+                        {
+                            assembler.printWarning(divsAndModsPos[modAndDivsPos],
+                                   "shift count out of range (between 0 and 63)");
+                            value = 0;
+                        }
+                        modAndDivsPos++;
                         break;
                     case AsmExprOp::LOGICAL_AND:
                         value = entry.value && value;
