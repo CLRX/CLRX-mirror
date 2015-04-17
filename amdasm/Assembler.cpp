@@ -637,9 +637,17 @@ void AsmSourcePos::print(std::ostream& os) const
  * expressions
  */
 
-AsmExpression::~AsmExpression()
+AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
+          size_t inOpsNum, const AsmExprOp* inOps, size_t inOpPosNum,
+          const LineCol* inOpPos, size_t inArgsNum, const AsmExprArg* inArgs)
+        : sourcePos(inPos), symOccursNum(inSymOccursNum)
 {
-    delete[] ops;
+    ops.reset(new AsmExprOp[inOpsNum]);
+    args.reset(new AsmExprArg[inArgsNum]);
+    divsAndModsPos.reset(new LineCol[inOpPosNum]);
+    std::copy(inOps, inOps+inOpsNum, ops.get());
+    std::copy(inArgs, inArgs+inArgsNum, args.get());
+    std::copy(inOpPos, inOpPos+inOpPosNum, divsAndModsPos.get());
 }
 
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
@@ -767,7 +775,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         value = entry.value ^ value;
                         break;
                     case AsmExprOp::SHIFT_LEFT:
-                        if (value > 63)
+                        if (value < 64)
                             value = entry.value << value;
                         else
                         {
@@ -778,7 +786,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         modAndDivsPos++;
                         break;
                     case AsmExprOp::SHIFT_RIGHT:
-                        if (value > 63)
+                        if (value < 64)
                             value = entry.value >> value;
                         else
                         {
@@ -789,7 +797,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         modAndDivsPos++;
                         break;
                     case AsmExprOp::SIGNED_SHIFT_RIGHT:
-                        if (value > 63)
+                        if (value < 64)
                             value = int64_t(entry.value) >> value;
                         else
                         {
@@ -843,9 +851,13 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
             {   // choice second
                 value = entry.value;
                 evaluated = true;
+                stack.pop();
             }
             else if (entry.filledArgs == 3) // choice last choice
+            {
                 evaluated = true;
+                stack.pop();
+            }
             
         } while (evaluated && !stack.empty());
         
@@ -954,18 +966,16 @@ AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char*
     return entry;
 }
 
-void Assembler::printWarning(LineCol lineCol, const std::string& message)
+void Assembler::printWarning(const AsmSourcePos& pos, const std::string& message)
 {
-    AsmSourcePos pos = { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     pos.print(*messageStream);
     messageStream->write("Warning: ", 9);
     messageStream->write(message.c_str(), message.size());
     messageStream->put('\n');
 }
 
-void Assembler::printError(LineCol lineCol, const std::string& message)
+void Assembler::printError(const AsmSourcePos& pos, const std::string& message)
 {
-    AsmSourcePos pos = { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     pos.print(*messageStream);
     messageStream->write("Error: ", 7);
     messageStream->write(message.c_str(), message.size());

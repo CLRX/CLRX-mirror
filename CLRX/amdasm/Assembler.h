@@ -89,7 +89,7 @@ struct AsmFile: public RefCountable
     uint64_t lineNo; // place where file is included (0 if root)
     const std::string file; // file path
     
-    explicit AsmFile(const std::string& _file) : file(_file)
+    explicit AsmFile(const std::string& _file) : lineNo(0), file(_file)
     { }
     
     AsmFile(const RefPtr<const AsmFile> pparent, uint64_t plineNo, const std::string& pfile)
@@ -311,11 +311,14 @@ struct AsmExpression
 {
     AsmSourcePos sourcePos;
     size_t symOccursNum;
-    AsmExprOp* ops;
-    LineCol* divsAndModsPos;    ///< for every for div/mod operation
-    AsmExprArg* args;
+    std::unique_ptr<AsmExprOp[]> ops;
+    std::unique_ptr<LineCol[]> divsAndModsPos;    ///< for every for div/mod operation
+    std::unique_ptr<AsmExprArg[]> args;
     
-    ~AsmExpression();
+    AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
+              size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
+              const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
+    ~AsmExpression() = default;
     
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
@@ -433,11 +436,13 @@ private:
     cxuint currentKernel;
     cxuint currentSection;
     
-    void printWarning(LineCol pos, const std::string& message);
-    void printError(LineCol pos, const std::string& message);
-    
     void printWarning(const AsmSourcePos& pos, const std::string& message);
     void printError(const AsmSourcePos& pos, const std::string& message);
+    
+    void printWarning(LineCol lineCol, const std::string& message)
+    { printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
+    void printError(LineCol lineCol, const std::string& message)
+    { printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
     
     AsmSymbolEntry* parseSymbol(LineCol lineCol, size_t size, const char* string);
 public:
