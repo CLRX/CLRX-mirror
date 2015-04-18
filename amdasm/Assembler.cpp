@@ -485,7 +485,7 @@ void AsmSourcePos::print(std::ostream& os) const
                     os.write("<stdin>", 7);
                 
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
+                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 31);
                 curFile = parentFile;
                 numBuf[size++] = (curFile->parent) ? ',' : ':';
                 numBuf[size++] = '\n';
@@ -501,7 +501,7 @@ void AsmSourcePos::print(std::ostream& os) const
                         os.write("<stdin>", 7);
                     
                     numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 31);
                     curFile = curFile->parent;
                     numBuf[size++] = (curFile->parent) ? ',' : ':';
                     numBuf[size++] = '\n';
@@ -541,7 +541,7 @@ void AsmSourcePos::print(std::ostream& os) const
                         os.write("<stdin>", 7);
                     
                     numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 31);
                     curFile = parentFile;
                     numBuf[size++] = (curFile->parent) ? ',' : ':';
                     numBuf[size++] = '\n';
@@ -575,7 +575,7 @@ void AsmSourcePos::print(std::ostream& os) const
                 else // stdin
                     os.write("<stdin>", 7);
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curMacro->lineNo, numBuf+1, 32);
+                size_t size = 1+itocstrCStyle<size_t>(curMacro->lineNo, numBuf+1, 31);
                 numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
@@ -595,7 +595,7 @@ void AsmSourcePos::print(std::ostream& os) const
             os.write("<stdin>", 7);
         
         numBuf[0] = ':';
-        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
+        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 31);
         curFile = parentFile;
         numBuf[size++] = (curFile->parent) ? ',' : ':';
         numBuf[size++] = '\n';
@@ -611,7 +611,7 @@ void AsmSourcePos::print(std::ostream& os) const
                 os.write("<stdin>", 7);
             
             numBuf[0] = ':';
-            size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 32);
+            size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 31);
             curFile = curFile->parent;
             numBuf[size++] = (curFile->parent) ? ',' : ':';
             numBuf[size++] = '\n';
@@ -624,10 +624,10 @@ void AsmSourcePos::print(std::ostream& os) const
     else // stdin
         os.write("<stdin>", 7);
     numBuf[0] = ':';
-    size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 32);
+    size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 31);
     os.write(numBuf, size);
     numBuf[0] = ':';
-    size = 1+itocstrCStyle<size_t>(colNo, numBuf+size, 32);
+    size = 1+itocstrCStyle<size_t>(colNo, numBuf+1, 31);
     numBuf[size++] = ':';
     numBuf[size++] = ' ';
     os.write(numBuf, size);
