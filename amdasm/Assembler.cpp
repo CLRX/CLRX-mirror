@@ -774,6 +774,9 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                     case AsmExprOp::BIT_XOR:
                         value = entry.value ^ value;
                         break;
+                    case AsmExprOp::BIT_ORNOT:
+                        value = ~(entry.value | value);
+                        break;
                     case AsmExprOp::SHIFT_LEFT:
                         if (value < 64)
                             value = entry.value << value;
@@ -882,31 +885,36 @@ static const cxbyte asmOpPrioritiesTbl[] =
 {
     0, // ARG_VALUE
     0, // ARG_SYMBOL
-    3, // ADDITION
-    3, // SUBTRACT
+    4, // ADDITION
+    4, // SUBTRACT
     1, // NEGATE
     2, // MULTIPLY
     2, // DIVISION
     2, // SIGNED_DIVISION
     2, // MODULO
     2, // SIGNED_MODULO
-    7, // BIT_AND
-    9, // BIT_OR
-    8, // BIT_XOR
-    1, // BIT_NOT
-    4, // SHIFT_LEFT
-    4, // SHIFT_RIGHT
-    4, // SIGNED_SHIFT_RIGHT
-    10, // LOGICAL_AND
-    11, // LOGICAL_OR
-    1, // LOGICAL_NOT
-    12, // CHOICE
-    6, // EQUAL
-    6, // NOT_EQUAL
-    5, // LESS
-    5, // LESS_EQ
-    5, // GREATER
-    5  // GREATER_EQ
+    3, // BIT_AND
+    3, // BIT_OR
+    3, // BIT_XOR
+    3, // BIT_ORNOT
+    3, // BIT_NOT
+    2, // SHIFT_LEFT
+    2, // SHIFT_RIGHT
+    2, // SIGNED_SHIFT_RIGHT
+    5, // LOGICAL_AND
+    5, // LOGICAL_OR
+    5, // LOGICAL_NOT
+    6, // CHOICE
+    4, // EQUAL
+    4, // NOT_EQUAL
+    4, // LESS
+    4, // LESS_EQ
+    4, // GREATER
+    4, // GREATER_EQ
+    4, // BELOW
+    4, // BELOW_EQ
+    4, // ABOVE
+    4  // ABOVE_EQ
 };
 
 AsmExpression* AsmExpression::parseExpression(Assembler& assembler,

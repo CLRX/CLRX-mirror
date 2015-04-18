@@ -276,6 +276,7 @@ enum class AsmExprOp : cxbyte
     BIT_AND,
     BIT_OR,
     BIT_XOR,
+    BIT_ORNOT,
     BIT_NOT,
     SHIFT_LEFT,
     SHIFT_RIGHT,
