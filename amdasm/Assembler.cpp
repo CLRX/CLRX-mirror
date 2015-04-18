@@ -803,7 +803,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         {
                             assembler.printWarning(divsAndModsPos[modAndDivsPos],
                                    "shift count out of range (between 0 and 63)");
-                            value = 0;
+                            value = (entry.value>=(1ULL<<63)) ? UINT64_MAX : 0;
                         }
                         modAndDivsPos++;
                         break;
@@ -944,7 +944,6 @@ Assembler::Assembler(std::istream& input, cxuint flags, std::ostream& msgStream)
         : macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           topFile(RefPtr<const AsmFile>(new AsmFile(""))), messageStream(msgStream)
 {
-    
 }
 
 Assembler::~Assembler()
