@@ -126,18 +126,18 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                                 pos++;
                                 break;
                             }
-                            else if (buffer[pos] == '/') // line comment
-                            {
-                                buffer[destPos-1] = ' ';
-                                buffer[destPos++] = ' ';
-                                mode = LineMode::LINE_COMMENT;
-                                pos++;
-                                break;
-                            }
                             slash = false;
                         }
                         else
                             slash = (buffer[pos] == '/');
+                        if (buffer[pos] == '#') // line comment
+                        {
+                            buffer[destPos-1] = ' ';
+                            buffer[destPos++] = ' ';
+                            mode = LineMode::LINE_COMMENT;
+                            pos++;
+                            break;
+                        }
                         
                         const char old = buffer[pos];
                         buffer[destPos++] = buffer[pos++];
