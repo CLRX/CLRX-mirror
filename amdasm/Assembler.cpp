@@ -627,7 +627,7 @@ void AsmSourcePos::print(std::ostream& os) const
     size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 32);
     os.write(numBuf, size);
     numBuf[0] = ':';
-    size = itocstrCStyle<size_t>(colNo, numBuf+size, 32);
+    size = 1+itocstrCStyle<size_t>(colNo, numBuf+size, 32);
     numBuf[size++] = ':';
     numBuf[size++] = ' ';
     os.write(numBuf, size);
