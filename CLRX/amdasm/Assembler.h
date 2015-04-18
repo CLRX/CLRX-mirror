@@ -89,7 +89,7 @@ struct AsmFile: public RefCountable
     uint64_t lineNo; // place where file is included (0 if root)
     const std::string file; // file path
     
-    explicit AsmFile(const std::string& _file) : lineNo(0), file(_file)
+    explicit AsmFile(const std::string& _file) : lineNo(1), file(_file)
     { }
     
     AsmFile(const RefPtr<const AsmFile> pparent, uint64_t plineNo, const std::string& pfile)
@@ -422,7 +422,7 @@ private:
     
     std::stack<AsmSourceFilter*> asmInputFilters;
     
-    std::ostream* messageStream;
+    std::ostream& messageStream;
     
     union {
         AmdInput* amdOutput;
@@ -446,7 +446,8 @@ private:
     
     AsmSymbolEntry* parseSymbol(LineCol lineCol, size_t size, const char* string);
 public:
-    explicit Assembler(std::istream& input, cxuint flags);
+    explicit Assembler(std::istream& input, cxuint flags,
+              std::ostream& msgStream = std::cerr);
     ~Assembler();
     
     GPUDeviceType getDeviceType() const
@@ -479,9 +480,8 @@ public:
     const GalliumInput* getGalliumOutput() const
     { return galliumOutput; }
     
-    void assemble(size_t inputSize, const char* inputString,
-                  std::ostream& msgStream = std::cerr);
-    void assemble(std::istream& inputStream, std::ostream& msgStream = std::cerr);
+    void assemble(size_t inputSize, const char* inputString);
+    void assemble(std::istream& inputStream);
 };
 
 }

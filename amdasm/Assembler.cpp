@@ -940,9 +940,11 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler,
  * Assembler
  */
 
-Assembler::Assembler(std::istream& input, cxuint flags)
-        : macroCount(0)
+Assembler::Assembler(std::istream& input, cxuint flags, std::ostream& msgStream)
+        : macroCount(0), inclusionLevel(0), macroSubstLevel(0),
+          topFile(RefPtr<const AsmFile>(new AsmFile(""))), messageStream(msgStream)
 {
+    
 }
 
 Assembler::~Assembler()
@@ -968,18 +970,18 @@ AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char*
 
 void Assembler::printWarning(const AsmSourcePos& pos, const std::string& message)
 {
-    pos.print(*messageStream);
-    messageStream->write("Warning: ", 9);
-    messageStream->write(message.c_str(), message.size());
-    messageStream->put('\n');
+    pos.print(messageStream);
+    messageStream.write("Warning: ", 9);
+    messageStream.write(message.c_str(), message.size());
+    messageStream.put('\n');
 }
 
 void Assembler::printError(const AsmSourcePos& pos, const std::string& message)
 {
-    pos.print(*messageStream);
-    messageStream->write("Error: ", 7);
-    messageStream->write(message.c_str(), message.size());
-    messageStream->put('\n');
+    pos.print(messageStream);
+    messageStream.write("Error: ", 7);
+    messageStream.write(message.c_str(), message.size());
+    messageStream.put('\n');
 }
 
 void Assembler::addIncludeDir(const std::string& includeDir)
@@ -998,14 +1000,13 @@ AsmExpression* Assembler::parseExpression(LineCol lineCol, size_t stringSize,
     return nullptr;
 }
 
-void Assembler::assemble(size_t inputSize, const char* inputString,
-             std::ostream& msgStream)
+void Assembler::assemble(size_t inputSize, const char* inputString)
 {
     ArrayIStream is(inputSize, inputString);
-    assemble(is, msgStream);
+    assemble(is);
 }
 
-void Assembler::assemble(std::istream& inputStream, std::ostream& msgStream)
+void Assembler::assemble(std::istream& inputStream)
 {
     const std::ios::iostate oldExceptions = inputStream.exceptions();
     inputStream.exceptions(std::ios::badbit);
