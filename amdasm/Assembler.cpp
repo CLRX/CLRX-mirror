@@ -830,15 +830,27 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         value = (entry.value != value) ? UINT64_MAX : 0;
                         break;
                     case AsmExprOp::LESS:
-                        value = (entry.value < value)? UINT64_MAX: 0;
+                        value = (int64_t(entry.value) < int64_t(value))? UINT64_MAX: 0;
                         break;
                     case AsmExprOp::LESS_EQ:
-                        value = (entry.value <= value) ? UINT64_MAX : 0;
+                        value = (int64_t(entry.value) <= int64_t(value)) ? UINT64_MAX : 0;
                         break;
                     case AsmExprOp::GREATER:
-                        value = (entry.value > value) ? UINT64_MAX : 0;
+                        value = (int64_t(entry.value) > int64_t(value)) ? UINT64_MAX : 0;
                         break;
                     case AsmExprOp::GREATER_EQ:
+                        value = (int64_t(entry.value) >= int64_t(value)) ? UINT64_MAX : 0;
+                        break;
+                    case AsmExprOp::BELOW:
+                        value = (entry.value < value)? UINT64_MAX: 0;
+                        break;
+                    case AsmExprOp::BELOW_EQ:
+                        value = (entry.value <= value) ? UINT64_MAX : 0;
+                        break;
+                    case AsmExprOp::ABOVE:
+                        value = (entry.value > value) ? UINT64_MAX : 0;
+                        break;
+                    case AsmExprOp::ABOVE_EQ:
                         value = (entry.value >= value) ? UINT64_MAX : 0;
                         break;
                     default:

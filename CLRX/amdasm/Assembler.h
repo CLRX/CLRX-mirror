@@ -290,6 +290,10 @@ enum class AsmExprOp : cxbyte
     LESS_EQ,
     GREATER,
     GREATER_EQ,
+    BELOW, // unsigned less
+    BELOW_EQ, // unsigned less or equal
+    ABOVE, // unsigned less
+    ABOVE_EQ, // unsigned less or equal
     CHOICE_SECOND = 0xfd,
     NONE = 0xfe
 };
