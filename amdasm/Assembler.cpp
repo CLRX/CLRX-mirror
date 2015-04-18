@@ -775,7 +775,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                         value = entry.value ^ value;
                         break;
                     case AsmExprOp::BIT_ORNOT:
-                        value = ~(entry.value | value);
+                        value = entry.value | ~value;
                         break;
                     case AsmExprOp::SHIFT_LEFT:
                         if (value < 64)
