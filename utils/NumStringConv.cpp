@@ -49,7 +49,7 @@ cxuint CLRX::cstrtoui(const char* str, const char* inend, const char*& outend)
             throw ParseException("number out of range");
     }
     if (p == str)
-        throw ParseException("A missing number");
+        throw ParseException("Missing number");
     outend = p;
     return out;
 }
@@ -87,7 +87,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
                 out = (out<<4) + digit;
             }
             if (p == str+2)
-                throw ParseException("A missing number");
+                throw ParseException("Missing number");
         }
         else if (inend != str+1 && (str[1] == 'b' || str[1] == 'B'))
         {   // binary
@@ -102,7 +102,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
                 out = (out<<1) + (*p-'0');
             }
             if (p == str+2)
-                throw ParseException("A missing number");
+                throw ParseException("Missing number");
         }
         else
         {   // octal
@@ -131,7 +131,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
                 throw ParseException("Number out of range");
         }
         if (p == str)
-            throw ParseException("A missing number");
+            throw ParseException("Missing number");
     }
     outend = p;
     return out;

@@ -1744,7 +1744,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         offset += sourceCodeSize;
     }
     sectionOffsets[7] = offset;
-    // .source
+    // .llvmir
     if (input->llvmir!=nullptr)
     {
         bos.writeArray(input->llvmirSize, input->llvmir);

@@ -69,15 +69,14 @@ AsmMacro::AsmMacro(const AsmSourcePos& inPos, uint64_t inContentLineNo,
 AsmSourceFilter::~AsmSourceFilter()
 { }
 
-void AsmSourceFilter::translatePos(size_t colNo, uint64_t& outLineNo, size_t& outColNo) const
+LineCol AsmSourceFilter::translatePos(size_t colNo) const
 {
     auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
          LineTrans({ colNo-1, 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position < t2.position; });
     
-    outLineNo = found->lineNo;
-    outColNo = colNo-found->position;
+    return { found->lineNo, colNo-found->position };
 }
 
 /*
@@ -644,10 +643,10 @@ AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
 {
     ops.reset(new AsmExprOp[inOpsNum]);
     args.reset(new AsmExprArg[inArgsNum]);
-    divsAndModsPos.reset(new LineCol[inOpPosNum]);
+    messagePositions.reset(new LineCol[inOpPosNum]);
     std::copy(inOps, inOps+inOpsNum, ops.get());
     std::copy(inArgs, inArgs+inArgsNum, args.get());
-    std::copy(inOpPos, inOpPos+inOpPosNum, divsAndModsPos.get());
+    std::copy(inOpPos, inOpPos+inOpPosNum, messagePositions.get());
 }
 
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
@@ -722,7 +721,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value / value;
                         else // error
                         {
-                            assembler.printError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(messagePositions[modAndDivsPos],
                                    "Divide by zero");
                             failed = true;
                             value = 0;
@@ -734,7 +733,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = int64_t(entry.value) / int64_t(value);
                         else // error
                         {
-                            assembler.printError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(messagePositions[modAndDivsPos],
                                    "Division by zero");
                             failed = true;
                             value = 0;
@@ -746,7 +745,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value % value;
                         else // error
                         {
-                            assembler.printError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(messagePositions[modAndDivsPos],
                                    "Division by zero");
                             failed = true;
                             value = 0;
@@ -758,7 +757,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = int64_t(entry.value) % int64_t(value);
                         else // error
                         {
-                            assembler.printError(divsAndModsPos[modAndDivsPos],
+                            assembler.printError(messagePositions[modAndDivsPos],
                                    "Division by zero");
                             failed = true;
                             value = 0;
@@ -782,7 +781,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value << value;
                         else
                         {
-                            assembler.printWarning(divsAndModsPos[modAndDivsPos],
+                            assembler.printWarning(messagePositions[modAndDivsPos],
                                    "shift count out of range (between 0 and 63)");
                             value = 0;
                         }
@@ -793,7 +792,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value >> value;
                         else
                         {
-                            assembler.printWarning(divsAndModsPos[modAndDivsPos],
+                            assembler.printWarning(messagePositions[modAndDivsPos],
                                    "shift count out of range (between 0 and 63)");
                             value = 0;
                         }
@@ -804,7 +803,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = int64_t(entry.value) >> value;
                         else
                         {
-                            assembler.printWarning(divsAndModsPos[modAndDivsPos],
+                            assembler.printWarning(messagePositions[modAndDivsPos],
                                    "shift count out of range (between 0 and 63)");
                             value = (entry.value>=(1ULL<<63)) ? UINT64_MAX : 0;
                         }
@@ -882,76 +881,96 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
 }
 
 static const cxbyte asmOpPrioritiesTbl[] =
-{
-    0, // ARG_VALUE
-    0, // ARG_SYMBOL
-    4, // ADDITION
-    4, // SUBTRACT
-    1, // NEGATE
-    2, // MULTIPLY
-    2, // DIVISION
-    2, // SIGNED_DIVISION
-    2, // MODULO
-    2, // SIGNED_MODULO
+{   /* higher value, higher priority */
+    6, // ARG_VALUE
+    6, // ARG_SYMBOL
+    2, // ADDITION
+    2, // SUBTRACT
+    5, // NEGATE
+    4, // MULTIPLY
+    4, // DIVISION
+    4, // SIGNED_DIVISION
+    4, // MODULO
+    4, // SIGNED_MODULO
     3, // BIT_AND
     3, // BIT_OR
     3, // BIT_XOR
     3, // BIT_ORNOT
-    3, // BIT_NOT
-    2, // SHIFT_LEFT
-    2, // SHIFT_RIGHT
-    2, // SIGNED_SHIFT_RIGHT
-    5, // LOGICAL_AND
-    5, // LOGICAL_OR
-    5, // LOGICAL_NOT
-    6, // CHOICE
-    4, // EQUAL
-    4, // NOT_EQUAL
-    4, // LESS
-    4, // LESS_EQ
-    4, // GREATER
-    4, // GREATER_EQ
-    4, // BELOW
-    4, // BELOW_EQ
-    4, // ABOVE
-    4  // ABOVE_EQ
+    5, // BIT_NOT
+    4, // SHIFT_LEFT
+    4, // SHIFT_RIGHT
+    4, // SIGNED_SHIFT_RIGHT
+    1, // LOGICAL_AND
+    1, // LOGICAL_OR
+    1, // LOGICAL_NOT
+    0, // CHOICE
+    2, // EQUAL
+    2, // NOT_EQUAL
+    2, // LESS
+    2, // LESS_EQ
+    2, // GREATER
+    2, // GREATER_EQ
+    2, // BELOW
+    2, // BELOW_EQ
+    2, // ABOVE
+    2  // ABOVE_EQ
 };
 
-AsmExpression* AsmExpression::parseExpression(Assembler& assembler,
-                  size_t size, const char* string, size_t& endPos)
+AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos)
 {
-    struct ConExprEntry
+    union ConExprArg
     {
-        size_t parethesisCount;
-        cxbyte priority;
-        AsmExprOp op;
+        AsmExprArg arg;
+        size_t node;
     };
-    std::vector<std::pair<size_t, AsmExprOp> > exprOps;
-    std::vector<AsmExprArg> exprArgs;
-    std::stack<AsmExprOp> opStack;
+    enum class ConExprArgType: cxbyte
+    {
+        ARG_NONE = 0,
+        ARG_VALUE = 1,
+        ARG_SYMBOL = 2,
+        ARG_NODE = 3
+    };
+    struct ConExprNode
+    {
+        size_t parent;
+        size_t priority;
+        cxuint lineColPos;
+        struct {
+            ConExprArgType arg1Type:2;
+            ConExprArgType arg2Type:2;
+        };
+        AsmExprOp op;
+        ConExprArg arg1;
+        ConExprArg arg2;
+        
+        ConExprNode() : parent(SIZE_MAX), priority(0), lineColPos(UINT64_MAX),
+              arg1Type(ConExprArgType::ARG_NONE),
+              arg2Type(ConExprArgType::ARG_NONE), op(AsmExprOp::NONE)
+        { }
+    };
+    std::vector<ConExprNode> exprTree;
+    std::vector<LineCol> messagePositions;
     
-    const char* end = string + size;
+    const char* string = assembler.line;
+    const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
     cxuint priority = 0;
     AsmExprOp curOp = AsmExprOp::NONE;
     bool emptyParen = false;
     
+    ConExprArgType leftArgType = ConExprArgType::ARG_NONE;
+    ConExprArg leftNode;
+    ConExprNode curNode;
+    
     while (string != end)
     {
         string = skipSpacesToEnd(string, end);
         if (string == end) break;
-        
-        if (*string == '(')
-        {
-            if (curOp == AsmExprOp::ARG_SYMBOL && curOp == AsmExprOp::ARG_VALUE)
-            {   // error
-                /*assembler.addError(assembler.cur,
-                                   "Divide by zero");*/
-            }
-        }
-        else if (*string == ')')
-        {
-        }
+    }
+    if (parenthesisCount != 0)
+    {   // print error
+        //assembler.printError();
+        throw ParseException("Parenthesis not closed");
     }
     return nullptr;
 }
@@ -970,16 +989,17 @@ Assembler::~Assembler()
 {
 }
 
-AsmSymbolEntry* Assembler::parseSymbol(LineCol lineCol, size_t size, const char* string)
+AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
 {
     AsmSymbolEntry* entry = nullptr;
-    const std::string symName = extractSymName(size, string);
+    const std::string symName = extractSymName(lineSize-linePos, line+linePos);
     std::pair<AsmSymbolMap::iterator, bool> res = symbolMap.insert({ symName, AsmSymbol()});
     if (!res.second)
     {   // if found
         AsmSymbolMap::iterator it = res.first;
         AsmSymbol& sym = it->second;
-        sym.occurrences.push_back({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo });
+        const LineCol curPos = currentInputFilter->translatePos(linePos);
+        sym.occurrences.push_back({ topFile, topMacroSubst, curPos.lineNo, curPos.colNo });
         entry = &*it;
     }
     else // if new symbol has been put

@@ -172,10 +172,8 @@ public:
     /// translate position to line number and column number
     /**
      * \param position position in line (from zero)
-     * \param outLineNo output line number
-     * \param outColNo output column number
      */
-    void translatePos(size_t position, uint64_t& outLineNo, size_t& outColNo) const;
+    LineCol translatePos(size_t position) const;
     
     /// returns column translations
     const std::vector<LineTrans> getColTranslations() const
@@ -317,7 +315,7 @@ struct AsmExpression
     AsmSourcePos sourcePos;
     size_t symOccursNum;
     std::unique_ptr<AsmExprOp[]> ops;
-    std::unique_ptr<LineCol[]> divsAndModsPos;    ///< for every for div/mod operation
+    std::unique_ptr<LineCol[]> messagePositions;    ///< for every potential message
     std::unique_ptr<AsmExprArg[]> args;
     
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
@@ -327,8 +325,7 @@ struct AsmExpression
     
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
-    static AsmExpression* parseExpression(Assembler& assembler,
-                  size_t size, const char* line, size_t& endPos);
+    static AsmExpression* parseExpression(Assembler& assembler, size_t linePos);
 };
 
 struct AsmExprSymbolOccurence
@@ -422,10 +419,12 @@ private:
     RefPtr<const AsmFile> topFile;
     RefPtr<const AsmMacroSubst> topMacroSubst;
     
+    size_t lineSize;
+    const char* line;
     uint64_t lineNo;
-    size_t linePos;
     
     std::stack<AsmSourceFilter*> asmInputFilters;
+    AsmSourceFilter* currentInputFilter;
     
     std::ostream& messageStream;
     
@@ -449,7 +448,7 @@ private:
     void printError(LineCol lineCol, const std::string& message)
     { printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
     
-    AsmSymbolEntry* parseSymbol(LineCol lineCol, size_t size, const char* string);
+    AsmSymbolEntry* parseSymbol(size_t linePos);
 public:
     explicit Assembler(std::istream& input, cxuint flags,
               std::ostream& msgStream = std::cerr);
