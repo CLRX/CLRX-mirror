@@ -318,6 +318,14 @@ struct AsmExpression
     std::unique_ptr<LineCol[]> messagePositions;    ///< for every potential message
     std::unique_ptr<AsmExprArg[]> args;
     
+    AsmSourcePos getSourcePos(size_t msgPosIndex) const
+    {
+        AsmSourcePos pos = sourcePos;
+        pos.lineNo = messagePositions[msgPosIndex].lineNo;
+        pos.colNo = messagePositions[msgPosIndex].colNo;
+        return pos;
+    }
+    
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
               size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
               const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
@@ -442,6 +450,17 @@ private:
     
     void printWarning(const AsmSourcePos& pos, const std::string& message);
     void printError(const AsmSourcePos& pos, const std::string& message);
+    
+    void printWarning(const char* linePlace, const std::string& message)
+    {
+        const LineCol lineCol = currentInputFilter->translatePos(linePlace-line);
+        printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message);
+    }
+    void printError(const char* linePlace, const std::string& message)
+    {
+        const LineCol lineCol = currentInputFilter->translatePos(linePlace-line);
+        printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message);
+    }
     
     void printWarning(LineCol lineCol, const std::string& message)
     { printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }

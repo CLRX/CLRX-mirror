@@ -69,14 +69,14 @@ AsmMacro::AsmMacro(const AsmSourcePos& inPos, uint64_t inContentLineNo,
 AsmSourceFilter::~AsmSourceFilter()
 { }
 
-LineCol AsmSourceFilter::translatePos(size_t colNo) const
+LineCol AsmSourceFilter::translatePos(size_t position) const
 {
     auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
-         LineTrans({ colNo-1, 0 }),
+         LineTrans({ position, 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position < t2.position; });
     
-    return { found->lineNo, colNo-found->position };
+    return { found->lineNo, position-found->position+1 };
 }
 
 /*
@@ -665,7 +665,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
     size_t opPos = 0;
     value = 0;
     std::stack<ExprStackEntry> stack;
-    size_t modAndDivsPos = 0;
+    size_t messagePosIndex = 0;
     
     bool failed = false;
     do {
@@ -721,48 +721,48 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value / value;
                         else // error
                         {
-                            assembler.printError(messagePositions[modAndDivsPos],
+                            assembler.printError(getSourcePos(messagePosIndex),
                                    "Divide by zero");
                             failed = true;
                             value = 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_DIVISION:
                         if (value != 0)
                             value = int64_t(entry.value) / int64_t(value);
                         else // error
                         {
-                            assembler.printError(messagePositions[modAndDivsPos],
+                            assembler.printError(getSourcePos(messagePosIndex),
                                    "Division by zero");
                             failed = true;
                             value = 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::MODULO:
                         if (value != 0)
                             value = entry.value % value;
                         else // error
                         {
-                            assembler.printError(messagePositions[modAndDivsPos],
+                            assembler.printError(getSourcePos(messagePosIndex),
                                    "Division by zero");
                             failed = true;
                             value = 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_MODULO:
                         if (value != 0)
                             value = int64_t(entry.value) % int64_t(value);
                         else // error
                         {
-                            assembler.printError(messagePositions[modAndDivsPos],
+                            assembler.printError(getSourcePos(messagePosIndex),
                                    "Division by zero");
                             failed = true;
                             value = 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::BIT_AND:
                         value = entry.value & value;
@@ -781,33 +781,33 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                             value = entry.value << value;
                         else
                         {
-                            assembler.printWarning(messagePositions[modAndDivsPos],
+                            assembler.printWarning(getSourcePos(messagePosIndex),
                                    "shift count out of range (between 0 and 63)");
                             value = 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::SHIFT_RIGHT:
                         if (value < 64)
                             value = entry.value >> value;
                         else
                         {
-                            assembler.printWarning(messagePositions[modAndDivsPos],
+                            assembler.printWarning(getSourcePos(messagePosIndex),
                                    "shift count out of range (between 0 and 63)");
                             value = 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::SIGNED_SHIFT_RIGHT:
                         if (value < 64)
                             value = int64_t(entry.value) >> value;
                         else
                         {
-                            assembler.printWarning(messagePositions[modAndDivsPos],
+                            assembler.printWarning(getSourcePos(messagePosIndex),
                                    "shift count out of range (between 0 and 63)");
                             value = (entry.value>=(1ULL<<63)) ? UINT64_MAX : 0;
                         }
-                        modAndDivsPos++;
+                        messagePosIndex++;
                         break;
                     case AsmExprOp::LOGICAL_AND:
                         value = entry.value && value;
@@ -969,7 +969,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     }
     if (parenthesisCount != 0)
     {   // print error
-        //assembler.printError();
+        assembler.printError(string, "Missing ')'");
         throw ParseException("Parenthesis not closed");
     }
     return nullptr;
