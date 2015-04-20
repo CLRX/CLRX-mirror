@@ -42,7 +42,6 @@ static inline const char* skipSpacesToEnd(const char* string, const char* end)
 // extract sybol name or argument name or other identifier
 static inline const std::string extractSymName(size_t size, const char* string)
 {
-    AsmSymbolEntry* entry = nullptr;
     size_t p = 0;
     if (0 < size && ((string[0] >= 'a' && string[0] <= 'z') ||
         (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' || string[0] == '.' ||
@@ -923,12 +922,12 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         AsmExprArg arg;
         size_t node;
     };
-    enum class ConExprArgType: cxbyte
+    enum ConExprArgType: cxbyte
     {
-        ARG_NONE = 0,
-        ARG_VALUE = 1,
-        ARG_SYMBOL = 2,
-        ARG_NODE = 3
+        CXARG_NONE = 0,
+        CXARG_VALUE = 1,
+        CXARG_SYMBOL = 2,
+        CXARG_NODE = 3
     };
     struct ConExprNode
     {
@@ -936,16 +935,16 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         size_t priority;
         cxuint lineColPos;
         struct {
-            ConExprArgType arg1Type:2;
-            ConExprArgType arg2Type:2;
+            ConExprArgType arg1Type;
+            ConExprArgType arg2Type;
         };
         AsmExprOp op;
         ConExprArg arg1;
         ConExprArg arg2;
+        bool filled;
         
-        ConExprNode() : parent(SIZE_MAX), priority(0), lineColPos(UINT64_MAX),
-              arg1Type(ConExprArgType::ARG_NONE),
-              arg2Type(ConExprArgType::ARG_NONE), op(AsmExprOp::NONE)
+        ConExprNode() : parent(SIZE_MAX), priority(0), lineColPos(UINT32_MAX),
+              arg1Type(CXARG_NONE), arg2Type(CXARG_NONE), op(AsmExprOp::NONE)
         { }
     };
     std::vector<ConExprNode> exprTree;
@@ -958,14 +957,355 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     AsmExprOp curOp = AsmExprOp::NONE;
     bool emptyParen = false;
     
-    ConExprArgType leftArgType = ConExprArgType::ARG_NONE;
-    ConExprArg leftNode;
     ConExprNode curNode;
     
     while (string != end)
     {
         string = skipSpacesToEnd(string, end);
         if (string == end) break;
+        
+        const bool beforeOp = (curNode.op == AsmExprOp::NONE);
+        const bool beforeFirstSecondArg = (beforeOp && curNode.arg1Type == CXARG_NONE) ||
+                (!beforeOp && curNode.arg2Type == CXARG_NONE);
+        
+        AsmExprOp op = AsmExprOp::NONE;
+        bool expectedPrimaryExpr = false;
+        switch(*string)
+        {
+            case '(':
+                if (curNode.op == AsmExprOp::NONE && curNode.arg1Type != CXARG_NONE)
+                {
+                    assembler.printError(string, "Expected operator");
+                    throw ParseException("Expected operator");
+                }
+                {
+                    const size_t parentNodeIndex = exprTree.size();
+                    exprTree.push_back(curNode);
+                    curNode = ConExprNode();
+                    curNode.parent = parentNodeIndex;
+                }
+                parenthesisCount++;
+                string++;
+                break;
+            case ')':
+                if ((curNode.op == AsmExprOp::NONE &&
+                    curNode.arg1Type == CXARG_NONE) || !curNode.filled)
+                {
+                    assembler.printError(string, "Expected operator or value or symbol");
+                    throw ParseException("Expected operator or value or symbol");
+                }
+                if (parenthesisCount == 0)
+                {
+                    assembler.printError(string, "Too many ')'");
+                    throw ParseException("Too many ')'");
+                }
+                parenthesisCount--;
+                string++;
+                break;
+            case '+':
+                if (!beforeFirstSecondArg && beforeOp) // addition
+                {
+                    op = AsmExprOp::ADDITION;
+                    string++;
+                }
+                break;
+            case '-':
+                if (!beforeFirstSecondArg && beforeOp) // subtract
+                {
+                    op = AsmExprOp::SUBTRACT;
+                    string++;
+                }
+                else if (beforeFirstSecondArg) // minus
+                {
+                    op = AsmExprOp::NEGATE;
+                    string++;
+                }
+                break;
+            case '*':
+                if (!beforeFirstSecondArg && beforeOp) // multiply
+                {
+                    op = AsmExprOp::MULTIPLY;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '/':
+                if (!beforeFirstSecondArg && beforeOp) // division
+                {
+                    if (string+1 != end && string[1] == '/')
+                    {
+                        op = AsmExprOp::DIVISION;
+                        string++;
+                    }
+                    else // standard GNU as signed division
+                        op = AsmExprOp::SIGNED_DIVISION;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '%':
+                if (!beforeFirstSecondArg && beforeOp) // modulo
+                {
+                    if (string+1 != end && string[1] == '%')
+                    {
+                        op = AsmExprOp::MODULO;
+                        string++;
+                    }
+                    else // standard GNU as signed division
+                        op = AsmExprOp::SIGNED_MODULO;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '&':
+                if (!beforeFirstSecondArg && beforeOp) // AND
+                {
+                    if (string+1 != end && string[1] == '&')
+                    {
+                        op = AsmExprOp::LOGICAL_AND;
+                        string++;
+                    }
+                    else // standard GNU as signed division
+                        op = AsmExprOp::BIT_AND;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '|':
+                if (!beforeFirstSecondArg && beforeOp) // OR
+                {
+                    if (string+1 != end && string[1] == '|')
+                    {
+                        op = AsmExprOp::LOGICAL_OR;
+                        string++;
+                    }
+                    else // standard GNU as signed division
+                        op = AsmExprOp::BIT_OR;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '!':
+                if (!beforeFirstSecondArg && beforeOp) // ORNOT or logical not
+                {
+                    if (string+1 != end && string[1] == '=')
+                    {
+                        op = AsmExprOp::NOT_EQUAL;
+                        string++;
+                    }
+                    else
+                        op = AsmExprOp::BIT_ORNOT;
+                    string++;
+                }
+                else if (beforeFirstSecondArg)
+                {
+                    curNode.op = AsmExprOp::LOGICAL_NOT;
+                    string++;
+                }
+                break;
+            case '~':
+                if (beforeFirstSecondArg)
+                {
+                    op = AsmExprOp::BIT_NOT;
+                    string++;
+                }
+                else
+                {
+                    assembler.printError(string,
+                        "Expected non-unary operator, '(', or end of expression");
+                    throw ParseException(
+                        "Expected non-unary operator, '(', or end of expression");
+                }
+                break;
+            case '^':
+                if (!beforeFirstSecondArg && beforeOp) // bit xor
+                {
+                    op = AsmExprOp::BIT_XOR;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '<':
+                if (!beforeFirstSecondArg && beforeOp) // ORNOT or logical not
+                {
+                    if (string+1 != end && string[1] == '<')
+                    {
+                        op = AsmExprOp::SHIFT_LEFT;
+                        string++;
+                    }
+                    else if (string+1 != end && string[1] == '>')
+                    {
+                        op = AsmExprOp::NOT_EQUAL;
+                        string++;
+                    }
+                    else if (string+1 != end && string[1] == '=')
+                    {
+                        if (string+2 != end && string[2] == '@')
+                        {
+                            op = AsmExprOp::BELOW_EQ;
+                            string++;
+                        }
+                        else
+                            op = AsmExprOp::LESS_EQ;
+                        string++;
+                    }
+                    else if (string+1 != end && string[1] == '@')
+                    {
+                        op = AsmExprOp::BELOW;
+                        string++;
+                    }
+                    else
+                        op = AsmExprOp::LESS;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '>':
+                if (!beforeFirstSecondArg && beforeOp) // ORNOT or logical not
+                {
+                    if (string+1 != end && string[1] == '>')
+                    {
+                        if (string+2 != end && string[2] == '>')
+                        {
+                            op = AsmExprOp::SIGNED_SHIFT_RIGHT;
+                            string++;
+                        }
+                        else
+                            op = AsmExprOp::SHIFT_RIGHT;
+                        string++;
+                    }
+                    else if (string+1 != end && string[1] == '=')
+                    {
+                        if (string+2 != end && string[2] == '@')
+                        {
+                            op = AsmExprOp::ABOVE_EQ;
+                            string++;
+                        }
+                        else
+                            op = AsmExprOp::GREATER_EQ;
+                    }
+                    else if (string+1 != end && string[1] == '@')
+                    {
+                        op = AsmExprOp::ABOVE;
+                        string++;
+                    }
+                    else
+                        op = AsmExprOp::GREATER;
+                    string++;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case '=':
+                if (string+1 != end && string[1] == '=')
+                {
+                    if (!beforeFirstSecondArg && beforeOp)
+                    {
+                        op = AsmExprOp::EQUAL;
+                        string += 2;
+                    }
+                    else
+                        expectedPrimaryExpr = true;
+                }
+                else
+                    ; // error
+                break;
+            default: // parse symbol or value
+                {
+                    const bool binaryOp = (curNode.op != AsmExprOp::BIT_NOT &&
+                            curNode.op != AsmExprOp::LOGICAL_NOT &&
+                            curNode.op != AsmExprOp::NEGATE);
+                    AsmSymbolEntry* symEntry = assembler.parseSymbol(string-assembler.line);
+                    if (symEntry != nullptr)
+                    {
+                        if (curNode.arg1Type == CXARG_NONE)
+                        {
+                            if (symEntry->second.isDefined)
+                            {
+                                curNode.arg1.arg.value = symEntry->second.value;
+                                curNode.arg1Type = CXARG_VALUE;
+                            }
+                            else
+                            {
+                                curNode.arg1.arg.symbol = symEntry;
+                                curNode.arg1Type = CXARG_SYMBOL;
+                            }
+                        }
+                        else if (curNode.arg2Type == CXARG_NONE)
+                        {
+                            if (binaryOp)
+                            {
+                                if (symEntry->second.isDefined)
+                                {
+                                    curNode.arg2.arg.value = symEntry->second.value;
+                                    curNode.arg2Type = CXARG_VALUE;
+                                }
+                                else
+                                {
+                                    curNode.arg2.arg.symbol = symEntry;
+                                    curNode.arg2Type = CXARG_SYMBOL;
+                                }
+                            }
+                            else
+                            {
+                                assembler.printError(string, "Expected ')', operator");
+                                throw ParseException("Expected ')', operator");
+                            }
+                        }
+                        else
+                        string += symEntry->first.size();
+                    }
+                    else // other we try to parse number
+                    {
+                        try
+                        {
+                            const char* newStrPos;
+                            const uint64_t value = cstrtovCStyle<uint64_t>(
+                                    string, end, newStrPos);
+                            if (curNode.arg1Type == CXARG_NONE)
+                            {
+                                curNode.arg1.arg.value = value;
+                                curNode.arg1Type = CXARG_VALUE;
+                            }
+                            else if (curNode.arg2Type == CXARG_NONE)
+                            {
+                                if (binaryOp)
+                                {
+                                    curNode.arg2.arg.value = value;
+                                    curNode.arg2Type = CXARG_VALUE;
+                                }
+                                else
+                                {
+                                    assembler.printError(string, "Expected ')', operator");
+                                    throw ParseException("Expected ')', operator");
+                                }
+                            }
+                            string = newStrPos;
+                        }
+                        catch(const ParseException& ex)
+                        {
+                            assembler.printError(string, ex.what());
+                            throw;
+                        }
+                    }
+                }
+                break;
+        }
+        if (expectedPrimaryExpr)
+        {
+            assembler.printError(string, "Expected primary expression before operator");
+            throw ParseException("Expected primary expression before operator");
+        }
+        if (op != AsmExprOp::NONE)
+        {   // if operator
+        }
     }
     if (parenthesisCount != 0)
     {   // print error
