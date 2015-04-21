@@ -468,6 +468,9 @@ private:
     { printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
     
     AsmSymbolEntry* parseSymbol(size_t linePos);
+    
+    LineCol translatePos(const char* string) const
+    { return currentInputFilter->translatePos(string-line); }
 public:
     explicit Assembler(std::istream& input, cxuint flags,
               std::ostream& msgStream = std::cerr);
