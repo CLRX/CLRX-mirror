@@ -313,7 +313,8 @@ static const cxbyte asmOpPrioritiesTbl[] =
     2, // BELOW
     2, // BELOW_EQ
     2, // ABOVE
-    2  // ABOVE_EQ
+    2, // ABOVE_EQ
+    0  // CHOICE_END
 };
 
 AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos)
@@ -373,7 +374,9 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     (curNode == nullptr || curNode->op == AsmExprOp::NONE);
         const bool beforeArg = curNode == nullptr ||
             (curNode->arg1Type == CXARG_NONE ||
-            (!beforeOp && curNode->arg2Type == CXARG_NONE));
+            (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
+            (!beforeOp && curNode->arg3Type == CXARG_NONE &&
+             curNode->op == AsmExprOp::CHOICE_END));
         
         LineCol lineCol = { 0, 0 };
         AsmExprOp op = AsmExprOp::NONE;
@@ -625,7 +628,16 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 break;
             case '?':
                 if (!beforeArg && beforeOp)
+                {
+                    lineCol = assembler.translatePos(string);
                     op = AsmExprOp::CHOICE;
+                }
+                else
+                    expectedPrimaryExpr = true;
+                break;
+            case ':':
+                if (!beforeArg && beforeOp)
+                    op = AsmExprOp::CHOICE_END;
                 else
                     expectedPrimaryExpr = true;
                 break;
@@ -709,6 +721,80 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             
             if (op == AsmExprOp::CHOICE)
             {   // choice
+                // first part
+                if (exprTree.size() == 1 && exprTree[0].op == AsmExprOp::NONE)
+                {   /* first value */
+                    exprTree[0].op = op;
+                    exprTree[0].lineColPos = lineColPos;
+                    exprTree[0].priority = (parenthesisCount<<3) +
+                            asmOpPrioritiesTbl[cxuint(op)];
+                }
+                else
+                {   // value or node
+                    const size_t nextNodeIndex = exprTree.size();
+                    exprTree.push_back(ConExprNode());
+                    ConExprNode& nextNode = exprTree.back();
+                    nextNode.op = op;
+                    nextNode.priority = (parenthesisCount<<3) +
+                                asmOpPrioritiesTbl[cxuint(op)];
+                    nextNode.lineColPos = lineColPos;
+                    size_t leftNodeIndex = curNodeIndex;
+                    if (nextNode.priority < exprTree[leftNodeIndex].priority)
+                    {   /* if left side has higher priority than current */
+                        while (exprTree[leftNodeIndex].parent != SIZE_MAX &&
+                               nextNode.priority <
+                                   exprTree[exprTree[leftNodeIndex].parent].priority)
+                            leftNodeIndex = exprTree[leftNodeIndex].parent;
+                        
+                        nextNode.arg1.node = leftNodeIndex;
+                        nextNode.arg1Type = CXARG_NODE;
+                        nextNode.parent = exprTree[leftNodeIndex].parent;
+                        exprTree[leftNodeIndex].parent = nextNodeIndex;
+                    }
+                    else
+                    {   /* if left side has lower priority than current */
+                        nextNode.parent = leftNodeIndex;
+                        if (curNode->arg3Type != CXARG_NONE)
+                        {   // binary op
+                            nextNode.arg1Type = curNode->arg3Type;
+                            nextNode.arg1 = curNode->arg3;
+                            curNode->arg3Type = CXARG_NODE;
+                            curNode->arg3.node = nextNodeIndex;
+                        }
+                        else if (curNode->arg2Type != CXARG_NONE)
+                        {   // binary op
+                            nextNode.arg1Type = curNode->arg2Type;
+                            nextNode.arg1 = curNode->arg2;
+                            curNode->arg2Type = CXARG_NODE;
+                            curNode->arg2.node = nextNodeIndex;
+                        }
+                        else
+                        {   // unary op
+                            nextNode.arg1Type = curNode->arg1Type;
+                            nextNode.arg1 = curNode->arg1;
+                            curNode->arg1Type = CXARG_NODE;
+                            curNode->arg1.node = nextNodeIndex;
+                        }
+                    }
+                    curNodeIndex = nextNodeIndex;
+                }
+            }
+            else if (op == AsmExprOp::CHOICE_END)
+            {   /* second part */
+                size_t nodeIndex = curNodeIndex;
+                const size_t priority = (parenthesisCount<<3) +
+                        asmOpPrioritiesTbl[cxuint(op)];
+                while (nodeIndex != SIZE_MAX && priority < exprTree[nodeIndex].priority)
+                    nodeIndex = exprTree[nodeIndex].parent;
+                if (nodeIndex == SIZE_MAX || exprTree[nodeIndex].priority != priority ||
+                    exprTree[nodeIndex].op != AsmExprOp::CHOICE)
+                {
+                    assembler.printError(string, "Missing '?' before ':' or too many ':'");
+                    throw ParseException("Missing '?' before ':'");
+                }
+                ConExprNode& thisNode = exprTree[nodeIndex];
+                thisNode.op = AsmExprOp::CHOICE_END;
+                curNodeIndex = nodeIndex;
             }
             else if (binaryOp)
             {
@@ -744,7 +830,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     else
                     {   /* if left side has lower priority than current */
                         nextNode.parent = leftNodeIndex;
-                        if (curNode->arg2Type != CXARG_NONE)
+                        if (curNode->arg3Type != CXARG_NONE)
+                        {   // binary op
+                            nextNode.arg1Type = curNode->arg3Type;
+                            nextNode.arg1 = curNode->arg3;
+                            curNode->arg3Type = CXARG_NODE;
+                            curNode->arg3.node = nextNodeIndex;
+                        }
+                        else if (curNode->arg2Type != CXARG_NONE)
                         {   // binary op
                             nextNode.arg1Type = curNode->arg2Type;
                             nextNode.arg1 = curNode->arg2;
@@ -783,6 +876,11 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     {
                         curNode->arg2Type = CXARG_NODE;
                         curNode->arg2.node = nextNodeIndex;
+                    }
+                    else /* choice operator */
+                    {
+                        curNode->arg3Type = CXARG_NODE;
+                        curNode->arg3.node = nextNodeIndex;
                     }
                 }
                 curNodeIndex = nextNodeIndex;
