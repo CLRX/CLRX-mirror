@@ -17,6 +17,7 @@ CLRX/utils/Utilities.h -text
 /COPYING -text
 /Doxyfile.in -text
 /Int128Detect.c -text
+amdasm/AsmExpression.cpp -text
 amdasm/AsmInternals.h -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain

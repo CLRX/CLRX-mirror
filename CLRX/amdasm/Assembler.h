@@ -293,8 +293,7 @@ enum class AsmExprOp : cxbyte
     BELOW_EQ, // unsigned less or equal
     ABOVE, // unsigned less
     ABOVE_EQ, // unsigned less or equal
-    CHOICE_SECOND = 0xfd,
-    NONE = 0xfe
+    NONE = 0xff
 };
 
 struct AsmExprTarget;
