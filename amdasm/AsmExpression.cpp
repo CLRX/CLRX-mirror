@@ -361,7 +361,6 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     };
     std::vector<ConExprNode> exprTree(0);
     std::vector<LineCol> messagePositions;
-    std::vector<LineCol> errorPositions;
     
     const char* string = assembler.line;
     const char* end = assembler.line + assembler.lineSize;
@@ -639,7 +638,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             case '?':
                 if (!beforeArg && beforeOp)
                 {
-                    errorPositions.push_back(assembler.translatePos(string));
+                    lineCol = assembler.translatePos(string);
                     op = AsmExprOp::CHOICE_START;
                 }
                 else
@@ -928,89 +927,92 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     /* convert into Expression */
     size_t opsNum;
     if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
-        opsNum = exprTree.size()+argsNum;
-    else
         opsNum = argsNum;
+    else
+        opsNum = exprTree.size()+argsNum;
     
     std::unique_ptr<AsmExpression> expr(new AsmExpression(assembler.getSourcePos(string),
               symOccursNum, opsNum, messagePositions.size(), argsNum));
     
+    AsmExprOp* opPtr = expr->ops.get();
+    AsmExprArg* argPtr = expr->args.get();
+    LineCol* msgPosPtr = expr->messagePositions.get();
+    
+    if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
+    {   /* if single value/symbol */
+        opPtr[0] = exprTree[0].op;
+        argPtr[0] = exprTree[0].arg1.arg;
+        return expr.release();
+    }
+    
+    ConExprNode* node = &exprTree[root];
+    while (node != nullptr)
     {
-        AsmExprOp* opPtr = expr->ops.get();
-        AsmExprArg* argPtr = expr->args.get();
-        LineCol* msgPosPtr = expr->messagePositions.get();
-        
-        ConExprNode* node = &exprTree[root];
-        while (node != nullptr)
+        if (node->visitedArgs == 0)
         {
-            if (node->visitedArgs==0)
-            {
-                if (node->op == AsmExprOp::CHOICE_START)
-                {   // error
-                }
-                if (node->lineColPos != UINT_MAX)
-                    *msgPosPtr++ = messagePositions[node->lineColPos];
-                *opPtr++ = node->op;
+            if (node->op == AsmExprOp::CHOICE_START)
+            {   // error
+                //throw 
             }
+            if (node->lineColPos != UINT_MAX && node->op != AsmExprOp::CHOICE)
+                *msgPosPtr++ = messagePositions[node->lineColPos];
+            *opPtr++ = node->op;
             
-            if (node->visitedArgs == 0)
+            node->visitedArgs++;
+            if (node->arg1Type == CXARG_NODE)
             {
-                node->visitedArgs++;
-                if (node->arg1Type == CXARG_NODE)
+                if (exprTree[node->arg1.node].visitedArgs==0)
                 {
-                    if (exprTree[node->arg1.node].visitedArgs==0)
-                    {
-                        node = &exprTree[node->arg1.node];
-                        continue;
-                    }
-                }
-                else if (node->arg1Type != CXARG_NONE)
-                {
-                    *opPtr++ = (node->arg1Type == CXARG_VALUE) ?
-                            AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
-                    *argPtr++ = node->arg1.arg;
+                    node = &exprTree[node->arg1.node];
+                    continue;
                 }
             }
-            if (node->visitedArgs == 1)
+            else if (node->arg1Type != CXARG_NONE)
             {
-                node->visitedArgs++;
-                if (node->arg2Type == CXARG_NODE)
-                {
-                    if (exprTree[node->arg2.node].visitedArgs==0)
-                    {
-                        node = &exprTree[node->arg2.node];
-                        continue;
-                    }
-                }
-                else if (node->arg2Type != CXARG_NONE)
-                {
-                    *opPtr++ = (node->arg2Type == CXARG_VALUE) ?
-                            AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
-                    *argPtr++ = node->arg2.arg;
-                }
+                *opPtr++ = (node->arg1Type == CXARG_VALUE) ?
+                        AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                *argPtr++ = node->arg1.arg;
             }
-            if (node->visitedArgs == 2)
-            {
-                node->visitedArgs++;
-                if (node->arg3Type == CXARG_NODE)
-                {
-                    if (exprTree[node->arg3.node].visitedArgs==0)
-                    {
-                        node = &exprTree[node->arg3.node];
-                        continue;
-                    }
-                }
-                else if (node->arg3Type != CXARG_NONE)
-                {
-                    *opPtr++ = (node->arg3Type == CXARG_VALUE) ?
-                            AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
-                    *argPtr++ = node->arg3.arg;
-                }
-            }
-            
-            if (node->visitedArgs == 3) // go back
-                node = (node->parent != SIZE_MAX) ? &exprTree[node->parent] : nullptr;
         }
+        if (node->visitedArgs == 1)
+        {
+            node->visitedArgs++;
+            if (node->arg2Type == CXARG_NODE)
+            {
+                if (exprTree[node->arg2.node].visitedArgs==0)
+                {
+                    node = &exprTree[node->arg2.node];
+                    continue;
+                }
+            }
+            else if (node->arg2Type != CXARG_NONE)
+            {
+                *opPtr++ = (node->arg2Type == CXARG_VALUE) ?
+                        AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                *argPtr++ = node->arg2.arg;
+            }
+        }
+        if (node->visitedArgs == 2)
+        {
+            node->visitedArgs++;
+            if (node->arg3Type == CXARG_NODE)
+            {
+                if (exprTree[node->arg3.node].visitedArgs==0)
+                {
+                    node = &exprTree[node->arg3.node];
+                    continue;
+                }
+            }
+            else if (node->arg3Type != CXARG_NONE)
+            {
+                *opPtr++ = (node->arg3Type == CXARG_VALUE) ?
+                        AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                *argPtr++ = node->arg3.arg;
+            }
+        }
+        
+        if (node->visitedArgs == 3) // go back
+            node = (node->parent != SIZE_MAX) ? &exprTree[node->parent] : nullptr;
     }
     return expr.release();
 }
