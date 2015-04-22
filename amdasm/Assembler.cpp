@@ -654,8 +654,7 @@ AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
     {   // if found
         AsmSymbolMap::iterator it = res.first;
         AsmSymbol& sym = it->second;
-        const LineCol curPos = currentInputFilter->translatePos(linePos);
-        sym.occurrences.push_back({ topFile, topMacroSubst, curPos.lineNo, curPos.colNo });
+        sym.occurrences.push_back(getSourcePos(linePos));
         entry = &*it;
     }
     else // if new symbol has been put

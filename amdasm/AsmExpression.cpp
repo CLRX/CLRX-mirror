@@ -49,6 +49,15 @@ AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
     std::copy(inOpPos, inOpPos+inOpPosNum, messagePositions.get());
 }
 
+AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
+            size_t inOpsNum, size_t inOpPosNum, size_t inArgsNum)
+        : sourcePos(inPos), symOccursNum(inSymOccursNum)
+{
+    ops.reset(new AsmExprOp[inOpsNum]);
+    args.reset(new AsmExprArg[inArgsNum]);
+    messagePositions.reset(new LineCol[inOpPosNum]);
+}
+
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
 {
     struct ExprStackEntry
@@ -334,7 +343,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     struct ConExprNode
     {
         size_t parent;
-        size_t priority;
+        cxuint priority;
         cxuint lineColPos;
         ConExprArgType arg1Type;
         ConExprArgType arg2Type;
@@ -343,22 +352,24 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         ConExprArg arg1;
         ConExprArg arg2;
         ConExprArg arg3;
-        bool filled;
+        cxbyte visitedArgs;
         
         ConExprNode() : parent(SIZE_MAX), priority(0), lineColPos(UINT_MAX),
               arg1Type(CXARG_NONE), arg2Type(CXARG_NONE), arg3Type(CXARG_NONE),
-              op(AsmExprOp::NONE)
+              op(AsmExprOp::NONE), visitedArgs(0)
         { }
     };
     std::vector<ConExprNode> exprTree(0);
     std::vector<LineCol> messagePositions;
+    std::vector<LineCol> errorPositions;
     
     const char* string = assembler.line;
     const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
     bool afterParenthesis = false;
-    cxuint priority = 0;
-    bool emptyParen = false;
+    size_t root = SIZE_MAX;
+    size_t symOccursNum = 0;
+    size_t argsNum = 0;
     
     size_t curNodeIndex = SIZE_MAX;
     
@@ -376,12 +387,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             (curNode->arg1Type == CXARG_NONE ||
             (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
             (!beforeOp && curNode->arg3Type == CXARG_NONE &&
-             curNode->op == AsmExprOp::CHOICE_END));
+             curNode->op == AsmExprOp::CHOICE));
         
         LineCol lineCol = { 0, 0 };
         AsmExprOp op = AsmExprOp::NONE;
         bool expectedPrimaryExpr = false;
         const size_t oldParenthesisCount = parenthesisCount;
+        bool doExit = false;
+        
         switch(*string)
         {
             case '(':
@@ -399,11 +412,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     assembler.printError(string, "Expected operator or value or symbol");
                     throw ParseException("Expected operator or value or symbol");
                 }
-                if (parenthesisCount == 0)
-                {
-                    assembler.printError(string, "Too many ')'");
-                    throw ParseException("Too many ')'");
-                }
+                if (parenthesisCount==0)
+                { doExit = true; break; }
                 parenthesisCount--;
                 string++;
                 break;
@@ -629,19 +639,20 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             case '?':
                 if (!beforeArg && beforeOp)
                 {
-                    lineCol = assembler.translatePos(string);
-                    op = AsmExprOp::CHOICE;
+                    errorPositions.push_back(assembler.translatePos(string));
+                    op = AsmExprOp::CHOICE_START;
                 }
                 else
                     expectedPrimaryExpr = true;
                 break;
             case ':':
                 if (!beforeArg && beforeOp)
-                    op = AsmExprOp::CHOICE_END;
+                    op = AsmExprOp::CHOICE;
                 else
                     expectedPrimaryExpr = true;
                 break;
             default: // parse symbol or value
+                if (beforeArg)
                 {
                     AsmSymbolEntry* symEntry = assembler.parseSymbol(string-assembler.line);
                     ConExprArgType argType = CXARG_NONE;
@@ -655,13 +666,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         }
                         else
                         {
+                            symOccursNum++;
                             arg.arg.symbol = symEntry;
                             argType = CXARG_SYMBOL;
                         }
                         string += symEntry->first.size();
                     }
-                    else // other we try to parse number
-                    {
+                    else if (parenthesisCount != 0 || *string < '0' || *string > '9')
+                    {   // other we try to parse number
                         try
                         {
                             const char* newStrPos;
@@ -676,6 +688,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                             throw;
                         }
                     }
+                    else // otherwise we finish parsing
+                    { doExit = true; break; }
                     
                     /* put argument */
                     if (curNode != nullptr)
@@ -700,9 +714,22 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         curNode->arg1 = arg;
                         curNode->op = AsmExprOp::NONE;
                     }
+                    argsNum++;
                 }
-                break;
+                else
+                {
+                    if (parenthesisCount == 0)
+                    { doExit = true; break; }
+                    else
+                    {
+                        assembler.printError(string, "Junks at end of expression");
+                        throw ParseException("Junks at end of expression");
+                    }
+                }
         }
+        if (doExit) // exit from parsing
+            break;
+        
         afterParenthesis = (oldParenthesisCount < oldParenthesisCount);
         const cxuint lineColPos = (lineCol.lineNo!=0) ? messagePositions.size() : UINT_MAX;
         if (lineCol.lineNo!=0)
@@ -719,7 +746,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                             op != AsmExprOp::LOGICAL_NOT &&
                             op != AsmExprOp::NEGATE);
             
-            if (op == AsmExprOp::CHOICE)
+            if (op == AsmExprOp::CHOICE_START)
             {   // choice
                 // first part
                 if (exprTree.size() == 1 && exprTree[0].op == AsmExprOp::NONE)
@@ -779,7 +806,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     curNodeIndex = nextNodeIndex;
                 }
             }
-            else if (op == AsmExprOp::CHOICE_END)
+            else if (op == AsmExprOp::CHOICE)
             {   /* second part */
                 size_t nodeIndex = curNodeIndex;
                 const size_t priority = (parenthesisCount<<3) +
@@ -793,7 +820,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     throw ParseException("Missing '?' before ':'");
                 }
                 ConExprNode& thisNode = exprTree[nodeIndex];
-                thisNode.op = AsmExprOp::CHOICE_END;
+                thisNode.op = AsmExprOp::CHOICE;
                 curNodeIndex = nodeIndex;
             }
             else if (binaryOp)
@@ -804,6 +831,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     exprTree[0].lineColPos = lineColPos;
                     exprTree[0].priority = (parenthesisCount<<3) +
                             asmOpPrioritiesTbl[cxuint(op)];
+                    root = 0;
                 }
                 else
                 {   /* next operators, add node */
@@ -826,6 +854,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         nextNode.arg1Type = CXARG_NODE;
                         nextNode.parent = exprTree[leftNodeIndex].parent;
                         exprTree[leftNodeIndex].parent = nextNodeIndex;
+                        if (nextNode.parent == SIZE_MAX)
+                            root = nextNodeIndex;
                     }
                     else
                     {   /* if left side has lower priority than current */
@@ -882,6 +912,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         curNode->arg3Type = CXARG_NODE;
                         curNode->arg3.node = nextNodeIndex;
                     }
+                    if (nextNode.parent == SIZE_MAX)
+                        root = nextNodeIndex;
                 }
                 curNodeIndex = nextNodeIndex;
             }
@@ -892,5 +924,93 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         assembler.printError(string, "Missing ')'");
         throw ParseException("Parenthesis not closed");
     }
-    return nullptr;
+    
+    /* convert into Expression */
+    size_t opsNum;
+    if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
+        opsNum = exprTree.size()+argsNum;
+    else
+        opsNum = argsNum;
+    
+    std::unique_ptr<AsmExpression> expr(new AsmExpression(assembler.getSourcePos(string),
+              symOccursNum, opsNum, messagePositions.size(), argsNum));
+    
+    {
+        AsmExprOp* opPtr = expr->ops.get();
+        AsmExprArg* argPtr = expr->args.get();
+        LineCol* msgPosPtr = expr->messagePositions.get();
+        
+        ConExprNode* node = &exprTree[root];
+        while (node != nullptr)
+        {
+            if (node->visitedArgs==0)
+            {
+                if (node->op == AsmExprOp::CHOICE_START)
+                {   // error
+                }
+                if (node->lineColPos != UINT_MAX)
+                    *msgPosPtr++ = messagePositions[node->lineColPos];
+                *opPtr++ = node->op;
+            }
+            
+            if (node->visitedArgs == 0)
+            {
+                node->visitedArgs++;
+                if (node->arg1Type == CXARG_NODE)
+                {
+                    if (exprTree[node->arg1.node].visitedArgs==0)
+                    {
+                        node = &exprTree[node->arg1.node];
+                        continue;
+                    }
+                }
+                else if (node->arg1Type != CXARG_NONE)
+                {
+                    *opPtr++ = (node->arg1Type == CXARG_VALUE) ?
+                            AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                    *argPtr++ = node->arg1.arg;
+                }
+            }
+            if (node->visitedArgs == 1)
+            {
+                node->visitedArgs++;
+                if (node->arg2Type == CXARG_NODE)
+                {
+                    if (exprTree[node->arg2.node].visitedArgs==0)
+                    {
+                        node = &exprTree[node->arg2.node];
+                        continue;
+                    }
+                }
+                else if (node->arg2Type != CXARG_NONE)
+                {
+                    *opPtr++ = (node->arg2Type == CXARG_VALUE) ?
+                            AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                    *argPtr++ = node->arg2.arg;
+                }
+            }
+            if (node->visitedArgs == 2)
+            {
+                node->visitedArgs++;
+                if (node->arg3Type == CXARG_NODE)
+                {
+                    if (exprTree[node->arg3.node].visitedArgs==0)
+                    {
+                        node = &exprTree[node->arg3.node];
+                        continue;
+                    }
+                }
+                else if (node->arg3Type != CXARG_NONE)
+                {
+                    *opPtr++ = (node->arg3Type == CXARG_VALUE) ?
+                            AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                    *argPtr++ = node->arg3.arg;
+                }
+            }
+            
+            if (node->visitedArgs == 3) // go back
+                node = (node->parent != SIZE_MAX) ? &exprTree[node->parent] : nullptr;
+        }
+    }
+    return expr.release();
 }

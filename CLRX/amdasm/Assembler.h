@@ -293,7 +293,7 @@ enum class AsmExprOp : cxbyte
     BELOW_EQ, // unsigned less or equal
     ABOVE, // unsigned less
     ABOVE_EQ, // unsigned less or equal
-    CHOICE_END,
+    CHOICE_START,
     NONE = 0xff
 };
 
@@ -326,6 +326,8 @@ struct AsmExpression
         return pos;
     }
     
+    AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
+            size_t opsNum, size_t opPosNum, size_t argsNum);
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
               size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
               const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
@@ -361,6 +363,9 @@ struct AsmSymbol
     AsmSymbol(cxuint inSectionId, AsmExpression* expr) : sectionId(inSectionId),
             isDefined(false), value(0), expression(expr)
     { }
+    
+    void addOccurrence(AsmSourcePos pos)
+    { occurrences.push_back(pos); }
 };
 
 typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
@@ -471,6 +476,19 @@ private:
     
     LineCol translatePos(const char* string) const
     { return currentInputFilter->translatePos(string-line); }
+    LineCol translatePos(size_t pos) const
+    { return currentInputFilter->translatePos(pos); }
+    
+    AsmSourcePos getSourcePos(const char* string) const
+    {
+        LineCol lineCol = translatePos(string);
+        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    }
+    AsmSourcePos getSourcePos(size_t pos) const
+    {
+        LineCol lineCol = translatePos(pos);
+        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    }
 public:
     explicit Assembler(std::istream& input, cxuint flags,
               std::ostream& msgStream = std::cerr);
