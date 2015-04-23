@@ -491,6 +491,13 @@ private:
         LineCol lineCol = translatePos(pos);
         return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     }
+protected:
+    void setLine(uint64_t lineNo, size_t lineSize, const char* line)
+    {
+        this->lineNo = lineNo;
+        this->lineSize = lineSize;
+        this->line = line;
+    }
 public:
     explicit Assembler(std::istream& input, cxuint flags,
               std::ostream& msgStream = std::cerr);

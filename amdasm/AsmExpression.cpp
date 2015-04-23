@@ -671,7 +671,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         }
                         string += symEntry->first.size();
                     }
-                    else if (parenthesisCount != 0 || *string < '0' || *string > '9')
+                    else if (parenthesisCount != 0 || (*string >= '0' && *string <= '9'))
                     {   // other we try to parse number
                         try
                         {
@@ -698,10 +698,15 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                             curNode->arg1Type = argType;
                             curNode->arg1 = arg;
                         }
-                        else
+                        else if (curNode->arg2Type == CXARG_NONE)
                         {
                             curNode->arg2Type = argType;
                             curNode->arg2 = arg;
+                        }
+                        else
+                        {
+                            curNode->arg3Type = argType;
+                            curNode->arg3 = arg;
                         }
                     }
                     else

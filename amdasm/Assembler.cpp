@@ -637,7 +637,8 @@ void AsmSourcePos::print(std::ostream& os) const
 
 Assembler::Assembler(std::istream& input, cxuint flags, std::ostream& msgStream)
         : macroCount(0), inclusionLevel(0), macroSubstLevel(0),
-          topFile(RefPtr<const AsmFile>(new AsmFile(""))), messageStream(msgStream)
+          topFile(RefPtr<const AsmFile>(new AsmFile(""))), 
+          lineSize(1), line(nullptr), lineNo(1), messageStream(msgStream)
 {
 }
 
@@ -649,6 +650,8 @@ AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
 {
     AsmSymbolEntry* entry = nullptr;
     const std::string symName = extractSymName(lineSize-linePos, line+linePos);
+    if (symName.empty())
+        return nullptr;
     std::pair<AsmSymbolMap::iterator, bool> res = symbolMap.insert({ symName, AsmSymbol()});
     if (!res.second)
     {   // if found
