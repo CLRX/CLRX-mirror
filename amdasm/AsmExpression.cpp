@@ -926,6 +926,12 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     
     /* convert into Expression */
     size_t opsNum;
+    if (exprTree.empty())
+    {   /* handle empty expression */
+        exprTree.push_back(ConExprNode());
+        exprTree[0].arg1Type = CXARG_VALUE;
+        exprTree[0].arg1.arg.value = 0;
+    }
     if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
         opsNum = argsNum;
     else
@@ -940,7 +946,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     
     if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
     {   /* if single value/symbol */
-        opPtr[0] = exprTree[0].op;
+        opPtr[0] = exprTree[0].arg1Type==CXARG_SYMBOL ?
+                AsmExprOp::ARG_SYMBOL : AsmExprOp::ARG_VALUE;
         argPtr[0] = exprTree[0].arg1.arg;
         return expr.release();
     }
@@ -969,8 +976,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             }
             else if (node->arg1Type != CXARG_NONE)
             {
-                *opPtr++ = (node->arg1Type == CXARG_VALUE) ?
-                        AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                if (node->arg1Type == CXARG_SYMBOL)
+                {
+                    node->arg1.arg.symbol->second.addOccurrenceInExpr(
+                                expr.get(), argPtr-expr->args.get());
+                    *opPtr++ = AsmExprOp::ARG_SYMBOL;
+                }
+                else // value
+                    *opPtr++ = AsmExprOp::ARG_VALUE;
                 *argPtr++ = node->arg1.arg;
             }
         }
@@ -987,8 +1000,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             }
             else if (node->arg2Type != CXARG_NONE)
             {
-                *opPtr++ = (node->arg2Type == CXARG_VALUE) ?
-                        AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                if (node->arg2Type == CXARG_SYMBOL)
+                {
+                    node->arg2.arg.symbol->second.addOccurrenceInExpr(
+                                expr.get(), argPtr-expr->args.get());
+                    *opPtr++ = AsmExprOp::ARG_SYMBOL;
+                }
+                else // value
+                    *opPtr++ = AsmExprOp::ARG_VALUE;
                 *argPtr++ = node->arg2.arg;
             }
         }
@@ -1005,8 +1024,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             }
             else if (node->arg3Type != CXARG_NONE)
             {
-                *opPtr++ = (node->arg3Type == CXARG_VALUE) ?
-                        AsmExprOp::ARG_VALUE : AsmExprOp::ARG_SYMBOL;
+                if (node->arg3Type == CXARG_SYMBOL)
+                {
+                    node->arg3.arg.symbol->second.addOccurrenceInExpr(
+                                expr.get(), argPtr-expr->args.get());
+                    *opPtr++ = AsmExprOp::ARG_SYMBOL;
+                }
+                else // value
+                    *opPtr++ = AsmExprOp::ARG_VALUE;
                 *argPtr++ = node->arg3.arg;
             }
         }

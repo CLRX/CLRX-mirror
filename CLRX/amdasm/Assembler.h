@@ -351,7 +351,7 @@ struct AsmSymbol
     uint64_t value;
     std::vector<AsmSourcePos> occurrences;
     AsmExpression* expression;
-    std::vector<std::pair<AsmExprTarget, AsmExprSymbolOccurence> > occurrencesInExprs;
+    std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
     AsmSymbol() : sectionId(0), isDefined(false), value(0), expression(nullptr)
     { }
@@ -366,6 +366,8 @@ struct AsmSymbol
     
     void addOccurrence(AsmSourcePos pos)
     { occurrences.push_back(pos); }
+    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex)
+    { occurrencesInExprs.push_back({expr, argIndex}); }
 };
 
 typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
@@ -423,7 +425,7 @@ private:
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
     KernelMap kernelMap;
-    std::vector<AsmExpression*> pendingExpressions;
+    std::vector<std::pair<AsmExprTarget, AsmExpression*> > pendingExpressions;
     cxuint flags;
     uint64_t macroCount;
     
