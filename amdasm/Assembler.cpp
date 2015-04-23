@@ -74,8 +74,10 @@ LineCol AsmSourceFilter::translatePos(size_t position) const
          LineTrans({ position, 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position < t2.position; });
-    
-    return { found->lineNo, position-found->position+1 };
+    if (found != colTranslations.end())
+        return { found->lineNo, position-found->position+1 };
+    else // not found!!!
+        return { 1, position+1 };
 }
 
 /*
@@ -640,10 +642,17 @@ Assembler::Assembler(std::istream& input, cxuint flags, std::ostream& msgStream)
           topFile(RefPtr<const AsmFile>(new AsmFile(""))), 
           lineSize(1), line(nullptr), lineNo(1), messageStream(msgStream)
 {
+    currentInputFilter = new AsmInputFilter(input);
+    asmInputFilters.push(currentInputFilter);
 }
 
 Assembler::~Assembler()
 {
+    while (!asmInputFilters.empty())
+    {
+        delete asmInputFilters.top();
+        asmInputFilters.pop();
+    }
 }
 
 AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)

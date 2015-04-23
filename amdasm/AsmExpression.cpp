@@ -381,7 +381,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         if (string == end) break;
         
         const bool beforeOp = !afterParenthesis &&
-                    (curNode == nullptr || curNode->op == AsmExprOp::NONE);
+                    (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
+                     (curNode->op != AsmExprOp::NONE && curNode->arg2Type != CXARG_NONE));
         const bool beforeArg = curNode == nullptr ||
             (curNode->arg1Type == CXARG_NONE ||
             (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
