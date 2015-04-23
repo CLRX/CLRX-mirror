@@ -785,6 +785,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     }
                     else
                     {   /* if left side has lower priority than current */
+                        curNode = &exprTree[curNodeIndex];
                         nextNode.parent = leftNodeIndex;
                         if (curNode->arg3Type != CXARG_NONE)
                         {   // binary op
@@ -865,6 +866,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     else
                     {   /* if left side has lower priority than current */
                         nextNode.parent = leftNodeIndex;
+                        curNode = &exprTree[curNodeIndex];
                         if (curNode->arg3Type != CXARG_NONE)
                         {   // binary op
                             nextNode.arg1Type = curNode->arg3Type;
@@ -898,7 +900,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 nextNode.op = op;
                 nextNode.priority = (parenthesisCount<<3) + asmOpPrioritiesTbl[cxuint(op)];
                 nextNode.lineColPos = lineColPos;
-                
+                curNode = &exprTree[curNodeIndex];
                 if (curNodeIndex != SIZE_MAX)
                 {
                     nextNode.parent = curNodeIndex;
