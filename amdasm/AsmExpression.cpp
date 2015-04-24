@@ -794,6 +794,21 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         nextNode.arg1Type = CXARG_NODE;
                         nextNode.parent = exprTree[leftNodeIndex].parent;
                         exprTree[leftNodeIndex].parent = nextNodeIndex;
+                        if (nextNode.parent == SIZE_MAX)
+                            root = nextNodeIndex;
+                        else
+                        {   // update parent link
+                            ConExprNode& parent = exprTree[nextNode.parent];
+                            if (parent.arg1Type == CXARG_NODE &&
+                                parent.arg1.node == leftNodeIndex)
+                                parent.arg1.node = nextNodeIndex;
+                            else if (parent.arg2Type == CXARG_NODE &&
+                                parent.arg2.node == leftNodeIndex)
+                                parent.arg2.node = nextNodeIndex;
+                            else if (parent.arg3Type == CXARG_NODE &&
+                                parent.arg3.node == leftNodeIndex)
+                                parent.arg3.node = nextNodeIndex;
+                        }
                     }
                     else
                     {   /* if left side has lower priority than current */
@@ -874,6 +889,19 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         exprTree[leftNodeIndex].parent = nextNodeIndex;
                         if (nextNode.parent == SIZE_MAX)
                             root = nextNodeIndex;
+                        else
+                        {   // update parent link
+                            ConExprNode& parent = exprTree[nextNode.parent];
+                            if (parent.arg1Type == CXARG_NODE &&
+                                parent.arg1.node == leftNodeIndex)
+                                parent.arg1.node = nextNodeIndex;
+                            else if (parent.arg2Type == CXARG_NODE &&
+                                parent.arg2.node == leftNodeIndex)
+                                parent.arg2.node = nextNodeIndex;
+                            else if (parent.arg3Type == CXARG_NODE &&
+                                parent.arg3.node == leftNodeIndex)
+                                parent.arg3.node = nextNodeIndex;
+                        }
                     }
                     else
                     {   /* if left side has lower priority than current */
