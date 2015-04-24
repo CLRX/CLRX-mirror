@@ -755,7 +755,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         if (doExit) // exit from parsing
             break;
         
-        afterParenthesis = (oldParenthesisCount < oldParenthesisCount);
+        afterParenthesis = (oldParenthesisCount < parenthesisCount);
         const cxuint lineColPos = (lineCol.lineNo!=0) ? messagePositions.size() : UINT_MAX;
         if (lineCol.lineNo!=0)
             messagePositions.push_back(lineCol);
