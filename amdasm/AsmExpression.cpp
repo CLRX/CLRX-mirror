@@ -392,7 +392,10 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         const bool beforeOp = !afterParenthesis &&
                     (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
                      (curNode->op != AsmExprOp::NONE && 
-                      curNode->arg2Type != CXARG_NONE) || !curBinaryOp);
+                      curNode->arg2Type != CXARG_NONE && curNode->op != AsmExprOp::CHOICE) ||
+                      !curBinaryOp ||
+                      (curNode->op == AsmExprOp::CHOICE &&
+                       curNode->arg3Type != CXARG_NONE));
         const bool beforeArg = curNode == nullptr ||
             (curNode->arg1Type == CXARG_NONE ||
             (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
@@ -654,13 +657,17 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 {
                     lineCol = assembler.translatePos(string);
                     op = AsmExprOp::CHOICE_START;
+                    string++;
                 }
                 else
                     expectedPrimaryExpr = true;
                 break;
             case ':':
                 if (!beforeArg && beforeOp)
+                {
                     op = AsmExprOp::CHOICE;
+                    string++;
+                }
                 else
                     expectedPrimaryExpr = true;
                 break;
@@ -773,6 +780,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     exprTree[0].lineColPos = lineColPos;
                     exprTree[0].priority = (parenthesisCount<<3) +
                             asmOpPrioritiesTbl[cxuint(op)];
+                    root = 0;
                 }
                 else
                 {   // value or node
@@ -848,7 +856,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 while (nodeIndex != SIZE_MAX && priority < exprTree[nodeIndex].priority)
                     nodeIndex = exprTree[nodeIndex].parent;
                 if (nodeIndex == SIZE_MAX || exprTree[nodeIndex].priority != priority ||
-                    exprTree[nodeIndex].op != AsmExprOp::CHOICE)
+                    exprTree[nodeIndex].op != AsmExprOp::CHOICE_START)
                 {
                     assembler.printError(string, "Missing '?' before ':' or too many ':'");
                     throw ParseException("Missing '?' before ':'");
