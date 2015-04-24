@@ -621,6 +621,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         }
                         else
                             op = AsmExprOp::GREATER_EQ;
+                        string++;
                     }
                     else if (string+1 != end && string[1] == '@')
                     {
@@ -646,7 +647,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         expectedPrimaryExpr = true;
                 }
                 else
-                    ; // error
+                    expectedPrimaryExpr = true;
                 break;
             case '?':
                 if (!beforeArg && beforeOp)
