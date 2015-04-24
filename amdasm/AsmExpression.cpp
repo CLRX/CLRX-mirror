@@ -386,9 +386,13 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         string = skipSpacesToEnd(string, end);
         if (string == end) break;
         
+        const bool curBinaryOp = curNode != nullptr && (curNode->op != AsmExprOp::BIT_NOT &&
+                            curNode->op != AsmExprOp::LOGICAL_NOT &&
+                            curNode->op != AsmExprOp::NEGATE);
         const bool beforeOp = !afterParenthesis &&
                     (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
-                     (curNode->op != AsmExprOp::NONE && curNode->arg2Type != CXARG_NONE));
+                     (curNode->op != AsmExprOp::NONE && 
+                      curNode->arg2Type != CXARG_NONE) || !curBinaryOp);
         const bool beforeArg = curNode == nullptr ||
             (curNode->arg1Type == CXARG_NONE ||
             (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
@@ -429,6 +433,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     op = AsmExprOp::ADDITION;
                     string++;
                 }
+                else if (beforeArg) // minus
+                    string++;
                 break;
             case '-':
                 if (!beforeArg && beforeOp) // subtract
@@ -925,9 +931,9 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         curNode->arg3Type = CXARG_NODE;
                         curNode->arg3.node = nextNodeIndex;
                     }
-                    if (nextNode.parent == SIZE_MAX)
-                        root = nextNodeIndex;
                 }
+                if (nextNode.parent == SIZE_MAX)
+                    root = nextNodeIndex;
                 curNodeIndex = nextNodeIndex;
             }
         }
