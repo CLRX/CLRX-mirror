@@ -70,6 +70,12 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
     if (symOccursNum != 0)
         throw Exception("Expression can't be evaluated if symbols still are unresolved!");
     
+    if (ops[0] == AsmExprOp::ARG_VALUE)
+    {
+        value = args[0].value;
+        return true;
+    }
+    
     size_t argPos = 0;
     size_t opPos = 0;
     value = 0;
@@ -939,6 +945,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         exprTree.push_back(ConExprNode());
         exprTree[0].arg1Type = CXARG_VALUE;
         exprTree[0].arg1.arg.value = 0;
+        argsNum = 1;
     }
     if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
         opsNum = argsNum;
