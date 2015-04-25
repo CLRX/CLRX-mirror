@@ -395,7 +395,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
                      (curNode->op != AsmExprOp::NONE && 
                       curNode->arg2Type != CXARG_NONE && curNode->op != AsmExprOp::CHOICE) ||
-                      !curBinaryOp ||
+                      (!curBinaryOp && curNode->arg1Type != CXARG_NONE) ||
                       (curNode->op == AsmExprOp::CHOICE &&
                        curNode->arg3Type != CXARG_NONE));
         const bool beforeArg = curNode == nullptr ||
