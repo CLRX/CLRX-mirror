@@ -858,7 +858,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 size_t nodeIndex = curNodeIndex;
                 const size_t priority = (parenthesisCount<<3) +
                         asmOpPrioritiesTbl[cxuint(op)];
-                while (nodeIndex != SIZE_MAX && priority < exprTree[nodeIndex].priority)
+                while (nodeIndex != SIZE_MAX && (priority < exprTree[nodeIndex].priority ||
+                    exprTree[nodeIndex].op == AsmExprOp::CHOICE))
                     nodeIndex = exprTree[nodeIndex].parent;
                 if (nodeIndex == SIZE_MAX || exprTree[nodeIndex].priority != priority ||
                     exprTree[nodeIndex].op != AsmExprOp::CHOICE_START)
@@ -1044,7 +1045,9 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         {
             if (node->op == AsmExprOp::CHOICE_START)
             {   // error
-                //throw 
+                assembler.printError(messagePositions[node->lineColPos],
+                         "Missing ':' for '?'");
+                throw ParseException("Missing ':' for '?'");
             }
             if (node->lineColPos != UINT_MAX && node->op != AsmExprOp::CHOICE)
                 *msgPosPtr++ = messagePositions[node->lineColPos];
