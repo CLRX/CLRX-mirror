@@ -298,27 +298,27 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
 
 static const cxbyte asmOpPrioritiesTbl[] =
 {   /* higher value, higher priority */
-    6, // ARG_VALUE
-    6, // ARG_SYMBOL
-    2, // ADDITION
-    2, // SUBTRACT
-    5, // NEGATE
-    4, // MULTIPLY
-    4, // DIVISION
-    4, // SIGNED_DIVISION
-    4, // MODULO
-    4, // SIGNED_MODULO
-    3, // BIT_AND
-    3, // BIT_OR
-    3, // BIT_XOR
-    3, // BIT_ORNOT
-    5, // BIT_NOT
-    4, // SHIFT_LEFT
-    4, // SHIFT_RIGHT
-    4, // SIGNED_SHIFT_RIGHT
+    7, // ARG_VALUE
+    7, // ARG_SYMBOL
+    3, // ADDITION
+    3, // SUBTRACT
+    6, // NEGATE
+    5, // MULTIPLY
+    5, // DIVISION
+    5, // SIGNED_DIVISION
+    5, // MODULO
+    5, // SIGNED_MODULO
+    4, // BIT_AND
+    4, // BIT_OR
+    4, // BIT_XOR
+    4, // BIT_ORNOT
+    6, // BIT_NOT
+    5, // SHIFT_LEFT
+    5, // SHIFT_RIGHT
+    5, // SIGNED_SHIFT_RIGHT
     1, // LOGICAL_AND
     1, // LOGICAL_OR
-    1, // LOGICAL_NOT
+    6, // LOGICAL_NOT
     0, // CHOICE
     2, // EQUAL
     2, // NOT_EQUAL
@@ -331,7 +331,7 @@ static const cxbyte asmOpPrioritiesTbl[] =
     2, // ABOVE
     2, // ABOVE_EQ
     0, // CHOICE_END
-    5, // PLUS
+    6, // PLUS
 };
 
 AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos)
