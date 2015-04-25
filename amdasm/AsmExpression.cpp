@@ -776,84 +776,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     op != AsmExprOp::LOGICAL_NOT && op != AsmExprOp::NEGATE &&
                     op != AsmExprOp::PLUS);
             
-            if (op == AsmExprOp::CHOICE_START)
-            {   // choice
-                // first part
-                if (exprTree.size() == 1 && exprTree[0].op == AsmExprOp::NONE)
-                {   /* first value */
-                    exprTree[0].op = op;
-                    exprTree[0].lineColPos = lineColPos;
-                    exprTree[0].priority = (parenthesisCount<<3) +
-                            asmOpPrioritiesTbl[cxuint(op)];
-                    root = 0;
-                }
-                else
-                {   // value or node
-                    const size_t nextNodeIndex = exprTree.size();
-                    exprTree.push_back(ConExprNode());
-                    ConExprNode& nextNode = exprTree.back();
-                    nextNode.op = op;
-                    nextNode.priority = (parenthesisCount<<3) +
-                                asmOpPrioritiesTbl[cxuint(op)];
-                    nextNode.lineColPos = lineColPos;
-                    size_t leftNodeIndex = curNodeIndex;
-                    if (nextNode.priority < exprTree[leftNodeIndex].priority)
-                    {   /* if left side has higher priority than current */
-                        while (exprTree[leftNodeIndex].parent != SIZE_MAX &&
-                               nextNode.priority <
-                                   exprTree[exprTree[leftNodeIndex].parent].priority)
-                            leftNodeIndex = exprTree[leftNodeIndex].parent;
-                        
-                        nextNode.arg1.node = leftNodeIndex;
-                        nextNode.arg1Type = CXARG_NODE;
-                        nextNode.parent = exprTree[leftNodeIndex].parent;
-                        exprTree[leftNodeIndex].parent = nextNodeIndex;
-                        if (nextNode.parent == SIZE_MAX)
-                            root = nextNodeIndex;
-                        else
-                        {   // update parent link
-                            ConExprNode& parent = exprTree[nextNode.parent];
-                            if (parent.arg1Type == CXARG_NODE &&
-                                parent.arg1.node == leftNodeIndex)
-                                parent.arg1.node = nextNodeIndex;
-                            else if (parent.arg2Type == CXARG_NODE &&
-                                parent.arg2.node == leftNodeIndex)
-                                parent.arg2.node = nextNodeIndex;
-                            else if (parent.arg3Type == CXARG_NODE &&
-                                parent.arg3.node == leftNodeIndex)
-                                parent.arg3.node = nextNodeIndex;
-                        }
-                    }
-                    else
-                    {   /* if left side has lower priority than current */
-                        curNode = &exprTree[curNodeIndex];
-                        nextNode.parent = leftNodeIndex;
-                        if (curNode->arg3Type != CXARG_NONE)
-                        {   // binary op
-                            nextNode.arg1Type = curNode->arg3Type;
-                            nextNode.arg1 = curNode->arg3;
-                            curNode->arg3Type = CXARG_NODE;
-                            curNode->arg3.node = nextNodeIndex;
-                        }
-                        else if (curNode->arg2Type != CXARG_NONE)
-                        {   // binary op
-                            nextNode.arg1Type = curNode->arg2Type;
-                            nextNode.arg1 = curNode->arg2;
-                            curNode->arg2Type = CXARG_NODE;
-                            curNode->arg2.node = nextNodeIndex;
-                        }
-                        else
-                        {   // unary op
-                            nextNode.arg1Type = curNode->arg1Type;
-                            nextNode.arg1 = curNode->arg1;
-                            curNode->arg1Type = CXARG_NODE;
-                            curNode->arg1.node = nextNodeIndex;
-                        }
-                    }
-                    curNodeIndex = nextNodeIndex;
-                }
-            }
-            else if (op == AsmExprOp::CHOICE)
+            if (op == AsmExprOp::CHOICE)
             {   /* second part */
                 size_t nodeIndex = curNodeIndex;
                 const size_t priority = (parenthesisCount<<3) +
@@ -891,10 +814,17 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                                 asmOpPrioritiesTbl[cxuint(op)];
                     nextNode.lineColPos = lineColPos;
                     size_t leftNodeIndex = curNodeIndex;
-                    if (nextNode.priority <= exprTree[leftNodeIndex].priority)
+                    if (nextNode.priority +
+                        /* because ?: is computed from right to left we adds 1 to priority
+                         * to force put new node higher than left node */
+                        (op == AsmExprOp::CHOICE_START) <=
+                        exprTree[leftNodeIndex].priority)
                     {   /* if left side has higher priority than current */
                         while (exprTree[leftNodeIndex].parent != SIZE_MAX &&
-                               nextNode.priority <= 
+                               nextNode.priority +
+                       /* because ?: is computed from right to left we adds 1 to priority
+                        * to force put new node higher than left node */
+                                   (op == AsmExprOp::CHOICE_START) <=
                                    exprTree[exprTree[leftNodeIndex].parent].priority)
                             leftNodeIndex = exprTree[leftNodeIndex].parent;
                         
