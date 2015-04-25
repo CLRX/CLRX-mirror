@@ -429,6 +429,7 @@ private:
     std::vector<std::pair<AsmExprTarget, AsmExpression*> > pendingExpressions;
     cxuint flags;
     uint64_t macroCount;
+    std::istream* inputStream;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
@@ -499,8 +500,10 @@ protected:
         this->lineSize = lineSize;
         this->line = line;
     }
+    
+    void readLine();
 public:
-    explicit Assembler(std::istream& input, cxuint flags,
+    explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
               std::ostream& msgStream = std::cerr);
     ~Assembler();
     
@@ -534,8 +537,7 @@ public:
     const GalliumInput* getGalliumOutput() const
     { return galliumOutput; }
     
-    void assemble(size_t inputSize, const char* inputString);
-    void assemble(std::istream& inputStream);
+    void assemble();
 };
 
 }

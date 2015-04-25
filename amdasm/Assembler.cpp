@@ -637,11 +637,13 @@ void AsmSourcePos::print(std::ostream& os) const
  * Assembler
  */
 
-Assembler::Assembler(std::istream& input, cxuint flags, std::ostream& msgStream)
-        : macroCount(0), inclusionLevel(0), macroSubstLevel(0),
-          topFile(RefPtr<const AsmFile>(new AsmFile(""))), 
-          lineSize(1), line(nullptr), lineNo(1), messageStream(msgStream)
+Assembler::Assembler(const std::string& filename, std::istream& input, cxuint flags,
+        std::ostream& msgStream)
+        : macroCount(0), inputStream(&input), inclusionLevel(0), macroSubstLevel(0),
+          topFile(RefPtr<const AsmFile>(new AsmFile(filename))), 
+          lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream)
 {
+    input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmInputFilter(input);
     asmInputFilters.push(currentInputFilter);
 }
@@ -706,30 +708,11 @@ AsmExpression* Assembler::parseExpression(LineCol lineCol, size_t stringSize,
     return nullptr;
 }
 
-void Assembler::assemble(size_t inputSize, const char* inputString)
+void Assembler::readLine()
 {
-    ArrayIStream is(inputSize, inputString);
-    assemble(is);
+    line = currentInputFilter->readLine(*this, lineSize);
 }
 
-void Assembler::assemble(std::istream& inputStream)
+void Assembler::assemble()
 {
-    const std::ios::iostate oldExceptions = inputStream.exceptions();
-    inputStream.exceptions(std::ios::badbit);
-    
-    try
-    {
-        /*AsmParser parser(inputStream);
-        // first line
-        parser.skipSpacesAndComments();
-        size_t lineNo = parser.getLineNo();
-        size_t wordSize = 0;
-        const char* word = parser.getWord(wordSize);*/
-    }
-    catch(...)
-    {
-        inputStream.exceptions(oldExceptions);
-        throw;
-    }
-    inputStream.exceptions(oldExceptions);
 }
