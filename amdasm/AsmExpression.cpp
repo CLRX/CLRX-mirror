@@ -357,9 +357,9 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         ConExprArgType arg3Type;
         AsmExprOp op;
         ConExprArg arg1;
+        cxbyte visitedArgs;
         ConExprArg arg2;
         ConExprArg arg3;
-        cxbyte visitedArgs;
         
         ConExprNode() : parent(SIZE_MAX), priority(0), lineColPos(UINT_MAX),
               arg1Type(CXARG_NONE), arg2Type(CXARG_NONE), arg3Type(CXARG_NONE),
