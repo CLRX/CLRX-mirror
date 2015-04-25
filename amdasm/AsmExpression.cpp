@@ -356,8 +356,8 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         ConExprArgType arg2Type;
         ConExprArgType arg3Type;
         AsmExprOp op;
-        ConExprArg arg1;
         cxbyte visitedArgs;
+        ConExprArg arg1;
         ConExprArg arg2;
         ConExprArg arg3;
         
