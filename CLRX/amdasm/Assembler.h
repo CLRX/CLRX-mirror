@@ -294,6 +294,7 @@ enum class AsmExprOp : cxbyte
     ABOVE, // unsigned less
     ABOVE_EQ, // unsigned less or equal
     CHOICE_START,
+    PLUS,
     NONE = 0xff
 };
 
