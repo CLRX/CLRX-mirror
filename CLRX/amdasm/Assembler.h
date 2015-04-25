@@ -263,9 +263,14 @@ enum class AsmExprOp : cxbyte
 {
     ARG_VALUE = 0,  ///< is value not operator
     ARG_SYMBOL = 1,  ///< is value not operator
-    ADDITION = 2,
+    NEGATE = 2,
+    BIT_NOT,
+    LOGICAL_NOT,
+    PLUS,
+    FIRST_UNARY = NEGATE,
+    LAST_UNARY = PLUS,
+    ADDITION,
     SUBTRACT,
-    NEGATE,
     MULTIPLY,
     DIVISION,
     SIGNED_DIVISION,
@@ -275,14 +280,11 @@ enum class AsmExprOp : cxbyte
     BIT_OR,
     BIT_XOR,
     BIT_ORNOT,
-    BIT_NOT,
     SHIFT_LEFT,
     SHIFT_RIGHT,
     SIGNED_SHIFT_RIGHT,
     LOGICAL_AND,
     LOGICAL_OR,
-    LOGICAL_NOT,
-    CHOICE,  ///< a ? b : c
     EQUAL,
     NOT_EQUAL,
     LESS,
@@ -293,8 +295,10 @@ enum class AsmExprOp : cxbyte
     BELOW_EQ, // unsigned less or equal
     ABOVE, // unsigned less
     ABOVE_EQ, // unsigned less or equal
+    FIRST_BINARY = ADDITION,
+    LAST_BINARY = ABOVE_EQ,
+    CHOICE,  ///< a ? b : c
     CHOICE_START,
-    PLUS,
     NONE = 0xff
 };
 
@@ -337,6 +341,12 @@ struct AsmExpression
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
     static AsmExpression* parseExpression(Assembler& assembler, size_t linePos);
+    
+    static bool isUnaryOp(AsmExprOp op)
+    { return (AsmExprOp::FIRST_UNARY <= op && op <= AsmExprOp::LAST_UNARY); }
+    
+    static bool isBinaryOp(AsmExprOp op)
+    { return (AsmExprOp::FIRST_BINARY <= op && op <= AsmExprOp::LAST_BINARY); }
 };
 
 struct AsmExprSymbolOccurence

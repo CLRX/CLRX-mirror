@@ -98,8 +98,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
             evaluated = false;
             if (entry.filledArgs == 0)
             {
-                if (op == AsmExprOp::NEGATE || op == AsmExprOp::BIT_NOT ||
-                    op == AsmExprOp::LOGICAL_NOT || op == AsmExprOp::PLUS)
+                if (isUnaryOp(op))
                 {   // unary operator
                     if (op == AsmExprOp::NEGATE)
                         value = -value;
@@ -300,9 +299,12 @@ static const cxbyte asmOpPrioritiesTbl[] =
 {   /* higher value, higher priority */
     7, // ARG_VALUE
     7, // ARG_SYMBOL
+    6, // NEGATE
+    6, // BIT_NOT
+    6, // LOGICAL_NOT
+    6, // PLUS
     3, // ADDITION
     3, // SUBTRACT
-    6, // NEGATE
     5, // MULTIPLY
     5, // DIVISION
     5, // SIGNED_DIVISION
@@ -312,14 +314,11 @@ static const cxbyte asmOpPrioritiesTbl[] =
     4, // BIT_OR
     4, // BIT_XOR
     4, // BIT_ORNOT
-    6, // BIT_NOT
     5, // SHIFT_LEFT
     5, // SHIFT_RIGHT
     5, // SIGNED_SHIFT_RIGHT
     1, // LOGICAL_AND
     1, // LOGICAL_OR
-    6, // LOGICAL_NOT
-    0, // CHOICE
     2, // EQUAL
     2, // NOT_EQUAL
     2, // LESS
@@ -330,8 +329,8 @@ static const cxbyte asmOpPrioritiesTbl[] =
     2, // BELOW_EQ
     2, // ABOVE
     2, // ABOVE_EQ
-    0, // CHOICE_END
-    6, // PLUS
+    0, // CHOICE
+    0 // CHOICE_END
 };
 
 AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos)
@@ -388,16 +387,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         string = skipSpacesToEnd(string, end);
         if (string == end) break;
         
-        const bool curBinaryOp = curNode != nullptr && (curNode->op != AsmExprOp::BIT_NOT &&
-                curNode->op != AsmExprOp::LOGICAL_NOT && curNode->op != AsmExprOp::NEGATE &&
-                curNode->op != AsmExprOp::PLUS);
+        const bool curUnaryOp = curNode != nullptr && isUnaryOp(curNode->op);
         const bool beforeOp = !afterParenthesis &&
-                    (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
-                     (curNode->op != AsmExprOp::NONE && 
-                      curNode->arg2Type != CXARG_NONE && curNode->op != AsmExprOp::CHOICE) ||
-                      (!curBinaryOp && curNode->arg1Type != CXARG_NONE) ||
-                      (curNode->op == AsmExprOp::CHOICE &&
-                       curNode->arg3Type != CXARG_NONE));
+            (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
+             (curNode->op != AsmExprOp::NONE && 
+              curNode->arg2Type != CXARG_NONE && curNode->op != AsmExprOp::CHOICE) ||
+              (curUnaryOp && curNode->arg1Type != CXARG_NONE) ||
+              (curNode->op == AsmExprOp::CHOICE &&
+               curNode->arg3Type != CXARG_NONE));
         const bool beforeArg = curNode == nullptr ||
             (curNode->arg1Type == CXARG_NONE ||
             (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
@@ -772,9 +769,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         }
         if (op != AsmExprOp::NONE)
         {   // if operator
-            const bool binaryOp = (op != AsmExprOp::BIT_NOT &&
-                    op != AsmExprOp::LOGICAL_NOT && op != AsmExprOp::NEGATE &&
-                    op != AsmExprOp::PLUS);
+            const bool unaryOp = isUnaryOp(op);
             
             if (op == AsmExprOp::CHOICE)
             {   /* second part */
@@ -794,7 +789,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 thisNode.op = AsmExprOp::CHOICE;
                 curNodeIndex = nodeIndex;
             }
-            else if (binaryOp)
+            else if (!unaryOp)
             {
                 if (exprTree.size() == 1 && exprTree[0].op == AsmExprOp::NONE)
                 {   /* first value */
@@ -919,14 +914,12 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
     if (!exprTree.empty())
     {
         ConExprNode& node = exprTree[curNodeIndex];
-        const bool binaryOp = (node.op != AsmExprOp::BIT_NOT &&
-                node.op != AsmExprOp::LOGICAL_NOT && node.op != AsmExprOp::NEGATE &&
-                node.op != AsmExprOp::PLUS);
         if ((node.op == AsmExprOp::CHOICE && node.arg3Type == CXARG_NONE))
         {
             assembler.printError(string, "Missing primary expression");
             throw ParseException("Missing primary expression");
         }
+        const bool binaryOp = isBinaryOp(node.op);
         if (!binaryOp && node.arg1Type == CXARG_NONE)
         {
             assembler.printError(string, "Missing primary expression");
