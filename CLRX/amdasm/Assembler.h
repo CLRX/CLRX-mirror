@@ -427,7 +427,7 @@ public:
 private:
     friend class AsmInputFilter;
     friend class AsmMacroInputFilter;
-    friend class AsmExpression;
+    friend struct AsmExpression;
     AsmFormat format;
     GPUDeviceType deviceType;
     ISAAssembler* isaAssembler;

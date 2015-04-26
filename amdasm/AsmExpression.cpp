@@ -77,172 +77,179 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
         }
         value = stack.top();
         stack.pop();
-        uint64_t value2;
-        uint64_t value3;
-        if (!isUnaryOp(op))
+        if (isUnaryOp(op))
         {
-            value2 = stack.top();
-            stack.pop();
+            switch (op)
+            {
+                case AsmExprOp::NEGATE:
+                    value = -value;
+                    break;
+                case AsmExprOp::BIT_NOT:
+                    value = ~value;
+                    break;
+                case AsmExprOp::LOGICAL_NOT:
+                    value = !value;
+                    break;
+                default:
+                    break;
+            }
         }
-        if (op == AsmExprOp::CHOICE)
+        else if (isBinaryOp(op))
         {
-            value3 = stack.top();
+            uint64_t value2 = stack.top();
             stack.pop();
+            switch (op)
+            {
+                case AsmExprOp::ADDITION:
+                    value = value2 + value;
+                    break;
+                case AsmExprOp::SUBTRACT:
+                    value = value2 - value;
+                    break;
+                case AsmExprOp::MULTIPLY:
+                    value = value2 * value;
+                    break;
+                case AsmExprOp::DIVISION:
+                    if (value != 0)
+                        value = value2 / value;
+                    else // error
+                    {
+                        assembler.printError(getSourcePos(messagePosIndex),
+                               "Divide by zero");
+                        failed = true;
+                        value = 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::SIGNED_DIVISION:
+                    if (value != 0)
+                        value = int64_t(value2) / int64_t(value);
+                    else // error
+                    {
+                        assembler.printError(getSourcePos(messagePosIndex),
+                               "Division by zero");
+                        failed = true;
+                        value = 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::MODULO:
+                    if (value != 0)
+                        value = value2 % value;
+                    else // error
+                    {
+                        assembler.printError(getSourcePos(messagePosIndex),
+                               "Division by zero");
+                        failed = true;
+                        value = 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::SIGNED_MODULO:
+                    if (value != 0)
+                        value = int64_t(value2) % int64_t(value);
+                    else // error
+                    {
+                        assembler.printError(getSourcePos(messagePosIndex),
+                               "Division by zero");
+                        failed = true;
+                        value = 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::BIT_AND:
+                    value = value2 & value;
+                    break;
+                case AsmExprOp::BIT_OR:
+                    value = value2 | value;
+                    break;
+                case AsmExprOp::BIT_XOR:
+                    value = value2 ^ value;
+                    break;
+                case AsmExprOp::BIT_ORNOT:
+                    value = value2 | ~value;
+                    break;
+                case AsmExprOp::SHIFT_LEFT:
+                    if (value < 64)
+                        value = value2 << value;
+                    else
+                    {
+                        assembler.printWarning(getSourcePos(messagePosIndex),
+                               "shift count out of range (between 0 and 63)");
+                        value = 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::SHIFT_RIGHT:
+                    if (value < 64)
+                        value = value2 >> value;
+                    else
+                    {
+                        assembler.printWarning(getSourcePos(messagePosIndex),
+                               "shift count out of range (between 0 and 63)");
+                        value = 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::SIGNED_SHIFT_RIGHT:
+                    if (value < 64)
+                        value = int64_t(value2) >> value;
+                    else
+                    {
+                        assembler.printWarning(getSourcePos(messagePosIndex),
+                               "shift count out of range (between 0 and 63)");
+                        value = (value2>=(1ULL<<63)) ? UINT64_MAX : 0;
+                    }
+                    messagePosIndex++;
+                    break;
+                case AsmExprOp::LOGICAL_AND:
+                    value = value2 && value;
+                    break;
+                case AsmExprOp::LOGICAL_OR:
+                    value = value2 || value;
+                    break;
+                case AsmExprOp::EQUAL:
+                    value = (value2 == value) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::NOT_EQUAL:
+                    value = (value2 != value) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::LESS:
+                    value = (int64_t(value2) < int64_t(value))? UINT64_MAX: 0;
+                    break;
+                case AsmExprOp::LESS_EQ:
+                    value = (int64_t(value2) <= int64_t(value)) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::GREATER:
+                    value = (int64_t(value2) > int64_t(value)) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::GREATER_EQ:
+                    value = (int64_t(value2) >= int64_t(value)) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::BELOW:
+                    value = (value2 < value)? UINT64_MAX: 0;
+                    break;
+                case AsmExprOp::BELOW_EQ:
+                    value = (value2 <= value) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::ABOVE:
+                    value = (value2 > value) ? UINT64_MAX : 0;
+                    break;
+                case AsmExprOp::ABOVE_EQ:
+                    value = (value2 >= value) ? UINT64_MAX : 0;
+                    break;
+                default:
+                    break;
+            }
+            
         }
-        switch (op)
+        else if (op == AsmExprOp::CHOICE)
         {
-            case AsmExprOp::NEGATE:
-                value = -value;
-                break;
-            case AsmExprOp::BIT_NOT:
-                value = ~value;
-                break;
-            case AsmExprOp::LOGICAL_NOT:
-                value = !value;
-                break;
-            case AsmExprOp::ADDITION:
-                value = value2 + value;
-                break;
-            case AsmExprOp::SUBTRACT:
-                value = value2 - value;
-                break;
-            case AsmExprOp::MULTIPLY:
-                value = value2 * value;
-                break;
-            case AsmExprOp::DIVISION:
-                if (value != 0)
-                    value = value2 / value;
-                else // error
-                {
-                    assembler.printError(getSourcePos(messagePosIndex),
-                           "Divide by zero");
-                    failed = true;
-                    value = 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::SIGNED_DIVISION:
-                if (value != 0)
-                    value = int64_t(value2) / int64_t(value);
-                else // error
-                {
-                    assembler.printError(getSourcePos(messagePosIndex),
-                           "Division by zero");
-                    failed = true;
-                    value = 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::MODULO:
-                if (value != 0)
-                    value = value2 % value;
-                else // error
-                {
-                    assembler.printError(getSourcePos(messagePosIndex),
-                           "Division by zero");
-                    failed = true;
-                    value = 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::SIGNED_MODULO:
-                if (value != 0)
-                    value = int64_t(value2) % int64_t(value);
-                else // error
-                {
-                    assembler.printError(getSourcePos(messagePosIndex),
-                           "Division by zero");
-                    failed = true;
-                    value = 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::BIT_AND:
-                value = value2 & value;
-                break;
-            case AsmExprOp::BIT_OR:
-                value = value2 | value;
-                break;
-            case AsmExprOp::BIT_XOR:
-                value = value2 ^ value;
-                break;
-            case AsmExprOp::BIT_ORNOT:
-                value = value2 | ~value;
-                break;
-            case AsmExprOp::SHIFT_LEFT:
-                if (value < 64)
-                    value = value2 << value;
-                else
-                {
-                    assembler.printWarning(getSourcePos(messagePosIndex),
-                           "shift count out of range (between 0 and 63)");
-                    value = 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::SHIFT_RIGHT:
-                if (value < 64)
-                    value = value2 >> value;
-                else
-                {
-                    assembler.printWarning(getSourcePos(messagePosIndex),
-                           "shift count out of range (between 0 and 63)");
-                    value = 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::SIGNED_SHIFT_RIGHT:
-                if (value < 64)
-                    value = int64_t(value2) >> value;
-                else
-                {
-                    assembler.printWarning(getSourcePos(messagePosIndex),
-                           "shift count out of range (between 0 and 63)");
-                    value = (value2>=(1ULL<<63)) ? UINT64_MAX : 0;
-                }
-                messagePosIndex++;
-                break;
-            case AsmExprOp::LOGICAL_AND:
-                value = value2 && value;
-                break;
-            case AsmExprOp::LOGICAL_OR:
-                value = value2 || value;
-                break;
-            case AsmExprOp::CHOICE:
-                value = value3 ? value2 : value;
-                break;
-            case AsmExprOp::EQUAL:
-                value = (value2 == value) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::NOT_EQUAL:
-                value = (value2 != value) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::LESS:
-                value = (int64_t(value2) < int64_t(value))? UINT64_MAX: 0;
-                break;
-            case AsmExprOp::LESS_EQ:
-                value = (int64_t(value2) <= int64_t(value)) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::GREATER:
-                value = (int64_t(value2) > int64_t(value)) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::GREATER_EQ:
-                value = (int64_t(value2) >= int64_t(value)) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::BELOW:
-                value = (value2 < value)? UINT64_MAX: 0;
-                break;
-            case AsmExprOp::BELOW_EQ:
-                value = (value2 <= value) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::ABOVE:
-                value = (value2 > value) ? UINT64_MAX : 0;
-                break;
-            case AsmExprOp::ABOVE_EQ:
-                value = (value2 >= value) ? UINT64_MAX : 0;
-                break;
-            default:
-                break;
+            const uint64_t value2 = stack.top();
+            stack.pop();
+            const uint64_t value3 = stack.top();
+            stack.pop();
+            value = value3 ? value2 : value;
         }
         stack.push(value);
     }

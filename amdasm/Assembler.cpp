@@ -33,11 +33,11 @@
 
 using namespace CLRX;
 
-static inline const char* skipSpacesToEnd(const char* string, const char* end)
+/*static inline const char* skipSpacesToEnd(const char* string, const char* end)
 {
     while (string!=end && *string == ' ') string++;
     return string;
-}
+}*/
 
 // extract sybol name or argument name or other identifier
 static inline const std::string extractSymName(size_t size, const char* string)
@@ -702,7 +702,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
                     printError(line+linePos, "Terminated character literal");
                     throw ParseException("Terminated character literal");
                 }
-                
+                value = 0;
                 for (cxuint i = 0; linePos != lineSize && i < 2; i++, linePos++)
                 {
                     cxuint digit;
@@ -724,6 +724,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
             }
             else if (line[linePos] >= '0' &&  line[linePos] <= '9')
             {   // octal
+                value = 0;
                 for (cxuint i = 0; linePos != lineSize && i < 3 &&
                             line[linePos] != '\''; i++, linePos++)
                 {
