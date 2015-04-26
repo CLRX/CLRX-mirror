@@ -49,7 +49,7 @@ ParseException::ParseException(const std::string& message)
     this->message = message;
 }
 
-ParseException::ParseException(size_t lineNo, const std::string& message)
+ParseException::ParseException(uint64_t lineNo, const std::string& message)
 {
     char buf[32];
     itocstrCStyle(lineNo, buf, 32);
@@ -58,7 +58,7 @@ ParseException::ParseException(size_t lineNo, const std::string& message)
     this->message += message;
 }
 
-ParseException::ParseException(size_t lineNo, size_t charNo, const std::string& message)
+ParseException::ParseException(uint64_t lineNo, size_t charNo, const std::string& message)
 {
     char buf[32];
     itocstrCStyle(lineNo, buf, 32);

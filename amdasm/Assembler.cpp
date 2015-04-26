@@ -657,6 +657,148 @@ Assembler::~Assembler()
     }
 }
 
+uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
+{
+    uint64_t value;
+    const char* end;
+    if (linePos != lineSize && line[linePos] == '\'')
+    {
+        linePos++;
+        if (linePos == lineSize)
+        {
+            printError(line+linePos, "Terminated character literal");
+            throw ParseException("Terminated character literal");
+        }
+        if (line[linePos] == '\'')
+        {
+            printError(line+linePos, "Empty character literal");
+            throw ParseException("Empty character literal");
+        }
+        
+        if (line[linePos] != '\\')
+        {
+            value = line[linePos++];
+            if (linePos == lineSize || line[linePos] != '\'')
+            {
+                printError(line+linePos, "Missing ''' at end of literal");
+                throw ParseException("Missing ''' at end of literal");
+            }
+            outLinePos = linePos+1;
+            return value;
+        }
+        else // escapes
+        {
+            linePos++;
+            if (linePos == lineSize)
+            {
+                printError(line+linePos, "Terminated character literal");
+                throw ParseException("Terminated character literal");
+            }
+            if (line[linePos] == 'x')
+            {   // hex
+                linePos++;
+                if (linePos == lineSize)
+                {
+                    printError(line+linePos, "Terminated character literal");
+                    throw ParseException("Terminated character literal");
+                }
+                
+                for (cxuint i = 0; linePos != lineSize && i < 2; i++, linePos++)
+                {
+                    cxuint digit;
+                    if (line[linePos] >= '0' && line[linePos] <= '9')
+                        digit = line[linePos]-'0';
+                    else if (line[linePos] >= 'a' && line[linePos] <= 'f')
+                        digit = line[linePos]-'a'+10;
+                    else if (line[linePos] >= 'A' && line[linePos] <= 'F')
+                        digit = line[linePos]-'A'+10;
+                    else if (line[linePos] == '\'' && i != 0)
+                        break;
+                    else
+                    {
+                        printError(line+linePos, "Expected hexadecimal character code");
+                        throw ParseException("Expected hexadecimal character code");
+                    }
+                    value = (value<<4) + digit;
+                }
+            }
+            else if (line[linePos] >= '0' &&  line[linePos] <= '9')
+            {   // octal
+                for (cxuint i = 0; linePos != lineSize && i < 3 &&
+                            line[linePos] != '\''; i++, linePos++)
+                {
+                    if (line[linePos] < '0' || line[linePos] > '9')
+                    {
+                        printError(line+linePos, "Expected octal character code");
+                        throw ParseException("Expected octal character code");
+                    }
+                    value = (value<<3) + uint64_t(line[linePos]-'0');
+                    if (value > 255)
+                    {
+                        printError(line+linePos, "Octal code out of range");
+                        throw ParseException("Octal code out of range");
+                    }
+                }
+            }
+            else
+            {   // normal escapes
+                const char c = line[linePos++];
+                switch (c)
+                {
+                    case 'a':
+                        value = '\a';
+                        break;
+                    case 'b':
+                        value = '\b';
+                        break;
+                    case 'r':
+                        value = '\r';
+                        break;
+                    case 'n':
+                        value = '\n';
+                        break;
+                    case 'f':
+                        value = '\f';
+                        break;
+                    case 'v':
+                        value = '\v';
+                        break;
+                    case 't':
+                        value = '\t';
+                        break;
+                    case '\\':
+                        value = '\\';
+                        break;
+                    case '\'':
+                        value = '\'';
+                        break;
+                    case '\"':
+                        value = '\"';
+                        break;
+                    default:
+                        value = c;
+                }
+            }
+            if (linePos == lineSize || line[linePos] != '\'')
+            {
+                printError(line+linePos, "Missing ''' at end of literal");
+                throw ParseException("Missing ''' at end of literal");
+            }
+            outLinePos = ++linePos;
+            return value;
+        }
+    }
+    try
+    { value = cstrtovCStyle<uint64_t>(line+linePos, line+lineSize, end); }
+    catch(const ParseException& ex)
+    {
+        printError(line+linePos, ex.what());
+        throw;
+    }
+    outLinePos = end-line;
+    return value;
+}
+
 AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
 {
     AsmSymbolEntry* entry = nullptr;
@@ -700,12 +842,6 @@ void Assembler::addIncludeDir(const std::string& includeDir)
 void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
 {
     defSyms.push_back({symName, value});
-}
-
-AsmExpression* Assembler::parseExpression(LineCol lineCol, size_t stringSize,
-             const char* string, size_t& outValue) const
-{
-    return nullptr;
 }
 
 void Assembler::readLine()

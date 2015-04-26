@@ -333,7 +333,8 @@ static const cxbyte asmOpPrioritiesTbl[] =
     0 // CHOICE_END
 };
 
-AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos)
+AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos,
+            size_t& outLinePos)
 {
     union ConExprArg
     {
@@ -694,21 +695,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         }
                         string += symEntry->first.size();
                     }
-                    else if (parenthesisCount != 0 || (*string >= '0' && *string <= '9'))
+                    else if (parenthesisCount != 0 || (*string >= '0' && *string <= '9') ||
+                             *string == '\'')
                     {   // other we try to parse number
-                        try
-                        {
-                            const char* newStrPos;
-                            arg.arg.value = cstrtovCStyle<uint64_t>(
-                                    string, end, newStrPos);
-                            argType = CXARG_VALUE;
-                            string = newStrPos;
-                        }
-                        catch(const ParseException& ex)
-                        {
-                            assembler.printError(string, ex.what());
-                            throw;
-                        }
+                        size_t outLinePos;
+                        arg.arg.value = assembler.parseLiteral(
+                                    string-assembler.line, outLinePos);
+                        string = assembler.line + outLinePos;
+                        argType = CXARG_VALUE;
                     }
                     else // otherwise we finish parsing
                     { doExit = true; break; }
@@ -958,6 +952,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         opPtr[0] = exprTree[0].arg1Type==CXARG_SYMBOL ?
                 AsmExprOp::ARG_SYMBOL : AsmExprOp::ARG_VALUE;
         argPtr[0] = exprTree[0].arg1.arg;
+        outLinePos = string-assembler.line;
         return expr.release();
     }
     
@@ -1050,5 +1045,6 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         if (node->visitedArgs == 3) // go back
             node = (node->parent != SIZE_MAX) ? &exprTree[node->parent] : nullptr;
     }
+    outLinePos = string-assembler.line;
     return expr.release();
 }

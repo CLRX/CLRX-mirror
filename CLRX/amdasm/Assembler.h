@@ -340,7 +340,8 @@ struct AsmExpression
     
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
-    static AsmExpression* parseExpression(Assembler& assembler, size_t linePos);
+    static AsmExpression* parseExpression(Assembler& assembler, size_t linePos,
+              size_t& outLinePos);
     
     static bool isUnaryOp(AsmExprOp op)
     { return (AsmExprOp::FIRST_UNARY <= op && op <= AsmExprOp::LAST_UNARY); }
@@ -486,6 +487,7 @@ private:
     void printError(LineCol lineCol, const std::string& message)
     { printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
     
+    uint64_t parseLiteral(size_t linePos, size_t& outLinePos);
     AsmSymbolEntry* parseSymbol(size_t linePos);
     
     LineCol translatePos(const char* string) const
@@ -504,13 +506,6 @@ private:
         return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     }
 protected:
-    void setLine(uint64_t lineNo, size_t lineSize, const char* line)
-    {
-        this->lineNo = lineNo;
-        this->lineSize = lineSize;
-        this->line = line;
-    }
-    
     void readLine();
 public:
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
@@ -537,9 +532,6 @@ public:
     { return symbolMap; }
     
     void addInitialDefSym(const std::string& symName, uint64_t name);
-    
-    AsmExpression* parseExpression(LineCol lineCol, size_t stringSize,
-             const char* string,  size_t& endPos) const;
     
     const AmdInput* getAmdOutput() const
     { return amdOutput; }
