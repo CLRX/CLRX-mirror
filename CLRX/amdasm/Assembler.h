@@ -319,7 +319,7 @@ struct AsmExpression
 {
     AsmSourcePos sourcePos;
     size_t symOccursNum;
-    std::unique_ptr<AsmExprOp[]> ops;
+    Array<AsmExprOp> ops;
     std::unique_ptr<LineCol[]> messagePositions;    ///< for every potential message
     std::unique_ptr<AsmExprArg[]> args;
     

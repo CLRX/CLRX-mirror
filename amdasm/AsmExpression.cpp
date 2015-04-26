@@ -39,259 +39,216 @@ static inline const char* skipSpacesToEnd(const char* string, const char* end)
 AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
           size_t inOpsNum, const AsmExprOp* inOps, size_t inOpPosNum,
           const LineCol* inOpPos, size_t inArgsNum, const AsmExprArg* inArgs)
-        : sourcePos(inPos), symOccursNum(inSymOccursNum)
+        : sourcePos(inPos), symOccursNum(inSymOccursNum), ops(inOps, inOps+inOpsNum)
 {
-    ops.reset(new AsmExprOp[inOpsNum]);
     args.reset(new AsmExprArg[inArgsNum]);
     messagePositions.reset(new LineCol[inOpPosNum]);
-    std::copy(inOps, inOps+inOpsNum, ops.get());
     std::copy(inArgs, inArgs+inArgsNum, args.get());
     std::copy(inOpPos, inOpPos+inOpPosNum, messagePositions.get());
 }
 
 AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
             size_t inOpsNum, size_t inOpPosNum, size_t inArgsNum)
-        : sourcePos(inPos), symOccursNum(inSymOccursNum)
+        : sourcePos(inPos), symOccursNum(inSymOccursNum), ops(inOpsNum)
 {
-    ops.reset(new AsmExprOp[inOpsNum]);
     args.reset(new AsmExprArg[inArgsNum]);
     messagePositions.reset(new LineCol[inOpPosNum]);
 }
 
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
 {
-    struct ExprStackEntry
-    {
-        AsmExprOp op;
-        cxbyte filledArgs;
-        uint64_t value;
-    };
-    
     if (symOccursNum != 0)
         throw Exception("Expression can't be evaluated if symbols still are unresolved!");
     
-    if (ops[0] == AsmExprOp::ARG_VALUE)
-    {
-        value = args[0].value;
-        return true;
-    }
+    std::stack<uint64_t> stack;
     
     size_t argPos = 0;
     size_t opPos = 0;
-    value = 0;
-    std::stack<ExprStackEntry> stack;
+    bool failed = false;
     size_t messagePosIndex = 0;
     
-    bool failed = false;
-    do {
-        AsmExprOp op = ops[opPos++];
-        if (op != AsmExprOp::ARG_VALUE)
-        {    // push to stack
-            stack.push({ op, 0, 0 });
+    while (opPos < ops.size())
+    {
+        const AsmExprOp op = ops[opPos++];
+        if (op == AsmExprOp::ARG_VALUE)
+        {
+            stack.push(args[argPos++].value);
             continue;
         }
-        bool evaluated;
-        value = args[argPos++].value;
-        do {
-            ExprStackEntry& entry = stack.top();
-            op = entry.op;
-            evaluated = false;
-            if (entry.filledArgs == 0)
-            {
-                if (isUnaryOp(op))
-                {   // unary operator
-                    if (op == AsmExprOp::NEGATE)
-                        value = -value;
-                    else if (op == AsmExprOp::BIT_NOT)
-                        value = ~value;
-                    else if (op == AsmExprOp::LOGICAL_NOT)
-                        value = !value;
-                    // plus does nothing
-                    
-                    evaluated = true;
-                    stack.pop();
-                }
-                else
-                {   // binary operator (first operand)
-                    entry.filledArgs++;
-                    entry.value = value;
-                }
-            }
-            else if (entry.filledArgs == 1)
-            {   // binary operators
-                evaluated = true;
-                switch(op)
+        value = stack.top();
+        stack.pop();
+        uint64_t value2;
+        uint64_t value3;
+        if (!isUnaryOp(op))
+        {
+            value2 = stack.top();
+            stack.pop();
+        }
+        if (op == AsmExprOp::CHOICE)
+        {
+            value3 = stack.top();
+            stack.pop();
+        }
+        switch (op)
+        {
+            case AsmExprOp::NEGATE:
+                value = -value;
+                break;
+            case AsmExprOp::BIT_NOT:
+                value = ~value;
+                break;
+            case AsmExprOp::LOGICAL_NOT:
+                value = !value;
+                break;
+            case AsmExprOp::ADDITION:
+                value = value2 + value;
+                break;
+            case AsmExprOp::SUBTRACT:
+                value = value2 - value;
+                break;
+            case AsmExprOp::MULTIPLY:
+                value = value2 * value;
+                break;
+            case AsmExprOp::DIVISION:
+                if (value != 0)
+                    value = value2 / value;
+                else // error
                 {
-                    case AsmExprOp::ADDITION:
-                        value = entry.value + value;
-                        break;
-                    case AsmExprOp::SUBTRACT:
-                        value = entry.value - value;
-                        break;
-                    case AsmExprOp::MULTIPLY:
-                        value = entry.value * value;
-                        break;
-                    case AsmExprOp::DIVISION:
-                        if (value != 0)
-                            value = entry.value / value;
-                        else // error
-                        {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Divide by zero");
-                            failed = true;
-                            value = 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::SIGNED_DIVISION:
-                        if (value != 0)
-                            value = int64_t(entry.value) / int64_t(value);
-                        else // error
-                        {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
-                            value = 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::MODULO:
-                        if (value != 0)
-                            value = entry.value % value;
-                        else // error
-                        {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
-                            value = 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::SIGNED_MODULO:
-                        if (value != 0)
-                            value = int64_t(entry.value) % int64_t(value);
-                        else // error
-                        {
-                            assembler.printError(getSourcePos(messagePosIndex),
-                                   "Division by zero");
-                            failed = true;
-                            value = 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::BIT_AND:
-                        value = entry.value & value;
-                        break;
-                    case AsmExprOp::BIT_OR:
-                        value = entry.value | value;
-                        break;
-                    case AsmExprOp::BIT_XOR:
-                        value = entry.value ^ value;
-                        break;
-                    case AsmExprOp::BIT_ORNOT:
-                        value = entry.value | ~value;
-                        break;
-                    case AsmExprOp::SHIFT_LEFT:
-                        if (value < 64)
-                            value = entry.value << value;
-                        else
-                        {
-                            assembler.printWarning(getSourcePos(messagePosIndex),
-                                   "shift count out of range (between 0 and 63)");
-                            value = 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::SHIFT_RIGHT:
-                        if (value < 64)
-                            value = entry.value >> value;
-                        else
-                        {
-                            assembler.printWarning(getSourcePos(messagePosIndex),
-                                   "shift count out of range (between 0 and 63)");
-                            value = 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::SIGNED_SHIFT_RIGHT:
-                        if (value < 64)
-                            value = int64_t(entry.value) >> value;
-                        else
-                        {
-                            assembler.printWarning(getSourcePos(messagePosIndex),
-                                   "shift count out of range (between 0 and 63)");
-                            value = (entry.value>=(1ULL<<63)) ? UINT64_MAX : 0;
-                        }
-                        messagePosIndex++;
-                        break;
-                    case AsmExprOp::LOGICAL_AND:
-                        value = entry.value && value;
-                        break;
-                    case AsmExprOp::LOGICAL_OR:
-                        value = entry.value || value;
-                        break;
-                    case AsmExprOp::CHOICE:
-                        if (entry.value)
-                        {   // choose second argument, ignore last argument
-                            entry.value = value;
-                            entry.filledArgs = 2;
-                        }
-                        else    // choose last argument
-                            entry.filledArgs = 3;
-                        evaluated = false;
-                        break;
-                    case AsmExprOp::EQUAL:
-                        value = (entry.value == value) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::NOT_EQUAL:
-                        value = (entry.value != value) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::LESS:
-                        value = (int64_t(entry.value) < int64_t(value))? UINT64_MAX: 0;
-                        break;
-                    case AsmExprOp::LESS_EQ:
-                        value = (int64_t(entry.value) <= int64_t(value)) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::GREATER:
-                        value = (int64_t(entry.value) > int64_t(value)) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::GREATER_EQ:
-                        value = (int64_t(entry.value) >= int64_t(value)) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::BELOW:
-                        value = (entry.value < value)? UINT64_MAX: 0;
-                        break;
-                    case AsmExprOp::BELOW_EQ:
-                        value = (entry.value <= value) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::ABOVE:
-                        value = (entry.value > value) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::ABOVE_EQ:
-                        value = (entry.value >= value) ? UINT64_MAX : 0;
-                        break;
-                    default:
-                        break;
+                    assembler.printError(getSourcePos(messagePosIndex),
+                           "Divide by zero");
+                    failed = true;
+                    value = 0;
                 }
-                if (evaluated)
-                    stack.pop();
-            }
-            else if (entry.filledArgs == 2)
-            {   // choice second
-                value = entry.value;
-                evaluated = true;
-                stack.pop();
-            }
-            else if (entry.filledArgs == 3) // choice last choice
-            {
-                evaluated = true;
-                stack.pop();
-            }
-            
-        } while (evaluated && !stack.empty());
-        
-    } while (!stack.empty());
+                messagePosIndex++;
+                break;
+            case AsmExprOp::SIGNED_DIVISION:
+                if (value != 0)
+                    value = int64_t(value2) / int64_t(value);
+                else // error
+                {
+                    assembler.printError(getSourcePos(messagePosIndex),
+                           "Division by zero");
+                    failed = true;
+                    value = 0;
+                }
+                messagePosIndex++;
+                break;
+            case AsmExprOp::MODULO:
+                if (value != 0)
+                    value = value2 % value;
+                else // error
+                {
+                    assembler.printError(getSourcePos(messagePosIndex),
+                           "Division by zero");
+                    failed = true;
+                    value = 0;
+                }
+                messagePosIndex++;
+                break;
+            case AsmExprOp::SIGNED_MODULO:
+                if (value != 0)
+                    value = int64_t(value2) % int64_t(value);
+                else // error
+                {
+                    assembler.printError(getSourcePos(messagePosIndex),
+                           "Division by zero");
+                    failed = true;
+                    value = 0;
+                }
+                messagePosIndex++;
+                break;
+            case AsmExprOp::BIT_AND:
+                value = value2 & value;
+                break;
+            case AsmExprOp::BIT_OR:
+                value = value2 | value;
+                break;
+            case AsmExprOp::BIT_XOR:
+                value = value2 ^ value;
+                break;
+            case AsmExprOp::BIT_ORNOT:
+                value = value2 | ~value;
+                break;
+            case AsmExprOp::SHIFT_LEFT:
+                if (value < 64)
+                    value = value2 << value;
+                else
+                {
+                    assembler.printWarning(getSourcePos(messagePosIndex),
+                           "shift count out of range (between 0 and 63)");
+                    value = 0;
+                }
+                messagePosIndex++;
+                break;
+            case AsmExprOp::SHIFT_RIGHT:
+                if (value < 64)
+                    value = value2 >> value;
+                else
+                {
+                    assembler.printWarning(getSourcePos(messagePosIndex),
+                           "shift count out of range (between 0 and 63)");
+                    value = 0;
+                }
+                messagePosIndex++;
+                break;
+            case AsmExprOp::SIGNED_SHIFT_RIGHT:
+                if (value < 64)
+                    value = int64_t(value2) >> value;
+                else
+                {
+                    assembler.printWarning(getSourcePos(messagePosIndex),
+                           "shift count out of range (between 0 and 63)");
+                    value = (value2>=(1ULL<<63)) ? UINT64_MAX : 0;
+                }
+                messagePosIndex++;
+                break;
+            case AsmExprOp::LOGICAL_AND:
+                value = value2 && value;
+                break;
+            case AsmExprOp::LOGICAL_OR:
+                value = value2 || value;
+                break;
+            case AsmExprOp::CHOICE:
+                value = value3 ? value2 : value;
+                break;
+            case AsmExprOp::EQUAL:
+                value = (value2 == value) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::NOT_EQUAL:
+                value = (value2 != value) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::LESS:
+                value = (int64_t(value2) < int64_t(value))? UINT64_MAX: 0;
+                break;
+            case AsmExprOp::LESS_EQ:
+                value = (int64_t(value2) <= int64_t(value)) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::GREATER:
+                value = (int64_t(value2) > int64_t(value)) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::GREATER_EQ:
+                value = (int64_t(value2) >= int64_t(value)) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::BELOW:
+                value = (value2 < value)? UINT64_MAX: 0;
+                break;
+            case AsmExprOp::BELOW_EQ:
+                value = (value2 <= value) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::ABOVE:
+                value = (value2 > value) ? UINT64_MAX : 0;
+                break;
+            case AsmExprOp::ABOVE_EQ:
+                value = (value2 >= value) ? UINT64_MAX : 0;
+                break;
+            default:
+                break;
+        }
+        stack.push(value);
+    }
     
+    if (!stack.empty())
+        value = stack.top();
     return !failed;
 }
 
@@ -336,91 +293,57 @@ static const cxbyte asmOpPrioritiesTbl[] =
 AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos,
             size_t& outLinePos)
 {
-    union ConExprArg
+    struct ConExprOpEntry
     {
-        AsmExprArg arg;
-        size_t node;
-    };
-    enum ConExprArgType: cxbyte
-    {
-        CXARG_NONE = 0,
-        CXARG_VALUE = 1,
-        CXARG_SYMBOL = 2,
-        CXARG_NODE = 3
-    };
-    struct ConExprNode
-    {
-        size_t parent;
-        cxuint priority;
-        cxuint lineColPos;
-        ConExprArgType arg1Type;
-        ConExprArgType arg2Type;
-        ConExprArgType arg3Type;
         AsmExprOp op;
-        cxbyte visitedArgs;
-        ConExprArg arg1;
-        ConExprArg arg2;
-        ConExprArg arg3;
-        
-        ConExprNode() : parent(SIZE_MAX), priority(0), lineColPos(UINT_MAX),
-              arg1Type(CXARG_NONE), arg2Type(CXARG_NONE), arg3Type(CXARG_NONE),
-              op(AsmExprOp::NONE), visitedArgs(0)
-        { }
+        cxuint priority;
+        size_t lineColPos;
     };
-    std::vector<ConExprNode> exprTree(0);
+
+    std::stack<ConExprOpEntry> stack;
+    std::vector<AsmExprOp> ops;
+    std::vector<AsmExprArg> args;
     std::vector<LineCol> messagePositions;
+    std::vector<LineCol> outMsgPositions;
     
     const char* string = assembler.line;
     const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
-    bool afterParenthesis = false;
-    size_t root = SIZE_MAX;
     size_t symOccursNum = 0;
-    size_t argsNum = 0;
     
-    size_t curNodeIndex = SIZE_MAX;
+    enum ExpectedToken
+    {
+        XT_FIRST = 0,
+        XT_OP = 1,
+        XT_ARG = 2
+    };
+    ExpectedToken expectedToken = XT_FIRST;
     
     while (string != end)
     {
-        ConExprNode* curNode = nullptr;
-        if (curNodeIndex != SIZE_MAX)
-            curNode = &exprTree[curNodeIndex];
         string = skipSpacesToEnd(string, end);
         if (string == end) break;
-        
-        const bool curUnaryOp = curNode != nullptr && isUnaryOp(curNode->op);
-        const bool beforeOp = !afterParenthesis &&
-            (curNode == nullptr || curNode->op == AsmExprOp::NONE ||
-             (curNode->op != AsmExprOp::NONE && 
-              curNode->arg2Type != CXARG_NONE && curNode->op != AsmExprOp::CHOICE) ||
-              (curUnaryOp && curNode->arg1Type != CXARG_NONE) ||
-              (curNode->op == AsmExprOp::CHOICE &&
-               curNode->arg3Type != CXARG_NONE));
-        const bool beforeArg = curNode == nullptr ||
-            (curNode->arg1Type == CXARG_NONE ||
-            (!beforeOp && curNode->arg2Type == CXARG_NONE) ||
-            (!beforeOp && curNode->arg3Type == CXARG_NONE &&
-             curNode->op == AsmExprOp::CHOICE));
         
         LineCol lineCol = { 0, 0 };
         AsmExprOp op = AsmExprOp::NONE;
         bool expectedPrimaryExpr = false;
-        const size_t oldParenthesisCount = parenthesisCount;
+        //const size_t oldParenthesisCount = parenthesisCount;
         bool doExit = false;
         
         switch(*string)
         {
             case '(':
-                if (!beforeArg)
+                if (expectedToken == XT_OP)
                 {
                     assembler.printError(string, "Expected operator");
                     throw ParseException("Expected operator");
                 }
+                expectedToken = XT_FIRST;
                 parenthesisCount++;
                 string++;
                 break;
             case ')':
-                if (!beforeOp && beforeArg)
+                if (expectedToken != XT_OP)
                 {
                     assembler.printError(string, "Expected operator or value or symbol");
                     throw ParseException("Expected operator or value or symbol");
@@ -431,31 +354,31 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 string++;
                 break;
             case '+':
-                if (!beforeArg && beforeOp) // addition
+                if (expectedToken == XT_OP) // addition
                 {
                     op = AsmExprOp::ADDITION;
                     string++;
                 }
-                else if (beforeArg) // minus
+                else
                 {
                     op = AsmExprOp::PLUS;
                     string++;
                 }
                 break;
             case '-':
-                if (!beforeArg && beforeOp) // subtract
+                if (expectedToken == XT_OP) // subtract
                 {
                     op = AsmExprOp::SUBTRACT;
                     string++;
                 }
-                else if (beforeArg) // minus
+                else
                 {
                     op = AsmExprOp::NEGATE;
                     string++;
                 }
                 break;
             case '*':
-                if (!beforeArg && beforeOp) // multiply
+                if (expectedToken == XT_OP) // multiply
                 {
                     op = AsmExprOp::MULTIPLY;
                     string++;
@@ -464,7 +387,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '/':
-                if (!beforeArg && beforeOp) // division
+                if (expectedToken == XT_OP) // division
                 {
                     lineCol = assembler.translatePos(string);
                     if (string+1 != end && string[1] == '/')
@@ -480,7 +403,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '%':
-                if (!beforeArg && beforeOp) // modulo
+                if (expectedToken == XT_OP) // modulo
                 {
                     lineCol = assembler.translatePos(string);
                     if (string+1 != end && string[1] == '%')
@@ -496,7 +419,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '&':
-                if (!beforeArg && beforeOp) // AND
+                if (expectedToken == XT_OP) // AND
                 {
                     if (string+1 != end && string[1] == '&')
                     {
@@ -511,7 +434,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '|':
-                if (!beforeArg && beforeOp) // OR
+                if (expectedToken == XT_OP) // OR
                 {
                     if (string+1 != end && string[1] == '|')
                     {
@@ -526,7 +449,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '!':
-                if (!beforeArg && beforeOp) // ORNOT or logical not
+                if (expectedToken == XT_OP) // ORNOT or logical not
                 {
                     if (string+1 != end && string[1] == '=')
                     {
@@ -537,14 +460,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                         op = AsmExprOp::BIT_ORNOT;
                     string++;
                 }
-                else if (beforeArg)
+                else
                 {
                     op = AsmExprOp::LOGICAL_NOT;
                     string++;
                 }
                 break;
             case '~':
-                if (beforeArg)
+                if (expectedToken != XT_OP)
                 {
                     op = AsmExprOp::BIT_NOT;
                     string++;
@@ -558,7 +481,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 }
                 break;
             case '^':
-                if (!beforeArg && beforeOp) // bit xor
+                if (expectedToken == XT_OP) // bit xor
                 {
                     op = AsmExprOp::BIT_XOR;
                     string++;
@@ -567,7 +490,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '<':
-                if (!beforeArg && beforeOp) // ORNOT or logical not
+                if (expectedToken == XT_OP) // ORNOT or logical not
                 {
                     if (string+1 != end && string[1] == '<')
                     {
@@ -604,7 +527,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '>':
-                if (!beforeArg && beforeOp) // ORNOT or logical not
+                if (expectedToken == XT_OP) // ORNOT or logical not
                 {
                     if (string+1 != end && string[1] == '>')
                     {
@@ -644,7 +567,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
             case '=':
                 if (string+1 != end && string[1] == '=')
                 {
-                    if (!beforeArg && beforeOp)
+                    if (expectedToken == XT_OP)
                     {
                         op = AsmExprOp::EQUAL;
                         string += 2;
@@ -656,7 +579,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case '?':
-                if (!beforeArg && beforeOp)
+                if (expectedToken == XT_OP)
                 {
                     lineCol = assembler.translatePos(string);
                     op = AsmExprOp::CHOICE_START;
@@ -666,7 +589,7 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             case ':':
-                if (!beforeArg && beforeOp)
+                if (expectedToken == XT_OP)
                 {
                     op = AsmExprOp::CHOICE;
                     string++;
@@ -675,23 +598,25 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                     expectedPrimaryExpr = true;
                 break;
             default: // parse symbol or value
-                if (beforeArg)
+                if (expectedToken != XT_OP)
                 {
+                    expectedToken = XT_OP;
                     AsmSymbolEntry* symEntry = assembler.parseSymbol(string-assembler.line);
-                    ConExprArgType argType = CXARG_NONE;
-                    ConExprArg arg;
+                    AsmExprArg arg;
                     if (symEntry != nullptr)
                     {
                         if (symEntry->second.isDefined)
                         {
-                            arg.arg.value = symEntry->second.value;
-                            argType = CXARG_VALUE;
+                            arg.value = symEntry->second.value;
+                            args.push_back(arg);
+                            ops.push_back(AsmExprOp::ARG_VALUE);
                         }
                         else
                         {
                             symOccursNum++;
-                            arg.arg.symbol = symEntry;
-                            argType = CXARG_SYMBOL;
+                            arg.symbol = symEntry;
+                            args.push_back(arg);
+                            ops.push_back(AsmExprOp::ARG_SYMBOL);
                         }
                         string += symEntry->first.size();
                     }
@@ -699,43 +624,14 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                              *string == '\'')
                     {   // other we try to parse number
                         size_t outLinePos;
-                        arg.arg.value = assembler.parseLiteral(
+                        arg.value = assembler.parseLiteral(
                                     string-assembler.line, outLinePos);
                         string = assembler.line + outLinePos;
-                        argType = CXARG_VALUE;
+                        args.push_back(arg);
+                        ops.push_back(AsmExprOp::ARG_VALUE);
                     }
                     else // otherwise we finish parsing
                     { doExit = true; break; }
-                    
-                    /* put argument */
-                    if (curNode != nullptr)
-                    {
-                        if (curNode->arg1Type == CXARG_NONE)
-                        {
-                            curNode->arg1Type = argType;
-                            curNode->arg1 = arg;
-                        }
-                        else if (curNode->arg2Type == CXARG_NONE)
-                        {
-                            curNode->arg2Type = argType;
-                            curNode->arg2 = arg;
-                        }
-                        else
-                        {
-                            curNode->arg3Type = argType;
-                            curNode->arg3 = arg;
-                        }
-                    }
-                    else
-                    {   // first node
-                        curNodeIndex = exprTree.size();
-                        exprTree.push_back(ConExprNode());
-                        curNode = &exprTree.back();
-                        curNode->arg1Type = argType;
-                        curNode->arg1 = arg;
-                        curNode->op = AsmExprOp::NONE;
-                    }
-                    argsNum++;
                 }
                 else
                 {
@@ -751,8 +647,11 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         if (doExit) // exit from parsing
             break;
         
-        afterParenthesis = (oldParenthesisCount < parenthesisCount);
-        const cxuint lineColPos = (lineCol.lineNo!=0) ? messagePositions.size() : UINT_MAX;
+        if (op != AsmExprOp::NONE && !isUnaryOp(op))
+            expectedToken = (expectedToken == XT_OP) ? XT_ARG : XT_OP;
+        
+        //afterParenthesis = (oldParenthesisCount < parenthesisCount);
+        const size_t lineColPos = (lineCol.lineNo!=0) ? messagePositions.size() : SIZE_MAX;
         if (lineCol.lineNo!=0)
             messagePositions.push_back(lineCol);
         
@@ -764,139 +663,54 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         if (op != AsmExprOp::NONE)
         {   // if operator
             const bool unaryOp = isUnaryOp(op);
+            const cxuint priority = (parenthesisCount<<3) +
+                        asmOpPrioritiesTbl[cxuint(op)];
             
             if (op == AsmExprOp::CHOICE)
-            {   /* second part */
-                size_t nodeIndex = curNodeIndex;
-                const size_t priority = (parenthesisCount<<3) +
-                        asmOpPrioritiesTbl[cxuint(op)];
-                while (nodeIndex != SIZE_MAX && (priority < exprTree[nodeIndex].priority ||
-                    exprTree[nodeIndex].op == AsmExprOp::CHOICE))
-                    nodeIndex = exprTree[nodeIndex].parent;
-                if (nodeIndex == SIZE_MAX || exprTree[nodeIndex].priority != priority ||
-                    exprTree[nodeIndex].op != AsmExprOp::CHOICE_START)
+            {   /* second part of choice */
+                while (!stack.empty())
                 {
+                    const ConExprOpEntry& entry = stack.top();
+                    if (priority > entry.priority || (priority == entry.priority &&
+                        entry.op == AsmExprOp::CHOICE_START))
+                        break;
+                    ops.push_back(entry.op);
+                    if (entry.lineColPos != SIZE_MAX && entry.op != AsmExprOp::CHOICE_START)
+                        outMsgPositions.push_back(messagePositions[entry.lineColPos]);
+                    stack.pop();
+                }
+                if (stack.empty() || stack.top().op != AsmExprOp::CHOICE_START ||
+                        stack.top().priority != priority)
+                {   // not found
                     assembler.printError(string, "Missing '?' before ':' or too many ':'");
                     throw ParseException("Missing '?' before ':'");
                 }
-                ConExprNode& thisNode = exprTree[nodeIndex];
-                thisNode.op = AsmExprOp::CHOICE;
-                curNodeIndex = nodeIndex;
-            }
-            else if (!unaryOp)
-            {
-                if (exprTree.size() == 1 && exprTree[0].op == AsmExprOp::NONE)
-                {   /* first value */
-                    exprTree[0].op = op;
-                    exprTree[0].lineColPos = lineColPos;
-                    exprTree[0].priority = (parenthesisCount<<3) +
-                            asmOpPrioritiesTbl[cxuint(op)];
-                    root = 0;
-                }
-                else
-                {   /* next operators, add node */
-                    const size_t nextNodeIndex = exprTree.size();
-                    exprTree.push_back(ConExprNode());
-                    ConExprNode& nextNode = exprTree.back();
-                    nextNode.op = op;
-                    nextNode.priority = (parenthesisCount<<3) +
-                                asmOpPrioritiesTbl[cxuint(op)];
-                    nextNode.lineColPos = lineColPos;
-                    size_t leftNodeIndex = curNodeIndex;
-                    if (nextNode.priority +
-                        /* because ?: is computed from right to left we adds 1 to priority
-                         * to force put new node higher than left node */
-                        (op == AsmExprOp::CHOICE_START) <=
-                        exprTree[leftNodeIndex].priority)
-                    {   /* if left side has higher priority than current */
-                        while (exprTree[leftNodeIndex].parent != SIZE_MAX &&
-                               nextNode.priority +
-                       /* because ?: is computed from right to left we adds 1 to priority
-                        * to force put new node higher than left node */
-                                   (op == AsmExprOp::CHOICE_START) <=
-                                   exprTree[exprTree[leftNodeIndex].parent].priority)
-                            leftNodeIndex = exprTree[leftNodeIndex].parent;
-                        
-                        nextNode.arg1.node = leftNodeIndex;
-                        nextNode.arg1Type = CXARG_NODE;
-                        nextNode.parent = exprTree[leftNodeIndex].parent;
-                        exprTree[leftNodeIndex].parent = nextNodeIndex;
-                        if (nextNode.parent == SIZE_MAX)
-                            root = nextNodeIndex;
-                        else
-                        {   // update parent link
-                            ConExprNode& parent = exprTree[nextNode.parent];
-                            if (parent.arg1Type == CXARG_NODE &&
-                                parent.arg1.node == leftNodeIndex)
-                                parent.arg1.node = nextNodeIndex;
-                            else if (parent.arg2Type == CXARG_NODE &&
-                                parent.arg2.node == leftNodeIndex)
-                                parent.arg2.node = nextNodeIndex;
-                            else if (parent.arg3Type == CXARG_NODE &&
-                                parent.arg3.node == leftNodeIndex)
-                                parent.arg3.node = nextNodeIndex;
-                        }
-                    }
-                    else
-                    {   /* if left side has lower priority than current */
-                        nextNode.parent = leftNodeIndex;
-                        curNode = &exprTree[curNodeIndex];
-                        if (curNode->arg3Type != CXARG_NONE)
-                        {   // binary op
-                            nextNode.arg1Type = curNode->arg3Type;
-                            nextNode.arg1 = curNode->arg3;
-                            curNode->arg3Type = CXARG_NODE;
-                            curNode->arg3.node = nextNodeIndex;
-                        }
-                        else if (curNode->arg2Type != CXARG_NONE)
-                        {   // binary op
-                            nextNode.arg1Type = curNode->arg2Type;
-                            nextNode.arg1 = curNode->arg2;
-                            curNode->arg2Type = CXARG_NODE;
-                            curNode->arg2.node = nextNodeIndex;
-                        }
-                        else
-                        {   // unary op
-                            nextNode.arg1Type = curNode->arg1Type;
-                            nextNode.arg1 = curNode->arg1;
-                            curNode->arg1Type = CXARG_NODE;
-                            curNode->arg1.node = nextNodeIndex;
-                        }
-                    }
-                    curNodeIndex = nextNodeIndex;
-                }
+                ConExprOpEntry& entry = stack.top();
+                entry.op = AsmExprOp::CHOICE;
+                entry.lineColPos = SIZE_MAX;
             }
             else
-            {   // if unary operator
-                const size_t nextNodeIndex = exprTree.size();
-                exprTree.push_back(ConExprNode());
-                ConExprNode& nextNode = exprTree.back();
-                nextNode.op = op;
-                nextNode.priority = (parenthesisCount<<3) + asmOpPrioritiesTbl[cxuint(op)];
-                nextNode.lineColPos = lineColPos;
-                curNode = &exprTree[curNodeIndex];
-                if (curNodeIndex != SIZE_MAX)
+            {
+                while (!stack.empty())
                 {
-                    nextNode.parent = curNodeIndex;
-                    if (curNode->arg1Type == CXARG_NONE)
-                    {
-                        curNode->arg1Type = CXARG_NODE;
-                        curNode->arg1.node = nextNodeIndex;
+                    const ConExprOpEntry& entry = stack.top();
+                    if (priority +
+                        /* because ?: is computed from right to left we adds 1 to priority
+                         * to force put new node higher than left node */
+                        (op == AsmExprOp::CHOICE_START) + unaryOp > entry.priority)
+                        break;
+                    if (entry.op == AsmExprOp::CHOICE_START)
+                    {   // unfinished choice
+                        assembler.printError(messagePositions[entry.lineColPos],
+                                 "Missing ':' for '?'");
+                        throw ParseException("Missing ':' for '?'");
                     }
-                    else if (curNode->arg2Type == CXARG_NONE)
-                    {
-                        curNode->arg2Type = CXARG_NODE;
-                        curNode->arg2.node = nextNodeIndex;
-                    }
-                    else /* choice operator */
-                    {
-                        curNode->arg3Type = CXARG_NODE;
-                        curNode->arg3.node = nextNodeIndex;
-                    }
+                    ops.push_back(entry.op);
+                    if (entry.lineColPos != SIZE_MAX && entry.op != AsmExprOp::CHOICE_START)
+                        outMsgPositions.push_back(messagePositions[entry.lineColPos]);
+                    stack.pop();
                 }
-                if (nextNode.parent == SIZE_MAX)
-                    root = nextNodeIndex;
-                curNodeIndex = nextNodeIndex;
+                stack.push({ op, priority, lineColPos });
             }
         }
     }
@@ -905,147 +719,40 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
         assembler.printError(string, "Missing ')'");
         throw ParseException("Parenthesis not closed");
     }
-    if (!exprTree.empty())
+    if (expectedToken != XT_OP)
     {
-        ConExprNode& node = exprTree[curNodeIndex];
-        if ((node.op == AsmExprOp::CHOICE && node.arg3Type == CXARG_NONE))
+        if (ops.empty())
         {
-            assembler.printError(string, "Missing primary expression");
-            throw ParseException("Missing primary expression");
+            ops.push_back(AsmExprOp::ARG_VALUE);
+            args.push_back({0});
         }
-        const bool binaryOp = isBinaryOp(node.op);
-        if (!binaryOp && node.arg1Type == CXARG_NONE)
-        {
-            assembler.printError(string, "Missing primary expression");
-            throw ParseException("Missing primary expression");
-        }
-        else if (binaryOp && node.arg2Type == CXARG_NONE)
+        else
         {
             assembler.printError(string, "Missing primary expression");
             throw ParseException("Missing primary expression");
         }
     }
-    
-    /* convert into Expression */
-    size_t opsNum;
-    if (exprTree.empty())
-    {   /* handle empty expression */
-        exprTree.push_back(ConExprNode());
-        exprTree[0].arg1Type = CXARG_VALUE;
-        exprTree[0].arg1.arg.value = 0;
-        argsNum = 1;
-    }
-    if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
-        opsNum = argsNum;
     else
-        opsNum = exprTree.size()+argsNum;
-    
-    std::unique_ptr<AsmExpression> expr(new AsmExpression(assembler.getSourcePos(string),
-              symOccursNum, opsNum, messagePositions.size(), argsNum));
-    
-    AsmExprOp* opPtr = expr->ops.get();
-    AsmExprArg* argPtr = expr->args.get();
-    LineCol* msgPosPtr = expr->messagePositions.get();
-    
-    if (exprTree.size()==1 && exprTree[0].op==AsmExprOp::NONE)
-    {   /* if single value/symbol */
-        opPtr[0] = exprTree[0].arg1Type==CXARG_SYMBOL ?
-                AsmExprOp::ARG_SYMBOL : AsmExprOp::ARG_VALUE;
-        argPtr[0] = exprTree[0].arg1.arg;
-        outLinePos = string-assembler.line;
-        return expr.release();
-    }
-    
-    ConExprNode* node = &exprTree[root];
-    while (node != nullptr)
     {
-        if (node->visitedArgs == 0)
+        while (!stack.empty())
         {
-            if (node->op == AsmExprOp::CHOICE_START)
-            {   // error
-                assembler.printError(messagePositions[node->lineColPos],
+            const ConExprOpEntry& entry = stack.top();
+            if (entry.op == AsmExprOp::CHOICE_START)
+            {   // unfinished choice
+                assembler.printError(messagePositions[entry.lineColPos],
                          "Missing ':' for '?'");
                 throw ParseException("Missing ':' for '?'");
             }
-            *opPtr++ = node->op;
-            
-            node->visitedArgs++;
-            if (node->arg1Type == CXARG_NODE)
-            {
-                if (exprTree[node->arg1.node].visitedArgs==0)
-                {
-                    node = &exprTree[node->arg1.node];
-                    continue;
-                }
-            }
-            else if (node->arg1Type != CXARG_NONE)
-            {
-                if (node->arg1Type == CXARG_SYMBOL)
-                {
-                    node->arg1.arg.symbol->second.addOccurrenceInExpr(
-                                expr.get(), argPtr-expr->args.get());
-                    *opPtr++ = AsmExprOp::ARG_SYMBOL;
-                }
-                else // value
-                    *opPtr++ = AsmExprOp::ARG_VALUE;
-                *argPtr++ = node->arg1.arg;
-            }
+            ops.push_back(entry.op);
+            if (entry.lineColPos != SIZE_MAX && entry.op != AsmExprOp::CHOICE_START)
+                outMsgPositions.push_back(messagePositions[entry.lineColPos]);
+            stack.pop();
         }
-        if (node->visitedArgs == 1)
-        {
-            node->visitedArgs++;
-            if (node->arg2Type == CXARG_NODE)
-            {
-                if (exprTree[node->arg2.node].visitedArgs==0)
-                {
-                    node = &exprTree[node->arg2.node];
-                    continue;
-                }
-            }
-            else if (node->arg2Type != CXARG_NONE)
-            {
-                if (node->arg2Type == CXARG_SYMBOL)
-                {
-                    node->arg2.arg.symbol->second.addOccurrenceInExpr(
-                                expr.get(), argPtr-expr->args.get());
-                    *opPtr++ = AsmExprOp::ARG_SYMBOL;
-                }
-                else // value
-                    *opPtr++ = AsmExprOp::ARG_VALUE;
-                *argPtr++ = node->arg2.arg;
-            }
-        }
-        if (node->visitedArgs == 2)
-        {
-            node->visitedArgs++;
-            if (node->arg3Type == CXARG_NODE)
-            {
-                if (exprTree[node->arg3.node].visitedArgs==0)
-                {
-                    node = &exprTree[node->arg3.node];
-                    continue;
-                }
-            }
-            else if (node->arg3Type != CXARG_NONE)
-            {
-                if (node->arg3Type == CXARG_SYMBOL)
-                {
-                    node->arg3.arg.symbol->second.addOccurrenceInExpr(
-                                expr.get(), argPtr-expr->args.get());
-                    *opPtr++ = AsmExprOp::ARG_SYMBOL;
-                }
-                else // value
-                    *opPtr++ = AsmExprOp::ARG_VALUE;
-                *argPtr++ = node->arg3.arg;
-            }
-        }
-        
-        if (node->lineColPos != UINT_MAX && node->op != AsmExprOp::CHOICE)
-                *msgPosPtr++ = messagePositions[node->lineColPos];
-        
-        if (node->visitedArgs == 3) // go back
-            node = (node->parent != SIZE_MAX) ? &exprTree[node->parent] : nullptr;
     }
+    std::unique_ptr<AsmExpression> expr(new AsmExpression(assembler.getSourcePos(string),
+              symOccursNum, ops.size(), ops.data(), outMsgPositions.size(),
+              outMsgPositions.data(), args.size(), args.data()));
+    
     outLinePos = string-assembler.line;
     return expr.release();
 }
