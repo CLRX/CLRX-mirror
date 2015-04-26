@@ -967,8 +967,6 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                          "Missing ':' for '?'");
                 throw ParseException("Missing ':' for '?'");
             }
-            if (node->lineColPos != UINT_MAX && node->op != AsmExprOp::CHOICE)
-                *msgPosPtr++ = messagePositions[node->lineColPos];
             *opPtr++ = node->op;
             
             node->visitedArgs++;
@@ -1041,6 +1039,9 @@ AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t lineP
                 *argPtr++ = node->arg3.arg;
             }
         }
+        
+        if (node->lineColPos != UINT_MAX && node->op != AsmExprOp::CHOICE)
+                *msgPosPtr++ = messagePositions[node->lineColPos];
         
         if (node->visitedArgs == 3) // go back
             node = (node->parent != SIZE_MAX) ? &exprTree[node->parent] : nullptr;
