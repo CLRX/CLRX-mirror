@@ -267,24 +267,22 @@ enum class AsmExprOp : cxbyte
     BIT_NOT,
     LOGICAL_NOT,
     PLUS,
-    FIRST_UNARY = NEGATE,
-    LAST_UNARY = PLUS,
     ADDITION,
-    SUBTRACT,
     MULTIPLY,
+    BIT_AND,
+    BIT_OR,
+    BIT_XOR,
+    LOGICAL_AND,
+    LOGICAL_OR,
+    SUBTRACT,
     DIVISION,
     SIGNED_DIVISION,
     MODULO,
     SIGNED_MODULO,
-    BIT_AND,
-    BIT_OR,
-    BIT_XOR,
     BIT_ORNOT,
     SHIFT_LEFT,
     SHIFT_RIGHT,
     SIGNED_SHIFT_RIGHT,
-    LOGICAL_AND,
-    LOGICAL_OR,
     EQUAL,
     NOT_EQUAL,
     LESS,
@@ -295,10 +293,14 @@ enum class AsmExprOp : cxbyte
     BELOW_EQ, // unsigned less or equal
     ABOVE, // unsigned less
     ABOVE_EQ, // unsigned less or equal
-    FIRST_BINARY = ADDITION,
-    LAST_BINARY = ABOVE_EQ,
     CHOICE,  ///< a ? b : c
     CHOICE_START,
+    FIRST_UNARY = NEGATE,
+    LAST_UNARY = PLUS,
+    FIRST_ASSOC_BINARY = ADDITION,
+    LAST_ASSOC_BINARY = LOGICAL_OR,
+    FIRST_BINARY = ADDITION,
+    LAST_BINARY = SIGNED_SHIFT_RIGHT,
     NONE = 0xff
 };
 
@@ -338,6 +340,9 @@ struct AsmExpression
               const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
     ~AsmExpression() = default;
     
+    static bool evaluateOperator(AsmExprOp op, std::vector<AsmExprArg>& stack,
+            Assembler& assembler, const AsmSourcePos* sourcePos);
+    
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
     static AsmExpression* parseExpression(Assembler& assembler, size_t linePos,
@@ -348,6 +353,9 @@ struct AsmExpression
     
     static bool isBinaryOp(AsmExprOp op)
     { return (AsmExprOp::FIRST_BINARY <= op && op <= AsmExprOp::LAST_BINARY); }
+    
+    static bool isAssocBinaryOp(AsmExprOp op)
+    { return (AsmExprOp::FIRST_ASSOC_BINARY <= op && op <= AsmExprOp::LAST_ASSOC_BINARY); }
 };
 
 struct AsmExprSymbolOccurence
@@ -389,6 +397,9 @@ union AsmExprArg
 {
     AsmSymbolEntry* symbol;
     uint64_t value;
+    AsmExprArg() { }
+    AsmExprArg(uint64_t invalue) : value(invalue)
+    { }
 };
 
 struct AsmSection
@@ -503,6 +514,10 @@ private:
     AsmSourcePos getSourcePos(size_t pos) const
     {
         LineCol lineCol = translatePos(pos);
+        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    }
+    AsmSourcePos getSourcePos(LineCol lineCol) const
+    {
         return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     }
 protected:
