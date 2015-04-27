@@ -216,18 +216,6 @@ static inline void mul64Full(uint64_t a, uint64_t b, uint64_t* c)
 #endif
 }
 
-static inline bool bigAdd(cxuint aSize, const uint64_t* biga, const uint64_t* bigb,
-              uint64_t* bigc)
-{
-    bool carry = false;
-    for (cxuint i = 0; i < aSize; i++)
-    {
-        bigc[i] = biga[i] + bigb[i] + carry;
-        carry = (bigc[i] < biga[i]) || ((bigc[i] == biga[i]) && carry);
-    }
-    return carry;
-}
-
 static bool inline bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 {
     bool carry = false;
@@ -253,25 +241,6 @@ static bool inline bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint
     {
         biga[i] += carry;
         carry = (biga[i] < carry);
-    }
-    return carry;
-}
-
-static bool inline bigAdd(cxuint aSize, const uint64_t* biga, cxuint bSize,
-          const uint64_t* bigb, uint64_t* bigc)
-{
-    bool carry = false;
-    cxuint minSize = std::min(aSize, bSize);
-    cxuint i = 0;
-    for (; i < minSize; i++)
-    {
-        bigc[i] = biga[i]+ bigb[i] + carry;
-        carry = (bigc[i] < biga[i]) || ((bigc[i] == biga[i]) && carry);
-    }
-    for (; i < aSize; i++)
-    {
-        bigc[i] = biga[i] + carry;
-        carry = (bigc[i] < carry);
     }
     return carry;
 }
