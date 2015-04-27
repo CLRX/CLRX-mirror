@@ -340,7 +340,7 @@ struct AsmExpression
     
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
-    static AsmExpression* parseExpression(Assembler& assembler, size_t linePos,
+    static AsmExpression* parse(Assembler& assembler, size_t linePos,
               size_t& outLinePos);
     
     static bool isUnaryOp(AsmExprOp op)

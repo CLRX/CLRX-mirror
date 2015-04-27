@@ -297,7 +297,7 @@ static const cxbyte asmOpPrioritiesTbl[] =
     0 // CHOICE_END
 };
 
-AsmExpression* AsmExpression::parseExpression(Assembler& assembler, size_t linePos,
+AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
             size_t& outLinePos)
 {
     struct ConExprOpEntry
