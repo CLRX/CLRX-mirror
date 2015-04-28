@@ -63,7 +63,20 @@ static AsmExprParseCase asmExprParseCases[] =
     { "-3", "3 !-", true, -3ULL, "" },
     { "+3", "3", true, 3, "" }, /* no plus operator, because is skipped */
     { "4-7+8", "4 7 - 8 +", true, 5, "" },
-    { "2*9 + 11*5", "2 9 * 11 5 * +", true, 73, "" }
+    { "2*9 + 11*5", "2 9 * 11 5 * +", true, 73, "" },
+    /* operator ordering */
+    { "--~-~x", "x ~ !- ~ !- !-", false, 0, "" },
+    { "x+-y+~z+!w", "x y !- + z ~ + w ! +", false, 0, "" },
+    { "a+b*x", "a b x * +", false, 0, "" },
+    { "a-b*x", "a b x * -", false, 0, "" },
+    { "a+b/x", "a b x / +", false, 0, "" },
+    { "a-b/x", "a b x / -", false, 0, "" },
+    { "a+b%x", "a b x % +", false, 0, "" },
+    { "a-b%x", "a b x % -", false, 0, "" },
+    { "a+b//x", "a b x // +", false, 0, "" },
+    { "a-b//x", "a b x // -", false, 0, "" },
+    { "a+b%%x", "a b x %% +", false, 0, "" },
+    { "a-b%%x", "a b x %% -", false, 0, "" },
 };
 
 static std::string rpnExpression(const AsmExpression* expr)
