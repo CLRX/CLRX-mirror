@@ -30,3 +30,7 @@ ADD_TEST(GCNDisasmOpcodes GCNDisasmOpcodes)
 ADD_EXECUTABLE(GCNDisasmLabels GCNDisasmLabels.cpp)
 TARGET_LINK_LIBRARIES(GCNDisasmLabels ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(GCNDisasmLabels GCNDisasmLabels)
+
+ADD_EXECUTABLE(AsmExprParse AsmExprParse.cpp)
+TARGET_LINK_LIBRARIES(AsmExprParse ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+ADD_TEST(AsmExprParse AsmExprParse)

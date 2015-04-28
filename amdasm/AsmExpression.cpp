@@ -563,9 +563,23 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                              *string == '\'')
                     {   // other we try to parse number
                         size_t outLinePos;
-                        arg.value = assembler.parseLiteral(
-                                    string-assembler.line, outLinePos);
-                        string = assembler.line + outLinePos;
+                        try
+                        {
+                            arg.value = assembler.parseLiteral(
+                                        string-assembler.line, outLinePos);
+                            string = assembler.line + outLinePos;
+                        }
+                        catch(const ParseException& ex)
+                        {
+                            arg.value = 0;
+                            const char* oldStr = string;
+                            string = assembler.line + outLinePos;
+                            if (string != end && oldStr == string)
+                                // skip one character when end is in this same place
+                                // (avoids infinity loops)
+                                string++;
+                            good = false;
+                        }
                         args.push_back(arg);
                         ops.push_back(AsmExprOp::ARG_VALUE);
                     }

@@ -667,11 +667,13 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
         if (linePos == lineSize)
         {
             printError(line+linePos, "Terminated character literal");
+            outLinePos = linePos;
             throw ParseException("Terminated character literal");
         }
         if (line[linePos] == '\'')
         {
             printError(line+linePos, "Empty character literal");
+            outLinePos = linePos;
             throw ParseException("Empty character literal");
         }
         
@@ -681,6 +683,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
             if (linePos == lineSize || line[linePos] != '\'')
             {
                 printError(line+linePos, "Missing ''' at end of literal");
+                outLinePos = linePos;
                 throw ParseException("Missing ''' at end of literal");
             }
             outLinePos = linePos+1;
@@ -692,6 +695,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
             if (linePos == lineSize)
             {
                 printError(line+linePos, "Terminated character literal");
+                outLinePos = linePos;
                 throw ParseException("Terminated character literal");
             }
             if (line[linePos] == 'x')
@@ -700,6 +704,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
                 if (linePos == lineSize)
                 {
                     printError(line+linePos, "Terminated character literal");
+                    outLinePos = linePos;
                     throw ParseException("Terminated character literal");
                 }
                 value = 0;
@@ -717,6 +722,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
                     else
                     {
                         printError(line+linePos, "Expected hexadecimal character code");
+                        outLinePos = linePos;
                         throw ParseException("Expected hexadecimal character code");
                     }
                     value = (value<<4) + digit;
@@ -731,12 +737,14 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
                     if (line[linePos] < '0' || line[linePos] > '9')
                     {
                         printError(line+linePos, "Expected octal character code");
+                        outLinePos = linePos;
                         throw ParseException("Expected octal character code");
                     }
                     value = (value<<3) + uint64_t(line[linePos]-'0');
                     if (value > 255)
                     {
                         printError(line+linePos, "Octal code out of range");
+                        outLinePos = linePos;
                         throw ParseException("Octal code out of range");
                     }
                 }
@@ -783,6 +791,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
             if (linePos == lineSize || line[linePos] != '\'')
             {
                 printError(line+linePos, "Missing ''' at end of literal");
+                outLinePos = linePos;
                 throw ParseException("Missing ''' at end of literal");
             }
             outLinePos = ++linePos;
@@ -793,6 +802,7 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
     { value = cstrtovCStyle<uint64_t>(line+linePos, line+lineSize, end); }
     catch(const ParseException& ex)
     {
+        outLinePos = end-line;
         printError(line+linePos, ex.what());
         throw;
     }

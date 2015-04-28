@@ -143,7 +143,7 @@ inline const char* skipSpacesAtEnd(const char* s, size_t length)
  * Currently only IEEE-754 format is supported.
  * \param str input string pointer
  * \param inend pointer points to end of string or null if not end specified
- * \param outend returns end of number in string
+ * \param outend returns end of number in string (returned even if exception thrown)
  * \return parsed integer value
  */
 template<typename T>
@@ -297,7 +297,7 @@ extern size_t escapeStringCStyle(size_t strSize, const char* str,
  * is out of range, when string does not have number or inend points to string.
  * \param str input string pointer
  * \param inend pointer points to end of string or null if not end specified
- * \param outend returns end of number in string
+ * \param outend returns end of number in string (returned even if exception thrown)
  * \return parsed integer value
  */
 extern cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
@@ -384,7 +384,7 @@ double cstrtovCStyle<double>(const char* str, const char* inend, const char*& ou
  * Currently only IEEE-754 format is supported.
  * \param str input string pointer
  * \param inend pointer points to end of string or null if not end specified
- * \param outend returns end of number in string
+ * \param outend returns end of number in string (returned even if exception thrown)
  * \return parsed floating point value
  */
 cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);

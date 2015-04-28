@@ -40,16 +40,25 @@ cxuint CLRX::cstrtoui(const char* str, const char* inend, const char*& outend)
     uint64_t out = 0;
     const char* p;
     if (inend == str)
+    {
+        outend = str;
         throw ParseException("No characters to parse");
+    }
     
     for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
     {
         out = (out*10U) + *p-'0';
         if (out > UINT_MAX)
+        {
+            outend = p;
             throw ParseException("number out of range");
+        }
     }
     if (p == str)
+    {
+        outend = p;
         throw ParseException("Missing number");
+    }
     outend = p;
     return out;
 }
@@ -60,14 +69,20 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
     uint64_t out = 0;
     const char* p = 0;
     if (inend == str)
+    {
+        outend = str;
         throw ParseException("No characters to parse");
+    }
     
     if (*str == '0')
     {
         if (inend != str+1 && (str[1] == 'x' || str[1] == 'X'))
         {   // hex
             if (inend == str+2)
+            {
+                outend = str+2;
                 throw ParseException("Number is too short");
+            }
             
             const uint64_t lastHex = (15ULL<<(bits-4));
             for (p = str+2; p != inend; p++)
@@ -83,26 +98,41 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
                     break;
                 
                 if ((out & lastHex) != 0)
+                {
+                    outend = p;
                     throw ParseException("Number out of range");
+                }
                 out = (out<<4) + digit;
             }
             if (p == str+2)
+            {
+                outend = p;
                 throw ParseException("Missing number");
+            }
         }
         else if (inend != str+1 && (str[1] == 'b' || str[1] == 'B'))
         {   // binary
             if (inend == str+2)
+            {
+                outend = str+2;
                 throw ParseException("Number is too short");
+            }
             
             const uint64_t lastBit = (1ULL<<(bits-1));
             for (p = str+2; p != inend && (*p == '0' || *p == '1'); p++)
             {
                 if ((out & lastBit) != 0)
+                {
+                    outend = p;
                     throw ParseException("Number out of range");
+                }
                 out = (out<<1) + (*p-'0');
             }
             if (p == str+2)
+            {
+                outend = p;
                 throw ParseException("Missing number");
+            }
         }
         else
         {   // octal
@@ -110,7 +140,10 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
             for (p = str+1; p != inend && *p >= '0' && *p <= '7'; p++)
             {
                 if ((out & lastOct) != 0)
+                {
+                    outend = p;
                     throw ParseException("Number out of range");
+                }
                 out = (out<<3) + (*p-'0');
             }
             // if no octal parsed, then zero and correctly treated as decimal zero
@@ -124,14 +157,23 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
         for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
         {
             if (out > lastDigitValue)
+            {
+                outend = p;
                 throw ParseException("Number out of range");
+            }
             const cxuint digit = (*p-'0');
             out = out * 10 + digit;
             if ((out&mask) < digit) // if carry
+            {
+                outend = p;
                 throw ParseException("Number out of range");
+            }
         }
         if (p == str)
+        {
+            outend = p;
             throw ParseException("Missing number");
+        }
     }
     outend = p;
     return out;
@@ -740,7 +782,10 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
     bool signOfValue = false;
     
     if (inend == str)
+    {
+        outend = str;
         throw ParseException("No characters to parse");
+    }
     
     p = str;
     if (p+1 != inend && (*p == '+' || *p == '-'))
@@ -791,18 +836,21 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             }
             
         if (p == expstr || (p+1 == expstr && *p == '.'))
+        {
+            outend = expstr;
             throw ParseException("Floating point doesn't have value part!");
+        }
         // value end in string
         const char* valEnd = expstr;
         
         if (expstr != inend && (*expstr == 'p' || *expstr == 'P')) // we found exponent
         {
             expstr++;
+            outend = expstr;
             if (expstr == inend)
                 throw ParseException("End of floating point at exponent");
-            binaryExp = parseFloatExponent(expstr, inend);
+            binaryExp = parseFloatExponent(outend, inend);
         }
-        outend = expstr; // set out end
         
         // determine real exponent
         cxint expOfValue = 0;
@@ -934,20 +982,23 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 if (comma) break;
                 comma = true;
             }
-            
+        
         if (p == expstr || (p+1 == expstr && *p == '.'))
+        {
+            outend = expstr;
             throw ParseException("Floating point doesn't have value part!");
+        }
         // value end in string
         const char* valEnd = expstr;
         
         if (expstr != inend && (*expstr == 'e' || *expstr == 'E')) // we found exponent
         {
             expstr++;
+            outend = expstr; // set out end
             if (expstr == inend)
                 throw ParseException("End of floating point at exponent");
-            decimalExp = parseFloatExponent(expstr, inend);
+            decimalExp = parseFloatExponent(outend, inend);
         }
-        outend = expstr; // set out end
         
         // determine real exponent
         cxint decExpOfValue = 0;
