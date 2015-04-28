@@ -587,7 +587,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
         if (doExit) // exit from parsing
             break;
         
-        if (!isUnaryOp(op) && expectedToken != XT_OP)
+        if (op != AsmExprOp::NONE && !isUnaryOp(op) && expectedToken != XT_OP)
         {
             expectedPrimaryExpr = true;
             op = AsmExprOp::NONE;
