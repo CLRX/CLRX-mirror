@@ -317,6 +317,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
     const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
     size_t symOccursNum = 0;
+    bool good = true;
     
     enum ExpectedToken
     {
@@ -337,123 +338,89 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
         //const size_t oldParenthesisCount = parenthesisCount;
         bool doExit = false;
         
+        const char* beforeToken = string;
         switch(*string)
         {
             case '(':
                 if (expectedToken == XT_OP)
                 {
                     assembler.printError(string, "Expected operator");
-                    throw ParseException("Expected operator");
+                    good = false;
                 }
-                expectedToken = XT_FIRST;
-                parenthesisCount++;
+                else
+                {
+                    expectedToken = XT_FIRST;
+                    parenthesisCount++;
+                }
                 string++;
                 break;
             case ')':
                 if (expectedToken != XT_OP)
                 {
                     assembler.printError(string, "Expected operator or value or symbol");
-                    throw ParseException("Expected operator or value or symbol");
+                    good = false;
                 }
-                if (parenthesisCount==0)
-                { doExit = true; break; }
-                parenthesisCount--;
+                else
+                {
+                    if (parenthesisCount==0)
+                    { doExit = true; break; }
+                    parenthesisCount--;
+                }
                 string++;
                 break;
             case '+':
-                if (expectedToken == XT_OP) // addition
-                {
-                    op = AsmExprOp::ADDITION;
-                    string++;
-                }
-                else
-                {
-                    op = AsmExprOp::PLUS;
-                    string++;
-                }
+                op = (expectedToken == XT_OP) ? AsmExprOp::ADDITION : AsmExprOp::PLUS;
+                string++;
                 break;
             case '-':
-                if (expectedToken == XT_OP) // subtract
-                {
-                    op = AsmExprOp::SUBTRACT;
-                    string++;
-                }
-                else
-                {
-                    op = AsmExprOp::NEGATE;
-                    string++;
-                }
+                op = (expectedToken == XT_OP) ? AsmExprOp::SUBTRACT : AsmExprOp::NEGATE;
+                string++;
                 break;
             case '*':
-                if (expectedToken == XT_OP) // multiply
-                {
-                    op = AsmExprOp::MULTIPLY;
-                    string++;
-                }
-                else
-                    expectedPrimaryExpr = true;
+                op = AsmExprOp::MULTIPLY;
+                string++;
                 break;
             case '/':
-                if (expectedToken == XT_OP) // division
+                lineCol = assembler.translatePos(string);
+                if (string+1 != end && string[1] == '/')
                 {
-                    lineCol = assembler.translatePos(string);
-                    if (string+1 != end && string[1] == '/')
-                    {
-                        op = AsmExprOp::DIVISION;
-                        string++;
-                    }
-                    else // standard GNU as signed division
-                        op = AsmExprOp::SIGNED_DIVISION;
+                    op = AsmExprOp::DIVISION;
                     string++;
                 }
-                else
-                    expectedPrimaryExpr = true;
+                else // standard GNU as signed division
+                    op = AsmExprOp::SIGNED_DIVISION;
+                string++;
                 break;
             case '%':
-                if (expectedToken == XT_OP) // modulo
+                lineCol = assembler.translatePos(string);
+                if (string+1 != end && string[1] == '%')
                 {
-                    lineCol = assembler.translatePos(string);
-                    if (string+1 != end && string[1] == '%')
-                    {
-                        op = AsmExprOp::MODULO;
-                        string++;
-                    }
-                    else // standard GNU as signed division
-                        op = AsmExprOp::SIGNED_MODULO;
+                    op = AsmExprOp::MODULO;
                     string++;
                 }
-                else
-                    expectedPrimaryExpr = true;
+                else // standard GNU as signed division
+                    op = AsmExprOp::SIGNED_MODULO;
+                string++;
                 break;
             case '&':
-                if (expectedToken == XT_OP) // AND
+                if (string+1 != end && string[1] == '&')
                 {
-                    if (string+1 != end && string[1] == '&')
-                    {
-                        op = AsmExprOp::LOGICAL_AND;
-                        string++;
-                    }
-                    else // standard GNU as signed division
-                        op = AsmExprOp::BIT_AND;
+                    op = AsmExprOp::LOGICAL_AND;
                     string++;
                 }
-                else
-                    expectedPrimaryExpr = true;
+                else // standard GNU as signed division
+                    op = AsmExprOp::BIT_AND;
+                string++;
                 break;
             case '|':
-                if (expectedToken == XT_OP) // OR
+                if (string+1 != end && string[1] == '|')
                 {
-                    if (string+1 != end && string[1] == '|')
-                    {
-                        op = AsmExprOp::LOGICAL_OR;
-                        string++;
-                    }
-                    else // standard GNU as signed division
-                        op = AsmExprOp::BIT_OR;
+                    op = AsmExprOp::LOGICAL_OR;
                     string++;
                 }
-                else
-                    expectedPrimaryExpr = true;
+                else // standard GNU as signed division
+                    op = AsmExprOp::BIT_OR;
+                string++;
                 break;
             case '!':
                 if (expectedToken == XT_OP) // ORNOT or logical not
@@ -465,144 +432,109 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                     }
                     else
                         op = AsmExprOp::BIT_ORNOT;
-                    string++;
                 }
                 else
-                {
                     op = AsmExprOp::LOGICAL_NOT;
-                    string++;
-                }
+                string++;
                 break;
             case '~':
                 if (expectedToken != XT_OP)
-                {
                     op = AsmExprOp::BIT_NOT;
-                    string++;
-                }
                 else
                 {
                     assembler.printError(string,
                         "Expected non-unary operator, '(', or end of expression");
-                    throw ParseException(
-                        "Expected non-unary operator, '(', or end of expression");
+                    good = false;
                 }
+                string++;
                 break;
             case '^':
-                if (expectedToken == XT_OP) // bit xor
-                {
-                    op = AsmExprOp::BIT_XOR;
-                    string++;
-                }
-                else
-                    expectedPrimaryExpr = true;
+                op = AsmExprOp::BIT_XOR;
+                string++;
                 break;
             case '<':
-                if (expectedToken == XT_OP) // ORNOT or logical not
+                if (string+1 != end && string[1] == '<')
                 {
-                    if (string+1 != end && string[1] == '<')
+                    lineCol = assembler.translatePos(string);
+                    op = AsmExprOp::SHIFT_LEFT;
+                    string++;
+                }
+                else if (string+1 != end && string[1] == '>')
+                {
+                    op = AsmExprOp::NOT_EQUAL;
+                    string++;
+                }
+                else if (string+1 != end && string[1] == '=')
+                {
+                    if (string+2 != end && string[2] == '@')
                     {
-                        lineCol = assembler.translatePos(string);
-                        op = AsmExprOp::SHIFT_LEFT;
-                        string++;
-                    }
-                    else if (string+1 != end && string[1] == '>')
-                    {
-                        op = AsmExprOp::NOT_EQUAL;
-                        string++;
-                    }
-                    else if (string+1 != end && string[1] == '=')
-                    {
-                        if (string+2 != end && string[2] == '@')
-                        {
-                            op = AsmExprOp::BELOW_EQ;
-                            string++;
-                        }
-                        else
-                            op = AsmExprOp::LESS_EQ;
-                        string++;
-                    }
-                    else if (string+1 != end && string[1] == '@')
-                    {
-                        op = AsmExprOp::BELOW;
+                        op = AsmExprOp::BELOW_EQ;
                         string++;
                     }
                     else
-                        op = AsmExprOp::LESS;
+                        op = AsmExprOp::LESS_EQ;
+                    string++;
+                }
+                else if (string+1 != end && string[1] == '@')
+                {
+                    op = AsmExprOp::BELOW;
                     string++;
                 }
                 else
-                    expectedPrimaryExpr = true;
+                    op = AsmExprOp::LESS;
+                string++;
                 break;
             case '>':
-                if (expectedToken == XT_OP) // ORNOT or logical not
+                if (string+1 != end && string[1] == '>')
                 {
-                    if (string+1 != end && string[1] == '>')
+                    lineCol = assembler.translatePos(string);
+                    if (string+2 != end && string[2] == '>')
                     {
-                        lineCol = assembler.translatePos(string);
-                        if (string+2 != end && string[2] == '>')
-                        {
-                            op = AsmExprOp::SIGNED_SHIFT_RIGHT;
-                            string++;
-                        }
-                        else
-                            op = AsmExprOp::SHIFT_RIGHT;
-                        string++;
-                    }
-                    else if (string+1 != end && string[1] == '=')
-                    {
-                        if (string+2 != end && string[2] == '@')
-                        {
-                            op = AsmExprOp::ABOVE_EQ;
-                            string++;
-                        }
-                        else
-                            op = AsmExprOp::GREATER_EQ;
-                        string++;
-                    }
-                    else if (string+1 != end && string[1] == '@')
-                    {
-                        op = AsmExprOp::ABOVE;
+                        op = AsmExprOp::SIGNED_SHIFT_RIGHT;
                         string++;
                     }
                     else
-                        op = AsmExprOp::GREATER;
+                        op = AsmExprOp::SHIFT_RIGHT;
+                    string++;
+                }
+                else if (string+1 != end && string[1] == '=')
+                {
+                    if (string+2 != end && string[2] == '@')
+                    {
+                        op = AsmExprOp::ABOVE_EQ;
+                        string++;
+                    }
+                    else
+                        op = AsmExprOp::GREATER_EQ;
+                    string++;
+                }
+                else if (string+1 != end && string[1] == '@')
+                {
+                    op = AsmExprOp::ABOVE;
                     string++;
                 }
                 else
-                    expectedPrimaryExpr = true;
+                    op = AsmExprOp::GREATER;
+                string++;
                 break;
             case '=':
                 if (string+1 != end && string[1] == '=')
                 {
-                    if (expectedToken == XT_OP)
-                    {
-                        op = AsmExprOp::EQUAL;
-                        string += 2;
-                    }
-                    else
-                        expectedPrimaryExpr = true;
+                    op = AsmExprOp::EQUAL;
+                    string++;
                 }
                 else
                     expectedPrimaryExpr = true;
+                string++;
                 break;
             case '?':
-                if (expectedToken == XT_OP)
-                {
-                    lineCol = assembler.translatePos(string);
-                    op = AsmExprOp::CHOICE_START;
-                    string++;
-                }
-                else
-                    expectedPrimaryExpr = true;
+                lineCol = assembler.translatePos(string);
+                op = AsmExprOp::CHOICE_START;
+                string++;
                 break;
             case ':':
-                if (expectedToken == XT_OP)
-                {
-                    op = AsmExprOp::CHOICE;
-                    string++;
-                }
-                else
-                    expectedPrimaryExpr = true;
+                op = AsmExprOp::CHOICE;
+                string++;
                 break;
             default: // parse symbol or value
                 if (expectedToken != XT_OP)
@@ -646,13 +578,27 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                     { doExit = true; break; }
                     else
                     {
+                        string++;
                         assembler.printError(string, "Junks at end of expression");
-                        throw ParseException("Junks at end of expression");
+                        good = false;
                     }
                 }
         }
         if (doExit) // exit from parsing
             break;
+        
+        if (!isUnaryOp(op) && expectedToken != XT_OP)
+        {
+            expectedPrimaryExpr = true;
+            op = AsmExprOp::NONE;
+        }
+        if (expectedPrimaryExpr)
+        {
+            assembler.printError(beforeToken,
+                     "Expected primary expression before operator");
+            good = false;
+            continue;
+        }
         
         if (op != AsmExprOp::NONE && !isUnaryOp(op))
             expectedToken = (expectedToken == XT_OP) ? XT_ARG : XT_OP;
@@ -662,11 +608,6 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
         if (lineCol.lineNo!=0)
             messagePositions.push_back(lineCol);
         
-        if (expectedPrimaryExpr)
-        {
-            assembler.printError(string, "Expected primary expression before operator");
-            throw ParseException("Expected primary expression before operator");
-        }
         if (op != AsmExprOp::NONE)
         {   // if operator
             const bool unaryOp = isUnaryOp(op);
@@ -691,7 +632,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                         stack.top().priority != priority)
                 {   // not found
                     assembler.printError(string, "Missing '?' before ':' or too many ':'");
-                    throw ParseException("Missing '?' before ':'");
+                    good = false;
+                    continue; // do noy change stack and them entries
                 }
                 ConExprOpEntry& entry = stack.top();
                 entry.op = AsmExprOp::CHOICE;
@@ -711,7 +653,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                     {   // unfinished choice
                         assembler.printError(messagePositions[entry.lineColPos],
                                  "Missing ':' for '?'");
-                        throw ParseException("Missing ':' for '?'");
+                        good = false;
+                        break;
                     }
                     if (entry.op != AsmExprOp::PLUS)
                         ops.push_back(entry.op);
@@ -726,7 +669,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
     if (parenthesisCount != 0)
     {   // print error
         assembler.printError(string, "Missing ')'");
-        throw ParseException("Parenthesis not closed");
+        good = false;
     }
     if (expectedToken != XT_OP)
     {
@@ -738,7 +681,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
         else
         {
             assembler.printError(string, "Missing primary expression");
-            throw ParseException("Missing primary expression");
+            good = false;
         }
     }
     else
@@ -750,7 +693,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
             {   // unfinished choice
                 assembler.printError(messagePositions[entry.lineColPos],
                          "Missing ':' for '?'");
-                throw ParseException("Missing ':' for '?'");
+                good = false;
+                break;
             }
             if (entry.op != AsmExprOp::PLUS)
                 ops.push_back(entry.op);
@@ -759,10 +703,12 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
             stack.pop();
         }
     }
-    std::unique_ptr<AsmExpression> expr(new AsmExpression(assembler.getSourcePos(string),
-              symOccursNum, ops.size(), ops.data(), outMsgPositions.size(),
-              outMsgPositions.data(), args.size(), args.data()));
-    
     outLinePos = string-assembler.line;
-    return expr.release();
+    
+    if (good)
+        return new AsmExpression(assembler.getSourcePos(string),
+                  symOccursNum, ops.size(), ops.data(), outMsgPositions.size(),
+                  outMsgPositions.data(), args.size(), args.data());
+    else
+        return nullptr;
 }

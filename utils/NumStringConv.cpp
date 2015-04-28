@@ -280,7 +280,7 @@ static void bigMulSimple(cxuint asize, const uint64_t* biga, cxuint bsize,
         for (cxuint j = 0; j < bsize-1; j++)
         {
             mul64Full(biga[i], bigb[j], t);
-            // add to bigc
+            // add to tmp
             tmpMul[j] += t[0];
             bool carry = (tmpMul[j] < t[0]);
             tmpMul[j+1] += t[1] + carry;
