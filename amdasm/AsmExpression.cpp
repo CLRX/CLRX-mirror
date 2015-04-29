@@ -115,7 +115,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                     else // error
                     {
                         assembler.printError(getSourcePos(messagePosIndex),
-                               "Divide by zero");
+                               "Division by zero");
                         failed = true;
                         value = 0;
                     }
@@ -175,7 +175,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                     else
                     {
                         assembler.printWarning(getSourcePos(messagePosIndex),
-                               "shift count out of range (between 0 and 63)");
+                               "Shift count out of range (between 0 and 63)");
                         value = 0;
                     }
                     messagePosIndex++;
@@ -186,7 +186,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                     else
                     {
                         assembler.printWarning(getSourcePos(messagePosIndex),
-                               "shift count out of range (between 0 and 63)");
+                               "Shift count out of range (between 0 and 63)");
                         value = 0;
                     }
                     messagePosIndex++;
@@ -197,7 +197,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const
                     else
                     {
                         assembler.printWarning(getSourcePos(messagePosIndex),
-                               "shift count out of range (between 0 and 63)");
+                               "Shift count out of range (between 0 and 63)");
                         value = (value2>=(1ULL<<63)) ? UINT64_MAX : 0;
                     }
                     messagePosIndex++;
