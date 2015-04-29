@@ -645,7 +645,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                 if (stack.empty() || stack.top().op != AsmExprOp::CHOICE_START ||
                         stack.top().priority != priority)
                 {   // not found
-                    assembler.printError(string, "Missing '?' before ':' or too many ':'");
+                    assembler.printError(string, "Missing '?' before ':'");
                     good = false;
                     continue; // do noy change stack and them entries
                 }
@@ -667,6 +667,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                     {   // unfinished choice
                         assembler.printError(messagePositions[entry.lineColPos],
                                  "Missing ':' for '?'");
+                        stack.pop();
                         good = false;
                         break;
                     }

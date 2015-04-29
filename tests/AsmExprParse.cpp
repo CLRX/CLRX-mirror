@@ -57,6 +57,9 @@ static AsmExprParseCase asmExprParseCases[] =
     { "'\\t'", "9", true, 9, "", "" },
     { "'\\132'", "90", true, 90, "", "" },
     { "'\\x9A'", "154", true, 154, "", "" },
+    { "'\\T'", "84", true, 84, "", "" },
+    { "'\\\\'", "92", true, 92, "", "" },
+    { "'\\''", "39", true, 39, "", "" },
     /* symbols */
     { "xyz", "xyz", false, 0, "", "" },
     { ".sometest", ".sometest", false, 0, "", "" },
@@ -293,6 +296,93 @@ static AsmExprParseCase asmExprParseCases[] =
     { "'\\xda", "", false, 0, "<stdin>:1:1: Error: Missing ''' at end of literal\n", "" },
     { "'\\39'", "", false, 0,
         "<stdin>:1:1: Error: Expected octal character code\n", "9'" },
+    /* operators */
+    { "+", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "-", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "~", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "!", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "*", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "/", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "//", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "%", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "&", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "|", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "^", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "!", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "<<", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { ">>>", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "!=", "", false, 0, "<stdin>:1:2: Error: "
+            "Expected primary expression before operator\n"
+            "<stdin>:1:3: Error: Missing primary expression\n", "" },
+    { "<", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "<=", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { ">", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { ">=", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "<@", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { "<=@", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { ">@", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    { ">=@", "", false, 0, "<stdin>:1:1: Error: "
+            "Expected primary expression before operator\n", "" },
+    /* operators at end of expression */
+    { "1+6+", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    { "1+6-", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    { "1+6~", "", false, 0, "<stdin>:1:4: Error: "
+        "Expected non-unary operator, '(', or end of expression\n", "" },
+    { "1+6/", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    { "1+6//", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
+    { "1+6%%", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
+    { "1+6<<", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
+    { "1+6>>>", "", false, 0, "<stdin>:1:7: Error: Missing primary expression\n", "" },
+    { "1+6!=", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
+    { "1+6<", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    { "1+6>", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    /* parentheses */
+    { "1+(8*9", "", false, 0, "<stdin>:1:7: Error: Missing ')'\n", "" },
+    { "1+(((8*9", "", false, 0, "<stdin>:1:9: Error: Missing ')'\n", "" },
+    { "()", "", false, 0, "<stdin>:1:2: Error: Expected operator or value or symbol\n"
+        "<stdin>:1:3: Error: Missing ')'\n", "" },
+    { "4+7+()", "", false, 0, "<stdin>:1:6: Error: Expected operator or value or symbol\n"
+        "<stdin>:1:7: Error: Missing ')'\n"
+        "<stdin>:1:7: Error: Missing primary expression\n", "" },
+    { "4+7<<()", "", false, 0, "<stdin>:1:7: Error: Expected operator or value or symbol\n"
+        "<stdin>:1:8: Error: Missing ')'\n"
+        "<stdin>:1:8: Error: Missing primary expression\n", "" },
+    { "1)+8*9", "1", true, 1, "", ")+8*9" }, // no error
+    { "1(+8*9", "", false, 0, "<stdin>:1:2: Error: Expected operator\n", "" },
+    { "1+8(*9", "", false, 0, "<stdin>:1:4: Error: Expected operator\n", "" },
+    { "1+8*9;", "1 8 9 * +", true, 73, "", ";" }, // no error
+    { "1+8*9:", "", false, 0, "<stdin>:1:7: Error: Missing '?' before ':'\n"
+        "<stdin>:1:7: Error: Missing primary expression\n", "" },
+    { "1+8*9'", "1 8 9 * +", true, 73, "", "'" }, // no error
+    { "1+8*9#", "1 8 9 * +", true, 73, "", "" }, // no error
+    { "1+8*9/* */", "1 8 9 * +", true, 73, "", "" }, // no error
+    /* error with ?: */
+    { "a?b+c", "", false, 0, "<stdin>:1:2: Error: Missing ':' for '?'\n", "" },
+    { "a*(a?b+c)", "", false, 0, "<stdin>:1:5: Error: Missing ':' for '?'\n", "" },
+    { "a*(a?b+c:)", "", false, 0,
+        "<stdin>:1:10: Error: Expected operator or value or symbol\n"
+        "<stdin>:1:11: Error: Missing ')'\n"
+        "<stdin>:1:11: Error: Missing primary expression\n", "" },
+    { "a*(a?b+c):x", "", false, 0, "<stdin>:1:11: Error: Missing '?' before ':'\n", "" },
+    { "a*a?(b+c:x)", "", false, 0, "<stdin>:1:10: Error: Missing '?' before ':'\n"
+        "<stdin>:1:4: Error: Missing ':' for '?'\n", "" },
+    { "a*(a?b+c)+x", "", false, 0, "<stdin>:1:5: Error: Missing ':' for '?'\n", "" },
 };
 
 static std::string rpnExpression(const AsmExpression* expr)

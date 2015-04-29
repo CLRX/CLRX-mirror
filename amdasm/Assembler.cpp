@@ -132,7 +132,6 @@ const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                             slash = (buffer[pos] == '/');
                         if (buffer[pos] == '#') // line comment
                         {
-                            buffer[destPos-1] = ' ';
                             buffer[destPos++] = ' ';
                             mode = LineMode::LINE_COMMENT;
                             pos++;
