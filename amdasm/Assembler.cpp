@@ -661,97 +661,90 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
 {
     uint64_t value;
     const char* end;
-    if (linePos != lineSize && line[linePos] == '\'')
+    outLinePos = linePos;
+    if (outLinePos != lineSize && line[outLinePos] == '\'')
     {
-        linePos++;
-        if (linePos == lineSize)
+        outLinePos++;
+        if (outLinePos == lineSize)
         {
             printError(line+linePos, "Terminated character literal");
-            outLinePos = linePos;
             throw ParseException("Terminated character literal");
         }
-        if (line[linePos] == '\'')
+        if (line[outLinePos] == '\'')
         {
             printError(line+linePos, "Empty character literal");
-            outLinePos = linePos;
             throw ParseException("Empty character literal");
         }
         
-        if (line[linePos] != '\\')
+        if (line[outLinePos] != '\\')
         {
-            value = line[linePos++];
-            if (linePos == lineSize || line[linePos] != '\'')
+            value = line[outLinePos++];
+            if (outLinePos == lineSize || line[outLinePos] != '\'')
             {
                 printError(line+linePos, "Missing ''' at end of literal");
-                outLinePos = linePos;
                 throw ParseException("Missing ''' at end of literal");
             }
-            outLinePos = linePos+1;
+            outLinePos = outLinePos+1;
             return value;
         }
         else // escapes
         {
-            linePos++;
-            if (linePos == lineSize)
+            outLinePos++;
+            if (outLinePos == lineSize)
             {
                 printError(line+linePos, "Terminated character literal");
-                outLinePos = linePos;
                 throw ParseException("Terminated character literal");
             }
-            if (line[linePos] == 'x')
+            if (line[outLinePos] == 'x')
             {   // hex
-                linePos++;
-                if (linePos == lineSize)
+                outLinePos++;
+                if (outLinePos == lineSize)
                 {
                     printError(line+linePos, "Terminated character literal");
-                    outLinePos = linePos;
                     throw ParseException("Terminated character literal");
                 }
                 value = 0;
-                for (cxuint i = 0; linePos != lineSize && i < 2; i++, linePos++)
+                for (cxuint i = 0; outLinePos != lineSize && i < 2; i++, outLinePos++)
                 {
                     cxuint digit;
-                    if (line[linePos] >= '0' && line[linePos] <= '9')
-                        digit = line[linePos]-'0';
-                    else if (line[linePos] >= 'a' && line[linePos] <= 'f')
-                        digit = line[linePos]-'a'+10;
-                    else if (line[linePos] >= 'A' && line[linePos] <= 'F')
-                        digit = line[linePos]-'A'+10;
-                    else if (line[linePos] == '\'' && i != 0)
+                    if (line[outLinePos] >= '0' && line[outLinePos] <= '9')
+                        digit = line[outLinePos]-'0';
+                    else if (line[outLinePos] >= 'a' && line[outLinePos] <= 'f')
+                        digit = line[outLinePos]-'a'+10;
+                    else if (line[outLinePos] >= 'A' && line[outLinePos] <= 'F')
+                        digit = line[outLinePos]-'A'+10;
+                    else if (line[outLinePos] == '\'' && i != 0)
                         break;
                     else
                     {
                         printError(line+linePos, "Expected hexadecimal character code");
-                        outLinePos = linePos;
                         throw ParseException("Expected hexadecimal character code");
                     }
                     value = (value<<4) + digit;
                 }
             }
-            else if (line[linePos] >= '0' &&  line[linePos] <= '9')
+            else if (line[outLinePos] >= '0' &&  line[outLinePos] <= '7')
             {   // octal
                 value = 0;
-                for (cxuint i = 0; linePos != lineSize && i < 3 &&
-                            line[linePos] != '\''; i++, linePos++)
+                for (cxuint i = 0; outLinePos != lineSize && i < 3 &&
+                            line[outLinePos] != '\''; i++, outLinePos++)
                 {
-                    if (line[linePos] < '0' || line[linePos] > '9')
+                    if (line[outLinePos] < '0' || line[outLinePos] > '7')
                     {
                         printError(line+linePos, "Expected octal character code");
-                        outLinePos = linePos;
                         throw ParseException("Expected octal character code");
                     }
-                    value = (value<<3) + uint64_t(line[linePos]-'0');
+                    value = (value<<3) + uint64_t(line[outLinePos]-'0');
                     if (value > 255)
                     {
                         printError(line+linePos, "Octal code out of range");
-                        outLinePos = linePos;
                         throw ParseException("Octal code out of range");
                     }
                 }
             }
             else
             {   // normal escapes
-                const char c = line[linePos++];
+                const char c = line[outLinePos++];
                 switch (c)
                 {
                     case 'a':
@@ -788,13 +781,12 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
                         value = c;
                 }
             }
-            if (linePos == lineSize || line[linePos] != '\'')
+            if (outLinePos == lineSize || line[outLinePos] != '\'')
             {
                 printError(line+linePos, "Missing ''' at end of literal");
-                outLinePos = linePos;
                 throw ParseException("Missing ''' at end of literal");
             }
-            outLinePos = ++linePos;
+            outLinePos++;
             return value;
         }
     }
