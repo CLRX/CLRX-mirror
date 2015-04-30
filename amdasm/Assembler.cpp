@@ -65,10 +65,10 @@ AsmMacro::AsmMacro(const AsmSourcePos& inPos, uint64_t inContentLineNo,
 { }
 
 
-AsmSourceFilter::~AsmSourceFilter()
+AsmInputFilter::~AsmInputFilter()
 { }
 
-LineCol AsmSourceFilter::translatePos(size_t position) const
+LineCol AsmInputFilter::translatePos(size_t position) const
 {
     auto found = std::lower_bound(colTranslations.begin(), colTranslations.end(),
          LineTrans({ position, 0 }),
@@ -86,13 +86,13 @@ LineCol AsmSourceFilter::translatePos(size_t position) const
 
 static const size_t AsmParserLineMaxSize = 300;
 
-AsmInputFilter::AsmInputFilter(std::istream& is) :
+AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is) :
         stream(is), mode(LineMode::NORMAL)
 {
     buffer.reserve(AsmParserLineMaxSize);
 }
 
-const char* AsmInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
     colTranslations.clear();
     bool endOfLine = false;
@@ -643,7 +643,7 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint fl
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream)
 {
     input.exceptions(std::ios::badbit);
-    currentInputFilter = new AsmInputFilter(input);
+    currentInputFilter = new AsmStreamInputFilter(input);
     asmInputFilters.push(currentInputFilter);
 }
 

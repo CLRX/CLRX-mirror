@@ -149,7 +149,7 @@ struct AsmMacro
              const Array<AsmMacroArg>& args, const std::string& content);
 };
 
-class AsmSourceFilter
+class AsmInputFilter
 {
 protected:
     size_t pos;
@@ -157,10 +157,10 @@ protected:
     std::vector<LineTrans> colTranslations;
     uint64_t lineNo;
     
-    AsmSourceFilter():  pos(0), lineNo(1)
+    AsmInputFilter():  pos(0), lineNo(1)
     { }
 public:
-    virtual ~AsmSourceFilter();
+    virtual ~AsmInputFilter();
     
     /// read line and returns line except newline character
     virtual const char* readLine(Assembler& assembler, size_t& lineSize) = 0;
@@ -184,7 +184,7 @@ public:
 /** filters input from comments and join splitted lines by backslash.
  * readLine returns prepared line which have only space (' ') and
  * non-space characters. */
-class AsmInputFilter: public AsmSourceFilter
+class AsmStreamInputFilter: public AsmInputFilter
 {
 private:
     enum class LineMode: cxbyte
@@ -199,13 +199,13 @@ private:
     std::istream& stream;
     LineMode mode;
 public:
-    explicit AsmInputFilter(std::istream& is);
+    explicit AsmStreamInputFilter(std::istream& is);
     
     /// read line and returns line except newline character
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
-class AsmMacroInputFilter: public AsmSourceFilter
+class AsmMacroInputFilter: public AsmInputFilter
 {
 private:
     const AsmMacro& macro;
@@ -425,7 +425,7 @@ public:
     typedef std::unordered_map<std::string, AsmMacro> MacroMap;
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
-    friend class AsmInputFilter;
+    friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
     friend struct AsmExpression;
     AsmFormat format;
@@ -451,8 +451,8 @@ private:
     const char* line;
     uint64_t lineNo;
     
-    std::stack<AsmSourceFilter*> asmInputFilters;
-    AsmSourceFilter* currentInputFilter;
+    std::stack<AsmInputFilter*> asmInputFilters;
+    AsmInputFilter* currentInputFilter;
     
     std::ostream& messageStream;
     
