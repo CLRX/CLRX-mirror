@@ -344,7 +344,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
 {
     buffer.clear();
     
-    const LineTrans* colTransEnd = macro.colTranslations.data()+macro.colTranslations.size();
+    const LineTrans* colTransEnd = macro.colTranslations.data()+
+            macro.colTranslations.size();
     const size_t contentSize = macro.content.size();
     if (exit || pos == contentSize)
     {   // early exit from macro

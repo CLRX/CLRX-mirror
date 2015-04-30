@@ -645,7 +645,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                 if (stack.empty() || stack.top().op != AsmExprOp::CHOICE_START ||
                         stack.top().priority != priority)
                 {   // not found
-                    assembler.printError(string, "Missing '?' before ':'");
+                    assembler.printError(beforeToken, "Missing '?' before ':'");
                     good = false;
                     continue; // do noy change stack and them entries
                 }
