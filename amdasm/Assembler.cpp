@@ -99,8 +99,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     size_t lineStart = pos;
     size_t joinStart = pos;
     size_t destPos = pos;
-    bool slash = false;
     size_t backslash = false;
+    bool prevAsterisk = false;
     bool asterisk = false;
     colTranslations.push_back({0, lineNo});
     while (!endOfLine)
@@ -115,21 +115,17 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                 {   // putting regular string (no spaces)
                     do {
                         backslash = (buffer[pos] == '\\');
-                        if (slash)
+                        if (buffer[pos] == '*' &&
+                            destPos > 0 && buffer[destPos-1] == '/') // longComment
                         {
-                            if (buffer[pos] == '*') // longComment
-                            {
-                                asterisk = false;
-                                buffer[destPos-1] = ' ';
-                                buffer[destPos++] = ' ';
-                                mode = LineMode::LONG_COMMENT;
-                                pos++;
-                                break;
-                            }
-                            slash = false;
+                            prevAsterisk = false;
+                            asterisk = false;
+                            buffer[destPos-1] = ' ';
+                            buffer[destPos++] = ' ';
+                            mode = LineMode::LONG_COMMENT;
+                            pos++;
+                            break;
                         }
-                        else
-                            slash = (buffer[pos] == '/');
                         if (buffer[pos] == '#') // line comment
                         {
                             buffer[destPos++] = ' ';
@@ -172,12 +168,12 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         }
                         pos++;
                         joinStart = pos;
+                        backslash = false;
                         break;
                     }
                     else if (mode == LineMode::NORMAL)
                     {   /* spaces */
                         backslash = false;
-                        slash = false;
                         do {
                             buffer[destPos++] = ' ';
                             pos++;
@@ -191,7 +187,6 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             }
             case LineMode::LINE_COMMENT:
             {
-                slash = false;
                 while (pos < buffer.size() && buffer[pos] != '\n')
                 {
                     backslash = (buffer[pos] == '\\');
@@ -213,16 +208,17 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         mode = LineMode::NORMAL;
                     pos++;
                     joinStart = pos;
+                    backslash = false;
                 }
                 break;
             }
             case LineMode::LONG_COMMENT:
             {
-                slash = false;
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
                     (!asterisk || buffer[pos] != '/'))
                 {
                     backslash = (buffer[pos] == '\\');
+                    prevAsterisk = asterisk;
                     asterisk = (buffer[pos] == '*');
                     pos++;
                     buffer[destPos++] = ' ';
@@ -241,6 +237,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         endOfLine = (!backslash);
                         if (backslash) 
                         {
+                            asterisk = prevAsterisk;
+                            prevAsterisk = false;
                             destPos--;
                             if (destPos-lineStart == colTranslations.back().position)
                                 colTranslations.pop_back();
@@ -248,6 +246,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         }
                         pos++;
                         joinStart = pos;
+                        backslash = false;
                     }
                 }
                 break;
@@ -255,7 +254,6 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             case LineMode::STRING:
             case LineMode::LSTRING:
             {
-                slash = false;
                 const char quoteChar = (mode == LineMode::STRING)?'"':'\'';
                 while (pos < buffer.size() && buffer[pos] != '\n' &&
                     ((backslash&1) || buffer[pos] != quoteChar))
@@ -287,6 +285,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         pos++;
                         joinStart = pos;
                     }
+                    backslash = false;
                 }
                 break;
             }
@@ -304,6 +303,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                 std::copy_backward(buffer.begin()+lineStart, buffer.begin()+pos,
                        buffer.begin() + pos-lineStart);
                 destPos -= lineStart;
+                joinStart -= pos-destPos;
                 pos = destPos;
                 lineStart = 0;
             }
