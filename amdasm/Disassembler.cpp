@@ -104,6 +104,17 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             if (numberedPos < namedPos && haveNumberedLabel)
             {
                 char* buf = output.reserve(30);
+                if (curPos != oldCurPos)
+                {   /* print location fix */
+                    char* buf = output.reserve(40);
+                    ::memcpy(buf, ".org .+", 7);
+                    size_t bufPos = 7;
+                    bufPos += itocstrCStyle((curPos-oldCurPos)*locationMultiplier,
+                            buf+bufPos, 22, 10, 0, false);
+                    buf[bufPos++] = '\n';
+                    output.forward(bufPos);
+                    oldCurPos = curPos;
+                }
                 size_t bufPos = 0;
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
@@ -114,7 +125,11 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 curPos = *labelIter;
                 ++labelIter;
                 haveLabel = true;
-                
+            }
+            
+            if(namedPos < numberedPos && haveNamedLabel)
+            {
+                output.put('\n');
                 if (curPos != oldCurPos)
                 {   /* print location fix */
                     char* buf = output.reserve(40);
@@ -126,29 +141,12 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                     output.forward(bufPos);
                     oldCurPos = curPos;
                 }
-            }
-            
-            if(namedPos < numberedPos && haveNamedLabel)
-            {
-                output.put('\n');
                 output.writeString(namedLabelIter->second.size(),
                        namedLabelIter->second.c_str());
                 output.writeString(2, ":\n");
                 curPos = namedLabelIter->first;
                 ++namedLabelIter;
                 haveLabel = true;
-                
-                if (curPos != oldCurPos)
-                {   /* print location fix */
-                    char* buf = output.reserve(40);
-                    ::memcpy(buf, ".org .+", 7);
-                    size_t bufPos = 7;
-                    bufPos += itocstrCStyle((curPos-oldCurPos)*locationMultiplier,
-                            buf+bufPos, 22, 10, 0, false);
-                    buf[bufPos++] = '\n';
-                    output.forward(bufPos);
-                    oldCurPos = curPos;
-                }
             }
             
         } while(haveLabel);
