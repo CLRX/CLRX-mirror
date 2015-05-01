@@ -62,40 +62,13 @@ void ISADisassembler::addNamedLabel(size_t pos, const std::string& name)
     namedLabels.push_back(std::make_pair(pos, name));
 }
 
-void ISADisassembler::writeLiteral(uint32_t literal, bool floatLit)
-{
-    union FloatUnion
-    {
-        float f;
-        uint32_t u;
-    };
-
-    char* buf = output.reserve(40);
-    size_t pos = itocstrCStyle(literal, buf, 11, 16);
-    if (floatLit)
-    {
-        FloatUnion fu;
-        fu.u = literal;
-        buf[pos++] = ' ';
-        buf[pos++] = '/';
-        buf[pos++] = '*';
-        buf[pos++] = ' ';
-        pos += ftocstrCStyle(fu.f, buf+pos, 20);
-        buf[pos++] = 'f';
-        buf[pos++] = ' ';
-        buf[pos++] = '*';
-        buf[pos++] = '/';
-    }
-    output.forward(pos);
-}
-
 void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
               NamedLabelIter& namedLabelIter)
 {
-    if ((namedLabelIter != namedLabels.end() && pos <= namedLabelIter->first) ||
-            (labelIter != labels.end() && pos <= *labelIter))
+    if ((namedLabelIter != namedLabels.end() && namedLabelIter->first <= pos) ||
+            (labelIter != labels.end() && *labelIter <= pos))
     {
-        size_t curPos = 0;
+        size_t curPos = SIZE_MAX;
         if (labelIter != labels.end())
             curPos = *labelIter;
         if (namedLabelIter != namedLabels.end())
@@ -116,8 +89,9 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
         bool haveLabel;
         do {
             haveLabel = false;
-            if(namedLabelIter != namedLabels.end() && pos < namedLabelIter->first)
+            if(namedLabelIter != namedLabels.end() && namedLabelIter->first <= pos)
             {
+                output.put('\n');
                 output.writeString(namedLabelIter->second.size(),
                        namedLabelIter->second.c_str());
                 output.writeString(2, ":\n");
@@ -140,13 +114,13 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                     oldCurPos = curPos;
                 }
             }
-            if (labelIter != labels.end() && pos < *labelIter)
+            if (labelIter != labels.end() && *labelIter <= pos)
             {
                 char* buf = output.reserve(30);
                 size_t bufPos = 0;
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
-                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
+                bufPos += itocstrCStyle(*labelIter, buf+bufPos, 22, 10, 0, false);
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
@@ -181,6 +155,70 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             buf[bufPos++] = '\n';
             output.forward(bufPos);
             oldCurPos = curPos;
+        }
+    }
+}
+
+void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
+                   NamedLabelIter namedLabelIter)
+{
+    size_t pos = start;
+    while (namedLabelIter != namedLabels.end() || labelIter != labels.end())
+    {
+        size_t namedPos = SIZE_MAX;
+        size_t numberedPos = SIZE_MAX;
+        if (labelIter != labels.end())
+            numberedPos = *labelIter;
+        if (namedLabelIter != namedLabels.end())
+            namedPos = namedLabelIter->first;
+        if (numberedPos < namedPos && labelIter != labels.end())
+        {
+            if (pos != *labelIter)
+            {
+                char* buf = output.reserve(30);
+                size_t bufPos = 0;
+                buf[bufPos++] = '.';
+                buf[bufPos++] = 'o';
+                buf[bufPos++] = 'r';
+                buf[bufPos++] = 'g';
+                buf[bufPos++] = ' ';
+                bufPos += itocstrCStyle(*labelIter*locationMultiplier,
+                            buf+bufPos, 20, 16);
+                buf[bufPos++] = '\n';
+                output.forward(bufPos);
+            }
+            char* buf = output.reserve(26);
+            size_t bufPos = 0;
+            buf[bufPos++] = '.';
+            buf[bufPos++] = 'L';
+            bufPos += itocstrCStyle(*labelIter, buf+bufPos, 22, 10, 0, false);
+            buf[bufPos++] = ':';
+            buf[bufPos++] = '\n';
+            output.forward(bufPos);
+            pos = *labelIter;
+            ++labelIter;
+        }
+        if (namedPos < numberedPos && namedLabelIter != namedLabels.end())
+        {
+            if (pos != namedLabelIter->first)
+            {
+                char* buf = output.reserve(30);
+                size_t bufPos = 0;
+                buf[bufPos++] = '.';
+                buf[bufPos++] = 'o';
+                buf[bufPos++] = 'r';
+                buf[bufPos++] = 'g';
+                buf[bufPos++] = ' ';
+                bufPos += itocstrCStyle(namedLabelIter->first*locationMultiplier,
+                            buf+bufPos, 20, 16);
+                buf[bufPos++] = '\n';
+                output.forward(bufPos);
+            }
+            output.put('\n');
+            output.writeString(namedLabelIter->second.size(),
+                        namedLabelIter->second.c_str());
+            pos = namedLabelIter->first;
+            ++namedLabelIter;
         }
     }
 }

@@ -63,7 +63,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     },
     {
         3, code4tbl, "        s_branch        .L580\n        s_branch        .L264\n"
-        "        s_branch        .L264\n.org 0x108\n.L264:\n.org 0x244\n.L580:\n"
+        "        s_branch        .L264\n.org 0x420\n.L264:\n.org 0x910\n.L580:\n"
     }
 };
 
@@ -109,46 +109,6 @@ static const uint32_t unalignedNamedLabelCode2[] =
     LEV(0x0934d6ffU), LEV(0x11110000U)
 };
 
-static void testUnalignedNamedLabel()
-{
-    std::ostringstream disOss;
-    AmdDisasmInput input;
-    input.deviceType = GPUDeviceType::PITCAIRN;
-    input.is64BitMode = false;
-    Disassembler disasm(&input, disOss, 0);
-    GCNDisassembler gcnDisasm(disasm);
-    gcnDisasm.addNamedLabel(8, "MyKernel0");
-    gcnDisasm.setInput(sizeof(unalignedNamedLabelCode),
-           reinterpret_cast<const cxbyte*>(unalignedNamedLabelCode));
-    gcnDisasm.beforeDisassemble();
-    gcnDisasm.disassemble();
-    std::string outStr = disOss.str();
-    if (outStr != "        s_lshr_b32      s21, s4, s61\n"
-        "        v_sub_f32       v154, 0x11110000, v107\n"
-        ".org .-4\n"
-        "\n"
-        "MyKernel0:\n"
-        "        v_mul_f32       v136, s0, v128\n"
-        "        s_lshr_b32      s21, s2, s61\n")
-        throw Exception("Unaligned named label test FAILED!");
-    
-    disOss.str("");
-    GCNDisassembler gcnDisasm2(disasm);
-    gcnDisasm2.addNamedLabel(8, "MyKernel0");
-    gcnDisasm2.setInput(sizeof(unalignedNamedLabelCode2),
-    reinterpret_cast<const cxbyte*>(unalignedNamedLabelCode2));
-    gcnDisasm2.beforeDisassemble();
-    gcnDisasm2.disassemble();
-    outStr = disOss.str();
-    if (outStr != "        s_lshr_b32      s21, s4, s61\n"
-        "        v_sub_f32       v154, 0x11110000, v107\n"
-        ".org .-4\n"
-        "\n"
-        "MyKernel0:\n"
-        "        v_mul_f32       v136, s0, v128\n")
-        throw Exception("Unaligned named label test2 FAILED!");
-}
-
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -160,12 +120,5 @@ int main(int argc, const char** argv)
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
-    try
-    { testUnalignedNamedLabel(); }
-    catch(const std::exception& ex)
-    {
-        std::cerr << ex.what() << std::endl;
-        retVal = 1;
-    }
     return retVal;
 }

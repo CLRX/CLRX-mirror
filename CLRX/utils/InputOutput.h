@@ -324,6 +324,13 @@ public:
     
     void writeString(const char* string)
     { writeString(::strlen(string), string); }
+    
+    void put(char c)
+    {
+        if (endPos == bufSize)
+            flush();
+        buffer[endPos++] = c;
+    }
 };
 
 }

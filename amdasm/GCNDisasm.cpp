@@ -523,9 +523,10 @@ static size_t addSpaces(char* buf, cxuint spacesToAdd)
     return bufPos;
 }
 
-static size_t decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
+    char* buf = output.reserve(80);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bufPos += decodeGCNOperand(insnCode&0xff,
            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, arch, literal);
@@ -533,12 +534,16 @@ static size_t decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = ' ';
     bufPos += decodeGCNOperand((insnCode>>8)&0xff,
            (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal);
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
-         const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal, size_t pos)
+
+template<typename LabelWriter>
+static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
+         LabelWriter labelWriter, const GCNInstruction& gcnInsn, uint32_t insnCode,
+         uint32_t literal, size_t pos)
 {
+    char* buf = output.reserve(60);
     size_t bufPos = 0;
     const cxuint imm16 = insnCode&0xffff;
     switch(gcnInsn.mode&GCN_MASK1)
@@ -547,9 +552,9 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         {
             const size_t branchPos = pos + int16_t(imm16);
             bufPos = addSpaces(buf, spacesToAdd);
-            buf[bufPos++] = '.';
-            buf[bufPos++] = 'L';
-            bufPos += itocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
+            output.forward(bufPos);
+            labelWriter(branchPos);
+            bufPos = 0;
             break;
         }
         case GCN_IMM_LOCKS:
@@ -654,12 +659,13 @@ static size_t decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             bufPos += itocstrCStyle(imm16, buf+bufPos, 11, 16);
             break;
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
+    char* buf = output.reserve(70);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool isDst = (gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE;
     if (isDst)
@@ -689,13 +695,13 @@ static size_t decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += 6;
         bufPos += itocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
     }
-    
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
+    char* buf = output.reserve(80);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
     {
@@ -722,7 +728,7 @@ static size_t decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = '=';
         bufPos += itocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
 static const char* hwregNames[13] =
@@ -733,9 +739,12 @@ static const char* hwregNames[13] =
     "IB_DBG0"
 };
 
-static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
-         const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal, size_t pos)
+template<typename LabelWriter>
+static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
+         LabelWriter labelWriter, const GCNInstruction& gcnInsn, uint32_t insnCode,
+         uint32_t literal, size_t pos)
 {
+    char* buf = output.reserve(80);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
@@ -748,9 +757,10 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
         const size_t branchPos = pos + int16_t(imm16);
-        buf[bufPos++] = '.';
-        buf[bufPos++] = 'L';
-        bufPos += itocstrCStyle(branchPos, buf+bufPos, 22, 10, 0, false);
+        output.forward(bufPos);
+        labelWriter(branchPos);
+        buf = output.reserve(60);
+        bufPos = 0;
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
@@ -810,12 +820,13 @@ static size_t decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             bufPos += decodeGCNOperand((insnCode>>16)&0x7f,
                    (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
+    char* buf = output.reserve(100);
     size_t bufPos = 0;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     bool useDst = false;
@@ -884,13 +895,14 @@ static size_t decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         ::memcpy(buf+bufPos, " imm=1", 6);
         bufPos += 6;
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          bool displayFloatLits)
 {
+    char* buf = output.reserve(80);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     buf[bufPos++] = 'v';
     buf[bufPos++] = 'c';
@@ -903,13 +915,14 @@ static size_t decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = ' ';
     bufPos += decodeGCNVRegOperand(((insnCode>>9)&0xff),
            (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos);
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          bool displayFloatLits)
 {
+    char* buf = output.reserve(90);
     size_t bufPos = 0;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_VOP_ARG_NONE)
     {
@@ -943,13 +956,14 @@ static size_t decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             bufPos += itocstrCStyle(insnCode&0x1ff, buf+bufPos, 6, 16);
         }
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
          bool displayFloatLits)
 {
+    char* buf = output.reserve(110);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     
@@ -1027,13 +1041,14 @@ static size_t decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         buf[bufPos++] = 'c';
         buf[bufPos++] = 'c';
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2,
          bool displayFloatLits)
 {
+    char* buf = output.reserve(140);
     size_t bufPos = 0;
     const cxuint opcode = ((insnCode>>17)&0x1ff);
     
@@ -1271,12 +1286,13 @@ static size_t decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += 5;
     }
     
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
-           const GCNInstruction& gcnInsn, uint32_t insnCode)
+static void decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch,
+           FastOutputBuffer& output, const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
+    char* buf = output.reserve(80);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bufPos += decodeGCNVRegOperand((insnCode>>18)&0xff, 1, buf+bufPos);
     buf[bufPos++] = ',';
@@ -1291,12 +1307,13 @@ static size_t decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
     buf[bufPos++] = '0' + attr - 10U*digit2;
     buf[bufPos++] = '.';
     buf[bufPos++] = "xyzw"[((insnCode>>8)&3)]; // attrchannel
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
            const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
+    char* buf = output.reserve(90);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool vdstUsed = false;
     bool vaddrUsed = false;
@@ -1413,7 +1430,7 @@ static size_t decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += 6;
         bufPos += itocstrCStyle(vdst, buf+bufPos, 6, 16);
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
 static const char* mtbufDFMTTable[] =
@@ -1429,9 +1446,11 @@ static const char* mtbufNFMTTable[] =
     "uint", "sint", "snorm_ogl", "float"
 };
 
-static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
-      const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2, bool mtbuf)
+static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
+      FastOutputBuffer& output, const GCNInstruction& gcnInsn, uint32_t insnCode,
+      uint32_t insnCode2, bool mtbuf)
 {
+    char* buf = output.reserve(150);
     size_t bufPos = 0;
     const cxuint vaddr = insnCode2&0xff;
     const cxuint vdata = (insnCode2>>8)&0xff;
@@ -1554,12 +1573,13 @@ static size_t decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             bufPos += itocstrCStyle(soffset, buf+bufPos, 6, 16);
         }
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
+    char* buf = output.reserve(150);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     
     const cxuint dmask =  (insnCode>>8)&15;
@@ -1654,12 +1674,13 @@ static size_t decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += 7;
         bufPos += itocstrCStyle(ssamp, buf+bufPos, 6, 16);
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
         const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
+    char* buf = output.reserve(90);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     /* export target */
     const cxuint target = (insnCode>>4)&63;
@@ -1774,12 +1795,13 @@ static size_t decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
             bufPos += itocstrCStyle(val, buf+bufPos, 6, 16);
         }
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
-static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
+static void decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
+    char* buf = output.reserve(130);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool vdstUsed = false;
     bool vdataUsed = false;
@@ -1849,100 +1871,35 @@ static size_t decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, char* buf,
         bufPos += 6;
         bufPos += itocstrCStyle(insnCode2>>24, buf+bufPos, 6, 16);
     }
-    return bufPos;
+    output.forward(bufPos);
 }
 
 /* main routine */
 
-static const size_t maxBufSize = 512;
-
 void GCNDisassembler::disassemble()
 {
-    auto curLabel = labels.begin();
-    auto curNamedLabel = namedLabels.begin();
+    LabelIter curLabel = labels.begin();
+    NamedLabelIter curNamedLabel = namedLabels.begin();
     const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(input);
     
     const bool isGCN11 = checkGCN11(disassembler.getDeviceType());
     const uint16_t curArchMask = isGCN11?ARCH_RX2X0:ARCH_HD7X00;
-    std::ostream& output = disassembler.getOutput();
-    
-    char buf[maxBufSize];
-    size_t bufPos = 0;
     const size_t codeWordsNum = (inputSize>>2);
     
     if ((inputSize&3) != 0)
-    {
-        ::memcpy(buf+bufPos,
-             "        /* WARNING: Code size is not aligned to 4-byte word! */\n", 64);
-        bufPos += 64;
-    }
+        output.writeString(64,
+           "        /* WARNING: Code size is not aligned to 4-byte word! */\n");
     if (instrOutOfCode)
-    {
-        ::memcpy(buf+bufPos,
-                 "        /* WARNING: Unfinished instruction at end! */\n", 54);
-        bufPos += 54;
-    }
+        output.writeString(54, "        /* WARNING: Unfinished instruction at end! */\n");
     
     bool prevIsTwoWord = false;
     
     size_t pos = 0;
     while (true)
-    {   
-        if (curNamedLabel != namedLabels.end())
-        {
-            if (prevIsTwoWord && pos-1 == curNamedLabel->first)
-            {   // fir for unalignment
-                pos--;
-                prevIsTwoWord = false;
-                ::memcpy(buf+bufPos, ".org .-4\n", 9);
-                bufPos += 9;
-            }
-            if (pos == curNamedLabel->first)
-            {
-                buf[bufPos++] = '\n';
-                output.write(buf, bufPos);
-                bufPos = 0;
-                output.write(curNamedLabel->second.c_str(), curNamedLabel->second.size());
-                output.write(":\n", 2);
-                curNamedLabel++;
-            }
-        }
+    {
+        writeLabelsToPosition(pos, curLabel, curNamedLabel);
         if (pos >= codeWordsNum)
             break;
-        // check label
-        if (curLabel != labels.end())
-        {
-            if (pos == *curLabel)
-            {   // put label
-                buf[bufPos++] = '.';
-                buf[bufPos++] = 'L';
-                bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
-                buf[bufPos++] = ':';
-                buf[bufPos++] = '\n';
-                if (bufPos+250 >= maxBufSize)
-                {
-                    output.write(buf, bufPos);
-                    bufPos = 0;
-                }
-                curLabel++;
-            }
-            else  if (prevIsTwoWord && pos-1 == *curLabel)
-            {   /* if label between words of previous instruction */
-                ::memcpy(buf+bufPos, ".org .-4\n.L", 11);
-                bufPos += 11;
-                bufPos += itocstrCStyle(pos-1, buf+bufPos, 22, 10, 0, false);
-                buf[bufPos++] = ':';
-                buf[bufPos++] = '\n';
-                ::memcpy(buf+bufPos, ".org .+4\n", 9);
-                bufPos += 9;
-                if (bufPos+250 >= maxBufSize)
-                {
-                    output.write(buf, bufPos);
-                    bufPos = 0;
-                }
-                curLabel++;
-            }
-        }
         
         const size_t oldPos = pos;
         cxbyte gcnEncoding = GCNENC_NONE;
@@ -2059,6 +2016,8 @@ void GCNDisassembler::disassemble()
         
         if (disassembler.getFlags() & DISASM_HEXCODE)
         {
+            char* buf = output.reserve(50);
+            size_t bufPos = 0;
             buf[bufPos++] = '/';
             buf[bufPos++] = '*';
             bufPos += itocstrCStyle(insnCode, buf+bufPos, 12, 16, 8, false);
@@ -2070,18 +2029,25 @@ void GCNDisassembler::disassemble()
             buf[bufPos++] = '*';
             buf[bufPos++] = '/';
             buf[bufPos++] = ' ';
+            output.forward(bufPos);
         }
         else // add spaces
-            bufPos += addSpaces(buf+bufPos, 8);
+        {
+            char* buf = output.reserve(8);
+            output.forward(addSpaces(buf, 8));
+        }
         
         if (gcnEncoding == GCNENC_NONE)
         {   // invalid encoding
+            char* buf = output.reserve(24);
+            size_t bufPos = 0;
             buf[bufPos++] = '.';
             buf[bufPos++] = 'i';
             buf[bufPos++] = 'n';
             buf[bufPos++] = 't';
             buf[bufPos++] = ' '; 
             bufPos += itocstrCStyle(insnCode, buf+bufPos, 11, 16);
+            output.forward(bufPos);
         }
         else
         {
@@ -2116,15 +2082,14 @@ void GCNDisassembler::disassemble()
             
             if (!isIllegal)
             {
-                size_t k;
-                const char* mnem = gcnInsn->mnemonic;
-                for (k = 0; mnem[k]!=0; k++)
-                    buf[bufPos++] = mnem[k];
+                size_t k = ::strlen(gcnInsn->mnemonic);
+                output.writeString(gcnInsn->mnemonic);
                 spacesToAdd = spacesToAdd>=k+1?spacesToAdd-k:1;
             }
             else
             {
-                const size_t oldBufPos = bufPos;
+                char* buf = output.reserve(40);
+                size_t bufPos = 0;
                 for (cxuint k = 0; gcnEncodingNames[gcnEncoding][k] != 0; k++)
                     buf[bufPos++] = gcnEncodingNames[gcnEncoding][k];
                 buf[bufPos++] = '_';
@@ -2133,9 +2098,9 @@ void GCNDisassembler::disassemble()
                 buf[bufPos++] = 'l';
                 buf[bufPos++] = '_';
                 bufPos += itocstrCStyle(opcode, buf + bufPos, 6);
-                spacesToAdd = spacesToAdd >= (bufPos-oldBufPos+1)?
-                    spacesToAdd - (bufPos-oldBufPos) : 1;
+                spacesToAdd = spacesToAdd >= (bufPos+1)? spacesToAdd - (bufPos) : 1;
                 gcnInsn = &defaultInsn;
+                output.forward(bufPos);
             }
             
             const bool displayFloatLits = 
@@ -2145,87 +2110,85 @@ void GCNDisassembler::disassemble()
             switch(gcnEncoding)
             {
                 case GCNENC_SOPC:
-                    bufPos += decodeSOPCEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeSOPCEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_SOPP:
-                    bufPos += decodeSOPPEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, pos);
+                    decodeSOPPEncoding(spacesToAdd, curArchMask, output,
+                             [this](size_t myPos)
+                             { this->writeLocation(myPos); },
+                                 *gcnInsn, insnCode, insnCode2, pos);
                     break;
                 case GCNENC_SOP1:
-                    bufPos += decodeSOP1Encoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeSOP1Encoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_SOP2:
-                    bufPos += decodeSOP2Encoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeSOP2Encoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_SOPK:
-                    bufPos += decodeSOPKEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2, pos);
+                    decodeSOPKEncoding(spacesToAdd, curArchMask, output,
+                               [this](size_t myPos)
+                               { this->writeLocation(myPos); },
+                               *gcnInsn, insnCode, insnCode2, pos);
                     break;
                 case GCNENC_SMRD:
-                    bufPos += decodeSMRDEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeSMRDEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_VOPC:
-                    bufPos += decodeVOPCEncoding(spacesToAdd, curArchMask,
-                             buf+bufPos, *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                    decodeVOPCEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2, displayFloatLits);
                     break;
                 case GCNENC_VOP1:
-                    bufPos += decodeVOP1Encoding(spacesToAdd, curArchMask,
-                             buf+bufPos, *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                    decodeVOP1Encoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2, displayFloatLits);
                     break;
                 case GCNENC_VOP2:
-                    bufPos += decodeVOP2Encoding(spacesToAdd, curArchMask,
-                             buf+bufPos, *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                    decodeVOP2Encoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2, displayFloatLits);
                     break;
                 case GCNENC_VOP3A:
-                    bufPos += decodeVOP3Encoding(spacesToAdd, curArchMask, buf+bufPos,
-                             *gcnInsn, insnCode, insnCode2, displayFloatLits);
+                    decodeVOP3Encoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2, displayFloatLits);
                     break;
                 case GCNENC_VINTRP:
-                    bufPos += decodeVINTRPEncoding(spacesToAdd, curArchMask,
-                                   buf+bufPos, *gcnInsn, insnCode);
+                    decodeVINTRPEncoding(spacesToAdd, curArchMask, output,
+                                 *gcnInsn, insnCode);
                     break;
                 case GCNENC_DS:
-                    bufPos += decodeDSEncoding(spacesToAdd, curArchMask,
-                                   buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeDSEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_MUBUF:
-                    bufPos += decodeMUBUFEncoding(spacesToAdd, curArchMask,
-                                    buf+bufPos, *gcnInsn, insnCode, insnCode2, false);
+                    decodeMUBUFEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2, false);
                     break;
                 case GCNENC_MTBUF:
-                    bufPos += decodeMUBUFEncoding(spacesToAdd, curArchMask,
-                                  buf+bufPos, *gcnInsn, insnCode, insnCode2, true);
+                    decodeMUBUFEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2, true);
                     break;
                 case GCNENC_MIMG:
-                    bufPos += decodeMIMGEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeMIMGEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_EXP:
-                    bufPos += decodeEXPEncoding(spacesToAdd, curArchMask,
-                                buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeEXPEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_FLAT:
-                    bufPos += decodeFLATEncoding(spacesToAdd, curArchMask,
-                                 buf+bufPos, *gcnInsn, insnCode, insnCode2);
+                    decodeFLATEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                 insnCode, insnCode2);
                     break;
                 default:
                     break;
             }
         }
-        buf[bufPos++] = '\n';
-        
-        if (bufPos+250 >= maxBufSize)
-        {
-            output.write(buf, bufPos);
-            bufPos = 0;
-        }
+        output.put('\n');
     }
     /* rest of the labels */
-    for (; curLabel != labels.end(); ++curLabel)
+    /*for (; curLabel != labels.end(); ++curLabel)
     {   // put .org directory
         if (codeWordsNum != *curLabel)
         {
@@ -2248,8 +2211,9 @@ void GCNDisassembler::disassemble()
             output.write(buf, bufPos);
             bufPos = 0;
         }
-    }
-    output.write(buf, bufPos);
+    }*/
+    writeLabelsToEnd(codeWordsNum, curLabel, curNamedLabel);
     output.flush();
+    disassembler.getOutput().flush();
     labels.clear(); // free labels
 }

@@ -77,11 +77,11 @@ protected:
     explicit ISADisassembler(Disassembler& disassembler, cxuint locMultiplier,
                  cxuint outBufSize = 300);
     
-    /// write literal
-    void writeLiteral(uint32_t literal, bool floatLit);
     /// write all labels before specified position
     void writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                NamedLabelIter& namedLabelIter);
+    /// write all labels to end
+    void writeLabelsToEnd(size_t start, LabelIter labelIter, NamedLabelIter namedLabelIter);
     /// write location in the code
     void writeLocation(size_t pos);
 public:
