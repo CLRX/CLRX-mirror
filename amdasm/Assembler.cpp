@@ -19,7 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <string>
-#include <ostream>
+#include <fstream>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -86,10 +86,23 @@ LineCol AsmInputFilter::translatePos(size_t position) const
 
 static const size_t AsmParserLineMaxSize = 300;
 
-AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is) :
-        stream(is), mode(LineMode::NORMAL)
+AsmStreamInputFilter::AsmStreamInputFilter(const std::string& filename)
+        : managed(true), mode(LineMode::NORMAL)
+{
+    stream = new std::ifstream(filename.c_str(), std::ios::binary);
+    stream->exceptions(std::ios::badbit);
+}
+
+AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is)
+        : managed(false), stream(&is), mode(LineMode::NORMAL)
 {
     buffer.reserve(AsmParserLineMaxSize);
+}
+
+AsmStreamInputFilter::~AsmStreamInputFilter()
+{
+    if (managed)
+        delete stream;
 }
 
 const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSize)
@@ -310,8 +323,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             if (pos == buffer.size())
                 buffer.resize(std::max(AsmParserLineMaxSize, (pos>>1)+pos));
             
-            stream.read(buffer.data()+pos, buffer.size()-pos);
-            const size_t readed = stream.gcount();
+            stream->read(buffer.data()+pos, buffer.size()-pos);
+            const size_t readed = stream->gcount();
             buffer.resize(pos+readed);
             if (readed == 0)
             {   // end of file. check comments

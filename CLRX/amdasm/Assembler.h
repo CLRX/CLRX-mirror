@@ -83,7 +83,7 @@ struct LineCol
  * assembler source position
  */
 
-struct AsmFile: public RefCountable
+struct AsmFile: public FastRefCountable
 {
     RefPtr<const AsmFile> parent; ///< parent file (or null if root)
     uint64_t lineNo; // place where file is included (0 if root)
@@ -97,7 +97,7 @@ struct AsmFile: public RefCountable
     { }
 };
 
-struct AsmMacroSubst: public RefCountable
+struct AsmMacroSubst: public FastRefCountable
 {
     RefPtr<const AsmMacroSubst> parent;   ///< parent macro (null if global scope)
     RefPtr<const AsmFile> file; ///< file where macro substituted
@@ -196,10 +196,13 @@ private:
         LINE_COMMENT
     };
     
-    std::istream& stream;
+    bool managed;
+    std::istream* stream;
     LineMode mode;
 public:
     explicit AsmStreamInputFilter(std::istream& is);
+    explicit AsmStreamInputFilter(const std::string& filename);
+    ~AsmStreamInputFilter();
     
     /// read line and returns line except newline character
     const char* readLine(Assembler& assembler, size_t& lineSize);

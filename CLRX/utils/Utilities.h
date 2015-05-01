@@ -566,10 +566,33 @@ public:
         refCount.fetch_add(1);
     }
     
-    /// unreference object (and delete object when no references)
+    /// unreference object (returns true if no reference count)
     bool unreference() const
     {
         return (refCount.fetch_sub(1) == 1);
+    }
+};
+
+/// reference countable object (only for single threading usage)
+class FastRefCountable
+{
+private:
+    mutable size_t refCount;
+public:
+    /// constructor
+    FastRefCountable() : refCount(1)
+    { }
+    
+    /// reference object
+    void reference() const
+    {
+        refCount++;
+    }
+    
+    /// unreference object (returns true if no reference count)
+    bool unreference() const
+    {
+        return (--refCount == 0);
     }
 };
 
