@@ -87,10 +87,18 @@ LineCol AsmInputFilter::translatePos(size_t position) const
 static const size_t AsmParserLineMaxSize = 300;
 
 AsmStreamInputFilter::AsmStreamInputFilter(const std::string& filename)
-        : managed(true), mode(LineMode::NORMAL)
+try
+        : managed(true), stream(nullptr), mode(LineMode::NORMAL)
 {
     stream = new std::ifstream(filename.c_str(), std::ios::binary);
+    if (!*stream)
+        throw Exception("Can't open include file");
     stream->exceptions(std::ios::badbit);
+    buffer.reserve(AsmParserLineMaxSize);
+}
+catch(...)
+{
+    delete stream;
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is)
@@ -668,6 +676,23 @@ Assembler::~Assembler()
         delete asmInputFilters.top();
         asmInputFilters.pop();
     }
+}
+
+void Assembler::includeFile(const std::string& filename)
+{
+    asmInputFilters.push(new AsmStreamInputFilter(filename));
+}
+
+void Assembler::applyMacro(const std::string& macroName, AsmMacroArgMap argMap)
+{
+    auto it = macroMap.find(macroName);
+    if (it == macroMap.end())
+        throw Exception("Macro doesn't exists");
+    asmInputFilters.push(new AsmMacroInputFilter(it->second, argMap));
+}
+
+void Assembler::exitFromMacro()
+{
 }
 
 uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)

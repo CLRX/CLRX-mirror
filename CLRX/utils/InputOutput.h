@@ -25,6 +25,7 @@
 
 #include <CLRX/Config.h>
 #include <vector>
+#include <cstring>
 #include <istream>
 #include <ostream>
 #include <streambuf>
@@ -272,6 +273,50 @@ public:
     { return os; }
     std::ostream& getOStream()
     { return os; }
+};
+
+/// fast and direct output buffer
+template<cxuint N>
+class FastOutputBuffer
+{
+private:
+    std::ostream& os;
+    cxuint endPos;
+    char buffer[N];
+public:
+    explicit FastOutputBuffer(std::ostream& output) : os(output), endPos(0)
+    { }
+    
+    /// write output buffer
+    void flush()
+    {
+        os.write(buffer, endPos);
+        endPos = 0;
+    }
+    
+    /// reserve and write out buffer if too few free bytes in buffer
+    char* reserve(cxuint toReserve)
+    {
+        if (toReserve > N-endPos)
+            flush();
+        return buffer + endPos;
+    }
+    
+    /// finish reservation in buffer
+    void finish(cxuint toWrite)
+    { endPos += toWrite; }
+    
+    void writeString(size_t length, const char* string)
+    {
+        flush();
+        os.write(string, length);
+    }
+    
+    void writeString(const char* string)
+    {
+        flush();
+        os.write(string, ::strlen(string));
+    }
 };
 
 }

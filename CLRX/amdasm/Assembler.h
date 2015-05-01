@@ -208,11 +208,13 @@ public:
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
+typedef Array<std::pair<std::string, std::string> > AsmMacroArgMap;
+
 class AsmMacroInputFilter: public AsmInputFilter
 {
 private:
     const AsmMacro& macro;
-    Array<std::pair<std::string, std::string> > argMap;
+    AsmMacroArgMap argMap;
     
     const LineTrans* curColTrans;
     bool exit;
@@ -467,7 +469,7 @@ private:
     std::stack<AsmCondClause> condClauses;
     
     bool inGlobal;
-    bool isInAmdConfig;
+    bool inAmdConfig;
     cxuint currentKernel;
     cxuint currentSection;
     
@@ -508,6 +510,11 @@ private:
         LineCol lineCol = translatePos(pos);
         return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     }
+    
+    void includeFile(const std::string& filename);
+    void applyMacro(const std::string& macroName, AsmMacroArgMap argMap);
+    void exitFromMacro();
+    
 protected:
     void readLine();
 public:
