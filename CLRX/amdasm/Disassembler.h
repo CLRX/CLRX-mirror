@@ -34,6 +34,7 @@
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/InputOutput.h>
 
 /// main namespace
 namespace CLRX
@@ -67,7 +68,8 @@ protected:
     const cxbyte* input;
     std::vector<size_t> labels;
     std::vector<std::pair<size_t, std::string> > namedLabels;
-    explicit ISADisassembler(Disassembler& disassembler);
+    FastOutputBuffer output;
+    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 300);
 public:
     virtual ~ISADisassembler();
     

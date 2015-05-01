@@ -28,6 +28,7 @@
 #include <cstring>
 #include <istream>
 #include <ostream>
+#include <memory>
 #include <streambuf>
 
 /// main namespace
@@ -276,30 +277,31 @@ public:
 };
 
 /// fast and direct output buffer
-template<cxuint N>
 class FastOutputBuffer
 {
 private:
     std::ostream& os;
     cxuint endPos;
-    char buffer[N];
+    cxuint bufSize;
+    std::unique_ptr<char[]> buffer;
 public:
-    explicit FastOutputBuffer(std::ostream& output) : os(output), endPos(0)
+    FastOutputBuffer(cxuint inBufSize, std::ostream& output) : os(output), endPos(0),
+            bufSize(inBufSize), buffer(new char[inBufSize])
     { }
     
     /// write output buffer
     void flush()
     {
-        os.write(buffer, endPos);
+        os.write(buffer.get(), endPos);
         endPos = 0;
     }
     
     /// reserve and write out buffer if too few free bytes in buffer
     char* reserve(cxuint toReserve)
     {
-        if (toReserve > N-endPos)
+        if (toReserve > bufSize-endPos)
             flush();
-        return buffer + endPos;
+        return buffer.get() + endPos;
     }
     
     /// finish reservation in buffer

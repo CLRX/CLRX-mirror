@@ -42,8 +42,8 @@ AmdDisasmInput AmdDisasmInput::createFromRawBinary(GPUDeviceType deviceType,
     } };
 }
 
-ISADisassembler::ISADisassembler(Disassembler& disassembler_)
-        : disassembler(disassembler_)
+ISADisassembler::ISADisassembler(Disassembler& disassembler_, cxuint outBufSize)
+        : disassembler(disassembler_), output(outBufSize, disassembler_.getOutput())
 { }
 
 ISADisassembler::~ISADisassembler()
