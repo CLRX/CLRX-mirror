@@ -103,7 +103,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             
             if (numberedPos < namedPos && haveNumberedLabel)
             {
-                char* buf = output.reserve(30);
+                curPos = *labelIter;
                 if (curPos != oldCurPos)
                 {   /* print location fix */
                     char* buf = output.reserve(40);
@@ -115,6 +115,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                     output.forward(bufPos);
                     oldCurPos = curPos;
                 }
+                char* buf = output.reserve(30);
                 size_t bufPos = 0;
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
@@ -122,7 +123,6 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 buf[bufPos++] = ':';
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
-                curPos = *labelIter;
                 ++labelIter;
                 haveLabel = true;
             }
@@ -130,6 +130,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             if(namedPos < numberedPos && haveNamedLabel)
             {
                 output.put('\n');
+                curPos = namedLabelIter->first;
                 if (curPos != oldCurPos)
                 {   /* print location fix */
                     char* buf = output.reserve(40);
@@ -144,7 +145,6 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 output.writeString(namedLabelIter->second.size(),
                        namedLabelIter->second.c_str());
                 output.writeString(2, ":\n");
-                curPos = namedLabelIter->first;
                 ++namedLabelIter;
                 haveLabel = true;
             }
