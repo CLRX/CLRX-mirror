@@ -118,7 +118,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 if (curPos != oldCurPos)
                 {   /* print location fix */
                     char* buf = output.reserve(40);
-                    ::memcpy(buf, ".org .-", 7);
+                    ::memcpy(buf, ".org .+", 7);
                     size_t bufPos = 7;
                     bufPos += itocstrCStyle((curPos-oldCurPos)*locationMultiplier,
                             buf+bufPos, 22, 10, 0, false);
@@ -141,7 +141,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 if (curPos != oldCurPos)
                 {   /* print location fix */
                     char* buf = output.reserve(40);
-                    ::memcpy(buf, ".org .-", 7);
+                    ::memcpy(buf, ".org .+", 7);
                     size_t bufPos = 7;
                     bufPos += itocstrCStyle((curPos-oldCurPos)*locationMultiplier,
                             buf+bufPos, 22, 10, 0, false);
