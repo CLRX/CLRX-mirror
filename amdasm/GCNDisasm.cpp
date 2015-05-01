@@ -101,7 +101,7 @@ static void initializeGCNDisassembler()
 }
 
 GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
-        : ISADisassembler(disassembler), instrOutOfCode(false)
+        : ISADisassembler(disassembler, 4), instrOutOfCode(false)
 {
     std::call_once(clrxGCNDisasmOnceFlag, initializeGCNDisassembler);
 }

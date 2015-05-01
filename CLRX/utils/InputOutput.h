@@ -304,21 +304,26 @@ public:
         return buffer.get() + endPos;
     }
     
-    /// finish reservation in buffer
-    void finish(cxuint toWrite)
+    /// go forward
+    void forward(cxuint toWrite)
     { endPos += toWrite; }
     
     void writeString(size_t length, const char* string)
     {
-        flush();
-        os.write(string, length);
+        if (length > bufSize-endPos)
+        {
+            flush();
+            os.write(string, length);
+        }
+        else
+        {
+            ::memcpy(buffer.get()+endPos, string, length);
+            endPos += length;
+        }
     }
     
     void writeString(const char* string)
-    {
-        flush();
-        os.write(string, ::strlen(string));
-    }
+    { writeString(::strlen(string), string); }
 };
 
 }

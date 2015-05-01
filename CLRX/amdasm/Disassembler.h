@@ -63,13 +63,27 @@ enum: cxuint
 class ISADisassembler
 {
 protected:
+    typedef std::vector<size_t>::const_iterator LabelIter;
+    typedef std::vector<std::pair<size_t, std::string> >::const_iterator NamedLabelIter;
+    
     Disassembler& disassembler;
     size_t inputSize;
     const cxbyte* input;
     std::vector<size_t> labels;
     std::vector<std::pair<size_t, std::string> > namedLabels;
     FastOutputBuffer output;
-    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 300);
+    cxuint locationMultiplier;  ///< location multiplier
+    
+    explicit ISADisassembler(Disassembler& disassembler, cxuint locMultiplier,
+                 cxuint outBufSize = 300);
+    
+    /// write literal
+    void writeLiteral(uint32_t literal, bool floatLit);
+    /// write all labels before specified position
+    void writeLabelsToPosition(size_t pos, LabelIter& labelIter,
+               NamedLabelIter& namedLabelIter);
+    /// write location in the code
+    void writeLocation(size_t pos);
 public:
     virtual ~ISADisassembler();
     
