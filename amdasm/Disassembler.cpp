@@ -81,6 +81,8 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             buf[bufPos++] = '\n';
             output.forward(bufPos);
         }
+        if (namedLabelIter != namedLabels.end() && namedLabelIter->first <= pos)
+            output.put('\n');
         
         size_t oldCurPos = curPos;
         bool haveLabel;
@@ -98,7 +100,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             if (haveNamedLabel)
                 namedPos = namedLabelIter->first;
             
-            if (numberedPos < namedPos && haveNumberedLabel)
+            if (numberedPos <= namedPos && haveNumberedLabel)
             {
                 curPos = *labelIter;
                 if (curPos != oldCurPos)
@@ -124,9 +126,8 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 haveLabel = true;
             }
             
-            if(namedPos < numberedPos && haveNamedLabel)
+            if(namedPos <= numberedPos && haveNamedLabel)
             {
-                output.put('\n');
                 curPos = namedLabelIter->first;
                 if (curPos != oldCurPos)
                 {   /* print location fix */
@@ -172,7 +173,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
             numberedPos = *labelIter;
         if (namedLabelIter != namedLabels.end())
             namedPos = namedLabelIter->first;
-        if (numberedPos < namedPos && labelIter != labels.end())
+        if (numberedPos <= namedPos && labelIter != labels.end())
         {
             if (pos != *labelIter)
             {
@@ -198,7 +199,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
             pos = *labelIter;
             ++labelIter;
         }
-        if (namedPos < numberedPos && namedLabelIter != namedLabels.end())
+        if (namedPos <= numberedPos && namedLabelIter != namedLabels.end())
         {
             if (pos != namedLabelIter->first)
             {
@@ -213,7 +214,6 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
             }
-            output.put('\n');
             output.writeString(namedLabelIter->second.size(),
                         namedLabelIter->second.c_str());
             pos = namedLabelIter->first;

@@ -100,14 +100,45 @@ static const uint32_t unalignedNamedLabelCode[] =
 {
     LEV(0x90153d04U),
     LEV(0x0934d6ffU), LEV(0x11110000U),
-    LEV(0x90153d02U)
+    LEV(0x90153d02U),
+    LEV(0xbf82fffcU)
 };
 
-static const uint32_t unalignedNamedLabelCode2[] =
+static void testDecGCNNamedLabels()
 {
-    LEV(0x90153d04U),
-    LEV(0x0934d6ffU), LEV(0x11110000U)
-};
+    std::ostringstream disOss;
+    AmdDisasmInput input;
+    input.deviceType = GPUDeviceType::PITCAIRN;
+    input.is64BitMode = false;
+    Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
+    GCNDisassembler gcnDisasm(disasm);
+    gcnDisasm.setInput(sizeof(unalignedNamedLabelCode),
+                   reinterpret_cast<const cxbyte*>(unalignedNamedLabelCode));
+    gcnDisasm.addNamedLabel(1, "buru");
+    gcnDisasm.addNamedLabel(2, "buru2");
+    gcnDisasm.addNamedLabel(2, "buru2tto");
+    gcnDisasm.addNamedLabel(3, "testLabel1");
+    gcnDisasm.addNamedLabel(4, "nextInstr");
+    gcnDisasm.beforeDisassemble();
+    gcnDisasm.disassemble();
+    if (disOss.str() !=
+        "        s_lshr_b32      s21, s4, s61\n"
+        ".org .-3\n"
+        "\n"
+        "buru:\n"
+        ".org .+1\n"
+        "buru2:\n"
+        "buru2tto:\n"
+        ".org .+1\n"
+        "testLabel1:\n"
+        ".org .+1\n"
+        ".L4:\n"
+        "nextInstr:\n"
+        "        v_sub_f32       v154, 0x11110000 /* 1.14384831e-28f */, v107\n"
+        "        s_lshr_b32      s21, s2, s61\n"
+        "        s_branch        nextInstr\n")
+        throw Exception("FAILED namedLabelsTest: result: "+disOss.str());
+}
 
 int main(int argc, const char** argv)
 {
@@ -120,5 +151,13 @@ int main(int argc, const char** argv)
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
+    
+    try
+    { testDecGCNNamedLabels(); }
+    catch(const std::exception& ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        retVal = 1;
+    }
     return retVal;
 }
