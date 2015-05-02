@@ -42,10 +42,8 @@ AmdDisasmInput AmdDisasmInput::createFromRawBinary(GPUDeviceType deviceType,
     } };
 }
 
-ISADisassembler::ISADisassembler(Disassembler& disassembler_, cxuint locMultiplier,
-             cxuint outBufSize)
-        : disassembler(disassembler_), output(outBufSize, disassembler_.getOutput()),
-          locationMultiplier(locMultiplier)
+ISADisassembler::ISADisassembler(Disassembler& disassembler_, cxuint outBufSize)
+        : disassembler(disassembler_), output(outBufSize, disassembler_.getOutput())
 { }
 
 ISADisassembler::~ISADisassembler()
@@ -79,8 +77,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             char* buf = output.reserve(40);
             ::memcpy(buf, ".org .-", 7);
             size_t bufPos = 7;
-            bufPos += itocstrCStyle((pos-curPos)*locationMultiplier,
-                        buf+bufPos, 22, 10, 0, false);
+            bufPos += itocstrCStyle((pos-curPos), buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = '\n';
             output.forward(bufPos);
         }
@@ -109,7 +106,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                     char* buf = output.reserve(40);
                     ::memcpy(buf, ".org .+", 7);
                     size_t bufPos = 7;
-                    bufPos += itocstrCStyle((curPos-oldCurPos)*locationMultiplier,
+                    bufPos += itocstrCStyle((curPos-oldCurPos),
                             buf+bufPos, 22, 10, 0, false);
                     buf[bufPos++] = '\n';
                     output.forward(bufPos);
@@ -136,7 +133,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                     char* buf = output.reserve(40);
                     ::memcpy(buf, ".org .+", 7);
                     size_t bufPos = 7;
-                    bufPos += itocstrCStyle((curPos-oldCurPos)*locationMultiplier,
+                    bufPos += itocstrCStyle((curPos-oldCurPos),
                             buf+bufPos, 22, 10, 0, false);
                     buf[bufPos++] = '\n';
                     output.forward(bufPos);
@@ -156,8 +153,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             char* buf = output.reserve(40);
             ::memcpy(buf, ".org .+", 7);
             size_t bufPos = 7;
-            bufPos += itocstrCStyle((pos-curPos)*locationMultiplier,
-                        buf+bufPos, 22, 10, 0, false);
+            bufPos += itocstrCStyle((pos-curPos), buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = '\n';
             output.forward(bufPos);
         }
@@ -187,8 +183,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
                 buf[bufPos++] = 'r';
                 buf[bufPos++] = 'g';
                 buf[bufPos++] = ' ';
-                bufPos += itocstrCStyle(*labelIter*locationMultiplier,
-                            buf+bufPos, 20, 16);
+                bufPos += itocstrCStyle(*labelIter, buf+bufPos, 20, 16);
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
             }
@@ -214,8 +209,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
                 buf[bufPos++] = 'r';
                 buf[bufPos++] = 'g';
                 buf[bufPos++] = ' ';
-                bufPos += itocstrCStyle(namedLabelIter->first*locationMultiplier,
-                            buf+bufPos, 20, 16);
+                bufPos += itocstrCStyle(namedLabelIter->first, buf+bufPos, 20, 16);
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
             }

@@ -72,10 +72,8 @@ protected:
     std::vector<size_t> labels;
     std::vector<std::pair<size_t, std::string> > namedLabels;
     FastOutputBuffer output;
-    cxuint locationMultiplier;  ///< location multiplier
     
-    explicit ISADisassembler(Disassembler& disassembler, cxuint locMultiplier,
-                 cxuint outBufSize = 300);
+    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 300);
     
     /// write all labels before specified position
     void writeLabelsToPosition(size_t pos, LabelIter& labelIter,

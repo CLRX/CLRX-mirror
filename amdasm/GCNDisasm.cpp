@@ -101,7 +101,7 @@ static void initializeGCNDisassembler()
 }
 
 GCNDisassembler::GCNDisassembler(Disassembler& disassembler)
-        : ISADisassembler(disassembler, 4), instrOutOfCode(false)
+        : ISADisassembler(disassembler), instrOutOfCode(false)
 {
     std::call_once(clrxGCNDisasmOnceFlag, initializeGCNDisassembler);
 }
@@ -145,13 +145,13 @@ void GCNDisassembler::beforeDisassemble()
                         if (opcode == 2 || (opcode >= 4 && opcode <= 9) ||
                             // GCN1.1 opcodes
                             (isGCN11 && (opcode >= 23 && opcode <= 26))) // if jump
-                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                     }
                     else
                     {   // SOPK
                         const cxuint opcode = (insnCode>>23)&0x1f;
                         if (opcode == 17) // if branch fork
-                            labels.push_back(pos+int16_t(insnCode&0xffff)+1);
+                            labels.push_back((pos+int16_t(insnCode&0xffff)+1)<<2);
                         else if (opcode == 21)
                             pos++; // additional literal
                     }
@@ -205,8 +205,6 @@ void GCNDisassembler::beforeDisassemble()
                 const std::pair<size_t, std::string>& a1,
                 const std::pair<size_t, std::string>& a2) 
         { return a1.first < a2.first; });
-    for (auto& l: namedLabels)
-        l.first >>= 2;
 }
 
 static const cxbyte gcnEncoding11Table[16] =
@@ -550,7 +548,7 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     {
         case GCN_IMM_REL:
         {
-            const size_t branchPos = pos + int16_t(imm16);
+            const size_t branchPos = (pos + int16_t(imm16))<<2;
             bufPos = addSpaces(buf, spacesToAdd);
             output.forward(bufPos);
             labelWriter(branchPos);
@@ -756,7 +754,7 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     const cxuint imm16 = insnCode&0xffff;
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
-        const size_t branchPos = pos + int16_t(imm16);
+        const size_t branchPos = (pos + int16_t(imm16))<<2;
         output.forward(bufPos);
         labelWriter(branchPos);
         buf = output.reserve(60);
@@ -1897,7 +1895,7 @@ void GCNDisassembler::disassemble()
     size_t pos = 0;
     while (true)
     {
-        writeLabelsToPosition(pos, curLabel, curNamedLabel);
+        writeLabelsToPosition(pos<<2, curLabel, curNamedLabel);
         if (pos >= codeWordsNum)
             break;
         
@@ -2187,32 +2185,7 @@ void GCNDisassembler::disassemble()
         }
         output.put('\n');
     }
-    /* rest of the labels */
-    /*for (; curLabel != labels.end(); ++curLabel)
-    {   // put .org directory
-        if (codeWordsNum != *curLabel)
-        {
-            buf[bufPos++] = '.';
-            buf[bufPos++] = 'o';
-            buf[bufPos++] = 'r';
-            buf[bufPos++] = 'g';
-            buf[bufPos++] = ' ';
-            bufPos += itocstrCStyle(*curLabel, buf+bufPos, 20, 16);
-            buf[bufPos++] = '\n';
-        }
-        // put label
-        buf[bufPos++] = '.';
-        buf[bufPos++] = 'L';
-        bufPos += itocstrCStyle(*curLabel, buf+bufPos, 22, 10, 0, false);
-        buf[bufPos++] = ':';
-        buf[bufPos++] = '\n';
-        if (bufPos+80 >= maxBufSize)
-        {
-            output.write(buf, bufPos);
-            bufPos = 0;
-        }
-    }*/
-    writeLabelsToEnd(codeWordsNum, curLabel, curNamedLabel);
+    writeLabelsToEnd(codeWordsNum<<2, curLabel, curNamedLabel);
     output.flush();
     disassembler.getOutput().flush();
     labels.clear(); // free labels

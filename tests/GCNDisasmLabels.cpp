@@ -45,7 +45,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         3, code1tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
-        ".org .-4\n.L1:\n.org .+4\n        s_branch        .L1\n"
+        ".org .-4\n.L4:\n.org .+4\n        s_branch        .L4\n"
     },
     {
         1, code2tbl,
@@ -55,15 +55,15 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         8, code3tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
-        ".org .-4\n.L1:\n.org .+4\n        s_branch        .L1\n"
-        "        s_branch        .L6\n"
+        ".org .-4\n.L4:\n.org .+4\n        s_branch        .L4\n"
+        "        s_branch        .L24\n"
         "        tbuffer_load_format_x v[61:62], v[18:19], s[80:83], s35"
         " offen idxen offset:2004 glc slc addr64 tfe format:[8,sint]\n"
-        ".L6:\n        v_cvt_pknorm_i16_f32 v55, s27, -v90\n"
+        ".L24:\n        v_cvt_pknorm_i16_f32 v55, s27, -v90\n"
     },
     {
-        3, code4tbl, "        s_branch        .L580\n        s_branch        .L264\n"
-        "        s_branch        .L264\n.org 0x420\n.L264:\n.org 0x910\n.L580:\n"
+        3, code4tbl, "        s_branch        .L2320\n        s_branch        .L1056\n"
+        "        s_branch        .L1056\n.org 0x420\n.L1056:\n.org 0x910\n.L2320:\n"
     }
 };
 
