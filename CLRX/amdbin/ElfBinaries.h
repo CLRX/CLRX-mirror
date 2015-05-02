@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <string>
 #include <utility>
+#include <ostream>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
@@ -361,6 +362,101 @@ extern template class ElfBinaryTemplate<Elf64Types>;
 typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
 /// type for 64-bit ELF binary
 typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
+
+/// elf binary generator template
+template<typename Types>
+class ElfBinaryGenTemplate
+{
+private:
+    std::unique_ptr<typename Types::Size[]> programOffsets;
+    std::unique_ptr<typename Types::Size[]> sectionOffsets;
+    
+protected:
+    void prepare();
+    
+    /// write section header string table section to stream
+    void writeShStrTabSectionContent(std::ostream& os) const;
+    
+    /// get size of section header string table section
+    typename Types::Size getShStrTabSectionSize() const;
+    
+    /// write symbol table section to stream
+    void writeSymTabSectionContent(std::ostream& os) const;
+    
+    /// get size of symbol table section 
+    typename Types::Size getSymTabSectionSize() const;
+    
+    /// write symbol string table section to stream
+    void writeStrTabSectionContent(std::ostream& os) const;
+    
+    /// get size of symbol string table section 
+    typename Types::Size getStrTabSectionSize() const;
+    
+    /// write dynamic symbol table section to stream
+    void writeDynSymSectionContent(std::ostream& os) const;
+    
+    /// get size of dynamic symbol table section to stream
+    typename Types::Size getDynSymSectionSize() const;
+    
+    /// write dynamic  symbol string table section to stream
+    void writeDynStrSectionContent(std::ostream& os) const;
+    
+    /// get size of dynamic symbol table section to stream
+    typename Types::Size getDynStrSectionSize() const;
+    
+    /// get elf header
+    virtual typename Types::Ehdr getHeader() const = 0;
+    
+    /// get section headers count
+    virtual uint16_t getSectionHeadersCount() const = 0;
+    
+    /// get get section header
+    virtual typename Types::Shdr getSectionHeader(uint16_t sectionId) const = 0;
+    
+    /// write section to stream
+    virtual void writeSectionContent(uint16_t sectionId, std::ostream& os) const = 0;
+    
+    /// get section name
+    virtual const char* getSectionName(uint16_t sectionId) const = 0;
+    
+    /// get program headers count
+    virtual uint16_t getProgramHeadersCount() const = 0;
+    
+    /// get program header
+    virtual typename Types::Phdr getProgramHeader(uint16_t phdrId) const = 0;
+    
+    /// write unused space in binary (for example between sections)
+    virtual void writeUnusedSpace(typename Types::Size offset, typename Types::Size size,
+                std::ostream& os) const;
+    
+    /// get symbol count
+    virtual typename Types::Size getSymbolsCount() const = 0;
+    
+    /// get symbol
+    virtual typename Types::Sym getSymbol(typename Types::Size symbolId) const = 0;
+    
+    /// get symbol name
+    virtual const char* getSymbolName(typename Types::Size symbolId) const = 0;
+    
+    /// get dynamic symbol count
+    virtual typename Types::Size getDynSymbolsCount() const = 0;
+    
+    /// get dynamic symbol
+    virtual typename Types::Sym getDynSymbol(typename Types::Size symbolId) const = 0;
+    
+    /// get dynamic symbol count
+    virtual const char* getDynSymbolName(typename Types::Size symbolId) const = 0;
+public:
+    virtual ~ElfBinaryGenTemplate();
+    
+    size_t generateSize() const;
+    void generate(std::ostream& os) const;
+};
+
+/// type for 32-bit ELF binary generator
+typedef class ElfBinaryGenTemplate<Elf32Types> ElfBinary32Generator;
+/// type for 64-bit ELF binary generator
+typedef class ElfBinaryGenTemplate<Elf64Types> ElfBinary64Generator;
 
 }
 

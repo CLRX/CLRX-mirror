@@ -191,6 +191,8 @@ private:
              Array<cxbyte>* aPtr) const;
 public:
     AmdGPUBinGenerator();
+    
+    /// constructor from amdInput
     AmdGPUBinGenerator(const AmdInput* amdInput);
     /// constructor
     /**

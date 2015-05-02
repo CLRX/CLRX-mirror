@@ -298,6 +298,7 @@ struct GalliumInput
     const cxbyte* code;     ///< code
 };
 
+/// gallium code binary generator
 class GalliumBinGenerator: public NonCopyableAndNonMovable
 {
 private:
@@ -308,12 +309,26 @@ private:
              Array<cxbyte>* aPtr) const;
 public:
     GalliumBinGenerator();
+    /// constructor with gallium input
     GalliumBinGenerator(const GalliumInput* galliumInput);
+    
+    /// constructor
+    /**
+     * \param codeSize size of code
+     * \param code code pointer
+     * \param globalDataSize global data size
+     * \param globalData global data pointer
+     * \param kernels vector of kernels
+     * \param disassemblySize size of disassembly string (may be zero)
+     * \param disassembly string of disassembly
+     * \param commentSize size of comment
+     * \param comment comment section data
+     */
     GalliumBinGenerator(size_t codeSize, const cxbyte* code,
             size_t globalDataSize, const cxbyte* globalData,
             const std::vector<GalliumKernelInput>& kernels,
             size_t disassemblySize = 0, const char* disassembly = nullptr,
-            size_t commentSize = 0, const char* comment= nullptr);
+            size_t commentSize = 0, const char* comment = nullptr);
     ~GalliumBinGenerator();
     
     /// get input
