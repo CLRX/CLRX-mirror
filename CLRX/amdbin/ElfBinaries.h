@@ -363,100 +363,157 @@ typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
 /// type for 64-bit ELF binary
 typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 
-/// elf binary generator template
-template<typename Types>
-class ElfBinaryGenTemplate
-{
-private:
-    std::unique_ptr<typename Types::Size[]> programOffsets;
-    std::unique_ptr<typename Types::Size[]> sectionOffsets;
-    
-protected:
-    void prepare();
-    
-    /// write section header string table section to stream
-    void writeShStrTabSectionContent(std::ostream& os) const;
-    
-    /// get size of section header string table section
-    typename Types::Size getShStrTabSectionSize() const;
-    
-    /// write symbol table section to stream
-    void writeSymTabSectionContent(std::ostream& os) const;
-    
-    /// get size of symbol table section 
-    typename Types::Size getSymTabSectionSize() const;
-    
-    /// write symbol string table section to stream
-    void writeStrTabSectionContent(std::ostream& os) const;
-    
-    /// get size of symbol string table section 
-    typename Types::Size getStrTabSectionSize() const;
-    
-    /// write dynamic symbol table section to stream
-    void writeDynSymSectionContent(std::ostream& os) const;
-    
-    /// get size of dynamic symbol table section to stream
-    typename Types::Size getDynSymSectionSize() const;
-    
-    /// write dynamic  symbol string table section to stream
-    void writeDynStrSectionContent(std::ostream& os) const;
-    
-    /// get size of dynamic symbol table section to stream
-    typename Types::Size getDynStrSectionSize() const;
-    
-    /// get elf header
-    virtual typename Types::Ehdr getHeader() const = 0;
-    
-    /// get section headers count
-    virtual uint16_t getSectionHeadersCount() const = 0;
-    
-    /// get get section header
-    virtual typename Types::Shdr getSectionHeader(uint16_t sectionId) const = 0;
-    
-    /// write section to stream
-    virtual void writeSectionContent(uint16_t sectionId, std::ostream& os) const = 0;
-    
-    /// get section name
-    virtual const char* getSectionName(uint16_t sectionId) const = 0;
-    
-    /// get program headers count
-    virtual uint16_t getProgramHeadersCount() const = 0;
-    
-    /// get program header
-    virtual typename Types::Phdr getProgramHeader(uint16_t phdrId) const = 0;
-    
-    /// write unused space in binary (for example between sections)
-    virtual void writeUnusedSpace(typename Types::Size offset, typename Types::Size size,
-                std::ostream& os) const;
-    
-    /// get symbol count
-    virtual typename Types::Size getSymbolsCount() const = 0;
-    
-    /// get symbol
-    virtual typename Types::Sym getSymbol(typename Types::Size symbolId) const = 0;
-    
-    /// get symbol name
-    virtual const char* getSymbolName(typename Types::Size symbolId) const = 0;
-    
-    /// get dynamic symbol count
-    virtual typename Types::Size getDynSymbolsCount() const = 0;
-    
-    /// get dynamic symbol
-    virtual typename Types::Sym getDynSymbol(typename Types::Size symbolId) const = 0;
-    
-    /// get dynamic symbol count
-    virtual const char* getDynSymbolName(typename Types::Size symbolId) const = 0;
-public:
-    virtual ~ElfBinaryGenTemplate();
-    
-    size_t generateSize() const;
-    void generate(std::ostream& os) const;
+enum {
+    PHDRTABLE_AFTER_SHDRTABLE = 0x10000
 };
 
-/// type for 32-bit ELF binary generator
-typedef class ElfBinaryGenTemplate<Elf32Types> ElfBinary32Generator;
-/// type for 64-bit ELF binary generator
-typedef class ElfBinaryGenTemplate<Elf64Types> ElfBinary64Generator;
+template<typename Types>
+struct ElfBinaryGenBaseHelper
+{
+    typedef Types ElfTypes;
+    
+    /// write section header string table section to stream
+    template<typename GenBase>
+    static void writeShStrTabSectionContent(const GenBase& base, std::ostream& os)
+    {
+        const cxuint shNum = base.getSectionsNum();
+        for (cxuint i = 0; i < shNum; i++)
+        {
+            const char* name = base.getSectionName(i);
+            os.write(name, base.getSectionNameSize(i));
+        }
+    }
+    
+    /// get size of section header string table section
+    template<typename GenBase>
+    static typename Types::Size getShStrTabSectionSize(const GenBase& base)
+    {
+        const cxuint shNum = base.getSectionsNum();
+        typename Types::Size size = 0;
+        for (cxuint i = 0; i < shNum; i++)
+            size += base.getSectionNameSize(i)+1;
+        return size;
+    }
+    
+    /// write symbol table section to stream
+    template<typename GenBase>
+    static void writeSymTabSectionContent(const GenBase& base, std::ostream& os)
+    {
+        const typename Types::Size symNum = base.getSymbolsNum();
+        const typename Types::Size nameOffset = 0;
+        for (typename Types::Size i = 0; i < symNum; i++)
+        {
+            typename Types::Sym sym = base.getSymbol(i);
+            sym.st_name = LEV(nameOffset);
+            sym.st_value = LEV(sym.st_value);
+            sym.st_size = LEV(sym.st_size);
+            os.write(reinterpret_cast<const char*>(&sym), sizeof(sym));
+            nameOffset += base.getSymbolNameSize()+1;
+        }
+    }
+    
+    /// get size of symbol table section 
+    template<typename GenBase>
+    static typename Types::Size getSymTabSectionSize(const GenBase& base)
+    { return base.getSymbolsNum()*sizeof(typename Types::Sym); }
+    
+    /// write symbol string table section to stream
+    template<typename GenBase>
+    static void writeStrTabSectionContent(const GenBase& base, std::ostream& os)
+    {
+        const typename Types::Size symNum = base.getSymbolsNum();
+        typename Types::Size size = 0;
+        for (typename Types::Size i = 0; i < symNum; i++)
+        {
+            const char* name = base.getSymbolName(i);
+            os.write(name, base.getSymbolNameSize(i));
+        }
+    }
+    
+    /// get size of symbol string table section 
+    template<typename GenBase>
+    static typename Types::Size getStrTabSectionSize(const GenBase& base)
+    {
+        const typename Types::Size symNum = base.getSymbolsNum();
+        typename Types::Size size = 0;
+        for (typename Types::Size i = 0; i < symNum; i++)
+            size += base.getSymbolNameSize(i)+1;
+        return size;
+    }
+    
+    /// write dynamic symbol table section to stream
+    template<typename GenBase>
+    static void writeDynSymSectionContent(const GenBase& base, std::ostream& os)
+    {
+        const typename Types::Size symNum = base.getDynSymbolsNum();
+        const typename Types::Size nameOffset = 0;
+        for (typename Types::Size i = 0; i < symNum; i++)
+        {
+            typename Types::Sym sym = base.getDynSymbol(i);
+            sym.st_name = LEV(nameOffset);
+            sym.st_value = LEV(sym.st_value);
+            sym.st_size = LEV(sym.st_size);
+            os.write(reinterpret_cast<const char*>(&sym), sizeof(sym));
+            nameOffset += base.getDynSymbolNameSize()+1;
+        }
+    }
+    
+    /// get size of dynamic symbol table section to stream
+    template<typename GenBase>
+    static typename Types::Size getDynSymSectionSize(const GenBase& base)
+    { return base.getDynSymbolsNum()*sizeof(typename Types::Sym); }
+    
+    /// write dynamic  symbol string table section to stream
+    template<typename GenBase>
+    static void writeDynStrSectionContent(const GenBase& base, std::ostream& os)
+    {
+        const typename Types::Size symNum = base.getDynSymbolsNum();
+        typename Types::Size size = 0;
+        for (typename Types::Size i = 0; i < symNum; i++)
+        {
+            const char* name = base.getDynSymbolName(i);
+            os.write(name, base.getDynSymbolNameSize(i));
+        }
+    }
+    
+    /// get size of dynamic symbol table section to stream
+    template<typename GenBase>
+    static typename Types::Size getDynStrSectionSize(const GenBase& base)
+    {
+        const typename Types::Size symNum = base.getDynSymbolsNum();
+        typename Types::Size size = 0;
+        for (typename Types::Size i = 0; i < symNum; i++)
+            size += base.getDynSymbolNameSize(i)+1;
+        return size;
+    }
+};
+
+typedef struct ElfBinaryGenBaseHelper<Elf32Types> ElfBinary32GenBaseHelper;
+typedef struct ElfBinaryGenBaseHelper<Elf64Types> ElfBinary64GenBaseHelper;
+
+template<typename GenBase>
+static inline typename GenBase::Types::Size countElfBinarySize(const GenBase& base)
+{
+    typedef typename GenBase::Types::Size Size;
+    Size size = sizeof(typename GenBase::Types::Ehdr);
+    const cxuint regionCount = base.getRegionCounts();
+    for (cxuint i = 0; i < regionCount; i++)
+    {
+        const size_t align = base.getRegionAlignment(i);
+        if ((size&(align-1)) != 0)
+            size += align - (size&(align-1));
+        size += base.getRegionSize(i);
+    }
+    return size;
+}
+
+template<typename GenBase>
+static inline void generateElfBinary(const GenBase& base, std::ostream& os)
+{
+    const cxuint regionCount = base.getRegionCounts();
+    for (cxuint i = 0; i < regionCount; i++)
+        base.writeRegion(i, os);
+}
 
 }
 

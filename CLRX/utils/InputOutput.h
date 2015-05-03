@@ -325,6 +325,14 @@ public:
     void writeString(const char* string)
     { writeString(::strlen(string), string); }
     
+    template<typename T>
+    void writeObject(const T& t)
+    { writeString(sizeof(T), reinterpret_cast<const char*>(&t)); }
+    
+    template<typename T>
+    void writeArray(size_t size, const T* t)
+    { writeString(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
+    
     void put(char c)
     {
         if (endPos == bufSize)
