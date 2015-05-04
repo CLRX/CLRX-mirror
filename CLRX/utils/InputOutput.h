@@ -254,7 +254,7 @@ public:
  * adaptor
  */
 
-struct BinaryOStream
+class BinaryOStream
 {
 private:
     std::ostream& os;
@@ -275,6 +275,39 @@ public:
     std::ostream& getOStream()
     { return os; }
 };
+
+class CountableBinaryOStream
+{
+private:
+    uint64_t written;
+    std::ostream& os;
+public:
+    CountableBinaryOStream(std::ostream& _os) : written(0), os(_os)
+    { }
+    
+    template<typename T>
+    void writeObject(const T& t)
+    {
+        os.write(reinterpret_cast<const char*>(&t), sizeof(T));
+        written += sizeof(T);
+    }
+    
+    template<typename T>
+    void writeArray(size_t size, const T* t)
+    {
+        os.write(reinterpret_cast<const char*>(t), sizeof(T)*size);
+        written += sizeof(T)*size;
+    }
+    
+    uint64_t getWritten() const
+    { return written; }
+    
+    const std::ostream& getOStream() const
+    { return os; }
+    std::ostream& getOStream()
+    { return os; }
+};
+
 
 /// fast and direct output buffer
 class FastOutputBuffer

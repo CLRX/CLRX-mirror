@@ -366,8 +366,8 @@ typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
 
 /* utilities for writing Elf binaries */
 
-template<typename ElfSection>
-inline void putElfSectionLE(BinaryOStream& bos, size_t shName, uint32_t shType,
+template<typename ElfSection, typename BOS>
+inline void putElfSectionLE(BOS& bos, size_t shName, uint32_t shType,
         uint32_t shFlags, size_t offset, size_t size, uint32_t link,
         uint32_t info = 0, size_t addrAlign = 1, uint64_t addr = 0, size_t entSize = 0)
 {
@@ -385,8 +385,8 @@ inline void putElfSectionLE(BinaryOStream& bos, size_t shName, uint32_t shType,
     bos.writeObject(shdr);
 }
 
-template<typename ElfSym>
-inline void putElfSymbolLE(BinaryOStream& bos, size_t symName, size_t value,
+template<typename ElfSym, typename BOS>
+inline void putElfSymbolLE(BOS& bos, size_t symName, size_t value,
         size_t size, uint16_t shndx, cxbyte info, cxbyte other = 0)
 {
     ElfSym sym;
@@ -399,8 +399,8 @@ inline void putElfSymbolLE(BinaryOStream& bos, size_t symName, size_t value,
     bos.writeObject(sym);
 }
 
-template<typename ElfProgHeader>
-inline void putElfProgramHeaderLE(BinaryOStream& bos, uint32_t type, size_t offset,
+template<typename ElfProgHeader, typename BOS>
+inline void putElfProgramHeaderLE(BOS& bos, uint32_t type, size_t offset,
         size_t filesz, uint32_t flags, size_t align, size_t memsz = 0,
         uint64_t vaddr = 0, uint64_t paddr = 0)
 {
