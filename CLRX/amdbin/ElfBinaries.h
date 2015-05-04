@@ -33,6 +33,7 @@
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/InputOutput.h>
 
 /* INFO: in this file is used ULEV function for conversion
  * from LittleEndian and unaligned access to other memory access policy and endianness
@@ -362,6 +363,58 @@ extern template class ElfBinaryTemplate<Elf64Types>;
 typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
 /// type for 64-bit ELF binary
 typedef class ElfBinaryTemplate<Elf64Types> ElfBinary64;
+
+/* utilities for writing Elf binaries */
+
+template<typename ElfSection>
+inline void putElfSectionLE(BinaryOStream& bos, size_t shName, uint32_t shType,
+        uint32_t shFlags, size_t offset, size_t size, uint32_t link,
+        uint32_t info = 0, size_t addrAlign = 1, uint64_t addr = 0, size_t entSize = 0)
+{
+    ElfSection shdr;
+    SLEV(shdr.sh_name, shName);
+    SLEV(shdr.sh_type, shType);
+    SLEV(shdr.sh_flags, shFlags);
+    SLEV(shdr.sh_addr, addr);
+    SLEV(shdr.sh_offset, offset);
+    SLEV(shdr.sh_size, size);
+    SLEV(shdr.sh_link, link);
+    SLEV(shdr.sh_info, info);
+    SLEV(shdr.sh_addralign, addrAlign);
+    SLEV(shdr.sh_entsize, entSize);
+    bos.writeObject(shdr);
+}
+
+template<typename ElfSym>
+inline void putElfSymbolLE(BinaryOStream& bos, size_t symName, size_t value,
+        size_t size, uint16_t shndx, cxbyte info, cxbyte other = 0)
+{
+    ElfSym sym;
+    SLEV(sym.st_name, symName); 
+    SLEV(sym.st_value, value);
+    SLEV(sym.st_size, size);
+    SLEV(sym.st_shndx, shndx);
+    sym.st_info = info;
+    sym.st_other = other;
+    bos.writeObject(sym);
+}
+
+template<typename ElfProgHeader>
+inline void putElfProgramHeaderLE(BinaryOStream& bos, uint32_t type, size_t offset,
+        size_t filesz, uint32_t flags, size_t align, size_t memsz = 0,
+        uint64_t vaddr = 0, uint64_t paddr = 0)
+{
+    ElfProgHeader phdr;
+    SLEV(phdr.p_type, type);
+    SLEV(phdr.p_offset, offset);
+    SLEV(phdr.p_vaddr, vaddr);
+    SLEV(phdr.p_paddr, paddr);
+    SLEV(phdr.p_filesz, filesz);
+    SLEV(phdr.p_memsz, memsz);
+    SLEV(phdr.p_flags, flags);
+    SLEV(phdr.p_align, align);
+    bos.writeObject(phdr);
+}
 
 }
 

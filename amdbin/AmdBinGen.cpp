@@ -36,48 +36,6 @@
 
 using namespace CLRX;
 
-template<typename ElfSection>
-static void putElfSectionLE(BinaryOStream& bos, size_t shName, uint32_t shType,
-        uint32_t shFlags, size_t offset, size_t size, uint32_t link,
-        uint32_t info = 0, uint32_t addrAlign = 1, size_t addr = 0, uint32_t entSize = 0)
-{
-    ElfSection shdr;
-    SLEV(shdr.sh_name, shName);
-    SLEV(shdr.sh_type, shType);
-    SLEV(shdr.sh_flags, shFlags);
-    SLEV(shdr.sh_addr, addr);
-    SLEV(shdr.sh_offset, offset);
-    SLEV(shdr.sh_size, size);
-    SLEV(shdr.sh_link, link);
-    SLEV(shdr.sh_info, info);
-    SLEV(shdr.sh_addralign, addrAlign);
-    SLEV(shdr.sh_entsize, entSize);
-    bos.writeObject(shdr);
-}
-
-template<typename ElfSym>
-static void putElfSymbolLE(BinaryOStream& bos, uint32_t symName, uint32_t value,
-        uint32_t size, uint16_t shndx, cxbyte info, cxbyte other = 0)
-{
-    ElfSym sym;
-    SLEV(sym.st_name, symName); 
-    SLEV(sym.st_value, value);
-    SLEV(sym.st_size, size);
-    SLEV(sym.st_shndx, shndx);
-    sym.st_info = info;
-    sym.st_other = other;
-    bos.writeObject(sym);
-}
-
-static void putElfProgramHeader32LE(BinaryOStream& bos, uint32_t type, uint32_t offset,
-        uint32_t filesz, uint32_t flags, uint32_t align, uint32_t memsz = 0,
-        uint32_t vaddr = 0, uint32_t paddr = 0)
-{
-    const Elf32_Phdr phdr = { LEV(type), LEV(offset), LEV(vaddr), LEV(paddr), LEV(filesz),
-        LEV(memsz), LEV(flags), LEV(align) };
-    bos.writeObject(phdr);
-}
-
 static inline void putCALNoteLE(BinaryOStream& bos, uint32_t type, uint32_t descSize)
 {
     const CALNoteHeader nhdr = { LEV(8U), LEV(descSize), LEV(type),
@@ -1654,10 +1612,10 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
         size_t sectionOffset = offset + sizeof(CALEncodingEntry) + 40 +
                 sizeof(Elf32_Shdr)*6 + tempAmdKernelConfigs[i].calNotesSize -
                 innerBinOffset;
-        putElfProgramHeader32LE(bos, 0x70000002U, 0x94, sizeof(CALEncodingEntry), 0,
-                0, 0, 0, 0);
-        putElfProgramHeader32LE(bos, PT_NOTE, 0x1c0, sectionOffset-0x1c0, 0, 0);
-        putElfProgramHeader32LE(bos, PT_LOAD, sectionOffset,
+        putElfProgramHeaderLE<Elf32_Phdr>(bos, 0x70000002U, 0x94,
+                sizeof(CALEncodingEntry), 0, 0, 0, 0, 0);
+        putElfProgramHeaderLE<Elf32_Phdr>(bos, PT_NOTE, 0x1c0, sectionOffset-0x1c0, 0, 0);
+        putElfProgramHeaderLE<Elf32_Phdr>(bos, PT_LOAD, sectionOffset,
                     innerBinSizes[i]-sectionOffset, 0, 0, innerBinSizes[i]-sectionOffset);
         
         const size_t encOffset = offset + sizeof(CALEncodingEntry) + 40 +

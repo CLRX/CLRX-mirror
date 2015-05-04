@@ -346,22 +346,6 @@ void GalliumBinGenerator::setInput(const GalliumInput* input)
     this->input = input;
 }
 
-static void putElfSectionLE(BinaryOStream& bos, uint32_t shName, uint32_t shType,
-        uint32_t shFlags, uint32_t offset, uint32_t size, uint32_t link,
-        uint32_t info = 0, uint32_t addrAlign = 1, uint32_t addr = 0, uint32_t entSize = 0)
-{
-    const Elf32_Shdr shdr = { LEV(shName), LEV(shType), LEV(shFlags), LEV(addr),
-        LEV(offset), LEV(size), LEV(link), LEV(info), LEV(addrAlign), LEV(entSize) };
-    bos.writeObject(shdr);
-}
-
-static void putElfSymbolLE(BinaryOStream& bos, uint32_t symName, uint32_t value,
-        uint32_t size, uint16_t shndx, cxbyte info, cxbyte other = 0)
-{
-    const Elf32_Sym sym = { LEV(symName), LEV(value), LEV(size), info, other, LEV(shndx) };
-    bos.writeObject(sym);
-}
-
 static inline void fixAlignment(std::ostream& os, size_t& offset, size_t elfOffset)
 {
     const char zeroes[4] = { 0, 0, 0, 0 };
@@ -601,72 +585,74 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
      * put section table
      */
     cxuint sectionName = 1;
-    putElfSectionLE(bos, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    putElfSectionLE<Elf32_Shdr>(bos, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     // .text
-    putElfSectionLE(bos, sectionName, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR,
             0x100, input->codeSize, 0, 0, 256, 0);
     sectionName += 6;
     // .data
-    putElfSectionLE(bos, sectionName, SHT_PROGBITS, SHF_ALLOC|SHF_WRITE,
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, SHF_ALLOC|SHF_WRITE,
                     sectionOffsets[0], 0, 0, 0, 4);
     sectionName += 6;
     // .bss
-    putElfSectionLE(bos, sectionName, 8, SHF_ALLOC|SHF_WRITE, sectionOffsets[0],
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, 8, SHF_ALLOC|SHF_WRITE, sectionOffsets[0],
                     0, 0, 0, 4);
     sectionName += 5;
     // .AMDGPU.config
-    putElfSectionLE(bos, sectionName, SHT_PROGBITS, 0, sectionOffsets[0],
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, 0, sectionOffsets[0],
                     input->kernels.size()*24U, 0, 0, 1);
     sectionName += 15;
     if (disassembly!=nullptr) // .AMDGPU.disasm
     {
-        putElfSectionLE(bos, sectionName, SHT_PROGBITS, SHF_ALLOC,
+        putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, SHF_ALLOC,
                 sectionOffsets[1], disassemblySize, 0, 0, 1);
         sectionName += 15;
     }
     if (input->globalData!=nullptr) // .rodata
     {
-        putElfSectionLE(bos, sectionName, SHT_PROGBITS, SHF_ALLOC,
+        putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, SHF_ALLOC,
                 sectionOffsets[2], input->globalDataSize, 0, 0, 4);
         sectionName += 8;
     }
     // .comment
-    putElfSectionLE(bos, sectionName, SHT_PROGBITS, SHF_STRINGS|SHF_MERGE,
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, SHF_STRINGS|SHF_MERGE,
                     sectionOffsets[3], commentSize, 0, 0, 1, 0, 1);
     sectionName += 9;
     // .note.GNU-stack
-    putElfSectionLE(bos, sectionName, SHT_PROGBITS, 0, sectionOffsets[4], 0, 0, 0, 1);
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_PROGBITS, 0, sectionOffsets[4],
+                    0, 0, 0, 1);
     sectionName += 16;
     // .shstrtab
-    putElfSectionLE(bos, sectionName, SHT_STRTAB, 0, sectionOffsets[4],
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_STRTAB, 0, sectionOffsets[4],
                     shstrtabSize, 0, 0, 1);
     sectionName += 10;
     // finish section table
     offset += sizeof(Elf32_Shdr)*elfSectionsNum;
     sectionOffsets[5] = offset-elfOffset;
     // .symtab
-    putElfSectionLE(bos, sectionName, SHT_SYMTAB, 0, sectionOffsets[5],
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_SYMTAB, 0, sectionOffsets[5],
             symTabsSize, elfSectionsNum-1, 0, 4, 0, sizeof(Elf32_Sym));
     sectionName += 8;
     // .strtab
-    putElfSectionLE(bos, sectionName, SHT_STRTAB, 0, strTabOffset,
+    putElfSectionLE<Elf32_Shdr>(bos, sectionName, SHT_STRTAB, 0, strTabOffset,
                     strtabSize, 0, 0, 1, 0, 0);
     
     // .symtab
-    putElfSymbolLE(bos, 0, 0, 0, 0, 0, 0);
-    putElfSymbolLE(bos, 1, input->codeSize, 0, 1,
+    putElfSymbolLE<Elf32_Sym>(bos, 0, 0, 0, 0, 0, 0);
+    putElfSymbolLE<Elf32_Sym>(bos, 1, input->codeSize, 0, 1,
            ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE), 0);
     const cxuint sectSymsNum = 6 + (input->globalData!=nullptr) + (disassembly!=nullptr);
     // local symbols for sections
     for (cxuint i = 0; i < sectSymsNum; i++)
-        putElfSymbolLE(bos, 0, 0, 0, i+1, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0);
+        putElfSymbolLE<Elf32_Sym>(bos, 0, 0, 0, i+1,
+                  ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0);
     uint32_t kernelNameOffset = 16;
     
     // put kernel symbols
     for (uint32_t korder: kernelsOrder)
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
-        putElfSymbolLE(bos, kernelNameOffset, kernel.offset, 0, 1,
+        putElfSymbolLE<Elf32_Sym>(bos, kernelNameOffset, kernel.offset, 0, 1,
                 ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0);
         kernelNameOffset += kernel.kernelName.size()+1;
     }
