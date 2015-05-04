@@ -1885,10 +1885,10 @@ void GCNDisassembler::disassemble()
     const size_t codeWordsNum = (inputSize>>2);
     
     if ((inputSize&3) != 0)
-        output.writeString(64,
+        output.write(64,
            "        /* WARNING: Code size is not aligned to 4-byte word! */\n");
     if (instrOutOfCode)
-        output.writeString(54, "        /* WARNING: Unfinished instruction at end! */\n");
+        output.write(54, "        /* WARNING: Unfinished instruction at end! */\n");
     
     bool prevIsTwoWord = false;
     

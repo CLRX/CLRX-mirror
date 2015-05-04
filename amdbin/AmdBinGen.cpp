@@ -360,7 +360,7 @@ static void putMainSections(BinaryOStream& bos, size_t &offset,
     putElfSectionLE<ElfShdr>(bos, 19, SHT_SYMTAB, 0, sectionOffsets[2],
             sectionOffsets[3]-sectionOffsets[2], 2, 0, 8, 0, sizeof(ElfSym));
     size_t shNamePos = 27;
-    if (!noKernels) // .text not emptyu
+    if (!noKernels) // .text not empty
     {   // .rodata
         putElfSectionLE<ElfShdr>(bos, 27, SHT_PROGBITS, SHF_ALLOC, sectionOffsets[3],
                 sectionOffsets[4]-sectionOffsets[3], 0);

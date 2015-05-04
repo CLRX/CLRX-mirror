@@ -140,9 +140,9 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                     output.forward(bufPos);
                     oldCurPos = curPos;
                 }
-                output.writeString(namedLabelIter->second.size(),
+                output.write(namedLabelIter->second.size(),
                        namedLabelIter->second.c_str());
-                output.writeString(2, ":\n");
+                output.write(2, ":\n");
                 ++namedLabelIter;
                 haveLabel = true;
             }
@@ -214,7 +214,7 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
             }
-            output.writeString(namedLabelIter->second.size(),
+            output.write(namedLabelIter->second.size(),
                         namedLabelIter->second.c_str());
             pos = namedLabelIter->first;
             ++namedLabelIter;
@@ -227,7 +227,7 @@ void ISADisassembler::writeLocation(size_t pos)
     const auto namedLabelIt = binaryMapFind(namedLabels.begin(), namedLabels.end(), pos);
     if (namedLabelIt != namedLabels.end())
     {   /* print named label */
-        output.writeString(namedLabelIt->second.size(), namedLabelIt->second.c_str());
+        output.write(namedLabelIt->second.size(), namedLabelIt->second.c_str());
         return;
     }
     /* otherwise we print numbered label */

@@ -308,7 +308,7 @@ public:
     void forward(cxuint toWrite)
     { endPos += toWrite; }
     
-    void writeString(size_t length, const char* string)
+    void write(size_t length, const char* string)
     {
         if (length > bufSize-endPos)
         {
@@ -323,15 +323,15 @@ public:
     }
     
     void writeString(const char* string)
-    { writeString(::strlen(string), string); }
+    { write(::strlen(string), string); }
     
     template<typename T>
     void writeObject(const T& t)
-    { writeString(sizeof(T), reinterpret_cast<const char*>(&t)); }
+    { write(sizeof(T), reinterpret_cast<const char*>(&t)); }
     
     template<typename T>
     void writeArray(size_t size, const T* t)
-    { writeString(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
+    { write(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
     
     void put(char c)
     {
