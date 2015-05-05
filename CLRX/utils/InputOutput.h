@@ -30,6 +30,7 @@
 #include <ostream>
 #include <memory>
 #include <streambuf>
+#include <CLRX/utils/Utilities.h>
 
 /// main namespace
 namespace CLRX
@@ -310,7 +311,7 @@ public:
 
 
 /// fast and direct output buffer
-class FastOutputBuffer
+class FastOutputBuffer: public NonCopyableAndNonMovable
 {
 private:
     std::ostream& os;
@@ -337,10 +338,11 @@ public:
         return buffer.get() + endPos;
     }
     
-    /// go forward
+    /// finish reservation and go forward
     void forward(cxuint toWrite)
     { endPos += toWrite; }
     
+    /// write sequence of characters
     void write(size_t length, const char* string)
     {
         if (length > bufSize-endPos)
@@ -355,13 +357,16 @@ public:
         }
     }
     
+    /// write string
     void writeString(const char* string)
     { write(::strlen(string), string); }
     
+    /// write object of type T
     template<typename T>
     void writeObject(const T& t)
     { write(sizeof(T), reinterpret_cast<const char*>(&t)); }
     
+    /// write array of objects
     template<typename T>
     void writeArray(size_t size, const T* t)
     { write(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
@@ -372,6 +377,62 @@ public:
             flush();
         buffer[endPos++] = c;
     }
+    
+    void fill(size_t num, char c)
+    {
+        while (num != 0)
+        {
+             size_t bufNum = std::min(size_t(bufSize-endPos), num);
+             ::memset(buffer.get()+endPos, c, bufNum);
+             num -= bufNum;
+             endPos += bufNum;
+             if (endPos == bufSize)
+                 flush();
+        }
+    }
+    
+    const std::ostream& getOStream() const
+    { return os; }
+    std::ostream& getOStream()
+    { return os; }
+};
+
+/// fast and direct output buffer
+class CountableFastOutputBuffer: public FastOutputBuffer
+{
+private:
+    uint64_t written;
+public:
+    CountableFastOutputBuffer(cxuint inBufSize, std::ostream& output) :
+            FastOutputBuffer(inBufSize, output), written(0)
+    { }
+    
+    void forward(cxuint toWrite)
+    { 
+        FastOutputBuffer::forward(toWrite);
+        written += toWrite; 
+    }
+    
+    void write(size_t length, const char* string)
+    {
+        FastOutputBuffer::write(length, string);
+        written++;
+    }
+    
+    void put(char c)
+    {
+        FastOutputBuffer::put(c);
+        written++;
+    }
+    
+    void fill(size_t num, char c)
+    {
+        FastOutputBuffer::fill(num, c);
+        written += num;
+    }
+    
+    uint64_t getWritten() const
+    { return written; }
 };
 
 }

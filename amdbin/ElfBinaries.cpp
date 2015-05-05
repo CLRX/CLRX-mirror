@@ -22,6 +22,7 @@
 #include <cstring>
 #include <elf.h>
 #include <cstdint>
+#include <climits>
 #include <utility>
 #include <string>
 #include <CLRX/utils/Utilities.h>
@@ -300,3 +301,204 @@ typename Types::Size ElfBinaryTemplate<Types>::getDynSymbolIndex(const char* nam
 
 template class CLRX::ElfBinaryTemplate<CLRX::Elf32Types>;
 template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
+
+/*
+ * Elf binary generator
+ */
+template<typename Types>
+ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate() : sizeComputed(false),
+        shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0), phdrTabRegion(0)
+{ }
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::addRegion(const ElfRegionTemplate<Types>& region)
+{
+    regions.push_back(region);
+}
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::addProgramHeader(
+        const ElfProgramHeaderTemplate<Types>& progHeader)
+{
+    progHeaders.push_back(progHeader);
+}
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::addSymbol(const ElfSymbolTemplate<Types>& symbol)
+{
+    symbols.push_back(symbol);
+}
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::addDynSymbol(const ElfSymbolTemplate<Types>& symbol)
+{
+    dynSymbols.push_back(symbol);
+}
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::computeSize()
+{
+    if (sizeComputed) return;
+    
+    regionOffsets.resize(regions.size());
+    size = sizeof(typename Types::Ehdr);
+    sectionsNum = 1;
+    for (const auto& region: regions)
+        if (region.type == ElfRegionType::SHDR_TABLE)
+            sectionsNum++;
+    
+    cxuint sectionCount = 1;
+    for (size_t i = 0; i < regions.size(); i++)
+    {   
+        const ElfRegionTemplate<Types>& region = regions[i];
+        // fix alignment
+        typename Types::Size align = region.align;
+        if ((region.type == ElfRegionType::PHDR_TABLE ||
+            region.type == ElfRegionType::SHDR_TABLE) && align == 0)
+            align = sizeof(typename Types::Word);
+        
+        if (region.align!=0 && (size&(region.align-1))!=0)
+            size += region.align - (size&(region.align-1));
+        
+        regionOffsets[i] = size;
+        // add region size
+        if (region.type == ElfRegionType::PHDR_TABLE)
+        {
+            size += uint64_t(regions.size())*sizeof(typename Types::Phdr);
+            phdrTabRegion = i;
+        }
+        else if (region.type == ElfRegionType::SHDR_TABLE)
+        {
+            size += uint64_t(sectionsNum)*sizeof(typename Types::Shdr);
+            shdrTabRegion = i;
+        }
+        else if (region.type == ElfRegionType::USER)
+            size += region.size;
+        else if (region.type == ElfRegionType::SECTION)
+        {   // if section
+            if (region.section.type != SHT_NOBITS && region.size != 0)
+                size += region.size;
+            else // otherwise get default size for symtab, dynsym, strtab, dynstr
+            {
+                if (region.section.type == SHT_SYMTAB)
+                    size += uint64_t(symbols.size())*sizeof(typename Types::Sym);
+                else if (region.section.type == SHT_DYNSYM)
+                    size += uint64_t(dynSymbols.size())*sizeof(typename Types::Sym);
+                else if (region.section.type == SHT_STRTAB)
+                {
+                    if (::strcmp(region.section.name, ".strtab") == 0)
+                    {
+                        size += 1;
+                        for (const auto& sym: symbols)
+                            size += ::strlen(sym.name)+1;
+                    }
+                    else if (::strcmp(region.section.name, ".dynstr") == 0)
+                    {
+                        size += 1;
+                        for (const auto& sym: dynSymbols)
+                            size += ::strlen(sym.name)+1;
+                    }
+                    else if (::strcmp(region.section.name, ".shstrtab") == 0)
+                    {
+                        size += 1;
+                        for (const auto& region2: regions)
+                        {
+                            if (region2.type == ElfRegionType::SECTION)
+                                size += strlen(region2.section.name)+1;
+                        }
+                    }
+                }
+            }
+            if (::strcmp(region.section.name, ".strtab") == 0)
+                strTab = sectionCount;
+            else if (::strcmp(region.section.name, ".dynstr") == 0)
+                dynStr = sectionCount;
+            else if (::strcmp(region.section.name, ".shstrtab") == 0)
+                shStrTab = sectionCount;
+            sectionCount++;
+        }
+    }
+    sizeComputed = true;
+}
+
+template<typename Types>
+uint64_t ElfBinaryGenTemplate<Types>::countSize()
+{
+    computeSize();
+    return size;
+}
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
+{
+    computeSize();
+    const uint64_t startOffset = fob.getWritten();
+    /* write elf header */
+    {
+        typename Types::Ehdr ehdr;
+        ::memcpy(ehdr.e_ident, header.ident, EI_NIDENT);
+        SLEV(ehdr.e_type, header.type);
+        SLEV(ehdr.e_machine, header.machine);
+        SLEV(ehdr.e_version, header.version);
+        SLEV(ehdr.e_flags, header.flags);
+        if (header.entryRegion != UINT_MAX)
+        {   // if have entry
+            typename Types::Word entry = regionOffsets[header.entryRegion] + header.entry;
+            if (regions[header.entryRegion].type == ElfRegionType::SECTION &&
+                regions[header.entryRegion].section.addrBase != 0)
+                entry += regions[header.entryRegion].section.addrBase;
+            else
+                entry += header.addrBase;
+            
+            SLEV(ehdr.e_entry, entry);
+        }
+        else
+            SLEV(ehdr.e_entry, 0);
+        SLEV(ehdr.e_ehsize, sizeof(typename Types::Ehdr));
+        if (!progHeaders.empty())
+            SLEV(ehdr.e_phentsize, sizeof(typename Types::Phdr));
+        else
+            SLEV(ehdr.e_phentsize, 0);
+        SLEV(ehdr.e_phnum, progHeaders.size());
+        SLEV(ehdr.e_shentsize, sizeof(typename Types::Shdr));
+        SLEV(ehdr.e_shnum, sectionsNum);
+        SLEV(ehdr.e_shstrndx, shStrTab);
+        
+        fob.writeObject(ehdr);
+    }
+    
+    /* write regions */
+    for (const auto& region: regions)
+    {   // fix alignment
+        typename Types::Size align = region.align;
+        if ((region.type == ElfRegionType::PHDR_TABLE ||
+            region.type == ElfRegionType::SHDR_TABLE) && align == 0)
+            align = sizeof(typename Types::Word);
+        
+        uint64_t toFill = 0;
+        if (region.align!=0 && (size&(region.align-1))!=0)
+            toFill = region.align - ((fob.getWritten()-startOffset)&(region.align-1));
+        fob.fill(toFill, 0);
+        
+        // write content
+        if (region.type == ElfRegionType::PHDR_TABLE)
+        {   // 
+            /*for (const auto phdr: progHeaders)
+            {
+            }*/
+        }
+        else if (region.type == ElfRegionType::SHDR_TABLE)
+        {
+        }
+        else if (region.type == ElfRegionType::USER)
+        {
+        }
+        else if (region.type == ElfRegionType::SECTION)
+        {
+        }
+    }
+    fob.flush();
+}
+
+template class CLRX::ElfBinaryGenTemplate<CLRX::Elf32Types>;
+template class CLRX::ElfBinaryGenTemplate<CLRX::Elf64Types>;

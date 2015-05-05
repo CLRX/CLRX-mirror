@@ -416,6 +416,167 @@ inline void putElfProgramHeaderLE(BOS& bos, uint32_t type, size_t offset,
     bos.writeObject(phdr);
 }
 
+/// type of Elf region
+enum class ElfRegionType: cxbyte
+{
+    PHDR_TABLE, ///< program header table
+    SHDR_TABLE, ///< section header table
+    SECTION,    ///< section
+    USER        ///< user region
+};
+
+/// elf region content generator for elf region
+class ElfRegionContent
+{
+public:
+    virtual ~ElfRegionContent();
+    
+    /// operator that generates content
+    void operator()(CountableFastOutputBuffer& fob) const;
+};
+
+template<typename Types>
+struct ElfHeaderTemplate
+{
+    typename Types::Word addrBase;
+    cxbyte ident[EI_NIDENT];
+    uint16_t type;
+    uint16_t machine;
+    uint32_t version;
+    cxuint entryRegion;
+    typename Types::Word entry;
+    uint32_t flags;
+    uint16_t shstrIndex;
+};
+
+typedef ElfHeaderTemplate<Elf32Types> ElfHeader32;
+typedef ElfHeaderTemplate<Elf64Types> ElfHeader64;
+
+/// template of ElfRegion
+template<typename Types>
+struct ElfRegionTemplate
+{
+    ElfRegionType type; ///< type of region
+    bool dataFromPointer;
+    typename Types::Word size;   ///< region size
+    typename Types::Word align;  ///< region alignment
+    union
+    {
+        const cxbyte* data; ///< content from pointer
+        const ElfRegionContent* dataGen;    ///< content generator pointer
+    };
+    struct {
+        const char* name;   ///< section name
+        uint32_t type;  ///< section type
+        uint32_t flags; ///< section flags
+        uint32_t link;  ///< section link
+        uint32_t info;  ///< section info
+        typename Types::Word addrBase;   ///< section address base
+        typename Types::Word entSize;    ///< entries size
+    } section;  ///< section structure
+    
+    ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
+              const cxbyte* inData, typename Types::Word inAlign)
+            : type(inType), dataFromPointer(true), align(inAlign), data(inData)
+    { }
+    
+    ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
+              const ElfRegionContent* contentGen, typename Types::Word inAlign)
+            : type(inType), dataFromPointer(false), align(inAlign), dataGen(contentGen)
+    { }
+    
+    ElfRegionTemplate(typename Types::Word inSize, const cxbyte* inData,
+              typename Types::Word inAlign, const char* inName, uint32_t inType,
+              uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
+              typename Types::Word inAddrBase = 0,
+              typename Types::Word inEntSize = 0)
+            : type(inType), dataFromPointer(true), align(inAlign), data(inData),
+              section({inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize})
+    { }
+    
+    ElfRegionTemplate(typename Types::Word inSize, const ElfRegionContent* inData,
+              typename Types::Word inAlign, const char* inName, uint32_t inType,
+              uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
+              typename Types::Word inAddrBase = 0,
+              typename Types::Word inEntSize = 0)
+            : type(inType), dataFromPointer(false), align(inAlign), dataGen(inData),
+              section({inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize})
+    { }
+};
+
+typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
+typedef ElfRegionTemplate<Elf64Types> ElfRegion64;
+
+/// template of ELF program header
+template<typename Types>
+struct ElfProgramHeaderTemplate
+{
+    uint32_t type;  ///< type
+    uint32_t flags; ///< flags
+    cxuint regionStart; ///< number of first region which is in program header data
+    cxuint regionsNum;  ///< number of regions whose is in program header data
+    typename Types::Word paddrBase;  ///< paddr base
+    typename Types::Word vaddrBase;  ///< vaddr base
+    typename Types::Word memSize;    ///< size in memory
+};
+
+typedef ElfProgramHeaderTemplate<Elf32Types> ElfProgramHeader32;
+typedef ElfProgramHeaderTemplate<Elf64Types> ElfProgramHeader64;
+
+/// ELF symbol template
+template<typename Types>
+struct ElfSymbolTemplate
+{
+    const char* name;   ///< name
+    uint16_t sectionIndex;  ///< section index for which symbol is
+    cxbyte info;    ///< info
+    cxbyte other;   ///< other
+    typename Types::Word value;  ///< symbol value
+    typename Types::Word size;   ///< symbol size
+};
+
+typedef ElfSymbolTemplate<Elf32Types> ElfSymbol32;
+typedef ElfSymbolTemplate<Elf64Types> ElfSymbol64;
+
+/// ELF binary generator
+template<typename Types>
+class ElfBinaryGenTemplate
+{
+private:
+    bool sizeComputed;
+    uint16_t shStrTab, strTab, dynStr;
+    cxuint shdrTabRegion, phdrTabRegion;
+    uint16_t sectionsNum;
+    typename Types::Word size;
+    ElfHeaderTemplate<Types> header;
+    std::vector<ElfRegionTemplate<Types> > regions;
+    Array<typename Types::Word> regionOffsets;
+    std::vector<ElfProgramHeaderTemplate<Types> > progHeaders;
+    std::vector<ElfSymbolTemplate<Types> > symbols;
+    std::vector<ElfSymbolTemplate<Types> > dynSymbols;
+    
+    void computeSize();
+public:
+    ElfBinaryGenTemplate();
+    
+    void addRegion(const ElfRegionTemplate<Types>& region);
+    void addProgramHeader(const ElfProgramHeaderTemplate<Types>& progHeader);
+    
+    void addSymbol(const ElfSymbolTemplate<Types>& symbol);
+    void addDynSymbol(const ElfSymbolTemplate<Types>& symbol);
+    
+    uint64_t countSize();
+    void generate(CountableFastOutputBuffer& fob);
+};
+
+extern template class ElfBinaryGenTemplate<Elf32Types>;
+extern template class ElfBinaryGenTemplate<Elf64Types>;
+
+/// type for 32-bit ELF binary generator
+typedef class ElfBinaryGenTemplate<Elf32Types> ElfBinaryGen32;
+/// type for 64-bit ELF binary generator
+typedef class ElfBinaryGenTemplate<Elf64Types> ElfBinaryGen64;
+
 }
 
 #endif
