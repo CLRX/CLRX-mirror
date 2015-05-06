@@ -478,13 +478,13 @@ struct ElfRegionTemplate
     
     ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
               const cxbyte* inData, typename Types::Word inAlign)
-            : type(inType), size(inSize), dataFromPointer(true),
+            : type(inType), dataFromPointer(true), size(inSize),
               align(inAlign), data(inData)
     { }
     
     ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
               const ElfRegionContent* contentGen, typename Types::Word inAlign)
-            : type(inType), size(inSize), dataFromPointer(false),
+            : type(inType), dataFromPointer(false), size(inSize),
               align(inAlign), dataGen(contentGen)
     { }
     
@@ -493,7 +493,7 @@ struct ElfRegionTemplate
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
-            : type(ElfRegionType::SECTION), size(inSize), dataFromPointer(true),
+            : type(ElfRegionType::SECTION), dataFromPointer(true), size(inSize),
               align(inAlign), data(inData)
     {
         section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
@@ -504,7 +504,7 @@ struct ElfRegionTemplate
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
-            : type(ElfRegionType::SECTION), size(inSize), dataFromPointer(false),
+            : type(ElfRegionType::SECTION), dataFromPointer(false), size(inSize),
               align(inAlign), dataGen(inData)
     {
         section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};

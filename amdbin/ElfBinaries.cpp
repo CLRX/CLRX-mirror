@@ -577,15 +577,15 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     SLEV(shdr.sh_addralign, region2.align);
                     if (region2.section.link == 0)
                     {
-                        if (::strcmp(region2.section.name, ".symtab"))
+                        if (::strcmp(region2.section.name, ".symtab")==0)
                             SLEV(shdr.sh_link, strTab);
-                        else if (::strcmp(region2.section.name, ".dynsym"))
+                        else if (::strcmp(region2.section.name, ".dynsym")==0)
                             SLEV(shdr.sh_link, dynStr);
                         else
-                            SLEV(shdr.sh_link, region.section.link);
+                            SLEV(shdr.sh_link, region2.section.link);
                     }
                     else
-                        SLEV(shdr.sh_link, region.section.link);
+                        SLEV(shdr.sh_link, region2.section.link);
                     
                     if (region2.section.type == SHT_SYMTAB ||
                         region2.section.type == SHT_DYNSYM)
