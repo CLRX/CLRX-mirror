@@ -358,7 +358,10 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         typename Types::Size align = region.align;
         if ((region.type == ElfRegionType::PHDR_TABLE ||
             region.type == ElfRegionType::SHDR_TABLE) && align == 0)
+        {
             align = sizeof(typename Types::Word);
+            regions[i].align = align;
+        }
         
         if (region.align!=0 && (size&(region.align-1))!=0)
             size += region.align - (size&(region.align-1));
@@ -368,11 +371,13 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         if (region.type == ElfRegionType::PHDR_TABLE)
         {
             size += uint64_t(progHeaders.size())*sizeof(typename Types::Phdr);
+            regions[i].size = size-regionOffsets[i];
             phdrTabRegion = i;
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
         {
             size += uint64_t(sectionsNum)*sizeof(typename Types::Shdr);
+            regions[i].size = size-regionOffsets[i];
             shdrTabRegion = i;
         }
         else if (region.type == ElfRegionType::USER)
@@ -473,7 +478,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
         if (!progHeaders.empty())
         {
             SLEV(ehdr.e_phentsize, sizeof(typename Types::Phdr));
-            SLEV(ehdr.e_phoff, regionOffsets[shdrTabRegion]);
+            SLEV(ehdr.e_phoff, regionOffsets[phdrTabRegion]);
         }
         else
         {
@@ -536,7 +541,8 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     SLEV(phdr.p_vaddr, 0);
                 
                 const typename Types::Word phSize = regionOffsets[progHeader.regionStart+
-                        progHeader.regionsNum] - regionOffsets[progHeader.regionStart];
+                        progHeader.regionsNum-1]+regions[progHeader.regionStart+
+                        progHeader.regionsNum-1].size - regionOffsets[progHeader.regionStart];
                 SLEV(phdr.p_filesz, phSize);
                 
                 if (progHeader.haveMemSize)
@@ -544,10 +550,11 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     if (progHeader.memSize != 0)
                         SLEV(phdr.p_memsz, progHeader.memSize);
                     else
-                        SLEV(phdr.p_filesz, phSize);
+                        SLEV(phdr.p_memsz, phSize);
                 }
                 else
-                    SLEV(phdr.p_filesz, 0);
+                    SLEV(phdr.p_memsz, 0);
+                SLEV(phdr.p_filesz, phSize);
                 fob.writeObject(phdr);
             }
         }
