@@ -432,13 +432,14 @@ public:
     virtual ~ElfRegionContent();
     
     /// operator that generates content
-    void operator()(CountableFastOutputBuffer& fob) const;
+    virtual void operator()(CountableFastOutputBuffer& fob) const = 0;
 };
 
 template<typename Types>
 struct ElfHeaderTemplate
 {
-    typename Types::Word addrBase;
+    typename Types::Word paddrBase;
+    typename Types::Word vaddrBase;
     cxbyte ident[EI_NIDENT];
     uint16_t type;
     uint16_t machine;
@@ -490,18 +491,22 @@ struct ElfRegionTemplate
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
-            : type(inType), dataFromPointer(true), align(inAlign), data(inData),
-              section({inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize})
-    { }
+            : type(ElfRegionType::SECTION), dataFromPointer(true), align(inAlign),
+              data(inData)
+    {
+        section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
+    }
     
     ElfRegionTemplate(typename Types::Word inSize, const ElfRegionContent* inData,
               typename Types::Word inAlign, const char* inName, uint32_t inType,
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
-            : type(inType), dataFromPointer(false), align(inAlign), dataGen(inData),
-              section({inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize})
-    { }
+            : type(ElfRegionType::SECTION), dataFromPointer(false), align(inAlign),
+              dataGen(inData)
+    {
+        section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
+    }
 };
 
 typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
@@ -531,6 +536,7 @@ struct ElfSymbolTemplate
     uint16_t sectionIndex;  ///< section index for which symbol is
     cxbyte info;    ///< info
     cxbyte other;   ///< other
+    bool valueIsAddr;
     typename Types::Word value;  ///< symbol value
     typename Types::Word size;   ///< symbol size
 };
@@ -550,7 +556,8 @@ private:
     typename Types::Word size;
     ElfHeaderTemplate<Types> header;
     std::vector<ElfRegionTemplate<Types> > regions;
-    Array<typename Types::Word> regionOffsets;
+    std::unique_ptr<typename Types::Word[]> regionOffsets;
+    std::unique_ptr<cxuint[]> sectionRegions;
     std::vector<ElfProgramHeaderTemplate<Types> > progHeaders;
     std::vector<ElfSymbolTemplate<Types> > symbols;
     std::vector<ElfSymbolTemplate<Types> > dynSymbols;

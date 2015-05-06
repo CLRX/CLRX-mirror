@@ -340,13 +340,14 @@ void ElfBinaryGenTemplate<Types>::computeSize()
 {
     if (sizeComputed) return;
     
-    regionOffsets.resize(regions.size());
+    regionOffsets.reset(new typename Types::Word[regions.size()]);
     size = sizeof(typename Types::Ehdr);
     sectionsNum = 1;
     for (const auto& region: regions)
         if (region.type == ElfRegionType::SHDR_TABLE)
             sectionsNum++;
-    
+    sectionRegions.reset(new cxuint[sectionsNum+1]);
+    sectionRegions[0] = UINT_MAX;
     cxuint sectionCount = 1;
     for (size_t i = 0; i < regions.size(); i++)
     {   
@@ -415,9 +416,11 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                 dynStr = sectionCount;
             else if (::strcmp(region.section.name, ".shstrtab") == 0)
                 shStrTab = sectionCount;
+            sectionRegions[sectionCount] = i;
             sectionCount++;
         }
     }
+    
     sizeComputed = true;
 }
 
@@ -448,7 +451,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                 regions[header.entryRegion].section.addrBase != 0)
                 entry += regions[header.entryRegion].section.addrBase;
             else
-                entry += header.addrBase;
+                entry += header.vaddrBase;
             
             SLEV(ehdr.e_entry, entry);
         }
@@ -468,8 +471,10 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
     }
     
     /* write regions */
-    for (const auto& region: regions)
-    {   // fix alignment
+    for (size_t i = 0; i < regions.size(); i++)
+    {   
+        const ElfRegionTemplate<Types>& region = regions[i];
+        // fix alignment
         typename Types::Size align = region.align;
         if ((region.type == ElfRegionType::PHDR_TABLE ||
             region.type == ElfRegionType::SHDR_TABLE) && align == 0)
@@ -482,20 +487,163 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
         
         // write content
         if (region.type == ElfRegionType::PHDR_TABLE)
-        {   // 
-            /*for (const auto phdr: progHeaders)
+        {   /* write program headers */
+            for (const auto& progHeader: progHeaders)
             {
-            }*/
+                typename Types::Phdr phdr;
+                SLEV(phdr.p_type, progHeader.type);
+                SLEV(phdr.p_flags, progHeader.flags);
+                SLEV(phdr.p_offset, regionOffsets[progHeader.regionStart]);
+                SLEV(phdr.p_align, regions[progHeader.regionStart].align);
+                
+                if (progHeader.paddrBase != 0)
+                    SLEV(phdr.p_paddr, progHeader.paddrBase +
+                                regionOffsets[progHeader.regionStart]);
+                else if (header.paddrBase != 0)
+                    SLEV(phdr.p_paddr, header.paddrBase +
+                                regionOffsets[progHeader.regionStart]);
+                else
+                    SLEV(phdr.p_paddr, 0);
+                
+                if (progHeader.vaddrBase != 0)
+                    SLEV(phdr.p_vaddr, progHeader.vaddrBase +
+                                regionOffsets[progHeader.regionStart]);
+                else if (header.vaddrBase != 0)
+                    SLEV(phdr.p_vaddr, header.vaddrBase +
+                                regionOffsets[progHeader.regionStart]);
+                else
+                    SLEV(phdr.p_vaddr, 0);
+                
+                SLEV(phdr.p_filesz, regionOffsets[progHeader.regionStart+
+                        progHeader.regionsNum] - regionOffsets[progHeader.regionStart]);
+                
+                SLEV(phdr.p_memsz, progHeader.memSize);
+                fob.writeObject(phdr);
+            }
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
-        {
+        {   /* write section headers table */
+            fob.fill(sizeof(typename Types::Shdr), 0);
+            uint32_t nameOffset = 1;
+            for (cxuint j = 0; j < regions.size(); j++)
+            {
+                const auto& region2 = regions[j];
+                if (region2.type == ElfRegionType::SECTION)
+                {
+                    typename Types::Shdr shdr;
+                    SLEV(shdr.sh_name, nameOffset);
+                    SLEV(shdr.sh_type, region2.section.type);
+                    SLEV(shdr.sh_flags, region2.section.flags);
+                    SLEV(shdr.sh_offset, regionOffsets[j]);
+                    if (region2.section.addrBase != 0)
+                        SLEV(shdr.sh_addr, region2.section.addrBase+regionOffsets[j]);
+                    else if (header.vaddrBase != 0)
+                        SLEV(shdr.sh_addr, header.vaddrBase+regionOffsets[j]);
+                    else
+                        SLEV(shdr.sh_addr, 0);
+                    
+                    SLEV(shdr.sh_size, region2.size);
+                    SLEV(shdr.sh_info, region2.section.info);
+                    SLEV(shdr.sh_addralign, region2.align);
+                    if (region.section.link == 0)
+                    {
+                        if (::strcmp(region2.section.name, ".symtab"))
+                            SLEV(shdr.sh_link, strTab);
+                        else if (::strcmp(region2.section.name, ".dynsym"))
+                            SLEV(shdr.sh_link, dynStr);
+                        else
+                            SLEV(shdr.sh_link, region.section.link);
+                    }
+                    else
+                        SLEV(shdr.sh_link, region.section.link);
+                    
+                    SLEV(shdr.sh_entsize, region2.section.entSize);
+                    nameOffset += ::strlen(region2.section.name)+1;
+                    fob.writeObject(shdr);
+                }
+            }
         }
         else if (region.type == ElfRegionType::USER)
         {
+            if (region.dataFromPointer)
+                fob.writeArray(region.size, region.data);
+            else
+                (*region.dataGen)(fob);
         }
-        else if (region.type == ElfRegionType::SECTION)
+        else if (region.type == ElfRegionType::SECTION &&
+                 region.section.type != SHT_NOBITS)
         {
+            if (region.data == nullptr)
+            {
+                if (region.section.type == SHT_SYMTAB)
+                {
+                    fob.fill(sizeof(typename Types::Sym), 0);
+                    uint32_t nameOffset = 1;
+                    for (const auto& inSym: symbols)
+                    {
+                        typename Types::Sym sym;
+                        SLEV(sym.st_name, nameOffset);
+                        SLEV(sym.st_shndx, inSym.sectionIndex);
+                        SLEV(sym.st_size, inSym.size);
+                        if (!inSym.valueIsAddr)
+                            SLEV(sym.st_value, inSym.value);
+                        else
+                            SLEV(sym.st_value, inSym.value + header.vaddrBase);
+                        sym.st_other = inSym.other;
+                        sym.st_info = inSym.info;
+                        nameOffset += ::strlen(inSym.name)+1;
+                        fob.writeObject(sym);
+                    }
+                }
+                else if (region.section.type == SHT_DYNSYM)
+                {
+                    fob.fill(sizeof(typename Types::Sym), 0);
+                    uint32_t nameOffset = 1;
+                    for (const auto& inSym: dynSymbols)
+                    {
+                        typename Types::Sym sym;
+                        SLEV(sym.st_name, nameOffset);
+                        SLEV(sym.st_shndx, inSym.sectionIndex);
+                        SLEV(sym.st_size, inSym.size);
+                        if (!inSym.valueIsAddr)
+                            SLEV(sym.st_value, inSym.value);
+                        else
+                            SLEV(sym.st_value, inSym.value + header.vaddrBase);
+                        sym.st_other = inSym.other;
+                        sym.st_info = inSym.info;
+                        nameOffset += ::strlen(inSym.name)+1;
+                        fob.writeObject(sym);
+                    }
+                }
+                else if (region.section.type == SHT_STRTAB)
+                {
+                    if (::strcmp(region.section.name, ".strtab") == 0)
+                    {
+                        fob.put(0);
+                        for (const auto& sym: symbols)
+                            fob.write(::strlen(sym.name), sym.name);
+                    }
+                    else if (::strcmp(region.section.name, ".dynstr") == 0)
+                    {
+                        fob.put(0);
+                        for (const auto& sym: dynSymbols)
+                            fob.write(::strlen(sym.name), sym.name);
+                    }
+                    else if (::strcmp(region.section.name, ".shstrtab") == 0)
+                    {
+                        fob.put(0);
+                        for (const auto& region2: regions)
+                            if (region2.type == ElfRegionType::SECTION)
+                                fob.write(::strlen(region2.section.name),
+                                          region2.section.name);
+                    }
+                }
+            }
         }
+        else if (region.dataFromPointer)
+            fob.writeArray(region.size, region.data);
+        else
+            (*region.dataGen)(fob);
     }
     fob.flush();
 }
