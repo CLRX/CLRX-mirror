@@ -416,8 +416,22 @@ public:
     void write(size_t length, const char* string)
     {
         FastOutputBuffer::write(length, string);
-        written++;
+        written += length;
     }
+    
+    /// write string
+    void writeString(const char* string)
+    { write(::strlen(string), string); }
+    
+    /// write object of type T
+    template<typename T>
+    void writeObject(const T& t)
+    { write(sizeof(T), reinterpret_cast<const char*>(&t)); }
+    
+    /// write array of objects
+    template<typename T>
+    void writeArray(size_t size, const T* t)
+    { write(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
     
     void put(char c)
     {

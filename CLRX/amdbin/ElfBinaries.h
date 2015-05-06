@@ -440,14 +440,14 @@ struct ElfHeaderTemplate
 {
     typename Types::Word paddrBase;
     typename Types::Word vaddrBase;
-    cxbyte ident[EI_NIDENT];
+    cxbyte osABI;
+    cxbyte abiVersion;
     uint16_t type;
     uint16_t machine;
     uint32_t version;
     cxuint entryRegion;
     typename Types::Word entry;
     uint32_t flags;
-    uint16_t shstrIndex;
 };
 
 typedef ElfHeaderTemplate<Elf32Types> ElfHeader32;
@@ -478,12 +478,14 @@ struct ElfRegionTemplate
     
     ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
               const cxbyte* inData, typename Types::Word inAlign)
-            : type(inType), dataFromPointer(true), align(inAlign), data(inData)
+            : type(inType), size(inSize), dataFromPointer(true),
+              align(inAlign), data(inData)
     { }
     
     ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
               const ElfRegionContent* contentGen, typename Types::Word inAlign)
-            : type(inType), dataFromPointer(false), align(inAlign), dataGen(contentGen)
+            : type(inType), size(inSize), dataFromPointer(false),
+              align(inAlign), dataGen(contentGen)
     { }
     
     ElfRegionTemplate(typename Types::Word inSize, const cxbyte* inData,
@@ -491,8 +493,8 @@ struct ElfRegionTemplate
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
-            : type(ElfRegionType::SECTION), dataFromPointer(true), align(inAlign),
-              data(inData)
+            : type(ElfRegionType::SECTION), size(inSize), dataFromPointer(true),
+              align(inAlign), data(inData)
     {
         section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
     }
@@ -502,11 +504,35 @@ struct ElfRegionTemplate
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
-            : type(ElfRegionType::SECTION), dataFromPointer(false), align(inAlign),
-              dataGen(inData)
+            : type(ElfRegionType::SECTION), size(inSize), dataFromPointer(false),
+              align(inAlign), dataGen(inData)
     {
         section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
     }
+    
+    static ElfRegionTemplate programHeader()
+    { return ElfRegionTemplate(ElfRegionType::PHDR_TABLE, 0, (const cxbyte*)nullptr, 0); }
+    
+    static ElfRegionTemplate sectionHeader()
+    { return ElfRegionTemplate(ElfRegionType::SHDR_TABLE, 0, (const cxbyte*)nullptr, 0); }
+    
+    static ElfRegionTemplate strtabSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, 0, ".strtab", SHT_STRTAB, 0); }
+    
+    static ElfRegionTemplate dynstrSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, 0, ".dynstr", SHT_STRTAB,
+                SHF_ALLOC); }
+    
+    static ElfRegionTemplate shstrtabSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, 0, ".shstrtab", SHT_STRTAB, 0); }
+    
+    static ElfRegionTemplate symtabSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr, sizeof(typename Types::Word),
+                ".symtab", SHT_SYMTAB, 0); }
+    
+    static ElfRegionTemplate dynsymSection()
+    { return ElfRegionTemplate(0, (const cxbyte*)nullptr,  sizeof(typename Types::Word),
+                ".dynsym", SHT_DYNSYM, 0); }
 };
 
 typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
@@ -520,6 +546,7 @@ struct ElfProgramHeaderTemplate
     uint32_t flags; ///< flags
     cxuint regionStart; ///< number of first region which is in program header data
     cxuint regionsNum;  ///< number of regions whose is in program header data
+    bool haveMemSize;
     typename Types::Word paddrBase;  ///< paddr base
     typename Types::Word vaddrBase;  ///< vaddr base
     typename Types::Word memSize;    ///< size in memory
@@ -564,7 +591,7 @@ private:
     
     void computeSize();
 public:
-    ElfBinaryGenTemplate();
+    ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& header);
     
     void addRegion(const ElfRegionTemplate<Types>& region);
     void addProgramHeader(const ElfProgramHeaderTemplate<Types>& progHeader);

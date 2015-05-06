@@ -25,6 +25,7 @@
 #include <climits>
 #include <utility>
 #include <string>
+#include <cassert>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdBinaries.h>
@@ -306,8 +307,9 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
  * Elf binary generator
  */
 template<typename Types>
-ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate() : sizeComputed(false),
-        shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0), phdrTabRegion(0)
+ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& inHeader)
+        : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
+          shdrTabRegion(0), phdrTabRegion(0), header(inHeader)
 { }
 
 template<typename Types>
@@ -344,13 +346,13 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     size = sizeof(typename Types::Ehdr);
     sectionsNum = 1;
     for (const auto& region: regions)
-        if (region.type == ElfRegionType::SHDR_TABLE)
+        if (region.type == ElfRegionType::SECTION)
             sectionsNum++;
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
     cxuint sectionCount = 1;
     for (size_t i = 0; i < regions.size(); i++)
-    {   
+    {
         const ElfRegionTemplate<Types>& region = regions[i];
         // fix alignment
         typename Types::Size align = region.align;
@@ -365,7 +367,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         // add region size
         if (region.type == ElfRegionType::PHDR_TABLE)
         {
-            size += uint64_t(regions.size())*sizeof(typename Types::Phdr);
+            size += uint64_t(progHeaders.size())*sizeof(typename Types::Phdr);
             phdrTabRegion = i;
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
@@ -382,9 +384,9 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             else // otherwise get default size for symtab, dynsym, strtab, dynstr
             {
                 if (region.section.type == SHT_SYMTAB)
-                    size += uint64_t(symbols.size())*sizeof(typename Types::Sym);
+                    size += uint64_t(symbols.size()+1)*sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_DYNSYM)
-                    size += uint64_t(dynSymbols.size())*sizeof(typename Types::Sym);
+                    size += uint64_t(dynSymbols.size()+1)*sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_STRTAB)
                 {
                     if (::strcmp(region.section.name, ".strtab") == 0)
@@ -409,6 +411,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                         }
                     }
                 }
+                regions[i].size = size-regionOffsets[i];
             }
             if (::strcmp(region.section.name, ".strtab") == 0)
                 strTab = sectionCount;
@@ -439,7 +442,16 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
     /* write elf header */
     {
         typename Types::Ehdr ehdr;
-        ::memcpy(ehdr.e_ident, header.ident, EI_NIDENT);
+        ::memset(ehdr.e_ident, 0, EI_NIDENT);
+        ehdr.e_ident[0] = 0x7f;
+        ehdr.e_ident[1] = 'E';
+        ehdr.e_ident[2] = 'L';
+        ehdr.e_ident[3] = 'F';
+        ehdr.e_ident[4] = Types::ELFCLASS;
+        ehdr.e_ident[5] = ELFDATA2LSB;
+        ehdr.e_ident[6] = EV_CURRENT;
+        ehdr.e_ident[EI_OSABI] = header.osABI;
+        ehdr.e_ident[EI_ABIVERSION] = header.abiVersion;
         SLEV(ehdr.e_type, header.type);
         SLEV(ehdr.e_machine, header.machine);
         SLEV(ehdr.e_version, header.version);
@@ -459,12 +471,19 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
             SLEV(ehdr.e_entry, 0);
         SLEV(ehdr.e_ehsize, sizeof(typename Types::Ehdr));
         if (!progHeaders.empty())
+        {
             SLEV(ehdr.e_phentsize, sizeof(typename Types::Phdr));
+            SLEV(ehdr.e_phoff, regionOffsets[shdrTabRegion]);
+        }
         else
+        {
             SLEV(ehdr.e_phentsize, 0);
+            SLEV(ehdr.e_phoff, 0);
+        }
         SLEV(ehdr.e_phnum, progHeaders.size());
         SLEV(ehdr.e_shentsize, sizeof(typename Types::Shdr));
         SLEV(ehdr.e_shnum, sectionsNum);
+        SLEV(ehdr.e_shoff, regionOffsets[shdrTabRegion]);
         SLEV(ehdr.e_shstrndx, shStrTab);
         
         fob.writeObject(ehdr);
@@ -481,9 +500,11 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
             align = sizeof(typename Types::Word);
         
         uint64_t toFill = 0;
-        if (region.align!=0 && (size&(region.align-1))!=0)
-            toFill = region.align - ((fob.getWritten()-startOffset)&(region.align-1));
+        const uint64_t curOffset = (fob.getWritten()-startOffset);
+        if (region.align!=0 && (curOffset&(region.align-1))!=0)
+            toFill = region.align - (curOffset&(region.align-1));
         fob.fill(toFill, 0);
+        assert(regionOffsets[i] == fob.getWritten()-startOffset);
         
         // write content
         if (region.type == ElfRegionType::PHDR_TABLE)
@@ -514,10 +535,19 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                 else
                     SLEV(phdr.p_vaddr, 0);
                 
-                SLEV(phdr.p_filesz, regionOffsets[progHeader.regionStart+
-                        progHeader.regionsNum] - regionOffsets[progHeader.regionStart]);
+                const typename Types::Word phSize = regionOffsets[progHeader.regionStart+
+                        progHeader.regionsNum] - regionOffsets[progHeader.regionStart];
+                SLEV(phdr.p_filesz, phSize);
                 
-                SLEV(phdr.p_memsz, progHeader.memSize);
+                if (progHeader.haveMemSize)
+                {
+                    if (progHeader.memSize != 0)
+                        SLEV(phdr.p_memsz, progHeader.memSize);
+                    else
+                        SLEV(phdr.p_filesz, phSize);
+                }
+                else
+                    SLEV(phdr.p_filesz, 0);
                 fob.writeObject(phdr);
             }
         }
@@ -545,7 +575,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     SLEV(shdr.sh_size, region2.size);
                     SLEV(shdr.sh_info, region2.section.info);
                     SLEV(shdr.sh_addralign, region2.align);
-                    if (region.section.link == 0)
+                    if (region2.section.link == 0)
                     {
                         if (::strcmp(region2.section.name, ".symtab"))
                             SLEV(shdr.sh_link, strTab);
@@ -557,7 +587,11 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     else
                         SLEV(shdr.sh_link, region.section.link);
                     
-                    SLEV(shdr.sh_entsize, region2.section.entSize);
+                    if (region2.section.type == SHT_SYMTAB ||
+                        region2.section.type == SHT_DYNSYM)
+                        SLEV(shdr.sh_entsize, sizeof(typename Types::Sym));
+                    else
+                        SLEV(shdr.sh_entsize, region2.section.entSize);
                     nameOffset += ::strlen(region2.section.name)+1;
                     fob.writeObject(shdr);
                 }
@@ -575,11 +609,13 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
         {
             if (region.data == nullptr)
             {
-                if (region.section.type == SHT_SYMTAB)
+                if (region.section.type == SHT_SYMTAB || region.section.type == SHT_DYNSYM)
                 {
                     fob.fill(sizeof(typename Types::Sym), 0);
                     uint32_t nameOffset = 1;
-                    for (const auto& inSym: symbols)
+                    const auto& symbolsList = (region.section.type == SHT_SYMTAB) ?
+                            symbols : dynSymbols;
+                    for (const auto& inSym: symbolsList)
                     {
                         typename Types::Sym sym;
                         SLEV(sym.st_name, nameOffset);
@@ -587,26 +623,11 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                         SLEV(sym.st_size, inSym.size);
                         if (!inSym.valueIsAddr)
                             SLEV(sym.st_value, inSym.value);
-                        else
-                            SLEV(sym.st_value, inSym.value + header.vaddrBase);
-                        sym.st_other = inSym.other;
-                        sym.st_info = inSym.info;
-                        nameOffset += ::strlen(inSym.name)+1;
-                        fob.writeObject(sym);
-                    }
-                }
-                else if (region.section.type == SHT_DYNSYM)
-                {
-                    fob.fill(sizeof(typename Types::Sym), 0);
-                    uint32_t nameOffset = 1;
-                    for (const auto& inSym: dynSymbols)
-                    {
-                        typename Types::Sym sym;
-                        SLEV(sym.st_name, nameOffset);
-                        SLEV(sym.st_shndx, inSym.sectionIndex);
-                        SLEV(sym.st_size, inSym.size);
-                        if (!inSym.valueIsAddr)
-                            SLEV(sym.st_value, inSym.value);
+                        else if (inSym.sectionIndex != 0 && regions[sectionRegions[
+                                    inSym.sectionIndex]].section.addrBase != 0)
+                            SLEV(sym.st_value, inSym.value + regionOffsets[
+                                        sectionRegions[inSym.sectionIndex]] +
+                            regions[sectionRegions[inSym.sectionIndex]].section.addrBase);
                         else
                             SLEV(sym.st_value, inSym.value + header.vaddrBase);
                         sym.st_other = inSym.other;
@@ -621,31 +642,32 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     {
                         fob.put(0);
                         for (const auto& sym: symbols)
-                            fob.write(::strlen(sym.name), sym.name);
+                            fob.write(::strlen(sym.name)+1, sym.name);
                     }
                     else if (::strcmp(region.section.name, ".dynstr") == 0)
                     {
                         fob.put(0);
                         for (const auto& sym: dynSymbols)
-                            fob.write(::strlen(sym.name), sym.name);
+                            fob.write(::strlen(sym.name)+1, sym.name);
                     }
                     else if (::strcmp(region.section.name, ".shstrtab") == 0)
                     {
                         fob.put(0);
                         for (const auto& region2: regions)
                             if (region2.type == ElfRegionType::SECTION)
-                                fob.write(::strlen(region2.section.name),
+                                fob.write(::strlen(region2.section.name)+1,
                                           region2.section.name);
                     }
                 }
             }
+            else if (region.dataFromPointer)
+                fob.writeArray(region.size, region.data);
+            else
+                (*region.dataGen)(fob);
         }
-        else if (region.dataFromPointer)
-            fob.writeArray(region.size, region.data);
-        else
-            (*region.dataGen)(fob);
     }
     fob.flush();
+    assert(size == fob.getWritten()-startOffset);
 }
 
 template class CLRX::ElfBinaryGenTemplate<CLRX::Elf32Types>;
