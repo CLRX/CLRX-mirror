@@ -424,20 +424,23 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                     {
                         size += 1;
                         for (const auto& sym: symbols)
-                            size += ::strlen(sym.name)+1;
+                            if (sym.name != nullptr)
+                                size += ::strlen(sym.name)+1;
                     }
                     else if (::strcmp(region.section.name, ".dynstr") == 0)
                     {
                         size += 1;
                         for (const auto& sym: dynSymbols)
-                            size += ::strlen(sym.name)+1;
+                            if (sym.name != nullptr)
+                                size += ::strlen(sym.name)+1;
                     }
                     else if (::strcmp(region.section.name, ".shstrtab") == 0)
                     {
                         size += 1;
                         for (const auto& region2: regions)
                         {
-                            if (region2.type == ElfRegionType::SECTION)
+                            if (region2.type == ElfRegionType::SECTION &&
+                                region2.section.name != nullptr)
                                 size += strlen(region2.section.name)+1;
                         }
                     }
@@ -591,7 +594,10 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                 if (region2.type == ElfRegionType::SECTION)
                 {
                     typename Types::Shdr shdr;
-                    SLEV(shdr.sh_name, nameOffset);
+                    if (region2.section.name != nullptr)
+                        SLEV(shdr.sh_name, nameOffset);
+                    else
+                        SLEV(shdr.sh_name, 0);
                     SLEV(shdr.sh_type, region2.section.type);
                     SLEV(shdr.sh_flags, region2.section.flags);
                     SLEV(shdr.sh_offset, regionOffsets[j]);
@@ -622,7 +628,8 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                         SLEV(shdr.sh_entsize, sizeof(typename Types::Sym));
                     else
                         SLEV(shdr.sh_entsize, region2.section.entSize);
-                    nameOffset += ::strlen(region2.section.name)+1;
+                    if (region2.section.name != nullptr)
+                        nameOffset += ::strlen(region2.section.name)+1;
                     fob.writeObject(shdr);
                 }
             }
@@ -647,7 +654,11 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     for (const auto& inSym: symbolsList)
                     {
                         typename Types::Sym sym;
-                        SLEV(sym.st_name, nameOffset);
+                        if (inSym.name != nullptr)
+                            SLEV(sym.st_name, nameOffset);
+                        else
+                            SLEV(sym.st_name, 0);
+                        
                         SLEV(sym.st_shndx, inSym.sectionIndex);
                         SLEV(sym.st_size, inSym.size);
                         if (!inSym.valueIsAddr)
@@ -663,7 +674,8 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                                 sectionRegions[inSym.sectionIndex]] + header.vaddrBase);
                         sym.st_other = inSym.other;
                         sym.st_info = inSym.info;
-                        nameOffset += ::strlen(inSym.name)+1;
+                        if (inSym.name != nullptr)
+                            nameOffset += ::strlen(inSym.name)+1;
                         fob.writeObject(sym);
                     }
                 }
@@ -673,19 +685,22 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     {
                         fob.put(0);
                         for (const auto& sym: symbols)
-                            fob.write(::strlen(sym.name)+1, sym.name);
+                            if (sym.name != nullptr)
+                                fob.write(::strlen(sym.name)+1, sym.name);
                     }
                     else if (::strcmp(region.section.name, ".dynstr") == 0)
                     {
                         fob.put(0);
                         for (const auto& sym: dynSymbols)
-                            fob.write(::strlen(sym.name)+1, sym.name);
+                            if (sym.name != nullptr)
+                                fob.write(::strlen(sym.name)+1, sym.name);
                     }
                     else if (::strcmp(region.section.name, ".shstrtab") == 0)
                     {
                         fob.put(0);
                         for (const auto& region2: regions)
-                            if (region2.type == ElfRegionType::SECTION)
+                            if (region2.type == ElfRegionType::SECTION &&
+                                region2.section.name != nullptr)
                                 fob.write(::strlen(region2.section.name)+1,
                                           region2.section.name);
                     }
