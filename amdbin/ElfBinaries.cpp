@@ -442,7 +442,8 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                         }
                     }
                 }
-                region.size = size-regionOffsets[i];
+                if (region.section.type != SHT_NOBITS)
+                    region.size = size-regionOffsets[i];
             }
             if (::strcmp(region.section.name, ".strtab") == 0)
                 strTab = sectionCount;
