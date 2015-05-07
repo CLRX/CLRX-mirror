@@ -632,8 +632,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
             else
                 (*region.dataGen)(fob);
         }
-        else if (region.type == ElfRegionType::SECTION &&
-                 region.section.type != SHT_NOBITS)
+        else if (region.type == ElfRegionType::SECTION)
         {
             if (region.data == nullptr)
             {
@@ -690,10 +689,13 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     }
                 }
             }
-            else if (region.dataFromPointer)
-                fob.writeArray(region.size, region.data);
-            else
-                (*region.dataGen)(fob);
+            else if (region.section.type != SHT_NOBITS)
+            {
+                if (region.dataFromPointer)
+                    fob.writeArray(region.size, region.data);
+                else
+                    (*region.dataGen)(fob);
+            }
         }
     }
     fob.flush();
