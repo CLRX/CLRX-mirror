@@ -564,7 +564,8 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                 
                 const typename Types::Word phSize = regionOffsets[progHeader.regionStart+
                         progHeader.regionsNum-1]+regions[progHeader.regionStart+
-                        progHeader.regionsNum-1].size - regionOffsets[progHeader.regionStart];
+                        progHeader.regionsNum-1].size -
+                        regionOffsets[progHeader.regionStart];
                 SLEV(phdr.p_filesz, phSize);
                 
                 if (progHeader.haveMemSize)
