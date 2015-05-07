@@ -345,6 +345,10 @@ void ElfBinaryGenTemplate<Types>::computeSize()
 {
     if (sizeComputed) return;
     
+    /* verify data */
+    if (header.entryRegion != UINT_MAX && header.entryRegion >= regions.size())
+        throw Exception("Header entry region out of range");
+    
     regionOffsets.reset(new typename Types::Word[regions.size()]);
     size = sizeof(typename Types::Ehdr);
     sectionsNum = 1;
@@ -354,6 +358,14 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
     cxuint sectionCount = 1;
+    
+    for (const auto& sym: symbols)
+        if (sym.sectionIndex >= sectionsNum)
+            throw Exception("Symbol section index out of range");
+    for (const auto& sym: dynSymbols)
+        if (sym.sectionIndex >= sectionsNum)
+            throw Exception("DynSymbol section index out of range");
+    
     for (size_t i = 0; i < regions.size(); i++)
     {
         ElfRegionTemplate<Types>& region = regions[i];
@@ -375,19 +387,29 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         if (region.type == ElfRegionType::PHDR_TABLE)
         {
             size += uint64_t(progHeaders.size())*sizeof(typename Types::Phdr);
-            regions[i].size = size-regionOffsets[i];
+            region.size = size-regionOffsets[i];
             phdrTabRegion = i;
+            for (const auto& progHdr: progHeaders)
+            {
+                if (progHdr.regionStart >= regions.size())
+                    throw Exception("Region start out of range");
+                if (uint64_t(progHdr.regionStart) + progHdr.regionsNum > regions.size())
+                    throw Exception("Region end out of range");
+            }
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
         {
             size += uint64_t(sectionsNum)*sizeof(typename Types::Shdr);
-            regions[i].size = size-regionOffsets[i];
+            region.size = size-regionOffsets[i];
             shdrTabRegion = i;
         }
         else if (region.type == ElfRegionType::USER)
             size += region.size;
         else if (region.type == ElfRegionType::SECTION)
         {   // if section
+            if (region.section.link >= sectionsNum)
+                throw Exception("Section link out of range");
+            
             if (region.section.type != SHT_NOBITS && region.size != 0)
                 size += region.size;
             else // otherwise get default size for symtab, dynsym, strtab, dynstr
@@ -675,6 +697,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
         }
     }
     fob.flush();
+    fob.getOStream().flush();
     assert(size == fob.getWritten()-startOffset);
 }
 

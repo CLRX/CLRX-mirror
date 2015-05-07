@@ -476,6 +476,18 @@ struct ElfRegionTemplate
         typename Types::Word entSize;    ///< entries size
     } section;  ///< section structure
     
+    ElfRegionTemplate(typename Types::Word inSize,
+              const cxbyte* inData, typename Types::Word inAlign)
+            : type(ElfRegionType::USER), dataFromPointer(true), size(inSize),
+              align(inAlign), data(inData)
+    { }
+    
+    ElfRegionTemplate(typename Types::Word inSize,
+              const ElfRegionContent* contentGen, typename Types::Word inAlign)
+            : type(ElfRegionType::USER), dataFromPointer(false), size(inSize),
+              align(inAlign), dataGen(contentGen)
+    { }
+    
     ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
               const cxbyte* inData, typename Types::Word inAlign)
             : type(inType), dataFromPointer(true), size(inSize),
