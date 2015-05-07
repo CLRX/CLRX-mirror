@@ -353,14 +353,15 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     cxuint sectionCount = 1;
     for (size_t i = 0; i < regions.size(); i++)
     {
-        const ElfRegionTemplate<Types>& region = regions[i];
+        ElfRegionTemplate<Types>& region = regions[i];
         // fix alignment
-        typename Types::Size align = region.align;
-        if ((region.type == ElfRegionType::PHDR_TABLE ||
-            region.type == ElfRegionType::SHDR_TABLE) && align == 0)
+        if (region.align == 0)
         {
-            align = sizeof(typename Types::Word);
-            regions[i].align = align;
+            if (region.type == ElfRegionType::PHDR_TABLE ||
+                region.type == ElfRegionType::SHDR_TABLE)
+                region.align = sizeof(typename Types::Word);
+            else
+                region.align = 1;
         }
         
         if (region.align!=0 && (size&(region.align-1))!=0)
@@ -416,7 +417,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                         }
                     }
                 }
-                regions[i].size = size-regionOffsets[i];
+                region.size = size-regionOffsets[i];
             }
             if (::strcmp(region.section.name, ".strtab") == 0)
                 strTab = sectionCount;
@@ -499,11 +500,6 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
     {   
         const ElfRegionTemplate<Types>& region = regions[i];
         // fix alignment
-        typename Types::Size align = region.align;
-        if ((region.type == ElfRegionType::PHDR_TABLE ||
-            region.type == ElfRegionType::SHDR_TABLE) && align == 0)
-            align = sizeof(typename Types::Word);
-        
         uint64_t toFill = 0;
         const uint64_t curOffset = (fob.getWritten()-startOffset);
         if (region.align!=0 && (curOffset&(region.align-1))!=0)
@@ -633,10 +629,12 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                         else if (inSym.sectionIndex != 0 && regions[sectionRegions[
                                     inSym.sectionIndex]].section.addrBase != 0)
                             SLEV(sym.st_value, inSym.value + regionOffsets[
-                                        sectionRegions[inSym.sectionIndex]] +
-                            regions[sectionRegions[inSym.sectionIndex]].section.addrBase);
+                                    sectionRegions[inSym.sectionIndex]] +
+                                    regions[sectionRegions[inSym.sectionIndex]].
+                                            section.addrBase);
                         else
-                            SLEV(sym.st_value, inSym.value + header.vaddrBase);
+                            SLEV(sym.st_value, inSym.value + regionOffsets[
+                                sectionRegions[inSym.sectionIndex]] + header.vaddrBase);
                         sym.st_other = inSym.other;
                         sym.st_info = inSym.info;
                         nameOffset += ::strlen(inSym.name)+1;
