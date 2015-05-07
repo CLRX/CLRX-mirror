@@ -306,6 +306,9 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
 /*
  * Elf binary generator
  */
+ElfRegionContent::~ElfRegionContent()
+{ }
+
 template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& inHeader)
         : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
