@@ -19,6 +19,8 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
+ADD_DEFINITIONS(-DCLRX_SOURCE_DIR=\"${PROJECT_SOURCE_DIR}\")
+
 ADD_EXECUTABLE(cstrtofXTest cstrtofXTest.cpp)
 TARGET_LINK_LIBRARIES(cstrtofXTest ${CMAKE_THREAD_LIBS_INIT} CLRXUtils)
 ADD_TEST(cstrtofXTest cstrtofXTest)
@@ -34,3 +36,7 @@ ADD_TEST(GCNDisasmLabels GCNDisasmLabels)
 ADD_EXECUTABLE(AsmExprParse AsmExprParse.cpp)
 TARGET_LINK_LIBRARIES(AsmExprParse ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(AsmExprParse AsmExprParse)
+
+ADD_EXECUTABLE(GalliumReconf GalliumReconf.cpp)
+TARGET_LINK_LIBRARIES(GalliumReconf ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+ADD_TEST(GalliumReconf GalliumReconf)

@@ -43,7 +43,11 @@ tests/AsmExprParse.cpp -text
 tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/GCNDisasmLabels.cpp -text
 tests/GCNDisasmOpcodes.cpp -text
+tests/GalliumReconf.cpp -text
 tests/cstrtofXTest.cpp -text
+tests/galliumbins/BlackScholes.0.reconf.orig -text
+tests/galliumbins/DCT.0.reconf.orig -text
+tests/galliumbins/MatrixMultiplication.0.reconf.orig -text
 utils/CLIParser.cpp -text
 utils/CMakeLists.txt -text svneol=unset#text/plain
 utils/GPUId.cpp -text
