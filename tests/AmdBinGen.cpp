@@ -613,7 +613,7 @@ static AmdInput genAmdInput(bool useConfig, const AmdGpuBin* amdGpuBin,
 static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool reconf)
 {
     Array<cxbyte> inputData;
-    AmdMainBinaryBase* base = nullptr;
+    std::unique_ptr<AmdMainBinaryBase> base;
     Array<cxbyte> output;
     AmdInput amdInput;
     
@@ -623,17 +623,17 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |
                 ELF_CREATE_SECTIONMAP |
                 AMDBIN_CREATE_INFOSTRINGS;
-    base = createAmdBinaryFromCode(inputData.size(), inputData.data(), binFlags);
+    base.reset(createAmdBinaryFromCode(inputData.size(), inputData.data(), binFlags));
     
     if (base->getType() == AmdMainType::GPU_BINARY)
     {
-        AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base);
+        AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base.get());
         amdInput = genAmdInput(reconf, amdGpuBin, false, false);
         amdInput.is64Bit = false;
     }
     else if (base->getType() == AmdMainType::GPU_64_BINARY)
     {
-        AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base);
+        AmdMainGPUBinary64* amdGpuBin = static_cast<AmdMainGPUBinary64*>(base.get());
         amdInput = genAmdInput(reconf, amdGpuBin, false, false);
         amdInput.is64Bit = true;
     }
