@@ -263,6 +263,13 @@ public:
     BinaryOStream(std::ostream& _os) : os(_os)
     { }
     
+    void write(size_t length, const char* data)
+    { os.write(data, length); }
+    
+    /// write string
+    void writeString(const char* string)
+    { write(::strlen(string), string); }
+    
     template<typename T>
     void writeObject(const T& t)
     { os.write(reinterpret_cast<const char*>(&t), sizeof(T)); }
@@ -285,6 +292,17 @@ private:
 public:
     CountableBinaryOStream(std::ostream& _os) : written(0), os(_os)
     { }
+    
+    /// write string
+    void write(size_t length, const char* data)
+    {
+        os.write(data, length);
+        written += length;
+    }
+    
+    /// write string
+    void writeString(const char* string)
+    { write(::strlen(string), string); }
     
     template<typename T>
     void writeObject(const T& t)
@@ -322,6 +340,11 @@ public:
     FastOutputBuffer(cxuint inBufSize, std::ostream& output) : os(output), endPos(0),
             bufSize(inBufSize), buffer(new char[inBufSize])
     { }
+    ~FastOutputBuffer()
+    { 
+        flush();
+        os.flush();
+    }
     
     /// write output buffer
     void flush()
