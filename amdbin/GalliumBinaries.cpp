@@ -346,17 +346,6 @@ void GalliumBinGenerator::setInput(const GalliumInput* input)
     this->input = input;
 }
 
-static inline void fixAlignment(std::ostream& os, size_t& offset, size_t elfOffset)
-{
-    const char zeroes[4] = { 0, 0, 0, 0 };
-    if (((offset-elfOffset) & 3) != 0)
-    {   // fix alignment
-        const cxuint alignFix = 4-((offset-elfOffset)&3);
-        os.write(zeroes, alignFix);
-        offset += alignFix;
-    }
-}
-
 void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
