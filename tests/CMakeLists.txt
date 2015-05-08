@@ -40,3 +40,7 @@ ADD_TEST(AsmExprParse AsmExprParse)
 ADD_EXECUTABLE(GalliumBinGen GalliumBinGen.cpp)
 TARGET_LINK_LIBRARIES(GalliumBinGen ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(GalliumBinGen GalliumBinGen)
+
+ADD_EXECUTABLE(AmdBinGen AmdBinGen.cpp)
+TARGET_LINK_LIBRARIES(AmdBinGen ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+ADD_TEST(AmdBinGen AmdBinGen)
