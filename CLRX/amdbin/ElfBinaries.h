@@ -630,11 +630,15 @@ public:
     /// construcrtor
     ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& header);
     
-    void addRegion(const ElfRegionTemplate<Types>& region);
-    void addProgramHeader(const ElfProgramHeaderTemplate<Types>& progHeader);
+    void addRegion(const ElfRegionTemplate<Types>& region)
+    { regions.push_back(region); }
+    void addProgramHeader(const ElfProgramHeaderTemplate<Types>& progHeader)
+    { progHeaders.push_back(progHeader); }
     
-    void addSymbol(const ElfSymbolTemplate<Types>& symbol);
-    void addDynSymbol(const ElfSymbolTemplate<Types>& symbol);
+    void addSymbol(const ElfSymbolTemplate<Types>& symbol)
+    { symbols.push_back(symbol); }
+    void addDynSymbol(const ElfSymbolTemplate<Types>& symbol)
+    { dynSymbols.push_back(symbol); }
     
     uint64_t countSize();
     void generate(CountableFastOutputBuffer& fob);

@@ -225,27 +225,11 @@ std::string CLRX::parseEnvVariable<std::string>(const char* envVar,
 template
 bool CLRX::parseEnvVariable<bool>(const char* envVar, const bool& defaultValue);
 
-size_t CStringHash::operator()(const char* c) const
-{
-    if (c == nullptr)
-        return 0;
-    size_t hash = 0;
-    
-    for (const char* p = c; *p != 0; p++)
-        hash = ((hash<<8)^(cxbyte)*p)*size_t(0x93cda145bf146a3dULL);
-    return hash;
-}
-
 static const char cstyleEscapesTable[32] =
 {
     0, 0, 0, 0, 0, 0, 0, 'a', 'b', 't', 'n', 'v', 'f', 'r', 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
-
-std::string CLRX::escapeStringCStyle(const std::string& str)
-{
-    return escapeStringCStyle(str.size(), str.c_str());
-}
 
 std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
 {

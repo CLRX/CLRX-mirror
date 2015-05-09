@@ -86,13 +86,19 @@ public:
     virtual ~ISADisassembler();
     
     /// set input code
-    void setInput(size_t inputSize, const cxbyte* input);
+    void setInput(size_t inputSize, const cxbyte* input)
+    {
+        this->inputSize = inputSize;
+        this->input = input;
+    }
+
     /// makes some things before disassemblying
     virtual void beforeDisassemble() = 0;
     /// disassembles input code
     virtual void disassemble() = 0;
     
-    void addNamedLabel(size_t pos, const std::string& name);
+    void addNamedLabel(size_t pos, const std::string& name)
+    { namedLabels.push_back(std::make_pair(pos, name)); }
 };
 
 class GCNDisassembler: public ISADisassembler

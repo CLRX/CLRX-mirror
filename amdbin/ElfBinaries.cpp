@@ -316,31 +316,6 @@ ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>
 { }
 
 template<typename Types>
-void ElfBinaryGenTemplate<Types>::addRegion(const ElfRegionTemplate<Types>& region)
-{
-    regions.push_back(region);
-}
-
-template<typename Types>
-void ElfBinaryGenTemplate<Types>::addProgramHeader(
-        const ElfProgramHeaderTemplate<Types>& progHeader)
-{
-    progHeaders.push_back(progHeader);
-}
-
-template<typename Types>
-void ElfBinaryGenTemplate<Types>::addSymbol(const ElfSymbolTemplate<Types>& symbol)
-{
-    symbols.push_back(symbol);
-}
-
-template<typename Types>
-void ElfBinaryGenTemplate<Types>::addDynSymbol(const ElfSymbolTemplate<Types>& symbol)
-{
-    dynSymbols.push_back(symbol);
-}
-
-template<typename Types>
 void ElfBinaryGenTemplate<Types>::computeSize()
 {
     if (sizeComputed) return;

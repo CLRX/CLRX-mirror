@@ -234,7 +234,16 @@ struct CStringEqual
 /// generate hash function for C string
 struct CStringHash
 {
-    size_t operator()(const char* c) const;
+    size_t operator()(const char* c) const
+    {
+        if (c == nullptr)
+            return 0;
+        size_t hash = 0;
+        
+        for (const char* p = c; *p != 0; p++)
+            hash = ((hash<<8)^(cxbyte)*p)*size_t(0x93cda145bf146a3dULL);
+        return hash;
+    }
 };
 
 /// counts leading zeroes for 32-bit unsigned integer. For zero behavior is undefined
@@ -274,11 +283,13 @@ template<typename T, typename T2>
 inline bool usumGe(T a, T b, T2 c)
 { return ((a+b)>=c) || ((a+b)<a); }
 
-/// escape string into C-style string
-extern std::string escapeStringCStyle(const std::string& str);
-
 /// escapes string into C-style string
 extern std::string escapeStringCStyle(size_t strSize, const char* str);
+
+/// escape string into C-style string
+inline std::string escapeStringCStyle(const std::string& str)
+{ return escapeStringCStyle(str.size(), str.c_str()); }
+
 
 /// escapes string into C-style string
 /**
