@@ -386,7 +386,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
                 const GalliumInput& inInput) : kernelsOrder(inKernelsOrder), input(inInput)
         { }
         
-        void operator()(CountableFastOutputBuffer& fob) const
+        void operator()(FastOutputBuffer& fob) const
         {
             for (uint32_t korder: kernelsOrder)
             {
@@ -439,7 +439,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
                 input->disassembly!=nullptr);
     // local symbols for sections
     for (cxuint i = 0; i < sectSymsNum; i++)
-        elfBinGen.addSymbol({nullptr, uint16_t(i+1), ELF32_ST_INFO(STB_LOCAL, STT_SECTION),
+        elfBinGen.addSymbol({"", uint16_t(i+1), ELF32_ST_INFO(STB_LOCAL, STT_SECTION),
                 0, false, 0, 0});
     for (uint32_t korder: kernelsOrder)
     {
@@ -485,7 +485,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     /****
      * write binary to output
      ****/
-    CountableFastOutputBuffer bos(256, *os);
+    FastOutputBuffer bos(256, *os);
     bos.writeObject<uint32_t>(LEV(kernelsNum));
     for (uint32_t korder: kernelsOrder)
     {

@@ -336,15 +336,19 @@ private:
     cxuint endPos;
     cxuint bufSize;
     std::unique_ptr<char[]> buffer;
+    uint64_t written;
 public:
     FastOutputBuffer(cxuint inBufSize, std::ostream& output) : os(output), endPos(0),
-            bufSize(inBufSize), buffer(new char[inBufSize])
+            bufSize(inBufSize), buffer(new char[inBufSize]), written(0)
     { }
     ~FastOutputBuffer()
     { 
         flush();
         os.flush();
     }
+    
+    uint64_t getWritten() const
+    { return written; }
     
     /// write output buffer
     void flush()
@@ -363,7 +367,10 @@ public:
     
     /// finish reservation and go forward
     void forward(cxuint toWrite)
-    { endPos += toWrite; }
+    {
+        endPos += toWrite;
+        written += toWrite;
+    }
     
     /// write sequence of characters
     void write(size_t length, const char* string)
@@ -378,6 +385,7 @@ public:
             ::memcpy(buffer.get()+endPos, string, length);
             endPos += length;
         }
+        written += length;
     }
     
     /// write string
@@ -399,77 +407,28 @@ public:
         if (endPos == bufSize)
             flush();
         buffer[endPos++] = c;
+        written++;
     }
     
     void fill(size_t num, char c)
     {
-        while (num != 0)
+        size_t count = num;
+        while (count != 0)
         {
-             size_t bufNum = std::min(size_t(bufSize-endPos), num);
+             size_t bufNum = std::min(size_t(bufSize-endPos), count);
              ::memset(buffer.get()+endPos, c, bufNum);
-             num -= bufNum;
+             count -= bufNum;
              endPos += bufNum;
              if (endPos == bufSize)
                  flush();
         }
+        written += num;
     }
     
     const std::ostream& getOStream() const
     { return os; }
     std::ostream& getOStream()
     { return os; }
-};
-
-/// fast and direct output buffer
-class CountableFastOutputBuffer: public FastOutputBuffer
-{
-private:
-    uint64_t written;
-public:
-    CountableFastOutputBuffer(cxuint inBufSize, std::ostream& output) :
-            FastOutputBuffer(inBufSize, output), written(0)
-    { }
-    
-    void forward(cxuint toWrite)
-    { 
-        FastOutputBuffer::forward(toWrite);
-        written += toWrite; 
-    }
-    
-    void write(size_t length, const char* string)
-    {
-        FastOutputBuffer::write(length, string);
-        written += length;
-    }
-    
-    /// write string
-    void writeString(const char* string)
-    { write(::strlen(string), string); }
-    
-    /// write object of type T
-    template<typename T>
-    void writeObject(const T& t)
-    { write(sizeof(T), reinterpret_cast<const char*>(&t)); }
-    
-    /// write array of objects
-    template<typename T>
-    void writeArray(size_t size, const T* t)
-    { write(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
-    
-    void put(char c)
-    {
-        FastOutputBuffer::put(c);
-        written++;
-    }
-    
-    void fill(size_t num, char c)
-    {
-        FastOutputBuffer::fill(num, c);
-        written += num;
-    }
-    
-    uint64_t getWritten() const
-    { return written; }
 };
 
 }

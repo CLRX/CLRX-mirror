@@ -68,6 +68,38 @@ static inline void putProgInfoEntryLE(BinaryOStream& bos, uint32_t address, uint
     bos.writeObject(piEntry);
 }
 
+static inline void putCALNoteLE(FastOutputBuffer& bos, uint32_t type, uint32_t descSize)
+{
+    const CALNoteHeader nhdr = { LEV(8U), LEV(descSize), LEV(type),
+        { 'A', 'T', 'I', ' ', 'C', 'A', 'L', 0 } };
+    bos.writeObject(nhdr);
+}
+
+static inline void putCALUavEntryLE(FastOutputBuffer& bos, uint32_t uavId, uint32_t f1,
+          uint32_t f2, uint32_t type)
+{
+    const CALUAVEntry uavEntry = { LEV(uavId), LEV(f1), LEV(f2), LEV(type) };
+    bos.writeObject(uavEntry);
+}
+
+static inline void putCBMaskLE(FastOutputBuffer& bos, uint32_t index, uint32_t size)
+{
+    const CALConstantBufferMask cbMask = { LEV(index), LEV(size) };
+    bos.writeObject(cbMask);
+}
+
+static inline void putSamplerEntryLE(FastOutputBuffer& bos, uint32_t input, uint32_t sampler)
+{
+    const CALSamplerMapEntry samplerEntry = { LEV(input), LEV(sampler) };
+    bos.writeObject(samplerEntry);
+}
+
+static inline void putProgInfoEntryLE(FastOutputBuffer& bos, uint32_t address, uint32_t value)
+{
+    const CALProgramInfoEntry piEntry = { LEV(address), LEV(value) };
+    bos.writeObject(piEntry);
+}
+
 // e_type (16-bit)
 static const uint16_t gpuDeviceCodeTable[13] =
 {
@@ -253,6 +285,7 @@ struct TempAmdKernelConfig
     uint32_t uavsNum;
     uint32_t calNotesSize;
 };
+
 
 template<typename ElfSym>
 static void putMainSymbols(BinaryOStream& bos, size_t& offset, const AmdInput* input,
@@ -880,6 +913,269 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     metadata += "_kernel\n";
     
     return metadata;
+}
+
+static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
+         cxuint driverVersion, const AmdKernelInput& kernel,
+         const TempAmdKernelConfig& tempConfig)
+{
+    const bool isOlderThan1124 = driverVersion < 112402;
+    const bool isOlderThan1348 = driverVersion < 134805;
+    const AmdKernelConfig& config = kernel.config;
+    cxuint readOnlyImages = 0;
+    cxuint writeOnlyImages = 0;
+    cxuint samplersNum = config.samplers.size();
+    cxuint argSamplersNum = 0;
+    bool isLocalPointers = false;
+    cxuint constBuffersNum = 2 + (isOlderThan1348 /* cbid:2 for older drivers*/ &&
+            (input->globalData != nullptr));
+    cxuint woUsedImagesMask = 0;
+    for (const AmdKernelArgInput& arg: config.args)
+    {
+        if (arg.argType >= KernelArgType::MIN_IMAGE &&
+            arg.argType <= KernelArgType::MAX_IMAGE)
+        {
+            if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
+                readOnlyImages++;
+            if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+            {
+                if (arg.used)
+                    woUsedImagesMask |= (1U<<writeOnlyImages);
+                writeOnlyImages++;
+            }
+        }
+        else if (arg.argType == KernelArgType::POINTER)
+        {
+            if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                constBuffersNum++;
+            else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
+                isLocalPointers = true;
+        }
+       else if (arg.argType == KernelArgType::SAMPLER)
+           argSamplersNum++;
+    }
+    samplersNum += argSamplersNum;
+    
+    // CAL CALNOTE_INPUTS
+    putCALNoteLE(bos, CALNOTE_ATI_INPUTS, 4*readOnlyImages);
+    {
+        uint32_t rdimgIds[128];
+        for (cxuint k = 0; k < readOnlyImages; k++)
+            SLEV(rdimgIds[k], isOlderThan1124 ? readOnlyImages-k-1 : k);
+        bos.writeArray(readOnlyImages, rdimgIds);
+    }
+    // CALNOTE_OUTPUTS
+    putCALNoteLE(bos, CALNOTE_ATI_OUTPUTS, 0);
+    // CALNOTE_UAV
+    putCALNoteLE(bos, CALNOTE_ATI_UAV, 16*tempConfig.uavsNum);
+    
+    if (isOlderThan1124)
+    {   // for old drivers
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArgInput& arg = config.args[k];
+            if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                arg.argType <= KernelArgType::MAX_IMAGE &&
+                (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                /* writeOnlyImages */
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 2, imgUavDimTable[
+                        cxuint(arg.argType)-cxuint(KernelArgType::MIN_IMAGE)], 3);
+        }
+        if (config.usePrintf)
+            putCALUavEntryLE(bos, tempConfig.uavId, 4, 0, 5);
+        // global buffers
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArgInput& arg = config.args[k];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 4, 0, 5);
+        }
+    }
+    else
+    {   /* in argument order */
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArgInput& arg = config.args[k];
+            if (arg.argType >= KernelArgType::MIN_IMAGE &&
+                arg.argType <= KernelArgType::MAX_IMAGE &&
+                (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
+                // write_only images
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 2, 2, 5);
+            else if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::GLOBAL) // uavid
+                putCALUavEntryLE(bos, tempConfig.argResIds[k], 4, 0, 5);
+        }
+        
+        if (config.usePrintf)
+            putCALUavEntryLE(bos, tempConfig.uavId, 0, 0, 5);
+    }
+    
+    // CALNOTE_CONDOUT
+    putCALNoteLE(bos, CALNOTE_ATI_CONDOUT, 4);
+    bos.writeObject(LEV(uint32_t(config.condOut)));
+    // CALNOTE_FLOAT32CONSTS
+    putCALNoteLE(bos, CALNOTE_ATI_FLOAT32CONSTS, 0);
+    // CALNOTE_INT32CONSTS
+    putCALNoteLE(bos, CALNOTE_ATI_INT32CONSTS, 0);
+    // CALNOTE_BOOL32CONSTS
+    putCALNoteLE(bos, CALNOTE_ATI_BOOL32CONSTS, 0);
+    
+    // CALNOTE_EARLYEXIT
+    putCALNoteLE(bos, CALNOTE_ATI_EARLYEXIT, 4);
+    bos.writeObject(LEV(uint32_t(config.earlyExit)));
+    
+    // CALNOTE_GLOBAL_BUFFERS
+    putCALNoteLE(bos, CALNOTE_ATI_GLOBAL_BUFFERS, 0);
+    
+    // CALNOTE_CONSTANT_BUFFERS
+    putCALNoteLE(bos, CALNOTE_ATI_CONSTANT_BUFFERS, 8*constBuffersNum);
+    
+    if (isOlderThan1124)
+    {   /* for driver 12.10 */
+        for (cxuint k = config.args.size(); k > 0; k--)
+        {
+            const AmdKernelArgInput& arg = config.args[k-1];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                putCBMaskLE(bos, tempConfig.argResIds[k-1], arg.constSpaceSize!=0 ?
+                    ((arg.constSpaceSize+15)>>4) : 4096);
+        }
+        if (input->globalData != nullptr)
+            putCBMaskLE(bos, 2, (input->globalDataSize+15)>>4);
+        putCBMaskLE(bos, 1, (tempConfig.argsSpace+15)>>4);
+        putCBMaskLE(bos, 0, 15);
+    }
+    else 
+    {
+        putCBMaskLE(bos, 0, 0);
+        putCBMaskLE(bos, 1, 0);
+        for (cxuint k = 0; k < config.args.size(); k++)
+        {
+            const AmdKernelArgInput& arg = config.args[k];
+            if (arg.argType == KernelArgType::POINTER &&
+                arg.ptrSpace == KernelPtrSpace::CONSTANT)
+                putCBMaskLE(bos, tempConfig.argResIds[k], 0);
+        }
+        if (isOlderThan1348 && input->globalData != nullptr)
+            putCBMaskLE(bos, 2, 0);
+    }
+    
+    // CALNOTE_INPUT_SAMPLERS
+    putCALNoteLE(bos, CALNOTE_ATI_INPUT_SAMPLERS, 8*samplersNum);
+    
+    for (cxuint k = 0; k < config.samplers.size(); k++)
+        putSamplerEntryLE(bos, 0, k+argSamplersNum);
+    for (cxuint k = 0; k < argSamplersNum; k++)
+        putSamplerEntryLE(bos, 0, k);
+    
+    // CALNOTE_SCRATCH_BUFFERS
+    putCALNoteLE(bos, CALNOTE_ATI_SCRATCH_BUFFERS, 4);
+    bos.writeObject<uint32_t>(LEV(config.scratchBufferSize>>2));
+    
+    // CALNOTE_PERSISTENT_BUFFERS
+    putCALNoteLE(bos, CALNOTE_ATI_PERSISTENT_BUFFERS, 0);
+    
+    /* PROGRAM_INFO */
+    const cxuint progInfoSize = (18+32 +
+            4*((isOlderThan1124)?16:config.userDataElemsNum))*8;
+    putCALNoteLE(bos, CALNOTE_ATI_PROGINFO, progInfoSize);
+    
+    putProgInfoEntryLE(bos, 0x80001000U, config.userDataElemsNum);
+    cxuint k = 0;
+    for (k = 0; k < config.userDataElemsNum; k++)
+    {
+        putProgInfoEntryLE(bos, 0x80001001U+(k<<2), config.userDatas[k].dataClass);
+        putProgInfoEntryLE(bos, 0x80001002U+(k<<2), config.userDatas[k].apiSlot);
+        putProgInfoEntryLE(bos, 0x80001003U+(k<<2), config.userDatas[k].regStart);
+        putProgInfoEntryLE(bos, 0x80001004U+(k<<2), config.userDatas[k].regSize);
+    }
+    if (isOlderThan1124)
+        for (k =  config.userDataElemsNum; k < 16; k++)
+        {
+            putProgInfoEntryLE(bos, 0x80001001U+(k<<2), 0);
+            putProgInfoEntryLE(bos, 0x80001002U+(k<<2), 0);
+            putProgInfoEntryLE(bos, 0x80001003U+(k<<2), 0);
+            putProgInfoEntryLE(bos, 0x80001004U+(k<<2), 0);
+        }
+    
+    const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
+    uint32_t curPgmRSRC2 = config.pgmRSRC2;
+    curPgmRSRC2 = (curPgmRSRC2 & 0xff007fffU) | ((((localSize+255)>>8)&0x1ff)<<15);
+    cxuint pgmUserSGPRsNum = 0;
+    for (cxuint p = 0; p < config.userDataElemsNum; p++)
+        pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
+                 config.userDatas[p].regStart+config.userDatas[p].regSize);
+    pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
+    curPgmRSRC2 = (curPgmRSRC2 & 0xffffffc1U) | ((pgmUserSGPRsNum&0x1f)<<1);
+    
+    putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
+    putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);
+    putProgInfoEntryLE(bos, 0x80001863U, 102);
+    putProgInfoEntryLE(bos, 0x80001864U, 256);
+    putProgInfoEntryLE(bos, 0x80001043U, config.floatMode);
+    putProgInfoEntryLE(bos, 0x80001044U, config.ieeeMode);
+    putProgInfoEntryLE(bos, 0x80001045U, config.scratchBufferSize>>2);
+    putProgInfoEntryLE(bos, 0x00002e13U, curPgmRSRC2);
+    
+    if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&
+        config.reqdWorkGroupSize[2] != 0)
+    {
+        putProgInfoEntryLE(bos, 0x8000001cU, config.reqdWorkGroupSize[0]);
+        putProgInfoEntryLE(bos, 0x8000001dU, config.reqdWorkGroupSize[1]);
+        putProgInfoEntryLE(bos, 0x8000001eU, config.reqdWorkGroupSize[2]);
+    }
+    else
+    {   /* default */
+        putProgInfoEntryLE(bos, 0x8000001cU, 256);
+        putProgInfoEntryLE(bos, 0x8000001dU, 0);
+        putProgInfoEntryLE(bos, 0x8000001eU, 0);
+    }
+    putProgInfoEntryLE(bos, 0x80001841U, 0);
+    uint32_t uavMask[32];
+    ::memset(uavMask, 0, 128);
+    uavMask[0] = woUsedImagesMask;
+    for (cxuint l = 0; l < config.args.size(); l++)
+    {
+        const AmdKernelArgInput& arg = config.args[l];
+        if (arg.used && arg.argType == KernelArgType::POINTER &&
+            (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
+             (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)))
+        {
+            const cxuint u = tempConfig.argResIds[l];
+            uavMask[u>>5] |= (1U<<(u&31));
+        }
+    }
+    if (!isOlderThan1348 && config.useConstantData)
+        uavMask[0] |= 1U<<tempConfig.constBufferId;
+    if (config.usePrintf) //if printf used
+    {
+        if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
+            uavMask[0] |= 1U<<tempConfig.printfId;
+        else
+            uavMask[0] |= 1U<<9;
+    }
+    
+    putProgInfoEntryLE(bos, 0x8000001fU, uavMask[0]);
+    for (cxuint p = 0; p < 32; p++)
+        putProgInfoEntryLE(bos, 0x80001843U+p, uavMask[p]);
+    putProgInfoEntryLE(bos, 0x8000000aU, 1);
+    putProgInfoEntryLE(bos, 0x80000078U, 64);
+    putProgInfoEntryLE(bos, 0x80000081U, 32768);
+    putProgInfoEntryLE(bos, 0x80000082U, ((curPgmRSRC2>>15)&0x1ff)<<8);
+    
+    // CAL_SUBCONSTANT_BUFFERS
+    putCALNoteLE(bos, CALNOTE_ATI_SUB_CONSTANT_BUFFERS, 0);
+    
+    // CAL_UAV_MAILBOX_SIZE
+    putCALNoteLE(bos, CALNOTE_ATI_UAV_MAILBOX_SIZE, 4);
+    bos.writeObject<uint32_t>(0);
+    
+    // CAL_UAV_OP_MASK
+    putCALNoteLE(bos, CALNOTE_ATI_UAV_OP_MASK, 128);
+    for (cxuint k = 0; k < 32; k++)
+        uavMask[k] = LEV(uavMask[k]);
+    bos.writeArray(32, uavMask);
 }
 
 static void generateCALNotes(BinaryOStream& bos, size_t& offset, const AmdInput* input,

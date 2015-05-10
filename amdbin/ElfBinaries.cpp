@@ -395,39 +395,39 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                     size += uint64_t(dynSymbols.size()+1)*sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_STRTAB)
                 {
-                    if (::strcmp(region.section.name, ".strtab") == 0)
+                    if (region.section.name == ".strtab")
                     {
                         size += 1;
                         for (const auto& sym: symbols)
-                            if (sym.name != nullptr)
-                                size += ::strlen(sym.name)+1;
+                            if (!sym.name.empty())
+                                size += sym.name.size()+1;
                     }
-                    else if (::strcmp(region.section.name, ".dynstr") == 0)
+                    else if (region.section.name == ".dynstr")
                     {
                         size += 1;
                         for (const auto& sym: dynSymbols)
-                            if (sym.name != nullptr)
-                                size += ::strlen(sym.name)+1;
+                            if (!sym.name.empty())
+                                size += sym.name.size()+1;
                     }
-                    else if (::strcmp(region.section.name, ".shstrtab") == 0)
+                    else if (region.section.name == ".shstrtab")
                     {
                         size += 1;
                         for (const auto& region2: regions)
                         {
                             if (region2.type == ElfRegionType::SECTION &&
-                                region2.section.name != nullptr)
-                                size += strlen(region2.section.name)+1;
+                                !region2.section.name.empty())
+                                size += region2.section.name.size()+1;
                         }
                     }
                 }
                 if (region.section.type != SHT_NOBITS)
                     region.size = size-regionOffsets[i];
             }
-            if (::strcmp(region.section.name, ".strtab") == 0)
+            if (region.section.name == ".strtab")
                 strTab = sectionCount;
-            else if (::strcmp(region.section.name, ".dynstr") == 0)
+            else if (region.section.name == ".dynstr")
                 dynStr = sectionCount;
-            else if (::strcmp(region.section.name, ".shstrtab") == 0)
+            else if (region.section.name == ".shstrtab")
                 shStrTab = sectionCount;
             sectionRegions[sectionCount] = i;
             sectionCount++;
@@ -445,7 +445,7 @@ uint64_t ElfBinaryGenTemplate<Types>::countSize()
 }
 
 template<typename Types>
-void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
+void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
 {
     computeSize();
     const uint64_t startOffset = fob.getWritten();
@@ -569,7 +569,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                 if (region2.type == ElfRegionType::SECTION)
                 {
                     typename Types::Shdr shdr;
-                    if (region2.section.name != nullptr)
+                    if (!region2.section.name.empty())
                         SLEV(shdr.sh_name, nameOffset);
                     else
                         SLEV(shdr.sh_name, 0);
@@ -588,9 +588,9 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     SLEV(shdr.sh_addralign, region2.align);
                     if (region2.section.link == 0)
                     {
-                        if (::strcmp(region2.section.name, ".symtab")==0)
+                        if (region2.section.name == ".symtab")
                             SLEV(shdr.sh_link, strTab);
-                        else if (::strcmp(region2.section.name, ".dynsym")==0)
+                        else if (region2.section.name == ".dynsym")
                             SLEV(shdr.sh_link, dynStr);
                         else
                             SLEV(shdr.sh_link, region2.section.link);
@@ -603,8 +603,8 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                         SLEV(shdr.sh_entsize, sizeof(typename Types::Sym));
                     else
                         SLEV(shdr.sh_entsize, region2.section.entSize);
-                    if (region2.section.name != nullptr)
-                        nameOffset += ::strlen(region2.section.name)+1;
+                    if (!region2.section.name.empty())
+                        nameOffset += region2.section.name.size()+1;
                     fob.writeObject(shdr);
                 }
             }
@@ -629,7 +629,7 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                     for (const auto& inSym: symbolsList)
                     {
                         typename Types::Sym sym;
-                        if (inSym.name != nullptr)
+                        if (!inSym.name.empty())
                             SLEV(sym.st_name, nameOffset);
                         else
                             SLEV(sym.st_name, 0);
@@ -649,35 +649,35 @@ void ElfBinaryGenTemplate<Types>::generate(CountableFastOutputBuffer& fob)
                                 sectionRegions[inSym.sectionIndex]] + header.vaddrBase);
                         sym.st_other = inSym.other;
                         sym.st_info = inSym.info;
-                        if (inSym.name != nullptr)
-                            nameOffset += ::strlen(inSym.name)+1;
+                        if (!inSym.name.empty())
+                            nameOffset += inSym.name.size()+1;
                         fob.writeObject(sym);
                     }
                 }
                 else if (region.section.type == SHT_STRTAB)
                 {
-                    if (::strcmp(region.section.name, ".strtab") == 0)
+                    if (region.section.name == ".strtab")
                     {
                         fob.put(0);
                         for (const auto& sym: symbols)
-                            if (sym.name != nullptr)
-                                fob.write(::strlen(sym.name)+1, sym.name);
+                            if (!sym.name.empty())
+                                fob.write(sym.name.size()+1, sym.name.c_str());
                     }
-                    else if (::strcmp(region.section.name, ".dynstr") == 0)
+                    else if (region.section.name == ".dynstr")
                     {
                         fob.put(0);
                         for (const auto& sym: dynSymbols)
-                            if (sym.name != nullptr)
-                                fob.write(::strlen(sym.name)+1, sym.name);
+                            if (!sym.name.empty())
+                                fob.write(sym.name.size()+1, sym.name.c_str());
                     }
-                    else if (::strcmp(region.section.name, ".shstrtab") == 0)
+                    else if (region.section.name == ".shstrtab")
                     {
                         fob.put(0);
                         for (const auto& region2: regions)
                             if (region2.type == ElfRegionType::SECTION &&
-                                region2.section.name != nullptr)
-                                fob.write(::strlen(region2.section.name)+1,
-                                          region2.section.name);
+                                !region2.section.name.empty())
+                                fob.write(region2.section.name.size()+1,
+                                          region2.section.name.c_str());
                     }
                 }
             }

@@ -372,15 +372,6 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 uavIdToCompare = 9;
             
         }
-        /*else if (line.compare(0, 6, ";cbid:")==0)
-        {
-        }
-        else if (line.compare(0, 10, ";printfid:")==0)
-        {
-        }
-        else if (line.compare(0, 11, ";privateid:")==0)
-        {
-        }*/
     }
     if (argSamplers != 0 && !config.samplers.empty())
     {
