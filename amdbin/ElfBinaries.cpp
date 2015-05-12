@@ -310,10 +310,25 @@ ElfRegionContent::~ElfRegionContent()
 { }
 
 template<typename Types>
+ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate()
+        : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
+          shdrTabRegion(0), phdrTabRegion(0)
+{ }
+
+template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& inHeader)
         : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
           shdrTabRegion(0), phdrTabRegion(0), header(inHeader)
 { }
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::addRegion(const ElfRegionTemplate<Types>& region)
+{ regions.push_back(region); }
+
+template<typename Types>
+void ElfBinaryGenTemplate<Types>::addProgramHeader(
+            const ElfProgramHeaderTemplate<Types>& progHeader)
+{ progHeaders.push_back(progHeader); }
 
 template<typename Types>
 void ElfBinaryGenTemplate<Types>::computeSize()
@@ -344,18 +359,11 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     for (size_t i = 0; i < regions.size(); i++)
     {
         ElfRegionTemplate<Types>& region = regions[i];
-        // fix alignment
-        if (region.align == 0)
-        {
-            if (region.type == ElfRegionType::PHDR_TABLE ||
-                region.type == ElfRegionType::SHDR_TABLE)
-                region.align = sizeof(typename Types::Word);
-            else
-                region.align = 1;
+        if (region.align > 1)
+        {   // fix alignment
+            if (region.align!=0 && (size&(region.align-1))!=0)
+                size += region.align - (size&(region.align-1));
         }
-        
-        if (region.align!=0 && (size&(region.align-1))!=0)
-            size += region.align - (size&(region.align-1));
         
         regionOffsets[i] = size;
         // add region size
@@ -505,10 +513,13 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         const ElfRegionTemplate<Types>& region = regions[i];
         // fix alignment
         uint64_t toFill = 0;
-        const uint64_t curOffset = (fob.getWritten()-startOffset);
-        if (region.align!=0 && (curOffset&(region.align-1))!=0)
-            toFill = region.align - (curOffset&(region.align-1));
-        fob.fill(toFill, 0);
+        if (region.align > 1)
+        {
+            const uint64_t curOffset = (fob.getWritten()-startOffset);
+            if (region.align!=0 && (curOffset&(region.align-1))!=0)
+                toFill = region.align - (curOffset&(region.align-1));
+            fob.fill(toFill, 0);
+        }
         assert(regionOffsets[i] == fob.getWritten()-startOffset);
         
         // write content
@@ -583,7 +594,11 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     else
                         SLEV(shdr.sh_addr, 0);
                     
-                    SLEV(shdr.sh_size, region2.size);
+                    if (region2.align != 0 || j+1 >= regions.size() ||
+                        regionOffsets[j]+region2.size == regionOffsets[j+1])
+                        SLEV(shdr.sh_size, region2.size);
+                    else
+                        SLEV(shdr.sh_size, regionOffsets[j+1]-regionOffsets[j]);
                     SLEV(shdr.sh_info, region2.section.info);
                     SLEV(shdr.sh_addralign, region2.align);
                     if (region2.section.link == 0)

@@ -18,7 +18,6 @@
  */
 
 #include <CLRX/Config.h>
-#include <elf.h>
 #include <cassert>
 #include <climits>
 #include <algorithm>
@@ -444,7 +443,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     for (uint32_t korder: kernelsOrder)
     {
         const GalliumKernelInput& kernel = input->kernels[korder];
-        elfBinGen.addSymbol({kernel.kernelName.c_str(), 1,
+        elfBinGen.addSymbol({kernel.kernelName, 1,
                 ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0, false, kernel.offset, 0});
     }
     elfSize = elfBinGen.countSize();
