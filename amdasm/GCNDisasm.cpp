@@ -48,11 +48,11 @@ static const char* gcnEncodingNames[GCNENC_MAXVAL+1] =
     "VOP3A", "VOP3B", "VINTRP", "DS", "MUBUF", "MTBUF", "MIMG", "EXP", "FLAT"
 };
 
-static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1+2] =
+static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2] =
 {
     { 0, 0 },
-    { 0, 0x80 }, // GCNENC_SOPC, opcode = (7bit)<<16 */
-    { 0x0080, 0x80 }, // GCNENC_SOPP, opcode = (7bit)<<16 */
+    { 0, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 */
+    { 0x0080, 0x80 }, /* GCNENC_SOPP, opcode = (7bit)<<16 */
     { 0x0100, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 */
     { 0x0200, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 */
     { 0x0280, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 */
@@ -70,10 +70,28 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1+2] =
     { 0x092c, 0x1 }, /* GCNENC_EXP, opcode = none */
     { 0x092d, 0x100 }, /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
     { 0x0a2d, 0x200 }, /* GCNENC_VOP3A, opcode = (9bit)<<17 (GCN1.1) */
-    { 0x0a2d, 0x200 }  /* GCNENC_VOP3B, opcode = (9bit)<<17 (GCN1.1) */
+    { 0x0a2d, 0x200 },  /* GCNENC_VOP3B, opcode = (9bit)<<17 (GCN1.1) */
+    { 0x0c2d, 0x0 },
+    { 0x0c2d, 0x80 }, /* GCNENC_SOPC, opcode = (7bit)<<16 (GCN1.2) */
+    { 0x0cad, 0x80 }, /* GCNENC_SOPP, opcode = (7bit)<<16 (GCN1.2) */
+    { 0x0d2d, 0x100 }, /* GCNENC_SOP1, opcode = (8bit)<<8 (GCN1.2) */
+    { 0x0e2d, 0x80 }, /* GCNENC_SOP2, opcode = (7bit)<<23 (GCN1.2) */
+    { 0x0ead, 0x20 }, /* GCNENC_SOPK, opcode = (5bit)<<23 (GCN1.2) */
+    { 0x0ecd, 0x100 }, /* GCNENC_SMEM, opcode = (8bit)<<18 (GCN1.2) */
+    { 0x0fcd, 0x100 }, /* GCNENC_VOPC, opcode = (8bit)<<27 (GCN1.2) */
+    { 0x10cd, 0x100 }, /* GCNENC_VOP1, opcode = (8bit)<<9 (GCN1.2) */
+    { 0x11cd, 0x40 }, /* GCNENC_VOP2, opcode = (6bit)<<25 (GCN1.2) */
+    { 0x120d, 0x400 }, /* GCNENC_VOP3A, opcode = (10bit)<<16 (GCN1.2) */
+    { 0x120d, 0x400 }, /* GCNENC_VOP3B, opcode = (10bit)<<16 (GCN1.2) */
+    { 0x160d, 0x4 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 (GCN1.2) */
+    { 0x1611, 0x100 }, /* GCNENC_DS, opcode = (8bit)<<18 (GCN1.2) */
+    { 0x1711, 0x80 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 (GCN1.2) */
+    { 0x1791, 0x10 }, /* GCNENC_MTBUF, opcode = (4bit)<<16 (GCN1.2) */
+    { 0x17a1, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 (GCN1.2) */
+    { 0x1821, 0x1 }, /* GCNENC_EXP, opcode = none (GCN1.2) */
 };
 
-static const size_t gcnInstrTableByCodeLength = 0x0c2d;
+static const size_t gcnInstrTableByCodeLength = 0x1822;
 
 static void initializeGCNDisassembler()
 {
@@ -96,6 +114,12 @@ static void initializeGCNDisassembler()
         {
             const GCNEncodingSpace& encSpace2 = gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
             gcnInstrTableByCode[encSpace2.offset + instr.code] = instr;
+        }
+        if ((instr.archMask & ARCH_RX3X0) != 0)
+        {
+            const GCNEncodingSpace& encSpace3 = gcnInstrTableByCodeSpaces[
+                        GCNENC_MAXVAL+2+instr.encoding];
+            gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
         }
     }
 }
@@ -227,7 +251,7 @@ static const cxbyte gcnEncoding11Table[16] =
     GCNENC_NONE   // 1111 - illegal
 };
 
-struct GCNEncodingOpcodeBits
+struct CLRX_INTERNAL GCNEncodingOpcodeBits
 {
     cxbyte bitPos;
     cxbyte bits;
@@ -261,7 +285,7 @@ static const char* gcnOperandFloatTable[] =
     "0.5", "-0.5", "1.0", "-1.0", "2.0", "-2.0", "4.0", "-4.0"
 };
 
-union FloatUnion
+union CLRX_INTERNAL FloatUnion
 {
     float f;
     uint32_t u;

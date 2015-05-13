@@ -35,6 +35,7 @@ enum : cxbyte
     GCNENC_SOP2,    /* 0x2<<30,   opcode = (7bit)<<23 */
     GCNENC_SOPK,    /* 0xb<<28,   opcode = (5bit)<<23 */
     GCNENC_SMRD,    /* 0x18<<27,  opcode = (6bit)<<22 */
+    GCNENC_SMEM = GCNENC_SMRD,    /* 0x18<<27,  opcode = (6bit)<<22 */
     GCNENC_VOPC,    /* 0x3e<<25,  opcode = (8bit)<<17 */
     GCNENC_VOP1,    /* 0x3f<<25,  opcode = (8bit)<<9 */
     GCNENC_VOP2,    /* 0x0<<31,   opcode = (6bit)<<25 */
@@ -54,8 +55,11 @@ enum : uint16_t
 {
     ARCH_SOUTHERN_ISLANDS = 1,
     ARCH_SEA_ISLANDS = 2,
+    ARCH_VOLCANIC_ISLANDS = 4,
     ARCH_HD7X00 = 1,
     ARCH_RX2X0 = 2,
+    ARCH_RX3X0 = 4,
+    ARCH_GCN_1_0_1 = 0x3,
     ARCH_GCN_ALL = 0xffff,
 };
 
