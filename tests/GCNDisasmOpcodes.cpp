@@ -2933,6 +2933,8 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
 static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
 {   /* flat registers */
     { 0x80683d04U, 0, false, "        s_add_u32       flat_scratch_lo, s4, s61\n" },
+    { 0x80693d04U, 0, false, "        s_add_u32       flat_scratch_hi, s4, s61\n" },
+    { 0x87e83d04U, 0, false, "        s_and_b64       flat_scratch, s[4:5], s[61:62]\n" },
     /* SOP1 encoding (is in GCN1.1???) */
     { 0xbed63514U, 0, false, "        s_mov_fed_b32   s86, s20\n" },
     /* SOPP encoding */
