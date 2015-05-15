@@ -60,6 +60,7 @@ enum : uint16_t
     ARCH_RX2X0 = 2,
     ARCH_RX3X0 = 4,
     ARCH_GCN_1_0_1 = 0x3,
+    ARCH_GCN_1_1_2 = 0x6,
     ARCH_GCN_ALL = 0xffff,
 };
 
