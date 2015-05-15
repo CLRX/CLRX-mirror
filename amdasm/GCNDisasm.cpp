@@ -968,7 +968,7 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 }
 
 static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
-             const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
+             const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
     char* buf = output.reserve(100);
     size_t bufPos = 0;
@@ -2292,7 +2292,7 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_SMRD:
                     decodeSMRDEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
-                                 insnCode, insnCode2);
+                                 insnCode);
                     break;
                 case GCNENC_VOPC:
                     decodeVOPCEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
