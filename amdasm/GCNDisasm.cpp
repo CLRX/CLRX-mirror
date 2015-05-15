@@ -400,6 +400,19 @@ static inline size_t putByteToBuf(cxuint op, char* buf)
     return pos;
 }
 
+static inline size_t putHexByteToBuf(cxuint op, char* buf)
+{
+    size_t bufPos = 0;
+    const cxuint digit0 = op&0xf;
+    const cxuint digit1 = (op&0xf0)>>4;
+    buf[bufPos++] = '0';
+    buf[bufPos++] = 'x';
+    if (digit1 != 0)
+        buf[bufPos++] = (digit1<=9)?'0'+digit1:'a'+digit1-10;
+    buf[bufPos++] = (digit0<=9)?'0'+digit0:'a'+digit0-10;
+    return bufPos;
+}
+
 static size_t regRanges(cxuint op, cxuint vregNum, char* buf)
 {
     size_t pos = 0;
@@ -666,15 +679,7 @@ static void decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     if ((gcnInsn.mode & GCN_SRC1_IMM) != 0)
-    {
-        const cxuint digit0 = (insnCode>>8)&0xf;
-        const cxuint digit1 = (insnCode>>12)&0xf;
-        buf[bufPos++] = '0';
-        buf[bufPos++] = 'x';
-        if (digit1 != 0)
-            buf[bufPos++] = (digit1<=9)?'0'+digit1:'a'+digit1-10;
-        buf[bufPos++] = (digit0<=9)?'0'+digit0:'a'+digit0-10;
-    }
+        bufPos += putHexByteToBuf((insnCode>>8)&0xff, buf+bufPos);
     else
         bufPos += decodeGCNOperand((insnCode>>8)&0xff,
                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal);
@@ -1039,6 +1044,96 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         ::memcpy(buf+bufPos, " imm=1", 6);
         bufPos += 6;
     }
+    output.forward(bufPos);
+}
+
+static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
+             const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
+{
+    char* buf = output.reserve(100);
+    size_t bufPos = 0;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    bool useDst = false;
+    bool useOthers = false;
+    bool spacesAdded = false;
+    if (mode1 == GCN_SMRD_ONLYDST)
+    {
+        bufPos += addSpaces(buf, spacesToAdd);
+        bufPos += decodeGCNOperand((insnCode>>6)&0x7f,
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos, arch);
+        useDst = true;
+        spacesAdded = true;
+    }
+    else if (mode1 != GCN_ARG_NONE)
+    {
+        const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
+        bufPos += addSpaces(buf, spacesToAdd);
+        if (mode1 & GCN_SMEM_SDATA_IMM)
+            bufPos += putHexByteToBuf((insnCode>>6)&0x7f, buf + bufPos);
+        else
+            bufPos += decodeGCNOperand((insnCode>>6)&0x7f, dregsNum, buf + bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        bufPos += decodeGCNOperand((insnCode<<1)&0x7e,
+                   (gcnInsn.mode&GCN_SBASE4)?4:2, buf + bufPos, arch);
+        buf[bufPos++] = ',';
+        buf[bufPos++] = ' ';
+        if (insnCode&0x20000) // immediate value
+            bufPos += itocstrCStyle(insnCode2&0xfffff, buf+bufPos, 11, 16);
+        else // S register
+            bufPos += decodeGCNOperand(insnCode2&0xff, 1, buf + bufPos, arch);
+        useDst = true;
+        useOthers = true;
+        spacesAdded = true;
+    }
+    
+    if ((insnCode & 0x10000) != 0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'g';
+        buf[bufPos++] = 'l';
+        buf[bufPos++] = 'c';
+    }
+    
+    if (!useDst && (insnCode & 0x1fc0U) != 0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " sdata=", 7);
+        bufPos += 7;
+        bufPos += itocstrCStyle((insnCode>>6)&0x7f, buf+bufPos, 6, 16);
+    }
+    if (!useOthers && (insnCode & 0x3fU)!=0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " sbase=", 7);
+        bufPos += 7;
+        bufPos += itocstrCStyle(insnCode&0x3f, buf+bufPos, 6, 16);
+    }
+    if (!useOthers && insnCode2!=0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " offset=", 8);
+        bufPos += 8;
+        bufPos += itocstrCStyle(insnCode2, buf+bufPos, 12, 16);
+    }
+    if (!useOthers && (insnCode & 0x20000U)!=0)
+    {
+        if (!spacesAdded)
+            bufPos += addSpaces(buf, spacesToAdd-1);
+        spacesAdded = true;
+        ::memcpy(buf+bufPos, " imm=1", 6);
+        bufPos += 6;
+    }
+    
     output.forward(bufPos);
 }
 
@@ -2247,8 +2342,14 @@ void GCNDisassembler::disassemble()
             {
                 char* buf = output.reserve(40);
                 size_t bufPos = 0;
-                for (cxuint k = 0; gcnEncodingNames[gcnEncoding][k] != 0; k++)
-                    buf[bufPos++] = gcnEncodingNames[gcnEncoding][k];
+                if (!isGCN12 || gcnEncoding != GCNENC_SMEM)
+                    for (cxuint k = 0; gcnEncodingNames[gcnEncoding][k] != 0; k++)
+                        buf[bufPos++] = gcnEncodingNames[gcnEncoding][k];
+                else
+                {   /* SMEM encoding */
+                    ::memcpy(buf+bufPos, "SMEM", 4);
+                    bufPos+=4;
+                }
                 buf[bufPos++] = '_';
                 buf[bufPos++] = 'i';
                 buf[bufPos++] = 'l';
@@ -2291,8 +2392,12 @@ void GCNDisassembler::disassemble()
                                *gcnInsn, insnCode, insnCode2, pos);
                     break;
                 case GCNENC_SMRD:
-                    decodeSMRDEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
-                                 insnCode);
+                    if (isGCN12)
+                        decodeSMEMEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                     insnCode, insnCode2);
+                    else
+                        decodeSMRDEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
+                                     insnCode);
                     break;
                 case GCNENC_VOPC:
                     decodeVOPCEncoding(spacesToAdd, curArchMask, output, *gcnInsn,

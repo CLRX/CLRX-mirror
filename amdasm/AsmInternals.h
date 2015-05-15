@@ -136,6 +136,7 @@ enum : uint16_t
     GCN_FLOATLIT = 0x100,
     GCN_F16LIT = 0x200,
     GCN_SMRD_ONLYDST = 0x30,
+    GCN_SMEM_SDATA_IMM = 0x40,
     GCN_MEMOP_MX1 = 0x0,
     GCN_MEMOP_MX2 = 0x100,
     GCN_MEMOP_MX4 = 0x200,
