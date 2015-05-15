@@ -3199,6 +3199,19 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
                 "v[47:48], v[187:188], v65 glc slc tfe\n" }
 };
 
+/* for Radeon RX3X0 series with GCN1.2 */
+static const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
+{
+    { 0x80153d04U, 0, false, "        s_add_u32       s21, s4, s61\n" },
+    /* extra registers */
+    { 0x80663d04U, 0, false, "        s_add_u32       flat_scratch_lo, s4, s61\n" },
+    { 0x80673d04U, 0, false, "        s_add_u32       flat_scratch_hi, s4, s61\n" },
+    { 0x80683d04U, 0, false, "        s_add_u32       xnack_mask_lo, s4, s61\n" },
+    { 0x80693d04U, 0, false, "        s_add_u32       xnack_mask_hi, s4, s61\n" },
+    // 1/(2*pi)
+    { 0x80693df8U, 0, false, "        s_add_u32       xnack_mask_hi, 0.15915494, s61\n" },
+};
+
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
                       GPUDeviceType deviceType)
 {
@@ -3215,7 +3228,7 @@ static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
     if (outStr != testCase.expected)
     {
         std::ostringstream oss;
-        oss << "FAILED for " << (deviceType==GPUDeviceType::HAWAII?"Hawaii":"Pitcairn") <<
+        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
             " decGCNCase#" << i << ": size=" << (testCase.twoWords?2:1) <<
             ", word0=0x" << std::hex << testCase.word0 << std::dec;
         if (testCase.twoWords)
@@ -3239,6 +3252,14 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(decGCNOpcodeGCN11Cases)/sizeof(GCNDisasmOpcodeCase); i++)
         try
         { testDecGCNOpcodes(i, decGCNOpcodeGCN11Cases[i], GPUDeviceType::HAWAII); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; i < sizeof(decGCNOpcodeGCN12Cases)/sizeof(GCNDisasmOpcodeCase); i++)
+        try
+        { testDecGCNOpcodes(i, decGCNOpcodeGCN12Cases[i], GPUDeviceType::TONGA); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

@@ -115,7 +115,7 @@ static void initializeGCNDisassembler()
         if ((instr.archMask & ARCH_RX3X0) != 0)
         {
             const GCNEncodingSpace& encSpace3 = gcnInstrTableByCodeSpaces[
-                        GCNENC_MAXVAL+2+instr.encoding];
+                        GCNENC_MAXVAL+3+instr.encoding];
             gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
         }
     }
@@ -455,8 +455,8 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
             case 104:
                 if ((arch&ARCH_RX3X0)!=0)
                 {   // GCN1.2
-                    ::memcpy(buf+pos, "xnack_mask", 11);
-                    pos += 11;
+                    ::memcpy(buf+pos, "xnack_mask", 10);
+                    pos += 10;
                 }
                 else
                 {   // GCN1.1

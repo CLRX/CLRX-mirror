@@ -24,7 +24,7 @@ using namespace CLRX;
 
 const GCNInstruction CLRX::gcnInstrsTable[] =
 {
-    { "s_add_u32",           GCNENC_SOP2,   GCN_STDMODE,              0,    ARCH_GCN_1_0_1  },
+    { "s_add_u32",           GCNENC_SOP2,   GCN_STDMODE,              0,    ARCH_GCN_ALL  },
     { "s_sub_u32",           GCNENC_SOP2,   GCN_STDMODE,              1,    ARCH_GCN_1_0_1  },
     { "s_add_i32",           GCNENC_SOP2,   GCN_STDMODE,              2,    ARCH_GCN_1_0_1  },
     { "s_sub_i32",           GCNENC_SOP2,   GCN_STDMODE,              3,    ARCH_GCN_1_0_1  },
