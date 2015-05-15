@@ -665,8 +665,19 @@ static void decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
            (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf + bufPos, arch, literal);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNOperand((insnCode>>8)&0xff,
-           (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal);
+    if ((gcnInsn.mode & GCN_SRC1_IMM) != 0)
+    {
+        const cxuint digit0 = (insnCode>>8)&0xf;
+        const cxuint digit1 = (insnCode>>12)&0xf;
+        buf[bufPos++] = '0';
+        buf[bufPos++] = 'x';
+        if (digit1 != 0)
+            buf[bufPos++] = (digit1<=9)?'0'+digit1:'a'+digit1-10;
+        buf[bufPos++] = (digit0<=9)?'0'+digit0:'a'+digit0-10;
+    }
+    else
+        bufPos += decodeGCNOperand((insnCode>>8)&0xff,
+               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal);
     output.forward(bufPos);
 }
 

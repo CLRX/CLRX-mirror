@@ -86,6 +86,8 @@ enum : uint16_t
     GCN_IMM_DST = 0x100,
     GCN_SOPK_CONST = 0x200,
     GCN_SOPK_SRIMM32 = 0x300,
+    /* SOPC */
+    GCN_SRC1_IMM = 0x10,
     /* VOP */
     GCN_SRC2_NONE = 0x10,
     GCN_DS2_VCC = 0x20,
