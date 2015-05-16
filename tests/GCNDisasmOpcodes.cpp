@@ -3530,7 +3530,160 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xc0a20c9dU, 0x5b, true, "        SMEM_ill_40     s50, s[58:59], 0x5b\n" },
     { 0xc0a60c9dU, 0x5b, true, "        SMEM_ill_41     s50, s[58:59], 0x5b\n" },
     { 0xc0aa0c9dU, 0x5b, true, "        SMEM_ill_42     s50, s[58:59], 0x5b\n" },
-    { 0xc0ae0c9dU, 0x5b, true, "        SMEM_ill_43     s50, s[58:59], 0x5b\n" }
+    { 0xc0ae0c9dU, 0x5b, true, "        SMEM_ill_43     s50, s[58:59], 0x5b\n" },
+    /* VOP2 encoding */
+    { 0x0134d715U, 0, false, "        v_cndmask_b32   v154, v21, v107, vcc\n" },
+    { 0x0134d6ffU, 0x445aa, true , "        v_cndmask_b32   v154, 0x445aa, v107, vcc\n" },
+    /* VOP_SDWA */
+    { 0x0134d6f9U, 0, true, "        v_cndmask_b32   v154, v0, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x3d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x13d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x23d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte2 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x33d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte3 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x43d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:word0 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x53d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:word1 src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x63d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x73d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:invalid src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x93d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 dst_unused:sext src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x113d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 dst_unused:preserve src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x193d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte1 dst_unused:invalid src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x393d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "clamp dst_sel:byte1 dst_unused:invalid src0_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x1003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte1 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x2003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte2 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x3003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte3 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x4003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:word0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x5003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x6003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x7003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:invalid src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0xd003d, true, "        v_cndmask_b32   v154, sext(v61), v107, vcc "
+        "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x1d003d, true, "        v_cndmask_b32   v154, sext(-v61), v107, vcc "
+        "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x3d003d, true, "        v_cndmask_b32   v154, sext(-abs(v61)), "
+        "v107, vcc dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x0134d6f9U, 0x100003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte1\n" },
+    { 0x0134d6f9U, 0x200003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte2\n" },
+    { 0x0134d6f9U, 0x300003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:byte3\n" },
+    { 0x0134d6f9U, 0x400003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:word0\n" },
+    { 0x0134d6f9U, 0x500003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:word1\n" },
+    { 0x0134d6f9U, 0x600003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0\n" },
+    { 0x0134d6f9U, 0x700003d, true, "        v_cndmask_b32   v154, v61, v107, vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    { 0x0134d6f9U, 0xf00003d, true, "        v_cndmask_b32   v154, v61, sext(v107), vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    { 0x0134d6f9U, 0x1f00003d, true, "        v_cndmask_b32   v154, v61, sext(-v107), vcc "
+        "dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    { 0x0134d6f9U, 0x3f00003d, true, "        v_cndmask_b32   v154, v61, "
+        "sext(-abs(v107)), vcc dst_sel:byte0 src0_sel:byte0 src1_sel:invalid\n" },
+    /* VOP_DPP */
+    { 0x0134d6faU, 0xbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[0,0,0,0] bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x72be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0xb4be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[0,1,3,2] bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x100be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x101be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:1 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x102be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:2 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x105be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:5 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x106be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:6 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x10abe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:10 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x10dbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:13 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x10fbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shl:15 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x110be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x110 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x11abe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_shr:10 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x120be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x120 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x12abe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_ror:10 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x12fbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_ror:15 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x130be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_shl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x131be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x131 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x134be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_rol bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x136be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x136 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x138be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_shr bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x13ebe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x13e bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x13cbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "wave_ror bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x140be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_mirror bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x141be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_half_mirror bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x142be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_bcast15 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x143be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "row_bcast31 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x14dbe, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x14d bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x193be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "dppctrl:0x193 bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x872be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x872be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x1872be, true, "        v_cndmask_b32   v154, -v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x2872be, true, "        v_cndmask_b32   v154, abs(v190), v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x3872be, true, "        v_cndmask_b32   v154, -abs(v190), v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x4872be, true, "        v_cndmask_b32   v154, v190, -v107, vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x8872be, true, "        v_cndmask_b32   v154, v190, abs(v107), vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0xc872be, true, "        v_cndmask_b32   v154, v190, -abs(v107), vcc "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x0134d6faU, 0x10072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:1 row_mask:0\n" },
+    { 0x0134d6faU, 0xe0072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:14 row_mask:0\n" },
+    { 0x0134d6faU, 0x100072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:0 row_mask:1\n" },
+    { 0x0134d6faU, 0xd00072be, true, "        v_cndmask_b32   v154, v190, v107, vcc "
+        "quad_perm:[2,0,3,1] bank_mask:0 row_mask:13\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,

@@ -412,7 +412,11 @@ struct ElfRegionTemplate
     
     /// true if content from pointer, otherwise will be generated from class
     bool dataFromPointer;
-    typename Types::Word size;   ///< region size
+    
+    /// region size
+    /** if alignment of this region is zero and size doesn't to alignment of next region
+     * then size of this region will be fixed to alignment of next region */
+    typename Types::Word size;
     typename Types::Word align;  ///< region alignment
     union
     {
