@@ -256,7 +256,9 @@ void GCNDisassembler::beforeDisassemble()
             else
             {   // VOP2
                 const cxuint opcode = (insnCode >> 25)&0x3f;
-                if (opcode == 32 || opcode == 33) // V_MADMK and V_MADAK
+                if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
+                    (isGCN12 && (opcode == 23 || opcode == 24 ||
+                    opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
                     pos++;  // inline 32-bit constant
                 else if ((insnCode&0x1ff) == 0xff || // literal
                     // SDWA, DDP
@@ -882,10 +884,10 @@ static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 
 static const char* hwregNames[13] =
 {
-    "0", "MODE", "STATUS", "TRAPSTS",
-    "HW_ID", "GPR_ALLOC", "LDS_ALLOC", "IB_STS",
-    "PC_LO", "PC_HI", "INST_DW0", "INST_DW1",
-    "IB_DBG0"
+    "0", "mode", "status", "trapsts",
+    "hw_id", "gpr_alloc", "lds_alloc", "ib_sts",
+    "pc_lo", "pc_hi", "inst_dw0", "inst_dw1",
+    "ib_dbg0"
 };
 
 template<typename LabelWriter>
@@ -2244,7 +2246,9 @@ void GCNDisassembler::disassemble()
             else
             {   // VOP2
                 const cxuint opcode = (insnCode >> 25)&0x3f;
-                if (opcode == 32 || opcode == 33) // V_MADMK and V_MADAK
+                if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
+                    (isGCN12 && (opcode == 23 || opcode == 24 ||
+                    opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
                 {
                     if (pos < codeWordsNum)
                         insnCode2 = ULEV(codeWords[pos++]);
