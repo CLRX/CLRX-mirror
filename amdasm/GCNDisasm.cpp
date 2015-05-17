@@ -1671,8 +1671,11 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             buf[bufPos++] = '/';
             buf[bufPos++] = '*';
             buf[bufPos++] = ' ';
-            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 20);
-            buf[bufPos++] = 'f';
+            if (displayFloatLits == FLTLIT_F32)
+                bufPos += ftocstrCStyle(fu.f, buf+bufPos, 20);
+            else
+                bufPos += htocstrCStyle(fu.u, buf+bufPos, 20);
+            buf[bufPos++] = (displayFloatLits == FLTLIT_F32)?'f':'h';
             buf[bufPos++] = ' ';
             buf[bufPos++] = '*';
             buf[bufPos++] = '/';
