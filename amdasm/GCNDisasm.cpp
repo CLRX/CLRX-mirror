@@ -439,8 +439,15 @@ static size_t decodeGCNVRegOperand(cxuint op, cxuint vregNum, char* buf)
     return regRanges(op, vregNum, buf+1)+1;
 }
 
+enum FloatLitType: cxbyte
+{
+    FLTLIT_NONE,
+    FLTLIT_F32,
+    FLTLIT_F16,
+};
+
 static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arch,
-           uint32_t literal = 0, bool floatLit = false)
+           uint32_t literal = 0, FloatLitType floatLit = FLTLIT_NONE)
 {
     if (((arch&ARCH_RX3X0)==0 && op < 104) ||
         ((arch&ARCH_RX3X0)!=0 && op < 102) || (op >= 256 && op < 512))
@@ -530,7 +537,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
     if (op == 255) // if literal
     {
         size_t pos = itocstrCStyle(literal, buf, 11, 16);
-        if (floatLit)
+        if (floatLit != FLTLIT_NONE)
         {
             FloatUnion fu;
             fu.u = literal;
@@ -538,8 +545,11 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
             buf[pos++] = '/';
             buf[pos++] = '*';
             buf[pos++] = ' ';
-            pos += ftocstrCStyle(fu.f, buf+pos, 20);
-            buf[pos++] = 'f';
+            if (floatLit == FLTLIT_F32)
+                pos += ftocstrCStyle(fu.f, buf+pos, 20);
+            else
+                pos += htocstrCStyle(fu.u, buf+pos, 20);
+            buf[pos++] = (floatLit == FLTLIT_F32)?'f':'h';
             buf[pos++] = ' ';
             buf[pos++] = '*';
             buf[pos++] = '/';
@@ -1366,7 +1376,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
 
 static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-         bool displayFloatLits)
+         FloatLitType displayFloatLits)
 {
     char* buf;
     if (arch & ARCH_RX3X0)
@@ -1450,7 +1460,7 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 
 static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-         bool displayFloatLits)
+         FloatLitType displayFloatLits)
 {
     char* buf;
     if (arch & ARCH_RX3X0)
@@ -1538,7 +1548,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 
 static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal,
-         bool displayFloatLits)
+         FloatLitType displayFloatLits)
 {
     char* buf;
     if (arch & ARCH_RX3X0)
@@ -1604,7 +1614,7 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         bufPos += itocstrCStyle(literal, buf+bufPos, 11, 16);
-        if (displayFloatLits)
+        if (displayFloatLits != FLTLIT_NONE)
         {
             FloatUnion fu;
             fu.u = literal;
@@ -1612,8 +1622,11 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             buf[bufPos++] = '/';
             buf[bufPos++] = '*';
             buf[bufPos++] = ' ';
-            bufPos += ftocstrCStyle(fu.f, buf+bufPos, 20);
-            buf[bufPos++] = 'f';
+            if (displayFloatLits != FLTLIT_F32)
+                bufPos += ftocstrCStyle(fu.f, buf+bufPos, 20);
+            else
+                bufPos += htocstrCStyle(fu.u, buf+bufPos, 20);
+            buf[bufPos++] = (displayFloatLits != FLTLIT_F32)?'f':'h';
             buf[bufPos++] = ' ';
             buf[bufPos++] = '*';
             buf[bufPos++] = '/';
@@ -1685,7 +1698,7 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 
 static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2,
-         bool displayFloatLits)
+         FloatLitType displayFloatLits)
 {
     char* buf = output.reserve(140);
     size_t bufPos = 0;
@@ -2763,9 +2776,11 @@ void GCNDisassembler::disassemble()
                 output.forward(bufPos);
             }
             
-            const bool displayFloatLits = 
-                    ((disassembler.getFlags()&DISASM_FLOATLITS) != 0 &&
-                    (gcnInsn->mode & GCN_MASK2) == GCN_FLOATLIT);
+            const FloatLitType displayFloatLits = 
+                    ((disassembler.getFlags()&DISASM_FLOATLITS) != 0) ?
+                    (((gcnInsn->mode & GCN_MASK2) == GCN_FLOATLIT) ? FLTLIT_F32 : 
+                    ((gcnInsn->mode & GCN_MASK2) == GCN_F16LIT) ? FLTLIT_F16 :
+                     FLTLIT_NONE) : FLTLIT_NONE;
             
             switch(gcnEncoding)
             {
