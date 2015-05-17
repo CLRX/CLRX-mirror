@@ -214,6 +214,8 @@ static int32_t parseFloatExponent(const char*& expstr, const char* inend)
             throw ParseException("End of floating point at exponent");
     }
     cxuint absExponent = 0;
+    if (expstr == inend ||*expstr < '0' || *expstr > '9')
+        throw ParseException("Garbages at floating point exponent");
     for (;expstr != inend && *expstr >= '0' && *expstr <= '9'; expstr++)
     {
         if (absExponent > ((1U<<31)/10))

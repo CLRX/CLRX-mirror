@@ -3739,7 +3739,9 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0x3934d715U, 0, false, "        v_addc_u32      v154, vcc, v21, v107, vcc\n" },
     { 0x3b34d715U, 0, false, "        v_subb_u32      v154, vcc, v21, v107, vcc\n" },
     { 0x3d34d715U, 0, false, "        v_subbrev_u32   v154, vcc, v21, v107, vcc\n" },
-    //{ 0x3f34d715U, 0, false, "        v_add_f16       v154, v21, v107\n" },
+    { 0x3f34d715U, 0, false, "        v_add_f16       v154, v21, v107\n" },
+    { 0x3f34d6ffU, 0x3d4c, true,
+        "        v_add_f16       v154, 0x3d4c /* 1.3242h */, v107\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,
