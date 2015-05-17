@@ -53,7 +53,7 @@ union DoubleUnion
 
 static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
 {
-    const char* end;
+    const char* end = nullptr;
     uint64_t result;
     cxuint width;
     const char* typeName;
@@ -93,6 +93,9 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
             break;
     }
     
+    if (end == nullptr || *end != 0)
+        std::cout << "Failed for #" << testId <<
+                ". outend is null or doesn't points to zero" << std::endl;
     if (testCase.expected != result)
     {
         std::ostringstream oss;
