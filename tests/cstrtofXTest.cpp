@@ -94,8 +94,13 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
     }
     
     if (end == nullptr || *end != 0)
-        std::cout << "Failed for #" << testId <<
+    {
+        std::ostringstream oss;
+        oss << "Failed for #" << testId << " with string='" << testCase.string <<
                 ". outend is null or doesn't points to zero" << std::endl;
+        oss.flush();
+        throw Exception(oss.str());
+    }
     if (testCase.expected != result)
     {
         std::ostringstream oss;
@@ -624,7 +629,7 @@ static const CStrtofXTestCase cstrtofXTestCases[] =
     { FT_D, "4.5395098885248518922272288095193501529226470624229992247242416071"
         "348586682483644341520195343575583279971397132612764835357666015626E-34",
         0x3902db3c22b8298dULL },
-    { FT_D, "0.24453547592710685176786711281238240189850330352783203125 d",
+    { FT_D, "0.24453547592710685176786711281238240189850330352783203125",
         0x3fcf4cf03fe8cbcaULL },
     /*
      * smallest denormals (half)
