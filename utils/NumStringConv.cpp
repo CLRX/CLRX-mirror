@@ -851,6 +851,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 throw ParseException("End of floating point at exponent");
             binaryExp = parseFloatExponent(outend, inend);
         }
+        else
+            outend = expstr;
         
         // determine real exponent
         cxint expOfValue = 0;
@@ -999,6 +1001,8 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 throw ParseException("End of floating point at exponent");
             decimalExp = parseFloatExponent(outend, inend);
         }
+        else
+            outend = expstr;
         
         // determine real exponent
         cxint decExpOfValue = 0;
