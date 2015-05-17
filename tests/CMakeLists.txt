@@ -25,7 +25,10 @@ ADD_EXECUTABLE(cstrtofXTest cstrtofXTest.cpp)
 TARGET_LINK_LIBRARIES(cstrtofXTest ${CMAKE_THREAD_LIBS_INIT} CLRXUtils)
 ADD_TEST(cstrtofXTest cstrtofXTest)
 
-ADD_EXECUTABLE(GCNDisasmOpcodes GCNDisasmOpcodes.cpp)
+ADD_EXECUTABLE(GCNDisasmOpcodes
+        GCNDisasmOpcodes.cpp
+        GCNDisasmOpc11.cpp
+        GCNDisasmOpc12.cpp)
 TARGET_LINK_LIBRARIES(GCNDisasmOpcodes ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(GCNDisasmOpcodes GCNDisasmOpcodes)
 
