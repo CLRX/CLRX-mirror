@@ -410,9 +410,9 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x6b34d715U, 0, false, "        VOP2_ill_53     v154, v21, v107\n" },
     { 0x6d34d715U, 0, false, "        VOP2_ill_54     v154, v21, v107\n" },
     /* VOP1 encoding */
-    { 0x7f3c004fU, 0, false, "        v_nop           vdst=0x9e vsrc=0x4f\n" },
+    { 0x7f3c004fU, 0, false, "        v_nop           vdst=0x9e src0=0x4f\n" },
     { 0x7f3c0000U, 0, false, "        v_nop           vdst=0x9e\n" },
-    { 0x7e00014fU, 0, false, "        v_nop           vsrc=0x14f\n" },
+    { 0x7e00014fU, 0, false, "        v_nop           src0=0x14f\n" },
     { 0x7e000000U, 0, false, "        v_nop\n" },
     { 0x7f3c024fU, 0, false, "        v_mov_b32       v158, s79\n" },
     { 0x7e3c044fU, 0, false, "        v_readfirstlane_b32 s30, s79\n" },
@@ -532,7 +532,7 @@ static const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x7f3c814fU, 0, false, "        v_frexp_mant_f32 v158, v79\n" },
     { 0x7f3c80ffU, 0x40000000U, true, "        v_frexp_mant_f32 v158, "
                 "0x40000000 /* 2f */\n" },
-    { 0x7f3c834fU, 0, false, "        v_clrexcp       vdst=0x9e vsrc=0x14f\n" },
+    { 0x7f3c834fU, 0, false, "        v_clrexcp       vdst=0x9e src0=0x14f\n" },
     { 0x7e008200U, 0, false, "        v_clrexcp\n" },
     { 0x7f3c854fU, 0, false, "        v_movreld_b32   v158, v79\n" },
     { 0x7f3c874fU, 0, false, "        v_movrels_b32   v158, v79\n" },
@@ -3781,6 +3781,19 @@ static const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0x6b34d715U, 0, false, "        VOP2_ill_53     v154, v21, v107\n" },
     { 0x6d34d715U, 0, false, "        VOP2_ill_54     v154, v21, v107\n" },
     { 0x6f34d715U, 0, false, "        VOP2_ill_55     v154, v21, v107\n" },
+    /* VOP1 encoding */
+    { 0x7f3c004fU, 0, false, "        v_nop           vdst=0x9e src0=0x4f\n" },
+    { 0x7f3c0000U, 0, false, "        v_nop           vdst=0x9e\n" },
+    { 0x7e00014fU, 0, false, "        v_nop           src0=0x14f\n" },
+    { 0x7e000000U, 0, false, "        v_nop\n" },
+    { 0x7e0000f9U, 0x3d003d, true,"        v_nop           "
+        "src0=0xf9 dst_sel:byte0 src0_sel:word1 src1_sel:byte0 sext0 neg0 abs0\n" },
+    { 0x7e0000f9U, 0x3d00003d, true,"        v_nop           "
+        "src0=0xf9 dst_sel:byte0 src0_sel:byte0 src1_sel:word1 sext1 neg1 abs1\n" },
+    { 0x7e0000faU, 0xc872be, true, "        v_nop           "
+        "src0=0xfa quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0 neg1 abs1\n" },
+    { 0x7e0000faU, 0x3872be, true, "        v_nop           "
+        "src0=0xfa quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0 neg0 abs0\n" },
 };
 
 static void testDecGCNOpcodes(cxuint i, const GCNDisasmOpcodeCase& testCase,

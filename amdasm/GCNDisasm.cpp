@@ -1530,7 +1530,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         }
         if ((insnCode & 0x1ff) != 0)
         {
-            ::memcpy(buf+bufPos, "vsrc=", 5);
+            ::memcpy(buf+bufPos, "src0=", 5);
             bufPos += 5;
             bufPos += itocstrCStyle(insnCode&0x1ff, buf+bufPos, 6, 16);
         }
