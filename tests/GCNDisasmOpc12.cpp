@@ -1323,6 +1323,18 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0x7dff934fU, 0, false, "        v_cmpx_tru_u64  vcc, v[79:80], v[201:202]\n" },
     { 0x7dff92ffU, 0x40000000U, true, "        v_cmpx_tru_u64  "
                 "vcc, 0x40000000, v[201:202]\n" },
+    /* VOPC SDWA */
+    { 0x7dbf92f9U, 0x3d003d, true, "        v_cmpx_tru_u32  vcc, sext(-abs(v61)), v201 "
+         "dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    { 0x7dbf92f9U, 0x383d003d, true, "        v_cmpx_tru_u32  vcc, sext(-abs(v61)), "
+        "sext(-abs(v201)) dst_sel:byte0 src0_sel:word1 src1_sel:byte0\n" },
+    /* VOPC DPP */
+    { 0x7dff92faU, 0x3872be, true,
+        "        v_cmpx_tru_u64  vcc, -abs(v[190:191]), v[201:202] "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    { 0x7dff92faU, 0xc872be, true,
+        "        v_cmpx_tru_u64  vcc, v[190:191], -abs(v[201:202]) "
+        "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
     
     { 0, 0, false, nullptr }
 };
