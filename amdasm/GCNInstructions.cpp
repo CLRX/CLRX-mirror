@@ -481,6 +481,8 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_subb_u32",          GCNENC_VOP3B,  GCN_DS2_VCC|GCN_VOP3_VOP2, 285,  ARCH_RX3X0  },
     { "v_subbrev_u32",       GCNENC_VOP2,   GCN_DS2_VCC,              30,   ARCH_RX3X0  },
     { "v_subbrev_u32",       GCNENC_VOP3B,  GCN_DS2_VCC| GCN_VOP3_VOP2, 286,  ARCH_RX3X0  },
+    { "v_add_f16",           GCNENC_VOP2,   GCN_F16LIT,               31,    ARCH_RX3X0  },
+    { "v_add_f16",           GCNENC_VOP3A,  GCN_VOP3_VOP2_DS12,       287,  ARCH_RX3X0  },
     
     { "v_nop",               GCNENC_VOP1,   GCN_VOP_ARG_NONE,         0,    ARCH_GCN_1_0_1  },
     { "v_nop",               GCNENC_VOP3A,  GCN_VOP_ARG_NONE|GCN_VOP3_VOP1, 384,  ARCH_GCN_1_0_1  },
