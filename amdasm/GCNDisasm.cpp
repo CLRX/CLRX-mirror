@@ -449,8 +449,8 @@ enum FloatLitType: cxbyte
 static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arch,
            uint32_t literal = 0, FloatLitType floatLit = FLTLIT_NONE)
 {
-    if (((arch&ARCH_RX3X0)==0 && op < 104) ||
-        ((arch&ARCH_RX3X0)!=0 && op < 102) || (op >= 256 && op < 512))
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
+    if ((!isGCN12 && op < 104) || (isGCN12 && op < 102) || (op >= 256 && op < 512))
     {   // scalar
         if (op >= 256)
         {
@@ -465,7 +465,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
     const cxuint op2 = op&~1U;
     if (op2 == 106 || op2 == 108 || op2 == 110 || op2 == 126 ||
         (op2 == 104 && (arch&ARCH_RX2X0)!=0) ||
-        ((op2 == 102 || op2 == 104) && (arch&ARCH_RX3X0)!=0))
+        ((op2 == 102 || op2 == 104) && isGCN12))
     {   // VCC
         size_t pos = 0;
         switch(op2)
@@ -475,7 +475,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
                 pos += 12;
                 break;
             case 104:
-                if ((arch&ARCH_RX3X0)!=0)
+                if (isGCN12)
                 {   // GCN1.2
                     ::memcpy(buf+pos, "xnack_mask", 10);
                     pos += 10;
@@ -617,7 +617,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
     switch(op)
     {
         case 248:
-            if ((arch & ARCH_RX3X0) != 0)
+            if (isGCN12)
             {   // 1/(2*PI)
                 ::memcpy(buf, "0.15915494", 10);
                 return 10;
@@ -1379,7 +1379,8 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          FloatLitType displayFloatLits)
 {
     char* buf;
-    if (arch & ARCH_RX3X0)
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
+    if (isGCN12)
         buf = output.reserve(100);
     else
         buf = output.reserve(80);
@@ -1392,7 +1393,7 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     buf[bufPos++] = 'c';
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    if (arch & ARCH_RX3X0)
+    if (isGCN12)
     {
         if (src0Field == 0xf9)
             extraFlags = decodeVOPSDWAFlags(literal);
@@ -1449,7 +1450,7 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         buf[bufPos++] = ')';
     
     output.forward(bufPos);
-    if (arch & ARCH_RX3X0)
+    if (isGCN12)
     {
         if (src0Field == 0xf9)
             decodeVOPSDWA(output, literal, true, true);
@@ -1463,7 +1464,8 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          FloatLitType displayFloatLits)
 {
     char* buf;
-    if (arch & ARCH_RX3X0)
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
+    if (isGCN12)
         buf = output.reserve(110);
     else
         buf = output.reserve(90);
@@ -1472,7 +1474,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     const cxuint src0Field = (insnCode&0x1ff);
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
     
-    if (arch & ARCH_RX3X0)
+    if (isGCN12)
     {
         if (src0Field == 0xf9)
             extraFlags = decodeVOPSDWAFlags(literal);
@@ -1537,7 +1539,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         argsUsed = false;
     }
     output.forward(bufPos);
-    if (arch & ARCH_RX3X0)
+    if (isGCN12)
     {
         if (src0Field == 0xf9)
             decodeVOPSDWA(output, literal, argsUsed, argsUsed);
@@ -1551,7 +1553,8 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          FloatLitType displayFloatLits)
 {
     char* buf;
-    if (arch & ARCH_RX3X0)
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
+    if (isGCN12)
         buf = output.reserve(130);
     else
         buf = output.reserve(110);
@@ -1561,7 +1564,7 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     const cxuint src0Field = (insnCode&0x1ff);
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
     
-    if (arch & ARCH_RX3X0)
+    if (isGCN12)
     {
         if (src0Field == 0xf9)
             extraFlags = decodeVOPSDWAFlags(literal);
@@ -1690,7 +1693,7 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         buf[bufPos++] = 'c';
     }
     output.forward(bufPos);
-    if (arch & ARCH_RX3X0)
+    if (isGCN12)
     {
         if (src0Field == 0xf9)
             decodeVOPSDWA(output, literal, true, true);
@@ -1704,6 +1707,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          FloatLitType displayFloatLits)
 {
     char* buf = output.reserve(140);
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     size_t bufPos = 0;
     const cxuint opcode = ((insnCode>>17)&0x1ff);
     
@@ -1824,7 +1828,8 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         bufPos += 6;
     }
     
-    if (gcnInsn.encoding == GCNENC_VOP3A && (insnCode&0x800) != 0)
+    if ((!isGCN12 && gcnInsn.encoding == GCNENC_VOP3A && (insnCode&0x800) != 0) ||
+        (isGCN12 && (insnCode&0x8000) != 0))
     {
         ::memcpy(buf+bufPos, " clamp", 6);
         bufPos += 6;

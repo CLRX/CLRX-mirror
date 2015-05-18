@@ -1335,6 +1335,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0x7dff92faU, 0xc872be, true,
         "        v_cmpx_tru_u64  vcc, v[190:191], -abs(v[201:202]) "
         "quad_perm:[2,0,3,1] bound_ctrl bank_mask:0 row_mask:0\n" },
+    /* VOP3 encoding */
     
     { 0, 0, false, nullptr }
 };
