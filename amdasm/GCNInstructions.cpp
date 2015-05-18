@@ -569,7 +569,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_cvt_off_f32_i4",    GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1,        398,  ARCH_GCN_1_0_1  },
     { "v_cvt_f32_f64",       GCNENC_VOP1,   GCN_REG_SRC0_64,          15,   ARCH_GCN_ALL  },
     { "v_cvt_f32_f64",       GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_REG_SRC0_64,335,  ARCH_RX3X0  },
-    { "v_cvt_f32_f64",       GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_REG_SRC0_64,399,  ARCH_GCN_ALL  },
+    { "v_cvt_f32_f64",       GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_REG_SRC0_64,399,  ARCH_GCN_1_0_1  },
     { "v_cvt_f64_f32",       GCNENC_VOP1,   GCN_REG_DST_64|GCN_FLOATLIT,16,   ARCH_GCN_ALL  },
     { "v_cvt_f64_f32",       GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_REG_DST_64,336,  ARCH_RX3X0  },
     { "v_cvt_f64_f32",       GCNENC_VOP3A,  GCN_VOP3_VOP1_DS1|GCN_REG_DST_64,400,  ARCH_GCN_1_0_1  },
