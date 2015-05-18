@@ -105,12 +105,16 @@ static void initializeGCNDisassembler()
     {
         const GCNInstruction& instr = gcnInstrsTable[i];
         const GCNEncodingSpace& encSpace = gcnInstrTableByCodeSpaces[instr.encoding];
-        if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr)
-            gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
-        else /* otherwise we for GCN1.1 */
+        if ((instr.archMask & ARCH_GCN_1_0_1) != 0)
         {
-            const GCNEncodingSpace& encSpace2 = gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
-            gcnInstrTableByCode[encSpace2.offset + instr.code] = instr;
+            if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr)
+                gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
+            else /* otherwise we for GCN1.1 */
+            {
+                const GCNEncodingSpace& encSpace2 =
+                        gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
+                gcnInstrTableByCode[encSpace2.offset + instr.code] = instr;
+            }
         }
         if ((instr.archMask & ARCH_RX3X0) != 0)
         {

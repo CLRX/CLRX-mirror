@@ -1774,5 +1774,72 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xd1350037U, 0x0002b41bU, true, "        VOP3A_ill_309   v55, s27, v90, s0\n" },
     { 0xd1360037U, 0x0002b41bU, true, "        VOP3A_ill_310   v55, s27, v90, s0\n" },
     { 0xd1370037U, 0x0002b41bU, true, "        VOP3A_ill_311   v55, s27, v90, s0\n" },
+    /* VOP1 instructions encoded to VOP3a/VOP3b */
+    { 0xd1400037U, 0x4002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b vsrc1=0x15a neg1\n" },
+    { 0xd1400000U, 0x00000000U, true, "        v_nop           vop3\n" },
+    { 0xd1400237U, 0x4002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b vsrc1=0x15a abs1 neg1\n" },
+    { 0xd1400137U, 0x4002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b abs0 vsrc1=0x15a neg1\n" },
+    { 0xd1400237U, 0xc01eb41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b vsrc1=0x15a abs1 neg1 vsrc2=0x7 neg2\n" },
+    { 0xd1400037U, 0x0002b41bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b vsrc1=0x15a\n" },
+    { 0xd1400037U, 0x0000001bU, true, "        v_nop           "
+                "dst=0x37 src0=0x1b vop3\n" },
+    { 0xd1408037U, 0x0000001bU, true, "        v_nop           "
+                "clamp dst=0x37 src0=0x1b\n" },
+    /* v_mov_b32 and v_readfirstlane_b32 */
+    { 0xd1410037U, 0x0000001bU, true, "        v_mov_b32       v55, s27 vop3\n" },
+    { 0xd1410037U, 0x0000011bU, true, "        v_mov_b32       v55, v27 vop3\n" },
+    { 0xd1418037U, 0x0000001bU, true, "        v_mov_b32       v55, s27 clamp\n" },
+    { 0xd1410037U, 0x00001e1bU, true, "        v_mov_b32       v55, s27 vsrc1=0xf\n" },
+    { 0xd1410037U, 0x003c001bU, true, "        v_mov_b32       v55, s27 vsrc2=0xf\n" },
+    { 0xd1410737U, 0x003c001bU, true, "        v_mov_b32       "
+                "v55, abs(s27) abs1 vsrc2=0xf abs2\n" },
+    { 0xd1410037U, 0x1800001bU, true, "        v_mov_b32       v55, s27 div:2\n" },
+    { 0xd1410037U, 0xf800001bU, true, "        v_mov_b32       "
+                "v55, -s27 div:2 neg1 neg2\n" },
+    { 0xd1410037U, 0x2000011bU, true, "        v_mov_b32       v55, -v27\n" },
+    { 0xd1420037U, 0x2000001bU, true, "        v_readfirstlane_b32 s55, -s27\n" },
+    { 0xd1420037U, 0x2000011bU, true, "        v_readfirstlane_b32 s55, -v27\n" },
+    { 0xd1420037U, 0x0000001bU, true, "        v_readfirstlane_b32 s55, s27 vop3\n" },
+    { 0xd1420037U, 0x0000011bU, true, "        v_readfirstlane_b32 s55, v27 vop3\n" },
+    { 0xd1428037U, 0x0000001bU, true, "        v_readfirstlane_b32 s55, s27 clamp\n" },
+    /* others */
+    { 0xd1430037U, 0x0000001bU, true, "        v_cvt_i32_f64   v55, s[27:28] vop3\n" },
+    { 0xd1430137U, 0x0000001bU, true, "        v_cvt_i32_f64   v55, abs(s[27:28])\n" },
+    { 0xd1430037U, 0x0000011bU, true, "        v_cvt_i32_f64   v55, v[27:28] vop3\n" },
+    { 0xd1430137U, 0x0000011bU, true, "        v_cvt_i32_f64   v55, abs(v[27:28])\n" },
+    { 0xd1440037U, 0x0000011bU, true, "        v_cvt_f64_i32   v[55:56], v27 vop3\n" },
+    { 0xd1440137U, 0x0000011bU, true, "        v_cvt_f64_i32   v[55:56], abs(v27)\n" },
+    { 0xd1450037U, 0x0000011bU, true, "        v_cvt_f32_i32   v55, v27 vop3\n" },
+    { 0xd1460037U, 0x0000011bU, true, "        v_cvt_f32_u32   v55, v27 vop3\n" },
+    { 0xd1470037U, 0x0000011bU, true, "        v_cvt_u32_f32   v55, v27 vop3\n" },
+    { 0xd1480037U, 0x0000011bU, true, "        v_cvt_i32_f32   v55, v27 vop3\n" },
+    { 0xd1490037U, 0x0000011bU, true, "        v_mov_fed_b32   v55, v27 vop3\n" },
+    { 0xd14a0037U, 0x0000011bU, true, "        v_cvt_f16_f32   v55, v27 vop3\n" },
+    { 0xd14b0037U, 0x0000011bU, true, "        v_cvt_f32_f16   v55, v27 vop3\n" },
+    { 0xd14c0037U, 0x0000011bU, true, "        v_cvt_rpi_i32_f32 v55, v27 vop3\n" },
+    { 0xd14d0037U, 0x0000011bU, true, "        v_cvt_flr_i32_f32 v55, v27 vop3\n" },
+    { 0xd14e0037U, 0x0000011bU, true, "        v_cvt_off_f32_i4 v55, v27 vop3\n" },
+    { 0xd14f0037U, 0x0000011bU, true, "        v_cvt_f32_f64   v55, v[27:28] vop3\n" },
+    { 0xd1500037U, 0x0000011bU, true, "        v_cvt_f64_f32   v[55:56], v27 vop3\n" },
+    { 0xd1510037U, 0x0000011bU, true, "        v_cvt_f32_ubyte0 v55, v27 vop3\n" },
+    { 0xd1520037U, 0x0000011bU, true, "        v_cvt_f32_ubyte1 v55, v27 vop3\n" },
+    { 0xd1530037U, 0x0000011bU, true, "        v_cvt_f32_ubyte2 v55, v27 vop3\n" },
+    { 0xd1540037U, 0x0000011bU, true, "        v_cvt_f32_ubyte3 v55, v27 vop3\n" },
+    { 0xd1550037U, 0x0000011bU, true, "        v_cvt_u32_f64   v55, v[27:28] vop3\n" },
+    { 0xd1560037U, 0x0000011bU, true, "        v_cvt_f64_u32   v[55:56], v27 vop3\n" },
+    { 0xd1570037U, 0x0000011bU, true, "        v_trunc_f64     v[55:56], v[27:28] vop3\n" },
+    { 0xd1580037U, 0x0000011bU, true, "        v_ceil_f64      v[55:56], v[27:28] vop3\n" },
+    { 0xd1590037U, 0x0000011bU, true, "        v_rndne_f64     v[55:56], v[27:28] vop3\n" },
+    { 0xd15a0037U, 0x0000011bU, true, "        v_floor_f64     v[55:56], v[27:28] vop3\n" },
+    { 0xd15b0037U, 0x0000011bU, true, "        v_fract_f32     v55, v27 vop3\n" },
+    { 0xd15c0037U, 0x0000011bU, true, "        v_trunc_f32     v55, v27 vop3\n" },
+    { 0xd15d0037U, 0x0000011bU, true, "        v_ceil_f32      v55, v27 vop3\n" },
+    { 0xd15e0037U, 0x0000011bU, true, "        v_rndne_f32     v55, v27 vop3\n" },
+    { 0xd15f0037U, 0x0000011bU, true, "        v_floor_f32     v55, v27 vop3\n" },
     { 0, 0, false, nullptr }
 };
