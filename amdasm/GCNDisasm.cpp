@@ -1709,7 +1709,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     char* buf = output.reserve(140);
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     size_t bufPos = 0;
-    const cxuint opcode = ((insnCode>>17)&0x1ff);
+    const cxuint opcode = (isGCN12) ? ((insnCode>>16)&0x3ff) : ((insnCode>>17)&0x1ff);
     
     const cxuint vdst = insnCode&0xff;
     const cxuint vsrc0 = insnCode2&0x1ff;
@@ -1828,8 +1828,9 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         bufPos += 6;
     }
     
-    if ((!isGCN12 && gcnInsn.encoding == GCNENC_VOP3A && (insnCode&0x800) != 0) ||
-        (isGCN12 && (insnCode&0x8000) != 0))
+    const bool clamp = (!isGCN12 && gcnInsn.encoding == GCNENC_VOP3A &&
+            (insnCode&0x800) != 0) || (isGCN12 && (insnCode&0x8000) != 0);
+    if (clamp)
     {
         ::memcpy(buf+bufPos, " clamp", 6);
         bufPos += 6;
@@ -1924,7 +1925,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 ((mode1 != GCN_SRC2_VCC && vsrc2 == 0) || vsrc2 == 106))
                 isVOP1Word = true;
             /* check clamp and abs flags */
-            if ((insnCode&((usedMask<<8)|0x800)) != 0)
+            if ((insnCode&(usedMask<<8)) != 0 || clamp)
                 isVOP1Word = false;
         }
         /* for VOP2 encoded as VOP3b (v_addc....) */
