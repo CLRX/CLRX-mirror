@@ -2008,6 +2008,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "        v_interp_mov_f32 v42, p0, attr39.z vop3\n" },
     { 0xd272002aU, 0x00022ca7U, true,
         "        v_interp_mov_f32 v42, invalid_278, attr39.z\n" },
+    { 0xd2730037U, 0x0002b41bU, true, "        VOP3A_ill_627   v55, s27, v90, s0\n" },
     { 0xd274802aU, 0x00022ca7U, true,   /* no vop3 */
         "        v_interp_p1ll_f16 v42, v22, attr39.z clamp\n" },
     { 0xd274002aU, 0x000220a7U, true,   /* no vop3 */
@@ -2020,5 +2021,46 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "        v_interp_p2_f16 v42, s1, attr39.z, s29\n" },
     { 0xd276002aU, 0x007403a7, true,
         "        v_interp_p2_f16 v42, s1, attr39.z, s29 high\n" },
+    /* others */
+    { 0xd2800037U, 0x00034d4fU, true, "        v_add_f64       "
+                "v[55:56], v[79:80], v[166:167]\n" },
+    { 0xd2810037U, 0x00034d4fU, true, "        v_mul_f64       "
+                "v[55:56], v[79:80], v[166:167]\n" },
+    { 0xd2820037U, 0x00034d4fU, true, "        v_min_f64       "
+                "v[55:56], v[79:80], v[166:167]\n" },
+    { 0xd2830037U, 0x00034d4fU, true, "        v_max_f64       "
+                "v[55:56], v[79:80], v[166:167]\n" },
+    { 0xd2840037U, 0x00034d4fU, true, "        v_ldexp_f64     "
+                "v[55:56], v[79:80], v166\n" },
+    { 0xd2850037U, 0x00034d4fU, true, "        v_mul_lo_u32    v55, v79, v166\n" },
+    { 0xd2860037U, 0x00034d4fU, true, "        v_mul_hi_u32    v55, v79, v166\n" },
+    { 0xd2870037U, 0x00034d4fU, true, "        v_mul_hi_i32    v55, v79, v166\n" },
+    { 0xd2880037U, 0x4002b41bU, true, "        v_ldexp_f32     v55, s27, -v90\n" },
+    { 0xd2890037U, 0x0002b51bU, true, "        v_readlane_b32  s55, v27, v90\n" },
+    { 0xd28a0037U, 0x0002b51bU, true, "        v_writelane_b32 v55, v27, v90\n" },
+    { 0xd28a0037U, 0x0002b41bU, true, "        v_writelane_b32 v55, s27, v90\n" },
+    { 0xd28b0037U, 0x4002b41bU, true, "        v_bcnt_u32_b32  v55, s27, -v90\n" },
+    { 0xd28c0037U, 0x4002b41bU, true, "        v_mbcnt_lo_u32_b32 v55, s27, -v90\n" },
+    { 0xd28d0037U, 0x4002b41bU, true, "        v_mbcnt_hi_u32_b32 v55, s27, -v90\n" },
+    { 0xd28e0037U, 0x4002b41bU, true, "        v_mac_legacy_f32 v55, s27, -v90\n" },
+    { 0xd28f0037U, 0x00034d4fU, true,
+                "        v_lshlrev_b64   v[55:56], v79, v[166:167]\n" },
+    { 0xd2900037U, 0x00034d4fU, true,
+                "        v_lshrrev_b64   v[55:56], v79, v[166:167]\n" },
+    { 0xd2910037U, 0x00034d4fU, true,
+                "        v_ashrrev_b64   v[55:56], v79, v[166:167]\n" },
+    { 0xd2920037U, 0x07974d4fU, true, "        v_trig_preop_f64 "
+                "v[55:56], v[79:80], v166 vsrc2=0x1e5\n" },
+    { 0xd2930037U, 0x4002b41bU, true, "        v_bfm_b32       v55, s27, -v90\n" },
+    { 0xd2940037U, 0x4002b41bU, true, "        v_cvt_pknorm_i16_f32 v55, s27, -v90\n" },
+    { 0xd2950037U, 0x4002b41bU, true, "        v_cvt_pknorm_u16_f32 v55, s27, -v90\n" },
+    { 0xd2960037U, 0x4002b41bU, true, "        v_cvt_pkrtz_f16_f32 v55, s27, -v90\n" },
+    { 0xd2970037U, 0x4002b41bU, true, "        v_cvt_pk_u16_u32 v55, s27, -v90\n" },
+    { 0xd2980037U, 0x4002b41bU, true, "        v_cvt_pk_i16_i32 v55, s27, -v90\n" },
+    { 0xd2990037U, 0x0002b41bU, true, "        VOP3A_ill_665   v55, s27, v90, s0\n" },
+    { 0xd29a0037U, 0x0002b41bU, true, "        VOP3A_ill_666   v55, s27, v90, s0\n" },
+    { 0xd29b0037U, 0x0002b41bU, true, "        VOP3A_ill_667   v55, s27, v90, s0\n" },
+    { 0xd29c0037U, 0x0002b41bU, true, "        VOP3A_ill_668   v55, s27, v90, s0\n" },
+    
     { 0, 0, false, nullptr }
 };

@@ -73,6 +73,7 @@ enum : uint16_t
     GCN_REG_SRC1_64 = 4,
     GCN_REG_SRC2_64 = 8,
     GCN_REG_DS0_64 = 3,
+    GCN_REG_DS1_64 = 5,
     GCN_REG_DS2_64 = 9,
     /* SOP */
     GCN_IMM_NONE = 0x10, // used in Scall insns
