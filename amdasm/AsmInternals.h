@@ -115,6 +115,8 @@ enum : uint16_t
     GCN_VOP3_SRC1_SGPR = 0x800,
     GCN_VOP3_DS1_SGPR = 0xc00,
     GCN_VOP3_MASK2 = 0x300,
+    GCN_VINTRP_SRC2 = 0x1000,
+    GCN_VOP3_MASK3 = 0xf000,
     // DS encoding modes
     GCN_ADDR_NONE = 0x0,
     GCN_ADDR_DST = 0x10,

@@ -1808,6 +1808,27 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             bufPos += putByteToBuf(attr, buf+bufPos);
             buf[bufPos++] = '.';
             buf[bufPos++] = "xyzw"[((vsrc0>>6)&3)]; // attrchannel
+            
+            if ((gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2)
+            {
+                buf[bufPos++] = ',';
+                buf[bufPos++] = ' ';
+                if ((insnCode2 & (1U<<31)) != 0)
+                    buf[bufPos++] = '-';
+                if (absFlags & 4)
+                {
+                    buf[bufPos++] = 'a';
+                    buf[bufPos++] = 'b';
+                    buf[bufPos++] = 's';
+                    buf[bufPos++] = '(';
+                }
+                bufPos += decodeGCNOperand(vsrc2, 1, buf + bufPos, arch, 0,
+                                   displayFloatLits);
+                if (absFlags & 4)
+                    buf[bufPos++] = ')';
+                vsrc2Used = true;
+            }
+            
             if (vsrc0 & 0x100)
             {
                 ::memcpy(buf+bufPos, " high", 5);

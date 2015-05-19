@@ -1676,6 +1676,8 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_interp_p2_f32",     GCNENC_VOP3A,  GCN_VOP3_VINTRP,          625,  ARCH_RX3X0  },
     { "v_interp_mov_f32",    GCNENC_VOP3A,  GCN_VOP3_VINTRP|GCN_P0_P10_P20, 626,  ARCH_RX3X0  },
     { "v_interp_p1ll_f16",   GCNENC_VOP3A,  GCN_VOP3_VINTRP_NEW,      628,  ARCH_RX3X0  },
+    { "v_interp_p1lv_f16",   GCNENC_VOP3A,  GCN_VOP3_VINTRP_NEW|GCN_VINTRP_SRC2, 629,  ARCH_RX3X0  },
+    { "v_interp_p2_f16",     GCNENC_VOP3A,  GCN_VOP3_VINTRP_NEW|GCN_VINTRP_SRC2, 630,  ARCH_RX3X0  },
     
     { "v_mad_u64_u32",       GCNENC_VOP3B,  GCN_REG_DS2_64|GCN_DST_VCC_VSRC2, 488,  ARCH_RX3X0  },
     { "v_mad_i64_i32",       GCNENC_VOP3B,  GCN_REG_DS2_64|GCN_DST_VCC_VSRC2, 489,  ARCH_RX3X0  },

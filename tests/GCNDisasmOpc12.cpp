@@ -2012,5 +2012,13 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "        v_interp_p1ll_f16 v42, v22, attr39.z clamp\n" },
     { 0xd274002aU, 0x000220a7U, true,   /* no vop3 */
         "        v_interp_p1ll_f16 v42, v16, attr39.z\n" },
+    { 0xd275002aU, 0x007402a7, true,
+        "        v_interp_p1lv_f16 v42, s1, attr39.z, s29\n" },
+    { 0xd275002aU, 0x007403a7, true,
+        "        v_interp_p1lv_f16 v42, s1, attr39.z, s29 high\n" },
+    { 0xd276002aU, 0x007402a7, true,
+        "        v_interp_p2_f16 v42, s1, attr39.z, s29\n" },
+    { 0xd276002aU, 0x007403a7, true,
+        "        v_interp_p2_f16 v42, s1, attr39.z, s29 high\n" },
     { 0, 0, false, nullptr }
 };
