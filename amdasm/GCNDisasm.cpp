@@ -1647,6 +1647,26 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     }
 }
 
+static const char* vintrpParamsTbl[] =
+{ "p10", "p20", "p0" };
+
+static size_t decodeVINTRPParam(uint16_t p, char* buf)
+{
+    if (p > 3)
+    {
+        ::memcpy(buf, "invalid_", 8);
+        return 8+itocstrCStyle(p, buf+8, 8);
+    }
+    else
+    {
+        const char* paramName = vintrpParamsTbl[p];
+        size_t k = 0;
+        for (k = 0; paramName[k] != 0; k++)
+            buf[k] = paramName[k];
+        return k;
+    }
+}
+
 static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2,
          FloatLitType displayFloatLits)
@@ -1662,6 +1682,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     const cxuint vsrc2 = (insnCode2>>18)&0x1ff;
     const cxuint sdst = (insnCode>>8)&0x7f;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const uint16_t vop3Mode = (gcnInsn.mode&GCN_VOP3_MASK2);
     
     bool vdstUsed = false;
     bool vsrc0Used = false;
@@ -1696,7 +1717,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
         
-        if (mode1 != GCN_VINTRP)
+        if (vop3Mode != GCN_VOP3_VINTRP)
         {
             if ((insnCode2 & (1U<<29)) != 0)
                 buf[bufPos++] = '-';
@@ -1714,7 +1735,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             vsrc0Used = true;
         }
         
-        if (mode1 != GCN_SRC12_NONE && (mode1 != GCN_VINTRP && mode1 != GCN_VINTRP_NEW))
+        if (mode1 != GCN_SRC12_NONE && (vop3Mode != GCN_VOP3_VINTRP))
         {
             buf[bufPos++] = ',';
             buf[bufPos++] = ' ';
@@ -1763,8 +1784,24 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             }
             vsrc1Used = true;
         }
-        else if (mode1 == GCN_VINTRP || mode1 == GCN_VINTRP_NEW)
+        else if (vop3Mode == GCN_VOP3_VINTRP)
         {
+            if ((insnCode2 & (1U<<30)) != 0)
+                buf[bufPos++] = '-';
+            if (absFlags & 2)
+            {
+                buf[bufPos++] = 'a';
+                buf[bufPos++] = 'b';
+                buf[bufPos++] = 's';
+                buf[bufPos++] = '(';
+            }
+            if (mode1 == GCN_P0_P10_P20)
+                bufPos += decodeVINTRPParam(vsrc1, buf+bufPos);
+            else
+                bufPos += decodeGCNOperand(vsrc1, 1, buf + bufPos, arch,
+                                           0, displayFloatLits);
+            if (absFlags & 2)
+                buf[bufPos++] = ')';
             ::memcpy(buf+bufPos, ", attr", 6);
             bufPos += 6;
             const cxuint attr = vsrc0&63;
@@ -1776,6 +1813,8 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 ::memcpy(buf+bufPos, " high", 5);
                 bufPos += 5;
             }
+            vsrc0Used = true;
+            vsrc1Used = true;
         }
         vdstUsed = true;
     }
@@ -1867,11 +1906,12 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     const cxuint usedMask = 7 & ~(vsrc2CC?4:0);
     /* check whether instruction is this same like VOP2/VOP1/VOPC */
     bool isVOP1Word = false;
-    if (mode1 == GCN_VINTRP || mode1 == GCN_VINTRP_NEW)
+    if (vop3Mode == GCN_VOP3_VINTRP)
     {
-        if (mode1 == GCN_VINTRP) /* check clamp and abs flags */
-            isVOP1Word = !((insnCode&(5<<8)) != 0 || (insnCode2&(5<<29)) != 0 ||
-                    clamp || vsrc1 < 256);
+        if (mode1 != GCN_NEW_OPCODE) /* check clamp and abs flags */
+            isVOP1Word = !((insnCode&(7<<8)) != 0 || (insnCode2&(7<<29)) != 0 ||
+                    clamp || ((vsrc1 < 256 && mode1!=GCN_P0_P10_P20) || (mode1==GCN_P0_P10_P20 && vsrc1 >= 256)) ||
+                    vsrc0 >= 256 || vsrc2 != 0);
     }
     else if (mode1 != GCN_ARG1_IMM && mode1 != GCN_ARG2_IMM)
     {
@@ -1881,12 +1921,10 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             if (opcode < 256 && vdst == 106 /* vcc */ && vsrc1 >= 256 && vsrc2 == 0)
                 isVOP1Word = true;
             /* for VOP1 */
-            else if ((gcnInsn.mode&GCN_VOP3_MASK2) == GCN_VOP3_VOP1 && vsrc1 == 0 &&
-                vsrc2 == 0)
+            else if (vop3Mode == GCN_VOP3_VOP1 && vsrc1 == 0 && vsrc2 == 0)
                 isVOP1Word = true;
             /* for VOP2 */
-            else if ((gcnInsn.mode&GCN_VOP3_MASK2) == GCN_VOP3_VOP2 &&
-                ((!vsrc1Used && vsrc1 == 0) || 
+            else if (vop3Mode == GCN_VOP3_VOP2 && ((!vsrc1Used && vsrc1 == 0) || 
                 /* distinguish for v_read/writelane and other vop2 encoded as vop3 */
                 (((gcnInsn.mode&GCN_VOP3_SRC1_SGPR)==0) && vsrc1 >= 256) ||
                 (((gcnInsn.mode&GCN_VOP3_SRC1_SGPR)!=0) && vsrc1 < 256)) &&
@@ -1897,8 +1935,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 isVOP1Word = false;
         }
         /* for VOP2 encoded as VOP3b (v_addc....) */
-        else if (gcnInsn.encoding == GCNENC_VOP3B &&
-                (gcnInsn.mode&GCN_VOP3_MASK2) == GCN_VOP3_VOP2 &&
+        else if (gcnInsn.encoding == GCNENC_VOP3B && vop3Mode == GCN_VOP3_VOP2 &&
                 vsrc1 >= 256 && sdst == 106 /* vcc */ &&
                 ((vsrc2 == 106 && mode1 == GCN_DS2_VCC) || vsrc2 == 0)) /* VOP3b */
             isVOP1Word = true;
@@ -1926,7 +1963,10 @@ static void decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch,
     bufPos += decodeGCNVRegOperand((insnCode>>18)&0xff, 1, buf+bufPos);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
-    bufPos += decodeGCNVRegOperand(insnCode&0xff, 1, buf+bufPos);
+    if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
+        bufPos += decodeVINTRPParam(insnCode&0xff, buf+bufPos);
+    else
+        bufPos += decodeGCNVRegOperand(insnCode&0xff, 1, buf+bufPos);
     ::memcpy(buf+bufPos, ", attr", 6);
     bufPos += 6;
     const cxuint attr = (insnCode>>10)&63;

@@ -1894,7 +1894,10 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xc97428d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr10.x\n" },
     { 0xc9743cd3U, 0, false, "        v_interp_p1_f32 v93, v211, attr15.x\n" },
     { 0xc9756bd3U, 0, false, "        v_interp_p2_f32 v93, v211, attr26.w\n" },
-    { 0xc9766bd3U, 0, false, "        v_interp_mov_f32 v93, v211, attr26.w\n" },
+    { 0xc9766b00U, 0, false, "        v_interp_mov_f32 v93, p10, attr26.w\n" },
+    { 0xc9766b01U, 0, false, "        v_interp_mov_f32 v93, p20, attr26.w\n" },
+    { 0xc9766b02U, 0, false, "        v_interp_mov_f32 v93, p0, attr26.w\n" },
+    { 0xc9766bd3U, 0, false, "        v_interp_mov_f32 v93, invalid_211, attr26.w\n" },
     { 0xc974f4d3U, 0, false, "        v_interp_p1_f32 v93, v211, attr61.x\n" },
     { 0xc9776bd3U, 0, false, "        VINTRP_ill_3    v93, v211, attr26.w\n" },
     /* DS encoding */
