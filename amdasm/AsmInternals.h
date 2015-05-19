@@ -103,6 +103,8 @@ enum : uint16_t
     GCN_SRC1_SGPR = 0xb0,
     GCN_DST_SGPR = 0xc0,
     GCN_VOP_ARG_NONE = 0xd0,
+    GCN_VINTRP = 0xe0,
+    GCN_VINTRP_NEW = 0xf0,
     GCN_VOP3_VOP2 = 0x100,
     GCN_VOP3_VOP1 = 0x200,
     GCN_VOP3_VOP2_DS12 = 0x110,

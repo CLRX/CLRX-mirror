@@ -1745,7 +1745,7 @@ size_t CLRX::uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint ra
 {
     cxuint digitsNum = 0;
     char buffer[64];
-
+    
     char* strend = str + maxSize-1;
     char* p = str;
     switch(radix)
@@ -1816,24 +1816,24 @@ size_t CLRX::uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint ra
             throw Exception("Unknown radix");
             break;
     }
-
+    
     // if zero
     if (value == 0)
         buffer[digitsNum++] = '0';
-
+    
     if (p+digitsNum > strend || p+width > strend)
         throw Exception("Max size is too small");
-
+    
     if (digitsNum < width)
     {
         const char fillchar = (radix == 10)?' ':'0';
         for (cxuint pos = 0; pos < width-digitsNum; pos++)
             *p++ = fillchar;
     }
-
+    
     for (cxuint pos = digitsNum; pos > 0; pos--)
         *p++ = buffer[pos-1];
-
+    
     *p = 0;
     return p-str;
 }
