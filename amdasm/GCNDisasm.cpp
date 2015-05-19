@@ -368,7 +368,7 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
     { 16, 10 }, /* GCNENC_VOP3A, opcode = (10bit)<<17 */
     { 16, 10 }, /* GCNENC_VOP3B, opcode = (10bit)<<17 */
     { 16, 2 }, /* GCNENC_VINTRP, opcode = (2bit)<<16 */
-    { 17, 8 }, /* GCNENC_DS, opcode = (8bit)<<18 */
+    { 17, 8 }, /* GCNENC_DS, opcode = (8bit)<<17 */
     { 18, 7 }, /* GCNENC_MUBUF, opcode = (7bit)<<18 */
     { 15, 4 }, /* GCNENC_MTBUF, opcode = (4bit)<<15 */
     { 18, 7 }, /* GCNENC_MIMG, opcode = (7bit)<<18 */
@@ -2001,6 +2001,7 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
            const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
     char* buf = output.reserve(90);
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     size_t bufPos = addSpaces(buf, spacesToAdd);
     bool vdstUsed = false;
     bool vaddrUsed = false;
@@ -2085,7 +2086,7 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
         }
     }
     
-    if (insnCode&0x20000)
+    if ((!isGCN12 && (insnCode&0x20000)!=0) || (isGCN12 && (insnCode&0x10000)!=0))
     {
         buf[bufPos++] = ' ';
         buf[bufPos++] = 'g';
