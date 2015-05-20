@@ -2954,5 +2954,220 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1c0fb00U, 0x00159d79U, true, "        MIMG_ill_112    "
         "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da\n" },
+    /* EXP encoding */
+    { 0xc4001e57U, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xc4001a57U, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, off done vm vsrc3=0x7c\n" },
+    { 0xc4001e5fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v116, v93, v93 done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xc4001a5fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, v124 done vm\n" },
+    /* EXP target */
+    { 0xc4001f47U, 0x7c1b5d74U, true, "        exp             "
+        "param20, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xc4001fd7U, 0x7c1b5d74U, true, "        exp             "
+        "param29, v116, v116, v93, off done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    /* flags */
+    { 0xc400125fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, v124 vm\n" },
+    { 0xc400025fU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, v93, v27, v124\n" },
+    /* en on/off (compr) */
+    { 0xc4001e5cU, 0x7c1b5d74U, true, "        exp             "
+        "param5, off, off, v93, v93 done compr vm vsrc0=0x74 vsrc2=0x1b vsrc3=0x7c\n" },
+    { 0xc4001e5dU, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, off, v93, v93 done compr vm vsrc2=0x1b vsrc3=0x7c\n" },
+    /* en on/off (compr) */
+    { 0xc4001a55U, 0x7c1b5d74U, true, "        exp             "
+        "param5, v116, off, v27, off done vm vsrc1=0x5d vsrc3=0x7c\n" },
+    { 0xc4001a5eU, 0x7c1b5d74U, true, "        exp             "
+        "param5, off, v93, v27, v124 done vm vsrc0=0x74\n" },
+    /* FLAT encoding */
+    { 0xdc030000U, 0x2f8041bbU, true, "        FLAT_ill_0      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc070000U, 0x2f8041bbU, true, "        FLAT_ill_1      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc0b0000U, 0x2f8041bbU, true, "        FLAT_ill_2      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc0f0000U, 0x2f8041bbU, true, "        FLAT_ill_3      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc130000U, 0x2f8041bbU, true, "        FLAT_ill_4      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc170000U, 0x2f8041bbU, true, "        FLAT_ill_5      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc1b0000U, 0x2f8041bbU, true, "        FLAT_ill_6      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc1f0000U, 0x2f8041bbU, true, "        FLAT_ill_7      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc230000U, 0x2f8041bbU, true, "        FLAT_ill_8      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc270000U, 0x2f8041bbU, true, "        FLAT_ill_9      "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc2b0000U, 0x2f8041bbU, true, "        FLAT_ill_10     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc2f0000U, 0x2f8041bbU, true, "        FLAT_ill_11     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc330000U, 0x2f8041bbU, true, "        FLAT_ill_12     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc370000U, 0x2f8041bbU, true, "        FLAT_ill_13     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc3b0000U, 0x2f8041bbU, true, "        FLAT_ill_14     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc3f0000U, 0x2f8041bbU, true, "        FLAT_ill_15     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc430000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc430000U, 0x2f0000bbU, true, "        flat_load_ubyte "
+                "v47, v[187:188] glc slc\n" },
+    { 0xdc430000U, 0x2f0062bbU, true, "        flat_load_ubyte "
+                "v47, v[187:188] glc slc vdata=0x62\n" },
+    { 0xdc400000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] tfe\n" },
+    { 0xdc410000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] glc tfe\n" },
+    { 0xdc420000U, 0x2f8000bbU, true, "        flat_load_ubyte "
+                "v[47:48], v[187:188] slc tfe\n" },
+    { 0xdc420000U, 0x2f8000bfU, true, "        flat_load_ubyte "
+                "v[47:48], v[191:192] slc tfe\n" },
+    /* FLAT instructions */
+    { 0xdc470000U, 0x2f8000bbU, true, "        flat_load_sbyte "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc4b0000U, 0x2f8000bbU, true, "        flat_load_ushort "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc4f0000U, 0x2f8000bbU, true, "        flat_load_sshort "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc530000U, 0x2f8000bbU, true, "        flat_load_dword "
+                "v[47:48], v[187:188] glc slc tfe\n" },
+    { 0xdc570000U, 0x2f8000bbU, true, "        flat_load_dwordx2 "
+                "v[47:49], v[187:188] glc slc tfe\n" },
+    { 0xdc5b0000U, 0x2f8000bbU, true, "        flat_load_dwordx3 "
+                "v[47:50], v[187:188] glc slc tfe\n" },
+    { 0xdc5f0000U, 0x2f8000bbU, true, "        flat_load_dwordx4 "
+                "v[47:51], v[187:188] glc slc tfe\n" },
+    { 0xdc630000U, 0x2f8054bfU, true, "        flat_store_byte "
+                "v[191:192], v84 glc slc tfe vdst=0x2f\n" },
+    { 0xdc630000U, 0x008054bfU, true, "        flat_store_byte "
+                "v[191:192], v84 glc slc tfe\n" },
+    { 0xdc670000U, 0x2f8041bbU, true, "        FLAT_ill_25     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc6b0000U, 0x008054bfU, true, "        flat_store_short "
+                "v[191:192], v84 glc slc tfe\n" },
+    { 0xdc6f0000U, 0x2f8041bbU, true, "        FLAT_ill_27     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc730000U, 0x008054bfU, true, "        flat_store_dword "
+                "v[191:192], v84 glc slc tfe\n" },
+    { 0xdc770000U, 0x008054bfU, true, "        flat_store_dwordx2 "
+                "v[191:192], v[84:85] glc slc tfe\n" },
+    { 0xdc7b0000U, 0x008054bfU, true, "        flat_store_dwordx3 "
+                "v[191:192], v[84:86] glc slc tfe\n" },
+    { 0xdc7f0000U, 0x008054bfU, true, "        flat_store_dwordx4 "
+                "v[191:192], v[84:87] glc slc tfe\n" },
+    { 0xdc830000U, 0x2f8041bbU, true, "        FLAT_ill_32     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc870000U, 0x2f8041bbU, true, "        FLAT_ill_33     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc8b0000U, 0x2f8041bbU, true, "        FLAT_ill_34     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc8f0000U, 0x2f8041bbU, true, "        FLAT_ill_35     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc930000U, 0x2f8041bbU, true, "        FLAT_ill_36     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc970000U, 0x2f8041bbU, true, "        FLAT_ill_37     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc9b0000U, 0x2f8041bbU, true, "        FLAT_ill_38     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdc9f0000U, 0x2f8041bbU, true, "        FLAT_ill_39     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdca30000U, 0x2f8041bbU, true, "        FLAT_ill_40     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdca70000U, 0x2f8041bbU, true, "        FLAT_ill_41     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcab0000U, 0x2f8041bbU, true, "        FLAT_ill_42     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcaf0000U, 0x2f8041bbU, true, "        FLAT_ill_43     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcb30000U, 0x2f8041bbU, true, "        FLAT_ill_44     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcb70000U, 0x2f8041bbU, true, "        FLAT_ill_45     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcbb0000U, 0x2f8041bbU, true, "        FLAT_ill_46     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcbf0000U, 0x2f8041bbU, true, "        FLAT_ill_47     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcc30000U, 0x2f8041bbU, true, "        flat_atomic_swap "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcc30000U, 0x2f0041bbU, true, "        flat_atomic_swap "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcc70000U, 0x2f0041bbU, true, "        flat_atomic_cmpswap "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdccb0000U, 0x2f0041bbU, true, "        flat_atomic_add "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdccf0000U, 0x2f0041bbU, true, "        flat_atomic_sub "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcd30000U, 0x2f8041bbU, true, "        FLAT_ill_52     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdcd70000U, 0x2f0041bbU, true, "        flat_atomic_smin "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcdb0000U, 0x2f0041bbU, true, "        flat_atomic_umin "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcdf0000U, 0x2f0041bbU, true, "        flat_atomic_smax "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdce30000U, 0x2f0041bbU, true, "        flat_atomic_umax "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdce70000U, 0x2f0041bbU, true, "        flat_atomic_and "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdceb0000U, 0x2f0041bbU, true, "        flat_atomic_or  "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcef0000U, 0x2f0041bbU, true, "        flat_atomic_xor "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcf30000U, 0x2f0041bbU, true, "        flat_atomic_inc "
+                "v47, v[187:188], v65 glc slc\n" },
+    { 0xdcf70000U, 0x2f0041bbU, true, "        flat_atomic_dec "
+                "v47, v[187:188], v65 glc slc\n" }, 
+    { 0xdd070000U, 0x2f8041bbU, true, "        FLAT_ill_65     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd0b0000U, 0x2f8041bbU, true, "        FLAT_ill_66     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd0f0000U, 0x2f8041bbU, true, "        FLAT_ill_67     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd130000U, 0x2f8041bbU, true, "        FLAT_ill_68     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd170000U, 0x2f8041bbU, true, "        FLAT_ill_69     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd1b0000U, 0x2f8041bbU, true, "        FLAT_ill_70     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd1f0000U, 0x2f8041bbU, true, "        FLAT_ill_71     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd230000U, 0x2f8041bbU, true, "        FLAT_ill_72     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd430000U, 0x2f0041bbU, true, "        flat_atomic_swap_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd470000U, 0x2f0041bbU, true, "        flat_atomic_cmpswap_x2 "
+                "v[47:50], v[187:188], v[65:68] glc slc\n" },
+    { 0xdd4b0000U, 0x2f0041bbU, true, "        flat_atomic_add_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd4f0000U, 0x2f0041bbU, true, "        flat_atomic_sub_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd530000U, 0x2f8041bbU, true, "        FLAT_ill_84     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd570000U, 0x2f0041bbU, true, "        flat_atomic_smin_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd5b0000U, 0x2f0041bbU, true, "        flat_atomic_umin_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd5f0000U, 0x2f0041bbU, true, "        flat_atomic_smax_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd630000U, 0x2f0041bbU, true, "        flat_atomic_umax_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd670000U, 0x2f0041bbU, true, "        flat_atomic_and_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd6b0000U, 0x2f0041bbU, true, "        flat_atomic_or_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd6f0000U, 0x2f0041bbU, true, "        flat_atomic_xor_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd730000U, 0x2f0041bbU, true, "        flat_atomic_inc_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xdd770000U, 0x2f0041bbU, true, "        flat_atomic_dec_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
     { 0, 0, false, nullptr }
 };

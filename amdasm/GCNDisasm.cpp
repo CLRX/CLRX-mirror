@@ -86,9 +86,10 @@ static const GCNEncodingSpace gcnInstrTableByCodeSpaces[2*(GCNENC_MAXVAL+1)+2] =
     { 0x1791, 0x10 }, /* GCNENC_MTBUF, opcode = (4bit)<<16 (GCN1.2) */
     { 0x17a1, 0x80 }, /* GCNENC_MIMG, opcode = (7bit)<<18 (GCN1.2) */
     { 0x1821, 0x1 }, /* GCNENC_EXP, opcode = none (GCN1.2) */
+    { 0x1822, 0x100 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
-static const size_t gcnInstrTableByCodeLength = 0x1822;
+static const size_t gcnInstrTableByCodeLength = 0x1922;
 
 static void initializeGCNDisassembler()
 {
