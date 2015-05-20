@@ -2462,6 +2462,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xea8877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[8,sint]\n" },
+    { 0xea88f7d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc addr64 tfe "
+        "format:[8,sint]\n" },
     /* formats */
     { 0xea8077d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "

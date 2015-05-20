@@ -2200,7 +2200,8 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
         buf[bufPos++] = 'l';
         buf[bufPos++] = 'c';
     }
-    if ((!isGCN12 && (insnCode2 & 0x400000U)!=0) || (isGCN12 && (insnCode & 0x20000)!=0))
+    if (((!isGCN12 || mtbuf) && (insnCode2 & 0x400000U)!=0) ||
+        ((isGCN12 && !mtbuf) && (insnCode & 0x20000)!=0))
     {
         buf[bufPos++] = ' ';
         buf[bufPos++] = 's';
@@ -2360,6 +2361,13 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         buf[bufPos++] = ' ';
         buf[bufPos++] = 'd';
         buf[bufPos++] = 'a';
+    }
+    if ((arch & ARCH_RX3X0)!=0 && (insnCode2 & (1U<<31)) != 0)
+    {
+        buf[bufPos++] = ' ';
+        buf[bufPos++] = 'd';
+        buf[bufPos++] = '1';
+        buf[bufPos++] = '6';
     }
     
     if ((gcnInsn.mode & GCN_MASK2) != GCN_MIMG_SAMPLE && ssamp != 0)
