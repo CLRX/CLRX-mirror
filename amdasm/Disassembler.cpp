@@ -236,7 +236,7 @@ struct GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[11] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[13] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -248,8 +248,8 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[11] =
     { 0x406, GPUDeviceType::KALINDI },
     { 0x407, GPUDeviceType::HAINAN },
     { 0x408, GPUDeviceType::HAWAII },
-    /*{ 0x409, GPUDeviceType::ICELAND },
-    { 0x40a, GPUDeviceType::TONGA },*/
+    { 0x409, GPUDeviceType::ICELAND },
+    { 0x40a, GPUDeviceType::TONGA },
     { 0x40b, GPUDeviceType::MULLINS }
 };
 
@@ -259,7 +259,7 @@ struct GPUDeviceInnerCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[11] =
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[13] =
 {
     { 0x1a, GPUDeviceType::TAHITI },
     { 0x1b, GPUDeviceType::PITCAIRN },
@@ -271,8 +271,8 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[11] =
     { 0x24, GPUDeviceType::KALINDI },
     { 0x25, GPUDeviceType::HAINAN },
     { 0x27, GPUDeviceType::HAWAII },
-    /*{ 0x29, GPUDeviceType::ICELAND },
-    { 0x2a, GPUDeviceType::TONGA },*/
+    { 0x29, GPUDeviceType::ICELAND },
+    { 0x2a, GPUDeviceType::TONGA },
     { 0x2b, GPUDeviceType::MULLINS }
 };
 
