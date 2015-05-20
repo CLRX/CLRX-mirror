@@ -150,6 +150,7 @@ enum : uint16_t
     GCN_MEMOP_MX8 = 0x300,
     GCN_MEMOP_MX16 = 0x400,
     GCN_MUBUF_X = 0x0,
+    GCN_MUBUF_NOVAD = 0x10, /* no vaddr and vdata */
     GCN_MUBUF_XY = 0x100,
     GCN_MUBUF_XYZ = 0x200,
     GCN_MUBUF_XYZW = 0x300,

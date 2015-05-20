@@ -2140,28 +2140,34 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
 {
     char* buf = output.reserve(150);
     size_t bufPos = 0;
+    const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     const cxuint vaddr = insnCode2&0xff;
     const cxuint vdata = (insnCode2>>8)&0xff;
     const cxuint srsrc = (insnCode2>>16)&0x1f;
     const cxuint soffset = insnCode2>>24;
-    if ((gcnInsn.mode & GCN_MASK1) != GCN_ARG_NONE)
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    if (mode1 != GCN_ARG_NONE)
     {
         bufPos = addSpaces(buf, spacesToAdd);
-        cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
-        if (insnCode2 & 0x800000U)
-            dregsNum++; // tfe
-        
-        bufPos += decodeGCNVRegOperand(vdata, dregsNum, buf+bufPos);
-        buf[bufPos++] = ',';
-        buf[bufPos++] = ' ';
-        // determine number of vaddr registers
-        /* for addr32 - idxen+offen or 1, for addr64 - 2 (idxen and offen is illegal) */
-        const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U ||
-                (insnCode & 0x8000U))? 2 : 1;
-        
-        bufPos += decodeGCNVRegOperand(vaddr, aregsNum, buf+bufPos);
-        buf[bufPos++] = ',';
-        buf[bufPos++] = ' ';
+        if (mode1 != GCN_MUBUF_NOVAD)
+        {
+            cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
+            if (insnCode2 & 0x800000U)
+                dregsNum++; // tfe
+            
+            bufPos += decodeGCNVRegOperand(vdata, dregsNum, buf+bufPos);
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            // determine number of vaddr registers
+            /* for addr32 - idxen+offen or 1, for addr64 - 2 (idxen and offen is illegal) */
+            const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U ||
+                    /* addr64 only for older GCN than 1.2 */
+                    (!isGCN12 && (insnCode & 0x8000U)))? 2 : 1;
+            
+            bufPos += decodeGCNVRegOperand(vaddr, aregsNum, buf+bufPos);
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+        }
         bufPos += decodeGCNOperand(srsrc<<2, 4, buf+bufPos, arch);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
@@ -2194,14 +2200,14 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
         buf[bufPos++] = 'l';
         buf[bufPos++] = 'c';
     }
-    if (insnCode2 & 0x400000U)
+    if ((!isGCN12 && (insnCode2 & 0x400000U)!=0) || (isGCN12 && (insnCode & 0x20000)!=0))
     {
         buf[bufPos++] = ' ';
         buf[bufPos++] = 's';
         buf[bufPos++] = 'l';
         buf[bufPos++] = 'c';
     }
-    if (insnCode & 0x8000U)
+    if (!isGCN12 && (insnCode & 0x8000U)!=0)
     {
         ::memcpy(buf+bufPos, " addr64", 7);
         bufPos += 7;
@@ -2234,7 +2240,7 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
         buf[bufPos++] = ']';
     }
     
-    if ((gcnInsn.mode & GCN_MASK1) == GCN_ARG_NONE)
+    if (mode1 == GCN_ARG_NONE || mode1 == GCN_MUBUF_NOVAD)
     {
         if (vaddr != 0)
         {
@@ -2248,6 +2254,9 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
             bufPos += 7;
             bufPos += itocstrCStyle(vdata, buf+bufPos, 6, 16);
         }
+    }
+    if (mode1 == GCN_ARG_NONE)
+    {
         if (srsrc != 0)
         {
             ::memcpy(buf+bufPos, " srsrc=", 7);
