@@ -3095,79 +3095,81 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
     { 0xdcbf0000U, 0x2f8041bbU, true, "        FLAT_ill_47     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdcc30000U, 0x2f8041bbU, true, "        flat_atomic_swap "
+    { 0xdcc30000U, 0x2f8041bbU, true, "        FLAT_ill_48     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdcc30000U, 0x2f0041bbU, true, "        flat_atomic_swap "
+    { 0xdce30000U, 0x2f8041bbU, true, "        FLAT_ill_56     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd030000U, 0x2f8041bbU, true, "        flat_atomic_swap "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd030000U, 0x2f0041bbU, true, "        flat_atomic_swap "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcc70000U, 0x2f0041bbU, true, "        flat_atomic_cmpswap "
+    { 0xdd070000U, 0x2f0041bbU, true, "        flat_atomic_cmpswap "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdccb0000U, 0x2f0041bbU, true, "        flat_atomic_add "
+    { 0xdd0b0000U, 0x2f0041bbU, true, "        flat_atomic_add "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdccf0000U, 0x2f0041bbU, true, "        flat_atomic_sub "
+    { 0xdd0f0000U, 0x2f0041bbU, true, "        flat_atomic_sub "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcd30000U, 0x2f8041bbU, true, "        FLAT_ill_52     "
-                "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdcd70000U, 0x2f0041bbU, true, "        flat_atomic_smin "
+    { 0xdd130000U, 0x2f0041bbU, true, "        flat_atomic_smin "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcdb0000U, 0x2f0041bbU, true, "        flat_atomic_umin "
+    { 0xdd170000U, 0x2f0041bbU, true, "        flat_atomic_umin "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcdf0000U, 0x2f0041bbU, true, "        flat_atomic_smax "
+    { 0xdd1b0000U, 0x2f0041bbU, true, "        flat_atomic_smax "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdce30000U, 0x2f0041bbU, true, "        flat_atomic_umax "
+    { 0xdd1f0000U, 0x2f0041bbU, true, "        flat_atomic_umax "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdce70000U, 0x2f0041bbU, true, "        flat_atomic_and "
+    { 0xdd230000U, 0x2f0041bbU, true, "        flat_atomic_and "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdceb0000U, 0x2f0041bbU, true, "        flat_atomic_or  "
+    { 0xdd270000U, 0x2f0041bbU, true, "        flat_atomic_or  "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcef0000U, 0x2f0041bbU, true, "        flat_atomic_xor "
+    { 0xdd2b0000U, 0x2f0041bbU, true, "        flat_atomic_xor "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcf30000U, 0x2f0041bbU, true, "        flat_atomic_inc "
+    { 0xdd2f0000U, 0x2f0041bbU, true, "        flat_atomic_inc "
                 "v47, v[187:188], v65 glc slc\n" },
-    { 0xdcf70000U, 0x2f0041bbU, true, "        flat_atomic_dec "
+    { 0xdd330000U, 0x2f0041bbU, true, "        flat_atomic_dec "
                 "v47, v[187:188], v65 glc slc\n" }, 
-    { 0xdd070000U, 0x2f8041bbU, true, "        FLAT_ill_65     "
+    { 0xdd430000U, 0x2f8041bbU, true, "        FLAT_ill_80     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd0b0000U, 0x2f8041bbU, true, "        FLAT_ill_66     "
+    { 0xdd470000U, 0x2f8041bbU, true, "        FLAT_ill_81     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd0f0000U, 0x2f8041bbU, true, "        FLAT_ill_67     "
+    { 0xdd4b0000U, 0x2f8041bbU, true, "        FLAT_ill_82     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd130000U, 0x2f8041bbU, true, "        FLAT_ill_68     "
+    { 0xdd4f0000U, 0x2f8041bbU, true, "        FLAT_ill_83     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd170000U, 0x2f8041bbU, true, "        FLAT_ill_69     "
-                "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd1b0000U, 0x2f8041bbU, true, "        FLAT_ill_70     "
-                "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd1f0000U, 0x2f8041bbU, true, "        FLAT_ill_71     "
-                "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd230000U, 0x2f8041bbU, true, "        FLAT_ill_72     "
-                "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd430000U, 0x2f0041bbU, true, "        flat_atomic_swap_x2 "
-                "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd470000U, 0x2f0041bbU, true, "        flat_atomic_cmpswap_x2 "
-                "v[47:50], v[187:188], v[65:68] glc slc\n" },
-    { 0xdd4b0000U, 0x2f0041bbU, true, "        flat_atomic_add_x2 "
-                "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd4f0000U, 0x2f0041bbU, true, "        flat_atomic_sub_x2 "
-                "v[47:48], v[187:188], v[65:66] glc slc\n" },
     { 0xdd530000U, 0x2f8041bbU, true, "        FLAT_ill_84     "
                 "v[47:48], v[187:188], v65 glc slc tfe\n" },
-    { 0xdd570000U, 0x2f0041bbU, true, "        flat_atomic_smin_x2 "
+    { 0xdd570000U, 0x2f8041bbU, true, "        FLAT_ill_85     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd5b0000U, 0x2f8041bbU, true, "        FLAT_ill_86     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd5f0000U, 0x2f8041bbU, true, "        FLAT_ill_87     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd630000U, 0x2f8041bbU, true, "        FLAT_ill_88     "
+                "v[47:48], v[187:188], v65 glc slc tfe\n" },
+    { 0xdd830000U, 0x2f0041bbU, true, "        flat_atomic_swap_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd5b0000U, 0x2f0041bbU, true, "        flat_atomic_umin_x2 "
+    { 0xdd870000U, 0x2f0041bbU, true, "        flat_atomic_cmpswap_x2 "
+                "v[47:50], v[187:188], v[65:68] glc slc\n" },
+    { 0xdd8b0000U, 0x2f0041bbU, true, "        flat_atomic_add_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd5f0000U, 0x2f0041bbU, true, "        flat_atomic_smax_x2 "
+    { 0xdd8f0000U, 0x2f0041bbU, true, "        flat_atomic_sub_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd630000U, 0x2f0041bbU, true, "        flat_atomic_umax_x2 "
+    { 0xdd930000U, 0x2f0041bbU, true, "        flat_atomic_smin_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd670000U, 0x2f0041bbU, true, "        flat_atomic_and_x2 "
+    { 0xdd970000U, 0x2f0041bbU, true, "        flat_atomic_umin_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd6b0000U, 0x2f0041bbU, true, "        flat_atomic_or_x2 "
+    { 0xdd9b0000U, 0x2f0041bbU, true, "        flat_atomic_smax_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd6f0000U, 0x2f0041bbU, true, "        flat_atomic_xor_x2 "
+    { 0xdd9f0000U, 0x2f0041bbU, true, "        flat_atomic_umax_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd730000U, 0x2f0041bbU, true, "        flat_atomic_inc_x2 "
+    { 0xdda30000U, 0x2f0041bbU, true, "        flat_atomic_and_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
-    { 0xdd770000U, 0x2f0041bbU, true, "        flat_atomic_dec_x2 "
+    { 0xdda70000U, 0x2f0041bbU, true, "        flat_atomic_or_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xddab0000U, 0x2f0041bbU, true, "        flat_atomic_xor_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xddaf0000U, 0x2f0041bbU, true, "        flat_atomic_inc_x2 "
+                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+    { 0xddb30000U, 0x2f0041bbU, true, "        flat_atomic_dec_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
     { 0, 0, false, nullptr }
 };
