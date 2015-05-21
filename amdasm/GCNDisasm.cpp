@@ -178,7 +178,7 @@ static const bool gcnSize12Table[16] =
 static inline void copyAndFw(char* buf, size_t& pos, const char* p)
 {
     size_t len = ::strlen(p);
-    ::strcpy(buf+pos, p);
+    ::memcpy(buf+pos, p, len);
     pos += len;
 }
 
