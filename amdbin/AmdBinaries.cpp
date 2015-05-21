@@ -749,28 +749,16 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             if (pos+4 <= metadataSize && kernelDesc[pos] == 'u' && 
                 kernelDesc[pos+1] == 'a' && kernelDesc[pos+2] == 'v' &&
                 kernelDesc[pos+3] == ':')
-            {
-                argIt->second.ptrSpace = KernelPtrSpace::GLOBAL;
-                pos += 4;
-            }
+            { argIt->second.ptrSpace = KernelPtrSpace::GLOBAL; pos += 4; }
             else if (pos+3 <= metadataSize && kernelDesc[pos] == 'h' &&
                 kernelDesc[pos+1] == 'c' && kernelDesc[pos+2] == ':')
-            {
-                argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
-                pos += 3;
-            }
+            { argIt->second.ptrSpace = KernelPtrSpace::CONSTANT; pos += 3; }
             else if (pos+3 <= metadataSize && kernelDesc[pos] == 'h' &&
                 kernelDesc[pos+1] == 'l' && kernelDesc[pos+2] == ':')
-            {
-                argIt->second.ptrSpace = KernelPtrSpace::LOCAL;
-                pos += 3;
-            }
+            { argIt->second.ptrSpace = KernelPtrSpace::LOCAL; pos += 3; }
             else if (pos+2 <= metadataSize && kernelDesc[pos] == 'c' &&
                   kernelDesc[pos+1] == ':')
-            {
-                argIt->second.ptrSpace = KernelPtrSpace::CONSTANT;
-                pos += 2;
-            }
+            { argIt->second.ptrSpace = KernelPtrSpace::CONSTANT; pos += 2; }
             else //if not match
                 throw ParseException(lineNo, "Unknown pointer type");
             /* skip RW */
@@ -832,39 +820,21 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 if (kernelDesc[pos] == '1')
                 {
                     if (kernelDesc[pos+2] == 'A')
-                    {
-                        entry.argType = KernelArgType::IMAGE1D_ARRAY;
-                        pos += 3;
-                    }
+                    { entry.argType = KernelArgType::IMAGE1D_ARRAY; pos += 3; }
                     else if (kernelDesc[pos+2] == 'B')
-                    {
-                        entry.argType = KernelArgType::IMAGE1D_BUFFER;
-                        pos += 3;
-                    }
+                    { entry.argType = KernelArgType::IMAGE1D_BUFFER; pos += 3; }
                     else
-                    {
-                        entry.argType = KernelArgType::IMAGE1D;
-                        pos += 2;
-                    }
+                    { entry.argType = KernelArgType::IMAGE1D; pos += 2; }
                 }
                 else if (kernelDesc[pos] == '2')
                 {
                     if (kernelDesc[pos+2] == 'A')
-                    {
-                        entry.argType = KernelArgType::IMAGE2D_ARRAY;
-                        pos += 3;
-                    }
+                    { entry.argType = KernelArgType::IMAGE2D_ARRAY; pos += 3; }
                     else
-                    {
-                        entry.argType = KernelArgType::IMAGE2D;
-                        pos += 2;
-                    }
+                    { entry.argType = KernelArgType::IMAGE2D; pos += 2; }
                 }
                 else if (kernelDesc[pos] == '3')
-                {
-                    entry.argType = KernelArgType::IMAGE3D;
-                    pos += 2;
-                }
+                { entry.argType = KernelArgType::IMAGE3D; pos += 2; }
                 else
                     throw ParseException("Unknown image type");
                 if (pos >= metadataSize || kernelDesc[pos] != ':')
