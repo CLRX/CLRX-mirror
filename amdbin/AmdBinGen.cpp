@@ -320,57 +320,143 @@ struct CLRX_INTERNAL TempAmdKernelData
     uint32_t header[8];
 };
 
-template<typename Types>
-static void putMainSymbols(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint driverVersion,
-       const AmdInput* input, const Array<TempAmdKernelData>& tempDatas)
+class CLRX_INTERNAL MainStrTabGen: public ElfRegionContent
 {
-    const bool isOlderThan1348 = driverVersion < 134805;
+private:
+    cxuint driverVersion;
+    const AmdInput* input;
+    const Array<TempAmdKernelData>& tempDatas;
+public:
+    MainStrTabGen(cxuint driverVersion_, const AmdInput* input_,
+                  const Array<TempAmdKernelData>& tempDatas_)
+            : driverVersion(driverVersion_), input(input_), tempDatas(tempDatas_)
+    { }
     
-    if (!input->compileOptions.empty())
-        elfBinGen.addSymbol({ "__OpenCL_compile_options",
-            uint16_t((input->kernels.size()!=0)?6:4),
-            ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false,
-            0, typename Types::Word(input->compileOptions.size()) });
-    
-    size_t rodataPos = 0;
-    if (input->globalData != nullptr)
+    size_t size() const
     {
-        elfBinGen.addSymbol({ (!isOlderThan1348)?"__OpenCL_0_global":"__OpenCL_2_global",
-            4, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, 0,
-            typename Types::Word(input->globalDataSize) });
-        rodataPos = input->globalDataSize;
+        size_t size = 1;
+        if (!input->compileOptions.empty())
+            size += 25;
+        if (input->globalData != nullptr)
+            size += 18;
+        
+        for (size_t i = 0; i < input->kernels.size(); i++)
+            size += input->kernels[i].kernelName.size()*3 + 19 + 17 + 17;
+        return size;
     }
     
-    size_t textPos = 0;
-    for (size_t i = 0; i < input->kernels.size(); i++)
+    void operator()(FastOutputBuffer& fob) const
     {
-        const AmdKernelInput& kernel = input->kernels[i];
-        std::string symName = "__OpenCL_";
-        symName += kernel.kernelName;
-        symName += "_metadata";
-        const size_t metadataSize = (kernel.useConfig) ?
+        const bool isOlderThan1348 = driverVersion < 134805;
+        fob.put(0);
+        if (!input->compileOptions.empty())
+            fob.write(25, "__OpenCL_compile_options");
+        if (input->globalData != nullptr)
+            fob.write(18, (!isOlderThan1348)?"__OpenCL_0_global":"__OpenCL_2_global");
+        
+        for (size_t i = 0; i < input->kernels.size(); i++)
+        {
+            const AmdKernelInput& kernel = input->kernels[i];
+            fob.write(9, "__OpenCL_");
+            fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
+            fob.write(19, "_metadata\000__OpenCL_");
+            fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
+            fob.write(17, "_kernel\000__OpenCL_");
+            fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
+            fob.write(8, "_header");
+        }
+    }
+};
+
+template<typename Types>
+class CLRX_INTERNAL MainSymTabGen: public ElfRegionContent
+{
+private:
+    cxuint driverVersion;
+    const AmdInput* input;
+    const Array<TempAmdKernelData>& tempDatas;
+public:
+    MainSymTabGen(cxuint driverVersion_, const AmdInput* input_,
+                  const Array<TempAmdKernelData>& tempDatas_)
+            : driverVersion(driverVersion_), input(input_), tempDatas(tempDatas_)
+    { }
+    
+    size_t size() const
+    {
+        return sizeof(typename Types::Sym)*(1 + (!input->compileOptions.empty()) +
+                (input->globalData != nullptr) + 3*input->kernels.size());
+    }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        fob.fill(sizeof(typename Types::Sym), 0);
+        typename Types::Sym sym;
+        size_t nameIndex = 1;
+        if (!input->compileOptions.empty())
+        {
+            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_shndx, uint16_t((input->kernels.size()!=0)?6:4));
+            SLEV(sym.st_value, 0);
+            SLEV(sym.st_size, input->compileOptions.size());
+            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_other = 0;
+            nameIndex += 25;
+            fob.writeObject(sym);
+        }
+        size_t rodataPos = 0;
+        if (input->globalData != nullptr)
+        {
+            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_shndx, 4);
+            SLEV(sym.st_value, 0);
+            SLEV(sym.st_size, input->globalDataSize);
+            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_other = 0;
+            nameIndex += 18;
+            fob.writeObject(sym);
+            rodataPos += input->globalDataSize;
+        }
+        
+        size_t textPos = 0;
+        for (size_t i = 0; i < input->kernels.size(); i++)
+        {
+            const AmdKernelInput& kernel = input->kernels[i];
+            // metadata
+            const size_t metadataSize = (kernel.useConfig) ?
                     tempDatas[i].metadata.size() : kernel.metadataSize;
-        elfBinGen.addSymbol({ symName, 4, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0,
-                false, typename Types::Word(rodataPos),
-                typename Types::Word(metadataSize) });
-        rodataPos += metadataSize;
-        symName = "__OpenCL_";
-        symName += kernel.kernelName;
-        symName += "_kernel";
-        elfBinGen.addSymbol({ symName, 5, ELF32_ST_INFO(STB_LOCAL, STT_FUNC), 0,
-                false, typename Types::Word(textPos),
-                typename Types::Word(tempDatas[i].innerBinSize) });
-        textPos += tempDatas[i].innerBinSize;
-        symName = "__OpenCL_";
-        symName += kernel.kernelName;
-        symName += "_header";
-        const size_t headerSize = (kernel.useConfig) ? 32 : kernel.headerSize;
-        elfBinGen.addSymbol({ symName, 4, ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0,
-                false, typename Types::Word(rodataPos),
-                typename Types::Word(headerSize) });
-        rodataPos += headerSize;
+            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_shndx, 4);
+            SLEV(sym.st_size, metadataSize);
+            SLEV(sym.st_value, rodataPos);
+            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_other = 0;
+            fob.writeObject(sym);
+            nameIndex += kernel.kernelName.size() + 19;
+            rodataPos += metadataSize;
+            // kernel
+            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_shndx, 5);
+            SLEV(sym.st_size, tempDatas[i].innerBinSize);
+            SLEV(sym.st_value, textPos);
+            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
+            sym.st_other = 0;
+            fob.writeObject(sym);
+            nameIndex += kernel.kernelName.size() + 17;
+            textPos += tempDatas[i].innerBinSize;
+            // kernel
+            const size_t headerSize = (kernel.useConfig) ? 32 : kernel.headerSize;
+            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_shndx, 4);
+            SLEV(sym.st_size, headerSize);
+            SLEV(sym.st_value, rodataPos);
+            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_other = 0;
+            fob.writeObject(sym);
+            nameIndex += kernel.kernelName.size() + 17;
+            rodataPos += headerSize;
+        }
     }
-}
+};
 
 class CLRX_INTERNAL MainRoDataGen: public ElfRegionContent
 {
@@ -439,14 +525,15 @@ template<typename Types>
 static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint driverVersion,
         const AmdInput* input, size_t allInnerBinSize, const MainTextGen& textGen,
         size_t rodataSize, const MainRoDataGen& rodataGen, const std::string& driverInfo,
-        const MainCommentGen& commentGen)
+        const MainCommentGen& commentGen, const MainStrTabGen& mainStrGen,
+        const MainSymTabGen<Types>& mainSymGen)
 {
     elfBinGen.addRegion(ElfRegionTemplate<Types>(0, (const cxbyte*)nullptr, 1,
                  ".shstrtab", SHT_STRTAB, SHF_STRINGS));
-    elfBinGen.addRegion(ElfRegionTemplate<Types>(0, (const cxbyte*)nullptr, 1,
+    elfBinGen.addRegion(ElfRegionTemplate<Types>(mainStrGen.size(), &mainStrGen, 1,
                  ".strtab", SHT_STRTAB, SHF_STRINGS));
-    elfBinGen.addRegion(ElfRegionTemplate<Types>(0, (const cxbyte*)nullptr,
-                8, ".symtab", SHT_SYMTAB, 0));
+    elfBinGen.addRegion(ElfRegionTemplate<Types>(mainSymGen.size(), &mainSymGen, 8,
+                 ".symtab", SHT_SYMTAB, 0));
     if (!input->kernels.empty())
     {   // rodata and text
         elfBinGen.addRegion(ElfRegionTemplate<Types>(rodataSize, &rodataGen, 1,
@@ -1506,20 +1593,19 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     MainRoDataGen rodataGen(input, tempAmdKernelDatas);
     MainTextGen textGen(tempAmdKernelDatas);
     MainCommentGen commentGen(input, driverInfo);
+    MainStrTabGen mainStrTabGen(driverVersion, input, tempAmdKernelDatas);
+    MainSymTabGen<Elf32Types> mainSymTabGen32(driverVersion, input, tempAmdKernelDatas);
+    MainSymTabGen<Elf64Types> mainSymTabGen64(driverVersion, input, tempAmdKernelDatas);
     
     /* main sections and symbols */
     if (input->is64Bit)
-    {
         putMainSections(*elfBinGen64.get(), driverVersion, input, allInnerBinSize, textGen,
-                    rodataSize, rodataGen, driverInfo, commentGen);
-        putMainSymbols(*elfBinGen64.get(), driverVersion, input, tempAmdKernelDatas);
-    }
+                    rodataSize, rodataGen, driverInfo, commentGen,
+                    mainStrTabGen, mainSymTabGen64);
     else
-    {
         putMainSections(*elfBinGen32.get(), driverVersion, input, allInnerBinSize, textGen,
-                    rodataSize, rodataGen, driverInfo, commentGen);
-        putMainSymbols(*elfBinGen32.get(), driverVersion, input, tempAmdKernelDatas);
-    }
+                    rodataSize, rodataGen, driverInfo, commentGen,
+                    mainStrTabGen, mainSymTabGen32);
     
     const uint64_t binarySize = (input->is64Bit) ? elfBinGen64->countSize() : 
             elfBinGen32->countSize();

@@ -424,7 +424,7 @@ struct ElfRegionTemplate
         const ElfRegionContent* dataGen;    ///< content generator pointer
     };
     struct {
-        std::string name;   ///< section name
+        const char* name;   ///< section name
         uint32_t type;  ///< section type
         uint32_t flags; ///< section flags
         uint32_t link;  ///< section link
@@ -463,7 +463,7 @@ struct ElfRegionTemplate
     
     /// constructor for section
     ElfRegionTemplate(typename Types::Word inSize, const cxbyte* inData,
-              typename Types::Word inAlign, const std::string& inName, uint32_t inType,
+              typename Types::Word inAlign, const char* inName, uint32_t inType,
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
@@ -475,7 +475,7 @@ struct ElfRegionTemplate
     
     /// constructor for section with generator
     ElfRegionTemplate(typename Types::Word inSize, const ElfRegionContent* inData,
-              typename Types::Word inAlign, const std::string& inName, uint32_t inType,
+              typename Types::Word inAlign, const char* inName, uint32_t inType,
               uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
               typename Types::Word inAddrBase = 0,
               typename Types::Word inEntSize = 0)
@@ -547,7 +547,7 @@ typedef ElfProgramHeaderTemplate<Elf64Types> ElfProgramHeader64;
 template<typename Types>
 struct ElfSymbolTemplate
 {
-    std::string name;   ///< name
+    const char* name;   ///< name
     uint16_t sectionIndex;  ///< section index for which symbol is
     cxbyte info;    ///< info
     cxbyte other;   ///< other
