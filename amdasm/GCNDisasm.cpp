@@ -1950,7 +1950,8 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 /* distinguish for v_read/writelane and other vop2 encoded as vop3 */
                 (((gcnInsn.mode&GCN_VOP3_SRC1_SGPR)==0) && vsrc1 >= 256) ||
                 (((gcnInsn.mode&GCN_VOP3_SRC1_SGPR)!=0) && vsrc1 < 256)) &&
-                ((mode1 != GCN_SRC2_VCC && vsrc2 == 0) || vsrc2 == 106))
+                ((mode1 != GCN_SRC2_VCC && vsrc2 == 0) ||
+                (vsrc2 == 106 && mode1 == GCN_SRC2_VCC)))
                 isVOP1Word = true;
             /* check clamp and abs and neg flags */
             if ((insnCode&(usedMask<<8)) != 0 || (insnCode2&(usedMask<<29)) != 0 || clamp)
@@ -1959,7 +1960,8 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         /* for VOP2 encoded as VOP3b (v_addc....) */
         else if (gcnInsn.encoding == GCNENC_VOP3B && vop3Mode == GCN_VOP3_VOP2 &&
                 vsrc1 >= 256 && sdst == 106 /* vcc */ &&
-                ((vsrc2 == 106 && mode1 == GCN_DS2_VCC) || vsrc2 == 0)) /* VOP3b */
+                ((vsrc2 == 106 && mode1 == GCN_DS2_VCC) || 
+                    (vsrc2 == 0 && mode1 != GCN_DS2_VCC))) /* VOP3b */
             isVOP1Word = true;
         
         if (isVOP1Word && !reqForVOP1Word)
