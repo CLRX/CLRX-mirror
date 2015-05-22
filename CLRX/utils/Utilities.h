@@ -109,6 +109,9 @@ public:
 
 /* parse utilities */
 
+/// check whether character is space
+inline bool isSpace(unsigned char c);
+
 inline bool isSpace(unsigned char c)
 {
     return (c == 32 || (c < 32 && (0x3e00U & (1U<<c))));
