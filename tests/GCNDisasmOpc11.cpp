@@ -1661,6 +1661,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
                 "v55, s[7:8], s27, -v90, s[25:26]\n" },
     { 0xd2540737U, 0x4066b41bU, true, "        v_subbrev_u32   "
                 "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd2526a0bU, 0x00021480U, true,   /* no vop3 case! */
+                "        v_subb_u32      v11, vcc, 0, v10, s[0:1]\n" },
     /* others */
     { 0xd2560037U, 0x4002b41bU, true, "        v_ldexp_f32     v55, s27, -v90\n" },
     { 0xd2580037U, 0x4002b41bU, true, "        v_cvt_pkaccum_u8_f32 v55, s27, -v90\n" },

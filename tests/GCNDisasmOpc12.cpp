@@ -1749,6 +1749,8 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
                 "v55, s[7:8], s27, -v90, s[25:26]\n" },
     { 0xd11e0737U, 0x4066b41bU, true, "        v_subbrev_u32   "
                 "v55, s[7:8], s27, -v90, s[25:26]\n" },
+    { 0xd11d6a0bU, 0x00021480U, true,   /* no vop3 case! */
+                "        v_subb_u32      v11, vcc, 0, v10, s[0:1]\n" },
     { 0xd11f0037U, 0x0002b41bU, true, "        v_add_f16       v55, s27, v90 vop3\n" },
     { 0xd1200037U, 0x0002b41bU, true, "        v_sub_f16       v55, s27, v90 vop3\n" },
     { 0xd1210037U, 0x0002b41bU, true, "        v_subrev_f16    v55, s27, v90 vop3\n" },

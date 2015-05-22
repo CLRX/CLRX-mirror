@@ -217,16 +217,12 @@ private:
     AsmMacroArgMap argMap;
     
     const LineTrans* curColTrans;
-    bool exit;
 public:
     AsmMacroInputFilter(const AsmMacro& macro,
         const Array<std::pair<std::string, std::string> >& argMap);
     
     /// read line and returns line except newline character
     const char* readLine(Assembler& assembler, size_t& lineSize);
-    
-    void setExit()
-    { exit = true; }
 };
 
 class ISAAssembler

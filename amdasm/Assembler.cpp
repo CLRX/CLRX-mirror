@@ -354,7 +354,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
         const Array<std::pair<std::string, std::string> >& inArgMap)
-        : macro(inMacro), argMap(inArgMap), exit(false)
+        : macro(inMacro), argMap(inArgMap)
 {
     curColTrans = macro.colTranslations.data();
     buffer.reserve(300);
@@ -368,7 +368,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     const LineTrans* colTransEnd = macro.colTranslations.data()+
             macro.colTranslations.size();
     const size_t contentSize = macro.content.size();
-    if (exit || pos == contentSize)
+    if (pos == contentSize)
     {   // early exit from macro
         lineSize = 0;
         return nullptr;
