@@ -130,9 +130,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
         {
             case LineMode::NORMAL:
             {
-                if (pos < buffer.size() && buffer[pos] != '\n' &&
-                    buffer[pos] != ' ' && buffer[pos] != '\t' && buffer[pos] != '\v' &&
-                    buffer[pos] != '\f' && buffer[pos] != '\r')
+                if (pos < buffer.size() && !isSpace(buffer[pos]))
                 {   // putting regular string (no spaces)
                     do {
                         backslash = (buffer[pos] == '\\');
@@ -169,10 +167,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                             break;
                         }
                         
-                    } while (pos < buffer.size() && buffer[pos] != '\n' &&
-                        (buffer[pos] != ' ' && buffer[pos] != '\t' &&
-                        buffer[pos] != '\v' && buffer[pos] != '\f' &&
-                        buffer[pos] != '\r'));
+                    } while (pos < buffer.size() && !isSpace(buffer[pos]));
                 }
                 if (pos < buffer.size())
                 {
@@ -199,9 +194,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                             buffer[destPos++] = ' ';
                             pos++;
                         } while (pos < buffer.size() && buffer[pos] != '\n' &&
-                            (buffer[pos] == ' ' || buffer[pos] == '\t' ||
-                            buffer[pos] == '\v' || buffer[pos] == '\f' ||
-                            buffer[pos] == '\r'));
+                            isSpace(buffer[pos]));
                     }
                 }
                 break;

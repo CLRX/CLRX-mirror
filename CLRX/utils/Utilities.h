@@ -109,13 +109,17 @@ public:
 
 /* parse utilities */
 
+inline bool isSpace(unsigned char c)
+{
+    return (c == 32 || (c < 32 && (0x3e00U & (1U<<c))));
+}
+
 /// skip spaces from cString
 inline const char* skipSpaces(const char* s);
 
 inline const char* skipSpaces(const char* s)
 {
-    while (*s == ' ' || *s == '\n' || *s == '\r' || *s == '\t' ||
-        *s == '\f' || *s == '\v') s++;
+    while (isSpace(*s)) s++;
     return s;
 }
 
@@ -126,8 +130,7 @@ inline const char* skipSpacesAtEnd(const char* s, size_t length)
 {
     const char* t = s+length;
     if (t == s) return s;
-    for (t--; t != s-1 && (*t == ' ' || *t == '\n' || *t == '\r' || *t == '\t' ||
-        *t == '\f' || *t == '\v'); t--);
+    for (t--; t != s-1 && isSpace(*t); t--);
     return t+1;
 }
 
