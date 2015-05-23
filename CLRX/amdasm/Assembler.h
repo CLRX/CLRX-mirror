@@ -230,20 +230,13 @@ class ISAAssembler
 protected:
     Assembler& assembler;
     explicit ISAAssembler(Assembler& assembler);
-    size_t outputSize;
-    char* output;
-    void reallocateOutput(size_t newSize);
 public:
     virtual ~ISAAssembler();
     
-    virtual size_t assemble(uint64_t lineNo, const char* line) = 0;
-    virtual void finish() = 0;
+    virtual size_t assemble(uint64_t lineNo, const char* line,
+                std::vector<cxbyte>& output) = 0;
     
-    size_t getOutputSize() const
-    { return outputSize; }
-    
-    const char* getOutput() const
-    { return output; }
+    virtual void resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
 };
 
 class GCNAssembler: public ISAAssembler
@@ -252,8 +245,8 @@ public:
     explicit GCNAssembler(Assembler& assembler);
     ~GCNAssembler();
     
-    size_t assemble(uint64_t lineNo, const char* line);
-    void finish();
+    size_t assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
+    void resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
 };
 
 /*
@@ -316,8 +309,61 @@ enum : cxbyte
 
 union AsmExprArg;
 
+struct AsmExpression;
+
+struct AsmExprSymbolOccurence
+{
+    AsmExpression* expression;
+    size_t opIndex;
+    size_t argIndex;
+};
+
+struct AsmSymbol
+{
+    cxuint sectionId;
+    bool isDefined;
+    uint64_t value;
+    std::vector<AsmSourcePos> occurrences;
+    AsmExpression* expression;
+    std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
+    
+    AsmSymbol() : sectionId(0), isDefined(false), value(0), expression(nullptr)
+    { }
+    
+    AsmSymbol(cxuint inSectionId, uint64_t inValue) : sectionId(inSectionId),
+            isDefined(true), value(inValue), expression(nullptr)
+    { }
+    
+    AsmSymbol(cxuint inSectionId, AsmExpression* expr) : sectionId(inSectionId),
+            isDefined(false), value(0), expression(expr)
+    { }
+    
+    void addOccurrence(AsmSourcePos pos)
+    { occurrences.push_back(pos); }
+    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
+    { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
+};
+
+typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
+typedef AsmSymbolMap::value_type AsmSymbolEntry;
+
+struct AsmExprTarget
+{
+    cxbyte type;
+    union
+    {
+        AsmSymbolEntry* symbol;
+        struct {
+            cxuint sectionId;
+            cxuint size;
+            size_t offset;
+        };
+    };
+};
+
 struct AsmExpression
 {
+    AsmExprTarget target;
     AsmSourcePos sourcePos;
     size_t symOccursNum;
     Array<AsmExprOp> ops;
@@ -351,41 +397,6 @@ struct AsmExpression
     { return (AsmExprOp::FIRST_BINARY <= op && op <= AsmExprOp::LAST_BINARY); }
 };
 
-struct AsmExprSymbolOccurence
-{
-    AsmExpression* expression;
-    size_t argIndex;
-};
-
-struct AsmSymbol
-{
-    cxuint sectionId;
-    bool isDefined;
-    uint64_t value;
-    std::vector<AsmSourcePos> occurrences;
-    AsmExpression* expression;
-    std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
-    
-    AsmSymbol() : sectionId(0), isDefined(false), value(0), expression(nullptr)
-    { }
-    
-    AsmSymbol(cxuint inSectionId, uint64_t inValue) : sectionId(inSectionId),
-            isDefined(true), value(inValue), expression(nullptr)
-    { }
-    
-    AsmSymbol(cxuint inSectionId, AsmExpression* expr) : sectionId(inSectionId),
-            isDefined(false), value(0), expression(expr)
-    { }
-    
-    void addOccurrence(AsmSourcePos pos)
-    { occurrences.push_back(pos); }
-    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex)
-    { occurrencesInExprs.push_back({expr, argIndex}); }
-};
-
-typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
-typedef AsmSymbolMap::value_type AsmSymbolEntry;
-
 union AsmExprArg
 {
     AsmSymbolEntry* symbol;
@@ -397,20 +408,6 @@ struct AsmSection
     cxuint kernelId;
     AsmSectionType type;
     std::vector<cxbyte> content;
-};
-
-struct AsmExprTarget
-{
-    cxbyte type;
-    union
-    {
-        AsmSymbolEntry* symbol;
-        struct {
-            cxuint sectionId;
-            cxuint size;
-            size_t offset;
-        };
-    };
 };
 
 struct AsmCondClause
@@ -438,7 +435,6 @@ private:
     AsmSymbolMap symbolMap;
     MacroMap macroMap;
     KernelMap kernelMap;
-    std::vector<std::pair<AsmExprTarget, AsmExpression*> > pendingExpressions;
     cxuint flags;
     uint64_t macroCount;
     std::istream* inputStream;
@@ -468,6 +464,7 @@ private:
     bool inAmdConfig;
     cxuint currentKernel;
     cxuint currentSection;
+    uint64_t& currentOutPos;
     
     void printWarning(const AsmSourcePos& pos, const std::string& message);
     void printError(const AsmSourcePos& pos, const std::string& message);
@@ -510,6 +507,10 @@ private:
     void includeFile(const std::string& filename);
     void applyMacro(const std::string& macroName, AsmMacroArgMap argMap);
     void exitFromMacro();
+    
+    void setSymbol(const char* symbol, uint64_t value);
+    
+    void resolveSymbols(AsmSymbolEntry& symEntry);
     
 protected:
     void readLine();

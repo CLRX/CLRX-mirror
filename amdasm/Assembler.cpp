@@ -21,6 +21,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <stack>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -653,9 +654,12 @@ void AsmSourcePos::print(std::ostream& os) const
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint flags,
         std::ostream& msgStream)
-        : macroCount(0), inputStream(&input), inclusionLevel(0), macroSubstLevel(0),
+        : symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+          macroCount(0), inputStream(&input), inclusionLevel(0), macroSubstLevel(0),
           topFile(RefPtr<const AsmFile>(new AsmFile(filename))), 
-          lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream)
+          lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
+          // get value reference from first symbol: '.'
+          currentOutPos(symbolMap.begin()->second.value)
 {
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input);
@@ -839,7 +843,8 @@ AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
     const std::string symName = extractSymName(lineSize-linePos, line+linePos);
     if (symName.empty())
         return nullptr;
-    std::pair<AsmSymbolMap::iterator, bool> res = symbolMap.insert({ symName, AsmSymbol()});
+    std::pair<AsmSymbolMap::iterator, bool> res =
+            symbolMap.insert({ symName, AsmSymbol()});
     if (!res.second)
     {   // if found
         AsmSymbolMap::iterator it = res.first;
@@ -850,6 +855,84 @@ AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
     else // if new symbol has been put
         entry = &*res.first;
     return entry;
+}
+
+void Assembler::setSymbol(const char* symbol, uint64_t value)
+{
+    auto it = symbolMap.find(symbol);
+    if (it != symbolMap.end())
+    {
+        it->second.value = value;
+        it->second.isDefined = true;
+        resolveSymbols(*it);
+    }
+}
+
+void Assembler::resolveSymbols(AsmSymbolEntry& symEntry)
+{
+    if (!symEntry.second.isDefined)
+        return;
+    // resolve value of pending symbols
+    std::stack<std::pair<AsmSymbol*, size_t> > symbolStack;
+    symbolStack.push(std::make_pair(&symEntry.second, 0));
+    
+    while (!symbolStack.empty())
+    {
+        std::pair<AsmSymbol*, size_t>& entry = symbolStack.top();
+        if (entry.second < entry.first->occurrencesInExprs.size())
+        {   // 
+            AsmExprSymbolOccurence& occurrence =
+                    entry.first->occurrencesInExprs[entry.second];
+            AsmExpression* expr = occurrence.expression;
+            expr->ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
+            expr->args[occurrence.argIndex].value = entry.first->value;
+            
+            if (--(expr->symOccursNum) == 0)
+            {   // expresion has been fully resolved
+                uint64_t value;
+                expr->evaluate(*this, value);
+                const AsmExprTarget& target = expr->target;
+                switch(expr->target.type)
+                {
+                    case ASMXTGT_SYMBOL:
+                    {    // resolve symbol
+                        AsmSymbolEntry& curSymEntry = *target.symbol;
+                        curSymEntry.second.value = value;
+                        curSymEntry.second.isDefined = true;
+                        symbolStack.push(std::make_pair(&curSymEntry.second, 0));
+                        break;
+                    }
+                    case ASMXTGT_DATA8:
+                        sections[target.sectionId].content[target.offset] =
+                                cxbyte(value);
+                        break;
+                    case ASMXTGT_DATA16:
+                        SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
+                                .content.data() + target.offset), uint16_t(value));
+                        break;
+                    case ASMXTGT_DATA32:
+                        SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
+                                .content.data() + target.offset), uint32_t(value));
+                        break;
+                    case ASMXTGT_DATA64:
+                        SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
+                                .content.data() + target.offset), uint64_t(value));
+                        break;
+                    default: // ISA assembler resolves this dependency
+                        isaAssembler->resolveCode(sections[target.sectionId]
+                                .content.data() + target.offset, target.type, value);
+                        break;
+                }
+                delete occurrence.expression; // delete expression
+            }
+            occurrence.expression = nullptr; // clear expression
+        }
+        else // pop
+        {
+            entry.first->occurrencesInExprs.clear();
+            symbolStack.pop();
+        }
+    }
 }
 
 void Assembler::printWarning(const AsmSourcePos& pos, const std::string& message)
