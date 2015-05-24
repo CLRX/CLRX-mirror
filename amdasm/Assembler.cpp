@@ -870,7 +870,7 @@ void Assembler::setSymbol(const char* symbol, uint64_t value)
 
 void Assembler::resolveSymbols(AsmSymbolEntry& symEntry)
 {
-    if (!symEntry.second.isDefined)
+    if (symEntry.second.isDefined)
         return;
     // resolve value of pending symbols
     std::stack<std::pair<AsmSymbol*, size_t> > symbolStack;

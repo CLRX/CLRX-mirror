@@ -721,9 +721,21 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
     outLinePos = string-assembler.line;
     
     if (good)
-        return new AsmExpression(assembler.getSourcePos(string),
-                  symOccursNum, ops.size(), ops.data(), outMsgPositions.size(),
-                  outMsgPositions.data(), args.size(), args.data());
+    {
+        std::unique_ptr<AsmExpression> expr(new AsmExpression(
+                  assembler.getSourcePos(string), symOccursNum, ops.size(), ops.data(),
+                  outMsgPositions.size(), outMsgPositions.data(),
+                  args.size(), args.data()));
+        for (size_t i = 0, j = 0; i < ops.size(); i++)
+            if (ops[i] == AsmExprOp::ARG_SYMBOL)
+            {
+                args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
+                j++;
+            }
+            else if (ops[i] == AsmExprOp::ARG_VALUE)
+                j++;
+        return expr.release();
+    }
     else
         return nullptr;
 }
