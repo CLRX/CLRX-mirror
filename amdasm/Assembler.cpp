@@ -654,13 +654,14 @@ void AsmSourcePos::print(std::ostream& os) const
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint flags,
         std::ostream& msgStream)
-        : symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
-          macroCount(0), inputStream(&input), inclusionLevel(0), macroSubstLevel(0),
+        : isaAssembler(nullptr), symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+          macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           topFile(RefPtr<const AsmFile>(new AsmFile(filename))), 
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
 {
+    amdOutput = nullptr;
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input);
     asmInputFilters.push(currentInputFilter);
@@ -668,11 +669,30 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint fl
 
 Assembler::~Assembler()
 {
+    if (amdOutput != nullptr)
+    {
+        if (format == AsmFormat::GALLIUM)
+            delete galliumOutput;
+        else if (format == AsmFormat::CATALYST)
+            delete amdOutput;
+    }
+    if (isaAssembler != nullptr)
+        delete isaAssembler;
     while (!asmInputFilters.empty())
     {
         delete asmInputFilters.top();
         asmInputFilters.pop();
     }
+    
+    for (auto& entry: symbolMap)    // free pending expressions
+        if (!entry.second.isDefined)
+            for (auto& occur: entry.second.occurrencesInExprs)
+                if (occur.expression!=nullptr)
+                {
+                    if (--occur.expression->symOccursNum==0)
+                        delete occur.expression;
+                    occur.expression = nullptr;
+                }
 }
 
 void Assembler::includeFile(const std::string& filename)
@@ -857,21 +877,11 @@ AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
     return entry;
 }
 
-void Assembler::setSymbol(const char* symbol, uint64_t value)
+bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
 {
-    auto it = symbolMap.find(symbol);
-    if (it != symbolMap.end())
-    {
-        it->second.value = value;
-        it->second.isDefined = true;
-        resolveSymbols(*it);
-    }
-}
-
-void Assembler::resolveSymbols(AsmSymbolEntry& symEntry)
-{
-    if (symEntry.second.isDefined)
-        return;
+    symEntry.second.value = value;
+    symEntry.second.isDefined = true;
+    bool good = true;
     // resolve value of pending symbols
     std::stack<std::pair<AsmSymbol*, size_t> > symbolStack;
     symbolStack.push(std::make_pair(&symEntry.second, 0));
@@ -890,7 +900,12 @@ void Assembler::resolveSymbols(AsmSymbolEntry& symEntry)
             if (--(expr->symOccursNum) == 0)
             {   // expresion has been fully resolved
                 uint64_t value;
-                expr->evaluate(*this, value);
+                if (!expr->evaluate(*this, value))
+                {   // if failed
+                    occurrence.expression = nullptr; // clear expression
+                    good = false;
+                    continue;
+                }
                 const AsmExprTarget& target = expr->target;
                 switch(expr->target.type)
                 {
@@ -933,6 +948,7 @@ void Assembler::resolveSymbols(AsmSymbolEntry& symEntry)
             symbolStack.pop();
         }
     }
+    return good;
 }
 
 void Assembler::printWarning(const AsmSourcePos& pos, const std::string& message)

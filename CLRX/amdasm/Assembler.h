@@ -437,7 +437,6 @@ private:
     KernelMap kernelMap;
     cxuint flags;
     uint64_t macroCount;
-    std::istream* inputStream;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
@@ -508,9 +507,7 @@ private:
     void applyMacro(const std::string& macroName, AsmMacroArgMap argMap);
     void exitFromMacro();
     
-    void setSymbol(const char* symbol, uint64_t value);
-    
-    void resolveSymbols(AsmSymbolEntry& symEntry);
+    bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value);
     
 protected:
     void readLine();
