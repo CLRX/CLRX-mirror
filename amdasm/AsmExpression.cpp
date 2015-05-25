@@ -726,14 +726,29 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                   assembler.getSourcePos(string), symOccursNum, ops.size(), ops.data(),
                   outMsgPositions.size(), outMsgPositions.data(),
                   args.size(), args.data()));
-        for (size_t i = 0, j = 0; i < ops.size(); i++)
-            if (ops[i] == AsmExprOp::ARG_SYMBOL)
-            {
-                args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
-                j++;
-            }
-            else if (ops[i] == AsmExprOp::ARG_VALUE)
-                j++;
+        try
+        {
+            for (size_t i = 0, j = 0; i < ops.size(); i++)
+                if (ops[i] == AsmExprOp::ARG_SYMBOL)
+                {
+                    args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
+                    j++;
+                }
+                else if (ops[i] == AsmExprOp::ARG_VALUE)
+                    j++;
+        }
+        catch(...)
+        {   // fallback! remove all occurrences
+            for (size_t i = 0, j = 0; i < ops.size(); i++)
+                if (ops[i] == AsmExprOp::ARG_SYMBOL)
+                {
+                    args[j].symbol->second.removeOccurrenceInExpr(expr.get(), j, i);
+                    j++;
+                }
+                else if (ops[i] == AsmExprOp::ARG_VALUE)
+                    j++;
+            throw;
+        }
         return expr.release();
     }
     else

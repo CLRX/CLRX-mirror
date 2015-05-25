@@ -648,6 +648,13 @@ void AsmSourcePos::print(std::ostream& os) const
     os.write(numBuf, size);
 }
 
+void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
+{ 
+    auto it = std::remove(occurrencesInExprs.begin(), occurrencesInExprs.end(),
+            AsmExprSymbolOccurence{expr, argIndex, opIndex});
+    occurrencesInExprs.resize(it-occurrencesInExprs.begin());
+}
+
 /*
  * Assembler
  */
@@ -691,7 +698,6 @@ Assembler::~Assembler()
                 {
                     if (--occur.expression->symOccursNum==0)
                         delete occur.expression;
-                    occur.expression = nullptr;
                 }
 }
 

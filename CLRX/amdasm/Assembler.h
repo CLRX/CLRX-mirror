@@ -316,6 +316,9 @@ struct AsmExprSymbolOccurence
     AsmExpression* expression;
     size_t opIndex;
     size_t argIndex;
+    
+    bool operator==(const AsmExprSymbolOccurence& b) const
+    { return expression==b.expression && opIndex==b.opIndex && argIndex==b.argIndex; }
 };
 
 struct AsmSymbol
@@ -342,6 +345,7 @@ struct AsmSymbol
     { occurrences.push_back(pos); }
     void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
     { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
+    void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
 };
 
 typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
