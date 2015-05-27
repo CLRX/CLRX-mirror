@@ -46,6 +46,7 @@ static AsmExprParseCase asmExprParseCases[] =
     { "187378932789789", "187378932789789", true, 187378932789789UL, "", "" },
     { "01234", "668", true, 668, "", "" },
     { "0xaddab", "712107", true, 712107, "", "" },
+    { "0b11", "3", true, 3, "", "" },
     /* character literals */
     { "'a'", "97", true, 97, "", "" },
     { "'d'", "100", true, 100, "", "" },
@@ -64,6 +65,8 @@ static AsmExprParseCase asmExprParseCases[] =
     /* symbols */
     { "xyz", "xyz", false, 0, "", "" },
     { ".sometest", ".sometest", false, 0, "", "" },
+    /* local labels */
+    { "555f + 555b", "555f 555b +", false, 0, "", "", },
     /* simple expressions */
     { "-3", "3 !-", true, -3ULL, "", "" },
     { "+3", "3", true, 3, "", "" }, /* no plus operator, because is skipped */

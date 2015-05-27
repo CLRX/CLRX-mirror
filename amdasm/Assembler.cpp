@@ -44,13 +44,27 @@ using namespace CLRX;
 static inline const std::string extractSymName(size_t size, const char* string)
 {
     size_t p = 0;
-    if (0 < size && ((string[0] >= 'a' && string[0] <= 'z') ||
-        (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' || string[0] == '.' ||
-         string[0] == '$'))
-        for (p = 1; p < size && ((string[p] >= '0' && string[p] <= '9') ||
-            (string[p] >= 'a' && string[p] <= 'z') ||
-            (string[p] >= 'A' && string[p] <= 'Z') || string[p] == '_' ||
-             string[p] == '.' || string[p] == '$') ; p++);
+    if (0 < size)
+    {
+        if((string[0] >= 'a' && string[0] <= 'z') ||
+            (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' ||
+             string[0] == '.' || string[0] == '$')
+            for (p = 1; p < size && ((string[p] >= '0' && string[p] <= '9') ||
+                (string[p] >= 'a' && string[p] <= 'z') ||
+                (string[p] >= 'A' && string[p] <= 'Z') || string[p] == '_' ||
+                 string[p] == '.' || string[p] == '$') ; p++);
+        else if (string[0] >= '0' && string[0] <= '9') // local label
+        {
+            for (p = 1; p < size && (string[p] >= '0' && string[p] <= '9'); p++);
+            // check whether is local forward or backward label
+            p = (p < size && (string[p] == 'f' || string[p] == 'b')) ? p+1 : 0;
+            // if not part of binary number or illegal bin number
+            if (p != 0 && (p < size && ((string[p] >= '0' && string[p] <= '9') ||
+                (string[p] >= 'a' && string[p] <= 'z') ||
+                (string[p] >= 'A' && string[p] <= 'Z'))))
+                p = 0;
+        }
+    }
     if (p == 0) // not parsed
         return std::string();
     
@@ -661,10 +675,12 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint flags,
         std::ostream& msgStream)
-        : isaAssembler(nullptr), symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
-          macroCount(0), inclusionLevel(0), macroSubstLevel(0),
+        : format(AsmFormat::CATALYST), deviceType(GPUDeviceType::CAPE_VERDE),
+          isaAssembler(nullptr), symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+          flags(0), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           topFile(RefPtr<const AsmFile>(new AsmFile(filename))), 
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
+          inGlobal(true), inAmdConfig(false), currentKernel(0), currentSection(0),
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
 {
@@ -988,6 +1004,134 @@ void Assembler::readLine()
     line = currentInputFilter->readLine(*this, lineSize);
 }
 
+static const char* pseudoOps[] =
+{
+    "32bit",
+    "64bit",
+    "abort",
+    "align",
+    "ascii",
+    "asciz",
+    "balign",
+    "balignw",
+    "balignl",
+    "byte",
+    "catalyst",
+    "config",
+    "data",
+    "double",
+    "else",
+    "elseif",
+    "elseifb",
+    "elseifc",
+    "elseifdef",
+    "elseifeq",
+    "elseifeqs",
+    "elseifge",
+    "elseifgt",
+    "elseifle",
+    "elseiflt",
+    "elseifnb",
+    "elseifnc",
+    "elseifndef",
+    "elseifnotdef",
+    "elseifne",
+    "elseifnes",
+    "end",
+    "endfunc",
+    "endif",
+    "endm",
+    "endr",
+    "equ",
+    "equiv",
+    "eqv",
+    "err",
+    "error",
+    "exitm",
+    "extern",
+    "fail",
+    "file",
+    "fill",
+    "float",
+    "format",
+    "func",
+    "gallium",
+    "global",
+    "gpu",
+    "half",
+    "hword",
+    "if",
+    "ifb",
+    "ifc",
+    "ifdef",
+    "ifeq",
+    "ifeqs",
+    "ifge",
+    "ifgt",
+    "ifle",
+    "iflt",
+    "ifnb",
+    "ifnc",
+    "ifndef",
+    "ifnotdef",
+    "ifne",
+    "ifnes",
+    "incbin",
+    "include",
+    "int",
+    "kernel",
+    "line",
+    "ln",
+    "loc",
+    "local",
+    "long",
+    "macro",
+    "octa",
+    "offset",
+    "org",
+    "p2align",
+    "print",
+    "purgem",
+    "quad",
+    "rept",
+    "section",
+    "set",
+    "short",
+    "single",
+    "size",
+    "skip",
+    "space",
+    "string",
+    "string16",
+    "string32",
+    "struct",
+    "text",
+    "title",
+    "warning",
+    "word"
+};
+
 void Assembler::assemble()
 {
+    while (!asmInputFilters.empty())
+    {
+        lineNo = currentInputFilter->getLineNo();
+        line = currentInputFilter->readLine(*this, lineSize);
+        while (line == nullptr)
+        {   // no line
+            asmInputFilters.pop();
+            if (asmInputFilters.empty())
+                break;
+            currentInputFilter = asmInputFilters.top();
+            lineNo = currentInputFilter->getLineNo();
+            line = currentInputFilter->readLine(*this, lineSize);
+        }
+        
+        /* parse line */
+        size_t linePos = 0;
+        while (isSpace(line[linePos]) && linePos < lineSize) linePos++;
+        if (linePos == lineSize)
+            continue; // only empty line
+        
+    }
 }
