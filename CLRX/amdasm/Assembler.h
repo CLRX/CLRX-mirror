@@ -391,8 +391,10 @@ struct AsmExpression
     
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     
-    static AsmExpression* parse(Assembler& assembler, size_t linePos,
-              size_t& outLinePos);
+    static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos);
+    
+    static AsmExpression* parse(Assembler& assembler, const char* string,
+              const char*& outend);
     
     static bool isUnaryOp(AsmExprOp op)
     { return (AsmExprOp::FIRST_UNARY <= op && op <= AsmExprOp::LAST_UNARY); }
@@ -469,27 +471,27 @@ private:
     cxuint currentSection;
     uint64_t& currentOutPos;
     
-    void printWarning(const AsmSourcePos& pos, const std::string& message);
-    void printError(const AsmSourcePos& pos, const std::string& message);
+    void printWarning(const AsmSourcePos& pos, const char* message);
+    void printError(const AsmSourcePos& pos, const char* message);
     
-    void printWarning(const char* linePlace, const std::string& message)
+    void printWarning(const char* linePlace, const char* message)
     {
         const LineCol lineCol = currentInputFilter->translatePos(linePlace-line);
         printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message);
     }
-    void printError(const char* linePlace, const std::string& message)
+    void printError(const char* linePlace, const char* message)
     {
         const LineCol lineCol = currentInputFilter->translatePos(linePlace-line);
         printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message);
     }
     
-    void printWarning(LineCol lineCol, const std::string& message)
+    void printWarning(LineCol lineCol, const char* message)
     { printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
-    void printError(LineCol lineCol, const std::string& message)
+    void printError(LineCol lineCol, const char* message)
     { printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
     
-    uint64_t parseLiteral(size_t linePos, size_t& outLinePos);
-    AsmSymbolEntry* parseSymbol(size_t linePos);
+    uint64_t parseLiteral(const char* string, const char*& outend);
+    AsmSymbolEntry* parseSymbol(const char* string, bool localLabel = true);
     
     LineCol translatePos(const char* string) const
     { return currentInputFilter->translatePos(string-line); }
@@ -512,8 +514,7 @@ private:
     void exitFromMacro();
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value);
-    
-protected:
+protected:    
     void readLine();
 public:
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,

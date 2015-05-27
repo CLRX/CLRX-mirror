@@ -34,41 +34,43 @@
 
 using namespace CLRX;
 
-/*static inline const char* skipSpacesToEnd(const char* string, const char* end)
+static inline const char* skipSpacesToEnd(const char* string, const char* end)
 {
     while (string!=end && *string == ' ') string++;
     return string;
-}*/
+}
 
 // extract sybol name or argument name or other identifier
-static inline const std::string extractSymName(size_t size, const char* string)
+static inline const std::string extractSymName(const char* startString, const char* end,
+           bool localLabel)
 {
-    size_t p = 0;
-    if (0 < size)
+    const char* string = startString;
+    if (string != end)
     {
-        if((string[0] >= 'a' && string[0] <= 'z') ||
-            (string[0] >= 'A' && string[0] <= 'Z') || string[0] == '_' ||
-             string[0] == '.' || string[0] == '$')
-            for (p = 1; p < size && ((string[p] >= '0' && string[p] <= '9') ||
-                (string[p] >= 'a' && string[p] <= 'z') ||
-                (string[p] >= 'A' && string[p] <= 'Z') || string[p] == '_' ||
-                 string[p] == '.' || string[p] == '$') ; p++);
-        else if (string[0] >= '0' && string[0] <= '9') // local label
+        if((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
+            *string == '_' || *string == '.' || *string == '$')
+            for (string++; string != end && ((*string >= '0' && *string <= '9') ||
+                (*string >= 'a' && *string <= 'z') ||
+                (*string >= 'A' && *string <= 'Z') || *string == '_' ||
+                 *string == '.' || *string == '$') ; string++);
+        else if (localLabel && *string >= '0' && *string <= '9') // local label
         {
-            for (p = 1; p < size && (string[p] >= '0' && string[p] <= '9'); p++);
+            for (string++; string!=end && (*string >= '0' && *string <= '9'); string++);
             // check whether is local forward or backward label
-            p = (p < size && (string[p] == 'f' || string[p] == 'b')) ? p+1 : 0;
+            string = (string != end && (*string == 'f' || *string == 'b')) ?
+                    string+1 : startString;
             // if not part of binary number or illegal bin number
-            if (p != 0 && (p < size && ((string[p] >= '0' && string[p] <= '9') ||
-                (string[p] >= 'a' && string[p] <= 'z') ||
-                (string[p] >= 'A' && string[p] <= 'Z'))))
-                p = 0;
+            if (startString != string && (string!=end &&
+                ((*string >= '0' && *string <= '9') ||
+                (*string >= 'a' && *string <= 'z') ||
+                (*string >= 'A' && *string <= 'Z'))))
+                string = startString;
         }
     }
-    if (p == 0) // not parsed
+    if (startString == string) // not parsed
         return std::string();
     
-    return std::string(string, string + p);
+    return std::string(startString, string);
 }
 
 ISAAssembler::~ISAAssembler()
@@ -430,7 +432,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 { // extract argName
                     //ile (content[pos] >= '0'
                     const std::string symName = extractSymName(
-                                contentSize-pos, content+pos);
+                                content+pos, content+contentSize, false);
                     auto it = binaryMapFind(argMap.begin(), argMap.end(), symName);
                     if (it != argMap.end())
                     {   // if found
@@ -734,94 +736,93 @@ void Assembler::exitFromMacro()
 {
 }
 
-uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
+uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
 {
     uint64_t value;
-    const char* end;
-    outLinePos = linePos;
-    if (outLinePos != lineSize && line[outLinePos] == '\'')
+    outend = string;
+    const char* end = line+lineSize;
+    if (outend != end && *outend == '\'')
     {
-        outLinePos++;
-        if (outLinePos == lineSize)
+        outend++;
+        if (outend == end)
         {
-            printError(line+linePos, "Terminated character literal");
+            printError(string, "Terminated character literal");
             throw ParseException("Terminated character literal");
         }
-        if (line[outLinePos] == '\'')
+        if (*outend == '\'')
         {
-            printError(line+linePos, "Empty character literal");
+            printError(string, "Empty character literal");
             throw ParseException("Empty character literal");
         }
         
-        if (line[outLinePos] != '\\')
+        if (*outend != '\\')
         {
-            value = line[outLinePos++];
-            if (outLinePos == lineSize || line[outLinePos] != '\'')
+            value = *outend++;
+            if (outend == end || *outend != '\'')
             {
-                printError(line+linePos, "Missing ''' at end of literal");
+                printError(string, "Missing ''' at end of literal");
                 throw ParseException("Missing ''' at end of literal");
             }
-            outLinePos = outLinePos+1;
+            outend++;
             return value;
         }
         else // escapes
         {
-            outLinePos++;
-            if (outLinePos == lineSize)
+            outend++;
+            if (outend == end)
             {
-                printError(line+linePos, "Terminated character literal");
+                printError(string, "Terminated character literal");
                 throw ParseException("Terminated character literal");
             }
-            if (line[outLinePos] == 'x')
+            if (*outend == 'x')
             {   // hex
-                outLinePos++;
-                if (outLinePos == lineSize)
+                outend++;
+                if (outend == end)
                 {
-                    printError(line+linePos, "Terminated character literal");
+                    printError(string, "Terminated character literal");
                     throw ParseException("Terminated character literal");
                 }
                 value = 0;
-                for (cxuint i = 0; outLinePos != lineSize && i < 2; i++, outLinePos++)
+                for (cxuint i = 0; outend != end && i < 2; i++, outend++)
                 {
                     cxuint digit;
-                    if (line[outLinePos] >= '0' && line[outLinePos] <= '9')
-                        digit = line[outLinePos]-'0';
-                    else if (line[outLinePos] >= 'a' && line[outLinePos] <= 'f')
-                        digit = line[outLinePos]-'a'+10;
-                    else if (line[outLinePos] >= 'A' && line[outLinePos] <= 'F')
-                        digit = line[outLinePos]-'A'+10;
-                    else if (line[outLinePos] == '\'' && i != 0)
+                    if (*outend >= '0' && *outend <= '9')
+                        digit = *outend-'0';
+                    else if (*outend >= 'a' && *outend <= 'f')
+                        digit = *outend-'a'+10;
+                    else if (*outend >= 'A' && *outend <= 'F')
+                        digit = *outend-'A'+10;
+                    else if (*outend == '\'' && i != 0)
                         break;
                     else
                     {
-                        printError(line+linePos, "Expected hexadecimal character code");
+                        printError(string, "Expected hexadecimal character code");
                         throw ParseException("Expected hexadecimal character code");
                     }
                     value = (value<<4) + digit;
                 }
             }
-            else if (line[outLinePos] >= '0' &&  line[outLinePos] <= '7')
+            else if (*outend >= '0' &&  *outend <= '7')
             {   // octal
                 value = 0;
-                for (cxuint i = 0; outLinePos != lineSize && i < 3 &&
-                            line[outLinePos] != '\''; i++, outLinePos++)
+                for (cxuint i = 0; outend != end && i < 3 && *outend != '\''; i++, outend++)
                 {
-                    if (line[outLinePos] < '0' || line[outLinePos] > '7')
+                    if (*outend < '0' || *outend > '7')
                     {
-                        printError(line+linePos, "Expected octal character code");
+                        printError(string, "Expected octal character code");
                         throw ParseException("Expected octal character code");
                     }
-                    value = (value<<3) + uint64_t(line[outLinePos]-'0');
+                    value = (value<<3) + uint64_t(*outend-'0');
                     if (value > 255)
                     {
-                        printError(line+linePos, "Octal code out of range");
+                        printError(string, "Octal code out of range");
                         throw ParseException("Octal code out of range");
                     }
                 }
             }
             else
             {   // normal escapes
-                const char c = line[outLinePos++];
+                const char c = *outend++;
                 switch (c)
                 {
                     case 'a':
@@ -858,31 +859,29 @@ uint64_t Assembler::parseLiteral(size_t linePos, size_t& outLinePos)
                         value = c;
                 }
             }
-            if (outLinePos == lineSize || line[outLinePos] != '\'')
+            if (outend == end || *outend != '\'')
             {
-                printError(line+linePos, "Missing ''' at end of literal");
+                printError(string, "Missing ''' at end of literal");
                 throw ParseException("Missing ''' at end of literal");
             }
-            outLinePos++;
+            outend++;
             return value;
         }
     }
     try
-    { value = cstrtovCStyle<uint64_t>(line+linePos, line+lineSize, end); }
+    { value = cstrtovCStyle<uint64_t>(string, line+lineSize, outend); }
     catch(const ParseException& ex)
     {
-        outLinePos = end-line;
-        printError(line+linePos, ex.what());
+        printError(string, ex.what());
         throw;
     }
-    outLinePos = end-line;
     return value;
 }
 
-AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
+AsmSymbolEntry* Assembler::parseSymbol(const char* string, bool localLabel)
 {
     AsmSymbolEntry* entry = nullptr;
-    const std::string symName = extractSymName(lineSize-linePos, line+linePos);
+    const std::string symName = extractSymName(string, line+lineSize, localLabel);
     if (symName.empty())
         return nullptr;
     std::pair<AsmSymbolMap::iterator, bool> res =
@@ -891,7 +890,7 @@ AsmSymbolEntry* Assembler::parseSymbol(size_t linePos)
     {   // if found
         AsmSymbolMap::iterator it = res.first;
         AsmSymbol& sym = it->second;
-        sym.occurrences.push_back(getSourcePos(linePos));
+        sym.occurrences.push_back(getSourcePos(string-line));
         entry = &*it;
     }
     else // if new symbol has been put
@@ -973,19 +972,19 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
     return good;
 }
 
-void Assembler::printWarning(const AsmSourcePos& pos, const std::string& message)
+void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
 {
     pos.print(messageStream);
     messageStream.write("Warning: ", 9);
-    messageStream.write(message.c_str(), message.size());
+    messageStream.write(message, ::strlen(message));
     messageStream.put('\n');
 }
 
-void Assembler::printError(const AsmSourcePos& pos, const std::string& message)
+void Assembler::printError(const AsmSourcePos& pos, const char* message)
 {
     pos.print(messageStream);
     messageStream.write("Error: ", 7);
-    messageStream.write(message.c_str(), message.size());
+    messageStream.write(message, ::strlen(message));
     messageStream.put('\n');
 }
 
@@ -1004,7 +1003,7 @@ void Assembler::readLine()
     line = currentInputFilter->readLine(*this, lineSize);
 }
 
-static const char* pseudoOps[] =
+static const char* pseudoOpNamesTbl[] =
 {
     "32bit",
     "64bit",
@@ -1128,10 +1127,36 @@ void Assembler::assemble()
         }
         
         /* parse line */
-        size_t linePos = 0;
-        while (isSpace(line[linePos]) && linePos < lineSize) linePos++;
-        if (linePos == lineSize)
+        const char* string = line;
+        string = skipSpacesToEnd(string, line+lineSize);
+        if (string == line+lineSize)
             continue; // only empty line
-        
+        std::string firstName = extractSymName(string, line+lineSize, false);
+        if (firstName.empty())
+        {   // error
+        }
+        string += firstName.size(); // skip this name
+        string = skipSpacesToEnd(string, line+lineSize);
+        if (string != line+lineSize && *string != '=')
+        {   // assignment
+            string = skipSpacesToEnd(string+1, line+lineSize);
+            if (string == line+lineSize)
+            {
+                printError(string, "Expected assignment expression");
+                continue;
+            }
+            std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
+            if (expr->symOccursNum==0)
+            {
+                size_t value;
+                if (!expr->evaluate(*this, value))
+                    continue;
+                //setSymbol();
+            }
+            continue;
+        }
+        // check for pseudo-op
+        const size_t pseudoOpName = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
+                sizeof(pseudoOpNamesTbl)/sizeof(char*), firstName.c_str())-pseudoOpNamesTbl;
     }
 }

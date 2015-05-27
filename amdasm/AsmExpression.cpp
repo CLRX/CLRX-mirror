@@ -297,8 +297,16 @@ static const cxbyte asmOpPrioritiesTbl[] =
     0 // CHOICE_END
 };
 
-AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
-            size_t& outLinePos)
+AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos, size_t& outLinePos)
+{
+    const char* outend;
+    AsmExpression* expr = parse(assembler, assembler.line+linePos, outend);
+    outLinePos = outend-(assembler.line+linePos);
+    return expr;
+}   
+
+AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
+            const char*& outend)
 {
     struct ConExprOpEntry
     {
@@ -313,7 +321,6 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
     std::vector<LineCol> messagePositions;
     std::vector<LineCol> outMsgPositions;
     
-    const char* string = assembler.line;
     const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
     size_t symOccursNum = 0;
@@ -540,7 +547,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                 if (expectedToken != XT_OP)
                 {
                     expectedToken = XT_OP;
-                    AsmSymbolEntry* symEntry = assembler.parseSymbol(string-assembler.line);
+                    AsmSymbolEntry* symEntry = assembler.parseSymbol(string);
                     AsmExprArg arg;
                     if (symEntry != nullptr)
                     {
@@ -562,18 +569,12 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
                     else if (parenthesisCount != 0 || (*string >= '0' && *string <= '9') ||
                              *string == '\'')
                     {   // other we try to parse number
-                        size_t outLinePos;
+                        const char* oldStr = string;
                         try
-                        {
-                            arg.value = assembler.parseLiteral(
-                                        string-assembler.line, outLinePos);
-                            string = assembler.line + outLinePos;
-                        }
+                        { arg.value = assembler.parseLiteral(string, string); }
                         catch(const ParseException& ex)
                         {
                             arg.value = 0;
-                            const char* oldStr = string;
-                            string = assembler.line + outLinePos;
                             if (string != end && oldStr == string)
                                 // skip one character when end is in this same place
                                 // (avoids infinity loops)
@@ -718,7 +719,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
             stack.pop();
         }
     }
-    outLinePos = string-assembler.line;
+    outend = string;
     
     if (good)
     {
