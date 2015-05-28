@@ -1307,7 +1307,7 @@ void Assembler::assemble()
         else if (string != end && *string == ':')
         {   // labels
             string = skipSpacesToEnd(string+1, line+lineSize);
-            if (string == end)
+            if (string != end)
             {
                 printError(string, "Expected assignment expression");
                 continue;
