@@ -1012,8 +1012,8 @@ static const char* pseudoOpNamesTbl[] =
     "ascii",
     "asciz",
     "balign",
-    "balignw",
     "balignl",
+    "balignw",
     "byte",
     "catalyst",
     "config",
@@ -1033,9 +1033,9 @@ static const char* pseudoOpNamesTbl[] =
     "elseifnb",
     "elseifnc",
     "elseifndef",
-    "elseifnotdef",
     "elseifne",
     "elseifnes",
+    "elseifnotdef",
     "end",
     "endfunc",
     "endif",
@@ -1072,9 +1072,9 @@ static const char* pseudoOpNamesTbl[] =
     "ifnb",
     "ifnc",
     "ifndef",
-    "ifnotdef",
     "ifne",
     "ifnes",
+    "ifnotdef",
     "incbin",
     "include",
     "int",
@@ -1110,6 +1110,113 @@ static const char* pseudoOpNamesTbl[] =
     "word"
 };
 
+enum
+{
+    ASMOP_32BIT = 0,
+    ASMOP_64BIT,
+    ASMOP_ABORT,
+    ASMOP_ALIGN,
+    ASMOP_ASCII,
+    ASMOP_ASCIZ,
+    ASMOP_BALIGN,
+    ASMOP_BALIGNL,
+    ASMOP_BALIGNW,
+    ASMOP_BYTE,
+    ASMOP_CATALYST,
+    ASMOP_CONFIG,
+    ASMOP_DATA,
+    ASMOP_DOUBLE,
+    ASMOP_ELSE,
+    ASMOP_ELSEIF,
+    ASMOP_ELSEIFB,
+    ASMOP_ELSEIFC,
+    ASMOP_ELSEIFDEF,
+    ASMOP_ELSEIFEQ,
+    ASMOP_ELSEIFEQS,
+    ASMOP_ELSEIFGE,
+    ASMOP_ELSEIFGT,
+    ASMOP_ELSEIFLE,
+    ASMOP_ELSEIFLT,
+    ASMOP_ELSEIFNB,
+    ASMOP_ELSEIFNC,
+    ASMOP_ELSEIFNDEF,
+    ASMOP_ELSEIFNE,
+    ASMOP_ELSEIFNES,
+    ASMOP_ELSEIFNOTDEF,
+    ASMOP_END,
+    ASMOP_ENDFUNC,
+    ASMOP_ENDIF,
+    ASMOP_ENDM,
+    ASMOP_ENDR,
+    ASMOP_EQU,
+    ASMOP_EQUIV,
+    ASMOP_EQV,
+    ASMOP_ERR,
+    ASMOP_ERROR,
+    ASMOP_EXITM,
+    ASMOP_EXTERN,
+    ASMOP_FAIL,
+    ASMOP_FILE,
+    ASMOP_FILL,
+    ASMOP_FLOAT,
+    ASMOP_FORMAT,
+    ASMOP_FUNC,
+    ASMOP_GALLIUM,
+    ASMOP_GLOBAL,
+    ASMOP_GPU,
+    ASMOP_HALF,
+    ASMOP_HWORD,
+    ASMOP_IF,
+    ASMOP_IFB,
+    ASMOP_IFC,
+    ASMOP_IFDEF,
+    ASMOP_IFEQ,
+    ASMOP_IFEQS,
+    ASMOP_IFGE,
+    ASMOP_IFGT,
+    ASMOP_IFLE,
+    ASMOP_IFLT,
+    ASMOP_IFNB,
+    ASMOP_IFNC,
+    ASMOP_IFNDEF,
+    ASMOP_IFNE,
+    ASMOP_IFNES,
+    ASMOP_IFNOTDEF,
+    ASMOP_INCBIN,
+    ASMOP_INCLUDE,
+    ASMOP_INT,
+    ASMOP_KERNEL,
+    ASMOP_LINE,
+    ASMOP_LN,
+    ASMOP_LOC,
+    ASMOP_LOCAL,
+    ASMOP_LONG,
+    ASMOP_MACRO,
+    ASMOP_OCTA,
+    ASMOP_OFFSET,
+    ASMOP_ORG,
+    ASMOP_P2ALIGN,
+    ASMOP_PRINT,
+    ASMOP_PURGEM,
+    ASMOP_QUAD,
+    ASMOP_REPT,
+    ASMOP_SECTION,
+    ASMOP_SET,
+    ASMOP_SHORT,
+    ASMOP_SINGLE,
+    ASMOP_SIZE,
+    ASMOP_SKIP,
+    ASMOP_SPACE,
+    ASMOP_STRING,
+    ASMOP_STRING16,
+    ASMOP_STRING32,
+    ASMOP_STRUCT,
+    ASMOP_TEXT,
+    ASMOP_TITLE,
+    ASMOP_WARNING,
+    ASMOP_WORD
+};
+
 void Assembler::assemble()
 {
     while (!asmInputFilters.empty())
@@ -1118,6 +1225,7 @@ void Assembler::assemble()
         line = currentInputFilter->readLine(*this, lineSize);
         while (line == nullptr)
         {   // no line
+            delete asmInputFilters.top();
             asmInputFilters.pop();
             if (asmInputFilters.empty())
                 break;
@@ -1128,35 +1236,267 @@ void Assembler::assemble()
         
         /* parse line */
         const char* string = line;
-        string = skipSpacesToEnd(string, line+lineSize);
-        if (string == line+lineSize)
+        const char* end = line+lineSize;
+        string = skipSpacesToEnd(string, end);
+        if (string == end)
             continue; // only empty line
-        std::string firstName = extractSymName(string, line+lineSize, false);
+        std::string firstName = extractSymName(string, end, false);
         if (firstName.empty())
         {   // error
+            printError(string, "Syntax error");
+            continue;
         }
         string += firstName.size(); // skip this name
-        string = skipSpacesToEnd(string, line+lineSize);
-        if (string != line+lineSize && *string != '=')
+        string = skipSpacesToEnd(string, end);
+        if (string != end && *string != '=')
         {   // assignment
             string = skipSpacesToEnd(string+1, line+lineSize);
-            if (string == line+lineSize)
+            if (string == end)
             {
                 printError(string, "Expected assignment expression");
                 continue;
             }
             std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
-            if (expr->symOccursNum==0)
+            string = skipSpacesToEnd(string+1, line+lineSize);
+            
+            if (!expr) // no expression, errors
+                continue;
+            if (string != end)
             {
+                printError(string, "Garbages at end of expression");
+                continue;
+            }
+            
+            std::pair<AsmSymbolMap::iterator, bool> res =
+                    symbolMap.insert({ firstName, AsmSymbol()});
+            AsmSymbolEntry& symEntry = *res.first;
+            
+            if (expr->symOccursNum==0)
+            {   // can evalute, assign now
                 size_t value;
                 if (!expr->evaluate(*this, value))
                     continue;
-                //setSymbol();
+                setSymbol(symEntry, value);
+            }
+            else // set expression
+            {
+                symEntry.second.expression = expr.release();
+                symEntry.second.isDefined = false; // undefine symbol
             }
             continue;
         }
         // check for pseudo-op
-        const size_t pseudoOpName = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
+        const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
                 sizeof(pseudoOpNamesTbl)/sizeof(char*), firstName.c_str())-pseudoOpNamesTbl;
+                
+        switch(pseudoOp)
+        {
+            case ASMOP_32BIT:
+                break;
+            case ASMOP_64BIT:
+                break;
+            case ASMOP_ABORT:
+                break;
+            case ASMOP_ALIGN:
+                break;
+            case ASMOP_ASCII:
+                break;
+            case ASMOP_ASCIZ:
+                break;
+            case ASMOP_BALIGN:
+                break;
+            case ASMOP_BALIGNL:
+                break;
+            case ASMOP_BALIGNW:
+                break;
+            case ASMOP_BYTE:
+                break;
+            case ASMOP_CATALYST:
+                break;
+            case ASMOP_CONFIG:
+                break;
+            case ASMOP_DATA:
+                break;
+            case ASMOP_DOUBLE:
+                break;
+            case ASMOP_ELSE:
+                break;
+            case ASMOP_ELSEIF:
+                break;
+            case ASMOP_ELSEIFB:
+                break;
+            case ASMOP_ELSEIFC:
+                break;
+            case ASMOP_ELSEIFDEF:
+                break;
+            case ASMOP_ELSEIFEQ:
+                break;
+            case ASMOP_ELSEIFEQS:
+                break;
+            case ASMOP_ELSEIFGE:
+                break;
+            case ASMOP_ELSEIFGT:
+                break;
+            case ASMOP_ELSEIFLE:
+                break;
+            case ASMOP_ELSEIFLT:
+                break;
+            case ASMOP_ELSEIFNB:
+                break;
+            case ASMOP_ELSEIFNC:
+                break;
+            case ASMOP_ELSEIFNDEF:
+                break;
+            case ASMOP_ELSEIFNE:
+                break;
+            case ASMOP_ELSEIFNES:
+                break;
+            case ASMOP_ELSEIFNOTDEF:
+                break;
+            case ASMOP_END:
+                break;
+            case ASMOP_ENDFUNC:
+                break;
+            case ASMOP_ENDIF:
+                break;
+            case ASMOP_ENDM:
+                break;
+            case ASMOP_ENDR:
+                break;
+            case ASMOP_EQU:
+                break;
+            case ASMOP_EQUIV:
+            case ASMOP_EQV:
+                break;
+            case ASMOP_ERR:
+                break;
+            case ASMOP_ERROR:
+                break;
+            case ASMOP_EXITM:
+                break;
+            case ASMOP_EXTERN:
+                break;
+            case ASMOP_FAIL:
+                break;
+            case ASMOP_FILE:
+                break;
+            case ASMOP_FILL:
+                break;
+            case ASMOP_FLOAT:
+                break;
+            case ASMOP_FORMAT:
+                break;
+            case ASMOP_FUNC:
+                break;
+            case ASMOP_GALLIUM:
+                break;
+            case ASMOP_GLOBAL:
+                break;
+            case ASMOP_GPU:
+                break;
+            case ASMOP_HALF:
+                break;
+            case ASMOP_HWORD:
+                break;
+            case ASMOP_IF:
+                break;
+            case ASMOP_IFB:
+                break;
+            case ASMOP_IFC:
+                break;
+            case ASMOP_IFDEF:
+                break;
+            case ASMOP_IFEQ:
+                break;
+            case ASMOP_IFEQS:
+                break;
+            case ASMOP_IFGE:
+                break;
+            case ASMOP_IFGT:
+                break;
+            case ASMOP_IFLE:
+                break;
+            case ASMOP_IFLT:
+                break;
+            case ASMOP_IFNB:
+                break;
+            case ASMOP_IFNC:
+                break;
+            case ASMOP_IFNDEF:
+                break;
+            case ASMOP_IFNE:
+                break;
+            case ASMOP_IFNES:
+                break;
+            case ASMOP_IFNOTDEF:
+                break;
+            case ASMOP_INCBIN:
+                break;
+            case ASMOP_INCLUDE:
+                break;
+            case ASMOP_INT:
+                break;
+            case ASMOP_KERNEL:
+                break;
+            case ASMOP_LINE:
+            case ASMOP_LN:
+                break;
+            case ASMOP_LOC:
+                break;
+            case ASMOP_LOCAL:
+                break;
+            case ASMOP_LONG:
+                break;
+            case ASMOP_MACRO:
+                break;
+            case ASMOP_OCTA:
+                break;
+            case ASMOP_OFFSET:
+                break;
+            case ASMOP_ORG:
+                break;
+            case ASMOP_P2ALIGN:
+                break;
+            case ASMOP_PRINT:
+                break;
+            case ASMOP_PURGEM:
+                break;
+            case ASMOP_QUAD:
+                break;
+            case ASMOP_REPT:
+                break;
+            case ASMOP_SECTION:
+                break;
+            case ASMOP_SET:
+                break;
+            case ASMOP_SHORT:
+                break;
+            case ASMOP_SINGLE:
+                break;
+            case ASMOP_SIZE:
+                break;
+            case ASMOP_SKIP:
+                break;
+            case ASMOP_SPACE:
+                break;
+            case ASMOP_STRING:
+                break;
+            case ASMOP_STRING16:
+                break;
+            case ASMOP_STRING32:
+                break;
+            case ASMOP_STRUCT:
+                break;
+            case ASMOP_TEXT:
+                break;
+            case ASMOP_TITLE:
+                break;
+            case ASMOP_WARNING:
+                break;
+            case ASMOP_WORD:
+                break;
+            default:
+                break;
+        }
     }
 }
