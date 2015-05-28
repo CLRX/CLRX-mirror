@@ -1292,7 +1292,7 @@ void Assembler::assemble()
             
             if (expr->symOccursNum==0)
             {   // can evalute, assign now
-                size_t value;
+                uint64_t value;
                 if (!expr->evaluate(*this, value))
                     continue;
                 setSymbol(symEntry, value);
