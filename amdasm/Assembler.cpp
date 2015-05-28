@@ -1240,15 +1240,26 @@ void Assembler::assemble()
         string = skipSpacesToEnd(string, end);
         if (string == end)
             continue; // only empty line
+        const char* firstNameString = string;
         std::string firstName = extractSymName(string, end, false);
         if (firstName.empty())
-        {   // error
-            printError(string, "Syntax error");
-            continue;
+        {
+            const char* startString = string;
+            // try to parse local label
+            while (string != end && *string >= '0' && *string <= '9') string++;
+            if (string == startString)
+            {   // error
+                printError(string, "Syntax error");
+                continue;
+            }
+            firstName.assign(startString, string);
         }
-        string += firstName.size(); // skip this name
+        else
+            string += firstName.size(); // skip this name
         string = skipSpacesToEnd(string, end);
-        if (string != end && *string != '=')
+        if (string != end && *string == '=' &&
+            // not for local labels
+            (firstName.front() < '0' || firstName.front() > '9' ))
         {   // assignment
             string = skipSpacesToEnd(string+1, line+lineSize);
             if (string == end)
@@ -1269,6 +1280,14 @@ void Assembler::assemble()
             
             std::pair<AsmSymbolMap::iterator, bool> res =
                     symbolMap.insert({ firstName, AsmSymbol()});
+            if (!res.second && res.first->second.onceDefined)
+            {   // found and can be only once defined
+                std::string msg = "Label '";
+                msg += firstName;
+                msg += "' is already defined";
+                printError(firstNameString, msg.c_str());
+                continue;
+            }
             AsmSymbolEntry& symEntry = *res.first;
             
             if (expr->symOccursNum==0)
@@ -1282,6 +1301,44 @@ void Assembler::assemble()
             {
                 symEntry.second.expression = expr.release();
                 symEntry.second.isDefined = false; // undefine symbol
+            }
+            continue;
+        }
+        else if (string != end && *string == ':')
+        {   // labels
+            string = skipSpacesToEnd(string+1, line+lineSize);
+            if (string == end)
+            {
+                printError(string, "Expected assignment expression");
+                continue;
+            }
+            if (firstName.front() >= '0' && firstName.front() <= '9')
+            {   // handle local labels
+                std::pair<AsmSymbolMap::iterator, bool> prevLRes =
+                        symbolMap.insert({ firstName+"b", AsmSymbol() });
+                std::pair<AsmSymbolMap::iterator, bool> nextLRes =
+                        symbolMap.insert({ firstName+"f", AsmSymbol() });
+                setSymbol(*nextLRes.first, currentOutPos);
+                prevLRes.first->second.value = nextLRes.first->second.value;
+                nextLRes.first->second.isDefined = false;
+            }
+            else
+            {   // regular labels
+                std::pair<AsmSymbolMap::iterator, bool> res = 
+                        symbolMap.insert({ firstName, AsmSymbol() });
+                if (!res.second)
+                {   // found
+                    if (res.first->second.onceDefined)
+                    {   // if label
+                        std::string msg = "Label '";
+                        msg += firstName;
+                        msg += "' is already defined";
+                        printError(firstNameString, msg.c_str());
+                        continue;
+                    }
+                    setSymbol(*res.first, currentOutPos);
+                    res.first->second.onceDefined = true;
+                }
             }
             continue;
         }
