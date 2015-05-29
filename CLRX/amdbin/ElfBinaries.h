@@ -434,55 +434,55 @@ struct ElfRegionTemplate
     } section;  ///< section structure
     
     /// constructor for user region
-    ElfRegionTemplate(typename Types::Word inSize,
-              const cxbyte* inData, typename Types::Word inAlign)
-            : type(ElfRegionType::USER), dataFromPointer(true), size(inSize),
-              align(inAlign), data(inData)
+    ElfRegionTemplate(typename Types::Word _size,
+              const cxbyte* _data, typename Types::Word _align)
+            : type(ElfRegionType::USER), dataFromPointer(true), size(_size),
+              align(_align), data(_data)
     { }
     
     /// constructor for user region with content generator
-    ElfRegionTemplate(typename Types::Word inSize,
-              const ElfRegionContent* contentGen, typename Types::Word inAlign)
-            : type(ElfRegionType::USER), dataFromPointer(false), size(inSize),
-              align(inAlign), dataGen(contentGen)
+    ElfRegionTemplate(typename Types::Word _size,
+              const ElfRegionContent* contentGen, typename Types::Word _align)
+            : type(ElfRegionType::USER), dataFromPointer(false), size(_size),
+              align(_align), dataGen(contentGen)
     { }
     
     /// constructor for region
-    ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
-              const cxbyte* inData, typename Types::Word inAlign)
-            : type(inType), dataFromPointer(true), size(inSize),
-              align(inAlign), data(inData)
+    ElfRegionTemplate(ElfRegionType _type, typename Types::Word _size,
+              const cxbyte* _data, typename Types::Word _align)
+            : type(_type), dataFromPointer(true), size(_size),
+              align(_align), data(_data)
     { }
     
     /// constructor for region with content generator
-    ElfRegionTemplate(ElfRegionType inType, typename Types::Word inSize,
-              const ElfRegionContent* contentGen, typename Types::Word inAlign)
-            : type(inType), dataFromPointer(false), size(inSize),
-              align(inAlign), dataGen(contentGen)
+    ElfRegionTemplate(ElfRegionType _type, typename Types::Word _size,
+              const ElfRegionContent* contentGen, typename Types::Word _align)
+            : type(_type), dataFromPointer(false), size(_size),
+              align(_align), dataGen(contentGen)
     { }
     
     /// constructor for section
-    ElfRegionTemplate(typename Types::Word inSize, const cxbyte* inData,
-              typename Types::Word inAlign, const char* inName, uint32_t inType,
-              uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
-              typename Types::Word inAddrBase = 0,
-              typename Types::Word inEntSize = 0)
-            : type(ElfRegionType::SECTION), dataFromPointer(true), size(inSize),
-              align(inAlign), data(inData)
+    ElfRegionTemplate(typename Types::Word _size, const cxbyte* _data,
+              typename Types::Word _align, const char* _name, uint32_t _type,
+              uint32_t _flags, uint32_t _link = 0, uint32_t _info = 0,
+              typename Types::Word _addrBase = 0,
+              typename Types::Word _entSize = 0)
+            : type(ElfRegionType::SECTION), dataFromPointer(true), size(_size),
+              align(_align), data(_data)
     {
-        section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
+        section = {_name, _type, _flags, _link, _info, _addrBase, _entSize};
     }
     
     /// constructor for section with generator
-    ElfRegionTemplate(typename Types::Word inSize, const ElfRegionContent* inData,
-              typename Types::Word inAlign, const char* inName, uint32_t inType,
-              uint32_t inFlags, uint32_t inLink = 0, uint32_t inInfo = 0,
-              typename Types::Word inAddrBase = 0,
-              typename Types::Word inEntSize = 0)
-            : type(ElfRegionType::SECTION), dataFromPointer(false), size(inSize),
-              align(inAlign), dataGen(inData)
+    ElfRegionTemplate(typename Types::Word _size, const ElfRegionContent* _data,
+              typename Types::Word _align, const char* inName, uint32_t _type,
+              uint32_t _flags, uint32_t _link = 0, uint32_t _info = 0,
+              typename Types::Word _addrBase = 0,
+              typename Types::Word _entSize = 0)
+            : type(ElfRegionType::SECTION), dataFromPointer(false), size(_size),
+              align(_align), dataGen(_data)
     {
-        section = {inName, inType, inFlags, inLink, inInfo, inAddrBase, inEntSize};
+        section = {inName, _type, _flags, _link, _info, _addrBase, _entSize};
     }
     
     /// get program header table region

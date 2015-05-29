@@ -97,8 +97,8 @@ struct AsmFile: public FastRefCountable
     explicit AsmFile(const std::string& _file) : lineNo(1), file(_file)
     { }
     
-    AsmFile(const RefPtr<const AsmFile> pparent, uint64_t plineNo, const std::string& pfile)
-        : parent(pparent), lineNo(plineNo), file(pfile)
+    AsmFile(const RefPtr<const AsmFile> _parent, uint64_t _lineNo, const std::string& _file)
+        : parent(_parent), lineNo(_lineNo), file(_file)
     { }
 };
 
@@ -108,12 +108,12 @@ struct AsmMacroSubst: public FastRefCountable
     RefPtr<const AsmFile> file; ///< file where macro substituted
     uint64_t lineNo;  ///< place where macro substituted
     
-    AsmMacroSubst(RefPtr<const AsmFile> pfile, uint64_t plineNo)
-            : file(pfile), lineNo(plineNo)
+    AsmMacroSubst(RefPtr<const AsmFile> _file, uint64_t _lineNo)
+            : file(_file), lineNo(_lineNo)
     { }
     
-    AsmMacroSubst(RefPtr<const AsmMacroSubst> pparent, RefPtr<const AsmFile> pfile,
-              size_t plineNo) : parent(pparent), file(pfile), lineNo(plineNo)
+    AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent, RefPtr<const AsmFile> _file,
+              size_t _lineNo) : parent(_parent), file(_file), lineNo(_lineNo)
     { }
 };
 
@@ -355,16 +355,16 @@ struct AsmSymbol
     AsmExpression* expression;
     std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
-    AsmSymbol(bool onceDefined_ = false) : sectionId(ASMSECT_ABS), isDefined(onceDefined_),
-            onceDefined(false), value(0), expression(nullptr)
+    AsmSymbol(bool _onceDefined = false) : sectionId(ASMSECT_ABS), isDefined(false),
+            onceDefined(_onceDefined), value(0), expression(nullptr)
     { }
-    AsmSymbol(AsmExpression* expr, bool onceDefined_ = false) :
-            sectionId(ASMSECT_ABS), isDefined(onceDefined_),
+    AsmSymbol(AsmExpression* expr, bool _onceDefined = false) :
+            sectionId(ASMSECT_ABS), isDefined(false), onceDefined(_onceDefined), 
             value(0), expression(expr)
     { }
     
-    AsmSymbol(cxuint inSectionId, uint64_t inValue, bool onceDefined_ = false) :
-            sectionId(inSectionId), isDefined(true), onceDefined(onceDefined_),
+    AsmSymbol(cxuint inSectionId, uint64_t inValue, bool _onceDefined = false) :
+            sectionId(inSectionId), isDefined(true), onceDefined(_onceDefined),
             value(inValue), expression(nullptr)
     { }
     

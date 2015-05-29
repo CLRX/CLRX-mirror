@@ -31,10 +31,8 @@
 using namespace CLRX;
 
 /* Command line exception */
-CLIException::CLIException(const std::string& message)
-{
-    this->message = message;
-}
+CLIException::CLIException(const std::string& message) : Exception(message)
+{ }
 
 CLIException::CLIException(const std::string& message, char shortName)
 {
@@ -72,15 +70,10 @@ CLIException::CLIException(const std::string& message, const CLIOption& option,
 
 /* Command line parser class */
 
-CLIParser::CLIParser(const char* programName, const CLIOption* options,
-        cxuint argc, const char** argv)
+CLIParser::CLIParser(const char* _programName, const CLIOption* _options,
+        cxuint _argc, const char** _argv) : options(_options), programName(_programName),
+        argc(_argc), argv(_argv)
 {
-    shortNameMap = nullptr;
-    this->programName = programName;
-    this->options = options;
-    this->argc = argc;
-    this->argv = argv;
-    
     shortNameMap.reset(new cxuint[256]);
     std::fill(shortNameMap.get(), shortNameMap.get()+256, UINT_MAX); // fill as unused
     

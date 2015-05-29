@@ -78,17 +78,13 @@ ElfBinaryTemplate<Types>::~ElfBinaryTemplate()
 { }
 
 template<typename Types>
-ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binaryCode,
-             cxuint creationFlags) :
-        binaryCodeSize(0), binaryCode(nullptr),
+ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _binaryCode,
+             cxuint _creationFlags) : creationFlags(_creationFlags),
+        binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),
-        symbolsNum(0), dynSymbolsNum(0), symbolEntSize(0), dynSymEntSize(0)
+        symbolsNum(0), dynSymbolsNum(0), symbolEntSize(0), dynSymEntSize(0)        
 {
-    this->creationFlags = creationFlags;
-    this->binaryCode = binaryCode;
-    this->binaryCodeSize = binaryCodeSize;
-    
     if (binaryCodeSize < sizeof(typename Types::Ehdr))
         throw Exception("Binary is too small!!!");
     
@@ -316,9 +312,9 @@ ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate()
 { }
 
 template<typename Types>
-ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& inHeader)
+ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& _header)
         : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
-          shdrTabRegion(0), phdrTabRegion(0), header(inHeader)
+          shdrTabRegion(0), phdrTabRegion(0), header(_header)
 { }
 
 template<typename Types>

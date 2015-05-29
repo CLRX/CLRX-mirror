@@ -36,23 +36,23 @@ static inline const char* skipSpacesToEnd(const char* string, const char* end)
  * expressions
  */
 
-AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
-          size_t inOpsNum, const AsmExprOp* inOps, size_t inOpPosNum,
-          const LineCol* inOpPos, size_t inArgsNum, const AsmExprArg* inArgs)
-        : sourcePos(inPos), symOccursNum(inSymOccursNum), ops(inOps, inOps+inOpsNum)
+AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
+          size_t _opsNum, const AsmExprOp* _ops, size_t _opPosNum,
+          const LineCol* _opPos, size_t _argsNum, const AsmExprArg* _args)
+        : sourcePos(_pos), symOccursNum(_symOccursNum), ops(_ops, _ops+_opsNum)
 {
-    args.reset(new AsmExprArg[inArgsNum]);
-    messagePositions.reset(new LineCol[inOpPosNum]);
-    std::copy(inArgs, inArgs+inArgsNum, args.get());
-    std::copy(inOpPos, inOpPos+inOpPosNum, messagePositions.get());
+    args.reset(new AsmExprArg[_argsNum]);
+    messagePositions.reset(new LineCol[_opPosNum]);
+    std::copy(_args, _args+_argsNum, args.get());
+    std::copy(_opPos, _opPos+_opPosNum, messagePositions.get());
 }
 
-AsmExpression::AsmExpression(const AsmSourcePos& inPos, size_t inSymOccursNum,
-            size_t inOpsNum, size_t inOpPosNum, size_t inArgsNum)
-        : sourcePos(inPos), symOccursNum(inSymOccursNum), ops(inOpsNum)
+AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
+            size_t _opsNum, size_t _opPosNum, size_t _argsNum)
+        : sourcePos(_pos), symOccursNum(_symOccursNum), ops(_opsNum)
 {
-    args.reset(new AsmExprArg[inArgsNum]);
-    messagePositions.reset(new LineCol[inOpPosNum]);
+    args.reset(new AsmExprArg[_argsNum]);
+    messagePositions.reset(new LineCol[_opPosNum]);
 }
 
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value) const

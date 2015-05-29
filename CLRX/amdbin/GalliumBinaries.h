@@ -192,9 +192,9 @@ public:
 class GalliumBinary: public NonCopyableAndNonMovable
 {
 private:
+    cxuint creationFlags;
     size_t binaryCodeSize;
     cxbyte* binaryCode;
-    cxuint creationFlags;
     uint32_t kernelsNum;
     uint32_t sectionsNum;
     std::unique_ptr<GalliumKernel[]> kernels;

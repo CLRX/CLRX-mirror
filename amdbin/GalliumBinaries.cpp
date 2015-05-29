@@ -134,14 +134,11 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 
 /* main GalliumBinary */
 
-GalliumBinary::GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-                 cxuint creationFlags)
-         : kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
+GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
+                 cxuint _creationFlags) : creationFlags(_creationFlags),
+         binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
+         kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
 {
-    this->creationFlags = creationFlags;
-    this->binaryCode = binaryCode;
-    this->binaryCodeSize = binaryCodeSize;
-    
     if (binaryCodeSize < 4)
         throw Exception("GalliumBinary is too small!!!");
     uint32_t* data32 = reinterpret_cast<uint32_t*>(binaryCode);

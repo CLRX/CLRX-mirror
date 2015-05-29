@@ -76,9 +76,9 @@ static inline const std::string extractSymName(const char* startString, const ch
 ISAAssembler::~ISAAssembler()
 { }
 
-AsmMacro::AsmMacro(const AsmSourcePos& inPos, uint64_t inContentLineNo,
-             const Array<AsmMacroArg>& inArgs, const std::string& inContent)
-        : pos(inPos), contentLineNo(inContentLineNo), args(inArgs), content(inContent)
+AsmMacro::AsmMacro(const AsmSourcePos& _pos, uint64_t _contentLineNo,
+             const Array<AsmMacroArg>& _args, const std::string& _content)
+        : pos(_pos), contentLineNo(_contentLineNo), args(_args), content(_content)
 { }
 
 AsmInputFilter::~AsmInputFilter()
@@ -361,9 +361,9 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     return buffer.data()+lineStart;
 }
 
-AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
-        const Array<std::pair<std::string, std::string> >& inArgMap)
-        : macro(inMacro), argMap(inArgMap)
+AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro,
+        const Array<std::pair<std::string, std::string> >& _argMap)
+        : macro(_macro), argMap(_argMap)
 {
     curColTrans = macro.colTranslations.data();
     buffer.reserve(300);
@@ -489,15 +489,15 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     return buffer.data();
 }
 
-AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmSourcePos& inPos,
-       uint64_t contentLineNo, const std::string& inContent, uint64_t inRepeatNum,
-       const std::vector<LineTrans>& inColTranslations)
-        : repeatPos(inPos), repeatCount(0), repeatNum(inRepeatNum),
-          repeatColTranslations(inColTranslations)
+AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmSourcePos& _pos,
+       uint64_t contentLineNo, const std::string& content, uint64_t _repeatNum,
+       const std::vector<LineTrans>& _colTranslations)
+        : repeatPos(_pos), repeatCount(0), repeatNum(_repeatNum),
+          repeatColTranslations(_colTranslations)
 {
     pos = 0;
     curColTrans = repeatColTranslations.data();
-    buffer.assign(inContent.begin(), inContent.end());
+    buffer.assign(content.begin(), content.end());
     lineNo = contentLineNo;
 }
 
@@ -721,11 +721,11 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
  * Assembler
  */
 
-Assembler::Assembler(const std::string& filename, std::istream& input, cxuint flags,
+Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
         std::ostream& msgStream)
         : format(AsmFormat::CATALYST), deviceType(GPUDeviceType::CAPE_VERDE),
           isaAssembler(nullptr), symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
-          flags(0), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
+          flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           topFile(RefPtr<const AsmFile>(new AsmFile(filename))), 
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
           inGlobal(true), inAmdConfig(false), currentKernel(0), currentSection(0),

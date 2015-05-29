@@ -34,20 +34,16 @@
 
 using namespace CLRX;
 
-Exception::Exception(const std::string& message)
-{
-    this->message = message;
-}
+Exception::Exception(const std::string& _message) : message(_message)
+{ }
 
 const char* Exception::what() const throw()
 {
     return message.c_str();
 }
 
-ParseException::ParseException(const std::string& message)
-{
-    this->message = message;
-}
+ParseException::ParseException(const std::string& message) : Exception(message)
+{ }
 
 ParseException::ParseException(uint64_t lineNo, const std::string& message)
 {
@@ -76,14 +72,11 @@ ParseException::ParseException(uint64_t lineNo, size_t charNo, const std::string
 
 std::mutex CLRX::DynLibrary::mutex;
 
-DynLibrary::DynLibrary()
-{
-    handle = nullptr;
-}
+DynLibrary::DynLibrary() : handle(nullptr)
+{ }
 
-DynLibrary::DynLibrary(const char* filename, cxuint flags)
+DynLibrary::DynLibrary(const char* filename, cxuint flags) : handle(nullptr)
 {
-    handle = nullptr;
     load(filename, flags);
 }
 
