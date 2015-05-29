@@ -57,6 +57,11 @@ enum class AsmFormat: cxbyte
     GALLIUM
 };
 
+enum: cxuint
+{
+    ASMSECT_ABS = UINT_MAX
+};
+
 enum class AsmSectionType: cxbyte
 {
     AMD_GLOBAL_DATA = 0,
@@ -140,7 +145,7 @@ struct AsmMacroArg
 struct AsmMacro
 {
     AsmSourcePos pos;
-    uint64_t contentLineNo;
+    uint64_t contentLineNo; //< where is macro content begin
     Array<AsmMacroArg> args;
     std::string content;
     std::vector<LineTrans> colTranslations;
@@ -224,6 +229,25 @@ public:
     /// read line and returns line except newline character
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
+
+class AsmRepeatInputFilter: public AsmInputFilter
+{
+private:
+    AsmSourcePos repeatPos;
+    uint64_t repeatCount;
+    uint64_t repeatNum;
+    std::vector<LineTrans> repeatColTranslations;
+    const LineTrans* curColTrans;
+    
+public:
+    AsmRepeatInputFilter(const AsmSourcePos& pos, uint64_t contentLineNo,
+            const std::string& content, uint64_t repeatNum,
+            const std::vector<LineTrans>& colTranslations);
+    
+    /// read line and returns line except newline character
+    const char* readLine(Assembler& assembler, size_t& lineSize);
+};
+
 
 class ISAAssembler
 {
@@ -331,18 +355,17 @@ struct AsmSymbol
     AsmExpression* expression;
     std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
-    AsmSymbol(bool onceDefined_ = false) : sectionId(0), isDefined(onceDefined_),
+    AsmSymbol(bool onceDefined_ = false) : sectionId(ASMSECT_ABS), isDefined(onceDefined_),
             onceDefined(false), value(0), expression(nullptr)
+    { }
+    AsmSymbol(AsmExpression* expr, bool onceDefined_ = false) :
+            sectionId(ASMSECT_ABS), isDefined(onceDefined_),
+            value(0), expression(expr)
     { }
     
     AsmSymbol(cxuint inSectionId, uint64_t inValue, bool onceDefined_ = false) :
             sectionId(inSectionId), isDefined(true), onceDefined(onceDefined_),
             value(inValue), expression(nullptr)
-    { }
-    
-    AsmSymbol(cxuint inSectionId, AsmExpression* expr, bool onceDefined_ = false) :
-            sectionId(inSectionId), isDefined(false), onceDefined(onceDefined_),
-            value(0), expression(expr)
     { }
     
     void addOccurrence(AsmSourcePos pos)
@@ -518,6 +541,9 @@ private:
     void exitFromMacro();
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value);
+    
+    bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
+                  const char* string);
 protected:    
     void readLine();
 public:

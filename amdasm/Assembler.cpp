@@ -81,7 +81,6 @@ AsmMacro::AsmMacro(const AsmSourcePos& inPos, uint64_t inContentLineNo,
         : pos(inPos), contentLineNo(inContentLineNo), args(inArgs), content(inContent)
 { }
 
-
 AsmInputFilter::~AsmInputFilter()
 { }
 
@@ -374,19 +373,19 @@ AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& inMacro,
 const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
     buffer.clear();
+    colTranslations.clear();
     
     const LineTrans* colTransEnd = macro.colTranslations.data()+
             macro.colTranslations.size();
     const size_t contentSize = macro.content.size();
     if (pos == contentSize)
-    {   // early exit from macro
+    {
         lineSize = 0;
         return nullptr;
     }
     
     const char* content = macro.content.c_str();
     
-    colTranslations.clear();
     size_t destPos = 0;
     size_t toCopyPos = pos;
     colTranslations.push_back({0, curColTrans->lineNo});
@@ -488,6 +487,53 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     lineSize = buffer.size();
     lineNo = curColTrans->lineNo;
     return buffer.data();
+}
+
+AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmSourcePos& inPos,
+       uint64_t contentLineNo, const std::string& inContent, uint64_t inRepeatNum,
+       const std::vector<LineTrans>& inColTranslations)
+        : repeatPos(inPos), repeatCount(0), repeatNum(inRepeatNum),
+          repeatColTranslations(inColTranslations)
+{
+    pos = 0;
+    curColTrans = repeatColTranslations.data();
+    buffer.assign(inContent.begin(), inContent.end());
+    lineNo = contentLineNo;
+}
+
+const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+{
+    colTranslations.clear();
+    if (pos == buffer.size()) // next repetition
+    {
+        curColTrans = repeatColTranslations.data();
+        repeatCount++;
+        pos = 0;
+    }
+    if (repeatCount >= repeatNum) // end of repetition
+        return nullptr;
+    
+    const char* thisLine = buffer.data()+pos;
+    lineNo = curColTrans->lineNo;
+    auto it = std::find(buffer.begin()+pos, buffer.end(), '\n');
+    if (it == buffer.end())
+    {
+        lineSize = buffer.size()-pos;
+        pos = buffer.size();
+    }
+    else // if not end
+    {
+        lineSize = it-buffer.begin()-pos;
+        pos += lineSize+1;
+    }
+    // column translations
+    const LineTrans* colTransEnd = repeatColTranslations.data()+repeatColTranslations.size();
+    const LineTrans* newCurColTrans = curColTrans+1;
+    while (newCurColTrans != colTransEnd && newCurColTrans->position!=0)
+        newCurColTrans++;
+    colTranslations.assign(curColTrans, newCurColTrans);
+    
+    return thisLine;
 }
 
 /*
@@ -972,6 +1018,44 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
     return good;
 }
 
+bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
+             const char* string)
+{
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
+    string = skipSpacesToEnd(string+1, line+lineSize);
+    
+    if (!expr) // no expression, errors
+        return false;
+    if (string != line+lineSize)
+    {
+        printError(string, "Garbages at end of expression");
+        return false;
+    }
+    
+    std::pair<AsmSymbolMap::iterator, bool> res =
+            symbolMap.insert({ symbolName, AsmSymbol() });
+    if (!res.second && res.first->second.onceDefined)
+    {   // found and can be only once defined
+        std::string msg = "Label '";
+        msg += symbolName;
+        msg += "' is already defined";
+        printError(stringAtSymbol, msg.c_str());
+        return false;
+    }
+    AsmSymbolEntry& symEntry = *res.first;
+    
+    if (expr->symOccursNum==0)
+    {   // can evalute, assign now
+        uint64_t value;
+        if (!expr->evaluate(*this, value))
+            return false;
+        setSymbol(symEntry, value);
+    }
+    else // set expression
+        symEntry.second = AsmSymbol(expr.release());
+    return true;
+}
+
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
 {
     pos.print(messageStream);
@@ -1267,41 +1351,7 @@ void Assembler::assemble()
                 printError(string, "Expected assignment expression");
                 continue;
             }
-            std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
-            string = skipSpacesToEnd(string+1, line+lineSize);
-            
-            if (!expr) // no expression, errors
-                continue;
-            if (string != end)
-            {
-                printError(string, "Garbages at end of expression");
-                continue;
-            }
-            
-            std::pair<AsmSymbolMap::iterator, bool> res =
-                    symbolMap.insert({ firstName, AsmSymbol()});
-            if (!res.second && res.first->second.onceDefined)
-            {   // found and can be only once defined
-                std::string msg = "Label '";
-                msg += firstName;
-                msg += "' is already defined";
-                printError(firstNameString, msg.c_str());
-                continue;
-            }
-            AsmSymbolEntry& symEntry = *res.first;
-            
-            if (expr->symOccursNum==0)
-            {   // can evalute, assign now
-                uint64_t value;
-                if (!expr->evaluate(*this, value))
-                    continue;
-                setSymbol(symEntry, value);
-            }
-            else // set expression
-            {
-                symEntry.second.expression = expr.release();
-                symEntry.second.isDefined = false; // undefine symbol
-            }
+            assignSymbol(firstName, firstNameString, string);
             continue;
         }
         else if (string != end && *string == ':')
