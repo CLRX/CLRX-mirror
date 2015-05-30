@@ -595,6 +595,25 @@ AsmSourcePos AsmRepeater::getSourcePos(size_t contentLineNo, size_t position) co
         return { file, macro, 1, position+1 };
 }
 
+AsmSourcePos AsmRepeater::getSourcePos(size_t contentLineNo, LineCol lineCol) const
+{
+    RefPtr<const AsmFile> file;
+    RefPtr<const AsmMacroSubst> macro;
+    // find source position
+    auto sourceFound  = std::lower_bound(sourcePosTranslations.begin(),
+         sourcePosTranslations.end(), SourcePosTrans({ contentLineNo }),
+         [](const SourcePosTrans& t1, const SourcePosTrans& t2)
+         { return t1.lineNo < t2.lineNo; });
+    if (sourceFound != sourcePosTranslations.end())
+    {   // set up file and macro
+        file = sourceFound->file;
+        macro = sourceFound->macro;
+    }
+    if (contentLineNo>=lineColTranslations.size())
+        return { file, macro, lineCol.lineNo, lineCol.colNo };
+    return { file, macro, lineCol.lineNo, lineCol.colNo };
+}
+
 /*
  * source pos
  */
@@ -832,8 +851,8 @@ Assembler::~Assembler()
     }
     while (!asmRepeaters.empty())
     {
-        delete asmRepeaters.top();
-        asmRepeaters.pop();
+        delete asmRepeaters.back();
+        asmRepeaters.pop_back();
     }
     
     for (auto& entry: symbolMap)    // free pending expressions
@@ -1145,7 +1164,15 @@ AsmSourcePos Assembler::getSourcePos(size_t pos) const
         return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     }
     else // from repeater
-        return currentRepeater->getSourcePos(lineNo, pos);
+    {
+        AsmSourcePos sourcePos = currentRepeater->getSourcePos(
+                    currentRepeater->getContentLineNo(), pos);
+        // create repetition info
+        for (size_t i = 0; i < asmRepeaters.size(); i++)
+            sourcePos.repetitions[i] = {asmRepeaters[i]->getRepeatCount(),
+                asmRepeaters[i]->getRepeatsNum()};
+        return sourcePos;
+    }
 }
 
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
@@ -1183,15 +1210,15 @@ bool Assembler::readLine()
         {   // no line
             if (asmRepeaters.size() > 1)
             {
-                delete asmRepeaters.top();
-                asmRepeaters.pop();
+                delete asmRepeaters.back();
+                asmRepeaters.pop_back();
             }
             else
             {
                 currentRepeater = nullptr;
                 break;
             }
-            currentRepeater = asmRepeaters.top();
+            currentRepeater = asmRepeaters.back();
             line = currentRepeater->readLine(*this, lineSize);
         }
         if (line != nullptr)

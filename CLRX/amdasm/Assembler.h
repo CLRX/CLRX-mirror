@@ -33,6 +33,7 @@
 #include <vector>
 #include <utility>
 #include <stack>
+#include <deque>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
@@ -271,6 +272,12 @@ public:
      */
     AsmSourcePos getSourcePos(size_t contentLineNo, size_t position) const;
     
+    /**
+     * \param contentLineNo line number (from zero) begins at start of content
+     * \return source position without repetitions
+     */
+    AsmSourcePos getSourcePos(size_t contentLineNo, LineCol lineCol) const;
+    
     /// translate position to line number and column number
     /**
      * \param position position in line (from zero)
@@ -281,6 +288,17 @@ public:
     { return sourcePosTranslations.back().file; }
     RefPtr<const AsmMacroSubst> getMacro() const
     { return sourcePosTranslations.back().macro; }
+    
+    uint64_t getRepeatCount() const
+    { return repeatCount; }
+    uint64_t getRepeatsNum() const
+    { return repeatNum; }
+    /// returns source line no
+    uint64_t getLineNo() const
+    { return lineNo; }
+    /// returns line number in content (not line number for source code)
+    uint64_t getContentLineNo() const
+    { return lineColTranslations.size()-1; }
 };
 
 
@@ -517,7 +535,7 @@ private:
     
     std::stack<AsmInputFilter*> asmInputFilters;
     AsmInputFilter* currentInputFilter;
-    std::stack<AsmRepeater*> asmRepeaters;
+    std::deque<AsmRepeater*> asmRepeaters;
     AsmRepeater* currentRepeater;
     
     std::ostream& messageStream;
@@ -538,8 +556,8 @@ private:
     AsmSourcePos getSourcePos(LineCol lineCol) const
     {
         if (currentRepeater!=nullptr)
-            return { currentRepeater->getFile(), currentRepeater->getMacro(),
-                lineCol.lineNo, lineCol.colNo };
+            return currentRepeater->getSourcePos(
+                currentRepeater->getContentLineNo(), lineCol);
         else
             return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
     }
