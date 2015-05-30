@@ -121,9 +121,10 @@ struct AsmSourcePos
 {
     RefPtr<const AsmFile> file;   ///< file in which message occurred
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
-    
     uint64_t lineNo;
     size_t colNo;
+    /// repetition counters
+    Array<std::pair<uint64_t, uint64_t> > repetitions;
     
     void print(std::ostream& os) const;
 };
@@ -230,22 +231,32 @@ public:
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
-class AsmRepeatInputFilter: public AsmInputFilter
+class AsmRepeater
 {
 private:
+    cxuint level;
     AsmSourcePos repeatPos;
     uint64_t repeatCount;
     uint64_t repeatNum;
+    std::vector<LineTrans> colTranslations;
     std::vector<LineTrans> repeatColTranslations;
+    size_t pos;
+    std::vector<char> buffer;
+    uint64_t lineNo;
     const LineTrans* curColTrans;
     
 public:
-    AsmRepeatInputFilter(const AsmSourcePos& pos, uint64_t contentLineNo,
+    AsmRepeater(cxuint level, const AsmSourcePos& pos, uint64_t contentLineNo,
             const std::string& content, uint64_t repeatNum,
             const std::vector<LineTrans>& colTranslations);
     
+    void addLine(RefPtr<AsmFile> file, RefPtr<AsmMacroSubst> macro, uint64_t lineNo,
+             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
+    
     /// read line and returns line except newline character
     const char* readLine(Assembler& assembler, size_t& lineSize);
+    
+    AsmSourcePos getSourcePos(size_t position) const;
 };
 
 
@@ -482,6 +493,7 @@ private:
     
     std::stack<AsmInputFilter*> asmInputFilters;
     AsmInputFilter* currentInputFilter;
+    std::stack<AsmRepeater> asmRepeaters;
     
     std::ostream& messageStream;
     
@@ -498,43 +510,40 @@ private:
     cxuint currentSection;
     uint64_t& currentOutPos;
     
+    AsmSourcePos getSourcePos(LineCol lineCol) const
+    { return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }; }
+    
+    AsmSourcePos getSourcePos(const char* string) const
+    {
+        const LineCol lineCol = currentInputFilter->translatePos(string-line);
+        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    }
+    AsmSourcePos getSourcePos(size_t pos) const
+    {
+        const LineCol lineCol = currentInputFilter->translatePos(pos);
+        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    }
+    
     void printWarning(const AsmSourcePos& pos, const char* message);
     void printError(const AsmSourcePos& pos, const char* message);
     
     void printWarning(const char* linePlace, const char* message)
-    {
-        const LineCol lineCol = currentInputFilter->translatePos(linePlace-line);
-        printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message);
-    }
+    { printWarning(getSourcePos(linePlace), message); }
     void printError(const char* linePlace, const char* message)
-    {
-        const LineCol lineCol = currentInputFilter->translatePos(linePlace-line);
-        printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message);
-    }
+    { printError(getSourcePos(linePlace), message); }
     
     void printWarning(LineCol lineCol, const char* message)
-    { printWarning({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
+    { printWarning(getSourcePos(lineCol), message); }
     void printError(LineCol lineCol, const char* message)
-    { printError({ topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo }, message); }
-    
-    uint64_t parseLiteral(const char* string, const char*& outend);
-    AsmSymbolEntry* parseSymbol(const char* string, bool localLabel = true);
+    { printError(getSourcePos(lineCol), message); }
     
     LineCol translatePos(const char* string) const
     { return currentInputFilter->translatePos(string-line); }
     LineCol translatePos(size_t pos) const
     { return currentInputFilter->translatePos(pos); }
     
-    AsmSourcePos getSourcePos(const char* string) const
-    {
-        LineCol lineCol = translatePos(string);
-        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
-    }
-    AsmSourcePos getSourcePos(size_t pos) const
-    {
-        LineCol lineCol = translatePos(pos);
-        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
-    }
+    uint64_t parseLiteral(const char* string, const char*& outend);
+    AsmSymbolEntry* parseSymbol(const char* string, bool localLabel = true);
     
     void includeFile(const std::string& filename);
     void applyMacro(const std::string& macroName, AsmMacroArgMap argMap);
@@ -545,7 +554,7 @@ private:
     bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
                   const char* string);
 protected:    
-    void readLine();
+    bool readLine();
 public:
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
               std::ostream& msgStream = std::cerr);

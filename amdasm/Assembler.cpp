@@ -489,10 +489,10 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     return buffer.data();
 }
 
-AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmSourcePos& _pos,
+AsmRepeater::AsmRepeater(cxuint _level, const AsmSourcePos& _pos,
        uint64_t contentLineNo, const std::string& content, uint64_t _repeatNum,
        const std::vector<LineTrans>& _colTranslations)
-        : repeatPos(_pos), repeatCount(0), repeatNum(_repeatNum),
+        : level(_level), repeatPos(_pos), repeatCount(0), repeatNum(_repeatNum),
           repeatColTranslations(_colTranslations)
 {
     pos = 0;
@@ -501,7 +501,7 @@ AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmSourcePos& _pos,
     lineNo = contentLineNo;
 }
 
-const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
 {
     colTranslations.clear();
     if (pos == buffer.size()) // next repetition
@@ -543,6 +543,22 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 void AsmSourcePos::print(std::ostream& os) const
 {
     char numBuf[32];
+    if (!repetitions.empty())
+    {   /* print repetitions */
+        os.write("Repetition: ", 13);
+        for (size_t i = 0; i < repetitions.size(); i++)
+        {
+            const auto& r = repetitions[i];
+            size_t size = itocstrCStyle<size_t>(r.first+1, numBuf, 31);
+            os.write(numBuf, size);
+            os.put('/');
+            size = itocstrCStyle<size_t>(r.second, numBuf, 31);
+            os.write(numBuf, size);
+            os.put((i+1 < repetitions.size())?',':')');
+        }
+        os.put('\n');
+    }
+    
     if (macro)
     {
         RefPtr<const AsmMacroSubst> curMacro = macro;
@@ -711,7 +727,7 @@ void AsmSourcePos::print(std::ostream& os) const
 }
 
 void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
-{ 
+{
     auto it = std::remove(occurrencesInExprs.begin(), occurrencesInExprs.end(),
             AsmExprSymbolOccurence{expr, argIndex, opIndex});
     occurrencesInExprs.resize(it-occurrencesInExprs.begin());
@@ -1082,9 +1098,27 @@ void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
     defSyms.push_back({symName, value});
 }
 
-void Assembler::readLine()
+bool Assembler::readLine()
 {
-    line = currentInputFilter->readLine(*this, lineSize);
+    if (asmRepeaters.empty())
+    {
+        lineNo = currentInputFilter->getLineNo();
+        line = currentInputFilter->readLine(*this, lineSize);
+        while (line == nullptr)
+        {   // no line
+            delete asmInputFilters.top();
+            asmInputFilters.pop();
+            if (asmInputFilters.empty())
+                return false;
+            currentInputFilter = asmInputFilters.top();
+            lineNo = currentInputFilter->getLineNo();
+            line = currentInputFilter->readLine(*this, lineSize);
+        }
+    }
+    else
+    {   // from repeater
+    }
+    return true;
 }
 
 static const char* pseudoOpNamesTbl[] =
@@ -1303,21 +1337,8 @@ enum
 
 void Assembler::assemble()
 {
-    while (!asmInputFilters.empty())
+    while (!readLine())
     {
-        lineNo = currentInputFilter->getLineNo();
-        line = currentInputFilter->readLine(*this, lineSize);
-        while (line == nullptr)
-        {   // no line
-            delete asmInputFilters.top();
-            asmInputFilters.pop();
-            if (asmInputFilters.empty())
-                break;
-            currentInputFilter = asmInputFilters.top();
-            lineNo = currentInputFilter->getLineNo();
-            line = currentInputFilter->readLine(*this, lineSize);
-        }
-        
         /* parse line */
         const char* string = line;
         const char* end = line+lineSize;
