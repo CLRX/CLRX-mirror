@@ -489,10 +489,10 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     return buffer.data();
 }
 
-AsmRepeater::AsmRepeater(cxuint _level, const AsmSourcePos& _pos,
-       uint64_t contentLineNo, const std::string& content, uint64_t _repeatNum,
+AsmRepeater::AsmRepeater(const AsmSourcePos& _pos, uint64_t contentLineNo,
+       const std::string& content, uint64_t _repeatNum,
        const std::vector<LineTrans>& _colTranslations)
-        : level(_level), repeatPos(_pos), repeatCount(0), repeatNum(_repeatNum),
+        : repeatPos(_pos), repeatCount(0), repeatNum(_repeatNum),
           repeatColTranslations(_colTranslations)
 {
     pos = 0;
@@ -501,9 +501,22 @@ AsmRepeater::AsmRepeater(cxuint _level, const AsmSourcePos& _pos,
     lineNo = contentLineNo;
 }
 
+void AsmRepeater::addLine(RefPtr<const AsmFile> file, RefPtr<const AsmMacroSubst> macro,
+             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
+{
+    buffer.insert(buffer.end(), line, line+lineSize);
+    lineColTranslations.push_back(repeatColTranslations.size());
+    repeatColTranslations.insert(repeatColTranslations.end(),
+             colTrans.begin(), colTrans.end());
+    // add source pos translation if differs from previous
+    if (sourcePosTranslations.empty() ||
+        (sourcePosTranslations.back().file != file &&
+         sourcePosTranslations.back().macro != macro))
+        sourcePosTranslations.push_back({lineColTranslations.size()-1, file, macro});
+}
+
 const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
 {
-    colTranslations.clear();
     if (pos == buffer.size()) // next repetition
     {
         curColTrans = repeatColTranslations.data();
@@ -531,9 +544,55 @@ const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
     const LineTrans* newCurColTrans = curColTrans+1;
     while (newCurColTrans != colTransEnd && newCurColTrans->position!=0)
         newCurColTrans++;
-    colTranslations.assign(curColTrans, newCurColTrans);
-    
     return thisLine;
+}
+
+LineCol AsmRepeater::translatePos(size_t position) const
+{
+    auto lineColTranBegin = repeatColTranslations.begin() +
+                lineColTranslations.back();
+    auto lineColTranEnd = repeatColTranslations.end();
+    auto found = std::lower_bound(lineColTranBegin, lineColTranEnd,
+         LineTrans({ position, 0 }),
+         [](const LineTrans& t1, const LineTrans& t2)
+         { return t1.position < t2.position; });
+    if (found != lineColTranEnd)
+        return { found->lineNo, position-found->position+1 };
+    else // not found!!!
+        return { 1, position+1 };
+}
+
+AsmSourcePos AsmRepeater::getSourcePos(size_t contentLineNo, size_t position) const
+{
+    RefPtr<const AsmFile> file;
+    RefPtr<const AsmMacroSubst> macro;
+    // find source position
+    auto sourceFound  = std::lower_bound(sourcePosTranslations.begin(),
+         sourcePosTranslations.end(), SourcePosTrans({ contentLineNo }),
+         [](const SourcePosTrans& t1, const SourcePosTrans& t2)
+         { return t1.lineNo < t2.lineNo; });
+    if (sourceFound != sourcePosTranslations.end())
+    {   // set up file and macro
+        file = sourceFound->file;
+        macro = sourceFound->macro;
+    }
+    if (contentLineNo>=lineColTranslations.size())
+        return { file, macro, 1, position+1 };
+    // get lineCol translations region for this content line
+    auto lineColTranBegin = repeatColTranslations.begin() +
+                lineColTranslations[contentLineNo];
+    auto lineColTranEnd = contentLineNo+1<lineColTranslations.size() ?
+        repeatColTranslations.begin() + lineColTranslations[contentLineNo+1] :
+        repeatColTranslations.end();
+    /// translate line position
+    auto found = std::lower_bound(lineColTranBegin, lineColTranEnd,
+         LineTrans({ position, 0 }),
+         [](const LineTrans& t1, const LineTrans& t2)
+         { return t1.position < t2.position; });
+    if (found != lineColTranEnd)
+        return { file, macro, found->lineNo, position-found->position+1 };
+    else // not found!!!
+        return { file, macro, 1, position+1 };
 }
 
 /*
@@ -748,6 +807,7 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _f
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
 {
+    currentRepeater = nullptr;
     amdOutput = nullptr;
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input);
@@ -769,6 +829,11 @@ Assembler::~Assembler()
     {
         delete asmInputFilters.top();
         asmInputFilters.pop();
+    }
+    while (!asmRepeaters.empty())
+    {
+        delete asmRepeaters.top();
+        asmRepeaters.pop();
     }
     
     for (auto& entry: symbolMap)    // free pending expressions
@@ -1072,6 +1137,17 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     return true;
 }
 
+AsmSourcePos Assembler::getSourcePos(size_t pos) const
+{
+    if (currentRepeater == nullptr)
+    {
+        const LineCol lineCol = currentInputFilter->translatePos(pos);
+        return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+    }
+    else // from repeater
+        return currentRepeater->getSourcePos(lineNo, pos);
+}
+
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
 {
     pos.print(messageStream);
@@ -1100,8 +1176,28 @@ void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
 
 bool Assembler::readLine()
 {
-    if (asmRepeaters.empty())
-    {
+    if (!asmRepeaters.empty())
+    {   // from repeater
+        line = currentRepeater->readLine(*this, lineSize);
+        while (line == nullptr)
+        {   // no line
+            if (asmRepeaters.size() > 1)
+            {
+                delete asmRepeaters.top();
+                asmRepeaters.pop();
+            }
+            else
+            {
+                currentRepeater = nullptr;
+                break;
+            }
+            currentRepeater = asmRepeaters.top();
+            line = currentRepeater->readLine(*this, lineSize);
+        }
+        if (line != nullptr)
+            return true;
+    }
+    {   // input filters
         lineNo = currentInputFilter->getLineNo();
         line = currentInputFilter->readLine(*this, lineSize);
         while (line == nullptr)
@@ -1117,9 +1213,6 @@ bool Assembler::readLine()
             lineNo = currentInputFilter->getLineNo();
             line = currentInputFilter->readLine(*this, lineSize);
         }
-    }
-    else
-    {   // from repeater
     }
     return true;
 }
