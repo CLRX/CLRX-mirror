@@ -1106,9 +1106,12 @@ bool Assembler::readLine()
         line = currentInputFilter->readLine(*this, lineSize);
         while (line == nullptr)
         {   // no line
-            delete asmInputFilters.top();
-            asmInputFilters.pop();
-            if (asmInputFilters.empty())
+            if (asmInputFilters.size() > 1)
+            {
+                delete asmInputFilters.top();
+                asmInputFilters.pop();
+            }
+            else
                 return false;
             currentInputFilter = asmInputFilters.top();
             lineNo = currentInputFilter->getLineNo();
