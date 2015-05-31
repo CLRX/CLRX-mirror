@@ -247,7 +247,7 @@ private:
     std::vector<LineTrans> colTranslations;
     std::vector<SourcePosTrans> sourcePosTranslations;
     /// holds colTranslations position for every line
-    std::vector<size_t> lineColTranPositions;    
+    std::vector<size_t> lineColTranPoss;    
     size_t pos; ///< buffer position
     std::vector<char> buffer;
     uint64_t contentLineNo;
