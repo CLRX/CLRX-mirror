@@ -495,13 +495,14 @@ void AsmRepeater::addLine(RefPtr<const AsmFile> file, RefPtr<const AsmMacroSubst
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     buffer.insert(buffer.end(), line, line+lineSize);
+    if (line[lineSize-1] != '\n')
+        buffer.push_back('\n');
     lineColTranPoss.push_back(colTranslations.size());
     colTranslations.insert(colTranslations.end(),
              colTrans.begin(), colTrans.end());
     // add source pos translation if differs from previous
-    if (sourcePosTranslations.empty() ||
-        (sourcePosTranslations.back().file != file ||
-         sourcePosTranslations.back().macro != macro))
+    if (sourcePosTranslations.empty() || sourcePosTranslations.back().file != file ||
+        sourcePosTranslations.back().macro != macro)
         sourcePosTranslations.push_back({lineColTranPoss.size()-1, file, macro});
     lineNo = colTranslations[0].lineNo;
 }
@@ -533,8 +534,6 @@ const char* AsmRepeater::readLine(size_t& lineSize)
         lineSize = it-buffer.begin()-pos;
         pos += lineSize+1;
     }
-    
-    
     return thisLine;
 }
 
