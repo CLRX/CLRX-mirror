@@ -183,7 +183,7 @@ public:
     LineCol translatePos(size_t position) const;
     
     /// returns column translations
-    const std::vector<LineTrans> getColTranslations() const
+    const std::vector<LineTrans>& getColTranslations() const
     { return colTranslations; }
 };
 
@@ -244,10 +244,10 @@ private:
     
     uint64_t repeatCount;
     uint64_t repeatNum;
-    std::vector<LineTrans> repeatColTranslations;
+    std::vector<LineTrans> colTranslations;
     std::vector<SourcePosTrans> sourcePosTranslations;
     /// holds colTranslations position for every line
-    std::vector<size_t> lineColTranslations;    
+    std::vector<size_t> lineColTranPositions;    
     size_t pos; ///< buffer position
     std::vector<char> buffer;
     uint64_t contentLineNo;
@@ -260,7 +260,7 @@ public:
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
     
     /// read line and returns line except newline character
-    const char* readLine(Assembler& assembler, size_t& lineSize);
+    const char* readLine(size_t& lineSize);
     
     /**
      * \param contentLineNo line number (from zero) begins at start of content
@@ -268,6 +268,9 @@ public:
      * \return source position without repetitions
      */
     AsmSourcePos getSourcePos(size_t contentLineNo, size_t position) const;
+    
+    AsmSourcePos getSourcePos(size_t position) const
+    { return getSourcePos(contentLineNo, position); }
     
     /**
      * \param contentLineNo line number (from zero) begins at start of content

@@ -90,6 +90,8 @@ LineCol AsmInputFilter::translatePos(size_t position) const
          LineTrans({ position, 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position < t2.position; });
+    if (found != colTranslations.begin())
+        found--;
     if (found != colTranslations.end())
         return { found->lineNo, position-found->position+1 };
     else // not found!!!
@@ -498,17 +500,17 @@ void AsmRepeater::addLine(RefPtr<const AsmFile> file, RefPtr<const AsmMacroSubst
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     buffer.insert(buffer.end(), line, line+lineSize);
-    lineColTranslations.push_back(repeatColTranslations.size());
-    repeatColTranslations.insert(repeatColTranslations.end(),
+    lineColTranPositions.push_back(colTranslations.size());
+    colTranslations.insert(colTranslations.end(),
              colTrans.begin(), colTrans.end());
     // add source pos translation if differs from previous
     if (sourcePosTranslations.empty() ||
         (sourcePosTranslations.back().file != file &&
          sourcePosTranslations.back().macro != macro))
-        sourcePosTranslations.push_back({lineColTranslations.size()-1, file, macro});
+        sourcePosTranslations.push_back({lineColTranPositions.size()-1, file, macro});
 }
 
-const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
+const char* AsmRepeater::readLine(size_t& lineSize)
 {
     if (pos == buffer.size()) // next repetition
     {
@@ -520,7 +522,7 @@ const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
         return nullptr;
     
     const char* thisLine = buffer.data()+pos;
-    lineNo = repeatColTranslations[contentLineNo++].lineNo;
+    lineNo = colTranslations[contentLineNo++].lineNo;
     auto it = std::find(buffer.begin()+pos, buffer.end(), '\n');
     if (it == buffer.end())
     {
@@ -538,13 +540,15 @@ const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
 
 LineCol AsmRepeater::translatePos(size_t position) const
 {
-    auto lineColTranBegin = repeatColTranslations.begin() +
-                lineColTranslations.back();
-    auto lineColTranEnd = repeatColTranslations.end();
+    auto lineColTranBegin = colTranslations.begin() +
+                lineColTranPositions.back();
+    auto lineColTranEnd = colTranslations.end();
     auto found = std::lower_bound(lineColTranBegin, lineColTranEnd,
          LineTrans({ position, 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position < t2.position; });
+    if (found != lineColTranBegin)
+        found--;
     if (found != lineColTranEnd)
         return { found->lineNo, position-found->position+1 };
     else // not found!!!
@@ -560,24 +564,28 @@ AsmSourcePos AsmRepeater::getSourcePos(size_t contentLineNo, size_t position) co
          sourcePosTranslations.end(), SourcePosTrans({ contentLineNo }),
          [](const SourcePosTrans& t1, const SourcePosTrans& t2)
          { return t1.lineNo < t2.lineNo; });
+    if (sourceFound != sourcePosTranslations.begin())
+        sourceFound--;
     if (sourceFound != sourcePosTranslations.end())
     {   // set up file and macro
         file = sourceFound->file;
         macro = sourceFound->macro;
     }
-    if (contentLineNo>=lineColTranslations.size())
+    if (contentLineNo>=lineColTranPositions.size())
         return { file, macro, 1, position+1 };
     // get lineCol translations region for this content line
-    auto lineColTranBegin = repeatColTranslations.begin() +
-                lineColTranslations[contentLineNo];
-    auto lineColTranEnd = contentLineNo+1<lineColTranslations.size() ?
-        repeatColTranslations.begin() + lineColTranslations[contentLineNo+1] :
-        repeatColTranslations.end();
+    auto lineColTranBegin = colTranslations.begin() +
+                lineColTranPositions[contentLineNo];
+    auto lineColTranEnd = contentLineNo+1<lineColTranPositions.size() ?
+        colTranslations.begin() + lineColTranPositions[contentLineNo+1] :
+        colTranslations.end();
     /// translate line position
     auto found = std::lower_bound(lineColTranBegin, lineColTranEnd,
          LineTrans({ position, 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position < t2.position; });
+    if (found != lineColTranBegin)
+        found--;
     if (found != lineColTranEnd)
         return { file, macro, found->lineNo, position-found->position+1 };
     else // not found!!!
@@ -598,7 +606,7 @@ AsmSourcePos AsmRepeater::getSourcePos(size_t contentLineNo, LineCol lineCol) co
         file = sourceFound->file;
         macro = sourceFound->macro;
     }
-    if (contentLineNo>=lineColTranslations.size())
+    if (contentLineNo>=lineColTranPositions.size())
         return { file, macro, lineCol.lineNo, lineCol.colNo };
     return { file, macro, lineCol.lineNo, lineCol.colNo };
 }
@@ -1194,7 +1202,7 @@ bool Assembler::readLine()
 {
     if (!asmRepeaters.empty())
     {   // from repeater
-        line = currentRepeater->readLine(*this, lineSize);
+        line = currentRepeater->readLine(lineSize);
         while (line == nullptr)
         {   // no line
             if (asmRepeaters.size() > 1)
@@ -1208,7 +1216,7 @@ bool Assembler::readLine()
                 break;
             }
             currentRepeater = asmRepeaters.back();
-            line = currentRepeater->readLine(*this, lineSize);
+            line = currentRepeater->readLine(lineSize);
         }
         if (line != nullptr)
             return true;
