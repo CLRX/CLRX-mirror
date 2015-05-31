@@ -242,7 +242,6 @@ private:
         RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     };
     
-    AsmSourcePos repeatPos;
     uint64_t repeatCount;
     uint64_t repeatNum;
     std::vector<LineTrans> repeatColTranslations;
@@ -251,13 +250,11 @@ private:
     std::vector<size_t> lineColTranslations;    
     size_t pos; ///< buffer position
     std::vector<char> buffer;
+    uint64_t contentLineNo;
     uint64_t lineNo;
-    const LineTrans* curColTrans;
     
 public:
-    AsmRepeater(const AsmSourcePos& pos, uint64_t contentLineNo,
-            const std::string& content, uint64_t repeatNum,
-            const std::vector<LineTrans>& colTranslations);
+    explicit AsmRepeater(uint64_t repeatNum);
     
     void addLine(RefPtr<const AsmFile> file, RefPtr<const AsmMacroSubst> macro,
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
@@ -298,7 +295,7 @@ public:
     { return lineNo; }
     /// returns line number in content (not line number for source code)
     uint64_t getContentLineNo() const
-    { return lineColTranslations.size()-1; }
+    { return contentLineNo; }
 };
 
 

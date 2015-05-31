@@ -489,17 +489,10 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     return buffer.data();
 }
 
-AsmRepeater::AsmRepeater(const AsmSourcePos& _pos, uint64_t contentLineNo,
-       const std::string& content, uint64_t _repeatNum,
-       const std::vector<LineTrans>& _colTranslations)
-        : repeatPos(_pos), repeatCount(0), repeatNum(_repeatNum),
-          repeatColTranslations(_colTranslations)
-{
-    pos = 0;
-    curColTrans = repeatColTranslations.data();
-    buffer.assign(content.begin(), content.end());
-    lineNo = contentLineNo;
-}
+AsmRepeater::AsmRepeater(uint64_t _repeatNum)
+        : repeatCount(0), repeatNum(_repeatNum), pos(0),
+          contentLineNo(0), lineNo(0)
+{ }
 
 void AsmRepeater::addLine(RefPtr<const AsmFile> file, RefPtr<const AsmMacroSubst> macro,
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
@@ -519,7 +512,7 @@ const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
 {
     if (pos == buffer.size()) // next repetition
     {
-        curColTrans = repeatColTranslations.data();
+        contentLineNo = 0;
         repeatCount++;
         pos = 0;
     }
@@ -527,7 +520,7 @@ const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
         return nullptr;
     
     const char* thisLine = buffer.data()+pos;
-    lineNo = curColTrans->lineNo;
+    lineNo = repeatColTranslations[contentLineNo++].lineNo;
     auto it = std::find(buffer.begin()+pos, buffer.end(), '\n');
     if (it == buffer.end())
     {
@@ -540,10 +533,6 @@ const char* AsmRepeater::readLine(Assembler& assembler, size_t& lineSize)
         pos += lineSize+1;
     }
     // column translations
-    const LineTrans* colTransEnd = repeatColTranslations.data()+repeatColTranslations.size();
-    const LineTrans* newCurColTrans = curColTrans+1;
-    while (newCurColTrans != colTransEnd && newCurColTrans->position!=0)
-        newCurColTrans++;
     return thisLine;
 }
 
