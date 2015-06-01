@@ -67,6 +67,13 @@ static const uint32_t code28tbl[] = { 0xbf820002U, 0xf203fb00U, 0x00159d79U };
 static const uint32_t code29tbl[] = { 0xbf820002U, 0xf8001a5fU, 0x7c1b5d74U };
 static const uint32_t code30tbl[] = { 0xbf820001U, 0xdc270000U };
 
+static const uint32_t code31tbl[] = { 0xbf820002U, 0xdc370000U, 0x2f8000bbU };
+
+static const uint32_t code32tbl[] = { 0xbf820001U, 0xb12bd3b9U };
+static const uint32_t code33tbl[] = { 0xbf820002U, 0xba0048c3u, 0x45d2aU };
+static const uint32_t code34tbl[] = { 0xbf820001U, 0xbed60114U };
+static const uint32_t code35tbl[] = { 0xbf820002U, 0xbed600ffU, 0xddbbaa11 };
+
 static const GCNDisasmLabelCase decGCNLabelCases[] =
 {
     {
@@ -157,7 +164,27 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
       "        s_branch        .L12\n        exp             "
       "param5, v116, v93, v27, v124 done vm\n.L12:\n" },
     { 2, code30tbl,  /* illegal encoding */
-      "        s_branch        .L8\n        .int 0xdc270000\n.L8:\n" },
+      "        s_branch        .L8\n        .int 0xdc270000\n.L8:\n" }
+};
+
+static const GCNDisasmLabelCase decGCN11LabelCases[] =
+{
+    { 3, code31tbl, /* FLAT */
+      "        s_branch        .L12\n        flat_load_dwordx2 "
+      "v[47:49], v[187:188] glc slc tfe\n.L12:\n" }
+};
+
+static const GCNDisasmLabelCase decGCN12LabelCases[] =
+{
+    { 2, code32tbl,  /* SOPK */
+      "        s_branch        .L8\n        s_cmpk_eq_i32   s43, 0xd3b9\n.L8:\n" },
+    { 3, code33tbl, /* SOPK with second IMM */
+      "        s_branch        .L12\n        s_setreg_imm32_b32 hwreg(trapsts, 3, 10), "
+      "0x45d2a\n.L12:\n" },
+    { 2, code34tbl,  /* SOP1 */
+      "        s_branch        .L8\n        s_mov_b64       s[86:87], s[20:21]\n.L8:\n" },
+    { 3, code35tbl, /* SOP1 with literal */
+      "        s_branch        .L12\n        s_mov_b32       s86, 0xddbbaa11\n.L12:\n" }
 };
 
 static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
@@ -181,8 +208,7 @@ static void testDecGCNLabels(cxuint i, const GCNDisasmLabelCase& testCase,
     if (outStr != testCase.expected)
     {
         std::ostringstream oss;
-        oss << "FAILED for " <<
-            (deviceType==GPUDeviceType::HAWAII?"Hawaii":"Pitcairn") <<
+        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
             " decGCNCase#" << i << ": size=" << (testCase.wordsNum) << std::endl;
         oss << "\nExpected: " << testCase.expected << ", Result: " << outStr;
         throw Exception(oss.str());
@@ -239,6 +265,22 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(decGCNLabelCases)/sizeof(GCNDisasmLabelCase); i++)
         try
         { testDecGCNLabels(i, decGCNLabelCases[i], GPUDeviceType::PITCAIRN); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; i < sizeof(decGCN11LabelCases)/sizeof(GCNDisasmLabelCase); i++)
+        try
+        { testDecGCNLabels(i, decGCN11LabelCases[i], GPUDeviceType::HAWAII); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; i < sizeof(decGCN12LabelCases)/sizeof(GCNDisasmLabelCase); i++)
+        try
+        { testDecGCNLabels(i, decGCN12LabelCases[i], GPUDeviceType::TONGA); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
