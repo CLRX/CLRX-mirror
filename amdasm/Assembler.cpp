@@ -1210,6 +1210,7 @@ bool Assembler::readLine()
         {   // no line
             if (asmInputFilters.size() > 1)
             {
+                topFile = topFile->parent;
                 delete asmInputFilters.top();
                 asmInputFilters.pop();
             }
