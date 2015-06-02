@@ -23,6 +23,7 @@
 /* for Radeon RX3X0 series with GCN1.2 */
 const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
 {
+    /* SOP2 encoding */
     { 0x80153d04U, 0, false, "        s_add_u32       s21, s4, s61\n" },
     /* extra registers */
     { 0x80663d04U, 0, false, "        s_add_u32       flat_scratch_lo, s4, s61\n" },
