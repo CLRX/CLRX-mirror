@@ -144,27 +144,54 @@ struct AsmMacroArg
     bool required;
 };
 
-struct AsmMacro
+class AsmMacro
 {
+public:
+    struct FileSourcePos
+    {
+        uint64_t lineNo;
+        RefPtr<const AsmFile> file;
+    };
+private:
+    uint64_t contentLineNo;
     AsmSourcePos pos;
-    uint64_t contentLineNo; //< where is macro content begin
     Array<AsmMacroArg> args;
-    std::string content;
+    std::vector<char> content;
+    std::vector<FileSourcePos> fileTranslations;
     std::vector<LineTrans> colTranslations;
+public:
+    AsmMacro(const AsmSourcePos& pos, const Array<AsmMacroArg>& args);
     
-    AsmMacro(const AsmSourcePos& pos, uint64_t contentLineNo,
-             const Array<AsmMacroArg>& args, const std::string& content);
+    void addLine(RefPtr<const AsmFile> file, const std::vector<LineTrans>& colTrans,
+             size_t lineSize, const char* line);
+    
+    const std::vector<LineTrans>& getColTranslations() const
+    { return colTranslations; }
+    
+    const std::vector<char>& getContent() const
+    { return content; }
+    
+    size_t getFileTransSize() const
+    { return fileTranslations.size(); }
+    const FileSourcePos&  getFileTrans(uint64_t index) const
+    { return fileTranslations[index]; }
 };
 
 class AsmInputFilter
 {
 protected:
     size_t pos;
+    RefPtr<const AsmFile> file;
+    RefPtr<const AsmMacroSubst> macroSubst;
     std::vector<char> buffer;
     std::vector<LineTrans> colTranslations;
     uint64_t lineNo;
     
     AsmInputFilter():  pos(0), lineNo(1)
+    { }
+    AsmInputFilter(RefPtr<const AsmFile> _file,
+       RefPtr<const AsmMacroSubst> _macroSubst = RefPtr<const AsmMacroSubst>())
+            : pos(0), file(_file), macroSubst(_macroSubst), lineNo(1)
     { }
 public:
     virtual ~AsmInputFilter();
@@ -185,6 +212,14 @@ public:
     /// returns column translations
     const std::vector<LineTrans>& getColTranslations() const
     { return colTranslations; }
+    
+    RefPtr<const AsmFile> getFile() const
+    { return file; }
+    RefPtr<const AsmMacroSubst> getMacroSubst() const
+    { return macroSubst; }
+    
+    AsmSourcePos getSourcePos(size_t position) const
+    { return { file, macroSubst, lineNo, translatePos(position).colNo }; }
 };
 
 /// assembler input layout filter
@@ -207,8 +242,8 @@ private:
     std::istream* stream;
     LineMode mode;
 public:
-    explicit AsmStreamInputFilter(std::istream& is);
-    explicit AsmStreamInputFilter(const std::string& filename);
+    explicit AsmStreamInputFilter(RefPtr<const AsmFile> file, std::istream& is);
+    explicit AsmStreamInputFilter(RefPtr<const AsmFile> file, const std::string& filename);
     ~AsmStreamInputFilter();
     
     /// read line and returns line except newline character
@@ -223,6 +258,8 @@ private:
     const AsmMacro& macro;
     AsmMacroArgMap argMap;
     
+    uint64_t contentLineNo;
+    size_t fileTransIndex;
     const LineTrans* curColTrans;
 public:
     AsmMacroInputFilter(const AsmMacro& macro,
