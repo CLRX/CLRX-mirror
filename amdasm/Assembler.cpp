@@ -647,6 +647,12 @@ static void printIndent(std::ostream& os, cxuint indentLevel)
 
 void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
 {
+    if (indentLevel == 10)
+    {
+        printIndent(os, indentLevel);
+        os.write("Can't print all tree trace due to too big depth level\n", 53);
+        return;
+    }
     char numBuf[32];
     if (!repetitions.empty())
     {   /* print repetitions */
@@ -665,120 +671,31 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         os.put('\n');
     }
     
-    if (macro)
+    /* print macro tree */
+    RefPtr<const AsmMacroSubst> curMacro = macro;
+    RefPtr<const AsmMacroSubst> parentMacro;
+    while(curMacro)
     {
-        RefPtr<const AsmMacroSubst> curMacro = macro;
-        if (curMacro)
-        {
-            RefPtr<const AsmMacroSubst> parentMacro = curMacro->parent;
-            
+        const bool firstDepth = (curMacro == macro);
+        parentMacro = curMacro->parent;
+        
+        if (curMacro->source->type == AsmSourceType::FILE)
+        {   /* if file */
             RefPtr<const AsmFile> curFile = curMacro->source.staticCast<const AsmFile>();
             if (curFile->parent)
             {
-                printIndent(os, indentLevel);
-                os.write("In macro substituted from\n", 26);
-                RefPtr<const AsmFile> parentFile = curFile->parent.staticCast<const AsmFile>();
-                printIndent(os, indentLevel);
-                os.write("    In file included from ", 26);
-                if (!parentFile->file.empty())
-                    os.write(parentFile->file.c_str(), parentFile->file.size());
-                else // stdin
-                    os.write("<stdin>", 7);
-                
-                numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-                curFile = parentFile;
-                numBuf[size++] = (curFile->parent) ? ',' : ':';
-                numBuf[size++] = '\n';
-                os.write(numBuf, size);
-                
-                while (curFile->parent)
-                {
-                    printIndent(os, indentLevel);
-                    parentFile = curFile->parent.staticCast<const AsmFile>();
-                    os.write("                          ", 26);
-                    if (!parentFile->file.empty())
-                        os.write(parentFile->file.c_str(), parentFile->file.size());
-                    else // stdin
-                        os.write("<stdin>", 7);
-                    
-                    numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-                    curFile = curFile->parent.staticCast<const AsmFile>();
-                    numBuf[size++] = (curFile->parent) ? ',' : ':';
-                    numBuf[size++] = '\n';
-                    os.write(numBuf, size);
-                }
-                os.write("    ", 4);
+                if (firstDepth)
+                    os.write("In macro substituted from\n", 26);
+                AsmSourcePos nextLevelPos = { curMacro->source,
+                    RefPtr<const AsmMacroSubst>(), curMacro->lineNo, 0 };
+                nextLevelPos.print(os, indentLevel+1);
+                os.write((parentMacro) ? ";\n" : ":\n", 2);
             }
             else
             {
                 printIndent(os, indentLevel);
-                os.write("In macro substituted from ", 26);
-            }
-            // leaf
-            curFile = curMacro->source.staticCast<const AsmFile>();
-            if (!curFile->file.empty())
-                os.write(curFile->file.c_str(), curFile->file.size());
-            else // stdin
-                os.write("<stdin>", 7);
-            numBuf[0] = ':';
-            size_t size = 1+itocstrCStyle<size_t>(macro->lineNo, numBuf+1, 29);
-            numBuf[size++] = (parentMacro) ? ';' : ':';
-            numBuf[size++] = '\n';
-            os.write(numBuf, size);
-            
-            curMacro = parentMacro;
-            
-            while(curMacro)
-            {
-                parentMacro = curMacro->parent;
-                //os.write("In macro substituted from\n", 26);
-                
-                curFile = curMacro->source.staticCast<const AsmFile>();
-                if (curFile->parent)
-                {
-                    RefPtr<const AsmFile> parentFile =
-                            curFile->parent.staticCast<const AsmFile>();
-                    printIndent(os, indentLevel);
-                    os.write("    In file included from ", 26);
-                    if (!parentFile->file.empty())
-                        os.write(parentFile->file.c_str(), parentFile->file.size());
-                    else // stdin
-                        os.write("<stdin>", 7);
-                    
-                    numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-                    curFile = parentFile;
-                    numBuf[size++] = (curFile->parent) ? ',' : ':';
-                    numBuf[size++] = '\n';
-                    os.write(numBuf, size);
-                    
-                    while (curFile->parent)
-                    {
-                        parentFile = curFile->parent.staticCast<const AsmFile>();
-                        printIndent(os, indentLevel);
-                        os.write("                          ", 26);
-                        if (!parentFile->file.empty())
-                            os.write(parentFile->file.c_str(), parentFile->file.size());
-                        else // stdin
-                            os.write("<stdin>", 7);
-                        
-                        numBuf[0] = ':';
-                        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo,
-                                      numBuf+1, 29);
-                        curFile = curFile->parent.staticCast<const AsmFile>();
-                        numBuf[size++] = (curFile->parent) ? ',' : ':';
-                        numBuf[size++] = '\n';
-                        os.write(numBuf, size);
-                    }
-                    os.write("    ", 4);
-                }
-                else
-                {
-                    printIndent(os, indentLevel);
-                    os.write("                          ", 26);
-                }
+                os.write((firstDepth) ? "In macro substituted from " :
+                        "                     from ", 26);
                 // leaf
                 curFile = curMacro->source.staticCast<const AsmFile>();
                 if (!curFile->file.empty())
@@ -790,34 +707,23 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
-                
-                curMacro = parentMacro;
             }
         }
+        else if (curMacro->source->type == AsmSourceType::MACROPOS)
+        {   // if macro
+        }
+        
+        curMacro = parentMacro;
     }
-    RefPtr<const AsmFile> curFile = source.staticCast<const AsmFile>();
-    if (curFile->parent)
-    {
-        RefPtr<const AsmFile> parentFile = curFile->parent.staticCast<const AsmFile>();
-        printIndent(os, indentLevel);
-        os.write("In file included from ", 22);
-        if (!parentFile->file.empty())
-            os.write(parentFile->file.c_str(), parentFile->file.size());
-        else // stdin
-            os.write("<stdin>", 7);
-        
-        numBuf[0] = ':';
-        size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-        curFile = parentFile;
-        numBuf[size++] = (curFile->parent) ? ',' : ':';
-        numBuf[size++] = '\n';
-        os.write(numBuf, size);
-        
-        while (curFile->parent)
+    /* print source tree */
+    if (source->type == AsmSourceType::FILE)
+    {   // if file
+        RefPtr<const AsmFile> curFile = source.staticCast<const AsmFile>();
+        if (curFile->parent)
         {
-            parentFile = curFile->parent.staticCast<const AsmFile>();
+            RefPtr<const AsmFile> parentFile = curFile->parent.staticCast<const AsmFile>();
             printIndent(os, indentLevel);
-            os.write("                      ", 22);
+            os.write("In file included from ", 22);
             if (!parentFile->file.empty())
                 os.write(parentFile->file.c_str(), parentFile->file.size());
             else // stdin
@@ -825,30 +731,48 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             
             numBuf[0] = ':';
             size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-            curFile = curFile->parent.staticCast<const AsmFile>();
+            curFile = parentFile;
             numBuf[size++] = (curFile->parent) ? ',' : ':';
             numBuf[size++] = '\n';
             os.write(numBuf, size);
+            
+            while (curFile->parent)
+            {
+                parentFile = curFile->parent.staticCast<const AsmFile>();
+                printIndent(os, indentLevel);
+                os.write("                 from ", 22);
+                if (!parentFile->file.empty())
+                    os.write(parentFile->file.c_str(), parentFile->file.size());
+                else // stdin
+                    os.write("<stdin>", 7);
+                
+                numBuf[0] = ':';
+                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
+                curFile = curFile->parent.staticCast<const AsmFile>();
+                numBuf[size++] = (curFile->parent) ? ',' : ':';
+                numBuf[size++] = '\n';
+                os.write(numBuf, size);
+            }
+        }
+        // leaf
+        printIndent(os, indentLevel);
+        if (!source.staticCast<const AsmFile>()->file.empty())
+            os.write(source.staticCast<const AsmFile>()->file.c_str(),
+                     source.staticCast<const AsmFile>()->file.size());
+        else // stdin
+            os.write("<stdin>", 7);
+        numBuf[0] = ':';
+        size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 31);
+        os.write(numBuf, size);
+        if (colNo != 0)
+        {
+            numBuf[0] = ':';
+            size = 1+itocstrCStyle<size_t>(colNo, numBuf+1, 29);
+            numBuf[size++] = ':';
+            numBuf[size++] = ' ';
+            os.write(numBuf, size);
         }
     }
-    // leaf
-    printIndent(os, indentLevel);
-    if (!source.staticCast<const AsmFile>()->file.empty())
-        os.write(source.staticCast<const AsmFile>()->file.c_str(),
-                 source.staticCast<const AsmFile>()->file.size());
-    else // stdin
-        os.write("<stdin>", 7);
-    numBuf[0] = ':';
-    size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 31);
-    os.write(numBuf, size);
-    if (colNo != 0)
-    {
-        numBuf[0] = ':';
-        size = 1+itocstrCStyle<size_t>(colNo, numBuf+1, 29);
-    }
-    numBuf[size++] = ':';
-    numBuf[size++] = ' ';
-    os.write(numBuf, size);
 }
 
 void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
