@@ -685,7 +685,10 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             if (curFile->parent)
             {
                 if (firstDepth)
+                {
+                    printIndent(os, indentLevel);
                     os.write("In macro substituted from\n", 26);
+                }
                 AsmSourcePos nextLevelPos = { curMacro->source,
                     RefPtr<const AsmMacroSubst>(), curMacro->lineNo, 0 };
                 nextLevelPos.print(os, indentLevel+1);
@@ -711,6 +714,15 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         }
         else if (curMacro->source->type == AsmSourceType::MACROPOS)
         {   // if macro
+            printIndent(os, indentLevel);
+            os.write("In macro substituted from macro content:\n", 41);
+            RefPtr<const AsmMacroPos> curMacroPos =
+                    curMacro->source.staticCast<const AsmMacroPos>();
+            AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro,
+                curMacro->lineNo, 0 };
+            macroPos.print(os, indentLevel+1);
+            os.write(":\n", 2);
+            break;
         }
         
         curMacro = parentMacro;
@@ -721,37 +733,42 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         RefPtr<const AsmFile> curFile = source.staticCast<const AsmFile>();
         if (curFile->parent)
         {
-            RefPtr<const AsmFile> parentFile = curFile->parent.staticCast<const AsmFile>();
-            printIndent(os, indentLevel);
-            os.write("In file included from ", 22);
-            if (!parentFile->file.empty())
-                os.write(parentFile->file.c_str(), parentFile->file.size());
-            else // stdin
-                os.write("<stdin>", 7);
-            
-            numBuf[0] = ':';
-            size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-            curFile = parentFile;
-            numBuf[size++] = (curFile->parent) ? ',' : ':';
-            numBuf[size++] = '\n';
-            os.write(numBuf, size);
-            
+            RefPtr<const AsmSource> parentSource;
+            bool firstDepth = true;
             while (curFile->parent)
             {
-                parentFile = curFile->parent.staticCast<const AsmFile>();
+                parentSource = curFile->parent;
                 printIndent(os, indentLevel);
-                os.write("                 from ", 22);
-                if (!parentFile->file.empty())
-                    os.write(parentFile->file.c_str(), parentFile->file.size());
-                else // stdin
-                    os.write("<stdin>", 7);
-                
-                numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
-                curFile = curFile->parent.staticCast<const AsmFile>();
-                numBuf[size++] = (curFile->parent) ? ',' : ':';
-                numBuf[size++] = '\n';
-                os.write(numBuf, size);
+                if (parentSource->type == AsmSourceType::FILE)
+                {
+                    RefPtr<const AsmFile> parentFile =
+                            parentSource.staticCast<const AsmFile>();
+                    os.write(firstDepth ? "In file included from " :
+                            "                 from ", 22);
+                    if (!parentFile->file.empty())
+                        os.write(parentFile->file.c_str(), parentFile->file.size());
+                    else // stdin
+                        os.write("<stdin>", 7);
+                    
+                    numBuf[0] = ':';
+                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
+                    curFile = parentFile.staticCast<const AsmFile>();
+                    numBuf[size++] = curFile->parent ? ',' : ':';
+                    numBuf[size++] = '\n';
+                    os.write(numBuf, size);
+                    firstDepth = false;
+                }
+                else if (parentSource->type == AsmSourceType::MACROPOS)
+                {   /* if macro */
+                    os.write("In file included from macro content:\n", 37);
+                    RefPtr<const AsmMacroPos> curMacroPos =
+                            parentSource.staticCast<const AsmMacroPos>();
+                    AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro,
+                        curFile->lineNo, 0 };
+                    macroPos.print(os, indentLevel+1);
+                    os.write(":\n", 2);
+                    break;
+                }
             }
         }
         // leaf
@@ -772,6 +789,14 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             numBuf[size++] = ' ';
             os.write(numBuf, size);
         }
+    }
+    else if (source->type == AsmSourceType::MACROPOS)
+    {   // if macro
+        printIndent(os, indentLevel);
+        os.write("In macro content:\n", 18);
+        RefPtr<const AsmMacroPos> curMacroPos = source.staticCast<const AsmMacroPos>();
+        AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro, lineNo, colNo };
+        macroPos.print(os, indentLevel+1);
     }
 }
 

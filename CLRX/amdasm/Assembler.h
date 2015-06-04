@@ -142,13 +142,11 @@ struct AsmMacroSubst: public FastRefCountable
 /// position in macro
 struct AsmMacroPos: public AsmSource
 {
-    RefPtr<const AsmMacroSubst> macro;   ///< parent macro substition
-    RefPtr<const AsmSource> source; ///< source of content where macro substituted
-    uint64_t lineNo;  ///< place where macro substituted
+    RefPtr<const AsmMacroSubst> macro;   ///< macro substition
+    RefPtr<const AsmSource> source; ///< source of substituted content
     
-    AsmMacroPos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source,
-              size_t _lineNo) : AsmSource(AsmSourceType::MACROPOS),
-              macro(_macro), source(_source), lineNo(_lineNo)
+    AsmMacroPos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source)
+                : AsmSource(AsmSourceType::MACROPOS), macro(_macro), source(_source)
     { }
     
     virtual ~AsmMacroPos();
