@@ -89,45 +89,81 @@ struct LineCol
  * assembler source position
  */
 
-struct AsmFile: public FastRefCountable
+enum class AsmSourceType : cxbyte
 {
-    RefPtr<const AsmFile> parent; ///< parent file (or null if root)
+    FILE,
+    MACROPOS
+};
+
+struct AsmSource: public FastRefCountable
+{
+    AsmSourceType type;    ///< type of Asm source (file or macro)
+    explicit AsmSource(AsmSourceType _type) : type(_type)
+    { }
+    virtual ~AsmSource();
+};
+
+struct AsmFile: public AsmSource
+{
+    ///  parent source for this source (for file is parent file or macro substitution,
+    /// for macro substitution is parent substitution
+    RefPtr<const AsmSource> parent; ///< parent file (or null if root)
     uint64_t lineNo; // place where file is included (0 if root)
     const std::string file; // file path
     
-    explicit AsmFile(const std::string& _file) : lineNo(1), file(_file)
+    explicit AsmFile(const std::string& _file) : 
+            AsmSource(AsmSourceType::FILE), lineNo(1), file(_file)
     { }
     
-    AsmFile(const RefPtr<const AsmFile> _parent, uint64_t _lineNo, const std::string& _file)
-        : parent(_parent), lineNo(_lineNo), file(_file)
+    AsmFile(const RefPtr<const AsmSource> _parent, uint64_t _lineNo, const std::string& _file)
+        : AsmSource(AsmSourceType::FILE), parent(_parent), lineNo(_lineNo), file(_file)
     { }
+    
+    virtual ~AsmFile();
 };
 
 struct AsmMacroSubst: public FastRefCountable
 {
-    RefPtr<const AsmMacroSubst> parent;   ///< parent macro (null if global scope)
-    RefPtr<const AsmFile> file; ///< file where macro substituted
+    ///  parent source for this source (for file is parent file or macro substitution,
+    /// for macro substitution is parent substitution
+    RefPtr<const AsmMacroSubst> parent;   ///< parent macro substition
+    RefPtr<const AsmSource> source; ///< source of content where macro substituted
     uint64_t lineNo;  ///< place where macro substituted
     
-    AsmMacroSubst(RefPtr<const AsmFile> _file, uint64_t _lineNo)
-            : file(_file), lineNo(_lineNo)
+    AsmMacroSubst(RefPtr<const AsmSource> _source, uint64_t _lineNo) :
+              source(_source), lineNo(_lineNo)
     { }
     
-    AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent, RefPtr<const AsmFile> _file,
-              size_t _lineNo) : parent(_parent), file(_file), lineNo(_lineNo)
+    AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent, RefPtr<const AsmSource> _source,
+              size_t _lineNo) : parent(_parent), source(_source), lineNo(_lineNo)
     { }
+};
+
+/// position in macro
+struct AsmMacroPos: public AsmSource
+{
+    RefPtr<const AsmMacroSubst> macro;   ///< parent macro substition
+    RefPtr<const AsmSource> source; ///< source of content where macro substituted
+    uint64_t lineNo;  ///< place where macro substituted
+    
+    AsmMacroPos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source,
+              size_t _lineNo) : AsmSource(AsmSourceType::MACROPOS),
+              macro(_macro), source(_source), lineNo(_lineNo)
+    { }
+    
+    virtual ~AsmMacroPos();
 };
 
 struct AsmSourcePos
 {
-    RefPtr<const AsmFile> file;   ///< file in which message occurred
+    RefPtr<const AsmSource> source;   ///< source in which message occurred
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     uint64_t lineNo;
     size_t colNo;
     /// repetition counters
     Array<std::pair<uint64_t, uint64_t> > repetitions;
     
-    void print(std::ostream& os) const;
+    void print(std::ostream& os, cxuint indentLevel = 0) const;
 };
 
 struct LineTrans
@@ -147,22 +183,22 @@ struct AsmMacroArg
 class AsmMacro
 {
 public:
-    struct FileSourcePos
+    struct SourceTrans
     {
         uint64_t lineNo;
-        RefPtr<const AsmFile> file;
+        RefPtr<const AsmSource> source;
     };
 private:
     uint64_t contentLineNo;
     AsmSourcePos pos;
     Array<AsmMacroArg> args;
     std::vector<char> content;
-    std::vector<FileSourcePos> fileTranslations;
+    std::vector<SourceTrans> sourceTranslations;
     std::vector<LineTrans> colTranslations;
 public:
     AsmMacro(const AsmSourcePos& pos, const Array<AsmMacroArg>& args);
     
-    void addLine(RefPtr<const AsmFile> file, const std::vector<LineTrans>& colTrans,
+    void addLine(RefPtr<const AsmSource> source, const std::vector<LineTrans>& colTrans,
              size_t lineSize, const char* line);
     
     const std::vector<LineTrans>& getColTranslations() const
@@ -171,17 +207,19 @@ public:
     const std::vector<char>& getContent() const
     { return content; }
     
-    size_t getFileTransSize() const
-    { return fileTranslations.size(); }
-    const FileSourcePos&  getFileTrans(uint64_t index) const
-    { return fileTranslations[index]; }
+    size_t getSourceTransSize() const
+    { return sourceTranslations.size(); }
+    const SourceTrans&  getSourceTrans(uint64_t index) const
+    { return sourceTranslations[index]; }
+    const AsmSourcePos& getPos() const
+    { return pos; }
 };
 
 class AsmInputFilter
 {
 protected:
     size_t pos;
-    RefPtr<const AsmFile> file;
+    RefPtr<const AsmSource> source;
     RefPtr<const AsmMacroSubst> macroSubst;
     std::vector<char> buffer;
     std::vector<LineTrans> colTranslations;
@@ -189,9 +227,9 @@ protected:
     
     AsmInputFilter():  pos(0), lineNo(1)
     { }
-    AsmInputFilter(RefPtr<const AsmFile> _file,
+    AsmInputFilter(RefPtr<const AsmSource> _source,
        RefPtr<const AsmMacroSubst> _macroSubst = RefPtr<const AsmMacroSubst>())
-            : pos(0), file(_file), macroSubst(_macroSubst), lineNo(1)
+            : pos(0), source(_source), macroSubst(_macroSubst), lineNo(1)
     { }
 public:
     virtual ~AsmInputFilter();
@@ -213,13 +251,13 @@ public:
     const std::vector<LineTrans>& getColTranslations() const
     { return colTranslations; }
     
-    RefPtr<const AsmFile> getFile() const
-    { return file; }
+    RefPtr<const AsmSource> getSource() const
+    { return source; }
     RefPtr<const AsmMacroSubst> getMacroSubst() const
     { return macroSubst; }
     
     AsmSourcePos getSourcePos(size_t position) const
-    { return { file, macroSubst, lineNo, translatePos(position).colNo }; }
+    { return { source, macroSubst, lineNo, translatePos(position).colNo }; }
 };
 
 /// assembler input layout filter
@@ -242,8 +280,8 @@ private:
     std::istream* stream;
     LineMode mode;
 public:
-    explicit AsmStreamInputFilter(RefPtr<const AsmFile> file, std::istream& is);
-    explicit AsmStreamInputFilter(RefPtr<const AsmFile> file, const std::string& filename);
+    explicit AsmStreamInputFilter(RefPtr<const AsmSource> source, std::istream& is);
+    explicit AsmStreamInputFilter(RefPtr<const AsmSource> source, const std::string& filename);
     ~AsmStreamInputFilter();
     
     /// read line and returns line except newline character
@@ -259,10 +297,10 @@ private:
     AsmMacroArgMap argMap;
     
     uint64_t contentLineNo;
-    size_t fileTransIndex;
+    size_t sourceTransIndex;
     const LineTrans* curColTrans;
 public:
-    AsmMacroInputFilter(const AsmMacro& macro,
+    AsmMacroInputFilter(const AsmMacro& macro, RefPtr<const AsmMacroSubst> macroSubst,
         const Array<std::pair<std::string, std::string> >& argMap);
     
     /// read line and returns line except newline character
@@ -275,7 +313,7 @@ private:
     struct SourcePosTrans
     {
         uint64_t lineNo;
-        RefPtr<const AsmFile> file;   ///< file in which message occurred
+        RefPtr<const AsmSource> source;   ///< file in which message occurred
         RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     };
     
@@ -293,7 +331,7 @@ private:
 public:
     explicit AsmRepeater(uint64_t repeatNum);
     
-    void addLine(RefPtr<const AsmFile> file, RefPtr<const AsmMacroSubst> macro,
+    void addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSubst> macro,
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
     
     /// read line and returns line except newline character
@@ -321,8 +359,8 @@ public:
      */
     LineCol translatePos(size_t position) const;
     
-    RefPtr<const AsmFile> getFile() const
-    { return sourcePosTranslations.back().file; }
+    RefPtr<const AsmSource> getSource() const
+    { return sourcePosTranslations.back().source; }
     RefPtr<const AsmMacroSubst> getMacro() const
     { return sourcePosTranslations.back().macro; }
     
@@ -563,8 +601,6 @@ private:
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
-    RefPtr<const AsmFile> topFile;
-    RefPtr<const AsmMacroSubst> topMacroSubst;
     
     size_t lineSize;
     const char* line;
@@ -596,7 +632,8 @@ private:
             return currentRepeater->getSourcePos(
                 currentRepeater->getContentLineNo(), lineCol);
         else
-            return { topFile, topMacroSubst, lineCol.lineNo, lineCol.colNo };
+            return { currentInputFilter->getSource(), currentInputFilter->getMacroSubst(),
+                lineCol.lineNo, lineCol.colNo };
     }
     
     AsmSourcePos getSourcePos(size_t pos) const;
