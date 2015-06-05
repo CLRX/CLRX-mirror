@@ -82,7 +82,7 @@ AsmSource::~AsmSource()
 AsmFile::~AsmFile()
 { }
 
-AsmMacroPos::~AsmMacroPos()
+AsmMacroSource::~AsmMacroSource()
 { }
 
 /* Asm Macro */
@@ -716,8 +716,8 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         {   // if macro
             printIndent(os, indentLevel);
             os.write("In macro substituted from macro content:\n", 41);
-            RefPtr<const AsmMacroPos> curMacroPos =
-                    curMacro->source.staticCast<const AsmMacroPos>();
+            RefPtr<const AsmMacroSource> curMacroPos =
+                    curMacro->source.staticCast<const AsmMacroSource>();
             AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro,
                 curMacro->lineNo, 0 };
             macroPos.print(os, indentLevel+1);
@@ -760,8 +760,8 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 else if (parentSource->type == AsmSourceType::MACROPOS)
                 {   /* if macro */
                     os.write("In file included from macro content:\n", 37);
-                    RefPtr<const AsmMacroPos> curMacroPos =
-                            parentSource.staticCast<const AsmMacroPos>();
+                    RefPtr<const AsmMacroSource> curMacroPos =
+                            parentSource.staticCast<const AsmMacroSource>();
                     AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro,
                         curFile->lineNo, 0 };
                     macroPos.print(os, indentLevel+1);
@@ -793,7 +793,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
     {   // if macro
         printIndent(os, indentLevel);
         os.write("In macro content:\n", 18);
-        RefPtr<const AsmMacroPos> curMacroPos = source.staticCast<const AsmMacroPos>();
+        RefPtr<const AsmMacroSource> curMacroPos = source.staticCast<const AsmMacroSource>();
         AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro, lineNo, colNo };
         macroPos.print(os, indentLevel+1);
     }

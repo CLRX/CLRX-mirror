@@ -140,16 +140,16 @@ struct AsmMacroSubst: public FastRefCountable
 };
 
 /// position in macro
-struct AsmMacroPos: public AsmSource
+struct AsmMacroSource: public AsmSource
 {
     RefPtr<const AsmMacroSubst> macro;   ///< macro substition
     RefPtr<const AsmSource> source; ///< source of substituted content
     
-    AsmMacroPos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source)
+    AsmMacroSource(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source)
                 : AsmSource(AsmSourceType::MACROPOS), macro(_macro), source(_source)
     { }
     
-    virtual ~AsmMacroPos();
+    virtual ~AsmMacroSource();
 };
 
 struct AsmSourcePos
