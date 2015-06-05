@@ -92,7 +92,8 @@ struct LineCol
 enum class AsmSourceType : cxbyte
 {
     FILE,
-    MACROPOS
+    MACRO,
+    REPT
 };
 
 struct AsmSource: public FastRefCountable
@@ -146,10 +147,24 @@ struct AsmMacroSource: public AsmSource
     RefPtr<const AsmSource> source; ///< source of substituted content
     
     AsmMacroSource(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source)
-                : AsmSource(AsmSourceType::MACROPOS), macro(_macro), source(_source)
+                : AsmSource(AsmSourceType::MACRO), macro(_macro), source(_source)
     { }
     
     virtual ~AsmMacroSource();
+};
+
+struct AsmRepeatSource: public AsmSource
+{
+    RefPtr<const AsmSource> source; ///< source of content
+    uint64_t repeatCount;
+    uint64_t repeatsNum;
+    
+    AsmRepeatSource(RefPtr<const AsmSource> _source, uint64_t _repeatCount,
+            uint64_t _repeatsNum) : AsmSource(AsmSourceType::REPT), source(_source),
+            repeatCount(_repeatCount), repeatsNum(_repeatsNum)
+    { }
+    
+    virtual ~AsmRepeatSource();
 };
 
 struct AsmSourcePos
@@ -158,8 +173,6 @@ struct AsmSourcePos
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     uint64_t lineNo;
     size_t colNo;
-    /// repetition counters
-    Array<std::pair<uint64_t, uint64_t> > repetitions;
     
     void print(std::ostream& os, cxuint indentLevel = 0) const;
 };
