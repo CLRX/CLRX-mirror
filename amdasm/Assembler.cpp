@@ -623,6 +623,28 @@ static void printIndent(std::ostream& os, cxuint indentLevel)
         os.write("    ", 4);
 }
 
+static RefPtr<const AsmSource> printAsmRepeats(std::ostream& os,
+           RefPtr<const AsmSource> source, cxuint indentLevel)
+{
+    bool firstDepth = true;
+    while (source->type == AsmSourceType::REPT)
+    {
+        RefPtr<const AsmRepeatSource> sourceRept = source.staticCast<const AsmRepeatSource>();
+        printIndent(os, indentLevel);
+        os.write((firstDepth)?"In repetition ":"              ", 14);
+        char numBuf[64];
+        size_t size = itocstrCStyle(sourceRept->repeatCount, numBuf, 32);
+        numBuf[size++] = '/';
+        size += itocstrCStyle(sourceRept->repeatsNum, numBuf, 32-size);
+        numBuf[size++] = ':';
+        numBuf[size++] = '\n';
+        os.write(numBuf, size);
+        source = sourceRept->source;
+        firstDepth = false;
+    }
+    return source;
+}
+
 void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
 {
     if (indentLevel == 10)
@@ -667,7 +689,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 else // stdin
                     os.write("<stdin>", 7);
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle<size_t>(curMacro->lineNo, numBuf+1, 29);
+                size_t size = 1+itocstrCStyle(curMacro->lineNo, numBuf+1, 29);
                 numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
@@ -688,10 +710,12 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         curMacro = parentMacro;
     }
     /* print source tree */
-    if (source->type != AsmSourceType::MACRO)
+    RefPtr<const AsmSource> curSource = source;
+    while (curSource->type == AsmSourceType::REPT)
+        curSource = curSource.staticCast<const AsmRepeatSource>()->source;
+    
+    if (curSource->type != AsmSourceType::MACRO)
     {   // if file
-        RefPtr<const AsmSource> curSource = source;
-        
         RefPtr<const AsmFile> curFile = curSource.staticCast<const AsmFile>();
         if (curFile->parent)
         {
@@ -700,6 +724,11 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             while (curFile->parent)
             {
                 parentSource = curFile->parent;
+                
+                parentSource = printAsmRepeats(os, parentSource, indentLevel);
+                if (!firstDepth)
+                    firstDepth = (curFile->parent != parentSource); // if repeats
+                
                 printIndent(os, indentLevel);
                 if (parentSource->type != AsmSourceType::MACRO)
                 {
@@ -713,7 +742,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                         os.write("<stdin>", 7);
                     
                     numBuf[0] = ':';
-                    size_t size = 1+itocstrCStyle<size_t>(curFile->lineNo, numBuf+1, 29);
+                    size_t size = 1+itocstrCStyle(curFile->lineNo, numBuf+1, 29);
                     curFile = parentFile.staticCast<const AsmFile>();
                     numBuf[size++] = curFile->parent ? ',' : ':';
                     numBuf[size++] = '\n';
@@ -734,6 +763,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             }
         }
         // leaf
+        printAsmRepeats(os, source, indentLevel);
         printIndent(os, indentLevel);
         if (!curSource.staticCast<const AsmFile>()->file.empty())
             os.write(curSource.staticCast<const AsmFile>()->file.c_str(),
@@ -741,12 +771,12 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         else // stdin
             os.write("<stdin>", 7);
         numBuf[0] = ':';
-        size_t size = 1+itocstrCStyle<size_t>(lineNo, numBuf+1, 31);
+        size_t size = 1+itocstrCStyle(lineNo, numBuf+1, 31);
         os.write(numBuf, size);
         if (colNo != 0)
         {
             numBuf[0] = ':';
-            size = 1+itocstrCStyle<size_t>(colNo, numBuf+1, 29);
+            size = 1+itocstrCStyle(colNo, numBuf+1, 29);
             numBuf[size++] = ':';
             numBuf[size++] = ' ';
             os.write(numBuf, size);
@@ -754,9 +784,10 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
     }
     else
     {   // if macro
+        printAsmRepeats(os, source, indentLevel);
         printIndent(os, indentLevel);
         os.write("In macro content:\n", 18);
-        RefPtr<const AsmMacroSource> curMacroPos = source.staticCast<const AsmMacroSource>();
+        RefPtr<const AsmMacroSource> curMacroPos = curSource.staticCast<const AsmMacroSource>();
         AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro, lineNo, colNo };
         macroPos.print(os, indentLevel+1);
     }
