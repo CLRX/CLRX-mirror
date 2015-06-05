@@ -213,6 +213,45 @@ public:
     { return pos; }
 };
 
+class AsmRepeat
+{
+public:
+    struct SourceTrans
+    {
+        uint64_t lineNo;
+        RefPtr<const AsmSource> source;
+        RefPtr<const AsmMacroSubst> macro;
+    };
+private:
+    uint64_t contentLineNo;
+    AsmSourcePos pos;
+    uint64_t repeatsNum;
+    std::vector<char> content;
+    std::vector<SourceTrans> sourceTranslations;
+    std::vector<LineTrans> colTranslations;
+public:
+    explicit AsmRepeat(const AsmSourcePos& pos, uint64_t repeatsNum);
+    
+    void addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSubst> macro,
+             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
+    
+    const std::vector<LineTrans>& getColTranslations() const
+    { return colTranslations; }
+    
+    const std::vector<char>& getContent() const
+    { return content; }
+    
+    size_t getSourceTransSize() const
+    { return sourceTranslations.size(); }
+    const SourceTrans&  getSourceTrans(uint64_t index) const
+    { return sourceTranslations[index]; }
+    const AsmSourcePos& getPos() const
+    { return pos; }
+    
+    uint64_t getRepeatsNum() const
+    { return repeatsNum; }
+};
+
 class AsmInputFilter
 {
 protected:
@@ -245,17 +284,23 @@ public:
      */
     LineCol translatePos(size_t position) const;
     
-    /// returns column translations
-    const std::vector<LineTrans>& getColTranslations() const
+    /// returns column translations after reading line
+    const std::vector<LineTrans> getColTranslations() const
     { return colTranslations; }
     
+    /// get current source before reading line
     RefPtr<const AsmSource> getSource() const
     { return source; }
+    /// get current macro substitution before reading line
     RefPtr<const AsmMacroSubst> getMacroSubst() const
     { return macroSubst; }
     
+    /// get source position after reading line
     AsmSourcePos getSourcePos(size_t position) const
-    { return { source, macroSubst, lineNo, translatePos(position).colNo }; }
+    {
+        LineCol lineCol = translatePos(position);
+        return { source, macroSubst, lineCol.lineNo, lineCol.colNo };
+    }
 };
 
 /// assembler input layout filter
@@ -305,75 +350,23 @@ public:
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
-class AsmRepeater
+class AsmRepeatInputFilter: public AsmInputFilter
 {
 private:
-    struct SourcePosTrans
-    {
-        uint64_t lineNo;
-        RefPtr<const AsmSource> source;   ///< file in which message occurred
-        RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
-    };
-    
+    const AsmRepeat& repeat;
     uint64_t repeatCount;
-    uint64_t repeatNum;
-    std::vector<LineTrans> colTranslations;
-    std::vector<SourcePosTrans> sourcePosTranslations;
-    /// holds colTranslations position for every line
-    std::vector<size_t> lineColTranPoss;    
-    size_t pos; ///< buffer position
-    std::vector<char> buffer;
     uint64_t contentLineNo;
-    uint64_t lineNo;
-    
+    size_t sourceTransIndex;
+    const LineTrans* curColTrans;
 public:
-    explicit AsmRepeater(uint64_t repeatNum);
-    
-    void addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSubst> macro,
-             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
+    AsmRepeatInputFilter(const AsmRepeat& repeat, RefPtr<const AsmMacroSubst> macroSubst);
     
     /// read line and returns line except newline character
-    const char* readLine(size_t& lineSize);
-    
-    /**
-     * \param contentLineNo line number (from zero) begins at start of content
-     * \param position position in line number
-     * \return source position without repetitions
-     */
-    AsmSourcePos getSourcePos(size_t contentLineNo, size_t position) const;
-    
-    AsmSourcePos getSourcePos(size_t position) const
-    { return getSourcePos(contentLineNo, position); }
-    
-    /**
-     * \param contentLineNo line number (from zero) begins at start of content
-     * \return source position without repetitions
-     */
-    AsmSourcePos getSourcePos(size_t contentLineNo, LineCol lineCol) const;
-    
-    /// translate position to line number and column number
-    /**
-     * \param position position in line (from zero)
-     */
-    LineCol translatePos(size_t position) const;
-    
-    RefPtr<const AsmSource> getSource() const
-    { return sourcePosTranslations.back().source; }
-    RefPtr<const AsmMacroSubst> getMacro() const
-    { return sourcePosTranslations.back().macro; }
+    const char* readLine(Assembler& assembler, size_t& lineSize);
     
     uint64_t getRepeatCount() const
     { return repeatCount; }
-    uint64_t getRepeatsNum() const
-    { return repeatNum; }
-    /// returns source line no
-    uint64_t getLineNo() const
-    { return lineNo; }
-    /// returns line number in content (not line number for source code)
-    uint64_t getContentLineNo() const
-    { return contentLineNo; }
 };
-
 
 class ISAAssembler
 {
@@ -606,8 +599,6 @@ private:
     
     std::stack<AsmInputFilter*> asmInputFilters;
     AsmInputFilter* currentInputFilter;
-    std::deque<AsmRepeater*> asmRepeaters;
-    AsmRepeater* currentRepeater;
     
     std::ostream& messageStream;
     
@@ -626,15 +617,12 @@ private:
     
     AsmSourcePos getSourcePos(LineCol lineCol) const
     {
-        if (currentRepeater!=nullptr)
-            return currentRepeater->getSourcePos(
-                currentRepeater->getContentLineNo(), lineCol);
-        else
-            return { currentInputFilter->getSource(), currentInputFilter->getMacroSubst(),
-                lineCol.lineNo, lineCol.colNo };
+        return { currentInputFilter->getSource(), currentInputFilter->getMacroSubst(),
+            lineCol.lineNo, lineCol.colNo };
     }
     
-    AsmSourcePos getSourcePos(size_t pos) const;
+    AsmSourcePos getSourcePos(size_t pos) const
+    { return currentInputFilter->getSourcePos(pos); }
     AsmSourcePos getSourcePos(const char* string) const
     { return getSourcePos(string-line); }
     
@@ -652,19 +640,9 @@ private:
     { printError(getSourcePos(lineCol), message); }
     
     LineCol translatePos(const char* string) const
-    { 
-        if (currentRepeater!=nullptr)
-            return currentRepeater->translatePos(string-line);
-        else
-            return currentInputFilter->translatePos(string-line);
-    }
+    { return currentInputFilter->translatePos(string-line); }
     LineCol translatePos(size_t pos) const
-    {
-        if (currentRepeater!=nullptr)
-            return currentRepeater->translatePos(pos);
-        else
-            return currentInputFilter->translatePos(pos);
-    }
+    { return currentInputFilter->translatePos(pos); }
     
     uint64_t parseLiteral(const char* string, const char*& outend);
     AsmSymbolEntry* parseSymbol(const char* string, bool localLabel = true);
