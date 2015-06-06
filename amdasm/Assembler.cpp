@@ -838,15 +838,22 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
  */
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
-        std::ostream& msgStream)
-        : format(AsmFormat::CATALYST), deviceType(GPUDeviceType::CAPE_VERDE),
-          isaAssembler(nullptr), symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+        AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream)
+        : format(_format), deviceType(_deviceType), isaAssembler(nullptr),
+          symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
-          inGlobal(true), inAmdConfig(false), currentKernel(0), currentSection(0),
+          formatDefined(false), gpuDefined(false),
+          inGlobal(_format != AsmFormat::RAWCODE),
+          inAmdConfig(false), currentKernel(0), currentSection(0),
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
 {
+    if (format == AsmFormat::RAWCODE)
+    {   // init kernels and sections
+        kernelMap.insert(std::make_pair("", 0));
+        sections.push_back({ 0, AsmSectionType::AMD_KERNEL_CODE });
+    }
     amdOutput = nullptr;
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input, filename);
@@ -1305,6 +1312,7 @@ static const char* pseudoOpNamesTbl[] =
     "print",
     "purgem",
     "quad",
+    "rawcode",
     "rept",
     "section",
     "set",
@@ -1412,6 +1420,7 @@ enum
     ASMOP_PRINT,
     ASMOP_PURGEM,
     ASMOP_QUAD,
+    ASMOP_RAWCODE,
     ASMOP_REPT,
     ASMOP_SECTION,
     ASMOP_SET,
@@ -1462,7 +1471,7 @@ bool Assembler::assemble()
         string = skipSpacesToEnd(string, end);
         if (string != end && *string == '=' &&
             // not for local labels
-            (firstName.front() < '0' || firstName.front() > '9' ))
+            (firstName.front() < '0' || firstName.front() > '9'))
         {   // assignment
             string = skipSpacesToEnd(string+1, line+lineSize);
             if (string == end)
@@ -1551,7 +1560,7 @@ bool Assembler::assemble()
             continue;
         }
         // make firstname as lowercase
-        std::transform(firstName.begin(), firstName.end(), firstName.begin(), toLower);
+        toLowerString(firstName);
         
         if (firstName.size() > 2 && firstName[0] == '.')
         {   // check for pseudo-op
@@ -1562,7 +1571,6 @@ bool Assembler::assemble()
             switch(pseudoOp)
             {
                 case ASMOP_32BIT:
-                    break;
                 case ASMOP_64BIT:
                     break;
                 case ASMOP_ABORT:
@@ -1581,7 +1589,27 @@ bool Assembler::assemble()
                     break;
                 case ASMOP_BYTE:
                     break;
+                case ASMOP_RAWCODE:
                 case ASMOP_CATALYST:
+                case ASMOP_GALLIUM:
+                    string = skipSpacesToEnd(string, end);
+                    if (string != end)
+                    {   // garbages
+                        printError(string, "Garbages at end of line with pseud-op");
+                        good = false;
+                    }
+                    else
+                    {
+                        if (formatDefined)
+                        {
+                            printError(string, "Output format type has been defined");
+                            good = false;
+                        }
+                        formatDefined = true;
+                        format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
+                            (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
+                            AsmFormat::RAWCODE;
+                    }
                     break;
                 case ASMOP_CONFIG:
                     break;
@@ -1655,10 +1683,35 @@ bool Assembler::assemble()
                 case ASMOP_FLOAT:
                     break;
                 case ASMOP_FORMAT:
+                {
+                    string = skipSpacesToEnd(string, end);
+                    if (string == end)
+                    {
+                        printError(string, "Expected output format type");
+                        good = false;
+                    }
+                    std::string formatName = extractSymName(string, end, false);
+                    toLowerString(formatName);
+                    if (formatName == "catalyst" || formatName == "amd")
+                        format = AsmFormat::CATALYST;
+                    else if (formatName == "gallium")
+                        format = AsmFormat::GALLIUM;
+                    else if (formatName == "raw")
+                        format = AsmFormat::RAWCODE;
+                    else
+                    {
+                        printError(string, "Unknown output format type");
+                        good = false;
+                    }
+                    if (formatDefined)
+                    {
+                        printError(string, "Output format type has been defined");
+                        good = false;
+                    }
+                    formatDefined = true;
                     break;
+                }
                 case ASMOP_FUNC:
-                    break;
-                case ASMOP_GALLIUM:
                     break;
                 case ASMOP_GLOBAL:
                     break;

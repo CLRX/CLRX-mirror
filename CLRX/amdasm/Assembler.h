@@ -49,14 +49,14 @@ enum: cxuint
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
     ASM_GNU_AS_COMPAT = 4, ///< compatibility with GNU as (expressions)
-    ASM_RAW_CODE = 8,
     ASM_ALL = 0xff  ///< all flags
 };
     
 enum class AsmFormat: cxbyte
 {
     CATALYST = 0,
-    GALLIUM
+    GALLIUM,
+    RAWCODE
 };
 
 enum: cxuint
@@ -628,6 +628,8 @@ private:
     
     std::stack<AsmCondClause> condClauses;
     
+    bool formatDefined;
+    bool gpuDefined;
     bool inGlobal;
     bool inAmdConfig;
     cxuint currentKernel;
@@ -678,6 +680,8 @@ protected:
     bool readLine();
 public:
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
+              AsmFormat format = AsmFormat::CATALYST,
+              GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
               std::ostream& msgStream = std::cerr);
     ~Assembler();
     

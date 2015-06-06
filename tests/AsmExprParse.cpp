@@ -536,7 +536,7 @@ class MyAssembler: public Assembler
 {
 public:
     explicit MyAssembler(std::istream& input, std::ostream& msgOut)
-                : Assembler("", input, 0, msgOut)
+        : Assembler("", input, 0, AsmFormat::CATALYST, GPUDeviceType::CAPE_VERDE, msgOut)
     { readLine(); }
 };
 

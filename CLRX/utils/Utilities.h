@@ -721,17 +721,23 @@ public:
 inline char toLower(char c);
 
 inline char toLower(char c)
-{
-    return  (c >= 'A' &&  c <= 'Z') ? c - 'A' + 'a' : c;
-}
+{ return  (c >= 'A' &&  c <= 'Z') ? c - 'A' + 'a' : c; }
+
+inline void toLowerString(std::string& string);
+
+inline void toLowerString(std::string& string)
+{ std::transform(string.begin(), string.end(), string.begin(), toLower); }
 
 /// to uppercase
 inline char toUpper(char c);
 
 inline char toUpper(char c)
-{
-    return  (c >= 'a' &&  c <= 'z') ? c - 'a' + 'A' : c;
-}
+{ return  (c >= 'a' &&  c <= 'z') ? c - 'a' + 'A' : c; }
+
+inline void toUpperString(std::string& string);
+
+inline void toUpperString(std::string& string)
+{ std::transform(string.begin(), string.end(), string.begin(), toUpper); }
 
 }
 
