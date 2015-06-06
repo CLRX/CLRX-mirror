@@ -93,8 +93,8 @@ AsmMacro::AsmMacro(const AsmSourcePos& _pos, const Array<AsmMacroArg>& _args)
         : contentLineNo(0), pos(_pos), args(_args)
 { }
 
-void AsmMacro::addLine(RefPtr<const AsmSource> source, const std::vector<LineTrans>& colTrans,
-             size_t lineSize, const char* line)
+void AsmMacro::addLine(RefPtr<const AsmSource> source,
+           const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
     if (lineSize > 0 && line[lineSize-1] != '\n')
@@ -110,7 +110,7 @@ AsmRepeat::AsmRepeat(const AsmSourcePos& _pos, uint64_t _repeatsNum)
         : contentLineNo(0), pos(_pos), repeatsNum(_repeatsNum)
 { }
 
-void AsmRepeat::addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSubst> macro,
+void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
@@ -119,7 +119,7 @@ void AsmRepeat::addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSub
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (sourceTranslations.empty() || sourceTranslations.back().source != source ||
         sourceTranslations.back().macro != macro)
-        sourceTranslations.push_back({contentLineNo, source, macro});
+        sourceTranslations.push_back({contentLineNo, macro, source});
     contentLineNo++;
 }
 
@@ -146,7 +146,8 @@ static const size_t AsmParserLineMaxSize = 300;
 AsmStreamInputFilter::AsmStreamInputFilter(RefPtr<const AsmSource> source,
                const std::string& filename)
 try
-        : AsmInputFilter(source), managed(true), stream(nullptr), mode(LineMode::NORMAL)
+        : AsmInputFilter(RefPtr<const AsmMacroSubst>(), source), managed(true),
+          stream(nullptr), mode(LineMode::NORMAL)
 {
     stream = new std::ifstream(filename.c_str(), std::ios::binary);
     if (!*stream)
@@ -160,7 +161,8 @@ catch(...)
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(RefPtr<const AsmSource> source, std::istream& is)
-        : AsmInputFilter(source), managed(false), stream(&is), mode(LineMode::NORMAL)
+        : AsmInputFilter(RefPtr<const AsmMacroSubst>(), source),
+          managed(false), stream(&is), mode(LineMode::NORMAL)
 {
     buffer.reserve(AsmParserLineMaxSize);
 }
@@ -406,9 +408,9 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro,
         RefPtr<const AsmMacroSubst> macroSubst,
         const Array<std::pair<std::string, std::string> >& _argMap)
-        : AsmInputFilter(
+        : AsmInputFilter(macroSubst,
             _macro.getSourceTransSize()!=0?_macro.getSourceTrans(0).source:
-            _macro.getPos().source, macroSubst),
+            _macro.getPos().source),
           macro(_macro), argMap(_argMap), contentLineNo(0), sourceTransIndex(0)
 {
     curColTrans = macro.getColTranslations().data();
@@ -550,10 +552,10 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
 
 AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmRepeat& _repeat,
            RefPtr<const AsmMacroSubst> macroSubst) :
-           AsmInputFilter(RefPtr<const AsmSource>(new AsmRepeatSource(
+           AsmInputFilter(macroSubst, RefPtr<const AsmSource>(new AsmRepeatSource(
                _repeat.getSourceTransSize()!=0?
                _repeat.getSourceTrans(0).source:_repeat.getPos().source,
-               0, _repeat.getRepeatsNum())), macroSubst),
+               0, _repeat.getRepeatsNum()))),
           repeat(_repeat), repeatCount(0), contentLineNo(0), sourceTransIndex(0)
 {
     curColTrans = repeat.getColTranslations().data();
@@ -672,8 +674,8 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     printIndent(os, indentLevel);
                     os.write("In macro substituted from\n", 26);
                 }
-                AsmSourcePos nextLevelPos = { curMacro->source,
-                    RefPtr<const AsmMacroSubst>(), curMacro->lineNo, 0 };
+                AsmSourcePos nextLevelPos = { RefPtr<const AsmMacroSubst>(),
+                    curMacro->source, curMacro->lineNo, 0 };
                 nextLevelPos.print(os, indentLevel+1);
                 os.write((parentMacro) ? ";\n" : ":\n", 2);
             }
@@ -701,7 +703,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             os.write("In macro substituted from macro content:\n", 41);
             RefPtr<const AsmMacroSource> curMacroPos =
                     curMacro->source.staticCast<const AsmMacroSource>();
-            AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro,
+            AsmSourcePos macroPos = { curMacroPos->macro, curMacroPos->source,
                 curMacro->lineNo, 0 };
             macroPos.print(os, indentLevel+1);
             os.write((parentMacro) ? ";\n" : ":\n", 2);
@@ -754,7 +756,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     os.write("In file included from macro content:\n", 37);
                     RefPtr<const AsmMacroSource> curMacroPos =
                             parentSource.staticCast<const AsmMacroSource>();
-                    AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro,
+                    AsmSourcePos macroPos = { curMacroPos->macro, curMacroPos->source,
                         curFile->lineNo, 0 };
                     macroPos.print(os, indentLevel+1);
                     os.write(":\n", 2);
@@ -787,8 +789,9 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         printAsmRepeats(os, source, indentLevel);
         printIndent(os, indentLevel);
         os.write("In macro content:\n", 18);
-        RefPtr<const AsmMacroSource> curMacroPos = curSource.staticCast<const AsmMacroSource>();
-        AsmSourcePos macroPos = { curMacroPos->source, curMacroPos->macro, lineNo, colNo };
+        RefPtr<const AsmMacroSource> curMacroPos =
+                curSource.staticCast<const AsmMacroSource>();
+        AsmSourcePos macroPos = { curMacroPos->macro, curMacroPos->source, lineNo, colNo };
         macroPos.print(os, indentLevel+1);
     }
 }

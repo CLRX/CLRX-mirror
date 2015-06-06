@@ -116,8 +116,9 @@ struct AsmFile: public AsmSource
             AsmSource(AsmSourceType::FILE), lineNo(1), file(_file)
     { }
     
-    AsmFile(const RefPtr<const AsmSource> _parent, uint64_t _lineNo, const std::string& _file)
-        : AsmSource(AsmSourceType::FILE), parent(_parent), lineNo(_lineNo), file(_file)
+    AsmFile(const RefPtr<const AsmSource> _parent, uint64_t _lineNo,
+        const std::string& _file) : AsmSource(AsmSourceType::FILE),
+        parent(_parent), lineNo(_lineNo), file(_file)
     { }
     
     virtual ~AsmFile();
@@ -169,8 +170,8 @@ struct AsmRepeatSource: public AsmSource
 
 struct AsmSourcePos
 {
-    RefPtr<const AsmSource> source;   ///< source in which message occurred
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
+    RefPtr<const AsmSource> source;   ///< source in which message occurred
     uint64_t lineNo;
     size_t colNo;
     
@@ -232,8 +233,8 @@ public:
     struct SourceTrans
     {
         uint64_t lineNo;
-        RefPtr<const AsmSource> source;
         RefPtr<const AsmMacroSubst> macro;
+        RefPtr<const AsmSource> source;
     };
 private:
     uint64_t contentLineNo;
@@ -245,7 +246,7 @@ private:
 public:
     explicit AsmRepeat(const AsmSourcePos& pos, uint64_t repeatsNum);
     
-    void addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSubst> macro,
+    void addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
              const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
     
     const std::vector<LineTrans>& getColTranslations() const
@@ -277,8 +278,8 @@ protected:
     
     AsmInputFilter():  pos(0), lineNo(1)
     { }
-    AsmInputFilter(RefPtr<const AsmSource> _source,
-       RefPtr<const AsmMacroSubst> _macroSubst = RefPtr<const AsmMacroSubst>())
+    AsmInputFilter(RefPtr<const AsmMacroSubst> _macroSubst,
+           RefPtr<const AsmSource> _source)
             : pos(0), source(_source), macroSubst(_macroSubst), lineNo(1)
     { }
 public:
@@ -312,7 +313,7 @@ public:
     AsmSourcePos getSourcePos(size_t position) const
     {
         LineCol lineCol = translatePos(position);
-        return { source, macroSubst, lineCol.lineNo, lineCol.colNo };
+        return { macroSubst, source, lineCol.lineNo, lineCol.colNo };
     }
 };
 
@@ -630,7 +631,7 @@ private:
     
     AsmSourcePos getSourcePos(LineCol lineCol) const
     {
-        return { currentInputFilter->getSource(), currentInputFilter->getMacroSubst(),
+        return { currentInputFilter->getMacroSubst(), currentInputFilter->getSource(),
             lineCol.lineNo, lineCol.colNo };
     }
     
