@@ -633,9 +633,9 @@ static RefPtr<const AsmSource> printAsmRepeats(std::ostream& os,
         printIndent(os, indentLevel);
         os.write((firstDepth)?"In repetition ":"              ", 14);
         char numBuf[64];
-        size_t size = itocstrCStyle(sourceRept->repeatCount, numBuf, 32);
+        size_t size = itocstrCStyle(sourceRept->repeatCount+1, numBuf, 32);
         numBuf[size++] = '/';
-        size += itocstrCStyle(sourceRept->repeatsNum, numBuf, 32-size);
+        size += itocstrCStyle(sourceRept->repeatsNum, numBuf+size, 32-size);
         numBuf[size++] = ':';
         numBuf[size++] = '\n';
         os.write(numBuf, size);
