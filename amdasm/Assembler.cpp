@@ -101,7 +101,8 @@ void AsmMacro::addLine(RefPtr<const AsmSource> source, const std::vector<LineTra
         content.push_back('\n');
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (sourceTranslations.empty() || sourceTranslations.back().source != source)
-        sourceTranslations.push_back({contentLineNo++, source});
+        sourceTranslations.push_back({contentLineNo, source});
+    contentLineNo++;
 }
 
 /* Asm Repeat */
@@ -118,7 +119,8 @@ void AsmRepeat::addLine(RefPtr<const AsmSource> source, RefPtr<const AsmMacroSub
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (sourceTranslations.empty() || sourceTranslations.back().source != source ||
         sourceTranslations.back().macro != macro)
-        sourceTranslations.push_back({contentLineNo++, source, macro});
+        sourceTranslations.push_back({contentLineNo, source, macro});
+    contentLineNo++;
 }
 
 /* AsmInputFilter */
@@ -538,8 +540,6 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             sourceTransIndex++;
         }
     }
-    else // if last
-        source = macro.getSourceTrans(sourceTransIndex).source;
     contentLineNo++;
     return buffer.data();
 }
@@ -550,8 +550,10 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
 
 AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmRepeat& _repeat,
            RefPtr<const AsmMacroSubst> macroSubst) :
-           AsmInputFilter(RefPtr<const AsmSource>(_repeat.getSourceTransSize()!=0?
-           _repeat.getSourceTrans(0).source:_repeat.getPos().source), macroSubst),
+           AsmInputFilter(RefPtr<const AsmSource>(new AsmRepeatSource(
+               _repeat.getSourceTransSize()!=0?
+               _repeat.getSourceTrans(0).source:_repeat.getPos().source,
+               0, _repeat.getRepeatsNum())), macroSubst),
           repeat(_repeat), repeatCount(0), contentLineNo(0), sourceTransIndex(0)
 {
     curColTrans = repeat.getColTranslations().data();
@@ -572,10 +574,13 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             lineSize = 0;
             return nullptr;
         }
+        sourceTransIndex = 0;
         curColTrans = repeat.getColTranslations().data();
         lineNo = curColTrans[0].lineNo;
         pos = 0;
         contentLineNo = 0;
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+            repeat.getSourceTrans(0).source, repeatCount, repeat.getRepeatsNum()));
     }
     const char* content = repeat.getContent().data();
     size_t oldPos = pos;
@@ -599,15 +604,10 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
         if (fpos.lineNo == contentLineNo)
         {
             macroSubst = fpos.macro;
-            source = fpos.source;
             sourceTransIndex++;
+            source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                fpos.source, repeatCount, repeat.getRepeatsNum()));
         }
-    }
-    else // if last
-    {
-        const AsmRepeat::SourceTrans& fpos = repeat.getSourceTrans(sourceTransIndex);
-        source = fpos.source;
-        macroSubst = fpos.macro;
     }
     contentLineNo++;
     return content + oldPos;
