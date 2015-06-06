@@ -270,8 +270,8 @@ class AsmInputFilter
 {
 protected:
     size_t pos;
-    RefPtr<const AsmSource> source;
     RefPtr<const AsmMacroSubst> macroSubst;
+    RefPtr<const AsmSource> source;
     std::vector<char> buffer;
     std::vector<LineTrans> colTranslations;
     uint64_t lineNo;
@@ -280,7 +280,7 @@ protected:
     { }
     AsmInputFilter(RefPtr<const AsmMacroSubst> _macroSubst,
            RefPtr<const AsmSource> _source)
-            : pos(0), source(_source), macroSubst(_macroSubst), lineNo(1)
+            : pos(0), macroSubst(_macroSubst), source(_source), lineNo(1)
     { }
 public:
     virtual ~AsmInputFilter();
@@ -337,8 +337,11 @@ private:
     std::istream* stream;
     LineMode mode;
 public:
-    explicit AsmStreamInputFilter(RefPtr<const AsmSource> source, std::istream& is);
-    explicit AsmStreamInputFilter(RefPtr<const AsmSource> source, const std::string& filename);
+    explicit AsmStreamInputFilter(std::istream& is, const std::string& filename = "");
+    explicit AsmStreamInputFilter(const std::string& filename);
+    AsmStreamInputFilter(const AsmSourcePos& pos, std::istream& is,
+             const std::string& filename = "");
+    AsmStreamInputFilter(const AsmSourcePos& pos, const std::string& filename);
     ~AsmStreamInputFilter();
     
     /// read line and returns line except newline character
@@ -357,7 +360,7 @@ private:
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
 public:
-    AsmMacroInputFilter(const AsmMacro& macro, RefPtr<const AsmMacroSubst> macroSubst,
+    AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
         const Array<std::pair<std::string, std::string> >& argMap);
     
     /// read line and returns line except newline character
@@ -373,7 +376,7 @@ private:
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
 public:
-    AsmRepeatInputFilter(const AsmRepeat& repeat, RefPtr<const AsmMacroSubst> macroSubst);
+    explicit AsmRepeatInputFilter(const AsmRepeat& repeat);
     
     /// read line and returns line except newline character
     const char* readLine(Assembler& assembler, size_t& lineSize);
@@ -501,7 +504,7 @@ struct AsmSymbol
             value(inValue), expression(nullptr)
     { }
     
-    void addOccurrence(AsmSourcePos pos)
+    void addOccurrence(const AsmSourcePos& pos)
     { occurrences.push_back(pos); }
     void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
     { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
