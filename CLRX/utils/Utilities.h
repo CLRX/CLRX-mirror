@@ -717,6 +717,22 @@ public:
     }
 };
 
+/// to lowercase
+inline char toLower(char c);
+
+inline char toLower(char c)
+{
+    return  (c >= 'A' &&  c <= 'Z') ? c - 'A' + 'a' : c;
+}
+
+/// to uppercase
+inline char toUpper(char c);
+
+inline char toUpper(char c)
+{
+    return  (c >= 'a' &&  c <= 'z') ? c - 'a' + 'A' : c;
+}
+
 }
 
 #endif

@@ -49,6 +49,7 @@ enum: cxuint
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
     ASM_GNU_AS_COMPAT = 4, ///< compatibility with GNU as (expressions)
+    ASM_RAW_CODE = 8,
     ASM_ALL = 0xff  ///< all flags
 };
     
@@ -602,6 +603,7 @@ private:
     std::vector<std::string> includeDirs;
     std::vector<AsmSection> sections;
     AsmSymbolMap symbolMap;
+    std::vector<AsmRepeat*> repeats;
     MacroMap macroMap;
     KernelMap kernelMap;
     cxuint flags;
@@ -706,7 +708,7 @@ public:
     const GalliumInput* getGalliumOutput() const
     { return galliumOutput; }
     
-    void assemble();
+    bool assemble();
 };
 
 }
