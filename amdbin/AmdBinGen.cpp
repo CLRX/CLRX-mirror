@@ -269,10 +269,10 @@ private:
     const TempAmdKernelConfig* tempConfig;
 public:
     CALNoteGen() { }
-    CALNoteGen(const AmdInput* input_, cxuint driverVersion_,
-           const AmdKernelInput* kernel_, const TempAmdKernelConfig* tempConfig_)
-        : input(input_), driverVersion(driverVersion_), kernel(kernel_),
-          tempConfig(tempConfig_)
+    CALNoteGen(const AmdInput* _input, cxuint _driverVersion,
+           const AmdKernelInput* _kernel, const TempAmdKernelConfig* _tempConfig)
+        : input(_input), driverVersion(_driverVersion), kernel(_kernel),
+          tempConfig(_tempConfig)
     { }
     
     void operator()(FastOutputBuffer& fob) const
@@ -297,7 +297,7 @@ private:
     const AmdKernelInput* kernel;
 public:
     KernelDataGen() { }
-    KernelDataGen(const AmdKernelInput* kernel_) : kernel(kernel_)
+    KernelDataGen(const AmdKernelInput* _kernel) : kernel(_kernel)
     { }
     
     void operator()(FastOutputBuffer& fob) const
@@ -325,11 +325,9 @@ class CLRX_INTERNAL MainStrTabGen: public ElfRegionContent
 private:
     cxuint driverVersion;
     const AmdInput* input;
-    const Array<TempAmdKernelData>& tempDatas;
 public:
-    MainStrTabGen(cxuint driverVersion_, const AmdInput* input_,
-                  const Array<TempAmdKernelData>& tempDatas_)
-            : driverVersion(driverVersion_), input(input_), tempDatas(tempDatas_)
+    MainStrTabGen(cxuint _driverVersion, const AmdInput* _input)
+            : driverVersion(_driverVersion), input(_input)
     { }
     
     size_t size() const
@@ -376,9 +374,9 @@ private:
     const AmdInput* input;
     const Array<TempAmdKernelData>& tempDatas;
 public:
-    MainSymTabGen(cxuint driverVersion_, const AmdInput* input_,
-                  const Array<TempAmdKernelData>& tempDatas_)
-            : driverVersion(driverVersion_), input(input_), tempDatas(tempDatas_)
+    MainSymTabGen(cxuint _driverVersion, const AmdInput* _input,
+                  const Array<TempAmdKernelData>& _tempDatas)
+            : driverVersion(_driverVersion), input(_input), tempDatas(_tempDatas)
     { }
     
     size_t size() const
@@ -464,8 +462,8 @@ private:
     const AmdInput* input;
     const Array<TempAmdKernelData>& tempDatas;
 public:
-    MainRoDataGen(const AmdInput* input_, const Array<TempAmdKernelData>& tempDatas_)
-            : input(input_), tempDatas(tempDatas_)
+    MainRoDataGen(const AmdInput* _input, const Array<TempAmdKernelData>& _tempDatas)
+            : input(_input), tempDatas(_tempDatas)
     { }
     
     void operator()(FastOutputBuffer& fob) const
@@ -494,7 +492,7 @@ class CLRX_INTERNAL MainTextGen: public ElfRegionContent
 private:
     Array<TempAmdKernelData>& tempDatas;
 public:
-    MainTextGen(Array<TempAmdKernelData>& tempDatas_) : tempDatas(tempDatas_)
+    MainTextGen(Array<TempAmdKernelData>& _tempDatas) : tempDatas(_tempDatas)
     { }
     
     void operator()(FastOutputBuffer& fob) const
@@ -510,8 +508,8 @@ private:
     const AmdInput* input;
     const std::string& driverInfo;
 public:
-    MainCommentGen(const AmdInput* input_, const std::string& driverInfo_)
-            : input(input_), driverInfo(driverInfo_)
+    MainCommentGen(const AmdInput* _input, const std::string& _driverInfo)
+            : input(_input), driverInfo(_driverInfo)
     { }
     
     void operator()(FastOutputBuffer& fob) const
@@ -1593,7 +1591,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     MainRoDataGen rodataGen(input, tempAmdKernelDatas);
     MainTextGen textGen(tempAmdKernelDatas);
     MainCommentGen commentGen(input, driverInfo);
-    MainStrTabGen mainStrTabGen(driverVersion, input, tempAmdKernelDatas);
+    MainStrTabGen mainStrTabGen(driverVersion, input);
     MainSymTabGen<Elf32Types> mainSymTabGen32(driverVersion, input, tempAmdKernelDatas);
     MainSymTabGen<Elf64Types> mainSymTabGen64(driverVersion, input, tempAmdKernelDatas);
     
