@@ -403,8 +403,8 @@ static AsmExprParseCase asmExprParseCases[] =
         "<stdin>:1:3: Error: Expected primary expression before operator\n"
         "<stdin>:1:5: Error: Missing '?' before ':'\n"
         "<stdin>:1:8: Error: Missing '?' before ':'\n", "Qf:hab<;<@" },
-    { "( ala + .,. )", "", false, 0, "<stdin>:1:11: Error: Junks at end of expression\n"
-        "<stdin>:1:12: Error: Junks at end of expression\n", "" },
+    { "( ala + .,. )", "", false, 0, "<stdin>:1:11: Error: Garbages at end of expression\n"
+        "<stdin>:1:12: Error: Garbages at end of expression\n", "" },
 };
 
 static std::string rpnExpression(const AsmExpression* expr)

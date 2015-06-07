@@ -65,6 +65,13 @@ static const char* gpuArchitectureNameTable[3] =
     "GCN 1.2"
 };
 
+static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
+{
+    GPUDeviceType::CAPE_VERDE,
+    GPUDeviceType::BONAIRE,
+    GPUDeviceType::TONGA
+};
+
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 {
     cxuint found = 1;
@@ -92,6 +99,13 @@ GPUArchitecture CLRX::getGPUArchitectureFromDeviceType(GPUDeviceType deviceType)
     if (deviceType > GPUDeviceType::GPUDEVICE_MAX)
         throw Exception("Unknown GPU device type");
     return gpuDeviceArchTable[cxuint(deviceType)];
+}
+
+GPUDeviceType CLRX::getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture architecture)
+{
+    if (architecture > GPUArchitecture::GPUARCH_MAX)
+        throw Exception("Unknown GPU architecture");
+    return gpuLowestDeviceFromArchTable[cxuint(architecture)];
 }
 
 const char* CLRX::getGPUDeviceTypeName(GPUDeviceType deviceType)

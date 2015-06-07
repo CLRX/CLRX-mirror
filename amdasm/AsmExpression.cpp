@@ -594,7 +594,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     else
                     {
                         string++;
-                        assembler.printError(string, "Junks at end of expression");
+                        assembler.printError(string, "Garbages at end of expression");
                         good = false;
                     }
                 }

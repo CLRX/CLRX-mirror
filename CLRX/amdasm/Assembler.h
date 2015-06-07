@@ -598,10 +598,11 @@ private:
     friend struct AsmExpression;
     AsmFormat format;
     GPUDeviceType deviceType;
+    bool _64bit;
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
     std::vector<std::string> includeDirs;
-    std::vector<AsmSection> sections;
+    std::vector<AsmSection*> sections;
     AsmSymbolMap symbolMap;
     std::vector<AsmRepeat*> repeats;
     MacroMap macroMap;
@@ -624,12 +625,15 @@ private:
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
+        cxbyte* rawCode;
     };
     
     std::stack<AsmCondClause> condClauses;
     
     bool formatDefined;
     bool gpuDefined;
+    bool bitnessDefined;
+    
     bool inGlobal;
     bool inAmdConfig;
     cxuint currentKernel;
@@ -676,6 +680,8 @@ private:
     
     bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
                   const char* string);
+    
+    void initializeOutputFormat();
 protected:    
     bool readLine();
 public:

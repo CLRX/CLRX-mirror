@@ -839,21 +839,16 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
         AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream)
-        : format(_format), deviceType(_deviceType), isaAssembler(nullptr),
+        : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
-          formatDefined(false), gpuDefined(false),
+          formatDefined(false), gpuDefined(false), bitnessDefined(false),
           inGlobal(_format != AsmFormat::RAWCODE),
           inAmdConfig(false), currentKernel(0), currentSection(0),
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
 {
-    if (format == AsmFormat::RAWCODE)
-    {   // init kernels and sections
-        kernelMap.insert(std::make_pair("", 0));
-        sections.push_back({ 0, AsmSectionType::AMD_KERNEL_CODE });
-    }
     amdOutput = nullptr;
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input, filename);
@@ -876,6 +871,9 @@ Assembler::~Assembler()
         delete asmInputFilters.top();
         asmInputFilters.pop();
     }
+    
+    for (AsmSection* section: sections)
+        delete section;
     
     for (AsmRepeat* repeat: repeats)
         delete repeat;
@@ -1105,24 +1103,24 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                         break;
                     }
                     case ASMXTGT_DATA8:
-                        sections[target.sectionId].content[target.offset] =
+                        sections[target.sectionId]->content[target.offset] =
                                 cxbyte(value);
                         break;
                     case ASMXTGT_DATA16:
                         SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
-                                .content.data() + target.offset), uint16_t(value));
+                                ->content.data() + target.offset), uint16_t(value));
                         break;
                     case ASMXTGT_DATA32:
                         SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
-                                .content.data() + target.offset), uint32_t(value));
+                                ->content.data() + target.offset), uint32_t(value));
                         break;
                     case ASMXTGT_DATA64:
                         SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
-                                .content.data() + target.offset), uint64_t(value));
+                                ->content.data() + target.offset), uint64_t(value));
                         break;
                     default: // ISA assembler resolves this dependency
                         isaAssembler->resolveCode(sections[target.sectionId]
-                                .content.data() + target.offset, target.type, value);
+                                ->content.data() + target.offset, target.type, value);
                         break;
                 }
                 delete occurrence.expression; // delete expression
@@ -1223,12 +1221,47 @@ bool Assembler::readLine()
     return true;
 }
 
+void Assembler::initializeOutputFormat()
+{
+    formatDefined = true;
+    bitnessDefined = true;
+    gpuDefined = true;
+    if (format == AsmFormat::CATALYST && amdOutput == nullptr)
+    {   // if not created
+        amdOutput = new AmdInput();
+        amdOutput->is64Bit = _64bit;
+        amdOutput->deviceType = deviceType;
+        amdOutput->globalData = nullptr;
+        amdOutput->globalDataSize = 0;
+        amdOutput->sourceCode = nullptr;
+        amdOutput->sourceCodeSize = 0;
+        amdOutput->llvmir = nullptr;
+        amdOutput->llvmirSize = 0;
+    }
+    else if (format == AsmFormat::GALLIUM && galliumOutput == nullptr)
+    {
+        galliumOutput = new GalliumInput();
+        galliumOutput->code = nullptr;
+        galliumOutput->codeSize = 0;
+        galliumOutput->disassembly = nullptr;
+        galliumOutput->disassemblySize = 0;
+        galliumOutput->commentSize = 0;
+        galliumOutput->comment = nullptr;
+    }
+    else if (format == AsmFormat::GALLIUM && rawCode == nullptr)
+    {
+        sections.push_back(new AsmSection{ 0, AsmSectionType::AMD_KERNEL_CODE });
+        rawCode = sections[0]->content.data();
+    }
+}
+
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit",
     "64bit",
     "abort",
     "align",
+    "arch",
     "ascii",
     "asciz",
     "balign",
@@ -1337,6 +1370,7 @@ enum
     ASMOP_64BIT,
     ASMOP_ABORT,
     ASMOP_ALIGN,
+    ASMOP_ARCH,
     ASMOP_ASCII,
     ASMOP_ASCIZ,
     ASMOP_BALIGN,
@@ -1572,10 +1606,23 @@ bool Assembler::assemble()
             {
                 case ASMOP_32BIT:
                 case ASMOP_64BIT:
+                    if (bitnessDefined)
+                    {
+                        printError(string, "Bitness has already been defined");
+                        good = false;
+                    }
+                    if (format != AsmFormat::CATALYST)
+                        printWarning(string,
+                             "Bitness ignored for other formats than AMD Catalyst");
+                    else
+                        _64bit = (pseudoOp == ASMOP_64BIT);
+                    bitnessDefined = true;
                     break;
                 case ASMOP_ABORT:
                     break;
                 case ASMOP_ALIGN:
+                    break;
+                case ASMOP_ARCH:
                     break;
                 case ASMOP_ASCII:
                     break;
@@ -1592,26 +1639,35 @@ bool Assembler::assemble()
                 case ASMOP_RAWCODE:
                 case ASMOP_CATALYST:
                 case ASMOP_GALLIUM:
-                    string = skipSpacesToEnd(string, end);
-                    if (string != end)
-                    {   // garbages
-                        printError(string, "Garbages at end of line with pseud-op");
+                    if (formatDefined)
+                    {
+                        printError(string, "Output format type has already been defined");
                         good = false;
+                    }
+                    formatDefined = true;
+                    format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
+                        (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
+                        AsmFormat::RAWCODE;
+                    break;
+                case ASMOP_CONFIG:
+                    if (format == AsmFormat::CATALYST)
+                    {
+                        initializeOutputFormat();
+                        if (inGlobal)
+                        {
+                            printError(string,
+                                   "Configuration in global layout is illegal");
+                            good = false;
+                        }
+                        else
+                            inAmdConfig = true; // inside Amd Config
                     }
                     else
                     {
-                        if (formatDefined)
-                        {
-                            printError(string, "Output format type has been defined");
-                            good = false;
-                        }
-                        formatDefined = true;
-                        format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
-                            (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
-                            AsmFormat::RAWCODE;
+                        printError(string,
+                           "Configuration section only for AMD Catalyst binaries");
+                        good = false;
                     }
-                    break;
-                case ASMOP_CONFIG:
                     break;
                 case ASMOP_DATA:
                     break;
@@ -1705,7 +1761,7 @@ bool Assembler::assemble()
                     }
                     if (formatDefined)
                     {
-                        printError(string, "Output format type has been defined");
+                        printError(string, "Output format type has already been defined");
                         good = false;
                     }
                     formatDefined = true;
@@ -1825,6 +1881,14 @@ bool Assembler::assemble()
         }
         else
         {   // try to parse processor instruction or macro substitution
+        }
+        
+        // check garbages at line and print error
+        string = skipSpacesToEnd(string, end);
+        if (string != end)
+        {   // garbages
+            printError(string, "Garbages at end of line with pseud-op");
+            good = false;
         }
     }
     return good;

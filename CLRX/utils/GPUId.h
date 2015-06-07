@@ -79,6 +79,8 @@ extern GPUArchitecture getGPUArchitectureFromName(const char* name);
 /// get GPUArchitecture from GPU device type
 extern GPUArchitecture getGPUArchitectureFromDeviceType(GPUDeviceType deviceType);
 
+extern GPUDeviceType getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture arch);
+
 /// get GPU architecture name
 extern const char* getGPUArchitectureName(GPUArchitecture architecture);
 
