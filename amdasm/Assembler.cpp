@@ -1176,6 +1176,8 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
 
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
 {
+    if ((flags & ASM_WARNINGS) == 0)
+        return; // do nothing
     pos.print(messageStream);
     messageStream.write("Warning: ", 9);
     messageStream.write(message, ::strlen(message));
@@ -1816,6 +1818,40 @@ bool Assembler::assemble()
                 case ASMOP_INT:
                     break;
                 case ASMOP_KERNEL:
+                    if (format == AsmFormat::CATALYST || format == AsmFormat::GALLIUM)
+                    {
+                        string = skipSpacesToEnd(string, end);
+                        if (string == end)
+                        {
+                            printError(string, "Expected kernel name");
+                            good = false;
+                            break;
+                        }
+                        std::string kernelName = extractSymName(string, end, false);
+                        if (kernelName.empty())
+                        {
+                            printError(string, "This is not kernel name");
+                            good = false;
+                            break;
+                        }
+                        if (format == AsmFormat::CATALYST)
+                        {
+                            kernelMap.insert(std::make_pair(kernelName,
+                                            amdOutput->kernels.size()));
+                            amdOutput->addEmptyKernel(kernelName.c_str());
+                        }
+                        else
+                        {
+                            kernelMap.insert(std::make_pair(kernelName,
+                                        galliumOutput->kernels.size()));
+                            //galliumOutput->addEmptyKernel(kernelName.c_str());
+                        }
+                    }
+                    else if (format == AsmFormat::RAWCODE)
+                    {
+                        printError(string, "Raw code can have only one unnamed kernel");
+                        good = false;
+                    }
                     break;
                 case ASMOP_LINE:
                 case ASMOP_LN:

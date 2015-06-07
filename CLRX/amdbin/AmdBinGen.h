@@ -178,6 +178,8 @@ struct AmdInput
            const std::vector<CALNoteInput>& calNotes, const cxbyte* header,
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
+    
+    void addEmptyKernel(const char* kernelName);
 };
 
 /// main AMD GPU Binary generator
