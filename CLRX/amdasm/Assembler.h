@@ -487,22 +487,23 @@ struct AsmSymbol
     cxuint sectionId;
     bool isDefined;
     bool onceDefined;
+    bool resolving;
     uint64_t value;
     std::vector<AsmSourcePos> occurrences;
     AsmExpression* expression;
     std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
     AsmSymbol(bool _onceDefined = false) : sectionId(ASMSECT_ABS), isDefined(false),
-            onceDefined(_onceDefined), value(0), expression(nullptr)
+            onceDefined(_onceDefined), resolving(false), value(0), expression(nullptr)
     { }
     AsmSymbol(AsmExpression* expr, bool _onceDefined = false) :
             sectionId(ASMSECT_ABS), isDefined(false), onceDefined(_onceDefined), 
-            value(0), expression(expr)
+            resolving(false), value(0), expression(expr)
     { }
     
     AsmSymbol(cxuint inSectionId, uint64_t inValue, bool _onceDefined = false) :
             sectionId(inSectionId), isDefined(true), onceDefined(_onceDefined),
-            value(inValue), expression(nullptr)
+            resolving(false), value(inValue), expression(nullptr)
     { }
     
     void addOccurrence(const AsmSourcePos& pos)

@@ -1071,6 +1071,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
     // resolve value of pending symbols
     std::stack<std::pair<AsmSymbol*, size_t> > symbolStack;
     symbolStack.push(std::make_pair(&symEntry.second, 0));
+    symEntry.second.resolving = true;
     
     while (!symbolStack.empty())
     {
@@ -1100,9 +1101,14 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                     case ASMXTGT_SYMBOL:
                     {    // resolve symbol
                         AsmSymbolEntry& curSymEntry = *target.symbol;
-                        curSymEntry.second.value = value;
-                        curSymEntry.second.isDefined = true;
-                        symbolStack.push(std::make_pair(&curSymEntry.second, 0));
+                        if (!curSymEntry.second.resolving)
+                        {
+                            curSymEntry.second.value = value;
+                            curSymEntry.second.isDefined = true;
+                            symbolStack.push(std::make_pair(&curSymEntry.second, 0));
+                            curSymEntry.second.resolving = true;
+                        }
+                        // otherwise we ignore circular dependencies
                         break;
                     }
                     case ASMXTGT_DATA8:
@@ -1132,6 +1138,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
         }
         else // pop
         {
+            entry.first->resolving = false;
             entry.first->occurrencesInExprs.clear();
             symbolStack.pop();
         }
