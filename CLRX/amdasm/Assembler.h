@@ -75,7 +75,9 @@ enum class AsmSectionType: cxbyte
     GALLIUM_GLOBAL_DATA = 64,
     GALLIUM_COMMENT,
     GALLIUM_DISASSEMBLY,
-    GALLIUM_CODE
+    GALLIUM_CODE,
+    
+    RAWCODE_CODE = 128
 };
 
 class Assembler;
@@ -475,8 +477,8 @@ struct AsmExpression;
 struct AsmExprSymbolOccurence
 {
     AsmExpression* expression;
-    size_t opIndex;
     size_t argIndex;
+    size_t opIndex;
     
     bool operator==(const AsmExprSymbolOccurence& b) const
     { return expression==b.expression && opIndex==b.opIndex && argIndex==b.argIndex; }
@@ -501,15 +503,15 @@ struct AsmSymbol
             resolving(false), value(0), expression(expr)
     { }
     
-    AsmSymbol(cxuint inSectionId, uint64_t inValue, bool _onceDefined = false) :
-            sectionId(inSectionId), isDefined(true), onceDefined(_onceDefined),
-            resolving(false), value(inValue), expression(nullptr)
+    AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
+            sectionId(_sectionId), isDefined(true), onceDefined(_onceDefined),
+            resolving(false), value(_value), expression(nullptr)
     { }
     
     void addOccurrence(const AsmSourcePos& pos)
     { occurrences.push_back(pos); }
     void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
-    { occurrencesInExprs.push_back({expr, opIndex, argIndex}); }
+    { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
 };
 
@@ -534,6 +536,16 @@ struct AsmExprTarget
         AsmExprTarget target;
         target.type = ASMXTGT_SYMBOL;
         target.symbol = entry;
+        return target;
+    }
+    
+    static AsmExprTarget data32Target(cxuint sectionId, size_t offset)
+    {
+        AsmExprTarget target;
+        target.type = ASMXTGT_DATA32;
+        target.sectionId = sectionId;
+        target.size = 4;
+        target.offset = offset;
         return target;
     }
 };
@@ -661,7 +673,7 @@ private:
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
-        cxbyte* rawCode;
+        AsmSection* rawCode;
     };
     
     std::stack<AsmCondClause> condClauses;
@@ -716,6 +728,22 @@ private:
                   const char* string);
     
     void initializeOutputFormat();
+    
+    void putData(size_t size, const cxbyte* data)
+    {
+        AsmSection& section = *sections[currentSection];
+        if (currentOutPos+size > section.content.size())
+            section.content.resize(currentOutPos+size);
+        ::memcpy(section.content.data() + currentOutPos, data, size);
+        currentOutPos += size;
+    }
+    void reserveData(size_t size)
+    {
+        AsmSection& section = *sections[currentSection];
+        if (currentOutPos+size > section.content.size())
+            section.content.resize(currentOutPos+size);
+        currentOutPos += size;
+    }
 protected:    
     bool readLine();
 public:

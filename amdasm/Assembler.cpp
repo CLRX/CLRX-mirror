@@ -842,6 +842,7 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
         AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream)
         : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
+          symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
           outFormatInitialized(false),
@@ -1238,6 +1239,8 @@ bool Assembler::readLine()
 
 void Assembler::initializeOutputFormat()
 {
+    if (outFormatInitialized)
+        return;
     outFormatInitialized = true;
     if (format == AsmFormat::CATALYST && amdOutput == nullptr)
     {   // if not created
@@ -1250,6 +1253,8 @@ void Assembler::initializeOutputFormat()
         amdOutput->sourceCodeSize = 0;
         amdOutput->llvmir = nullptr;
         amdOutput->llvmirSize = 0;
+        /* sections */
+        sections.push_back(new AsmSection{ 0, AsmSectionType::AMD_GLOBAL_DATA });
     }
     else if (format == AsmFormat::GALLIUM && galliumOutput == nullptr)
     {
@@ -1260,12 +1265,17 @@ void Assembler::initializeOutputFormat()
         galliumOutput->disassemblySize = 0;
         galliumOutput->commentSize = 0;
         galliumOutput->comment = nullptr;
+        sections.push_back(new AsmSection{ 0, AsmSectionType::GALLIUM_CODE});
     }
     else if (format == AsmFormat::GALLIUM && rawCode == nullptr)
     {
-        sections.push_back(new AsmSection{ 0, AsmSectionType::AMD_KERNEL_CODE });
-        rawCode = sections[0]->content.data();
+        sections.push_back(new AsmSection{ 0, AsmSectionType::RAWCODE_CODE});
+        rawCode = sections[0];
     }
+    else // FAIL
+        abort();
+    // define counter symbol
+    symbolMap.find(".")->second.sectionId = 0;
 }
 
 static const char* pseudoOpNamesTbl[] =
@@ -1533,6 +1543,7 @@ bool Assembler::assemble()
         }
         else if (string != end && *string == ':')
         {   // labels
+            initializeOutputFormat();
             string = skipSpacesToEnd(string+1, line+lineSize);
             if (string != end)
             {
@@ -1580,29 +1591,29 @@ bool Assembler::assemble()
                         good = false;
                         continue;
                     }
-                    if (sections.empty())
-                    {
-                        printError(firstNameString,
-                                   "Label can't be defined outside section");
-                        good = false;
-                        continue;
-                    }
-                    if (inAmdConfig)
-                    {
-                        printError(firstNameString,
-                                   "Label can't defined in AMD config place");
-                        good = false;
-                        continue;
-                    }
-                    
-                    if (!setSymbol(*res.first, currentOutPos))
-                    {   // if symbol not set
-                        good = false;
-                        continue;
-                    }
-                    res.first->second.onceDefined = true;
-                    res.first->second.sectionId = currentSection;
                 }
+                if (sections.empty())
+                {
+                    printError(firstNameString,
+                               "Label can't be defined outside section");
+                    good = false;
+                    continue;
+                }
+                if (inAmdConfig)
+                {
+                    printError(firstNameString,
+                               "Label can't defined in AMD config place");
+                    good = false;
+                    continue;
+                }
+                
+                if (!setSymbol(*res.first, currentOutPos))
+                {   // if symbol not set
+                    good = false;
+                    continue;
+                }
+                res.first->second.onceDefined = true;
+                res.first->second.sectionId = currentSection;
             }
             continue;
         }
@@ -1612,8 +1623,8 @@ bool Assembler::assemble()
         if (firstName.size() > 2 && firstName[0] == '.')
         {   // check for pseudo-op
             const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
-                    sizeof(pseudoOpNamesTbl)/sizeof(char*), firstName.c_str()+1) -
-                    pseudoOpNamesTbl;
+                    sizeof(pseudoOpNamesTbl)/sizeof(char*), firstName.c_str()+1,
+                   CStringLess()) - pseudoOpNamesTbl;
             
             switch(pseudoOp)
             {
@@ -1824,7 +1835,47 @@ bool Assembler::assemble()
                 case ASMOP_INCLUDE:
                     break;
                 case ASMOP_INT:
+                {
+                    string = skipSpacesToEnd(string, end);
+                    while (string != end)
+                    {
+                        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
+                                    *this, string, string));
+                        if (expr)
+                        {
+                            if (expr->getSymOccursNum()==0)
+                            {   // put directly to section
+                                uint64_t value;
+                                if (expr->evaluate(*this, value))
+                                {
+                                    uint32_t out;
+                                    SLEV(out, value);
+                                    putData(4, reinterpret_cast<const cxbyte*>(&out));
+                                }
+                            }
+                            else // expression
+                            {
+                                expr->setTarget(AsmExprTarget::data32Target(
+                                                currentSection, currentOutPos));
+                                expr.release();
+                                reserveData(4);
+                            }
+                        }
+                        else // fail
+                            good = false;
+                        string = skipSpacesToEnd(string, end); // spaces before ','
+                        if (string == end)
+                            break;
+                        if (*string != ',')
+                        {
+                            printError(string, "Expected ',' before next value");
+                            good = false;
+                        }
+                        else
+                            string = skipSpacesToEnd(string+1, end);
+                    }
                     break;
+                }
                 case ASMOP_KERNEL:
                     if (format == AsmFormat::CATALYST || format == AsmFormat::GALLIUM)
                     {
@@ -1956,9 +2007,32 @@ bool Assembler::assemble()
                 std::cerr << " onceDefined";
             if (symEntry.second.sectionId == ASMSECT_ABS)
                 std::cerr << ", sect=ABS";
+            else if (sections.size() < symEntry.second.sectionId)
+                std::cerr << ", secttype=" <<
+                        cxuint(sections[symEntry.second.sectionId]->type);
             else
-                std::cerr << ", sect=" << cxuint(sections[symEntry.second.sectionId]->type);
+                std::cerr << ", sect=" << symEntry.second.sectionId;
             std::cerr << std::endl;
+        }
+        
+        /* print sections */
+        for (const AsmSection* sectionPtr: sections)
+        {
+            const AsmSection& section = *sectionPtr;
+            std::cerr << "SectionType: " << cxuint(section.type) << std::endl;
+            for (size_t i = 0; i < section.content.size(); i+=8)
+            {
+                char buf[64];
+                size_t bufsz = itocstrCStyle(i, buf, 64, 16, 16, false);
+                std::cerr.write(buf, bufsz);
+                std::cerr.put(' ');
+                for (size_t j = i; j < i+8 && j < section.content.size(); j++)
+                {
+                    size_t bufsz = itocstrCStyle(section.content[j], buf, 64, 16, 2, false);
+                    std::cerr.write(buf, bufsz);
+                }
+                std::cerr << std::endl;
+            }
         }
     }
 #endif
