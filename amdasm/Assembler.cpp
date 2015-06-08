@@ -884,7 +884,7 @@ Assembler::~Assembler()
             for (auto& occur: entry.second.occurrencesInExprs)
                 if (occur.expression!=nullptr)
                 {
-                    if (--occur.expression->symOccursNum==0)
+                    if (!occur.expression->unrefSymOccursNum())
                         delete occur.expression;
                 }
 }
@@ -1081,11 +1081,10 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
             AsmExprSymbolOccurence& occurrence =
                     entry.first->occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
-            expr->ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
-            expr->args[occurrence.argIndex].value = entry.first->value;
+            expr->substituteOccurrence(occurrence, entry.first->value);
             entry.second++;
             
-            if (--(expr->symOccursNum) == 0)
+            if (!expr->unrefSymOccursNum())
             {   // expresion has been fully resolved
                 uint64_t value;
                 if (!expr->evaluate(*this, value))
@@ -1095,8 +1094,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                     good = false;
                     continue;
                 }
-                const AsmExprTarget& target = expr->target;
-                switch(expr->target.type)
+                const AsmExprTarget& target = expr->getTarget();
+                switch(target.type)
                 {
                     case ASMXTGT_SYMBOL:
                     {    // resolve symbol
@@ -1172,7 +1171,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     }
     AsmSymbolEntry& symEntry = *res.first;
     
-    if (expr->symOccursNum==0)
+    if (expr->getSymOccursNum()==0)
     {   // can evalute, assign now
         uint64_t value;
         if (!expr->evaluate(*this, value))

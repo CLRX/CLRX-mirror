@@ -538,8 +538,9 @@ struct AsmExprTarget
     }
 };
 
-struct AsmExpression
+class AsmExpression
 {
+private:
     AsmExprTarget target;
     AsmSourcePos sourcePos;
     size_t symOccursNum;
@@ -554,7 +555,7 @@ struct AsmExpression
         pos.colNo = messagePositions[msgPosIndex].colNo;
         return pos;
     }
-    
+public:
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
             size_t opsNum, size_t opPosNum, size_t argsNum);
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
@@ -577,6 +578,22 @@ struct AsmExpression
     
     static bool isBinaryOp(AsmExprOp op)
     { return (AsmExprOp::FIRST_BINARY <= op && op <= AsmExprOp::LAST_BINARY); }
+    
+    const AsmExprTarget& getTarget() const
+    { return target; }
+    
+    size_t getSymOccursNum() const
+    { return symOccursNum; }
+    
+    bool unrefSymOccursNum()
+    { return --symOccursNum!=0; }
+    
+    void substituteOccurrence(AsmExprSymbolOccurence occurrence, uint64_t value);
+    
+    const Array<AsmExprOp>& getOps() const
+    { return ops; }
+    const AsmExprArg* getArgs() const
+    { return args.get(); }
 };
 
 union AsmExprArg
@@ -584,6 +601,13 @@ union AsmExprArg
     AsmSymbolEntry* symbol;
     uint64_t value;
 };
+
+inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurence occurrence,
+                        uint64_t value)
+{
+    ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
+    args[occurrence.argIndex].value = value;
+}
 
 struct AsmSection
 {
@@ -607,7 +631,7 @@ public:
 private:
     friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
-    friend struct AsmExpression;
+    friend class AsmExpression;
     AsmFormat format;
     GPUDeviceType deviceType;
     bool _64bit;

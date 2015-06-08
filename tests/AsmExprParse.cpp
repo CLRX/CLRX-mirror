@@ -410,9 +410,9 @@ static AsmExprParseCase asmExprParseCases[] =
 static std::string rpnExpression(const AsmExpression* expr)
 {
     std::ostringstream oss;
-    const AsmExprArg* args = expr->args.get();
+    const AsmExprArg* args = expr->getArgs();
     bool first = true;
-    for (AsmExprOp op: expr->ops)
+    for (AsmExprOp op: expr->getOps())
     {
         if (!first)
             oss << ' ';
@@ -555,7 +555,7 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase)
     if (expr)
     {
         resultRpnExpr = rpnExpression(expr.get());
-        if (expr->symOccursNum == 0)
+        if (expr->getSymOccursNum() == 0)
             resultEvaluated = expr->evaluate(assembler, resultValue);
         else
         {
