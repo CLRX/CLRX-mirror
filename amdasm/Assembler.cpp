@@ -1174,7 +1174,8 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     else // set expression
     {
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
-        symEntry.second = AsmSymbol(expr.release());
+        symEntry.second.expression = expr.release();
+        symEntry.second.isDefined = false;
     }
     return true;
 }
