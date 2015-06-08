@@ -630,9 +630,7 @@ private:
     
     std::stack<AsmCondClause> condClauses;
     
-    bool formatDefined;
-    bool gpuDefined;
-    bool bitnessDefined;
+    bool outFormatInitialized;
     
     bool inGlobal;
     bool inAmdConfig;

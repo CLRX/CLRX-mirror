@@ -33,6 +33,8 @@
 #include <CLRX/utils/InputOutput.h>
 #include <CLRX/amdasm/Assembler.h>
 
+#define ASM_OUTPUT_DUMP 1
+
 using namespace CLRX;
 
 static inline const char* skipSpacesToEnd(const char* string, const char* end)
@@ -840,10 +842,9 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
         AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream)
         : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
-          symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
-          formatDefined(false), gpuDefined(false), bitnessDefined(false),
+          outFormatInitialized(false),
           inGlobal(_format != AsmFormat::RAWCODE),
           inAmdConfig(false), currentKernel(0), currentSection(0),
           // get value reference from first symbol: '.'
@@ -1140,7 +1141,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
              const char* string)
 {
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
-    string = skipSpacesToEnd(string+1, line+lineSize);
+    string = skipSpacesToEnd(string, line+lineSize);
     
     if (!expr) // no expression, errors
         return false;
@@ -1225,9 +1226,7 @@ bool Assembler::readLine()
 
 void Assembler::initializeOutputFormat()
 {
-    formatDefined = true;
-    bitnessDefined = true;
-    gpuDefined = true;
+    outFormatInitialized = true;
     if (format == AsmFormat::CATALYST && amdOutput == nullptr)
     {   // if not created
         amdOutput = new AmdInput();
@@ -1478,7 +1477,7 @@ enum
 bool Assembler::assemble()
 {
     bool good = true;
-    while (!readLine())
+    while (readLine())
     {
         /* parse line */
         const char* string = line;
@@ -1608,7 +1607,7 @@ bool Assembler::assemble()
             {
                 case ASMOP_32BIT:
                 case ASMOP_64BIT:
-                    if (bitnessDefined)
+                    if (outFormatInitialized)
                     {
                         printError(string, "Bitness has already been defined");
                         good = false;
@@ -1618,7 +1617,6 @@ bool Assembler::assemble()
                              "Bitness ignored for other formats than AMD Catalyst");
                     else
                         _64bit = (pseudoOp == ASMOP_64BIT);
-                    bitnessDefined = true;
                     break;
                 case ASMOP_ABORT:
                     break;
@@ -1641,12 +1639,11 @@ bool Assembler::assemble()
                 case ASMOP_RAWCODE:
                 case ASMOP_CATALYST:
                 case ASMOP_GALLIUM:
-                    if (formatDefined)
+                    if (outFormatInitialized)
                     {
                         printError(string, "Output format type has already been defined");
                         good = false;
                     }
-                    formatDefined = true;
                     format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
                         (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
                         AsmFormat::RAWCODE;
@@ -1761,12 +1758,11 @@ bool Assembler::assemble()
                         printError(string, "Unknown output format type");
                         good = false;
                     }
-                    if (formatDefined)
+                    if (outFormatInitialized)
                     {
                         printError(string, "Output format type has already been defined");
                         good = false;
                     }
-                    formatDefined = true;
                     break;
                 }
                 case ASMOP_FUNC:
@@ -1927,5 +1923,32 @@ bool Assembler::assemble()
             good = false;
         }
     }
+#ifdef ASM_OUTPUT_DUMP
+    {
+        std::vector<const AsmSymbolEntry*> symEntries;
+        for (const AsmSymbolEntry& symEntry: symbolMap)
+            symEntries.push_back(&symEntry);
+        std::sort(symEntries.begin(), symEntries.end(),
+                  [](const AsmSymbolEntry* s1, const AsmSymbolEntry* s2)
+                  { return s1->first < s2->first; });
+        
+        for (const AsmSymbolEntry* symEntryPtr: symEntries)
+        {
+            const AsmSymbolEntry& symEntry = *symEntryPtr;
+            if (symEntry.second.isDefined)
+                std::cerr << symEntry.first << " = " << symEntry.second.value <<
+                        "(0x" << std::hex << symEntry.second.value << ")";
+            else
+                std::cerr << symEntry.first << " undefined";
+            if (symEntry.second.onceDefined)
+                std::cerr << " onceDefined";
+            if (symEntry.second.sectionId == ASMSECT_ABS)
+                std::cerr << ", sect=ABS";
+            else
+                std::cerr << ", sect=" << cxuint(sections[symEntry.second.sectionId]->type);
+            std::cerr << std::endl;
+        }
+    }
+#endif
     return good;
 }
