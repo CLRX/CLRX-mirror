@@ -527,6 +527,14 @@ struct AsmExprTarget
             size_t offset;
         };
     };
+    
+    static AsmExprTarget symbolTarget(AsmSymbolEntry* entry)
+    { 
+        AsmExprTarget target;
+        target.type = ASMXTGT_SYMBOL;
+        target.symbol = entry;
+        return target;
+    }
 };
 
 struct AsmExpression
@@ -552,6 +560,9 @@ struct AsmExpression
               size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
               const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
     ~AsmExpression() = default;
+    
+    void setTarget(AsmExprTarget _target)
+    { target = _target; }
     
     bool evaluate(Assembler& assembler, uint64_t& value) const;
     

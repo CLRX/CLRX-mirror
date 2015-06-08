@@ -1127,6 +1127,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                 delete occurrence.expression; // delete expression
             }
             occurrence.expression = nullptr; // clear expression
+            entry.second++;
         }
         else // pop
         {
@@ -1171,7 +1172,10 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         setSymbol(symEntry, value);
     }
     else // set expression
+    {
+        expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second = AsmSymbol(expr.release());
+    }
     return true;
 }
 
@@ -1937,7 +1941,7 @@ bool Assembler::assemble()
             const AsmSymbolEntry& symEntry = *symEntryPtr;
             if (symEntry.second.isDefined)
                 std::cerr << symEntry.first << " = " << symEntry.second.value <<
-                        "(0x" << std::hex << symEntry.second.value << ")";
+                        "(0x" << std::hex << symEntry.second.value << ")" << std::dec;
             else
                 std::cerr << symEntry.first << " undefined";
             if (symEntry.second.onceDefined)
