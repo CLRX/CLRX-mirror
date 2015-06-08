@@ -1082,12 +1082,14 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
             AsmExpression* expr = occurrence.expression;
             expr->ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
             expr->args[occurrence.argIndex].value = entry.first->value;
+            entry.second++;
             
             if (--(expr->symOccursNum) == 0)
             {   // expresion has been fully resolved
                 uint64_t value;
                 if (!expr->evaluate(*this, value))
                 {   // if failed
+                    delete occurrence.expression; // delete expression
                     occurrence.expression = nullptr; // clear expression
                     good = false;
                     continue;
@@ -1127,7 +1129,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                 delete occurrence.expression; // delete expression
             }
             occurrence.expression = nullptr; // clear expression
-            entry.second++;
         }
         else // pop
         {
