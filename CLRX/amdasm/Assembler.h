@@ -508,7 +508,7 @@ struct AsmSymbol
     void addOccurrence(const AsmSourcePos& pos)
     { occurrences.push_back(pos); }
     void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
-    { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
+    { occurrencesInExprs.push_back({expr, opIndex, argIndex}); }
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
 };
 
