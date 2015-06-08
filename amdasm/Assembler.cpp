@@ -835,6 +835,17 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
     occurrencesInExprs.resize(it-occurrencesInExprs.begin());
 }
 
+void AsmSymbol::clearOccurrencesInExpr()
+{
+    for (auto occur: occurrencesInExprs)
+        if (occur.expression!=nullptr)
+            {
+                if (!occur.expression->unrefSymOccursNum())
+                    delete occur.expression;
+            }
+    occurrencesInExprs.clear();
+}
+
 /*
  * Assembler
  */
@@ -879,15 +890,6 @@ Assembler::~Assembler()
     
     for (AsmRepeat* repeat: repeats)
         delete repeat;
-    
-    for (auto& entry: symbolMap)    // free pending expressions
-        if (!entry.second.isDefined)
-            for (auto& occur: entry.second.occurrencesInExprs)
-                if (occur.expression!=nullptr)
-                {
-                    if (!occur.expression->unrefSymOccursNum())
-                        delete occur.expression;
-                }
 }
 
 void Assembler::includeFile(const std::string& filename)
@@ -1573,6 +1575,8 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName+"f", AsmSymbol() });
                 assert(setSymbol(*nextLRes.first, currentOutPos));
                 prevLRes.first->second.value = nextLRes.first->second.value;
+                prevLRes.first->second.isDefined = true;
+                prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.sectionId = currentSection;
                 nextLRes.first->second.isDefined = false;
             }
@@ -1836,6 +1840,7 @@ bool Assembler::assemble()
                     break;
                 case ASMOP_INT:
                 {
+                    initializeOutputFormat();
                     string = skipSpacesToEnd(string, end);
                     while (string != end)
                     {
@@ -2020,13 +2025,13 @@ bool Assembler::assemble()
         {
             const AsmSection& section = *sectionPtr;
             std::cerr << "SectionType: " << cxuint(section.type) << std::endl;
-            for (size_t i = 0; i < section.content.size(); i+=8)
+            for (size_t i = 0; i < section.content.size(); i+=16)
             {
                 char buf[64];
                 size_t bufsz = itocstrCStyle(i, buf, 64, 16, 16, false);
                 std::cerr.write(buf, bufsz);
                 std::cerr.put(' ');
-                for (size_t j = i; j < i+8 && j < section.content.size(); j++)
+                for (size_t j = i; j < i+16 && j < section.content.size(); j++)
                 {
                     size_t bufsz = itocstrCStyle(section.content[j], buf, 64, 16, 2, false);
                     std::cerr.write(buf, bufsz);

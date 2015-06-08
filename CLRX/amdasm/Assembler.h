@@ -507,12 +507,16 @@ struct AsmSymbol
             sectionId(_sectionId), isDefined(true), onceDefined(_onceDefined),
             resolving(false), value(_value), expression(nullptr)
     { }
+    ~AsmSymbol()
+    { clearOccurrencesInExpr(); }
     
     void addOccurrence(const AsmSourcePos& pos)
     { occurrences.push_back(pos); }
     void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
     { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
+    
+    void clearOccurrencesInExpr();
 };
 
 typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
