@@ -862,6 +862,7 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _f
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
 {
+    good = true;
     amdOutput = nullptr;
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input, filename);
@@ -1244,14 +1245,17 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                         break;
                     }
                     case ASMXTGT_DATA8:
+                        printWarningForRange(8, value, expr->getSourcePos());
                         sections[target.sectionId]->content[target.offset] =
                                 cxbyte(value);
                         break;
                     case ASMXTGT_DATA16:
+                        printWarningForRange(16, value, expr->getSourcePos());
                         SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
                                 ->content.data() + target.offset), uint16_t(value));
                         break;
                     case ASMXTGT_DATA32:
+                        printWarningForRange(32, value, expr->getSourcePos());
                         SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
                                 ->content.data() + target.offset), uint32_t(value));
                         break;
@@ -1333,10 +1337,26 @@ void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
 
 void Assembler::printError(const AsmSourcePos& pos, const char* message)
 {
+    good = false;
     pos.print(messageStream);
     messageStream.write("Error: ", 7);
     messageStream.write(message, ::strlen(message));
     messageStream.put('\n');
+}
+
+void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos)
+{
+    if (value > (1ULL<<bits) || int64_t(value) < -(1LL<<(bits-1)))
+    {
+        std::string warning = "Value ";
+        char buf[32];
+        itocstrCStyle(value, buf, 32, 16);
+        warning += buf;
+        warning += " truncated to ";
+        itocstrCStyle(value&((1ULL<<bits)-1), buf, 32, 16);
+        warning += buf;
+        printWarning(pos, warning.c_str());
+    }
 }
 
 void Assembler::addIncludeDir(const std::string& includeDir)
@@ -1351,7 +1371,6 @@ void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
 
 bool Assembler::readLine()
 {
-    // input filters
     lineNo = currentInputFilter->getLineNo();
     line = currentInputFilter->readLine(*this, lineSize);
     while (line == nullptr)
@@ -1631,7 +1650,7 @@ enum
 
 bool Assembler::assemble()
 {
-    bool good = true;
+    good = true;
     while (readLine())
     {
         /* parse line */
@@ -1784,7 +1803,30 @@ bool Assembler::assemble()
                 case ASMOP_ARCH:
                     break;
                 case ASMOP_ASCII:
+                {
+                    initializeOutputFormat();
+                    string = skipSpacesToEnd(string, end);
+                    while (string != end)
+                    {
+                        std::vector<char> outStr;
+                        if (parseString(outStr, string, string))
+                            putData(outStr.size(), (const cxbyte*)outStr.data());
+                        else
+                            good = false;
+                        
+                        string = skipSpacesToEnd(string, end); // spaces before ','
+                        if (string == end)
+                            break;
+                        if (*string != ',')
+                        {
+                            printError(string, "Expected ',' before next value");
+                            good = false;
+                        }
+                        else
+                            string = skipSpacesToEnd(string+1, end);
+                    }
                     break;
+                }
                 case ASMOP_ASCIZ:
                     break;
                 case ASMOP_BALIGN:
@@ -1976,6 +2018,7 @@ bool Assembler::assemble()
                     string = skipSpacesToEnd(string, end);
                     while (string != end)
                     {
+                        const char* literalStr = string;
                         std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
                                     *this, string, string));
                         if (expr)
@@ -1985,6 +2028,8 @@ bool Assembler::assemble()
                                 uint64_t value;
                                 if (expr->evaluate(*this, value))
                                 {
+                                    printWarningForRange(32, value,
+                                                 getSourcePos(literalStr));
                                     uint32_t out;
                                     SLEV(out, value);
                                     putData(4, reinterpret_cast<const cxbyte*>(&out));

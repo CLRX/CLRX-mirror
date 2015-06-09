@@ -610,6 +610,9 @@ public:
     { return ops; }
     const AsmExprArg* getArgs() const
     { return args.get(); }
+    
+    const AsmSourcePos& getSourcePos() const
+    { return sourcePos; }
 };
 
 union AsmExprArg
@@ -651,6 +654,7 @@ private:
     AsmFormat format;
     GPUDeviceType deviceType;
     bool _64bit;
+    bool good;
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
     std::vector<std::string> includeDirs;
@@ -749,6 +753,8 @@ private:
             section.content.resize(currentOutPos+size);
         currentOutPos += size;
     }
+    
+    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
 protected:    
     bool readLine();
 public:
