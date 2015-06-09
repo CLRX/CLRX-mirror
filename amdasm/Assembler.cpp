@@ -1580,10 +1580,10 @@ bool Assembler::assemble()
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
                         symbolMap.insert({ firstName+"f", AsmSymbol() });
                 assert(setSymbol(*nextLRes.first, currentOutPos));
-                prevLRes.first->second.value = nextLRes.first->second.value;
-                prevLRes.first->second.isDefined = true;
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.occurrences.clear();
+                prevLRes.first->second.value = nextLRes.first->second.value;
+                prevLRes.first->second.isDefined = true;
                 prevLRes.first->second.sectionId = currentSection;
                 nextLRes.first->second.isDefined = false;
             }

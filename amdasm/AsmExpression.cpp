@@ -546,6 +546,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
             default: // parse symbol or value
                 if (expectedToken != XT_OP)
                 {
+                    ExpectedToken oldExpectedToken = expectedToken;
                     expectedToken = XT_OP;
                     std::pair<AsmSymbolEntry*,bool> out = assembler.parseSymbol(string);
                     AsmSymbolEntry* symEntry = out.first;
@@ -587,7 +588,10 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                         ops.push_back(AsmExprOp::ARG_VALUE);
                     }
                     else // otherwise we finish parsing
-                    { doExit = true; break; }
+                    {
+                        expectedToken = oldExpectedToken;
+                        doExit = true; break;
+                    }
                 }
                 else
                 {
@@ -601,8 +605,6 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     }
                 }
         }
-        if (doExit) // exit from parsing
-            break;
         
         if (op != AsmExprOp::NONE && !isUnaryOp(op) && expectedToken != XT_OP)
         {
@@ -683,6 +685,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                 stack.push({ op, priority, lineColPos });
             }
         }
+        
+        if (doExit) // exit from parsing
+            break;
     }
     if (parenthesisCount != 0)
     {   // print error
