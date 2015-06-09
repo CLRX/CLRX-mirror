@@ -905,7 +905,7 @@ void Assembler::exitFromMacro()
 {
 }
 
-bool Assembler::parseString(std::vector<char>& strarray, const char* string,
+bool Assembler::parseString(std::string& strarray, const char* string,
             const char*& outend)
 {
     const char* end = line+lineSize;
@@ -1808,9 +1808,9 @@ bool Assembler::assemble()
                     string = skipSpacesToEnd(string, end);
                     while (string != end)
                     {
-                        std::vector<char> outStr;
+                        std::string outStr;
                         if (parseString(outStr, string, string))
-                            putData(outStr.size(), (const cxbyte*)outStr.data());
+                            putData(outStr.size(), (const cxbyte*)outStr.c_str());
                         else
                             good = false;
                         
@@ -2011,7 +2011,25 @@ bool Assembler::assemble()
                 case ASMOP_INCBIN:
                     break;
                 case ASMOP_INCLUDE:
+                {
+                    string = skipSpacesToEnd(string, end);
+                    std::string filename;
+                    const char* nameStr = string;
+                    if (parseString(filename, string, string))
+                    {
+                        try
+                        {
+                            std::unique_ptr<AsmInputFilter> newInputFilter(
+                                    new AsmStreamInputFilter(
+                                        getSourcePos(firstNameString), filename));
+                            asmInputFilters.push(newInputFilter.release());
+                            currentInputFilter = asmInputFilters.top(); 
+                        }
+                        catch(const Exception& ex)
+                        { printError(nameStr, ex.what()); }
+                    }
                     break;
+                }
                 case ASMOP_INT:
                 {
                     initializeOutputFormat();

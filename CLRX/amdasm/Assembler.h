@@ -724,7 +724,7 @@ private:
     { return currentInputFilter->translatePos(pos); }
     
     bool parseLiteral(uint64_t& value, const char* string, const char*& outend);
-    bool parseString(std::vector<char>& strarray, const char* string, const char*& outend);
+    bool parseString(std::string& strarray, const char* string, const char*& outend);
     bool parseSymbol(const char* string, AsmSymbolEntry*& entry, bool localLabel = true);
     
     void includeFile(const std::string& filename);
