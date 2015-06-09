@@ -904,51 +904,37 @@ void Assembler::exitFromMacro()
 {
 }
 
-uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
+bool Assembler::parseString(std::vector<char>& strarray, const char* string,
+            const char*& outend)
 {
-    uint64_t value;
-    outend = string;
     const char* end = line+lineSize;
-    if (outend != end && *outend == '\'')
+    outend = string;
+    strarray.clear();
+    if (outend == end || *outend != '"')
     {
-        outend++;
-        if (outend == end)
-        {
-            printError(string, "Terminated character literal");
-            throw ParseException("Terminated character literal");
-        }
-        if (*outend == '\'')
-        {
-            printError(string, "Empty character literal");
-            throw ParseException("Empty character literal");
-        }
-        
-        if (*outend != '\\')
-        {
-            value = *outend++;
-            if (outend == end || *outend != '\'')
-            {
-                printError(string, "Missing ''' at end of literal");
-                throw ParseException("Missing ''' at end of literal");
-            }
+        printError(string, "Expected string");
+        return false;
+    }
+    outend++;
+    
+    while (outend != end && *outend != '"')
+    {
+        if (*outend == '\\')
+        {   // escape
             outend++;
-            return value;
-        }
-        else // escapes
-        {
-            outend++;
+            uint16_t value;
             if (outend == end)
             {
-                printError(string, "Terminated character literal");
-                throw ParseException("Terminated character literal");
+                printError(string, "Terminated character of string");
+                return false;
             }
             if (*outend == 'x')
             {   // hex
                 outend++;
                 if (outend == end)
                 {
-                    printError(string, "Terminated character literal");
-                    throw ParseException("Terminated character literal");
+                    printError(string, "Terminated character of string");
+                    return false;
                 }
                 value = 0;
                 for (cxuint i = 0; outend != end && i < 2; i++, outend++)
@@ -965,7 +951,143 @@ uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
                     else
                     {
                         printError(string, "Expected hexadecimal character code");
-                        throw ParseException("Expected hexadecimal character code");
+                        return false;
+                    }
+                    value = (value<<4) + digit;
+                }
+            }
+            else if (*outend >= '0' &&  *outend <= '7')
+            {   // octal
+                value = 0;
+                for (cxuint i = 0; outend != end && i < 3; i++, outend++)
+                {
+                    if (*outend < '0' || *outend > '7')
+                    {
+                        printError(string, "Expected octal character code");
+                        return false;
+                    }
+                    value = (value<<3) + uint64_t(*outend-'0');
+                    if (value > 255)
+                    {
+                        printError(string, "Octal code out of range");
+                        return false;
+                    }
+                }
+            }
+            else
+            {   // normal escapes
+                const char c = *outend++;
+                switch (c)
+                {
+                    case 'a':
+                        value = '\a';
+                        break;
+                    case 'b':
+                        value = '\b';
+                        break;
+                    case 'r':
+                        value = '\r';
+                        break;
+                    case 'n':
+                        value = '\n';
+                        break;
+                    case 'f':
+                        value = '\f';
+                        break;
+                    case 'v':
+                        value = '\v';
+                        break;
+                    case 't':
+                        value = '\t';
+                        break;
+                    case '\\':
+                        value = '\\';
+                        break;
+                    case '\'':
+                        value = '\'';
+                        break;
+                    case '\"':
+                        value = '\"';
+                        break;
+                    default:
+                        value = c;
+                }
+            }
+            strarray.push_back(value);
+        }
+        else // regular character
+            strarray.push_back(*outend++);
+    }
+    if (outend == end)
+    {
+        printError(string, "Terminated string");
+        return false;
+    }
+    outend++;
+    return true;
+}
+
+bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& outend)
+{
+    outend = string;
+    const char* end = line+lineSize;
+    if (outend != end && *outend == '\'')
+    {
+        outend++;
+        if (outend == end)
+        {
+            printError(string, "Terminated character literal");
+            return false;
+        }
+        if (*outend == '\'')
+        {
+            printError(string, "Empty character literal");
+            return false;
+        }
+        
+        if (*outend != '\\')
+        {
+            value = *outend++;
+            if (outend == end || *outend != '\'')
+            {
+                printError(string, "Missing ''' at end of literal");
+                return false;
+            }
+            outend++;
+            return true;
+        }
+        else // escapes
+        {
+            outend++;
+            if (outend == end)
+            {
+                printError(string, "Terminated character literal");
+                return false;
+            }
+            if (*outend == 'x')
+            {   // hex
+                outend++;
+                if (outend == end)
+                {
+                    printError(string, "Terminated character literal");
+                    return false;
+                }
+                value = 0;
+                for (cxuint i = 0; outend != end && i < 2; i++, outend++)
+                {
+                    cxuint digit;
+                    if (*outend >= '0' && *outend <= '9')
+                        digit = *outend-'0';
+                    else if (*outend >= 'a' && *outend <= 'f')
+                        digit = *outend-'a'+10;
+                    else if (*outend >= 'A' && *outend <= 'F')
+                        digit = *outend-'A'+10;
+                    else if (*outend == '\'' && i != 0)
+                        break;
+                    else
+                    {
+                        printError(string, "Expected hexadecimal character code");
+                        return false;
                     }
                     value = (value<<4) + digit;
                 }
@@ -978,13 +1100,13 @@ uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
                     if (*outend < '0' || *outend > '7')
                     {
                         printError(string, "Expected octal character code");
-                        throw ParseException("Expected octal character code");
+                        return false;
                     }
                     value = (value<<3) + uint64_t(*outend-'0');
                     if (value > 255)
                     {
                         printError(string, "Octal code out of range");
-                        throw ParseException("Octal code out of range");
+                        return false;
                     }
                 }
             }
@@ -1030,10 +1152,10 @@ uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
             if (outend == end || *outend != '\'')
             {
                 printError(string, "Missing ''' at end of literal");
-                throw ParseException("Missing ''' at end of literal");
+                return false;
             }
             outend++;
-            return value;
+            return true;
         }
     }
     try
@@ -1041,17 +1163,19 @@ uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
     catch(const ParseException& ex)
     {
         printError(string, ex.what());
-        throw;
+        return false;
     }
-    return value;
+    return true;
 }
 
-std::pair<AsmSymbolEntry*,bool> Assembler::parseSymbol(const char* string, bool localLabel)
+bool Assembler::parseSymbol(const char* string, AsmSymbolEntry*& entry, bool localLabel)
 {
-    AsmSymbolEntry* entry = nullptr;
     const std::string symName = extractSymName(string, line+lineSize, localLabel);
     if (symName.empty())
-        return std::make_pair(nullptr, true);
+    {
+        entry = nullptr;
+        return true;
+    }
     
     bool good = true;
     std::pair<AsmSymbolMap::iterator, bool> res =
@@ -1069,7 +1193,7 @@ std::pair<AsmSymbolEntry*,bool> Assembler::parseSymbol(const char* string, bool 
     AsmSymbol& sym = it->second;
     sym.occurrences.push_back(getSourcePos(string));
     entry = &*it;
-    return std::make_pair(entry, good);
+    return good;
 }
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
@@ -1151,6 +1275,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
             symbolStack.pop();
         }
     }
+    symEntry.second.occurrences.clear();
     return good;
 }
 

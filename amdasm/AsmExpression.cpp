@@ -548,9 +548,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                 {
                     ExpectedToken oldExpectedToken = expectedToken;
                     expectedToken = XT_OP;
-                    std::pair<AsmSymbolEntry*,bool> out = assembler.parseSymbol(string);
-                    AsmSymbolEntry* symEntry = out.first;
-                    if (!out.second) good = false;
+                    AsmSymbolEntry* symEntry;
+                    bool symIsGood = assembler.parseSymbol(string, symEntry);
+                    if (!symIsGood) good = false;
                     AsmExprArg arg;
                     if (symEntry != nullptr)
                     {
@@ -573,9 +573,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                              *string == '\'')
                     {   // other we try to parse number
                         const char* oldStr = string;
-                        try
-                        { arg.value = assembler.parseLiteral(string, string); }
-                        catch(const ParseException& ex)
+                        if (!assembler.parseLiteral(arg.value, string, string))
                         {
                             arg.value = 0;
                             if (string != end && oldStr == string)
