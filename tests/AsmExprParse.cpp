@@ -66,7 +66,7 @@ static AsmExprParseCase asmExprParseCases[] =
     { "xyz", "xyz", false, 0, "", "" },
     { ".sometest", ".sometest", false, 0, "", "" },
     /* local labels */
-    { "555f + 555b", "555f 555b +", false, 0, "", "", },
+    { "555f + 556f", "555f 556f +", false, 0, "", "", },
     /* simple expressions */
     { "-3", "3 !-", true, -3ULL, "", "" },
     { "+3", "3", true, 3, "", "" }, /* no plus operator, because is skipped */

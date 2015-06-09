@@ -720,7 +720,7 @@ private:
     { return currentInputFilter->translatePos(pos); }
     
     uint64_t parseLiteral(const char* string, const char*& outend);
-    AsmSymbolEntry* parseSymbol(const char* string, bool localLabel = true);
+    std::pair<AsmSymbolEntry*,bool> parseSymbol(const char* string, bool localLabel = true);
     
     void includeFile(const std::string& filename);
     void applyMacro(const std::string& macroName, AsmMacroArgMap argMap);

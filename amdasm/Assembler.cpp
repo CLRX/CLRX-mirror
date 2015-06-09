@@ -1046,24 +1046,30 @@ uint64_t Assembler::parseLiteral(const char* string, const char*& outend)
     return value;
 }
 
-AsmSymbolEntry* Assembler::parseSymbol(const char* string, bool localLabel)
+std::pair<AsmSymbolEntry*,bool> Assembler::parseSymbol(const char* string, bool localLabel)
 {
     AsmSymbolEntry* entry = nullptr;
     const std::string symName = extractSymName(string, line+lineSize, localLabel);
     if (symName.empty())
-        return nullptr;
+        return std::make_pair(nullptr, true);
+    
+    bool good = true;
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symName, AsmSymbol()});
-    if (!res.second)
-    {   // if found
-        AsmSymbolMap::iterator it = res.first;
-        AsmSymbol& sym = it->second;
-        sym.occurrences.push_back(getSourcePos(string-line));
-        entry = &*it;
+    if (symName.front() >= '0' && symName.front() <= '9' && symName.back() == 'b' &&
+        !res.first->second.isDefined)
+    {
+        std::string error = "Undefined previous local label '";
+        error.insert(error.end(), symName.begin(), symName.end()-1);
+        error += "'";
+        printError(string, error.c_str());
+        good = false;
     }
-    else // if new symbol has been put
-        entry = &*res.first;
-    return entry;
+    AsmSymbolMap::iterator it = res.first;
+    AsmSymbol& sym = it->second;
+    sym.occurrences.push_back(getSourcePos(string));
+    entry = &*it;
+    return std::make_pair(entry, good);
 }
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
@@ -1577,6 +1583,7 @@ bool Assembler::assemble()
                 prevLRes.first->second.value = nextLRes.first->second.value;
                 prevLRes.first->second.isDefined = true;
                 prevLRes.first->second.clearOccurrencesInExpr();
+                prevLRes.first->second.occurrences.clear();
                 prevLRes.first->second.sectionId = currentSection;
                 nextLRes.first->second.isDefined = false;
             }

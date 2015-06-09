@@ -547,7 +547,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                 if (expectedToken != XT_OP)
                 {
                     expectedToken = XT_OP;
-                    AsmSymbolEntry* symEntry = assembler.parseSymbol(string);
+                    std::pair<AsmSymbolEntry*,bool> out = assembler.parseSymbol(string);
+                    AsmSymbolEntry* symEntry = out.first;
+                    if (!out.second) good = false;
                     AsmExprArg arg;
                     if (symEntry != nullptr)
                     {
