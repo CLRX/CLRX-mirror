@@ -165,6 +165,7 @@ AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& 
     :  managed(false), stream(&is), mode(LineMode::NORMAL)
 {
     source = RefPtr<const AsmSource>(new AsmFile(filename));
+    stream->exceptions(std::ios::badbit);
     buffer.reserve(AsmParserLineMaxSize);
 }
 
@@ -199,6 +200,7 @@ AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos, std::istream
         source = RefPtr<const AsmSource>(new AsmFile(
             RefPtr<const AsmSource>(new AsmMacroSource(pos.macro, pos.source)),
                  pos.lineNo, filename));
+    stream->exceptions(std::ios::badbit);
     buffer.reserve(AsmParserLineMaxSize);
 }
 

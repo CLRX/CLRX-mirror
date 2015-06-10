@@ -472,7 +472,7 @@ enum : cxbyte
 
 union AsmExprArg;
 
-struct AsmExpression;
+class AsmExpression;
 
 struct AsmExprSymbolOccurence
 {
