@@ -38,12 +38,18 @@
 namespace CLRX
 {
 
+/// non copyable and non movable base structure (class)
 struct NonCopyableAndNonMovable
 {
+    /// constructor
     NonCopyableAndNonMovable() { }
+    /// copy-constructor
     NonCopyableAndNonMovable(const NonCopyableAndNonMovable&) = delete;
+    /// move-constructor
     NonCopyableAndNonMovable(NonCopyableAndNonMovable&&) = delete;
+    /// copy-assignment
     NonCopyableAndNonMovable& operator=(const NonCopyableAndNonMovable&) = delete;
+    /// move-asignment
     NonCopyableAndNonMovable& operator=(NonCopyableAndNonMovable&&) = delete;
 };
 
@@ -51,12 +57,16 @@ struct NonCopyableAndNonMovable
 class Exception: public std::exception
 {
 protected:
-    std::string message;
+    std::string message;    ///< message
 public:
+    /// empty constructor
     Exception() = default;
+    /// constructor with messasge
     explicit Exception(const std::string& message);
+    /// destructor
     virtual ~Exception() throw() = default;
     
+    /// get exception message
     const char* what() const throw();
 };
 
@@ -64,10 +74,15 @@ public:
 class ParseException: public Exception
 {
 public:
+    /// empty constructor
     ParseException() = default;
+    /// constructor with message
     explicit ParseException(const std::string& message);
+    /// constructor with message and line number
     ParseException(uint64_t lineNo, const std::string& message);
+    /// constructor with message and line number and column number
     ParseException(uint64_t lineNo, size_t charNo, const std::string& message);
+    /// destructor
     virtual ~ParseException() throw() = default;
 };
 
@@ -156,9 +171,10 @@ template<typename T>
 extern T cstrtovCStyle(const char* str, const char* inend, const char*& outend);
 
 /// parse environment variable
-/**parse environment variable
+/** parse environment variable
  * \param envVar - name of environment variable
  * \param defaultValue - value that will be returned if environment variable is not present
+ * \return value
  */
 template<typename T>
 T parseEnvVariable(const char* envVar, const T& defaultValue = T())
@@ -176,48 +192,62 @@ T parseEnvVariable(const char* envVar, const T& defaultValue = T())
     { return defaultValue; }
 }
 
+/// parse environment variable of cxuchar type
 extern template
 cxuchar parseEnvVariable<cxuchar>(const char* envVar, const cxuchar& defaultValue);
 
+/// parse environment variable of cxchar type
 extern template
 cxchar parseEnvVariable<cxchar>(const char* envVar, const cxchar& defaultValue);
 
+/// parse environment variable of cxuint type
 extern template
 cxuint parseEnvVariable<cxuint>(const char* envVar, const cxuint& defaultValue);
 
+/// parse environment variable of cxint type
 extern template
 cxint parseEnvVariable<cxint>(const char* envVar, const cxint& defaultValue);
 
+/// parse environment variable of cxushort type
 extern template
 cxushort parseEnvVariable<cxushort>(const char* envVar, const cxushort& defaultValue);
 
+/// parse environment variable of cxshort type
 extern template
 cxshort parseEnvVariable<cxshort>(const char* envVar, const cxshort& defaultValue);
 
+/// parse environment variable of cxulong type
 extern template
 cxulong parseEnvVariable<cxulong>(const char* envVar, const cxulong& defaultValue);
 
+/// parse environment variable of cxlong type
 extern template
 cxlong parseEnvVariable<cxlong>(const char* envVar, const cxlong& defaultValue);
 
+/// parse environment variable of cxullong type
 extern template
 cxullong parseEnvVariable<cxullong>(const char* envVar, const cxullong& defaultValue);
 
+/// parse environment variable of cxllong type
 extern template
 cxllong parseEnvVariable<cxllong>(const char* envVar, const cxllong& defaultValue);
 
+/// parse environment variable of float type
 extern template
 float parseEnvVariable<float>(const char* envVar, const float& defaultValue);
 
+/// parse environment variable of double type
 extern template
 double parseEnvVariable<double>(const char* envVar, const double& defaultValue);
 
 #ifndef __UTILITIES_MODULE__
 
+/// parse environment variable of string type
 extern template
 std::string parseEnvVariable<std::string>(const char* envVar,
               const std::string& defaultValue);
 
+/// parse environment variable of boolean type
 extern template
 bool parseEnvVariable<bool>(const char* envVar, const bool& defaultValue);
 
@@ -226,6 +256,7 @@ bool parseEnvVariable<bool>(const char* envVar, const bool& defaultValue);
 /// function class that returns true if first C string is less than second
 struct CStringLess
 {
+    /// operator of call
     inline bool operator()(const char* c1, const char* c2) const
     { return ::strcmp(c1, c2)<0; }
 };
@@ -233,6 +264,7 @@ struct CStringLess
 /// function class that returns true if C strings are equal
 struct CStringEqual
 {
+    /// operator of call
     inline bool operator()(const char* c1, const char* c2) const
     { return ::strcmp(c1, c2)==0; }
 };
@@ -240,6 +272,7 @@ struct CStringEqual
 /// generate hash function for C string
 struct CStringHash
 {
+    /// operator of call
     size_t operator()(const char* c) const
     {
         if (c == nullptr)
@@ -303,6 +336,7 @@ inline std::string escapeStringCStyle(const std::string& str)
  * \param str string
  * \param outMaxSize output max size (including null-character)
  * \param outStr output string
+ * \param outSize size of output string
  * \return number of processed input characters
  */
 extern size_t escapeStringCStyle(size_t strSize, const char* str,
@@ -319,57 +353,71 @@ extern size_t escapeStringCStyle(size_t strSize, const char* str,
  */
 extern cxuint cstrtoui(const char* str, const char* inend, const char*& outend);
 
+/// parse 64-bit signed integer
 extern int64_t cstrtoiXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits);
 
+/// parse 64-bit unsigned integer
 extern uint64_t cstrtouXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits);
 
+/// parse 64-bit float value
 extern uint64_t cstrtofXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint expBits, cxuint mantisaBits);
 
 /* cstrtovcstyle impls */
 
+/// parse cxuchar value from string
 template<> inline
 cxuchar cstrtovCStyle<cxuchar>(const char* str, const char* inend, const char*& outend)
 { return cstrtouXCStyle(str, inend, outend, sizeof(cxuchar)<<3); }
 
+/// parse cxchar value from string
 template<> inline
 cxchar cstrtovCStyle<cxchar>(const char* str, const char* inend, const char*& outend)
 { return cstrtoiXCStyle(str, inend, outend, sizeof(cxchar)<<3); }
 
+/// parse cxuint value from string
 template<> inline
 cxuint cstrtovCStyle<cxuint>(const char* str, const char* inend, const char*& outend)
 { return cstrtouXCStyle(str, inend, outend, sizeof(cxuint)<<3); }
 
+/// parse cxint value from string
 template<> inline
 cxint cstrtovCStyle<cxint>(const char* str, const char* inend, const char*& outend)
 { return cstrtoiXCStyle(str, inend, outend, sizeof(cxint)<<3); }
 
+/// parse cxushort value from string
 template<> inline
 cxushort cstrtovCStyle<cxushort>(const char* str, const char* inend, const char*& outend)
 { return cstrtouXCStyle(str, inend, outend, sizeof(cxushort)<<3); }
 
+/// parse cxshort value from string
 template<> inline
 cxshort cstrtovCStyle<cxshort>(const char* str, const char* inend, const char*& outend)
 { return cstrtoiXCStyle(str, inend, outend, sizeof(cxshort)<<3); }
 
+/// parse cxulong value from string
 template<> inline
 cxulong cstrtovCStyle<cxulong>(const char* str, const char* inend, const char*& outend)
 { return cstrtouXCStyle(str, inend, outend, sizeof(cxulong)<<3); }
 
+/// parse cxlong value from string
 template<> inline
 cxlong cstrtovCStyle<cxlong>(const char* str, const char* inend, const char*& outend)
 { return cstrtoiXCStyle(str, inend, outend, sizeof(cxlong)<<3); }
 
+/// parse cxullong value from string
 template<> inline
 cxullong cstrtovCStyle<cxullong>(const char* str, const char* inend, const char*& outend)
 { return cstrtouXCStyle(str, inend, outend, sizeof(cxullong)<<3); }
 
+/// parse cxllong value from string
 template<> inline
 cxllong cstrtovCStyle<cxllong>(const char* str, const char* inend, const char*& outend)
 { return cstrtoiXCStyle(str, inend, outend, sizeof(cxllong)<<3); }
 
+/// parse float value from string
 template<> inline
 float cstrtovCStyle<float>(const char* str, const char* inend, const char*& outend)
 {
@@ -381,6 +429,7 @@ float cstrtovCStyle<float>(const char* str, const char* inend, const char*& oute
     return v.f;
 }
 
+/// parse double value from string
 template<> inline
 double cstrtovCStyle<double>(const char* str, const char* inend, const char*& outend)
 {
@@ -406,13 +455,15 @@ double cstrtovCStyle<double>(const char* str, const char* inend, const char*& ou
  */
 cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend);
 
+/// parse half value from string
 inline cxushort cstrtohCStyle(const char* str, const char* inend, const char*& outend)
 { return cstrtofXCStyle(str, inend, outend, 5, 10); }
 
-
+/// format unsigned value to string
 extern size_t uXtocstrCStyle(uint64_t value, char* str, size_t maxSize, cxuint radix,
             cxuint width, bool prefix);
 
+/// formast signed value to string
 extern size_t iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint radix,
             cxuint width, bool prefix);
 
@@ -430,56 +481,67 @@ template<typename T>
 extern size_t itocstrCStyle(T value, char* str, size_t maxSize, cxuint radix = 10,
        cxuint width = 0, bool prefix = true);
 
+/// format cxuchar value to string
 template<> inline
 size_t itocstrCStyle<cxuchar>(cxuchar value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxchar value to string
 template<> inline
 size_t itocstrCStyle<cxchar>(cxchar value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxushort value to string
 template<> inline
 size_t itocstrCStyle<cxushort>(cxushort value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxshort value to string
 template<> inline
 size_t itocstrCStyle<cxshort>(cxshort value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxuint value to string
 template<> inline
 size_t itocstrCStyle<cxuint>(cxuint value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxint value to string
 template<> inline
 size_t itocstrCStyle<cxint>(cxint value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxulong value to string
 template<> inline
 size_t itocstrCStyle<cxulong>(cxulong value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxlong value to string
 template<> inline
 size_t itocstrCStyle<cxlong>(cxlong value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxullong value to string
 template<> inline
 size_t itocstrCStyle<cxullong>(cxullong value, char* str, size_t maxSize, cxuint radix,
        cxuint width , bool prefix)
 { return uXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format cxllong value to string
 template<> inline
 size_t itocstrCStyle<cxllong>(cxllong value, char* str, size_t maxSize, cxuint radix,
        cxuint width, bool prefix)
 { return iXtocstrCStyle(value, str, maxSize, radix, width, prefix); }
 
+/// format float value to string
 extern size_t fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         bool scientific, cxuint expBits, cxuint mantisaBits);
 
@@ -620,21 +682,26 @@ class RefPtr
 private:
     T* ptr;
 public:
+    /// empty constructor
     RefPtr(): ptr(nullptr)
     { }
     
+    /// constructor from pointer
     explicit RefPtr(T* inputPtr) : ptr(inputPtr)
     { }
     
+    /// copy constructor
     RefPtr(const RefPtr<T>& refPtr) : ptr(refPtr.ptr)
     {
         if (ptr != nullptr)
             ptr->reference();
     }
     
+    /// move constructor
     RefPtr(RefPtr<T>&& refPtr) : ptr(refPtr.ptr)
     { refPtr.ptr = nullptr; }
     
+    /// destructor
     ~RefPtr()
     {
         if (ptr != nullptr)
@@ -642,6 +709,7 @@ public:
                 delete ptr;
     }
     
+    /// copy constructor
     RefPtr<T>& operator=(const RefPtr<T>& refPtr)
     {
         if (ptr != nullptr)
@@ -652,6 +720,7 @@ public:
         ptr = refPtr.ptr;
         return *this;
     }
+    /// move constructor
     RefPtr<T>& operator=(RefPtr<T>&& refPtr)
     {
         if (ptr != nullptr)
@@ -662,20 +731,26 @@ public:
         return *this;
     }
     
+    /// equality operator
     bool operator==(const RefPtr<T>& refPtr) const
     { return ptr == refPtr.ptr; }
+    /// unequality operator
     bool operator!=(const RefPtr<T>& refPtr) const
     { return ptr != refPtr.ptr; }
     
+    /// return true if not null
     operator bool() const
     { return ptr!=nullptr; }
     
+    /// return true if null
     bool operator!() const
     { return ptr==nullptr; }
     
+    /// get elem from pointer
     T* operator->() const
     { return ptr; }
     
+    /// reset refpointer
     void reset()
     {
         if (ptr != nullptr)
@@ -684,6 +759,7 @@ public:
         ptr = nullptr;
     }
     
+    /// swap between refpointers
     void swap(RefPtr<T>& refPtr)
     {
         T* tmp = ptr;
@@ -691,6 +767,7 @@ public:
         refPtr.ptr = tmp;
     }
     
+    /// const cast
     template<typename DestType>
     RefPtr<DestType> constCast() const
     {
@@ -699,6 +776,7 @@ public:
             p->reference();
         return RefPtr<DestType>(p);
     }
+    /// static cast
     template<typename DestType>
     RefPtr<DestType> staticCast() const
     {
@@ -707,6 +785,7 @@ public:
             p->reference();
         return RefPtr<DestType>(p);
     }
+    /// dynamic cast
     template<typename DestType>
     RefPtr<DestType> dynamicCast() const
     {
@@ -717,28 +796,30 @@ public:
     }
 };
 
-/// to lowercase
+/// convert character to lowercase
 inline char toLower(char c);
 
 inline char toLower(char c)
 { return  (c >= 'A' &&  c <= 'Z') ? c - 'A' + 'a' : c; }
 
+/// convert string to lowercase
 inline void toLowerString(std::string& string);
 
 inline void toLowerString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toLower); }
 
-/// to uppercase
+/// convert character to uppercase
 inline char toUpper(char c);
 
 inline char toUpper(char c)
 { return  (c >= 'a' &&  c <= 'z') ? c - 'a' + 'A' : c; }
 
+/// convert string to uppercase
 inline void toUpperString(std::string& string);
 
 inline void toUpperString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toUpper); }
 
-}
+};
 
 #endif

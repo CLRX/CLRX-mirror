@@ -54,7 +54,7 @@ struct AmdKernelArgInput
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
     uint8_t ptrAccess;  ///< pointer access flags
     cxuint structSize; ///< structure size (if structure)
-    size_t constSpaceSize;
+    size_t constSpaceSize; ///< constant space size
     uint32_t resId; ///< uavid or cbid or counterId
     bool used; ///< used by kernel
     
@@ -113,33 +113,34 @@ struct AmdKernelConfig
 {
     std::vector<AmdKernelArgInput> args; ///< arguments
     std::vector<cxuint> samplers;   ///< defined samplers
-    uint32_t reqdWorkGroupSize[3];  /// reqd_work_group_size
+    uint32_t reqdWorkGroupSize[3];  ///< reqd_work_group_size
     uint32_t usedVGPRsNum;  ///< number of used VGPRs
     uint32_t usedSGPRsNum;  ///< number of used SGPRs
-    uint32_t pgmRSRC2;
-    uint32_t ieeeMode;
-    uint32_t floatMode;
+    uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
+    uint32_t ieeeMode;  ///< IEEE mode
+    uint32_t floatMode; ///< float mode
     size_t hwLocalSize; ///< used local size (not local defined in kernel arguments)
-    uint32_t hwRegion;
+    uint32_t hwRegion;  ///< hwRegion ????
     uint32_t scratchBufferSize; ///< size of scratch buffer
     uint32_t uavPrivate;    ///< uav private size
     uint32_t uavId; ///< uavid, first uavid for kernel argument minus 1
-    uint32_t constBufferId;
+    uint32_t constBufferId; ///< constant buffer id
     uint32_t printfId;  ///< UAV ID for printf
-    uint32_t privateId;
+    uint32_t privateId; ///< private id (???)
     uint32_t earlyExit; ///< CALNOTE_EARLYEXIT value
     uint32_t condOut;   ///< CALNOTE_CONDOUT value
-    bool usePrintf;     // if kernel uses printf function
+    bool usePrintf;     ///< if kernel uses printf function
     bool useConstantData; ///< if const data required
     cxuint userDataElemsNum;    ///< number of user data
-    AmdUserData userDatas[16];
+    AmdUserData userDatas[16];  ///< user datas
 };
 
+/// AMD kernel input
 struct AmdKernelInput
 {
     std::string kernelName; ///< kernel name
     size_t dataSize;    ///< data size
-    const cxbyte* data; /// data
+    const cxbyte* data; ///< data
     size_t headerSize;  ///< kernel header size (used if useConfig=false)
     const cxbyte* header;   ///< kernel header size (used if useConfig=false)
     size_t metadataSize;    ///< metadata size (used if useConfig=false)
@@ -164,8 +165,8 @@ struct AmdInput
     std::vector<AmdKernelInput> kernels;    ///< kernels
     size_t sourceCodeSize;  ///< source code size (can be zero)
     const char* sourceCode; ///< string of source (if size==0 then must be null-terminated)
-    size_t llvmirSize;
-    const cxbyte* llvmir;
+    size_t llvmirSize;  ///< LLVMIR content size
+    const cxbyte* llvmir;   ///< LLVMIR content
     
     /// add kernel to input
     void addKernel(const AmdKernelInput& kernelInput);
@@ -178,7 +179,8 @@ struct AmdInput
            const std::vector<CALNoteInput>& calNotes, const cxbyte* header,
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
-    
+
+    /// add empty kernel
     void addEmptyKernel(const char* kernelName);
 };
 
@@ -218,9 +220,6 @@ public:
     void setInput(const AmdInput* input);
     
     /// generates binary
-    /**
-     * \return binary content array
-     */
     void generate(Array<cxbyte>& array) const;
     
     /// generates binary
@@ -230,12 +229,9 @@ public:
     void generate(std::ostream& os) const;
     
     /// generates binary
-    /**
-     * \return binary content vector
-     */
     void generate(std::vector<char>& vector) const;
 };
 
-}
+};
 
 #endif

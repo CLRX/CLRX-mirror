@@ -46,9 +46,9 @@ enum : cxuint {
     GALLIUM_INNER_CREATE_SYMBOLMAP = 0x20,  ///< create map of kernels for inner binaries
     /** create map of dynamic kernels for inner binaries */
     GALLIUM_INNER_CREATE_DYNSYMMAP = 0x40,
-    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x100,
+    GALLIUM_INNER_CREATE_PROGINFOMAP = 0x100, ///< create prinfomap for inner binaries
     
-    GALLIUM_ELF_CREATE_PROGINFOMAP = 0x10,
+    GALLIUM_ELF_CREATE_PROGINFOMAP = 0x10,  ///< create elf proginfomap
     
     GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all Gallium binaries flalgs
     GALLIUM_INNER_SHIFT = 4 ///< shift for convert inner binary flags into elf binary flags
@@ -57,25 +57,25 @@ enum : cxuint {
 /// GalliumCompute Kernel Arg type
 enum class GalliumArgType: cxbyte
 {
-    SCALAR = 0,
-    CONSTANT,
-    GLOBAL,
-    LOCAL,
-    IMAGE2D_RDONLY,
-    IMAGE2D_WRONLY,
-    IMAGE3D_RDONLY,
-    IMAGE3D_WRONLY,
-    SAMPLER,
-    MAX_VALUE = SAMPLER
+    SCALAR = 0, ///< scalar type
+    CONSTANT,   ///< constant pointer
+    GLOBAL,     ///< global pointer
+    LOCAL,      ///< local pointer
+    IMAGE2D_RDONLY, ///< read-only 2d image
+    IMAGE2D_WRONLY, ///< write-only 2d image
+    IMAGE3D_RDONLY, ///< read-only 3d image
+    IMAGE3D_WRONLY, ///< write-only 3d image
+    SAMPLER,    ///< sampler
+    MAX_VALUE = SAMPLER ///< last value
 };
 
 /// Gallium semantic field type
 enum class GalliumArgSemantic: cxbyte
 {
-    GENERAL = 0,
-    GRID_DIMENSION,
-    GRID_OFFSET,
-    MAX_VALUE = GRID_OFFSET
+    GENERAL = 0,    ///< general
+    GRID_DIMENSION,     ///< ???
+    GRID_OFFSET,    ///< ???
+    MAX_VALUE = GRID_OFFSET ///< last value
 };
 
 /// kernel program info entry for Gallium binaries
@@ -105,14 +105,15 @@ struct GalliumKernel
     Array<GalliumArgInfo> argInfos;   ///< arguments
 };
 
+/// Gallium format section type
 enum class GalliumSectionType: cxbyte
 {
     TEXT = 0,   ///< section for text (binary code)
-    DATA_CONSTANT,
-    DATA_GLOBAL,
-    DATA_LOCAL,
-    DATA_PRIVATE,
-    MAX_VALUE = DATA_PRIVATE
+    DATA_CONSTANT,  ///< constant data (???)
+    DATA_GLOBAL,    ///< global data (???)
+    DATA_LOCAL,     ///< local data (???)
+    DATA_PRIVATE,   ///< private data (???)
+    MAX_VALUE = DATA_PRIVATE    ///< last value
 };
 
 /// Gallium binarie's Section
@@ -134,6 +135,7 @@ struct GalliumSection
 class GalliumElfBinary: public ElfBinary32
 {
 public:
+    /// program info entry index map
     typedef Array<std::pair<const char*, size_t> > ProgInfoEntryIndexMap;
 private:
     uint32_t progInfosNum;
@@ -142,10 +144,14 @@ private:
     uint32_t disasmSize;
     uint32_t disasmOffset;
 public:
+    /// empty constructor
     GalliumElfBinary();
+    /// constructor
     GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
+    /// destructor
     ~GalliumElfBinary() = default;
     
+    /// return true if binary has program info map
     bool hasProgInfoMap() const
     { return (creationFlags & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0; }
     
@@ -202,7 +208,9 @@ private:
     
     GalliumElfBinary elfBinary;
 public:
+    /// constructor
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
+    /// destructor
     ~GalliumBinary() = default;
     
     /// get creation flags
@@ -280,16 +288,17 @@ public:
 struct GalliumKernelInput
 {
     std::string kernelName;   ///< kernel's name
-    GalliumProgInfoEntry progInfo[3];
-    uint32_t offset;
+    GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
+    uint32_t offset;    ///< offset of kernel code
     std::vector<GalliumArgInfo> argInfos;   ///< arguments
 };
 
+/// Gallium input
 struct GalliumInput
 {
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
-    std::vector<GalliumKernelInput> kernels;
+    std::vector<GalliumKernelInput> kernels;    ///< input kernel list
     size_t disassemblySize; ///< disassembly size (can be null)
     const char* disassembly;    ///< program disasembly
     size_t commentSize; ///< comment size (can be null)
@@ -342,7 +351,7 @@ public:
     /**
      * \param array output array
      */
-    void generate(Array<cxbyte>& binarySize) const;
+    void generate(Array<cxbyte>& array) const;
     
     /// generates binary
     /**
@@ -357,6 +366,6 @@ public:
     void generate(std::vector<char>& vector) const;
 };
 
-}
+};
 
 #endif

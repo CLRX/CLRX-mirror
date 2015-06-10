@@ -117,25 +117,29 @@ struct AmdKernelArg
     std::string argName;    ///< argument name
 };
 
+/// X86_64 kernel argument symbol
 struct X86KernelArgSym
 {
-    uint32_t argType;
-    uint32_t ptrType;
-    uint32_t ptrAccess;
-    uint32_t nameOffset;
+    uint32_t argType;   ///< arg type
+    uint32_t ptrType;   ///< pointer type
+    uint32_t ptrAccess; ///< pointer access flags
+    uint32_t nameOffset; ///< name offset
     
+    /// get name offset
     size_t getNameOffset() const
     { return ULEV(nameOffset); }
 };
 
+/// X86_64 kernel argument symbol
 struct X86_64KernelArgSym
 {
-    uint32_t argType;
-    uint32_t ptrType;
-    uint32_t ptrAccess;
-    uint32_t nameOffsetLo;
-    uint32_t nameOffsetHi;
+    uint32_t argType;   ///< arg type
+    uint32_t ptrType;   ///< pointer type
+    uint32_t ptrAccess; ///< pointer access flags
+    uint32_t nameOffsetLo;  ///< low half of name offset
+    uint32_t nameOffsetHi;  ///< high half of name offset
     
+    /// compute name offset
     size_t getNameOffset() const
     { return (uint64_t(ULEV(nameOffsetHi))<<32)+uint64_t(ULEV(nameOffsetLo)); }
 };
@@ -188,6 +192,7 @@ struct CALNote
     cxbyte* data;   ///< data of CAL note
 };
 
+/// ATI CAL note input
 struct CALNoteInput
 {
     CALNoteHeader header;  ///< header of CAL note
@@ -204,30 +209,31 @@ struct CALProgramInfoEntry
 /// There are not copied (ULEV must be used)
 struct CALUAVEntry
 {
-    uint32_t uavId;
-    uint32_t f1, f2;
-    uint32_t type;
+    uint32_t uavId; ///< uav id
+    uint32_t f1;    ///< field 1
+    uint32_t f2;    ///< field 2
+    uint32_t type;  ///< type
 };
 
 /// There are not copied (ULEV must be used)
 struct CALDataSegmentEntry
 {
-    uint32_t offset;
-    uint32_t size;
+    uint32_t offset;    ///< offset
+    uint32_t size;      ///< size
 };
 
 /// There are not copied (ULEV must be used)
 struct CALConstantBufferMask
 {
-    uint32_t index;
-    uint32_t size;
+    uint32_t index; ///< index
+    uint32_t size;  ///< size
 };
 
 /// There are not copied (ULEV must be used)
 struct CALSamplerMapEntry
 {
-    uint32_t input;
-    uint32_t sampler;
+    uint32_t input; ///< input
+    uint32_t sampler;   ///< sampler
 };
 
 /// kernel informations
@@ -304,15 +310,29 @@ public:
     cxbyte* getCALNoteData(cxuint encodingIndex, uint32_t index)
     { return calNotesTable[encodingIndex][index].data; }
     
+    /// get CALNote
+    /**
+     * \param encodingIndex index of encoding
+     * \param index index of CALNote
+     * \return CALNote
+     */
     const CALNote& getCALNote(cxuint encodingIndex, uint32_t index) const
     { return calNotesTable[encodingIndex][index]; }
-
+    
+    /// get CALNote
+    /**
+     * \param encodingIndex index of encoding
+     * \param index index of CALNote
+     * \return CALNote
+     */
     CALNote& getCALNote(cxuint encodingIndex, uint32_t index)
     { return calNotesTable[encodingIndex][index]; }
     
+    /// get all CALNotes for encoding index
     const Array<CALNote>& getCALNotes(cxuint encodingIndex) const
     { return calNotesTable[encodingIndex]; }
     
+    /// get all CALNotes for encoding index
     Array<CALNote>& getCALNotes(cxuint encodingIndex)
     { return calNotesTable[encodingIndex]; }
 };
@@ -376,9 +396,10 @@ protected:
     Array<KernelInfo> kernelInfos;    ///< kernel informations
     KernelInfoMap kernelInfosMap;   ///< kernel informations map
     
-    std::string driverInfo;
-    std::string compileOptions;
+    std::string driverInfo; ///< driver info string
+    std::string compileOptions; ///< compiler options string
     
+    /// constructor
     explicit AmdMainBinaryBase(AmdMainType type);
 public:
     virtual ~AmdMainBinaryBase();
@@ -414,36 +435,39 @@ public:
 /// AMD GPU metadata for kernel
 struct AmdGPUKernelMetadata
 {
-    size_t size;
-    char* data;
+    size_t size;    ///< size
+    char* data;     ///< data (unterminated string)
 };
 
 /// AMD GPU header for kernel
 struct AmdGPUKernelHeader
 {
-    std::string kernelName;
-    size_t size;
-    cxbyte* data;
+    std::string kernelName; ///< kernel name
+    size_t size;    ///< size
+    cxbyte* data;   ///< data
 };
 
 /// main AMD GPU binary base class
 class AmdMainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
-    /// inner binary map
+    /// inner binary map type
     typedef Array<std::pair<std::string, size_t> > InnerBinaryMap;
+    /// kernel header map type
     typedef Array<std::pair<std::string, size_t> > KernelHeaderMap;
 protected:
-    Array<AmdInnerGPUBinary32> innerBinaries;
-    InnerBinaryMap innerBinaryMap;
-    std::unique_ptr<AmdGPUKernelMetadata[]> metadatas;
-    Array<AmdGPUKernelHeader> kernelHeaders;
-    KernelHeaderMap kernelHeaderMap;
-    size_t globalDataSize;
-    cxbyte* globalData;
+    Array<AmdInnerGPUBinary32> innerBinaries;   ///< inner binaries
+    InnerBinaryMap innerBinaryMap;  ///< inner binary map
+    std::unique_ptr<AmdGPUKernelMetadata[]> metadatas;  ///< AMD metadatas
+    Array<AmdGPUKernelHeader> kernelHeaders;    ///< kernel headers
+    KernelHeaderMap kernelHeaderMap;    ///< kernel header map
+    size_t globalDataSize;  ///< global data size
+    cxbyte* globalData; ///< global data content
     
+    /// constructor
     explicit AmdMainGPUBinaryBase(AmdMainType type);
     
+    /// initialize main gpu binary (internal use only)
     template<typename Types>
     void initMainGPUBinary(typename Types::ElfBinary& binary);
 public:
@@ -689,11 +713,12 @@ public:
  * \param binaryCodeSize binary code size
  * \param binaryCode pointer to binary code
  * \param creationFlags flags that specified what will be created during creation
+ * \return binary object
  */
 extern AmdMainBinaryBase* createAmdBinaryFromCode(
             size_t binaryCodeSize, cxbyte* binaryCode,
             cxuint creationFlags = AMDBIN_CREATE_ALL);
 
-}
+};
 
 #endif

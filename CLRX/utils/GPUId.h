@@ -46,25 +46,26 @@ enum class GPUDeviceType: cxbyte
     KALINDI, ///< ???  GCN1.1
     HAINAN, ///< ????  GCN1.0
     HAWAII, ///< Radeon R9 290
-    ICELAND, ///<
-    TONGA, ///<
-    MULLINS, //
-    GPUDEVICE_MAX = MULLINS,
+    ICELAND, ///< ???
+    TONGA, ///< Radeon R9 285
+    MULLINS, ///< ???
+    GPUDEVICE_MAX = MULLINS,    /// last value
     
-    RADEON_HD7700 = CAPE_VERDE,
-    RADEON_HD7800 = PITCAIRN,
-    RADEON_HD7900 = TAHITI,
-    RADEON_R7_250 = OLAND,
-    RADEON_R7_260 = BONAIRE,
-    RADEON_R9_290 = HAWAII
+    RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
+    RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800
+    RADEON_HD7900 = TAHITI,     ///< Radeon HD7900
+    RADEON_R7_250 = OLAND,      ///< Radeon R7 250
+    RADEON_R7_260 = BONAIRE,    ///< Radeon R7 260
+    RADEON_R9_290 = HAWAII      ///< Radeon R7 290
 };
 
+/// GPU architecture
 enum class GPUArchitecture: cxbyte
 {
-    GCN1_0 = 0,
-    GCN1_1,
-    GCN1_2,
-    GPUARCH_MAX = GCN1_2
+    GCN1_0 = 0, ///< first iteration (Radeon HD7000 series)
+    GCN1_1,     ///< second iteration (Radeon Rx 200 series)
+    GCN1_2,     ///< third iteration (Radeon Rx 300 series and Tonga)
+    GPUARCH_MAX = GCN1_2    /// last value
 };
 
 /// get GPU device type from name
@@ -79,11 +80,12 @@ extern GPUArchitecture getGPUArchitectureFromName(const char* name);
 /// get GPUArchitecture from GPU device type
 extern GPUArchitecture getGPUArchitectureFromDeviceType(GPUDeviceType deviceType);
 
+/// get lowest GPU device for architecture
 extern GPUDeviceType getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture arch);
 
 /// get GPU architecture name
 extern const char* getGPUArchitectureName(GPUArchitecture architecture);
 
-}
+};
 
 #endif

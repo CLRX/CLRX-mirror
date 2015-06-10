@@ -42,10 +42,11 @@ namespace CLRX
 
 class Disassembler;
 
+/// binary for Disassembler
 enum class BinaryFormat
 {
-    AMD = 0,
-    GALLIUM
+    AMD = 0,    ///< AMD CATALYST format
+    GALLIUM     ///< GalliumCompute format
 };
 
 enum: cxuint
@@ -63,16 +64,19 @@ enum: cxuint
 class ISADisassembler
 {
 protected:
-    typedef std::vector<size_t>::const_iterator LabelIter;
+    typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
+    
+    /// named label iterator
     typedef std::vector<std::pair<size_t, std::string> >::const_iterator NamedLabelIter;
     
-    Disassembler& disassembler;
-    size_t inputSize;
-    const cxbyte* input;
-    std::vector<size_t> labels;
-    std::vector<std::pair<size_t, std::string> > namedLabels;
-    FastOutputBuffer output;
+    Disassembler& disassembler; ///< disassembler instance
+    size_t inputSize;   ///< size of input
+    const cxbyte* input;    ///< input code
+    std::vector<size_t> labels; ///< list of local labels
+    std::vector<std::pair<size_t, std::string> > namedLabels;   ///< named labels
+    FastOutputBuffer output;    ///< output buffer
     
+    /// constructor
     explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 300);
     
     /// write all labels before specified position
@@ -96,22 +100,27 @@ public:
     virtual void beforeDisassemble() = 0;
     /// disassembles input code
     virtual void disassemble() = 0;
-    
+
+    /// add named label to list (must be called before disassembly)
     void addNamedLabel(size_t pos, const std::string& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
 };
 
+/// GCN architectur dissassembler
 class GCNDisassembler: public ISADisassembler
 {
 private:
     bool instrOutOfCode;
 public:
+    /// constructor
     GCNDisassembler(Disassembler& disassembler);
+    /// destructor
     ~GCNDisassembler();
     
+    /// routine called before main disassemblying
     void beforeDisassemble();
+    /// disassemble code
     void disassemble();
-    size_t determineEndOfCode();
 };
 
 /// single kernel input for disassembler
@@ -124,7 +133,7 @@ struct AmdDisasmKernelInput
     const char* metadata;   ///< kernel's metadata
     size_t headerSize;  ///< kernel header size
     const cxbyte* header;   ///< kernel header size
-    std::vector<CALNoteInput> calNotes;   /// ATI CAL notes
+    std::vector<CALNoteInput> calNotes;   ///< ATI CAL notes
     size_t dataSize;    ///< data (from inner binary) size
     const cxbyte* data; ///< data from inner binary
     size_t codeSize;    ///< size of code of kernel
@@ -155,9 +164,9 @@ struct GalliumDisasmInput
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
-    std::vector<GalliumKernelInput> kernels;
-    size_t codeSize;    // code size
-    const cxbyte* code; // code
+    std::vector<GalliumKernelInput> kernels;    ///< list of input kernels
+    size_t codeSize;    ///< code size
+    const cxbyte* code; ///< code
 };
 
 /// disassembler class
@@ -204,6 +213,7 @@ public:
     
     /// constructor for bit GPU binary from Gallium
     /**
+     * \param deviceType GPU device type
      * \param binary main GPU binary
      * \param output output stream
      * \param flags flags for disassembler
@@ -250,9 +260,6 @@ public:
     { return output; }
 };
 
-/// get GPU device type from name
-extern GPUDeviceType getGPUDeviceTypeFromName(const char* name);
-
-}
+};
 
 #endif

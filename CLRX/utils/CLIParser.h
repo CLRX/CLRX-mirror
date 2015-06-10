@@ -37,7 +37,7 @@
 /// main namespace
 namespace CLRX
 {
-
+/// helper for auto help (this macro should be place in CLI option table
 #define CLRX_CLI_AUTOHELP \
     { "help", '?', CLIArgType::NONE, false, false, "print help", nullptr }, \
     { "usage", 0, CLIArgType::NONE, false, false, "print usage", nullptr },
@@ -79,12 +79,18 @@ struct CLIOption
 class CLIException: public Exception
 {
 public:
+    /// default constructor
     CLIException() = default;
+    /// constructor from message
     explicit CLIException(const std::string& message);
+    /// constructor for short option
     CLIException(const std::string& message, char shortName);
+    /// constructor for long option
     CLIException(const std::string& message, const std::string& longName);
+    /// constructor for option
     CLIException(const std::string& message, const CLIOption& option,
              bool chooseShortName);
+    /// destructor
     virtual ~CLIException() throw() = default;
 };
 
@@ -122,62 +128,85 @@ private:
     
     struct OptionEntry
     {
-        bool isSet;
-        bool isArg;
-        union {
-            bool b;
-            cxint i;
-            cxuint u;
-            cxlong li;
-            cxulong lu;
-            cxllong lli;
-            cxullong llu;
-            int32_t i32;
-            uint32_t u32;
-            int64_t i64;
-            uint64_t u64;
-            size_t size;
-            float f;
-            double d;
-            const char* s;
-            bool* bArr;
-            cxint* iArr;
-            cxuint* uArr;
-            cxlong* liArr;
-            cxulong* luArr;
-            cxllong* lliArr;
-            cxullong* lluArr;
-            int32_t* i32Arr;
-            uint32_t* u32Arr;
-            int64_t* i64Arr;
-            uint64_t* u64Arr;
-            size_t* sizeArr;
-            float* fArr;
-            double* dArr;
-            const char** sArr;
+        bool isSet;     ///< true if entry set
+        bool isArg;     ///< true if entry have set argument
+        
+        /// value holder
+        union Value {
+            bool b; ///< boolean
+            cxint i;    ///< cxint
+            cxuint u;   ///< cxuint
+            cxlong li;  ///< cxlong
+            cxulong lu; ///< cxulong
+            cxllong lli;    ///< cxllong
+            cxullong llu;   ///< cxullong
+            int32_t i32;    ///< 32-bit int
+            uint32_t u32;   ///< 32-bit uint
+            int64_t i64;    ///< 64-bit int
+            uint64_t u64;   ///< 64-bit uint
+            size_t size;    ///< size
+            float f;    ///< float
+            double d;   ///< double
+            const char* s;  ///< C-style string
+            bool* bArr; ///< array of booleans
+            cxint* iArr;     ///< array of cxints
+            cxuint* uArr;   ///< array of cxuints
+            cxlong* liArr;  ///< array of cxlongs
+            cxulong* luArr; ///< array cxulongs
+            cxllong* lliArr;    ///< array of cxllongs
+            cxullong* lluArr;   ///< array of cxullongs
+            int32_t* i32Arr;    ///< array of 32-bit ints
+            uint32_t* u32Arr;   ///< array of 32-bit uints
+            int64_t* i64Arr;    ///< array of 64-bit ints
+            uint64_t* u64Arr;   ///< array of 64-bit uints
+            size_t* sizeArr;    ///< array of sizes
+            float* fArr;        ///< array of floats
+            double* dArr;       ///< array of doubles
+            const char** sArr;      ///< array of C-style strings
             
+            /// cast to boolean
             operator bool() const { return b; }
+            /// cast to cxint
             operator cxint() const { return i; }
+            /// cast to cxuint
             operator cxuint() const { return u; }
+            /// cast to cxlong
             operator cxlong() const { return li; }
+            /// cast to cxulong
             operator cxulong() const { return lu; }
+            /// cast to cxllong
             operator cxllong() const { return lli; }
+            /// cast to cxullong
             operator cxullong() const { return llu; }
+            /// cast to float
             operator float() const { return f; }
+            /// cast to double
             operator double() const { return d; }
+            /// cast to C-style string
             operator const char*() const { return s; }
             
+            /// cast to array of booleans
             operator const bool*() const { return bArr; }
+            /// cast to array of cxints
             operator const cxint*() const { return iArr; }
+            /// cast to array of cxuints
             operator const cxuint*() const { return uArr; }
+            /// cast to array of cxlongs
             operator const cxlong*() const { return liArr; }
+            /// cast to array of cxulongs
             operator const cxulong*() const { return luArr; }
+            /// cast to array of cxllongs
             operator const cxllong*() const { return lliArr; }
+            /// cast to array of cxullongs
             operator const cxullong*() const { return lluArr; }
+            /// cast to array of floats
             operator const float*() const { return fArr; }
+            /// cast to array of doubles
             operator const double*() const { return dArr; }
+            /// cast to array of C-style strings
             operator const char**() const { return sArr; }
-        } v;
+        };
+        Value v;    ///< value
         size_t arrSize;
         OptionEntry() : isSet(false), isArg(false), arrSize(0)
         { ::memset(&v, 0, sizeof v); }
@@ -242,6 +271,7 @@ public:
     /**
      * \param optionId id of option
      * \param length length of array
+     * \return argument array
      */
     template<typename T>
     const T* getOptArgArray(cxuint optionId, size_t& length) const
@@ -256,6 +286,7 @@ public:
     /**
      * \param shortName short name of option
      * \param length length of array
+     * \return argument array
      */
     template<typename T>
     const T* getShortOptArgArray(char shortName, size_t& length) const
@@ -265,6 +296,7 @@ public:
     /**
      * \param longName long name of option
      * \param length length of array
+     * \return argument value
      */
     template<typename T>
     const T* getLongOptArgArray(const char* longName, size_t& length) const
@@ -315,88 +347,128 @@ public:
     void printUsage(std::ostream& os = std::cout) const;
 };
 
+/// Option type trait for boolean type
 template<>
 struct CLIParser::OptTypeTrait<bool> {
-static const CLIArgType type = CLIArgType::BOOL; };
+static const CLIArgType type = CLIArgType::BOOL; ///< type
+};
 
+/// Option type trait for cxuint type
 template<>
 struct CLIParser::OptTypeTrait<cxuint> {
-static const CLIArgType type = CLIArgType::UINT; };
+static const CLIArgType type = CLIArgType::UINT; ///< type
+};
 
+/// Option type trait for cxint type
 template<>
 struct CLIParser::OptTypeTrait<cxint> {
-static const CLIArgType type = CLIArgType::INT; };
+static const CLIArgType type = CLIArgType::INT; ///< type
+};
 
+/// Option type trait for cxulong type
 template<>
 struct CLIParser::OptTypeTrait<cxulong> {
+/// type
 static const CLIArgType type = (sizeof(cxulong)==8)?CLIArgType::UINT64:CLIArgType::UINT; };
 
+/// Option type trait for cxlong type
 template<>
 struct CLIParser::OptTypeTrait<cxlong> {
+/// type
 static const CLIArgType type = (sizeof(cxlong)==8)?CLIArgType::INT64:CLIArgType::INT; };
 
+/// Option type trait for cxullong type
 template<>
 struct CLIParser::OptTypeTrait<cxullong> {
-static const CLIArgType type = CLIArgType::UINT64; };
+static const CLIArgType type = CLIArgType::UINT64; ///< type
+};
 
+/// Option type trait for cxllong type
 template<>
 struct CLIParser::OptTypeTrait<cxllong> {
-static const CLIArgType type = CLIArgType::INT64; };
+static const CLIArgType type = CLIArgType::INT64; ///< type
+};
 
+/// Option type trait for float type
 template<>
 struct CLIParser::OptTypeTrait<float> {
-static const CLIArgType type = CLIArgType::FLOAT; };
+static const CLIArgType type = CLIArgType::FLOAT; ///< type
+};
 
+/// Option type trait for double type
 template<>
 struct CLIParser::OptTypeTrait<double> {
-static const CLIArgType type = CLIArgType::DOUBLE; };
+static const CLIArgType type = CLIArgType::DOUBLE; ///< type
+};
 
+/// Option type trait for const char* type
 template<>
 struct CLIParser::OptTypeTrait<const char*> {
-static const CLIArgType type = CLIArgType::STRING; };
+static const CLIArgType type = CLIArgType::STRING; ///< type
+};
 
-template<>
-struct CLIParser::OptTypeTrait<cxuint*> {
-static const CLIArgType type = CLIArgType::UINT_ARRAY; };
-
+/// Option type trait for bool* type
 template<>
 struct CLIParser::OptTypeTrait<bool*> {
-static const CLIArgType type = CLIArgType::BOOL_ARRAY; };
+static const CLIArgType type = CLIArgType::BOOL_ARRAY; ///< type
+};
 
+/// Option type trait for cxuint* type
+template<>
+struct CLIParser::OptTypeTrait<cxuint*> {
+static const CLIArgType type = CLIArgType::UINT_ARRAY; ///< type
+};
+
+/// Option type trait for cxint* type
 template<>
 struct CLIParser::OptTypeTrait<cxint*> {
-static const CLIArgType type = CLIArgType::INT_ARRAY; };
+static const CLIArgType type = CLIArgType::INT_ARRAY; ///< type
+};
 
+/// Option type trait for cxulong* type
 template<>
 struct CLIParser::OptTypeTrait<cxulong*> {
+/// type
 static const CLIArgType type =
     (sizeof(cxulong)==8)?CLIArgType::UINT64_ARRAY:CLIArgType::UINT_ARRAY; };
 
+/// Option type trait for cxlong* type
 template<>
 struct CLIParser::OptTypeTrait<cxlong*> {
+/// type
 static const CLIArgType type =
     (sizeof(cxlong)==8)?CLIArgType::INT64_ARRAY:CLIArgType::INT_ARRAY; };
 
+/// Option type trait for cxullong* type
 template<>
 struct CLIParser::OptTypeTrait<cxullong*> {
-static const CLIArgType type = CLIArgType::UINT64_ARRAY; };
+static const CLIArgType type = CLIArgType::UINT64_ARRAY; ///< type
+};
 
+/// Option type trait for cxllong* type
 template<>
 struct CLIParser::OptTypeTrait<cxllong*> {
-static const CLIArgType type = CLIArgType::INT64_ARRAY; };
+static const CLIArgType type = CLIArgType::INT64_ARRAY; ///< type
+};
 
+/// Option type trait for float* type
 template<>
 struct CLIParser::OptTypeTrait<float*> {
-static const CLIArgType type = CLIArgType::FLOAT_ARRAY; };
+static const CLIArgType type = CLIArgType::FLOAT_ARRAY; ///< type
+};
 
+/// Option type trait for double* type
 template<>
 struct CLIParser::OptTypeTrait<double*> {
-static const CLIArgType type = CLIArgType::DOUBLE_ARRAY; };
+static const CLIArgType type = CLIArgType::DOUBLE_ARRAY; ///< type
+};
 
+/// Option type trait for const char** type
 template<>
 struct CLIParser::OptTypeTrait<const char**> {
-static const CLIArgType type = CLIArgType::STRING_ARRAY; };
+static const CLIArgType type = CLIArgType::STRING_ARRAY; ///< type
+};
 
-}
+};
 
 #endif

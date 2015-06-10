@@ -37,14 +37,17 @@ template<typename T>
 class Array
 {
 public:
-    typedef T* iterator;
-    typedef const T* const_iterator;
-    typedef T element_type;
+    typedef T* iterator;    ///< type of iterator
+    typedef const T* const_iterator;    ///< type of constant iterator
+    typedef T element_type; ///< element type
 private:
     T* ptr, *ptrEnd;
 public:
+    /// empty constructor
     Array(): ptr(nullptr), ptrEnd(nullptr)
     { }
+    
+    /// construct array of N elements
     explicit Array(size_t N)
     {
         ptr = nullptr;
@@ -53,6 +56,7 @@ public:
         ptrEnd = ptr+N;
     }
     
+    /// construct array of elements in begin and end
     template<typename It>
     Array(It b, It e)
     try
@@ -70,6 +74,7 @@ public:
         throw;
     }
     
+    /// copy constructor
     Array(const Array& cp)
     try
     {
@@ -86,6 +91,7 @@ public:
         throw;
     }
     
+    /// move constructor
     Array(Array&& cp) noexcept
     {
         ptr = cp.ptr;
@@ -93,6 +99,7 @@ public:
         cp.ptr = cp.ptrEnd = nullptr;
     }
     
+    /// constructor with initializer list
     Array(std::initializer_list<T> list)
     try
     {
@@ -109,9 +116,11 @@ public:
         throw;
     }
     
+    /// destructor
     ~Array()
     { delete[] ptr; }
     
+    /// copy assignment
     Array& operator=(const Array& cp)
     {
         if (this == &cp)
@@ -119,7 +128,7 @@ public:
         assign(cp.begin(), cp.end());
         return *this;
     }
-    
+    /// move assignment
     Array& operator=(Array&& cp) noexcept
     {
         if (this == &cp)
@@ -131,20 +140,25 @@ public:
         return *this;
     }
     
+    /// assignment from initializer list
     Array& operator=(std::initializer_list<T> list)
     {
         assign(list.begin(), list.end());
         return *this;
     }
     
+    /// operator of indexing
     const T& operator[] (size_t i) const
     { return ptr[i]; }
+    /// operator of indexing
     T& operator[] (size_t i)
     { return ptr[i]; }
     
+    /// returns true if empty
     bool empty() const
     { return ptrEnd==ptr; }
     
+    /// returns number of elements
     size_t size() const
     { return ptrEnd-ptr; }
     
@@ -180,12 +194,14 @@ public:
         ptrEnd = ptr + N;
     }
     
+    /// clear array
     void clear()
     {
         delete[] ptr;
         ptr = ptrEnd = nullptr;
     }
     
+    /// assign from range of iterators
     template<typename It>
     void assign(It b, It e)
     {
@@ -210,60 +226,113 @@ public:
             std::copy(b, e, ptr);
     }
     
+    /// get data
     const T* data() const
     { return ptr; }
+    /// get data
     T* data()
     { return ptr; }
     
+    /// get iterator to first element
     const T* begin() const
     { return ptr; }
+    /// get iterator to first element
     T* begin()
     { return ptr; }
     
+    /// get iterator to after last element
     const T* end() const
     { return ptrEnd; }
+    /// get iterator to after last element
     T* end()
     { return ptrEnd; }
     
+    /// get first element
     const T& front() const
     { return *ptr; }
+    /// get first element
     T& front()
     { return *ptr; }
+    /// get last element
     const T& back() const
     { return ptrEnd[-1]; }
+    /// get last element
     T& back()
     { return ptrEnd[-1]; }
 };
 
 /// binary find helper
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param v value to find
+ * \return iterator to value or end
+ */
 template<typename Iter>
 Iter binaryFind(Iter begin, Iter end, const
             typename std::iterator_traits<Iter>::value_type& v);
 
 /// binary find helper
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param v value to find
+ * \param comp comparator
+ * \return iterator to value or end
+ */
 template<typename Iter, typename Comp =
         std::less<typename std::iterator_traits<Iter>::value_type> >
 Iter binaryFind(Iter begin, Iter end, const
         typename std::iterator_traits<Iter>::value_type& v, Comp comp);
 
 /// binary find helper for array-map
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param k key to find
+ * \return iterator to value or end
+ */
 template<typename Iter>
 Iter binaryMapFind(Iter begin, Iter end, const 
         typename std::iterator_traits<Iter>::value_type::first_type& k);
 
 /// binary find helper for array-map
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param k key to find
+ * \param comp comparator
+ * \return iterator to value or end
+ */
 template<typename Iter, typename Comp =
     std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
 Iter binaryMapFind(Iter begin, Iter end, const
         typename std::iterator_traits<Iter>::value_type::first_type& k, Comp comp);
 
+/// map range of iterators
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ */
 template<typename Iter>
 void mapSort(Iter begin, Iter end);
 
+/// map range of iterators
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ */
 template<typename Iter, typename Comp =
     std::less<typename std::iterator_traits<Iter>::value_type::first_type> >
 void mapSort(Iter begin, Iter end, Comp comp);
 
+/// binary find
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param v value to find
+ * \return iterator to value or end
+ */
 template<typename Iter>
 Iter binaryFind(Iter begin, Iter end,
         const typename std::iterator_traits<Iter>::value_type& v)
@@ -274,6 +343,14 @@ Iter binaryFind(Iter begin, Iter end,
     return it;
 }
 
+/// binary find
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param v value to find
+ * \param comp comparator
+ * \return iterator to value or end
+ */
 template<typename Iter, typename Comp>
 Iter binaryFind(Iter begin, Iter end,
         const typename std::iterator_traits<Iter>::value_type& v, Comp comp)
@@ -284,6 +361,7 @@ Iter binaryFind(Iter begin, Iter end,
     return it;
 }
 
+/// binary find of map (array)
 template<typename Iter>
 Iter binaryMapFind(Iter begin, Iter end, const
             typename std::iterator_traits<Iter>::value_type::first_type& k)
@@ -298,6 +376,7 @@ Iter binaryMapFind(Iter begin, Iter end, const
     return it;
 }
 
+/// binary find of map (array)
 template<typename Iter, typename Comp>
 Iter binaryMapFind(Iter begin, Iter end, const
         typename std::iterator_traits<Iter>::value_type::first_type& k, Comp comp)
@@ -312,6 +391,11 @@ Iter binaryMapFind(Iter begin, Iter end, const
     return it;
 }
 
+/// sort map (array)
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ */
 template<typename Iter>
 void mapSort(Iter begin, Iter end)
 {
@@ -321,6 +405,12 @@ void mapSort(Iter begin, Iter end)
         return e1.first < e2.first; });
 }
 
+/// sort map (array)
+/**
+ * \param begin iterator to first element
+ * \param end iterator to after last element
+ * \param comp comparator
+ */
 template<typename Iter, typename Comp>
 void mapSort(Iter begin, Iter end, Comp comp)
 {
@@ -330,6 +420,6 @@ void mapSort(Iter begin, Iter end, Comp comp)
        return comp(e1.first, e2.first); });
 }
 
-}
+};
 
 #endif

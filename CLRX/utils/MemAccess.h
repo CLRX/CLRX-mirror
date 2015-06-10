@@ -150,17 +150,23 @@ inline void SULEV(int64_t& r, int64_t v);
 
 
 #ifdef __GNUC__
+/// BSWAP 16-bit
 inline uint16_t BSWAP16(uint16_t v)
 { return __builtin_bswap16(v); }
+/// BSWAP 32-bit
 inline uint32_t BSWAP32(uint32_t v)
 { return __builtin_bswap32(v); }
+/// BSWAP 64-bit
 inline uint64_t BSWAP64(uint64_t v)
 { return __builtin_bswap64(v); }
 #else
+/// BSWAP 16-bit
 inline uint16_t BSWAP16(uint16_t v)
 { return (v>>8)|(v<<8); }
+/// BSWAP 32-bit
 inline uint32_t BSWAP32(uint32_t v)
 { return (v>>24)|((v&0xff0000)>>8)|((v&0xff00)<<8)|(v<<24); }
+/// BSWAP 64-bit
 inline uint64_t BSWAP64(uint64_t v)
 { return (v>>56)|((v&0xff000000000000ULL)>>40)|((v&0xff0000000000ULL)>>24)|
     ((v&0xff00000000ULL)>>8)|((v&0xff000000ULL)<<8)|((v&0xff0000ULL)<<24)|
@@ -594,6 +600,6 @@ inline void SULEV(int64_t& r, int64_t v)
 
 #endif
 
-}
+};
 
 #endif

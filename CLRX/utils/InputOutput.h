@@ -40,22 +40,30 @@ namespace CLRX
  * stream utilities
  */
 
+/// memory stream buffer
 class MemoryStreamBuf: public std::streambuf
 {
 protected:
-    std::ios_base::openmode openMode;
+    std::ios_base::openmode openMode;   ///< open mode
     
+    /// constructor
     MemoryStreamBuf(std::ios_base::openmode openMode);
     
+    /// seekoff implementation
     pos_type seekoff(off_type off, std::ios_base::seekdir dir,
              std::ios_base::openmode which);
     
+    /// seekpos implementation
     pos_type seekpos(pos_type pos, std::ios_base::openmode which);
+    /// showmanyc implementation
     std::streamsize showmanyc();
+    /// pbackfail implementation
     int_type pbackfail(int_type ch);
     
+    /// safe pbump version
     void safePBump(ssize_t offset);
 public:
+    /// destructor
     ~MemoryStreamBuf() = default;
 };
 
@@ -63,7 +71,9 @@ public:
 class ArrayStreamBuf: public MemoryStreamBuf
 {
 public:
+    /// constructor
     ArrayStreamBuf(size_t size, char* buffer, std::ios_base::openmode openMode);
+    /// destructor
     ~ArrayStreamBuf() = default;
     
     /// get a held array size
@@ -73,6 +83,7 @@ public:
     char* getArray() const
     { return eback(); }
 protected:
+    /// setbuf implementation
     std::streambuf* setbuf(char_type* buffer, std::streamsize size);
 };
 
@@ -82,7 +93,9 @@ class StringStreamBuf: public MemoryStreamBuf
 private:
     std::string& string;
 public:
+    /// constructor
     StringStreamBuf(std::string& string, std::ios_base::openmode openMode);
+    /// destructor
     ~StringStreamBuf() = default;
     
     /// get a held string
@@ -92,7 +105,9 @@ public:
     std::string& getString()
     { return string; }
 protected:
+    /// overflow implementation
     int_type overflow(int_type ch);
+    /// setbuf implementation
     std::streambuf* setbuf(char_type* buffer, std::streamsize size);
 };
 
@@ -102,7 +117,9 @@ class VectorStreamBuf: public MemoryStreamBuf
 private:
     std::vector<char>& vector;
 public:
+    /// constructor
     VectorStreamBuf(std::vector<char>& vector, std::ios_base::openmode openMode);
+    /// destructor
     ~VectorStreamBuf() = default;
     
     /// get a held char vector
@@ -112,7 +129,9 @@ public:
     std::vector<char>& getVector()
     { return vector; }
 protected:
+    /// overflow implementation
     int_type overflow(int_type ch);
+    /// setbuf implementation
     std::streambuf* setbuf(char_type* buffer, std::streamsize size);
 };
 
@@ -122,7 +141,9 @@ class ArrayIStream: public std::istream
 private:
     ArrayStreamBuf buffer;
 public:
+    /// constructor
     ArrayIStream(size_t size, const char* array);
+    /// destructor
     ~ArrayIStream() = default;
     
     /// get a held array size
@@ -139,7 +160,9 @@ class ArrayIOStream: public std::iostream
 private:
     ArrayStreamBuf buffer;
 public:
+    /// constructor
     ArrayIOStream(size_t size, char* array);
+    /// destructor
     ~ArrayIOStream() = default;
     
     /// get a held array size
@@ -156,7 +179,9 @@ class ArrayOStream: public std::ostream
 private:
     ArrayStreamBuf buffer;
 public:
+    /// constructor
     ArrayOStream(size_t size, char* array);
+    /// destructor
     ~ArrayOStream() = default;
     
     /// get a held array size
@@ -173,7 +198,9 @@ class StringIStream: public std::istream
 private:
     StringStreamBuf buffer;
 public:
+    /// constructor
     StringIStream(const std::string& string);
+    /// destructor
     ~StringIStream() = default;
     
     /// get a held string
@@ -187,7 +214,9 @@ class StringIOStream: public std::iostream
 private:
     StringStreamBuf buffer;
 public:
+    /// constructor
     StringIOStream(std::string& string);
+    /// destructor
     ~StringIOStream() = default;
     
     /// get a held string
@@ -201,7 +230,9 @@ class StringOStream: public std::ostream
 private:
     StringStreamBuf buffer;
 public:
+    /// constructor
     StringOStream(std::string& string);
+    /// destructor
     ~StringOStream() = default;
     
     /// get a held string
@@ -215,7 +246,9 @@ class VectorIStream: public std::istream
 private:
     VectorStreamBuf buffer;
 public:
+    /// constructor
     VectorIStream(const std::vector<char>& string);
+    /// destructor
     ~VectorIStream() = default;
     
     /// get a held char vector
@@ -229,7 +262,9 @@ class VectorIOStream: public std::iostream
 private:
     VectorStreamBuf buffer;
 public:
+    /// constructor
     VectorIOStream(std::vector<char>& string);
+    /// destructor
     ~VectorIOStream() = default;
     
     /// get a held char vector
@@ -243,7 +278,9 @@ class VectorOStream: public std::ostream
 private:
     VectorStreamBuf buffer;
 public:
+    /// constructor
     VectorOStream(std::vector<char>& string);
+    /// destructor
     ~VectorOStream() = default;
     
     /// get a held char vector
@@ -265,15 +302,22 @@ private:
     std::unique_ptr<char[]> buffer;
     uint64_t written;
 public:
-    FastOutputBuffer(cxuint inBufSize, std::ostream& output) : os(output), endPos(0),
-            bufSize(inBufSize), buffer(new char[inBufSize]), written(0)
+    /// constructor with inBufSize and output
+    /**
+     * \param _bufSize max buffer size
+     * \param output output stream
+     */
+    FastOutputBuffer(cxuint _bufSize, std::ostream& output) : os(output), endPos(0),
+            bufSize(_bufSize), buffer(new char[_bufSize]), written(0)
     { }
+    /// destructor
     ~FastOutputBuffer()
     { 
         flush();
         os.flush();
     }
     
+    /// get written bytes number
     uint64_t getWritten() const
     { return written; }
     
@@ -329,6 +373,7 @@ public:
     void writeArray(size_t size, const T* t)
     { write(sizeof(T)*size, reinterpret_cast<const char*>(t)); }
     
+    /// put single character
     void put(char c)
     {
         if (endPos == bufSize)
@@ -337,6 +382,7 @@ public:
         written++;
     }
     
+    /// fill (put num c character)
     void fill(size_t num, char c)
     {
         size_t count = num;
@@ -352,12 +398,14 @@ public:
         written += num;
     }
     
+    /// get output stream
     const std::ostream& getOStream() const
     { return os; }
+    /// get output stream
     std::ostream& getOStream()
     { return os; }
 };
 
-}
+};
 
 #endif

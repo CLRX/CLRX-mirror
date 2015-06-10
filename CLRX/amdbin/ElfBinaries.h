@@ -52,30 +52,32 @@ enum : cxuint {
     ELF_CREATE_ALL = 0xf, ///< creation flags for ELF binaries
 };
 
+/// ELF 32-bit types
 struct Elf32Types
 {
-    typedef uint32_t Size;
-    typedef uint32_t Word;
-    typedef Elf32_Ehdr Ehdr;
-    typedef Elf32_Shdr Shdr;
-    typedef Elf32_Phdr Phdr;
-    typedef Elf32_Sym Sym;
-    static const cxbyte ELFCLASS;
-    static const cxuint bitness;
-    static const char* bitName;
+    typedef uint32_t Size;  ///< size used to return size value
+    typedef uint32_t Word;  ///< word size in ELF
+    typedef Elf32_Ehdr Ehdr;    ///< ELF header
+    typedef Elf32_Shdr Shdr;    ///< Section header
+    typedef Elf32_Phdr Phdr;    ///< program header
+    typedef Elf32_Sym Sym;      ///< symbol header
+    static const cxbyte ELFCLASS;   ///< ELF class
+    static const cxuint bitness;    ///< ELF bitness
+    static const char* bitName;     ///< bitness name
 };
 
+/// ELF 32-bit types
 struct Elf64Types
 {
-    typedef size_t Size;
-    typedef uint64_t Word;
-    typedef Elf64_Ehdr Ehdr;
-    typedef Elf64_Shdr Shdr;
-    typedef Elf64_Phdr Phdr;
-    typedef Elf64_Sym Sym;
-    static const cxbyte ELFCLASS;
-    static const cxuint bitness;
-    static const char* bitName;
+    typedef size_t Size;  ///< size used to return size value
+    typedef uint64_t Word;  ///< word size in ELF
+    typedef Elf64_Ehdr Ehdr;    ///< ELF header
+    typedef Elf64_Shdr Shdr;    ///< Section header
+    typedef Elf64_Phdr Phdr;    ///< program header
+    typedef Elf64_Sym Sym;      ///< symbol header
+    static const cxbyte ELFCLASS;   ///< ELF class
+    static const cxuint bitness;    ///< ELF bitness
+    static const char* bitName;     ///< bitness name
 };
 
 /// ELF binary class
@@ -146,10 +148,11 @@ public:
     /// returns true if object is uninitialized
     bool operator!() const
     { return binaryCode==nullptr; }
-    
+
+    /// get binary code    
     const cxbyte* getBinaryCode() const
     { return binaryCode; }
-    
+    /// get binary code
     cxbyte* getBinaryCode()
     { return binaryCode; }
     
@@ -551,7 +554,7 @@ struct ElfSymbolTemplate
     uint16_t sectionIndex;  ///< section index for which symbol is
     cxbyte info;    ///< info
     cxbyte other;   ///< other
-    bool valueIsAddr;
+    bool valueIsAddr;   ///< true if value should be treats as address
     typename Types::Word value;  ///< symbol value
     typename Types::Word size;   ///< symbol size
 };
@@ -623,6 +626,6 @@ typedef class ElfBinaryGenTemplate<Elf32Types> ElfBinaryGen32;
 /// type for 64-bit ELF binary generator
 typedef class ElfBinaryGenTemplate<Elf64Types> ElfBinaryGen64;
 
-}
+};
 
 #endif
