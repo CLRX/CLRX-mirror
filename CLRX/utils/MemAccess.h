@@ -31,6 +31,11 @@ namespace CLRX
 {
 
 /// convert from/to big endian value
+inline uint8_t BEV(uint8_t t);
+/// convert from/to big endian value
+inline int8_t BEV(int8_t t);
+
+/// convert from/to big endian value
 inline uint16_t BEV(uint16_t t);
 /// convert from/to big endian value
 inline int16_t BEV(int16_t t);
@@ -44,6 +49,11 @@ inline int32_t BEV(int32_t t);
 inline uint64_t BEV(uint64_t t);
 /// convert from/to big endian value
 inline int64_t BEV(int64_t t);
+
+/// convert from/to big endian value from unaligned memory
+inline uint8_t UBEV(const uint8_t& t);
+/// convert from/to big endian value from unaligned memory
+inline int8_t UBEV(const int8_t& t);
 
 /// convert from/to big endian value from unaligned memory
 inline uint16_t UBEV(const uint16_t& t);
@@ -61,6 +71,11 @@ inline uint64_t UBEV(const uint64_t& t);
 inline int64_t UBEV(const int64_t& t);
 
 /// convert from/to little endian value
+inline uint8_t LEV(uint8_t t);
+/// convert from/to little endian value
+inline int8_t LEV(int8_t t);
+
+/// convert from/to little endian value
 inline uint16_t LEV(uint16_t t);
 /// convert from/to little endian value
 inline int16_t LEV(int16_t t);
@@ -76,6 +91,10 @@ inline uint64_t LEV(uint64_t t);
 inline int64_t LEV(int64_t t);
 
 /// convert from/to little endian value from unaligned memory
+inline uint8_t ULEV(const uint8_t& t);
+/// convert from/to little endian value from unaligned memory
+inline int8_t ULEV(const int8_t& t);
+/// convert from/to little endian value from unaligned memory
 inline uint16_t ULEV(const uint16_t& t);
 /// convert from/to little endian value from unaligned memory
 inline int16_t ULEV(const int16_t& t);
@@ -87,6 +106,11 @@ inline int32_t ULEV(const int32_t& t);
 inline uint64_t ULEV(const uint64_t& t);
 /// convert from/to little endian value from unaligned memory
 inline int64_t ULEV(const int64_t& t);
+
+/// save from/to big endian value
+inline void SBEV(uint8_t& r, uint8_t v);
+/// save from/to big endian value
+inline void SBEV(int8_t& r, int8_t v);
 
 /// save from/to big endian value
 inline void SBEV(uint16_t& r, uint16_t v);
@@ -119,6 +143,11 @@ inline void SUBEV(uint64_t& r, uint64_t v);
 inline void SUBEV(int64_t& r, int64_t v);
 
 /// save from/to little endian value
+inline void SLEV(uint8_t& r, uint8_t v);
+/// save from/to little endian value
+inline void SLEV(int8_t& r, int8_t v);
+
+/// save from/to little endian value
 inline void SLEV(uint16_t& r, uint16_t v);
 /// save from/to little endian value
 inline void SLEV(int16_t& r, int16_t v);
@@ -132,6 +161,11 @@ inline void SLEV(int32_t& r, int32_t v);
 inline void SLEV(uint64_t& r, uint64_t v);
 /// save from/to little endian value
 inline void SLEV(int64_t& r, int64_t v);
+
+/// save from/to little endian value
+inline void SULEV(uint8_t& r, uint8_t v);
+/// save from/to little endian value
+inline void SULEV(int8_t& r, int8_t v);
 
 /// save from/to little endian value
 inline void SULEV(uint16_t& r, uint16_t v);
@@ -172,6 +206,46 @@ inline uint64_t BSWAP64(uint64_t v)
     ((v&0xff00000000ULL)>>8)|((v&0xff000000ULL)<<8)|((v&0xff0000ULL)<<24)|
     ((v&0xff00ULL)<<40)|(v<<56); }
 #endif
+
+inline uint8_t BEV(uint8_t t)
+{ return t; }
+inline int8_t BEV(int8_t t)
+{ return t; }
+
+inline uint8_t LEV(uint8_t t)
+{ return t; }
+inline int8_t LEV(int8_t t)
+{ return t; }
+
+inline uint8_t UBEV(uint8_t t)
+{ return t; }
+inline int8_t UBEV(int8_t t)
+{ return t; }
+
+inline uint8_t ULEV(uint8_t t)
+{ return t; }
+inline int8_t ULEV(int8_t t)
+{ return t; }
+
+inline void SBEV(uint8_t& r, uint8_t v)
+{ r = v; }
+inline void SBEV(int8_t& r, int8_t v)
+{ r = v; }
+
+inline void SLEV(uint8_t& r, uint8_t v)
+{ r = v; }
+inline void SLEV(int8_t& r, int8_t v)
+{ r = v; }
+
+inline void SUBEV(uint8_t& r, uint8_t v)
+{ r = v; }
+inline void SUBEV(int8_t& r, int8_t v)
+{ r = v; }
+
+inline void SULEV(uint8_t& r, uint8_t v)
+{ r = v; }
+inline void SULEV(int8_t& r, int8_t v)
+{ r = v; }
 
 #ifdef HAVE_LITTLE_ENDIAN
 

@@ -624,11 +624,14 @@ struct AsmExprTarget
         target.symbol = entry;
         return target;
     }
-    /// make 32-bit word target for expression
-    static AsmExprTarget data32Target(cxuint sectionId, size_t offset)
+    
+    /// make n-bit word target for expression
+    template<typename T>
+    static AsmExprTarget dataTarget(cxuint sectionId, size_t offset)
     {
         AsmExprTarget target;
-        target.type = ASMXTGT_DATA32;
+        target.type = (sizeof(T)==1) ? ASMXTGT_DATA8 : (sizeof(T)==2) ? ASMXTGT_DATA16 :
+                (sizeof(T)==4) ? ASMXTGT_DATA32 : ASMXTGT_DATA64;
         target.sectionId = sectionId;
         target.offset = offset;
         return target;
@@ -755,6 +758,7 @@ private:
     friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
     friend class AsmExpression;
+    friend struct AsmPseudoOps; // INTERNAL LOGIC
     AsmFormat format;
     GPUDeviceType deviceType;
     bool _64bit;    ///
@@ -839,6 +843,9 @@ private:
     
     bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
                   const char* string);
+    
+    void putMacro(const char* argsString);
+    void putRepeat(uint64_t repeatsNum);
     
     void initializeOutputFormat();
     

@@ -1348,7 +1348,7 @@ void Assembler::printError(const AsmSourcePos& pos, const char* message)
 
 void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos)
 {
-    if (value > (1ULL<<bits) || int64_t(value) < -(1LL<<(bits-1)))
+    if (int64_t(value) > (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1)))
     {
         std::string warning = "Value ";
         char buf[32];
@@ -1650,6 +1650,67 @@ enum
     ASMOP_WORD
 };
 
+namespace CLRX
+{
+
+struct CLRX_INTERNAL AsmPseudoOps
+{
+    template<typename T>
+    static void putIntegers(Assembler& asmr, const char*& string);
+};
+
+template<typename T>
+void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    asmr.initializeOutputFormat();
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+        return;
+    while (true)
+    {
+        const char* literalStr = string;
+        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
+        if (expr)
+        {
+            if (expr->getSymOccursNum()==0)
+            {   // put directly to section
+                uint64_t value;
+                if (expr->evaluate(asmr, value))
+                {
+                    if (sizeof(T) < 8)
+                        asmr.printWarningForRange(sizeof(T)<<3, value,
+                                     asmr.getSourcePos(literalStr));
+                    T out;
+                    SLEV(out, value);
+                    asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&out));
+                }
+            }
+            else // expression
+            {
+                expr->setTarget(AsmExprTarget::dataTarget<T>(
+                                asmr.currentSection, asmr.currentOutPos));
+                expr.release();
+                asmr.reserveData(sizeof(T));
+            }
+        }
+        else // fail
+            asmr.good = false;
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before next value");
+            asmr.good = false;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
+    }
+}
+
+};
+
 bool Assembler::assemble()
 {
     good = true;
@@ -1838,6 +1899,7 @@ bool Assembler::assemble()
                 case ASMOP_BALIGNW:
                     break;
                 case ASMOP_BYTE:
+                    AsmPseudoOps::putIntegers<cxbyte>(*this, string);
                     break;
                 case ASMOP_RAWCODE:
                 case ASMOP_CATALYST:
@@ -1977,6 +2039,7 @@ bool Assembler::assemble()
                 case ASMOP_HALF:
                     break;
                 case ASMOP_HWORD:
+                    AsmPseudoOps::putIntegers<uint16_t>(*this, string);
                     break;
                 case ASMOP_IF:
                     break;
@@ -2033,51 +2096,9 @@ bool Assembler::assemble()
                     break;
                 }
                 case ASMOP_INT:
-                {
-                    initializeOutputFormat();
-                    string = skipSpacesToEnd(string, end);
-                    while (string != end)
-                    {
-                        const char* literalStr = string;
-                        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
-                                    *this, string, string));
-                        if (expr)
-                        {
-                            if (expr->getSymOccursNum()==0)
-                            {   // put directly to section
-                                uint64_t value;
-                                if (expr->evaluate(*this, value))
-                                {
-                                    printWarningForRange(32, value,
-                                                 getSourcePos(literalStr));
-                                    uint32_t out;
-                                    SLEV(out, value);
-                                    putData(4, reinterpret_cast<const cxbyte*>(&out));
-                                }
-                            }
-                            else // expression
-                            {
-                                expr->setTarget(AsmExprTarget::data32Target(
-                                                currentSection, currentOutPos));
-                                expr.release();
-                                reserveData(4);
-                            }
-                        }
-                        else // fail
-                            good = false;
-                        string = skipSpacesToEnd(string, end); // spaces before ','
-                        if (string == end)
-                            break;
-                        if (*string != ',')
-                        {
-                            printError(string, "Expected ',' before next value");
-                            good = false;
-                        }
-                        else
-                            string = skipSpacesToEnd(string+1, end);
-                    }
+                case ASMOP_LONG:
+                    AsmPseudoOps::putIntegers<uint32_t>(*this, string);
                     break;
-                }
                 case ASMOP_KERNEL:
                     if (format == AsmFormat::CATALYST || format == AsmFormat::GALLIUM)
                     {
@@ -2121,8 +2142,6 @@ bool Assembler::assemble()
                     break;
                 case ASMOP_LOCAL:
                     break;
-                case ASMOP_LONG:
-                    break;
                 case ASMOP_MACRO:
                     break;
                 case ASMOP_OCTA:
@@ -2138,6 +2157,7 @@ bool Assembler::assemble()
                 case ASMOP_PURGEM:
                     break;
                 case ASMOP_QUAD:
+                    AsmPseudoOps::putIntegers<uint64_t>(*this, string);
                     break;
                 case ASMOP_REPT:
                     break;
