@@ -1534,6 +1534,7 @@ static const char* pseudoOpNamesTbl[] =
     "string",
     "string16",
     "string32",
+    "string64",
     "struct",
     "text",
     "title",
@@ -1643,6 +1644,7 @@ enum
     ASMOP_STRING,
     ASMOP_STRING16,
     ASMOP_STRING32,
+    ASMOP_STRING64,
     ASMOP_STRUCT,
     ASMOP_TEXT,
     ASMOP_TITLE,
@@ -1662,6 +1664,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void putFloats(Assembler& asmr, const char*& string);
     
     static void putStrings(Assembler& asmr, const char*& string, bool addZero = false);
+    template<typename T>
+    static void putStringsToInts(Assembler& asmr, const char*& string);
 };
 
 template<typename T>
@@ -1791,6 +1795,44 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
         {
             if (asmr.parseString(outStr, string, string))
                 asmr.putData(outStr.size()+(addZero), (const cxbyte*)outStr.c_str());
+            else
+                asmr.good = false;
+        }
+        
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before next value");
+            asmr.good = false;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
+    }
+}
+
+template<typename T>
+void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
+{
+     const char* end = asmr.line + asmr.lineSize;
+    asmr.initializeOutputFormat();
+    string = skipSpacesToEnd(string, end);
+    while (string != end)
+    {
+        std::string outStr;
+        if (*string != ',')
+        {
+            if (asmr.parseString(outStr, string, string))
+            {
+                const uint64_t oldOffset = asmr.currentOutPos;
+                const size_t strSize = outStr.size()+1;
+                asmr.reserveData(sizeof(T)*(strSize));
+                T* outData = reinterpret_cast<T*>(
+                        asmr.sections[asmr.currentSection]->content.data()+oldOffset);
+                for (size_t i = 0; i < strSize; i++)
+                    SULEV(outData[i], T(outStr[i])&T(0xff));
+            }
             else
                 asmr.good = false;
         }
@@ -2261,8 +2303,13 @@ bool Assembler::assemble()
                     AsmPseudoOps::putStrings(*this, string, true);
                     break;
                 case ASMOP_STRING16:
+                    AsmPseudoOps::putStringsToInts<uint16_t>(*this, string);
                     break;
                 case ASMOP_STRING32:
+                    AsmPseudoOps::putStringsToInts<uint32_t>(*this, string);
+                    break;
+                case ASMOP_STRING64:
+                    AsmPseudoOps::putStringsToInts<uint64_t>(*this, string);
                     break;
                 case ASMOP_STRUCT:
                     break;
@@ -2273,6 +2320,7 @@ bool Assembler::assemble()
                 case ASMOP_WARNING:
                     break;
                 case ASMOP_WORD:
+                    AsmPseudoOps::putIntegers<uint32_t>(*this, string);
                     break;
                 default:
                     // macro substitution
