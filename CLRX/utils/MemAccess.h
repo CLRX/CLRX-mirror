@@ -127,19 +127,19 @@ inline void SBEV(uint64_t& r, uint64_t v);
 /// save from/to big endian value
 inline void SBEV(int64_t& r, int64_t v);
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint16_t& r, uint16_t v);
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int16_t& r, int16_t v);
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint32_t& r, uint32_t v);
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int32_t& r, int32_t v);
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint64_t& r, uint64_t v);
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int64_t& r, int64_t v);
 
 /// save from/to little endian value
@@ -162,24 +162,24 @@ inline void SLEV(uint64_t& r, uint64_t v);
 /// save from/to little endian value
 inline void SLEV(int64_t& r, int64_t v);
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint8_t& r, uint8_t v);
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int8_t& r, int8_t v);
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint16_t& r, uint16_t v);
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int16_t& r, int16_t v);
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint32_t& r, uint32_t v);
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int32_t& r, int32_t v);
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint64_t& r, uint64_t v);
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int64_t& r, int64_t v);
 
 
@@ -207,43 +207,59 @@ inline uint64_t BSWAP64(uint64_t v)
     ((v&0xff00ULL)<<40)|(v<<56); }
 #endif
 
+/// convert from/to big endian value
 inline uint8_t BEV(uint8_t t)
 { return t; }
+/// convert from/to big endian value
 inline int8_t BEV(int8_t t)
 { return t; }
 
+/// convert from/to little endian value
 inline uint8_t LEV(uint8_t t)
 { return t; }
+/// convert from/to little endian value
 inline int8_t LEV(int8_t t)
 { return t; }
 
+/// convert from/to big endian value from unaligned memory
 inline uint8_t UBEV(uint8_t t)
 { return t; }
+/// convert from/to big endian value from unaligned memory
 inline int8_t UBEV(int8_t t)
 { return t; }
 
+/// convert from/to little endian value from unaligned memory
 inline uint8_t ULEV(uint8_t t)
 { return t; }
+/// convert from/to little endian value from unaligned memory
 inline int8_t ULEV(int8_t t)
 { return t; }
 
+/// save from/to big endian value
 inline void SBEV(uint8_t& r, uint8_t v)
 { r = v; }
+/// save from/to big endian value
 inline void SBEV(int8_t& r, int8_t v)
 { r = v; }
 
+/// save from/to little endian value
 inline void SLEV(uint8_t& r, uint8_t v)
 { r = v; }
+/// save from/to little endian value
 inline void SLEV(int8_t& r, int8_t v)
 { r = v; }
 
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint8_t& r, uint8_t v)
 { r = v; }
+/// save from/to bif endian value to unaligned memory
 inline void SUBEV(int8_t& r, int8_t v)
 { r = v; }
 
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint8_t& r, uint8_t v)
 { r = v; }
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int8_t& r, int8_t v)
 { r = v; }
 
@@ -377,32 +393,32 @@ inline void SBEV(uint64_t& r, uint64_t v)
 inline void SBEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint16_t& r, uint16_t v)
 { r = BSWAP16(v); }
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int16_t& r, int16_t v)
 { r = BSWAP16(v); }
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint32_t& r, uint32_t v)
 { r = BSWAP32(v); }
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int32_t& r, int32_t v)
 { r = BSWAP32(v); }
 
 #  ifdef HAVE_ARCH_ARM32
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SUBEV(uint64_t& r, uint64_t v)
 { ((uint32_t*)&r)[0] = BSWAP32(v>>32); ((uint32_t*)&r)[1] = BSWAP32(v); }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SUBEV(int64_t& r, int64_t v)
 { ((uint32_t*)&r)[0] = BSWAP32(v>>32); ((uint32_t*)&r)[1] = BSWAP32(v); }
 #  else
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SUBEV(uint64_t& r, uint64_t v)
 { r = BSWAP64(v); }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SUBEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
 #  endif
@@ -429,32 +445,32 @@ inline void SLEV(uint64_t& r, uint64_t v)
 inline void SLEV(int64_t& r, int64_t v)
 { r = v; }
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint16_t& r, uint16_t v)
 { r = v; }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int16_t& r, int16_t v)
 { r = v; }
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint32_t& r, uint32_t v)
 { r = v; }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int32_t& r, int32_t v)
 { r = v; }
 
 #  ifdef HAVE_ARCH_ARM32
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint64_t& r, uint64_t v)
 { ((uint32_t*)&r)[0] = (uint32_t)v; ((uint32_t*)&r)[1] = v>>32; }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int64_t& r, int64_t v)
 { ((uint32_t*)&r)[0] = (uint32_t)v; ((uint32_t*)&r)[1] = v>>32; }
 #  else
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint64_t& r, uint64_t v)
 { r = v; }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int64_t& r, int64_t v)
 { r = v; }
 #  endif
@@ -590,32 +606,32 @@ inline void SBEV(uint64_t& r, uint64_t v)
 inline void SBEV(int64_t& r, int64_t v)
 { r = v; }
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint16_t& r, uint16_t v)
 { r = v; }
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int16_t& r, int16_t v)
 { r = v; }
 
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint32_t& r, uint32_t v)
 { r = v; }
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int32_t& r, int32_t v)
 { r = v; }
 
 #  ifdef HAVE_ARCH_ARM32
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint64_t& r, uint64_t v)
 { ((uint32_t*)&r)[0] = v>>32; ((uint32_t*)&r)[1] = (uint32_t)v; }
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int64_t& r, int64_t v)
 { ((uint32_t*)&r)[0] = v>>32; ((uint32_t*)&r)[1] = (uint32_t)v; }
 #  else
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(uint64_t& r, uint64_t v)
 { r = v; }
-/// save from/to big endian value
+/// save from/to big endian value to unaligned memory
 inline void SUBEV(int64_t& r, int64_t v)
 { r = v; }
 #  endif
@@ -642,32 +658,32 @@ inline void SLEV(uint64_t& r, uint64_t v)
 inline void SLEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint16_t& r, uint16_t v)
 { r = BSWAP16(v); }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int16_t& r, int16_t v)
 { r = BSWAP16(v); }
 
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint32_t& r, uint32_t v)
 { r = BSWAP32(v); }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int32_t& r, int32_t v)
 { r = BSWAP32(v); }
 
 #  ifdef HAVE_ARCH_ARM32
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint64_t& r, uint64_t v)
 { ((uint32_t*)&r)[0] = BSWAP32((uint32_t)v); ((uint32_t*)&r)[1] = BSWAP32(v>>32); }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int64_t& r, int64_t v)
 { ((uint32_t*)&r)[0] = BSWAP32((uint32_t)v); ((uint32_t*)&r)[1] = BSWAP32(v>>32); }
 #  else
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(uint64_t& r, uint64_t v)
 { r = BSWAP64(v); }
-/// save from/to little endian value
+/// save from/to little endian value to unaligned memory
 inline void SULEV(int64_t& r, int64_t v)
 { r = BSWAP64(v); }
 #  endif

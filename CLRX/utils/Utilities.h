@@ -361,9 +361,19 @@ extern int64_t cstrtoiXCStyle(const char* str, const char* inend,
 extern uint64_t cstrtouXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint bits);
 
+/// Unsigned 128-bit integer
+struct UInt128
+{
+    uint64_t lo; ///< low part
+    uint64_t hi; ///< high part
+};
+
 /// parse 64-bit float value
 extern uint64_t cstrtofXCStyle(const char* str, const char* inend,
              const char*& outend, cxuint expBits, cxuint mantisaBits);
+
+/// parse 128-bit unsigned integer
+extern UInt128 cstrtou128CStyle(const char* str, const char* inend, const char*& outend);
 
 /* cstrtovcstyle impls */
 
@@ -416,6 +426,11 @@ cxullong cstrtovCStyle<cxullong>(const char* str, const char* inend, const char*
 template<> inline
 cxllong cstrtovCStyle<cxllong>(const char* str, const char* inend, const char*& outend)
 { return cstrtoiXCStyle(str, inend, outend, sizeof(cxllong)<<3); }
+
+/// parse UInt128 value from string
+template<> inline
+UInt128 cstrtovCStyle<UInt128>(const char* str, const char* inend, const char*& outend)
+{ return cstrtou128CStyle(str, inend, outend); }
 
 /// parse float value from string
 template<> inline

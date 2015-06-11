@@ -1848,3 +1848,133 @@ size_t CLRX::iXtocstrCStyle(int64_t value, char* str, size_t maxSize, cxuint rad
     str[0] = '-';
     return uXtocstrCStyle(-value, str+1, maxSize-1, radix, width, prefix)+1;
 }
+
+/* support for 128-bit integers */
+
+UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& outend)
+{
+    UInt128 out = { 0, 0 };
+    const char* p = 0;
+    if (inend == str)
+    {
+        outend = str;
+        throw ParseException("No characters to parse");
+    }
+    
+    if (*str == '0')
+    {
+        if (inend != str+1 && (str[1] == 'x' || str[1] == 'X'))
+        {   // hex
+            if (inend == str+2)
+            {
+                outend = str+2;
+                throw ParseException("Number is too short");
+            }
+            
+            const uint64_t lastHex = (15ULL<<60);
+            for (p = str+2; p != inend; p++)
+            {
+                cxuint digit;
+                if (*p >= '0' && *p <= '9')
+                    digit = *p-'0';
+                else if (*p >= 'A' && *p <= 'F')
+                    digit = *p-'A'+10;
+                else if (*p >= 'a' && *p <= 'f')
+                    digit = *p-'a'+10;
+                else //
+                    break;
+                
+                if ((out.hi & lastHex) != 0)
+                {
+                    outend = p;
+                    throw ParseException("Number out of range");
+                }
+                out.hi = (out.hi<<4) | (out.lo>>60);
+                out.lo = (out.lo<<4) + digit;
+            }
+            if (p == str+2)
+            {
+                outend = p;
+                throw ParseException("Missing number");
+            }
+        }
+        else if (inend != str+1 && (str[1] == 'b' || str[1] == 'B'))
+        {   // binary
+            if (inend == str+2)
+            {
+                outend = str+2;
+                throw ParseException("Number is too short");
+            }
+            
+            const uint64_t lastBit = (1ULL<<63);
+            for (p = str+2; p != inend && (*p == '0' || *p == '1'); p++)
+            {
+                if ((out.hi & lastBit) != 0)
+                {
+                    outend = p;
+                    throw ParseException("Number out of range");
+                }
+                out.hi = (out.hi<<1) | (out.lo>>63);
+                out.lo = (out.lo<<1) + (*p-'0');
+            }
+            if (p == str+2)
+            {
+                outend = p;
+                throw ParseException("Missing number");
+            }
+        }
+        else
+        {   // octal
+            const uint64_t lastOct = (7ULL<<61);
+            for (p = str+1; p != inend && *p >= '0' && *p <= '7'; p++)
+            {
+                if ((out.hi & lastOct) != 0)
+                {
+                    outend = p;
+                    throw ParseException("Number out of range");
+                }
+                out.hi = (out.hi<<3) | (out.lo>>61);
+                out.lo = (out.lo<<3) + (*p-'0');
+            }
+            // if no octal parsed, then zero and correctly treated as decimal zero
+        }
+    }
+    else
+    {   // decimal
+        const UInt128 lastDigitValue = { 11068046444225730969ULL, 1844674407370955161ULL };
+        for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
+        {
+            if (out.hi > lastDigitValue.hi ||
+                (out.hi == lastDigitValue.hi && out.lo > lastDigitValue.lo))
+            {
+                outend = p;
+                throw ParseException("Number out of range");
+            }
+            const cxuint digit = (*p-'0');
+            UInt128 temp = out;
+            // multiply by 10
+            out.hi = (temp.hi<<3) | (temp.lo>>61);
+            out.lo = (temp.lo<<3);
+            out.hi += (temp.hi<<1) | (temp.lo>>63);
+            out.lo += (temp.lo<<1);
+            if (out.lo < (temp.lo<<1)) // carry
+                out.hi++;
+            // add digit
+            out.lo += digit;
+            if (out.lo < digit) // carry
+                out.hi++;
+            if (out.lo < digit && out.hi == 0) // if carry
+            {
+                outend = p;
+                throw ParseException("Number out of range");
+            }
+        }
+        if (p == str)
+        {
+            outend = p;
+            throw ParseException("Missing number");
+        }
+    }
+    outend = p;
+    return out;
+}

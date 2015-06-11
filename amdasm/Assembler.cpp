@@ -1666,6 +1666,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void putStrings(Assembler& asmr, const char*& string, bool addZero = false);
     template<typename T>
     static void putStringsToInts(Assembler& asmr, const char*& string);
+    
+    static void putUInt128s(Assembler& asmr, const char*& string);
 };
 
 template<typename T>
@@ -1770,6 +1772,40 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
         }
         
         asmr.putData(sizeof(UIntType), reinterpret_cast<const cxbyte*>(&out));
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before next value");
+            asmr.good = false;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
+    }
+}
+
+void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    asmr.initializeOutputFormat();
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+        return;
+    while (true)
+    {
+        UInt128 value = { 0, 0 };
+        if (string != end && *string != ',')
+        {
+            try
+            { value = cstrtou128CStyle(string, end, string); }
+            catch(const ParseException& ex)
+            { asmr.printError(string, ex.what()); }
+        }
+        UInt128 out;
+        SLEV(out.lo, value.lo);
+        SLEV(out.hi, value.hi);
+        asmr.putData(16, reinterpret_cast<const cxbyte*>(&out));
         string = skipSpacesToEnd(string, end); // spaces before ','
         if (string == end)
             break;
@@ -2268,6 +2304,7 @@ bool Assembler::assemble()
                 case ASMOP_MACRO:
                     break;
                 case ASMOP_OCTA:
+                    AsmPseudoOps::putUInt128s(*this, string);
                     break;
                 case ASMOP_OFFSET:
                     break;
