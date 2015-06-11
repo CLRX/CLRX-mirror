@@ -1657,6 +1657,11 @@ struct CLRX_INTERNAL AsmPseudoOps
 {
     template<typename T>
     static void putIntegers(Assembler& asmr, const char*& string);
+    
+    template<typename UIntType>
+    static void putFloats(Assembler& asmr, const char*& string);
+    
+    static void putStrings(Assembler& asmr, const char*& string, bool addZero = false);
 };
 
 template<typename T>
@@ -1696,6 +1701,100 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
         }
         else // fail
             asmr.good = false;
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before next value");
+            asmr.good = false;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
+    }
+}
+
+template<typename T> inline
+T asmcstrtofCStyleLEV(const char* str, const char* inend, const char*& outend);
+
+template<> inline
+uint16_t asmcstrtofCStyleLEV<uint16_t>(const char* str, const char* inend,
+                   const char*& outend)
+{ return LEV(cstrtohCStyle(str, inend, outend)); }
+
+template<> inline
+uint32_t asmcstrtofCStyleLEV<uint32_t>(const char* str, const char* inend,
+                   const char*& outend)
+{
+    union {
+        float f;
+        uint32_t u;
+    } value;
+    value.f = cstrtovCStyle<float>(str, inend, outend);
+    return LEV(value.u);
+}
+
+template<> inline
+uint64_t asmcstrtofCStyleLEV<uint64_t>(const char* str, const char* inend,
+                   const char*& outend)
+{
+    union {
+        double f;
+        uint64_t u;
+    } value;
+    value.f = cstrtovCStyle<double>(str, inend, outend);
+    return LEV(value.u);
+}
+
+template<typename UIntType>
+void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    asmr.initializeOutputFormat();
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+        return;
+    while (true)
+    {
+        UIntType out = 0;
+        if (string != end && *string != ',')
+        {
+            try
+            { out = asmcstrtofCStyleLEV<UIntType>(string, end, string); }
+            catch(const ParseException& ex)
+            { asmr.printError(string, ex.what()); }
+        }
+        
+        asmr.putData(sizeof(UIntType), reinterpret_cast<const cxbyte*>(&out));
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before next value");
+            asmr.good = false;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
+    }
+}
+
+void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    asmr.initializeOutputFormat();
+    string = skipSpacesToEnd(string, end);
+    while (string != end)
+    {
+        std::string outStr;
+        if (*string != ',')
+        {
+            if (asmr.parseString(outStr, string, string))
+                asmr.putData(outStr.size()+(addZero), (const cxbyte*)outStr.c_str());
+            else
+                asmr.good = false;
+        }
+        
         string = skipSpacesToEnd(string, end); // spaces before ','
         if (string == end)
             break;
@@ -1866,31 +1965,10 @@ bool Assembler::assemble()
                 case ASMOP_ARCH:
                     break;
                 case ASMOP_ASCII:
-                {
-                    initializeOutputFormat();
-                    string = skipSpacesToEnd(string, end);
-                    while (string != end)
-                    {
-                        std::string outStr;
-                        if (parseString(outStr, string, string))
-                            putData(outStr.size(), (const cxbyte*)outStr.c_str());
-                        else
-                            good = false;
-                        
-                        string = skipSpacesToEnd(string, end); // spaces before ','
-                        if (string == end)
-                            break;
-                        if (*string != ',')
-                        {
-                            printError(string, "Expected ',' before next value");
-                            good = false;
-                        }
-                        else
-                            string = skipSpacesToEnd(string+1, end);
-                    }
+                    AsmPseudoOps::putStrings(*this, string);
                     break;
-                }
                 case ASMOP_ASCIZ:
+                    AsmPseudoOps::putStrings(*this, string, true);
                     break;
                 case ASMOP_BALIGN:
                     break;
@@ -1936,6 +2014,7 @@ bool Assembler::assemble()
                 case ASMOP_DATA:
                     break;
                 case ASMOP_DOUBLE:
+                    AsmPseudoOps::putFloats<uint64_t>(*this, string);
                     break;
                 case ASMOP_ELSE:
                     break;
@@ -2001,6 +2080,7 @@ bool Assembler::assemble()
                 case ASMOP_FILL:
                     break;
                 case ASMOP_FLOAT:
+                    AsmPseudoOps::putFloats<uint32_t>(*this, string);
                     break;
                 case ASMOP_FORMAT:
                 {
@@ -2037,6 +2117,7 @@ bool Assembler::assemble()
                 case ASMOP_GPU:
                     break;
                 case ASMOP_HALF:
+                    AsmPseudoOps::putFloats<uint16_t>(*this, string);
                     break;
                 case ASMOP_HWORD:
                     AsmPseudoOps::putIntegers<uint16_t>(*this, string);
@@ -2168,6 +2249,7 @@ bool Assembler::assemble()
                 case ASMOP_SHORT:
                     break;
                 case ASMOP_SINGLE:
+                    AsmPseudoOps::putFloats<uint32_t>(*this, string);
                     break;
                 case ASMOP_SIZE:
                     break;
@@ -2176,6 +2258,7 @@ bool Assembler::assemble()
                 case ASMOP_SPACE:
                     break;
                 case ASMOP_STRING:
+                    AsmPseudoOps::putStrings(*this, string, true);
                     break;
                 case ASMOP_STRING16:
                     break;
