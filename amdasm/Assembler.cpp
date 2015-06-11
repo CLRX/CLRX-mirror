@@ -1657,6 +1657,16 @@ namespace CLRX
 
 struct CLRX_INTERNAL AsmPseudoOps
 {
+    static void setBitness(Assembler& asmr, const char*& string, bool _64Bit);
+    static void setOutFormat(Assembler& asmr, const char*& string);
+    static void goToKernel(Assembler& asmr, const char*& string);
+    
+    static void includeFile(Assembler& asmr, const char* pseudoStr, const char*& string);
+    
+    static void doFail(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void printError(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void printWarning(Assembler& asmr, const char* pseudoStr, const char*& string);
+    
     template<typename T>
     static void putIntegers(Assembler& asmr, const char*& string);
     
@@ -1669,6 +1679,173 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void putUInt128s(Assembler& asmr, const char*& string);
 };
+
+void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
+{
+    if (asmr.outFormatInitialized)
+    {
+        asmr.printError(string, "Bitness has already been defined");
+        asmr.good = false;
+    }
+    if (asmr.format != AsmFormat::CATALYST)
+        asmr.printWarning(string, "Bitness ignored for other formats than AMD Catalyst");
+    else
+        asmr._64bit = (_64Bit);
+}
+
+void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        asmr.printError(string, "Expected output format type");
+        asmr.good = false;
+    }
+    std::string formatName = extractSymName(string, end, false);
+    toLowerString(formatName);
+    if (formatName == "catalyst" || formatName == "amd")
+        asmr.format = AsmFormat::CATALYST;
+    else if (formatName == "gallium")
+        asmr.format = AsmFormat::GALLIUM;
+    else if (formatName == "raw")
+        asmr.format = AsmFormat::RAWCODE;
+    else
+    {
+        asmr.printError(string, "Unknown output format type");
+        asmr.good = false;
+    }
+    if (asmr.outFormatInitialized)
+    {
+        asmr.printError(string, "Output format type has already been defined");
+        asmr.good = false;
+    }
+}
+
+void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.format == AsmFormat::CATALYST || asmr.format == AsmFormat::GALLIUM)
+    {
+        string = skipSpacesToEnd(string, end);
+        if (string == end)
+        {
+            asmr.printError(string, "Expected kernel name");
+            asmr.good = false;
+            return;
+        }
+        std::string kernelName = extractSymName(string, end, false);
+        if (kernelName.empty())
+        {
+            asmr.printError(string, "This is not kernel name");
+            asmr.good = false;
+            return;
+        }
+        if (asmr.format == AsmFormat::CATALYST)
+        {
+            asmr.kernelMap.insert(std::make_pair(kernelName,
+                            asmr.amdOutput->kernels.size()));
+            asmr.amdOutput->addEmptyKernel(kernelName.c_str());
+        }
+        else
+        {
+            asmr.kernelMap.insert(std::make_pair(kernelName,
+                        asmr.galliumOutput->kernels.size()));
+            //galliumOutput->addEmptyKernel(kernelName.c_str());
+        }
+    }
+    else if (asmr.format == AsmFormat::RAWCODE)
+    {
+        asmr.printError(string, "Raw code can have only one unnamed kernel");
+        asmr.good = false;
+    }
+}
+
+void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    std::string filename;
+    const char* nameStr = string;
+    if (asmr.parseString(filename, string, string))
+    {
+        try
+        {
+            std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
+                    asmr.getSourcePos(pseudoStr), filename));
+            asmr.asmInputFilters.push(newInputFilter.release());
+            asmr.currentInputFilter = asmr.asmInputFilters.top(); 
+        }
+        catch(const Exception& ex)
+        { asmr.printError(nameStr, ex.what()); }
+    }
+}
+
+void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    uint64_t value = 0;
+    if (string != end)
+    {
+        const char* exprStr = string;
+        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
+        if (expr == nullptr)
+        {
+            asmr.good = false;
+            return;
+        }
+        if (expr->getSymOccursNum() != 0)
+        {
+            expr.release(); // expr is registered in symbols occurrences
+            asmr.printError(exprStr, "Expression has unresolved symbols!");
+            return;
+        }
+        if (!expr->evaluate(asmr, value))
+        {   // failed!
+            asmr.good = false;
+            return;
+        }
+    }
+    char buf[50];
+    ::memcpy(buf, ".fail ", 6);
+    const size_t pos = 6+itocstrCStyle(int64_t(value), buf+6, 50-6);
+    ::memcpy(buf+pos, " encountered", 13);
+    if (int64_t(value) >= 500)
+        asmr.printWarning(pseudoStr, buf);
+    else
+        asmr.printError(pseudoStr, buf);
+}
+
+void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoStr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string != end)
+    {
+        std::string outStr;
+        if (!asmr.parseString(outStr, string, string))
+            return; // error
+        asmr.printError(pseudoStr, outStr.c_str());
+    }
+    else
+        asmr.printError(pseudoStr, ".error encountered");
+}
+
+void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoStr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string != end)
+    {
+        std::string outStr;
+        if (!asmr.parseString(outStr, string, string))
+            return; // error
+        asmr.printWarning(pseudoStr, outStr.c_str());
+    }
+    else
+        asmr.printWarning(pseudoStr, ".warning encountered");
+}
 
 template<typename T>
 void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
@@ -2025,18 +2202,11 @@ bool Assembler::assemble()
             {
                 case ASMOP_32BIT:
                 case ASMOP_64BIT:
-                    if (outFormatInitialized)
-                    {
-                        printError(string, "Bitness has already been defined");
-                        good = false;
-                    }
-                    if (format != AsmFormat::CATALYST)
-                        printWarning(string,
-                             "Bitness ignored for other formats than AMD Catalyst");
-                    else
-                        _64bit = (pseudoOp == ASMOP_64BIT);
+                    AsmPseudoOps::setBitness(*this, string, pseudoOp == ASMOP_64BIT);
                     break;
                 case ASMOP_ABORT:
+                    printError(firstNameString, "Aborted!");
+                    return good;
                     break;
                 case ASMOP_ALIGN:
                     break;
@@ -2144,14 +2314,17 @@ bool Assembler::assemble()
                 case ASMOP_EQV:
                     break;
                 case ASMOP_ERR:
+                    printError(firstNameString, ".err encountered");
                     break;
                 case ASMOP_ERROR:
+                    AsmPseudoOps::printError(*this, firstNameString, string);
                     break;
                 case ASMOP_EXITM:
                     break;
                 case ASMOP_EXTERN:
                     break;
                 case ASMOP_FAIL:
+                    AsmPseudoOps::doFail(*this, firstNameString, string);
                     break;
                 case ASMOP_FILE:
                     break;
@@ -2161,33 +2334,8 @@ bool Assembler::assemble()
                     AsmPseudoOps::putFloats<uint32_t>(*this, string);
                     break;
                 case ASMOP_FORMAT:
-                {
-                    string = skipSpacesToEnd(string, end);
-                    if (string == end)
-                    {
-                        printError(string, "Expected output format type");
-                        good = false;
-                    }
-                    std::string formatName = extractSymName(string, end, false);
-                    toLowerString(formatName);
-                    if (formatName == "catalyst" || formatName == "amd")
-                        format = AsmFormat::CATALYST;
-                    else if (formatName == "gallium")
-                        format = AsmFormat::GALLIUM;
-                    else if (formatName == "raw")
-                        format = AsmFormat::RAWCODE;
-                    else
-                    {
-                        printError(string, "Unknown output format type");
-                        good = false;
-                    }
-                    if (outFormatInitialized)
-                    {
-                        printError(string, "Output format type has already been defined");
-                        good = false;
-                    }
+                    AsmPseudoOps::setOutFormat(*this, string);
                     break;
-                }
                 case ASMOP_FUNC:
                     break;
                 case ASMOP_GLOBAL:
@@ -2235,64 +2383,14 @@ bool Assembler::assemble()
                 case ASMOP_INCBIN:
                     break;
                 case ASMOP_INCLUDE:
-                {
-                    string = skipSpacesToEnd(string, end);
-                    std::string filename;
-                    const char* nameStr = string;
-                    if (parseString(filename, string, string))
-                    {
-                        try
-                        {
-                            std::unique_ptr<AsmInputFilter> newInputFilter(
-                                    new AsmStreamInputFilter(
-                                        getSourcePos(firstNameString), filename));
-                            asmInputFilters.push(newInputFilter.release());
-                            currentInputFilter = asmInputFilters.top(); 
-                        }
-                        catch(const Exception& ex)
-                        { printError(nameStr, ex.what()); }
-                    }
+                    AsmPseudoOps::includeFile(*this, firstNameString, string);
                     break;
-                }
                 case ASMOP_INT:
                 case ASMOP_LONG:
                     AsmPseudoOps::putIntegers<uint32_t>(*this, string);
                     break;
                 case ASMOP_KERNEL:
-                    if (format == AsmFormat::CATALYST || format == AsmFormat::GALLIUM)
-                    {
-                        string = skipSpacesToEnd(string, end);
-                        if (string == end)
-                        {
-                            printError(string, "Expected kernel name");
-                            good = false;
-                            break;
-                        }
-                        std::string kernelName = extractSymName(string, end, false);
-                        if (kernelName.empty())
-                        {
-                            printError(string, "This is not kernel name");
-                            good = false;
-                            break;
-                        }
-                        if (format == AsmFormat::CATALYST)
-                        {
-                            kernelMap.insert(std::make_pair(kernelName,
-                                            amdOutput->kernels.size()));
-                            amdOutput->addEmptyKernel(kernelName.c_str());
-                        }
-                        else
-                        {
-                            kernelMap.insert(std::make_pair(kernelName,
-                                        galliumOutput->kernels.size()));
-                            //galliumOutput->addEmptyKernel(kernelName.c_str());
-                        }
-                    }
-                    else if (format == AsmFormat::RAWCODE)
-                    {
-                        printError(string, "Raw code can have only one unnamed kernel");
-                        good = false;
-                    }
+                    AsmPseudoOps::goToKernel(*this, string);
                     break;
                 case ASMOP_LINE:
                 case ASMOP_LN:
@@ -2326,6 +2424,7 @@ bool Assembler::assemble()
                 case ASMOP_SET:
                     break;
                 case ASMOP_SHORT:
+                    AsmPseudoOps::putIntegers<uint16_t>(*this, string);
                     break;
                 case ASMOP_SINGLE:
                     AsmPseudoOps::putFloats<uint32_t>(*this, string);
@@ -2355,6 +2454,7 @@ bool Assembler::assemble()
                 case ASMOP_TITLE:
                     break;
                 case ASMOP_WARNING:
+                    AsmPseudoOps::printWarning(*this, firstNameString, string);
                     break;
                 case ASMOP_WORD:
                     AsmPseudoOps::putIntegers<uint32_t>(*this, string);
