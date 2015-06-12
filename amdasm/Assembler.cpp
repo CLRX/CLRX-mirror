@@ -1236,50 +1236,68 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     continue;
                 }
                 
-                if (target.type == ASMXTGT_SYMBOL || sectionId == ASMSECT_ABS)
-                    switch(target.type)
-                    {
-                        case ASMXTGT_SYMBOL:
-                        {    // resolve symbol
-                            AsmSymbolEntry& curSymEntry = *target.symbol;
-                            if (!curSymEntry.second.resolving)
-                            {
-                                curSymEntry.second.value = value;
-                                curSymEntry.second.sectionId = sectionId;
-                                curSymEntry.second.isDefined = true;
-                                symbolStack.push(std::make_pair(&curSymEntry, 0));
-                                curSymEntry.second.resolving = true;
-                            }
-                            // otherwise we ignore circular dependencies
-                            break;
+                switch(target.type)
+                {
+                    case ASMXTGT_SYMBOL:
+                    {    // resolve symbol
+                        AsmSymbolEntry& curSymEntry = *target.symbol;
+                        if (!curSymEntry.second.resolving)
+                        {
+                            curSymEntry.second.value = value;
+                            curSymEntry.second.sectionId = sectionId;
+                            curSymEntry.second.isDefined = true;
+                            symbolStack.push(std::make_pair(&curSymEntry, 0));
+                            curSymEntry.second.resolving = true;
                         }
-                        case ASMXTGT_DATA8:
+                        // otherwise we ignore circular dependencies
+                        break;
+                    }
+                    case ASMXTGT_DATA8:
+                        if (sectionId != ASMSECT_ABS)
+                            printError(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions");
+                        else
+                        {
                             printWarningForRange(8, value, expr->getSourcePos());
                             sections[target.sectionId]->content[target.offset] =
                                     cxbyte(value);
-                            break;
-                        case ASMXTGT_DATA16:
+                        }
+                        break;
+                    case ASMXTGT_DATA16:
+                        if (sectionId != ASMSECT_ABS)
+                            printError(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions");
+                        else
+                        {
                             printWarningForRange(16, value, expr->getSourcePos());
                             SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
                                     ->content.data() + target.offset), uint16_t(value));
-                            break;
-                        case ASMXTGT_DATA32:
+                        }
+                        break;
+                    case ASMXTGT_DATA32:
+                        if (sectionId != ASMSECT_ABS)
+                            printError(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions");
+                        else
+                        {
                             printWarningForRange(32, value, expr->getSourcePos());
                             SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
                                     ->content.data() + target.offset), uint32_t(value));
-                            break;
-                        case ASMXTGT_DATA64:
+                        }
+                        break;
+                    case ASMXTGT_DATA64:
+                        if (sectionId != ASMSECT_ABS)
+                            printError(expr->getSourcePos(),
+                                   "Relative value is illegal in data expressions");
+                        else
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
                                     ->content.data() + target.offset), uint64_t(value));
-                            break;
-                        default: // ISA assembler resolves this dependency
-                            isaAssembler->resolveCode(sections[target.sectionId]
-                                    ->content.data() + target.offset, target.type, value);
-                            break;
-                    }
-                else
-                    printError(expr->getSourcePos(),
-                               "Relative value is illegal in data expressions");
+                        break;
+                    default: // ISA assembler resolves this dependency
+                        isaAssembler->resolveCode(sections[target.sectionId]
+                                ->content.data() + target.offset, target.type, value);
+                        break;
+                }
                 delete occurrence.expression; // delete expression
             }
             occurrence.expression = nullptr; // clear expression
