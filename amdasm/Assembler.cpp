@@ -35,6 +35,10 @@
 
 #define ASM_OUTPUT_DUMP 1
 
+#ifdef ASM_OUTPUT_DUMP
+#include <iostream>
+#endif
+
 using namespace CLRX;
 
 static inline const char* skipSpacesToEnd(const char* string, const char* end)
@@ -895,18 +899,6 @@ Assembler::~Assembler()
         delete repeat;
 }
 
-void Assembler::includeFile(const std::string& filename)
-{
-}
-
-void Assembler::applyMacro(const std::string& macroName, AsmMacroArgMap argMap)
-{
-}
-
-void Assembler::exitFromMacro()
-{
-}
-
 bool Assembler::parseString(std::string& strarray, const char* string,
             const char*& outend)
 {
@@ -1199,9 +1191,12 @@ bool Assembler::parseSymbol(const char* string, AsmSymbolEntry*& entry, bool loc
     return good;
 }
 
-bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
+bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
+    std::cout << "Setsymbol:" << symEntry.first << "=" << value << ",sectId=" <<
+                sectionId << std::endl;
     symEntry.second.value = value;
+    symEntry.second.sectionId = sectionId;
     symEntry.second.isDefined = true;
     bool good = true;
     // resolve value of pending symbols
@@ -1223,7 +1218,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
             if (!expr->unrefSymOccursNum())
             {   // expresion has been fully resolved
                 uint64_t value;
-                if (!expr->evaluate(*this, value))
+                cxuint sectionId;
+                if (!expr->evaluate(*this, value, sectionId))
                 {   // if failed
                     delete occurrence.expression; // delete expression
                     occurrence.expression = nullptr; // clear expression
@@ -1231,45 +1227,50 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value)
                     continue;
                 }
                 const AsmExprTarget& target = expr->getTarget();
-                switch(target.type)
-                {
-                    case ASMXTGT_SYMBOL:
-                    {    // resolve symbol
-                        AsmSymbolEntry& curSymEntry = *target.symbol;
-                        if (!curSymEntry.second.resolving)
-                        {
-                            curSymEntry.second.value = value;
-                            curSymEntry.second.isDefined = true;
-                            symbolStack.push(std::make_pair(&curSymEntry.second, 0));
-                            curSymEntry.second.resolving = true;
+                if (target.type == ASMXTGT_SYMBOL || sectionId == ASMSECT_ABS)
+                    switch(target.type)
+                    {
+                        case ASMXTGT_SYMBOL:
+                        {    // resolve symbol
+                            AsmSymbolEntry& curSymEntry = *target.symbol;
+                            if (!curSymEntry.second.resolving)
+                            {
+                                curSymEntry.second.value = value;
+                                curSymEntry.second.sectionId = sectionId;
+                                curSymEntry.second.isDefined = true;
+                                symbolStack.push(std::make_pair(&curSymEntry.second, 0));
+                                curSymEntry.second.resolving = true;
+                            }
+                            // otherwise we ignore circular dependencies
+                            break;
                         }
-                        // otherwise we ignore circular dependencies
-                        break;
+                        case ASMXTGT_DATA8:
+                            printWarningForRange(8, value, expr->getSourcePos());
+                            sections[target.sectionId]->content[target.offset] =
+                                    cxbyte(value);
+                            break;
+                        case ASMXTGT_DATA16:
+                            printWarningForRange(16, value, expr->getSourcePos());
+                            SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
+                                    ->content.data() + target.offset), uint16_t(value));
+                            break;
+                        case ASMXTGT_DATA32:
+                            printWarningForRange(32, value, expr->getSourcePos());
+                            SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
+                                    ->content.data() + target.offset), uint32_t(value));
+                            break;
+                        case ASMXTGT_DATA64:
+                            SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
+                                    ->content.data() + target.offset), uint64_t(value));
+                            break;
+                        default: // ISA assembler resolves this dependency
+                            isaAssembler->resolveCode(sections[target.sectionId]
+                                    ->content.data() + target.offset, target.type, value);
+                            break;
                     }
-                    case ASMXTGT_DATA8:
-                        printWarningForRange(8, value, expr->getSourcePos());
-                        sections[target.sectionId]->content[target.offset] =
-                                cxbyte(value);
-                        break;
-                    case ASMXTGT_DATA16:
-                        printWarningForRange(16, value, expr->getSourcePos());
-                        SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
-                                ->content.data() + target.offset), uint16_t(value));
-                        break;
-                    case ASMXTGT_DATA32:
-                        printWarningForRange(32, value, expr->getSourcePos());
-                        SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
-                                ->content.data() + target.offset), uint32_t(value));
-                        break;
-                    case ASMXTGT_DATA64:
-                        SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
-                                ->content.data() + target.offset), uint64_t(value));
-                        break;
-                    default: // ISA assembler resolves this dependency
-                        isaAssembler->resolveCode(sections[target.sectionId]
-                                ->content.data() + target.offset, target.type, value);
-                        break;
-                }
+                else
+                    printError(expr->getSourcePos(),
+                               "Relative value is illegal in data expressions");
                 delete occurrence.expression; // delete expression
             }
             occurrence.expression = nullptr; // clear expression
@@ -1314,9 +1315,10 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     if (expr->getSymOccursNum()==0)
     {   // can evalute, assign now
         uint64_t value;
-        if (!expr->evaluate(*this, value))
+        cxuint sectionId;
+        if (!expr->evaluate(*this, value, sectionId))
             return false;
-        setSymbol(symEntry, value);
+        setSymbol(symEntry, value, sectionId);
     }
     else // set expression
     {
@@ -1325,6 +1327,19 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         symEntry.second.isDefined = false;
     }
     return true;
+}
+
+bool Assembler::isAbsoluteSymbol(const AsmSymbol& symbol) const
+{
+    if (symbol.sectionId == ASMSECT_ABS)
+        return true;
+    // otherwise check section
+    if (sections.empty())
+        return false; // fallback
+    const AsmSection& section = *sections[symbol.sectionId];
+    return section.type!=AsmSectionType::AMD_KERNEL_CODE &&
+            section.type!=AsmSectionType::GALLIUM_CODE &&
+            section.type!=AsmSectionType::RAWCODE_CODE;
 }
 
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
@@ -1801,9 +1816,15 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& s
             asmr.printError(exprStr, "Expression has unresolved symbols!");
             return;
         }
-        if (!expr->evaluate(asmr, value))
+        cxuint sectionId;
+        if (!expr->evaluate(asmr, value, sectionId))
         {   // failed!
             asmr.good = false;
+            return;
+        }
+        else if (sectionId != ASMSECT_ABS)
+        {
+            asmr.printError(exprStr, "Expression must be absolute!");
             return;
         }
     }
@@ -1864,14 +1885,20 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
             if (expr->getSymOccursNum()==0)
             {   // put directly to section
                 uint64_t value;
-                if (expr->evaluate(asmr, value))
+                cxuint sectionId;
+                if (expr->evaluate(asmr, value, sectionId))
                 {
-                    if (sizeof(T) < 8)
-                        asmr.printWarningForRange(sizeof(T)<<3, value,
-                                     asmr.getSourcePos(literalStr));
-                    T out;
-                    SLEV(out, value);
-                    asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&out));
+                    if (sectionId == ASMSECT_ABS)
+                    {
+                        if (sizeof(T) < 8)
+                            asmr.printWarningForRange(sizeof(T)<<3, value,
+                                         asmr.getSourcePos(literalStr));
+                        T out;
+                        SLEV(out, value);
+                        asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&out));
+                    }
+                    else
+                        asmr.printError(literalStr, "Expression must be absolute!");
                 }
             }
             else // expression
@@ -2140,7 +2167,7 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName+"b", AsmSymbol() });
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
                         symbolMap.insert({ firstName+"f", AsmSymbol() });
-                assert(setSymbol(*nextLRes.first, currentOutPos));
+                assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.occurrences.clear();
                 prevLRes.first->second.value = nextLRes.first->second.value;
@@ -2179,7 +2206,7 @@ bool Assembler::assemble()
                     continue;
                 }
                 
-                if (!setSymbol(*res.first, currentOutPos))
+                if (!setSymbol(*res.first, currentOutPos, currentSection))
                 {   // if symbol not set
                     good = false;
                     continue;

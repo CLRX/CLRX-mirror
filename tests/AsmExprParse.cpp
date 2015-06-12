@@ -557,8 +557,9 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase)
     if (expr)
     {
         resultRpnExpr = rpnExpression(expr.get());
+        cxuint sectionId;
         if (expr->getSymOccursNum() == 0)
-            resultEvaluated = expr->evaluate(assembler, resultValue);
+            resultEvaluated = expr->evaluate(assembler, resultValue, sectionId);
         else
         {
             resultEvaluated = false;

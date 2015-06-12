@@ -489,7 +489,8 @@ enum class AsmExprOp : cxbyte
 {
     ARG_VALUE = 0,  ///< is value not operator
     ARG_SYMBOL = 1,  ///< is value not operator
-    NEGATE = 2, ///< negation
+    ARG_RELSYMBOL = 2, ///< is relative symbol
+    NEGATE = 3, ///< negation
     BIT_NOT,    ///< binary negation
     LOGICAL_NOT,    ///< logical negation
     PLUS,   ///< plus (nothing)
@@ -645,6 +646,7 @@ private:
     AsmExprTarget target;
     AsmSourcePos sourcePos;
     size_t symOccursNum;
+    bool relativeSymOccurs;
     Array<AsmExprOp> ops;
     std::unique_ptr<LineCol[]> messagePositions;    ///< for every potential message
     std::unique_ptr<AsmExprArg[]> args;
@@ -658,10 +660,10 @@ private:
     }
 public:
     /// constructor of expression (helper)
-    AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
+    AsmExpression(const AsmSourcePos& pos, size_t symOccursNum, bool relativeSymOccurs,
             size_t opsNum, size_t opPosNum, size_t argsNum);
     /// constructor of expression (helper)
-    AsmExpression(const AsmSourcePos& pos, size_t symOccursNum,
+    AsmExpression(const AsmSourcePos& pos, size_t symOccursNum, bool relativeSymOccurs,
               size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
               const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
     /// destructor
@@ -677,7 +679,7 @@ public:
      * \param value output value
      * \return true if evaluated
      */
-    bool evaluate(Assembler& assembler, uint64_t& value) const;
+    bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const;
     
     /// parse expression (helper)
     static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos);
@@ -698,6 +700,9 @@ public:
     /// get number of symbol occurrences in expression
     size_t getSymOccursNum() const
     { return symOccursNum; }
+    /// get number of symbol occurrences in expression
+    size_t hasRelativeSymOccurs() const
+    { return relativeSymOccurs; }
     /// unreference symbol occurrences in expression (used internally)
     bool unrefSymOccursNum()
     { return --symOccursNum!=0; }
@@ -835,17 +840,10 @@ private:
     bool parseString(std::string& strarray, const char* string, const char*& outend);
     bool parseSymbol(const char* string, AsmSymbolEntry*& entry, bool localLabel = true);
     
-    void includeFile(const std::string& filename);
-    void applyMacro(const std::string& macroName, AsmMacroArgMap argMap);
-    void exitFromMacro();
-    
-    bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value);
+    bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
     bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
                   const char* string);
-    
-    void putMacro(const char* argsString);
-    void putRepeat(uint64_t repeatsNum);
     
     void initializeOutputFormat();
     
@@ -857,6 +855,7 @@ private:
         ::memcpy(section.content.data() + currentOutPos, data, size);
         currentOutPos += size;
     }
+    
     void reserveData(size_t size)
     {
         AsmSection& section = *sections[currentSection];
@@ -865,7 +864,7 @@ private:
         currentOutPos += size;
     }
     
-    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
+    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 
 protected:    
     /// helper for testing
     bool readLine();
@@ -906,6 +905,10 @@ public:
     /// get symbols map
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
+    
+    /// returns true if symbol contains absolute value
+    bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
+    
     /// add initiali defsyms
     void addInitialDefSym(const std::string& symName, uint64_t name);
     /// get AMD Catalyst output
