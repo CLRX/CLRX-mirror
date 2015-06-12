@@ -571,16 +571,16 @@ struct AsmSymbol
     std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
     /// empty constructor
-    AsmSymbol(bool _onceDefined = false) : sectionId(ASMSECT_ABS), isDefined(false),
+    explicit AsmSymbol(bool _onceDefined = false) : sectionId(ASMSECT_ABS), isDefined(false),
             onceDefined(_onceDefined), resolving(false), value(0), expression(nullptr)
     { }
     /// constructor with expression
-    AsmSymbol(AsmExpression* expr, bool _onceDefined = false) :
+    explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false) :
             sectionId(ASMSECT_ABS), isDefined(false), onceDefined(_onceDefined), 
             resolving(false), value(0), expression(expr)
     { }
     /// constructor with value and section id
-    AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
+    explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
             sectionId(_sectionId), isDefined(true), onceDefined(_onceDefined),
             resolving(false), value(_value), expression(nullptr)
     { }
@@ -709,6 +709,8 @@ public:
     
     /// substitute occurrence in expression by value
     void substituteOccurrence(AsmExprSymbolOccurence occurrence, uint64_t value);
+    /// substitute occurrence in expression by value
+    void substituteOccurrence(AsmExprSymbolOccurence occurrence, AsmSymbolEntry* entry);
     /// get operators list
     const Array<AsmExprOp>& getOps() const
     { return ops; }
@@ -732,6 +734,13 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurence occurrenc
 {
     ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
     args[occurrence.argIndex].value = value;
+}
+
+inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurence occurrence,
+                    AsmSymbolEntry* entry)
+{
+    ops[occurrence.opIndex] = AsmExprOp::ARG_RELSYMBOL;
+    args[occurrence.argIndex].symbol = entry;
 }
 
 /// assembler section

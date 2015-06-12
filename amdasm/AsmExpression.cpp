@@ -298,7 +298,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
             }
             else if (op == AsmExprOp::ARG_RELSYMBOL)
             {
-                const AsmSymbol& sym = args[argPos++].symbol;
+                const AsmSymbol& sym = args[argPos++].symbol->second;
                 stack.push(ValueAndMultiplies(sym.value, sym.sectionId));
                 continue;
             }
@@ -332,7 +332,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
             else if (isBinaryOp(op))
             {
                 uint64_t value2 = stack.top().value;
-                const Array<RelMultiply>& relatives2 = stack.top().relatives;
+                const Array<RelMultiply> relatives2 = stack.top().relatives;
                 stack.pop();
                 switch (op)
                 {
@@ -700,10 +700,10 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
             else if (op == AsmExprOp::CHOICE)
             {
                 const uint64_t value2 = stack.top().value;
-                const Array<RelMultiply>& relatives2 = stack.top().relatives;
+                const Array<RelMultiply> relatives2 = stack.top().relatives;
                 stack.pop();
                 const uint64_t value3 = stack.top().value;
-                const Array<RelMultiply>& relatives3 = stack.top().relatives;
+                const Array<RelMultiply> relatives3 = stack.top().relatives;
                 stack.pop();
                 if (!relatives3.empty())
                 {
@@ -1235,7 +1235,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
                     j++;
                 }
-                else if (ops[i] == AsmExprOp::ARG_VALUE)
+                else if (ops[i] == AsmExprOp::ARG_VALUE || ops[i] == AsmExprOp::ARG_RELSYMBOL)
                     j++;
         }
         catch(...)
@@ -1246,7 +1246,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     args[j].symbol->second.removeOccurrenceInExpr(expr.get(), j, i);
                     j++;
                 }
-                else if (ops[i] == AsmExprOp::ARG_VALUE)
+                else if (ops[i] == AsmExprOp::ARG_VALUE || ops[i] == AsmExprOp::ARG_RELSYMBOL)
                     j++;
             throw;
         }

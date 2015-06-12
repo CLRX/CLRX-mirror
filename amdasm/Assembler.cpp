@@ -1200,25 +1200,34 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.isDefined = true;
     bool good = true;
     // resolve value of pending symbols
-    std::stack<std::pair<AsmSymbol*, size_t> > symbolStack;
-    symbolStack.push(std::make_pair(&symEntry.second, 0));
+    std::stack<std::pair<AsmSymbolEntry*, size_t> > symbolStack;
+    symbolStack.push(std::make_pair(&symEntry, 0));
     symEntry.second.resolving = true;
     
+    uint64_t prevOutPos = currentOutPos;
+    
+    try
+    {
     while (!symbolStack.empty())
     {
-        std::pair<AsmSymbol*, size_t>& entry = symbolStack.top();
-        if (entry.second < entry.first->occurrencesInExprs.size())
+        std::pair<AsmSymbolEntry*, size_t>& entry = symbolStack.top();
+        if (entry.second < entry.first->second.occurrencesInExprs.size())
         {   // 
             AsmExprSymbolOccurence& occurrence =
-                    entry.first->occurrencesInExprs[entry.second];
+                    entry.first->second.occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
-            expr->substituteOccurrence(occurrence, entry.first->value);
+            if (isAbsoluteSymbol(entry.first->second))
+                expr->substituteOccurrence(occurrence, entry.first->second.value);
+            else
+                expr->substituteOccurrence(occurrence, entry.first);
             entry.second++;
             
             if (!expr->unrefSymOccursNum())
             {   // expresion has been fully resolved
                 uint64_t value;
                 cxuint sectionId;
+                const AsmExprTarget& target = expr->getTarget();
+                currentOutPos = target.offset;
                 if (!expr->evaluate(*this, value, sectionId))
                 {   // if failed
                     delete occurrence.expression; // delete expression
@@ -1226,7 +1235,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     good = false;
                     continue;
                 }
-                const AsmExprTarget& target = expr->getTarget();
+                
                 if (target.type == ASMXTGT_SYMBOL || sectionId == ASMSECT_ABS)
                     switch(target.type)
                     {
@@ -1238,7 +1247,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                                 curSymEntry.second.value = value;
                                 curSymEntry.second.sectionId = sectionId;
                                 curSymEntry.second.isDefined = true;
-                                symbolStack.push(std::make_pair(&curSymEntry.second, 0));
+                                symbolStack.push(std::make_pair(&curSymEntry, 0));
                                 curSymEntry.second.resolving = true;
                             }
                             // otherwise we ignore circular dependencies
@@ -1277,11 +1286,18 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
         }
         else // pop
         {
-            entry.first->resolving = false;
-            entry.first->occurrencesInExprs.clear();
+            entry.first->second.resolving = false;
+            entry.first->second.occurrencesInExprs.clear();
             symbolStack.pop();
         }
     }
+    }
+    catch(...)
+    {
+        currentOutPos = prevOutPos;
+        throw;
+    }
+    currentOutPos = prevOutPos;
     symEntry.second.occurrences.clear();
     return good;
 }
@@ -1436,7 +1452,7 @@ void Assembler::initializeOutputFormat()
         galliumOutput->comment = nullptr;
         sections.push_back(new AsmSection{ 0, AsmSectionType::GALLIUM_CODE});
     }
-    else if (format == AsmFormat::GALLIUM && rawCode == nullptr)
+    else if (format == AsmFormat::RAWCODE && rawCode == nullptr)
     {
         sections.push_back(new AsmSection{ 0, AsmSectionType::RAWCODE_CODE});
         rawCode = sections[0];
