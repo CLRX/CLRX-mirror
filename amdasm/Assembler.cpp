@@ -33,12 +33,6 @@
 #include <CLRX/utils/InputOutput.h>
 #include <CLRX/amdasm/Assembler.h>
 
-#define ASM_OUTPUT_DUMP 1
-
-#ifdef ASM_OUTPUT_DUMP
-#include <iostream>
-#endif
-
 using namespace CLRX;
 
 static inline const char* skipSpacesToEnd(const char* string, const char* end)
@@ -1193,8 +1187,6 @@ bool Assembler::parseSymbol(const char* string, AsmSymbolEntry*& entry, bool loc
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
-    std::cout << "Setsymbol:" << symEntry.first << "=" << value << ",sectId=" <<
-                sectionId << std::endl;
     symEntry.second.value = value;
     symEntry.second.sectionId = sectionId;
     symEntry.second.isDefined = true;
@@ -2537,55 +2529,5 @@ bool Assembler::assemble()
             good = false;
         }
     }
-#ifdef ASM_OUTPUT_DUMP
-    {
-        std::vector<const AsmSymbolEntry*> symEntries;
-        for (const AsmSymbolEntry& symEntry: symbolMap)
-            symEntries.push_back(&symEntry);
-        std::sort(symEntries.begin(), symEntries.end(),
-                  [](const AsmSymbolEntry* s1, const AsmSymbolEntry* s2)
-                  { return s1->first < s2->first; });
-        
-        for (const AsmSymbolEntry* symEntryPtr: symEntries)
-        {
-            const AsmSymbolEntry& symEntry = *symEntryPtr;
-            if (symEntry.second.isDefined)
-                std::cerr << symEntry.first << " = " << symEntry.second.value <<
-                        "(0x" << std::hex << symEntry.second.value << ")" << std::dec;
-            else
-                std::cerr << symEntry.first << " undefined";
-            if (symEntry.second.onceDefined)
-                std::cerr << " onceDefined";
-            if (symEntry.second.sectionId == ASMSECT_ABS)
-                std::cerr << ", sect=ABS";
-            else if (sections.size() < symEntry.second.sectionId)
-                std::cerr << ", secttype=" <<
-                        cxuint(sections[symEntry.second.sectionId]->type);
-            else
-                std::cerr << ", sect=" << symEntry.second.sectionId;
-            std::cerr << std::endl;
-        }
-        
-        /* print sections */
-        for (const AsmSection* sectionPtr: sections)
-        {
-            const AsmSection& section = *sectionPtr;
-            std::cerr << "SectionType: " << cxuint(section.type) << std::endl;
-            for (size_t i = 0; i < section.content.size(); i+=16)
-            {
-                char buf[64];
-                size_t bufsz = itocstrCStyle(i, buf, 64, 16, 16, false);
-                std::cerr.write(buf, bufsz);
-                std::cerr.put(' ');
-                for (size_t j = i; j < i+16 && j < section.content.size(); j++)
-                {
-                    size_t bufsz = itocstrCStyle(section.content[j], buf, 64, 16, 2, false);
-                    std::cerr.write(buf, bufsz);
-                }
-                std::cerr << std::endl;
-            }
-        }
-    }
-#endif
     return good;
 }
