@@ -639,6 +639,11 @@ extern Array<cxbyte> loadDataFromFile(const char* filename);
 
 /// convert to filesystem from unified path (with slashes)
 extern void filesystemPath(char* path);
+/// convert to filesystem from unified path (with slashes)
+extern void filesystemPath(std::string& path);
+
+/// join two paths
+extern std::string joinPaths(const std::string& path1, const std::string& path2);
 
 /*
  * Reference support

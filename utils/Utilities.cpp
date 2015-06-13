@@ -417,4 +417,35 @@ extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
 }
 
 void CLRX::filesystemPath(char* path)
-{ }
+{
+    while (*path != 0)  // change to native dir separator
+        if (*path == CLRX_ALT_DIR_SEP)
+            *path = CLRX_NATIVE_DIR_SEP;
+}
+
+void CLRX::filesystemPath(std::string& path)
+{
+    for (char& c: path)
+        if (c == CLRX_ALT_DIR_SEP)
+            c = CLRX_NATIVE_DIR_SEP;
+}
+
+std::string CLRX::joinPaths(const std::string& path1, const std::string& path2)
+{
+    std::string outPath = path1;
+    if (path1.back() == CLRX_NATIVE_DIR_SEP)
+    {
+        if (path2.size() >= 1 && path2.front() == CLRX_NATIVE_DIR_SEP)
+            // skip first dir separator
+            outPath.append(path2.begin()+1, path2.end());
+        else
+            outPath += path2;
+    }
+    else
+    {
+        if (path2.size() >= 1 && path2.front() != CLRX_NATIVE_DIR_SEP)
+            outPath.push_back(CLRX_NATIVE_DIR_SEP); // add dir separator
+        outPath += path2;
+    }
+    return outPath;
+}

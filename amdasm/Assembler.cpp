@@ -851,12 +851,13 @@ void AsmSymbol::clearOccurrencesInExpr()
  */
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
-        AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream)
+        AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
+        std::ostream& _printStream)
         : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
-          outFormatInitialized(false),
+          printStream(_printStream), outFormatInitialized(false),
           inGlobal(_format != AsmFormat::RAWCODE),
           inAmdConfig(false), currentKernel(0), currentSection(0),
           // get value reference from first symbol: '.'
@@ -1734,15 +1735,42 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
     const char* nameStr = string;
     if (asmr.parseString(filename, string, string))
     {
+        bool failedOpen = false;
+        filesystemPath(filename);
         try
         {
             std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
                     asmr.getSourcePos(pseudoStr), filename));
             asmr.asmInputFilters.push(newInputFilter.release());
             asmr.currentInputFilter = asmr.asmInputFilters.top(); 
+            return;
         }
         catch(const Exception& ex)
-        { asmr.printError(nameStr, ex.what()); }
+        { failedOpen = true; }
+        
+        for (const std::string& incDir: asmr.includeDirs)
+        {
+            failedOpen = false;
+            std::string inDirFilename;
+            try
+            {
+                inDirFilename = joinPaths(incDir, filename);
+                std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
+                        asmr.getSourcePos(pseudoStr), inDirFilename));
+                asmr.asmInputFilters.push(newInputFilter.release());
+                asmr.currentInputFilter = asmr.asmInputFilters.top();
+                break;
+            }
+            catch(const Exception& ex)
+            { failedOpen = true; }
+        }
+        if (failedOpen)
+        {
+            std::string error("Include file '");
+            error += filename;
+            error += "' not found or unavailable in any directory";
+            asmr.printError(nameStr, error.c_str());
+        }
     }
 }
 
@@ -2363,7 +2391,15 @@ bool Assembler::assemble()
                 case ASMOP_P2ALIGN:
                     break;
                 case ASMOP_PRINT:
+                {
+                    std::string outStr;
+                    if (parseString(outStr, string, string))
+                    {
+                        std::cout.write(outStr.c_str(), outStr.size());
+                        std::cout.put('\n');
+                    }
                     break;
+                }
                 case ASMOP_PURGEM:
                     break;
                 case ASMOP_QUAD:

@@ -132,6 +132,12 @@
 #  define DEFAULT_AMDOCLPATH "/usr/lib64/libamdocl64.so"
 #  endif
 
+#  define CLRX_NATIVE_DIR_SEP '/'
+#  define CLRX_NATIVE_DIR_SEP_S "/"
+
+#  define CLRX_ALT_DIR_SEP '\\'
+#  define CLRX_ALT_DIR_SEP_S "\\"
+
 #else
 #error "Other platforms than Linux is not unsupported"
 #endif

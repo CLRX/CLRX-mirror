@@ -799,6 +799,7 @@ private:
     AsmInputFilter* currentInputFilter;
     
     std::ostream& messageStream;
+    std::ostream& printStream;
     
     union {
         AmdInput* amdOutput;
@@ -890,7 +891,7 @@ public:
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
               AsmFormat format = AsmFormat::CATALYST,
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
-              std::ostream& msgStream = std::cerr);
+              std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
     /// destructor
     ~Assembler();
     
