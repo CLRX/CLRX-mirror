@@ -586,12 +586,20 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                         break;
                     case AsmExprOp::EQUAL:
                     case AsmExprOp::NOT_EQUAL:
+                    case AsmExprOp::LESS:
+                    case AsmExprOp::LESS_EQ:
+                    case AsmExprOp::GREATER:
+                    case AsmExprOp::GREATER_EQ:
+                    case AsmExprOp::BELOW:
+                    case AsmExprOp::BELOW_EQ:
+                    case AsmExprOp::ABOVE:
+                    case AsmExprOp::ABOVE_EQ:
                     {
                         size_t requals = 0;
                         if (relatives2.size() != relatives.size())
                         {
                             assembler.printError(sourcePos,
-                                 "For equality two values must have same relatives!");
+                                 "For comparisons two values must have same relatives!");
                             failed = true;
                         }
                         else
@@ -607,91 +615,51 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                                     }
                             if (requals != relatives.size())
                             {
-                                assembler.printError(sourcePos,
-                                     "For equality two values must have same relatives!");
+                                assembler.printError(sourcePos, "For comparisons "
+                                        "two values must have same relatives!");
                                 failed = true;
                             }
                         }
                         relatives.clear();
-                        if (op == AsmExprOp::EQUAL)
-                            value = (value2 == value) ? UINT64_MAX : 0;
-                        else
-                            value = (value2 != value) ? UINT64_MAX : 0;
+                        switch(op)
+                        {
+                            case AsmExprOp::EQUAL:
+                                value = (value2 == value) ? UINT64_MAX : 0;
+                                break;
+                            case AsmExprOp::NOT_EQUAL:
+                                value = (value2 != value) ? UINT64_MAX : 0;
+                                break;
+                            case AsmExprOp::LESS:
+                                value = (int64_t(value2) < int64_t(value))? UINT64_MAX: 0;
+                                break;
+                            case AsmExprOp::LESS_EQ:
+                                value = (int64_t(value2) <= int64_t(value)) ?
+                                        UINT64_MAX : 0;
+                                break;
+                            case AsmExprOp::GREATER:
+                                value = (int64_t(value2) > int64_t(value)) ? UINT64_MAX : 0;
+                                break;
+                            case AsmExprOp::GREATER_EQ:
+                                value = (int64_t(value2) >= int64_t(value)) ?
+                                        UINT64_MAX : 0;
+                                break;
+                            case AsmExprOp::BELOW:
+                                value = (value2 < value)? UINT64_MAX: 0;
+                                break;
+                            case AsmExprOp::BELOW_EQ:
+                                value = (value2 <= value)? UINT64_MAX: 0;
+                                break;
+                            case AsmExprOp::ABOVE:
+                                value = (value2 > value)? UINT64_MAX: 0;
+                                break;
+                            case AsmExprOp::ABOVE_EQ:
+                                value = (value2 >= value)? UINT64_MAX: 0;
+                                break;
+                            default:
+                                break;
+                        }
                         break;
                     }
-                        break;
-                    case AsmExprOp::LESS:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Less is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (int64_t(value2) < int64_t(value))? UINT64_MAX: 0;
-                        break;
-                    case AsmExprOp::LESS_EQ:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "LessEqual is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (int64_t(value2) <= int64_t(value)) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::GREATER:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Greater is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (int64_t(value2) > int64_t(value)) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::GREATER_EQ:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "GreaterEqual is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (int64_t(value2) >= int64_t(value)) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::BELOW:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Below is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (value2 < value)? UINT64_MAX: 0;
-                        break;
-                    case AsmExprOp::BELOW_EQ:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "BelowEqual is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (value2 <= value) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::ABOVE:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "Above is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (value2 > value) ? UINT64_MAX : 0;
-                        break;
-                    case AsmExprOp::ABOVE_EQ:
-                        if (!relatives.empty() || !relatives2.empty())
-                        {
-                            assembler.printError(sourcePos,
-                                 "AboveEqual is not allowed for any relative value");
-                            failed = true;
-                        }
-                        value = (value2 >= value) ? UINT64_MAX : 0;
-                        break;
                     default:
                         break;
                 }
@@ -1235,7 +1203,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
                     j++;
                 }
-                else if (ops[i] == AsmExprOp::ARG_VALUE || ops[i] == AsmExprOp::ARG_RELSYMBOL)
+                else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
                     j++;
         }
         catch(...)
@@ -1246,7 +1214,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     args[j].symbol->second.removeOccurrenceInExpr(expr.get(), j, i);
                     j++;
                 }
-                else if (ops[i] == AsmExprOp::ARG_VALUE || ops[i] == AsmExprOp::ARG_RELSYMBOL)
+                else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
                     j++;
             throw;
         }

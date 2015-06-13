@@ -914,6 +914,9 @@ public:
     /// get symbols map
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
+    /// get sections
+    const std::vector<AsmSection*>& getSections() const
+    { return sections; }
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
