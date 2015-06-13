@@ -1225,7 +1225,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 {   // if failed
                     delete occurrence.expression; // delete expression
                     occurrence.expression = nullptr; // clear expression
-                    good = false;
                     continue;
                 }
                 
@@ -1314,7 +1313,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
 }
 
 bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
-             const char* string)
+             const char* string, bool reassign)
 {
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
     string = skipSpacesToEnd(string, line+lineSize);
@@ -1323,15 +1322,19 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         return false;
     if (string != line+lineSize)
     {
+        if (expr->getSymOccursNum()!=0)
+            expr.release();
         printError(string, "Garbages at end of expression");
         return false;
     }
     
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symbolName, AsmSymbol() });
-    if (!res.second && res.first->second.onceDefined)
+    if (!res.second && (res.first->second.onceDefined || !reassign))
     {   // found and can be only once defined
-        std::string msg = "Label '";
+        if (expr->getSymOccursNum()!=0)
+            expr.release();
+        std::string msg = (res.first->second.onceDefined) ? "Label '" : "Symbol '";
         msg += symbolName;
         msg += "' is already defined";
         printError(stringAtSymbol, msg.c_str());
@@ -1574,6 +1577,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void putStringsToInts(Assembler& asmr, const char*& string);
     
     static void putUInt128s(Assembler& asmr, const char*& string);
+    
+    static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true);
 };
 
 bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
@@ -1584,10 +1589,7 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     const char* exprStr = string;
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
     if (expr == nullptr)
-    {   // error
-        asmr.good = false;
         return false;
-    }
     if (expr->getSymOccursNum() != 0)
     {   // not resolved at this time
         expr.release(); // expr is registered in symbols occurrences
@@ -1595,11 +1597,8 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
         return false;
     }
     cxuint sectionId; // for getting
-    if (!expr->evaluate(asmr, value, sectionId))
-    {   // failed evaluation!
-        asmr.good = false;
+    if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
         return false;
-    }
     else if (sectionId != ASMSECT_ABS)
     {   // if not absolute value
         asmr.printError(exprStr, "Expression must be absolute!");
@@ -1661,10 +1660,7 @@ inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char
 void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
 {
     if (asmr.outFormatInitialized)
-    {
         asmr.printError(string, "Bitness has already been defined");
-        asmr.good = false;
-    }
     if (asmr.format != AsmFormat::CATALYST)
         asmr.printWarning(string, "Bitness ignored for other formats than AMD Catalyst");
     else
@@ -1687,15 +1683,9 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
     else if (formatName == "raw")
         asmr.format = AsmFormat::RAWCODE;
     else
-    {
         asmr.printError(string, "Unknown output format type");
-        asmr.good = false;
-    }
     if (asmr.outFormatInitialized)
-    {
         asmr.printError(string, "Output format type has already been defined");
-        asmr.good = false;
-    }
 }
 
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
@@ -1721,10 +1711,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
         }
     }
     else if (asmr.format == AsmFormat::RAWCODE)
-    {
         asmr.printError(string, "Raw code can have only one unnamed kernel");
-        asmr.good = false;
-    }
 }
 
 void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const char*& string)
@@ -1862,16 +1849,11 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
                 asmr.reserveData(sizeof(T));
             }
         }
-        else // fail
-            asmr.good = false;
         string = skipSpacesToEnd(string, end); // spaces before ','
         if (string == end)
             break;
         if (*string != ',')
-        {
             asmr.printError(string, "Expected ',' before next value");
-            asmr.good = false;
-        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -1933,10 +1915,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
         if (string == end)
             break;
         if (*string != ',')
-        {
             asmr.printError(string, "Expected ',' before next value");
-            asmr.good = false;
-        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -1967,10 +1946,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         if (string == end)
             break;
         if (*string != ',')
-        {
             asmr.printError(string, "Expected ',' before next value");
-            asmr.good = false;
-        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -1988,18 +1964,13 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
         {
             if (asmr.parseString(outStr, string, string))
                 asmr.putData(outStr.size()+(addZero), (const cxbyte*)outStr.c_str());
-            else
-                asmr.good = false;
         }
         
         string = skipSpacesToEnd(string, end); // spaces before ','
         if (string == end)
             break;
         if (*string != ',')
-        {
             asmr.printError(string, "Expected ',' before next value");
-            asmr.good = false;
-        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -2008,7 +1979,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
 template<typename T>
 void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
 {
-     const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     while (string != end)
@@ -2026,21 +1997,45 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
                 for (size_t i = 0; i < strSize; i++)
                     SULEV(outData[i], T(outStr[i])&T(0xff));
             }
-            else
-                asmr.good = false;
         }
         
         string = skipSpacesToEnd(string, end); // spaces before ','
         if (string == end)
             break;
         if (*string != ',')
-        {
             asmr.printError(string, "Expected ',' before next value");
-            asmr.good = false;
-        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+}
+
+void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        asmr.printError(string, "Expected symbol name and expression");
+        return;
+    }
+    const char* strAtSymName = string;
+    std::string symName = extractSymName(string, end, false);
+    if (symName.empty())
+    {
+        asmr.printError(string, "Expected symbol name and expression");
+        return;
+    }
+    string += symName.size();
+    bool haveComma;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected symbol name and expression");
+        return;
+    }
+    asmr.assignSymbol(symName, strAtSymName, string, reassign);
+    string = end;
 }
 
 };
@@ -2066,7 +2061,6 @@ bool Assembler::assemble()
             while (string != end && *string >= '0' && *string <= '9') string++;
             if (string == startString)
             {   // error
-                good = false;
                 printError(string, "Syntax error");
                 continue;
             }
@@ -2082,12 +2076,10 @@ bool Assembler::assemble()
             string = skipSpacesToEnd(string+1, line+lineSize);
             if (string == end)
             {
-                good = false;
                 printError(string, "Expected assignment expression");
                 continue;
             }
-            if (!assignSymbol(firstName, firstNameString, string))
-                good = false;
+            assignSymbol(firstName, firstNameString, string);
             continue;
         }
         else if (string != end && *string == ':')
@@ -2096,7 +2088,6 @@ bool Assembler::assemble()
             string = skipSpacesToEnd(string+1, line+lineSize);
             if (string != end)
             {
-                good = false;
                 printError(string, "Expected assignment expression");
                 continue;
             }
@@ -2106,14 +2097,12 @@ bool Assembler::assemble()
                 {
                     printError(firstNameString,
                                "Local label can't be defined outside section");
-                    good = false;
                     continue;
                 }
                 if (inAmdConfig)
                 {
                     printError(firstNameString,
                                "Local label can't defined in AMD config place");
-                    good = false;
                     continue;
                 }
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
@@ -2140,7 +2129,6 @@ bool Assembler::assemble()
                         msg += firstName;
                         msg += "' is already defined";
                         printError(firstNameString, msg.c_str());
-                        good = false;
                         continue;
                     }
                 }
@@ -2148,22 +2136,16 @@ bool Assembler::assemble()
                 {
                     printError(firstNameString,
                                "Label can't be defined outside section");
-                    good = false;
                     continue;
                 }
                 if (inAmdConfig)
                 {
                     printError(firstNameString,
                                "Label can't defined in AMD config place");
-                    good = false;
                     continue;
                 }
                 
-                if (!setSymbol(*res.first, currentOutPos, currentSection))
-                {   // if symbol not set
-                    good = false;
-                    continue;
-                }
+                setSymbol(*res.first, currentOutPos, currentSection);
                 res.first->second.onceDefined = true;
                 res.first->second.sectionId = currentSection;
             }
@@ -2213,7 +2195,6 @@ bool Assembler::assemble()
                     if (outFormatInitialized)
                     {
                         printError(string, "Output format type has already been defined");
-                        good = false;
                     }
                     format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
                         (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
@@ -2224,20 +2205,14 @@ bool Assembler::assemble()
                     {
                         initializeOutputFormat();
                         if (inGlobal)
-                        {
                             printError(string,
                                    "Configuration in global layout is illegal");
-                            good = false;
-                        }
                         else
                             inAmdConfig = true; // inside Amd Config
                     }
                     else
-                    {
                         printError(string,
                            "Configuration section only for AMD Catalyst binaries");
-                        good = false;
-                    }
                     break;
                 case ASMOP_DATA:
                     break;
@@ -2289,9 +2264,12 @@ bool Assembler::assemble()
                 case ASMOP_ENDR:
                     break;
                 case ASMOP_EQU:
+                case ASMOP_SET:
+                    AsmPseudoOps::setSymbol(*this, string);
                     break;
                 case ASMOP_EQUIV:
                 case ASMOP_EQV:
+                    AsmPseudoOps::setSymbol(*this, string, false);
                     break;
                 case ASMOP_ERR:
                     printError(firstNameString, ".err encountered");
@@ -2409,8 +2387,6 @@ bool Assembler::assemble()
                     break;
                 case ASMOP_SECTION:
                     break;
-                case ASMOP_SET:
-                    break;
                 case ASMOP_SHORT:
                     AsmPseudoOps::putIntegers<uint16_t>(*this, string);
                     break;
@@ -2458,11 +2434,8 @@ bool Assembler::assemble()
         
         // check garbages at line and print error
         string = skipSpacesToEnd(string, end);
-        if (string != end)
-        {   // garbages
-            printError(string, "Garbages at end of line with pseud-op");
-            good = false;
-        }
+        if (string != end) // garbages
+            printError(string, "Garbages at end of line with pseudo-op");
     }
     return good;
 }

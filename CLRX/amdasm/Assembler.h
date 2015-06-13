@@ -853,7 +853,7 @@ private:
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
     bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
-                  const char* string);
+                  const char* string, bool reassign = true);
     
     void initializeOutputFormat();
     
