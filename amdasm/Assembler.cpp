@@ -1475,222 +1475,64 @@ void Assembler::initializeOutputFormat()
 
 static const char* pseudoOpNamesTbl[] =
 {
-    "32bit",
-    "64bit",
-    "abort",
-    "align",
-    "arch",
-    "ascii",
-    "asciz",
-    "balign",
-    "balignl",
-    "balignw",
-    "byte",
-    "catalyst",
-    "config",
-    "data",
-    "double",
-    "else",
-    "elseif",
-    "elseifb",
-    "elseifc",
-    "elseifdef",
-    "elseifeq",
-    "elseifeqs",
-    "elseifge",
-    "elseifgt",
-    "elseifle",
-    "elseiflt",
-    "elseifnb",
-    "elseifnc",
-    "elseifndef",
-    "elseifne",
-    "elseifnes",
-    "elseifnotdef",
-    "end",
-    "endfunc",
-    "endif",
-    "endm",
-    "endr",
-    "equ",
-    "equiv",
-    "eqv",
-    "err",
-    "error",
-    "exitm",
-    "extern",
-    "fail",
-    "file",
-    "fill",
-    "float",
-    "format",
-    "func",
-    "gallium",
-    "global",
-    "gpu",
-    "half",
-    "hword",
-    "if",
-    "ifb",
-    "ifc",
-    "ifdef",
-    "ifeq",
-    "ifeqs",
-    "ifge",
-    "ifgt",
-    "ifle",
-    "iflt",
-    "ifnb",
-    "ifnc",
-    "ifndef",
-    "ifne",
-    "ifnes",
-    "ifnotdef",
-    "incbin",
-    "include",
-    "int",
-    "kernel",
-    "line",
-    "ln",
-    "loc",
-    "local",
-    "long",
-    "macro",
-    "octa",
-    "offset",
-    "org",
-    "p2align",
-    "print",
-    "purgem",
-    "quad",
-    "rawcode",
-    "rept",
-    "section",
-    "set",
-    "short",
-    "single",
-    "size",
-    "skip",
-    "space",
-    "string",
-    "string16",
-    "string32",
-    "string64",
-    "struct",
-    "text",
-    "title",
-    "warning",
-    "word"
+    "32bit", "64bit", "abort", "align",
+    "arch", "ascii", "asciz", "balign",
+    "balignl", "balignw", "byte", "catalyst",
+    "config", "data", "double", "else",
+    "elseif", "elseifb", "elseifc", "elseifdef",
+    "elseifeq", "elseifeqs", "elseifge", "elseifgt",
+    "elseifle", "elseiflt", "elseifnb", "elseifnc",
+    "elseifndef", "elseifne", "elseifnes", "elseifnotdef",
+    "end", "endfunc", "endif", "endm",
+    "endr", "equ", "equiv", "eqv",
+    "err", "error", "exitm", "extern",
+    "fail", "file", "fill", "float",
+    "format", "func", "gallium", "global",
+    "gpu", "half", "hword", "if",
+    "ifb", "ifc", "ifdef", "ifeq",
+    "ifeqs", "ifge", "ifgt", "ifle",
+    "iflt", "ifnb", "ifnc", "ifndef",
+    "ifne", "ifnes", "ifnotdef", "incbin",
+    "include", "int", "kernel", "line",
+    "ln", "loc", "local", "long",
+    "macro", "octa", "offset", "org",
+    "p2align", "print", "purgem", "quad",
+    "rawcode", "rept", "section", "set",
+    "short", "single", "size", "skip",
+    "space", "string", "string16", "string32",
+    "string64", "struct", "text", "title",
+    "warning", "word"
 };
 
 enum
 {
-    ASMOP_32BIT = 0,
-    ASMOP_64BIT,
-    ASMOP_ABORT,
-    ASMOP_ALIGN,
-    ASMOP_ARCH,
-    ASMOP_ASCII,
-    ASMOP_ASCIZ,
-    ASMOP_BALIGN,
-    ASMOP_BALIGNL,
-    ASMOP_BALIGNW,
-    ASMOP_BYTE,
-    ASMOP_CATALYST,
-    ASMOP_CONFIG,
-    ASMOP_DATA,
-    ASMOP_DOUBLE,
-    ASMOP_ELSE,
-    ASMOP_ELSEIF,
-    ASMOP_ELSEIFB,
-    ASMOP_ELSEIFC,
-    ASMOP_ELSEIFDEF,
-    ASMOP_ELSEIFEQ,
-    ASMOP_ELSEIFEQS,
-    ASMOP_ELSEIFGE,
-    ASMOP_ELSEIFGT,
-    ASMOP_ELSEIFLE,
-    ASMOP_ELSEIFLT,
-    ASMOP_ELSEIFNB,
-    ASMOP_ELSEIFNC,
-    ASMOP_ELSEIFNDEF,
-    ASMOP_ELSEIFNE,
-    ASMOP_ELSEIFNES,
-    ASMOP_ELSEIFNOTDEF,
-    ASMOP_END,
-    ASMOP_ENDFUNC,
-    ASMOP_ENDIF,
-    ASMOP_ENDM,
-    ASMOP_ENDR,
-    ASMOP_EQU,
-    ASMOP_EQUIV,
-    ASMOP_EQV,
-    ASMOP_ERR,
-    ASMOP_ERROR,
-    ASMOP_EXITM,
-    ASMOP_EXTERN,
-    ASMOP_FAIL,
-    ASMOP_FILE,
-    ASMOP_FILL,
-    ASMOP_FLOAT,
-    ASMOP_FORMAT,
-    ASMOP_FUNC,
-    ASMOP_GALLIUM,
-    ASMOP_GLOBAL,
-    ASMOP_GPU,
-    ASMOP_HALF,
-    ASMOP_HWORD,
-    ASMOP_IF,
-    ASMOP_IFB,
-    ASMOP_IFC,
-    ASMOP_IFDEF,
-    ASMOP_IFEQ,
-    ASMOP_IFEQS,
-    ASMOP_IFGE,
-    ASMOP_IFGT,
-    ASMOP_IFLE,
-    ASMOP_IFLT,
-    ASMOP_IFNB,
-    ASMOP_IFNC,
-    ASMOP_IFNDEF,
-    ASMOP_IFNE,
-    ASMOP_IFNES,
-    ASMOP_IFNOTDEF,
-    ASMOP_INCBIN,
-    ASMOP_INCLUDE,
-    ASMOP_INT,
-    ASMOP_KERNEL,
-    ASMOP_LINE,
-    ASMOP_LN,
-    ASMOP_LOC,
-    ASMOP_LOCAL,
-    ASMOP_LONG,
-    ASMOP_MACRO,
-    ASMOP_OCTA,
-    ASMOP_OFFSET,
-    ASMOP_ORG,
-    ASMOP_P2ALIGN,
-    ASMOP_PRINT,
-    ASMOP_PURGEM,
-    ASMOP_QUAD,
-    ASMOP_RAWCODE,
-    ASMOP_REPT,
-    ASMOP_SECTION,
-    ASMOP_SET,
-    ASMOP_SHORT,
-    ASMOP_SINGLE,
-    ASMOP_SIZE,
-    ASMOP_SKIP,
-    ASMOP_SPACE,
-    ASMOP_STRING,
-    ASMOP_STRING16,
-    ASMOP_STRING32,
-    ASMOP_STRING64,
-    ASMOP_STRUCT,
-    ASMOP_TEXT,
-    ASMOP_TITLE,
-    ASMOP_WARNING,
-    ASMOP_WORD
+    ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN,
+    ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ, ASMOP_BALIGN,
+    ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE, ASMOP_CATALYST,
+    ASMOP_CONFIG, ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
+    ASMOP_ELSEIF, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
+    ASMOP_ELSEIFEQ, ASMOP_ELSEIFEQS, ASMOP_ELSEIFGE, ASMOP_ELSEIFGT,
+    ASMOP_ELSEIFLE, ASMOP_ELSEIFLT, ASMOP_ELSEIFNB, ASMOP_ELSEIFNC,
+    ASMOP_ELSEIFNDEF, ASMOP_ELSEIFNE, ASMOP_ELSEIFNES, ASMOP_ELSEIFNOTDEF,
+    ASMOP_END, ASMOP_ENDFUNC, ASMOP_ENDIF, ASMOP_ENDM,
+    ASMOP_ENDR, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
+    ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
+    ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FLOAT,
+    ASMOP_FORMAT, ASMOP_FUNC, ASMOP_GALLIUM, ASMOP_GLOBAL,
+    ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF,
+    ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
+    ASMOP_IFEQS, ASMOP_IFGE, ASMOP_IFGT, ASMOP_IFLE,
+    ASMOP_IFLT, ASMOP_IFNB, ASMOP_IFNC, ASMOP_IFNDEF,
+    ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNOTDEF, ASMOP_INCBIN,
+    ASMOP_INCLUDE, ASMOP_INT, ASMOP_KERNEL, ASMOP_LINE,
+    ASMOP_LN, ASMOP_LOC, ASMOP_LOCAL, ASMOP_LONG,
+    ASMOP_MACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
+    ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
+    ASMOP_RAWCODE, ASMOP_REPT, ASMOP_SECTION, ASMOP_SET,
+    ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
+    ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
+    ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
+    ASMOP_WARNING, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1698,6 +1540,18 @@ namespace CLRX
 
 struct CLRX_INTERNAL AsmPseudoOps
 {
+    /* parsing helpers */
+    // get absolute value arg resolved at this time
+    static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& string);
+    // get name (not symbol name)
+    static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
+               const char* objName);
+    // skip comma
+    static bool skipComma(Assembler& asmr, bool& haveComma, const char*& string);
+    
+    /*
+     * pseudo-ops logic
+     */
     static void setBitness(Assembler& asmr, const char*& string, bool _64Bit);
     static void setOutFormat(Assembler& asmr, const char*& string);
     static void goToKernel(Assembler& asmr, const char*& string);
@@ -1721,6 +1575,88 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void putUInt128s(Assembler& asmr, const char*& string);
 };
 
+bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
+                      const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* exprStr = string;
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
+    if (expr == nullptr)
+    {   // error
+        asmr.good = false;
+        return false;
+    }
+    if (expr->getSymOccursNum() != 0)
+    {   // not resolved at this time
+        expr.release(); // expr is registered in symbols occurrences
+        asmr.printError(exprStr, "Expression has unresolved symbols!");
+        return false;
+    }
+    cxuint sectionId; // for getting
+    if (!expr->evaluate(asmr, value, sectionId))
+    {   // failed evaluation!
+        asmr.good = false;
+        return false;
+    }
+    else if (sectionId != ASMSECT_ABS)
+    {   // if not absolute value
+        asmr.printError(exprStr, "Expression must be absolute!");
+        return false;
+    }
+    return true;
+}
+
+bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
+            const char* objName)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    outStr.clear();
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        std::string error("Expected");
+        error += objName;
+        asmr.printError(string, error.c_str());
+        return false;
+    }
+    const char* nameStr = string;
+    if ((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
+            *string == '_')
+    {
+        string++;
+        while (string != end && ((*string >= 'a' && *string <= 'z') ||
+           (*string >= 'A' && *string <= 'Z') || (*string >= '0' && *string <= '9') ||
+           *string == '_')) string++;
+    }
+    else
+    {
+        asmr.printError(string, "Some garbages at name place");
+        return false;
+    }
+    outStr.assign(nameStr, string);
+    return true;
+}
+
+inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        haveComma = false;
+        return true;
+    }
+    if (*string != ',')
+    {
+        asmr.printError(string, "Expected ',' before argument");
+        return false;
+    }
+    string++;
+    haveComma = true;
+    return true;
+}
+
 void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
 {
     if (asmr.outFormatInitialized)
@@ -1738,12 +1674,10 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-    {
-        asmr.printError(string, "Expected output format type");
-        asmr.good = false;
-    }
-    std::string formatName = extractSymName(string, end, false);
+    std::string formatName;
+    if (!getNameArg(asmr, formatName, string, "output format type"))
+        return;
+    
     toLowerString(formatName);
     if (formatName == "catalyst" || formatName == "amd")
         asmr.format = AsmFormat::CATALYST;
@@ -1769,19 +1703,9 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
     if (asmr.format == AsmFormat::CATALYST || asmr.format == AsmFormat::GALLIUM)
     {
         string = skipSpacesToEnd(string, end);
-        if (string == end)
-        {
-            asmr.printError(string, "Expected kernel name");
-            asmr.good = false;
+        std::string kernelName;
+        if (!getNameArg(asmr, kernelName, string, "kernel name"))
             return;
-        }
-        std::string kernelName = extractSymName(string, end, false);
-        if (kernelName.empty())
-        {
-            asmr.printError(string, "This is not kernel name");
-            asmr.good = false;
-            return;
-        }
         if (asmr.format == AsmFormat::CATALYST)
         {
             asmr.kernelMap.insert(std::make_pair(kernelName,
@@ -1827,33 +1751,8 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& s
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     uint64_t value = 0;
-    if (string != end)
-    {
-        const char* exprStr = string;
-        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
-        if (expr == nullptr)
-        {
-            asmr.good = false;
-            return;
-        }
-        if (expr->getSymOccursNum() != 0)
-        {
-            expr.release(); // expr is registered in symbols occurrences
-            asmr.printError(exprStr, "Expression has unresolved symbols!");
-            return;
-        }
-        cxuint sectionId;
-        if (!expr->evaluate(asmr, value, sectionId))
-        {   // failed!
-            asmr.good = false;
-            return;
-        }
-        else if (sectionId != ASMSECT_ABS)
-        {
-            asmr.printError(exprStr, "Expression must be absolute!");
-            return;
-        }
-    }
+    if (!getAbsoluteValueArg(asmr, value, string))
+        return;
     char buf[50];
     ::memcpy(buf, ".fail ", 6);
     const size_t pos = 6+itocstrCStyle(int64_t(value), buf+6, 50-6);
