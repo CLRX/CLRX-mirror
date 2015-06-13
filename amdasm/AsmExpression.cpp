@@ -57,6 +57,18 @@ AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
     messagePositions.reset(new LineCol[_opPosNum]);
 }
 
+AsmExpression::~AsmExpression()
+{
+    for (size_t i = 0, j = 0; i < ops.size(); i++)
+        if (ops[i] == AsmExprOp::ARG_SYMBOL)
+        {
+            args[j].symbol->second.removeOccurrenceInExpr(this, j, i);
+            j++;
+        }
+        else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
+            j++;
+}
+
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
 {
     if (symOccursNum != 0)
@@ -1195,29 +1207,14 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                   assembler.getSourcePos(startString), symOccursNum, relativeSymOccurs,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
                   args.size(), args.data()));
-        try
-        {
-            for (size_t i = 0, j = 0; i < ops.size(); i++)
-                if (ops[i] == AsmExprOp::ARG_SYMBOL)
-                {
-                    args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
-                    j++;
-                }
-                else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
-                    j++;
-        }
-        catch(...)
-        {   // fallback! remove all occurrences
-            for (size_t i = 0, j = 0; i < ops.size(); i++)
-                if (ops[i] == AsmExprOp::ARG_SYMBOL)
-                {
-                    args[j].symbol->second.removeOccurrenceInExpr(expr.get(), j, i);
-                    j++;
-                }
-                else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
-                    j++;
-            throw;
-        }
+        for (size_t i = 0, j = 0; i < ops.size(); i++)
+            if (ops[i] == AsmExprOp::ARG_SYMBOL)
+            {
+                args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
+                j++;
+            }
+            else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
+                j++;
         return expr.release();
     }
     else

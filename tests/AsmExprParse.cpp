@@ -561,11 +561,7 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase)
         if (expr->getSymOccursNum() == 0)
             resultEvaluated = expr->evaluate(assembler, resultValue, sectionId);
         else
-        {
             resultEvaluated = false;
-            // release pointer, because will be deleted by assembler instance!
-            expr.release();
-        }
     }
     /* compare */
     std::string resultErrors = resultErrorsOut.str();

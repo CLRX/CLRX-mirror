@@ -667,7 +667,7 @@ public:
               size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
               const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
     /// destructor
-    ~AsmExpression() = default;
+    ~AsmExpression();
     
     /// set target of expression
     void setTarget(AsmExprTarget _target)

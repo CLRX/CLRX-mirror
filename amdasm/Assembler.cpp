@@ -837,12 +837,23 @@ void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, siz
 
 void AsmSymbol::clearOccurrencesInExpr()
 {
-    for (auto occur: occurrencesInExprs)
+    /* iteration with index and occurrencesInExprs.size() is required for checking size
+     * after expression deletion that removes occurrences in exprs in this symbol */
+    for (size_t i = 0; i < occurrencesInExprs.size();)
+    {
+        auto& occur = occurrencesInExprs[i];
         if (occur.expression!=nullptr)
-            {
-                if (!occur.expression->unrefSymOccursNum())
-                    delete occur.expression;
+        {
+            if (!occur.expression->unrefSymOccursNum())
+            {   // delete and keep in this place to delete next element
+                // because expression removes this occurrence
+                delete occur.expression;
+                occur.expression = nullptr;
             }
+            else i++;
+        }
+        else i++;
+    }
     occurrencesInExprs.clear();
 }
 
@@ -886,6 +897,10 @@ Assembler::~Assembler()
         delete asmInputFilters.top();
         asmInputFilters.pop();
     }
+    
+    /// remove expressions before deletion
+    for (auto& entry: symbolMap)
+        entry.second.clearOccurrencesInExpr();
     
     for (AsmSection* section: sections)
         delete section;
@@ -1322,8 +1337,6 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         return false;
     if (string != line+lineSize)
     {
-        if (expr->getSymOccursNum()!=0)
-            expr.release();
         printError(string, "Garbages at end of expression");
         return false;
     }
@@ -1332,8 +1345,6 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
             symbolMap.insert({ symbolName, AsmSymbol() });
     if (!res.second && (res.first->second.onceDefined || !reassign))
     {   // found and can be only once defined
-        if (expr->getSymOccursNum()!=0)
-            expr.release();
         std::string msg = (res.first->second.onceDefined) ? "Label '" : "Symbol '";
         msg += symbolName;
         msg += "' is already defined";
@@ -1592,7 +1603,6 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
         return false;
     if (expr->getSymOccursNum() != 0)
     {   // not resolved at this time
-        expr.release(); // expr is registered in symbols occurrences
         asmr.printError(exprStr, "Expression has unresolved symbols!");
         return false;
     }
@@ -2268,7 +2278,9 @@ bool Assembler::assemble()
                     AsmPseudoOps::setSymbol(*this, string);
                     break;
                 case ASMOP_EQUIV:
-                case ASMOP_EQV:
+                    AsmPseudoOps::setSymbol(*this, string, false);
+                    break;
+                case ASMOP_EQV: // FIXME: fix eqv (must be evaluated for each use)
                     AsmPseudoOps::setSymbol(*this, string, false);
                     break;
                 case ASMOP_ERR:
