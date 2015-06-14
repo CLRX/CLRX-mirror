@@ -43,7 +43,7 @@ static inline const char* skipSpacesToEnd(const char* string, const char* end)
 
 // extract sybol name or argument name or other identifier
 static inline const std::string extractSymName(const char* startString, const char* end,
-           bool localLabel)
+           bool localLabelSymName)
 {
     const char* string = startString;
     if (string != end)
@@ -54,7 +54,7 @@ static inline const std::string extractSymName(const char* startString, const ch
                 (*string >= 'a' && *string <= 'z') ||
                 (*string >= 'A' && *string <= 'Z') || *string == '_' ||
                  *string == '.' || *string == '$') ; string++);
-        else if (localLabel && *string >= '0' && *string <= '9') // local label
+        else if (localLabelSymName && *string >= '0' && *string <= '9') // local label
         {
             for (string++; string!=end && (*string >= '0' && *string <= '9'); string++);
             // check whether is local forward or backward label
@@ -72,6 +72,17 @@ static inline const std::string extractSymName(const char* startString, const ch
         return std::string();
     
     return std::string(startString, string);
+}
+
+static inline const std::string extractLabelName(const char* startString, const char* end)
+{
+    if (startString != end && *startString >= '0' && *startString <= '9')
+    {
+        const char* string = startString;
+        while (string != end && *string >= '0' && *string <= '9') string++;
+        return std::string(startString, string);
+    }
+    return extractSymName(startString, end, false);
 }
 
 ISAAssembler::~ISAAssembler()
@@ -1345,7 +1356,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
             symbolMap.insert({ symbolName, AsmSymbol() });
     if (!res.second && (res.first->second.onceDefined || !reassign))
     {   // found and can be only once defined
-        std::string msg = (res.first->second.onceDefined) ? "Label '" : "Symbol '";
+        std::string msg = "Symbol '";
         msg += symbolName;
         msg += "' is already defined";
         printError(stringAtSymbol, msg.c_str());
@@ -1366,6 +1377,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second.expression = expr.release();
         symEntry.second.isDefined = false;
+        symEntry.second.onceDefined = !reassign;
     }
     return true;
 }
@@ -2063,57 +2075,32 @@ bool Assembler::assemble()
             continue; // only empty line
         
         const char* firstNameString = string;
-        std::string firstName = extractSymName(string, end, false);
-        if (firstName.empty())
-        {
-            const char* startString = string;
-            // try to parse local label
-            while (string != end && *string >= '0' && *string <= '9') string++;
-            if (string == startString)
-            {   // error
-                printError(string, "Syntax error");
-                continue;
-            }
-            firstName.assign(startString, string);
-        }
-        else
-            string += firstName.size(); // skip this name
+        std::string firstName = extractLabelName(string, end);
+        string += firstName.size();
+        
         string = skipSpacesToEnd(string, end);
-        if (string != end && *string == '=' &&
-            // not for local labels
-            (firstName.front() < '0' || firstName.front() > '9'))
-        {   // assignment
-            string = skipSpacesToEnd(string+1, line+lineSize);
-            if (string == end)
-            {
-                printError(string, "Expected assignment expression");
-                continue;
-            }
-            assignSymbol(firstName, firstNameString, string);
-            continue;
-        }
-        else if (string != end && *string == ':')
+        
+        bool doNextLine = false;
+        while (!firstName.empty() && string != end && *string == ':')
         {   // labels
+            string++;
+            string = skipSpacesToEnd(string, end);
             initializeOutputFormat();
-            string = skipSpacesToEnd(string+1, line+lineSize);
-            if (string != end)
-            {
-                printError(string, "Expected assignment expression");
-                continue;
-            }
             if (firstName.front() >= '0' && firstName.front() <= '9')
             {   // handle local labels
                 if (sections.empty())
                 {
                     printError(firstNameString,
                                "Local label can't be defined outside section");
-                    continue;
+                    doNextLine = true;
+                    break;
                 }
                 if (inAmdConfig)
                 {
                     printError(firstNameString,
                                "Local label can't defined in AMD config place");
-                    continue;
+                    doNextLine = true;
+                    break;
                 }
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
                         symbolMap.insert({ firstName+"b", AsmSymbol() });
@@ -2135,30 +2122,53 @@ bool Assembler::assemble()
                 {   // found
                     if (res.first->second.onceDefined)
                     {   // if label
-                        std::string msg = "Label '";
+                        std::string msg = "Symbol '";
                         msg += firstName;
                         msg += "' is already defined";
                         printError(firstNameString, msg.c_str());
-                        continue;
+                        doNextLine = true;
+                        break;
                     }
                 }
                 if (sections.empty())
                 {
                     printError(firstNameString,
                                "Label can't be defined outside section");
-                    continue;
+                    doNextLine = true;
+                    break;
                 }
                 if (inAmdConfig)
                 {
                     printError(firstNameString,
                                "Label can't defined in AMD config place");
-                    continue;
+                    doNextLine = true;
+                    break;
                 }
                 
                 setSymbol(*res.first, currentOutPos, currentSection);
                 res.first->second.onceDefined = true;
                 res.first->second.sectionId = currentSection;
             }
+            // new label or statement
+            firstNameString = string;
+            firstName = extractLabelName(string, end);
+            string += firstName.size();
+        }
+        if (doNextLine)
+            continue;
+        
+        string = skipSpacesToEnd(string, end);
+        if (string != end && *string == '=' &&
+            // not for local labels
+            (firstName.front() < '0' || firstName.front() > '9'))
+        {   // assignment
+            string = skipSpacesToEnd(string+1, line+lineSize);
+            if (string == end)
+            {
+                printError(string, "Expected assignment expression");
+                continue;
+            }
+            assignSymbol(firstName, firstNameString, string);
             continue;
         }
         // make firstname as lowercase

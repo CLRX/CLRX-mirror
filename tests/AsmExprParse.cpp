@@ -543,13 +543,14 @@ public:
     { readLine(); }
 };
 
-static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase)
+static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase, bool makeBase)
 {
     std::istringstream iss(testCase.expression);
     std::ostringstream resultErrorsOut;
     MyAssembler assembler(iss, resultErrorsOut);
     size_t linePos;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(assembler, 0, linePos));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(assembler,
+                     0, linePos, makeBase));
     std::string resultRpnExpr;
     std::string resultExtra = testCase.expression+linePos;
     uint64_t resultValue = 0;
@@ -571,7 +572,8 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase)
         ::strcmp(testCase.extra, resultExtra.c_str()))
     {
         std::ostringstream oss;
-        oss << "FAILED for parseExpr#" << i << "\nResult: rpnString='" << resultRpnExpr <<
+        oss << "FAILED for parseExpr#" << i << " snapshot=" << makeBase << "\n"
+                "Result: rpnString='" << resultRpnExpr <<
                 "', value=" << resultValue << ", evaluated=" << int(resultEvaluated) <<
                 ", errors='" << resultErrors << "'"
                 ", extra='" << resultExtra << "'.\n"
@@ -588,12 +590,21 @@ int main(int argc, const char** argv)
 {
     int retVal = 0;
     for (cxuint i = 0; i < sizeof(asmExprParseCases)/sizeof(AsmExprParseCase); i++)
+    {
         try
-        { testAsmExprParse(i, asmExprParseCases[i]); }
+        { testAsmExprParse(i, asmExprParseCases[i], false); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
+        try
+        { testAsmExprParse(i, asmExprParseCases[i], true); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    }
     return retVal;
 }

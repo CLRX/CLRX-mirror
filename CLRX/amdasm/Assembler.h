@@ -487,9 +487,9 @@ public:
 /// assembler expression operator
 enum class AsmExprOp : cxbyte
 {
-    ARG_VALUE = 0,  ///< is value not operator
-    ARG_SYMBOL = 1,  ///< is value not operator
-    ARG_RELSYMBOL = 2, ///< is relative symbol
+    ARG_VALUE = 0,  ///< absolute value
+    ARG_SYMBOL = 1,  ///< absolute symbol without defined value
+    ARG_RELSYMBOL = 2, ///< relative symbol with defined value
     NEGATE = 3, ///< negation
     BIT_NOT,    ///< binary negation
     LOGICAL_NOT,    ///< logical negation
@@ -566,7 +566,8 @@ struct AsmSymbol
     uint64_t value;         ///< value of symbol
     std::vector<AsmSourcePos> occurrences;  ///< occurrences in source
     AsmExpression* expression;      ///< expression of symbol (if not resolved)
-
+    AsmExpression* baseExpression;      ///< base Expression
+    
     /** list of occurrences in expressions */
     std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
@@ -682,11 +683,24 @@ public:
     bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const;
     
     /// parse expression (helper)
-    static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos);
+    /**
+     * \param assembler assembler
+     * \param linePos position in line
+     * \param outLinePos position in line after parsing
+     * \param makeBase do not evaluate resolved symbols, put them to expression
+     */
+    static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos,
+                    bool makeBase = false);
     
     /// parse expression (helper)
+    /**
+     * \param assembler assembler
+     * \param string string at position in line
+     * \param outend string at position in line after parsing
+     * \param makeBase do not evaluate resolved symbols, put them to expression
+     */
     static AsmExpression* parse(Assembler& assembler, const char* string,
-              const char*& outend);
+              const char*& outend, bool makeBase = false);
     
     /// return true if is unary op
     static bool isUnaryOp(AsmExprOp op)

@@ -760,16 +760,16 @@ static const cxbyte asmOpPrioritiesTbl[] =
 };
 
 AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
-                size_t& outLinePos)
+                size_t& outLinePos, bool makeBase)
 {
     const char* outend;
-    AsmExpression* expr = parse(assembler, assembler.line+linePos, outend);
+    AsmExpression* expr = parse(assembler, assembler.line+linePos, outend, makeBase);
     outLinePos = outend-(assembler.line+linePos);
     return expr;
 }   
 
 AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
-            const char*& outend)
+            const char*& outend, bool makeBase)
 {
     struct ConExprOpEntry
     {
@@ -1019,7 +1019,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     AsmExprArg arg;
                     if (symEntry != nullptr)
                     {
-                        if (symEntry->second.isDefined)
+                        if (symEntry->second.isDefined && !makeBase)
                         {
                             if (!assembler.isAbsoluteSymbol(symEntry->second))
                             {
@@ -1207,14 +1207,18 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                   assembler.getSourcePos(startString), symOccursNum, relativeSymOccurs,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
                   args.size(), args.data()));
-        for (size_t i = 0, j = 0; i < ops.size(); i++)
-            if (ops[i] == AsmExprOp::ARG_SYMBOL)
-            {
-                args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
-                j++;
-            }
-            else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
-                j++;
+        if (!makeBase)
+        {   // add expression into symbol occurrences in expressions
+            // only for non-base expressions
+            for (size_t i = 0, j = 0; i < ops.size(); i++)
+                if (ops[i] == AsmExprOp::ARG_SYMBOL)
+                {
+                    args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
+                    j++;
+                }
+                else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
+                    j++;
+        }
         return expr.release();
     }
     else
