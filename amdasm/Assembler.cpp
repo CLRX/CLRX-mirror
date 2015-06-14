@@ -909,7 +909,7 @@ Assembler::~Assembler()
         asmInputFilters.pop();
     }
     
-    /// remove expressions before deletion
+    /// remove expressions before symbol map deletion
     for (auto& entry: symbolMap)
         entry.second.clearOccurrencesInExpr();
     
@@ -1324,6 +1324,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
         {
             entry.first->second.resolving = false;
             entry.first->second.occurrencesInExprs.clear();
+            entry.first->second.occurrences.clear();
             symbolStack.pop();
         }
     }
@@ -1334,7 +1335,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
         throw;
     }
     currentOutPos = prevOutPos;
-    symEntry.second.occurrences.clear();
     return good;
 }
 
