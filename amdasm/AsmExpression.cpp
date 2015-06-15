@@ -942,6 +942,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     good = false;
                 thisSymEntry->second.isDefined = true;
                 delete thisSymEntry->second.expression;
+                thisSymEntry->second.expression = nullptr;
             }
             thisSymEntry->second.base = false;
             thisSymEntry->second.snapshot = true;
@@ -959,6 +960,24 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                 break;
             }
         }
+    }
+    return good;
+}
+
+bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
+           const AsmSymbolEntry& symEntry, AsmSymbolEntry*& outSymEntry)
+{
+    TempSymbolSnapshotMap symbolSnapshots;
+    bool good = true;
+    try
+    {
+        good = makeSymbolSnapshot(assembler, &symbolSnapshots, symEntry, outSymEntry);
+    }
+    catch(...)
+    {
+        for (AsmSymbolEntry* symEntry: symbolSnapshots)
+            delete symEntry;
+        throw;
     }
     return good;
 }

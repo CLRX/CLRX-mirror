@@ -759,6 +759,9 @@ public:
     /// get source position
     const AsmSourcePos& getSourcePos() const
     { return sourcePos; }
+    
+    static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
+               AsmSymbolEntry*& outSymEntry);
 };
 
 inline AsmSymbol::~AsmSymbol()

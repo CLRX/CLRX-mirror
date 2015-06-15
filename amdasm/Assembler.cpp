@@ -1392,6 +1392,18 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         symEntry.second.isDefined = false;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = baseExpr;
+        if (baseExpr)
+        {
+            AsmSymbolEntry* tempSymEntry;
+            if (!AsmExpression::makeSymbolSnapshot(*this, symEntry, tempSymEntry))
+                return false;
+            //std::unique_ptr<AsmSymbolEntry> tempSymEntry(tempSymEntryPtr);
+            tempSymEntry->second.occurrencesInExprs = symEntry.second.occurrencesInExprs;
+            symEntry.second.occurrencesInExprs.clear(); // clear occurrences after copy
+            if (tempSymEntry->second.isDefined) // set symbol chain
+                setSymbol(*tempSymEntry, tempSymEntry->second.value,
+                          tempSymEntry->second.sectionId);
+        }
     }
     return true;
 }
