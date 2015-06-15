@@ -34,6 +34,7 @@
 #include <utility>
 #include <stack>
 #include <deque>
+#include <unordered_set>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
@@ -522,6 +523,8 @@ enum class AsmExprOp : cxbyte
     ABOVE_EQ, ///< unsigned less or equal
     CHOICE,  ///< a ? b : c
     CHOICE_START,   ///< helper
+    FIRST_ARG = ARG_VALUE,
+    LAST_ARG = ARG_RELSYMBOL,
     FIRST_UNARY = NEGATE,   ///< helper
     LAST_UNARY = PLUS,  ///< helper
     FIRST_BINARY = ADDITION,    ///< helper
@@ -559,35 +562,40 @@ struct AsmExprSymbolOccurence
 /// assembler symbol structure
 struct AsmSymbol
 {
+    cxuint refCount;
     cxuint sectionId;       ///< section id
-    bool isDefined;         ///< symbol is defined
-    bool onceDefined;       ///< symbol can be only once defined (likes labels)
-    bool resolving;         ///< helper
+    cxuint isDefined:1;         ///< symbol is defined
+    cxuint onceDefined:1;       ///< symbol can be only once defined (likes labels)
+    cxuint resolving:1;         ///< helper
+    cxuint base:1;              ///< with base expression
+    cxuint snapshot:1;          ///< if symbol is snapshot
     uint64_t value;         ///< value of symbol
     std::vector<AsmSourcePos> occurrences;  ///< occurrences in source
     AsmExpression* expression;      ///< expression of symbol (if not resolved)
-    AsmExpression* baseExpression;      ///< base Expression
     
     /** list of occurrences in expressions */
     std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
     
     /// empty constructor
-    explicit AsmSymbol(bool _onceDefined = false) : sectionId(ASMSECT_ABS), isDefined(false),
-            onceDefined(_onceDefined), resolving(false), value(0), expression(nullptr)
+    explicit AsmSymbol(bool _onceDefined = false) :
+            refCount(1), sectionId(ASMSECT_ABS), isDefined(false),
+            onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
+            value(0), expression(nullptr)
     { }
     /// constructor with expression
-    explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false) :
-            sectionId(ASMSECT_ABS), isDefined(false), onceDefined(_onceDefined), 
-            resolving(false), value(0), expression(expr)
+    explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false, bool _base = false) :
+            refCount(1), sectionId(ASMSECT_ABS), isDefined(false),
+            onceDefined(_onceDefined), resolving(false), base(_base),
+            snapshot(false), value(0), expression(expr)
     { }
     /// constructor with value and section id
     explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
-            sectionId(_sectionId), isDefined(true), onceDefined(_onceDefined),
-            resolving(false), value(_value), expression(nullptr)
+            refCount(1), sectionId(_sectionId), isDefined(true),
+            onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
+            value(_value), expression(nullptr)
     { }
     /// destructor
-    ~AsmSymbol()
-    { clearOccurrencesInExpr(); }
+    ~AsmSymbol();
     
     /// adds occurrence to list
     void addOccurrence(const AsmSourcePos& pos)
@@ -640,14 +648,19 @@ struct AsmExprTarget
     }
 };
 
+
+
 /// assembler expression class
 class AsmExpression
 {
 private:
+    class TempSymbolSnapshotMap;
+    
     AsmExprTarget target;
     AsmSourcePos sourcePos;
     size_t symOccursNum;
     bool relativeSymOccurs;
+    bool baseExpr;
     Array<AsmExprOp> ops;
     std::unique_ptr<LineCol[]> messagePositions;    ///< for every potential message
     std::unique_ptr<AsmExprArg[]> args;
@@ -659,16 +672,25 @@ private:
         pos.colNo = messagePositions[msgPosIndex].colNo;
         return pos;
     }
+    
+    static bool makeSymbolSnapshot(Assembler& assembler,
+               TempSymbolSnapshotMap* snapshotMap, const AsmSymbolEntry& symEntry,
+               AsmSymbolEntry*& outSymEntry);
+    
+    AsmExpression();
 public:
     /// constructor of expression (helper)
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum, bool relativeSymOccurs,
-            size_t opsNum, size_t opPosNum, size_t argsNum);
+            size_t opsNum, size_t opPosNum, size_t argsNum, bool baseExpr = false);
     /// constructor of expression (helper)
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum, bool relativeSymOccurs,
               size_t opsNum, const AsmExprOp* ops, size_t opPosNum,
-              const LineCol* opPos, size_t argsNum, const AsmExprArg* args);
+              const LineCol* opPos, size_t argsNum, const AsmExprArg* args,
+              bool baseExpr = false);
     /// destructor
     ~AsmExpression();
+    
+    AsmExpression* createForSnapshot() const;
     
     /// set target of expression
     void setTarget(AsmExprTarget _target)
@@ -702,6 +724,9 @@ public:
     static AsmExpression* parse(Assembler& assembler, const char* string,
               const char*& outend, bool makeBase = false);
     
+    /// return true if is argument op
+    static bool isArg(AsmExprOp op)
+    { return (AsmExprOp::FIRST_ARG <= op && op <= AsmExprOp::LAST_ARG); }
     /// return true if is unary op
     static bool isUnaryOp(AsmExprOp op)
     { return (AsmExprOp::FIRST_UNARY <= op && op <= AsmExprOp::LAST_UNARY); }
@@ -735,6 +760,12 @@ public:
     const AsmSourcePos& getSourcePos() const
     { return sourcePos; }
 };
+
+inline AsmSymbol::~AsmSymbol()
+{
+    if (base) delete expression; // if symbol with base expresion
+    clearOccurrencesInExpr();
+}
 
 /// assembler expression argument
 union AsmExprArg
@@ -796,6 +827,7 @@ private:
     std::vector<std::string> includeDirs;
     std::vector<AsmSection*> sections;
     AsmSymbolMap symbolMap;
+    std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     std::vector<AsmRepeat*> repeats;
     MacroMap macroMap;
     KernelMap kernelMap;
@@ -867,7 +899,7 @@ private:
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
     bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
-                  const char* string, bool reassign = true);
+                  const char* string, bool reassign = true, bool baseExpr = false);
     
     void initializeOutputFormat();
     

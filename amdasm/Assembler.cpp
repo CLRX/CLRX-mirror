@@ -912,6 +912,12 @@ Assembler::~Assembler()
     /// remove expressions before symbol map deletion
     for (auto& entry: symbolMap)
         entry.second.clearOccurrencesInExpr();
+    /// remove expressions before symbol snapshots
+    for (auto& entry: symbolSnapshots)
+        entry->second.clearOccurrencesInExpr();
+    
+    for (auto& entry: symbolSnapshots)
+        delete entry;
     
     for (AsmSection* section: sections)
         delete section;
@@ -1325,6 +1331,11 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
             entry.first->second.resolving = false;
             entry.first->second.occurrencesInExprs.clear();
             entry.first->second.occurrences.clear();
+            if (entry.first->second.snapshot && --(entry.first->second.refCount) == 0)
+            {
+                symbolSnapshots.erase(entry.first);
+                delete entry.first; // delete this symbol snapshot
+            }
             symbolStack.pop();
         }
     }
@@ -1339,9 +1350,10 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
 }
 
 bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
-             const char* string, bool reassign)
+             const char* string, bool reassign, bool baseExpr)
 {
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, string, string));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
+                    *this, string, string, baseExpr));
     string = skipSpacesToEnd(string, line+lineSize);
     
     if (!expr) // no expression, errors
@@ -1354,7 +1366,8 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symbolName, AsmSymbol() });
-    if (!res.second && (res.first->second.onceDefined || !reassign))
+    if (!res.second && ((res.first->second.onceDefined || !reassign) &&
+        res.first->second.isDefined))
     {   // found and can be only once defined
         std::string msg = "Symbol '";
         msg += symbolName;
@@ -1378,6 +1391,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         symEntry.second.expression = expr.release();
         symEntry.second.isDefined = false;
         symEntry.second.onceDefined = !reassign;
+        symEntry.second.base = baseExpr;
     }
     return true;
 }
@@ -1601,7 +1615,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void putUInt128s(Assembler& asmr, const char*& string);
     
-    static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true);
+    static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true,
+                bool baseExpr = false);
 };
 
 bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
@@ -2031,7 +2046,8 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
     }
 }
 
-void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign)
+void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign,
+                 bool baseExpr)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -2056,7 +2072,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
         asmr.printError(string, "Expected symbol name and expression");
         return;
     }
-    asmr.assignSymbol(symName, strAtSymName, string, reassign);
+    asmr.assignSymbol(symName, strAtSymName, string, reassign, baseExpr);
     string = end;
 }
 
@@ -2120,7 +2136,7 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName, AsmSymbol() });
                 if (!res.second)
                 {   // found
-                    if (res.first->second.onceDefined)
+                    if (res.first->second.onceDefined && res.first->second.isDefined)
                     {   // if label
                         std::string msg = "Symbol '";
                         msg += firstName;
@@ -2290,8 +2306,8 @@ bool Assembler::assemble()
                 case ASMOP_EQUIV:
                     AsmPseudoOps::setSymbol(*this, string, false);
                     break;
-                case ASMOP_EQV: // FIXME: fix eqv (must be evaluated for each use)
-                    AsmPseudoOps::setSymbol(*this, string, false);
+                case ASMOP_EQV:
+                    AsmPseudoOps::setSymbol(*this, string, false, true);
                     break;
                 case ASMOP_ERR:
                     printError(firstNameString, ".err encountered");

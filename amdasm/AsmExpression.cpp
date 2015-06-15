@@ -20,7 +20,9 @@
 #include <CLRX/Config.h>
 #include <string>
 #include <vector>
+#include <stack>
 #include <algorithm>
+#include <unordered_set>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
 
@@ -36,11 +38,16 @@ static inline const char* skipSpacesToEnd(const char* string, const char* end)
  * expressions
  */
 
+AsmExpression::AsmExpression() : symOccursNum(0), relativeSymOccurs(false),
+            baseExpr(false)
+{ }
+
 AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
           bool _relSymOccurs, size_t _opsNum, const AsmExprOp* _ops, size_t _opPosNum,
-          const LineCol* _opPos, size_t _argsNum, const AsmExprArg* _args)
+          const LineCol* _opPos, size_t _argsNum, const AsmExprArg* _args,
+          bool _baseExpr)
         : sourcePos(_pos), symOccursNum(_symOccursNum), relativeSymOccurs(_relSymOccurs),
-          ops(_ops, _ops+_opsNum)
+          baseExpr(_baseExpr), ops(_ops, _ops+_opsNum)
 {
     args.reset(new AsmExprArg[_argsNum]);
     messagePositions.reset(new LineCol[_opPosNum]);
@@ -49,9 +56,10 @@ AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
 }
 
 AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
-            bool _relSymOccurs, size_t _opsNum, size_t _opPosNum, size_t _argsNum)
+            bool _relSymOccurs, size_t _opsNum, size_t _opPosNum, size_t _argsNum,
+            bool _baseExpr)
         : sourcePos(_pos), symOccursNum(_symOccursNum), relativeSymOccurs(_relSymOccurs),
-          ops(_opsNum)
+          baseExpr(_baseExpr), ops(_opsNum)
 {
     args.reset(new AsmExprArg[_argsNum]);
     messagePositions.reset(new LineCol[_opPosNum]);
@@ -59,14 +67,15 @@ AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
 
 AsmExpression::~AsmExpression()
 {
-    for (size_t i = 0, j = 0; i < ops.size(); i++)
-        if (ops[i] == AsmExprOp::ARG_SYMBOL)
-        {
-            args[j].symbol->second.removeOccurrenceInExpr(this, j, i);
-            j++;
-        }
-        else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
-            j++;
+    if (!baseExpr)
+        for (size_t i = 0, j = 0; i < ops.size(); i++)
+            if (ops[i] == AsmExprOp::ARG_SYMBOL)
+            {
+                args[j].symbol->second.removeOccurrenceInExpr(this, j, i);
+                j++;
+            }
+            else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
+                j++;
 }
 
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
@@ -768,6 +777,192 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
     return expr;
 }   
 
+struct CLRX_INTERNAL SymbolSnapshotHash: std::hash<std::string>
+{
+    size_t operator()(const AsmSymbolEntry* e1) const
+    { return static_cast<const std::hash<std::string>&>(*this)(e1->first); }
+};
+
+struct CLRX_INTERNAL SymbolSnapshotEqual
+{
+    bool operator()(const AsmSymbolEntry* e1, const AsmSymbolEntry* e2) const
+    { return e1->first == e2->first; }
+};
+
+class CLRX_INTERNAL CLRX::AsmExpression::TempSymbolSnapshotMap: 
+        public std::unordered_set<AsmSymbolEntry*, SymbolSnapshotHash, SymbolSnapshotEqual>
+{ };
+
+static const uint64_t operatorWithMessage = 
+        (1ULL<<int(AsmExprOp::DIVISION)) | (1ULL<<int(AsmExprOp::SIGNED_DIVISION)) |
+        (1ULL<<int(AsmExprOp::MODULO)) | (1ULL<<int(AsmExprOp::SIGNED_MODULO)) |
+        (1ULL<<int(AsmExprOp::SHIFT_LEFT)) | (1ULL<<int(AsmExprOp::SHIFT_RIGHT)) |
+        (1ULL<<int(AsmExprOp::SIGNED_SHIFT_RIGHT));
+
+AsmExpression* AsmExpression::createForSnapshot() const
+{
+    std::unique_ptr<AsmExpression> expr(new AsmExpression);
+    size_t argsNum = 0;
+    size_t msgPosNum = 0;
+    for (AsmExprOp op: ops)
+        if (AsmExpression::isArg(op))
+            argsNum++;
+        else if (operatorWithMessage & (1ULL<<int(op)))
+            msgPosNum++;
+    expr->sourcePos = sourcePos;
+    expr->ops = ops;
+    expr->args.reset(new AsmExprArg[argsNum]);
+    std::copy(args.get(), args.get()+argsNum, expr->args.get());
+    expr->messagePositions.reset(new LineCol[msgPosNum]);
+    std::copy(messagePositions.get(), messagePositions.get()+msgPosNum,
+              expr->messagePositions.get());
+    return expr.release();
+}
+
+static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry& symEntry)
+{
+    std::unique_ptr<AsmExpression> expr(symEntry.second.expression->createForSnapshot());
+    std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry{
+            symEntry.first, AsmSymbol(expr.get(), false, false)});
+    expr->setTarget(AsmExprTarget::symbolTarget(newSymEntry.get()));
+    expr.release();
+    newSymEntry->second.base = true;
+    return newSymEntry.release();
+}
+
+bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
+           TempSymbolSnapshotMap* snapshotMap, const AsmSymbolEntry& symEntry,
+           AsmSymbolEntry*& outSymEntry)
+{
+    struct StackEntry
+    {
+        AsmSymbolEntry* entry;
+        size_t opIndex;
+        size_t argIndex;
+        
+        explicit StackEntry(AsmSymbolEntry* _entry)
+            : entry(_entry), opIndex(0), argIndex(0)
+        { }
+        
+        AsmSymbolEntry* releaseEntry()
+        {
+            AsmSymbolEntry* out = entry;
+            entry = nullptr;
+            return out;
+        }
+    };
+    std::stack<StackEntry> stack;
+    
+    outSymEntry = nullptr;
+    {
+        std::unique_ptr<AsmSymbolEntry> newSymEntry(
+                    createSymbolEntryForSnapshot(symEntry));
+        auto res = snapshotMap->insert(newSymEntry.get());
+        if (!res.second)
+        {   // do nothing (symbol snapshot already made)
+            outSymEntry = *res.first;
+            outSymEntry->second.refCount++;
+            return true;
+        }
+        stack.push(StackEntry(newSymEntry.release()));
+    }
+    
+    bool good = true;
+    
+    while (!stack.empty())
+    {
+        StackEntry& se = stack.top();
+        size_t opIndex = se.opIndex;
+        size_t argIndex = se.argIndex;
+        AsmExpression* expr = se.entry->second.expression;
+        const size_t opsSize = expr->ops.size();
+        
+        AsmExprArg* args = expr->args.get();
+        AsmExprOp* ops = expr->ops.data();
+        if (opIndex < opsSize)
+        {
+            for (; opIndex < opsSize; opIndex++)
+                if (ops[opIndex] == AsmExprOp::ARG_SYMBOL)
+                {   // check this symbol
+                    AsmSymbolEntry* nextSymEntry = args[argIndex].symbol;
+                    if (nextSymEntry->second.base)
+                    {   // new base expression (set by using .'eqv')
+                        std::unique_ptr<AsmSymbolEntry> newSymEntry(
+                                    createSymbolEntryForSnapshot(*nextSymEntry));
+                        auto res = snapshotMap->insert(newSymEntry.get());
+                        if (!res.second)
+                        {    // replace this symEntry by symbol from tempSymbolMap
+                            nextSymEntry = *res.first;
+                            args[argIndex].symbol = nextSymEntry;
+                            nextSymEntry->second.refCount++;
+                        }
+                        else
+                        {   // new symEntry to stack
+                            stack.push(StackEntry(newSymEntry.release()));
+                            se.argIndex = argIndex;
+                            se.opIndex = opIndex;
+                            break;
+                        }
+                    }
+                    
+                    if (nextSymEntry->second.isDefined)
+                    {   // put value to argument
+                        if (nextSymEntry->second.sectionId == ASMSECT_ABS)
+                        {
+                            ops[opIndex] = AsmExprOp::ARG_VALUE;
+                            args[argIndex].value = nextSymEntry->second.value;
+                        }
+                        else
+                        {
+                            ops[opIndex] = AsmExprOp::ARG_RELSYMBOL;
+                            args[argIndex].symbol = nextSymEntry;
+                            expr->relativeSymOccurs = true;
+                        }
+                    }
+                    else // if not defined
+                    {
+                        args[argIndex].symbol->second.addOccurrenceInExpr(
+                                        expr, argIndex, opIndex);
+                        expr->symOccursNum++;
+                    }
+                    
+                    argIndex++;
+                }
+                else if (ops[opIndex]==AsmExprOp::ARG_VALUE ||
+                    ops[opIndex]==AsmExprOp::ARG_RELSYMBOL)
+                    argIndex++;
+        }
+        if (opIndex == opsSize)
+        {   // check if expression is evaluatable
+            AsmSymbolEntry* thisSymEntry = se.releaseEntry();
+            if (expr->symOccursNum == 0) // no symbols, we try to evaluate
+            {   // evaluate and remove obsolete expression
+                if (!expr->evaluate(assembler, thisSymEntry->second.value,
+                            thisSymEntry->second.sectionId))
+                    good = false;
+                thisSymEntry->second.isDefined = true;
+                delete thisSymEntry->second.expression;
+            }
+            thisSymEntry->second.base = false;
+            thisSymEntry->second.snapshot = true;
+            stack.pop();
+            if (!stack.empty())
+            {   // put to place in parent expression
+                StackEntry& parentStackEntry = stack.top();
+                AsmExpression* parentExpr = parentStackEntry.entry->second.expression;
+                parentExpr->args[parentStackEntry.argIndex].symbol = thisSymEntry;
+                parentExpr->ops[parentStackEntry.opIndex] = AsmExprOp::ARG_SYMBOL;
+            }
+            else
+            {   // last we return it
+                outSymEntry = thisSymEntry;
+                break;
+            }
+        }
+    }
+    return good;
+}
+
 AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
             const char*& outend, bool makeBase)
 {
@@ -784,6 +979,10 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     std::vector<LineCol> messagePositions;
     std::vector<LineCol> outMsgPositions;
     
+    TempSymbolSnapshotMap symbolSnapshots;
+    
+    try
+    {
     const char* startString = string;
     const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
@@ -1019,6 +1218,10 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     AsmExprArg arg;
                     if (symEntry != nullptr)
                     {
+                        if (symEntry->second.base && !makeBase)
+                            good = makeSymbolSnapshot(assembler, &symbolSnapshots,
+                                      *symEntry, symEntry);
+                        
                         if (symEntry->second.isDefined && !makeBase)
                         {
                             if (!assembler.isAbsoluteSymbol(symEntry->second))
@@ -1036,7 +1239,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                             }
                         }
                         else
-                        {
+                        {   /* add symbol */
                             symOccursNum++;
                             arg.symbol = symEntry;
                             args.push_back(arg);
@@ -1203,14 +1406,15 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     
     if (good)
     {
+        const size_t argsNum = args.size();
         std::unique_ptr<AsmExpression> expr(new AsmExpression(
                   assembler.getSourcePos(startString), symOccursNum, relativeSymOccurs,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
-                  args.size(), args.data()));
+                  argsNum, args.data(), makeBase));
         if (!makeBase)
         {   // add expression into symbol occurrences in expressions
             // only for non-base expressions
-            for (size_t i = 0, j = 0; i < ops.size(); i++)
+            for (size_t i = 0, j = 0; j < argsNum; i++)
                 if (ops[i] == AsmExprOp::ARG_SYMBOL)
                 {
                     args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
@@ -1219,8 +1423,26 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                 else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
                     j++;
         }
+        for (AsmSymbolEntry* symEntry: symbolSnapshots)
+        {
+            if (!symEntry->second.isDefined)
+                assembler.symbolSnapshots.insert(symEntry);
+            else
+                delete symEntry;
+        }
         return expr.release();
     }
     else
+    {
+        for (AsmSymbolEntry* symEntry: symbolSnapshots)
+            delete symEntry;
         return nullptr;
+    }
+    }
+    catch(...)
+    {
+        for (AsmSymbolEntry* symEntry: symbolSnapshots)
+            delete symEntry;
+        throw;
+    }
 }
