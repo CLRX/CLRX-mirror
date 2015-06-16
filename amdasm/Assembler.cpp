@@ -1324,6 +1324,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 }
                 delete occurrence.expression; // delete expression
             }
+            else // otherwise we only clear occurrence expression
+                occurrence.expression = nullptr; // clear expression
         }
         else // pop
         {
