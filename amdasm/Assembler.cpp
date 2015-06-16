@@ -858,8 +858,9 @@ void AsmSymbol::clearOccurrencesInExpr()
             if (!occur.expression->unrefSymOccursNum())
             {   // delete and keep in this place to delete next element
                 // because expression removes this occurrence
-                delete occur.expression;
+                AsmExpression* occurExpr = occur.expression;
                 occur.expression = nullptr;
+                delete occurExpr;
             }
             else i++;
         }
