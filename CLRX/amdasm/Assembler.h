@@ -548,14 +548,14 @@ union AsmExprArg;
 class AsmExpression;
 
 /// assembler symbol occurrence in expression
-struct AsmExprSymbolOccurence
+struct AsmExprSymbolOccurrence
 {
     AsmExpression* expression;      ///< target expression pointer
     size_t argIndex;        ///< argument index
     size_t opIndex;         ///< operator index
     
     /// comparison operator
-    bool operator==(const AsmExprSymbolOccurence& b) const
+    bool operator==(const AsmExprSymbolOccurrence& b) const
     { return expression==b.expression && opIndex==b.opIndex && argIndex==b.argIndex; }
 };
 
@@ -574,7 +574,7 @@ struct AsmSymbol
     AsmExpression* expression;      ///< expression of symbol (if not resolved)
     
     /** list of occurrences in expressions */
-    std::vector<AsmExprSymbolOccurence> occurrencesInExprs;
+    std::vector<AsmExprSymbolOccurrence> occurrencesInExprs;
     
     /// empty constructor
     explicit AsmSymbol(bool _onceDefined = false) :
@@ -747,9 +747,9 @@ public:
     { return --symOccursNum!=0; }
     
     /// substitute occurrence in expression by value
-    void substituteOccurrence(AsmExprSymbolOccurence occurrence, uint64_t value);
+    void substituteOccurrence(AsmExprSymbolOccurrence occurrence, uint64_t value);
     /// substitute occurrence in expression by value
-    void substituteOccurrence(AsmExprSymbolOccurence occurrence, AsmSymbolEntry* entry);
+    void substituteOccurrence(AsmExprSymbolOccurrence occurrence, AsmSymbolEntry* entry);
     /// get operators list
     const Array<AsmExprOp>& getOps() const
     { return ops; }
@@ -777,14 +777,14 @@ union AsmExprArg
     uint64_t value;         ///< value
 };
 
-inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurence occurrence,
+inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
                         uint64_t value)
 {
     ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
     args[occurrence.argIndex].value = value;
 }
 
-inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurence occurrence,
+inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
                     AsmSymbolEntry* entry)
 {
     ops[occurrence.opIndex] = AsmExprOp::ARG_RELSYMBOL;

@@ -842,7 +842,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
 void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
 {
     auto it = std::remove(occurrencesInExprs.begin(), occurrencesInExprs.end(),
-            AsmExprSymbolOccurence{expr, argIndex, opIndex});
+            AsmExprSymbolOccurrence{expr, argIndex, opIndex});
     occurrencesInExprs.resize(it-occurrencesInExprs.begin());
 }
 
@@ -1239,7 +1239,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
         std::pair<AsmSymbolEntry*, size_t>& entry = symbolStack.top();
         if (entry.second < entry.first->second.occurrencesInExprs.size())
         {   // 
-            AsmExprSymbolOccurence& occurrence =
+            AsmExprSymbolOccurrence& occurrence =
                     entry.first->second.occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
             if (isAbsoluteSymbol(entry.first->second))
@@ -1257,7 +1257,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 if (!expr->evaluate(*this, value, sectionId))
                 {   // if failed
                     delete occurrence.expression; // delete expression
-                    occurrence.expression = nullptr; // clear expression
                     continue;
                 }
                 
@@ -1325,7 +1324,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 }
                 delete occurrence.expression; // delete expression
             }
-            occurrence.expression = nullptr; // clear expression
         }
         else // pop
         {
