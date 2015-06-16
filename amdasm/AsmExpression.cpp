@@ -1488,7 +1488,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     catch(...)
     {
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
-        {
+        {   // remove from assembler symbolSnapshots
+            assembler.symbolSnapshots.erase(symEntry);
+            // remove this snapshot
             delete symEntry->second.expression;
             symEntry->second.expression = nullptr;
             delete symEntry;
