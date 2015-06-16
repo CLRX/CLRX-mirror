@@ -975,14 +975,29 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
         // delete evaluated symbol entries (except output symbol entry)
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
             if (outSymEntry != symEntry && symEntry->second.isDefined)
+            {
+                delete symEntry->second.expression;
+                symEntry->second.expression = nullptr;
                 delete symEntry;
+            }
     }
     catch(...)
     {
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
+        {
+            delete symEntry->second.expression;
+            symEntry->second.expression = nullptr;
             delete symEntry;
+        }
         throw;
     }
+    if (!good)
+        for (AsmSymbolEntry* symEntry: symbolSnapshots)
+        {
+            delete symEntry->second.expression;
+            symEntry->second.expression = nullptr;
+            delete symEntry;
+        }
     return good;
 }
 
@@ -1451,21 +1466,33 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
             if (!symEntry->second.isDefined)
                 assembler.symbolSnapshots.insert(symEntry);
             else
+            {
+                delete symEntry->second.expression;
+                symEntry->second.expression = nullptr;
                 delete symEntry;
+            }
         }
         return expr.release();
     }
     else
     {
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
+        {
+            delete symEntry->second.expression;
+            symEntry->second.expression = nullptr;
             delete symEntry;
+        }
         return nullptr;
     }
     }
     catch(...)
     {
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
+        {
+            delete symEntry->second.expression;
+            symEntry->second.expression = nullptr;
             delete symEntry;
+        }
         throw;
     }
 }
