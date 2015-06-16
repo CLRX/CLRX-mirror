@@ -995,16 +995,24 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
         good = makeSymbolSnapshot(assembler, &symbolSnapshots, symEntry, outSymEntry,
                     parentExprSourcePos);
         // delete evaluated symbol entries (except output symbol entry)
-        for (AsmSymbolEntry* symEntry: symbolSnapshots)
-            if (outSymEntry != symEntry && symEntry->second.isDefined)
+        if (!good)
+            for (AsmSymbolEntry* symEntry: symbolSnapshots)
+                if (outSymEntry != symEntry && symEntry->second.isDefined)
+                {
+                    delete symEntry->second.expression;
+                    symEntry->second.expression = nullptr;
+                    delete symEntry;
+                }
+                else
+                    assembler.symbolSnapshots.insert(symEntry);
+        else // if failed
+            for (AsmSymbolEntry* symEntry: symbolSnapshots)
             {
+                assembler.symbolSnapshots.erase(symEntry);
                 delete symEntry->second.expression;
                 symEntry->second.expression = nullptr;
                 delete symEntry;
             }
-            else
-                assembler.symbolSnapshots.insert(symEntry);
-        symbolSnapshots.clear();
     }
     catch(...)
     {
@@ -1016,15 +1024,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
             delete symEntry;
         }
         throw;
-    }
-    if (!good)
-        for (AsmSymbolEntry* symEntry: symbolSnapshots)
-        {
-            assembler.symbolSnapshots.erase(symEntry);
-            delete symEntry->second.expression;
-            symEntry->second.expression = nullptr;
-            delete symEntry;
-        }
+    }   
     return good;
 }
 
