@@ -598,8 +598,7 @@ struct AsmSymbol
     ~AsmSymbol();
     
     /// adds occurrence in expression
-    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex,
-                 size_t linePos)
+    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
     { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
     /// remove occurrence in expression
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
