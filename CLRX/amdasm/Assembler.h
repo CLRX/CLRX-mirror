@@ -553,6 +553,7 @@ struct AsmExprSymbolOccurrence
     AsmExpression* expression;      ///< target expression pointer
     size_t argIndex;        ///< argument index
     size_t opIndex;         ///< operator index
+    size_t linePosition;
     
     /// comparison operator
     bool operator==(const AsmExprSymbolOccurrence& b) const
@@ -570,7 +571,6 @@ struct AsmSymbol
     cxuint base:1;              ///< with base expression
     cxuint snapshot:1;          ///< if symbol is snapshot
     uint64_t value;         ///< value of symbol
-    std::vector<AsmSourcePos> occurrences;  ///< occurrences in source
     AsmExpression* expression;      ///< expression of symbol (if not resolved)
     
     /** list of occurrences in expressions */
@@ -597,11 +597,9 @@ struct AsmSymbol
     /// destructor
     ~AsmSymbol();
     
-    /// adds occurrence to list
-    void addOccurrence(const AsmSourcePos& pos)
-    { occurrences.push_back(pos); }
     /// adds occurrence in expression
-    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
+    void addOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex,
+                 size_t linePos)
     { occurrencesInExprs.push_back({expr, argIndex, opIndex}); }
     /// remove occurrence in expression
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);

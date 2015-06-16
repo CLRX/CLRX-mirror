@@ -1213,8 +1213,6 @@ bool Assembler::parseSymbol(const char* string, AsmSymbolEntry*& entry, bool loc
         good = false;
     }
     AsmSymbolMap::iterator it = res.first;
-    AsmSymbol& sym = it->second;
-    sym.occurrences.push_back(getSourcePos(string));
     entry = &*it;
     return good;
 }
@@ -1331,7 +1329,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
         {
             entry.first->second.resolving = false;
             entry.first->second.occurrencesInExprs.clear();
-            entry.first->second.occurrences.clear();
             if (entry.first->second.snapshot && --(entry.first->second.refCount) == 0)
             {
                 symbolSnapshots.erase(entry.first);
@@ -2139,7 +2136,6 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName+"f", AsmSymbol() });
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
                 prevLRes.first->second.clearOccurrencesInExpr();
-                prevLRes.first->second.occurrences.clear();
                 prevLRes.first->second.value = nextLRes.first->second.value;
                 prevLRes.first->second.isDefined = true;
                 prevLRes.first->second.sectionId = currentSection;
