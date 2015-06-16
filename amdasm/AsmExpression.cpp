@@ -42,6 +42,20 @@ AsmExpression::AsmExpression() : symOccursNum(0), relativeSymOccurs(false),
             baseExpr(false)
 { }
 
+void AsmExpression::setParams(size_t _symOccursNum,
+          bool _relativeSymOccurs, size_t _opsNum, const AsmExprOp* _ops, size_t _opPosNum,
+          const LineCol* _opPos, size_t _argsNum, const AsmExprArg* _args, bool _baseExpr)
+{
+    symOccursNum = _symOccursNum;
+    relativeSymOccurs = _relativeSymOccurs;
+    baseExpr = _baseExpr;
+    args.reset(new AsmExprArg[_argsNum]);
+    ops.assign(_ops, _ops+_opsNum);
+    messagePositions.reset(new LineCol[_opPosNum]);
+    std::copy(_args, _args+_argsNum, args.get());
+    std::copy(_opPos, _opPos+_opPosNum, messagePositions.get());
+}
+
 AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
           bool _relSymOccurs, size_t _opsNum, const AsmExprOp* _ops, size_t _opPosNum,
           const LineCol* _opPos, size_t _argsNum, const AsmExprArg* _args,
@@ -799,7 +813,7 @@ static const uint64_t operatorWithMessage =
         (1ULL<<int(AsmExprOp::SHIFT_LEFT)) | (1ULL<<int(AsmExprOp::SHIFT_RIGHT)) |
         (1ULL<<int(AsmExprOp::SIGNED_SHIFT_RIGHT));
 
-AsmExpression* AsmExpression::createForSnapshot() const
+AsmExpression* AsmExpression::createForSnapshot(const AsmSourcePos* exprSourcePos) const
 {
     std::unique_ptr<AsmExpression> expr(new AsmExpression);
     size_t argsNum = 0;
@@ -810,6 +824,7 @@ AsmExpression* AsmExpression::createForSnapshot() const
         else if (operatorWithMessage & (1ULL<<int(op)))
             msgPosNum++;
     expr->sourcePos = sourcePos;
+    expr->sourcePos.exprSourcePos = exprSourcePos;
     expr->ops = ops;
     expr->args.reset(new AsmExprArg[argsNum]);
     std::copy(args.get(), args.get()+argsNum, expr->args.get());
@@ -819,11 +834,15 @@ AsmExpression* AsmExpression::createForSnapshot() const
     return expr.release();
 }
 
-static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry& symEntry)
+static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry& symEntry,
+            const AsmSourcePos* exprSourcePos)
 {
-    std::unique_ptr<AsmExpression> expr(symEntry.second.expression->createForSnapshot());
+    std::unique_ptr<AsmExpression> expr(
+            symEntry.second.expression->createForSnapshot(exprSourcePos));
+    
     std::unique_ptr<AsmSymbolEntry> newSymEntry(new AsmSymbolEntry{
             symEntry.first, AsmSymbol(expr.get(), false, false)});
+    
     expr->setTarget(AsmExprTarget::symbolTarget(newSymEntry.get()));
     expr.release();
     newSymEntry->second.base = true;
@@ -832,7 +851,7 @@ static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry&
 
 bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
            TempSymbolSnapshotMap* snapshotMap, const AsmSymbolEntry& symEntry,
-           AsmSymbolEntry*& outSymEntry)
+           AsmSymbolEntry*& outSymEntry, const AsmSourcePos* topParentSourcePos)
 {
     struct StackEntry
     {
@@ -856,7 +875,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
     outSymEntry = nullptr;
     {
         std::unique_ptr<AsmSymbolEntry> newSymEntry(
-                    createSymbolEntryForSnapshot(symEntry));
+                    createSymbolEntryForSnapshot(symEntry, topParentSourcePos));
         auto res = snapshotMap->insert(newSymEntry.get());
         if (!res.second)
         {   // do nothing (symbol snapshot already made)
@@ -888,7 +907,8 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     if (nextSymEntry->second.base)
                     {   // new base expression (set by using .'eqv')
                         std::unique_ptr<AsmSymbolEntry> newSymEntry(
-                                    createSymbolEntryForSnapshot(*nextSymEntry));
+                                    createSymbolEntryForSnapshot(*nextSymEntry,
+                                     &(expr->sourcePos)));
                         auto res = snapshotMap->insert(newSymEntry.get());
                         if (!res.second)
                         {    // replace this symEntry by symbol from tempSymbolMap
@@ -965,13 +985,15 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
 }
 
 bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
-           const AsmSymbolEntry& symEntry, AsmSymbolEntry*& outSymEntry)
+           const AsmSymbolEntry& symEntry, AsmSymbolEntry*& outSymEntry,
+           const AsmSourcePos* parentExprSourcePos)
 {
     TempSymbolSnapshotMap symbolSnapshots;
     bool good = true;
     try
     {
-        good = makeSymbolSnapshot(assembler, &symbolSnapshots, symEntry, outSymEntry);
+        good = makeSymbolSnapshot(assembler, &symbolSnapshots, symEntry, outSymEntry,
+                    parentExprSourcePos);
         // delete evaluated symbol entries (except output symbol entry)
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
             if (outSymEntry != symEntry && symEntry->second.isDefined)
@@ -982,6 +1004,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
             }
             else
                 assembler.symbolSnapshots.insert(symEntry);
+        symbolSnapshots.clear();
     }
     catch(...)
     {
@@ -1039,6 +1062,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
         XT_ARG = 2
     };
     ExpectedToken expectedToken = XT_FIRST;
+    std::unique_ptr<AsmExpression> expr(new AsmExpression);
+    expr->sourcePos = assembler.getSourcePos(startString);
     
     while (string != end)
     {
@@ -1262,7 +1287,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     {
                         if (symEntry->second.base && !makeBase)
                             good = makeSymbolSnapshot(assembler, &symbolSnapshots,
-                                      *symEntry, symEntry);
+                                      *symEntry, symEntry, &(expr->sourcePos));
                         
                         if (symEntry->second.isDefined && !makeBase)
                         {
@@ -1449,10 +1474,11 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     if (good)
     {
         const size_t argsNum = args.size();
-        std::unique_ptr<AsmExpression> expr(new AsmExpression(
-                  assembler.getSourcePos(startString), symOccursNum, relativeSymOccurs,
+        expr->setParams(symOccursNum, relativeSymOccurs,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
-                  argsNum, args.data(), makeBase));
+                  argsNum, args.data(), makeBase);
+        /*std::unique_ptr<AsmExpression> expr(new AsmExpression(
+                  ));*/
         if (!makeBase)
         {   // add expression into symbol occurrences in expressions
             // only for non-base expressions
@@ -1476,6 +1502,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                 delete symEntry;
             }
         }
+        symbolSnapshots.clear();
         return expr.release();
     }
     else

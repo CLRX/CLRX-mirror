@@ -195,6 +195,16 @@ struct AsmSourcePos
     RefPtr<const AsmSource> source;   ///< source in which message occurred
     uint64_t lineNo;    ///< line number of top-most source
     size_t colNo;       ///< column number
+    const AsmSourcePos* exprSourcePos; ///< expression sourcepos from what evaluation made
+    
+    AsmSourcePos() : lineNo(0), colNo(0), exprSourcePos(nullptr)
+    { }
+    
+    AsmSourcePos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source,
+                 uint64_t _lineNo, size_t _colNo, AsmSourcePos* _exprSourcePos = nullptr)
+            : macro(_macro), source(_source), lineNo(_lineNo), colNo(_colNo),
+              exprSourcePos(_exprSourcePos)
+    { }
     
     /// print source position
     void print(std::ostream& os, cxuint indentLevel = 0) const;
@@ -672,9 +682,12 @@ private:
     
     static bool makeSymbolSnapshot(Assembler& assembler,
                TempSymbolSnapshotMap* snapshotMap, const AsmSymbolEntry& symEntry,
-               AsmSymbolEntry*& outSymEntry);
+               AsmSymbolEntry*& outSymEntry, const AsmSourcePos* topParentSourcePos);
     
     AsmExpression();
+    void setParams(size_t symOccursNum, bool relativeSymOccurs,
+            size_t _opsNum, const AsmExprOp* ops, size_t opPosNum, const LineCol* opPos,
+            size_t argsNum, const AsmExprArg* args, bool baseExpr = false);
 public:
     /// constructor of expression (helper)
     AsmExpression(const AsmSourcePos& pos, size_t symOccursNum, bool relativeSymOccurs,
@@ -687,7 +700,7 @@ public:
     /// destructor
     ~AsmExpression();
     
-    AsmExpression* createForSnapshot() const;
+    AsmExpression* createForSnapshot(const AsmSourcePos* exprSourcePos) const;
     
     /// set target of expression
     void setTarget(AsmExprTarget _target)
@@ -758,7 +771,8 @@ public:
     { return sourcePos; }
     
     static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
-               AsmSymbolEntry*& outSymEntry);
+               AsmSymbolEntry*& outSymEntry,
+               const AsmSourcePos* parentExprSourcePos);
 };
 
 inline AsmSymbol::~AsmSymbol()

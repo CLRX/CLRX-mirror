@@ -698,6 +698,17 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         os.write("Can't print all tree trace due to too big depth level\n", 53);
         return;
     }
+    const AsmSourcePos* thisPos = this;
+    while (thisPos->exprSourcePos!=nullptr)
+    {
+        AsmSourcePos sourcePosToPrint = *(thisPos->exprSourcePos);
+        sourcePosToPrint.exprSourcePos = nullptr;
+        printIndent(os, indentLevel);
+        os.write("Error from expression evaluation:\n", 34);
+        sourcePosToPrint.print(os, indentLevel+1);
+        os.put('\n');
+        thisPos = thisPos->exprSourcePos;
+    }
     char numBuf[32];
     /* print macro tree */
     RefPtr<const AsmMacroSubst> curMacro = macro;
@@ -1393,7 +1404,8 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         if (baseExpr && !symEntry.second.occurrencesInExprs.empty())
         {
             AsmSymbolEntry* tempSymEntry;
-            if (!AsmExpression::makeSymbolSnapshot(*this, symEntry, tempSymEntry))
+            if (!AsmExpression::makeSymbolSnapshot(*this, symEntry, tempSymEntry,
+                    &symEntry.second.occurrencesInExprs[0].expression->getSourcePos()))
                 return false;
             //std::unique_ptr<AsmSymbolEntry> tempSymEntry(tempSymEntryPtr);
             tempSymEntry->second.occurrencesInExprs =
