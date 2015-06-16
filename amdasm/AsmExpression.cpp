@@ -980,11 +980,14 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                 symEntry->second.expression = nullptr;
                 delete symEntry;
             }
+            else
+                assembler.symbolSnapshots.insert(symEntry);
     }
     catch(...)
     {
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
         {
+            assembler.symbolSnapshots.erase(symEntry);
             delete symEntry->second.expression;
             symEntry->second.expression = nullptr;
             delete symEntry;
@@ -994,6 +997,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
     if (!good)
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
         {
+            assembler.symbolSnapshots.erase(symEntry);
             delete symEntry->second.expression;
             symEntry->second.expression = nullptr;
             delete symEntry;
