@@ -1234,6 +1234,8 @@ bool Assembler::parseSymbol(const char* string, AsmSymbolEntry*& entry, bool loc
         entry = nullptr;
         return true;
     }
+    if (symName == ".") // any usage of '.' causes format initialization
+        initializeOutputFormat();
     
     bool good = true;
     std::pair<AsmSymbolMap::iterator, bool> res =
@@ -1679,7 +1681,7 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
         return false;
     if (expr->getSymOccursNum() != 0)
     {   // not resolved at this time
-        asmr.printError(exprStr, "Expression has unresolved symbols!");
+        asmr.printError(exprStr, "Expression has an unresolved symbols!");
         return false;
     }
     cxuint sectionId; // for getting
@@ -1746,8 +1748,8 @@ inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char
 void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
 {
     if (asmr.outFormatInitialized)
-        asmr.printError(string, "Bitness has already been defined");
-    if (asmr.format != AsmFormat::CATALYST)
+        asmr.printError(string, "Bitness is already defined");
+    else if (asmr.format != AsmFormat::CATALYST)
         asmr.printWarning(string, "Bitness ignored for other formats than AMD Catalyst");
     else
         asmr._64bit = (_64Bit);
@@ -1771,7 +1773,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
     else
         asmr.printError(string, "Unknown output format type");
     if (asmr.outFormatInitialized)
-        asmr.printError(string, "Output format type has already been defined");
+        asmr.printError(string, "Output format type is already defined");
 }
 
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
@@ -2277,12 +2279,11 @@ bool Assembler::assemble()
                 case ASMOP_CATALYST:
                 case ASMOP_GALLIUM:
                     if (outFormatInitialized)
-                    {
-                        printError(string, "Output format type has already been defined");
-                    }
-                    format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
-                        (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
-                        AsmFormat::RAWCODE;
+                        printError(string, "Output format type is already defined");
+                    else
+                        format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
+                            (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
+                            AsmFormat::RAWCODE;
                     break;
                 case ASMOP_CONFIG:
                     if (format == AsmFormat::CATALYST)
