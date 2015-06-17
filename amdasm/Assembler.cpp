@@ -861,7 +861,7 @@ void AsmSymbol::clearOccurrencesInExpr()
 {
     /* iteration with index and occurrencesInExprs.size() is required for checking size
      * after expression deletion that removes occurrences in exprs in this symbol */
-    for (size_t i = 0; i < occurrencesInExprs.size();)
+    for (size_t i = 0; i < occurrencesInExprs.size(); i++)
     {
         auto& occur = occurrencesInExprs[i];
         if (occur.expression!=nullptr)
@@ -869,18 +869,14 @@ void AsmSymbol::clearOccurrencesInExpr()
             if (!occur.expression->unrefSymOccursNum())
             {   // delete and keep in this place to delete next element
                 // because expression removes this occurrence
+                const size_t oldSize = occurrencesInExprs.size();
                 AsmExpression* occurExpr = occur.expression;
                 occur.expression = nullptr;
                 delete occurExpr;
-                i = 0;
-            }
-            else
-            {
-                occur.expression = nullptr;
-                i++;
+                // subtract number of removed elements from counter
+                i -= oldSize-occurrencesInExprs.size(); 
             }
         }
-        else i++;
     }
     occurrencesInExprs.clear();
 }
