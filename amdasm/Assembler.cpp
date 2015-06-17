@@ -872,6 +872,7 @@ void AsmSymbol::clearOccurrencesInExpr()
                 AsmExpression* occurExpr = occur.expression;
                 occur.expression = nullptr;
                 delete occurExpr;
+                i = 0;
             }
             else i++;
         }
