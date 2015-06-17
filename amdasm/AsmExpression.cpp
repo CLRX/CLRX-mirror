@@ -82,6 +82,7 @@ AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
 AsmExpression::~AsmExpression()
 {
     if (!baseExpr)
+    {
         for (size_t i = 0, j = 0; i < ops.size(); i++)
             if (ops[i] == AsmExprOp::ARG_SYMBOL)
             {
@@ -90,6 +91,7 @@ AsmExpression::~AsmExpression()
             }
             else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
                 j++;
+    }
 }
 
 bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
@@ -380,7 +382,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                                 if (r.sectionId == r2.sectionId)
                                 {
                                     r.multiply += r2.multiply;
-                                    rfound++;
+                                    rfound = true;
                                 }
                            if (!rfound)
                                relatives.push_back(r2);
@@ -400,7 +402,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                                 if (r.sectionId == r2.sectionId)
                                 {
                                     r.multiply -= r2.multiply;
-                                    rfound++;
+                                    rfound = true;
                                 }
                            if (!rfound)
                                relatives.push_back({-r2.multiply, r2.sectionId});
