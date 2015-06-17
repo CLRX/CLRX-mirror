@@ -532,8 +532,8 @@ enum class AsmExprOp : cxbyte
     ABOVE_EQ, ///< unsigned less or equal
     CHOICE,  ///< a ? b : c
     CHOICE_START,   ///< helper
-    FIRST_ARG = ARG_SYMBOL,
-    LAST_ARG = ARG_VALUE,
+    FIRST_ARG = ARG_VALUE,
+    LAST_ARG = ARG_SYMBOL,
     FIRST_UNARY = NEGATE,   ///< helper
     LAST_UNARY = PLUS,  ///< helper
     FIRST_BINARY = ADDITION,    ///< helper
