@@ -473,7 +473,7 @@ public:
     virtual size_t assemble(uint64_t lineNo, const char* line,
                 std::vector<cxbyte>& output) = 0;
     /// resolve code with location, target and value
-    virtual void resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
+    virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
 };
 
 /// GCN arch assembler
@@ -488,7 +488,7 @@ public:
     /// assemble single line
     size_t assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
     /// resolve code with location, target and value
-    void resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
+    bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
 };
 
 /*
@@ -794,6 +794,8 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurren
     ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
     args[occurrence.argIndex].relValue.value = value;
     args[occurrence.argIndex].relValue.sectionId = sectionId;
+    if (sectionId != ASMSECT_ABS)
+        relativeSymOccurs = true;
 }
 
 /// assembler section

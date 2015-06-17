@@ -1272,8 +1272,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     entry.first->second.occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
             expr->substituteOccurrence(occurrence, entry.first->second.value,
-                           (!isAbsoluteSymbol(entry.first->second)) ?
-                           entry.first->second.sectionId : ASMSECT_ABS);
+                       (!isAbsoluteSymbol(entry.first->second)) ?
+                       entry.first->second.sectionId : ASMSECT_ABS);
             entry.second++;
             
             if (!expr->unrefSymOccursNum())
@@ -1306,8 +1306,11 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     }
                     case ASMXTGT_DATA8:
                         if (sectionId != ASMSECT_ABS)
+                        {
                             printError(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions");
+                            good = false;
+                        }
                         else
                         {
                             printWarningForRange(8, value, expr->getSourcePos());
@@ -1317,8 +1320,11 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA16:
                         if (sectionId != ASMSECT_ABS)
+                        {
                             printError(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions");
+                            good = false;
+                        }
                         else
                         {
                             printWarningForRange(16, value, expr->getSourcePos());
@@ -1328,8 +1334,11 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA32:
                         if (sectionId != ASMSECT_ABS)
+                        {
                             printError(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions");
+                            good = false;
+                        }
                         else
                         {
                             printWarningForRange(32, value, expr->getSourcePos());
@@ -1339,15 +1348,19 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     case ASMXTGT_DATA64:
                         if (sectionId != ASMSECT_ABS)
+                        {
                             printError(expr->getSourcePos(),
                                    "Relative value is illegal in data expressions");
+                            good = false;
+                        }
                         else
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
                                     ->content.data() + target.offset), uint64_t(value));
                         break;
                     default: // ISA assembler resolves this dependency
-                        isaAssembler->resolveCode(sections[target.sectionId]
-                                ->content.data() + target.offset, target.type, value);
+                        if (!isaAssembler->resolveCode(sections[target.sectionId]
+                                ->content.data() + target.offset, target.type, value))
+                            good = false;
                         break;
                 }
                 delete occurrence.expression; // delete expression
