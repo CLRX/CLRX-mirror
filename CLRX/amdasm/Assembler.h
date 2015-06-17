@@ -500,8 +500,7 @@ enum class AsmExprOp : cxbyte
 {
     ARG_VALUE = 0,  ///< absolute value
     ARG_SYMBOL = 1,  ///< absolute symbol without defined value
-    ARG_RELSYMBOL = 2, ///< relative symbol with defined value
-    NEGATE = 3, ///< negation
+    NEGATE = 2, ///< negation
     BIT_NOT,    ///< binary negation
     LOGICAL_NOT,    ///< logical negation
     PLUS,   ///< plus (nothing)
@@ -533,8 +532,8 @@ enum class AsmExprOp : cxbyte
     ABOVE_EQ, ///< unsigned less or equal
     CHOICE,  ///< a ? b : c
     CHOICE_START,   ///< helper
-    FIRST_ARG = ARG_VALUE,
-    LAST_ARG = ARG_RELSYMBOL,
+    FIRST_ARG = ARG_SYMBOL,
+    LAST_ARG = ARG_VALUE,
     FIRST_UNARY = NEGATE,   ///< helper
     LAST_UNARY = PLUS,  ///< helper
     FIRST_BINARY = ADDITION,    ///< helper
@@ -655,8 +654,6 @@ struct AsmExprTarget
     }
 };
 
-
-
 /// assembler expression class
 class AsmExpression
 {
@@ -757,9 +754,8 @@ public:
     { return --symOccursNum!=0; }
     
     /// substitute occurrence in expression by value
-    void substituteOccurrence(AsmExprSymbolOccurrence occurrence, uint64_t value);
-    /// substitute occurrence in expression by value
-    void substituteOccurrence(AsmExprSymbolOccurrence occurrence, AsmSymbolEntry* entry);
+    void substituteOccurrence(AsmExprSymbolOccurrence occurrence, uint64_t value,
+                  cxuint sectionId = ASMSECT_ABS);
     /// get operators list
     const Array<AsmExprOp>& getOps() const
     { return ops; }
@@ -786,20 +782,18 @@ union AsmExprArg
 {
     AsmSymbolEntry* symbol; ///< if symbol
     uint64_t value;         ///< value
+    struct {
+        uint64_t value;         ///< value
+        cxuint sectionId;       ///< sectionId
+    } relValue;
 };
 
 inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
-                        uint64_t value)
+                        uint64_t value, cxuint sectionId)
 {
     ops[occurrence.opIndex] = AsmExprOp::ARG_VALUE;
-    args[occurrence.argIndex].value = value;
-}
-
-inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
-                    AsmSymbolEntry* entry)
-{
-    ops[occurrence.opIndex] = AsmExprOp::ARG_RELSYMBOL;
-    args[occurrence.argIndex].symbol = entry;
+    args[occurrence.argIndex].relValue.value = value;
+    args[occurrence.argIndex].relValue.sectionId = sectionId;
 }
 
 /// assembler section

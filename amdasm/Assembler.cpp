@@ -864,18 +864,14 @@ void AsmSymbol::clearOccurrencesInExpr()
     for (size_t i = 0; i < occurrencesInExprs.size(); i++)
     {
         auto& occur = occurrencesInExprs[i];
-        if (occur.expression!=nullptr)
-        {
-            if (!occur.expression->unrefSymOccursNum())
-            {   // delete and keep in this place to delete next element
-                // because expression removes this occurrence
-                const size_t oldSize = occurrencesInExprs.size();
-                AsmExpression* occurExpr = occur.expression;
-                occur.expression = nullptr;
-                delete occurExpr;
-                // subtract number of removed elements from counter
-                i -= oldSize-occurrencesInExprs.size(); 
-            }
+        if (occur.expression!=nullptr && !occur.expression->unrefSymOccursNum())
+        {   // delete and move back iteration by number of removed elements
+            const size_t oldSize = occurrencesInExprs.size();
+            AsmExpression* occurExpr = occur.expression;
+            occur.expression = nullptr;
+            delete occurExpr;
+            // subtract number of removed elements from counter
+            i -= oldSize-occurrencesInExprs.size(); 
         }
     }
     occurrencesInExprs.clear();
@@ -1240,10 +1236,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symbolStack.push(std::make_pair(&symEntry, 0));
     symEntry.second.resolving = true;
     
-    uint64_t prevOutPos = currentOutPos;
-    
-    try
-    {
     while (!symbolStack.empty())
     {
         std::pair<AsmSymbolEntry*, size_t>& entry = symbolStack.top();
@@ -1252,10 +1244,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
             AsmExprSymbolOccurrence& occurrence =
                     entry.first->second.occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
-            if (isAbsoluteSymbol(entry.first->second))
-                expr->substituteOccurrence(occurrence, entry.first->second.value);
-            else
-                expr->substituteOccurrence(occurrence, entry.first);
+            expr->substituteOccurrence(occurrence, entry.first->second.value,
+                           entry.first->second.sectionId);
             entry.second++;
             
             if (!expr->unrefSymOccursNum())
@@ -1263,10 +1253,10 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 uint64_t value;
                 cxuint sectionId;
                 const AsmExprTarget& target = expr->getTarget();
-                currentOutPos = target.offset;
                 if (!expr->evaluate(*this, value, sectionId))
                 {   // if failed
                     delete occurrence.expression; // delete expression
+                    good = false;
                     continue;
                 }
                 
@@ -1349,13 +1339,6 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
             symbolStack.pop();
         }
     }
-    }
-    catch(...)
-    {
-        currentOutPos = prevOutPos;
-        throw;
-    }
-    currentOutPos = prevOutPos;
     return good;
 }
 

@@ -89,7 +89,7 @@ AsmExpression::~AsmExpression()
                 args[j].symbol->second.removeOccurrenceInExpr(this, j, i);
                 j++;
             }
-            else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
+            else if (ops[i]==AsmExprOp::ARG_VALUE)
                 j++;
     }
 }
@@ -330,13 +330,12 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
             const AsmExprOp op = ops[opPos++];
             if (op == AsmExprOp::ARG_VALUE)
             {
-                stack.push(args[argPos++].value);
-                continue;
-            }
-            else if (op == AsmExprOp::ARG_RELSYMBOL)
-            {
-                const AsmSymbol& sym = args[argPos++].symbol->second;
-                stack.push(ValueAndMultiplies(sym.value, sym.sectionId));
+                if (args[argPos].relValue.sectionId != ASMSECT_ABS)
+                    stack.push(ValueAndMultiplies(args[argPos].relValue.value,
+                                args[argPos].relValue.sectionId));
+                else
+                    stack.push(args[argPos].value);
+                argPos++;
                 continue;
             }
             value = stack.top().value;
@@ -749,7 +748,6 @@ static const cxbyte asmOpPrioritiesTbl[] =
 {   /* higher value, higher priority */
     7, // ARG_VALUE
     7, // ARG_SYMBOL
-    7, // ARG_RELSYMBOL
     6, // NEGATE
     6, // BIT_NOT
     6, // LOGICAL_NOT
@@ -929,17 +927,12 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     
                     if (nextSymEntry->second.isDefined)
                     {   // put value to argument
-                        if (nextSymEntry->second.sectionId == ASMSECT_ABS)
-                        {
-                            ops[opIndex] = AsmExprOp::ARG_VALUE;
-                            args[argIndex].value = nextSymEntry->second.value;
-                        }
-                        else
-                        {
-                            ops[opIndex] = AsmExprOp::ARG_RELSYMBOL;
-                            args[argIndex].symbol = nextSymEntry;
+                        ops[opIndex] = AsmExprOp::ARG_VALUE;
+                        args[argIndex].relValue.value = nextSymEntry->second.value;
+                        args[argIndex].relValue.sectionId =
+                                nextSymEntry->second.sectionId;
+                        if (!assembler.isAbsoluteSymbol(nextSymEntry->second));
                             expr->relativeSymOccurs = true;
-                        }
                     }
                     else // if not defined
                     {
@@ -950,8 +943,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     
                     argIndex++;
                 }
-                else if (ops[opIndex]==AsmExprOp::ARG_VALUE ||
-                    ops[opIndex]==AsmExprOp::ARG_RELSYMBOL)
+                else if (ops[opIndex]==AsmExprOp::ARG_VALUE)
                     argIndex++;
         }
         if (opIndex == opsSize)
@@ -1285,6 +1277,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     bool symIsGood = assembler.parseSymbol(string, symEntry);
                     if (!symIsGood) good = false;
                     AsmExprArg arg;
+                    arg.relValue.sectionId = ASMSECT_ABS;
                     if (symEntry != nullptr)
                     {
                         if (symEntry->second.base && !makeBase)
@@ -1294,18 +1287,11 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                         if (symEntry->second.isDefined && !makeBase)
                         {
                             if (!assembler.isAbsoluteSymbol(symEntry->second))
-                            {
                                 relativeSymOccurs = true;
-                                arg.symbol = symEntry;
-                                args.push_back(arg);
-                                ops.push_back(AsmExprOp::ARG_RELSYMBOL);
-                            }
-                            else
-                            {
-                                arg.value = symEntry->second.value;
-                                args.push_back(arg);
-                                ops.push_back(AsmExprOp::ARG_VALUE);
-                            }
+                            arg.relValue.value = symEntry->second.value;
+                            arg.relValue.sectionId = symEntry->second.sectionId;
+                            args.push_back(arg);
+                            ops.push_back(AsmExprOp::ARG_VALUE);
                         }
                         else
                         {   /* add symbol */
@@ -1490,7 +1476,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     args[j].symbol->second.addOccurrenceInExpr(expr.get(), j, i);
                     j++;
                 }
-                else if (ops[i]==AsmExprOp::ARG_VALUE || ops[i]==AsmExprOp::ARG_RELSYMBOL)
+                else if (ops[i]==AsmExprOp::ARG_VALUE)
                     j++;
         }
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
