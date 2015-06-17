@@ -133,9 +133,9 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
             typeName = "half";
             htocstrCStyle(result16, buf1, 64, false);
             htocstrCStyle(result16, buf2, 64, true);
-            result16 = cstrtohCStyle(buf1, buf1+64, end);
+            result16 = cstrtohCStyle(buf1, buf1+::strlen(buf1), end);
             tripped1 = result16;
-            result16 = cstrtohCStyle(buf2, buf2+64, end);
+            result16 = cstrtohCStyle(buf2, buf2+::strlen(buf2), end);
             tripped2 = result16;
             break;
         }
@@ -149,9 +149,9 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
             typeName = "float";
             ftocstrCStyle(resultU.f, buf1, 64, false);
             ftocstrCStyle(resultU.f, buf2, 64, true);
-            resultU.f = cstrtovCStyle<float>(buf1, buf1+64, end);
+            resultU.f = cstrtovCStyle<float>(buf1, buf1+::strlen(buf1), end);
             tripped1 = resultU.u;
-            resultU.f = cstrtovCStyle<float>(buf2, buf2+64, end);
+            resultU.f = cstrtovCStyle<float>(buf2, buf2+::strlen(buf2), end);
             tripped2 = resultU.u;
             break;
         }
@@ -165,9 +165,9 @@ static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
             typeName = "double";
             dtocstrCStyle(resultU.d, buf1, 64, false);
             dtocstrCStyle(resultU.d, buf2, 64, true);
-            resultU.d = cstrtovCStyle<double>(buf1, buf1+64, end);
+            resultU.d = cstrtovCStyle<double>(buf1, buf1+::strlen(buf1), end);
             tripped1 = resultU.u;
-            resultU.d = cstrtovCStyle<double>(buf2, buf2+64, end);
+            resultU.d = cstrtovCStyle<double>(buf2, buf2+::strlen(buf2), end);
             tripped2 = resultU.u;
             break;
         }
