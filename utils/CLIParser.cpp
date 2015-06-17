@@ -332,6 +332,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
             char* newStr = new char[end-optArg+1];
             std::copy(optArg, end, newStr);
             newStr[end-optArg] = 0;
+            delete[] optEntry.v.s;
             optEntry.v.s = newStr;
             break;
         }

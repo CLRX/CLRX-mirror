@@ -41,6 +41,7 @@ programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxdisasm.cpp -text
 tests/AmdBinGen.cpp -text
 tests/AsmExprParse.cpp -text
+tests/CLIParser.cpp -text
 tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/GCNDisasmLabels.cpp -text
 tests/GCNDisasmOpc.h -text
