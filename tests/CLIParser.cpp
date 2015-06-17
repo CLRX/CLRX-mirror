@@ -136,7 +136,8 @@ static const CLIOption programOptions1[] =
     { "bigNum", 'N', CLIArgType::UINT64, false, false, "bignum", "UBIGNUM" },
     { "sbigNum", 0, CLIArgType::INT64, false, false, "bignum", "SBIGNUM" },
     { "size", 's', CLIArgType::SIZE, false, false, "sizeof", "SIZEOF" },
-    { "distance", 'd', CLIArgType::FLOAT, false, false, "distance between two points", "DIST" },
+    { "distance", 'd', CLIArgType::FLOAT, false, false,
+        "distance between two points", "DIST" },
     { "dpval", 'D', CLIArgType::DOUBLE, false, false, "double precision", "DPVAL" },
     { "text", 't', CLIArgType::STRING, false, false, "text for some item", "TEXT" },
     { "name", 'n', CLIArgType::TRIMMED_STRING, false, false, "trimmed name", "NAME" },
@@ -147,17 +148,19 @@ static const CLIOption programOptions1[] =
     { "uintset", 'u', CLIArgType::UINT_ARRAY, false, false,
       "set of unsigned numbers", "UINTARR" },
     { "int64set", 0, CLIArgType::INT64_ARRAY, false, false, "set of bigints", "INTARR64" },
-    { "uint64set", 0, CLIArgType::UINT64_ARRAY, false, false, "set of biguints", "UINTARR64" },
+    { "uint64set", 0, CLIArgType::UINT64_ARRAY, false, false,
+        "set of biguints", "UINTARR64" },
     { nullptr, 'Y', CLIArgType::SIZE_ARRAY, false, false, "set of sizeofs", "SIZEARR" },
     { "positions", 'p', CLIArgType::FLOAT_ARRAY, false, false, "positions", "POSITIONS" },
     { "powers", 'P', CLIArgType::DOUBLE_ARRAY, false, false, "powers", "POWERS" },
     { "titles", 0, CLIArgType::STRING_ARRAY, false, false, "set of titles", "STRINGS" },
-    { "names", 0, CLIArgType::TRIMMED_STRING_ARRAY, false, false, "set of names", "NAMES" },
+    { "names", 0, CLIArgType::TRIMMED_STRING_ARRAY, false, false,
+        "set of names", "NAMES" },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
 };
 
-static const char* programArgv1_1[] = 
+static const char* programArgv1_1[] =
 {
     "prog1",
     "-X", "-0-12", "-1", "35", "-BON", "-N111111333311111",
@@ -178,7 +181,7 @@ static const char* programArgv1_1[] =
     nullptr
 };
 
-static const char* programArgv1_2[] = 
+static const char* programArgv1_2[] =
 {
     "prog1",
     "-X", "-0-12", "-1", "35", "-BON", "-N111111333311111",
@@ -199,7 +202,7 @@ static const char* programArgv1_2[] =
     nullptr
 };
 
-static const char* programArgv1_3[] = 
+static const char* programArgv1_3[] =
 {
     "prog1",
     "-X", "-0-12", "-1", "35", "-BON", "-N111111333311111",
@@ -216,6 +219,34 @@ static const char* programArgv1_3[] =
     "--int64set=12344444444444444,-5644,-4455445545454,2232344343",
     "--uint64set=1235555555555555,5644,4455445545454,2232344343",
     "-Y=11,33,454,55,59", "-p=0.5,0.25,1.5,1.5,-5.25", "-P=3.5,18.5,-15.25",
+    "--titles=ala,ma,kotka,lateks", "--names=   linux   , somebody,xxx,radeon   ",
+    nullptr
+};
+
+static const char* programArgv1_4[] =
+{
+    "prog1",
+    "-X", "-0=   -12", "-1", "35", "-B= \t  ON", "-N=\t 1111213331111111  ",
+    "--sbigNum=    -11234511656565", "-s= 133", "-d=    2.5", "-D= \t  12.5   ",
+    "-t=akla", "-n=   ala ", "-T=kot", "-b=     1010100",
+    "-i=     -12,55    , -677   ", "-u=  42 ,64 \t,\t677",
+    "--int64set=  12344444444444444  \t,-5644,-4455445545454,2232344343",
+    "--uint64set=      1235555555555555,    5644,4455445545454   ,2232344343",
+    "-Y=  11,33,454,55,59", "-p=    0.5,0.25,1.5,1.5,-5.25", "-P=    3.5,   18.5,-15.25",
+    "--titles=ala,ma,kotka,lateks", "--names=   linux   , somebody,xxx,radeon   ",
+    nullptr
+};
+
+static const char* programArgv1_5[] =
+{
+    "prog1",
+    "-X", "--param0=-12", "--param1", "35", "--boolX=ON", "--bigNum=1111213331111111",
+    "--sbigNum=-11234511656565", "--size=133", "--distance=2.5", "--dpval=12.5",
+    "--text=akla", "--name=   ala ", "--text2=kot", "--boolArrX=1010100",
+    "--intset=-12,55,-677", "--uintset=42,64,677",
+    "--int64set=12344444444444444,-5644,-4455445545454,2232344343",
+    "--uint64set=1235555555555555,5644,4455445545454,2232344343",
+    "-Y11,33,454,55,59", "--positions=0.5,0.25,1.5,1.5,-5.25", "--powers=3.5,18.5,-15.25",
     "--titles=ala,ma,kotka,lateks", "--names=   linux   , somebody,xxx,radeon   ",
     nullptr
 };
@@ -347,5 +378,9 @@ int main(int argc, const char** argv)
                programArgv1_2);
     retVal |= callTest(testCLI1, "3", sizeof(programArgv1_3)/sizeof(const char*)-1,
                programArgv1_3);
+    retVal |= callTest(testCLI1, "4", sizeof(programArgv1_4)/sizeof(const char*)-1,
+               programArgv1_4);
+    retVal |= callTest(testCLI1, "5", sizeof(programArgv1_5)/sizeof(const char*)-1,
+               programArgv1_5);
     return retVal;
 }
