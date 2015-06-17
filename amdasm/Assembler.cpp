@@ -699,17 +699,44 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         return;
     }
     const AsmSourcePos* thisPos = this;
+    bool exprFirstDepth = true;
+    char numBuf[32];
     while (thisPos->exprSourcePos!=nullptr)
     {
         AsmSourcePos sourcePosToPrint = *(thisPos->exprSourcePos);
         sourcePosToPrint.exprSourcePos = nullptr;
         printIndent(os, indentLevel);
-        os.write("Error from expression evaluation:\n", 34);
+        if (sourcePosToPrint.source->type == AsmSourceType::FILE)
+        {
+            RefPtr<const AsmFile> file = sourcePosToPrint.source.
+                        staticCast<const AsmFile>();
+            if (!file->parent)
+            {
+                os.write((exprFirstDepth) ? "Expression evaluation from " :
+                        "                      from ", 27);
+                os.write(file->file.c_str(), file->file.size());
+                numBuf[0] = ':';
+                size_t size = 1+itocstrCStyle(sourcePosToPrint.lineNo, numBuf+1, 31);
+                os.write(numBuf, size);
+                if (colNo != 0)
+                {
+                    numBuf[0] = ':';
+                    size = 1+itocstrCStyle(sourcePosToPrint.colNo, numBuf+1, 29);
+                    numBuf[size++] = ':';
+                    os.write(numBuf, size);
+                }
+                os.put('\n');
+                exprFirstDepth = false;
+                thisPos = thisPos->exprSourcePos;
+                continue;
+            }
+        }
+        exprFirstDepth = true;
+        os.write("Expression evaluation from\n", 27);
         sourcePosToPrint.print(os, indentLevel+1);
         os.put('\n');
         thisPos = thisPos->exprSourcePos;
     }
-    char numBuf[32];
     /* print macro tree */
     RefPtr<const AsmMacroSubst> curMacro = macro;
     RefPtr<const AsmMacroSubst> parentMacro;
