@@ -995,7 +995,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
         good = makeSymbolSnapshot(assembler, &symbolSnapshots, symEntry, outSymEntry,
                     parentExprSourcePos);
         // delete evaluated symbol entries (except output symbol entry)
-        if (!good)
+        if (good)
             for (AsmSymbolEntry* symEntry: symbolSnapshots)
                 if (outSymEntry != symEntry && symEntry->second.isDefined)
                 {
