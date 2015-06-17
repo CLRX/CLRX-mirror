@@ -113,6 +113,81 @@ static void testCStrtofX(cxuint testId, const CStrtofXTestCase& testCase)
     }
 }
 
+static void testTripping(cxuint testId, const CStrtofXTestCase& testCase)
+{
+    const char* end = nullptr;
+    uint64_t result;
+    uint64_t tripped1;
+    uint64_t tripped2;
+    cxuint width;
+    const char* typeName;
+    char buf1[64], buf2[32];
+    switch (testCase.type)
+    {
+        case FT_H:
+        {
+            uint16_t result16 = cstrtohCStyle(testCase.string,
+                    testCase.string+::strlen(testCase.string), end);
+            result = result16;
+            width = 4;
+            typeName = "half";
+            htocstrCStyle(result16, buf1, 64, false);
+            htocstrCStyle(result16, buf2, 64, true);
+            result16 = cstrtohCStyle(buf1, buf1+64, end);
+            tripped1 = result16;
+            result16 = cstrtohCStyle(buf2, buf2+64, end);
+            tripped2 = result16;
+            break;
+        }
+        case FT_F:
+        {
+            FloatUnion resultU;
+            resultU.f = cstrtovCStyle<float>(testCase.string,
+                    testCase.string+::strlen(testCase.string), end);
+            result = resultU.u;
+            width = 8;
+            typeName = "float";
+            ftocstrCStyle(resultU.f, buf1, 64, false);
+            ftocstrCStyle(resultU.f, buf2, 64, true);
+            resultU.f = cstrtovCStyle<float>(buf1, buf1+64, end);
+            tripped1 = resultU.u;
+            resultU.f = cstrtovCStyle<float>(buf2, buf2+64, end);
+            tripped2 = resultU.u;
+            break;
+        }
+        case FT_D:
+        {
+            DoubleUnion resultU;
+            resultU.d = cstrtovCStyle<double>(testCase.string,
+                    testCase.string+::strlen(testCase.string), end);
+            result = resultU.u;
+            width = 16;
+            typeName = "double";
+            dtocstrCStyle(resultU.d, buf1, 64, false);
+            dtocstrCStyle(resultU.d, buf2, 64, true);
+            resultU.d = cstrtovCStyle<double>(buf1, buf1+64, end);
+            tripped1 = resultU.u;
+            resultU.d = cstrtovCStyle<double>(buf2, buf2+64, end);
+            tripped2 = resultU.u;
+            break;
+        }
+        default:
+            throw Exception("Unknown type");
+            break;
+    }
+    if (result != tripped1 || result != tripped2)
+    {
+        std::ostringstream oss;
+        oss << "Failed tripping for #" << testId << " with string='" << testCase.string <<
+               "' and type=" << typeName << ". Result: 0x";
+        oss << std::hex << std::setw(width) << std::setfill('0') << result <<
+                "!=0x" << std::setw(width) << std::setfill('0') << tripped1 <<
+                "!=0x" << std::setw(width) << std::setfill('0') << tripped2;
+        oss.flush();
+        throw Exception(oss.str());
+    }
+}
+
 static const CStrtofXTestCase cstrtofXTestCases[] =
 {
     /* hex formatting */
@@ -1309,6 +1384,16 @@ int main(int argc, const char** argv)
         try
         {
             testCStrtofX(i, cstrtofXTestCases[i]);
+        }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; i < sizeof(cstrtofXTestCases)/sizeof(CStrtofXTestCase); i++)
+        try
+        {
+            testTripping(i, cstrtofXTestCases[i]);
         }
         catch(const std::exception& ex)
         {
