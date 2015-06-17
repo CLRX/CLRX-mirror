@@ -929,10 +929,14 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     {   // put value to argument
                         ops[opIndex] = AsmExprOp::ARG_VALUE;
                         args[argIndex].relValue.value = nextSymEntry->second.value;
-                        args[argIndex].relValue.sectionId =
-                                nextSymEntry->second.sectionId;
-                        if (!assembler.isAbsoluteSymbol(nextSymEntry->second));
+                        if (!assembler.isAbsoluteSymbol(nextSymEntry->second))
+                        {
                             expr->relativeSymOccurs = true;
+                            args[argIndex].relValue.sectionId = 
+                                nextSymEntry->second.sectionId;
+                        }
+                        else
+                            args[argIndex].relValue.sectionId = ASMSECT_ABS;
                     }
                     else // if not defined
                     {
@@ -1287,9 +1291,11 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                         if (symEntry->second.isDefined && !makeBase)
                         {
                             if (!assembler.isAbsoluteSymbol(symEntry->second))
+                            {
                                 relativeSymOccurs = true;
+                                arg.relValue.sectionId = symEntry->second.sectionId;
+                            }
                             arg.relValue.value = symEntry->second.value;
-                            arg.relValue.sectionId = symEntry->second.sectionId;
                             args.push_back(arg);
                             ops.push_back(AsmExprOp::ARG_VALUE);
                         }

@@ -1245,7 +1245,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     entry.first->second.occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
             expr->substituteOccurrence(occurrence, entry.first->second.value,
-                           entry.first->second.sectionId);
+                           (!isAbsoluteSymbol(entry.first->second)) ?
+                           entry.first->second.sectionId : ASMSECT_ABS);
             entry.second++;
             
             if (!expr->unrefSymOccursNum())
