@@ -172,16 +172,71 @@ static AmdDisasmInput disasmInput1 =
     }
 };
 
+static const cxbyte galliumInput1Global[14] =
+{ 1,2,3,4,5,6,7,8,9,10,11,33,44,55 };
+
+static const GalliumDisasmInput galliumDisasmData =
+{
+    GPUDeviceType::PITCAIRN,
+    sizeof(galliumInput1Global), galliumInput1Global,
+    {
+        { "kernel1",
+          { { 0xff1123, 0xcda1fa }, { 0x3bf1123, 0xfdca45 }, { 0x2dca6, 0xfbca168 } },
+          0, {
+              { GalliumArgType::SCALAR, false, GalliumArgSemantic::GENERAL, 4, 8, 12 },
+              { GalliumArgType::CONSTANT, false, GalliumArgSemantic::GENERAL, 1, 8, 12 },
+              { GalliumArgType::GLOBAL, false, GalliumArgSemantic::GENERAL, 4, 2, 12 },
+              { GalliumArgType::IMAGE2D_RDONLY, false,
+                  GalliumArgSemantic::GENERAL, 4, 7, 45 },
+              { GalliumArgType::IMAGE2D_WRONLY, false,
+                  GalliumArgSemantic::GENERAL, 4, 8, 45 },
+              { GalliumArgType::IMAGE3D_RDONLY, false,
+                  GalliumArgSemantic::GENERAL, 9, 7, 45 },
+              { GalliumArgType::IMAGE3D_WRONLY, false,
+                  GalliumArgSemantic::GENERAL, 12, 7, 45 },
+              { GalliumArgType::SAMPLER, false, GalliumArgSemantic::GENERAL, 17, 16, 74 },
+              { GalliumArgType::SCALAR, true, GalliumArgSemantic::GENERAL, 4, 8, 12 },
+              { GalliumArgType::SCALAR, false,
+                  GalliumArgSemantic::GRID_DIMENSION, 124, 8, 12 },
+              { GalliumArgType::SCALAR, false,
+                  GalliumArgSemantic::GRID_OFFSET, 4, 0, 32 }
+          } },
+        { "kernel2",
+          { { 0x234423, 0xaaabba }, { 0x3bdd123, 0x132235 }, { 0x11122, 0xf3424dd } },
+          0, {
+              { GalliumArgType::CONSTANT, false, GalliumArgSemantic::GENERAL, 1, 8, 12 },
+              { GalliumArgType::GLOBAL, false, GalliumArgSemantic::GENERAL, 4, 2, 12 },
+              { GalliumArgType::SCALAR, false, GalliumArgSemantic::GENERAL, 4, 8, 12 },
+              { GalliumArgType::IMAGE2D_RDONLY, false,
+                  GalliumArgSemantic::GENERAL, 4, 9, 45 },
+              { GalliumArgType::IMAGE2D_WRONLY, false,
+                  GalliumArgSemantic::GENERAL, 4, 8, 51 },
+              { GalliumArgType::IMAGE3D_RDONLY, false,
+                  GalliumArgSemantic::GENERAL, 9, 7, 45 },
+              { GalliumArgType::IMAGE3D_WRONLY, true,
+                  GalliumArgSemantic::GENERAL, 12, 7, 45 },
+              { GalliumArgType::SAMPLER, false, GalliumArgSemantic::GENERAL, 17, 16, 74 },
+              { GalliumArgType::SCALAR, true, GalliumArgSemantic::GENERAL, 4, 8, 12 },
+              { GalliumArgType::SCALAR, false,
+                  GalliumArgSemantic::GRID_DIMENSION, 124, 8, 12 },
+              { GalliumArgType::SCALAR, false,
+                  GalliumArgSemantic::GRID_OFFSET, 4, 32, 32 }
+          } }
+    },
+    0, nullptr
+};
+
 struct DisasmAmdTestCase
 {
     const AmdDisasmInput* amdInput;
+    const GalliumDisasmInput* galliumInput;
     const char* filename;
     const char* expectedString;
 };
 
 static const DisasmAmdTestCase disasmDataTestCases[] =
 {
-    { &disasmInput1, nullptr,
+    { &disasmInput1, nullptr, nullptr,
         R"xxFxx(.amd
 .gpu Spooky
 .64bit
@@ -288,7 +343,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     .uavopmask 4556
 )xxFxx"
     },
-    { nullptr, CLRX_SOURCE_DIR "/tests/amdbins/samplekernels.clo",
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdbins/samplekernels.clo",
         R"xxFxx(.amd
 .gpu Pitcairn
 .32bit
@@ -594,6 +649,48 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 .L128:
 /*bf810000         */ s_endpgm
 )xxFxx"
+    },
+    { nullptr, &galliumDisasmData, nullptr,
+        R"fxDfx(.gallium
+.gpu Pitcairn
+.data
+    .byte 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
+    .byte 0x09, 0x0a, 0x0b, 0x21, 0x2c, 0x37
+.kernel kernel1
+    .args
+        .arg scalar, 4, 8, 12, zext, general
+        .arg constant, 1, 8, 12, zext, general
+        .arg global, 4, 2, 12, zext, general
+        .arg image2d_rd, 4, 7, 45, zext, general
+        .arg image2d_wr, 4, 8, 45, zext, general
+        .arg image3d_rd, 9, 7, 45, zext, general
+        .arg image3d_wr, 12, 7, 45, zext, general
+        .arg sampler, 17, 16, 74, zext, general
+        .arg scalar, 4, 8, 12, sext, general
+        .arg scalar, 124, 8, 12, zext, griddim
+        .arg scalar, 4, 0, 32, zext, gridoffset
+    .proginfo
+        .entry 0x00ff1123, 0x00cda1fa
+        .entry 0x03bf1123, 0x00fdca45
+        .entry 0x0002dca6, 0x0fbca168
+.kernel kernel2
+    .args
+        .arg constant, 1, 8, 12, zext, general
+        .arg global, 4, 2, 12, zext, general
+        .arg scalar, 4, 8, 12, zext, general
+        .arg image2d_rd, 4, 9, 45, zext, general
+        .arg image2d_wr, 4, 8, 51, zext, general
+        .arg image3d_rd, 9, 7, 45, zext, general
+        .arg image3d_wr, 12, 7, 45, sext, general
+        .arg sampler, 17, 16, 74, zext, general
+        .arg scalar, 4, 8, 12, sext, general
+        .arg scalar, 124, 8, 12, zext, griddim
+        .arg scalar, 4, 32, 32, zext, gridoffset
+    .proginfo
+        .entry 0x00234423, 0x00aaabba
+        .entry 0x03bdd123, 0x00132235
+        .entry 0x00011122, 0x0f3424dd
+)fxDfx"
     }
 };
 
@@ -603,9 +700,18 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
     std::string resultStr;
     if (testCase.filename == nullptr)
     {
-        Disassembler disasm(testCase.amdInput, disasmOss, DISASM_ALL);
-        disasm.disassemble();
-        resultStr = disasmOss.str();
+        if (testCase.amdInput != nullptr)
+        {
+            Disassembler disasm(testCase.amdInput, disasmOss, DISASM_ALL);
+            disasm.disassemble();
+            resultStr = disasmOss.str();
+        }
+        else if (testCase.galliumInput != nullptr)
+        {
+            Disassembler disasm(testCase.galliumInput, disasmOss, DISASM_ALL);
+            disasm.disassemble();
+            resultStr = disasmOss.str();
+        }
     }
     else
     {
@@ -621,6 +727,7 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
         disasm.disassemble();
         resultStr = disasmOss.str();
     }
+    
     if (::strcmp(testCase.expectedString, resultStr.c_str()) != 0)
     {   // print error
         std::ostringstream oss;
