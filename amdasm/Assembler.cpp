@@ -983,7 +983,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
             uint16_t value;
             if (outend == end)
             {
-                printError(string, "Terminated character of string");
+                printError(string, "Unterminated character of string");
                 return false;
             }
             if (*outend == 'x')
@@ -991,7 +991,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
                 outend++;
                 if (outend == end)
                 {
-                    printError(string, "Terminated character of string");
+                    printError(string, "Unterminated character of string");
                     return false;
                 }
                 value = 0;
@@ -1078,7 +1078,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
     }
     if (outend == end)
     {
-        printError(string, "Terminated string");
+        printError(string, "Unterminated string");
         return false;
     }
     outend++;
@@ -1094,7 +1094,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
         outend++;
         if (outend == end)
         {
-            printError(string, "Terminated character literal");
+            printError(string, "Unterminated character literal");
             return false;
         }
         if (*outend == '\'')
@@ -1119,7 +1119,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
             outend++;
             if (outend == end)
             {
-                printError(string, "Terminated character literal");
+                printError(string, "Unterminated character literal");
                 return false;
             }
             if (*outend == 'x')
@@ -1127,7 +1127,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
                 outend++;
                 if (outend == end)
                 {
-                    printError(string, "Terminated character literal");
+                    printError(string, "Unterminated character literal");
                     return false;
                 }
                 value = 0;

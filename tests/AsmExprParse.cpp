@@ -293,9 +293,9 @@ static AsmExprParseCase asmExprParseCases[] =
     /* literals */
     { "0xx", "", false, 0, "<stdin>:1:1: Error: Missing number\n", "x" },
     { "0bx", "", false, 0, "<stdin>:1:1: Error: Missing number\n", "x" },
-    { "'", "", false, 0, "<stdin>:1:1: Error: Terminated character literal\n", "" },
-    { "'\\", "", false, 0, "<stdin>:1:1: Error: Terminated character literal\n", "" },
-    { "'\\x", "", false, 0, "<stdin>:1:1: Error: Terminated character literal\n", "" },
+    { "'", "", false, 0, "<stdin>:1:1: Error: Unterminated character literal\n", "" },
+    { "'\\", "", false, 0, "<stdin>:1:1: Error: Unterminated character literal\n", "" },
+    { "'\\x", "", false, 0, "<stdin>:1:1: Error: Unterminated character literal\n", "" },
     { "'\\400", "", false, 0, "<stdin>:1:1: Error: Octal code out of range\n", "0" },
     { "'\\xda", "", false, 0, "<stdin>:1:1: Error: Missing ''' at end of literal\n", "" },
     { "'\\39'", "", false, 0,

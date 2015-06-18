@@ -29,7 +29,7 @@
 
 using namespace CLRX;
 
-static void assertTrue(const std::string& testName, const std::string& caseName,
+static inline void assertTrue(const std::string& testName, const std::string& caseName,
            bool value)
 {
     if (!value)
@@ -56,7 +56,7 @@ static void assertValue(const std::string& testName, const std::string& caseName
     }
 }
 
-static void assertString(const std::string& testName, const std::string& caseName,
+static inline void assertString(const std::string& testName, const std::string& caseName,
              const char* expected, const char* result)
 {
     if (::strcmp(expected, result) != 0)
@@ -93,9 +93,9 @@ static void assertArray(const std::string& testName, const std::string& caseName
         }
 }
 
-static void assertStrArray(const std::string& testName, const std::string& caseName,
-            const std::initializer_list<const char*>& expected,
-            size_t resultSize, const char** result)
+static inline void assertStrArray(const std::string& testName,
+      const std::string& caseName,const std::initializer_list<const char*>& expected,
+      size_t resultSize, const char** result)
 {
     if (expected.size() != resultSize)
     {

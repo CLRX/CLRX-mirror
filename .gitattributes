@@ -43,6 +43,7 @@ tests/AmdBinGen.cpp -text
 tests/AsmExprParse.cpp -text
 tests/CLIParser.cpp -text
 tests/CMakeLists.txt -text svneol=unset#text/plain
+tests/DisasmDataTest.cpp -text
 tests/GCNDisasmLabels.cpp -text
 tests/GCNDisasmOpc.h -text
 tests/GCNDisasmOpc11.cpp -text
