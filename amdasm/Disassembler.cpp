@@ -745,11 +745,10 @@ void Disassembler::disassembleAmd()
     for (const AmdDisasmKernelInput& kinput: amdInput->kernels)
     {
         {
-            output.write(".kernel \"", 9);
-            const std::string escapedKernelName =
-                    escapeStringCStyle(kinput.kernelName);
-            output.write(escapedKernelName.c_str(), escapedKernelName.size());
-            output.write("\"\n", 2);
+            
+            output.write(".kernel ", 8);
+            output.write(kinput.kernelName.c_str(), kinput.kernelName.size());
+            output.put('\n');
         }
         if (doMetadata)
         {
@@ -1037,11 +1036,9 @@ void Disassembler::disassembleGallium()
     {
         const GalliumKernelInput& kinput = galliumInput->kernels[i];
         {
-            output.write(".kernel \"", 9);
-            const std::string escapedKernelName =
-                    escapeStringCStyle(kinput.kernelName);
-            output.write(escapedKernelName.c_str(), escapedKernelName.size());
-            output.write("\"\n", 2);
+            output.write(".kernel ", 8);
+            output.write(kinput.kernelName.c_str(), kinput.kernelName.size());
+            output.put('\n');
         }
         if (doMetadata)
         {
