@@ -23,109 +23,9 @@
 #include <cstring>
 #include <initializer_list>
 #include <CLRX/utils/CLIParser.h>
+#include "TestUtils.h"
 
 using namespace CLRX;
-
-static void assertTrue(const std::string& testName, const std::string& caseName, bool value)
-{
-    if (!value)
-    {
-        std::ostringstream oss;
-        oss << "Failed " << testName << ":" << caseName;
-        oss.flush();
-        throw Exception(oss.str());
-    }
-}
-
-
-template<typename T>
-static void assertValue(const std::string& testName, const std::string& caseName,
-            const T& expected, const T& result)
-{
-    if (expected != result)
-    {
-        std::ostringstream oss;
-        oss << "Failed " << testName << ":" << caseName << "\n" <<
-            expected << "!=" << result;
-        oss.flush();
-        throw Exception(oss.str());
-    }
-}
-
-static void assertString(const std::string& testName, const std::string& caseName,
-             const char* expected, const char* result)
-{
-    if (::strcmp(expected, result) != 0)
-    {
-        std::ostringstream oss;
-        oss << "Failed " << testName << ":" << caseName << "\n" <<
-            "\"" << expected << "\"!=\"" << result << "\"";
-        oss.flush();
-        throw Exception(oss.str());
-    }
-}
-
-template<typename T>
-static void assertArray(const std::string& testName, const std::string& caseName,
-            const std::initializer_list<T>& expected, size_t resultSize, const T* result)
-{
-    if (expected.size() != resultSize)
-    {
-        std::ostringstream oss;
-        oss << "Failed " << testName << ":" << caseName << " \n" <<
-            "Size of Array: " << expected.size() << "!=" << resultSize;
-        oss.flush();
-        throw Exception(oss.str());
-    }
-    auto it = expected.begin();
-    for (size_t i = 0; i < resultSize ; i++, ++it)
-        if (*it != result[i])
-        {
-            std::ostringstream oss;
-            oss << "Failed " << testName << ":" << caseName << " \n" <<
-                "Elem #" << i << ": " << *it << "!=" << result[i];
-            oss.flush();
-            throw Exception(oss.str());
-        }
-}
-
-static void assertStrArray(const std::string& testName, const std::string& caseName,
-            const std::initializer_list<const char*>& expected,
-            size_t resultSize, const char** result)
-{
-    if (expected.size() != resultSize)
-    {
-        std::ostringstream oss;
-        oss << "Failed " << testName << ":" << caseName << " \n" <<
-            "Size of Array: " << expected.size() << "!=" << resultSize;
-        oss.flush();
-        throw Exception(oss.str());
-    }
-    auto it = expected.begin();
-    for (size_t i = 0; i < resultSize ; i++, ++it)
-        if (::strcmp(*it, result[i]) != 0)
-        {
-            std::ostringstream oss;
-            oss << "Failed " << testName << ":" << caseName << " \n" <<
-                "Elem #" << i << ": " << *it << "!=" << result[i];
-            oss.flush();
-            throw Exception(oss.str());
-        }
-}
-
-
-template<typename Call, typename... T>
-static int callTest(Call* call, T ...args)
-{
-    try
-    { call(args...); }
-    catch(const std::exception& ex)
-    {
-        std::cerr << ex.what() << std::endl;
-        return 1;
-    }
-    return 0;
-}
 
 static const CLIOption programOptions1[] =
 {
@@ -369,6 +269,102 @@ static void testCLI1(const char* name, int argc, const char** argv)
             "xxx", "radeon" }, namesArrLength, (const char**)namesArr);
 }
 
+template<typename T1>
+bool isTypeMatch(const CLIParser& cli, cxuint optId)
+{
+    try
+    { cli.getOptArg<T1>(optId); }
+    catch(const CLIException& ex)
+    {
+        if (::strcmp(ex.what(), "Argument type of option mismatch!") == 0)
+            return false;
+        throw; // other error
+    }
+    return true;
+}
+
+static void testCLI1TypeMatch(const char* name, int argc, const char** argv)
+{
+    std::ostringstream oss;
+    oss << "testCLI1TypeMismatch#" << name;
+    oss.flush();
+    const std::string testName = oss.str();
+    CLIParser cli("CLIParserTest", programOptions1, argc, argv);
+    cli.parse();
+    assertTrue(testName, "-O(int)!=(uint)", !isTypeMatch<uint32_t>(cli, 1));
+    assertTrue(testName, "-O(int)==(int)", isTypeMatch<int32_t>(cli, 1));
+    assertTrue(testName, "-O(int)!=(int64)", !isTypeMatch<int64_t>(cli, 1));
+    assertTrue(testName, "-B(bool)!=(uint)", !isTypeMatch<uint32_t>(cli, 3));
+    assertTrue(testName, "-B(bool)==(bool)", isTypeMatch<bool>(cli, 3));
+    assertTrue(testName, "-t(char*)==(char*)", isTypeMatch<const char*>(
+                cli, cli.findOption('t')));
+    assertTrue(testName, "-n(char*)==(char*)", isTypeMatch<const char*>(
+                cli, cli.findOption('n')));
+    assertTrue(testName, "--titles(char**)==(char**)", isTypeMatch<const char**>(
+                cli, cli.findOption("titles")));
+    assertTrue(testName, "--names(char**)==(char**)", isTypeMatch<const char**>(
+                cli, cli.findOption("names")));
+}
+
+static const CLIOption programOptionsLong[] =
+{
+    { "x", '1', CLIArgType::INT, false, false, "parameter x", "PARAM" },
+    { "x=x", '2', CLIArgType::INT, false, false, "parameter x=x", "PARAM" },
+    { "x=x=x", '3', CLIArgType::INT, false, false, "parameter x=x=x", "PARAM" },
+    { "x=x=x=x", '4', CLIArgType::INT, false, false, "parameter x=x=x=x", "PARAM" },
+    { "x=x=x=x=x", '5', CLIArgType::INT, false, false, "parameter x=x=x=x=x", "PARAM" },
+    { "x=x=x=x=x=x", '6', CLIArgType::INT, false, false,
+                "parameter x=x=x=x=x=x", "PARAM" },
+    CLRX_CLI_AUTOHELP
+    { nullptr, 0 }
+};
+
+static const char* programArgvLong_1[] =
+{ "prog1", "-11246", "-21331", "-3232", "-4781", "-5832", "-6637", nullptr };
+
+static const char* programArgvLong_2[] =
+{ "prog1", "-1=1246", "-2=1331", "-3=232", "-4=781", "-5=832", "-6=637", nullptr };
+
+static const char* programArgvLong_3[] =
+{
+    "prog1", "--x=1246", "--x=x=1331", "--x=x=x=232", "--x=x=x=x=781", "--x=x=x=x=x=832",
+    "--x=x=x=x=x=x=637", nullptr
+};
+
+static const char* programArgvLong_4[] =
+{
+    "prog1", "--x", "1246", "--x=x", "1331", "--x=x=x", "232", "--x=x=x=x", "781",
+    "--x=x=x=x=x", "832", "--x=x=x=x=x=x", "637", nullptr
+};
+
+static void testCLILong(const char* name, int argc, const char** argv)
+{
+    std::ostringstream oss;
+    oss << "testCLILong#" << name;
+    oss.flush();
+    const std::string testName = oss.str();
+    CLIParser cli("CLIParserTest", programOptionsLong, argc, argv);
+    cli.parse();
+    assertTrue(testName, "hasOption(-1)", cli.hasOption(0));
+    assertTrue(testName, "hasNoArg(-1)", cli.hasOptArg(0));
+    assertValue(testName, "getOptArg(-1)", int32_t(1246), cli.getOptArg<int32_t>(0));
+    assertTrue(testName, "hasOption(-2)", cli.hasOption(1));
+    assertTrue(testName, "hasNoArg(-2)", cli.hasOptArg(1));
+    assertValue(testName, "getOptArg(-2)", int32_t(1331), cli.getOptArg<int32_t>(1));
+    assertTrue(testName, "hasOption(-3)", cli.hasOption(2));
+    assertTrue(testName, "hasNoArg(-3)", cli.hasOptArg(2));
+    assertValue(testName, "getOptArg(-3)", int32_t(232), cli.getOptArg<int32_t>(2));
+    assertTrue(testName, "hasOption(-4)", cli.hasOption(3));
+    assertTrue(testName, "hasNoArg(-4)", cli.hasOptArg(3));
+    assertValue(testName, "getOptArg(-4)", int32_t(781), cli.getOptArg<int32_t>(3));
+    assertTrue(testName, "hasOption(-5)", cli.hasOption(4));
+    assertTrue(testName, "hasNoArg(-5)", cli.hasOptArg(4));
+    assertValue(testName, "getOptArg(-5)", int32_t(832), cli.getOptArg<int32_t>(4));
+    assertTrue(testName, "hasOption(-6)", cli.hasOption(5));
+    assertTrue(testName, "hasNoArg(-6)", cli.hasOptArg(5));
+    assertValue(testName, "getOptArg(-6)", int32_t(637), cli.getOptArg<int32_t>(5));
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -382,5 +378,16 @@ int main(int argc, const char** argv)
                programArgv1_4);
     retVal |= callTest(testCLI1, "5", sizeof(programArgv1_5)/sizeof(const char*)-1,
                programArgv1_5);
+    retVal |= callTest(testCLI1TypeMatch, "1",
+           sizeof(programArgv1_1)/sizeof(const char*)-1, programArgv1_1);
+    
+    retVal |= callTest(testCLILong, "1", sizeof(programArgvLong_1)/sizeof(const char*)-1,
+               programArgvLong_1);
+    retVal |= callTest(testCLILong, "2", sizeof(programArgvLong_2)/sizeof(const char*)-1,
+               programArgvLong_2);
+    retVal |= callTest(testCLILong, "3", sizeof(programArgvLong_3)/sizeof(const char*)-1,
+               programArgvLong_3);
+    retVal |= callTest(testCLILong, "4", sizeof(programArgvLong_4)/sizeof(const char*)-1,
+               programArgvLong_4);
     return retVal;
 }

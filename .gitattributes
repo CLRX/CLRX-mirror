@@ -49,6 +49,7 @@ tests/GCNDisasmOpc11.cpp -text
 tests/GCNDisasmOpc12.cpp -text
 tests/GCNDisasmOpcodes.cpp -text
 tests/GalliumBinGen.cpp -text
+tests/TestUtils.h -text
 tests/amdbins/prginfo1.cl -text
 tests/amdbins/prginfo1_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
 tests/amdbins/prginfo1_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
