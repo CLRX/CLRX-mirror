@@ -1382,9 +1382,7 @@ int main(int argc, const char** argv)
     int retVal = 0;
     for (cxuint i = 0; i < sizeof(cstrtofXTestCases)/sizeof(CStrtofXTestCase); i++)
         try
-        {
-            testCStrtofX(i, cstrtofXTestCases[i]);
-        }
+        { testCStrtofX(i, cstrtofXTestCases[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;
@@ -1392,9 +1390,7 @@ int main(int argc, const char** argv)
         }
     for (cxuint i = 0; i < sizeof(cstrtofXTestCases)/sizeof(CStrtofXTestCase); i++)
         try
-        {
-            testTripping(i, cstrtofXTestCases[i]);
-        }
+        { testTripping(i, cstrtofXTestCases[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

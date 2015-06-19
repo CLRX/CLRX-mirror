@@ -655,22 +655,26 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
 int main(int argc, const char** argv)
 {
     int retVal = 0;
-    try
+    for (cxuint i = 0; i < sizeof(origBinaryFiles)/sizeof(const char*); i++)
     {
-        for (cxuint i = 0; i < sizeof(origBinaryFiles)/sizeof(const char*); i++)
+        std::string regenName = origBinaryFiles[i];
+        regenName += ".regen";
+        std::string reconfName = origBinaryFiles[i];
+        reconfName += ".reconf";
+        try
+        { testOrigBinary(i, regenName.c_str(), false); }
+        catch(const std::exception& ex)
         {
-            std::string regenName = origBinaryFiles[i];
-            regenName += ".regen";
-            std::string reconfName = origBinaryFiles[i];
-            reconfName += ".reconf";
-            testOrigBinary(i, regenName.c_str(), false);
-            testOrigBinary(i, reconfName.c_str(), true);
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
         }
-    }
-    catch(const std::exception& ex)
-    {
-        std::cerr << ex.what() << std::endl;
-        retVal = 1;
+        try
+        { testOrigBinary(i, reconfName.c_str(), true); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     }
     return retVal;
 }

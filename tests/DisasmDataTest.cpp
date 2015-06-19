@@ -742,9 +742,7 @@ int main(int argc, const char** argv)
     int retVal = 0;
     for (cxuint i = 0; i < sizeof(disasmDataTestCases)/sizeof(DisasmAmdTestCase); i++)
         try
-        {
-            testDisasmData(i, disasmDataTestCases[i]);
-        }
+        { testDisasmData(i, disasmDataTestCases[i]); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

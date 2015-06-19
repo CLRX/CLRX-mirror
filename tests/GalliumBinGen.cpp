@@ -131,15 +131,13 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename)
 int main(int argc, const char** argv)
 {
     int retVal = 0;
-    try
-    {
-        for (cxuint i = 0; i < sizeof(origBinaryFiles)/sizeof(const char*); i++)
-            testOrigBinary(i, origBinaryFiles[i]);
-    }
-    catch(const std::exception& ex)
-    {
-        std::cerr << ex.what() << std::endl;
-        retVal = 1;
-    }
+    for (cxuint i = 0; i < sizeof(origBinaryFiles)/sizeof(const char*); i++)
+        try
+        { testOrigBinary(i, origBinaryFiles[i]); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }
