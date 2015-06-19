@@ -89,7 +89,7 @@ try
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)
     {
-        std::cout << "// Disassembling '" << *args << '\'' << std::endl;
+        std::cout << "/* Disassembling '" << *args << "\' */" << std::endl;
         Array<cxbyte> binaryData;
         std::unique_ptr<AmdMainBinaryBase> base = nullptr;
         std::unique_ptr<GalliumBinary> galliumBin = nullptr;
@@ -148,8 +148,8 @@ try
         catch(const std::exception& ex)
         {
             ret = 1;
-            std::cout << "// ERROR for '" << *args << '\'' << std::endl;
-            std::cerr << "Error at disassembling '" << *args << "': " <<
+            std::cout << "/* ERROR for '" << *args << "\' */" << std::endl;
+            std::cerr << "Error during disassemblying '" << *args << "': " <<
                     ex.what() << std::endl;
         }
     }
