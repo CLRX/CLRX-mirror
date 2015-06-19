@@ -55,3 +55,8 @@ ADD_TEST(CLIParser CLIParser)
 ADD_EXECUTABLE(DisasmDataTest DisasmDataTest.cpp)
 TARGET_LINK_LIBRARIES(DisasmDataTest ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(DisasmDataTest DisasmDataTest)
+
+ADD_EXECUTABLE(AmdBinLoading AmdBinLoading.cpp)
+TARGET_LINK_LIBRARIES(AmdBinLoading ${CMAKE_THREAD_LIBS_INIT} CLRXAmdBin CLRXUtils)
+ADD_TEST(AmdBinLoading AmdBinLoading)
+

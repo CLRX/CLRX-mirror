@@ -650,6 +650,334 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 )xxFxx"
     },
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdbins/samplekernels_64.clo",
+        R"xxFxx(.amd
+.gpu Pitcairn
+.64bit
+.compile_options ""
+.driver_info "@(#) OpenCL 1.2 AMD-APP (1702.3).  Driver version: 1702.3 (VM)"
+.kernel add
+    .header
+        .fill 16, 1, 0x00
+        .byte 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+        .fill 8, 1, 0x00
+    .metadata
+        .ascii ";ARGSTART:__OpenCL_add_kernel\n"
+        .ascii ";version:3:1:111\n"
+        .ascii ";device:pitcairn\n"
+        .ascii ";uniqueid:1024\n"
+        .ascii ";memory:uavprivate:0\n"
+        .ascii ";memory:hwlocal:0\n"
+        .ascii ";memory:hwregion:0\n"
+        .ascii ";value:n:u32:1:1:0\n"
+        .ascii ";pointer:adat:u32:1:1:16:uav:12:4:RO:0:0\n"
+        .ascii ";constarg:1:adat\n"
+        .ascii ";pointer:bdat:u32:1:1:32:uav:13:4:RO:0:0\n"
+        .ascii ";constarg:2:bdat\n"
+        .ascii ";pointer:cdat:u32:1:1:48:uav:14:4:RW:0:0\n"
+        .ascii ";function:1:1028\n"
+        .ascii ";memory:64bitABI\n"
+        .ascii ";uavid:11\n"
+        .ascii ";printfid:9\n"
+        .ascii ";cbid:10\n"
+        .ascii ";privateid:8\n"
+        .ascii ";reflection:0:uint\n"
+        .ascii ";reflection:1:uint*\n"
+        .ascii ";reflection:2:uint*\n"
+        .ascii ";reflection:3:uint*\n"
+        .ascii ";ARGEND:__OpenCL_add_kernel\n"
+    .kerneldata
+        .fill 4736, 1, 0x00
+    .inputs
+    .outputs
+    .uav
+        .entry 12, 4, 0, 5
+        .entry 13, 4, 0, 5
+        .entry 14, 4, 0, 5
+        .entry 11, 4, 0, 5
+    .condout 0
+    .floatconsts
+    .intconsts
+    .boolconsts
+    .earlyexit 0
+    .globalbuffers
+    .constantbuffers
+        .cbmask 0, 0
+        .cbmask 1, 0
+    .inputsamplers
+    .scratchbuffers
+        .int 0x00000000
+    .persistentbuffers
+    .proginfo
+        .entry 0x80001000, 0x00000003
+        .entry 0x80001001, 0x00000017
+        .entry 0x80001002, 0x00000000
+        .entry 0x80001003, 0x00000002
+        .entry 0x80001004, 0x00000002
+        .entry 0x80001005, 0x00000002
+        .entry 0x80001006, 0x00000000
+        .entry 0x80001007, 0x00000004
+        .entry 0x80001008, 0x00000004
+        .entry 0x80001009, 0x00000002
+        .entry 0x8000100a, 0x00000001
+        .entry 0x8000100b, 0x00000008
+        .entry 0x8000100c, 0x00000004
+        .entry 0x80001041, 0x00000008
+        .entry 0x80001042, 0x00000014
+        .entry 0x80001863, 0x00000066
+        .entry 0x80001864, 0x00000100
+        .entry 0x80001043, 0x000000c0
+        .entry 0x80001044, 0x00000000
+        .entry 0x80001045, 0x00000000
+        .entry 0x00002e13, 0x00000098
+        .entry 0x8000001c, 0x00000100
+        .entry 0x8000001d, 0x00000000
+        .entry 0x8000001e, 0x00000000
+        .entry 0x80001841, 0x00000000
+        .entry 0x8000001f, 0x00007000
+        .entry 0x80001843, 0x00007000
+        .entry 0x80001844, 0x00000000
+        .entry 0x80001845, 0x00000000
+        .entry 0x80001846, 0x00000000
+        .entry 0x80001847, 0x00000000
+        .entry 0x80001848, 0x00000000
+        .entry 0x80001849, 0x00000000
+        .entry 0x8000184a, 0x00000000
+        .entry 0x8000184b, 0x00000000
+        .entry 0x8000184c, 0x00000000
+        .entry 0x8000184d, 0x00000000
+        .entry 0x8000184e, 0x00000000
+        .entry 0x8000184f, 0x00000000
+        .entry 0x80001850, 0x00000000
+        .entry 0x80001851, 0x00000000
+        .entry 0x80001852, 0x00000000
+        .entry 0x80001853, 0x00000000
+        .entry 0x80001854, 0x00000000
+        .entry 0x80001855, 0x00000000
+        .entry 0x80001856, 0x00000000
+        .entry 0x80001857, 0x00000000
+        .entry 0x80001858, 0x00000000
+        .entry 0x80001859, 0x00000000
+        .entry 0x8000185a, 0x00000000
+        .entry 0x8000185b, 0x00000000
+        .entry 0x8000185c, 0x00000000
+        .entry 0x8000185d, 0x00000000
+        .entry 0x8000185e, 0x00000000
+        .entry 0x8000185f, 0x00000000
+        .entry 0x80001860, 0x00000000
+        .entry 0x80001861, 0x00000000
+        .entry 0x80001862, 0x00000000
+        .entry 0x8000000a, 0x00000001
+        .entry 0x80000078, 0x00000040
+        .entry 0x80000081, 0x00008000
+        .entry 0x80000082, 0x00000000
+    .subconstantbuffers
+    .uavmailboxsize 0
+    .uavopmask
+        .byte 0x00, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .fill 120, 1, 0x00
+    .text
+/*c2000504         */ s_buffer_load_dword s0, s[4:7], 0x4
+/*c2008518         */ s_buffer_load_dword s1, s[4:7], 0x18
+/*c2420904         */ s_buffer_load_dwordx2 s[4:5], s[8:11], 0x4
+/*c2430908         */ s_buffer_load_dwordx2 s[6:7], s[8:11], 0x8
+/*c247090c         */ s_buffer_load_dwordx2 s[14:15], s[8:11], 0xc
+/*c2040900         */ s_buffer_load_dword s8, s[8:11], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8380ff00 0000ffff*/ s_min_u32       s0, s0, 0xffff
+/*9300000c         */ s_mul_i32       s0, s12, s0
+/*80000100         */ s_add_u32       s0, s0, s1
+/*4a000000         */ v_add_i32       v0, vcc, s0, v0
+/*7e020280         */ v_mov_b32       v1, 0
+/*7e040208         */ v_mov_b32       v2, s8
+/*7e060280         */ v_mov_b32       v3, 0
+/*7dc20500         */ v_cmp_lt_u64    vcc, v[0:1], v[2:3]
+/*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
+/*bf880018         */ s_cbranch_execz .L168
+/*c0840360         */ s_load_dwordx4  s[8:11], s[2:3], 0x60
+/*c0880368         */ s_load_dwordx4  s[16:19], s[2:3], 0x68
+/*d2c20000 00010500*/ v_lshl_b64      v[0:1], v[0:1], 2
+/*4a040004         */ v_add_i32       v2, vcc, s4, v0
+/*7e060205         */ v_mov_b32       v3, s5
+/*50060303         */ v_addc_u32      v3, vcc, v3, v1, vcc
+/*4a0c0006         */ v_add_i32       v6, vcc, s6, v0
+/*7e0a0207         */ v_mov_b32       v5, s7
+/*500e0305         */ v_addc_u32      v7, vcc, v5, v1, vcc
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*eba08000 80020202*/ tbuffer_load_format_x v2, v[2:3], s[8:11], 0 addr64 format:[32,float]
+/*eba08000 80040306*/ tbuffer_load_format_x v3, v[6:7], s[16:19], 0 addr64 format:[32,float]
+/*c0820370         */ s_load_dwordx4  s[4:7], s[2:3], 0x70
+/*bf8c0f70         */ s_waitcnt       vmcnt(0)
+/*4a040702         */ v_add_i32       v2, vcc, v2, v3
+/*4a00000e         */ v_add_i32       v0, vcc, s14, v0
+/*7e06020f         */ v_mov_b32       v3, s15
+/*50020303         */ v_addc_u32      v1, vcc, v3, v1, vcc
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*eba48000 80010200*/ tbuffer_store_format_x v2, v[0:1], s[4:7], 0 addr64 format:[32,float]
+.L168:
+/*bf810000         */ s_endpgm
+.kernel multiply
+    .header
+        .fill 16, 1, 0x00
+        .byte 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+        .fill 8, 1, 0x00
+    .metadata
+        .ascii ";ARGSTART:__OpenCL_multiply_kernel\n"
+        .ascii ";version:3:1:111\n"
+        .ascii ";device:pitcairn\n"
+        .ascii ";uniqueid:1025\n"
+        .ascii ";memory:uavprivate:0\n"
+        .ascii ";memory:hwlocal:0\n"
+        .ascii ";memory:hwregion:0\n"
+        .ascii ";value:n:u32:1:1:0\n"
+        .ascii ";pointer:adat:u32:1:1:16:uav:12:4:RO:0:0\n"
+        .ascii ";constarg:1:adat\n"
+        .ascii ";pointer:bdat:u32:1:1:32:uav:13:4:RO:0:0\n"
+        .ascii ";constarg:2:bdat\n"
+        .ascii ";pointer:cdat:u32:1:1:48:uav:14:4:RW:0:0\n"
+        .ascii ";function:1:1029\n"
+        .ascii ";memory:64bitABI\n"
+        .ascii ";uavid:11\n"
+        .ascii ";printfid:9\n"
+        .ascii ";cbid:10\n"
+        .ascii ";privateid:8\n"
+        .ascii ";reflection:0:uint\n"
+        .ascii ";reflection:1:uint*\n"
+        .ascii ";reflection:2:uint*\n"
+        .ascii ";reflection:3:uint*\n"
+        .ascii ";ARGEND:__OpenCL_multiply_kernel\n"
+    .kerneldata
+        .fill 4736, 1, 0x00
+    .inputs
+    .outputs
+    .uav
+        .entry 12, 4, 0, 5
+        .entry 13, 4, 0, 5
+        .entry 14, 4, 0, 5
+        .entry 11, 4, 0, 5
+    .condout 0
+    .floatconsts
+    .intconsts
+    .boolconsts
+    .earlyexit 0
+    .globalbuffers
+    .constantbuffers
+        .cbmask 0, 0
+        .cbmask 1, 0
+    .inputsamplers
+    .scratchbuffers
+        .int 0x00000000
+    .persistentbuffers
+    .proginfo
+        .entry 0x80001000, 0x00000003
+        .entry 0x80001001, 0x00000017
+        .entry 0x80001002, 0x00000000
+        .entry 0x80001003, 0x00000002
+        .entry 0x80001004, 0x00000002
+        .entry 0x80001005, 0x00000002
+        .entry 0x80001006, 0x00000000
+        .entry 0x80001007, 0x00000004
+        .entry 0x80001008, 0x00000004
+        .entry 0x80001009, 0x00000002
+        .entry 0x8000100a, 0x00000001
+        .entry 0x8000100b, 0x00000008
+        .entry 0x8000100c, 0x00000004
+        .entry 0x80001041, 0x00000008
+        .entry 0x80001042, 0x00000014
+        .entry 0x80001863, 0x00000066
+        .entry 0x80001864, 0x00000100
+        .entry 0x80001043, 0x000000c0
+        .entry 0x80001044, 0x00000000
+        .entry 0x80001045, 0x00000000
+        .entry 0x00002e13, 0x00000098
+        .entry 0x8000001c, 0x00000100
+        .entry 0x8000001d, 0x00000000
+        .entry 0x8000001e, 0x00000000
+        .entry 0x80001841, 0x00000000
+        .entry 0x8000001f, 0x00007000
+        .entry 0x80001843, 0x00007000
+        .entry 0x80001844, 0x00000000
+        .entry 0x80001845, 0x00000000
+        .entry 0x80001846, 0x00000000
+        .entry 0x80001847, 0x00000000
+        .entry 0x80001848, 0x00000000
+        .entry 0x80001849, 0x00000000
+        .entry 0x8000184a, 0x00000000
+        .entry 0x8000184b, 0x00000000
+        .entry 0x8000184c, 0x00000000
+        .entry 0x8000184d, 0x00000000
+        .entry 0x8000184e, 0x00000000
+        .entry 0x8000184f, 0x00000000
+        .entry 0x80001850, 0x00000000
+        .entry 0x80001851, 0x00000000
+        .entry 0x80001852, 0x00000000
+        .entry 0x80001853, 0x00000000
+        .entry 0x80001854, 0x00000000
+        .entry 0x80001855, 0x00000000
+        .entry 0x80001856, 0x00000000
+        .entry 0x80001857, 0x00000000
+        .entry 0x80001858, 0x00000000
+        .entry 0x80001859, 0x00000000
+        .entry 0x8000185a, 0x00000000
+        .entry 0x8000185b, 0x00000000
+        .entry 0x8000185c, 0x00000000
+        .entry 0x8000185d, 0x00000000
+        .entry 0x8000185e, 0x00000000
+        .entry 0x8000185f, 0x00000000
+        .entry 0x80001860, 0x00000000
+        .entry 0x80001861, 0x00000000
+        .entry 0x80001862, 0x00000000
+        .entry 0x8000000a, 0x00000001
+        .entry 0x80000078, 0x00000040
+        .entry 0x80000081, 0x00008000
+        .entry 0x80000082, 0x00000000
+    .subconstantbuffers
+    .uavmailboxsize 0
+    .uavopmask
+        .byte 0x00, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .fill 120, 1, 0x00
+    .text
+/*c2000504         */ s_buffer_load_dword s0, s[4:7], 0x4
+/*c2008518         */ s_buffer_load_dword s1, s[4:7], 0x18
+/*c2420904         */ s_buffer_load_dwordx2 s[4:5], s[8:11], 0x4
+/*c2430908         */ s_buffer_load_dwordx2 s[6:7], s[8:11], 0x8
+/*c247090c         */ s_buffer_load_dwordx2 s[14:15], s[8:11], 0xc
+/*c2040900         */ s_buffer_load_dword s8, s[8:11], 0x0
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*8380ff00 0000ffff*/ s_min_u32       s0, s0, 0xffff
+/*9300000c         */ s_mul_i32       s0, s12, s0
+/*80000100         */ s_add_u32       s0, s0, s1
+/*4a000000         */ v_add_i32       v0, vcc, s0, v0
+/*7e020280         */ v_mov_b32       v1, 0
+/*7e040208         */ v_mov_b32       v2, s8
+/*7e060280         */ v_mov_b32       v3, 0
+/*7dc20500         */ v_cmp_lt_u64    vcc, v[0:1], v[2:3]
+/*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
+/*bf880019         */ s_cbranch_execz .L172
+/*c0840360         */ s_load_dwordx4  s[8:11], s[2:3], 0x60
+/*c0880368         */ s_load_dwordx4  s[16:19], s[2:3], 0x68
+/*d2c20000 00010500*/ v_lshl_b64      v[0:1], v[0:1], 2
+/*4a040004         */ v_add_i32       v2, vcc, s4, v0
+/*7e060205         */ v_mov_b32       v3, s5
+/*50060303         */ v_addc_u32      v3, vcc, v3, v1, vcc
+/*4a0c0006         */ v_add_i32       v6, vcc, s6, v0
+/*7e0a0207         */ v_mov_b32       v5, s7
+/*500e0305         */ v_addc_u32      v7, vcc, v5, v1, vcc
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*eba08000 80020202*/ tbuffer_load_format_x v2, v[2:3], s[8:11], 0 addr64 format:[32,float]
+/*eba08000 80040306*/ tbuffer_load_format_x v3, v[6:7], s[16:19], 0 addr64 format:[32,float]
+/*c0820370         */ s_load_dwordx4  s[4:7], s[2:3], 0x70
+/*bf8c0f70         */ s_waitcnt       vmcnt(0)
+/*d2d60002 00020503*/ v_mul_lo_i32    v2, v3, v2
+/*4a00000e         */ v_add_i32       v0, vcc, s14, v0
+/*7e06020f         */ v_mov_b32       v3, s15
+/*50020303         */ v_addc_u32      v1, vcc, v3, v1, vcc
+/*bf8c007f         */ s_waitcnt       lgkmcnt(0)
+/*eba48000 80010200*/ tbuffer_store_format_x v2, v[0:1], s[4:7], 0 addr64 format:[32,float]
+.L172:
+/*bf810000         */ s_endpgm
+)xxFxx"
+    },
     { nullptr, &galliumDisasmData, nullptr,
         R"fxDfx(.gallium
 .gpu Pitcairn
