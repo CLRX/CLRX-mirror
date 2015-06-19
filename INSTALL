@@ -1,0 +1,87 @@
+-----------------------------------------------------------------------
+                               CLRadeonExtender
+-----------------------------------------------------------------------
+
+1. Installation prerequisities.
+
+CLRadeonExtender doesn't require many libraries and dependencies.
+It can be installed on the 32-bit/64-bit machines.
+Currently, the OpenCL support for AMD Catalyst (for the OpenCL applications)
+is disabled by default (enablement is not recommended in current development
+stage).
+
+This package provides source code and requires:
+
+* C++11 compliant compiler (Clang++ or GCC 4.7 or later)
+* GNU make tool
+* CMake system (2.6 or later)
+* Threads support (for Linux recommended NPTL)
+* 'elf.h' include file (should be installed in standard)
+* Linux system
+
+Optionally for clwrapper (an OpenCL wrapper that replaces AMD Catalyst driver
+behaviour) requires:
+
+* libOpenCL.so
+* OpenCL ICD (for example from AMD Catalyst driver)
+* AMD Catalyst driver.
+
+These utilities is working with an OpenCL kernel binaries compiled for the
+Radeon GPU's based on GCN 1.0/1.1/1.2 architecture. Any binaries compiled
+for older Radeons (VLIW architecture) has not been handled.
+
+2. Compilation
+
+To build system you should create a build directory in source code package:
+
+  mkdir build
+
+and run:
+
+  cmake ..
+
+Optional CMake configuration options for build:
+
+CMAKE_BUILD_TYPE - type of build (Release, Debug, GCCSan, GCCSSP).
+CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
+BUILD_32BIT - build also 32-bit binaries
+BUILD_TESTS - build all tests
+BUILD_DOCUMENTATION - build the Doxygen documentation
+NO_STATIC - no static libraries
+OPENCL_DIST_DIR - an OpenCL directory distribution installation (optional)
+
+You can just add one or many of these options to cmake command:
+
+  cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON
+
+After creating Makefiles scripts you can compile project:
+
+  make or make -jX - where X is number of processors.
+
+After building you can check whether project is working (if you will build tests):
+
+  ctest
+
+Creating documentation will be done by this command
+(if you will enable a building documentation):
+
+  make Docs
+
+3. Installation
+
+Installation is easy. Just run command:
+
+  make install
+  
+4. clwrapper
+
+Currently, the clwrapper have not been tested on real AMD Catalyst environment.
+
+5. Uninstallation
+
+In a build directory is a 'install_manifest.txt' file that contains all installed files.
+You can remove these files by using command:
+
+  rm -f `cat install_manifest.txt`
+
+Don't forget to keep 'build' directory after installation.

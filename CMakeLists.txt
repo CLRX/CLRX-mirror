@@ -138,8 +138,6 @@ ENDIF(BUILD_DOCUMENTATION)
 # Documentation
 ####
 
-FIND_PACKAGE(PkgConfig REQUIRED)
-
 ####
 # OpenCL find
 ####
