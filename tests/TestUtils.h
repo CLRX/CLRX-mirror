@@ -117,9 +117,40 @@ static inline void assertStrArray(const std::string& testName,
         }
 }
 
+template<typename Call, typename... T>
+static inline void assertCLRXException(const std::string& testName,
+           const std::string& caseName, const char* expectedWhat,
+           const Call& call, T ...args)
+{
+    bool failed = false;
+    std::string resultWhat;
+    try
+    { call(args...); }
+    catch(const std::exception& ex)
+    {
+        failed = true;
+        resultWhat = ex.what();
+    }
+    if (!failed)
+    {
+        std::ostringstream oss;
+        oss << "No exception occurred for " << testName << ":" << caseName << " \n";
+        oss.flush();
+        throw Exception(oss.str());
+    }
+    else if (resultWhat != expectedWhat)
+    {
+        std::ostringstream oss;
+        oss << "Exception string mismatch for " << testName << ":" << caseName << " \n" <<
+                expectedWhat << "!=" << resultWhat << "\n";
+        oss.flush();
+        throw Exception(oss.str());
+    }
+}
+
 
 template<typename Call, typename... T>
-static int callTest(Call* call, T ...args)
+static int callTest(const Call& call, T ...args)
 {
     try
     { call(args...); }

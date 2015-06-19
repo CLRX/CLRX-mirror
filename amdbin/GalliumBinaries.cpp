@@ -307,25 +307,8 @@ GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
         size_t commentSize, const char* comment)
         : manageable(true), input(nullptr)
 {
-    GalliumInput* newInput = new GalliumInput;
-    try
-    {
-        newInput->globalDataSize = globalDataSize;
-        newInput->globalData = globalData;
-        newInput->codeSize = codeSize;
-        newInput->code = code;
-        newInput->kernels = kernels;
-        newInput->disassemblySize = disassemblySize;
-        newInput->disassembly = disassembly;
-        newInput->commentSize = commentSize;
-        newInput->comment = comment;
-    }
-    catch(...)
-    {
-         delete newInput;
-         throw;
-    }
-    input = newInput;
+    input = new GalliumInput{ globalDataSize, globalData, kernels,
+        disassemblySize, disassembly, commentSize, comment, codeSize, code };
 }
 
 GalliumBinGenerator::~GalliumBinGenerator()

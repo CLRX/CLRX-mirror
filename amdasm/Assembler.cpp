@@ -1531,21 +1531,15 @@ void Assembler::initializeOutputFormat()
     outFormatInitialized = true;
     if (format == AsmFormat::CATALYST && amdOutput == nullptr)
     {   // if not created
-        amdOutput = new AmdInput();
+        amdOutput = new AmdInput{};
         amdOutput->is64Bit = _64bit;
         amdOutput->deviceType = deviceType;
-        amdOutput->globalData = nullptr;
-        amdOutput->globalDataSize = 0;
-        amdOutput->sourceCode = nullptr;
-        amdOutput->sourceCodeSize = 0;
-        amdOutput->llvmir = nullptr;
-        amdOutput->llvmirSize = 0;
         /* sections */
         sections.push_back(new AsmSection{ 0, AsmSectionType::AMD_GLOBAL_DATA });
     }
     else if (format == AsmFormat::GALLIUM && galliumOutput == nullptr)
     {
-        galliumOutput = new GalliumInput();
+        galliumOutput = new GalliumInput{};
         galliumOutput->code = nullptr;
         galliumOutput->codeSize = 0;
         galliumOutput->disassembly = nullptr;

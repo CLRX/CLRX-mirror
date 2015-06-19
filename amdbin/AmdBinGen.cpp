@@ -145,22 +145,8 @@ AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType
        const std::vector<AmdKernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    AmdInput* newInput = new AmdInput;
-    try
-    {
-        newInput->is64Bit = _64bitMode;
-        newInput->deviceType = deviceType;
-        newInput->driverVersion = driverVersion;
-        newInput->globalDataSize = globalDataSize;
-        newInput->globalData = globalData;
-        newInput->kernels = kernelInputs;
-    }
-    catch(...)
-    {
-        delete newInput;
-        throw;
-    }
-    input = newInput;
+    input = new AmdInput{_64bitMode, deviceType, globalDataSize, globalData,
+                driverVersion, "", "", kernelInputs };
 }
 
 AmdGPUBinGenerator::~AmdGPUBinGenerator()
@@ -1366,6 +1352,8 @@ static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
         if (!kernel.useConfig)
         {
             const char* metadata = kernel.metadata;
+            if (kernel.metadataSize < 11) // if too short
+                continue;
             size_t pos = 0;
             for (pos = 0; pos < kernel.metadataSize-11; pos++)
                 if (::memcmp(metadata+pos, "\n;uniqueid:", 11) == 0)

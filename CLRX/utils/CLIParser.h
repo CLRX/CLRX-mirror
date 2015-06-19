@@ -29,7 +29,6 @@
 #include <vector>
 #include <ostream>
 #include <iostream>
-#include <cstring>
 #include <memory>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
@@ -208,8 +207,8 @@ private:
         };
         Value v;    ///< value
         size_t arrSize;
-        OptionEntry() : isSet(false), isArg(false), arrSize(0)
-        { ::memset(&v, 0, sizeof v); }
+        OptionEntry() : isSet(false), isArg(false), v{}, arrSize(0)
+        { }
     };
     
     const CLIOption* options;
