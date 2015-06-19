@@ -196,17 +196,6 @@ struct AsmSourcePos
     uint64_t lineNo;    ///< line number of top-most source
     size_t colNo;       ///< column number
     const AsmSourcePos* exprSourcePos; ///< expression sourcepos from what evaluation made
-
-    /// empty constructor    
-    AsmSourcePos() : lineNo(0), colNo(0), exprSourcePos(nullptr)
-    { }
-    
-    /// constructor with all fields
-    AsmSourcePos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source,
-                 uint64_t _lineNo, size_t _colNo, AsmSourcePos* _exprSourcePos = nullptr)
-            : macro(_macro), source(_source), lineNo(_lineNo), colNo(_colNo),
-              exprSourcePos(_exprSourcePos)
-    { }
     
     /// print source position
     void print(std::ostream& os, cxuint indentLevel = 0) const;
