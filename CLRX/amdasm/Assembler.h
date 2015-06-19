@@ -196,10 +196,12 @@ struct AsmSourcePos
     uint64_t lineNo;    ///< line number of top-most source
     size_t colNo;       ///< column number
     const AsmSourcePos* exprSourcePos; ///< expression sourcepos from what evaluation made
-    
+
+    /// empty constructor    
     AsmSourcePos() : lineNo(0), colNo(0), exprSourcePos(nullptr)
     { }
     
+    /// constructor with all fields
     AsmSourcePos(RefPtr<const AsmMacroSubst> _macro, RefPtr<const AsmSource> _source,
                  uint64_t _lineNo, size_t _colNo, AsmSourcePos* _exprSourcePos = nullptr)
             : macro(_macro), source(_source), lineNo(_lineNo), colNo(_colNo),
@@ -562,7 +564,6 @@ struct AsmExprSymbolOccurrence
     AsmExpression* expression;      ///< target expression pointer
     size_t argIndex;        ///< argument index
     size_t opIndex;         ///< operator index
-    size_t linePosition;
     
     /// comparison operator
     bool operator==(const AsmExprSymbolOccurrence& b) const
@@ -572,7 +573,7 @@ struct AsmExprSymbolOccurrence
 /// assembler symbol structure
 struct AsmSymbol
 {
-    cxuint refCount;
+    cxuint refCount;    ///< reference counter (for internal use only)
     cxuint sectionId;       ///< section id
     cxuint isDefined:1;         ///< symbol is defined
     cxuint onceDefined:1;       ///< symbol can be only once defined (likes labels)
@@ -696,7 +697,8 @@ public:
               bool baseExpr = false);
     /// destructor
     ~AsmExpression();
-    
+
+    /// helper to create symbol snapshot. Creates initial expression for symbol snapshot
     AsmExpression* createForSnapshot(const AsmSourcePos* exprSourcePos) const;
     
     /// set target of expression
@@ -707,6 +709,7 @@ public:
     /**
      * \param assembler assembler instace
      * \param value output value
+     * \param sectionId output section id
      * \return true if evaluated
      */
     bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const;
@@ -717,6 +720,7 @@ public:
      * \param linePos position in line
      * \param outLinePos position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
+     * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos,
                     bool makeBase = false);
@@ -727,6 +731,7 @@ public:
      * \param string string at position in line
      * \param outend string at position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
+     * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, const char* string,
               const char*& outend, bool makeBase = false);
@@ -765,10 +770,10 @@ public:
     /// get source position
     const AsmSourcePos& getSourcePos() const
     { return sourcePos; }
-    
+
+    /// make symbol snapshot (required to implement .eqv pseudo-op)    
     static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
-               AsmSymbolEntry*& outSymEntry,
-               const AsmSourcePos* parentExprSourcePos);
+               AsmSymbolEntry*& outSymEntry, const AsmSourcePos* parentExprSourcePos);
 };
 
 inline AsmSymbol::~AsmSymbol()
@@ -785,7 +790,7 @@ union AsmExprArg
     struct {
         uint64_t value;         ///< value
         cxuint sectionId;       ///< sectionId
-    } relValue;
+    } relValue; //< relative value (with section)
 };
 
 inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
@@ -943,6 +948,7 @@ public:
      * \param format output format type
      * \param deviceType GPU device type
      * \param msgStream stream for warnings and errors
+     * \param printStream stream for printing message by .print pseudo-ops
      */
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
               AsmFormat format = AsmFormat::CATALYST,

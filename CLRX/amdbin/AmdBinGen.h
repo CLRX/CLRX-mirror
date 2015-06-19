@@ -170,11 +170,30 @@ struct AmdInput
     
     /// add kernel to input
     void addKernel(const AmdKernelInput& kernelInput);
-    /// add kernel to input
+    /// add kernel to input with configuration
+    /**
+     * \param kernelName kernel name
+     * \param codeSize size of kernel code size
+     * \param code kernel code
+     * \param config kernel configuration
+     * \param dataSize size of data in .data section
+     * \param data content of .data section
+     */
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
            const AmdKernelConfig& config, size_t dataSize = 0,
            const cxbyte* data = nullptr);
     /// add kernel to input
+    /**
+     * \param kernelName kernel name
+     * \param codeSize size of kernel code size
+     * \param code kernel code
+     * \param calNotes list of ATI CAL notes
+     * \param header kernel header (32-bytes)
+     * \param metadataSize size of metadata text in bytes
+     * \param metadata metadata text (not null-terminated)
+     * \param dataSize size of data in .data section
+     * \param data content of .data section
+     */
     void addKernel(const char* kernelName, size_t codeSize, const cxbyte* code,
            const std::vector<CALNoteInput>& calNotes, const cxbyte* header,
            size_t metadataSize, const char* metadata,
