@@ -1570,11 +1570,11 @@ static const char* pseudoOpNamesTbl[] =
     "elseifeq", "elseifeqs", "elseifge", "elseifgt",
     "elseifle", "elseiflt", "elseifnb", "elseifnc",
     "elseifndef", "elseifne", "elseifnes", "elseifnotdef",
-    "end", "endfunc", "endif", "endm",
+    "end", "endif", "endm",
     "endr", "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
-    "fail", "file", "fill", "float",
-    "format", "func", "gallium", "global",
+    "fail", "file", "fill", "fill64",
+    "float", "format", "gallium", "global",
     "gpu", "half", "hword", "if",
     "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "ifge", "ifgt", "ifle",
@@ -1601,11 +1601,11 @@ enum
     ASMOP_ELSEIFEQ, ASMOP_ELSEIFEQS, ASMOP_ELSEIFGE, ASMOP_ELSEIFGT,
     ASMOP_ELSEIFLE, ASMOP_ELSEIFLT, ASMOP_ELSEIFNB, ASMOP_ELSEIFNC,
     ASMOP_ELSEIFNDEF, ASMOP_ELSEIFNE, ASMOP_ELSEIFNES, ASMOP_ELSEIFNOTDEF,
-    ASMOP_END, ASMOP_ENDFUNC, ASMOP_ENDIF, ASMOP_ENDM,
+    ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM,
     ASMOP_ENDR, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
-    ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FLOAT,
-    ASMOP_FORMAT, ASMOP_FUNC, ASMOP_GALLIUM, ASMOP_GLOBAL,
+    ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILL64,
+    ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
     ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF,
     ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
     ASMOP_IFEQS, ASMOP_IFGE, ASMOP_IFGT, ASMOP_IFLE,
@@ -1619,7 +1619,7 @@ enum
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
-    ASMOP_WARNING, ASM_WEAK, ASMOP_WORD
+    ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1639,30 +1639,55 @@ struct CLRX_INTERNAL AsmPseudoOps
     /*
      * pseudo-ops logic
      */
+    // set bitnesss
     static void setBitness(Assembler& asmr, const char*& string, bool _64Bit);
+    // set output format
     static void setOutFormat(Assembler& asmr, const char*& string);
+    // change kernel
     static void goToKernel(Assembler& asmr, const char*& string);
     
+    /// include file
     static void includeFile(Assembler& asmr, const char* pseudoStr, const char*& string);
+    // include binary file
+    static void includeBinFile(Assembler& asmr, const char* pseudoStr,
+                   const char*& string);
     
+    // fail
     static void doFail(Assembler& asmr, const char* pseudoStr, const char*& string);
+    // .error
     static void printError(Assembler& asmr, const char* pseudoStr, const char*& string);
+    // .warning
     static void printWarning(Assembler& asmr, const char* pseudoStr, const char*& string);
     
+    // .byte, .short, .int, .word, .long, .quad
     template<typename T>
     static void putIntegers(Assembler& asmr, const char*& string);
     
+    // .half, .float, .double
     template<typename UIntType>
     static void putFloats(Assembler& asmr, const char*& string);
     
+    /// .string, ascii
     static void putStrings(Assembler& asmr, const char*& string, bool addZero = false);
+    // .string16, .string32, .string64
     template<typename T>
     static void putStringsToInts(Assembler& asmr, const char*& string);
     
+    /// .octa
     static void putUInt128s(Assembler& asmr, const char*& string);
     
+    /// .set, .equ, .eqv, .equiv
     static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true,
                 bool baseExpr = false);
+    
+    static void doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
+               bool _64bit = false);
+    static void doSkip(Assembler& asmr, const char*& string);
+    
+    static void doAlign(Assembler& asmr,  const char*& string);
+    
+    template<typename Word>
+    static void doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string);
 };
 
 bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
@@ -1812,7 +1837,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
             std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
                     asmr.getSourcePos(pseudoStr), filename));
             asmr.asmInputFilters.push(newInputFilter.release());
-            asmr.currentInputFilter = asmr.asmInputFilters.top(); 
+            asmr.currentInputFilter = asmr.asmInputFilters.top();
             return;
         }
         catch(const Exception& ex)
@@ -1843,6 +1868,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
         }
     }
 }
+
 
 void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
@@ -2122,6 +2148,219 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
     string = end;
 }
 
+void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
+          bool _64bit)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    uint64_t repeat, size = 1, value = 0;
+    if (!getAbsoluteValueArg(asmr, repeat, string))
+        return;
+    bool haveComma = false;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    const char* secondParamStr = string;
+    if (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        if (!getAbsoluteValueArg(asmr, size, string))
+            return;
+        if (!skipComma(asmr, haveComma, string))
+            return;
+        if (haveComma)
+        {
+            string = skipSpacesToEnd(string, end);
+            secondParamStr = string;
+            if (!getAbsoluteValueArg(asmr, value, string))
+                return;
+        }
+    }
+    if (!_64bit && (value & (0xffffffffULL<<32))!=0)
+    {
+        asmr.printWarning(secondParamStr,
+                  ".fill pseudo-op truncates pattern to 32-bit value");
+        value &= 0xffffffffUL;
+    }
+    if (size == 0)
+        return;
+    if (SIZE_MAX/size < repeat)
+    {
+        asmr.printError(pseudoStr, "Product of repeat and size is too big");
+        return;
+    }
+    /* do fill */
+    uint64_t outPos = asmr.currentOutPos;
+    asmr.reserveData(size*repeat);
+    
+    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    const size_t valueSize = std::min(uint64_t(8), size);
+    cxbyte valueBytes[8];
+    SLEV(*reinterpret_cast<uint64_t*>(valueBytes), value);
+    for (uint64_t r = 0; r < repeat; r++)
+    {
+        ::memcpy(content, valueBytes, valueSize);
+        ::memset(content+valueSize, 0, size-valueSize);
+        content += size;
+    }
+}
+
+void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    uint64_t size = 1, value = 0;
+    if (!getAbsoluteValueArg(asmr, size, string))
+        return;
+    bool haveComma = false;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        if (!getAbsoluteValueArg(asmr, value, string))
+            return;
+    }
+    
+    if ((value & ~uint64_t(0xff)) != 0)
+        asmr.printWarning(string, "Fill value is truncated to  8-bit value");
+    
+    uint64_t outPos = asmr.currentOutPos;
+    asmr.reserveData(size);
+    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    ::memset(content, value&0xff, size);
+}
+
+void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    uint64_t alignment, value = 0, maxAlign = 0;
+    const char* alignStr = string;
+    if (!getAbsoluteValueArg(asmr, alignment, string))
+        return;
+    bool haveComma = false;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    const char* valueStr = string;
+    if (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        valueStr = string;
+        if (!getAbsoluteValueArg(asmr, value, string))
+            return;
+        if (!skipComma(asmr, haveComma, string))
+            return;
+        if (haveComma)
+        {
+            string = skipSpacesToEnd(string, end);
+            if (!getAbsoluteValueArg(asmr, maxAlign, string))
+                return;
+        }
+    }
+    
+    if ((value & ~uint64_t(0xff)) != 0)
+        asmr.printWarning(valueStr, "Fill value is truncated to 8-bit value");
+    if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
+    {
+        asmr.printError(alignStr, "Alignment is not power of 2");
+        return;
+    }
+    uint64_t outPos = asmr.currentOutPos;
+    const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
+            alignment - (outPos&(alignment-1)) : 0;
+    if (maxAlign!=0 && bytesToFill > maxAlign)
+        return; // do not make alignment
+    
+    asmr.reserveData(bytesToFill);
+    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    ::memset(content, value&0xff, bytesToFill);
+}
+
+template<typename Word>
+void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (string == end)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    uint64_t alignment, value = 0, maxAlign = 0;
+    const char* alignStr = string;
+    if (!getAbsoluteValueArg(asmr, alignment, string))
+        return;
+    bool haveComma = false;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    const char* valueStr = string;
+    if (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        valueStr = string;
+        if (!getAbsoluteValueArg(asmr, value, string))
+            return;
+        if (!skipComma(asmr, haveComma, string))
+            return;
+        if (haveComma)
+        {
+            string = skipSpacesToEnd(string, end);
+            if (!getAbsoluteValueArg(asmr, maxAlign, string))
+                return;
+        }
+    }
+    
+    if ((value & ~((1ULL<<(sizeof(Word)<<3))-1)) != 0)
+        asmr.printWarning(valueStr, "Fill value is truncated to word");
+    
+    if (alignment == 0)
+        return; // do nothing
+    
+    if ((1ULL<<(63-CLZ64(alignment))) != alignment)
+    {
+        asmr.printError(alignStr, "Alignment is not power of 2");
+        return;
+    }
+    uint64_t outPos = asmr.currentOutPos;
+    if (outPos&(sizeof(Word)-1))
+    {
+        asmr.printError(pseudoStr, "Offset is not aligned to word");
+        return;
+    }
+    
+    const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
+            alignment - (outPos&(alignment-1)) : 0;
+    
+    if (maxAlign!=0 && bytesToFill > maxAlign)
+        return; // do not make alignment
+    
+    asmr.reserveData(bytesToFill);
+    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    Word word;
+    SLEV(word, value);
+    std::fill(reinterpret_cast<Word*>(content),
+              reinterpret_cast<Word*>(content + bytesToFill), word);
+}
+
 };
 
 bool Assembler::assemble()
@@ -2252,6 +2491,8 @@ bool Assembler::assemble()
                     return good;
                     break;
                 case ASMOP_ALIGN:
+                case ASMOP_BALIGN:
+                    AsmPseudoOps::doAlign(*this, string);
                     break;
                 case ASMOP_ARCH:
                     break;
@@ -2261,11 +2502,11 @@ bool Assembler::assemble()
                 case ASMOP_ASCIZ:
                     AsmPseudoOps::putStrings(*this, string, true);
                     break;
-                case ASMOP_BALIGN:
-                    break;
                 case ASMOP_BALIGNL:
+                    AsmPseudoOps::doAlignWord<uint32_t>(*this, firstNameString, string);
                     break;
                 case ASMOP_BALIGNW:
+                    AsmPseudoOps::doAlignWord<uint16_t>(*this, firstNameString, string);
                     break;
                 case ASMOP_BYTE:
                     AsmPseudoOps::putIntegers<cxbyte>(*this, string);
@@ -2335,8 +2576,6 @@ bool Assembler::assemble()
                     break;
                 case ASMOP_END:
                     break;
-                case ASMOP_ENDFUNC:
-                    break;
                 case ASMOP_ENDIF:
                     break;
                 case ASMOP_ENDM:
@@ -2369,14 +2608,16 @@ bool Assembler::assemble()
                 case ASMOP_FILE:
                     break;
                 case ASMOP_FILL:
+                    AsmPseudoOps::doFill(*this, firstNameString, string, false);
+                    break;
+                case ASMOP_FILL64:
+                    AsmPseudoOps::doFill(*this, firstNameString, string, true);
                     break;
                 case ASMOP_FLOAT:
                     AsmPseudoOps::putFloats<uint32_t>(*this, string);
                     break;
                 case ASMOP_FORMAT:
                     AsmPseudoOps::setOutFormat(*this, string);
-                    break;
-                case ASMOP_FUNC:
                     break;
                 case ASMOP_GLOBAL:
                     break;
@@ -2478,8 +2719,8 @@ bool Assembler::assemble()
                 case ASMOP_SIZE:
                     break;
                 case ASMOP_SKIP:
-                    break;
                 case ASMOP_SPACE:
+                    AsmPseudoOps::doSkip(*this, string);
                     break;
                 case ASMOP_STRING:
                     AsmPseudoOps::putStrings(*this, string, true);
@@ -2501,6 +2742,8 @@ bool Assembler::assemble()
                     break;
                 case ASMOP_WARNING:
                     AsmPseudoOps::printWarning(*this, firstNameString, string);
+                    break;
+                case ASMOP_WEAK:
                     break;
                 case ASMOP_WORD:
                     AsmPseudoOps::putIntegers<uint32_t>(*this, string);
