@@ -1649,8 +1649,7 @@ struct CLRX_INTERNAL AsmPseudoOps
     /// include file
     static void includeFile(Assembler& asmr, const char* pseudoStr, const char*& string);
     // include binary file
-    static void includeBinFile(Assembler& asmr, const char* pseudoStr,
-                   const char*& string);
+    static void includeBinFile(Assembler& asmr, const char*& string);
     
     // fail
     static void doFail(Assembler& asmr, const char* pseudoStr, const char*& string);
@@ -1869,6 +1868,114 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
     }
 }
 
+void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    std::string filename;
+    const char* nameStr = string;
+    uint64_t offset = 0, count = UINT64_MAX;
+    if (!asmr.parseString(filename, string, string))
+        return;
+    bool haveComma;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        if (!getAbsoluteValueArg(asmr, offset, string))
+            return;
+        if (!skipComma(asmr, haveComma, string))
+            return;
+        if (haveComma)
+        {
+            string = skipSpacesToEnd(string, end);
+            if (!getAbsoluteValueArg(asmr, count, string))
+                return;
+        }
+    }
+    
+    if (count == 0)
+    {
+        asmr.printWarning(nameStr, "Number of bytes is zero, ignoring .incbin");
+        return;
+    }
+    
+    std::ifstream ifs;
+    filesystemPath(filename);
+    ifs.open(filename.c_str(), std::ios::binary);
+    if (!ifs)
+    {
+        for (const std::string& incDir: asmr.includeDirs)
+        {
+            std::string inDirFilename = joinPaths(incDir, filename);
+            ifs.open(inDirFilename.c_str(), std::ios::binary);
+            if (ifs)
+                break;
+        }
+    }
+    if (!ifs)
+    {
+        std::string error("Binary file '");
+        error += filename;
+        error += "' not found or unavailable in any directory";
+        asmr.printError(nameStr, error.c_str());
+    }
+    // exception for checking file seeking
+    bool seekingIsWorking = true;
+    ifs.exceptions(std::ios::badbit | std::ios::failbit); // exceptions
+    try
+    { ifs.seekg(0, std::ios::end); /* to end of file */ }
+    catch(const std::exception& ex)
+    {   /* oh, no! this is not regular file */
+        seekingIsWorking = false;
+        ifs.clear();
+    }
+    ifs.exceptions(std::ios::badbit);  // exceptions for reading
+    if (seekingIsWorking)
+    {   /* for regular files */
+        const uint64_t size = ifs.tellg();
+        if (size < offset)
+            return; // do nothing
+        ifs.seekg(offset, std::ios::beg);
+        const uint64_t toRead = std::min(size-offset, count);
+        uint64_t outPos = asmr.currentOutPos;
+        asmr.reserveData(toRead);
+        char* output = reinterpret_cast<char*>(
+            asmr.sections[asmr.currentSection]->content.data() + outPos);
+        ifs.read(output, toRead);
+        if (ifs.gcount() != std::streamsize(toRead))
+        {
+            asmr.printError(nameStr, "Can't read whole needed file content");
+            return;
+        }
+    }
+    else
+    {   /* for sequential files, likes fifo */
+        char tempBuf[256];
+        for (uint64_t pos = 0; pos < offset; )
+        {
+            const size_t toRead = std::min(offset-pos, uint64_t(256));
+            ifs.read(tempBuf, toRead);
+            const uint64_t readed = ifs.gcount();
+            pos += readed;
+            if (readed < toRead)
+                break;
+        }
+        // read data from binary file
+        for (uint64_t bytes = 0; bytes < count; )
+        {
+            const size_t toRead = std::min(uint64_t(256), count-bytes);
+            ifs.read(tempBuf, toRead);
+            const uint64_t readed = ifs.gcount();
+            asmr.putData(readed, (cxbyte*)tempBuf);
+            bytes += readed;
+            if (readed < toRead)
+                break;
+        }
+    }
+}
 
 void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
@@ -2662,6 +2769,7 @@ bool Assembler::assemble()
                 case ASMOP_IFNOTDEF:
                     break;
                 case ASMOP_INCBIN:
+                    AsmPseudoOps::includeBinFile(*this, string);
                     break;
                 case ASMOP_INCLUDE:
                     AsmPseudoOps::includeFile(*this, firstNameString, string);

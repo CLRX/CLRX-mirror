@@ -366,7 +366,7 @@ bool CLRX::isDirectory(const char* path)
 
 extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
 {
-    size_t size;
+    uint64_t size;
     if (isDirectory(filename))
         throw Exception("This is directory!");
     
@@ -384,9 +384,12 @@ extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
         ifs.clear();
     }
     Array<cxbyte> buf;
+    ifs.exceptions(std::ifstream::badbit); // ignore failbit for read
     if (seekingIsWorking)
     {
         size = ifs.tellg();
+        if (size > SIZE_MAX)
+            throw Exception("File is too big to load");
         ifs.seekg(0, std::ios::beg);
         buf.resize(size);
         ifs.read((char*)buf.data(), size);
@@ -395,7 +398,6 @@ extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
     }
     else
     {   /* growing, growing... */
-        ifs.exceptions(std::ifstream::badbit); // ignore failbit for read
         size_t prevBufSize = 0;
         size_t readBufSize = 256;
         buf.resize(readBufSize);
