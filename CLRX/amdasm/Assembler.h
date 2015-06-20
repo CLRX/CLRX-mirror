@@ -913,12 +913,14 @@ private:
         currentOutPos += size;
     }
     
-    void reserveData(size_t size)
+    cxbyte* reserveData(size_t size)
     {
+        size_t oldOutPos = currentOutPos;
         AsmSection& section = *sections[currentSection];
         if (currentOutPos+size > section.content.size())
             section.content.resize(currentOutPos+size);
         currentOutPos += size;
+        return section.content.data() + oldOutPos;
     }
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 

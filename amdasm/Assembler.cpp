@@ -23,6 +23,7 @@
 #include <fstream>
 #include <vector>
 #include <stack>
+#include <elf.h>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -1679,6 +1680,11 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true,
                 bool baseExpr = false);
     
+    // .global, .local, .extern
+    static void setSymbolBind(Assembler& asmr, const char*& string, cxbyte elfInfo);
+    
+    static void setSymbolSize(Assembler& asmr, const char*& string);
+    
     static void doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
                bool _64bit = false);
     static void doSkip(Assembler& asmr, const char*& string);
@@ -1940,10 +1946,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
             return; // do nothing
         ifs.seekg(offset, std::ios::beg);
         const uint64_t toRead = std::min(size-offset, count);
-        uint64_t outPos = asmr.currentOutPos;
-        asmr.reserveData(toRead);
-        char* output = reinterpret_cast<char*>(
-            asmr.sections[asmr.currentSection]->content.data() + outPos);
+        char* output = reinterpret_cast<char*>(asmr.reserveData(toRead));
         ifs.read(output, toRead);
         if (ifs.gcount() != std::streamsize(toRead))
         {
@@ -2205,11 +2208,9 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
         {
             if (asmr.parseString(outStr, string, string))
             {
-                const uint64_t oldOffset = asmr.currentOutPos;
                 const size_t strSize = outStr.size()+1;
-                asmr.reserveData(sizeof(T)*(strSize));
                 T* outData = reinterpret_cast<T*>(
-                        asmr.sections[asmr.currentSection]->content.data()+oldOffset);
+                        asmr.reserveData(sizeof(T)*(strSize)));
                 for (size_t i = 0; i < strSize; i++)
                     SULEV(outData[i], T(outStr[i])&T(0xff));
             }
@@ -2253,6 +2254,57 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
     }
     asmr.assignSymbol(symName, strAtSymName, string, reassign, baseExpr);
     string = end;
+}
+
+void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bind)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    bool haveComma = true; // initial value
+    while (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        const char* symNameStr = string;
+        AsmSymbolEntry* symEntry;
+        if (!asmr.parseSymbol(string, symEntry, false))
+            return;
+        if (symEntry == nullptr)
+        {
+            asmr.printError(symNameStr, "Expected symbol name");
+            return;
+        }
+        string += symEntry->first.size();
+        symEntry->second.info = ELF32_ST_INFO(bind, ELF32_ST_TYPE(symEntry->second.info));
+        if (!skipComma(asmr, haveComma, string))
+            return;
+    }
+}
+
+void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* symNameStr = string;
+    AsmSymbolEntry* symEntry;
+    if (!asmr.parseSymbol(string, symEntry, false))
+        return;
+    if (symEntry == nullptr)
+    {
+        asmr.printError(symNameStr, "Expected symbol name and expression");
+        return;
+    }
+    string += symEntry->first.size();
+    bool haveComma;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(symNameStr, "Expected symbol name and expression");
+        return;
+    }
+    string = skipSpacesToEnd(string, end);
+    // parse size
+    if (!getAbsoluteValueArg(asmr, symEntry->second.size, string))
+        return;
 }
 
 void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
@@ -2302,10 +2354,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
         return;
     }
     /* do fill */
-    uint64_t outPos = asmr.currentOutPos;
-    asmr.reserveData(size*repeat);
-    
-    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    cxbyte* content = asmr.reserveData(size*repeat);
     const size_t valueSize = std::min(uint64_t(8), size);
     cxbyte valueBytes[8];
     SLEV(*reinterpret_cast<uint64_t*>(valueBytes), value);
@@ -2343,9 +2392,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     if ((value & ~uint64_t(0xff)) != 0)
         asmr.printWarning(string, "Fill value is truncated to  8-bit value");
     
-    uint64_t outPos = asmr.currentOutPos;
-    asmr.reserveData(size);
-    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    cxbyte* content = asmr.reserveData(size);
     ::memset(content, value&0xff, size);
 }
 
@@ -2396,8 +2443,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string)
     if (maxAlign!=0 && bytesToFill > maxAlign)
         return; // do not make alignment
     
-    asmr.reserveData(bytesToFill);
-    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    cxbyte* content = asmr.reserveData(bytesToFill);
     ::memset(content, value&0xff, bytesToFill);
 }
 
@@ -2460,8 +2506,8 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     if (maxAlign!=0 && bytesToFill > maxAlign)
         return; // do not make alignment
     
-    asmr.reserveData(bytesToFill);
-    cxbyte* content = asmr.sections[asmr.currentSection]->content.data() + outPos;
+    
+    cxbyte* content = asmr.reserveData(bytesToFill);
     Word word;
     SLEV(word, value);
     std::fill(reinterpret_cast<Word*>(content),
@@ -2727,6 +2773,7 @@ bool Assembler::assemble()
                     AsmPseudoOps::setOutFormat(*this, string);
                     break;
                 case ASMOP_GLOBAL:
+                    AsmPseudoOps::setSymbolBind(*this, string, STB_GLOBAL);
                     break;
                 case ASMOP_GPU:
                     break;
@@ -2787,6 +2834,7 @@ bool Assembler::assemble()
                 case ASMOP_LOC:
                     break;
                 case ASMOP_LOCAL:
+                    AsmPseudoOps::setSymbolBind(*this, string, STB_LOCAL);
                     break;
                 case ASMOP_MACRO:
                     break;
@@ -2825,6 +2873,7 @@ bool Assembler::assemble()
                     AsmPseudoOps::putFloats<uint32_t>(*this, string);
                     break;
                 case ASMOP_SIZE:
+                    AsmPseudoOps::setSymbolSize(*this, string);
                     break;
                 case ASMOP_SKIP:
                 case ASMOP_SPACE:
@@ -2852,6 +2901,7 @@ bool Assembler::assemble()
                     AsmPseudoOps::printWarning(*this, firstNameString, string);
                     break;
                 case ASMOP_WEAK:
+                    AsmPseudoOps::setSymbolBind(*this, string, STB_WEAK);
                     break;
                 case ASMOP_WORD:
                     AsmPseudoOps::putIntegers<uint32_t>(*this, string);
