@@ -674,7 +674,7 @@ static RefPtr<const AsmSource> printAsmRepeats(std::ostream& os,
     bool firstDepth = true;
     while (source->type == AsmSourceType::REPT)
     {
-        RefPtr<const AsmRepeatSource> sourceRept = source.staticCast<const AsmRepeatSource>();
+        auto sourceRept = source.staticCast<const AsmRepeatSource>();
         printIndent(os, indentLevel);
         os.write((firstDepth)?"In repetition ":"              ", 14);
         char numBuf[64];
@@ -877,7 +877,8 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
     }
 }
 
-void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex)
+void AsmSymbol::removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex,
+               size_t opIndex)
 {
     auto it = std::remove(occurrencesInExprs.begin(), occurrencesInExprs.end(),
             AsmExprSymbolOccurrence{expr, argIndex, opIndex});
@@ -909,14 +910,14 @@ void AsmSymbol::clearOccurrencesInExpr()
  */
 
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
-        AsmFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
+        BinaryFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
         std::ostream& _printStream)
         : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
           printStream(_printStream), outFormatInitialized(false),
-          inGlobal(_format != AsmFormat::RAWCODE),
+          inGlobal(_format != BinaryFormat::RAWCODE),
           inAmdConfig(false), currentKernel(0), currentSection(0),
           // get value reference from first symbol: '.'
           currentOutPos(symbolMap.begin()->second.value)
@@ -932,9 +933,9 @@ Assembler::~Assembler()
 {
     if (amdOutput != nullptr)
     {
-        if (format == AsmFormat::GALLIUM)
+        if (format == BinaryFormat::GALLIUM)
             delete galliumOutput;
-        else if (format == AsmFormat::CATALYST)
+        else if (format == BinaryFormat::AMD)
             delete amdOutput;
     }
     if (isaAssembler != nullptr)
@@ -1269,7 +1270,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     {
         std::pair<AsmSymbolEntry*, size_t>& entry = symbolStack.top();
         if (entry.second < entry.first->second.occurrencesInExprs.size())
-        {   // 
+        {
             AsmExprSymbolOccurrence& occurrence =
                     entry.first->second.occurrencesInExprs[entry.second];
             AsmExpression* expr = occurrence.expression;
@@ -1529,7 +1530,7 @@ void Assembler::initializeOutputFormat()
     if (outFormatInitialized)
         return;
     outFormatInitialized = true;
-    if (format == AsmFormat::CATALYST && amdOutput == nullptr)
+    if (format == BinaryFormat::AMD && amdOutput == nullptr)
     {   // if not created
         amdOutput = new AmdInput{};
         amdOutput->is64Bit = _64bit;
@@ -1537,7 +1538,7 @@ void Assembler::initializeOutputFormat()
         /* sections */
         sections.push_back(new AsmSection{ 0, AsmSectionType::AMD_GLOBAL_DATA });
     }
-    else if (format == AsmFormat::GALLIUM && galliumOutput == nullptr)
+    else if (format == BinaryFormat::GALLIUM && galliumOutput == nullptr)
     {
         galliumOutput = new GalliumInput{};
         galliumOutput->code = nullptr;
@@ -1548,7 +1549,7 @@ void Assembler::initializeOutputFormat()
         galliumOutput->comment = nullptr;
         sections.push_back(new AsmSection{ 0, AsmSectionType::GALLIUM_CODE});
     }
-    else if (format == AsmFormat::RAWCODE && rawCode == nullptr)
+    else if (format == BinaryFormat::RAWCODE && rawCode == nullptr)
     {
         sections.push_back(new AsmSection{ 0, AsmSectionType::RAWCODE_CODE});
         rawCode = sections[0];
@@ -1562,8 +1563,8 @@ void Assembler::initializeOutputFormat()
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align",
-    "arch", "ascii", "asciz", "balign",
-    "balignl", "balignw", "byte", "catalyst",
+    "amd", "arch", "ascii", "asciz",
+    "balign", "balignl", "balignw", "byte",
     "config", "data", "double", "else",
     "elseif", "elseifb", "elseifc", "elseifdef",
     "elseifeq", "elseifeqs", "elseifge", "elseifgt",
@@ -1587,14 +1588,14 @@ static const char* pseudoOpNamesTbl[] =
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
-    "warning", "word"
+    "warning", "weak", "word"
 };
 
 enum
 {
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN,
-    ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ, ASMOP_BALIGN,
-    ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE, ASMOP_CATALYST,
+    ASMOP_AMD, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
+    ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE,
     ASMOP_CONFIG, ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
     ASMOP_ELSEIF, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
     ASMOP_ELSEIFEQ, ASMOP_ELSEIFEQS, ASMOP_ELSEIFGE, ASMOP_ELSEIFGT,
@@ -1618,7 +1619,7 @@ enum
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
-    ASMOP_WARNING, ASMOP_WORD
+    ASMOP_WARNING, ASM_WEAK, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1743,7 +1744,7 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
 {
     if (asmr.outFormatInitialized)
         asmr.printError(string, "Bitness is already defined");
-    else if (asmr.format != AsmFormat::CATALYST)
+    else if (asmr.format != BinaryFormat::AMD)
         asmr.printWarning(string, "Bitness ignored for other formats than AMD Catalyst");
     else
         asmr._64bit = (_64Bit);
@@ -1759,11 +1760,11 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
     
     toLowerString(formatName);
     if (formatName == "catalyst" || formatName == "amd")
-        asmr.format = AsmFormat::CATALYST;
+        asmr.format = BinaryFormat::AMD;
     else if (formatName == "gallium")
-        asmr.format = AsmFormat::GALLIUM;
+        asmr.format = BinaryFormat::GALLIUM;
     else if (formatName == "raw")
-        asmr.format = AsmFormat::RAWCODE;
+        asmr.format = BinaryFormat::RAWCODE;
     else
         asmr.printError(string, "Unknown output format type");
     if (asmr.outFormatInitialized)
@@ -1773,13 +1774,13 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.format == AsmFormat::CATALYST || asmr.format == AsmFormat::GALLIUM)
+    if (asmr.format == BinaryFormat::AMD || asmr.format == BinaryFormat::GALLIUM)
     {
         string = skipSpacesToEnd(string, end);
         std::string kernelName;
         if (!getNameArg(asmr, kernelName, string, "kernel name"))
             return;
-        if (asmr.format == AsmFormat::CATALYST)
+        if (asmr.format == BinaryFormat::AMD)
         {
             asmr.kernelMap.insert(std::make_pair(kernelName,
                             asmr.amdOutput->kernels.size()));
@@ -1792,7 +1793,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
             //galliumOutput->addEmptyKernel(kernelName.c_str());
         }
     }
-    else if (asmr.format == AsmFormat::RAWCODE)
+    else if (asmr.format == BinaryFormat::RAWCODE)
         asmr.printError(string, "Raw code can have only one unnamed kernel");
 }
 
@@ -2269,18 +2270,18 @@ bool Assembler::assemble()
                 case ASMOP_BYTE:
                     AsmPseudoOps::putIntegers<cxbyte>(*this, string);
                     break;
+                case ASMOP_AMD:
                 case ASMOP_RAWCODE:
-                case ASMOP_CATALYST:
                 case ASMOP_GALLIUM:
                     if (outFormatInitialized)
                         printError(string, "Output format type is already defined");
                     else
-                        format = (pseudoOp == ASMOP_GALLIUM) ? AsmFormat::GALLIUM :
-                            (pseudoOp == ASMOP_CATALYST) ? AsmFormat::CATALYST :
-                            AsmFormat::RAWCODE;
+                        format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
+                            (pseudoOp == ASMOP_AMD) ? BinaryFormat::AMD :
+                            BinaryFormat::RAWCODE;
                     break;
                 case ASMOP_CONFIG:
-                    if (format == AsmFormat::CATALYST)
+                    if (format == BinaryFormat::AMD)
                     {
                         initializeOutputFormat();
                         if (inGlobal)

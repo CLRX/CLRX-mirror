@@ -33,6 +33,7 @@
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
+#include <CLRX/amdasm/Commons.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/InputOutput.h>
 
@@ -41,13 +42,6 @@ namespace CLRX
 {
 
 class Disassembler;
-
-/// binary for Disassembler
-enum class BinaryFormat
-{
-    AMD = 0,    ///< AMD CATALYST format
-    GALLIUM     ///< GalliumCompute format
-};
 
 enum: cxuint
 {
@@ -152,10 +146,6 @@ struct AmdDisasmInput
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs
-    
-    /// get disassembler input from raw binary data
-    static AmdDisasmInput createFromRawBinary(GPUDeviceType deviceType,
-                        size_t binarySize, const cxbyte* binaryData);
 };
 
 /// whole disassembler input (for Gallium driver GPU binaries)
@@ -169,6 +159,14 @@ struct GalliumDisasmInput
     const cxbyte* code; ///< code
 };
 
+/// disassembler input for raw code
+struct RawCodeInput
+{
+    GPUDeviceType deviceType;   ///< GPU device type
+    size_t codeSize;            ///< code size
+    const cxbyte* code;         ///< code
+};
+
 /// disassembler class
 class Disassembler
 {
@@ -179,12 +177,14 @@ private:
     union {
         const AmdDisasmInput* amdInput;
         const GalliumDisasmInput* galliumInput;
+        const RawCodeInput* rawInput;
     };
     std::ostream& output;
     cxuint flags;
     
     void disassembleAmd(); // Catalyst format
     void disassembleGallium(); // Gallium format
+    void disassembleRawCode(); // raw code format
 public:
     /// constructor for 32-bit GPU binary
     /**
@@ -229,6 +229,11 @@ public:
      */
     Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& output,
                  cxuint flags = 0);
+    
+    /// constructor for raw code
+    Disassembler(GPUDeviceType deviceType, size_t rawCodeSize, const cxbyte* rawCode,
+                 std::ostream& output, cxuint flags = 0);
+    
     ~Disassembler();
     
     /// disassembles input

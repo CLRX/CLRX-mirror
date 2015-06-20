@@ -33,15 +33,6 @@
 
 using namespace CLRX;
 
-AmdDisasmInput AmdDisasmInput::createFromRawBinary(GPUDeviceType deviceType,
-                        size_t binarySize, const cxbyte* binaryData)
-{
-    return { deviceType,  false, "", "", 0,  nullptr, {
-        { "binaryKernel", 0, nullptr, 0, nullptr, { }, 0, nullptr,
-            binarySize, binaryData }
-    } };
-}
-
 ISADisassembler::ISADisassembler(Disassembler& _disassembler, cxuint outBufSize)
         : disassembler(_disassembler), output(outBufSize, _disassembler.getOutput())
 { }
@@ -520,14 +511,25 @@ Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& 
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
 
+Disassembler::Disassembler(GPUDeviceType deviceType, size_t rawCodeSize,
+           const cxbyte* rawCode, std::ostream& _output, cxuint _flags)
+       : fromBinary(true), binaryFormat(BinaryFormat::RAWCODE),
+         output(_output), flags(_flags)
+{
+    isaDisassembler.reset(new GCNDisassembler(*this));
+    rawInput = new RawCodeInput{ deviceType, rawCodeSize, rawCode };
+}
+
 Disassembler::~Disassembler()
 {
     if (fromBinary)
     {
         if (binaryFormat == BinaryFormat::AMD)
             delete amdInput;
-        else // gallium
+        else if (binaryFormat == BinaryFormat::GALLIUM)
             delete galliumInput;
+        else // raw code input
+            delete rawInput;
     }
 }
 
@@ -1109,6 +1111,17 @@ void Disassembler::disassembleGallium()
     }
 }
 
+void Disassembler::disassembleRawCode()
+{
+    if ((flags & DISASM_DUMPCODE) != 0)
+    {
+        output.write(".text\n", 6);
+        isaDisassembler->setInput(rawInput->codeSize, rawInput->code);
+        isaDisassembler->beforeDisassemble();
+        isaDisassembler->disassemble();
+    }
+}
+
 void Disassembler::disassemble()
 {
     const std::ios::iostate oldExceptions = output.exceptions();
@@ -1117,19 +1130,23 @@ void Disassembler::disassemble()
     {
     if (binaryFormat == BinaryFormat::AMD)
         output.write(".amd\n", 5);
-    else // gallium
+    else if (binaryFormat == BinaryFormat::GALLIUM) // Gallium
         output.write(".gallium\n", 9);
+    else // raw code
+        output.write(".rawcode\n", 9);
     
     const GPUDeviceType deviceType = getDeviceType();
     output.write(".gpu ", 5);
     const char* gpuName = getGPUDeviceTypeName(deviceType);
     output.write(gpuName, ::strlen(gpuName));
-    output.write("\n", 1);
+    output.put('\n');
     
     if (binaryFormat == BinaryFormat::AMD)
         disassembleAmd();
-    else // Gallium
+    else if (binaryFormat == BinaryFormat::GALLIUM) // Gallium
         disassembleGallium();
+    else // raw code input
+        disassembleRawCode();
     output.flush();
     } /* try catch */
     catch(...)

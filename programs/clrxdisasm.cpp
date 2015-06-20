@@ -139,9 +139,8 @@ try
             }
             else
             {   /* raw binaries */
-                const AmdDisasmInput disasmInput = AmdDisasmInput::createFromRawBinary(
-                        gpuDeviceType, binaryData.size(), binaryData.data());
-                Disassembler disasm(&disasmInput, std::cout, disasmFlags);
+                Disassembler disasm(gpuDeviceType, binaryData.size(), binaryData.data(),
+                        std::cout, disasmFlags);
                 disasm.disassemble();
             }
         }

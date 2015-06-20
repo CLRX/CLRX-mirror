@@ -39,6 +39,7 @@
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
+#include <CLRX/amdasm/Commons.h>
 #include <CLRX/utils/Utilities.h>
 
 /// main namespace
@@ -51,14 +52,6 @@ enum: cxuint
     ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
     ASM_GNU_AS_COMPAT = 4, ///< compatibility with GNU as (expressions)
     ASM_ALL = 0xff  ///< all flags
-};
-
-/// assembler output format
-enum class AsmFormat: cxbyte
-{
-    CATALYST = 0,       ///< AMD Catalyst binary format
-    GALLIUM,            ///< GalliumCompute binary format
-    RAWCODE             ///< raw code
 };
 
 enum: cxuint
@@ -564,12 +557,15 @@ struct AsmSymbol
 {
     cxuint refCount;    ///< reference counter (for internal use only)
     cxuint sectionId;       ///< section id
+    cxbyte info;           ///< ELF symbol info
+    cxbyte other;           ///< ELF symbol other
     cxuint isDefined:1;         ///< symbol is defined
     cxuint onceDefined:1;       ///< symbol can be only once defined (likes labels)
     cxuint resolving:1;         ///< helper
     cxuint base:1;              ///< with base expression
     cxuint snapshot:1;          ///< if symbol is snapshot
     uint64_t value;         ///< value of symbol
+    uint64_t size;          ///< size of symbol
     AsmExpression* expression;      ///< expression of symbol (if not resolved)
     
     /** list of occurrences in expressions */
@@ -577,21 +573,21 @@ struct AsmSymbol
     
     /// empty constructor
     explicit AsmSymbol(bool _onceDefined = false) :
-            refCount(1), sectionId(ASMSECT_ABS), isDefined(false),
+            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), isDefined(false),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
-            value(0), expression(nullptr)
+            value(0), size(0), expression(nullptr)
     { }
     /// constructor with expression
     explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false, bool _base = false) :
-            refCount(1), sectionId(ASMSECT_ABS), isDefined(false),
+            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), isDefined(false),
             onceDefined(_onceDefined), resolving(false), base(_base),
-            snapshot(false), value(0), expression(expr)
+            snapshot(false), value(0), size(0), expression(expr)
     { }
     /// constructor with value and section id
     explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
-            refCount(1), sectionId(_sectionId), isDefined(true),
+            refCount(1), sectionId(_sectionId), info(0), other(0), isDefined(true),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
-            value(_value), expression(nullptr)
+            value(_value), size(0), expression(nullptr)
     { }
     /// destructor
     ~AsmSymbol();
@@ -717,12 +713,12 @@ public:
     /// parse expression (helper)
     /**
      * \param assembler assembler
-     * \param string string at position in line
+     * \param linePlace string at position in line
      * \param outend string at position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
      * \return expression pointer
      */
-    static AsmExpression* parse(Assembler& assembler, const char* string,
+    static AsmExpression* parse(Assembler& assembler, const char* linePlace,
               const char*& outend, bool makeBase = false);
     
     /// return true if is argument op
@@ -822,7 +818,7 @@ private:
     friend class AsmMacroInputFilter;
     friend class AsmExpression;
     friend struct AsmPseudoOps; // INTERNAL LOGIC
-    AsmFormat format;
+    BinaryFormat format;
     GPUDeviceType deviceType;
     bool _64bit;    ///
     bool good;
@@ -891,18 +887,19 @@ private:
     void printError(LineCol lineCol, const char* message)
     { printError(getSourcePos(lineCol), message); }
     
-    LineCol translatePos(const char* string) const
-    { return currentInputFilter->translatePos(string-line); }
+    LineCol translatePos(const char* linePlace) const
+    { return currentInputFilter->translatePos(linePlace-line); }
     LineCol translatePos(size_t pos) const
     { return currentInputFilter->translatePos(pos); }
     
-    bool parseLiteral(uint64_t& value, const char* string, const char*& outend);
-    bool parseString(std::string& strarray, const char* string, const char*& outend);
-    bool parseSymbol(const char* string, AsmSymbolEntry*& entry, bool localLabel = true);
+    bool parseLiteral(uint64_t& value, const char* linePlace, const char*& outend);
+    bool parseString(std::string& strarray, const char* linePlace, const char*& outend);
+    bool parseSymbol(const char* linePlace, AsmSymbolEntry*& entry,
+                     bool localLabel = true);
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
-    bool assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
+    bool assignSymbol(const std::string& symbolName, const char* placeAtSymbol,
                   const char* string, bool reassign = true, bool baseExpr = false);
     
     void initializeOutputFormat();
@@ -940,7 +937,7 @@ public:
      * \param printStream stream for printing message by .print pseudo-ops
      */
     explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
-              AsmFormat format = AsmFormat::CATALYST,
+              BinaryFormat format = BinaryFormat::AMD,
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
               std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
     /// destructor
