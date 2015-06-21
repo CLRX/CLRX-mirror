@@ -1228,14 +1228,19 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
     return true;
 }
 
-bool Assembler::parseSymbol(const char* string, AsmSymbolEntry*& entry, bool localLabel)
+bool Assembler::parseSymbol(const char* string, const char*& outend,
+                AsmSymbolEntry*& entry, bool localLabel)
 {
     const std::string symName = extractSymName(string, line+lineSize, localLabel);
+    outend = string;
     if (symName.empty())
     {
+        while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
+            *outend != ':' && *outend != ';') outend++;
         entry = nullptr;
         return true;
     }
+    outend = string + symName.size();
     if (symName == ".") // any usage of '.' causes format initialization
         initializeOutputFormat();
     
@@ -2252,17 +2257,13 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-    {
-        asmr.printError(string, "Expected symbol name and expression");
-        return;
-    }
     const char* strAtSymName = string;
     std::string symName = extractSymName(string, end, false);
+    bool good = true;
     if (symName.empty())
     {
-        asmr.printError(string, "Expected symbol name and expression");
-        return;
+        asmr.printError(string, "Expected symbol");
+        good = false;
     }
     string += symName.size();
     bool haveComma;
@@ -2270,9 +2271,11 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
         return;
     if (!haveComma)
     {
-        asmr.printError(string, "Expected symbol name and expression");
+        asmr.printError(string, "Expected expression");
         return;
     }
+    if (!good) // is not so good
+        return;
     asmr.assignSymbol(symName, strAtSymName, string, reassign, baseExpr);
     string = end;
 }
@@ -2286,15 +2289,15 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
         string = skipSpacesToEnd(string, end);
         const char* symNameStr = string;
         AsmSymbolEntry* symEntry;
-        if (!asmr.parseSymbol(string, symEntry, false))
-            return;
+        bool good = asmr.parseSymbol(string, string, symEntry, false);
         if (symEntry == nullptr)
         {
             asmr.printError(symNameStr, "Expected symbol name");
-            return;
+            good = false;
         }
-        string += symEntry->first.size();
-        symEntry->second.info = ELF32_ST_INFO(bind, ELF32_ST_TYPE(symEntry->second.info));
+        if (good)
+            symEntry->second.info = ELF32_ST_INFO(bind,
+                      ELF32_ST_TYPE(symEntry->second.info));
         if (!skipComma(asmr, haveComma, string))
             return;
     }
@@ -2306,26 +2309,26 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     const char* symNameStr = string;
     AsmSymbolEntry* symEntry;
-    if (!asmr.parseSymbol(string, symEntry, false))
-        return;
+    bool good = asmr.parseSymbol(string, string, symEntry, false);
     if (symEntry == nullptr)
     {
-        asmr.printError(symNameStr, "Expected symbol name and expression");
-        return;
+        asmr.printError(symNameStr, "Expected symbol name");
+        good = false;
     }
-    string += symEntry->first.size();
     bool haveComma;
     if (!skipComma(asmr, haveComma, string))
         return;
     if (!haveComma)
     {
-        asmr.printError(symNameStr, "Expected symbol name and expression");
+        asmr.printError(symNameStr, "Expected expression");
         return;
     }
     string = skipSpacesToEnd(string, end);
     // parse size
-    if (!getAbsoluteValueArg(asmr, symEntry->second.size, string))
-        return;
+    uint64_t size;
+    good &= getAbsoluteValueArg(asmr, size, string);
+    if (good)
+        symEntry->second.size = size;
 }
 
 void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,

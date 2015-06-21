@@ -1278,7 +1278,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     ExpectedToken oldExpectedToken = expectedToken;
                     expectedToken = XT_OP;
                     AsmSymbolEntry* symEntry;
-                    bool symIsGood = assembler.parseSymbol(string, symEntry);
+                    
+                    const char* symEndStr;
+                    bool symIsGood = assembler.parseSymbol(string, symEndStr, symEntry);
                     if (!symIsGood) good = false;
                     AsmExprArg arg;
                     arg.relValue.sectionId = ASMSECT_ABS;
@@ -1306,7 +1308,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                             args.push_back(arg);
                             ops.push_back(AsmExprOp::ARG_SYMBOL);
                         }
-                        string += symEntry->first.size();
+                        string = symEndStr;
                     }
                     else if (parenthesisCount != 0 || (*string >= '0' && *string <= '9') ||
                              *string == '\'')

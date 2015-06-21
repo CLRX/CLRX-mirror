@@ -894,7 +894,7 @@ private:
     
     bool parseLiteral(uint64_t& value, const char* linePlace, const char*& outend);
     bool parseString(std::string& strarray, const char* linePlace, const char*& outend);
-    bool parseSymbol(const char* linePlace, AsmSymbolEntry*& entry,
+    bool parseSymbol(const char* linePlace, const char*& outend, AsmSymbolEntry*& entry,
                      bool localLabel = true);
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
