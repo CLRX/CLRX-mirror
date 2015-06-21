@@ -2378,11 +2378,11 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     /* do fill */
     cxbyte* content = asmr.reserveData(size*repeat);
     const size_t valueSize = std::min(uint64_t(8), size);
-    cxbyte valueBytes[8];
-    SLEV(*reinterpret_cast<uint64_t*>(valueBytes), value);
+    uint64_t outValue;
+    SLEV(outValue, value);
     for (uint64_t r = 0; r < repeat; r++)
     {
-        ::memcpy(content, valueBytes, valueSize);
+        ::memcpy(content, &outValue, valueSize);
         ::memset(content+valueSize, 0, size-valueSize);
         content += size;
     }

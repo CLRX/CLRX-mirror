@@ -109,7 +109,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         3, code1tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
-        ".org .-4\n.L4:\n.org .+4\n        s_branch        .L4\n"
+        ".L4=.-4\n        s_branch        .L4\n"
     },
     {
         1, code2tbl,
@@ -119,7 +119,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         8, code3tbl,
         "        ds_read2_b32    v[55:56], v6 offset0:37 offset1:38\n"
-        ".org .-4\n.L4:\n.org .+4\n        s_branch        .L4\n"
+        ".L4=.-4\n        s_branch        .L4\n"
         "        s_branch        .L24\n"
         "        tbuffer_load_format_x v[61:62], v[18:19], s[80:83], s35"
         " offen idxen offset:2004 glc slc addr64 tfe format:[8,sint]\n"
@@ -390,15 +390,10 @@ static void testDecGCNNamedLabels()
     gcnDisasm.disassemble();
     if (disOss.str() !=
         "        s_lshr_b32      s21, s4, s61\n"
-        ".org .-3\n"
-        "\n"
-        "buru:\n"
-        ".org .+1\n"
-        "buru2:\n"
-        "buru2tto:\n"
-        ".org .+1\n"
-        "testLabel1:\n"
-        ".org .+1\n"
+        "buru=.-3\n"
+        "buru2=.-2\n"
+        "buru2tto=.-2\n"
+        "testLabel1=.-1\n"
         ".L4:\n"
         "nextInstr:\n"
         "        v_sub_f32       v154, 0x11110000 /* 1.14384831e-28f */, v107\n"
