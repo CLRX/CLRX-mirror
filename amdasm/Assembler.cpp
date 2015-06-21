@@ -1904,25 +1904,24 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
     std::string filename;
     const char* nameStr = string;
     uint64_t offset = 0, count = UINT64_MAX;
-    if (!asmr.parseString(filename, string, string))
-        return;
+    bool good = asmr.parseString(filename, string, string);
     bool haveComma;
     if (!skipComma(asmr, haveComma, string))
         return;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
-        if (!getAbsoluteValueArg(asmr, offset, string))
-            return;
+        good &= getAbsoluteValueArg(asmr, offset, string);
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
-            if (!getAbsoluteValueArg(asmr, count, string))
-                return;
+            good &= getAbsoluteValueArg(asmr, count, string);
         }
     }
+    if (!good) // failed parsing
+        return;
     
     if (count == 0)
     {
@@ -2335,14 +2334,8 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-    {
-        asmr.printError(string, "Expected absolute value");
-        return;
-    }
     uint64_t repeat, size = 1, value = 0;
-    if (!getAbsoluteValueArg(asmr, repeat, string))
-        return;
+    bool good = getAbsoluteValueArg(asmr, repeat, string);
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -2350,18 +2343,19 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
-        if (!getAbsoluteValueArg(asmr, size, string))
-            return;
+        good &= getAbsoluteValueArg(asmr, size, string);
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
             secondParamStr = string;
-            if (!getAbsoluteValueArg(asmr, value, string))
-                return;
+            good &= getAbsoluteValueArg(asmr, value, string);
         }
     }
+    if (!good) // if parsing failed
+        return;
+    
     if (!_64bit && (value & (0xffffffffULL<<32))!=0)
     {
         asmr.printWarning(secondParamStr,
@@ -2393,23 +2387,18 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-    {
-        asmr.printError(string, "Expected absolute value");
-        return;
-    }
     uint64_t size = 1, value = 0;
-    if (!getAbsoluteValueArg(asmr, size, string))
-        return;
+    bool good = getAbsoluteValueArg(asmr, size, string);
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
-        if (!getAbsoluteValueArg(asmr, value, string))
-            return;
+        good &= getAbsoluteValueArg(asmr, value, string);
     }
+    if (!good)
+        return;
     
     if ((value & ~uint64_t(0xff)) != 0)
         asmr.printWarning(string, "Fill value is truncated to  8-bit value");
@@ -2423,15 +2412,10 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-    {
-        asmr.printError(string, "Expected absolute value");
-        return;
-    }
+    
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignStr = string;
-    if (!getAbsoluteValueArg(asmr, alignment, string))
-        return;
+    bool good = getAbsoluteValueArg(asmr, alignment, string);
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -2440,17 +2424,17 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     {
         string = skipSpacesToEnd(string, end);
         valueStr = string;
-        if (!getAbsoluteValueArg(asmr, value, string))
-            return;
+        good &= getAbsoluteValueArg(asmr, value, string);
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
-            if (!getAbsoluteValueArg(asmr, maxAlign, string))
-                return;
+            good &= getAbsoluteValueArg(asmr, maxAlign, string);
         }
     }
+    if (!good) //if parsing failed
+        return;
     
     if (powerOf2)
     {
@@ -2485,15 +2469,9 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-    {
-        asmr.printError(string, "Expected absolute value");
-        return;
-    }
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignStr = string;
-    if (!getAbsoluteValueArg(asmr, alignment, string))
-        return;
+    bool good = getAbsoluteValueArg(asmr, alignment, string);
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -2502,17 +2480,17 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     {
         string = skipSpacesToEnd(string, end);
         valueStr = string;
-        if (!getAbsoluteValueArg(asmr, value, string))
-            return;
+        good &= getAbsoluteValueArg(asmr, value, string);
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
-            if (!getAbsoluteValueArg(asmr, maxAlign, string))
-                return;
+            good &= getAbsoluteValueArg(asmr, maxAlign, string);
         }
     }
+    if (!good)
+        return;
     
     if ((value & ~((1ULL<<(sizeof(Word)<<3))-1)) != 0)
         asmr.printWarning(valueStr, "Fill value is truncated to word");
