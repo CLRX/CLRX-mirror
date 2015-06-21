@@ -100,6 +100,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
         throw Exception("Expression can't be evaluated if symbols still are unresolved!");
     
     bool failed = false;
+    value = 0; // by default is zero
     if (!relativeSymOccurs)
     {   // all value is absolute
         std::stack<uint64_t> stack;
@@ -1435,12 +1436,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     }
     if (expectedToken != XT_OP)
     {
-        if (ops.empty() && stack.empty())
-        {
-            ops.push_back(AsmExprOp::ARG_VALUE);
-            args.push_back({0});
-        }
-        else
+        if (!ops.empty() || !stack.empty())
         {
             assembler.printError(string, "Missing primary expression");
             good = false;

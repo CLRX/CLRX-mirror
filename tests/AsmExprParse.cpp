@@ -39,7 +39,7 @@ struct AsmExprParseCase
 static AsmExprParseCase asmExprParseCases[] =
 {
     /* literals */
-    { "", "0", true, 0, "", "" }, /* empty string is illegal */
+    { "", "", true, 0, "", "" }, /* empty string is illegal */
     { "1", "1", true, 1, "", "" },
     { "3", "3", true, 3, "", "" },
     { "1234893", "1234893", true, 1234893, "", "" },

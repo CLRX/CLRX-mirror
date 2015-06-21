@@ -682,6 +682,9 @@ public:
               bool baseExpr = false);
     /// destructor
     ~AsmExpression();
+    
+    bool isEmpty() const
+    { return ops.empty(); }
 
     /// helper to create symbol snapshot. Creates initial expression for symbol snapshot
     AsmExpression* createForSnapshot(const AsmSourcePos* exprSourcePos) const;
