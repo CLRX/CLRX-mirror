@@ -907,9 +907,7 @@ private:
     void putData(size_t size, const cxbyte* data)
     {
         AsmSection& section = *sections[currentSection];
-        if (currentOutPos+size > section.content.size())
-            section.content.resize(currentOutPos+size);
-        ::memcpy(section.content.data() + currentOutPos, data, size);
+        section.content.insert(section.content.end(), data, data+size);
         currentOutPos += size;
     }
     
@@ -917,8 +915,7 @@ private:
     {
         size_t oldOutPos = currentOutPos;
         AsmSection& section = *sections[currentSection];
-        if (currentOutPos+size > section.content.size())
-            section.content.resize(currentOutPos+size);
+        section.content.insert(section.content.end(), size, 0);
         currentOutPos += size;
         return section.content.data() + oldOutPos;
     }

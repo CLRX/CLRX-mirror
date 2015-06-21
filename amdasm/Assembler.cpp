@@ -1262,6 +1262,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.sectionId = sectionId;
     symEntry.second.isDefined = true;
     bool good = true;
+    
     // resolve value of pending symbols
     std::stack<std::pair<AsmSymbolEntry*, size_t> > symbolStack;
     symbolStack.push(std::make_pair(&symEntry, 0));
@@ -1421,10 +1422,29 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         cxuint sectionId;
         if (!expr->evaluate(*this, value, sectionId))
             return false;
+        
+        if (symEntry.first == ".")
+        {   // checkings for '.'
+            if (symEntry.second.sectionId != sectionId)
+            {
+                printError(stringAtSymbol, "Illegal section change for symbol '.'");
+                return false;
+            }
+            if (symEntry.second.value < value)
+            {
+                printError(stringAtSymbol, "Attempt to move backwards");
+                return false;
+            }
+        }
         setSymbol(symEntry, value, sectionId);
     }
     else // set expression
     {
+        if (symEntry.first == ".")
+        {
+            printError(stringAtSymbol, "Symbol '.' requires a resolved expression");
+            return false;
+        }
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second.expression = expr.release();
         symEntry.second.isDefined = false;
@@ -1574,7 +1594,7 @@ static const char* pseudoOpNamesTbl[] =
     "end", "endif", "endm",
     "endr", "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
-    "fail", "file", "fill", "fill64",
+    "fail", "file", "fill", "fillq",
     "float", "format", "gallium", "global",
     "gpu", "half", "hword", "if",
     "ifb", "ifc", "ifdef", "ifeq",
@@ -1605,7 +1625,7 @@ enum
     ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM,
     ASMOP_ENDR, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
-    ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILL64,
+    ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
     ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF,
     ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
@@ -1689,8 +1709,10 @@ struct CLRX_INTERNAL AsmPseudoOps
                bool _64bit = false);
     static void doSkip(Assembler& asmr, const char*& string);
     
-    static void doAlign(Assembler& asmr,  const char*& string);
+    /* TODO: add no-op fillin for text sections */
+    static void doAlign(Assembler& asmr,  const char*& string, bool powerOf2 = false);
     
+    /* TODO: add no-op fillin for text sections */
     template<typename Word>
     static void doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string);
 };
@@ -2396,7 +2418,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     ::memset(content, value&0xff, size);
 }
 
-void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string)
+void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -2428,6 +2450,16 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string)
             if (!getAbsoluteValueArg(asmr, maxAlign, string))
                 return;
         }
+    }
+    
+    if (powerOf2)
+    {
+        if (alignment >= 64)
+        {
+            asmr.printError(alignStr, "Power of 2 of alignment is greater than 64");
+            return;
+        }
+        alignment = (1ULL<< alignment);
     }
     
     if ((value & ~uint64_t(0xff)) != 0)
@@ -2763,7 +2795,7 @@ bool Assembler::assemble()
                 case ASMOP_FILL:
                     AsmPseudoOps::doFill(*this, firstNameString, string, false);
                     break;
-                case ASMOP_FILL64:
+                case ASMOP_FILLQ:
                     AsmPseudoOps::doFill(*this, firstNameString, string, true);
                     break;
                 case ASMOP_FLOAT:
@@ -2846,6 +2878,7 @@ bool Assembler::assemble()
                 case ASMOP_ORG:
                     break;
                 case ASMOP_P2ALIGN:
+                    AsmPseudoOps::doAlign(*this, string, true);
                     break;
                 case ASMOP_PRINT:
                 {
