@@ -25,14 +25,9 @@
 #include <unordered_set>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
+#include "AsmInternals.h"
 
 using namespace CLRX;
-
-static inline const char* skipSpacesToEnd(const char* string, const char* end)
-{
-    while (string!=end && *string == ' ') string++;
-    return string;
-}
 
 /*
  * expressions

@@ -909,6 +909,9 @@ private:
     bool assignOutputCounter(const char* symbolStr, uint64_t value, cxuint sectionId,
                      cxbyte fillValue = 0);
     
+    bool parsePseudoOps(const std::string firstName, const char* stmtStartString,
+                const char*& string);
+    
     void initializeOutputFormat();
     
     void putData(size_t size, const cxbyte* data)

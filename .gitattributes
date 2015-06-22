@@ -22,6 +22,7 @@ CLRX/utils/Utilities.h -text
 /README -text
 amdasm/AsmExpression.cpp -text
 amdasm/AsmInternals.h -text
+amdasm/AsmPseudoOps.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
 amdasm/Disassembler.cpp -text

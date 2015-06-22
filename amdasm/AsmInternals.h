@@ -22,6 +22,7 @@
 
 #include <CLRX/Config.h>
 #include <cstdint>
+#include <string>
 
 namespace CLRX
 {
@@ -181,6 +182,56 @@ struct CLRX_INTERNAL GCNInstruction
 };
 
 CLRX_INTERNAL extern const GCNInstruction gcnInstrsTable[];
+
+static inline const char* skipSpacesToEnd(const char* string, const char* end)
+{
+    while (string!=end && *string == ' ') string++;
+    return string;
+}
+
+// extract sybol name or argument name or other identifier
+static inline const std::string extractSymName(const char* startString, const char* end,
+           bool localLabelSymName)
+{
+    const char* string = startString;
+    if (string != end)
+    {
+        if((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
+            *string == '_' || *string == '.' || *string == '$')
+            for (string++; string != end && ((*string >= '0' && *string <= '9') ||
+                (*string >= 'a' && *string <= 'z') ||
+                (*string >= 'A' && *string <= 'Z') || *string == '_' ||
+                 *string == '.' || *string == '$') ; string++);
+        else if (localLabelSymName && *string >= '0' && *string <= '9') // local label
+        {
+            for (string++; string!=end && (*string >= '0' && *string <= '9'); string++);
+            // check whether is local forward or backward label
+            string = (string != end && (*string == 'f' || *string == 'b')) ?
+                    string+1 : startString;
+            // if not part of binary number or illegal bin number
+            if (startString != string && (string!=end &&
+                ((*string >= '0' && *string <= '9') ||
+                (*string >= 'a' && *string <= 'z') ||
+                (*string >= 'A' && *string <= 'Z'))))
+                string = startString;
+        }
+    }
+    if (startString == string) // not parsed
+        return std::string();
+    
+    return std::string(startString, string);
+}
+
+static inline const std::string extractLabelName(const char* startString, const char* end)
+{
+    if (startString != end && *startString >= '0' && *startString <= '9')
+    {
+        const char* string = startString;
+        while (string != end && *string >= '0' && *string <= '9') string++;
+        return std::string(startString, string);
+    }
+    return extractSymName(startString, end, false);
+}
 
 };
 
