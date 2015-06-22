@@ -71,7 +71,7 @@ protected:
     FastOutputBuffer output;    ///< output buffer
     
     /// constructor
-    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 300);
+    explicit ISADisassembler(Disassembler& disassembler, cxuint outBufSize = 500);
     
     /// write all labels before specified position
     void writeLabelsToPosition(size_t pos, LabelIter& labelIter,

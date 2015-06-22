@@ -703,7 +703,7 @@ public:
     bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const;
     
     /// parse expression (helper)
-    /**
+    /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
      * \param linePos position in line
      * \param outLinePos position in line after parsing
@@ -714,7 +714,7 @@ public:
                     bool makeBase = false);
     
     /// parse expression (helper)
-    /**
+    /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
      * \param linePlace string at position in line
      * \param outend string at position in line after parsing

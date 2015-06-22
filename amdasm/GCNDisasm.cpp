@@ -377,6 +377,12 @@ static const GCNEncodingOpcodeBits gcnEncodingOpcode12Table[GCNENC_MAXVAL+1] =
     { 18, 8 } /* GCNENC_FLAT, opcode = (8bit)<<18 (???8bit) */
 };
 
+static inline void putChars(char* buf, size_t& pos, const char* input, size_t size)
+{
+    ::memcpy(buf+pos, input, size);
+    pos += size;
+}
+
 static const char* gcnOperandFloatTable[] =
 {
     "0.5", "-0.5", "1.0", "-1.0", "2.0", "-2.0", "4.0", "-4.0"
@@ -458,18 +464,13 @@ static size_t printLiteral(char* buf, uint32_t literal, FloatLitType floatLit)
     {
         FloatUnion fu;
         fu.u = literal;
-        buf[pos++] = ' ';
-        buf[pos++] = '/';
-        buf[pos++] = '*';
-        buf[pos++] = ' ';
+        putChars(buf, pos, " /* ", 4);
         if (floatLit == FLTLIT_F32)
             pos += ftocstrCStyle(fu.f, buf+pos, 20);
         else
             pos += htocstrCStyle(fu.u, buf+pos, 20);
         buf[pos++] = (floatLit == FLTLIT_F32)?'f':'h';
-        buf[pos++] = ' ';
-        buf[pos++] = '*';
-        buf[pos++] = '/';
+        putChars(buf, pos, " */", 3);
     }   
     return pos;
 }
@@ -499,20 +500,13 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
         switch(op2)
         {
             case 102:
-                ::memcpy(buf+pos, "flat_scratch", 12);
-                pos += 12;
+                putChars(buf, pos, "flat_scratch", 12);
                 break;
             case 104:
-                if (isGCN12)
-                {   // GCN1.2
-                    ::memcpy(buf+pos, "xnack_mask", 10);
-                    pos += 10;
-                }
-                else
-                {   // GCN1.1
-                    ::memcpy(buf+pos, "flat_scratch", 12);
-                    pos += 12;
-                }
+                if (isGCN12) // GCN1.2
+                    putChars(buf, pos, "xnack_mask", 10);
+                else // GCN1.1
+                    putChars(buf, pos, "flat_scratch", 12);
                 break;
             case 106:
                 buf[pos++] = 'v';
@@ -530,10 +524,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
                 buf[pos++] = 'a';
                 break;
             case 126:
-                buf[pos++] = 'e';
-                buf[pos++] = 'x';
-                buf[pos++] = 'e';
-                buf[pos++] = 'c';
+                putChars(buf, pos, "exec", 4);
                 break;
         }
         if (regNum >= 2)
@@ -545,10 +536,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
                 buf[pos++] = '!';
             }
             if (regNum > 2)
-            {
-                ::memcpy(buf+pos, "&ill!", 5);
-                pos += 5;
-            }
+                putChars(buf, pos, "&ill!", 5);
             return pos;
         }
         buf[pos++] = '_';
@@ -564,10 +552,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
     
     if (op >= 112 && op < 124)
     {
-        buf[0] = 't';
-        buf[1] = 't';
-        buf[2] = 'm';
-        buf[3] = 'p';
+        ::memcpy(buf, "ttmp", 4);
         return regRanges(op-112, regNum, buf+4)+4;
     }
     if (op == 124)
@@ -642,10 +627,7 @@ static size_t decodeGCNOperand(cxuint op, cxuint regNum, char* buf, uint16_t arc
     }
     
     // reserved value (illegal)
-    buf[0] = 'i';
-    buf[1] = 'l';
-    buf[2] = 'l';
-    buf[3] = '_';
+    ::memcpy(buf, "ill_", 4);
     buf[4] = '0'+op/100U;
     buf[5] = '0'+(op/10U)%10U;
     buf[6] = '0'+op%10U;
@@ -718,8 +700,7 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             if ((imm16&15) != 15)
             {
                 const cxuint lockCnt = imm16&15;
-                ::memcpy(buf+bufPos, "vmcnt(", 6);
-                bufPos += 6;
+                putChars(buf, bufPos, "vmcnt(", 6);
                 if (lockCnt >= 10)
                     buf[bufPos++] = '1';
                 buf[bufPos++] = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
@@ -734,8 +715,7 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                     buf[bufPos++] = '&';
                     buf[bufPos++] = ' ';
                 }
-                ::memcpy(buf+bufPos, "expcnt(", 7);
-                bufPos += 7;
+                putChars(buf, bufPos, "expcnt(", 7);
                 buf[bufPos++] = '0' + ((imm16>>4)&7);
                 buf[bufPos++] = ')';
                 prevLock = true;
@@ -749,8 +729,7 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                     buf[bufPos++] = '&';
                     buf[bufPos++] = ' ';
                 }
-                ::memcpy(buf+bufPos, "lgkmcnt(", 8);
-                bufPos += 8;
+                putChars(buf, bufPos, "lgkmcnt(", 8);
                 const cxuint digit2 = lockCnt/10U;
                 if (lockCnt >= 10)
                     buf[bufPos++] = '0'+digit2;
@@ -773,8 +752,7 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         {
             cxuint illMask = 0xfff0;
             bufPos = addSpaces(buf, spacesToAdd);
-            ::memcpy(buf+bufPos, "sendmsg(", 8);
-            bufPos += 8;
+            putChars(buf, bufPos, "sendmsg(", 8);
             const cxuint msgType = imm16&15;
             const char* msgName = sendMsgCodeMessageTable[msgType];
             while (*msgName != 0)
@@ -838,15 +816,13 @@ static void decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     }
     else if ((insnCode&0xff) != 0)
     {
-        ::memcpy(buf+bufPos, " ssrc=", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " ssrc=", 6);
         bufPos += itocstrCStyle((insnCode&0xff), buf+bufPos, 6, 16);
     }
     
     if (!isDst && ((insnCode>>16)&0x7f) != 0)
     {
-        ::memcpy(buf+bufPos, " sdst=", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " sdst=", 6);
         bufPos += itocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
     }
     output.forward(bufPos);
@@ -874,8 +850,7 @@ static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if ((gcnInsn.mode & GCN_MASK1) == GCN_REG_S1_JMP &&
         ((insnCode>>16)&0x7f) != 0)
     {
-        ::memcpy(buf+bufPos, " sdst=", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " sdst=", 6);
         bufPos += itocstrCStyle(((insnCode>>16)&0x7f), buf+bufPos, 6, 16);
     }
     output.forward(bufPos);
@@ -914,15 +889,10 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
-        ::memcpy(buf+bufPos, "hwreg(", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, "hwreg(", 6);
         const cxuint hwregId = imm16&0x3f;
         if (hwregId < 13)
-        {
-            const char* hwregName = hwregNames[hwregId];
-            for (cxuint k = 0; hwregName[k] != 0; k++)
-                buf[bufPos++] = hwregName[k];
-        }
+            putChars(buf, bufPos, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
         else
         {
             const cxuint digit2 = hwregId/10U;
@@ -931,22 +901,10 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         }
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        const cxuint hwoffset = (imm16>>6)&31;
-        {
-            const cxuint digit2 = hwoffset/10U;
-            if (digit2 != 0)
-                buf[bufPos++] = '0' + digit2;
-            buf[bufPos++] = '0' + hwoffset - 10U*digit2;
-        }
+        bufPos += putByteToBuf((imm16>>6)&31, buf+bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        const cxuint hwsize = ((imm16>>11)&31)+1;
-        {
-            const cxuint digit2 = hwsize/10U;
-            if (digit2 != 0)
-                buf[bufPos++] = '0' + digit2;
-            buf[bufPos++] = '0' + hwsize - 10U*digit2;
-        }
+        bufPos += putByteToBuf(((imm16>>11)&31)+1, buf+bufPos);
         buf[bufPos++] = ')';
     }
     else
@@ -961,8 +919,7 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             bufPos += itocstrCStyle(literal, buf+bufPos, 11, 16);
             if (((insnCode>>16)&0x7f) != 0)
             {
-                ::memcpy(buf+bufPos, " sdst=", 6);
-                bufPos += 6;
+                putChars(buf, bufPos, " sdst=", 6);
                 bufPos += itocstrCStyle((insnCode>>16)&0x7f, buf+bufPos, 6, 16);
             }
         }
@@ -1015,8 +972,7 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     {
         bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " sdst=", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " sdst=", 6);
         bufPos += itocstrCStyle((insnCode>>15)&0x7f, buf+bufPos, 6, 16);
     }
     if (!useOthers && (insnCode & 0x7e00U)!=0)
@@ -1024,8 +980,7 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " sbase=", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " sbase=", 7);
         bufPos += itocstrCStyle((insnCode>>9)&0x3f, buf+bufPos, 6, 16);
     }
     if (!useOthers && (insnCode & 0xffU)!=0)
@@ -1033,8 +988,7 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " offset=", 8);
-        bufPos += 8;
+        putChars(buf, bufPos, " offset=", 8);
         bufPos += itocstrCStyle(insnCode&0xff, buf+bufPos, 6, 16);
     }
     if (!useOthers && (insnCode & 0x100U)!=0)
@@ -1042,8 +996,7 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " imm=1", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " imm=1", 6);
     }
     output.forward(bufPos);
 }
@@ -1093,10 +1046,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
+        putChars(buf, bufPos, " glc", 4);
     }
     
     if (!useDst && (insnCode & 0x1fc0U) != 0)
@@ -1104,8 +1054,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " sdata=", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " sdata=", 7);
         bufPos += itocstrCStyle((insnCode>>6)&0x7f, buf+bufPos, 6, 16);
     }
     if (!useOthers && (insnCode & 0x3fU)!=0)
@@ -1113,8 +1062,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " sbase=", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " sbase=", 7);
         bufPos += itocstrCStyle(insnCode&0x3f, buf+bufPos, 6, 16);
     }
     if (!useOthers && insnCode2!=0)
@@ -1122,8 +1070,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " offset=", 8);
-        bufPos += 8;
+        putChars(buf, bufPos, " offset=", 8);
         bufPos += itocstrCStyle(insnCode2, buf+bufPos, 12, 16);
     }
     if (!useOthers && (insnCode & 0x20000U)!=0)
@@ -1131,8 +1078,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (!spacesAdded)
             bufPos += addSpaces(buf, spacesToAdd-1);
         spacesAdded = true;
-        ::memcpy(buf+bufPos, " imm=1", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " imm=1", 6);
     }
     
     output.forward(bufPos);
@@ -1177,82 +1123,50 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint32_t insnCode2,
     const cxuint src0Sel = (insnCode2>>16)&7;
     const cxuint src1Sel = (insnCode2>>24)&7;
     if (insnCode2 & 0x2000)
-    {
-        ::memcpy(buf+bufPos, " clamp", 6);
-        bufPos += 6;
-    }
+        putChars(buf, bufPos, " clamp", 6);
+    
     if (dstSel != 6)
     {
-        ::memcpy(buf+bufPos, " dst_sel:", 9);
-        bufPos += 9;
-        size_t k = 0;
-        for (; sdwaSelChoicesTbl[dstSel][k] != 0; k++)
-            buf[bufPos+k] = sdwaSelChoicesTbl[dstSel][k];
-        bufPos += k;
+        putChars(buf, bufPos, " dst_sel:", 9);
+        putChars(buf, bufPos, sdwaSelChoicesTbl[dstSel],
+                 ::strlen(sdwaSelChoicesTbl[dstSel]));
     }
     if (dstUnused!=0)
     {
-        ::memcpy(buf+bufPos, " dst_unused:", 12);
-        bufPos += 12;
-        size_t k = 0;
-        for (; sdwaDstUnusedTbl[dstUnused][k] != 0; k++)
-            buf[bufPos+k] = sdwaDstUnusedTbl[dstUnused][k];
-        bufPos += k;
+        putChars(buf, bufPos, " dst_unused:", 12);
+        putChars(buf, bufPos, sdwaDstUnusedTbl[dstUnused],
+                 ::strlen(sdwaDstUnusedTbl[dstUnused]));
     }
     if (src0Sel != 6)
     {
-        ::memcpy(buf+bufPos, " src0_sel:", 10);
-        bufPos += 10;
-        size_t k = 0;
-        for (; sdwaSelChoicesTbl[src0Sel][k] != 0; k++)
-            buf[bufPos+k] = sdwaSelChoicesTbl[src0Sel][k];
-        bufPos += k;
+        putChars(buf, bufPos, " src0_sel:", 10);
+        putChars(buf, bufPos, sdwaSelChoicesTbl[src0Sel],
+                 ::strlen(sdwaSelChoicesTbl[src0Sel]));
     }
     if (src1Sel != 6)
     {
-        ::memcpy(buf+bufPos, " src1_sel:", 10);
-        bufPos += 10;
-        size_t k = 0;
-        for (; sdwaSelChoicesTbl[src1Sel][k] != 0; k++)
-            buf[bufPos+k] = sdwaSelChoicesTbl[src1Sel][k];
-        bufPos += k;
+        putChars(buf, bufPos, " src1_sel:", 10);
+        putChars(buf, bufPos, sdwaSelChoicesTbl[src1Sel],
+                 ::strlen(sdwaSelChoicesTbl[src1Sel]));
     }
     
     if (!src0Used)
     {
         if ((insnCode2&(1U<<20))!=0)
-        {
-            ::memcpy(buf+bufPos, " sext0", 6);
-            bufPos += 6;
-        }
+            putChars(buf, bufPos, " sext0", 6);
         if ((insnCode2&(1U<<20))!=0)
-        {
-            ::memcpy(buf+bufPos, " neg0", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg0", 5);
         if ((insnCode2&(1U<<21))!=0)
-        {
-            ::memcpy(buf+bufPos, " abs0", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs0", 5);
     }
     if (!src1Used)
     {
         if ((insnCode2&(1U<<27))!=0)
-        {
-            ::memcpy(buf+bufPos, " sext1", 6);
-            bufPos += 6;
-        }
+            putChars(buf, bufPos, " sext1", 6);
         if ((insnCode2&(1U<<28))!=0)
-        {
-            ::memcpy(buf+bufPos, " neg1", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg1", 5);
         if ((insnCode2&(1U<<29))!=0)
-        {
-            ::memcpy(buf+bufPos, " abs1", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs1", 5);
     }
     
     output.forward(bufPos);
@@ -1298,66 +1212,43 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
     else if ((dppCtrl >= 0x101 && dppCtrl <= 0x12f) && ((dppCtrl&0xf) != 0))
     {   // row_shl
         if ((dppCtrl&0xf0) == 0)
-            ::memcpy(buf+bufPos, " row_shl:", 9);
+            putChars(buf, bufPos, " row_shl:", 9);
         else if ((dppCtrl&0xf0) == 16)
-            ::memcpy(buf+bufPos, " row_shr:", 9);
+            putChars(buf, bufPos, " row_shr:", 9);
         else
-            ::memcpy(buf+bufPos, " row_ror:", 9);
-        bufPos += 9;
+            putChars(buf, bufPos, " row_ror:", 9);
         bufPos += putByteToBuf(dppCtrl&0xf, buf+bufPos);
     }
     else if (dppCtrl >= 0x130 && dppCtrl <= 0x143 && dppCtrl130Tbl[dppCtrl-0x130]!=nullptr)
-    {
-        size_t k = 0;
-        const char* str = dppCtrl130Tbl[dppCtrl-0x130];
-        for (; str[k] != 0; k++)
-            buf[bufPos+k] = str[k];
-        bufPos += k;
-    }
+        putChars(buf, bufPos, dppCtrl130Tbl[dppCtrl-0x130],
+                 ::strlen(dppCtrl130Tbl[dppCtrl-0x130]));
     else if (dppCtrl != 0x100)
     {
-        ::memcpy(buf+bufPos, " dppctrl:", 9);
-        bufPos += 9;
+        putChars(buf, bufPos, " dppctrl:", 9);
         bufPos += itocstrCStyle(dppCtrl, buf+bufPos, 10, 16);
     }
     
-    if (insnCode2 & (0x80000U))
-    {   // bound ctrl
-        ::memcpy(buf+bufPos, " bound_ctrl", 11);
-        bufPos += 11;
-    }
-    ::memcpy(buf+bufPos, " bank_mask:", 11);
-    bufPos += 11;
+    if (insnCode2 & (0x80000U)) // bound ctrl
+        putChars(buf, bufPos, " bound_ctrl", 11);
+    
+    putChars(buf, bufPos, " bank_mask:", 11);
     bufPos += putByteToBuf((insnCode2>>24)&0xf, buf+bufPos);
-    ::memcpy(buf+bufPos, " row_mask:", 10);
-    bufPos += 10;
+    putChars(buf, bufPos, " row_mask:", 10);
     bufPos += putByteToBuf((insnCode2>>28)&0xf, buf+bufPos);
     
     if (!src0Used)
     {
         if ((insnCode2&(1U<<20))!=0)
-        {
-            ::memcpy(buf+bufPos, " neg0", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg0", 5);
         if ((insnCode2&(1U<<21))!=0)
-        {
-            ::memcpy(buf+bufPos, " abs0", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs0", 5);
     }
     if (!src1Used)
     {
         if ((insnCode2&(1U<<22))!=0)
-        {
-            ::memcpy(buf+bufPos, " neg1", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg1", 5);
         if ((insnCode2&(1U<<23))!=0)
-        {
-            ::memcpy(buf+bufPos, " abs1", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs1", 5);
     }
     
     output.forward(bufPos);
@@ -1392,19 +1283,12 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         extraFlags.src0 = src0Field;
     
     if (extraFlags.sextSrc0)
-    {
-        ::memcpy(buf+bufPos, "sext(", 5);
-        bufPos += 5;
-    }
+        putChars(buf, bufPos, "sext(", 5);
     if (extraFlags.negSrc0)
         buf[bufPos++] = '-';
     if (extraFlags.absSrc0)
-    {
-        buf[bufPos++] = 'a';
-        buf[bufPos++] = 'b';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = '(';
-    }
+        putChars(buf, bufPos, "abs(", 4);
+    
     bufPos += decodeGCNOperand(extraFlags.src0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
                            buf + bufPos, arch, literal, displayFloatLits);
     if (extraFlags.absSrc0)
@@ -1422,12 +1306,8 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (extraFlags.negSrc1)
         buf[bufPos++] = '-';
     if (extraFlags.absSrc1)
-    {
-        buf[bufPos++] = 'a';
-        buf[bufPos++] = 'b';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = '(';
-    }
+        putChars(buf, bufPos, "abs(", 4);
+    
     bufPos += decodeGCNVRegOperand(((insnCode>>9)&0xff),
            (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos);
     if (extraFlags.absSrc1)
@@ -1492,12 +1372,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         if (extraFlags.negSrc0)
             buf[bufPos++] = '-';
         if (extraFlags.absSrc0)
-        {
-            buf[bufPos++] = 'a';
-            buf[bufPos++] = 'b';
-            buf[bufPos++] = 's';
-            buf[bufPos++] = '(';
-        }
+            putChars(buf, bufPos, "abs(", 4);
         bufPos += decodeGCNOperand(extraFlags.src0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
                            buf + bufPos, arch, literal, displayFloatLits);
         if (extraFlags.absSrc0)
@@ -1510,16 +1385,14 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         bufPos += addSpaces(buf, spacesToAdd);
         if ((insnCode & 0x1fe0000U) != 0)
         {
-            ::memcpy(buf+bufPos, "vdst=", 5);
-            bufPos += 5;
+            putChars(buf, bufPos, "vdst=", 5);
             bufPos += itocstrCStyle((insnCode>>17)&0xff, buf+bufPos, 6, 16);
             if ((insnCode & 0x1ff) != 0)
                 buf[bufPos++] = ' ';
         }
         if ((insnCode & 0x1ff) != 0)
         {
-            ::memcpy(buf+bufPos, "src0=", 5);
-            bufPos += 5;
+            putChars(buf, bufPos, "src0=", 5);
             bufPos += itocstrCStyle(insnCode&0x1ff, buf+bufPos, 6, 16);
         }
         argsUsed = false;
@@ -1569,26 +1442,15 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         bufPos += decodeGCNVRegOperand(((insnCode>>17)&0xff),
                (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf + bufPos);
     if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)
-    {
-        ::memcpy(buf+bufPos, ", vcc", 5);
-        bufPos += 5;
-    }
+        putChars(buf, bufPos, ", vcc", 5);
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     if (extraFlags.sextSrc0)
-    {
-        ::memcpy(buf+bufPos, "sext(", 5);
-        bufPos += 5;
-    }
+        putChars(buf, bufPos, "sext(", 5);
     if (extraFlags.negSrc0)
         buf[bufPos++] = '-';
     if (extraFlags.absSrc0)
-    {
-        buf[bufPos++] = 'a';
-        buf[bufPos++] = 'b';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = '(';
-    }
+        putChars(buf, bufPos, "abs(", 4);
     bufPos += decodeGCNOperand(extraFlags.src0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
                        buf + bufPos, arch, literal, displayFloatLits);
     if (extraFlags.absSrc0)
@@ -1611,12 +1473,7 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (extraFlags.negSrc1)
         buf[bufPos++] = '-';
     if (extraFlags.absSrc1)
-    {
-        buf[bufPos++] = 'a';
-        buf[bufPos++] = 'b';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = '(';
-    }
+        putChars(buf, bufPos, "abs(", 4);
     if (mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR)
         bufPos += decodeGCNOperand(((insnCode>>9)&0xff),
                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch);
@@ -1634,10 +1491,8 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         bufPos += printLiteral(buf+bufPos, literal, displayFloatLits);
     }
     else if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
-    {
-        ::memcpy(buf+bufPos, ", vcc", 5);
-        bufPos += 5;
-    }
+        putChars(buf,bufPos, ", vcc", 5);
+    
     output.forward(bufPos);
     if (isGCN12)
     {
@@ -1660,10 +1515,8 @@ static size_t decodeVINTRPParam(uint16_t p, char* buf)
     }
     else
     {
-        const char* paramName = vintrpParamsTbl[p];
         size_t k = 0;
-        for (k = 0; paramName[k] != 0; k++)
-            buf[k] = paramName[k];
+        putChars(buf, k, vintrpParamsTbl[p], ::strlen(vintrpParamsTbl[p]));
         return k;
     }
 }
@@ -1714,21 +1567,14 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             buf[bufPos++] = ' ';
             bufPos += decodeGCNOperand(((insnCode>>8)&0x7f), 2, buf + bufPos, arch);
         }
-        
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        
         if (vop3Mode != GCN_VOP3_VINTRP)
         {
             if ((insnCode2 & (1U<<29)) != 0)
                 buf[bufPos++] = '-';
             if (absFlags & 1)
-            {
-                buf[bufPos++] = 'a';
-                buf[bufPos++] = 'b';
-                buf[bufPos++] = 's';
-                buf[bufPos++] = '(';
-            }
+                putChars(buf, bufPos, "abs(", 4);
             bufPos += decodeGCNOperand(vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
                                    buf + bufPos, arch, 0, displayFloatLits);
             if (absFlags & 1)
@@ -1743,12 +1589,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             if ((insnCode2 & (1U<<30)) != 0)
                 buf[bufPos++] = '-';
             if (absFlags & 2)
-            {
-                buf[bufPos++] = 'a';
-                buf[bufPos++] = 'b';
-                buf[bufPos++] = 's';
-                buf[bufPos++] = '(';
-            }
+                putChars(buf, bufPos, "abs(", 4);
             bufPos += decodeGCNOperand(vsrc1,
                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, 0, displayFloatLits);
             if (absFlags & 2)
@@ -1769,12 +1610,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                     if ((insnCode2 & (1U<<31)) != 0)
                         buf[bufPos++] = '-';
                     if (absFlags & 4)
-                    {
-                        buf[bufPos++] = 'a';
-                        buf[bufPos++] = 'b';
-                        buf[bufPos++] = 's';
-                        buf[bufPos++] = '(';
-                    }
+                        putChars(buf, bufPos, "abs(", 4);
                     bufPos += decodeGCNOperand(vsrc2,
                        (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, buf + bufPos, arch, 0,
                                displayFloatLits);
@@ -1790,12 +1626,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             if ((insnCode2 & (1U<<30)) != 0)
                 buf[bufPos++] = '-';
             if (absFlags & 2)
-            {
-                buf[bufPos++] = 'a';
-                buf[bufPos++] = 'b';
-                buf[bufPos++] = 's';
-                buf[bufPos++] = '(';
-            }
+                putChars(buf, bufPos, "abs(", 4);
             if (mode1 == GCN_P0_P10_P20)
                 bufPos += decodeVINTRPParam(vsrc1, buf+bufPos);
             else
@@ -1803,8 +1634,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                                            0, displayFloatLits);
             if (absFlags & 2)
                 buf[bufPos++] = ')';
-            ::memcpy(buf+bufPos, ", attr", 6);
-            bufPos += 6;
+            putChars(buf, bufPos, ", attr", 6);
             const cxuint attr = vsrc0&63;
             bufPos += putByteToBuf(attr, buf+bufPos);
             buf[bufPos++] = '.';
@@ -1817,12 +1647,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 if ((insnCode2 & (1U<<31)) != 0)
                     buf[bufPos++] = '-';
                 if (absFlags & 4)
-                {
-                    buf[bufPos++] = 'a';
-                    buf[bufPos++] = 'b';
-                    buf[bufPos++] = 's';
-                    buf[bufPos++] = '(';
-                }
+                    putChars(buf, bufPos, "abs(", 4);
                 bufPos += decodeGCNOperand(vsrc2, 1, buf + bufPos, arch, 0,
                                    displayFloatLits);
                 if (absFlags & 4)
@@ -1831,10 +1656,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             }
             
             if (vsrc0 & 0x100)
-            {
-                ::memcpy(buf+bufPos, " high", 5);
-                bufPos += 5;
-            }
+                putChars(buf, bufPos, " high", 5);
             vsrc0Used = true;
             vsrc1Used = true;
         }
@@ -1847,23 +1669,18 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (omod != 0)
     {
         const char* omodStr = (omod==3)?" div:2":(omod==2)?" mul:4":" mul:2";
-        ::memcpy(buf+bufPos, omodStr, 6);
-        bufPos += 6;
+        putChars(buf, bufPos, omodStr, 6);
     }
     
     const bool clamp = (!isGCN12 && gcnInsn.encoding == GCNENC_VOP3A &&
             (insnCode&0x800) != 0) || (isGCN12 && (insnCode&0x8000) != 0);
     if (clamp)
-    {
-        ::memcpy(buf+bufPos, " clamp", 6);
-        bufPos += 6;
-    }
+        putChars(buf, bufPos, " clamp", 6);
     
     /* as field */
     if (!vdstUsed && vdst != 0)
     {
-        ::memcpy(buf+bufPos, " dst=", 5);
-        bufPos += 5;
+        putChars(buf, bufPos, " dst=", 5);
         bufPos += itocstrCStyle(vdst, buf+bufPos, 6, 16);
     }
         
@@ -1871,58 +1688,37 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     {
         if (vsrc0 != 0)
         {
-            ::memcpy(buf+bufPos, " src0=", 6);
-            bufPos += 6;
+            putChars(buf, bufPos, " src0=", 6);
             bufPos += itocstrCStyle(vsrc0, buf+bufPos, 6, 16);
         }
         if (absFlags & 1)
-        {
-            ::memcpy(buf+bufPos, " abs0", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs0", 5);
         if ((insnCode2 & (1U<<29)) != 0)
-        {
-            ::memcpy(buf+bufPos, " neg0", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg0", 5);
     }
     if (!vsrc1Used)
     {
         if (vsrc1 != 0)
         {
-            ::memcpy(buf+bufPos, " vsrc1=", 7);
-            bufPos += 7;
+            putChars(buf, bufPos, " vsrc1=", 7);
             bufPos += itocstrCStyle(vsrc1, buf+bufPos, 6, 16);
         }
         if (absFlags & 2)
-        {
-            ::memcpy(buf+bufPos, " abs1", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs1", 5);
         if ((insnCode2 & (1U<<30)) != 0)
-        {
-            ::memcpy(buf+bufPos, " neg1", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg1", 5);
     }
     if (!vsrc2Used)
     {
         if (vsrc2 != 0)
         {
-            ::memcpy(buf+bufPos, " vsrc2=", 7);
-            bufPos += 7;
+            putChars(buf, bufPos, " vsrc2=", 7);
             bufPos += itocstrCStyle(vsrc2, buf+bufPos, 6, 16);
         }
         if (absFlags & 4)
-        {
-            ::memcpy(buf+bufPos, " abs2", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " abs2", 5);
         if ((insnCode2 & (1U<<31)) != 0)
-        {
-            ::memcpy(buf+bufPos, " neg2", 5);
-            bufPos += 5;
-        }
+            putChars(buf, bufPos, " neg2", 5);
     }
     
     const cxuint usedMask = 7 & ~(vsrc2CC?4:0);
@@ -1971,10 +1767,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         isVOP1Word = true;
     
     if (isVOP1Word) // add vop3 for distinguishing encoding
-    {
-        ::memcpy(buf+bufPos, " vop3", 5);
-        bufPos += 5;
-    }
+        putChars(buf, bufPos, " vop3", 5);
     
     output.forward(bufPos);
 }
@@ -1991,8 +1784,7 @@ static void decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch,
         bufPos += decodeVINTRPParam(insnCode&0xff, buf+bufPos);
     else
         bufPos += decodeGCNVRegOperand(insnCode&0xff, 1, buf+bufPos);
-    ::memcpy(buf+bufPos, ", attr", 6);
-    bufPos += 6;
+    putChars(buf, bufPos, ", attr", 6);
     const cxuint attr = (insnCode>>10)&63;
     bufPos += putByteToBuf(attr, buf+bufPos);
     buf[bufPos++] = '.';
@@ -2068,57 +1860,45 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
     {
         if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
         {
-            ::memcpy(buf+bufPos, " offset:", 8);
-            bufPos += 8;
+            putChars(buf, bufPos, " offset:", 8);
             bufPos += itocstrCStyle(offset, buf+bufPos, 7, 10);
         }
         else
         {
             if ((offset&0xff) != 0)
             {
-                ::memcpy(buf+bufPos, " offset0:", 9);
-                bufPos += 9;
+                putChars(buf, bufPos, " offset0:", 9);
                 bufPos += putByteToBuf(offset&0xff, buf+bufPos);
             }
             if ((offset&0xff00) != 0)
             {
-                ::memcpy(buf+bufPos, " offset1:", 9);
-                bufPos += 9;
+                putChars(buf, bufPos, " offset1:", 9);
                 bufPos += putByteToBuf((offset>>8)&0xff, buf+bufPos);
             }
         }
     }
     
     if ((!isGCN12 && (insnCode&0x20000)!=0) || (isGCN12 && (insnCode&0x10000)!=0))
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = 'd';
-        buf[bufPos++] = 's';
-    }
+        putChars(buf, bufPos, " gds", 4);
     
     if (!vaddrUsed && vaddr != 0)
     {
-        ::memcpy(buf+bufPos, " vaddr=", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " vaddr=", 7);
         bufPos += itocstrCStyle(vaddr, buf+bufPos, 6, 16);
     }
     if (!vdata0Used && vdata0 != 0)
     {
-        ::memcpy(buf+bufPos, " vdata0=", 8);
-        bufPos += 8;
+        putChars(buf, bufPos, " vdata0=", 8);
         bufPos += itocstrCStyle(vdata0, buf+bufPos, 6, 16);
     }
     if (!vdata1Used && vdata1 != 0)
     {
-        ::memcpy(buf+bufPos, " vdata1=", 8);
-        bufPos += 8;
+        putChars(buf, bufPos, " vdata1=", 8);
         bufPos += itocstrCStyle(vdata1, buf+bufPos, 6, 16);
     }
     if (!vdstUsed && vdst != 0)
     {
-        ::memcpy(buf+bufPos, " vdst=", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " vdst=", 6);
         bufPos += itocstrCStyle(vdst, buf+bufPos, 6, 16);
     }
     output.forward(bufPos);
@@ -2180,67 +1960,36 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
         bufPos = addSpaces(buf, spacesToAdd-1);
     
     if (insnCode & 0x1000U)
-    {
-        ::memcpy(buf+bufPos, " offen", 6);
-        bufPos += 6;
-    }
+        putChars(buf, bufPos, " offen", 6);
     if (insnCode & 0x2000U)
-    {
-        ::memcpy(buf+bufPos, " idxen", 6);
-        bufPos += 6;
-    }
+        putChars(buf, bufPos, " idxen", 6);
     const cxuint offset = insnCode&0xfff;
     if (offset != 0)
     {
-        ::memcpy(buf+bufPos, " offset:", 8);
-        bufPos += 8;
+        putChars(buf, bufPos, " offset:", 8);
         bufPos += itocstrCStyle(offset, buf+bufPos, 7, 10);
     }
     if (insnCode & 0x4000U)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
-    }
+        putChars(buf, bufPos, " glc", 4);
+    
     if (((!isGCN12 || mtbuf) && (insnCode2 & 0x400000U)!=0) ||
         ((isGCN12 && !mtbuf) && (insnCode & 0x20000)!=0))
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
-    }
+        putChars(buf, bufPos, " slc", 4);
+    
     if (!isGCN12 && (insnCode & 0x8000U)!=0)
-    {
-        ::memcpy(buf+bufPos, " addr64", 7);
-        bufPos += 7;
-    }
+        putChars(buf, bufPos, " addr64", 7);
     if (!mtbuf && (insnCode & 0x10000U) != 0)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'd';
-        buf[bufPos++] = 's';
-    }
+        putChars(buf, bufPos, " lds", 4);
     if (insnCode2 & 0x800000U)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 't';
-        buf[bufPos++] = 'f';
-        buf[bufPos++] = 'e';
-    }
+        putChars(buf, bufPos, " tfe", 4);
     if (mtbuf)
     {
-        ::memcpy(buf+bufPos, " format:[", 9);
-        bufPos += 9;
+        putChars(buf, bufPos, " format:[", 9);
         const char* dfmtStr = mtbufDFMTTable[(insnCode>>19)&15];
-        for (cxuint k = 0; dfmtStr[k] != 0; k++)
-            buf[bufPos++] = dfmtStr[k];
+        putChars(buf, bufPos, dfmtStr, ::strlen(dfmtStr));
         buf[bufPos++] = ',';
         const char* nfmtStr = mtbufNFMTTable[(insnCode>>23)&7];
-        for (cxuint k = 0; nfmtStr[k] != 0; k++)
-            buf[bufPos++] = nfmtStr[k];
+        putChars(buf, bufPos, nfmtStr, ::strlen(nfmtStr));
         buf[bufPos++] = ']';
     }
     
@@ -2248,14 +1997,12 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
     {
         if (vaddr != 0)
         {
-            ::memcpy(buf+bufPos, " vaddr=", 7);
-            bufPos += 7;
+            putChars(buf, bufPos, " vaddr=", 7);
             bufPos += itocstrCStyle(vaddr, buf+bufPos, 6, 16);
         }
         if (vdata != 0)
         {
-            ::memcpy(buf+bufPos, " vdata=", 7);
-            bufPos += 7;
+            putChars(buf, bufPos, " vdata=", 7);
             bufPos += itocstrCStyle(vdata, buf+bufPos, 6, 16);
         }
     }
@@ -2263,14 +2010,12 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
     {
         if (srsrc != 0)
         {
-            ::memcpy(buf+bufPos, " srsrc=", 7);
-            bufPos += 7;
+            putChars(buf, bufPos, " srsrc=", 7);
             bufPos += itocstrCStyle(srsrc, buf+bufPos, 6, 16);
         }
         if (soffset != 0)
         {
-            ::memcpy(buf+bufPos, " soffset=", 9);
-            bufPos += 9;
+            putChars(buf, bufPos, " soffset=", 9);
             bufPos += itocstrCStyle(soffset, buf+bufPos, 6, 16);
         }
     }
@@ -2310,8 +2055,7 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     }
     if (dmask != 1)
     {
-        ::memcpy(buf+bufPos, " dmask:", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " dmask:", 7);
         if (dmask >= 10)
         {
             buf[bufPos++] = '1';
@@ -2322,43 +2066,17 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     }
     
     if (insnCode & 0x1000)
-    {
-        ::memcpy(buf+bufPos, " unorm", 6);
-        bufPos += 6;
-    }
+        putChars(buf, bufPos, " unorm", 6);
     if (insnCode & 0x2000)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
-    }
+        putChars(buf, bufPos, " glc", 4);
     if (insnCode & 0x2000000)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
-    }
+        putChars(buf, bufPos, " slc", 4);
     if (insnCode & 0x8000)
-    {
-        ::memcpy(buf+bufPos, " r128", 5);
-        bufPos += 5;
-    }
+        putChars(buf, bufPos, " r128", 5);
     if (insnCode & 0x10000)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 't';
-        buf[bufPos++] = 'f';
-        buf[bufPos++] = 'e';
-    }
+        putChars(buf, bufPos, " tfe", 4);
     if (insnCode & 0x20000)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'w';
-        buf[bufPos++] = 'e';
-    }
+        putChars(buf, bufPos, " lwe", 4);
     if (insnCode & 0x4000)
     {
         buf[bufPos++] = ' ';
@@ -2366,17 +2084,11 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         buf[bufPos++] = 'a';
     }
     if ((arch & ARCH_RX3X0)!=0 && (insnCode2 & (1U<<31)) != 0)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'd';
-        buf[bufPos++] = '1';
-        buf[bufPos++] = '6';
-    }
+        putChars(buf, bufPos, " d16", 4);
     
     if ((gcnInsn.mode & GCN_MASK2) != GCN_MIMG_SAMPLE && ssamp != 0)
     {
-        ::memcpy(buf+bufPos, " ssamp=", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " ssamp=", 7);
         bufPos += itocstrCStyle(ssamp, buf+bufPos, 6, 16);
     }
     output.forward(bufPos);
@@ -2391,8 +2103,7 @@ static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffe
     const cxuint target = (insnCode>>4)&63;
     if (target >= 32)
     {
-        ::memcpy(buf+bufPos, "param", 5);
-        bufPos += 5;
+        putChars(buf, bufPos, "param", 5);
         const cxuint tpar = target-32;
         const cxuint digit2 = tpar/10;
         if (digit2 != 0)
@@ -2401,38 +2112,21 @@ static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffe
     }
     else if (target >= 12 && target <= 15)
     {
-        buf[bufPos++] = 'p';
-        buf[bufPos++] = 'o';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = '0' + target-12;
+        putChars(buf, bufPos, "pos0", 4);
+        buf[bufPos-1] = '0' + target-12;
     }
     else if (target < 8)
     {
-        buf[bufPos++] = 'm';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 't';
-        buf[bufPos++] = '0' + target;
+        putChars(buf, bufPos, "mrt0", 4);
+        buf[bufPos-1] = '0' + target;
     }
     else if (target == 8)
-    {
-        buf[bufPos++] = 'm';
-        buf[bufPos++] = 'r';
-        buf[bufPos++] = 't';
-        buf[bufPos++] = 'z';
-    }
+        putChars(buf, bufPos, "mrtz", 4);
     else if (target == 9)
-    {
-        buf[bufPos++] = 'n';
-        buf[bufPos++] = 'u';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'l';
-    }
+        putChars(buf, bufPos, "null", 4);
     else
     {   /* reserved */
-        buf[bufPos++] = 'i';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = '_';
+        putChars(buf, bufPos, "ill_", 4);
         const cxuint digit2 = target/10U;
         buf[bufPos++] = '0' + digit2;
         buf[bufPos++] = '0' + target - 10U*digit2;
@@ -2459,23 +2153,13 @@ static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffe
             }
         }
         else
-        {
-            buf[bufPos++] = 'o';
-            buf[bufPos++] = 'f';
-            buf[bufPos++] = 'f';
-        }
+            putChars(buf, bufPos, "off", 3);
     }
     
     if (insnCode&0x800)
-    {
-        ::memcpy(buf+bufPos, " done", 5);
-        bufPos += 5;
-    }
+        putChars(buf, bufPos, " done", 5);
     if (insnCode&0x400)
-    {
-        ::memcpy(buf+bufPos, " compr", 6);
-        bufPos += 6;
-    }
+        putChars(buf, bufPos, " compr", 6);
     if (insnCode&0x1000)
     {
         buf[bufPos++] = ' ';
@@ -2537,37 +2221,20 @@ static void decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     }
     
     if (insnCode & 0x10000U)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 'g';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
-    }
+        putChars(buf, bufPos, " glc", 4);
     if (insnCode & 0x20000U)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 's';
-        buf[bufPos++] = 'l';
-        buf[bufPos++] = 'c';
-    }
+        putChars(buf, bufPos, " slc", 4);
     if (insnCode2 & 0x800000U)
-    {
-        buf[bufPos++] = ' ';
-        buf[bufPos++] = 't';
-        buf[bufPos++] = 'f';
-        buf[bufPos++] = 'e';
-    }
+        putChars(buf, bufPos, " tfe", 4);
     
     if (!vdataUsed && ((insnCode2>>8)&0xff) != 0)
     {
-        ::memcpy(buf+bufPos, " vdata=", 7);
-        bufPos += 7;
+        putChars(buf, bufPos, " vdata=", 7);
         bufPos += itocstrCStyle((insnCode2>>8)&0xff, buf+bufPos, 6, 16);
     }
     if (!vdstUsed && (insnCode2>>24) != 0)
     {
-        ::memcpy(buf+bufPos, " vdst=", 6);
-        bufPos += 6;
+        putChars(buf, bufPos, " vdst=", 6);
         bufPos += itocstrCStyle(insnCode2>>24, buf+bufPos, 6, 16);
     }
     output.forward(bufPos);
@@ -2807,16 +2474,9 @@ void GCNDisassembler::disassemble()
                 if (!isGCN12 || gcnEncoding != GCNENC_SMEM)
                     for (cxuint k = 0; gcnEncodingNames[gcnEncoding][k] != 0; k++)
                         buf[bufPos++] = gcnEncodingNames[gcnEncoding][k];
-                else
-                {   /* SMEM encoding */
-                    ::memcpy(buf+bufPos, "SMEM", 4);
-                    bufPos+=4;
-                }
-                buf[bufPos++] = '_';
-                buf[bufPos++] = 'i';
-                buf[bufPos++] = 'l';
-                buf[bufPos++] = 'l';
-                buf[bufPos++] = '_';
+                else /* SMEM encoding */
+                    putChars(buf, bufPos, "SMEM", 4);
+                putChars(buf, bufPos, "_ill_", 5);
                 bufPos += itocstrCStyle(opcode, buf + bufPos, 6);
                 spacesToAdd = spacesToAdd >= (bufPos+1)? spacesToAdd - (bufPos) : 1;
                 gcnInsn = &defaultInsn;
