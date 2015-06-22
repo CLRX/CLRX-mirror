@@ -23,15 +23,11 @@
 #include <fstream>
 #include <vector>
 #include <stack>
-#include <elf.h>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
-#include <CLRX/amdbin/AmdBinaries.h>
-#include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/GPUId.h>
-#include <CLRX/utils/InputOutput.h>
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
 

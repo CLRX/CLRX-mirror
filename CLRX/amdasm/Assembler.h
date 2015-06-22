@@ -958,6 +958,18 @@ public:
     /// set GPU device type
     void setDeviceType(const GPUDeviceType deviceType)
     { this->deviceType = deviceType; }
+    /// get binary format
+    BinaryFormat getBinaryFormat() const
+    { return format; }
+    /// set binary format
+    void setBinaryFormat(BinaryFormat binFormat)
+    { format = binFormat; }
+    /// get bitness
+    bool is64Bit() const
+    { return _64bit; }
+    /// set bitness
+    void set64Bit(bool this64Bit)
+    {  _64bit = this64Bit; }
     /// get flags
     cxuint getFlags() const
     { return flags; }
@@ -975,6 +987,9 @@ public:
     /// get sections
     const std::vector<AsmSection*>& getSections() const
     { return sections; }
+    /// get kernel map
+    const KernelMap& getKernelMap() const
+    { return kernelMap; }
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;

@@ -60,3 +60,6 @@ ADD_EXECUTABLE(AmdBinLoading AmdBinLoading.cpp)
 TARGET_LINK_LIBRARIES(AmdBinLoading ${CMAKE_THREAD_LIBS_INIT} CLRXAmdBin CLRXUtils)
 ADD_TEST(AmdBinLoading AmdBinLoading)
 
+ADD_EXECUTABLE(AssemblerBasics AssemblerBasics.cpp)
+TARGET_LINK_LIBRARIES(AssemblerBasics ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+ADD_TEST(AssemblerBasics AssemblerBasics)

@@ -69,9 +69,13 @@ static inline void assertString(const std::string& testName, const std::string& 
     }
 }
 
+static inline void assertString(const std::string& testName, const std::string& caseName,
+             const char* expected, const std::string& result)
+{ assertString(testName, caseName, expected, result.c_str()); }
+
 template<typename T>
 static void assertArray(const std::string& testName, const std::string& caseName,
-            const std::initializer_list<T>& expected, size_t resultSize, const T* result)
+            const Array<T>& expected, size_t resultSize, const T* result)
 {
     if (expected.size() != resultSize)
     {
@@ -92,6 +96,16 @@ static void assertArray(const std::string& testName, const std::string& caseName
             throw Exception(oss.str());
         }
 }
+
+template<typename T>
+static void assertArray(const std::string& testName, const std::string& caseName,
+            const Array<T>& expected, const Array<T>& result)
+{ assertArray<T>(testName, caseName, expected, result.size(), result.data()); }
+
+template<typename T>
+static void assertArray(const std::string& testName, const std::string& caseName,
+            const Array<T>& expected, const std::vector<T>& result)
+{ assertArray<T>(testName, caseName, expected, result.size(), result.data()); }
 
 static inline void assertStrArray(const std::string& testName,
       const std::string& caseName,const std::initializer_list<const char*>& expected,

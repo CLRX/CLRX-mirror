@@ -18,12 +18,13 @@
  */
 
 #include <CLRX/Config.h>
+#include <elf.h>
 #include <string>
+#include <cstring>
 #include <cassert>
 #include <fstream>
 #include <vector>
 #include <stack>
-#include <elf.h>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
