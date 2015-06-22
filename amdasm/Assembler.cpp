@@ -919,8 +919,9 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _f
           lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
           printStream(_printStream), outFormatInitialized(false),
           inGlobal(_format != BinaryFormat::RAWCODE),
-          inAmdConfig(false), currentKernel(0), currentSection(0),
-          // get value reference from first symbol: '.'
+          inAmdConfig(false), currentKernel(0),
+          // value reference and section reference from first symbol: '.'
+          currentSection(symbolMap.begin()->second.sectionId),
           currentOutPos(symbolMap.begin()->second.value)
 {
     good = true;
@@ -1434,20 +1435,10 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         if (!expr->evaluate(*this, value, sectionId))
             return false;
         
-        if (symEntry.first == ".")
-        {   // checkings for '.'
-            if (symEntry.second.sectionId != sectionId)
-            {
-                printError(stringAtSymbol, "Illegal section change for symbol '.'");
-                return false;
-            }
-            if (symEntry.second.value < value)
-            {
-                printError(stringAtSymbol, "Attempt to move backwards");
-                return false;
-            }
-        }
-        setSymbol(symEntry, value, sectionId);
+        if (symEntry.first == ".") // assigning '.'
+            assignOutputCounter(stringAtSymbol, value, sectionId);
+        else
+            setSymbol(symEntry, value, sectionId);
     }
     else // set expression
     {
@@ -1476,6 +1467,50 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
                 setSymbol(*tempSymEntry, tempSymEntry->second.value,
                           tempSymEntry->second.sectionId);
         }
+    }
+    return true;
+}
+
+bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
+            cxuint sectionId, cxbyte fillValue)
+{
+    if (currentSection != sectionId)
+    {
+        printError(symbolStr, "Illegal section change for symbol '.'");
+        return false;
+    }
+    if (currentOutPos > value)
+    {
+        printError(symbolStr, "Attempt to move backwards");
+        return false;
+    }
+    if (value-currentOutPos!=0)
+        reserveData(value-currentOutPos, fillValue);
+    currentOutPos = value;
+    return true;
+}
+
+bool Assembler::skipSymbol(const char* string, const char*& outend)
+{
+    const char* end = line + lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* start = string;
+    if (string != end)
+    {
+        if((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
+            *string == '_' || *string == '.' || *string == '$')
+            for (string++; string != end && ((*string >= '0' && *string <= '9') ||
+                (*string >= 'a' && *string <= 'z') ||
+                (*string >= 'A' && *string <= 'Z') || *string == '_' ||
+                 *string == '.' || *string == '$') ; string++);
+    }
+    outend = string;
+    if (start == string)
+    {   // this is not symbol name
+        while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
+            *outend != ':' && *outend != ';') outend++;
+        printError(start, "Expected symbol name");
+        return false;
     }
     return true;
 }
@@ -1664,6 +1699,9 @@ struct CLRX_INTERNAL AsmPseudoOps
        if empty expression value is not set */
     static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& string,
                     bool requredExpr = false);
+    
+    static bool getRelativeValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
+                    const char*& string);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
                const char* objName);
@@ -1718,6 +1756,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void setSymbolSize(Assembler& asmr, const char*& string);
     
+    static void ignoreExtern(Assembler& asmr, const char*& string);
+    
     static void doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
                bool _64bit = false);
     static void doSkip(Assembler& asmr, const char*& string);
@@ -1728,6 +1768,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     /* TODO: add no-op fillin for text sections */
     template<typename Word>
     static void doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string);
+    
+    static void doOrganize(Assembler& asmr, const char*& string);
 };
 
 bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
@@ -1759,6 +1801,36 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
         asmr.printError(exprStr, "Expression must be absolute!");
         return false;
     }
+    return true;
+}
+
+bool AsmPseudoOps::getRelativeValueArg(Assembler& asmr, uint64_t& value,
+                   cxuint& sectionId, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* exprStr = string;
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
+    if (expr == nullptr)
+        return false;
+    if (expr->isEmpty())
+    {
+        asmr.printError(exprStr, "Expected expression");
+        return false;
+    }
+    if (expr->getSymOccursNum() != 0)
+    {   // not resolved at this time
+        asmr.printError(exprStr, "Expression has an unresolved symbols!");
+        return false;
+    }
+    if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+        return false;
+    else if (sectionId == ASMSECT_ABS)
+    {   // if not absolute value
+        asmr.printError(exprStr, "Expression must be relative!");
+        return false;
+    }
+    
     return true;
 }
 
@@ -2352,6 +2424,17 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
         symEntry->second.size = size;
 }
 
+void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
+{
+    bool haveComma = true; // initial value
+    while (haveComma)
+    {
+        asmr.skipSymbol(string, string);
+        if (!skipComma(asmr, haveComma, string))
+            return;
+    }
+}
+
 void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
           bool _64bit)
 {
@@ -2548,6 +2631,26 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
               reinterpret_cast<Word*>(content + bytesToFill), word);
 }
 
+void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    size_t value;
+    cxuint sectionId;
+    const char* valStr = string;
+    if (!getRelativeValueArg(asmr, value, sectionId, string))
+        return;
+    uint64_t fillValue = 0;
+    bool haveComma;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (haveComma) // optional fill argument
+        if (!getAbsoluteValueArg(asmr, fillValue, string, true))
+            return;
+    asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
+}
+
 };
 
 bool Assembler::assemble()
@@ -2555,14 +2658,14 @@ bool Assembler::assemble()
     good = true;
     while (readLine())
     {
-        /* parse line */
-        const char* string = line;
+        const char* string = line; // string points to place of line
         const char* end = line+lineSize;
         string = skipSpacesToEnd(string, end);
         if (string == end)
             continue; // only empty line
         
-        const char* firstNameString = string;
+        // statement start (except labels). in this time can point to labels
+        const char* stmtStartStr = string;
         std::string firstName = extractLabelName(string, end);
         string += firstName.size();
         
@@ -2578,14 +2681,14 @@ bool Assembler::assemble()
             {   // handle local labels
                 if (sections.empty())
                 {
-                    printError(firstNameString,
+                    printError(stmtStartStr,
                                "Local label can't be defined outside section");
                     doNextLine = true;
                     break;
                 }
                 if (inAmdConfig)
                 {
-                    printError(firstNameString,
+                    printError(stmtStartStr,
                                "Local label can't defined in AMD config place");
                     doNextLine = true;
                     break;
@@ -2612,21 +2715,21 @@ bool Assembler::assemble()
                         std::string msg = "Symbol '";
                         msg += firstName;
                         msg += "' is already defined";
-                        printError(firstNameString, msg.c_str());
+                        printError(stmtStartStr, msg.c_str());
                         doNextLine = true;
                         break;
                     }
                 }
                 if (sections.empty())
                 {
-                    printError(firstNameString,
+                    printError(stmtStartStr,
                                "Label can't be defined outside section");
                     doNextLine = true;
                     break;
                 }
                 if (inAmdConfig)
                 {
-                    printError(firstNameString,
+                    printError(stmtStartStr,
                                "Label can't defined in AMD config place");
                     doNextLine = true;
                     break;
@@ -2637,13 +2740,15 @@ bool Assembler::assemble()
                 res.first->second.sectionId = currentSection;
             }
             // new label or statement
-            firstNameString = string;
+            stmtStartStr = string;
             firstName = extractLabelName(string, end);
             string += firstName.size();
         }
         if (doNextLine)
             continue;
         
+        /* now stmtStartStr - points to first string of statement
+         * (labels has been skipped) */
         string = skipSpacesToEnd(string, end);
         if (string != end && *string == '=' &&
             // not for local labels
@@ -2655,7 +2760,7 @@ bool Assembler::assemble()
                 printError(string, "Expected assignment expression");
                 continue;
             }
-            assignSymbol(firstName, firstNameString, string);
+            assignSymbol(firstName, stmtStartStr, string);
             continue;
         }
         // make firstname as lowercase
@@ -2674,7 +2779,7 @@ bool Assembler::assemble()
                     AsmPseudoOps::setBitness(*this, string, pseudoOp == ASMOP_64BIT);
                     break;
                 case ASMOP_ABORT:
-                    printError(firstNameString, "Aborted!");
+                    printError(stmtStartStr, "Aborted!");
                     return good;
                     break;
                 case ASMOP_ALIGN:
@@ -2690,10 +2795,10 @@ bool Assembler::assemble()
                     AsmPseudoOps::putStrings(*this, string, true);
                     break;
                 case ASMOP_BALIGNL:
-                    AsmPseudoOps::doAlignWord<uint32_t>(*this, firstNameString, string);
+                    AsmPseudoOps::doAlignWord<uint32_t>(*this, stmtStartStr, string);
                     break;
                 case ASMOP_BALIGNW:
-                    AsmPseudoOps::doAlignWord<uint16_t>(*this, firstNameString, string);
+                    AsmPseudoOps::doAlignWord<uint16_t>(*this, stmtStartStr, string);
                     break;
                 case ASMOP_BYTE:
                     AsmPseudoOps::putIntegers<cxbyte>(*this, string);
@@ -2780,25 +2885,26 @@ bool Assembler::assemble()
                     AsmPseudoOps::setSymbol(*this, string, false, true);
                     break;
                 case ASMOP_ERR:
-                    printError(firstNameString, ".err encountered");
+                    printError(stmtStartStr, ".err encountered");
                     break;
                 case ASMOP_ERROR:
-                    AsmPseudoOps::printError(*this, firstNameString, string);
+                    AsmPseudoOps::printError(*this, stmtStartStr, string);
                     break;
                 case ASMOP_EXITM:
                     break;
                 case ASMOP_EXTERN:
+                    AsmPseudoOps::ignoreExtern(*this, string);
                     break;
                 case ASMOP_FAIL:
-                    AsmPseudoOps::doFail(*this, firstNameString, string);
+                    AsmPseudoOps::doFail(*this, stmtStartStr, string);
                     break;
                 case ASMOP_FILE:
                     break;
                 case ASMOP_FILL:
-                    AsmPseudoOps::doFill(*this, firstNameString, string, false);
+                    AsmPseudoOps::doFill(*this, stmtStartStr, string, false);
                     break;
                 case ASMOP_FILLQ:
-                    AsmPseudoOps::doFill(*this, firstNameString, string, true);
+                    AsmPseudoOps::doFill(*this, stmtStartStr, string, true);
                     break;
                 case ASMOP_FLOAT:
                     AsmPseudoOps::putFloats<uint32_t>(*this, string);
@@ -2853,7 +2959,7 @@ bool Assembler::assemble()
                     AsmPseudoOps::includeBinFile(*this, string);
                     break;
                 case ASMOP_INCLUDE:
-                    AsmPseudoOps::includeFile(*this, firstNameString, string);
+                    AsmPseudoOps::includeFile(*this, stmtStartStr, string);
                     break;
                 case ASMOP_INT:
                 case ASMOP_LONG:
@@ -2878,6 +2984,7 @@ bool Assembler::assemble()
                 case ASMOP_OFFSET:
                     break;
                 case ASMOP_ORG:
+                    AsmPseudoOps::doOrganize(*this, string);
                     break;
                 case ASMOP_P2ALIGN:
                     AsmPseudoOps::doAlign(*this, string, true);
@@ -2933,7 +3040,7 @@ bool Assembler::assemble()
                 case ASMOP_TITLE:
                     break;
                 case ASMOP_WARNING:
-                    AsmPseudoOps::printWarning(*this, firstNameString, string);
+                    AsmPseudoOps::printWarning(*this, stmtStartStr, string);
                     break;
                 case ASMOP_WEAK:
                     AsmPseudoOps::setSymbolBind(*this, string, STB_WEAK);

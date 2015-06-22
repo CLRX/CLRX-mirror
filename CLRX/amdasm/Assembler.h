@@ -863,7 +863,7 @@ private:
     bool inGlobal;
     bool inAmdConfig;
     cxuint currentKernel;
-    cxuint currentSection;
+    cxuint& currentSection;
     uint64_t& currentOutPos;
     
     AsmSourcePos getSourcePos(LineCol lineCol) const
@@ -899,11 +899,15 @@ private:
     bool parseString(std::string& strarray, const char* linePlace, const char*& outend);
     bool parseSymbol(const char* linePlace, const char*& outend, AsmSymbolEntry*& entry,
                      bool localLabel = true);
+    bool skipSymbol(const char* linePlace, const char*& outend);
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
     bool assignSymbol(const std::string& symbolName, const char* placeAtSymbol,
                   const char* string, bool reassign = true, bool baseExpr = false);
+    
+    bool assignOutputCounter(const char* symbolStr, uint64_t value, cxuint sectionId,
+                     cxbyte fillValue = 0);
     
     void initializeOutputFormat();
     
@@ -914,11 +918,11 @@ private:
         currentOutPos += size;
     }
     
-    cxbyte* reserveData(size_t size)
+    cxbyte* reserveData(size_t size, cxbyte fillValue = 0)
     {
         size_t oldOutPos = currentOutPos;
         AsmSection& section = *sections[currentSection];
-        section.content.insert(section.content.end(), size, 0);
+        section.content.insert(section.content.end(), size, fillValue);
         currentOutPos += size;
         return section.content.data() + oldOutPos;
     }
