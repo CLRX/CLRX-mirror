@@ -29,22 +29,6 @@
 
 using namespace CLRX;
 
-std::ostream& operator<<(std::ostream& os, BinaryFormat format)
-{
-    os << cxuint(format);
-    return os;
-}
-std::ostream& operator<<(std::ostream& os, GPUDeviceType type)
-{
-    os << cxuint(type);
-    return os;
-}
-std::ostream& operator<<(std::ostream& os, AsmSectionType type)
-{
-    os << cxuint(type);
-    return os;
-}
-
 struct Section
 {
     const char* kernel;
@@ -256,8 +240,10 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     snprintf(testName, 30, "Test #%u", testId);
     
     assertValue(testName, "good", int(testCase.good), int(good));
-    assertValue(testName, "format", testCase.format, assembler.getBinaryFormat());
-    assertValue(testName, "deviceType", testCase.deviceType, assembler.getDeviceType());
+    assertValue(testName, "format", int(testCase.format),
+                int(assembler.getBinaryFormat()));
+    assertValue(testName, "deviceType", int(testCase.deviceType),
+                int(assembler.getDeviceType()));
     assertValue(testName, "64bit", int(testCase.is64Bit), int(assembler.is64Bit()));
     
     // check sections
@@ -272,7 +258,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         
         const AsmSection& resSection = *(resSections[i]);
         const Section& expSection = testCase.sections[i];
-        assertValue(testName, caseName+"type", expSection.type, resSection.type);
+        assertValue(testName, caseName+"type", int(expSection.type), int(resSection.type));
         assertArray<cxbyte>(testName, caseName+".content", expSection.content,
                     resSection.content);
     }

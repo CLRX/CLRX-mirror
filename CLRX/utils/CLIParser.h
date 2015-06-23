@@ -207,8 +207,8 @@ private:
         };
         Value v;    ///< value
         size_t arrSize;
-        OptionEntry() : isSet(false), isArg(false), v{}, arrSize(0)
-        { }
+        OptionEntry() : isSet(false), isArg(false), arrSize(0)
+        {  ::memset(&v, 0, sizeof(v)); /* use memset, workaround for CLang++ */ }
     };
     
     const CLIOption* options;
