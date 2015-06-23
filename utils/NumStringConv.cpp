@@ -45,7 +45,7 @@ cxuint CLRX::cstrtoui(const char* str, const char* inend, const char*& outend)
         throw ParseException("No characters to parse");
     }
     
-    for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
+    for (p = str; p != inend && isDigit(*p); p++)
     {
         out = (out*10U) + *p-'0';
         if (out > UINT_MAX)
@@ -137,7 +137,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
         else
         {   // octal
             const uint64_t lastOct = (7ULL<<(bits-3));
-            for (p = str+1; p != inend && *p >= '0' && *p <= '7'; p++)
+            for (p = str+1; p != inend && isODigit(*p); p++)
             {
                 if ((out & lastOct) != 0)
                 {
@@ -154,7 +154,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
         const uint64_t mask = (bits < 64) ? ((1ULL<<bits)-1) :
                     UINT64_MAX; /* fix for shift */
         const uint64_t lastDigitValue = mask/10;
-        for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
+        for (p = str; p != inend && isDigit(*p); p++)
         {
             if (out > lastDigitValue)
             {
@@ -214,9 +214,9 @@ static int32_t parseFloatExponent(const char*& expstr, const char* inend)
             throw ParseException("End of floating point at exponent");
     }
     cxuint absExponent = 0;
-    if (expstr == inend ||*expstr < '0' || *expstr > '9')
+    if (expstr == inend || !isDigit(*expstr))
         throw ParseException("Garbages at floating point exponent");
-    for (;expstr != inend && *expstr >= '0' && *expstr <= '9'; expstr++)
+    for (;expstr != inend && isDigit(*expstr); expstr++)
     {
         if (absExponent > ((1U<<31)/10))
             throw ParseException("Exponent out of range");
@@ -979,7 +979,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         cxint decimalExp = 0;
         const char* expstr = p;
         bool comma = false;
-        for (;expstr != inend && (*expstr == '.' || (*expstr >= '0' && *expstr <= '9'));
+        for (;expstr != inend && (*expstr == '.' || isDigit(*expstr));
              expstr++)
             if (*expstr == '.')
             {   // if comma found and we found next we break skipping
@@ -1046,7 +1046,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         cxuint processedDigits = 0;
         for (processedDigits = 0; vs != valEnd && processedDigits < 19; vs++)
         {
-            if (*vs >= '0' && *vs <= '9')
+            if (isDigit(*vs))
                 value = value*10 + *vs-'0';
             else // if (*vs == '.')
                 continue;
@@ -1203,7 +1203,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                         for (; vs != valEnd && digitsOfPart < 19 &&
                             processedDigits < digitsToProcess; vs++)
                         {
-                            if (*vs >= '0' && *vs <= '9')
+                            if (isDigit(*vs))
                                 curValue = curValue*10 + *vs-'0';
                             else // if (*vs == '.')
                                 continue;
@@ -1926,7 +1926,7 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
         else
         {   // octal
             const uint64_t lastOct = (7ULL<<61);
-            for (p = str+1; p != inend && *p >= '0' && *p <= '7'; p++)
+            for (p = str+1; p != inend && isODigit(*p); p++)
             {
                 if ((out.hi & lastOct) != 0)
                 {
@@ -1942,7 +1942,7 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
     else
     {   // decimal
         const UInt128 lastDigitValue = { 11068046444225730969ULL, 1844674407370955161ULL };
-        for (p = str; p != inend && *p >= '0' && *p <= '9'; p++)
+        for (p = str; p != inend && isDigit(*p); p++)
         {
             if (out.hi > lastDigitValue.hi ||
                 (out.hi == lastDigitValue.hi && out.lo > lastDigitValue.lo))

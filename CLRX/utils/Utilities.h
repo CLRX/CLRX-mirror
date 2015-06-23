@@ -128,9 +128,31 @@ public:
 inline bool isSpace(unsigned char c);
 
 inline bool isSpace(unsigned char c)
-{
-    return (c == 32 || (c < 32 && (0x3e00U & (1U<<c))));
-}
+{ return (c == 32 || (c < 32 && (0x3e00U & (1U<<c)))); }
+
+/// check whether character is digit
+inline bool isODigit(unsigned char c);
+
+inline bool isODigit(unsigned char c)
+{ return c>='0' && c<= '7'; }
+
+/// check whether character is digit
+inline bool isDigit(unsigned char c);
+
+inline bool isDigit(unsigned char c)
+{ return c>='0' && c<= '9'; }
+
+/// check whether character is digit
+inline bool isAlpha(unsigned char c);
+
+inline bool isAlpha(unsigned char c)
+{ return (c>='a' && c<='z') || (c>='A' && c<='Z'); }
+
+/// check whether character is digit
+inline bool isAlnum(unsigned char c);
+
+inline bool isAlnum(unsigned char c)
+{ return (c>='0' && c<= '9') || (c>='a' && c<='z') || (c>='A' && c<='Z'); }
 
 /// skip spaces from cString
 inline const char* skipSpaces(const char* s);
@@ -839,6 +861,8 @@ inline void toUpperString(std::string& string);
 
 inline void toUpperString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toUpper); }
+
+
 
 };
 

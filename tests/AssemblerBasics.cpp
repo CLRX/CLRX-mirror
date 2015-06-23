@@ -181,6 +181,64 @@ label2: .int 3,6,7
             { "v1", 0, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "v2", 0, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
+    },
+    /* assignments, assignment of labels and symbols */
+    {   R"ffDXD(.rawcode
+start: .byte 0xfa, 0xfd, 0xfb, 0xda
+start:  # try define again this same label
+        start = 132 # try define by assignment
+        .byte zx
+        zx = 9
+        .byte zx
+        zx = 10
+1:      .byte zx
+        1 = 6       # illegal asssignemt of local label
+        # by .set
+        .byte zy
+        .set zy, 10
+        .byte zy
+        .set zy, 11
+        .byte zy
+        # by .equ
+        .byte zz
+        .equ zz, 100
+        .byte zz
+        .equ zz, 120
+        .byte zz
+        # by equiv
+        .byte testx
+        .equiv testx, 130   # illegal by equiv
+        .byte testx
+        .equiv testx, 150
+        .byte testx
+        myval = 0x12
+        .equiv myval,0x15   # illegal by equiv
+        .equiv myval,0x15   # illegal by equiv
+        myval = 6       # legal by normal assignment
+        .set myval,8    # legal
+        .equ myval,9    # legal)ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::RAWCODE_CODE,
+            { 0xfa, 0xfd, 0xfb, 0xda, 0x09, 0x09, 0x0a, 0x0a, 0x0a, 0x0b, 0x64, 0x64,
+              0x78, 0x82, 0x82, 0x82 } } },
+        {
+            { ".", 16, 0, 0, true, false, false, 0, 0 },
+            { "1b", 6, 0, 0, true, false, false, 0, 0 },
+            { "1f", 6, 0, 0, false, false, false, 0, 0 },
+            { "myval", 9, ASMSECT_ABS, 0, true, false, false, 0, 0, },
+            { "start", 0, 0, 0, true, true, false, 0, 0 },
+            { "testx", 130, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "zx", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "zy", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "zz", 120, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, false,
+        "test.s:3:1: Error: Symbol 'start' is already defined\n"
+        "test.s:4:9: Error: Symbol 'start' is already defined\n"
+        "test.s:10:9: Error: Illegal number at statement begin\n"
+        "test.s:10:11: Error: Garbages at end of line with pseudo-op\n"
+        "test.s:27:16: Error: Symbol 'testx' is already defined\n"
+        "test.s:30:16: Error: Symbol 'myval' is already defined\n"
+        "test.s:31:16: Error: Symbol 'myval' is already defined\n", ""
     }
 };
 

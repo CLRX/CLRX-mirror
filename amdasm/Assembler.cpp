@@ -964,12 +964,12 @@ bool Assembler::parseString(std::string& strarray, const char* string,
                     value = (value<<4) + digit;
                 }
             }
-            else if (*outend >= '0' &&  *outend <= '7')
+            else if (isODigit(*outend))
             {   // octal
                 value = 0;
                 for (cxuint i = 0; outend != end && i < 3; i++, outend++)
                 {
-                    if (*outend < '0' || *outend > '7')
+                    if (!isODigit(*outend))
                     {
                         printError(string, "Expected octal character code");
                         return false;
@@ -1100,12 +1100,12 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
                     value = (value<<4) + digit;
                 }
             }
-            else if (*outend >= '0' &&  *outend <= '7')
+            else if (isODigit(*outend))
             {   // octal
                 value = 0;
                 for (cxuint i = 0; outend != end && i < 3 && *outend != '\''; i++, outend++)
                 {
-                    if (*outend < '0' || *outend > '7')
+                    if (!isODigit(*outend))
                     {
                         printError(string, "Expected octal character code");
                         return false;
@@ -1444,11 +1444,8 @@ bool Assembler::skipSymbol(const char* string, const char*& outend)
     const char* start = string;
     if (string != end)
     {
-        if((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
-            *string == '_' || *string == '.' || *string == '$')
-            for (string++; string != end && ((*string >= '0' && *string <= '9') ||
-                (*string >= 'a' && *string <= 'z') ||
-                (*string >= 'A' && *string <= 'Z') || *string == '_' ||
+        if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
+            for (string++; string != end && (isAlnum(*string) || *string == '_' ||
                  *string == '.' || *string == '$') ; string++);
     }
     outend = string;
@@ -1687,11 +1684,13 @@ bool Assembler::assemble()
         // make firstname as lowercase
         toLowerString(firstName);
         
-        if (firstName.size() > 2 && firstName[0] == '.') // check for pseudo-op
+        if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
         {
             if (!parsePseudoOps(firstName, stmtStartStr, string))
                 return good;
         }
+        else if (firstName.size() >= 1 && isDigit(firstName[0]))
+            printError(stmtStartStr, "Illegal number at statement begin");
         else
         {   // try to parse processor instruction or macro substitution
         }

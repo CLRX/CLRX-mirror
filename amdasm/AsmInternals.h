@@ -23,6 +23,7 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <string>
+#include <CLRX/utils/Utilities.h>
 
 namespace CLRX
 {
@@ -196,23 +197,17 @@ static inline const std::string extractSymName(const char* startString, const ch
     const char* string = startString;
     if (string != end)
     {
-        if((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
-            *string == '_' || *string == '.' || *string == '$')
-            for (string++; string != end && ((*string >= '0' && *string <= '9') ||
-                (*string >= 'a' && *string <= 'z') ||
-                (*string >= 'A' && *string <= 'Z') || *string == '_' ||
+        if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
+            for (string++; string != end && (isAlnum(*string) || *string == '_' ||
                  *string == '.' || *string == '$') ; string++);
-        else if (localLabelSymName && *string >= '0' && *string <= '9') // local label
+        else if (localLabelSymName && isDigit(*string)) // local label
         {
-            for (string++; string!=end && (*string >= '0' && *string <= '9'); string++);
+            for (string++; string!=end && isDigit(*string); string++);
             // check whether is local forward or backward label
             string = (string != end && (*string == 'f' || *string == 'b')) ?
                     string+1 : startString;
             // if not part of binary number or illegal bin number
-            if (startString != string && (string!=end &&
-                ((*string >= '0' && *string <= '9') ||
-                (*string >= 'a' && *string <= 'z') ||
-                (*string >= 'A' && *string <= 'Z'))))
+            if (startString != string && (string!=end && (isAlnum(*string))))
                 string = startString;
         }
     }
@@ -224,10 +219,10 @@ static inline const std::string extractSymName(const char* startString, const ch
 
 static inline const std::string extractLabelName(const char* startString, const char* end)
 {
-    if (startString != end && *startString >= '0' && *startString <= '9')
+    if (startString != end && isDigit(*startString))
     {
         const char* string = startString;
-        while (string != end && *string >= '0' && *string <= '9') string++;
+        while (string != end && isDigit(*string)) string++;
         return std::string(startString, string);
     }
     return extractSymName(startString, end, false);
