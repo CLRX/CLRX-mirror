@@ -1365,7 +1365,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symbolName, AsmSymbol() });
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
-        res.first->second.isDefined))
+        (res.first->second.isDefined || res.first->second.base)))
     {   // found and can be only once defined
         std::string msg = "Symbol '";
         msg += symbolName;
@@ -1385,7 +1385,10 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         if (symEntry.first == ".") // assigning '.'
             assignOutputCounter(stringAtSymbol, value, sectionId);
         else
+        {
             setSymbol(symEntry, value, sectionId);
+            symEntry.second.onceDefined = !reassign;
+        }
     }
     else // set expression
     {
@@ -1628,7 +1631,8 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName, AsmSymbol() });
                 if (!res.second)
                 {   // found
-                    if (res.first->second.onceDefined && res.first->second.isDefined)
+                    if (res.first->second.onceDefined && 
+                        (res.first->second.isDefined || res.first->second.base))
                     {   // if label
                         std::string msg = "Symbol '";
                         msg += firstName;

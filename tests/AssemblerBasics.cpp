@@ -64,10 +64,10 @@ struct AsmTestCase
 
 static AsmTestCase asmTestCases1Tbl[] =
 {
-    /* empty */
+    /* 0 empty */
     { "", BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
       {  }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "" },
-    /* standard symbol assignment */
+    /* 1 standard symbol assignment */
     {   R"ffDXD(sym1 = 7
         sym2 = 81
         sym3 = sym7*sym4
@@ -87,7 +87,7 @@ static AsmTestCase asmTestCases1Tbl[] =
             { "sym7", 91, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* undefined symbols and self defined and redefinitions */
+    /* 2 undefined symbols and self defined and redefinitions */
     {   R"ffDXD(sym1 = 7
         sym2 = 81
         sym3 = sym7*sym4
@@ -111,7 +111,7 @@ static AsmTestCase asmTestCases1Tbl[] =
             { "sym9", 0, ASMSECT_ABS, 0, false, false, false, 0, 0 },
         }, true, "", ""
     },
-    // labels and local labels
+    // 3 labels and local labels
     {   R"ffDXD(.rawcode
 start: .int 3,5,6
 label1: vx0 = start
@@ -151,7 +151,7 @@ label2: .int 3,6,7
             { "vx8", 48, 0, 0, true, false, false, 0, 0 },
         }, true, "", ""
     },
-    /* labels on absolute section type (likes global data) */
+    /* 4 labels on absolute section type (likes global data) */
     {   R"ffDXD(label1:
 3:      v1 = label1
         v2 = 3b)ffDXD",
@@ -166,7 +166,7 @@ label2: .int 3,6,7
             { "v2", 0, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* assignments, assignment of labels and symbols */
+    /* 5 assignments, assignment of labels and symbols */
     {   R"ffDXD(.rawcode
 start: .byte 0xfa, 0xfd, 0xfb, 0xda
 start:  # try define again this same label
@@ -200,7 +200,9 @@ start:  # try define again this same label
         .equiv myval,0x15   # illegal by equiv
         myval = 6       # legal by normal assignment
         .set myval,8    # legal
-        .equ myval,9    # legal)ffDXD",
+        .equ myval,9    # legal
+        testx = 566
+        .set testx,55)ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::RAWCODE_CODE,
             { 0xfa, 0xfd, 0xfb, 0xda, 0x09, 0x09, 0x0a, 0x0a, 0x0a, 0x0b, 0x64, 0x64,
@@ -211,7 +213,7 @@ start:  # try define again this same label
             { "1f", 6, 0, 0, false, false, false, 0, 0 },
             { "myval", 9, ASMSECT_ABS, 0, true, false, false, 0, 0, },
             { "start", 0, 0, 0, true, true, false, 0, 0 },
-            { "testx", 130, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "testx", 130, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "zx", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "zy", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "zz", 120, ASMSECT_ABS, 0, true, false, false, 0, 0 }
@@ -222,7 +224,296 @@ start:  # try define again this same label
         "test.s:10:11: Error: Garbages at end of line with pseudo-op\n"
         "test.s:27:16: Error: Symbol 'testx' is already defined\n"
         "test.s:30:16: Error: Symbol 'myval' is already defined\n"
-        "test.s:31:16: Error: Symbol 'myval' is already defined\n", ""
+        "test.s:31:16: Error: Symbol 'myval' is already defined\n"
+        "test.s:35:9: Error: Symbol 'testx' is already defined\n"
+        "test.s:36:14: Error: Symbol 'testx' is already defined\n", ""
+    },
+    /* 6 .eqv test 1 */
+    {   R"ffDXD(        z=5
+        .eqv v1,v+t
+        .eqv v,z*y
+        .int v1
+        .int v+v
+        z=8
+        .int v+v
+        z=9
+        y=3
+        t=7
+        .int v1
+        t=8
+        y=2
+        .int v1+v)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+           { 0x16, 0, 0, 0, 0x1e, 0, 0, 0, 0x30, 0, 0, 0, 0x22, 0, 0, 0,
+             0x2c, 0, 0, 0 } } },
+        {
+            { ".", 20, 0, 0, true, false, false, 0, 0 },
+            { "t", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "v", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "v1", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "y", 2, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z", 9, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 7 .eqv test 2 */
+    {   R"ffDXD(.int y+7
+        t=8
+        tx=3
+        .eqv y,t*tx+2
+        
+        .int y2+7
+        t2=8
+        .eqv y2,t2*tx2+3
+        tx2=5
+        
+        n1=7
+        n2=6
+        .eqv out0,n1*n2+2
+        .int out0
+        n2=5
+        .int out0
+        
+        t2=3
+        t3=4
+        .eqv x0,2*t2*t3
+        .eqv out1,x0*2
+        .int out1
+        
+        .eqv x1,2
+        .eqv out2,x1*2
+        .int out2)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+           { 0x21, 0, 0, 0, 0x32, 0, 0, 0, 0x2c, 0, 0, 0, 0x25, 0, 0, 0,
+             0x30, 0, 0, 0, 0x04, 0, 0, 0 } } },
+        {
+            { ".", 24, 0, 0, true, false, false, 0, 0 },
+            { "n1", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "n2", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "out0", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "out1", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "out2", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "t", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "t2", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "t3", 4, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "tx", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "tx2", 5, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x0", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x1", 2, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "y", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "y2", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 }
+        }, true, "", ""
+    },
+    /* 8 .eqv test3 - various order of .eqv */
+    {   R"ffDXD(x00t = 6
+            x00u = x00t+9
+            .eqv x03,6
+            .eqv x02,x03+2*x03+x00u
+            .eqv x01,x02*x02+x00t
+            x00 = x01+x02*x03
+            .int x00
+            z00 = x00
+            
+            x10u = x10t+11
+            x10t = 8
+            .eqv x12,x13+2*x13+x10u
+            .eqv x13,14
+            .eqv x11,x12*x12+x10t
+            x10 = x11+x12*x13
+            .int x10
+            z10 = x10
+            
+            x20u = x20t+3
+            x20t = 11
+            .eqv x21,x22*x22+x20t
+            .eqv x22,x23+2*x23+x20u
+            .eqv x23,78
+            x20 = x21+x22*x23
+            .int x20
+            z20 = x20
+            
+            x30u = x30t+21
+            x30t = 31
+            x30 = x31+x32*x33
+            .eqv x31,x32*x32+x30t
+            .eqv x32,x33+2*x33+x30u
+            .eqv x33,5
+            .int x30
+            z30 = x30
+            
+            z40 = x40
+            .int x40
+            x40u = x40t+71
+            x40t = 22
+            x40 = x41+x42*x43
+            .eqv x41,x42*x42+x40t
+            .eqv x42,x43+2*x43+x40u
+            .eqv x43,12
+            
+            z50 = x50
+            .int x50
+            x50t = 15
+            x50 = x51+x52*x53
+            .eqv x51,x52*x52+x50t
+            .eqv x52,x53+2*x53+x50u
+            .eqv x53,23
+            x50u = x50t+19
+            )ffDXD", /* TODO: GNU as incorrectly calculates x40 and x50 symbols */
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+           { 0x0d, 0x5, 0, 0, 0xe7, 0x11, 0, 0, 0xdb, 0x3b, 1, 0, 0xf7, 0x12, 0, 0,
+             0x23, 0x47, 0, 0, 0xc1, 0x32, 0, 0 } } },
+        {
+            { ".", 24, 0, 0, true, false, false, 0, 0 },
+            { "x00", 1293, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x00t", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x00u", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x01", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x02", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x03", 6, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "x10", 4583, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x10t", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x10u", 19, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x11", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x12", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x13", 14, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "x20", 80859, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x20t", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x20u", 14, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x21", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x22", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x23", 78, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "x30", 4855, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x30t", 31, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x30u", 52, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x31", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x32", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x33", 5, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "x40", 18211, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x40t", 22, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x40u", 93, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x41", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x42", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x43", 12, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "x50", 12993, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x50t", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x50u", 34, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x51", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x52", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x53", 23, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "z00", 1293, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z10", 4583, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z20", 80859, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z30", 4855, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z40", 18211, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z50", 12993, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 9 .eqv test3 - various order of .eqv */
+    {   R"ffDXD(x00t = 6
+            x00u = x00t+9
+            .eqv x03,x00u*x00t+6
+            .eqv x02,x03+2*x03+x00u
+            .eqv x01,x02*x02+x00t
+            x00 = x01+x02*x03
+            .int x00
+            z00 = x00
+            
+            x10u = x10t+11
+            x10t = 8
+            .eqv x12,x13+2*x13+x10u
+            .eqv x13,x10u*x10t+14
+            .eqv x11,x12*x12+x10t
+            x10 = x11+x12*x13
+            .int x10
+            z10 = x10
+            
+            x20u = x20t+3
+            x20t = 11
+            .eqv x21,x22*x22+x20t
+            .eqv x22,x23+2*x23+x20u
+            .eqv x23,x20u*x20t+78
+            x20 = x21+x22*x23
+            .int x20
+            z20 = x20
+            
+            x30u = x30t+21
+            x30t = 31
+            x30 = x31+x32*x33
+            .eqv x31,x32*x32+x30t
+            .eqv x32,x33+2*x33+x30u
+            .eqv x33,x30u*x30t+5
+            .int x30
+            z30 = x30
+            
+            z40 = x40
+            .int x40
+            x40u = x40t+71
+            x40t = 22
+            x40 = x41+x42*x43
+            .eqv x41,x42*x42+x40t
+            .eqv x42,x43+2*x43+x40u
+            .eqv x43,x40u*x40t+12
+            
+            z50 = x50
+            .int x50
+            x50t = 15
+            x50 = x51+x52*x53
+            .eqv x51,x52*x52+x50t
+            .eqv x52,x53+2*x53+x50u
+            .eqv x53,x50u*x50t+23
+            x50u = x50t+19
+            )ffDXD", /* TODO: GNU as incorrectly calculates x40 and x50 symbols */
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+           { 0x47, 0xd8, 0x01, 0x00, 0x5f, 0x63, 0x05, 0x00, 0x9f, 0x34, 0x0a, 0x00,
+             0x67, 0xc9, 0xe7, 0x01, 0xfd, 0x17, 0x1c, 0x03, 0xc5, 0xf8, 0x35, 0x00 } } },
+        {
+            { ".", 24, 0, 0, true, false, false, 0, 0 },
+            { "x00", 120903U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x00t", 6, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x00u", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x01", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x02", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x03", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x10", 353119U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x10t", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x10u", 19, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x11", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x12", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x13", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x20", 668831U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x20t", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x20u", 14, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x21", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x22", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x23", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x30", 31967591U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x30t", 31, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x30u", 52, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x31", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x32", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x33", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x40", 52172797U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x40t", 22, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x40u", 93, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x41", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x42", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x43", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x50", 3537093U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x50t", 15, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x50u", 34, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "x51", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x52", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "x53", 0, ASMSECT_ABS, 0, false, true, true, 0, 0 },
+            { "z00", 120903U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z10", 353119U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z20", 668831U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z30", 31967591U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z40", 52172797U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "z50", 3537093U, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
     }
 };
 
