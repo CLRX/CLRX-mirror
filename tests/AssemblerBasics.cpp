@@ -202,7 +202,9 @@ start:  # try define again this same label
         .set myval,8    # legal
         .equ myval,9    # legal
         testx = 566
-        .set testx,55)ffDXD",
+        .set testx,55
+testx:
+        )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::RAWCODE_CODE,
             { 0xfa, 0xfd, 0xfb, 0xda, 0x09, 0x09, 0x0a, 0x0a, 0x0a, 0x0b, 0x64, 0x64,
@@ -226,7 +228,8 @@ start:  # try define again this same label
         "test.s:30:16: Error: Symbol 'myval' is already defined\n"
         "test.s:31:16: Error: Symbol 'myval' is already defined\n"
         "test.s:35:9: Error: Symbol 'testx' is already defined\n"
-        "test.s:36:14: Error: Symbol 'testx' is already defined\n", ""
+        "test.s:36:14: Error: Symbol 'testx' is already defined\n"
+        "test.s:37:1: Error: Symbol 'testx' is already defined\n", ""
     },
     /* 6 .eqv test 1 */
     {   R"ffDXD(        z=5

@@ -1047,7 +1047,7 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    size_t value;
+    uint64_t value;
     cxuint sectionId;
     const char* valStr = string;
     if (!getRelativeValueArg(asmr, value, sectionId, string))
