@@ -204,6 +204,10 @@ start:  # try define again this same label
         testx = 566
         .set testx,55
 testx:
+        lab1 = 656
+        .set lab2, 594
+        .set lab3, 551
+lab1: lab2: lab3: # reassign by labels is legal
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::RAWCODE_CODE,
@@ -213,12 +217,15 @@ testx:
             { ".", 16, 0, 0, true, false, false, 0, 0 },
             { "1b", 6, 0, 0, true, false, false, 0, 0 },
             { "1f", 6, 0, 0, false, false, false, 0, 0 },
+            { "lab1", 16, 0, 0, true, true, false, 0, 0 },
+            { "lab2", 16, 0, 0, true, true, false, 0, 0 },
+            { "lab3", 16, 0, 0, true, true, false, 0, 0 },
             { "myval", 9, ASMSECT_ABS, 0, true, false, false, 0, 0, },
             { "start", 0, 0, 0, true, true, false, 0, 0 },
             { "testx", 130, ASMSECT_ABS, 0, true, true, false, 0, 0 },
             { "zx", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "zy", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
-            { "zz", 120, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+            { "zz", 120, ASMSECT_ABS, 0, true, false, false, 0, 0 },
         }, false,
         "test.s:3:1: Error: Symbol 'start' is already defined\n"
         "test.s:4:9: Error: Symbol 'start' is already defined\n"
@@ -247,9 +254,9 @@ testx:
         y=2
         .int v1+v)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
-        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
-           { 0x16, 0, 0, 0, 0x1e, 0, 0, 0, 0x30, 0, 0, 0, 0x22, 0, 0, 0,
-             0x2c, 0, 0, 0 } } },
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+          { 0x16, 0, 0, 0, 0x1e, 0, 0, 0, 0x30, 0, 0, 0, 0x22, 0, 0, 0,
+            0x2c, 0, 0, 0 } } },
         {
             { ".", 20, 0, 0, true, false, false, 0, 0 },
             { "t", 8, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -287,9 +294,9 @@ testx:
         .eqv out2,x1*2
         .int out2)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
-        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
-           { 0x21, 0, 0, 0, 0x32, 0, 0, 0, 0x2c, 0, 0, 0, 0x25, 0, 0, 0,
-             0x30, 0, 0, 0, 0x04, 0, 0, 0 } } },
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+          { 0x21, 0, 0, 0, 0x32, 0, 0, 0, 0x2c, 0, 0, 0, 0x25, 0, 0, 0,
+            0x30, 0, 0, 0, 0x04, 0, 0, 0 } } },
         {
             { ".", 24, 0, 0, true, false, false, 0, 0 },
             { "n1", 7, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -364,9 +371,9 @@ testx:
             x50u = x50t+19
             )ffDXD", /* TODO: GNU as incorrectly calculates x40 and x50 symbols */
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
-        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
-           { 0x0d, 0x5, 0, 0, 0xe7, 0x11, 0, 0, 0xdb, 0x3b, 1, 0, 0xf7, 0x12, 0, 0,
-             0x23, 0x47, 0, 0, 0xc1, 0x32, 0, 0 } } },
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+          { 0x0d, 0x5, 0, 0, 0xe7, 0x11, 0, 0, 0xdb, 0x3b, 1, 0, 0xf7, 0x12, 0, 0,
+            0x23, 0x47, 0, 0, 0xc1, 0x32, 0, 0 } } },
         {
             { ".", 24, 0, 0, true, false, false, 0, 0 },
             { "x00", 1293, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -469,9 +476,9 @@ testx:
             x50u = x50t+19
             )ffDXD", /* TODO: GNU as incorrectly calculates x40 and x50 symbols */
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
-        {  { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
-           { 0x47, 0xd8, 0x01, 0x00, 0x5f, 0x63, 0x05, 0x00, 0x9f, 0x34, 0x0a, 0x00,
-             0x67, 0xc9, 0xe7, 0x01, 0xfd, 0x17, 0x1c, 0x03, 0xc5, 0xf8, 0x35, 0x00 } } },
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+          { 0x47, 0xd8, 0x01, 0x00, 0x5f, 0x63, 0x05, 0x00, 0x9f, 0x34, 0x0a, 0x00,
+            0x67, 0xc9, 0xe7, 0x01, 0xfd, 0x17, 0x1c, 0x03, 0xc5, 0xf8, 0x35, 0x00 } } },
         {
             { ".", 24, 0, 0, true, false, false, 0, 0 },
             { "x00", 120903U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -517,6 +524,184 @@ testx:
             { "z40", 52172797U, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "z50", 3537093U, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
+    },
+    /* 10 .eqv - undefined snapshots */
+    {   R"ffDXD(            x00u = x00t+9
+            .eqv x02,x03+2*x03+x00u
+            .eqv x01,x02*x02+x00t
+            x00 = x01+x02*x03
+            .int x00+x00*x00
+            z00 = x00+x00*x00
+            
+            x10u = x10t+11
+            x10t = 8
+            .eqv x12,x13+2*x13+x10u
+            .eqv x11,x12*x12+x10t
+            x10 = x11+x12*x13
+            .int x10+x10+x10
+            
+            .int x20+x20+x20
+            x20u = x20t+3
+            .eqv x21,x22*x22+x20t
+            .eqv x22,x23+2*x23+x20u
+            .eqv x23,x20t+78
+            x20 = x21+x22*x23
+            
+            x30u = x30t+21
+            x30t = 31
+            x30 = x31+x32*x33
+            .eqv x31,x32*x32+x30t
+            .eqv x32,x33+2*x33+x30u
+            .int x10+x20+x30*x30
+            .int x30
+            z30 = x10+x20+x30*x30
+        )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } } },
+        {
+            { ".", 20U, 0, 0, true, false, false, 0, 0 },
+            { "x00", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x00t", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x00u", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x01", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x02", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x03", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x10", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x10t", 8U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x10u", 19U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x11", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x12", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x13", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x20", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x20t", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x20u", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x21", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x22", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x23", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x30", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x30t", 31U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x30u", 52U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x31", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x32", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x33", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "z00", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "z30", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 11 .eqv - reassign trials */
+    {   R"ffDXD(            .eqv x0, 5
+            .set x0, 56
+            .equ x0, 53
+            x0 = 51
+x0:
+            .eqv x1, x1_1<<1
+            .set x1, 56
+            .equ x1, 53
+            x1 = 51
+x1:
+            x1_1 = 74
+            .int x1
+            
+            .int x2
+            .eqv x2, x2_1<<1
+            .set x2, 56
+            .equ x2, 53
+            x2 = 51
+x2:
+            x2_1 = 7)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 0x94, 0, 0, 0, 0xe, 0, 0, 0 } } },
+        {
+            { ".", 8U, 0, 0U, true, false, false, 0, 0 },
+            { "x0", 5U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "x1", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x1_1", 74U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x2_1", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        false, R"ffDXD(test.s:2:18: Error: Symbol 'x0' is already defined
+test.s:3:18: Error: Symbol 'x0' is already defined
+test.s:4:13: Error: Symbol 'x0' is already defined
+test.s:5:1: Error: Symbol 'x0' is already defined
+test.s:7:18: Error: Symbol 'x1' is already defined
+test.s:8:18: Error: Symbol 'x1' is already defined
+test.s:9:13: Error: Symbol 'x1' is already defined
+test.s:10:1: Error: Symbol 'x1' is already defined
+test.s:16:18: Error: Symbol 'x2' is already defined
+test.s:17:18: Error: Symbol 'x2' is already defined
+test.s:18:13: Error: Symbol 'x2' is already defined
+test.s:19:1: Error: Symbol 'x2' is already defined
+)ffDXD", ""
+    },
+    /* 12 - .eqv evaluation */
+    {   R"ffDXD(            .eqv t0, x0<<65
+            x0 = 6
+            .eqv t00, t0+t0
+            .int t00
+            
+            .eqv t1, t2<<65
+            .eqv t2, x1<<67
+            x1 = 5
+            .eqv t20, t1+t1
+            .int t20)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 0, 0, 0, 0, 0, 0, 0, 0 } } },
+        {
+            { ".", 8U, 0, 0U, true, false, false, 0, 0 },
+            { "t0", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "t00", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "t1", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "t2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "t20", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x0", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x1", 5U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+        },
+        true, R"ffDXD(Expression evaluation from test.s:3:22:
+                      from test.s:4:18:
+test.s:1:24: Warning: Shift count out of range (between 0 and 63)
+Expression evaluation from test.s:6:21:
+                      from test.s:9:22:
+                      from test.s:10:18:
+test.s:7:24: Warning: Shift count out of range (between 0 and 63)
+Expression evaluation from test.s:9:22:
+                      from test.s:10:18:
+test.s:6:24: Warning: Shift count out of range (between 0 and 63)
+)ffDXD", ""
+    },
+    /* 13 - .eqv */
+    {   R"ffDXD(            .int x00+x01+x00
+            a00 = 3
+            a01 = 7
+            a02 = 0
+            .eqv x00,a00*a01
+            .eqv x01,a00/a02
+            
+            .int x10+x11+x10
+            .eqv x10,a10*a11
+            .eqv x11,a10/a12
+            a10 = 3
+            a11 = 7
+            a12 = 0)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 0, 0, 0, 0, 0, 0, 0, 0 } } },
+        {
+            { ".", 8U, 0, 0U, true, false, false, 0, 0 },
+            { "a00", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "a01", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "a02", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "a10", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "a11", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "a12", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x00", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x01", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x10", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x11", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 }
+        },
+        false, "Expression evaluation from test.s:1:18:\n"
+        "test.s:6:25: Error: Division by zero\n"
+        "Expression evaluation from test.s:8:18:\n"
+        "test.s:10:25: Error: Division by zero\n", ""
     }
 };
 
