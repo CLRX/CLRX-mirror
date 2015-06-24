@@ -111,7 +111,7 @@ struct CLRX_INTERNAL AsmPseudoOps
     static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& string,
                     bool requredExpr = false);
     
-    static bool getRelativeValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
+    static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
                     const char*& string);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
@@ -215,7 +215,7 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     return true;
 }
 
-bool AsmPseudoOps::getRelativeValueArg(Assembler& asmr, uint64_t& value,
+bool AsmPseudoOps::getAnyValueArg(Assembler& asmr, uint64_t& value,
                    cxuint& sectionId, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -236,12 +236,6 @@ bool AsmPseudoOps::getRelativeValueArg(Assembler& asmr, uint64_t& value,
     }
     if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
         return false;
-    else if (sectionId == ASMSECT_ABS)
-    {   // if not absolute value
-        asmr.printError(exprStr, "Expression must be relative!");
-        return false;
-    }
-    
     return true;
 }
 
@@ -1062,10 +1056,11 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     uint64_t value;
-    cxuint sectionId;
+    cxuint sectionId = ASMSECT_ABS;
     const char* valStr = string;
-    if (!getRelativeValueArg(asmr, value, sectionId, string))
+    if (!getAnyValueArg(asmr, value, sectionId, string))
         return;
+        
     uint64_t fillValue = 0;
     bool haveComma;
     if (!skipComma(asmr, haveComma, string))

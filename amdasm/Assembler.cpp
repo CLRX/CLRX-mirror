@@ -1362,6 +1362,21 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         return false;
     }
     
+    if (symbolName == ".")
+    {   // assigning '.'
+        uint64_t value;
+        cxuint sectionId;
+        if (!expr->evaluate(*this, value, sectionId))
+            return false;
+        if (expr->getSymOccursNum()==0)
+            return assignOutputCounter(stringAtSymbol, value, sectionId);
+        else
+        {
+            printError(stringAtSymbol, "Symbol '.' requires a resolved expression");
+            return false;
+        }
+    }
+    
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symbolName, AsmSymbol() });
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
@@ -1382,21 +1397,11 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         if (!expr->evaluate(*this, value, sectionId))
             return false;
         
-        if (symEntry.first == ".") // assigning '.'
-            assignOutputCounter(stringAtSymbol, value, sectionId);
-        else
-        {
-            setSymbol(symEntry, value, sectionId);
-            symEntry.second.onceDefined = !reassign;
-        }
+        setSymbol(symEntry, value, sectionId);
+        symEntry.second.onceDefined = !reassign;
     }
     else // set expression
     {
-        if (symEntry.first == ".")
-        {
-            printError(stringAtSymbol, "Symbol '.' requires a resolved expression");
-            return false;
-        }
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second.expression = expr.release();
         symEntry.second.isDefined = false;
@@ -1424,7 +1429,8 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
 bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
             cxuint sectionId, cxbyte fillValue)
 {
-    if (currentSection != sectionId)
+    initializeOutputFormat();
+    if (currentSection != sectionId && sectionId != ASMSECT_ABS)
     {
         printError(symbolStr, "Illegal section change for symbol '.'");
         return false;
