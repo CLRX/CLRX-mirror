@@ -807,9 +807,21 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
             asmr.printError(symNameStr, "Expected symbol name");
             good = false;
         }
+        else if (symEntry->second.base)
+        {
+            asmr.printError(symNameStr,
+                "Symbol must not be set by .eqv pseudo-op or must be constant");
+            good = false;
+        }
+        
         if (good)
-            symEntry->second.info = ELF32_ST_INFO(bind,
+        {
+            if (symEntry->first != ".")
+                symEntry->second.info = ELF32_ST_INFO(bind,
                       ELF32_ST_TYPE(symEntry->second.info));
+            else
+                asmr.printWarning(symNameStr, "Symbol '.' is ignored");
+        }
         if (!skipComma(asmr, haveComma, string))
             return;
     }
@@ -838,6 +850,18 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
     // parse size
     uint64_t size;
     good &= getAbsoluteValueArg(asmr, size, string, true);
+    if (symEntry->second.base)
+    {
+        asmr.printError(symNameStr,
+                "Symbol must not be set by .eqv pseudo-op or must be constant");
+        good = false;
+    }
+    else if (symEntry->first == ".")
+    {
+        asmr.printWarning(symNameStr, "Symbol '.' is ignored");
+        return;
+    }
+    
     if (good)
         symEntry->second.size = size;
 }
@@ -1060,7 +1084,7 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     const char* valStr = string;
     if (!getAnyValueArg(asmr, value, sectionId, string))
         return;
-        
+    
     uint64_t fillValue = 0;
     bool haveComma;
     if (!skipComma(asmr, haveComma, string))

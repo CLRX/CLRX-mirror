@@ -1345,8 +1345,10 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
              const char* string, bool reassign, bool baseExpr)
 {
     const char* exprStr = string;
+    // make base expr if baseExpr=true and symbolName is not output counter
+    bool makeBaseExpr = (baseExpr && symbolName != ".");
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
-                    *this, string, string, baseExpr));
+                    *this, string, string, makeBaseExpr));
     string = skipSpacesToEnd(string, line+lineSize);
     if (!expr) // no expression, errors
         return false;

@@ -1015,6 +1015,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
         true, "test.s:5:22: Warning: Value 0xffffffffffffff03 truncated to 0x3\n"
         "test.s:7:23: Warning: Value 0xffffffffffffff03 truncated to 0x3\n", ""
     },
+    /* 19 - .org and '.' */
     {   R"ffDXD(. = 1
             .int 2,3
             .org .+6
@@ -1027,7 +1028,9 @@ test.s:12:30: Warning: No floating point literal, zero has been put
             .int 77
             .equiv .,.+6
             .int 21
-            .org 80,0xfa)ffDXD",
+            .org 80,0xfa
+            .org .+4,0xcdaaa
+            .eqv .,.+6)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
             {
@@ -1040,10 +1043,101 @@ test.s:12:30: Warning: No floating point literal, zero has been put
                 0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0xfa,
                 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa,
                 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa,
-                0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa
+                0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa,
+                0xaa, 0xaa, 0xaa, 0xaa, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00
             } } },
-        { { ".", 80U, 0, 0U, true, false, false, 0, 0 } },
-        true, "", ""
+        { { ".", 90U, 0, 0U, true, false, false, 0, 0 } },
+        true, "test.s:14:22: Warning: Value 0xcdaaa truncated to 0xaa\n", ""
+    },
+    /* 20 - .org and '.' (rawcode) */
+    {   R"ffDXD(.rawcode
+            . = 1
+            .int 2,3
+            .org .+6
+            .int 12
+            . = .+6
+            .int 23
+            .set .,.+4
+            .int 65
+            .equ .,.+4
+            .int 77
+            .equiv .,.+6
+            .int 21
+            .org 80,0xfa
+            .org .+4,0xcdaaa
+            .eqv .,.+6)ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::RAWCODE_CODE,
+            {
+                0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x4d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00, 0xfa,
+                0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa,
+                0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa,
+                0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfa,
+                0xaa, 0xaa, 0xaa, 0xaa, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00
+            } } },
+        { { ".", 90U, 0, 0U, true, false, false, 0, 0 } },
+        true, "test.s:15:22: Warning: Value 0xcdaaa truncated to 0xaa\n", ""
+    },
+    /* 21 - globals, locals and sizes */
+    {   R"ffDXD(            .global x1, xx2,ddx
+            v0 = 10
+            v1 = 11
+            v2 = 33
+vl:
+            .global v0,v1,v2,vl
+            .local lx1, lxx2,lddx
+            lv0 = 10
+            lv1 = 11
+            lv2 = 33
+lvl:
+            .local lv0,lv1,lv2,lvl
+            .weak wx1, wxx2,wddx
+            wv0 = 10
+            wv1 = 11
+            wv2 = 33
+wvl:
+            .weak wv0,wv1,wv2,wvl
+            .size wv0,5
+            .size v1,7
+            .eqv ddvt,77
+            .global ddvt,.,ddvt
+            .size .,55)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { } } },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "ddvt", 77U, ASMSECT_ABS, 0U, true, true, false, 16, 0 },
+            { "ddx", 0U, ASMSECT_ABS, 0U, false, false, false, 16, 0 },
+            { "lddx", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "lv0", 10U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "lv1", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "lv2", 33U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "lvl", 0U, 0, 0U, true, true, false, 0, 0 },
+            { "lx1", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "lxx2", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "v0", 10U, ASMSECT_ABS, 0U, true, false, false, 16, 0 },
+            { "v1", 11U, ASMSECT_ABS, 7U, true, false, false, 16, 0 },
+            { "v2", 33U, ASMSECT_ABS, 0U, true, false, false, 16, 0 },
+            { "vl", 0U, 0, 0U, true, true, false, 16, 0 },
+            { "wddx", 0U, ASMSECT_ABS, 0U, false, false, false, 32, 0 },
+            { "wv0", 10U, ASMSECT_ABS, 5U, true, false, false, 32, 0 },
+            { "wv1", 11U, ASMSECT_ABS, 0U, true, false, false, 32, 0 },
+            { "wv2", 33U, ASMSECT_ABS, 0U, true, false, false, 32, 0 },
+            { "wvl", 0U, 0, 0U, true, true, false, 32, 0 },
+            { "wx1", 0U, ASMSECT_ABS, 0U, false, false, false, 32, 0 },
+            { "wxx2", 0U, ASMSECT_ABS, 0U, false, false, false, 32, 0 },
+            { "x1", 0U, ASMSECT_ABS, 0U, false, false, false, 16, 0 },
+            { "xx2", 0U, ASMSECT_ABS, 0U, false, false, false, 16, 0 }
+        }, true, "test.s:22:26: Warning: Symbol '.' is ignored\n"
+            "test.s:23:19: Warning: Symbol '.' is ignored\n", ""
     }
 };
 
