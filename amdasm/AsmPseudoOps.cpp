@@ -681,10 +681,23 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         UInt128 value = { 0, 0 };
         if (string != end && *string != ',')
         {
+            bool negative = false;
+            if (*string == '+')
+                string++;
+            else if (*string == '-')
+            {
+                negative = true;
+                string++;
+            }
             try
             { value = cstrtou128CStyle(string, end, string); }
             catch(const ParseException& ex)
             { asmr.printError(string, ex.what()); }
+            if (negative)
+            {
+                value.hi = ~value.hi + (value.lo==0);
+                value.lo = -value.lo;
+            }
         }
         else // warning
             asmr.printWarning(string, "No 128-bit literal, zero has been put");
@@ -857,7 +870,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
-    const char* secondParamStr = string;
+    const char* thirdParamStr = string;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
@@ -867,21 +880,23 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
-            secondParamStr = string;
+            thirdParamStr = string;
             good &= getAbsoluteValueArg(asmr, value, string);
         }
     }
     if (!good) // if parsing failed
         return;
     
-    if (!_64bit && (value & (0xffffffffULL<<32))!=0)
-    {
-        asmr.printWarning(secondParamStr,
-                  ".fill pseudo-op truncates pattern to 32-bit value");
-        value &= 0xffffffffUL;
-    }
-    if (size == 0)
+    cxuint truncBits = std::min(uint64_t(8), size)<<3;
+    if (!_64bit)
+        truncBits = std::min(cxuint(32), truncBits);
+    if (size == 0) // no data to emit
         return;
+    if (truncBits < 64) // if print 
+        asmr.printWarningForRange(truncBits, value, asmr.getSourcePos(thirdParamStr));
+    if (!_64bit)
+        value &= 0xffffffffUL;
+    
     if (SIZE_MAX/size < repeat)
     {
         asmr.printError(pseudoStr, "Product of repeat and size is too big");
@@ -910,16 +925,17 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
+    const char* secondParamStr = string;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
+        secondParamStr = string;
         good &= getAbsoluteValueArg(asmr, value, string);
     }
     if (!good)
         return;
     
-    if ((value & ~uint64_t(0xff)) != 0)
-        asmr.printWarning(string, "Fill value is truncated to  8-bit value");
+    asmr.printWarningForRange(8, value, asmr.getSourcePos(secondParamStr));
     
     cxbyte* content = asmr.reserveData(size);
     ::memset(content, value&0xff, size);
@@ -964,8 +980,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
         alignment = (1ULL<< alignment);
     }
     
-    if ((value & ~uint64_t(0xff)) != 0)
-        asmr.printWarning(valueStr, "Fill value is truncated to 8-bit value");
+    asmr.printWarningForRange(8, value, asmr.getSourcePos(valueStr));
     if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
     {
         asmr.printError(alignStr, "Alignment is not power of 2");
@@ -1010,8 +1025,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     if (!good)
         return;
     
-    if ((value & ~((1ULL<<(sizeof(Word)<<3))-1)) != 0)
-        asmr.printWarning(valueStr, "Fill value is truncated to word");
+    asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valueStr));
     
     if (alignment == 0)
         return; // do nothing
@@ -1056,9 +1070,16 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     bool haveComma;
     if (!skipComma(asmr, haveComma, string))
         return;
+    const char* fillValueStr = string;
     if (haveComma) // optional fill argument
+    {
+        string = skipSpacesToEnd(string, end);
+        fillValueStr = string;
         if (!getAbsoluteValueArg(asmr, fillValue, string, true))
             return;
+    }
+    asmr.printWarningForRange(8, fillValue, asmr.getSourcePos(fillValueStr));
+    
     asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
 }
 
