@@ -1333,8 +1333,8 @@ bool Assembler::parsePseudoOps(const std::string firstName,
             std::string outStr;
             if (parseString(outStr, string, string))
             {
-                std::cout.write(outStr.c_str(), outStr.size());
-                std::cout.put('\n');
+                printStream.write(outStr.c_str(), outStr.size());
+                printStream.put('\n');
             }
             break;
         }

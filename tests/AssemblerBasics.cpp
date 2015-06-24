@@ -1138,6 +1138,28 @@ wvl:
             { "xx2", 0U, ASMSECT_ABS, 0U, false, false, false, 16, 0 }
         }, true, "test.s:22:26: Warning: Symbol '.' is ignored\n"
             "test.s:23:19: Warning: Symbol '.' is ignored\n", ""
+    },
+    /* 22 - messages */
+    {   R"ffDXD(            .print "to jest test"
+            .warning "o rety"
+            .error "aaarrrgggg!!!!"
+            .fail 510
+            .fail 110
+            .fail -1
+            .fail
+            .err
+            .abort)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false, R"ffDXD(test.s:2:13: Warning: o rety
+test.s:3:13: Error: aaarrrgggg!!!!
+test.s:4:13: Warning: .fail 510 encountered
+test.s:5:13: Error: .fail 110 encountered
+test.s:6:13: Error: .fail -1 encountered
+test.s:7:18: Error: Expected expression
+test.s:8:13: Error: .err encountered
+test.s:9:13: Error: Aborted!
+)ffDXD", "to jest test\n"
     }
 };
 
