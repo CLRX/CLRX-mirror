@@ -253,13 +253,10 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
         return false;
     }
     const char* nameStr = string;
-    if ((*string >= 'a' && *string <= 'z') || (*string >= 'A' && *string <= 'Z') ||
-            *string == '_')
+    if (isAlpha(*string) || *string == '_')
     {
         string++;
-        while (string != end && ((*string >= 'a' && *string <= 'z') ||
-           (*string >= 'A' && *string <= 'Z') || (*string >= '0' && *string <= '9') ||
-           *string == '_')) string++;
+        while (string != end && (isAlnum(*string) || *string == '_')) string++;
     }
     else
     {
@@ -555,7 +552,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
         return;
     while (true)
     {
-        const char* literalStr = string;
+        const char* exprStr = string;
         std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
         if (expr)
         {
@@ -572,13 +569,13 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
                     {
                         if (sizeof(T) < 8)
                             asmr.printWarningForRange(sizeof(T)<<3, value,
-                                         asmr.getSourcePos(literalStr));
+                                         asmr.getSourcePos(exprStr));
                         T out;
                         SLEV(out, value);
                         asmr.putData(sizeof(T), reinterpret_cast<const cxbyte*>(&out));
                     }
                     else
-                        asmr.printError(literalStr, "Expression must be absolute!");
+                        asmr.printError(exprStr, "Expression must be absolute!");
                 }
             }
             else // expression
