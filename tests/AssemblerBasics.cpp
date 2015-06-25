@@ -1109,7 +1109,9 @@ wvl:
             .size v1,7
             .eqv ddvt,77
             .global ddvt,.,ddvt
-            .size .,55)ffDXD",
+            .size .,55
+            # extern should ignored
+            .extern ala,ma,kota)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { } } },
         {
@@ -1195,7 +1197,8 @@ test.s:9:13: Error: Aborted!
             .size a1221, ;;;
             .extern ,,,,
             .print 23233
-            .error xxx)ffDXD",
+            .error xxx
+            .extern 65,88,,)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
             {
@@ -1353,6 +1356,10 @@ test.s:33:20: Error: Expected string
 test.s:33:20: Error: Garbages at end of line with pseudo-op
 test.s:34:20: Error: Expected string
 test.s:34:20: Error: Garbages at end of line with pseudo-op
+test.s:35:21: Error: Expected symbol name
+test.s:35:24: Error: Expected symbol name
+test.s:35:27: Error: Expected symbol name
+test.s:35:28: Error: Expected symbol name
 )ffDXD", ""
     },
     /* 24 - illegal output counter change 1 */
