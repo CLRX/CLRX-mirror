@@ -1160,6 +1160,200 @@ test.s:7:18: Error: Expected expression
 test.s:8:13: Error: .err encountered
 test.s:9:13: Error: Aborted!
 )ffDXD", "to jest test\n"
+    },
+    /* 22 - pseudo-ops errors */
+    {   R"ffDXD(            .byte 22,12+,  55,1*, 7, ;
+            .hword 22,12+,  55,1*, 7, ;
+            .short 22,12+,  55,1*, 7, ;
+            .word 22,12+,  55,1*, 7, ;
+            .int 22,12+,  55,1*, 7, ;
+            .long 22,12+,  55,1*, 7, ;
+            .long 22,12+,  55,1*, 7, ;
+            .long 111111111111111111111,333333,1111111111111111111111111111
+            .half 1.3544, 1.341e3, 1e10000, 76.233e, %
+            .float 1.3544, 1.341e3, 1e10000, 76.233e, %
+            .double 1.3544, 1.341e3, 1e10000, 76.233e, %
+            .octa 1233, ;
+            .ascii "aaa", "aaax", ::, 2344, '34'
+            .asciz "aaa", "aaax", ::, 2344, '34'
+            .string "aaa", "aaax", ::, 2344, '34'
+            .string16 "aaa", "aaax", ::, 2344, '34'
+            .string32 "aaa", "aaax", ::, 2344, '34'
+            .string64 "aaa", "aaax", ::, 2344, '34'
+            .fill ,,
+            .fillq ,,
+            .skip ,
+            .space ,,
+            .align 3,5,1
+            .balign 1,2,2
+            .p2align 634
+            .global ,,,
+            .local ,,,
+            .weak ,,,
+            .size 3343,aa
+            .size a1221, 
+            .size a1221, ;;;
+            .extern ,,,,
+            .print 23233
+            .error xxx)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x16, 0x37, 0x07, 0x00, 0x16, 0x00, 0x37, 0x00,
+                0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x37, 0x00,
+                0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+                0x37, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+                0x37, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+                0x37, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00,
+                0x37, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x6b, 0x3d, 0x3d, 0x65,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfb, 0x5c,
+                0xad, 0x3f, 0x00, 0xa0, 0xa7, 0x44, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x08, 0x3d, 0x9b, 0x55, 0x9f, 0xab,
+                0xf5, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf4,
+                0x94, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0xd1, 0x04, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61,
+                0x78, 0x61, 0x61, 0x61, 0x00, 0x61, 0x61, 0x61,
+                0x78, 0x00, 0x61, 0x61, 0x61, 0x00, 0x61, 0x61,
+                0x61, 0x78, 0x00, 0x61, 0x00, 0x61, 0x00, 0x61,
+                0x00, 0x00, 0x00, 0x61, 0x00, 0x61, 0x00, 0x61,
+                0x00, 0x78, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00,
+                0x00, 0x78, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x78, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 339U, 0, 0U, true, false, false, 0, 0 },
+            { "a1221", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "aa", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        },
+        false, R"ffDXD(test.s:1:25: Error: Missing primary expression
+test.s:1:33: Error: Missing primary expression
+test.s:1:38: Warning: No expression, zero has been put
+test.s:1:38: Error: Expected ',' before next value
+test.s:1:38: Error: Garbages at end of line with pseudo-op
+test.s:2:26: Error: Missing primary expression
+test.s:2:34: Error: Missing primary expression
+test.s:2:39: Warning: No expression, zero has been put
+test.s:2:39: Error: Expected ',' before next value
+test.s:2:39: Error: Garbages at end of line with pseudo-op
+test.s:3:26: Error: Missing primary expression
+test.s:3:34: Error: Missing primary expression
+test.s:3:39: Warning: No expression, zero has been put
+test.s:3:39: Error: Expected ',' before next value
+test.s:3:39: Error: Garbages at end of line with pseudo-op
+test.s:4:25: Error: Missing primary expression
+test.s:4:33: Error: Missing primary expression
+test.s:4:38: Warning: No expression, zero has been put
+test.s:4:38: Error: Expected ',' before next value
+test.s:4:38: Error: Garbages at end of line with pseudo-op
+test.s:5:24: Error: Missing primary expression
+test.s:5:32: Error: Missing primary expression
+test.s:5:37: Warning: No expression, zero has been put
+test.s:5:37: Error: Expected ',' before next value
+test.s:5:37: Error: Garbages at end of line with pseudo-op
+test.s:6:25: Error: Missing primary expression
+test.s:6:33: Error: Missing primary expression
+test.s:6:38: Warning: No expression, zero has been put
+test.s:6:38: Error: Expected ',' before next value
+test.s:6:38: Error: Garbages at end of line with pseudo-op
+test.s:7:25: Error: Missing primary expression
+test.s:7:33: Error: Missing primary expression
+test.s:7:38: Warning: No expression, zero has been put
+test.s:7:38: Error: Expected ',' before next value
+test.s:7:38: Error: Garbages at end of line with pseudo-op
+test.s:8:19: Error: Number out of range
+test.s:8:39: Error: Expected ',' before next value
+test.s:8:39: Error: Garbages at end of line with pseudo-op
+test.s:9:36: Error: Absolute value of number is too big
+test.s:9:45: Error: Garbages at floating point exponent
+test.s:9:54: Error: Floating point doesn't have value part!
+test.s:9:54: Error: Expected ',' before next value
+test.s:9:54: Error: Garbages at end of line with pseudo-op
+test.s:10:37: Error: Absolute value of number is too big
+test.s:10:46: Error: Garbages at floating point exponent
+test.s:10:55: Error: Floating point doesn't have value part!
+test.s:10:55: Error: Expected ',' before next value
+test.s:10:55: Error: Garbages at end of line with pseudo-op
+test.s:11:38: Error: Absolute value of number is too big
+test.s:11:47: Error: Garbages at floating point exponent
+test.s:11:56: Error: Floating point doesn't have value part!
+test.s:11:56: Error: Expected ',' before next value
+test.s:11:56: Error: Garbages at end of line with pseudo-op
+test.s:12:25: Error: Missing number
+test.s:12:25: Error: Expected ',' before next value
+test.s:12:25: Error: Garbages at end of line with pseudo-op
+test.s:13:35: Error: Expected string
+test.s:13:35: Error: Expected ',' before next value
+test.s:13:35: Error: Garbages at end of line with pseudo-op
+test.s:14:35: Error: Expected string
+test.s:14:35: Error: Expected ',' before next value
+test.s:14:35: Error: Garbages at end of line with pseudo-op
+test.s:15:36: Error: Expected string
+test.s:15:36: Error: Expected ',' before next value
+test.s:15:36: Error: Garbages at end of line with pseudo-op
+test.s:16:38: Error: Expected string
+test.s:16:38: Error: Expected ',' before next value
+test.s:16:38: Error: Garbages at end of line with pseudo-op
+test.s:17:38: Error: Expected string
+test.s:17:38: Error: Expected ',' before next value
+test.s:17:38: Error: Garbages at end of line with pseudo-op
+test.s:18:38: Error: Expected string
+test.s:18:38: Error: Expected ',' before next value
+test.s:18:38: Error: Garbages at end of line with pseudo-op
+test.s:19:19: Error: Expected expression
+test.s:20:20: Error: Expected expression
+test.s:22:21: Error: Garbages at end of line with pseudo-op
+test.s:23:20: Error: Alignment is not power of 2
+test.s:25:22: Error: Power of 2 of alignment is greater than 64
+test.s:26:21: Error: Expected symbol name
+test.s:26:22: Error: Expected symbol name
+test.s:26:23: Error: Expected symbol name
+test.s:26:24: Error: Expected symbol name
+test.s:27:20: Error: Expected symbol name
+test.s:27:21: Error: Expected symbol name
+test.s:27:22: Error: Expected symbol name
+test.s:27:23: Error: Expected symbol name
+test.s:28:19: Error: Expected symbol name
+test.s:28:20: Error: Expected symbol name
+test.s:28:21: Error: Expected symbol name
+test.s:28:22: Error: Expected symbol name
+test.s:29:19: Error: Expected symbol name
+test.s:29:24: Error: Expression has an unresolved symbols!
+test.s:30:26: Error: Expected expression
+test.s:31:26: Error: Expected expression
+test.s:31:26: Error: Garbages at end of line with pseudo-op
+test.s:32:21: Error: Expected symbol name
+test.s:32:22: Error: Expected symbol name
+test.s:32:23: Error: Expected symbol name
+test.s:32:24: Error: Expected symbol name
+test.s:32:25: Error: Expected symbol name
+test.s:33:20: Error: Expected string
+test.s:33:20: Error: Garbages at end of line with pseudo-op
+test.s:34:20: Error: Expected string
+test.s:34:20: Error: Garbages at end of line with pseudo-op
+)ffDXD", ""
     }
 };
 

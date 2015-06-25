@@ -593,7 +593,10 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
         if (string == end)
             break;
         if (*string != ',')
+        {
             asmr.printError(string, "Expected ',' before next value");
+            break;
+        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -642,22 +645,27 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
     while (true)
     {
         UIntType out = 0;
+        const char* literalString = string;
         if (string != end && *string != ',')
         {
             try
             { out = asmcstrtofCStyleLEV<UIntType>(string, end, string); }
             catch(const ParseException& ex)
-            { asmr.printError(string, ex.what()); }
+            { asmr.printError(literalString, ex.what()); }
         }
         else // warning
-            asmr.printWarning(string, "No floating point literal, zero has been put");
+            asmr.printWarning(literalString,
+                      "No floating point literal, zero has been put");
         
         asmr.putData(sizeof(UIntType), reinterpret_cast<const cxbyte*>(&out));
         string = skipSpacesToEnd(string, end); // spaces before ','
         if (string == end)
             break;
         if (*string != ',')
+        {
             asmr.printError(string, "Expected ',' before next value");
+            break;
+        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -675,6 +683,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         UInt128 value = { 0, 0 };
         if (string != end && *string != ',')
         {
+            const char* literalString = string;
             bool negative = false;
             if (*string == '+')
                 string++;
@@ -686,7 +695,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
             try
             { value = cstrtou128CStyle(string, end, string); }
             catch(const ParseException& ex)
-            { asmr.printError(string, ex.what()); }
+            { asmr.printError(literalString, ex.what()); }
             if (negative)
             {
                 value.hi = ~value.hi + (value.lo==0);
@@ -703,7 +712,10 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         if (string == end)
             break;
         if (*string != ',')
+        {
             asmr.printError(string, "Expected ',' before next value");
+            break;
+        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -727,7 +739,10 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
         if (string == end)
             break;
         if (*string != ',')
+        {
             asmr.printError(string, "Expected ',' before next value");
+            break;
+        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -758,7 +773,10 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
         if (string == end)
             break;
         if (*string != ',')
+        {
             asmr.printError(string, "Expected ',' before next value");
+            break;
+        }
         else
             string = skipSpacesToEnd(string+1, end);
     }
@@ -850,16 +868,19 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
     // parse size
     uint64_t size;
     good &= getAbsoluteValueArg(asmr, size, string, true);
-    if (symEntry->second.base)
+    if (symEntry != nullptr)
     {
-        asmr.printError(symNameStr,
-                "Symbol must not be set by .eqv pseudo-op or must be constant");
-        good = false;
-    }
-    else if (symEntry->first == ".")
-    {
-        asmr.printWarning(symNameStr, "Symbol '.' is ignored");
-        return;
+        if (symEntry->second.base)
+        {
+            asmr.printError(symNameStr,
+                    "Symbol must not be set by .eqv pseudo-op or must be constant");
+            good = false;
+        }
+        else if (symEntry->first == ".")
+        {
+            asmr.printWarning(symNameStr, "Symbol '.' is ignored");
+            return;
+        }
     }
     
     if (good)
