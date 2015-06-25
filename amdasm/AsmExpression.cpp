@@ -396,11 +396,11 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                             for (RelMultiply& r: relatives)
                                 if (r.sectionId == r2.sectionId)
                                 {
-                                    r.multiply -= r2.multiply;
+                                    r.multiply = r2.multiply - r.multiply;
                                     rfound = true;
                                 }
                            if (!rfound)
-                               relatives.push_back({-r2.multiply, r2.sectionId});
+                               relatives.push_back({r2.multiply, r2.sectionId});
                         }
                         // remove zeroes from relatives
                         relatives.resize(std::remove_if(relatives.begin(), relatives.end(),

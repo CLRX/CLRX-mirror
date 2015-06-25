@@ -902,26 +902,41 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     uint64_t repeat, size = 1, value = 0;
+    
+    const char* reptStr = string;
     bool good = getAbsoluteValueArg(asmr, repeat, string, true);
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
-    const char* thirdParamStr = string;
+    const char* sizeStr = string;
+    const char* fillValStr = string;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
+        sizeStr = string; //
         good &= getAbsoluteValueArg(asmr, size, string);
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
-            thirdParamStr = string;
+            fillValStr = string;
             good &= getAbsoluteValueArg(asmr, value, string);
         }
     }
     if (!good) // if parsing failed
         return;
+    
+    if (int64_t(repeat) < 0)
+    {
+        asmr.printWarning(reptStr, "Negative repeat has no effect");
+        return;
+    }
+    if (int64_t(size) < 0)
+    {
+        asmr.printWarning(sizeStr, "Negative size has no effect");
+        return;
+    }
     
     cxuint truncBits = std::min(uint64_t(8), size)<<3;
     if (!_64bit)
@@ -929,11 +944,11 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     if (size == 0) // no data to emit
         return;
     if (truncBits < 64) // if print 
-        asmr.printWarningForRange(truncBits, value, asmr.getSourcePos(thirdParamStr));
+        asmr.printWarningForRange(truncBits, value, asmr.getSourcePos(fillValStr));
     if (!_64bit)
         value &= 0xffffffffUL;
     
-    if (SIZE_MAX/size < repeat)
+    if (SSIZE_MAX/size < repeat)
     {
         asmr.printError(pseudoStr, "Product of repeat and size is too big");
         return;
@@ -957,21 +972,28 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     uint64_t size = 1, value = 0;
+    
+    const char* sizeStr = string;
     bool good = getAbsoluteValueArg(asmr, size, string);
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
-    const char* secondParamStr = string;
+    const char* fillValStr = string;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
-        secondParamStr = string;
+        fillValStr = string;
         good &= getAbsoluteValueArg(asmr, value, string);
     }
     if (!good)
         return;
     
-    asmr.printWarningForRange(8, value, asmr.getSourcePos(secondParamStr));
+    if (int64_t(size) < 0)
+    {
+        asmr.printWarning(sizeStr, "Negative size has no effect");
+        return;
+    }
+    asmr.printWarningForRange(8, value, asmr.getSourcePos(fillValStr));
     
     cxbyte* content = asmr.reserveData(size);
     ::memset(content, value&0xff, size);
@@ -1008,9 +1030,9 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     
     if (powerOf2)
     {
-        if (alignment >= 64)
+        if (alignment >= 63)
         {
-            asmr.printError(alignStr, "Power of 2 of alignment is greater than 64");
+            asmr.printError(alignStr, "Power of 2 of alignment is greater than 63");
             return;
         }
         alignment = (1ULL<< alignment);

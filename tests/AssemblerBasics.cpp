@@ -1161,7 +1161,7 @@ test.s:8:13: Error: .err encountered
 test.s:9:13: Error: Aborted!
 )ffDXD", "to jest test\n"
     },
-    /* 22 - pseudo-ops errors */
+    /* 23 - pseudo-ops errors */
     {   R"ffDXD(            .byte 22,12+,  55,1*, 7, ;
             .hword 22,12+,  55,1*, 7, ;
             .short 22,12+,  55,1*, 7, ;
@@ -1326,7 +1326,7 @@ test.s:19:19: Error: Expected expression
 test.s:20:20: Error: Expected expression
 test.s:22:21: Error: Garbages at end of line with pseudo-op
 test.s:23:20: Error: Alignment is not power of 2
-test.s:25:22: Error: Power of 2 of alignment is greater than 64
+test.s:25:22: Error: Power of 2 of alignment is greater than 63
 test.s:26:21: Error: Expected symbol name
 test.s:26:22: Error: Expected symbol name
 test.s:26:23: Error: Expected symbol name
@@ -1354,6 +1354,51 @@ test.s:33:20: Error: Garbages at end of line with pseudo-op
 test.s:34:20: Error: Expected string
 test.s:34:20: Error: Garbages at end of line with pseudo-op
 )ffDXD", ""
+    },
+    /* 24 - illegal output counter change 1 */
+    {   R"ffDXD(            . = -6
+            .org .-8
+            .org .-11
+            .set .,.-11
+            .int 1,2,4
+            . = 3
+            . = 7
+            . = .-6)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+              0x04, 0x00, 0x00, 0x00 } } },
+        { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:1:13: Error: Attempt to move backwards\n"
+        "test.s:2:18: Error: Attempt to move backwards\n"
+        "test.s:3:18: Error: Attempt to move backwards\n"
+        "test.s:4:18: Error: Attempt to move backwards\n"
+        "test.s:6:13: Error: Attempt to move backwards\n"
+        "test.s:7:13: Error: Attempt to move backwards\n"
+        "test.s:8:13: Error: Attempt to move backwards\n", ""
+    },
+    /* 25 - illegal output counter change 2 (rawcode) */
+    {   R"ffDXD(.rawcode
+            . = -6
+            .org .-8
+            .org .-11
+            .set .,.-11
+            .int 1,2,4
+            . = 3
+            . = 7
+            . = .-6)ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::RAWCODE_CODE,
+            { 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
+              0x04, 0x00, 0x00, 0x00 } } },
+        { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:2:13: Error: Attempt to move backwards\n"
+        "test.s:3:18: Error: Attempt to move backwards\n"
+        "test.s:4:18: Error: Attempt to move backwards\n"
+        "test.s:5:18: Error: Attempt to move backwards\n"
+        "test.s:7:13: Error: Attempt to move backwards\n"
+        "test.s:8:13: Error: Attempt to move backwards\n"
+        "test.s:9:13: Error: Attempt to move backwards\n", ""
     }
 };
 

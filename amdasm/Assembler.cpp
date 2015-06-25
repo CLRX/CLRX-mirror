@@ -1437,7 +1437,7 @@ bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
         printError(symbolStr, "Illegal section change for symbol '.'");
         return false;
     }
-    if (currentOutPos > value)
+    if (int64_t(currentOutPos) > int64_t(value))
     {
         printError(symbolStr, "Attempt to move backwards");
         return false;
