@@ -400,7 +400,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                                     rfound = true;
                                 }
                            if (!rfound)
-                               relatives.push_back({r2.multiply, r2.sectionId});
+                               relatives.push_back(r2);
                         }
                         // remove zeroes from relatives
                         relatives.resize(std::remove_if(relatives.begin(), relatives.end(),

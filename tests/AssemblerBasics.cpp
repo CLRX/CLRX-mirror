@@ -1399,6 +1399,23 @@ test.s:34:20: Error: Garbages at end of line with pseudo-op
         "test.s:7:13: Error: Attempt to move backwards\n"
         "test.s:8:13: Error: Attempt to move backwards\n"
         "test.s:9:13: Error: Attempt to move backwards\n", ""
+    },
+    /* negative repeats,sizes */
+    {   R"ffDXD(           .fill -7,0,45
+           .fill 6,-7,3
+           .fill -7,0,3
+           .fill 6,-7,43
+           .space -73,4
+           .skip -563,14)ffDXD",
+       BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, {  } } },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        true, "test.s:1:18: Warning: Negative repeat has no effect\n"
+        "test.s:2:20: Warning: Negative size has no effect\n"
+        "test.s:3:18: Warning: Negative repeat has no effect\n"
+        "test.s:4:20: Warning: Negative size has no effect\n"
+        "test.s:5:19: Warning: Negative size has no effect\n"
+        "test.s:6:18: Warning: Negative size has no effect\n", ""
     }
 };
 
