@@ -1273,26 +1273,32 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_AMD:
         case ASMOP_RAWCODE:
         case ASMOP_GALLIUM:
-            if (outFormatInitialized)
-                printError(string, "Output format type is already defined");
-            else
-                format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
-                    (pseudoOp == ASMOP_AMD) ? BinaryFormat::AMD :
-                    BinaryFormat::RAWCODE;
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, string))
+            {
+                if (outFormatInitialized)
+                    printError(string, "Output format type is already defined");
+                else
+                    format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
+                        (pseudoOp == ASMOP_AMD) ? BinaryFormat::AMD :
+                        BinaryFormat::RAWCODE;
+            }
             break;
         case ASMOP_CONFIG:
-            if (format == BinaryFormat::AMD)
+            if (AsmPseudoOps::checkGarbagesAtEnd(*this, string))
             {
-                initializeOutputFormat();
-                if (inGlobal)
-                    printError(string,
-                           "Configuration in global layout is illegal");
+                if (format == BinaryFormat::AMD)
+                {
+                    initializeOutputFormat();
+                    if (inGlobal)
+                        printError(string,
+                               "Configuration in global layout is illegal");
+                    else
+                        inAmdConfig = true; // inside Amd Config
+                }
                 else
-                    inAmdConfig = true; // inside Amd Config
+                    printError(string,
+                       "Configuration section only for AMD Catalyst binaries");
             }
-            else
-                printError(string,
-                   "Configuration section only for AMD Catalyst binaries");
             break;
         case ASMOP_DATA:
             break;
@@ -1462,8 +1468,11 @@ void Assembler::parsePseudoOps(const std::string firstName,
             std::string outStr;
             if (parseString(outStr, string, string))
             {
-                printStream.write(outStr.c_str(), outStr.size());
-                printStream.put('\n');
+                if (AsmPseudoOps::checkGarbagesAtEnd(*this, string))
+                {
+                    printStream.write(outStr.c_str(), outStr.size());
+                    printStream.put('\n');
+                }
             }
             break;
         }
