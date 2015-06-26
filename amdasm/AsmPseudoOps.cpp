@@ -1115,14 +1115,14 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
         if (alignment >= 63)
         {
             asmr.printError(alignStr, "Power of 2 of alignment is greater than 63");
-            return;
+            good = false;
         }
         alignment = (1ULL<< alignment);
     }
     if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
     {
         asmr.printError(alignStr, "Alignment is not power of 2");
-        return;
+        good = false;
     }
     
     bool haveComma = false;
@@ -1169,7 +1169,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     if (alignment != 0 && (1ULL<<(63-CLZ64(alignment))) != alignment)
     {
         asmr.printError(alignStr, "Alignment is not power of 2");
-        return;
+        good = false;
     }
     
     bool haveComma = false;
