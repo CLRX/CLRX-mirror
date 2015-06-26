@@ -1033,7 +1033,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
             good &= getAbsoluteValueArg(asmr, value, string);
         }
     }
-    if (int64_t(size) > 0 && SSIZE_MAX/size < repeat)
+    if (int64_t(size) > 0 && int64_t(repeat) > 0 && SSIZE_MAX/size < repeat)
     {
         asmr.printError(pseudoStr, "Product of repeat and size is too big");
         good = false;
