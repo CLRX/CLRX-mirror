@@ -810,10 +810,9 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
 void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bind)
 {
     const char* end = asmr.line + asmr.lineSize;
-    bool haveComma = true; // initial value
-    while (haveComma)
+    string = skipSpacesToEnd(string, end);
+    while (true)
     {
-        string = skipSpacesToEnd(string, end);
         const char* symNameStr = string;
         AsmSymbolEntry* symEntry;
         bool good = asmr.parseSymbol(string, string, symEntry, false);
@@ -837,8 +836,17 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
             else
                 asmr.printWarning(symNameStr, "Symbol '.' is ignored");
         }
-        if (!skipComma(asmr, haveComma, string))
-            return;
+        
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before symbol");
+            break;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
     }
 }
 
@@ -886,12 +894,21 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
 {
-    bool haveComma = true; // initial value
-    while (haveComma)
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    while (true)
     {
         asmr.skipSymbol(string, string);
-        if (!skipComma(asmr, haveComma, string))
-            return;
+        string = skipSpacesToEnd(string, end); // spaces before ','
+        if (string == end)
+            break;
+        if (*string != ',')
+        {
+            asmr.printError(string, "Expected ',' before symbol");
+            break;
+        }
+        else
+            string = skipSpacesToEnd(string+1, end);
     }
 }
 
@@ -1159,7 +1176,7 @@ bool Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_ABORT:
             printError(stmtStartStr, "Aborted!");
-            return good;
+            return false;
             break;
         case ASMOP_ALIGN:
         case ASMOP_BALIGN:
@@ -1246,6 +1263,7 @@ bool Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_ELSEIFNOTDEF:
             break;
         case ASMOP_END:
+            return false;
             break;
         case ASMOP_ENDIF:
             break;
