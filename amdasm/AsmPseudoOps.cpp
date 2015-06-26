@@ -38,6 +38,32 @@
 
 using namespace CLRX;
 
+static const char* offlinePseudoOpNamesTbl[] =
+{
+    "end", "endm", "endr",
+    "else", "elseif", "elseifb", "elseifc", "elseifdef",
+    "elseifeq", "elseifeqs", "elseifge", "elseifgt",
+    "elseifle", "elseiflt", "elseifnb", "elseifnc",
+    "elseifndef", "elseifne", "elseifnes", "elseifnotdef",
+    "if", "ifb", "ifc", "ifdef", "ifeq",
+    "ifeqs", "ifge", "ifgt", "ifle",
+    "iflt", "ifnb", "ifnc", "ifndef",
+    "ifne", "ifnes", "ifnotdef", "macro", "rept"
+};
+
+enum
+{
+    ASMCOP_END, ASMCOP_ENDM, ASMCOP_ENDR,
+    ASMCOP_ELSE, ASMCOP_ELSEIF, ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
+    ASMCOP_ELSEIFEQ, ASMCOP_ELSEIFEQS, ASMCOP_ELSEIFGE, ASMCOP_ELSEIFGT,
+    ASMCOP_ELSEIFLE, ASMCOP_ELSEIFLT, ASMCOP_ELSEIFNB, ASMCOP_ELSEIFNC,
+    ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES, ASMCOP_ELSEIFNOTDEF,
+    ASMCOP_IF, ASMCOP_IFB, ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
+    ASMCOP_IFEQS, ASMCOP_IFGE, ASMCOP_IFGT, ASMCOP_IFLE,
+    ASMCOP_IFLT, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
+    ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNOTDEF, ASMCOP_MACRO, ASMCOP_REPT
+};
+
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align",
@@ -105,6 +131,7 @@ namespace CLRX
 
 struct CLRX_INTERNAL AsmPseudoOps
 {
+    static bool checkGarbagesAtEnd(Assembler& asmr, const char* string);
     /* parsing helpers */
     /* get absolute value arg resolved at this time.
        if empty expression value is not set */
@@ -182,6 +209,17 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void doOrganize(Assembler& asmr, const char*& string);
 };
+
+bool AsmPseudoOps::checkGarbagesAtEnd(Assembler& asmr, const char* string)
+{
+    string = skipSpacesToEnd(string, asmr.line + asmr.lineSize);
+    if (string != asmr.line + asmr.lineSize)
+    {
+        asmr.printError(string, "Garbages at end of line");
+        return false;
+    }
+    return true;
+}
 
 bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
                       const char*& string, bool requiredExpr)
@@ -288,12 +326,15 @@ inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char
 
 void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
 {
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
     if (asmr.outFormatInitialized)
         asmr.printError(string, "Bitness is already defined");
     else if (asmr.format != BinaryFormat::AMD)
         asmr.printWarning(string, "Bitness ignored for other formats than AMD Catalyst");
     else
         asmr._64bit = (_64Bit);
+    
 }
 
 void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
@@ -315,6 +356,8 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
         asmr.printError(string, "Unknown output format type");
     if (asmr.outFormatInitialized)
         asmr.printError(string, "Output format type is already defined");
+    
+    checkGarbagesAtEnd(asmr, string);
 }
 
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
@@ -326,6 +369,9 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
         std::string kernelName;
         if (!getNameArg(asmr, kernelName, string, "kernel name"))
             return;
+        if (!checkGarbagesAtEnd(asmr, string))
+            return;
+        
         if (asmr.format == BinaryFormat::AMD)
         {
             asmr.kernelMap.insert(std::make_pair(kernelName,
@@ -351,6 +397,9 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
     const char* nameStr = string;
     if (asmr.parseString(filename, string, string))
     {
+        if (!checkGarbagesAtEnd(asmr, string))
+            return;
+        
         bool failedOpen = false;
         filesystemPath(filename);
         try
@@ -414,7 +463,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
             good &= getAbsoluteValueArg(asmr, count, string);
         }
     }
-    if (!good) // failed parsing
+    if (!good || !checkGarbagesAtEnd(asmr, string)) // failed parsing
         return;
     
     if (count == 0)
@@ -502,6 +551,9 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& s
     uint64_t value = 0;
     if (!getAbsoluteValueArg(asmr, value, string, true))
         return;
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    
     char buf[50];
     ::memcpy(buf, ".fail ", 6);
     const size_t pos = 6+itocstrCStyle(int64_t(value), buf+6, 50-6);
@@ -521,6 +573,8 @@ void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoStr, const char
         std::string outStr;
         if (!asmr.parseString(outStr, string, string))
             return; // error
+        if (!checkGarbagesAtEnd(asmr, string))
+            return;
         asmr.printError(pseudoStr, outStr.c_str());
     }
     else
@@ -536,6 +590,8 @@ void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoStr, const ch
         std::string outStr;
         if (!asmr.parseString(outStr, string, string))
             return; // error
+        if (!checkGarbagesAtEnd(asmr, string))
+            return;
         asmr.printWarning(pseudoStr, outStr.c_str());
     }
     else
@@ -592,11 +648,14 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before next value");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 template<typename T> inline
@@ -661,11 +720,14 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before next value");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
@@ -711,11 +773,14 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before next value");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero)
@@ -738,11 +803,14 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before next value");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 template<typename T>
@@ -772,11 +840,14 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before next value");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign,
@@ -801,10 +872,8 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
         asmr.printError(string, "Expected expression");
         return;
     }
-    if (!good) // is not so good
-        return;
-    asmr.assignSymbol(symName, strAtSymName, string, reassign, baseExpr);
-    string = end;
+    if (good) // is not so good
+        asmr.assignSymbol(symName, strAtSymName, string, reassign, baseExpr);
 }
 
 void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bind)
@@ -843,11 +912,14 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before symbol");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
@@ -888,7 +960,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
         }
     }
     
-    if (good)
+    if (good && checkGarbagesAtEnd(asmr, string))
         symEntry->second.size = size;
 }
 
@@ -905,11 +977,14 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
         if (*string != ',')
         {
             asmr.printError(string, "Expected ',' before symbol");
+            string++;
             break;
         }
         else
             string = skipSpacesToEnd(string+1, end);
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
 }
 
 void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
@@ -941,7 +1016,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
             good &= getAbsoluteValueArg(asmr, value, string);
         }
     }
-    if (!good) // if parsing failed
+    if (!good || !checkGarbagesAtEnd(asmr, string)) // if parsing failed
         return;
     
     if (int64_t(repeat) < 0)
@@ -1002,7 +1077,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
         fillValStr = string;
         good &= getAbsoluteValueArg(asmr, value, string);
     }
-    if (!good)
+    if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
     if (int64_t(size) < 0)
@@ -1042,7 +1117,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
             good &= getAbsoluteValueArg(asmr, maxAlign, string);
         }
     }
-    if (!good) //if parsing failed
+    if (!good || !checkGarbagesAtEnd(asmr, string)) //if parsing failed
         return;
     
     if (powerOf2)
@@ -1097,7 +1172,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
             good &= getAbsoluteValueArg(asmr, maxAlign, string);
         }
     }
-    if (!good)
+    if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
     asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valueStr));
@@ -1156,12 +1231,15 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     }
     asmr.printWarningForRange(8, fillValue, asmr.getSourcePos(fillValueStr));
     
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    
     asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
 }
 
 };
 
-bool Assembler::parsePseudoOps(const std::string firstName,
+void Assembler::parsePseudoOps(const std::string firstName,
        const char* stmtStartStr, const char*& string)
 {
     const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
@@ -1176,7 +1254,7 @@ bool Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_ABORT:
             printError(stmtStartStr, "Aborted!");
-            return false;
+            endOfAssembly = true;
             break;
         case ASMOP_ALIGN:
         case ASMOP_BALIGN:
@@ -1263,7 +1341,7 @@ bool Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_ELSEIFNOTDEF:
             break;
         case ASMOP_END:
-            return false;
+            endOfAssembly = true;
             break;
         case ASMOP_ENDIF:
             break;
@@ -1449,5 +1527,78 @@ bool Assembler::parsePseudoOps(const std::string firstName,
             // macro substitution
             break;
     }
+}
+
+/* skipping clauses */
+bool Assembler::skipClauses()
+{
+    while (readLine())
+    {
+        const char* string = line;
+        const char* end = line + lineSize;
+        string = skipSpacesToEnd(string, end);
+        if (string == end || *string != '.')
+            continue;
+        
+        std::string pseudOpName = extractSymName(string, end, false);
+        
+        const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl, offlinePseudoOpNamesTbl +
+                    sizeof(offlinePseudoOpNamesTbl)/sizeof(char*), pseudOpName.c_str()+1,
+                   CStringLess()) - offlinePseudoOpNamesTbl;
+        switch(pseudoOp)
+        {
+            case ASMCOP_END:
+            case ASMCOP_ENDM:
+            case ASMCOP_ENDR:
+            case ASMCOP_ELSE:
+            case ASMCOP_ELSEIF:
+            case ASMCOP_ELSEIFB:
+            case ASMCOP_ELSEIFC:
+            case ASMCOP_ELSEIFDEF:
+            case ASMCOP_ELSEIFEQ:
+            case ASMCOP_ELSEIFEQS:
+            case ASMCOP_ELSEIFGE:
+            case ASMCOP_ELSEIFGT:
+            case ASMCOP_ELSEIFLE:
+            case ASMCOP_ELSEIFLT:
+            case ASMCOP_ELSEIFNB:
+            case ASMCOP_ELSEIFNC:
+            case ASMCOP_ELSEIFNDEF:
+            case ASMCOP_ELSEIFNE:
+            case ASMCOP_ELSEIFNES:
+            case ASMCOP_ELSEIFNOTDEF:
+            case ASMCOP_IF:
+            case ASMCOP_IFB:
+            case ASMCOP_IFC:
+            case ASMCOP_IFDEF:
+            case ASMCOP_IFEQ:
+            case ASMCOP_IFEQS:
+            case ASMCOP_IFGE:
+            case ASMCOP_IFGT:
+            case ASMCOP_IFLE:
+            case ASMCOP_IFLT:
+            case ASMCOP_IFNB:
+            case ASMCOP_IFNC:
+            case ASMCOP_IFNDEF:
+            case ASMCOP_IFNE:
+            case ASMCOP_IFNES:
+            case ASMCOP_IFNOTDEF:
+            case ASMCOP_MACRO:
+            case ASMCOP_REPT:
+                break;
+            default:
+                break;
+        }
+    }
+    return true;
+}
+
+bool Assembler::putMacroContent(AsmMacro& macro)
+{
+    return true;
+}
+
+bool Assembler::putRepetitionContent(AsmRepeat& repeat)
+{
     return true;
 }

@@ -230,7 +230,6 @@ lab1: lab2: lab3: # reassign by labels is legal
         "test.s:3:1: Error: Symbol 'start' is already defined\n"
         "test.s:4:9: Error: Symbol 'start' is already defined\n"
         "test.s:10:9: Error: Illegal number at statement begin\n"
-        "test.s:10:11: Error: Garbages at end of line with pseudo-op\n"
         "test.s:27:16: Error: Symbol 'testx' is already defined\n"
         "test.s:30:16: Error: Symbol 'myval' is already defined\n"
         "test.s:31:16: Error: Symbol 'myval' is already defined\n"
@@ -725,9 +724,7 @@ test.s:2:17: Error: Expected expression
 test.s:3:21: Error: Expected expression
 test.s:4:22: Error: Expected assignment expression
 test.s:5:1: Error: Illegal number at statement begin
-test.s:5:2: Error: Garbages at end of line with pseudo-op
 test.s:6:6: Error: Symbol 'aaa' is already defined
-test.s:7:15: Error: Garbages at end of line with pseudo-op
 test.s:8:23: Error: Garbages at end of expression
 test.s:9:30: Error: Garbages at end of expression
 )ffDXD", ""
@@ -1244,10 +1241,10 @@ test.s:9:13: Error: Aborted!
                 0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x78, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00
+                0x00, 0x00
             } } },
         {
-            { ".", 339U, 0, 0U, true, false, false, 0, 0 },
+            { ".", 338U, 0, 0U, true, false, false, 0, 0 },
             { "a1221", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
             { "aa", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
         },
@@ -1255,79 +1252,68 @@ test.s:9:13: Error: Aborted!
 test.s:1:33: Error: Missing primary expression
 test.s:1:38: Warning: No expression, zero has been put
 test.s:1:38: Error: Expected ',' before next value
-test.s:1:38: Error: Garbages at end of line with pseudo-op
 test.s:2:26: Error: Missing primary expression
 test.s:2:34: Error: Missing primary expression
 test.s:2:39: Warning: No expression, zero has been put
 test.s:2:39: Error: Expected ',' before next value
-test.s:2:39: Error: Garbages at end of line with pseudo-op
 test.s:3:26: Error: Missing primary expression
 test.s:3:34: Error: Missing primary expression
 test.s:3:39: Warning: No expression, zero has been put
 test.s:3:39: Error: Expected ',' before next value
-test.s:3:39: Error: Garbages at end of line with pseudo-op
 test.s:4:25: Error: Missing primary expression
 test.s:4:33: Error: Missing primary expression
 test.s:4:38: Warning: No expression, zero has been put
 test.s:4:38: Error: Expected ',' before next value
-test.s:4:38: Error: Garbages at end of line with pseudo-op
 test.s:5:24: Error: Missing primary expression
 test.s:5:32: Error: Missing primary expression
 test.s:5:37: Warning: No expression, zero has been put
 test.s:5:37: Error: Expected ',' before next value
-test.s:5:37: Error: Garbages at end of line with pseudo-op
 test.s:6:25: Error: Missing primary expression
 test.s:6:33: Error: Missing primary expression
 test.s:6:38: Warning: No expression, zero has been put
 test.s:6:38: Error: Expected ',' before next value
-test.s:6:38: Error: Garbages at end of line with pseudo-op
 test.s:7:25: Error: Missing primary expression
 test.s:7:33: Error: Missing primary expression
 test.s:7:38: Warning: No expression, zero has been put
 test.s:7:38: Error: Expected ',' before next value
-test.s:7:38: Error: Garbages at end of line with pseudo-op
 test.s:8:19: Error: Number out of range
 test.s:8:39: Error: Expected ',' before next value
-test.s:8:39: Error: Garbages at end of line with pseudo-op
+test.s:8:40: Error: Garbages at end of line
 test.s:9:36: Error: Absolute value of number is too big
 test.s:9:45: Error: Garbages at floating point exponent
 test.s:9:54: Error: Floating point doesn't have value part!
 test.s:9:54: Error: Expected ',' before next value
-test.s:9:54: Error: Garbages at end of line with pseudo-op
 test.s:10:37: Error: Absolute value of number is too big
 test.s:10:46: Error: Garbages at floating point exponent
 test.s:10:55: Error: Floating point doesn't have value part!
 test.s:10:55: Error: Expected ',' before next value
-test.s:10:55: Error: Garbages at end of line with pseudo-op
 test.s:11:38: Error: Absolute value of number is too big
 test.s:11:47: Error: Garbages at floating point exponent
 test.s:11:56: Error: Floating point doesn't have value part!
 test.s:11:56: Error: Expected ',' before next value
-test.s:11:56: Error: Garbages at end of line with pseudo-op
 test.s:12:25: Error: Missing number
 test.s:12:25: Error: Expected ',' before next value
-test.s:12:25: Error: Garbages at end of line with pseudo-op
 test.s:13:35: Error: Expected string
 test.s:13:35: Error: Expected ',' before next value
-test.s:13:35: Error: Garbages at end of line with pseudo-op
+test.s:13:36: Error: Garbages at end of line
 test.s:14:35: Error: Expected string
 test.s:14:35: Error: Expected ',' before next value
-test.s:14:35: Error: Garbages at end of line with pseudo-op
+test.s:14:36: Error: Garbages at end of line
 test.s:15:36: Error: Expected string
 test.s:15:36: Error: Expected ',' before next value
-test.s:15:36: Error: Garbages at end of line with pseudo-op
+test.s:15:37: Error: Garbages at end of line
 test.s:16:38: Error: Expected string
 test.s:16:38: Error: Expected ',' before next value
-test.s:16:38: Error: Garbages at end of line with pseudo-op
+test.s:16:39: Error: Garbages at end of line
 test.s:17:38: Error: Expected string
 test.s:17:38: Error: Expected ',' before next value
-test.s:17:38: Error: Garbages at end of line with pseudo-op
+test.s:17:39: Error: Garbages at end of line
 test.s:18:38: Error: Expected string
 test.s:18:38: Error: Expected ',' before next value
-test.s:18:38: Error: Garbages at end of line with pseudo-op
+test.s:18:39: Error: Garbages at end of line
 test.s:19:19: Error: Expected expression
 test.s:20:20: Error: Expected expression
-test.s:22:21: Error: Garbages at end of line with pseudo-op
+test.s:22:21: Error: Garbages at end of line
 test.s:23:20: Error: Alignment is not power of 2
 test.s:25:22: Error: Power of 2 of alignment is greater than 63
 test.s:26:21: Error: Expected symbol name
@@ -1346,16 +1332,13 @@ test.s:29:19: Error: Expected symbol name
 test.s:29:24: Error: Expression has an unresolved symbols!
 test.s:30:26: Error: Expected expression
 test.s:31:26: Error: Expected expression
-test.s:31:26: Error: Garbages at end of line with pseudo-op
 test.s:32:21: Error: Expected symbol name
 test.s:32:22: Error: Expected symbol name
 test.s:32:23: Error: Expected symbol name
 test.s:32:24: Error: Expected symbol name
 test.s:32:25: Error: Expected symbol name
 test.s:33:20: Error: Expected string
-test.s:33:20: Error: Garbages at end of line with pseudo-op
 test.s:34:20: Error: Expected string
-test.s:34:20: Error: Garbages at end of line with pseudo-op
 test.s:35:21: Error: Expected symbol name
 test.s:35:24: Error: Expected symbol name
 test.s:35:27: Error: Expected symbol name
@@ -1438,8 +1421,7 @@ test.s:35:28: Error: Expected symbol name
         false, "test.s:1:20: Warning: Shift count out of range (between 0 and 63)\n"
         "test.s:3:6: Warning: Shift count out of range (between 0 and 63)\n"
         "test.s:3:19: Warning: Shift count out of range (between 0 and 63)\n"
-        "test.s:8:5: Error: Expected ',' before next value\n"
-        "test.s:8:5: Error: Garbages at end of line with pseudo-op\n", ""
+        "test.s:8:5: Error: Expected ',' before next value\n", ""
     }
 };
 

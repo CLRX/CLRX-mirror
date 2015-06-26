@@ -702,7 +702,7 @@ public:
      */
     bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const;
     
-    /// parse expression (helper)
+    /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
      * \param linePos position in line
@@ -713,7 +713,7 @@ public:
     static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos,
                     bool makeBase = false);
     
-    /// parse expression (helper)
+    /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
      * \param linePlace string at position in line
@@ -799,11 +799,19 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
 };
 
-/// ???
-struct AsmCondClause
+enum AsmClauseType
 {
-    RefPtr<AsmMacroSubst> macroSubst;
-    std::vector<std::pair<AsmSourcePos, uint64_t> > positions;
+    IF,
+    ELSEIF,
+    REPEAT,
+    MACRO
+};
+
+/// ???
+struct AsmClause
+{
+    AsmClauseType type;
+    AsmSourcePos pos;
 };
 
 /// main class of assembler
@@ -839,10 +847,12 @@ private:
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
+    bool lineAlreadyRead; // if line already read
     
     size_t lineSize;
     const char* line;
     uint64_t lineNo;
+    bool endOfAssembly;
     
     std::stack<AsmInputFilter*> asmInputFilters;
     AsmInputFilter* currentInputFilter;
@@ -856,7 +866,7 @@ private:
         AsmSection* rawCode;
     };
     
-    std::stack<AsmCondClause> condClauses;
+    std::stack<AsmClause> clauses;
     
     bool outFormatInitialized;
     
@@ -909,8 +919,12 @@ private:
     bool assignOutputCounter(const char* symbolStr, uint64_t value, cxuint sectionId,
                      cxbyte fillValue = 0);
     
-    bool parsePseudoOps(const std::string firstName, const char* stmtStartString,
+    void parsePseudoOps(const std::string firstName, const char* stmtStartString,
                 const char*& string);
+    
+    bool skipClauses();
+    bool putMacroContent(AsmMacro& macro);
+    bool putRepetitionContent(AsmRepeat& repeat);
     
     void initializeOutputFormat();
     

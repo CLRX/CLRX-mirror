@@ -866,14 +866,15 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _f
         : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
-          lineSize(0), line(nullptr), lineNo(0), messageStream(msgStream),
-          printStream(_printStream), outFormatInitialized(false),
+          lineSize(0), line(nullptr), lineNo(0), endOfAssembly(false),
+          messageStream(msgStream), printStream(_printStream), outFormatInitialized(false),
           inGlobal(_format != BinaryFormat::RAWCODE),
           inAmdConfig(false), currentKernel(0),
           // value reference and section reference from first symbol: '.'
           currentSection(symbolMap.begin()->second.sectionId),
           currentOutPos(symbolMap.begin()->second.value)
 {
+    lineAlreadyRead = false;
     good = true;
     amdOutput = nullptr;
     input.exceptions(std::ios::badbit);
@@ -1588,8 +1589,20 @@ void Assembler::initializeOutputFormat()
 bool Assembler::assemble()
 {
     good = true;
-    while (readLine())
+    while (!endOfAssembly)
     {
+        if (!lineAlreadyRead)
+        {   // read line
+            if (!readLine())
+                break;
+        }
+        else
+        {   // already line is read
+            lineAlreadyRead = false;
+            if (line == nullptr)
+                break; // end of stream
+        }
+        
         const char* string = line; // string points to place of line
         const char* end = line+lineSize;
         string = skipSpacesToEnd(string, end);
@@ -1701,19 +1714,13 @@ bool Assembler::assemble()
         
         if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
         {
-            if (!parsePseudoOps(firstName, stmtStartStr, string))
-                return good;
+            parsePseudoOps(firstName, stmtStartStr, string);
         }
         else if (firstName.size() >= 1 && isDigit(firstName[0]))
             printError(stmtStartStr, "Illegal number at statement begin");
         else
         {   // try to parse processor instruction or macro substitution
         }
-        
-        // check garbages at line and print error
-        string = skipSpacesToEnd(string, end);
-        if (string != end) // garbages
-            printError(string, "Garbages at end of line with pseudo-op");
     }
     return good;
 }
