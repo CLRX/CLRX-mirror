@@ -446,31 +446,47 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     std::string filename;
     const char* nameStr = string;
-    uint64_t offset = 0, count = UINT64_MAX;
+    const char* offsetStr = string;
+    const char* countStr = string;
+    uint64_t offset = 0, count = INT64_MAX;
     bool good = asmr.parseString(filename, string, string);
     bool haveComma;
+    
     if (!skipComma(asmr, haveComma, string))
         return;
     if (haveComma)
     {
         string = skipSpacesToEnd(string, end);
+        offsetStr = string;
         good &= getAbsoluteValueArg(asmr, offset, string);
+        if (int64_t(offset) < 0)
+        {
+            asmr.printError(offsetStr, "Offset is negative!");
+            good = false;
+        }
+        
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
         {
             string = skipSpacesToEnd(string, end);
+            countStr = string;
             good &= getAbsoluteValueArg(asmr, count, string);
+            if (int64_t(count) < 0)
+            {
+                asmr.printError(countStr, "Count bytes is negative!");
+                good = false;
+            }
         }
     }
-    if (!good || !checkGarbagesAtEnd(asmr, string)) // failed parsing
-        return;
-    
     if (count == 0)
     {
         asmr.printWarning(nameStr, "Number of bytes is zero, ignoring .incbin");
         return;
     }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, string)) // failed parsing
+        return;
     
     std::ifstream ifs;
     filesystemPath(filename);
@@ -990,6 +1006,10 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     
     const char* reptStr = string;
     bool good = getAbsoluteValueArg(asmr, repeat, string, true);
+    
+    if (int64_t(repeat) < 0)
+        asmr.printWarning(reptStr, "Negative repeat has no effect");
+    
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -1000,6 +1020,10 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
         string = skipSpacesToEnd(string, end);
         sizeStr = string; //
         good &= getAbsoluteValueArg(asmr, size, string);
+        
+        if (int64_t(size) < 0)
+            asmr.printWarning(sizeStr, "Negative size has no effect");
+        
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
@@ -1009,35 +1033,27 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
             good &= getAbsoluteValueArg(asmr, value, string);
         }
     }
-    if (!good || !checkGarbagesAtEnd(asmr, string)) // if parsing failed
-        return;
-    
-    if (int64_t(repeat) < 0)
+    if (int64_t(size) > 0 && SSIZE_MAX/size < repeat)
     {
-        asmr.printWarning(reptStr, "Negative repeat has no effect");
-        return;
-    }
-    if (int64_t(size) < 0)
-    {
-        asmr.printWarning(sizeStr, "Negative size has no effect");
-        return;
+        asmr.printError(pseudoStr, "Product of repeat and size is too big");
+        good = false;
     }
     
     cxuint truncBits = std::min(uint64_t(8), size)<<3;
     if (!_64bit)
         truncBits = std::min(cxuint(32), truncBits);
-    if (size == 0) // no data to emit
-        return;
-    if (truncBits < 64) // if print 
+    if (truncBits != 0 && truncBits < 64) // if print 
         asmr.printWarningForRange(truncBits, value, asmr.getSourcePos(fillValStr));
+    
+    if (!good || !checkGarbagesAtEnd(asmr, string)) // if parsing failed
+        return;
+    
+    if (int64_t(repeat) <= 0 || int64_t(size) <= 0)
+        return;
+    
     if (!_64bit)
         value &= 0xffffffffUL;
     
-    if (SSIZE_MAX/size < repeat)
-    {
-        asmr.printError(pseudoStr, "Product of repeat and size is too big");
-        return;
-    }
     /* do fill */
     cxbyte* content = asmr.reserveData(size*repeat);
     const size_t valueSize = std::min(uint64_t(8), size);
@@ -1060,6 +1076,9 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     
     const char* sizeStr = string;
     bool good = getAbsoluteValueArg(asmr, size, string);
+    if (int64_t(size) < 0)
+        asmr.printWarning(sizeStr, "Negative size has no effect");
+    
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -1069,16 +1088,13 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
         string = skipSpacesToEnd(string, end);
         fillValStr = string;
         good &= getAbsoluteValueArg(asmr, value, string);
+        asmr.printWarningForRange(8, value, asmr.getSourcePos(fillValStr));
     }
     if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
     if (int64_t(size) < 0)
-    {
-        asmr.printWarning(sizeStr, "Negative size has no effect");
         return;
-    }
-    asmr.printWarningForRange(8, value, asmr.getSourcePos(fillValStr));
     
     cxbyte* content = asmr.reserveData(size);
     ::memset(content, value&0xff, size);
@@ -1093,6 +1109,22 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignStr = string;
     bool good = getAbsoluteValueArg(asmr, alignment, string, true);
+    
+    if (powerOf2)
+    {
+        if (alignment >= 63)
+        {
+            asmr.printError(alignStr, "Power of 2 of alignment is greater than 63");
+            return;
+        }
+        alignment = (1ULL<< alignment);
+    }
+    if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
+    {
+        asmr.printError(alignStr, "Alignment is not power of 2");
+        return;
+    }
+    
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -1102,6 +1134,8 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
         string = skipSpacesToEnd(string, end);
         valueStr = string;
         good &= getAbsoluteValueArg(asmr, value, string);
+        asmr.printWarningForRange(8, value, asmr.getSourcePos(valueStr));
+        
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
@@ -1113,22 +1147,6 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     if (!good || !checkGarbagesAtEnd(asmr, string)) //if parsing failed
         return;
     
-    if (powerOf2)
-    {
-        if (alignment >= 63)
-        {
-            asmr.printError(alignStr, "Power of 2 of alignment is greater than 63");
-            return;
-        }
-        alignment = (1ULL<< alignment);
-    }
-    
-    asmr.printWarningForRange(8, value, asmr.getSourcePos(valueStr));
-    if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
-    {
-        asmr.printError(alignStr, "Alignment is not power of 2");
-        return;
-    }
     uint64_t outPos = asmr.currentOutPos;
     const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
             alignment - (outPos&(alignment-1)) : 0;
@@ -1148,6 +1166,12 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignStr = string;
     bool good = getAbsoluteValueArg(asmr, alignment, string, true);
+    if (alignment != 0 && (1ULL<<(63-CLZ64(alignment))) != alignment)
+    {
+        asmr.printError(alignStr, "Alignment is not power of 2");
+        return;
+    }
+    
     bool haveComma = false;
     if (!skipComma(asmr, haveComma, string))
         return;
@@ -1157,6 +1181,8 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
         string = skipSpacesToEnd(string, end);
         valueStr = string;
         good &= getAbsoluteValueArg(asmr, value, string);
+        asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valueStr));
+        
         if (!skipComma(asmr, haveComma, string))
             return;
         if (haveComma)
@@ -1168,16 +1194,9 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
-    asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valueStr));
-    
     if (alignment == 0)
         return; // do nothing
     
-    if ((1ULL<<(63-CLZ64(alignment))) != alignment)
-    {
-        asmr.printError(alignStr, "Alignment is not power of 2");
-        return;
-    }
     uint64_t outPos = asmr.currentOutPos;
     if (outPos&(sizeof(Word)-1))
     {
@@ -1207,8 +1226,7 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     uint64_t value;
     cxuint sectionId = ASMSECT_ABS;
     const char* valStr = string;
-    if (!getAnyValueArg(asmr, value, sectionId, string))
-        return;
+    bool good = getAnyValueArg(asmr, value, sectionId, string);
     
     uint64_t fillValue = 0;
     bool haveComma;
@@ -1219,12 +1237,11 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     {
         string = skipSpacesToEnd(string, end);
         fillValueStr = string;
-        if (!getAbsoluteValueArg(asmr, fillValue, string, true))
-            return;
+        good = getAbsoluteValueArg(asmr, fillValue, string, true);
     }
     asmr.printWarningForRange(8, fillValue, asmr.getSourcePos(fillValueStr));
     
-    if (!checkGarbagesAtEnd(asmr, string))
+    if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
     asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
