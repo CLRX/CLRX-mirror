@@ -654,8 +654,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 template<typename T> inline
@@ -726,8 +725,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
@@ -779,8 +777,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero)
@@ -809,8 +806,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 template<typename T>
@@ -846,8 +842,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign,
@@ -918,8 +913,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
@@ -983,8 +977,7 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
         else
             string = skipSpacesToEnd(string+1, end);
     }
-    if (!checkGarbagesAtEnd(asmr, string))
-        return;
+    checkGarbagesAtEnd(asmr, string);
 }
 
 void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
