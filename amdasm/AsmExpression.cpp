@@ -89,13 +89,15 @@ AsmExpression::~AsmExpression()
     }
 }
 
-bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
+bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
+                             cxuint& outSectionId) const
 {
     if (symOccursNum != 0)
         throw Exception("Expression can't be evaluated if symbols still are unresolved!");
     
     bool failed = false;
-    value = 0; // by default is zero
+    uint64_t value = 0; // by default is zero
+    cxuint sectionId = 0;
     if (!relativeSymOccurs)
     {   // all value is absolute
         std::stack<uint64_t> stack;
@@ -736,6 +738,11 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& value, cxuint& sect
                      "Only one relative=1 (section) can be result of expression");
             failed = true;
         }
+    }
+    if (!failed)
+    {   // write results only if no errors
+        outSectionId = sectionId;
+        outValue = value;
     }
     return !failed;
 }
