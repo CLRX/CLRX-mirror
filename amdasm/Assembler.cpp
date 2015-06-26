@@ -346,7 +346,10 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         lineNo++;
                         endOfLine = ((backslash&1)==0);
                         if (backslash&1)
+                        {
+                            destPos--; // ignore last backslash
                             colTranslations.push_back({destPos-lineStart, lineNo});
+                        }
                         else
                             assembler.printWarning({lineNo, pos-joinStart+1},
                                         "Unterminated string: newline inserted");

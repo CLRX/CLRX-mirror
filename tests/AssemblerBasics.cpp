@@ -1423,6 +1423,23 @@ test.s:35:28: Error: Expected symbol name
         "test.s:4:20: Warning: Negative size has no effect\n"
         "test.s:5:19: Warning: Negative size has no effect\n"
         "test.s:6:18: Warning: Negative size has no effect\n", ""
+    },
+    {   "           z =  (1 << 7\\\n7) + (343 /\\\n* */ << 64 ) + (11<\\\n\\\n\\\n<77)\n"
+        "        .string \"aaa\\\nvvv\":",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x61, 0x61, 0x61, 0x76, 0x76, 0x76, 0x00
+            } } },
+        {
+            { ".", 7U, 0, 0U, true, false, false, 0, 0 },
+            { "z", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        false, "test.s:1:20: Warning: Shift count out of range (between 0 and 63)\n"
+        "test.s:3:6: Warning: Shift count out of range (between 0 and 63)\n"
+        "test.s:3:19: Warning: Shift count out of range (between 0 and 63)\n"
+        "test.s:8:5: Error: Expected ',' before next value\n"
+        "test.s:8:5: Error: Garbages at end of line with pseudo-op\n", ""
     }
 };
 
