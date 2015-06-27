@@ -146,6 +146,9 @@ struct CLRX_INTERNAL AsmPseudoOps
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& string);
     
+    // skip comma for multiple argument pseudo-ops
+    static bool skipCommaForMultipleArgd(Assembler& asmr, const char*& string);
+    
     /*
      * pseudo-ops logic
      */
@@ -321,6 +324,23 @@ inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char
     }
     string++;
     haveComma = true;
+    return true;
+}
+
+bool AsmPseudoOps::skipCommaForMultipleArgd(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end); // spaces before ','
+    if (string == end)
+        return false;
+    if (*string != ',')
+    {
+        asmr.printError(string, "Expected ',' before next value");
+        string++;
+        return false;
+    }
+    else
+        string = skipSpacesToEnd(string+1, end);
     return true;
 }
 
@@ -622,8 +642,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
-    while (true)
-    {
+    do {
         const char* exprStr = string;
         std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
         if (expr)
@@ -658,18 +677,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
                 asmr.reserveData(sizeof(T));
             }
         }
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before next value");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+    } while(skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
@@ -713,8 +721,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
-    while (true)
-    {
+    do {
         UIntType out = 0;
         const char* literalString = string;
         if (string != end && *string != ',')
@@ -727,20 +734,9 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
         else // warning
             asmr.printWarning(literalString,
                       "No floating point literal, zero has been put");
-        
         asmr.putData(sizeof(UIntType), reinterpret_cast<const cxbyte*>(&out));
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before next value");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+        
+    } while (skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
@@ -751,8 +747,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
-    while (true)
-    {
+    do {
         UInt128 value = { 0, 0 };
         if (string != end && *string != ',')
         {
@@ -781,18 +776,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
         SLEV(out.lo, value.lo);
         SLEV(out.hi, value.hi);
         asmr.putData(16, reinterpret_cast<const cxbyte*>(&out));
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before next value");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+    } while (skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
@@ -801,27 +785,16 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
-    while (string != end)
-    {
+    if (string == end)
+        return;
+    do {
         std::string outStr;
         if (*string != ',')
         {
             if (asmr.parseString(outStr, string, string))
                 asmr.putData(outStr.size()+(addZero), (const cxbyte*)outStr.c_str());
         }
-        
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before next value");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+    } while (skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
@@ -831,8 +804,9 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
-    while (string != end)
-    {
+    if (string == end)
+        return;
+    do {
         std::string outStr;
         if (*string != ',')
         {
@@ -846,18 +820,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
             }
         }
         
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before next value");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+    } while (skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
@@ -891,8 +854,9 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    while (true)
-    {
+    if (string == end)
+        return;
+    do {
         const char* symNameStr = string;
         AsmSymbolEntry* symEntry;
         bool good = asmr.parseSymbol(string, string, symEntry, false);
@@ -917,18 +881,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
                 asmr.printWarning(symNameStr, "Symbol '.' is ignored");
         }
         
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before symbol");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+    } while(skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
@@ -978,21 +931,11 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    while (true)
-    {
+    if (string == end)
+        return;
+    do {
         asmr.skipSymbol(string, string);
-        string = skipSpacesToEnd(string, end); // spaces before ','
-        if (string == end)
-            break;
-        if (*string != ',')
-        {
-            asmr.printError(string, "Expected ',' before symbol");
-            string++;
-            break;
-        }
-        else
-            string = skipSpacesToEnd(string+1, end);
-    }
+    } while (skipCommaForMultipleArgd(asmr, string));
     checkGarbagesAtEnd(asmr, string);
 }
 
