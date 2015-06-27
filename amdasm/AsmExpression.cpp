@@ -786,11 +786,11 @@ static const cxbyte asmOpPrioritiesTbl[] =
 };
 
 AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
-                size_t& outLinePos, bool makeBase, bool dontCreateSymbols)
+                size_t& outLinePos, bool makeBase, bool dontResolveSymbolsLater)
 {
     const char* outend;
     AsmExpression* expr = parse(assembler, assembler.line+linePos, outend,
-                makeBase, dontCreateSymbols);
+                makeBase, dontResolveSymbolsLater);
     outLinePos = outend-(assembler.line+linePos);
     return expr;
 }   
@@ -1031,7 +1031,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
 }
 
 AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
-            const char*& outend, bool makeBase, bool dontCreateSymbols)
+            const char*& outend, bool makeBase, bool dontResolveSymbolsLater)
 {
     struct ConExprOpEntry
     {
@@ -1285,7 +1285,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     
                     const char* symEndStr;
                     Assembler::ParseState parseState = assembler.parseSymbol(string,
-                                     symEndStr, symEntry, true, dontCreateSymbols);
+                                     symEndStr, symEntry, true, dontResolveSymbolsLater);
                     
                     if (parseState == Assembler::ParseState::FAILED) good = false;
                     AsmExprArg arg;
@@ -1295,7 +1295,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                         if (symEntry!=nullptr && symEntry->second.base && !makeBase)
                             good = makeSymbolSnapshot(assembler, &symbolSnapshots,
                                       *symEntry, symEntry, &(expr->sourcePos));
-                        if (symEntry==nullptr)
+                        if (symEntry==nullptr ||
+                            (!symEntry->second.isDefined && dontResolveSymbolsLater))
                         {   // no symbol not found
                             std::string errorMsg("Expression have unresolved symbol '");
                             errorMsg.append(string, symEndStr);

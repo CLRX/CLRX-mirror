@@ -708,11 +708,11 @@ public:
      * \param linePos position in line
      * \param outLinePos position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
-     * \param dontCreateSymbols do not create new symbols and print error if not found
+     * \param dontReolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos,
-                    bool makeBase = false, bool dontCreateSymbols = false);
+                    bool makeBase = false, bool dontReolveSymbolsLater = false);
     
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
@@ -720,11 +720,12 @@ public:
      * \param linePlace string at position in line
      * \param outend string at position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
-     * \param dontCreateSymbols do not create new symbols and print error if not found
+     * \param dontReolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, const char* linePlace,
-              const char*& outend, bool makeBase = false, bool dontCreateSymbols = false);
+              const char*& outend, bool makeBase = false,
+              bool dontReolveSymbolsLater = false);
     
     /// return true if is argument op
     static bool isArg(AsmExprOp op)

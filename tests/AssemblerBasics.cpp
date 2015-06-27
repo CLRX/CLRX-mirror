@@ -1437,6 +1437,25 @@ test.s:38:23: Error: Expected ',' before argument
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 15, 15, 15, 15, 15 } } },
         { { ".", 5U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    {
+        R"ffDXD(                .eqv x2,y1+y2*z-z2
+                .fill x2,5,6
+                .equ x,y1+y2*z-z2
+                .fill x,5,6)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { } } },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "y1", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "y2", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "z", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "z2", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        },
+        false, "test.s:2:23: Error: Expression have unresolved symbol 'x2'\n"
+        "test.s:4:23: Error: Expression have unresolved symbol 'x'\n", ""
     }
 };
 
