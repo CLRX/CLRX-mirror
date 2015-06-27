@@ -230,7 +230,8 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     const char* exprStr = string;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string,
+                 false, true));
     if (expr == nullptr)
         return false;
     if (expr->isEmpty() && requiredExpr)
@@ -240,11 +241,6 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     }
     if (expr->isEmpty()) // do not set if empty expression
         return true;
-    if (expr->getSymOccursNum() != 0)
-    {   // not resolved at this time
-        asmr.printError(exprStr, "Expression has an unresolved symbols!");
-        return false;
-    }
     cxuint sectionId; // for getting
     if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
         return false;
@@ -262,17 +258,13 @@ bool AsmPseudoOps::getAnyValueArg(Assembler& asmr, uint64_t& value,
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     const char* exprStr = string;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string,
+                 false, true));
     if (expr == nullptr)
         return false;
     if (expr->isEmpty())
     {
         asmr.printError(exprStr, "Expected expression");
-        return false;
-    }
-    if (expr->getSymOccursNum() != 0)
-    {   // not resolved at this time
-        asmr.printError(exprStr, "Expression has an unresolved symbols!");
         return false;
     }
     if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
@@ -854,12 +846,11 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    if (string == end)
-        return;
     do {
         const char* symNameStr = string;
         AsmSymbolEntry* symEntry;
-        bool good = asmr.parseSymbol(string, string, symEntry, false);
+        Assembler::ParseState state = asmr.parseSymbol(string, string, symEntry, false);
+        bool good = (state != Assembler::ParseState::FAILED);
         if (symEntry == nullptr)
         {
             asmr.printError(symNameStr, "Expected symbol name");
@@ -891,7 +882,8 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     const char* symNameStr = string;
     AsmSymbolEntry* symEntry;
-    bool good = asmr.parseSymbol(string, string, symEntry, false);
+    Assembler::ParseState state = asmr.parseSymbol(string, string, symEntry, false);
+    bool good = (state != Assembler::ParseState::FAILED);
     if (symEntry == nullptr)
     {
         asmr.printError(symNameStr, "Expected symbol name");
@@ -945,7 +937,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
-    uint64_t repeat, size = 1, value = 0;
+    uint64_t repeat = 0, size = 1, value = 0;
     
     const char* reptStr = string;
     bool good = getAbsoluteValueArg(asmr, repeat, string, true);
@@ -1152,7 +1144,6 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     
     if (maxAlign!=0 && bytesToFill > maxAlign)
         return; // do not make alignment
-    
     
     cxbyte* content = asmr.reserveData(bytesToFill);
     Word word;

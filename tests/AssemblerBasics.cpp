@@ -1195,7 +1195,10 @@ test.s:9:13: Error: Aborted!
             .extern ,,,,
             .print 23233
             .error xxx
-            .extern 65,88,,)ffDXD",
+            .extern 65,88,,
+            .global
+            .fill -1,0;
+            .fill 0,-1;)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
             {
@@ -1245,8 +1248,7 @@ test.s:9:13: Error: Aborted!
             } } },
         {
             { ".", 338U, 0, 0U, true, false, false, 0, 0 },
-            { "a1221", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
-            { "aa", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+            { "a1221", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
         },
         false, R"ffDXD(test.s:1:25: Error: Missing primary expression
 test.s:1:33: Error: Missing primary expression
@@ -1329,7 +1331,7 @@ test.s:28:20: Error: Expected symbol name
 test.s:28:21: Error: Expected symbol name
 test.s:28:22: Error: Expected symbol name
 test.s:29:19: Error: Expected symbol name
-test.s:29:24: Error: Expression has an unresolved symbols!
+test.s:29:24: Error: Expression have unresolved symbol 'aa'
 test.s:30:26: Error: Expected expression
 test.s:31:26: Error: Expected expression
 test.s:32:21: Error: Expected symbol name
@@ -1343,6 +1345,11 @@ test.s:35:21: Error: Expected symbol name
 test.s:35:24: Error: Expected symbol name
 test.s:35:27: Error: Expected symbol name
 test.s:35:28: Error: Expected symbol name
+test.s:36:20: Error: Expected symbol name
+test.s:37:19: Warning: Negative repeat has no effect
+test.s:37:23: Error: Expected ',' before argument
+test.s:38:21: Warning: Negative size has no effect
+test.s:38:23: Error: Expected ',' before argument
 )ffDXD", ""
     },
     /* 24 - illegal output counter change 1 */
@@ -1390,7 +1397,7 @@ test.s:35:28: Error: Expected symbol name
         "test.s:8:13: Error: Attempt to move backwards\n"
         "test.s:9:13: Error: Attempt to move backwards\n", ""
     },
-    /* negative repeats,sizes */
+    /* 26 - negative repeats,sizes */
     {   R"ffDXD(           .fill -7,0,45
            .fill 6,-7,3
            .fill -7,0,3
@@ -1407,6 +1414,7 @@ test.s:35:28: Error: Expected symbol name
         "test.s:5:19: Warning: Negative size has no effect\n"
         "test.s:6:18: Warning: Negative size has no effect\n", ""
     },
+    /* 27 */
     {   "           z =  (1 << 7\\\n7) + (343 /\\\n* */ << 64 ) + (11<\\\n\\\n\\\n<77)\n"
         "        .string \"aaa\\\nvvv\":",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
@@ -1422,6 +1430,13 @@ test.s:35:28: Error: Expected symbol name
         "test.s:3:6: Warning: Shift count out of range (between 0 and 63)\n"
         "test.s:3:19: Warning: Shift count out of range (between 0 and 63)\n"
         "test.s:8:5: Error: Expected ',' before next value\n", ""
+    },
+    /* 28 - Upper pseudo-ops names */
+    {   ".FILL 5,,15\n",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 15, 15, 15, 15, 15 } } },
+        { { ".", 5U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 

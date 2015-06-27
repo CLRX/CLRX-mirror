@@ -708,10 +708,11 @@ public:
      * \param linePos position in line
      * \param outLinePos position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
+     * \param dontCreateSymbols do not create new symbols and print error if not found
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos,
-                    bool makeBase = false);
+                    bool makeBase = false, bool dontCreateSymbols = false);
     
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
@@ -719,10 +720,11 @@ public:
      * \param linePlace string at position in line
      * \param outend string at position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
+     * \param dontCreateSymbols do not create new symbols and print error if not found
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, const char* linePlace,
-              const char*& outend, bool makeBase = false);
+              const char*& outend, bool makeBase = false, bool dontCreateSymbols = false);
     
     /// return true if is argument op
     static bool isArg(AsmExprOp op)
@@ -907,8 +909,19 @@ private:
     
     bool parseLiteral(uint64_t& value, const char* linePlace, const char*& outend);
     bool parseString(std::string& strarray, const char* linePlace, const char*& outend);
-    bool parseSymbol(const char* linePlace, const char*& outend, AsmSymbolEntry*& entry,
-                     bool localLabel = true);
+    
+    enum class ParseState
+    {
+        FAILED = 0,
+        PARSED,
+        MISSING // missing element
+    };
+    
+    /** parse symbol
+     * \returns 
+     */
+    ParseState parseSymbol(const char* linePlace, const char*& outend,
+           AsmSymbolEntry*& entry, bool localLabel = true, bool dontCreateSymbol = false);
     bool skipSymbol(const char* linePlace, const char*& outend);
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);

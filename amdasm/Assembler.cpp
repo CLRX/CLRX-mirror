@@ -1180,37 +1180,48 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
     return true;
 }
 
-bool Assembler::parseSymbol(const char* string, const char*& outend,
-                AsmSymbolEntry*& entry, bool localLabel)
+Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& outend,
+                AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
     const std::string symName = extractSymName(string, line+lineSize, localLabel);
     outend = string;
     if (symName.empty())
-    {
+    {   // this is not symbol or a missing symbol
         while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
             *outend != ':' && *outend != ';') outend++;
         entry = nullptr;
-        return true;
+        return Assembler::ParseState::MISSING;
     }
     outend = string + symName.size();
     if (symName == ".") // any usage of '.' causes format initialization
         initializeOutputFormat();
     
-    bool good = true;
-    std::pair<AsmSymbolMap::iterator, bool> res =
-            symbolMap.insert({ symName, AsmSymbol()});
-    if (symName.front() >= '0' && symName.front() <= '9' && symName.back() == 'b' &&
-        !res.first->second.isDefined)
-    {
+    Assembler::ParseState state = Assembler::ParseState::PARSED;
+    bool symIsDefined;
+    if (!dontCreateSymbol)
+    {   // create symbol if not found
+        std::pair<AsmSymbolMap::iterator, bool> res =
+                symbolMap.insert({ symName, AsmSymbol()});
+        entry = &*res.first;
+        symIsDefined = res.first->second.isDefined;
+    }
+    else
+    {   // only find symbol and set isDefined and entry
+        AsmSymbolMap::iterator it = symbolMap.find(symName);
+        entry = (it != symbolMap.end()) ? &*it : nullptr;
+        symIsDefined = (it != symbolMap.end() && it->second.isDefined);
+    }
+    if (isDigit(symName.front()) && symName.back() == 'b' &&
+        !symIsDefined)
+    {   // failed at finding
         std::string error = "Undefined previous local label '";
         error.insert(error.end(), symName.begin(), symName.end()-1);
         error += "'";
         printError(string, error.c_str());
-        good = false;
+        state = Assembler::ParseState::FAILED;
     }
-    AsmSymbolMap::iterator it = res.first;
-    entry = &*it;
-    return good;
+    
+    return state;
 }
 
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)

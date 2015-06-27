@@ -786,10 +786,11 @@ static const cxbyte asmOpPrioritiesTbl[] =
 };
 
 AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
-                size_t& outLinePos, bool makeBase)
+                size_t& outLinePos, bool makeBase, bool dontCreateSymbols)
 {
     const char* outend;
-    AsmExpression* expr = parse(assembler, assembler.line+linePos, outend, makeBase);
+    AsmExpression* expr = parse(assembler, assembler.line+linePos, outend,
+                makeBase, dontCreateSymbols);
     outLinePos = outend-(assembler.line+linePos);
     return expr;
 }   
@@ -1030,7 +1031,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
 }
 
 AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
-            const char*& outend, bool makeBase)
+            const char*& outend, bool makeBase, bool dontCreateSymbols)
 {
     struct ConExprOpEntry
     {
@@ -1283,33 +1284,45 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     AsmSymbolEntry* symEntry;
                     
                     const char* symEndStr;
-                    bool symIsGood = assembler.parseSymbol(string, symEndStr, symEntry);
-                    if (!symIsGood) good = false;
+                    Assembler::ParseState parseState = assembler.parseSymbol(string,
+                                     symEndStr, symEntry, true, dontCreateSymbols);
+                    
+                    if (parseState == Assembler::ParseState::FAILED) good = false;
                     AsmExprArg arg;
                     arg.relValue.sectionId = ASMSECT_ABS;
-                    if (symEntry != nullptr)
+                    if (parseState != Assembler::ParseState::MISSING)
                     {
-                        if (symEntry->second.base && !makeBase)
+                        if (symEntry!=nullptr && symEntry->second.base && !makeBase)
                             good = makeSymbolSnapshot(assembler, &symbolSnapshots,
                                       *symEntry, symEntry, &(expr->sourcePos));
-                        
-                        if (symEntry->second.isDefined && !makeBase)
-                        {
-                            if (!assembler.isAbsoluteSymbol(symEntry->second))
-                            {
-                                relativeSymOccurs = true;
-                                arg.relValue.sectionId = symEntry->second.sectionId;
-                            }
-                            arg.relValue.value = symEntry->second.value;
-                            args.push_back(arg);
-                            ops.push_back(AsmExprOp::ARG_VALUE);
+                        if (symEntry==nullptr)
+                        {   // no symbol not found
+                            std::string errorMsg("Expression have unresolved symbol '");
+                            errorMsg.append(string, symEndStr);
+                            errorMsg += '\'';
+                            assembler.printError(string, errorMsg.c_str());
+                            good = false;
                         }
                         else
-                        {   /* add symbol */
-                            symOccursNum++;
-                            arg.symbol = symEntry;
-                            args.push_back(arg);
-                            ops.push_back(AsmExprOp::ARG_SYMBOL);
+                        {
+                            if (symEntry->second.isDefined && !makeBase)
+                            {
+                                if (!assembler.isAbsoluteSymbol(symEntry->second))
+                                {
+                                    relativeSymOccurs = true;
+                                    arg.relValue.sectionId = symEntry->second.sectionId;
+                                }
+                                arg.relValue.value = symEntry->second.value;
+                                args.push_back(arg);
+                                ops.push_back(AsmExprOp::ARG_VALUE);
+                            }
+                            else
+                            {   /* add symbol */
+                                symOccursNum++;
+                                arg.symbol = symEntry;
+                                args.push_back(arg);
+                                ops.push_back(AsmExprOp::ARG_SYMBOL);
+                            }
                         }
                         string = symEndStr;
                     }
