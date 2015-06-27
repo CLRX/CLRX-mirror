@@ -301,10 +301,10 @@ static AsmExprParseCase asmExprParseCases[] =
     { "'\\39'", "", false, 0,
         "<stdin>:1:1: Error: Expected octal character code\n", "9'" },
     /* operators */
-    { "+", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
-    { "-", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
-    { "~", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
-    { "!", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "+", "", false, 0, "<stdin>:1:2: Error: Unterminated expression\n", "" },
+    { "-", "", false, 0, "<stdin>:1:2: Error: Unterminated expression\n", "" },
+    { "~", "", false, 0, "<stdin>:1:2: Error: Unterminated expression\n", "" },
+    { "!", "", false, 0, "<stdin>:1:2: Error: Unterminated expression\n", "" },
     { "*", "", false, 0, "<stdin>:1:1: Error: "
             "Expected primary expression before operator\n", "" },
     { "/", "", false, 0, "<stdin>:1:1: Error: "
@@ -319,14 +319,14 @@ static AsmExprParseCase asmExprParseCases[] =
             "Expected primary expression before operator\n", "" },
     { "^", "", false, 0, "<stdin>:1:1: Error: "
             "Expected primary expression before operator\n", "" },
-    { "!", "", false, 0, "<stdin>:1:2: Error: Missing primary expression\n", "" },
+    { "!", "", false, 0, "<stdin>:1:2: Error: Unterminated expression\n", "" },
     { "<<", "", false, 0, "<stdin>:1:1: Error: "
             "Expected primary expression before operator\n", "" },
     { ">>>", "", false, 0, "<stdin>:1:1: Error: "
             "Expected primary expression before operator\n", "" },
     { "!=", "", false, 0, "<stdin>:1:2: Error: "
             "Expected primary expression before operator\n"
-            "<stdin>:1:3: Error: Missing primary expression\n", "" },
+            "<stdin>:1:3: Error: Unterminated expression\n", "" },
     { "<", "", false, 0, "<stdin>:1:1: Error: "
             "Expected primary expression before operator\n", "" },
     { "<=", "", false, 0, "<stdin>:1:1: Error: "
@@ -344,18 +344,18 @@ static AsmExprParseCase asmExprParseCases[] =
     { ">=@", "", false, 0, "<stdin>:1:1: Error: "
             "Expected primary expression before operator\n", "" },
     /* operators at end of expression */
-    { "1+6+", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
-    { "1+6-", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    { "1+6+", "", false, 0, "<stdin>:1:5: Error: Unterminated expression\n", "" },
+    { "1+6-", "", false, 0, "<stdin>:1:5: Error: Unterminated expression\n", "" },
     { "1+6~", "", false, 0, "<stdin>:1:4: Error: "
         "Expected non-unary operator, '(', or end of expression\n", "" },
-    { "1+6/", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
-    { "1+6//", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
-    { "1+6%%", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
-    { "1+6<<", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
-    { "1+6>>>", "", false, 0, "<stdin>:1:7: Error: Missing primary expression\n", "" },
-    { "1+6!=", "", false, 0, "<stdin>:1:6: Error: Missing primary expression\n", "" },
-    { "1+6<", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
-    { "1+6>", "", false, 0, "<stdin>:1:5: Error: Missing primary expression\n", "" },
+    { "1+6/", "", false, 0, "<stdin>:1:5: Error: Unterminated expression\n", "" },
+    { "1+6//", "", false, 0, "<stdin>:1:6: Error: Unterminated expression\n", "" },
+    { "1+6%%", "", false, 0, "<stdin>:1:6: Error: Unterminated expression\n", "" },
+    { "1+6<<", "", false, 0, "<stdin>:1:6: Error: Unterminated expression\n", "" },
+    { "1+6>>>", "", false, 0, "<stdin>:1:7: Error: Unterminated expression\n", "" },
+    { "1+6!=", "", false, 0, "<stdin>:1:6: Error: Unterminated expression\n", "" },
+    { "1+6<", "", false, 0, "<stdin>:1:5: Error: Unterminated expression\n", "" },
+    { "1+6>", "", false, 0, "<stdin>:1:5: Error: Unterminated expression\n", "" },
     /* parentheses */
     { "1+(8*9", "", false, 0, "<stdin>:1:7: Error: Missing ')'\n", "" },
     { "1+(((8*9", "", false, 0, "<stdin>:1:9: Error: Missing ')'\n", "" },
@@ -363,16 +363,16 @@ static AsmExprParseCase asmExprParseCases[] =
         "<stdin>:1:3: Error: Missing ')'\n", "" },
     { "4+7+()", "", false, 0, "<stdin>:1:6: Error: Expected operator or value or symbol\n"
         "<stdin>:1:7: Error: Missing ')'\n"
-        "<stdin>:1:7: Error: Missing primary expression\n", "" },
+        "<stdin>:1:7: Error: Unterminated expression\n", "" },
     { "4+7<<()", "", false, 0, "<stdin>:1:7: Error: Expected operator or value or symbol\n"
         "<stdin>:1:8: Error: Missing ')'\n"
-        "<stdin>:1:8: Error: Missing primary expression\n", "" },
+        "<stdin>:1:8: Error: Unterminated expression\n", "" },
     { "1)+8*9", "1", true, 1, "", ")+8*9" }, // no error
     { "1(+8*9", "", false, 0, "<stdin>:1:2: Error: Expected operator\n", "" },
     { "1+8(*9", "", false, 0, "<stdin>:1:4: Error: Expected operator\n", "" },
     { "1+8*9;", "1 8 9 * +", true, 73, "", ";" }, // no error
     { "1+8*9:", "", false, 0, "<stdin>:1:6: Error: Missing '?' before ':'\n"
-        "<stdin>:1:7: Error: Missing primary expression\n", "" },
+        "<stdin>:1:7: Error: Unterminated expression\n", "" },
     { "1+8*9'", "1 8 9 * +", true, 73, "", "'" }, // no error
     { "1+8*9#", "1 8 9 * +", true, 73, "", "" }, // no error
     { "1+8*9/* */", "1 8 9 * +", true, 73, "", "" }, // no error
@@ -390,7 +390,7 @@ static AsmExprParseCase asmExprParseCases[] =
     { "a*(a?b+c:)", "", false, 0,
         "<stdin>:1:10: Error: Expected operator or value or symbol\n"
         "<stdin>:1:11: Error: Missing ')'\n"
-        "<stdin>:1:11: Error: Missing primary expression\n", "" },
+        "<stdin>:1:11: Error: Unterminated expression\n", "" },
     { "a*(a?b+c):x", "", false, 0, "<stdin>:1:10: Error: Missing '?' before ':'\n", "" },
     { "a*a?(b+c:x)", "", false, 0, "<stdin>:1:9: Error: Missing '?' before ':'\n"
         "<stdin>:1:4: Error: Missing ':' for '?'\n", "" },
@@ -406,7 +406,7 @@ static AsmExprParseCase asmExprParseCases[] =
     { "( ala + .,. )", "", false, 0, "<stdin>:1:11: Error: Garbages at end of expression\n"
         "<stdin>:1:12: Error: Garbages at end of expression\n", "" },
     /* with ',' */
-    { "123+45*,", "", false, 0, "<stdin>:1:8: Error: Missing primary expression\n", "," }
+    { "123+45*,", "", false, 0, "<stdin>:1:8: Error: Unterminated expression\n", "," }
 };
 
 static std::string rpnExpression(const AsmExpression* expr)

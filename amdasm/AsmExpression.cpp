@@ -1454,7 +1454,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     {
         if (!ops.empty() || !stack.empty())
         {
-            assembler.printError(string, "Missing primary expression");
+            assembler.printError(string, "Unterminated expression");
             good = false;
         }
     }

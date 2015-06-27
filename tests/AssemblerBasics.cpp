@@ -208,6 +208,13 @@ testx:
         .set lab2, 594
         .set lab3, 551
 lab1: lab2: lab3: # reassign by labels is legal
+        valx = 122
+        valx = x+y+z
+        .equiv valx,f+f
+        .eqv valx,f+f
+labelx:
+        .equiv labelx,f+f
+        .eqv labelx,f+f
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::RAWCODE_CODE,
@@ -217,12 +224,18 @@ lab1: lab2: lab3: # reassign by labels is legal
             { ".", 16, 0, 0, true, false, false, 0, 0 },
             { "1b", 6, 0, 0, true, false, false, 0, 0 },
             { "1f", 6, 0, 0, false, false, false, 0, 0 },
+            { "f", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
             { "lab1", 16, 0, 0, true, true, false, 0, 0 },
             { "lab2", 16, 0, 0, true, true, false, 0, 0 },
             { "lab3", 16, 0, 0, true, true, false, 0, 0 },
+            { "labelx", 16U, 0, 0U, true, true, false, 0, 0 },
             { "myval", 9, ASMSECT_ABS, 0, true, false, false, 0, 0, },
             { "start", 0, 0, 0, true, true, false, 0, 0 },
             { "testx", 130, ASMSECT_ABS, 0, true, true, false, 0, 0 },
+            { "valx", 122U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "x", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "y", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "z", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
             { "zx", 10, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "zy", 11, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "zz", 120, ASMSECT_ABS, 0, true, false, false, 0, 0 },
@@ -235,7 +248,11 @@ lab1: lab2: lab3: # reassign by labels is legal
         "test.s:31:16: Error: Symbol 'myval' is already defined\n"
         "test.s:35:9: Error: Symbol 'testx' is already defined\n"
         "test.s:36:14: Error: Symbol 'testx' is already defined\n"
-        "test.s:37:1: Error: Symbol 'testx' is already defined\n", ""
+        "test.s:37:1: Error: Symbol 'testx' is already defined\n"
+        "test.s:44:16: Error: Symbol 'valx' is already defined\n"
+        "test.s:45:14: Error: Symbol 'valx' is already defined\n"
+        "test.s:47:16: Error: Symbol 'labelx' is already defined\n"
+        "test.s:48:14: Error: Symbol 'labelx' is already defined\n", ""
     },
     /* 6 .eqv test 1 */
     {   R"ffDXD(        z=5
@@ -1250,32 +1267,32 @@ test.s:9:13: Error: Aborted!
             { ".", 338U, 0, 0U, true, false, false, 0, 0 },
             { "a1221", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
         },
-        false, R"ffDXD(test.s:1:25: Error: Missing primary expression
-test.s:1:33: Error: Missing primary expression
+        false, R"ffDXD(test.s:1:25: Error: Unterminated expression
+test.s:1:33: Error: Unterminated expression
 test.s:1:38: Warning: No expression, zero has been put
 test.s:1:38: Error: Expected ',' before next value
-test.s:2:26: Error: Missing primary expression
-test.s:2:34: Error: Missing primary expression
+test.s:2:26: Error: Unterminated expression
+test.s:2:34: Error: Unterminated expression
 test.s:2:39: Warning: No expression, zero has been put
 test.s:2:39: Error: Expected ',' before next value
-test.s:3:26: Error: Missing primary expression
-test.s:3:34: Error: Missing primary expression
+test.s:3:26: Error: Unterminated expression
+test.s:3:34: Error: Unterminated expression
 test.s:3:39: Warning: No expression, zero has been put
 test.s:3:39: Error: Expected ',' before next value
-test.s:4:25: Error: Missing primary expression
-test.s:4:33: Error: Missing primary expression
+test.s:4:25: Error: Unterminated expression
+test.s:4:33: Error: Unterminated expression
 test.s:4:38: Warning: No expression, zero has been put
 test.s:4:38: Error: Expected ',' before next value
-test.s:5:24: Error: Missing primary expression
-test.s:5:32: Error: Missing primary expression
+test.s:5:24: Error: Unterminated expression
+test.s:5:32: Error: Unterminated expression
 test.s:5:37: Warning: No expression, zero has been put
 test.s:5:37: Error: Expected ',' before next value
-test.s:6:25: Error: Missing primary expression
-test.s:6:33: Error: Missing primary expression
+test.s:6:25: Error: Unterminated expression
+test.s:6:33: Error: Unterminated expression
 test.s:6:38: Warning: No expression, zero has been put
 test.s:6:38: Error: Expected ',' before next value
-test.s:7:25: Error: Missing primary expression
-test.s:7:33: Error: Missing primary expression
+test.s:7:25: Error: Unterminated expression
+test.s:7:33: Error: Unterminated expression
 test.s:7:38: Warning: No expression, zero has been put
 test.s:7:38: Error: Expected ',' before next value
 test.s:8:19: Error: Number out of range
@@ -1438,6 +1455,7 @@ test.s:38:23: Error: Expected ',' before argument
         { { ".", 5U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
+    /*  29 - */
     {
         R"ffDXD(                .eqv x2,y1+y2*z-z2
                 .fill x2,5,6
@@ -1456,6 +1474,27 @@ test.s:38:23: Error: Expected ',' before argument
         },
         false, "test.s:2:23: Error: Expression have unresolved symbol 'x2'\n"
         "test.s:4:23: Error: Expression have unresolved symbol 'x'\n", ""
+    },
+    {   R"ffDXD(            .eqv x2,5+vx
+            .equ vx,2
+            .fill x2,1,33
+            .equ x,20-vy
+            .equ vy,9
+            .fill x,1,93)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x5d,
+                0x5d, 0x5d, 0x5d, 0x5d, 0x5d, 0x5d, 0x5d, 0x5d,
+                0x5d, 0x5d
+            } } },
+        {
+            { ".", 18U, 0, 0U, true, false, false, 0, 0 },
+            { "vx", 2U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "vy", 9U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 }
+        }, true, "", ""
     }
 };
 

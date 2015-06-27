@@ -1497,6 +1497,7 @@ bool Assembler::skipClauses()
             continue;
         
         std::string pseudOpName = extractSymName(string, end, false);
+        toLowerString(pseudOpName);
         
         const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl, offlinePseudoOpNamesTbl +
                     sizeof(offlinePseudoOpNamesTbl)/sizeof(char*), pseudOpName.c_str()+1,

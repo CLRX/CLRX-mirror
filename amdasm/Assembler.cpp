@@ -1211,8 +1211,7 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
         entry = (it != symbolMap.end()) ? &*it : nullptr;
         symIsDefined = (it != symbolMap.end() && it->second.isDefined);
     }
-    if (isDigit(symName.front()) && symName.back() == 'b' &&
-        !symIsDefined)
+    if (isDigit(symName.front()) && symName.back() == 'b' && !symIsDefined)
     {   // failed at finding
         std::string error = "Undefined previous local label '";
         error.insert(error.end(), symName.begin(), symName.end()-1);
@@ -1229,6 +1228,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.value = value;
     symEntry.second.sectionId = sectionId;
     symEntry.second.isDefined = true;
+    symEntry.second.isAssigned = true;
     bool good = true;
     
     // resolve value of pending symbols
@@ -1397,7 +1397,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symbolName, AsmSymbol() });
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
-        (res.first->second.isDefined || res.first->second.base)))
+        res.first->second.isAssigned))
     {   // found and can be only once defined
         std::string msg = "Symbol '";
         msg += symbolName;
@@ -1416,6 +1416,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         
         setSymbol(symEntry, value, sectionId);
         symEntry.second.onceDefined = !reassign;
+        symEntry.second.isAssigned = true;
     }
     else // set expression
     {
@@ -1439,6 +1440,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
                 setSymbol(*tempSymEntry, tempSymEntry->second.value,
                           tempSymEntry->second.sectionId);
         }
+        symEntry.second.isAssigned = true;
     }
     return true;
 }
@@ -1657,8 +1659,10 @@ bool Assembler::assemble()
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.value = nextLRes.first->second.value;
                 prevLRes.first->second.isDefined = true;
+                prevLRes.first->second.isAssigned = true;
                 prevLRes.first->second.sectionId = currentSection;
                 nextLRes.first->second.isDefined = false;
+                prevLRes.first->second.isAssigned = false;
             }
             else
             {   // regular labels
@@ -1666,8 +1670,7 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName, AsmSymbol() });
                 if (!res.second)
                 {   // found
-                    if (res.first->second.onceDefined && 
-                        (res.first->second.isDefined || res.first->second.base))
+                    if (res.first->second.onceDefined && res.first->second.isAssigned)
                     {   // if label
                         std::string msg = "Symbol '";
                         msg += firstName;
