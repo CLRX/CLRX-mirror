@@ -1045,19 +1045,22 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     const char* alignStr = string;
     bool good = getAbsoluteValueArg(asmr, alignment, string, true);
     
-    if (powerOf2)
+    if (good)
     {
-        if (alignment >= 63)
+        if (powerOf2)
         {
-            asmr.printError(alignStr, "Power of 2 of alignment is greater than 63");
+            if (alignment >= 63)
+            {
+                asmr.printError(alignStr, "Power of 2 of alignment is greater than 63");
+                good = false;
+            }
+            alignment = (1ULL<< alignment);
+        }
+        if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
+        {
+            asmr.printError(alignStr, "Alignment is not power of 2");
             good = false;
         }
-        alignment = (1ULL<< alignment);
-    }
-    if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
-    {
-        asmr.printError(alignStr, "Alignment is not power of 2");
-        good = false;
     }
     
     bool haveComma = false;
@@ -1101,7 +1104,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignStr = string;
     bool good = getAbsoluteValueArg(asmr, alignment, string, true);
-    if (alignment != 0 && (1ULL<<(63-CLZ64(alignment))) != alignment)
+    if (good && alignment != 0 && (1ULL<<(63-CLZ64(alignment))) != alignment)
     {
         asmr.printError(alignStr, "Alignment is not power of 2");
         good = false;
