@@ -919,7 +919,7 @@ Assembler::~Assembler()
 bool Assembler::parseString(std::string& strarray, const char* string,
             const char*& outend)
 {
-    const char* end = line+lineSize;
+    const char* end = stmtEnd;
     outend = string;
     strarray.clear();
     if (outend == end || *outend != '"')
@@ -1042,7 +1042,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
 bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& outend)
 {
     outend = string;
-    const char* end = line+lineSize;
+    const char* end = stmtEnd;
     if (outend != end && *outend == '\'')
     {
         outend++;
@@ -1171,7 +1171,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
         }
     }
     try
-    { value = cstrtovCStyle<uint64_t>(string, line+lineSize, outend); }
+    { value = cstrtovCStyle<uint64_t>(string, stmtEnd, outend); }
     catch(const ParseException& ex)
     {
         printError(string, ex.what());
@@ -1183,11 +1183,11 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
 Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& outend,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
-    const std::string symName = extractSymName(string, line+lineSize, localLabel);
+    const std::string symName = extractSymName(string, stmtEnd, localLabel);
     outend = string;
     if (symName.empty())
     {   // this is not symbol or a missing symbol
-        while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
+        while (outend != stmtEnd && !isSpace(*outend) && *outend != ',' &&
             *outend != ':' && *outend != ';') outend++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
@@ -1214,7 +1214,7 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
     if (isDigit(symName.front()) && symName.back() == 'b' && !symIsDefined)
     {   // failed at finding
         std::string error = "Undefined previous local label '";
-        error.insert(error.end(), symName.begin(), symName.end()-1);
+        error.append(symName.begin(), symName.end()-1);
         error += "'";
         printError(string, error.c_str());
         state = Assembler::ParseState::FAILED;
@@ -1363,11 +1363,11 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     bool makeBaseExpr = (baseExpr && symbolName != ".");
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
                     *this, string, string, makeBaseExpr));
-    string = skipSpacesToEnd(string, line+lineSize);
+    string = skipSpacesToEnd(string, stmtEnd);
     if (!expr) // no expression, errors
         return false;
     
-    if (string != line+lineSize)
+    if (string != stmtEnd)
     {
         printError(string, "Garbages at end of expression");
         return false;
@@ -1464,7 +1464,7 @@ bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
 
 bool Assembler::skipSymbol(const char* string, const char*& outend)
 {
-    const char* end = line + lineSize;
+    const char* end = stmtEnd;
     string = skipSpacesToEnd(string, end);
     const char* start = string;
     if (string != end)
@@ -1476,7 +1476,7 @@ bool Assembler::skipSymbol(const char* string, const char*& outend)
     outend = string;
     if (start == string)
     {   // this is not symbol name
-        while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
+        while (outend != end && !isSpace(*outend) && *outend != ',' &&
             *outend != ':' && *outend != ';') outend++;
         printError(start, "Expected symbol name");
         return false;
@@ -1553,11 +1553,15 @@ bool Assembler::readLine()
             asmInputFilters.pop();
         }
         else
+        {
+            stmtEnd = nullptr;
             return false;
+        }
         currentInputFilter = asmInputFilters.top();
         lineNo = currentInputFilter->getLineNo();
         line = currentInputFilter->readLine(*this, lineSize);
     }
+    stmtEnd = line + lineSize;
     return true;
 }
 
@@ -1613,123 +1617,151 @@ bool Assembler::assemble()
                 break; // end of stream
         }
         
+        const char* lineEnd = line+lineSize;
         const char* string = line; // string points to place of line
-        const char* end = line+lineSize;
-        string = skipSpacesToEnd(string, end);
-        if (string == end)
-            continue; // only empty line
-        
-        // statement start (except labels). in this time can point to labels
-        const char* stmtStartStr = string;
-        std::string firstName = extractLabelName(string, end);
-        string += firstName.size();
-        
-        string = skipSpacesToEnd(string, end);
-        
-        bool doNextLine = false;
-        while (!firstName.empty() && string != end && *string == ':')
-        {   // labels
-            string++;
-            string = skipSpacesToEnd(string, end);
-            initializeOutputFormat();
-            if (firstName.front() >= '0' && firstName.front() <= '9')
-            {   // handle local labels
-                if (sections.empty())
-                {
-                    printError(stmtStartStr,
-                               "Local label can't be defined outside section");
-                    doNextLine = true;
-                    break;
+        stmtEnd = string;
+        bool firstStmt = true;
+        while (stmtEnd != lineEnd)
+        {
+            string = (!firstStmt) ? stmtEnd+1 : stmtEnd;
+            stmtEnd = string;
+            /* find first ';' (statement separator) */
+            while (stmtEnd != lineEnd && *stmtEnd != ';')
+                if (*stmtEnd != '\"' && *stmtEnd != '\'')
+                    stmtEnd++;
+                else
+                {   // string
+                    const char term = *stmtEnd++;
+                    cxuint backslash = 0;
+                    while (stmtEnd != lineEnd && (*stmtEnd != term || (backslash&1)))
+                    {
+                        if (*stmtEnd == '\\')
+                            backslash++;
+                        else
+                            backslash = 0;
+                        stmtEnd++;
+                    }
+                    if (stmtEnd != lineEnd) stmtEnd++;
                 }
-                if (inAmdConfig)
-                {
-                    printError(stmtStartStr,
-                               "Local label can't defined in AMD config place");
-                    doNextLine = true;
-                    break;
-                }
-                std::pair<AsmSymbolMap::iterator, bool> prevLRes =
-                        symbolMap.insert({ firstName+"b", AsmSymbol() });
-                std::pair<AsmSymbolMap::iterator, bool> nextLRes =
-                        symbolMap.insert({ firstName+"f", AsmSymbol() });
-                assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
-                prevLRes.first->second.clearOccurrencesInExpr();
-                prevLRes.first->second.value = nextLRes.first->second.value;
-                prevLRes.first->second.isDefined = true;
-                prevLRes.first->second.sectionId = currentSection;
-                nextLRes.first->second.isDefined = false;
-            }
-            else
-            {   // regular labels
-                std::pair<AsmSymbolMap::iterator, bool> res = 
-                        symbolMap.insert({ firstName, AsmSymbol() });
-                if (!res.second)
-                {   // found
-                    if (res.first->second.onceDefined && (res.first->second.isDefined ||
-                        res.first->second.expression!=nullptr))
-                    {   // if label
-                        std::string msg = "Symbol '";
-                        msg += firstName;
-                        msg += "' is already defined";
-                        printError(stmtStartStr, msg.c_str());
+            firstStmt = false;
+            
+            string = skipSpacesToEnd(string, stmtEnd);
+            if (string == stmtEnd)
+                continue; // only empty line
+            
+            // statement start (except labels). in this time can point to labels
+            const char* stmtStartStr = string;
+            std::string firstName = extractLabelName(string, stmtEnd);
+            string += firstName.size();
+            
+            string = skipSpacesToEnd(string, stmtEnd);
+            
+            bool doNextLine = false;
+            while (!firstName.empty() && string != stmtEnd && *string == ':')
+            {   // labels
+                string++;
+                string = skipSpacesToEnd(string, stmtEnd);
+                initializeOutputFormat();
+                if (firstName.front() >= '0' && firstName.front() <= '9')
+                {   // handle local labels
+                    if (sections.empty())
+                    {
+                        printError(stmtStartStr,
+                                   "Local label can't be defined outside section");
                         doNextLine = true;
                         break;
                     }
+                    if (inAmdConfig)
+                    {
+                        printError(stmtStartStr,
+                                   "Local label can't defined in AMD config place");
+                        doNextLine = true;
+                        break;
+                    }
+                    std::pair<AsmSymbolMap::iterator, bool> prevLRes =
+                            symbolMap.insert({ firstName+"b", AsmSymbol() });
+                    std::pair<AsmSymbolMap::iterator, bool> nextLRes =
+                            symbolMap.insert({ firstName+"f", AsmSymbol() });
+                    assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
+                    prevLRes.first->second.clearOccurrencesInExpr();
+                    prevLRes.first->second.value = nextLRes.first->second.value;
+                    prevLRes.first->second.isDefined = true;
+                    prevLRes.first->second.sectionId = currentSection;
+                    nextLRes.first->second.isDefined = false;
                 }
-                if (sections.empty())
-                {
-                    printError(stmtStartStr,
-                               "Label can't be defined outside section");
-                    doNextLine = true;
-                    break;
+                else
+                {   // regular labels
+                    std::pair<AsmSymbolMap::iterator, bool> res = 
+                            symbolMap.insert({ firstName, AsmSymbol() });
+                    if (!res.second)
+                    {   // found
+                        if (res.first->second.onceDefined &&
+                            (res.first->second.isDefined ||
+                            res.first->second.expression!=nullptr))
+                        {   // if label
+                            std::string msg = "Symbol '";
+                            msg += firstName;
+                            msg += "' is already defined";
+                            printError(stmtStartStr, msg.c_str());
+                            doNextLine = true;
+                            break;
+                        }
+                    }
+                    if (sections.empty())
+                    {
+                        printError(stmtStartStr,
+                                   "Label can't be defined outside section");
+                        doNextLine = true;
+                        break;
+                    }
+                    if (inAmdConfig)
+                    {
+                        printError(stmtStartStr,
+                                   "Label can't defined in AMD config place");
+                        doNextLine = true;
+                        break;
+                    }
+                    
+                    setSymbol(*res.first, currentOutPos, currentSection);
+                    res.first->second.onceDefined = true;
+                    res.first->second.sectionId = currentSection;
                 }
-                if (inAmdConfig)
-                {
-                    printError(stmtStartStr,
-                               "Label can't defined in AMD config place");
-                    doNextLine = true;
-                    break;
-                }
-                
-                setSymbol(*res.first, currentOutPos, currentSection);
-                res.first->second.onceDefined = true;
-                res.first->second.sectionId = currentSection;
+                // new label or statement
+                stmtStartStr = string;
+                firstName = extractLabelName(string, stmtEnd);
+                string += firstName.size();
             }
-            // new label or statement
-            stmtStartStr = string;
-            firstName = extractLabelName(string, end);
-            string += firstName.size();
-        }
-        if (doNextLine)
-            continue;
-        
-        /* now stmtStartStr - points to first string of statement
-         * (labels has been skipped) */
-        string = skipSpacesToEnd(string, end);
-        if (string != end && *string == '=' &&
-            // not for local labels
-            (firstName.front() < '0' || firstName.front() > '9'))
-        {   // assignment
-            string = skipSpacesToEnd(string+1, line+lineSize);
-            if (string == end)
-            {
-                printError(string, "Expected assignment expression");
+            if (doNextLine)
+                continue;
+            
+            /* now stmtStartStr - points to first string of statement
+             * (labels has been skipped) */
+            string = skipSpacesToEnd(string, stmtEnd);
+            if (string != stmtEnd && *string == '=' &&
+                // not for local labels
+                (firstName.front() < '0' || firstName.front() > '9'))
+            {   // assignment
+                string = skipSpacesToEnd(string+1, line+lineSize);
+                if (string == stmtEnd)
+                {
+                    printError(string, "Expected assignment expression");
+                    continue;
+                }
+                assignSymbol(firstName, stmtStartStr, string);
                 continue;
             }
-            assignSymbol(firstName, stmtStartStr, string);
-            continue;
-        }
-        // make firstname as lowercase
-        toLowerString(firstName);
-        
-        if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
-        {
-            parsePseudoOps(firstName, stmtStartStr, string);
-        }
-        else if (firstName.size() >= 1 && isDigit(firstName[0]))
-            printError(stmtStartStr, "Illegal number at statement begin");
-        else
-        {   // try to parse processor instruction or macro substitution
+            // make firstname as lowercase
+            toLowerString(firstName);
+            
+            if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
+            {
+                parsePseudoOps(firstName, stmtStartStr, string);
+            }
+            else if (firstName.size() >= 1 && isDigit(firstName[0]))
+                printError(stmtStartStr, "Illegal number at statement begin");
+            else
+            {   // try to parse processor instruction or macro substitution
+            }
         }
     }
     return good;

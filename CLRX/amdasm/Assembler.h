@@ -802,19 +802,24 @@ struct AsmSection
     std::vector<cxbyte> content;    ///< content of section
 };
 
+/// type of clause
 enum AsmClauseType
 {
-    IF,
-    ELSEIF,
-    REPEAT,
-    MACRO
+    IF,     ///< if clause
+    ELSEIF, ///< elseif clause
+    ELSE,   ///< else clause
+    REPEAT, ///< rept clause
+    MACRO   ///< macro clause
 };
 
-/// ???
+/// assembler's clause (if,else,macro,rept)
 struct AsmClause
 {
-    AsmClauseType type;
-    AsmSourcePos pos;
+    AsmClauseType type; ///< type of clause
+    AsmSourcePos pos;   ///< position
+    bool condSatisfied; ///< if conditional clause has already been satisfied
+    AsmSourcePos prevIfPos; ///< position of previous if-clause
+    AsmSourcePos prevElsePos; //< psotion of previois
 };
 
 /// main class of assembler
@@ -854,6 +859,7 @@ private:
     
     size_t lineSize;
     const char* line;
+    const char* stmtEnd;
     uint64_t lineNo;
     bool endOfAssembly;
     

@@ -727,8 +727,8 @@ test.s:6:24: Warning: Shift count out of range (between 0 and 63)
 1x:
 aaa: aaa:
             uu<> = t
-            uuxu = 34 ;;;;
-            .set udu, 3445   ;;;;;;;)ffDXD",
+            uuxu = 34 ````
+            .set udu, 3445   ``````)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { } } },
         {
@@ -1178,18 +1178,18 @@ test.s:9:13: Error: Aborted!
 )ffDXD", "to jest test\n"
     },
     /* 23 - pseudo-ops errors */
-    {   R"ffDXD(            .byte 22,12+,  55,1*, 7, ;
-            .hword 22,12+,  55,1*, 7, ;
-            .short 22,12+,  55,1*, 7, ;
-            .word 22,12+,  55,1*, 7, ;
-            .int 22,12+,  55,1*, 7, ;
-            .long 22,12+,  55,1*, 7, ;
-            .long 22,12+,  55,1*, 7, ;
+    {   R"ffDXD(            .byte 22,12+,  55,1*, 7, `
+            .hword 22,12+,  55,1*, 7, `
+            .short 22,12+,  55,1*, 7, `
+            .word 22,12+,  55,1*, 7, `
+            .int 22,12+,  55,1*, 7, `
+            .long 22,12+,  55,1*, 7, `
+            .long 22,12+,  55,1*, 7, `
             .long 111111111111111111111,333333,1111111111111111111111111111
             .half 1.3544, 1.341e3, 1e10000, 76.233e, %
             .float 1.3544, 1.341e3, 1e10000, 76.233e, %
             .double 1.3544, 1.341e3, 1e10000, 76.233e, %
-            .octa 1233, ;
+            .octa 1233, `
             .ascii "aaa", "aaax", ::, 2344, '34'
             .asciz "aaa", "aaax", ::, 2344, '34'
             .string "aaa", "aaax", ::, 2344, '34'
@@ -1208,14 +1208,14 @@ test.s:9:13: Error: Aborted!
             .weak ,,,
             .size 3343,aa
             .size a1221, 
-            .size a1221, ;;;
+            .size a1221, ```
             .extern ,,,,
             .print 23233
             .error xxx
             .extern 65,88,,
             .global
-            .fill -1,0;
-            .fill 0,-1;)ffDXD",
+            .fill -1,0`
+            .fill 0,-1`)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
             {
@@ -1495,6 +1495,20 @@ test.s:38:23: Error: Expected ',' before argument
             { "x", 11U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "x2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 }
         }, true, "", ""
+    },
+    /* 30 - multiple statement in single line */
+    {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff
+            .byte '\''; .byte ';'; .byte 0x8a
+            .byte 1; .int 2; ;)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x61, 0x62, 0x63, 0x3b, 0x00, 0x61, 0x62, 0x22,
+                0x3b, 0x00, 0x61, 0x62, 0x5c, 0x00, 0xff, 0x27,
+                0x3b, 0x8a, 0x01, 0x02, 0x00, 0x00, 0x00
+            } } },
+        { { ".", 23U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 

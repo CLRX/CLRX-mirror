@@ -216,7 +216,7 @@ struct CLRX_INTERNAL AsmPseudoOps
 bool AsmPseudoOps::checkGarbagesAtEnd(Assembler& asmr, const char* string)
 {
     string = skipSpacesToEnd(string, asmr.line + asmr.lineSize);
-    if (string != asmr.line + asmr.lineSize)
+    if (string != asmr.stmtEnd)
     {
         asmr.printError(string, "Garbages at end of line");
         return false;
@@ -227,7 +227,7 @@ bool AsmPseudoOps::checkGarbagesAtEnd(Assembler& asmr, const char* string)
 bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
                       const char*& string, bool requiredExpr)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     const char* exprStr = string;
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, string, string,
@@ -275,7 +275,7 @@ bool AsmPseudoOps::getAnyValueArg(Assembler& asmr, uint64_t& value,
 bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
             const char* objName)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     outStr.clear();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -302,7 +302,7 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
 
 inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     if (string == end)
     {
@@ -321,7 +321,7 @@ inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char
 
 bool AsmPseudoOps::skipCommaForMultipleArgd(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end); // spaces before ','
     if (string == end)
         return false;
@@ -351,7 +351,7 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char*& string, bool _64Bit)
 
 void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     std::string formatName;
     if (!getNameArg(asmr, formatName, string, "output format type"))
@@ -374,7 +374,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     if (asmr.format == BinaryFormat::AMD || asmr.format == BinaryFormat::GALLIUM)
     {
         string = skipSpacesToEnd(string, end);
@@ -403,7 +403,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     std::string filename;
     const char* nameStr = string;
@@ -454,7 +454,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
 void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
 {
     asmr.initializeOutputFormat();
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     std::string filename;
     const char* nameStr = string;
@@ -574,7 +574,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     uint64_t value = 0;
     if (!getAbsoluteValueArg(asmr, value, string, true))
@@ -594,7 +594,7 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& s
 
 void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     if (string != end)
     {
@@ -611,7 +611,7 @@ void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoStr, const char
 
 void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     if (string != end)
     {
@@ -629,7 +629,7 @@ void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoStr, const ch
 template<typename T>
 void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -708,7 +708,7 @@ uint64_t asmcstrtofCStyleLEV<uint64_t>(const char* str, const char* inend,
 template<typename UIntType>
 void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -734,7 +734,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -774,7 +774,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -793,7 +793,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
 template<typename T>
 void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -819,7 +819,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
 void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign,
                  bool baseExpr)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     const char* strAtSymName = string;
     std::string symName = extractSymName(string, end, false);
@@ -844,7 +844,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& string, bool reassign
 
 void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bind)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     do {
         const char* symNameStr = string;
@@ -878,7 +878,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& string, cxbyte bi
 
 void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     const char* symNameStr = string;
     AsmSymbolEntry* symEntry;
@@ -921,7 +921,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& string)
 
 void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
 {
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
@@ -935,7 +935,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
           bool _64bit)
 {
     asmr.initializeOutputFormat();
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     uint64_t repeat = 0, size = 1, value = 0;
     
@@ -1005,7 +1005,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
 void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
 {
     asmr.initializeOutputFormat();
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     uint64_t size = 1, value = 0;
     
@@ -1038,7 +1038,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
 void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
 {
     asmr.initializeOutputFormat();
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     
     uint64_t alignment, value = 0, maxAlign = 0;
@@ -1099,7 +1099,7 @@ template<typename Word>
 void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string)
 {
     asmr.initializeOutputFormat();
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignStr = string;
@@ -1158,7 +1158,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
 void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
 {
     asmr.initializeOutputFormat();
-    const char* end = asmr.line + asmr.lineSize;
+    const char* end = asmr.stmtEnd;
     string = skipSpacesToEnd(string, end);
     uint64_t value;
     cxuint sectionId = ASMSECT_ABS;
@@ -1491,7 +1491,7 @@ bool Assembler::skipClauses()
     while (readLine())
     {
         const char* string = line;
-        const char* end = line + lineSize;
+        const char* end = stmtEnd;
         string = skipSpacesToEnd(string, end);
         if (string == end || *string != '.')
             continue;
