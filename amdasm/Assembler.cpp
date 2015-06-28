@@ -131,11 +131,12 @@ AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos,
 try : managed(true), stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
     if (!pos.macro)
-        source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo, filename));
+        source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo,
+                         pos.colNo, filename));
     else // if inside macro
         source = RefPtr<const AsmSource>(new AsmFile(
             RefPtr<const AsmSource>(new AsmMacroSource(pos.macro, pos.source)),
-                 pos.lineNo, filename));
+                 pos.lineNo, pos.colNo, filename));
     
     stream = new std::ifstream(filename.c_str(), std::ios::binary);
     if (!*stream)
@@ -153,11 +154,12 @@ AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos, std::istream
         stmtPos(0)
 {
     if (!pos.macro)
-        source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo, filename));
+        source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo,
+                             pos.colNo, filename));
     else // if inside macro
         source = RefPtr<const AsmSource>(new AsmFile(
             RefPtr<const AsmSource>(new AsmMacroSource(pos.macro, pos.source)),
-                 pos.lineNo, filename));
+                 pos.lineNo, pos.colNo, filename));
     stream->exceptions(std::ios::badbit);
     buffer.reserve(AsmParserLineMaxSize);
 }
@@ -318,7 +320,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     {
                         lineNo++;
                         endOfLine = (!backslash);
-                        if (backslash) 
+                        if (backslash)
                         {
                             asterisk = prevAsterisk;
                             prevAsterisk = false;
@@ -428,7 +430,7 @@ AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSource
 {
     source = macro.getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
-                   pos.source, pos.lineNo));
+                   pos.source, pos.lineNo, pos.colNo));
     curColTrans = macro.getColTranslations().data();
     buffer.reserve(300);
     lineNo = curColTrans[0].lineNo;
@@ -729,7 +731,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     os.write("In macro substituted from\n", 26);
                 }
                 AsmSourcePos nextLevelPos = { RefPtr<const AsmMacroSubst>(),
-                    curMacro->source, curMacro->lineNo, 0 };
+                    curMacro->source, curMacro->lineNo, curMacro->colNo };
                 nextLevelPos.print(os, indentLevel+1);
                 os.write((parentMacro) ? ";\n" : ":\n", 2);
             }
@@ -745,7 +747,9 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 else // stdin
                     os.write("<stdin>", 7);
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle(curMacro->lineNo, numBuf+1, 29);
+                size_t size = 1+itocstrCStyle(curMacro->lineNo, numBuf+1, 30);
+                os.write(numBuf, size);
+                size = itocstrCStyle(curMacro->colNo, numBuf, 29);
                 numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
@@ -758,7 +762,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
             RefPtr<const AsmMacroSource> curMacroPos =
                     curMacro->source.staticCast<const AsmMacroSource>();
             AsmSourcePos macroPos = { curMacroPos->macro, curMacroPos->source,
-                curMacro->lineNo, 0 };
+                curMacro->lineNo, curMacro->colNo };
             macroPos.print(os, indentLevel+1);
             os.write((parentMacro) ? ";\n" : ":\n", 2);
         }
@@ -799,6 +803,9 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     
                     numBuf[0] = ':';
                     size_t size = 1+itocstrCStyle(curFile->lineNo, numBuf+1, 29);
+                    numBuf[size++] = ':';
+                    os.write(numBuf, size);
+                    size = itocstrCStyle(curFile->colNo, numBuf, 30);
                     curFile = parentFile.staticCast<const AsmFile>();
                     numBuf[size++] = curFile->parent ? ',' : ':';
                     numBuf[size++] = '\n';
@@ -811,7 +818,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     RefPtr<const AsmMacroSource> curMacroPos =
                             parentSource.staticCast<const AsmMacroSource>();
                     AsmSourcePos macroPos = { curMacroPos->macro, curMacroPos->source,
-                        curFile->lineNo, 0 };
+                        curFile->lineNo, curFile->colNo };
                     macroPos.print(os, indentLevel+1);
                     os.write(":\n", 2);
                     break;
@@ -832,9 +839,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         if (colNo != 0)
         {
             numBuf[0] = ':';
-            size = 1+itocstrCStyle(colNo, numBuf+1, 29);
-            numBuf[size++] = ':';
-            numBuf[size++] = ' ';
+            size = 1+itocstrCStyle(colNo, numBuf+1, 31);
             os.write(numBuf, size);
         }
     }
@@ -1524,7 +1529,7 @@ void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
     if ((flags & ASM_WARNINGS) == 0)
         return; // do nothing
     pos.print(messageStream);
-    messageStream.write("Warning: ", 9);
+    messageStream.write(": Warning: ", 11);
     messageStream.write(message, ::strlen(message));
     messageStream.put('\n');
 }
@@ -1533,7 +1538,7 @@ void Assembler::printError(const AsmSourcePos& pos, const char* message)
 {
     good = false;
     pos.print(messageStream);
-    messageStream.write("Error: ", 7);
+    messageStream.write(": Error: ", 9);
     messageStream.write(message, ::strlen(message));
     messageStream.put('\n');
 }

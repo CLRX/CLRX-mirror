@@ -116,6 +116,7 @@ struct AsmFile: public AsmSource
     /// for macro substitution is parent substitution
     RefPtr<const AsmSource> parent; ///< parent file (or null if root)
     uint64_t lineNo; ///< place where file is included (0 if root)
+    size_t colNo; ///< place in line where file is included
     const std::string file; ///< file path
     
     /// constructor
@@ -124,9 +125,9 @@ struct AsmFile: public AsmSource
     { }
     
     /// constructor with parent file inclustion
-    AsmFile(const RefPtr<const AsmSource> _parent, uint64_t _lineNo,
+    AsmFile(const RefPtr<const AsmSource> _parent, uint64_t _lineNo, size_t _colNo,
         const std::string& _file) : AsmSource(AsmSourceType::FILE),
-        parent(_parent), lineNo(_lineNo), file(_file)
+        parent(_parent), lineNo(_lineNo), colNo(_colNo), file(_file)
     { }
     /// destructor
     virtual ~AsmFile();
@@ -140,14 +141,16 @@ struct AsmMacroSubst: public FastRefCountable
     RefPtr<const AsmMacroSubst> parent;   ///< parent macro substition
     RefPtr<const AsmSource> source; ///< source of content where macro substituted
     uint64_t lineNo;  ///< place where macro substituted
+    size_t colNo; ///< place in line where macro substituted
     
     /// constructor
-    AsmMacroSubst(RefPtr<const AsmSource> _source, uint64_t _lineNo) :
-              source(_source), lineNo(_lineNo)
+    AsmMacroSubst(RefPtr<const AsmSource> _source, uint64_t _lineNo, size_t _colNo) :
+              source(_source), lineNo(_lineNo), colNo(_colNo)
     { }
     /// constructor with parent macro substitution
     AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent, RefPtr<const AsmSource> _source,
-              size_t _lineNo) : parent(_parent), source(_source), lineNo(_lineNo)
+              uint64_t _lineNo, size_t _colNo) : parent(_parent), source(_source),
+              lineNo(_lineNo), colNo(_colNo)
     { }
 };
 
