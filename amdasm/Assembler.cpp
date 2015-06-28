@@ -119,7 +119,7 @@ catch(...)
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& filename)
-    :  managed(false), stream(&is), mode(LineMode::NORMAL)
+    :  managed(false), stream(&is), mode(LineMode::NORMAL), stmtPos(0)
 {
     source = RefPtr<const AsmSource>(new AsmFile(filename));
     stream->exceptions(std::ios::badbit);
@@ -128,7 +128,7 @@ AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& 
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos,
            const std::string& filename)
-try : managed(true), stream(nullptr), mode(LineMode::NORMAL)
+try : managed(true), stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
     if (!pos.macro)
         source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo, filename));
@@ -149,7 +149,8 @@ catch(...)
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos, std::istream& is,
-        const std::string& filename) : managed(false), stream(&is), mode(LineMode::NORMAL)
+        const std::string& filename) : managed(false), stream(&is), mode(LineMode::NORMAL),
+        stmtPos(0)
 {
     if (!pos.macro)
         source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo, filename));

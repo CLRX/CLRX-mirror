@@ -320,10 +320,9 @@ protected:
     std::vector<char> buffer;   ///< buffer of line (can be not used)
     std::vector<LineTrans> colTranslations; ///< column translations
     uint64_t lineNo;    ///< current line number
-    size_t stmtPos;
     
     /// empty constructor
-    AsmInputFilter():  pos(0), lineNo(1), stmtPos(0)
+    AsmInputFilter():  pos(0), lineNo(1)
     { }
     /// constructor with macro substitution and source
     AsmInputFilter(RefPtr<const AsmMacroSubst> _macroSubst,
@@ -386,6 +385,8 @@ private:
     bool managed;
     std::istream* stream;
     LineMode mode;
+    size_t stmtPos;
+    
 public:
     /// constructor with input stream and their filename
     explicit AsmStreamInputFilter(std::istream& is, const std::string& filename = "");
