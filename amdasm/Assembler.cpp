@@ -250,7 +250,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     {   /* treat statement as separate line */
                         endOfLine = true;
                         pos++;
-                        stmtPos = pos-joinStart;
+                        stmtPos += pos-joinStart;
                         joinStart = pos;
                         backslash = false;
                         break;

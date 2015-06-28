@@ -1524,6 +1524,25 @@ test.s:38:23: Error: Expected ',' before argument
         false, "test.s:1:57: Error: Unterminated expression\n"
         "test.s:2:35: Warning: No expression, zero has been put\n"
         "test.s:3:29: Error: Expected ',' before next value\n", ""
+    },
+    {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff
+            .byte '\''; .byte ';'; .byte 0x8a
+            .byte 1; .fill uuu,; \
+.int , 2 x; ; .fill xxx,; .fill yyy)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 
+                0x61, 0x62, 0x63, 0x3b, 0x00, 0x61, 0x62, 0x22,
+                0x3b, 0x00, 0x61, 0x62, 0x5c, 0x00, 0xff, 0x27,
+                0x3b, 0x8a, 0x01, 0x00, 0x00, 0x00, 0x00, 0x02,
+                0x00, 0x00, 0x00
+            } } },
+        { { ".", 27U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:3:28: Error: Expression have unresolved symbol 'uuu'\n"
+        "test.s:4:6: Warning: No expression, zero has been put\n"
+        "test.s:4:10: Error: Expected ',' before next value\n"
+        "test.s:4:21: Error: Expression have unresolved symbol 'xxx'\n"
+        "test.s:4:33: Error: Expression have unresolved symbol 'yyy'\n", ""
     }
 };
 
