@@ -91,7 +91,7 @@ AsmInputFilter::~AsmInputFilter()
 LineCol AsmInputFilter::translatePos(size_t position) const
 {
     auto found = std::lower_bound(colTranslations.rbegin(), colTranslations.rend(),
-         LineTrans({ position, 0 }),
+         LineTrans({ ssize_t(position), 0 }),
          [](const LineTrans& t1, const LineTrans& t2)
          { return t1.position > t2.position; });
     return { found->lineNo, position-found->position+1 };
@@ -172,19 +172,19 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     colTranslations.clear();
     bool endOfLine = false;
     size_t lineStart = pos;
-    size_t joinStart = pos;
+    size_t joinStart = pos; // join Start - physical line start
     size_t destPos = pos;
     size_t backslash = false;
     bool prevAsterisk = false;
     bool asterisk = false;
-    colTranslations.push_back({0, lineNo});
+    colTranslations.push_back({ssize_t(-stmtPos), lineNo});
     while (!endOfLine)
     {
         switch(mode)
         {
             case LineMode::NORMAL:
             {
-                if (pos < buffer.size() && !isSpace(buffer[pos]))
+                if (pos < buffer.size() && !isSpace(buffer[pos]) && buffer[pos] != ';')
                 {   // putting regular string (no spaces)
                     do {
                         backslash = (buffer[pos] == '\\');
@@ -221,7 +221,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                             break;
                         }
                         
-                    } while (pos < buffer.size() && !isSpace(buffer[pos]));
+                    } while (pos < buffer.size() && !isSpace(buffer[pos]) &&
+                                buffer[pos] != ';');
                 }
                 if (pos < buffer.size())
                 {
@@ -232,11 +233,23 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         if (backslash) 
                         {
                             destPos--;
-                            if (destPos-lineStart == colTranslations.back().position)
+                            if (ssize_t(destPos-lineStart) ==
+                                colTranslations.back().position)
                                 colTranslations.pop_back();
-                            colTranslations.push_back({destPos-lineStart, lineNo});
+                            colTranslations.push_back(
+                                {ssize_t(destPos-lineStart), lineNo});
                         }
+                        stmtPos = 0;
                         pos++;
+                        joinStart = pos;
+                        backslash = false;
+                        break;
+                    }
+                    else if (buffer[pos] == ';' && mode == LineMode::NORMAL)
+                    {   /* treat statement as separate line */
+                        endOfLine = true;
+                        pos++;
+                        stmtPos = pos-joinStart;
                         joinStart = pos;
                         backslash = false;
                         break;
@@ -268,15 +281,16 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     if (backslash)
                     {
                         destPos--;
-                        if (destPos-lineStart == colTranslations.back().position)
+                        if (ssize_t(destPos-lineStart) == colTranslations.back().position)
                             colTranslations.pop_back();
-                        colTranslations.push_back({destPos-lineStart, lineNo});
+                        colTranslations.push_back({ssize_t(destPos-lineStart), lineNo});
                     }
                     else
                         mode = LineMode::NORMAL;
                     pos++;
                     joinStart = pos;
                     backslash = false;
+                    stmtPos = 0;
                 }
                 break;
             }
@@ -308,13 +322,16 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                             asterisk = prevAsterisk;
                             prevAsterisk = false;
                             destPos--;
-                            if (destPos-lineStart == colTranslations.back().position)
+                            if (ssize_t(destPos-lineStart) ==
+                                colTranslations.back().position)
                                 colTranslations.pop_back();
-                            colTranslations.push_back({destPos-lineStart, lineNo});
+                            colTranslations.push_back(
+                                {ssize_t(destPos-lineStart), lineNo});
                         }
                         pos++;
                         joinStart = pos;
                         backslash = false;
+                        stmtPos = 0;
                     }
                 }
                 break;
@@ -348,13 +365,15 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                         if (backslash&1)
                         {
                             destPos--; // ignore last backslash
-                            colTranslations.push_back({destPos-lineStart, lineNo});
+                            colTranslations.push_back(
+                                {ssize_t(destPos-lineStart), lineNo});
                         }
                         else
-                            assembler.printWarning({lineNo, pos-joinStart+1},
+                            assembler.printWarning({lineNo, pos-joinStart+stmtPos+1},
                                         "Unterminated string: newline inserted");
                         pos++;
                         joinStart = pos;
+                        stmtPos = 0;
                     }
                     backslash = false;
                 }
@@ -387,7 +406,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             if (readed == 0)
             {   // end of file. check comments
                 if (mode == LineMode::LONG_COMMENT && lineStart!=pos)
-                    assembler.printError({lineNo, pos-joinStart+1},
+                    assembler.printError({lineNo, pos-joinStart+stmtPos+1},
                            "Unterminated multi-line comment");
                 if (destPos-lineStart == 0)
                 {
@@ -431,7 +450,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     
     size_t destPos = 0;
     size_t toCopyPos = pos;
-    colTranslations.push_back({0, curColTrans->lineNo});
+    colTranslations.push_back({ curColTrans->position, curColTrans->lineNo});
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
             curColTrans[1].position : SIZE_MAX;
     
@@ -442,7 +461,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             if (pos >= colTransThreshold)
             {
                 curColTrans++;
-                colTranslations.push_back({destPos + pos-toCopyPos, curColTrans->lineNo});
+                colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
+                            curColTrans->lineNo});
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         curColTrans[1].position : SIZE_MAX;
             }
@@ -453,7 +473,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             if (pos >= colTransThreshold)
             {
                 curColTrans++;
-                colTranslations.push_back({destPos + pos-toCopyPos, curColTrans->lineNo});
+                colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
+                            curColTrans->lineNo});
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         curColTrans[1].position : SIZE_MAX;
             }
@@ -919,7 +940,7 @@ Assembler::~Assembler()
 bool Assembler::parseString(std::string& strarray, const char* string,
             const char*& outend)
 {
-    const char* end = stmtEnd;
+    const char* end = line+lineSize;
     outend = string;
     strarray.clear();
     if (outend == end || *outend != '"')
@@ -1042,7 +1063,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
 bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& outend)
 {
     outend = string;
-    const char* end = stmtEnd;
+    const char* end = line+lineSize;
     if (outend != end && *outend == '\'')
     {
         outend++;
@@ -1171,7 +1192,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
         }
     }
     try
-    { value = cstrtovCStyle<uint64_t>(string, stmtEnd, outend); }
+    { value = cstrtovCStyle<uint64_t>(string, line+lineSize, outend); }
     catch(const ParseException& ex)
     {
         printError(string, ex.what());
@@ -1183,11 +1204,11 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
 Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& outend,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
-    const std::string symName = extractSymName(string, stmtEnd, localLabel);
+    const std::string symName = extractSymName(string, line+lineSize, localLabel);
     outend = string;
     if (symName.empty())
     {   // this is not symbol or a missing symbol
-        while (outend != stmtEnd && !isSpace(*outend) && *outend != ',' &&
+        while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
             *outend != ':' && *outend != ';') outend++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
@@ -1363,11 +1384,11 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     bool makeBaseExpr = (baseExpr && symbolName != ".");
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
                     *this, string, string, makeBaseExpr));
-    string = skipSpacesToEnd(string, stmtEnd);
+    string = skipSpacesToEnd(string, line+lineSize);
     if (!expr) // no expression, errors
         return false;
     
-    if (string != stmtEnd)
+    if (string != line+lineSize)
     {
         printError(string, "Garbages at end of expression");
         return false;
@@ -1464,7 +1485,7 @@ bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
 
 bool Assembler::skipSymbol(const char* string, const char*& outend)
 {
-    const char* end = stmtEnd;
+    const char* end = line+lineSize;
     string = skipSpacesToEnd(string, end);
     const char* start = string;
     if (string != end)
@@ -1553,15 +1574,11 @@ bool Assembler::readLine()
             asmInputFilters.pop();
         }
         else
-        {
-            stmtEnd = nullptr;
             return false;
-        }
         currentInputFilter = asmInputFilters.top();
         lineNo = currentInputFilter->getLineNo();
         line = currentInputFilter->readLine(*this, lineSize);
     }
-    stmtEnd = line + lineSize;
     return true;
 }
 
@@ -1617,151 +1634,123 @@ bool Assembler::assemble()
                 break; // end of stream
         }
         
-        const char* lineEnd = line+lineSize;
         const char* string = line; // string points to place of line
-        stmtEnd = string;
-        bool firstStmt = true;
-        while (stmtEnd != lineEnd)
-        {
-            string = (!firstStmt) ? stmtEnd+1 : stmtEnd;
-            stmtEnd = string;
-            /* find first ';' (statement separator) */
-            while (stmtEnd != lineEnd && *stmtEnd != ';')
-                if (*stmtEnd != '\"' && *stmtEnd != '\'')
-                    stmtEnd++;
-                else
-                {   // string
-                    const char term = *stmtEnd++;
-                    cxuint backslash = 0;
-                    while (stmtEnd != lineEnd && (*stmtEnd != term || (backslash&1)))
-                    {
-                        if (*stmtEnd == '\\')
-                            backslash++;
-                        else
-                            backslash = 0;
-                        stmtEnd++;
-                    }
-                    if (stmtEnd != lineEnd) stmtEnd++;
-                }
-            firstStmt = false;
-            
-            string = skipSpacesToEnd(string, stmtEnd);
-            if (string == stmtEnd)
-                continue; // only empty line
-            
-            // statement start (except labels). in this time can point to labels
-            const char* stmtStartStr = string;
-            std::string firstName = extractLabelName(string, stmtEnd);
-            string += firstName.size();
-            
-            string = skipSpacesToEnd(string, stmtEnd);
-            
-            bool doNextLine = false;
-            while (!firstName.empty() && string != stmtEnd && *string == ':')
-            {   // labels
-                string++;
-                string = skipSpacesToEnd(string, stmtEnd);
-                initializeOutputFormat();
-                if (firstName.front() >= '0' && firstName.front() <= '9')
-                {   // handle local labels
-                    if (sections.empty())
-                    {
-                        printError(stmtStartStr,
-                                   "Local label can't be defined outside section");
-                        doNextLine = true;
-                        break;
-                    }
-                    if (inAmdConfig)
-                    {
-                        printError(stmtStartStr,
-                                   "Local label can't defined in AMD config place");
-                        doNextLine = true;
-                        break;
-                    }
-                    std::pair<AsmSymbolMap::iterator, bool> prevLRes =
-                            symbolMap.insert({ firstName+"b", AsmSymbol() });
-                    std::pair<AsmSymbolMap::iterator, bool> nextLRes =
-                            symbolMap.insert({ firstName+"f", AsmSymbol() });
-                    assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
-                    prevLRes.first->second.clearOccurrencesInExpr();
-                    prevLRes.first->second.value = nextLRes.first->second.value;
-                    prevLRes.first->second.isDefined = true;
-                    prevLRes.first->second.sectionId = currentSection;
-                    nextLRes.first->second.isDefined = false;
-                }
-                else
-                {   // regular labels
-                    std::pair<AsmSymbolMap::iterator, bool> res = 
-                            symbolMap.insert({ firstName, AsmSymbol() });
-                    if (!res.second)
-                    {   // found
-                        if (res.first->second.onceDefined &&
-                            (res.first->second.isDefined ||
-                            res.first->second.expression!=nullptr))
-                        {   // if label
-                            std::string msg = "Symbol '";
-                            msg += firstName;
-                            msg += "' is already defined";
-                            printError(stmtStartStr, msg.c_str());
-                            doNextLine = true;
-                            break;
-                        }
-                    }
-                    if (sections.empty())
-                    {
-                        printError(stmtStartStr,
-                                   "Label can't be defined outside section");
-                        doNextLine = true;
-                        break;
-                    }
-                    if (inAmdConfig)
-                    {
-                        printError(stmtStartStr,
-                                   "Label can't defined in AMD config place");
-                        doNextLine = true;
-                        break;
-                    }
-                    
-                    setSymbol(*res.first, currentOutPos, currentSection);
-                    res.first->second.onceDefined = true;
-                    res.first->second.sectionId = currentSection;
-                }
-                // new label or statement
-                stmtStartStr = string;
-                firstName = extractLabelName(string, stmtEnd);
-                string += firstName.size();
-            }
-            if (doNextLine)
-                continue;
-            
-            /* now stmtStartStr - points to first string of statement
-             * (labels has been skipped) */
-            string = skipSpacesToEnd(string, stmtEnd);
-            if (string != stmtEnd && *string == '=' &&
-                // not for local labels
-                (firstName.front() < '0' || firstName.front() > '9'))
-            {   // assignment
-                string = skipSpacesToEnd(string+1, line+lineSize);
-                if (string == stmtEnd)
+        const char* end = line+lineSize;
+        string = skipSpacesToEnd(string, end);
+        if (string == end)
+            continue; // only empty line
+        
+        // statement start (except labels). in this time can point to labels
+        const char* stmtStartStr = string;
+        std::string firstName = extractLabelName(string, end);
+        string += firstName.size();
+        
+        string = skipSpacesToEnd(string, end);
+        
+        bool doNextLine = false;
+        while (!firstName.empty() && string != end && *string == ':')
+        {   // labels
+            string++;
+            string = skipSpacesToEnd(string, end);
+            initializeOutputFormat();
+            if (firstName.front() >= '0' && firstName.front() <= '9')
+            {   // handle local labels
+                if (sections.empty())
                 {
-                    printError(string, "Expected assignment expression");
-                    continue;
+                    printError(stmtStartStr,
+                               "Local label can't be defined outside section");
+                    doNextLine = true;
+                    break;
                 }
-                assignSymbol(firstName, stmtStartStr, string);
+                if (inAmdConfig)
+                {
+                    printError(stmtStartStr,
+                               "Local label can't defined in AMD config place");
+                    doNextLine = true;
+                    break;
+                }
+                std::pair<AsmSymbolMap::iterator, bool> prevLRes =
+                        symbolMap.insert({ firstName+"b", AsmSymbol() });
+                std::pair<AsmSymbolMap::iterator, bool> nextLRes =
+                        symbolMap.insert({ firstName+"f", AsmSymbol() });
+                assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
+                prevLRes.first->second.clearOccurrencesInExpr();
+                prevLRes.first->second.value = nextLRes.first->second.value;
+                prevLRes.first->second.isDefined = true;
+                prevLRes.first->second.sectionId = currentSection;
+                nextLRes.first->second.isDefined = false;
+            }
+            else
+            {   // regular labels
+                std::pair<AsmSymbolMap::iterator, bool> res = 
+                        symbolMap.insert({ firstName, AsmSymbol() });
+                if (!res.second)
+                {   // found
+                    if (res.first->second.onceDefined && (res.first->second.isDefined ||
+                        res.first->second.expression!=nullptr))
+                    {   // if label
+                        std::string msg = "Symbol '";
+                        msg += firstName;
+                        msg += "' is already defined";
+                        printError(stmtStartStr, msg.c_str());
+                        doNextLine = true;
+                        break;
+                    }
+                }
+                if (sections.empty())
+                {
+                    printError(stmtStartStr,
+                               "Label can't be defined outside section");
+                    doNextLine = true;
+                    break;
+                }
+                if (inAmdConfig)
+                {
+                    printError(stmtStartStr,
+                               "Label can't defined in AMD config place");
+                    doNextLine = true;
+                    break;
+                }
+                
+                setSymbol(*res.first, currentOutPos, currentSection);
+                res.first->second.onceDefined = true;
+                res.first->second.sectionId = currentSection;
+            }
+            // new label or statement
+            stmtStartStr = string;
+            firstName = extractLabelName(string, end);
+            string += firstName.size();
+        }
+        if (doNextLine)
+            continue;
+        
+        /* now stmtStartStr - points to first string of statement
+         * (labels has been skipped) */
+        string = skipSpacesToEnd(string, end);
+        if (string != end && *string == '=' &&
+            // not for local labels
+            (firstName.front() < '0' || firstName.front() > '9'))
+        {   // assignment
+            string = skipSpacesToEnd(string+1, line+lineSize);
+            if (string == end)
+            {
+                printError(string, "Expected assignment expression");
                 continue;
             }
-            // make firstname as lowercase
-            toLowerString(firstName);
-            
-            if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
-            {
-                parsePseudoOps(firstName, stmtStartStr, string);
-            }
-            else if (firstName.size() >= 1 && isDigit(firstName[0]))
-                printError(stmtStartStr, "Illegal number at statement begin");
-            else
-            {   // try to parse processor instruction or macro substitution
-            }
+            assignSymbol(firstName, stmtStartStr, string);
+            continue;
+        }
+        // make firstname as lowercase
+        toLowerString(firstName);
+        
+        if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
+        {
+            parsePseudoOps(firstName, stmtStartStr, string);
+        }
+        else if (firstName.size() >= 1 && isDigit(firstName[0]))
+            printError(stmtStartStr, "Illegal number at statement begin");
+        else
+        {   // try to parse processor instruction or macro substitution
         }
     }
     return good;

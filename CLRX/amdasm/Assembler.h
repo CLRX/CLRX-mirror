@@ -197,8 +197,9 @@ struct AsmSourcePos
 /// line translations
 struct LineTrans
 {
-    size_t position;    ///< position in line
-    uint64_t lineNo;    ///< destination line number
+    /// position in joined line, can be negative if filtered line is statement
+    ssize_t position;
+    uint64_t lineNo;    ///< source code line number
 };
 
 /// assembler macro aegument
@@ -319,9 +320,10 @@ protected:
     std::vector<char> buffer;   ///< buffer of line (can be not used)
     std::vector<LineTrans> colTranslations; ///< column translations
     uint64_t lineNo;    ///< current line number
+    size_t stmtPos;
     
     /// empty constructor
-    AsmInputFilter():  pos(0), lineNo(1)
+    AsmInputFilter():  pos(0), lineNo(1), stmtPos(0)
     { }
     /// constructor with macro substitution and source
     AsmInputFilter(RefPtr<const AsmMacroSubst> _macroSubst,
@@ -859,7 +861,6 @@ private:
     
     size_t lineSize;
     const char* line;
-    const char* stmtEnd;
     uint64_t lineNo;
     bool endOfAssembly;
     

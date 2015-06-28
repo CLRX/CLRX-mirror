@@ -1051,7 +1051,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     try
     {
     const char* startString = string;
-    const char* end = assembler.stmtEnd;
+    const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
     size_t symOccursNum = 0;
     bool good = true;

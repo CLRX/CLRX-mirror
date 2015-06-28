@@ -1509,6 +1509,21 @@ test.s:38:23: Error: Expected ',' before argument
             } } },
         { { ".", 23U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff,~
+            .byte '\''; .byte ';',; .byte 0x8a
+            .byte 1; .int 2 x; ;)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x61, 0x62, 0x63, 0x3b, 0x00, 0x61, 0x62, 0x22,
+                0x3b, 0x00, 0x61, 0x62, 0x5c, 0x00, 0xff, 0x27,
+                0x3b, 0x00, 0x8a, 0x01, 0x02, 0x00, 0x00, 0x00
+            } } },
+        { { ".", 24U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:1:57: Error: Unterminated expression\n"
+        "test.s:2:35: Warning: No expression, zero has been put\n"
+        "test.s:3:29: Error: Expected ',' before next value\n", ""
     }
 };
 
