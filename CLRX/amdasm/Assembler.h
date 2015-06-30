@@ -952,10 +952,10 @@ private:
     
     void initializeOutputFormat();
     
-    void pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
-                    bool satisfied);
-    bool changeToElseIfClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
-                  bool satisfied);
+    void pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType)
+    { clauses.push({clauseType, sourcePos, true, { } }); }
+    bool pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
+                  bool satisfied, bool& included);
      // return false when failed (for example no clauses)
     bool popClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType);
     

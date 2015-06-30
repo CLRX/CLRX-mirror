@@ -129,6 +129,17 @@ enum
 namespace CLRX
 {
 
+enum class IfIntComp
+{
+    EQUAL = 0,
+    NOT_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL
+};
+    
+
 struct CLRX_INTERNAL AsmPseudoOps
 {
     static bool checkGarbagesAtEnd(Assembler& asmr, const char* string);
@@ -212,30 +223,20 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void doOrganize(Assembler& asmr, const char*& string);
     
-    enum class IfIntComp
-    {
-        EQUAL = 0,
-        NOT_EQUAL,
-        LESS,
-        LESS_EQUAL,
-        GREATER,
-        GREATER_EQUAL
-    };
+    static void doIfInt(Assembler& asmr, const char* pseudoStr, const char*& string,
+                IfIntComp compType, bool elseIfClause);
     
-    static void doIfInt(Assembler& asmr, const char*& string, IfIntComp compType,
-                bool elseIfClause);
+    static void doIfDef(Assembler& asmr, const char* pseudoStr, const char*& string,
+                bool negation, bool elseIfClause);
     
-    static void doIfDef(Assembler& asmr, const char*& string, bool negation,
-                bool elseIfClause);
-    
-    static void doIfBlank(Assembler& asmr, const char*& string, bool negation,
-                bool elseIfClause);
+    static void doIfBlank(Assembler& asmr, const char* pseudoStr, const char*& string,
+                bool negation, bool elseIfClause);
     /// .ifc
-    static void doIfCompare(Assembler& asmr, const char*& string, bool negation,
-                bool elseIfClause);
+    static void doIfCompare(Assembler& asmr, const char* pseudoStr, const char*& string,
+                bool negation, bool elseIfClause);
     /// ifeqs, ifnes
-    static void doIfStrEqual(Assembler& asmr, const char*& string, bool negation,
-                bool elseIfClause);
+    static void doIfStrEqual(Assembler& asmr, const char* pseudoStr, const char*& string,
+                bool negation, bool elseIfClause);
 };
 
 
@@ -1210,29 +1211,171 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
 }
 
-void AsmPseudoOps::doIfInt(Assembler& asmr, const char*& string, IfIntComp compType,
-               bool elseIfClause)
+void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoStr, const char*& string,
+               IfIntComp compType, bool elseIfClause)
 {
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, string, true))
+        return;
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool satisfied;
+    switch(compType)
+    {
+        case IfIntComp::EQUAL:
+            satisfied = (value == 0);
+            break;
+        case IfIntComp::NOT_EQUAL:
+            satisfied = (value != 0);
+            break;
+        case IfIntComp::LESS:
+            satisfied = (int64_t(value) < 0);
+            break;
+        case IfIntComp::LESS_EQUAL:
+            satisfied = (int64_t(value) <= 0);
+            break;
+        case IfIntComp::GREATER:
+            satisfied = (int64_t(value) > 0);
+            break;
+        case IfIntComp::GREATER_EQUAL:
+            satisfied = (int64_t(value) >= 0);
+            break;
+        default:
+            break;
+    }
+    bool included;
+    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
 }
 
-void AsmPseudoOps::doIfDef(Assembler& asmr, const char*& string, bool negation,
-               bool elseIfClause)
+void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoStr, const char*& string,
+               bool negation, bool elseIfClause)
 {
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* strAtSymName = string;
+    AsmSymbolEntry* entry;
+    Assembler::ParseState state = asmr.parseSymbol(string, string, entry, false, true);
+    if (state == Assembler::ParseState::FAILED)
+        return;
+    if (state == Assembler::ParseState::MISSING)
+    {
+        asmr.printError(strAtSymName, "Expected symbol");
+        return;
+    }
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    bool satisfied = (!negation) ? entry!=nullptr : entry==nullptr;
+    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
 }
 
-void AsmPseudoOps::doIfBlank(Assembler& asmr, const char*& string, bool negation,
-              bool elseifClause)
+void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoStr, const char*& string,
+              bool negation, bool elseIfClause)
 {
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    bool satisfied = (!negation) ? string==end : string!=end;
+    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
 }
 
-void AsmPseudoOps::doIfCompare(Assembler& asmr, const char*& string, bool negation,
-               bool elseifClause)
+static std::string getStringToCompare(const char* strStart, const char* strEnd)
 {
+    std::string firstStr;
+    bool blank = true;
+    for (const char* s = strStart; s != strEnd; ++s)
+        if (isSpace(*s))
+        {
+            if (!blank)
+                firstStr.push_back(*s);
+            blank = true;
+        }
+        else
+        {
+            blank = false;
+            firstStr.push_back(*s);
+        }
+    if (!firstStr.empty() && isSpace(firstStr.back()))
+        firstStr.pop_back(); // remove last space
+    return firstStr;
 }
 
-void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char*& string, bool negation,
-                bool elseifClause)
+void AsmPseudoOps::doIfCompare(Assembler& asmr, const char* pseudoStr, const char*& string,
+               bool negation, bool elseIfClause)
 {
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* firstStrStart = string;
+    
+    while (string != end && *string != ',') string++;
+    if (string == end)
+    {
+        asmr.printError(string, "Missing second string");
+        return;
+    }
+    const char* firstStrEnd = string;
+    string++; // comma
+    
+    std::string firstStr = getStringToCompare(firstStrStart, firstStrEnd);
+    std::string secondStr = getStringToCompare(string, end);
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    bool satisfied = (!negation) ? firstStr==secondStr : firstStr!=secondStr;
+    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
+}
+
+void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoStr,
+                const char*& string, bool negation, bool elseIfClause)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    std::string firstStr, secondStr;
+    bool good = asmr.parseString(firstStr, string, string);
+    bool haveComma;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected two strings");
+        return;
+    }
+    good &= asmr.parseString(secondStr, string, string);
+    if (!good)
+        return;
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    bool satisfied = (!negation) ? firstStr==secondStr : firstStr!=secondStr;
+    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
 }
 
 };
@@ -1313,36 +1456,57 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_ELSE:
             break;
         case ASMOP_ELSEIF:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::NOT_EQUAL, true);
             break;
         case ASMOP_ELSEIFB:
+            AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, false, true);
             break;
         case ASMOP_ELSEIFC:
+            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, false, true);
             break;
         case ASMOP_ELSEIFDEF:
+            AsmPseudoOps::doIfDef(*this, stmtStartStr, string, false, true);
             break;
         case ASMOP_ELSEIFEQ:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::EQUAL, true);
             break;
         case ASMOP_ELSEIFEQS:
+            AsmPseudoOps::doIfStrEqual(*this, stmtStartStr, string, false, true);
             break;
         case ASMOP_ELSEIFGE:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::GREATER_EQUAL, true);
             break;
         case ASMOP_ELSEIFGT:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::GREATER, true);
             break;
         case ASMOP_ELSEIFLE:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::LESS_EQUAL, true);
             break;
         case ASMOP_ELSEIFLT:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::LESS, true);
             break;
         case ASMOP_ELSEIFNB:
+            AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_ELSEIFNC:
+            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_ELSEIFNDEF:
+            AsmPseudoOps::doIfDef(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_ELSEIFNE:
+        case ASMOP_ELSEIFNOTDEF:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::NOT_EQUAL, true);
             break;
         case ASMOP_ELSEIFNES:
-            break;
-        case ASMOP_ELSEIFNOTDEF:
+            AsmPseudoOps::doIfStrEqual(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_END:
             endOfAssembly = true;
@@ -1403,36 +1567,57 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::putIntegers<uint16_t>(*this, string);
             break;
         case ASMOP_IF:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::NOT_EQUAL, false);
             break;
         case ASMOP_IFB:
+            AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, false, false);
             break;
         case ASMOP_IFC:
+            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, false, false);
             break;
         case ASMOP_IFDEF:
+            AsmPseudoOps::doIfDef(*this, stmtStartStr, string, false, false);
             break;
         case ASMOP_IFEQ:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::EQUAL, false);
             break;
         case ASMOP_IFEQS:
+            AsmPseudoOps::doIfStrEqual(*this, stmtStartStr, string, false, false);
             break;
         case ASMOP_IFGE:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::GREATER_EQUAL, false);
             break;
         case ASMOP_IFGT:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::GREATER, false);
             break;
         case ASMOP_IFLE:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::LESS_EQUAL, false);
             break;
         case ASMOP_IFLT:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::LESS, false);
             break;
         case ASMOP_IFNB:
+            AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_IFNC:
+            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_IFNDEF:
+        case ASMOP_IFNOTDEF:
+            AsmPseudoOps::doIfDef(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_IFNE:
+            AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
+                      IfIntComp::NOT_EQUAL, false);
             break;
         case ASMOP_IFNES:
-            break;
-        case ASMOP_IFNOTDEF:
+            AsmPseudoOps::doIfStrEqual(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_INCBIN:
             AsmPseudoOps::includeBinFile(*this, string);

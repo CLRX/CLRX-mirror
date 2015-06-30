@@ -1568,15 +1568,16 @@ void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
     defSyms.push_back({symName, value});
 }
 
-void Assembler::pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
-                    bool satisfied)
+bool Assembler::pushClause(const AsmSourcePos& sourcePos,
+             AsmClauseType clauseType, bool satisfied, bool& included)
 {
-    clauses.push({ clauseType, sourcePos, satisfied, {} });
-}
-
-bool Assembler::changeToElseIfClause(const AsmSourcePos& sourcePos,
-             AsmClauseType clauseType, bool satisfied)
-{
+    if (clauseType == AsmClauseType::MACRO || clauseType == AsmClauseType::IF ||
+        clauseType == AsmClauseType::REPEAT)
+    {   // add new clause
+        clauses.push({ clauseType, sourcePos, satisfied, { } });
+        included = satisfied;
+        return true;
+    }
     if (clauses.empty())
     {   // no clauses
         if (clauseType == AsmClauseType::ELSEIF)
@@ -1615,6 +1616,7 @@ bool Assembler::changeToElseIfClause(const AsmSourcePos& sourcePos,
         default:
             break;
     }
+    included = satisfied && !clause.condSatisfied;
     clause.condSatisfied |= satisfied;
     if (clause.type == AsmClauseType::IF)
         clause.prevIfPos = clause.pos;
