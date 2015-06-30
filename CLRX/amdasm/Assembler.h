@@ -825,7 +825,6 @@ struct AsmClause
     AsmSourcePos pos;   ///< position
     bool condSatisfied; ///< if conditional clause has already been satisfied
     AsmSourcePos prevIfPos; ///< position of previous if-clause
-    AsmSourcePos prevElsePos; //< psotion of previois
 };
 
 /// main class of assembler
@@ -930,7 +929,7 @@ private:
     };
     
     /** parse symbol
-     * \returns 
+     * \return state
      */
     ParseState parseSymbol(const char* linePlace, const char*& outend,
            AsmSymbolEntry*& entry, bool localLabel = true, bool dontCreateSymbol = false);
@@ -952,6 +951,13 @@ private:
     bool putRepetitionContent(AsmRepeat& repeat);
     
     void initializeOutputFormat();
+    
+    void pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
+                    bool satisfied);
+    bool changeToElseIfClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
+                  bool satisfied);
+     // return false when failed (for example no clauses)
+    bool popClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType);
     
     void putData(size_t size, const cxbyte* data)
     {

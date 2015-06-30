@@ -211,6 +211,31 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string);
     
     static void doOrganize(Assembler& asmr, const char*& string);
+    
+    enum class IfIntComp
+    {
+        EQUAL = 0,
+        NOT_EQUAL,
+        LESS,
+        LESS_EQUAL,
+        GREATER,
+        GREATER_EQUAL
+    };
+    
+    static void doIfInt(Assembler& asmr, const char*& string, IfIntComp compType,
+                bool elseIfClause);
+    
+    static void doIfDef(Assembler& asmr, const char*& string, bool negation,
+                bool elseIfClause);
+    
+    static void doIfBlank(Assembler& asmr, const char*& string, bool negation,
+                bool elseIfClause);
+    /// .ifc
+    static void doIfCompare(Assembler& asmr, const char*& string, bool negation,
+                bool elseIfClause);
+    /// ifeqs, ifnes
+    static void doIfStrEqual(Assembler& asmr, const char*& string, bool negation,
+                bool elseIfClause);
 };
 
 
@@ -1185,6 +1210,31 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
 }
 
+void AsmPseudoOps::doIfInt(Assembler& asmr, const char*& string, IfIntComp compType,
+               bool elseIfClause)
+{
+}
+
+void AsmPseudoOps::doIfDef(Assembler& asmr, const char*& string, bool negation,
+               bool elseIfClause)
+{
+}
+
+void AsmPseudoOps::doIfBlank(Assembler& asmr, const char*& string, bool negation,
+              bool elseifClause)
+{
+}
+
+void AsmPseudoOps::doIfCompare(Assembler& asmr, const char*& string, bool negation,
+               bool elseifClause)
+{
+}
+
+void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char*& string, bool negation,
+                bool elseifClause)
+{
+}
+
 };
 
 void Assembler::parsePseudoOps(const std::string firstName,
@@ -1500,9 +1550,9 @@ bool Assembler::skipClauses()
         std::string pseudOpName = extractSymName(string, end, false);
         toLowerString(pseudOpName);
         
-        const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl, offlinePseudoOpNamesTbl +
-                    sizeof(offlinePseudoOpNamesTbl)/sizeof(char*), pseudOpName.c_str()+1,
-                   CStringLess()) - offlinePseudoOpNamesTbl;
+        const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
+               offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
+               pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
         switch(pseudoOp)
         {
             case ASMCOP_END:

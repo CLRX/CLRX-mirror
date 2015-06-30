@@ -1568,6 +1568,121 @@ void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
     defSyms.push_back({symName, value});
 }
 
+void Assembler::pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
+                    bool satisfied)
+{
+    clauses.push({ clauseType, sourcePos, satisfied, {} });
+}
+
+bool Assembler::changeToElseIfClause(const AsmSourcePos& sourcePos,
+             AsmClauseType clauseType, bool satisfied)
+{
+    if (clauses.empty())
+    {   // no clauses
+        if (clauseType == AsmClauseType::ELSEIF)
+            printError(sourcePos, "No '.if' before '.elseif");
+        else // else
+            printError(sourcePos, "No '.if' before '.else'");
+        return false;
+    }
+    AsmClause& clause = clauses.top();
+    switch(clause.type)
+    {
+        case AsmClauseType::ELSE:
+            if (clauseType == AsmClauseType::ELSEIF)
+                printError(sourcePos, "'.elseif' after '.else'");
+            else // else
+                printError(sourcePos, "Duplicate of '.else'");
+           printError(clause.pos, "here is previous '.else'"); 
+           printError(clause.prevIfPos, "here is begin of conditional clause"); 
+           return false;
+        case AsmClauseType::MACRO:
+            if (clauseType == AsmClauseType::ELSEIF)
+                printError(sourcePos,
+                       "No '.if' before '.elseif' and inside macro");
+            else // else
+                printError(sourcePos,
+                       "No '.if' before '.else' and inside macro");
+            return false;
+        case AsmClauseType::REPEAT:
+            if (clauseType == AsmClauseType::ELSEIF)
+                printError(sourcePos,
+                       "No '.if' before '.elseif' and inside repetition");
+            else // else
+                printError(sourcePos,
+                       "No '.if' before '.else' and inside repetition");
+            return false;
+        default:
+            break;
+    }
+    clause.condSatisfied |= satisfied;
+    if (clause.type == AsmClauseType::IF)
+        clause.prevIfPos = clause.pos;
+    clause.type = clauseType;
+    clause.pos = sourcePos;
+    return true;
+}
+
+bool Assembler::popClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType)
+{
+    if (clauses.empty())
+    {   // no clauses
+        if (clauseType == AsmClauseType::IF)
+            printError(sourcePos, "No conditional before '.endif' pseudo-op");
+        else if (clauseType == AsmClauseType::MACRO) // macro
+            printError(sourcePos, "No '.macro' pseudo-op before '.endm' pseudo-op");
+        else if (clauseType == AsmClauseType::REPEAT) // repeat
+            printError(sourcePos, "No '.rept' pseudo-op before '.endr' pseudo-op");
+        return false;
+    }
+    AsmClause& clause = clauses.top();
+    switch(clause.type)
+    {
+        case AsmClauseType::IF:
+        case AsmClauseType::ELSE:
+        case AsmClauseType::ELSEIF:
+            if (clauseType == AsmClauseType::MACRO)
+            {
+                printError(sourcePos, "Ending macro across conditionals");
+                return false;
+            }
+            else if (clauseType == AsmClauseType::REPEAT)
+            {
+                printError(sourcePos, "Ending repetition across conditionals");
+                return false;
+            }
+            break;
+        case AsmClauseType::MACRO:
+            if (clauseType == AsmClauseType::REPEAT)
+            {
+                printError(sourcePos, "Ending repetition across macro");
+                return false;
+            }
+            if (clauseType == AsmClauseType::IF)
+            {
+                printError(sourcePos, "Ending conditional across macro");
+                return false;
+            }
+            break;
+        case AsmClauseType::REPEAT:
+            if (clauseType == AsmClauseType::MACRO)
+            {
+                printError(sourcePos, "Ending macro across repetition");
+                return false;
+            }
+            if (clauseType == AsmClauseType::IF)
+            {
+                printError(sourcePos, "Ending conditional across repetition");
+                return false;
+            }
+            break;
+        default:
+            break;
+    }
+    clauses.pop();
+    return true;
+}
+
 bool Assembler::readLine()
 {
     lineNo = currentInputFilter->getLineNo();
