@@ -1255,6 +1255,7 @@ void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpStr, const char*
             satisfied = (int64_t(value) >= 0);
             break;
         default:
+            satisfied = false;
             break;
     }
     bool included;

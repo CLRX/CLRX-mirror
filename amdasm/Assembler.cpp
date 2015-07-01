@@ -1594,9 +1594,9 @@ bool Assembler::pushClause(const AsmSourcePos& sourcePos,
                 printError(sourcePos, "'.elseif' after '.else'");
             else // else
                 printError(sourcePos, "Duplicate of '.else'");
-           printError(clause.pos, "here is previous '.else'"); 
-           printError(clause.prevIfPos, "here is begin of conditional clause"); 
-           return false;
+            printError(clause.pos, "here is previous '.else'"); 
+            printError(clause.prevIfPos, "here is begin of conditional clause"); 
+            return false;
         case AsmClauseType::MACRO:
             if (clauseType == AsmClauseType::ELSEIF)
                 printError(sourcePos,
@@ -1875,6 +1875,31 @@ bool Assembler::assemble()
         else
         {   // try to parse processor instruction or macro substitution
         }
+    }
+    /* check clauses and print errors */
+    while (!clauses.empty())
+    {
+        const AsmClause& clause = clauses.top();
+        switch(clause.type)
+        {
+            case AsmClauseType::IF:
+                printError(clause.pos, "Unterminated 'if'");
+                break;
+            case AsmClauseType::ELSEIF:
+                printError(clause.pos, "Unterminated '.else'");
+                break;
+            case AsmClauseType::ELSE:
+                printError(clause.pos, "Unterminated '.else'");
+                break;
+            case AsmClauseType::MACRO:
+                printError(clause.pos, "Unterminated macro definition");
+                break;
+            case AsmClauseType::REPEAT:
+                printError(clause.pos, "Unterminated repetition");
+            default:
+                break;
+        }
+        clauses.pop();
     }
     return good;
 }

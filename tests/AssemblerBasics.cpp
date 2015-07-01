@@ -1510,6 +1510,7 @@ test.s:38:23: Error: Expected ',' before argument
         { { ".", 23U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
+    /* 31 */
     {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff,~
             .byte '\''; .byte ';',; .byte 0x8a
             .byte 1; .int 2 x; ;)ffDXD",
@@ -1525,6 +1526,7 @@ test.s:38:23: Error: Expected ',' before argument
         "test.s:2:35: Warning: No expression, zero has been put\n"
         "test.s:3:29: Error: Expected ',' before next value\n", ""
     },
+    /* 32 */
     {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff
             .byte '\''; .byte ';'; .byte 0x8a
             .byte 1; .fill uuu,; \
@@ -1543,6 +1545,227 @@ test.s:38:23: Error: Expected ',' before argument
         "test.s:4:10: Error: Expected ',' before next value\n"
         "test.s:4:21: Error: Expression have unresolved symbol 'xxx'\n"
         "test.s:4:33: Error: Expression have unresolved symbol 'yyy'\n", ""
+    },
+    /* 33 - if statementd */
+    {   R"ffDXD(            .if 1
+            .byte 1
+            .endif
+            .if 0
+            .byte 2
+            .endif
+            
+            .ifne 1
+            .byte 3
+            .endif
+            .ifne 0
+            .byte 4
+            .endif
+            
+            .ifle 1
+            .byte 5
+            .endif
+            .ifle 0
+            .byte 6
+            .endif
+            .ifle -1
+            .byte 7
+            .endif
+            
+            .iflt 1
+            .byte 8
+            .endif
+            .iflt 0
+            .byte 9
+            .endif
+            .iflt -1
+            .byte 10
+            .endif
+            
+            .ifge 1
+            .byte 11
+            .endif
+            .ifge 0
+            .byte 12
+            .endif
+            .ifge -1
+            .byte 13
+            .endif
+            
+            .ifgt 1
+            .byte 14
+            .endif
+            .ifgt 0
+            .byte 15
+            .endif
+            .ifgt -1
+            .byte 16
+            .endif
+            
+            .ifeq 1
+            .byte 17
+            .endif
+            .ifeq 0
+            .byte 18
+            .endif
+            
+            .ifb  
+            .byte 21
+            .endif
+            .ifb  xx
+            .byte 22
+            .endif
+            .ifnb  
+            .byte 23
+            .endif
+            .ifnb  xx
+            .byte 24
+            .endif
+            
+            ab = 7
+            ac = ax
+            .ifdef aaa
+            .byte 25
+            .endif
+            .ifdef ab
+            .byte 26
+            .endif
+            .ifdef ac
+            .byte 27
+            .endif
+            .ifndef aaa
+            .byte 28
+            .endif
+            .ifndef ab
+            .byte 29
+            .endif
+            .ifndef ac
+            .byte 30
+            .endif
+            .ifnotdef aaa
+            .byte 31
+            .endif
+            .ifnotdef ab
+            .byte 32
+            .endif
+            .ifnotdef ac
+            .byte 33
+            .endif
+            
+            .ifeqs "ala","ala"
+            .byte 41
+            .endif
+            .ifeqs "ala","alA"
+            .byte 42
+            .endif
+            .ifeqs "ala","alax"
+            .byte 43
+            .endif
+            .ifnes "ala","ala"
+            .byte 44
+            .endif
+            .ifnes "ala","alA"
+            .byte 45
+            .endif
+            .ifnes "ala","alax"
+            .byte 46
+            .endif
+            
+            .ifc   buru     , buru
+            .byte 47
+            .endif
+            .ifc   bu ru     , bu  ru
+            .byte 48
+            .endif
+            .ifc   "buru"     , "buru"
+            .byte 49
+            .endif
+            .ifc   "bu ru"     , "bu  ru"
+            .byte 50
+            .endif
+            .ifc   buxru     , buru
+            .byte 51
+            .endif
+            .ifc   buRu     , buru
+            .byte 52
+            .endif
+            .ifnc   buru     , buru
+            .byte 53
+            .endif
+            .ifnc   bu ru     , bu  ru
+            .byte 54
+            .endif
+            .ifnc   "buru"     , "buru"
+            .byte 55
+            .endif
+            .ifnc   "bu ru"     , "bu  ru"
+            .byte 56
+            .endif
+            .ifnc   buxru     , buru
+            .byte 57
+            .endif
+            .ifnc   buRu     , buru
+            .byte 58
+            .endif)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 
+                0x01, 0x03, 0x06, 0x07, 0x0a, 0x0b, 0x0c, 0x0e,
+                0x12, 0x15, 0x18, 0x1a, 0x1b, 0x1c, 0x1f, 0x29,
+                0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x38, 0x39, 0x3a
+            } } },
+        {
+            { ".", 24U, 0, 0U, true, false, false, 0, 0 },
+            { "ab", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "ac", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "ax", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 34 - nesting of ifs */
+    {   R"ffDXD(            .if 4
+            .byte 4
+            .else # to ignore
+                .if 5
+                    .if 8
+                    .endif
+                .else
+                    .if 7
+                    .else
+                    .endif
+                .endif
+            .endif)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 4 } } },
+        { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 35 - if.elseif.else.endif all  ways */
+    {   R"ffDXD(            .if 0
+            .byte 1
+            .elseif 1
+            .byte 2
+            .else
+            .byte 3
+            .endif
+            
+            .if 1
+            .byte 4
+            .elseif 0
+            .byte 5
+            .else
+            .byte 6
+            .endif
+            
+            .if 0
+            .byte 7
+            .elseif 0
+            .byte 8
+            .else
+            .byte 9
+            .endif)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 2, 4, 9 } } },
+        { { ".", 3U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 
