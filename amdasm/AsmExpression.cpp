@@ -929,7 +929,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                         }
                     }
                     
-                    if (nextSymEntry->second.isDefined)
+                    if (nextSymEntry->second.hasValue)
                     {   // put value to argument
                         ops[opIndex] = AsmExprOp::ARG_VALUE;
                         args[argIndex].relValue.value = nextSymEntry->second.value;
@@ -962,7 +962,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                 if (!expr->evaluate(assembler, thisSymEntry->second.value,
                             thisSymEntry->second.sectionId))
                     good = false;
-                thisSymEntry->second.isDefined = true;
+                thisSymEntry->second.hasValue = true;
                 delete thisSymEntry->second.expression;
                 thisSymEntry->second.expression = nullptr;
             }
@@ -999,7 +999,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
         if (good)
             for (AsmSymbolEntry* symEntry: symbolSnapshots)
                 // delete evaluated symbol entries (except output symbol entry)
-                if (outSymEntry != symEntry && symEntry->second.isDefined)
+                if (outSymEntry != symEntry && symEntry->second.hasValue)
                 {
                     delete symEntry->second.expression;
                     symEntry->second.expression = nullptr;
@@ -1296,7 +1296,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                             good = makeSymbolSnapshot(assembler, &symbolSnapshots,
                                       *symEntry, symEntry, &(expr->sourcePos));
                         if (symEntry==nullptr ||
-                            (!symEntry->second.isDefined && dontResolveSymbolsLater))
+                            (!symEntry->second.hasValue && dontResolveSymbolsLater))
                         {   // no symbol not found
                             std::string errorMsg("Expression have unresolved symbol '");
                             errorMsg.append(string, symEndStr);
@@ -1306,7 +1306,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                         }
                         else
                         {
-                            if (symEntry->second.isDefined && !makeBase)
+                            if (symEntry->second.hasValue && !makeBase)
                             {
                                 if (!assembler.isAbsoluteSymbol(symEntry->second))
                                 {
@@ -1501,7 +1501,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
         }
         for (AsmSymbolEntry* symEntry: symbolSnapshots)
         {
-            if (!symEntry->second.isDefined)
+            if (!symEntry->second.hasValue)
                 assembler.symbolSnapshots.insert(symEntry);
             else
             {

@@ -565,7 +565,7 @@ struct AsmSymbol
     cxuint sectionId;       ///< section id
     cxbyte info;           ///< ELF symbol info
     cxbyte other;           ///< ELF symbol other
-    cxuint isDefined:1;         ///< symbol is defined
+    cxuint hasValue:1;         ///< symbol is defined
     cxuint onceDefined:1;       ///< symbol can be only once defined (likes labels)
     cxuint resolving:1;         ///< helper
     cxuint base:1;              ///< with base expression
@@ -579,19 +579,19 @@ struct AsmSymbol
     
     /// empty constructor
     explicit AsmSymbol(bool _onceDefined = false) :
-            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), isDefined(false),
+            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
             value(0), size(0), expression(nullptr)
     { }
     /// constructor with expression
     explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false, bool _base = false) :
-            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), isDefined(false),
+            refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(_base),
             snapshot(false), value(0), size(0), expression(expr)
     { }
     /// constructor with value and section id
     explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
-            refCount(1), sectionId(_sectionId), info(0), other(0), isDefined(true),
+            refCount(1), sectionId(_sectionId), info(0), other(0), hasValue(true),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
             value(_value), size(0), expression(nullptr)
     { }

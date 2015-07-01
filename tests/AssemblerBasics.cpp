@@ -42,7 +42,7 @@ struct SymEntry
     uint64_t value;
     cxuint sectionId;
     uint64_t size;
-    bool isDefined;
+    bool hasValue;
     bool onceDefined;
     bool base;
     cxbyte info;
@@ -1830,8 +1830,8 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         assertValue(testName,caseName+"sectId", expSymbol.sectionId,
                      resSymbol.second.sectionId);
         assertValue(testName,caseName+"size", expSymbol.size, resSymbol.second.size);
-        assertValue(testName,caseName+"isDefined", int(expSymbol.isDefined),
-                    int(resSymbol.second.isDefined));
+        assertValue(testName,caseName+"isDefined", int(expSymbol.hasValue),
+                    int(resSymbol.second.hasValue));
         assertValue(testName,caseName+"onceDefined", int(expSymbol.onceDefined),
                     int(resSymbol.second.onceDefined));
         assertValue(testName,caseName+"base", int(expSymbol.base),

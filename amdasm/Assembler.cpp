@@ -1230,13 +1230,13 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
         std::pair<AsmSymbolMap::iterator, bool> res =
                 symbolMap.insert({ symName, AsmSymbol()});
         entry = &*res.first;
-        symIsDefined = res.first->second.isDefined;
+        symIsDefined = res.first->second.hasValue;
     }
     else
     {   // only find symbol and set isDefined and entry
         AsmSymbolMap::iterator it = symbolMap.find(symName);
         entry = (it != symbolMap.end()) ? &*it : nullptr;
-        symIsDefined = (it != symbolMap.end() && it->second.isDefined);
+        symIsDefined = (it != symbolMap.end() && it->second.hasValue);
     }
     if (isDigit(symName.front()) && symName.back() == 'b' && !symIsDefined)
     {   // failed at finding
@@ -1254,7 +1254,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
 {
     symEntry.second.value = value;
     symEntry.second.sectionId = sectionId;
-    symEntry.second.isDefined = true;
+    symEntry.second.hasValue = true;
     bool good = true;
     
     // resolve value of pending symbols
@@ -1296,7 +1296,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         {
                             curSymEntry.second.value = value;
                             curSymEntry.second.sectionId = sectionId;
-                            curSymEntry.second.isDefined = true;
+                            curSymEntry.second.hasValue = true;
                             symbolStack.push(std::make_pair(&curSymEntry, 0));
                             curSymEntry.second.resolving = true;
                         }
@@ -1423,7 +1423,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert({ symbolName, AsmSymbol() });
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
-        (res.first->second.isDefined || res.first->second.expression!=nullptr)))
+        (res.first->second.hasValue || res.first->second.expression!=nullptr)))
     {   // found and can be only once defined
         std::string msg = "Symbol '";
         msg += symbolName;
@@ -1447,7 +1447,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     {
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second.expression = expr.release();
-        symEntry.second.isDefined = false;
+        symEntry.second.hasValue = false;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = baseExpr;
         if (baseExpr && !symEntry.second.occurrencesInExprs.empty())
@@ -1461,7 +1461,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
                         symEntry.second.occurrencesInExprs;
             // clear occurrences after copy
             symEntry.second.occurrencesInExprs.clear();
-            if (tempSymEntry->second.isDefined) // set symbol chain
+            if (tempSymEntry->second.hasValue) // set symbol chain
                 setSymbol(*tempSymEntry, tempSymEntry->second.value,
                           tempSymEntry->second.sectionId);
         }
@@ -1799,9 +1799,9 @@ bool Assembler::assemble()
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.value = nextLRes.first->second.value;
-                prevLRes.first->second.isDefined = true;
+                prevLRes.first->second.hasValue = true;
                 prevLRes.first->second.sectionId = currentSection;
-                nextLRes.first->second.isDefined = false;
+                nextLRes.first->second.hasValue = false;
             }
             else
             {   // regular labels
@@ -1809,7 +1809,7 @@ bool Assembler::assemble()
                         symbolMap.insert({ firstName, AsmSymbol() });
                 if (!res.second)
                 {   // found
-                    if (res.first->second.onceDefined && (res.first->second.isDefined ||
+                    if (res.first->second.onceDefined && (res.first->second.hasValue ||
                         res.first->second.expression!=nullptr))
                     {   // if label
                         std::string msg = "Symbol '";

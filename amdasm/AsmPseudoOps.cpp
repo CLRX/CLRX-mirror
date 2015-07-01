@@ -1288,7 +1288,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpStr, const char*
     const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
             AsmClauseType::IF;
     bool included;
-    const bool symDefined = (entry!=nullptr && (entry->second.isDefined ||
+    const bool symDefined = (entry!=nullptr && (entry->second.hasValue ||
                 entry->second.expression!=nullptr));
     bool satisfied = (!negation) ?  symDefined : !symDefined;
     if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
