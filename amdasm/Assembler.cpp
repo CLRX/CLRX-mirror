@@ -1883,13 +1883,15 @@ bool Assembler::assemble()
         switch(clause.type)
         {
             case AsmClauseType::IF:
-                printError(clause.pos, "Unterminated 'if'");
+                printError(clause.pos, "Unterminated '.if'");
                 break;
             case AsmClauseType::ELSEIF:
-                printError(clause.pos, "Unterminated '.else'");
+                printError(clause.pos, "Unterminated '.elseif'");
+                printError(clause.prevIfPos, "here is begin of conditional clause"); 
                 break;
             case AsmClauseType::ELSE:
                 printError(clause.pos, "Unterminated '.else'");
+                printError(clause.prevIfPos, "here is begin of conditional clause"); 
                 break;
             case AsmClauseType::MACRO:
                 printError(clause.pos, "Unterminated macro definition");

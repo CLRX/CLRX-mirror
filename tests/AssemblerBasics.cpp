@@ -1475,6 +1475,7 @@ test.s:38:23: Error: Expected ',' before argument
         false, "test.s:2:23: Error: Expression have unresolved symbol 'x2'\n"
         "test.s:4:23: Error: Expression have unresolved symbol 'x'\n", ""
     },
+    /* 30 */
     {   R"ffDXD(            .eqv x2,5+vx
             .equ vx,2
             .fill x2,1,33
@@ -1496,7 +1497,7 @@ test.s:38:23: Error: Expected ',' before argument
             { "x2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 }
         }, true, "", ""
     },
-    /* 30 - multiple statement in single line */
+    /* 31 - multiple statement in single line */
     {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff
             .byte '\''; .byte ';'; .byte 0x8a
             .byte 1; .int 2; ;)ffDXD",
@@ -1510,7 +1511,7 @@ test.s:38:23: Error: Expected ',' before argument
         { { ".", 23U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 31 */
+    /* 32 */
     {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff,~
             .byte '\''; .byte ';',; .byte 0x8a
             .byte 1; .int 2 x; ;)ffDXD",
@@ -1526,7 +1527,7 @@ test.s:38:23: Error: Expected ',' before argument
         "test.s:2:35: Warning: No expression, zero has been put\n"
         "test.s:3:29: Error: Expected ',' before next value\n", ""
     },
-    /* 32 */
+    /* 33 */
     {   R"ffDXD(            .string "abc;", "ab\";","ab\\"; .byte 0xff
             .byte '\''; .byte ';'; .byte 0x8a
             .byte 1; .fill uuu,; \
@@ -1546,7 +1547,7 @@ test.s:38:23: Error: Expected ',' before argument
         "test.s:4:21: Error: Expression have unresolved symbol 'xxx'\n"
         "test.s:4:33: Error: Expression have unresolved symbol 'yyy'\n", ""
     },
-    /* 33 - if statementd */
+    /* 34 - if statementd */
     {   R"ffDXD(            .if 1
             .byte 1
             .endif
@@ -1720,7 +1721,7 @@ test.s:38:23: Error: Expected ',' before argument
             { "ax", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 34 - nesting of ifs */
+    /* 35 - nesting of ifs */
     {   R"ffDXD(            .if 4
             .byte 4
             .else # to ignore
@@ -1738,7 +1739,7 @@ test.s:38:23: Error: Expected ',' before argument
         { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 35 - if.elseif.else.endif all  ways */
+    /* 36 - if.elseif.else.endif all  ways */
     {   R"ffDXD(            .if 0
             .byte 1
             .elseif 1
@@ -1766,6 +1767,56 @@ test.s:38:23: Error: Expected ',' before argument
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 2, 4, 9 } } },
         { { ".", 3U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    /* 37 - unterminated else */
+    {   R"ffDXD(            .if 123
+            .byte 1
+            .else
+            .byte 22)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 1 } } },
+        { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:3:13: Error: Unterminated '.else'\n"
+        "test.s:1:13: Error: here is begin of conditional clause\n", ""
+    },
+    /* 38 - unterminated elseif */
+    {   R"ffDXD(            .if 123
+            .byte 1
+            .elseif 12
+            .byte 22)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 1 } } },
+        { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:3:13: Error: Unterminated '.elseif'\n"
+        "test.s:1:13: Error: here is begin of conditional clause\n", ""
+    },
+    /* 39 - unterminated if */
+    {   R"ffDXD(            .if 123
+            .byte 1)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 1 } } },
+        { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:1:13: Error: Unterminated '.if'\n", ""
+    },
+    /* 40 - nested unterminated ifs */
+    {   R"ffDXD(            .if 123
+            .byte 0
+            .if 6
+            .byte 1
+            .elseif 7
+            .byte 2
+            .if 8
+            .byte 9
+            .else
+            .byte 10)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 0, 1 } } },
+        { { ".", 2U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:9:13: Error: Unterminated '.else'\n"
+        "test.s:7:13: Error: here is begin of conditional clause\n"
+        "test.s:5:13: Error: Unterminated '.elseif'\n"
+        "test.s:3:13: Error: here is begin of conditional clause\n"
+        "test.s:1:13: Error: Unterminated '.if'\n", ""
     }
 };
 
