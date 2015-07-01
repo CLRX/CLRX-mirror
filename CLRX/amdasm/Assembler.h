@@ -809,7 +809,7 @@ struct AsmSection
 };
 
 /// type of clause
-enum AsmClauseType
+enum class AsmClauseType
 {
     IF,     ///< if clause
     ELSEIF, ///< elseif clause
@@ -952,8 +952,11 @@ private:
     
     void initializeOutputFormat();
     
-    void pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType)
-    { clauses.push({clauseType, sourcePos, true, { } }); }
+    bool pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType)
+    {
+        bool included; // to ignore
+        return pushClause(sourcePos, clauseType, true, included);
+    }
     bool pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
                   bool satisfied, bool& included);
      // return false when failed (for example no clauses)

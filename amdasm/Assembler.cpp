@@ -1617,7 +1617,7 @@ bool Assembler::pushClause(const AsmSourcePos& sourcePos,
             break;
     }
     included = satisfied && !clause.condSatisfied;
-    clause.condSatisfied |= satisfied;
+    clause.condSatisfied |= included;
     if (clause.type == AsmClauseType::IF)
         clause.prevIfPos = clause.pos;
     clause.type = clauseType;

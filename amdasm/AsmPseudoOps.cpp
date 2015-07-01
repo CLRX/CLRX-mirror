@@ -40,11 +40,11 @@ using namespace CLRX;
 
 static const char* offlinePseudoOpNamesTbl[] =
 {
-    "end", "endm", "endr",
     "else", "elseif", "elseifb", "elseifc", "elseifdef",
     "elseifeq", "elseifeqs", "elseifge", "elseifgt",
     "elseifle", "elseiflt", "elseifnb", "elseifnc",
     "elseifndef", "elseifne", "elseifnes", "elseifnotdef",
+    "endif", "endm", "endr",
     "if", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "ifge", "ifgt", "ifle",
     "iflt", "ifnb", "ifnc", "ifndef",
@@ -53,11 +53,11 @@ static const char* offlinePseudoOpNamesTbl[] =
 
 enum
 {
-    ASMCOP_END, ASMCOP_ENDM, ASMCOP_ENDR,
     ASMCOP_ELSE, ASMCOP_ELSEIF, ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
     ASMCOP_ELSEIFEQ, ASMCOP_ELSEIFEQS, ASMCOP_ELSEIFGE, ASMCOP_ELSEIFGT,
     ASMCOP_ELSEIFLE, ASMCOP_ELSEIFLT, ASMCOP_ELSEIFNB, ASMCOP_ELSEIFNC,
     ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES, ASMCOP_ELSEIFNOTDEF,
+    ASMCOP_ENDIF, ASMCOP_ENDM, ASMCOP_ENDR,
     ASMCOP_IF, ASMCOP_IFB, ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
     ASMCOP_IFEQS, ASMCOP_IFGE, ASMCOP_IFGT, ASMCOP_IFLE,
     ASMCOP_IFLT, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
@@ -142,6 +142,12 @@ enum class IfIntComp
 
 struct CLRX_INTERNAL AsmPseudoOps
 {
+    /* IMPORTANT:
+     * about string argumenbt - string points to place of current line
+     * processed by assembler
+     * pseudoOpStr - points to first character from line of pseudo-op name
+     */
+    
     static bool checkGarbagesAtEnd(Assembler& asmr, const char* string);
     /* parsing helpers */
     /* get absolute value arg resolved at this time.
@@ -171,16 +177,16 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void goToKernel(Assembler& asmr, const char*& string);
     
     /// include file
-    static void includeFile(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void includeFile(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // include binary file
     static void includeBinFile(Assembler& asmr, const char*& string);
     
     // fail
-    static void doFail(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void doFail(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // .error
-    static void printError(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void printError(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // .warning
-    static void printWarning(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void printWarning(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     
     // .byte, .short, .int, .word, .long, .quad
     template<typename T>
@@ -210,7 +216,7 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void ignoreExtern(Assembler& asmr, const char*& string);
     
-    static void doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
+    static void doFill(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                bool _64bit = false);
     static void doSkip(Assembler& asmr, const char*& string);
     
@@ -219,24 +225,28 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     /* TODO: add no-op fillin for text sections */
     template<typename Word>
-    static void doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string);
+    static void doAlignWord(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     
     static void doOrganize(Assembler& asmr, const char*& string);
     
-    static void doIfInt(Assembler& asmr, const char* pseudoStr, const char*& string,
+    static void doIfInt(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                 IfIntComp compType, bool elseIfClause);
     
-    static void doIfDef(Assembler& asmr, const char* pseudoStr, const char*& string,
+    static void doIfDef(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                 bool negation, bool elseIfClause);
     
-    static void doIfBlank(Assembler& asmr, const char* pseudoStr, const char*& string,
+    static void doIfBlank(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                 bool negation, bool elseIfClause);
     /// .ifc
-    static void doIfCompare(Assembler& asmr, const char* pseudoStr, const char*& string,
+    static void doIfCmpStr(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                 bool negation, bool elseIfClause);
     /// ifeqs, ifnes
-    static void doIfStrEqual(Assembler& asmr, const char* pseudoStr, const char*& string,
+    static void doIfStrEqual(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                 bool negation, bool elseIfClause);
+    
+    static void doElse(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    
+    static void doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*& string);
 };
 
 
@@ -428,7 +438,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
         asmr.printError(string, "Raw code can have only one unnamed kernel");
 }
 
-void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const char*& string)
+void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -444,7 +454,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
         try
         {
             std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
-                    asmr.getSourcePos(pseudoStr), filename));
+                    asmr.getSourcePos(pseudoOpStr), filename));
             asmr.asmInputFilters.push(newInputFilter.release());
             asmr.currentInputFilter = asmr.asmInputFilters.top();
             return;
@@ -460,7 +470,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoStr, const cha
             {
                 inDirFilename = joinPaths(incDir, filename);
                 std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
-                        asmr.getSourcePos(pseudoStr), inDirFilename));
+                        asmr.getSourcePos(pseudoOpStr), inDirFilename));
                 asmr.asmInputFilters.push(newInputFilter.release());
                 asmr.currentInputFilter = asmr.asmInputFilters.top();
                 break;
@@ -599,7 +609,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
     }
 }
 
-void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& string)
+void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -614,12 +624,12 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoStr, const char*& s
     const size_t pos = 6+itocstrCStyle(int64_t(value), buf+6, 50-6);
     ::memcpy(buf+pos, " encountered", 13);
     if (int64_t(value) >= 500)
-        asmr.printWarning(pseudoStr, buf);
+        asmr.printWarning(pseudoOpStr, buf);
     else
-        asmr.printError(pseudoStr, buf);
+        asmr.printError(pseudoOpStr, buf);
 }
 
-void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoStr, const char*& string)
+void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -630,13 +640,13 @@ void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoStr, const char
             return; // error
         if (!checkGarbagesAtEnd(asmr, string))
             return;
-        asmr.printError(pseudoStr, outStr.c_str());
+        asmr.printError(pseudoOpStr, outStr.c_str());
     }
     else
-        asmr.printError(pseudoStr, ".error encountered");
+        asmr.printError(pseudoOpStr, ".error encountered");
 }
 
-void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoStr, const char*& string)
+void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -647,10 +657,10 @@ void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoStr, const ch
             return; // error
         if (!checkGarbagesAtEnd(asmr, string))
             return;
-        asmr.printWarning(pseudoStr, outStr.c_str());
+        asmr.printWarning(pseudoOpStr, outStr.c_str());
     }
     else
-        asmr.printWarning(pseudoStr, ".warning encountered");
+        asmr.printWarning(pseudoOpStr, ".warning encountered");
 }
 
 template<typename T>
@@ -958,7 +968,7 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& string)
     checkGarbagesAtEnd(asmr, string);
 }
 
-void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& string,
+void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpStr, const char*& string,
           bool _64bit)
 {
     asmr.initializeOutputFormat();
@@ -997,7 +1007,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoStr, const char*& s
     }
     if (int64_t(size) > 0 && int64_t(repeat) > 0 && SSIZE_MAX/size < repeat)
     {
-        asmr.printError(pseudoStr, "Product of repeat and size is too big");
+        asmr.printError(pseudoOpStr, "Product of repeat and size is too big");
         good = false;
     }
     
@@ -1123,7 +1133,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
 }
 
 template<typename Word>
-void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const char*& string)
+void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1165,7 +1175,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoStr, const cha
     uint64_t outPos = asmr.currentOutPos;
     if (outPos&(sizeof(Word)-1))
     {
-        asmr.printError(pseudoStr, "Offset is not aligned to word");
+        asmr.printError(pseudoOpStr, "Offset is not aligned to word");
         return;
     }
     
@@ -1211,13 +1221,14 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
     asmr.assignOutputCounter(valStr, value, sectionId, fillValue);
 }
 
-void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoStr, const char*& string,
+void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                IfIntComp compType, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     uint64_t value;
-    if (!getAbsoluteValueArg(asmr, value, string, true))
+    bool good = getAbsoluteValueArg(asmr, value, string, true);
+    if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
     const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
@@ -1247,40 +1258,46 @@ void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoStr, const char*& 
             break;
     }
     bool included;
-    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
     }
 }
 
-void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoStr, const char*& string,
+void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     const char* strAtSymName = string;
     AsmSymbolEntry* entry;
+    bool good = true;
     Assembler::ParseState state = asmr.parseSymbol(string, string, entry, false, true);
     if (state == Assembler::ParseState::FAILED)
         return;
     if (state == Assembler::ParseState::MISSING)
     {
         asmr.printError(strAtSymName, "Expected symbol");
-        return;
+        good = false;
     }
+    if (!good || !checkGarbagesAtEnd(asmr, string))
+        return;
+    
     const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
             AsmClauseType::IF;
     bool included;
-    bool satisfied = (!negation) ? entry!=nullptr : entry==nullptr;
-    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    const bool symDefined = (entry!=nullptr && (entry->second.isDefined ||
+                entry->second.expression!=nullptr));
+    bool satisfied = (!negation) ?  symDefined : !symDefined;
+    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
     }
 }
 
-void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoStr, const char*& string,
+void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpStr, const char*& string,
               bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -1290,7 +1307,7 @@ void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoStr, const char*
             AsmClauseType::IF;
     bool included;
     bool satisfied = (!negation) ? string==end : string!=end;
-    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1301,16 +1318,22 @@ static std::string getStringToCompare(const char* strStart, const char* strEnd)
 {
     std::string firstStr;
     bool blank = true;
+    bool singleQuote = false;
+    bool dblQuote = false;
     for (const char* s = strStart; s != strEnd; ++s)
         if (isSpace(*s))
         {
-            if (!blank)
+            if (!blank || dblQuote || singleQuote)
                 firstStr.push_back(*s);
             blank = true;
         }
         else
         {
             blank = false;
+            if (*s == '"' && !singleQuote)
+                dblQuote = !dblQuote;
+            else if (*s == '\'' && !dblQuote)
+                singleQuote = !singleQuote;
             firstStr.push_back(*s);
         }
     if (!firstStr.empty() && isSpace(firstStr.back()))
@@ -1318,21 +1341,21 @@ static std::string getStringToCompare(const char* strStart, const char* strEnd)
     return firstStr;
 }
 
-void AsmPseudoOps::doIfCompare(Assembler& asmr, const char* pseudoStr, const char*& string,
-               bool negation, bool elseIfClause)
+void AsmPseudoOps::doIfCmpStr(Assembler& asmr, const char* pseudoOpStr,
+               const char*& string, bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     const char* firstStrStart = string;
-    
+    bool good = true;
     while (string != end && *string != ',') string++;
     if (string == end)
     {
         asmr.printError(string, "Missing second string");
-        return;
+        good = false;
     }
     const char* firstStrEnd = string;
-    string++; // comma
+    if (good) string++; // comma
     
     std::string firstStr = getStringToCompare(firstStrStart, firstStrEnd);
     std::string secondStr = getStringToCompare(string, end);
@@ -1341,14 +1364,14 @@ void AsmPseudoOps::doIfCompare(Assembler& asmr, const char* pseudoStr, const cha
             AsmClauseType::IF;
     bool included;
     bool satisfied = (!negation) ? firstStr==secondStr : firstStr!=secondStr;
-    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
     }
 }
 
-void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoStr,
+void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpStr,
                 const char*& string, bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -1361,21 +1384,46 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoStr,
     if (!haveComma)
     {
         asmr.printError(string, "Expected two strings");
-        return;
+        good = true;
     }
+    string = skipSpacesToEnd(string, end);
     good &= asmr.parseString(secondStr, string, string);
-    if (!good)
+    if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
     const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
             AsmClauseType::IF;
     bool included;
     bool satisfied = (!negation) ? firstStr==secondStr : firstStr!=secondStr;
-    if (asmr.pushClause(asmr.getSourcePos(string), clauseType, satisfied, included))
+    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
     }
+}
+
+void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpStr, const char*&string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    bool included;
+    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), AsmClauseType::ELSE,
+                        true, included))
+    {
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
+}
+
+void AsmPseudoOps::doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    asmr.popClause(asmr.getSourcePos(pseudoOpStr), AsmClauseType::IF);
 }
 
 };
@@ -1454,6 +1502,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::putFloats<uint64_t>(*this, string);
             break;
         case ASMOP_ELSE:
+            AsmPseudoOps::doElse(*this, stmtStartStr, string);
             break;
         case ASMOP_ELSEIF:
             AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
@@ -1463,7 +1512,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, false, true);
             break;
         case ASMOP_ELSEIFC:
-            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, false, true);
+            AsmPseudoOps::doIfCmpStr(*this, stmtStartStr, string, false, true);
             break;
         case ASMOP_ELSEIFDEF:
             AsmPseudoOps::doIfDef(*this, stmtStartStr, string, false, true);
@@ -1495,7 +1544,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_ELSEIFNC:
-            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, true, true);
+            AsmPseudoOps::doIfCmpStr(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_ELSEIFNDEF:
             AsmPseudoOps::doIfDef(*this, stmtStartStr, string, true, true);
@@ -1512,6 +1561,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             endOfAssembly = true;
             break;
         case ASMOP_ENDIF:
+            AsmPseudoOps::doEndIf(*this, stmtStartStr, string);
             break;
         case ASMOP_ENDM:
             break;
@@ -1574,7 +1624,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, false, false);
             break;
         case ASMOP_IFC:
-            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, false, false);
+            AsmPseudoOps::doIfCmpStr(*this, stmtStartStr, string, false, false);
             break;
         case ASMOP_IFDEF:
             AsmPseudoOps::doIfDef(*this, stmtStartStr, string, false, false);
@@ -1606,7 +1656,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doIfBlank(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_IFNC:
-            AsmPseudoOps::doIfCompare(*this, stmtStartStr, string, true, false);
+            AsmPseudoOps::doIfCmpStr(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_IFNDEF:
         case ASMOP_IFNOTDEF:
@@ -1724,11 +1774,17 @@ void Assembler::parsePseudoOps(const std::string firstName,
 /* skipping clauses */
 bool Assembler::skipClauses()
 {
-    while (readLine())
+    cxuint clauseLevel = clauses.size();
+    bool good = true;
+    while (clauses.size() >= clauseLevel)
     {
+        if (!readLine())
+            break;
+        
         const char* string = line;
         const char* end = line+lineSize;
         string = skipSpacesToEnd(string, end);
+        const char* stmtString = string;
         if (string == end || *string != '.')
             continue;
         
@@ -1738,11 +1794,21 @@ bool Assembler::skipClauses()
         const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
                offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
                pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
+        
         switch(pseudoOp)
         {
-            case ASMCOP_END:
+            case ASMCOP_ENDIF:
+                if (!popClause(getSourcePos(stmtString), AsmClauseType::IF))
+                    good = false;
+                break;
             case ASMCOP_ENDM:
+                if (!popClause(getSourcePos(stmtString), AsmClauseType::MACRO))
+                    good = false;
+                break;
             case ASMCOP_ENDR:
+                if (!popClause(getSourcePos(stmtString), AsmClauseType::REPEAT))
+                    good = false;
+                break;
             case ASMCOP_ELSE:
             case ASMCOP_ELSEIF:
             case ASMCOP_ELSEIFB:
@@ -1760,6 +1826,15 @@ bool Assembler::skipClauses()
             case ASMCOP_ELSEIFNE:
             case ASMCOP_ELSEIFNES:
             case ASMCOP_ELSEIFNOTDEF:
+                if (clauseLevel == clauses.size())
+                {
+                    lineAlreadyRead = true; // read
+                    return good; // do exit
+                }
+                if (!pushClause(getSourcePos(stmtString), (pseudoOp==ASMCOP_ELSE ?
+                            AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
+                    good = false;
+                break;
             case ASMCOP_IF:
             case ASMCOP_IFB:
             case ASMCOP_IFC:
@@ -1776,14 +1851,22 @@ bool Assembler::skipClauses()
             case ASMCOP_IFNE:
             case ASMCOP_IFNES:
             case ASMCOP_IFNOTDEF:
+                if (!pushClause(getSourcePos(stmtString), AsmClauseType::IF))
+                    good = false;
+                break;
             case ASMCOP_MACRO:
+                if (!pushClause(getSourcePos(stmtString), AsmClauseType::MACRO))
+                    good = false;
+                break;
             case ASMCOP_REPT:
+                if (!pushClause(getSourcePos(stmtString), AsmClauseType::REPEAT))
+                    good = false;
                 break;
             default:
                 break;
         }
     }
-    return true;
+    return good;
 }
 
 bool Assembler::putMacroContent(AsmMacro& macro)
