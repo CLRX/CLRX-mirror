@@ -317,7 +317,8 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
         asmr.printError(string, "Raw code can have only one unnamed kernel");
 }
 
-void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpStr,
+                   const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -1321,11 +1322,6 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
     uint64_t repeatsNum;
     const char* repeatsNumStr = string;
     bool good = getAbsoluteValueArg(asmr, repeatsNum, string, true);
-    if (good && int64_t(repeatsNum) < 0)
-    {
-        asmr.printError(repeatsNumStr, "Repeat number is negative!");
-        good = false;
-    }
     if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
