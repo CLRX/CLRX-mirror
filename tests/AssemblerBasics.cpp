@@ -1817,6 +1817,68 @@ test.s:38:23: Error: Expected ',' before argument
         "test.s:5:13: Error: Unterminated '.elseif'\n"
         "test.s:3:13: Error: here is begin of conditional clause\n"
         "test.s:1:13: Error: Unterminated '.if'\n", ""
+    },
+    /* 41 - conditional pseudo-ops: syntax errors */
+    {   R"ffDXD(            .if 2*aa+7
+            .if 
+            .ifle 2*aa+7
+            .ifle 
+            .iflt 2*aa+7
+            .iflt 
+            .ifge 2*aa+7
+            .ifge 
+            .ifgt 2*aa+7
+            .ifgt 
+            .ifeq 2*aa+7
+            .ifeq
+            
+            .ifc aaa
+            .ifeqs 55+5
+            .ifeqs "aa",55
+            .ifeqs 5,"bda"
+            
+            .ifnes 55+5
+            .ifnes "aa",55
+            .ifnes 5,"bda"
+            
+            .ifdef +++
+            .ifdef
+            .ifdef 0dd
+            
+            .if 7
+            .else xx
+            .endif xx)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { }, { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false,
+        R"ffDXD(test.s:1:19: Error: Expression have unresolved symbol 'aa'
+test.s:2:17: Error: Expected expression
+test.s:3:21: Error: Expression have unresolved symbol 'aa'
+test.s:4:19: Error: Expected expression
+test.s:5:21: Error: Expression have unresolved symbol 'aa'
+test.s:6:19: Error: Expected expression
+test.s:7:21: Error: Expression have unresolved symbol 'aa'
+test.s:8:19: Error: Expected expression
+test.s:9:21: Error: Expression have unresolved symbol 'aa'
+test.s:10:19: Error: Expected expression
+test.s:11:21: Error: Expression have unresolved symbol 'aa'
+test.s:12:18: Error: Expected expression
+test.s:14:21: Error: Missing second string
+test.s:15:20: Error: Expected string
+test.s:15:24: Error: Expected two strings
+test.s:16:25: Error: Expected string
+test.s:17:20: Error: Expected string
+test.s:19:20: Error: Expected string
+test.s:19:24: Error: Expected two strings
+test.s:20:25: Error: Expected string
+test.s:21:20: Error: Expected string
+test.s:23:20: Error: Expected symbol
+test.s:24:19: Error: Expected symbol
+test.s:25:20: Error: Expected symbol
+test.s:28:19: Error: Garbages at end of line
+test.s:29:20: Error: Garbages at end of line
+test.s:27:13: Error: Unterminated '.if'
+)ffDXD", ""
     }
 };
 

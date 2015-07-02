@@ -951,6 +951,8 @@ bool Assembler::parseString(std::string& strarray, const char* string,
     strarray.clear();
     if (outend == end || *outend != '"')
     {
+        while (outend != end && !isSpace(*outend) && *outend != ',' &&
+            *outend != ':' && *outend != ';') outend++;
         printError(string, "Expected string");
         return false;
     }

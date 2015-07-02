@@ -1353,10 +1353,11 @@ void AsmPseudoOps::doIfCmpStr(Assembler& asmr, const char* pseudoOpStr,
     if (string == end)
     {
         asmr.printError(string, "Missing second string");
-        good = false;
+        return;
     }
     const char* firstStrEnd = string;
     if (good) string++; // comma
+    else return;
     
     std::string firstStr = getStringToCompare(firstStrStart, firstStrEnd);
     std::string secondStr = getStringToCompare(string, end);
@@ -1385,7 +1386,7 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpStr,
     if (!haveComma)
     {
         asmr.printError(string, "Expected two strings");
-        good = true;
+        return;
     }
     string = skipSpacesToEnd(string, end);
     good &= asmr.parseString(secondStr, string, string);
