@@ -228,6 +228,133 @@ static inline const std::string extractLabelName(const char* startString, const 
     return extractSymName(startString, end, false);
 }
 
+class Assembler;
+
+enum class IfIntComp
+{
+    EQUAL = 0,
+    NOT_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL
+};
+
+struct CLRX_INTERNAL AsmPseudoOps
+{
+    /* IMPORTANT:
+     * about string argumenbt - string points to place of current line
+     * processed by assembler
+     * pseudoOpStr - points to first character from line of pseudo-op name
+     */
+    
+    static bool checkGarbagesAtEnd(Assembler& asmr, const char* string);
+    /* parsing helpers */
+    /* get absolute value arg resolved at this time.
+       if empty expression value is not set */
+    static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& string,
+                    bool requredExpr = false);
+    
+    static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
+                    const char*& string);
+    // get name (not symbol name)
+    static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
+               const char* objName);
+    // skip comma
+    static bool skipComma(Assembler& asmr, bool& haveComma, const char*& string);
+    
+    // skip comma for multiple argument pseudo-ops
+    static bool skipCommaForMultipleArgd(Assembler& asmr, const char*& string);
+    
+    /*
+     * pseudo-ops logic
+     */
+    // set bitnesss
+    static void setBitness(Assembler& asmr, const char*& string, bool _64Bit);
+    // set output format
+    static void setOutFormat(Assembler& asmr, const char*& string);
+    // change kernel
+    static void goToKernel(Assembler& asmr, const char*& string);
+    
+    /// include file
+    static void includeFile(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    // include binary file
+    static void includeBinFile(Assembler& asmr, const char*& string);
+    
+    // fail
+    static void doFail(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    // .error
+    static void printError(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    // .warning
+    static void printWarning(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    
+    // .byte, .short, .int, .word, .long, .quad
+    template<typename T>
+    static void putIntegers(Assembler& asmr, const char*& string);
+    
+    // .half, .float, .double
+    template<typename UIntType>
+    static void putFloats(Assembler& asmr, const char*& string);
+    
+    /// .string, ascii
+    static void putStrings(Assembler& asmr, const char*& string, bool addZero = false);
+    // .string16, .string32, .string64
+    template<typename T>
+    static void putStringsToInts(Assembler& asmr, const char*& string);
+    
+    /// .octa
+    static void putUInt128s(Assembler& asmr, const char*& string);
+    
+    /// .set, .equ, .eqv, .equiv
+    static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true,
+                bool baseExpr = false);
+    
+    // .global, .local, .extern
+    static void setSymbolBind(Assembler& asmr, const char*& string, cxbyte elfInfo);
+    
+    static void setSymbolSize(Assembler& asmr, const char*& string);
+    
+    static void ignoreExtern(Assembler& asmr, const char*& string);
+    
+    static void doFill(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+               bool _64bit = false);
+    static void doSkip(Assembler& asmr, const char*& string);
+    
+    /* TODO: add no-op fillin for text sections */
+    static void doAlign(Assembler& asmr,  const char*& string, bool powerOf2 = false);
+    
+    /* TODO: add no-op fillin for text sections */
+    template<typename Word>
+    static void doAlignWord(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    
+    static void doOrganize(Assembler& asmr, const char*& string);
+    
+    static void doPrint(Assembler& asmr, const char*& string);
+    
+    static void doIfInt(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+                IfIntComp compType, bool elseIfClause);
+    
+    static void doIfDef(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+                bool negation, bool elseIfClause);
+    
+    static void doIfBlank(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+                bool negation, bool elseIfClause);
+    /// .ifc
+    static void doIfCmpStr(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+                bool negation, bool elseIfClause);
+    /// ifeqs, ifnes
+    static void doIfStrEqual(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+                bool negation, bool elseIfClause);
+    // else
+    static void doElse(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    // endif
+    static void doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    
+    static void doRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    
+    static void doEndRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+};
+
 };
 
 #endif

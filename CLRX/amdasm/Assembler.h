@@ -431,14 +431,14 @@ public:
 class AsmRepeatInputFilter: public AsmInputFilter
 {
 private:
-    const AsmRepeat& repeat;
+    std::unique_ptr<const AsmRepeat> repeat;
     uint64_t repeatCount;
     uint64_t contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
 public:
     /// constructor
-    explicit AsmRepeatInputFilter(const AsmRepeat& repeat);
+    explicit AsmRepeatInputFilter(const AsmRepeat* repeat);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
     
@@ -852,7 +852,6 @@ private:
     std::vector<AsmSection*> sections;
     AsmSymbolMap symbolMap;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
-    std::vector<AsmRepeat*> repeats;
     MacroMap macroMap;
     KernelMap kernelMap;
     cxuint flags;
