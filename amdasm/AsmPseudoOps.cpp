@@ -1150,7 +1150,7 @@ void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpStr, const char*
             break;
     }
     bool included;
-    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
+    if (asmr.pushClause(pseudoOpStr, clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1182,7 +1182,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpStr, const char*
     const bool symDefined = (entry!=nullptr && (entry->second.hasValue ||
                 entry->second.expression!=nullptr));
     bool satisfied = (!negation) ?  symDefined : !symDefined;
-    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
+    if (asmr.pushClause(pseudoOpStr, clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1199,7 +1199,7 @@ void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpStr, const cha
             AsmClauseType::IF;
     bool included;
     bool satisfied = (!negation) ? string==end : string!=end;
-    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
+    if (asmr.pushClause(pseudoOpStr, clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1257,7 +1257,7 @@ void AsmPseudoOps::doIfCmpStr(Assembler& asmr, const char* pseudoOpStr,
             AsmClauseType::IF;
     bool included;
     bool satisfied = (!negation) ? firstStr==secondStr : firstStr!=secondStr;
-    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
+    if (asmr.pushClause(pseudoOpStr, clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1288,7 +1288,7 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpStr,
             AsmClauseType::IF;
     bool included;
     bool satisfied = (!negation) ? firstStr==secondStr : firstStr!=secondStr;
-    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), clauseType, satisfied, included))
+    if (asmr.pushClause(pseudoOpStr, clauseType, satisfied, included))
     {   // 
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1300,8 +1300,7 @@ void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpStr, const char*&
     if (!checkGarbagesAtEnd(asmr, string))
         return;
     bool included;
-    if (asmr.pushClause(asmr.getSourcePos(pseudoOpStr), AsmClauseType::ELSE,
-                        true, included))
+    if (asmr.pushClause(pseudoOpStr, AsmClauseType::ELSE, true, included))
     {
         if (!included) // skip clauses (do not perform statements)
             asmr.skipClauses();
@@ -1312,7 +1311,7 @@ void AsmPseudoOps::doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*
 {
     if (!checkGarbagesAtEnd(asmr, string))
         return;
-    asmr.popClause(asmr.getSourcePos(pseudoOpStr), AsmClauseType::IF);
+    asmr.popClause(pseudoOpStr, AsmClauseType::IF);
 }
 
 void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string)
@@ -1320,12 +1319,11 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     uint64_t repeatsNum;
-    const char* repeatsNumStr = string;
     bool good = getAbsoluteValueArg(asmr, repeatsNum, string, true);
     if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
-    asmr.pushClause(asmr.getSourcePos(pseudoOpStr), AsmClauseType::REPEAT);
+    asmr.pushClause(pseudoOpStr, AsmClauseType::REPEAT);
     if (repeatsNum == 0)
     {   /* skip it */
         asmr.skipClauses();
@@ -1336,12 +1334,14 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
     {   // create repetition
         std::unique_ptr<AsmRepeat> repeat(new AsmRepeat(
                     asmr.getSourcePos(pseudoOpStr), repeatsNum));
-        asmr.putRepetitionContent(*repeat);
-        // and input stream filter
-        std::unique_ptr<AsmInputFilter> newInputFilter(
-                    new AsmRepeatInputFilter(repeat.release()));
-        asmr.asmInputFilters.push(newInputFilter.release());
-        asmr.currentInputFilter = asmr.asmInputFilters.top();
+        if (asmr.putRepetitionContent(*repeat))
+        {
+            // and input stream filter
+            std::unique_ptr<AsmInputFilter> newInputFilter(
+                        new AsmRepeatInputFilter(repeat.release()));
+            asmr.asmInputFilters.push(newInputFilter.release());
+            asmr.currentInputFilter = asmr.asmInputFilters.top();
+        }
     }
     // otherwise just execute next code
 }
@@ -1351,7 +1351,7 @@ void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
 {
     if (!checkGarbagesAtEnd(asmr, string))
         return;
-    asmr.popClause(asmr.getSourcePos(pseudoOpStr), AsmClauseType::REPEAT);
+    asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
 }
 
 };
@@ -1721,15 +1721,15 @@ bool Assembler::skipClauses()
         switch(pseudoOp)
         {
             case ASMCOP_ENDIF:
-                if (!popClause(getSourcePos(stmtString), AsmClauseType::IF))
+                if (!popClause(stmtString, AsmClauseType::IF))
                     good = false;
                 break;
             case ASMCOP_ENDM:
-                if (!popClause(getSourcePos(stmtString), AsmClauseType::MACRO))
+                if (!popClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMCOP_ENDR:
-                if (!popClause(getSourcePos(stmtString), AsmClauseType::REPEAT))
+                if (!popClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
             case ASMCOP_ELSE:
@@ -1754,7 +1754,7 @@ bool Assembler::skipClauses()
                     lineAlreadyRead = true; // read
                     return good; // do exit
                 }
-                if (!pushClause(getSourcePos(stmtString), (pseudoOp==ASMCOP_ELSE ?
+                if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
                             AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
                     good = false;
                 break;
@@ -1774,15 +1774,15 @@ bool Assembler::skipClauses()
             case ASMCOP_IFNE:
             case ASMCOP_IFNES:
             case ASMCOP_IFNOTDEF:
-                if (!pushClause(getSourcePos(stmtString), AsmClauseType::IF))
+                if (!pushClause(stmtString, AsmClauseType::IF))
                     good = false;
                 break;
             case ASMCOP_MACRO:
-                if (!pushClause(getSourcePos(stmtString), AsmClauseType::MACRO))
+                if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMCOP_REPT:
-                if (!pushClause(getSourcePos(stmtString), AsmClauseType::REPEAT))
+                if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
             default:
@@ -1804,7 +1804,10 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
     while (clauses.size() >= clauseLevel)
     {
         if (!readLine())
+        {
+            good = false;
             break;
+        }
         
         
         const char* string = line;
@@ -1828,15 +1831,15 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
         switch(pseudoOp)
         {
             case ASMCOP_ENDIF:
-                if (!popClause(getSourcePos(stmtString), AsmClauseType::IF))
+                if (!popClause(stmtString, AsmClauseType::IF))
                     good = false;
                 break;
             case ASMCOP_ENDM:
-                if (!popClause(getSourcePos(stmtString), AsmClauseType::MACRO))
+                if (!popClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMCOP_ENDR:
-                if (!popClause(getSourcePos(stmtString), AsmClauseType::REPEAT))
+                if (!popClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
             case ASMCOP_ELSE:
@@ -1856,7 +1859,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             case ASMCOP_ELSEIFNE:
             case ASMCOP_ELSEIFNES:
             case ASMCOP_ELSEIFNOTDEF:
-                if (!pushClause(getSourcePos(stmtString), (pseudoOp==ASMCOP_ELSE ?
+                if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
                             AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
                     good = false;
                 break;
@@ -1876,15 +1879,15 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             case ASMCOP_IFNE:
             case ASMCOP_IFNES:
             case ASMCOP_IFNOTDEF:
-                if (!pushClause(getSourcePos(stmtString), AsmClauseType::IF))
+                if (!pushClause(stmtString, AsmClauseType::IF))
                     good = false;
                 break;
             case ASMCOP_MACRO:
-                if (!pushClause(getSourcePos(stmtString), AsmClauseType::MACRO))
+                if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMCOP_REPT:
-                if (!pushClause(getSourcePos(stmtString), AsmClauseType::REPEAT))
+                if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
             default:

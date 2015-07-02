@@ -1879,6 +1879,125 @@ test.s:28:19: Error: Garbages at end of line
 test.s:29:20: Error: Garbages at end of line
 test.s:27:13: Error: Unterminated '.if'
 )ffDXD", ""
+    },
+    /* 42 - rept and if */
+    {   R"ffDXD(            reptCnt = 1
+            .rept 6
+            counter = 0
+                .rept reptCnt
+                .if counter&1
+                    .byte reptCnt,counter
+                .else
+                    .byte reptCnt|0x80,counter
+                .endif
+                counter = counter+1
+                .endr
+            reptCnt = reptCnt + 1
+            .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x81, 0x00, 0x82, 0x00, 0x02, 0x01, 0x83, 0x00,
+                0x03, 0x01, 0x83, 0x02, 0x84, 0x00, 0x04, 0x01,
+                0x84, 0x02, 0x04, 0x03, 0x85, 0x00, 0x05, 0x01,
+                0x85, 0x02, 0x05, 0x03, 0x85, 0x04, 0x86, 0x00,
+                0x06, 0x01, 0x86, 0x02, 0x06, 0x03, 0x86, 0x04,
+                0x06, 0x05
+            } } },
+        {
+            { ".", 42U, 0, 0U, true, false, false, 0, 0 },
+            { "counter", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "reptCnt", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 43 - */
+    {   R"ffDXD(            reptCnt = 1
+            .rept 6
+            counter = 0
+                .rept reptCnt
+                .if counter&1
+                    .byte reptCnt,counter
+                .else
+                    .byte reptCnt|0x80,counter
+                .endif
+                counter = counter+1
+                .endr
+            counter = 3
+                .rept counter
+                    .byte 0xc0|counter
+                    counter = counter - 1
+                .endr
+            reptCnt = reptCnt + 1
+            .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x81, 0x00, 0xc3, 0xc2, 0xc1, 0x82, 0x00, 0x02,
+                0x01, 0xc3, 0xc2, 0xc1, 0x83, 0x00, 0x03, 0x01,
+                0x83, 0x02, 0xc3, 0xc2, 0xc1, 0x84, 0x00, 0x04,
+                0x01, 0x84, 0x02, 0x04, 0x03, 0xc3, 0xc2, 0xc1,
+                0x85, 0x00, 0x05, 0x01, 0x85, 0x02, 0x05, 0x03,
+                0x85, 0x04, 0xc3, 0xc2, 0xc1, 0x86, 0x00, 0x06,
+                0x01, 0x86, 0x02, 0x06, 0x03, 0x86, 0x04, 0x06,
+                0x05, 0xc3, 0xc2, 0xc1
+            } } },
+        {
+            { ".", 60U, 0, 0U, true, false, false, 0, 0 },
+            { "counter", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "reptCnt", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 44 - unterminated rept */
+    {   R"ffDXD(reptCnt = 1
+            .rept 6
+            counter = 0)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "reptCnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        }, false, "test.s:2:13: Error: Unterminated repetition\n", ""
+    },
+    /* 45 - endr without rept */
+    {   R"ffDXD(            .rept 2
+            .string "ala"
+            .endr
+            .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 0x61, 0x6c, 0x61, 0x00, 0x61, 0x6c, 0x61, 0x00 } } },
+        { { ".", 8U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:4:13: Error: No '.rept' before '.endr'\n", ""
+    },
+    /* 45 - no if on rept */
+    {   R"ffDXD(            cnt  = 1
+            .rept 0
+            .elseif 10
+            .else
+             cnt = cnt + 1
+            .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "cnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+        }, false,
+        "test.s:3:13: Error: No '.if' before '.elseif' inside repetition\n"
+        "test.s:4:13: Error: No '.if' before '.else' inside repetition\n", ""
+    },
+    /* 46 - */
+    {
+        R"ffDXD(            cnt  = 1
+            .if 1
+            .rept 0
+            .endif
+             cnt = cnt + 1
+            .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "cnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+        }, false, "test.s:4:13: Error: Ending conditional across repetition\n"
+        "test.s:2:13: Error: Unterminated '.if'\n", ""
     }
 };
 

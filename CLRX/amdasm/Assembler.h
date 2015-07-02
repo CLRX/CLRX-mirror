@@ -951,15 +951,15 @@ private:
     
     void initializeOutputFormat();
     
-    bool pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType)
+    bool pushClause(const char* string, AsmClauseType clauseType)
     {
         bool included; // to ignore
-        return pushClause(sourcePos, clauseType, true, included);
+        return pushClause(string, clauseType, true, included);
     }
-    bool pushClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType,
+    bool pushClause(const char* string, AsmClauseType clauseType,
                   bool satisfied, bool& included);
      // return false when failed (for example no clauses)
-    bool popClause(const AsmSourcePos& sourcePos, AsmClauseType clauseType);
+    bool popClause(const char* string, AsmClauseType clauseType);
     
     void putData(size_t size, const cxbyte* data)
     {
