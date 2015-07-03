@@ -1998,6 +1998,59 @@ test.s:27:13: Error: Unterminated '.if'
             { "cnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
         }, false, "test.s:4:13: Error: Ending conditional across repetition\n"
         "test.s:2:13: Error: Unterminated '.if'\n", ""
+    },
+    /* 47 - error inside repetitions */
+    {   R"ffDXD(            .rept 1
+            exe = 4*6; d = f; dd = ; 
+            .endr
+            .rept 3
+            .fill ,, ; .byte 2 ; .fill 4*x ;
+            .endr
+            .rept 3
+                .rept 2
+                .byte ----
+                .endr
+            .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 2, 2, 2 } } },
+        {
+            { ".", 3U, 0, 0U, true, false, false, 0, 0 },
+            { "d", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "exe", 24U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "f", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        }, false, R"ffDXD(In repetition 1/1:
+test.s:2:36: Error: Expected assignment expression
+In repetition 1/3:
+test.s:5:19: Error: Expected expression
+In repetition 1/3:
+test.s:5:42: Error: Expression have unresolved symbol 'x'
+In repetition 2/3:
+test.s:5:19: Error: Expected expression
+In repetition 2/3:
+test.s:5:42: Error: Expression have unresolved symbol 'x'
+In repetition 3/3:
+test.s:5:19: Error: Expected expression
+In repetition 3/3:
+test.s:5:42: Error: Expression have unresolved symbol 'x'
+In repetition 1/2:
+              1/3:
+test.s:9:27: Error: Unterminated expression
+In repetition 2/2:
+              1/3:
+test.s:9:27: Error: Unterminated expression
+In repetition 1/2:
+              2/3:
+test.s:9:27: Error: Unterminated expression
+In repetition 2/2:
+              2/3:
+test.s:9:27: Error: Unterminated expression
+In repetition 1/2:
+              3/3:
+test.s:9:27: Error: Unterminated expression
+In repetition 2/2:
+              3/3:
+test.s:9:27: Error: Unterminated expression
+)ffDXD", ""
     }
 };
 

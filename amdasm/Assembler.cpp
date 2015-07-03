@@ -613,7 +613,7 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     
     const LineTrans* oldCurColTrans = curColTrans;
     curColTrans++;
-    while (curColTrans != colTransEnd && curColTrans->position != 0)
+    while (curColTrans != colTransEnd && curColTrans->position > 0)
         curColTrans++;
     colTranslations.assign(oldCurColTrans, curColTrans);
     

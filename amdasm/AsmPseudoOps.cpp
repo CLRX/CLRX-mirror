@@ -1329,21 +1329,17 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
         asmr.skipClauses();
         return;
     }
-    //
-    if (repeatsNum != 1)
-    {   // create repetition
-        std::unique_ptr<AsmRepeat> repeat(new AsmRepeat(
-                    asmr.getSourcePos(pseudoOpStr), repeatsNum));
-        if (asmr.putRepetitionContent(*repeat))
-        {
-            // and input stream filter
-            std::unique_ptr<AsmInputFilter> newInputFilter(
-                        new AsmRepeatInputFilter(repeat.release()));
-            asmr.asmInputFilters.push(newInputFilter.release());
-            asmr.currentInputFilter = asmr.asmInputFilters.top();
-        }
+    /* create repetition (even if only 1 - for correct source position included
+     * to messages from repetition) */
+    std::unique_ptr<AsmRepeat> repeat(new AsmRepeat(
+                asmr.getSourcePos(pseudoOpStr), repeatsNum));
+    if (asmr.putRepetitionContent(*repeat))
+    {   // and input stream filter
+        std::unique_ptr<AsmInputFilter> newInputFilter(
+                    new AsmRepeatInputFilter(repeat.release()));
+        asmr.asmInputFilters.push(newInputFilter.release());
+        asmr.currentInputFilter = asmr.asmInputFilters.top();
     }
-    // otherwise just execute next code
 }
 
 void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
