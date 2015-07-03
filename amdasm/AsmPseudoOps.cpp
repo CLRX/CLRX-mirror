@@ -1352,6 +1352,10 @@ void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
 
 void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* macroNameStr = string;
+    std::string macroName;
 }
 
 void AsmPseudoOps::doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
@@ -1481,11 +1485,11 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_ELSEIFNC:
             AsmPseudoOps::doIfCmpStr(*this, stmtStartStr, string, true, true);
             break;
+        case ASMOP_ELSEIFNOTDEF:
         case ASMOP_ELSEIFNDEF:
             AsmPseudoOps::doIfDef(*this, stmtStartStr, string, true, true);
             break;
         case ASMOP_ELSEIFNE:
-        case ASMOP_ELSEIFNOTDEF:
             AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
                       IfIntComp::NOT_EQUAL, true);
             break;

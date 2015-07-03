@@ -1547,7 +1547,7 @@ test.s:38:23: Error: Expected ',' before argument
         "test.s:4:21: Error: Expression have unresolved symbol 'xxx'\n"
         "test.s:4:33: Error: Expression have unresolved symbol 'yyy'\n", ""
     },
-    /* 34 - if statementd */
+    /* 34 - if statements */
     {   R"ffDXD(            .if 1
             .byte 1
             .endif
