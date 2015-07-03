@@ -349,10 +349,14 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doElse(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // endif
     static void doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*& string);
-    
+    /// start repetition content
     static void doRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
-    
+    /// end repetition content
     static void doEndRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    /// start macro definition
+    static void doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    /// ends macro definition
+    static void doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
 };
 
 };

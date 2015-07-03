@@ -1350,6 +1350,17 @@ void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
     asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
 }
 
+void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+{
+}
+
+void AsmPseudoOps::doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+{
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
+}
+
 };
 
 void Assembler::parsePseudoOps(const std::string firstName,
