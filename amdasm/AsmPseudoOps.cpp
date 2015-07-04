@@ -1209,29 +1209,29 @@ void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpStr, const cha
 
 static const cxbyte tokenCharTable[96] =
 {
-    //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''  
+    //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
     0x00, 0x01, 0x02, 0x03, 0x90, 0x85, 0x06, 0x07,
-    //'('   ')'   '*'   '+'   ','   '-'   '.'   '/'  
+    //'('   ')'   '*'   '+'   ','   '-'   '.'   '/'
     0x88, 0x88, 0x8a, 0x0b, 0x0c, 0x8d, 0x90, 0x0f,
     //'0'   '1'   '2'   '3'   '4'   '5'   '6'   '7'  
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'8'   '9'   ':'   ';'   '<'   '='   '>'   '?'  
+    //'8'   '9'   ':'   ';'   '<'   '='   '>'   '?'
     0x90, 0x90, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
-    //'@'   'A'   'B'   'C'   'D'   'E'   'F'   'G'  
+    //'@'   'A'   'B'   'C'   'D'   'E'   'F'   'G'
     0x26, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'H'   'I'   'J'   'K'   'L'   'M'   'N'   'O'  
+    //'H'   'I'   'J'   'K'   'L'   'M'   'N'   'O'
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'P'   'Q'   'R'   'S'   'T'   'U'   'V'   'W'  
+    //'P'   'Q'   'R'   'S'   'T'   'U'   'V'   'W'
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'X'   'Y'   'Z'   '['   '\'   ']'   '^'   '_'  
+    //'X'   'Y'   'Z'   '['   '\'   ']'   '^'   '_'
     0x90, 0x90, 0x90, 0x91, 0x92, 0x93, 0x14, 0x90,
-    //'`'   'a'   'b'   'c'   'd'   'e'   'f'   'g'  
+    //'`'   'a'   'b'   'c'   'd'   'e'   'f'   'g'
     0x16, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'h'   'i'   'j'   'k'   'l'   'm'   'n'   'o'  
+    //'h'   'i'   'j'   'k'   'l'   'm'   'n'   'o'
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'p'   'q'   'r'   's'   't'   'u'   'v'   'w'  
+    //'p'   'q'   'r'   's'   't'   'u'   'v'   'w'
     0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'x'   'y'   'z'   '{'   '|'   '}'   '~'   ''  
+    //'x'   'y'   'z'   '{'   '|'   '}'   '~'   ''
     0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
 };
 
@@ -1390,7 +1390,35 @@ void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
     asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
 }
 
-//static void 
+static std::string getMacroArgValue(const char*& string, const char* end)
+{
+    std::string outStr;
+    bool firstNonSpace = false;
+    for (; string != end && *string == ','; string++)
+    {
+        if(*string == '"' || *string == '\'')
+        { // quoted
+            char quote = *string++;
+            for (; string != end && *string == quote; string++)
+                outStr.push_back(*string);
+        }
+        if (!isSpace(*string))
+        {
+            const cxbyte thisTok = (*string >= 0x20 && *string < 0x80) ?
+                tokenCharTable[*string-0x20] : 0;
+            if (firstNonSpace && (thisTok&0x80)!=0)
+                break;  // end of token list for macro arg
+            outStr.push_back(*string);
+            firstNonSpace = false;
+        }
+        else
+        {
+            firstNonSpace = true;
+            continue; // space
+        }
+    }
+    return outStr;
+}
 
 void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
@@ -1425,6 +1453,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         bool argRequired = false;
         bool argVarArgs = false;
         bool argGood = true;
+        std::string defaultArgValue;
+        
         auto found = std::find_if(args.begin(), args.end(),
                [&argName](const AsmMacroArg& arg)
                 { return arg.name == argName; });
@@ -1440,14 +1470,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         string = skipSpacesToEnd(string, end);
         if (string != end && *string == '=')
         {   // parse default value
-            string++;
-            if (string!=end && *string == '\"')
-            {   // double quoted value
-            }
-            else // normal quoted value
-            {
-                
-            }   
+            string = skipSpacesToEnd(string+1, end);
+            defaultArgValue = getMacroArgValue(string, end);
         }
         else if (string != end && *string == ':')
         {   // qualifier
@@ -1482,9 +1506,17 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         }
         else // not good
             good = false;
+        
+        if (argGood) // push argument
+            args.push_back({argName, defaultArgValue, argVarArgs, argRequired});
     }
     if (good)
     {   // create a macro
+        AsmMacro macro(asmr.getSourcePos(pseudoOpStr),
+                        Array<AsmMacroArg>(args.begin(), args.end()));
+        if (!asmr.putMacroContent(macro))
+            return;
+        asmr.macroMap.insert(std::make_pair(macroName, macro));
     }
 }
 
@@ -1935,7 +1967,38 @@ bool Assembler::skipClauses()
 
 bool Assembler::putMacroContent(AsmMacro& macro)
 {
-    return true;
+    const cxuint clauseLevel = clauses.size();
+    bool good = true;
+    while (clauses.size() >= clauseLevel)
+    {
+        if (!readLine())
+        {
+            good = false;
+            break;
+        }
+        
+        const char* string = line;
+        const char* end = line+lineSize;
+        string = skipSpacesToEnd(string, end);
+        const char* stmtString = string;
+        if (string == end || *string != '.')
+        {
+            continue;
+        }
+        
+        std::string pseudOpName = extractSymName(string, end, false);
+        toLowerString(pseudOpName);
+        
+        const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
+               offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
+               pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
+        switch(pseudoOp)
+        {
+            default:
+                break;
+        }
+    }
+    return good;
 }
 
 bool Assembler::putRepetitionContent(AsmRepeat& repeat)
@@ -1949,7 +2012,6 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             good = false;
             break;
         }
-        
         
         const char* string = line;
         const char* end = line+lineSize;
