@@ -1227,7 +1227,7 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
     if (!dontCreateSymbol)
     {   // create symbol if not found
         std::pair<AsmSymbolMap::iterator, bool> res =
-                symbolMap.insert({ symName, AsmSymbol()});
+                symbolMap.insert(std::make_pair(symName, AsmSymbol()));
         entry = &*res.first;
         symIsDefined = res.first->second.hasValue;
     }
@@ -1420,7 +1420,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     }
     
     std::pair<AsmSymbolMap::iterator, bool> res =
-            symbolMap.insert({ symbolName, AsmSymbol() });
+            symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
         (res.first->second.hasValue || res.first->second.expression!=nullptr)))
     {   // found and can be only once defined
@@ -1559,7 +1559,7 @@ void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourc
 
 void Assembler::addIncludeDir(const std::string& includeDir)
 {
-    includeDirs.push_back(std::string(includeDir));
+    includeDirs.push_back(includeDir);
 }
 
 void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
@@ -1792,9 +1792,9 @@ bool Assembler::assemble()
                     break;
                 }
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
-                        symbolMap.insert({ firstName+"b", AsmSymbol() });
+                        symbolMap.insert(std::make_pair(firstName+"b", AsmSymbol()));
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
-                        symbolMap.insert({ firstName+"f", AsmSymbol() });
+                        symbolMap.insert(std::make_pair(firstName+"f", AsmSymbol()));
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.value = nextLRes.first->second.value;
@@ -1805,7 +1805,7 @@ bool Assembler::assemble()
             else
             {   // regular labels
                 std::pair<AsmSymbolMap::iterator, bool> res = 
-                        symbolMap.insert({ firstName, AsmSymbol() });
+                        symbolMap.insert(std::make_pair(firstName, AsmSymbol()));
                 if (!res.second)
                 {   // found
                     if (res.first->second.onceDefined && (res.first->second.hasValue ||

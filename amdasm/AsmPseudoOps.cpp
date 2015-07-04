@@ -1516,7 +1516,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
                         Array<AsmMacroArg>(args.begin(), args.end()));
         if (!asmr.putMacroContent(macro))
             return;
-        asmr.macroMap.insert(std::make_pair(macroName, macro));
+        asmr.macroMap.insert(std::make_pair(std::move(macroName), std::move(macro)));
     }
 }
 
@@ -1983,6 +1983,8 @@ bool Assembler::putMacroContent(AsmMacro& macro)
         const char* stmtString = string;
         if (string == end || *string != '.')
         {
+            macro.addLine(currentInputFilter->getSource(),
+                  currentInputFilter->getColTranslations(), lineSize, line);
             continue;
         }
         
@@ -1994,9 +1996,72 @@ bool Assembler::putMacroContent(AsmMacro& macro)
                pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
         switch(pseudoOp)
         {
+            case ASMCOP_ENDIF:
+                if (!popClause(stmtString, AsmClauseType::IF))
+                    good = false;
+                break;
+            case ASMCOP_ENDM:
+                if (!popClause(stmtString, AsmClauseType::MACRO))
+                    good = false;
+                break;
+            case ASMCOP_ENDR:
+                if (!popClause(stmtString, AsmClauseType::REPEAT))
+                    good = false;
+                break;
+            case ASMCOP_ELSE:
+            case ASMCOP_ELSEIF:
+            case ASMCOP_ELSEIFB:
+            case ASMCOP_ELSEIFC:
+            case ASMCOP_ELSEIFDEF:
+            case ASMCOP_ELSEIFEQ:
+            case ASMCOP_ELSEIFEQS:
+            case ASMCOP_ELSEIFGE:
+            case ASMCOP_ELSEIFGT:
+            case ASMCOP_ELSEIFLE:
+            case ASMCOP_ELSEIFLT:
+            case ASMCOP_ELSEIFNB:
+            case ASMCOP_ELSEIFNC:
+            case ASMCOP_ELSEIFNDEF:
+            case ASMCOP_ELSEIFNE:
+            case ASMCOP_ELSEIFNES:
+            case ASMCOP_ELSEIFNOTDEF:
+                if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
+                            AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
+                    good = false;
+                break;
+            case ASMCOP_IF:
+            case ASMCOP_IFB:
+            case ASMCOP_IFC:
+            case ASMCOP_IFDEF:
+            case ASMCOP_IFEQ:
+            case ASMCOP_IFEQS:
+            case ASMCOP_IFGE:
+            case ASMCOP_IFGT:
+            case ASMCOP_IFLE:
+            case ASMCOP_IFLT:
+            case ASMCOP_IFNB:
+            case ASMCOP_IFNC:
+            case ASMCOP_IFNDEF:
+            case ASMCOP_IFNE:
+            case ASMCOP_IFNES:
+            case ASMCOP_IFNOTDEF:
+                if (!pushClause(stmtString, AsmClauseType::IF))
+                    good = false;
+                break;
+            case ASMCOP_MACRO:
+                if (!pushClause(stmtString, AsmClauseType::MACRO))
+                    good = false;
+                break;
+            case ASMCOP_REPT:
+                if (!pushClause(stmtString, AsmClauseType::REPEAT))
+                    good = false;
+                break;
             default:
                 break;
         }
+        if (pseudoOp != ASMCOP_ENDM || clauses.size() >= clauseLevel)
+            macro.addLine(currentInputFilter->getSource(),
+                  currentInputFilter->getColTranslations(), lineSize, line);
     }
     return good;
 }
