@@ -1880,7 +1880,43 @@ test.s:29:20: Error: Garbages at end of line
 test.s:27:13: Error: Unterminated '.if'
 )ffDXD", ""
     },
-    /* 42 - rept and if */
+    /* 42 - ifc tests */
+    {   R"ffDXD(                .ifc ala ++ ala, ala + +  ala
+                .byte 11
+                .endif
+                .ifc ala -- ala, ala - -  ala
+                .byte 12
+                .endif
+                .ifc ala %% ala, ala % %  ala
+                .byte 13
+                .endif
+                .ifc ala @@ ala, ala @ @  ala
+                .byte 14
+                .endif
+                .ifc ala (( ala, ala ( (  ala
+                .byte 15
+                .endif
+                .ifc ala () ala, ala ( )  ala
+                .byte 16
+                .endif
+                .ifc ala $$ ala, ala $ $  ala
+                .byte 17
+                .endif
+                .ifc ala << ala, ala < <  ala
+                .byte 18
+                .endif
+                .ifc ala :: ala, ala : :  ala
+                .byte 19
+                .endif
+                .ifc ala "::" ala, ala ": :"  ala
+                .byte 19
+                .endif)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 0x0b, 0x0e, 0x12, 0x13 } } },
+        { { ".", 4U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 43 - rept and if */
     {   R"ffDXD(            reptCnt = 1
             .rept 6
             counter = 0
@@ -1910,7 +1946,7 @@ test.s:27:13: Error: Unterminated '.if'
             { "reptCnt", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 43 - */
+    /* 44 - */
     {   R"ffDXD(            reptCnt = 1
             .rept 6
             counter = 0
@@ -1947,7 +1983,7 @@ test.s:27:13: Error: Unterminated '.if'
             { "reptCnt", 7U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 44 - unterminated rept */
+    /* 45 - unterminated rept */
     {   R"ffDXD(reptCnt = 1
             .rept 6
             counter = 0)ffDXD",
@@ -1958,7 +1994,7 @@ test.s:27:13: Error: Unterminated '.if'
             { "reptCnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
         }, false, "test.s:2:13: Error: Unterminated repetition\n", ""
     },
-    /* 45 - endr without rept */
+    /* 46 - endr without rept */
     {   R"ffDXD(            .rept 2
             .string "ala"
             .endr
@@ -1969,7 +2005,7 @@ test.s:27:13: Error: Unterminated '.if'
         { { ".", 8U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:4:13: Error: No '.rept' before '.endr'\n", ""
     },
-    /* 45 - no if on rept */
+    /* 47 - no if on rept */
     {   R"ffDXD(            cnt  = 1
             .rept 0
             .elseif 10
@@ -1984,7 +2020,7 @@ test.s:27:13: Error: Unterminated '.if'
         "test.s:3:13: Error: No '.if' before '.elseif' inside repetition\n"
         "test.s:4:13: Error: No '.if' before '.else' inside repetition\n", ""
     },
-    /* 46 - */
+    /* 48 - */
     {
         R"ffDXD(            cnt  = 1
             .if 1
@@ -1999,7 +2035,7 @@ test.s:27:13: Error: Unterminated '.if'
         }, false, "test.s:4:13: Error: Ending conditional across repetition\n"
         "test.s:2:13: Error: Unterminated '.if'\n", ""
     },
-    /* 47 - error inside repetitions */
+    /* 49 - error inside repetitions */
     {   R"ffDXD(            .rept 1
             exe = 4*6; d = f; dd = ; 
             .endr

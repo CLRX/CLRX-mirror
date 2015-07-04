@@ -1013,7 +1013,8 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
 }
 
 template<typename Word>
-void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpStr,
+                       const char*& string)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1206,12 +1207,41 @@ void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpStr, const cha
     }
 }
 
+static const cxbyte tokenCharTable[96] =
+{
+    //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''  
+    0x00, 0x01, 0x02, 0x03, 0x90, 0x85, 0x06, 0x07,
+    //'('   ')'   '*'   '+'   ','   '-'   '.'   '/'  
+    0x88, 0x88, 0x8a, 0x0b, 0x0c, 0x8d, 0x90, 0x0f,
+    //'0'   '1'   '2'   '3'   '4'   '5'   '6'   '7'  
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'8'   '9'   ':'   ';'   '<'   '='   '>'   '?'  
+    0x90, 0x90, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
+    //'@'   'A'   'B'   'C'   'D'   'E'   'F'   'G'  
+    0x26, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'H'   'I'   'J'   'K'   'L'   'M'   'N'   'O'  
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'P'   'Q'   'R'   'S'   'T'   'U'   'V'   'W'  
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'X'   'Y'   'Z'   '['   '\'   ']'   '^'   '_'  
+    0x90, 0x90, 0x90, 0x91, 0x92, 0x93, 0x14, 0x90,
+    //'`'   'a'   'b'   'c'   'd'   'e'   'f'   'g'  
+    0x16, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'h'   'i'   'j'   'k'   'l'   'm'   'n'   'o'  
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'p'   'q'   'r'   's'   't'   'u'   'v'   'w'  
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'x'   'y'   'z'   '{'   '|'   '}'   '~'   ''  
+    0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
+};
+
 static std::string getStringToCompare(const char* strStart, const char* strEnd)
 {
     std::string firstStr;
     bool blank = true;
     bool singleQuote = false;
     bool dblQuote = false;
+    cxbyte prevTok = 0;
     for (const char* s = strStart; s != strEnd; ++s)
         if (isSpace(*s))
         {
@@ -1226,7 +1256,17 @@ static std::string getStringToCompare(const char* strStart, const char* strEnd)
                 dblQuote = !dblQuote;
             else if (*s == '\'' && !dblQuote)
                 singleQuote = !singleQuote;
+            
+            /* original GNU as tokenize line before processing, this code 'emulates'
+             * this operation */
+            cxbyte thisTok = (*s >= 0x20 && *s < 0x80) ? tokenCharTable[*s-0x20] : 0;
+            if (!singleQuote && !dblQuote && !firstStr.empty() &&
+                isSpace(firstStr.back()) &&
+                ((prevTok != thisTok) || ((prevTok == thisTok) && (prevTok & 0x80)==0)))
+                firstStr.pop_back();// delete space between different tokens
+            
             firstStr.push_back(*s);
+            prevTok = thisTok;
         }
     if (!firstStr.empty() && isSpace(firstStr.back()))
         firstStr.pop_back(); // remove last space
@@ -1350,12 +1390,102 @@ void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
     asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
 }
 
+//static void 
+
 void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
     const char* macroNameStr = string;
-    std::string macroName;
+    std::string macroName = extractSymName(string, end, false);
+    if (macroName.empty())
+    {
+        asmr.printError(macroNameStr, "Expected macro name");
+        return;
+    }
+    toUpperString(macroName);
+    string += macroName.size();
+    /* parse args */
+    std::vector<AsmMacroArg> args;
+    
+    bool good = true;
+    bool haveVarArg = false;
+    while(string == end)
+    {
+        string = skipSpacesToEnd(string, end);
+        if (string != end && *string == ',')
+            string = skipSpacesToEnd(string+1, end);
+        const char* argStr = string;
+        std::string argName = extractSymName(string, end, false);
+        if (argName.empty())
+        {
+            asmr.printError(argStr, "Expected macro argument name");
+            return; //
+        }
+        bool argRequired = false;
+        bool argVarArgs = false;
+        bool argGood = true;
+        auto found = std::find_if(args.begin(), args.end(),
+               [&argName](const AsmMacroArg& arg)
+                { return arg.name == argName; });
+        if (found != args.end()) // found
+        {   // duplicate!
+            std::string message = "Duplicates macro argument '";
+            message += argName;
+            message += '\'';
+            asmr.printError(argStr, message.c_str());
+            argGood = false;
+        }
+        
+        string = skipSpacesToEnd(string, end);
+        if (string != end && *string == '=')
+        {   // parse default value
+            string++;
+            if (string!=end && *string == '\"')
+            {   // double quoted value
+            }
+            else // normal quoted value
+            {
+                
+            }   
+        }
+        else if (string != end && *string == ':')
+        {   // qualifier
+            string = skipSpacesToEnd(string+1, end);
+            //extr
+            if (string+3 <= end && string[0] == 'r' && string[1] == 'e' &&
+                    string[2] == 'q') // required
+            {
+                argRequired = true;
+                string += 3;
+            }
+            else if (string+6 <= end && ::memcmp(string, "vararg", 6)==0) // required
+            {
+                argVarArgs = true;
+                string += 6;
+            }
+            else
+            {   // otherwise
+                asmr.printError(string, "Expected qualifier 'req' or 'vararg'");
+                argGood = false;
+            }
+        }
+        if (argGood) // push to arguments
+        {
+            if (haveVarArg)
+            {
+                asmr.printError(argStr, "Variadic argument must be last");
+                good = false;
+            }
+            else
+                haveVarArg = true;
+        }
+        else // not good
+            good = false;
+    }
+    if (good)
+    {   // create a macro
+    }
 }
 
 void AsmPseudoOps::doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
