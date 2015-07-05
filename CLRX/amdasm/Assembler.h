@@ -259,6 +259,11 @@ public:
     /// get source position
     const AsmSourcePos& getPos() const
     { return pos; }
+    
+    const size_t getArgsNum() const
+    { return args.size(); }
+    const AsmMacroArg& getArg(size_t i) const
+    { return args[i]; }
 };
 
 /// assembler repeat
@@ -412,6 +417,8 @@ typedef Array<std::pair<std::string, std::string> > AsmMacroArgMap;
 /// assembler macro input filter (for macro filtering)
 class AsmMacroInputFilter: public AsmInputFilter
 {
+public:
+    typedef Array<std::pair<std::string, std::string> > MacroArgMap;
 private:
     const AsmMacro& macro;  ///< input macro
     AsmMacroArgMap argMap;  ///< input macro argument map
@@ -422,7 +429,7 @@ private:
 public:
     /// constructor with input macro, source position and arguments map
     AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
-        const Array<std::pair<std::string, std::string> >& argMap);
+        const MacroArgMap& argMap);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };

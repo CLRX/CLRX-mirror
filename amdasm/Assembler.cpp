@@ -33,6 +33,65 @@
 
 using namespace CLRX;
 
+static const cxbyte tokenCharTable[96] =
+{
+    //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
+    0x00, 0x01, 0x02, 0x03, 0x90, 0x85, 0x06, 0x07,
+    //'('   ')'   '*'   '+'   ','   '-'   '.'   '/'
+    0x88, 0x88, 0x8a, 0x0b, 0x0c, 0x8d, 0x90, 0x0f,
+    //'0'   '1'   '2'   '3'   '4'   '5'   '6'   '7'  
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'8'   '9'   ':'   ';'   '<'   '='   '>'   '?'
+    0x90, 0x90, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
+    //'@'   'A'   'B'   'C'   'D'   'E'   'F'   'G'
+    0x26, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'H'   'I'   'J'   'K'   'L'   'M'   'N'   'O'
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'P'   'Q'   'R'   'S'   'T'   'U'   'V'   'W'
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'X'   'Y'   'Z'   '['   '\'   ']'   '^'   '_'
+    0x90, 0x90, 0x90, 0x91, 0x92, 0x93, 0x14, 0x90,
+    //'`'   'a'   'b'   'c'   'd'   'e'   'f'   'g'
+    0x16, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'h'   'i'   'j'   'k'   'l'   'm'   'n'   'o'
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'p'   'q'   'r'   's'   't'   'u'   'v'   'w'
+    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+    //'x'   'y'   'z'   '{'   '|'   '}'   '~'   ''
+    0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
+};
+
+std::string CLRX::getMacroArgValue(const char*& string, const char* end)
+{
+    std::string outStr;
+    bool firstNonSpace = false;
+    for (; string != end && *string == ','; string++)
+    {
+        if(*string == '"' || *string == '\'')
+        { // quoted
+            char quote = *string++;
+            for (; string != end && *string == quote; string++)
+                outStr.push_back(*string);
+        }
+        if (!isSpace(*string))
+        {
+            const cxbyte thisTok = (*string >= 0x20 && *string < 0x80) ?
+                tokenCharTable[*string-0x20] : 0;
+            if (firstNonSpace && (thisTok&0x80)!=0)
+                break;  // end of token list for macro arg
+            outStr.push_back(*string);
+            firstNonSpace = false;
+        }
+        else
+        {
+            firstNonSpace = true;
+            continue; // space
+        }
+    }
+    return outStr;
+}
+
+
 ISAAssembler::~ISAAssembler()
 { }
 
@@ -425,7 +484,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
-        const Array<std::pair<std::string, std::string> >& _argMap)
+        const MacroArgMap& _argMap)
         : macro(_macro), argMap(_argMap), contentLineNo(0), sourceTransIndex(0)
 {
     source = macro.getSourceTrans(0).source;
@@ -1684,6 +1743,8 @@ bool Assembler::popClause(const char* string, AsmClauseType clauseType)
 Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
 {
     const char* end = line+lineSize;
+    const char* macroStartStr = string;
+    
     std::string macroName = extractSymName(string, end, false);
     if (macroName.empty())
         return ParseState::MISSING;
@@ -1692,9 +1753,44 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     if (it == macroMap.end())
         return ParseState::MISSING; // macro not found
     /* parse arguments */
-    string = skipSpacesToEnd(string, end);
     
-    return ParseState::FAILED;
+    const AsmMacro& macro = it->second;
+    const size_t macroArgsNum = macro.getArgsNum();
+    bool good = true;
+    AsmMacroInputFilter::MacroArgMap argMap(macroArgsNum);
+    for (size_t i = 0; i < macroArgsNum; i++) // set name of args
+        argMap[i].first = macro.getArg(i).name;
+    
+    for (size_t i = 0; i < macroArgsNum; i++)
+    {
+        const AsmMacroArg& arg = macro.getArg(i);
+        
+        string = skipSpacesToEnd(string, end);
+        if (string!=end && *string==',')
+            string = skipSpacesToEnd(string+1, end);
+        
+        const char* argStr = string;
+        argMap[i].second = getMacroArgValue(string, end);
+        if (arg.required && argMap[i].second.empty())
+        {   // error, value required
+            std::string message = "Value required for macro argument '";
+            message += arg.name;
+            message += '\'';
+            printError(argStr, message.c_str());
+            good = false;
+        }
+    }
+    
+    if (!good)
+        return ParseState::FAILED;
+    // sort argmap before using
+    mapSort(argMap.begin(), argMap.end());
+    // create macro input filter and push to stack
+    std::unique_ptr<AsmInputFilter> macroFilter(new AsmMacroInputFilter(macro,
+            getSourcePos(macroStartStr), argMap));
+    asmInputFilters.push(macroFilter.release());
+    currentInputFilter = asmInputFilters.top();
+    return ParseState::PARSED;
 }
 
 bool Assembler::readLine()

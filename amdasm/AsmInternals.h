@@ -359,6 +359,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
 };
 
+extern std::string getMacroArgValue(const char*& string, const char* end);
+
 };
 
 #endif

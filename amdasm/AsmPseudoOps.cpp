@@ -1399,36 +1399,6 @@ void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
     asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
 }
 
-static std::string getMacroArgValue(const char*& string, const char* end)
-{
-    std::string outStr;
-    bool firstNonSpace = false;
-    for (; string != end && *string == ','; string++)
-    {
-        if(*string == '"' || *string == '\'')
-        { // quoted
-            char quote = *string++;
-            for (; string != end && *string == quote; string++)
-                outStr.push_back(*string);
-        }
-        if (!isSpace(*string))
-        {
-            const cxbyte thisTok = (*string >= 0x20 && *string < 0x80) ?
-                tokenCharTable[*string-0x20] : 0;
-            if (firstNonSpace && (thisTok&0x80)!=0)
-                break;  // end of token list for macro arg
-            outStr.push_back(*string);
-            firstNonSpace = false;
-        }
-        else
-        {
-            firstNonSpace = true;
-            continue; // space
-        }
-    }
-    return outStr;
-}
-
 void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -1467,7 +1437,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         auto found = std::find_if(args.begin(), args.end(),
                [&argName](const AsmMacroArg& arg)
                 { return arg.name == argName; });
-        if (found != args.end()) // found
+        if (found != args.end()) // found (optimization is needed?)
         {   // duplicate!
             std::string message = "Duplicates macro argument '";
             message += argName;
