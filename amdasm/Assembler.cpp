@@ -935,9 +935,6 @@ Assembler::~Assembler()
     
     for (auto& entry: symbolSnapshots)
         delete entry;
-    
-    for (AsmSection* section: sections)
-        delete section;
 }
 
 bool Assembler::parseString(std::string& strarray, const char* string,
@@ -1312,7 +1309,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         else
                         {
                             printWarningForRange(8, value, expr->getSourcePos());
-                            sections[target.sectionId]->content[target.offset] =
+                            sections[target.sectionId].content[target.offset] =
                                     cxbyte(value);
                         }
                         break;
@@ -1327,7 +1324,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         {
                             printWarningForRange(16, value, expr->getSourcePos());
                             SULEV(*reinterpret_cast<uint16_t*>(sections[target.sectionId]
-                                    ->content.data() + target.offset), uint16_t(value));
+                                    .content.data() + target.offset), uint16_t(value));
                         }
                         break;
                     case ASMXTGT_DATA32:
@@ -1341,7 +1338,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         {
                             printWarningForRange(32, value, expr->getSourcePos());
                             SULEV(*reinterpret_cast<uint32_t*>(sections[target.sectionId]
-                                    ->content.data() + target.offset), uint32_t(value));
+                                    .content.data() + target.offset), uint32_t(value));
                         }
                         break;
                     case ASMXTGT_DATA64:
@@ -1353,11 +1350,11 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         }
                         else
                             SULEV(*reinterpret_cast<uint64_t*>(sections[target.sectionId]
-                                    ->content.data() + target.offset), uint64_t(value));
+                                    .content.data() + target.offset), uint64_t(value));
                         break;
                     default: // ISA assembler resolves this dependency
                         if (!isaAssembler->resolveCode(sections[target.sectionId]
-                                ->content.data() + target.offset, target.type, value))
+                                .content.data() + target.offset, target.type, value))
                             good = false;
                         break;
                 }
@@ -1517,7 +1514,7 @@ bool Assembler::isAbsoluteSymbol(const AsmSymbol& symbol) const
     // otherwise check section
     if (sections.empty())
         return false; // fallback
-    const AsmSection& section = *sections[symbol.sectionId];
+    const AsmSection& section = sections[symbol.sectionId];
     return section.type!=AsmSectionType::AMD_KERNEL_CODE &&
             section.type!=AsmSectionType::GALLIUM_CODE &&
             section.type!=AsmSectionType::RAWCODE_CODE;
@@ -1684,6 +1681,19 @@ bool Assembler::popClause(const char* string, AsmClauseType clauseType)
     return true;
 }
 
+bool Assembler::makeMacroSubstitution(const char* string)
+{
+    const char* end = line+lineSize;
+    std::string macroName = extractSymName(string, end, false);
+    if (macroName.empty())
+        return false;
+    toLowerString(macroName);
+    MacroMap::const_iterator it = macroMap.find(macroName);
+    if (it == macroMap.end())
+        return false; // macro not found
+    return false;
+}
+
 bool Assembler::readLine()
 {
     lineNo = currentInputFilter->getLineNo();
@@ -1715,7 +1725,7 @@ void Assembler::initializeOutputFormat()
         amdOutput->is64Bit = _64bit;
         amdOutput->deviceType = deviceType;
         /* sections */
-        sections.push_back(new AsmSection{ 0, AsmSectionType::AMD_GLOBAL_DATA });
+        sections.push_back({ 0, AsmSectionType::AMD_GLOBAL_DATA });
     }
     else if (format == BinaryFormat::GALLIUM && galliumOutput == nullptr)
     {
@@ -1726,12 +1736,12 @@ void Assembler::initializeOutputFormat()
         galliumOutput->disassemblySize = 0;
         galliumOutput->commentSize = 0;
         galliumOutput->comment = nullptr;
-        sections.push_back(new AsmSection{ 0, AsmSectionType::GALLIUM_CODE});
+        sections.push_back({ 0, AsmSectionType::GALLIUM_CODE});
     }
     else if (format == BinaryFormat::RAWCODE && rawCode == nullptr)
     {
-        sections.push_back(new AsmSection{ 0, AsmSectionType::RAWCODE_CODE});
-        rawCode = sections[0];
+        sections.push_back({ 0, AsmSectionType::RAWCODE_CODE});
+        rawCode = &sections;
     }
     else // FAIL
         abort();

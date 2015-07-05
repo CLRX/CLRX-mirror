@@ -2111,7 +2111,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     assertValue(testName, "64bit", int(testCase.is64Bit), int(assembler.is64Bit()));
     
     // check sections
-    const std::vector<AsmSection*>& resSections = assembler.getSections();
+    const std::vector<AsmSection>& resSections = assembler.getSections();
     assertValue(testName, "sections.length", testCase.sections.size(), resSections.size());
     for (size_t i = 0; i < testCase.sections.size(); i++)
     {
@@ -2120,7 +2120,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         caseOss.flush();
         std::string caseName(caseOss.str());
         
-        const AsmSection& resSection = *(resSections[i]);
+        const AsmSection& resSection = resSections[i];
         const Section& expSection = testCase.sections[i];
         assertValue(testName, caseName+"type", int(expSection.type), int(resSection.type));
         assertArray<cxbyte>(testName, caseName+"content", expSection.content,

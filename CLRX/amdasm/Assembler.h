@@ -849,7 +849,7 @@ private:
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
     std::vector<std::string> includeDirs;
-    std::vector<AsmSection*> sections;
+    std::vector<AsmSection> sections;
     AsmSymbolMap symbolMap;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     MacroMap macroMap;
@@ -875,7 +875,7 @@ private:
     union {
         AmdInput* amdOutput;
         GalliumInput* galliumOutput;
-        AsmSection* rawCode;
+        std::vector<AsmSection>* rawCode;
     };
     
     std::stack<AsmClause> clauses;
@@ -961,9 +961,11 @@ private:
      // return false when failed (for example no clauses)
     bool popClause(const char* string, AsmClauseType clauseType);
     
+    bool makeMacroSubstitution(const char* string);
+    
     void putData(size_t size, const cxbyte* data)
     {
-        AsmSection& section = *sections[currentSection];
+        AsmSection& section = sections[currentSection];
         section.content.insert(section.content.end(), data, data+size);
         currentOutPos += size;
     }
@@ -971,7 +973,7 @@ private:
     cxbyte* reserveData(size_t size, cxbyte fillValue = 0)
     {
         size_t oldOutPos = currentOutPos;
-        AsmSection& section = *sections[currentSection];
+        AsmSection& section = sections[currentSection];
         section.content.insert(section.content.end(), size, fillValue);
         currentOutPos += size;
         return section.content.data() + oldOutPos;
@@ -1032,7 +1034,7 @@ public:
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
     /// get sections
-    const std::vector<AsmSection*>& getSections() const
+    const std::vector<AsmSection>& getSections() const
     { return sections; }
     /// get kernel map
     const KernelMap& getKernelMap() const
