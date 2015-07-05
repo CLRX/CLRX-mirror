@@ -1764,6 +1764,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     std::string macroName = extractSymName(string, end, false);
     if (macroName.empty())
         return ParseState::MISSING;
+    string += macroName.size();
     toLowerString(macroName);
     MacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
@@ -1782,7 +1783,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
         const AsmMacroArg& arg = macro.getArg(i);
         
         string = skipSpacesToEnd(string, end);
-        if (string!=end && *string==',')
+        if (string!=end && *string==',' && i!=0)
             string = skipSpacesToEnd(string+1, end);
         
         const char* argStr = string;
@@ -1795,6 +1796,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
             printError(argStr, message.c_str());
             good = false;
         }
+        else if (argMap[i].second.empty())
+            argMap[i].second = arg.defaultValue;
     }
     
     if (!good)

@@ -1383,14 +1383,14 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         asmr.printError(macroNameStr, "Expected macro name");
         return;
     }
-    toUpperString(macroName);
+    toLowerString(macroName);
     string += macroName.size();
     /* parse args */
     std::vector<AsmMacroArg> args;
     
     bool good = true;
     bool haveVarArg = false;
-    while(string == end)
+    while(string != end)
     {
         string = skipSpacesToEnd(string, end);
         if (string != end && *string == ',')
@@ -1402,6 +1402,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
             asmr.printError(argStr, "Expected macro argument name");
             return; //
         }
+        string += argName.size();
         bool argRequired = false;
         bool argVarArgs = false;
         bool argGood = true;
@@ -1454,7 +1455,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
                 good = false;
             }
             else
-                haveVarArg = true;
+                haveVarArg = argVarArgs;
         }
         else // not good
             good = false;
@@ -1466,6 +1467,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
     {   // create a macro
         AsmMacro macro(asmr.getSourcePos(pseudoOpStr),
                         Array<AsmMacroArg>(args.begin(), args.end()));
+        asmr.pushClause(pseudoOpStr, AsmClauseType::MACRO);
         if (!asmr.putMacroContent(macro))
             return;
         asmr.macroMap.insert(std::make_pair(std::move(macroName), std::move(macro)));
@@ -1617,6 +1619,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doEndIf(*this, stmtStartStr, string);
             break;
         case ASMOP_ENDM:
+            AsmPseudoOps::doEndMacro(*this, stmtStartStr, string);
             break;
         case ASMOP_ENDR:
             AsmPseudoOps::doEndRepeat(*this, stmtStartStr, string);
@@ -1745,6 +1748,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::setSymbolBind(*this, string, STB_LOCAL);
             break;
         case ASMOP_MACRO:
+            AsmPseudoOps::doMacro(*this, stmtStartStr, string);
             break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, string);
