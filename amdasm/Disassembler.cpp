@@ -1081,7 +1081,7 @@ void Disassembler::disassembleGallium()
                 output.write("\n", 1);
             }
         }
-        isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName.c_str());
+        isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }
     if (doDumpCode && galliumInput->code != nullptr && galliumInput->codeSize != 0)
     {   // print text

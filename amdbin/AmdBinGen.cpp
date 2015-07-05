@@ -111,6 +111,11 @@ void AmdInput::addKernel(const AmdKernelInput& kernelInput)
     kernels.push_back(kernelInput);
 }
 
+void AmdInput::addKernel(AmdKernelInput&& kernelInput)
+{
+    kernels.push_back(kernelInput);
+}
+
 void AmdInput::addKernel(const char* kernelName, size_t codeSize,
        const cxbyte* code, const AmdKernelConfig& config,
        size_t dataSize, const cxbyte* data)
@@ -147,6 +152,15 @@ AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType
 {
     input = new AmdInput{_64bitMode, deviceType, globalDataSize, globalData,
                 driverVersion, "", "", kernelInputs };
+}
+
+AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
+       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
+       std::vector<AmdKernelInput>&& kernelInputs)
+        : manageable(true), input(nullptr)
+{
+    input = new AmdInput{_64bitMode, deviceType, globalDataSize, globalData,
+                driverVersion, "", "", std::move(kernelInputs) };
 }
 
 AmdGPUBinGenerator::~AmdGPUBinGenerator()

@@ -311,6 +311,18 @@ GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
         disassemblySize, disassembly, commentSize, comment, codeSize, code };
 }
 
+GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+        size_t globalDataSize, const cxbyte* globalData,
+        std::vector<GalliumKernelInput>&& kernels,
+        size_t disassemblySize, const char* disassembly,
+        size_t commentSize, const char* comment)
+        : manageable(true), input(nullptr)
+{
+    input = new GalliumInput{ globalDataSize, globalData, std::move(kernels),
+        disassemblySize, disassembly, commentSize, comment, codeSize, code };
+}
+
+
 GalliumBinGenerator::~GalliumBinGenerator()
 {
     if (manageable)

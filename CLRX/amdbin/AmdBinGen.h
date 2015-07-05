@@ -170,6 +170,9 @@ struct AmdInput
     
     /// add kernel to input
     void addKernel(const AmdKernelInput& kernelInput);
+    /// add kernel to input
+    void addKernel(AmdKernelInput&& kernelInput);
+    
     /// add kernel to input with configuration
     /**
      * \param kernelName kernel name
@@ -229,6 +232,10 @@ public:
     AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData, 
            const std::vector<AmdKernelInput>& kernelInputs);
+    /// constructor
+    AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
+           size_t globalDataSize, const cxbyte* globalData, 
+           std::vector<AmdKernelInput>&& kernelInputs);
     ~AmdGPUBinGenerator();
     
     /// get input

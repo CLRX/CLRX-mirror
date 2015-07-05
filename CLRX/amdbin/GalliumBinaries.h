@@ -338,6 +338,12 @@ public:
             const std::vector<GalliumKernelInput>& kernels,
             size_t disassemblySize = 0, const char* disassembly = nullptr,
             size_t commentSize = 0, const char* comment = nullptr);
+    /// constructor
+    GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+            size_t globalDataSize, const cxbyte* globalData,
+            std::vector<GalliumKernelInput>&& kernels,
+            size_t disassemblySize = 0, const char* disassembly = nullptr,
+            size_t commentSize = 0, const char* comment = nullptr);
     ~GalliumBinGenerator();
     
     /// get input

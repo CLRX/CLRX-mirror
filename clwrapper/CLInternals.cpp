@@ -32,6 +32,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include "CLWrapper.h"
 
@@ -797,7 +798,7 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
         for (cl_uint i = 0; i < amdDevicesNum; i++)
         {
             tmpDevice.amdOclDevice = amdDevices[i];
-            const auto& found = std::lower_bound(sortedOriginal.begin(),
+            const auto& found = binaryFind(sortedOriginal.begin(),
                      newEnd, &tmpDevice, clrxDeviceCompareByAmdDevice);
             if (found != newEnd)
                 amdDevices[i] = (cl_device_id)(*found);

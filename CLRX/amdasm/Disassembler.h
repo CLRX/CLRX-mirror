@@ -98,6 +98,9 @@ public:
     /// add named label to list (must be called before disassembly)
     void addNamedLabel(size_t pos, const std::string& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
+    /// add named label to list (must be called before disassembly)
+    void addNamedLabel(size_t pos, std::string&& name)
+    { namedLabels.push_back(std::make_pair(pos, name)); }
 };
 
 /// GCN architectur dissassembler
