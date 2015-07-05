@@ -2016,9 +2016,7 @@ test.s:27:13: Error: Unterminated '.if'
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
             { "cnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
-        }, false,
-        "test.s:3:13: Error: No '.if' before '.elseif' inside repetition\n"
-        "test.s:4:13: Error: No '.if' before '.else' inside repetition\n", ""
+        }, true, "", ""
     },
     /* 48 - */
     {
@@ -2032,8 +2030,7 @@ test.s:27:13: Error: Unterminated '.if'
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
             { "cnt", 1U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
-        }, false, "test.s:4:13: Error: Ending conditional across repetition\n"
-        "test.s:2:13: Error: Unterminated '.if'\n", ""
+        }, false, "test.s:2:13: Error: Unterminated '.if'\n", ""
     },
     /* 49 - error inside repetitions */
     {   R"ffDXD(            .rept 1

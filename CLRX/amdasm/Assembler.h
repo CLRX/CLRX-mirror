@@ -961,7 +961,7 @@ private:
      // return false when failed (for example no clauses)
     bool popClause(const char* string, AsmClauseType clauseType);
     
-    bool makeMacroSubstitution(const char* string);
+    ParseState makeMacroSubstitution(const char* string);
     
     void putData(size_t size, const cxbyte* data)
     {

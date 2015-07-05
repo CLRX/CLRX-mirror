@@ -51,6 +51,12 @@ static const char* offlinePseudoOpNamesTbl[] =
     "ifne", "ifnes", "ifnotdef", "macro", "rept"
 };
 
+static const char* macroRepeatPseudoOpNamesTbl[] =
+{
+    "endm", "endr", "macro", "rept"
+};
+
+
 enum
 {
     ASMCOP_ELSE, ASMCOP_ELSEIF, ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
@@ -63,6 +69,9 @@ enum
     ASMCOP_IFLT, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
     ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNOTDEF, ASMCOP_MACRO, ASMCOP_REPT
 };
+
+enum
+{ ASMMROP_ENDM, ASMMROP_ENDR, ASMMROP_MACRO, ASMMROP_REPT };
 
 static const char* pseudoOpNamesTbl[] =
 {
@@ -1891,11 +1900,15 @@ bool Assembler::skipClauses()
                offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
                pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
         
+        // any conditional inside macro or repeat will be ignored
+        bool insideMacroOrRepeat = (clauses.top().type == AsmClauseType::MACRO ||
+            clauses.top().type == AsmClauseType::REPEAT);
         switch(pseudoOp)
         {
             case ASMCOP_ENDIF:
-                if (!popClause(stmtString, AsmClauseType::IF))
-                    good = false;
+                if (!insideMacroOrRepeat)
+                    if (!popClause(stmtString, AsmClauseType::IF))
+                        good = false;
                 break;
             case ASMCOP_ENDM:
                 if (!popClause(stmtString, AsmClauseType::MACRO))
@@ -1922,14 +1935,17 @@ bool Assembler::skipClauses()
             case ASMCOP_ELSEIFNE:
             case ASMCOP_ELSEIFNES:
             case ASMCOP_ELSEIFNOTDEF:
-                if (clauseLevel == clauses.size() && isTopIfClause)
+                if (!insideMacroOrRepeat)
                 {
-                    lineAlreadyRead = true; // read
-                    return good; // do exit
+                    if (clauseLevel == clauses.size() && isTopIfClause)
+                    {
+                        lineAlreadyRead = true; // read
+                        return good; // do exit
+                    }
+                    if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
+                                AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
+                        good = false;
                 }
-                if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
-                            AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
-                    good = false;
                 break;
             case ASMCOP_IF:
             case ASMCOP_IFB:
@@ -1947,8 +1963,11 @@ bool Assembler::skipClauses()
             case ASMCOP_IFNE:
             case ASMCOP_IFNES:
             case ASMCOP_IFNOTDEF:
-                if (!pushClause(stmtString, AsmClauseType::IF))
-                    good = false;
+                if (!insideMacroOrRepeat)
+                {
+                    if (!pushClause(stmtString, AsmClauseType::IF))
+                        good = false;
+                }
                 break;
             case ASMCOP_MACRO:
                 if (!pushClause(stmtString, AsmClauseType::MACRO))
@@ -1991,75 +2010,32 @@ bool Assembler::putMacroContent(AsmMacro& macro)
         std::string pseudOpName = extractSymName(string, end, false);
         toLowerString(pseudOpName);
         
-        const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
-               offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
-               pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
+        const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,
+               macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
+               sizeof(char*), pseudOpName.c_str()+1, CStringLess()) -
+               macroRepeatPseudoOpNamesTbl;
         switch(pseudoOp)
         {
-            case ASMCOP_ENDIF:
-                if (!popClause(stmtString, AsmClauseType::IF))
-                    good = false;
-                break;
-            case ASMCOP_ENDM:
+            case ASMMROP_ENDM:
                 if (!popClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
-            case ASMCOP_ENDR:
+            case ASMMROP_ENDR:
                 if (!popClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
-            case ASMCOP_ELSE:
-            case ASMCOP_ELSEIF:
-            case ASMCOP_ELSEIFB:
-            case ASMCOP_ELSEIFC:
-            case ASMCOP_ELSEIFDEF:
-            case ASMCOP_ELSEIFEQ:
-            case ASMCOP_ELSEIFEQS:
-            case ASMCOP_ELSEIFGE:
-            case ASMCOP_ELSEIFGT:
-            case ASMCOP_ELSEIFLE:
-            case ASMCOP_ELSEIFLT:
-            case ASMCOP_ELSEIFNB:
-            case ASMCOP_ELSEIFNC:
-            case ASMCOP_ELSEIFNDEF:
-            case ASMCOP_ELSEIFNE:
-            case ASMCOP_ELSEIFNES:
-            case ASMCOP_ELSEIFNOTDEF:
-                if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
-                            AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
-                    good = false;
-                break;
-            case ASMCOP_IF:
-            case ASMCOP_IFB:
-            case ASMCOP_IFC:
-            case ASMCOP_IFDEF:
-            case ASMCOP_IFEQ:
-            case ASMCOP_IFEQS:
-            case ASMCOP_IFGE:
-            case ASMCOP_IFGT:
-            case ASMCOP_IFLE:
-            case ASMCOP_IFLT:
-            case ASMCOP_IFNB:
-            case ASMCOP_IFNC:
-            case ASMCOP_IFNDEF:
-            case ASMCOP_IFNE:
-            case ASMCOP_IFNES:
-            case ASMCOP_IFNOTDEF:
-                if (!pushClause(stmtString, AsmClauseType::IF))
-                    good = false;
-                break;
-            case ASMCOP_MACRO:
+            case ASMMROP_MACRO:
                 if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
-            case ASMCOP_REPT:
+            case ASMMROP_REPT:
                 if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
             default:
                 break;
         }
-        if (pseudoOp != ASMCOP_ENDM || clauses.size() >= clauseLevel)
+        if (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel)
             macro.addLine(currentInputFilter->getSource(),
                   currentInputFilter->getColTranslations(), lineSize, line);
     }
@@ -2093,75 +2069,32 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
         std::string pseudOpName = extractSymName(string, end, false);
         toLowerString(pseudOpName);
         
-        const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
-               offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
-               pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
+        const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,
+               macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
+               sizeof(char*), pseudOpName.c_str()+1, CStringLess()) -
+               macroRepeatPseudoOpNamesTbl;
         switch(pseudoOp)
         {
-            case ASMCOP_ENDIF:
-                if (!popClause(stmtString, AsmClauseType::IF))
-                    good = false;
-                break;
-            case ASMCOP_ENDM:
+            case ASMMROP_ENDM:
                 if (!popClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
-            case ASMCOP_ENDR:
+            case ASMMROP_ENDR:
                 if (!popClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
-            case ASMCOP_ELSE:
-            case ASMCOP_ELSEIF:
-            case ASMCOP_ELSEIFB:
-            case ASMCOP_ELSEIFC:
-            case ASMCOP_ELSEIFDEF:
-            case ASMCOP_ELSEIFEQ:
-            case ASMCOP_ELSEIFEQS:
-            case ASMCOP_ELSEIFGE:
-            case ASMCOP_ELSEIFGT:
-            case ASMCOP_ELSEIFLE:
-            case ASMCOP_ELSEIFLT:
-            case ASMCOP_ELSEIFNB:
-            case ASMCOP_ELSEIFNC:
-            case ASMCOP_ELSEIFNDEF:
-            case ASMCOP_ELSEIFNE:
-            case ASMCOP_ELSEIFNES:
-            case ASMCOP_ELSEIFNOTDEF:
-                if (!pushClause(stmtString, (pseudoOp==ASMCOP_ELSE ?
-                            AsmClauseType::ELSE : AsmClauseType::ELSEIF)))
-                    good = false;
-                break;
-            case ASMCOP_IF:
-            case ASMCOP_IFB:
-            case ASMCOP_IFC:
-            case ASMCOP_IFDEF:
-            case ASMCOP_IFEQ:
-            case ASMCOP_IFEQS:
-            case ASMCOP_IFGE:
-            case ASMCOP_IFGT:
-            case ASMCOP_IFLE:
-            case ASMCOP_IFLT:
-            case ASMCOP_IFNB:
-            case ASMCOP_IFNC:
-            case ASMCOP_IFNDEF:
-            case ASMCOP_IFNE:
-            case ASMCOP_IFNES:
-            case ASMCOP_IFNOTDEF:
-                if (!pushClause(stmtString, AsmClauseType::IF))
-                    good = false;
-                break;
-            case ASMCOP_MACRO:
+            case ASMMROP_MACRO:
                 if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
-            case ASMCOP_REPT:
+            case ASMMROP_REPT:
                 if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
                 break;
             default:
                 break;
         }
-        if (pseudoOp != ASMCOP_ENDR || clauses.size() >= clauseLevel)
+        if (pseudoOp != ASMMROP_ENDR || clauses.size() >= clauseLevel)
             repeat.addLine(currentInputFilter->getMacroSubst(),
                    currentInputFilter->getSource(),
                    currentInputFilter->getColTranslations(), lineSize, line);

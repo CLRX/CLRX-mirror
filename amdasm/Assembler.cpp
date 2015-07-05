@@ -1681,17 +1681,20 @@ bool Assembler::popClause(const char* string, AsmClauseType clauseType)
     return true;
 }
 
-bool Assembler::makeMacroSubstitution(const char* string)
+Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
 {
     const char* end = line+lineSize;
     std::string macroName = extractSymName(string, end, false);
     if (macroName.empty())
-        return false;
+        return ParseState::MISSING;
     toLowerString(macroName);
     MacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
-        return false; // macro not found
-    return false;
+        return ParseState::MISSING; // macro not found
+    /* parse arguments */
+    string = skipSpacesToEnd(string, end);
+    
+    return ParseState::FAILED;
 }
 
 bool Assembler::readLine()
@@ -1876,13 +1879,17 @@ bool Assembler::assemble()
         toLowerString(firstName);
         
         if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
-        {
             parsePseudoOps(firstName, stmtStartStr, string);
-        }
         else if (firstName.size() >= 1 && isDigit(firstName[0]))
             printError(stmtStartStr, "Illegal number at statement begin");
         else
         {   // try to parse processor instruction or macro substitution
+            if (makeMacroSubstitution(stmtStartStr) == ParseState::MISSING)
+            {  // try parse instruction
+                //initializeOutputFormat();
+                /*isaAssembler->assemble(lineNo, stmtStartStr,
+                           sections[currentSection].content);*/
+            }
         }
     }
     /* check clauses and print errors */
