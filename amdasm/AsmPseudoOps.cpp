@@ -1216,34 +1216,6 @@ void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpStr, const cha
     }
 }
 
-static const cxbyte tokenCharTable[96] =
-{
-    //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
-    0x00, 0x01, 0x02, 0x03, 0x90, 0x85, 0x06, 0x07,
-    //'('   ')'   '*'   '+'   ','   '-'   '.'   '/'
-    0x88, 0x88, 0x8a, 0x0b, 0x0c, 0x8d, 0x90, 0x0f,
-    //'0'   '1'   '2'   '3'   '4'   '5'   '6'   '7'  
-    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'8'   '9'   ':'   ';'   '<'   '='   '>'   '?'
-    0x90, 0x90, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
-    //'@'   'A'   'B'   'C'   'D'   'E'   'F'   'G'
-    0x26, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'H'   'I'   'J'   'K'   'L'   'M'   'N'   'O'
-    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'P'   'Q'   'R'   'S'   'T'   'U'   'V'   'W'
-    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'X'   'Y'   'Z'   '['   '\'   ']'   '^'   '_'
-    0x90, 0x90, 0x90, 0x91, 0x92, 0x93, 0x14, 0x90,
-    //'`'   'a'   'b'   'c'   'd'   'e'   'f'   'g'
-    0x16, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'h'   'i'   'j'   'k'   'l'   'm'   'n'   'o'
-    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'p'   'q'   'r'   's'   't'   'u'   'v'   'w'
-    0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
-    //'x'   'y'   'z'   '{'   '|'   '}'   '~'   ''
-    0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
-};
-
 static std::string getStringToCompare(const char* strStart, const char* strEnd)
 {
     std::string firstStr;
@@ -1268,7 +1240,8 @@ static std::string getStringToCompare(const char* strStart, const char* strEnd)
             
             /* original GNU as tokenize line before processing, this code 'emulates'
              * this operation */
-            cxbyte thisTok = (*s >= 0x20 && *s < 0x80) ? tokenCharTable[*s-0x20] : 0;
+            cxbyte thisTok = (cxbyte(*s) >= 0x20 && cxbyte(*s) <= 0x80) ?
+                    tokenCharTable[*s-0x20] : 0;
             if (!singleQuote && !dblQuote && !firstStr.empty() &&
                 isSpace(firstStr.back()) &&
                 ((prevTok != thisTok) || ((prevTok == thisTok) && (prevTok & 0x80)==0)))

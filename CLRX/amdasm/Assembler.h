@@ -234,6 +234,7 @@ private:
 public:
     /// constructor
     AsmMacro(const AsmSourcePos& pos, const Array<AsmMacroArg>& args);
+    AsmMacro(const AsmSourcePos& pos, Array<AsmMacroArg>&& args);
     
     /// adds line to macro from source
     /**
@@ -430,6 +431,8 @@ public:
     /// constructor with input macro, source position and arguments map
     AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
         const MacroArgMap& argMap);
+    AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
+        MacroArgMap&& argMap);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };

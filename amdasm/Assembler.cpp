@@ -33,7 +33,7 @@
 
 using namespace CLRX;
 
-static const cxbyte tokenCharTable[96] =
+const cxbyte CLRX::tokenCharTable[96] =
 {
     //' '   '!'   '"'   '#'   '$'   '%'   '&'   '''
     0x00, 0x01, 0x02, 0x03, 0x90, 0x85, 0x06, 0x07,
@@ -61,11 +61,11 @@ static const cxbyte tokenCharTable[96] =
     0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
 };
 
-std::string CLRX::getMacroArgValue(const char*& string, const char* end)
+std::string CLRX::getMacroArgValue(const char*& string, const char* end, bool varArgs)
 {
     std::string outStr;
     bool firstNonSpace = false;
-    for (; string != end && *string == ','; string++)
+    for (; string != end && (*string != ',' || varArgs); string++)
     {
         if(*string == '"' || *string == '\'')
         { // quoted
@@ -75,7 +75,7 @@ std::string CLRX::getMacroArgValue(const char*& string, const char* end)
         }
         if (!isSpace(*string))
         {
-            const cxbyte thisTok = (*string >= 0x20 && *string < 0x80) ?
+            const cxbyte thisTok = (cxbyte(*string) >= 0x20 && cxbyte(*string) < 0x80) ?
                 tokenCharTable[*string-0x20] : 0;
             if (firstNonSpace && (thisTok&0x80)!=0)
                 break;  // end of token list for macro arg
@@ -110,6 +110,10 @@ AsmRepeatSource::~AsmRepeatSource()
 /* Asm Macro */
 AsmMacro::AsmMacro(const AsmSourcePos& _pos, const Array<AsmMacroArg>& _args)
         : contentLineNo(0), pos(_pos), args(_args)
+{ }
+
+AsmMacro::AsmMacro(const AsmSourcePos& _pos, Array<AsmMacroArg>&& _args)
+        : contentLineNo(0), pos(_pos), args(std::move(_args))
 { }
 
 void AsmMacro::addLine(RefPtr<const AsmSource> source,
@@ -486,6 +490,18 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
         const MacroArgMap& _argMap)
         : macro(_macro), argMap(_argMap), contentLineNo(0), sourceTransIndex(0)
+{
+    source = macro.getSourceTrans(0).source;
+    macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
+                   pos.source, pos.lineNo, pos.colNo));
+    curColTrans = macro.getColTranslations().data();
+    buffer.reserve(300);
+    lineNo = curColTrans[0].lineNo;
+}
+
+AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
+        MacroArgMap&& _argMap)
+        : macro(_macro), argMap(std::move(_argMap)), contentLineNo(0), sourceTransIndex(0)
 {
     source = macro.getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
@@ -1770,7 +1786,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
             string = skipSpacesToEnd(string+1, end);
         
         const char* argStr = string;
-        argMap[i].second = getMacroArgValue(string, end);
+        argMap[i].second = getMacroArgValue(string, end, arg.vararg);
         if (arg.required && argMap[i].second.empty())
         {   // error, value required
             std::string message = "Value required for macro argument '";
@@ -1787,7 +1803,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     mapSort(argMap.begin(), argMap.end());
     // create macro input filter and push to stack
     std::unique_ptr<AsmInputFilter> macroFilter(new AsmMacroInputFilter(macro,
-            getSourcePos(macroStartStr), argMap));
+            getSourcePos(macroStartStr), std::move(argMap)));
     asmInputFilters.push(macroFilter.release());
     currentInputFilter = asmInputFilters.top();
     return ParseState::PARSED;

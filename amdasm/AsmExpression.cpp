@@ -1485,8 +1485,6 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
         expr->setParams(symOccursNum, relativeSymOccurs,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
                   argsNum, args.data(), makeBase);
-        /*std::unique_ptr<AsmExpression> expr(new AsmExpression(
-                  ));*/
         if (!makeBase)
         {   // add expression into symbol occurrences in expressions
             // only for non-base expressions
