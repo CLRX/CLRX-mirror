@@ -88,10 +88,15 @@ AsmMacro::AsmMacro(const AsmSourcePos& _pos, Array<AsmMacroArg>&& _args)
 void AsmMacro::addLine(RefPtr<const AsmSource> source,
            const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
+    size_t oldContentSize = content.size();
     content.insert(content.end(), line, line+lineSize);
     if (lineSize > 0 && line[lineSize-1] != '\n')
         content.push_back('\n');
-    colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
+    for (const LineTrans& trans: colTrans)
+        colTranslations.push_back({ ssize_t(trans.position+oldContentSize),
+            trans.lineNo });
+    
+    //colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (sourceTranslations.empty() || sourceTranslations.back().source != source)
         sourceTranslations.push_back({contentLineNo, source});
     contentLineNo++;
@@ -497,7 +502,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     
     size_t destPos = 0;
     size_t toCopyPos = pos;
-    colTranslations.push_back({ curColTrans->position, curColTrans->lineNo});
+    colTranslations.push_back({ 0, curColTrans->lineNo});
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
             curColTrans[1].position : SIZE_MAX;
     
@@ -791,7 +796,8 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 else // stdin
                     os.write("<stdin>", 7);
                 numBuf[0] = ':';
-                size_t size = 1+itocstrCStyle(curMacro->lineNo, numBuf+1, 30);
+                size_t size = 1+itocstrCStyle(curMacro->lineNo, numBuf+1, 29);
+                numBuf[size++] = ':';
                 os.write(numBuf, size);
                 size = itocstrCStyle(curMacro->colNo, numBuf, 29);
                 numBuf[size++] = (parentMacro) ? ';' : ':';
