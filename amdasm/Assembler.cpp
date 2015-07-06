@@ -61,44 +61,6 @@ const cxbyte CLRX::tokenCharTable[96] =
     0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
 };
 
-std::string CLRX::getMacroArgValue(const char*& string, const char* end, bool varArgs)
-{
-    std::string outStr;
-    bool firstNonSpace = false;
-    cxbyte prevTok = 0;
-    for (; string != end && (*string != ',' || varArgs); string++)
-    {
-        if(*string == '"' || *string == '\'')
-        { // quoted
-            char quote = *string++;
-            for (; string != end && *string != quote; string++)
-                outStr.push_back(*string);
-            if (string!=end)
-                string++;
-        }
-        if (!isSpace(*string))
-        {
-            const cxbyte thisTok = (cxbyte(*string) >= 0x20 && cxbyte(*string) < 0x80) ?
-                tokenCharTable[*string-0x20] : 0;
-            bool prevTokCont = (prevTok&0x80)!=0;
-            bool thisTokCont = (thisTok&0x80)!=0;
-            if (firstNonSpace && ((prevTok!=thisTok && !(thisTokCont ^ prevTokCont)) || 
-                (prevTok==thisTok && (thisTokCont&prevTokCont))))
-                break;  // end of token list for macro arg
-            outStr.push_back(*string);
-            firstNonSpace = false;
-            prevTok = thisTok;
-        }
-        else
-        {
-            firstNonSpace = true;
-            continue; // space
-        }
-    }
-    return outStr;
-}
-
-
 ISAAssembler::~ISAAssembler()
 { }
 
@@ -1328,6 +1290,60 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
     return state;
 }
 
+bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr, bool varArgs)
+{
+    const char* end = line+lineSize;
+    bool firstNonSpace = false;
+    cxbyte prevTok = 0;
+    if (string != end && *string=='"')
+    {
+        string++;
+        while (string != end && *string != '\"')
+            outStr.push_back(*string++);
+        if (string == end)
+        {
+            printError(string, "Unterminated quoted string");
+            return false;
+        }
+        string++;
+        return true;
+    }
+    
+    for (; string != end && (*string != ',' || varArgs); string++)
+    {
+        if(*string == '"')
+        { // quoted
+            printError(string, "Unexpected '\"' at macro argument");
+            while (string != end && *string != '\"')
+                string++;
+            if (string == end)
+                printError(string, "Unterminated quoted string");
+            else
+                string++;
+            return false;
+        }
+        if (!isSpace(*string))
+        {
+            const cxbyte thisTok = (cxbyte(*string) >= 0x20 && cxbyte(*string) < 0x80) ?
+                tokenCharTable[*string-0x20] : 0;
+            bool prevTokCont = (prevTok&0x80)!=0;
+            bool thisTokCont = (thisTok&0x80)!=0;
+            if (firstNonSpace && ((prevTok!=thisTok && !(thisTokCont ^ prevTokCont)) || 
+                (prevTok==thisTok && (thisTokCont&prevTokCont))))
+                break;  // end of token list for macro arg
+            outStr.push_back(*string);
+            firstNonSpace = false;
+            prevTok = thisTok;
+        }
+        else
+        {
+            firstNonSpace = true;
+            continue; // space
+        }
+    }
+    return true;
+}
+
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
     symEntry.second.value = value;
@@ -1794,7 +1810,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
             string = skipSpacesToEnd(string+1, end);
         
         const char* argStr = string;
-        argMap[i].second = getMacroArgValue(string, end, arg.vararg);
+        if (!parseMacroArgValue(string, argMap[i].second, arg.vararg))
+            continue;
         if (arg.required && argMap[i].second.empty())
         {   // error, value required
             std::string message = "Value required for macro argument '";
@@ -1805,6 +1822,13 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
         }
         else if (argMap[i].second.empty())
             argMap[i].second = arg.defaultValue;
+    }
+    
+    string = skipSpacesToEnd(string, end);
+    if (string != end)
+    {
+        printError(string, "Garbages at end of line");
+        return ParseState::FAILED;
     }
     
     if (!good)

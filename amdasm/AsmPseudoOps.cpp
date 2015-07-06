@@ -1424,7 +1424,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         if (string != end && *string == '=')
         {   // parse default value
             string = skipSpacesToEnd(string+1, end);
-            defaultArgValue = getMacroArgValue(string, end);
+            if (!asmr.parseMacroArgValue(string, defaultArgValue))
+                continue; // error
         }
         else if (string != end && *string == ':')
         {   // qualifier

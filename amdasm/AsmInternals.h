@@ -361,9 +361,6 @@ struct CLRX_INTERNAL AsmPseudoOps
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;
 
-extern std::string getMacroArgValue(const char*& string, const char* end,
-                        bool varArgs = false) CLRX_INTERNAL;
-
 };
 
 #endif
