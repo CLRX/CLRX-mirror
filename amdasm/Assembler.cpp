@@ -1290,7 +1290,7 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
     return state;
 }
 
-bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr, bool varArgs)
+bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 {
     const char* end = line+lineSize;
     bool firstNonSpace = false;
@@ -1309,7 +1309,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr, boo
         return true;
     }
     
-    for (; string != end && (*string != ',' || varArgs); string++)
+    for (; string != end && *string != ','; string++)
     {
         if(*string == '"')
         { // quoted
@@ -1810,8 +1810,34 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
             string = skipSpacesToEnd(string+1, end);
         
         const char* argStr = string;
-        if (!parseMacroArgValue(string, argMap[i].second, arg.vararg))
-            continue;
+        if (!arg.vararg)
+        {
+            if (!parseMacroArgValue(string, argMap[i].second))
+                continue;
+        }
+        else
+        {
+            while (string != end)
+            {
+                if (!parseMacroArgValue(string, argMap[i].second))
+                {
+                    good = false;
+                    break;
+                }
+                string = skipSpacesToEnd(string, end);
+                if (string!=end)
+                {
+                    if(*string==',')
+                        string = skipSpacesToEnd(string+1, end);
+                    else
+                    {
+                        printError(string, "Garbages at end of line");
+                        good = false;
+                        break;
+                    }
+                }
+            }
+        }
         if (arg.required && argMap[i].second.empty())
         {   // error, value required
             std::string message = "Value required for macro argument '";

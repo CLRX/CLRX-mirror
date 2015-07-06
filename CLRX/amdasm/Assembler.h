@@ -973,8 +973,7 @@ private:
     
     ParseState makeMacroSubstitution(const char* string);
     
-    bool parseMacroArgValue(const char*& string, std::string& outStr,
-                            bool varArgs = false);
+    bool parseMacroArgValue(const char*& string, std::string& outStr);
     
     void putData(size_t size, const cxbyte* data)
     {
