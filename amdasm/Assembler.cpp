@@ -88,15 +88,10 @@ AsmMacro::AsmMacro(const AsmSourcePos& _pos, Array<AsmMacroArg>&& _args)
 void AsmMacro::addLine(RefPtr<const AsmSource> source,
            const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
-    size_t oldContentSize = content.size();
     content.insert(content.end(), line, line+lineSize);
     if (lineSize > 0 && line[lineSize-1] != '\n')
         content.push_back('\n');
-    for (const LineTrans& trans: colTrans)
-        colTranslations.push_back({ ssize_t(trans.position+oldContentSize),
-            trans.lineNo });
-    
-    //colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
+    colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (sourceTranslations.empty() || sourceTranslations.back().source != source)
         sourceTranslations.push_back({contentLineNo, source});
     contentLineNo++;
@@ -500,11 +495,17 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     
     const char* content = macro.getContent().data();
     
+    size_t nextLinePos = pos;
+    while (nextLinePos < contentSize && content[nextLinePos] != '\n')
+        nextLinePos++;
+    
+    const size_t linePos = pos;
     size_t destPos = 0;
     size_t toCopyPos = pos;
-    colTranslations.push_back({ 0, curColTrans->lineNo});
+    colTranslations.push_back({ curColTrans->position, curColTrans->lineNo});
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
-            curColTrans[1].position : SIZE_MAX;
+            (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                    nextLinePos) : SIZE_MAX;
     
     while (pos < contentSize && content[pos] != '\n')
     {
@@ -516,19 +517,22 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
-                        curColTrans[1].position : SIZE_MAX;
+                        (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                                nextLinePos) : SIZE_MAX;
             }
             pos++;
         }
         else
         {   // backslash
+            //std::cout << "pos: " << pos << ", threshold: " << colTransThreshold << std::endl;
             if (pos >= colTransThreshold)
             {
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
-                        curColTrans[1].position : SIZE_MAX;
+                        (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                                nextLinePos) : SIZE_MAX;
             }
             // copy chars to buffer
             if (pos > toCopyPos)
@@ -579,7 +583,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             // skip colTrans between macroarg or separator
             if (skipColTransBetweenMacroArg)
             {
-                while (pos >= colTransThreshold)
+                while (pos > colTransThreshold)
                 {
                     curColTrans++;
                     colTransThreshold = (curColTrans+1 != colTransEnd) ?
