@@ -65,22 +65,29 @@ std::string CLRX::getMacroArgValue(const char*& string, const char* end, bool va
 {
     std::string outStr;
     bool firstNonSpace = false;
+    cxbyte prevTok = 0;
     for (; string != end && (*string != ',' || varArgs); string++)
     {
         if(*string == '"' || *string == '\'')
         { // quoted
             char quote = *string++;
-            for (; string != end && *string == quote; string++)
+            for (; string != end && *string != quote; string++)
                 outStr.push_back(*string);
+            if (string!=end)
+                string++;
         }
         if (!isSpace(*string))
         {
             const cxbyte thisTok = (cxbyte(*string) >= 0x20 && cxbyte(*string) < 0x80) ?
                 tokenCharTable[*string-0x20] : 0;
-            if (firstNonSpace && (thisTok&0x80)!=0)
+            bool prevTokCont = (prevTok&0x80)!=0;
+            bool thisTokCont = (thisTok&0x80)!=0;
+            if (firstNonSpace && ((prevTok!=thisTok && !(thisTokCont ^ prevTokCont)) || 
+                (prevTok==thisTok && (thisTokCont&prevTokCont))))
                 break;  // end of token list for macro arg
             outStr.push_back(*string);
             firstNonSpace = false;
+            prevTok = thisTok;
         }
         else
         {
