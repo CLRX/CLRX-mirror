@@ -835,6 +835,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 curMacro->lineNo, curMacro->colNo };
             macroPos.print(os, indentLevel+1);
             os.write((parentMacro) ? ";\n" : ":\n", 2);
+            firstDepth = true;
         }
         
         curMacro = parentMacro;
