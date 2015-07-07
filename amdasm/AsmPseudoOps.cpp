@@ -1492,6 +1492,24 @@ void AsmPseudoOps::doEndMacro(Assembler& asmr, const char* pseudoOpStr, const ch
     asmr.popClause(pseudoOpStr, AsmClauseType::MACRO);
 }
 
+void AsmPseudoOps::doExitMacro(Assembler& asmr, const char* pseudoOpStr,
+                   const char*& string)
+{
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    
+    const AsmInputFilterType type = asmr.currentInputFilter->getType();
+    if (type == AsmInputFilterType::STREAM)
+        asmr.printWarning(pseudoOpStr, "'.exitm' is ignored  outside macro content'");
+    else
+    {
+        if (type == AsmInputFilterType::REPEAT)
+            asmr.printWarning(pseudoOpStr, "Behavior of '.exitm' inside repeat is "
+                    "undefined. Exiting from repeat...");
+        asmr.skipClauses(true);
+    }
+}
+
 };
 
 void Assembler::parsePseudoOps(const std::string firstName,
@@ -1652,6 +1670,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::printError(*this, stmtStartStr, string);
             break;
         case ASMOP_EXITM:
+            AsmPseudoOps::doExitMacro(*this, stmtStartStr, string);
             break;
         case ASMOP_EXTERN:
             AsmPseudoOps::ignoreExtern(*this, string);
@@ -1832,17 +1851,22 @@ void Assembler::parsePseudoOps(const std::string firstName,
 }
 
 /* skipping clauses */
-bool Assembler::skipClauses()
+bool Assembler::skipClauses(bool exitm)
 {
     const cxuint clauseLevel = clauses.size();
-    AsmClauseType topClause = clauses.top().type;
+    AsmClauseType topClause = (!clauses.empty()) ? clauses.top().type :
+            AsmClauseType::IF;
     const bool isTopIfClause = (topClause == AsmClauseType::IF ||
             topClause == AsmClauseType::ELSEIF || topClause == AsmClauseType::ELSE);
     bool good = true;
-    while (clauses.size() >= clauseLevel)
+    const size_t inputFilterTop = asmInputFilters.size();
+    while (exitm || clauses.size() >= clauseLevel)
     {
         if (!readLine())
             break;
+        // if exit from macro mode, exit when macro filter exits
+        if (exitm && inputFilterTop > asmInputFilters.size())
+            break; // end of macro, 
         
         const char* string = line;
         const char* end = line+lineSize;
@@ -1859,8 +1883,9 @@ bool Assembler::skipClauses()
                pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
         
         // any conditional inside macro or repeat will be ignored
-        bool insideMacroOrRepeat = (clauses.top().type == AsmClauseType::MACRO ||
-            clauses.top().type == AsmClauseType::REPEAT);
+        bool insideMacroOrRepeat = !clauses.empty() && 
+            (clauses.top().type == AsmClauseType::MACRO ||
+                    clauses.top().type == AsmClauseType::REPEAT);
         switch(pseudoOp)
         {
             case ASMCOP_ENDIF:

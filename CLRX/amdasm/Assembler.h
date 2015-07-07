@@ -33,7 +33,6 @@
 #include <vector>
 #include <utility>
 #include <stack>
-#include <deque>
 #include <unordered_set>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
@@ -320,10 +319,18 @@ public:
     { return repeatsNum; }
 };
 
+enum class AsmInputFilterType
+{
+    STREAM = 0,
+    REPEAT,
+    MACROSUBST
+};
+
 /// assembler input filter for reading lines
 class AsmInputFilter
 {
 protected:
+    AsmInputFilterType type;        ///< input filter type
     size_t pos;     ///< position in content
     RefPtr<const AsmMacroSubst> macroSubst; ///< current macro substitution
     RefPtr<const AsmSource> source; ///< current source
@@ -332,12 +339,12 @@ protected:
     uint64_t lineNo;    ///< current line number
     
     /// empty constructor
-    AsmInputFilter():  pos(0), lineNo(1)
+    explicit AsmInputFilter(AsmInputFilterType _type):  type(_type), pos(0), lineNo(1)
     { }
     /// constructor with macro substitution and source
-    AsmInputFilter(RefPtr<const AsmMacroSubst> _macroSubst,
-           RefPtr<const AsmSource> _source)
-            : pos(0), macroSubst(_macroSubst), source(_source), lineNo(1)
+    explicit AsmInputFilter(RefPtr<const AsmMacroSubst> _macroSubst,
+           RefPtr<const AsmSource> _source, AsmInputFilterType _type)
+            : type(_type), pos(0), macroSubst(_macroSubst), source(_source), lineNo(1)
     { }
 public:
     /// destructor
@@ -374,6 +381,9 @@ public:
         LineCol lineCol = translatePos(position);
         return { macroSubst, source, lineCol.lineNo, lineCol.colNo };
     }
+    
+    AsmInputFilterType getType() const
+    { return type; }
 };
 
 /// assembler input layout filter
@@ -957,7 +967,8 @@ private:
     void parsePseudoOps(const std::string firstName, const char* stmtStartString,
                 const char*& string);
     
-    bool skipClauses();
+    /// exitm - exit macro mode
+    bool skipClauses(bool exitm = false);
     bool putMacroContent(AsmMacro& macro);
     bool putRepetitionContent(AsmRepeat& repeat);
     

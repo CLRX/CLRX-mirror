@@ -357,6 +357,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     /// ends macro definition
     static void doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    // immediately exit from macro
+    static void doExitMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

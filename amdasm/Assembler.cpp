@@ -150,7 +150,8 @@ LineCol AsmInputFilter::translatePos(size_t position) const
 static const size_t AsmParserLineMaxSize = 300;
 
 AsmStreamInputFilter::AsmStreamInputFilter(const std::string& filename)
-try : managed(true), stream(nullptr), mode(LineMode::NORMAL)
+try : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
+        stream(nullptr), mode(LineMode::NORMAL)
 {
     source = RefPtr<const AsmSource>(new AsmFile(filename));
     stream = new std::ifstream(filename.c_str(), std::ios::binary);
@@ -165,7 +166,8 @@ catch(...)
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& filename)
-    :  managed(false), stream(&is), mode(LineMode::NORMAL), stmtPos(0)
+    : AsmInputFilter(AsmInputFilterType::STREAM),
+      managed(false), stream(&is), mode(LineMode::NORMAL), stmtPos(0)
 {
     source = RefPtr<const AsmSource>(new AsmFile(filename));
     stream->exceptions(std::ios::badbit);
@@ -174,7 +176,8 @@ AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& 
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos,
            const std::string& filename)
-try : managed(true), stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
+try : AsmInputFilter(AsmInputFilterType::STREAM),
+      managed(true), stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
     if (!pos.macro)
         source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo,
@@ -196,8 +199,8 @@ catch(...)
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos, std::istream& is,
-        const std::string& filename) : managed(false), stream(&is), mode(LineMode::NORMAL),
-        stmtPos(0)
+        const std::string& filename) : AsmInputFilter(AsmInputFilterType::STREAM),
+        managed(false), stream(&is), mode(LineMode::NORMAL), stmtPos(0)
 {
     if (!pos.macro)
         source = RefPtr<const AsmSource>(new AsmFile(pos.source, pos.lineNo,
@@ -472,8 +475,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
         const MacroArgMap& _argMap, uint64_t _macroCount)
-        : macro(_macro), argMap(_argMap), macroCount(_macroCount),
-          contentLineNo(0), sourceTransIndex(0)
+        : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
+          argMap(_argMap), macroCount(_macroCount), contentLineNo(0), sourceTransIndex(0)
 {
     source = macro.getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
@@ -485,7 +488,8 @@ AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSource
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
         MacroArgMap&& _argMap, uint64_t _macroCount)
-        : macro(_macro), argMap(std::move(_argMap)), macroCount(_macroCount),
+        : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
+          argMap(std::move(_argMap)), macroCount(_macroCount),
           contentLineNo(0), sourceTransIndex(0)
 {
     source = macro.getSourceTrans(0).source;
@@ -639,7 +643,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
  */
 
 AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmRepeat* _repeat) :
-          repeat(_repeat), repeatCount(0), contentLineNo(0), sourceTransIndex(0)
+          AsmInputFilter(AsmInputFilterType::REPEAT), repeat(_repeat),
+          repeatCount(0), contentLineNo(0), sourceTransIndex(0)
 {
     source = RefPtr<const AsmSource>(new AsmRepeatSource(
                 _repeat->getSourceTrans(0).source, 0, repeat->getRepeatsNum()));
