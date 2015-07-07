@@ -238,13 +238,14 @@ public:
     
     /// adds line to macro from source
     /**
+     * \param macro macro substitution
      * \param source source of line
      * \param colTrans column translations (for backslashes)
      * \param lineSize line size
      * \param line line text (can be with newline character)
      */
-    void addLine(RefPtr<const AsmSource> source, const std::vector<LineTrans>& colTrans,
-             size_t lineSize, const char* line);
+    void addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
+             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line);
     /// get column translations
     const std::vector<LineTrans>& getColTranslations() const
     { return colTranslations; }

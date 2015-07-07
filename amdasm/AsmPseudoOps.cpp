@@ -1950,7 +1950,8 @@ bool Assembler::putMacroContent(AsmMacro& macro)
         const char* stmtString = string;
         if (string == end || *string != '.')
         {
-            macro.addLine(currentInputFilter->getSource(),
+            macro.addLine(currentInputFilter->getMacroSubst(),
+                  currentInputFilter->getSource(),
                   currentInputFilter->getColTranslations(), lineSize, line);
             continue;
         }
@@ -1984,7 +1985,8 @@ bool Assembler::putMacroContent(AsmMacro& macro)
                 break;
         }
         if (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel)
-            macro.addLine(currentInputFilter->getSource(),
+            macro.addLine(currentInputFilter->getMacroSubst(),
+                  currentInputFilter->getSource(),
                   currentInputFilter->getColTranslations(), lineSize, line);
     }
     return good;

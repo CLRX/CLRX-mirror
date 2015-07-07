@@ -85,15 +85,29 @@ AsmMacro::AsmMacro(const AsmSourcePos& _pos, Array<AsmMacroArg>&& _args)
         : contentLineNo(0), pos(_pos), args(std::move(_args))
 { }
 
-void AsmMacro::addLine(RefPtr<const AsmSource> source,
+void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
            const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
     if (lineSize > 0 && line[lineSize-1] != '\n')
         content.push_back('\n');
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
-    if (sourceTranslations.empty() || sourceTranslations.back().source != source)
-        sourceTranslations.push_back({contentLineNo, source});
+    if (!macro)
+    {
+        if (sourceTranslations.empty() || sourceTranslations.back().source != source)
+            sourceTranslations.push_back({contentLineNo, source});
+    }
+    else
+    {   // with macro
+        if (sourceTranslations.empty() ||
+            sourceTranslations.back().source->type != AsmSourceType::MACRO ||
+            sourceTranslations.back().source.
+                    staticCast<const AsmMacroSource>()->source != source ||
+            sourceTranslations.back().source.
+                    staticCast<const AsmMacroSource>()->macro != macro)
+            sourceTranslations.push_back({contentLineNo, RefPtr<const AsmSource>(
+                new AsmMacroSource{macro, source})});
+    }
     contentLineNo++;
 }
 
@@ -768,9 +782,9 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
     /* print macro tree */
     RefPtr<const AsmMacroSubst> curMacro = macro;
     RefPtr<const AsmMacroSubst> parentMacro;
+    bool firstDepth = true;
     while(curMacro)
     {
-        const bool firstDepth = (curMacro == macro);
         parentMacro = curMacro->parent;
         
         if (curMacro->source->type != AsmSourceType::MACRO)
@@ -787,6 +801,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                     curMacro->source, curMacro->lineNo, curMacro->colNo };
                 nextLevelPos.print(os, indentLevel+1);
                 os.write((parentMacro) ? ";\n" : ":\n", 2);
+                firstDepth = true;
             }
             else
             {
@@ -807,6 +822,7 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
                 numBuf[size++] = (parentMacro) ? ';' : ':';
                 numBuf[size++] = '\n';
                 os.write(numBuf, size);
+                firstDepth = false;
             }
         }
         else
