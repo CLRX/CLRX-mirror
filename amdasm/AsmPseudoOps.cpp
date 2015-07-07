@@ -1390,6 +1390,16 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
     
     bool good = true;
     bool haveVarArg = false;
+    
+    if (asmr.macroMap.find(macroName) != asmr.macroMap.end())
+    {
+        std::string message = "Macro '";
+        message += macroName;
+        message += "' is already defined";
+        asmr.printError(macroNameStr, message.c_str());
+        good = false;
+    }
+    
     while(string != end)
     {
         string = skipSpacesToEnd(string, end);
@@ -1479,7 +1489,7 @@ void AsmPseudoOps::doEndMacro(Assembler& asmr, const char* pseudoOpStr, const ch
 {
     if (!checkGarbagesAtEnd(asmr, string))
         return;
-    asmr.popClause(pseudoOpStr, AsmClauseType::REPEAT);
+    asmr.popClause(pseudoOpStr, AsmClauseType::MACRO);
 }
 
 };
