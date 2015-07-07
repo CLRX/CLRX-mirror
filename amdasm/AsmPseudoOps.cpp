@@ -1984,10 +1984,11 @@ bool Assembler::putMacroContent(AsmMacro& macro)
             default:
                 break;
         }
-        if (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel)
-            macro.addLine(currentInputFilter->getMacroSubst(),
-                  currentInputFilter->getSource(),
-                  currentInputFilter->getColTranslations(), lineSize, line);
+        macro.addLine(currentInputFilter->getMacroSubst(),
+              currentInputFilter->getSource(),
+              currentInputFilter->getColTranslations(),
+              (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel) ?
+              lineSize : 0, line);
     }
     return good;
 }
@@ -2044,10 +2045,11 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             default:
                 break;
         }
-        if (pseudoOp != ASMMROP_ENDR || clauses.size() >= clauseLevel)
-            repeat.addLine(currentInputFilter->getMacroSubst(),
-                   currentInputFilter->getSource(),
-                   currentInputFilter->getColTranslations(), lineSize, line);
+        repeat.addLine(currentInputFilter->getMacroSubst(),
+               currentInputFilter->getSource(),
+               currentInputFilter->getColTranslations(),
+               (pseudoOp != ASMMROP_ENDR || clauses.size() >= clauseLevel) ?
+               lineSize : 0, line);
     }
     return good;
 }

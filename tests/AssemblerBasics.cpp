@@ -2084,6 +2084,14 @@ In repetition 2/2:
               3/3:
 test.s:9:27: Error: Unterminated expression
 )ffDXD", ""
+    },
+    /* 50 - empty repeats */
+    {   R"ffDXD(    .rept 7
+        .endr
+        .rept 9; .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 

@@ -425,15 +425,16 @@ private:
     const AsmMacro& macro;  ///< input macro
     AsmMacroArgMap argMap;  ///< input macro argument map
     
+    uint64_t macroCount;
     uint64_t contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
 public:
     /// constructor with input macro, source position and arguments map
     AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
-        const MacroArgMap& argMap);
+        const MacroArgMap& argMap, uint64_t macroCount);
     AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
-        MacroArgMap&& argMap);
+        MacroArgMap&& argMap, uint64_t macroCount);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };

@@ -471,8 +471,9 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
-        const MacroArgMap& _argMap)
-        : macro(_macro), argMap(_argMap), contentLineNo(0), sourceTransIndex(0)
+        const MacroArgMap& _argMap, uint64_t _macroCount)
+        : macro(_macro), argMap(_argMap), macroCount(_macroCount),
+          contentLineNo(0), sourceTransIndex(0)
 {
     source = macro.getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
@@ -483,8 +484,9 @@ AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSource
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
-        MacroArgMap&& _argMap)
-        : macro(_macro), argMap(std::move(_argMap)), contentLineNo(0), sourceTransIndex(0)
+        MacroArgMap&& _argMap, uint64_t _macroCount)
+        : macro(_macro), argMap(std::move(_argMap)), macroCount(_macroCount),
+          contentLineNo(0), sourceTransIndex(0)
 {
     source = macro.getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
@@ -578,8 +580,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                     else if (content[pos] == '@')
                     {
                         char numBuf[32];
-                        const size_t numLen = itocstrCStyle(assembler.macroCount,
-                                numBuf, 32);
+                        const size_t numLen = itocstrCStyle(macroCount, numBuf, 32);
                         pos++;
                         buffer.resize(destPos + numLen);
                         std::copy(numBuf, numBuf+numLen, buffer.begin()+destPos);
@@ -1890,7 +1891,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     mapSort(argMap.begin(), argMap.end());
     // create macro input filter and push to stack
     std::unique_ptr<AsmInputFilter> macroFilter(new AsmMacroInputFilter(macro,
-            getSourcePos(macroStartStr), std::move(argMap)));
+            getSourcePos(macroStartStr), std::move(argMap), macroCount++));
     asmInputFilters.push(macroFilter.release());
     currentInputFilter = asmInputFilters.top();
     return ParseState::PARSED;
