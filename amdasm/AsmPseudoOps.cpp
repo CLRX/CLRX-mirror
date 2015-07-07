@@ -1984,12 +1984,15 @@ bool Assembler::putMacroContent(AsmMacro& macro)
             default:
                 break;
         }
-        macro.addLine(currentInputFilter->getMacroSubst(),
-              currentInputFilter->getSource(),
-              currentInputFilter->getColTranslations(),
-              (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel) ?
-              lineSize : 0, line);
+        if (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel)
+            macro.addLine(currentInputFilter->getMacroSubst(),
+                  currentInputFilter->getSource(),
+                  currentInputFilter->getColTranslations(), lineSize, line);
     }
+    if (macro.getContent().empty()) // add empty line if no content
+        macro.addLine(currentInputFilter->getMacroSubst(),
+                  currentInputFilter->getSource(),
+                  currentInputFilter->getColTranslations(), 0, line);
     return good;
 }
 
@@ -2045,11 +2048,14 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             default:
                 break;
         }
-        repeat.addLine(currentInputFilter->getMacroSubst(),
-               currentInputFilter->getSource(),
-               currentInputFilter->getColTranslations(),
-               (pseudoOp != ASMMROP_ENDR || clauses.size() >= clauseLevel) ?
-               lineSize : 0, line);
+        if (pseudoOp != ASMMROP_ENDR || clauses.size() >= clauseLevel)
+            repeat.addLine(currentInputFilter->getMacroSubst(),
+                   currentInputFilter->getSource(),
+                   currentInputFilter->getColTranslations(), lineSize, line);
     }
+    if (repeat.getContent().empty()) // add empty line if no content
+            repeat.addLine(currentInputFilter->getMacroSubst(),
+                   currentInputFilter->getSource(),
+                   currentInputFilter->getColTranslations(), 0, line);
     return good;
 }
