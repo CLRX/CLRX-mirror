@@ -25,6 +25,7 @@
 #include <fstream>
 #include <vector>
 #include <stack>
+#include <set>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
@@ -1400,6 +1401,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         good = false;
     }
     
+    {
+    std::set<std::string> macroArgSet;
     while(string != end)
     {
         string = skipSpacesToEnd(string, end);
@@ -1418,10 +1421,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         bool argGood = true;
         std::string defaultArgValue;
         
-        auto found = std::find_if(args.begin(), args.end(),
-               [&argName](const AsmMacroArg& arg)
-                { return arg.name == argName; });
-        if (found != args.end()) // found (optimization is needed?)
+        if (!macroArgSet.insert(argName).second)
         {   // duplicate!
             std::string message = "Duplicates macro argument '";
             message += argName;
@@ -1431,13 +1431,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         }
         
         string = skipSpacesToEnd(string, end);
-        if (string != end && *string == '=')
-        {   // parse default value
-            string = skipSpacesToEnd(string+1, end);
-            if (!asmr.parseMacroArgValue(string, defaultArgValue))
-                continue; // error
-        }
-        else if (string != end && *string == ':')
+        if (string != end && *string == ':')
         {   // qualifier
             string = skipSpacesToEnd(string+1, end);
             //extr
@@ -1458,6 +1452,22 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
                 argGood = false;
             }
         }
+        string = skipSpacesToEnd(string, end);
+        if (string != end && *string == '=')
+        {   // parse default value
+            string = skipSpacesToEnd(string+1, end);
+            const char* defaultValueStr = string;
+            if (!asmr.parseMacroArgValue(string, defaultArgValue))
+                continue; // error
+            if (argRequired)
+            {
+                std::string message = "Pointless default value for argument '";
+                message += argName;
+                message += "'";
+                asmr.printWarning(defaultValueStr, message.c_str());
+            }
+        }
+        
         if (argGood) // push to arguments
         {
             if (haveVarArg)
@@ -1473,6 +1483,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
         
         if (argGood) // push argument
             args.push_back({argName, defaultArgValue, argVarArgs, argRequired});
+    }
     }
     if (good)
     {   // create a macro
@@ -1521,6 +1532,9 @@ void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
         asmr.printError(macroNameStr, "Expected macro name");
         return;
     }
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    
     if (!asmr.macroMap.erase(macroName))
     {
         std::string message = "Macro '";
