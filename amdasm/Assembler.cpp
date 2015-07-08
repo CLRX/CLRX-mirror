@@ -1869,7 +1869,10 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
                 if (string!=end)
                 {
                     if(*string==',')
+                    {
                         string = skipSpacesToEnd(string+1, end);
+                        argMap[i].second.push_back(',');
+                    }
                     else
                     {
                         printError(string, "Garbages at end of line");

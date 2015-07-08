@@ -2092,6 +2092,83 @@ test.s:9:27: Error: Unterminated expression
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
         { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    /* 51 - basic macro calls */
+    {   R"ffDXD(            .macro am1 a,b,c
+            .byte \a,\b,\c
+            .endm
+            
+            .macro am1_1 a=56,b,c
+            .byte \a,\b,\c
+            .endm
+            
+            .macro am1_2 a,b=7+1,c
+            .byte \a,\b,\c
+            .endm
+            
+            .macro am1_3 a,b=7+1,c=6
+            .byte \a,\b,\c
+            .endm
+            
+            am1 3,5,7
+            am1
+            am1 12,77
+            
+            am1_1 3,5,7
+            am1_1 ,-3 , 7
+            am1_1 12,77
+            
+            am1_2 3,5,7
+            am1_2 -3,  , 7
+            am1_2 12,77
+            
+            am1_3 3,5,7
+            am1_3 -3,  , 7
+            am1_3 12,77)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x03, 0x05, 0x07, 0x00, 0x00, 0x00, 0x0c, 0x4d,
+                0x00, 0x03, 0x05, 0x07, 0x38, 0xfd, 0x07, 0x0c,
+                0x4d, 0x00, 0x03, 0x05, 0x07, 0xfd, 0x08, 0x07,
+                0x0c, 0x4d, 0x00, 0x03, 0x05, 0x07, 0xfd, 0x08,
+                0x07, 0x0c, 0x4d, 0x06
+            } } },
+        { { ".", 36U, 0, 0U, true, false, false, 0, 0 } },
+        true, R"ffDXD(In macro substituted from test.s:18:13:
+test.s:2:19: Warning: No expression, zero has been put
+In macro substituted from test.s:18:13:
+test.s:2:20: Warning: No expression, zero has been put
+In macro substituted from test.s:18:13:
+test.s:2:21: Warning: No expression, zero has been put
+In macro substituted from test.s:19:13:
+test.s:2:25: Warning: No expression, zero has been put
+In macro substituted from test.s:23:13:
+test.s:6:25: Warning: No expression, zero has been put
+In macro substituted from test.s:27:13:
+test.s:10:25: Warning: No expression, zero has been put
+)ffDXD", ""
+    },
+    /* 52 - varargs */
+    {   R"ffDXD(            .macro varArgs ax,bx,dx:vararg
+            .hword \ax*\bx+\bx, \dx
+            .endm
+            
+            varArgs 12,55,4
+            varArgs 7,3
+            varArgs 7,3,2,4,-5,14
+            varArgs 7 3 2,4,-5,14 # without ',')ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0xcb, 0x02, 0x04, 0x00, 0x18, 0x00, 0x00, 0x00,
+                0x18, 0x00, 0x02, 0x00, 0x04, 0x00, 0xfb, 0xff,
+                0x0e, 0x00, 0x18, 0x00, 0x02, 0x00, 0x04, 0x00,
+                0xfb, 0xff, 0x0e, 0x00
+            } } },
+        { { ".", 28U, 0, 0U, true, false, false, 0, 0 } },
+        true, "In macro substituted from test.s:6:13:\n"
+        "test.s:2:27: Warning: No expression, zero has been put\n", ""
     }
 };
 
