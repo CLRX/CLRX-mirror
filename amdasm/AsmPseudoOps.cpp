@@ -1535,7 +1535,7 @@ void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
     string += macroName.size();
     if (!checkGarbagesAtEnd(asmr, string))
         return;
-    
+    toLowerString(macroName); // macro name is lowered
     if (!asmr.macroMap.erase(macroName))
     {
         std::string message = "Macro '";

@@ -2411,8 +2411,8 @@ In macro content:
     },
     /* 63 - purgem (undefine macro) */
     {   R"ffDXD(            .macro xxx
-            .purgem xxx
-            .purgem xxx
+            .purgem xXx
+            .purgem xxX
             .byte 3,4,5
             .endm
             xxx
