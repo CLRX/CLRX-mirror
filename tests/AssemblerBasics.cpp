@@ -2423,6 +2423,25 @@ In macro content:
         { { ".", 3U, 0, 0U, true, false, false, 0, 0 } },
         true, "In macro substituted from test.s:6:13:\n"
         "test.s:3:21: Warning: Macro 'xxx' already doesn't exist\n", ""
+    },
+    /* 64 - macro def without ',' */
+    {   R"ffDXD(            .macro test1 a b c d
+            .hword \a, \b, \c, \d
+            .endm
+            .macro test2 a b = 6 c:req d
+            .hword \a, \b, \c, \d
+            .endm
+            
+            test1 1 2 3 4
+            test2 1 "" 3 4)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00,
+                0x01, 0x00, 0x06, 0x00, 0x03, 0x00, 0x04, 0x00
+            } } },
+        { { ".", 16U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 

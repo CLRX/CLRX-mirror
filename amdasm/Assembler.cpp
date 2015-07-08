@@ -968,6 +968,15 @@ void AsmSymbol::clearOccurrencesInExpr()
     occurrencesInExprs.clear();
 }
 
+void AsmSymbol::undefine()
+{
+    hasValue = false;
+    base = false;
+    delete expression;
+    expression = nullptr;
+    onceDefined = false;
+}
+
 /*
  * Assembler
  */

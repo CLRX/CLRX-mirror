@@ -102,7 +102,7 @@ static const char* pseudoOpNamesTbl[] =
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
-    "warning", "weak", "word"
+    "undef", "warning", "weak", "word"
 };
 
 enum
@@ -133,7 +133,7 @@ enum
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
-    ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
+    ASMOP_UNDEF, ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1527,13 +1527,14 @@ void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
     string = skipSpacesToEnd(string, end);
     const char* macroNameStr = string;
     std::string macroName = extractSymName(string, end, false);
+    bool good = true;
     if (macroName.empty())
     {
         asmr.printError(macroNameStr, "Expected macro name");
-        return;
+        good = false;
     }
     string += macroName.size();
-    if (!checkGarbagesAtEnd(asmr, string))
+    if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     toLowerString(macroName); // macro name is lowered
     if (!asmr.macroMap.erase(macroName))
@@ -1543,6 +1544,40 @@ void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
         message += "' already doesn't exist";
         asmr.printWarning(macroNameStr, message.c_str());
     }
+}
+
+void AsmPseudoOps::doUndefSymbol(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* symNameStr = string;
+    std::string symName = extractSymName(string, end, false);
+    bool good = true;
+    if (symName.empty())
+    {
+        asmr.printError(symNameStr, "Expected symbol name");
+        good = false;
+    }
+    else if (symName == ".")
+    {
+        asmr.printError(symNameStr, "Symbol '.' can not be undefined");
+        good = false;
+    }
+    string += symName.size();
+    if (!good || !checkGarbagesAtEnd(asmr, string))
+        return;
+    
+    auto it = asmr.symbolMap.find(symName);
+    if (it == asmr.symbolMap.end() ||
+        (!it->second.hasValue && it->second.expression==nullptr))
+    {
+        std::string message = "Symbol '";
+        message += symName;
+        message += "' already doesn't exist";
+        asmr.printWarning(symNameStr, message.c_str());
+    }
+    else
+        it->second.undefine();
 }
 
 };
@@ -1714,6 +1749,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doFail(*this, stmtStartStr, string);
             break;
         case ASMOP_FILE:
+            printWarning(stmtStartStr, "'.file' is ignored by this assembler.");
             break;
         case ASMOP_FILL:
             AsmPseudoOps::doFill(*this, stmtStartStr, string, false);
@@ -1806,6 +1842,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_LINE:
         case ASMOP_LN:
+            printWarning(stmtStartStr, "'.line' is ignored by this assembler.");
             break;
         case ASMOP_LOC:
             break;
@@ -1870,6 +1907,9 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_TEXT:
             break;
         case ASMOP_TITLE:
+            break;
+        case ASMOP_UNDEF:
+            AsmPseudoOps::doUndefSymbol(*this, string);
             break;
         case ASMOP_WARNING:
             AsmPseudoOps::printWarning(*this, stmtStartStr, string);

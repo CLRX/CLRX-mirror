@@ -627,6 +627,8 @@ struct AsmSymbol
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
     /// clear list of occurrences in expression
     void clearOccurrencesInExpr();
+    
+    void undefine();
 };
 
 /// assembler symbol map
