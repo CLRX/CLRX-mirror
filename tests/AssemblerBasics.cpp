@@ -2169,6 +2169,135 @@ test.s:10:25: Warning: No expression, zero has been put
         { { ".", 28U, 0, 0U, true, false, false, 0, 0 } },
         true, "In macro substituted from test.s:6:13:\n"
         "test.s:2:27: Warning: No expression, zero has been put\n", ""
+    },
+    /* 53 - required arguments */
+    {   R"ffDXD(            .macro reqArg1 af,bf:req,cf
+            .ascii "\af:\bf:\cf;"
+            .endm
+            
+            .macro reqArg2 af,bf:req,cf:req
+            .ascii "\af:\bf:\cf;"
+            .endm
+            
+            reqArg1 1,32,4
+            reqArg1 ,32,
+            reqArg1 1,,4
+            
+            reqArg2 1,32,4
+            reqArg2 ,32,23
+            reqArg2 ,32
+            reqArg2 1,,4)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x31, 0x3a, 0x33, 0x32, 0x3a, 0x34, 0x3b, 0x3a,
+                0x33, 0x32, 0x3a, 0x3b, 0x31, 0x3a, 0x33, 0x32,
+                0x3a, 0x34, 0x3b, 0x3a, 0x33, 0x32, 0x3a, 0x32,
+                0x33, 0x3b
+            } } },
+        { { ".", 26U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:11:23: Error: Value required for macro argument 'bf'\n"
+        "test.s:15:24: Error: Value required for macro argument 'cf'\n"
+        "test.s:16:23: Error: Value required for macro argument 'bf'\n", ""
+    },
+    /* 54 - argument passing */
+    {   R"ffDXD(            .macro passer a,b,c,d,e,f
+            .asciz "\a:\b:\c:\d:\e:\f"
+            .endm
+            passer
+            passer aa fgf a ! A 41 uu +*+ 8 33
+            passer aa * aa "aa * aa" XaF %%%
+            passer aa +,ff,^^,33 + 33 - -)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x3a, 0x3a, 0x3a, 0x3a, 0x3a, 0x00, 0x61, 0x61,
+                0x3a, 0x66, 0x67, 0x66, 0x3a, 0x61, 0x21, 0x41,
+                0x3a, 0x34, 0x31, 0x3a, 0x75, 0x75, 0x2b, 0x2a,
+                0x2b, 0x38, 0x3a, 0x33, 0x33, 0x00, 0x61, 0x61,
+                0x3a, 0x2a, 0x3a, 0x61, 0x61, 0x3a, 0x61, 0x61,
+                0x20, 0x2a, 0x20, 0x61, 0x61, 0x3a, 0x58, 0x61,
+                0x46, 0x3a, 0x25, 0x25, 0x25, 0x00, 0x61, 0x61,
+                0x2b, 0x3a, 0x66, 0x66, 0x3a, 0x5e, 0x5e, 0x3a,
+                0x33, 0x33, 0x2b, 0x33, 0x33, 0x3a, 0x2d, 0x3a,
+                0x2d, 0x00,
+            } } },
+        { { ".", 74U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 55 - call macro in macro */
+    {   R"ffDXD(            .macro one x
+            .hword 12+\x
+            .endm
+            .macro two x
+            one 3+\x; one 4+\x
+            .endm
+            .macro three x
+            one 11+\x; two \x+\x; two \x*\x
+            .endm
+            
+            three 9)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 0x20, 0x00, 0x21, 0x00, 0x22, 0x00, 0x60, 0x00, 0x61, 0x00 } } },
+        { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 56 - call with errors */
+    {   R"ffDXD(            .macro one x
+            .hword 12+\x
+            .error "simple error"
+            .endm
+            .macro two x
+            one 3+\x; one 4+\x
+            .endm
+            .macro three x
+            one 11+\x; two \x+\x; two \x*\x
+            .endm
+            
+            three 9)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 0x20, 0x00, 0x21, 0x00, 0x22, 0x00, 0x60, 0x00, 0x61, 0x00 } } },
+        { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
+        false, R"ffDXD(In macro substituted from test.s:9:13;
+                     from test.s:12:13:
+test.s:3:13: Error: simple error
+In macro substituted from test.s:6:13;
+                     from test.s:9:24;
+                     from test.s:12:13:
+test.s:3:13: Error: simple error
+In macro substituted from test.s:6:23;
+                     from test.s:9:24;
+                     from test.s:12:13:
+test.s:3:13: Error: simple error
+In macro substituted from test.s:6:13;
+                     from test.s:9:35;
+                     from test.s:12:13:
+test.s:3:13: Error: simple error
+In macro substituted from test.s:6:23;
+                     from test.s:9:35;
+                     from test.s:12:13:
+test.s:3:13: Error: simple error
+)ffDXD", ""
+    },
+    /* 57 - macro counter */
+    {   R"ffDXD(        .macro t3
+        .endm
+        .macro t2; t3; t3; .endm
+        .macro t1; t2; t2; .int \@, \@; .endm
+        .rept 5; t1; .endr)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
+                0x0e, 0x00, 0x00, 0x00, 0x0e, 0x00, 0x00, 0x00,
+                0x15, 0x00, 0x00, 0x00, 0x15, 0x00, 0x00, 0x00,
+                0x1c, 0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x00
+            } } },
+        { { ".", 40U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 

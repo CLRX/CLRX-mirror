@@ -1352,17 +1352,8 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     
     for (; string != end && *string != ','; string++)
     {
-        if(*string == '"')
-        { // quoted
-            printError(string, "Unexpected '\"' at macro argument");
-            while (string != end && *string != '\"')
-                string++;
-            if (string == end)
-                printError(string, "Unterminated quoted string");
-            else
-                string++;
-            return false;
-        }
+        if(*string == '"') // quoted
+            return true; // next argument
         if (!isSpace(*string))
         {
             const cxbyte thisTok = (cxbyte(*string) >= 0x20 && cxbyte(*string) < 0x80) ?
@@ -1857,12 +1848,13 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
                 continue;
         }
         else
-        {
+        {   /* parse variadic arguments */
+            bool argGood = true;
             while (string != end)
             {
                 if (!parseMacroArgValue(string, argMap[i].second))
                 {
-                    good = false;
+                    argGood = good = false;
                     break;
                 }
                 string = skipSpacesToEnd(string, end);
@@ -1876,11 +1868,13 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
                     else
                     {
                         printError(string, "Garbages at end of line");
-                        good = false;
+                        argGood = good = false;
                         break;
                     }
                 }
             }
+            if (!argGood) // not so good
+                continue;
         }
         if (arg.required && argMap[i].second.empty())
         {   // error, value required
