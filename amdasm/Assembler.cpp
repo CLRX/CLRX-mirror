@@ -473,47 +473,49 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     return buffer.data()+lineStart;
 }
 
-AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
-        const MacroArgMap& _argMap, uint64_t _macroCount)
+AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
+         const AsmSourcePos& pos, const MacroArgMap& _argMap, uint64_t _macroCount)
         : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
           argMap(_argMap), macroCount(_macroCount), contentLineNo(0), sourceTransIndex(0)
 {
-    source = macro.getSourceTrans(0).source;
+    if (macro->getSourceTransSize()!=0)
+        source = macro->getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
                    pos.source, pos.lineNo, pos.colNo));
-    curColTrans = macro.getColTranslations().data();
+    curColTrans = macro->getColTranslations().data();
     buffer.reserve(300);
     lineNo = curColTrans[0].lineNo;
 }
 
-AsmMacroInputFilter::AsmMacroInputFilter(const AsmMacro& _macro, const AsmSourcePos& pos,
-        MacroArgMap&& _argMap, uint64_t _macroCount)
+AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
+         const AsmSourcePos& pos, MacroArgMap&& _argMap, uint64_t _macroCount)
         : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
           argMap(std::move(_argMap)), macroCount(_macroCount),
           contentLineNo(0), sourceTransIndex(0)
 {
-    source = macro.getSourceTrans(0).source;
+    if (macro->getSourceTransSize()!=0)
+        source = macro->getSourceTrans(0).source;
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
                    pos.source, pos.lineNo, pos.colNo));
-    curColTrans = macro.getColTranslations().data();
+    curColTrans = macro->getColTranslations().data();
     buffer.reserve(300);
-    lineNo = curColTrans[0].lineNo;
+    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
 }
 
 const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
     buffer.clear();
     colTranslations.clear();
-    const std::vector<LineTrans>& macroColTrans = macro.getColTranslations();
+    const std::vector<LineTrans>& macroColTrans = macro->getColTranslations();
     const LineTrans* colTransEnd = macroColTrans.data()+ macroColTrans.size();
-    const size_t contentSize = macro.getContent().size();
+    const size_t contentSize = macro->getContent().size();
     if (pos == contentSize)
     {
         lineSize = 0;
         return nullptr;
     }
     
-    const char* content = macro.getContent().data();
+    const char* content = macro->getContent().data();
     
     size_t nextLinePos = pos;
     while (nextLinePos < contentSize && content[nextLinePos] != '\n')
@@ -625,9 +627,9 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     }
     lineSize = buffer.size();
     lineNo = curColTrans->lineNo;
-    if (sourceTransIndex+1 < macro.getSourceTransSize())
+    if (sourceTransIndex+1 < macro->getSourceTransSize())
     {
-        const AsmMacro::SourceTrans& fpos = macro.getSourceTrans(sourceTransIndex+1);
+        const AsmMacro::SourceTrans& fpos = macro->getSourceTrans(sourceTransIndex+1);
         if (fpos.lineNo == contentLineNo)
         {
             source = fpos.source;
@@ -646,11 +648,17 @@ AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmRepeat* _repeat) :
           AsmInputFilter(AsmInputFilterType::REPEAT), repeat(_repeat),
           repeatCount(0), contentLineNo(0), sourceTransIndex(0)
 {
-    source = RefPtr<const AsmSource>(new AsmRepeatSource(
-                _repeat->getSourceTrans(0).source, 0, repeat->getRepeatsNum()));
-    macroSubst = _repeat->getSourceTrans(0).macro;
+    if (_repeat->getSourceTransSize()!=0)
+    {
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                    _repeat->getSourceTrans(0).source, 0, repeat->getRepeatsNum()));
+        macroSubst = _repeat->getSourceTrans(0).macro;
+    }
+    else
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                    RefPtr<const AsmSource>(), 0, repeat->getRepeatsNum()));
     curColTrans = repeat->getColTranslations().data();
-    lineNo = curColTrans[0].lineNo;
+    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
 }
 
 const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSize)
@@ -662,7 +670,7 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     if (pos == contentSize)
     {
         repeatCount++;
-        if (repeatCount == repeat->getRepeatsNum())
+        if (repeatCount == repeat->getRepeatsNum() || contentSize==0)
         {
             lineSize = 0;
             return nullptr;
@@ -1827,16 +1835,16 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
         return ParseState::MISSING; // macro not found
     /* parse arguments */
     
-    const AsmMacro& macro = it->second;
-    const size_t macroArgsNum = macro.getArgsNum();
+    RefPtr<const AsmMacro> macro = it->second;
+    const size_t macroArgsNum = macro->getArgsNum();
     bool good = true;
     AsmMacroInputFilter::MacroArgMap argMap(macroArgsNum);
     for (size_t i = 0; i < macroArgsNum; i++) // set name of args
-        argMap[i].first = macro.getArg(i).name;
+        argMap[i].first = macro->getArg(i).name;
     
     for (size_t i = 0; i < macroArgsNum; i++)
     {
-        const AsmMacroArg& arg = macro.getArg(i);
+        const AsmMacroArg& arg = macro->getArg(i);
         
         string = skipSpacesToEnd(string, end);
         if (string!=end && *string==',' && i!=0)

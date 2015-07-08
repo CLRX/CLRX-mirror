@@ -1476,10 +1476,10 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
     }
     if (good)
     {   // create a macro
-        AsmMacro macro(asmr.getSourcePos(pseudoOpStr),
-                        Array<AsmMacroArg>(args.begin(), args.end()));
+        RefPtr<const AsmMacro> macro(new AsmMacro(asmr.getSourcePos(pseudoOpStr),
+                        Array<AsmMacroArg>(args.begin(), args.end())));
         asmr.pushClause(pseudoOpStr, AsmClauseType::MACRO);
-        if (!asmr.putMacroContent(macro))
+        if (!asmr.putMacroContent(macro.constCast<AsmMacro>()))
             return;
         asmr.macroMap.insert(std::make_pair(std::move(macroName), std::move(macro)));
     }
@@ -1507,6 +1507,26 @@ void AsmPseudoOps::doExitMacro(Assembler& asmr, const char* pseudoOpStr,
             asmr.printWarning(pseudoOpStr, "Behavior of '.exitm' inside repeat is "
                     "undefined. Exiting from repeat...");
         asmr.skipClauses(true);
+    }
+}
+
+void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* macroNameStr = string;
+    std::string macroName = extractSymName(string, end, false);
+    if (macroName.empty())
+    {
+        asmr.printError(macroNameStr, "Expected macro name");
+        return;
+    }
+    if (!asmr.macroMap.erase(macroName))
+    {
+        std::string message = "Macro '";
+        message += macroName;
+        message += "' already doesn't exist";
+        asmr.printWarning(macroNameStr, message.c_str());
     }
 }
 
@@ -1795,6 +1815,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doPrint(*this, string);
             break;
         case ASMOP_PURGEM:
+            AsmPseudoOps::doPurgeMacro(*this, string);
             break;
         case ASMOP_QUAD:
             AsmPseudoOps::putIntegers<uint64_t>(*this, string);
@@ -1967,7 +1988,7 @@ bool Assembler::skipClauses(bool exitm)
     return good;
 }
 
-bool Assembler::putMacroContent(AsmMacro& macro)
+bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
 {
     const cxuint clauseLevel = clauses.size();
     bool good = true;
@@ -1985,7 +2006,7 @@ bool Assembler::putMacroContent(AsmMacro& macro)
         const char* stmtString = string;
         if (string == end || *string != '.')
         {
-            macro.addLine(currentInputFilter->getMacroSubst(),
+            macro->addLine(currentInputFilter->getMacroSubst(),
                   currentInputFilter->getSource(),
                   currentInputFilter->getColTranslations(), lineSize, line);
             continue;
@@ -2020,14 +2041,10 @@ bool Assembler::putMacroContent(AsmMacro& macro)
                 break;
         }
         if (pseudoOp != ASMMROP_ENDM || clauses.size() >= clauseLevel)
-            macro.addLine(currentInputFilter->getMacroSubst(),
+            macro->addLine(currentInputFilter->getMacroSubst(),
                   currentInputFilter->getSource(),
                   currentInputFilter->getColTranslations(), lineSize, line);
     }
-    if (macro.getContent().empty()) // add empty line if no content
-        macro.addLine(currentInputFilter->getMacroSubst(),
-                  currentInputFilter->getSource(),
-                  currentInputFilter->getColTranslations(), 0, line);
     return good;
 }
 
@@ -2088,9 +2105,5 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
                    currentInputFilter->getSource(),
                    currentInputFilter->getColTranslations(), lineSize, line);
     }
-    if (repeat.getContent().empty()) // add empty line if no content
-            repeat.addLine(currentInputFilter->getMacroSubst(),
-                   currentInputFilter->getSource(),
-                   currentInputFilter->getColTranslations(), 0, line);
     return good;
 }

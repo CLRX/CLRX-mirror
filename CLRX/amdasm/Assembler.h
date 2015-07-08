@@ -214,7 +214,7 @@ struct AsmMacroArg
 };
 
 /// assembler macro
-class AsmMacro
+class AsmMacro: public FastRefCountable
 {
 public:
     /// source translation
@@ -432,7 +432,7 @@ class AsmMacroInputFilter: public AsmInputFilter
 public:
     typedef Array<std::pair<std::string, std::string> > MacroArgMap;
 private:
-    const AsmMacro& macro;  ///< input macro
+    RefPtr<const AsmMacro> macro;  ///< input macro
     AsmMacroArgMap argMap;  ///< input macro argument map
     
     uint64_t macroCount;
@@ -441,9 +441,9 @@ private:
     const LineTrans* curColTrans;
 public:
     /// constructor with input macro, source position and arguments map
-    AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
+    AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
         const MacroArgMap& argMap, uint64_t macroCount);
-    AsmMacroInputFilter(const AsmMacro& macro, const AsmSourcePos& pos,
+    AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
         MacroArgMap&& argMap, uint64_t macroCount);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
@@ -856,7 +856,7 @@ public:
     /// defined symbol entry
     typedef std::pair<std::string, uint64_t> DefSym;
     /// macro map type
-    typedef std::unordered_map<std::string, AsmMacro> MacroMap;
+    typedef std::unordered_map<std::string, RefPtr<const AsmMacro> > MacroMap;
     /// kernel map type
     typedef std::unordered_map<std::string, cxuint> KernelMap;
 private:
@@ -969,7 +969,7 @@ private:
     
     /// exitm - exit macro mode
     bool skipClauses(bool exitm = false);
-    bool putMacroContent(AsmMacro& macro);
+    bool putMacroContent(RefPtr<AsmMacro> macro);
     bool putRepetitionContent(AsmRepeat& repeat);
     
     void initializeOutputFormat();
