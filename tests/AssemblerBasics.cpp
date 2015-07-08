@@ -2298,6 +2298,131 @@ test.s:3:13: Error: simple error
             } } },
         { { ".", 40U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    /* 58 - macro in macro */
+    {   R"ffDXD(.macro supply x
+        .byte \x*\x+\x
+        .endm
+        .macro creator name, t, s
+        .macro \name x,y
+            .int \x+\t,\y*\s
+            supply 3
+        .endm
+        .endm
+        creator mymac,9,12
+        creator mymax,41,18
+        mymac 3,7
+        mymax 3,7)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x0c, 0x00, 0x00, 0x00, 0x54, 0x00, 0x00, 0x00,
+                0x0c, 0x2c, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x0c,
+            } } },
+        { { ".", 18U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 59 - macro defined in macro */
+    {   R"ffDXD(            .macro tx0 name0,name1,t0,t1,t2,t3
+            .macro \name0 u0,u1
+            .macro \name0\()\name1 x0,x1
+            .int \t0+\u0*\x0, \t0+\u1*\x1
+            .int \t2+\u0*\x0, \t3+\u1*\x1
+            .endm
+            .endm
+            .endm
+            
+            tx0 next1 next2 2 3 4 5
+            next1 -3 -5
+            next1next2 13 37)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0xdb, 0xff, 0xff, 0xff, 0x49, 0xff, 0xff, 0xff,
+                0xdd, 0xff, 0xff, 0xff, 0x4c, 0xff, 0xff, 0xff
+            } } },
+        { { ".", 16U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 60 - macro defined in macro (error) */
+    {   R"ffDXD(.macro tx0 name0,name1,t0,t1,t2,t3
+            .macro \name0 u0,u1
+            .macro \name0\()\name1 x0,x1
+            .int \t0+\u0*\x0, \t0+\u1*\x1
+            .int \t2+\u0*\x0, \t3+\u1*\x1
+            .error "aaaaaaarrrrrgggggggghhhhhhhhh!!!"
+            .endm
+            .endm
+            .endm
+            
+            tx0 next1 next2 2 3 4 5
+            next1 -3 -5
+            next1next2 13 37)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0xdb, 0xff, 0xff, 0xff, 0x49, 0xff, 0xff, 0xff,
+                0xdd, 0xff, 0xff, 0xff, 0x4c, 0xff, 0xff, 0xff
+            } } },
+        { { ".", 16U, 0, 0U, true, false, false, 0, 0 } },
+        false, R"ffDXD(In macro substituted from test.s:13:13:
+In macro content:
+    In macro substituted from test.s:12:13:
+    In macro content:
+        In macro substituted from test.s:11:13:
+        test.s:6:13: Error: aaaaaaarrrrrgggggggghhhhhhhhh!!!
+)ffDXD", ""
+    },
+    /* 61 - conditionals in macro */
+    {   R"ffDXD(        .macro bstr str1,str2
+        .ifc \str1\()xx,\str2\()x
+        .ascii "\str1\str2"
+        .elseifc \str1\()o,\str2\()Uo
+        .ascii "oo\str1\str2"
+        .endif
+        .endm
+        bStr ala,alax
+        bStr alaU,ala)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x61, 0x6c, 0x61, 0x61, 0x6c, 0x61, 0x78, 0x6f,
+                0x6f, 0x61, 0x6c, 0x61, 0x55, 0x61, 0x6c, 0x61
+            } } },
+        { { ".", 16U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 62 - exitm */
+    {   R"ffDXD(            .macro exiter a1,b2
+            .byte \a1,\b2
+            .if \a1-3==\b2+5
+            .hword 2221
+            .exitm
+            .endif
+            .byte 12,\b2&0xf
+            .endm
+            exiter 30,70
+            exiter 23,15)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 0x1e, 0x46, 0x0c, 0x06, 0x17, 0x0f, 0xad, 0x08 } } },
+        { { ".", 8U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 63 - purgem (undefine macro) */
+    {   R"ffDXD(            .macro xxx
+            .purgem xxx
+            .purgem xxx
+            .byte 3,4,5
+            .endm
+            xxx
+            .macro xxx
+            .endm)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { 3, 4, 5 } } },
+        { { ".", 3U, 0, 0U, true, false, false, 0, 0 } },
+        true, "In macro substituted from test.s:6:13:\n"
+        "test.s:3:21: Warning: Macro 'xxx' already doesn't exist\n", ""
     }
 };
 

@@ -1532,6 +1532,7 @@ void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
         asmr.printError(macroNameStr, "Expected macro name");
         return;
     }
+    string += macroName.size();
     if (!checkGarbagesAtEnd(asmr, string))
         return;
     
