@@ -1833,8 +1833,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     MacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
         return ParseState::MISSING; // macro not found
-    /* parse arguments */
     
+    /* parse arguments */
     RefPtr<const AsmMacro> macro = it->second;
     const size_t macroArgsNum = macro->getArgsNum();
     bool good = true;

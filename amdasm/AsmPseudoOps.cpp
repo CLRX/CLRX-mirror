@@ -1922,6 +1922,13 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         default:
             // macro substitution
+            // try to parse processor instruction or macro substitution
+            if (makeMacroSubstitution(stmtStartStr) == ParseState::MISSING)
+            {  // try parse instruction
+                //initializeOutputFormat();
+                /*isaAssembler->assemble(lineNo, stmtStartStr,
+                           sections[currentSection].content);*/
+            }
             break;
     }
 }
