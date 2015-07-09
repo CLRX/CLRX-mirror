@@ -1576,6 +1576,8 @@ void AsmPseudoOps::doUndefSymbol(Assembler& asmr, const char*& string)
         message += "' already doesn't exist";
         asmr.printWarning(symNameStr, message.c_str());
     }
+    else if (it->second.occurrencesInExprs.empty())
+        asmr.symbolMap.erase(it);
     else
         it->second.undefine();
 }
