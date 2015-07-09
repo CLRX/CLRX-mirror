@@ -484,7 +484,7 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
                    pos.source, pos.lineNo, pos.colNo));
     curColTrans = macro->getColTranslations().data();
     buffer.reserve(300);
-    lineNo = curColTrans[0].lineNo;
+    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
