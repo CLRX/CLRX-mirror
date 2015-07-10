@@ -49,7 +49,9 @@ enum class GPUDeviceType: cxbyte
     ICELAND, ///< ???
     TONGA, ///< Radeon R9 285
     MULLINS, ///< ???
-    GPUDEVICE_MAX = MULLINS,    /// last value
+    FIJI,  ///< Radeon Fury
+    CARRIZO, ///< APU
+    GPUDEVICE_MAX = CARRIZO,    /// last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800

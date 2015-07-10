@@ -24,7 +24,7 @@
 
 using namespace CLRX;
 
-static const char* gpuDeviceNameTable[13] =
+static const char* gpuDeviceNameTable[15] =
 {
     "CapeVerde",
     "Pitcairn",
@@ -38,10 +38,12 @@ static const char* gpuDeviceNameTable[13] =
     "Hawaii",
     "Iceland",
     "Tonga",
-    "Mullins"
+    "Mullins",
+    "Fiji",
+    "Carrizo"
 };
 
-static const GPUArchitecture gpuDeviceArchTable[13] =
+static const GPUArchitecture gpuDeviceArchTable[15] =
 {
     GPUArchitecture::GCN1_0, // CapeVerde
     GPUArchitecture::GCN1_0, // Pitcairn
@@ -55,7 +57,9 @@ static const GPUArchitecture gpuDeviceArchTable[13] =
     GPUArchitecture::GCN1_1, // Hawaii
     GPUArchitecture::GCN1_2, // Iceland
     GPUArchitecture::GCN1_2, // Tonga
-    GPUArchitecture::GCN1_1 // Mullins
+    GPUArchitecture::GCN1_1, // Mullins
+    GPUArchitecture::GCN1_2, // Fiji
+    GPUArchitecture::GCN1_2  // Carrizo
 };
 
 static const char* gpuArchitectureNameTable[3] =

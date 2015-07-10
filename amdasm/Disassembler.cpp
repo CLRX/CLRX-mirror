@@ -208,7 +208,7 @@ struct GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[13] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[15] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -222,7 +222,9 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[13] =
     { 0x408, GPUDeviceType::HAWAII },
     { 0x409, GPUDeviceType::ICELAND },
     { 0x40a, GPUDeviceType::TONGA },
-    { 0x40b, GPUDeviceType::MULLINS }
+    { 0x40b, GPUDeviceType::MULLINS },
+    { 0x40c, GPUDeviceType::FIJI },
+    { 0x40d, GPUDeviceType::CARRIZO }
 };
 
 struct GPUDeviceInnerCodeEntry
@@ -231,7 +233,7 @@ struct GPUDeviceInnerCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[13] =
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[15] =
 {
     { 0x1a, GPUDeviceType::TAHITI },
     { 0x1b, GPUDeviceType::PITCAIRN },
@@ -245,7 +247,9 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[13] =
     { 0x27, GPUDeviceType::HAWAII },
     { 0x29, GPUDeviceType::ICELAND },
     { 0x2a, GPUDeviceType::TONGA },
-    { 0x2b, GPUDeviceType::MULLINS }
+    { 0x2b, GPUDeviceType::MULLINS },
+    { 0x2d, GPUDeviceType::FIJI },
+    { 0x2e, GPUDeviceType::CARRIZO }
 };
 
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
@@ -342,7 +346,7 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
         if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
             break;
     if (entriesNum == index)
-        throw Exception("Cant determine GPU device type");
+        throw Exception("Can't determine GPU device type");
     input->deviceType = gpuDeviceCodeTable[index].deviceType;
     input->compileOptions = binary.getCompileOptions();
     input->driverInfo = binary.getDriverInfo();
