@@ -60,6 +60,7 @@ struct AsmTestCase
     bool good;
     const char* errorMessages;
     const char* printMessages;
+    Array<const char*> includeDirs;
 };
 
 static AsmTestCase asmTestCases1Tbl[] =
@@ -2502,6 +2503,78 @@ In macro content:
             { "xz2", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
         },
         true, "test.s:21:16: Warning: Symbol 'xz2' already doesn't exist\n", ""
+    },
+    /* 67 - include test 1 */
+    {   R"ffDXD(            .include "inc1.s"
+            .include "inc2.s"
+            .include "inc3.s")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 11,22,44,55, 11,22,44,58, 31,23,44,55 } } },
+        { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", "",
+        { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
+    },
+    /* 68 - include test 2 */
+    {   R"ffDXD(            .include "incdir0\\inc1.s"
+            .include "incdir0/inc2.s"
+            .include "incdir1\\inc3.s")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            { 11,22,44,55, 11,22,44,58, 31,23,44,55 } } },
+        { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", "",
+        { CLRX_SOURCE_DIR "/tests" }
+    },
+    /* 69 - failed include */
+    {   R"ffDXD(            .include "incdir0\\incx.s"
+            .include "xxxx.s"
+            .include "xxxa.s")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:1:22: Error: Include file "
+        "'incdir0/incx.s' not found or unavailable in any directory\n"
+        "test.s:2:22: Error: Include file 'xxxx.s' "
+        "not found or unavailable in any directory\n"
+        "test.s:3:22: Error: Include file 'xxxa.s' "
+        "not found or unavailable in any directory\n", "",
+        { CLRX_SOURCE_DIR "/tests" }
+    },
+    /* 70 - incbin */
+    {   R"ffDXD(            .incbin "incbin1"
+            .incbin "incbin2"
+            .incbin "incbin3")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x12, 0x87, 0x17, 0x87, 0x8C, 0xD8, 0xA8, 0x93,
+                0x89, 0xA9, 0x81, 0xA8, 0x94, 0xD3, 0x89, 0xC8,
+                0x9A, 0x13, 0x89, 0x89, 0xDD, 0x12, 0x31, 0x12,
+                0x1D, 0xCD, 0xAF, 0x12, 0xCD, 0xCD, 0x33, 0x81,
+                0xA8, 0x11, 0xD3, 0x22, 0xC8, 0x9A, 0x12, 0x34,
+                0x56, 0x78, 0x90, 0xCD, 0xAD, 0xFC, 0x1A, 0x2A,
+                0x3D, 0x4D, 0x6D, 0x3C
+            } } },
+        { { ".", 52U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", "",
+        { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
+    },
+    /* 71 - incbin (choose offset and size) */
+    {   R"ffDXD(            .incbin "incbin1",3,4
+            .incbin "incbin2",2
+            .incbin "incbin3", 0, 9)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0x87, 0x8C, 0xD8, 0xA8, 0x12, 0x1D, 0xCD, 0xAF,
+                0x12, 0xCD, 0xCD, 0x33, 0x81, 0xA8, 0x11, 0xD3,
+                0x22, 0xC8, 0x9A, 0x12, 0x34, 0x56, 0x78, 0x90,
+                0xCD, 0xAD, 0xFC, 0x1A
+            } } },
+        { { ".", 28U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", "",
+        { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
     }
 };
 
@@ -2513,6 +2586,8 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     
     Assembler assembler("test.s", input, ASM_ALL, BinaryFormat::AMD,
             GPUDeviceType::CAPE_VERDE, errorStream, printStream);
+    for (const char* incDir: testCase.includeDirs)
+        assembler.addIncludeDir(incDir);
     bool good = assembler.assemble();
     /* compare results */
     char testName[30];
