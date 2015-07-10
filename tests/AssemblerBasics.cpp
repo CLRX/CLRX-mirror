@@ -2442,6 +2442,66 @@ In macro content:
             } } },
         { { ".", 16U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    /* 65 - macro error handling */
+    {   R"ffDXD(            .macro test1 a b c d:vararg=xx,xx
+            .macro test1 a=aa * a
+            .macro test1 a,b,b,1x
+            .macro test1 a1,num=5,dd:req:vararg
+            .macro test1 a1,num=5,xx= xx   ""
+            test1 33, 554 , aa)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:1:44: Error: Variadic argument must be last\n"
+        "test.s:2:31: Error: Expected macro argument name\n"
+        "test.s:3:30: Error: Duplicates macro argument 'b'\n"
+        "test.s:3:32: Error: Expected macro argument name\n"
+        "test.s:4:41: Error: Expected macro argument name\n"
+        "test.s:5:44: Error: Expected macro argument name\n", ""
+    },
+    /* 66 - undef test */
+    {   R"ffDXD(.eqv xz, a*b
+        .int xz+xz*7
+        .eqv ulu,xz*xz
+        .int ulu
+        .undef xz
+        .int xz
+        a = 3; b = 8
+        
+        xz1=a*b
+        .int xz1
+        .undef xz1
+        .int xz1
+        
+        xz2=a1*b1
+        .int xz2
+        .undef xz2
+        .int xz2
+        
+        xz2=a1*b1
+        .undef xz2
+        .undef xz2)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
+            {
+                0xc0, 0x00, 0x00, 0x00, 0x40, 0x02, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00, 0x00, 0x00
+            } } },
+        {
+            { ".", 28U, 0, 0U, true, false, false, 0, 0 },
+            { "a", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "a1", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "b", 8U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "b1", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "ulu", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "xz", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "xz1", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "xz2", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        },
+        true, "test.s:21:16: Warning: Symbol 'xz2' already doesn't exist\n", ""
     }
 };
 

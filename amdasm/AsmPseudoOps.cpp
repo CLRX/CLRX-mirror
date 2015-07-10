@@ -95,7 +95,7 @@ static const char* pseudoOpNamesTbl[] =
     "iflt", "ifnb", "ifnc", "ifndef",
     "ifne", "ifnes", "ifnotdef", "incbin",
     "include", "int", "kernel", "line",
-    "ln", "loc", "local", "long",
+    "ln", "local", "long",
     "macro", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
     "rawcode", "rept", "section", "set",
@@ -126,7 +126,7 @@ enum
     ASMOP_IFLT, ASMOP_IFNB, ASMOP_IFNC, ASMOP_IFNDEF,
     ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNOTDEF, ASMOP_INCBIN,
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_KERNEL, ASMOP_LINE,
-    ASMOP_LN, ASMOP_LOC, ASMOP_LOCAL, ASMOP_LONG,
+    ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REPT, ASMOP_SECTION, ASMOP_SET,
@@ -1845,8 +1845,6 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_LINE:
         case ASMOP_LN:
             printWarning(stmtStartStr, "'.line' is ignored by this assembler.");
-            break;
-        case ASMOP_LOC:
             break;
         case ASMOP_LOCAL:
             AsmPseudoOps::setSymbolBind(*this, string, STB_LOCAL);
