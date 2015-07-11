@@ -654,12 +654,14 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             }
             /* filter: only put unavailable devices (offline) */
             cl_uint k = platform->devicesNum-amdOfflineDevicesNum;
-            cl_uint normalDevices = k;
+            std::vector<cl_device_id> normalDevices(
+                        amdDevices.begin(), amdDevices.begin()+k);
+            std::sort(normalDevices.begin(), normalDevices.end());
             for (cl_device_id deviceId: offlineDevices)
             {   /* broken CL_DEVICE_AVAILABLE in latest driver (Catalyst 15.7) */
                 //if (!available)
-                if (std::find(amdDevices.begin(), amdDevices.begin()+normalDevices,
-                            deviceId) == amdDevices.begin()+normalDevices)
+                if (binaryFind(normalDevices.begin(), normalDevices.end(), deviceId)
+                            == normalDevices.end())
                     amdDevices[k++] = deviceId;
             }
         }
