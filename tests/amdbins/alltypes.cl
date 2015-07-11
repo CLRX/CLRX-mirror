@@ -1,7 +1,9 @@
 
 typedef ulong4 typ1;
 
+#ifdef __GPU__
 #pragma OPENCL EXTENSION cl_ext_atomic_counters_32: enable
+#endif
 
 kernel void myKernel(
     uchar v0, uchar2 v1, uchar3 v2, uchar4 v3, uchar8 v4, uchar16 v5,
@@ -22,6 +24,9 @@ kernel void myKernel(
     const local void* v63, local void* v64,
     const constant void* v65 __attribute__((max_constant_size(3200))),
     constant void* v66 __attribute__((max_constant_size(3200))),
-    typ1 v67, volatile global void* v68, global void* restrict v69,
-    counter32_t v70)
+    typ1 v67, volatile global void* v68, global void* restrict v69
+#ifdef __GPU__
+    , counter32_t v70
+#endif
+    )
 { }

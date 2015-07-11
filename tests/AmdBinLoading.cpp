@@ -116,6 +116,92 @@ static const AmdKernelArg expectedKernelArgs1[] =
         "counter32_t", "v70" }
 };
 
+static const AmdKernelArg expectedCPUKernelArgs1[] =
+{
+    { KernelArgType::CHAR, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar", "v0" },
+    { KernelArgType::CHAR2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar2", "v1" },
+    { KernelArgType::CHAR3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar3", "v2" },
+    { KernelArgType::CHAR4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar4", "v3" },
+    { KernelArgType::CHAR8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar8", "v4" },
+    { KernelArgType::CHAR16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar16", "v5" },
+    { KernelArgType::CHAR, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "char", "v6" },
+    { KernelArgType::CHAR2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "char2", "v7" },
+    { KernelArgType::CHAR3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "char3", "v8" },
+    { KernelArgType::CHAR4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "char4", "v9" },
+    { KernelArgType::CHAR8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "char8", "v10" },
+    { KernelArgType::CHAR16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "char16", "v11" },
+    { KernelArgType::SHORT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ushort", "v12" },
+    { KernelArgType::SHORT2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ushort2", "v13" },
+    { KernelArgType::SHORT3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ushort3", "v14" },
+    { KernelArgType::SHORT4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ushort4", "v15" },
+    { KernelArgType::SHORT8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ushort8", "v16" },
+    { KernelArgType::SHORT16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ushort16", "v17" },
+    { KernelArgType::SHORT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "short", "v18" },
+    { KernelArgType::SHORT2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "short2", "v19" },
+    { KernelArgType::SHORT3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "short3", "v20" },
+    { KernelArgType::SHORT4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "short4", "v21" },
+    { KernelArgType::SHORT8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "short8", "v22" },
+    { KernelArgType::SHORT16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "short16", "v23" },
+    { KernelArgType::INT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint", "v24" },
+    { KernelArgType::INT2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint2", "v25" },
+    { KernelArgType::INT3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint3", "v26" },
+    { KernelArgType::INT4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint4", "v27" },
+    { KernelArgType::INT8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint8", "v28" },
+    { KernelArgType::INT16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint16", "v29" },
+    { KernelArgType::INT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "int", "v30" },
+    { KernelArgType::INT2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "int2", "v31" },
+    { KernelArgType::INT3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "int3", "v32" },
+    { KernelArgType::INT4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "int4", "v33" },
+    { KernelArgType::INT8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "int8", "v34" },
+    { KernelArgType::INT16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "int16", "v35" },
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ulong", "v36" },
+    { KernelArgType::LONG2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ulong2", "v37" },
+    { KernelArgType::LONG3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ulong3", "v38" },
+    { KernelArgType::LONG4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ulong4", "v39" },
+    { KernelArgType::LONG8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ulong8", "v40" },
+    { KernelArgType::LONG16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "ulong16", "v41" },
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "long", "v42" },
+    { KernelArgType::LONG2, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "long2", "v43" },
+    { KernelArgType::LONG3, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "long3", "v44" },
+    { KernelArgType::LONG4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "long4", "v45" },
+    { KernelArgType::LONG8, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "long8", "v46" },
+    { KernelArgType::LONG16, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "long16", "v47" },
+    { KernelArgType::SAMPLER, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "sampler_t", "v48" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_ONLY,
+        "image1d_t", "v49" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_WRITE_ONLY,
+        "image1d_t", "v50" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_ONLY,
+        "image2d_t", "v51" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_WRITE_ONLY,
+        "image2d_t", "v52" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_ONLY,
+        "image3d_t", "v53" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_WRITE_ONLY,
+        "image3d_t", "v54" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_ONLY,
+        "image1d_array_t", "v55" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_WRITE_ONLY,
+        "image1d_array_t", "v56" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_ONLY,
+        "image1d_buffer_t", "v57" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_WRITE_ONLY,
+        "image1d_buffer_t", "v58" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_ONLY,
+        "image2d_array_t", "v59" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_WRITE_ONLY,
+        "image2d_array_t", "v60" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_CONST, "void*", "v61" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, "void*", "v62" },
+    { KernelArgType::POINTER, KernelPtrSpace::LOCAL, KARG_PTR_CONST, "void*", "v63" },
+    { KernelArgType::POINTER, KernelPtrSpace::LOCAL, KARG_PTR_NORMAL, "void*", "v64" },
+    { KernelArgType::POINTER, KernelPtrSpace::CONSTANT, KARG_PTR_CONST, "void*", "v65" },
+    { KernelArgType::POINTER, KernelPtrSpace::CONSTANT, KARG_PTR_NORMAL, "void*", "v66" },
+    { KernelArgType::LONG4, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "typ1", "v67" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_VOLATILE, "void*", "v68" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_RESTRICT, "void*", "v69" }
+};
+
 static void testKernelArgs(const char* filename, const char* kernelName,
                size_t expKernelArgsNum, const AmdKernelArg* expKernelArgs)
 {
@@ -124,7 +210,7 @@ static void testKernelArgs(const char* filename, const char* kernelName,
     Array<cxbyte> data = loadDataFromFile(filename);
     std::unique_ptr<AmdMainBinaryBase> base(createAmdBinaryFromCode(
                 data.size(), data.data()));
-    AmdMainGPUBinaryBase* gpuBin = static_cast<AmdMainGPUBinaryBase*>(base.get());
+    AmdMainBinaryBase* gpuBin = static_cast<AmdMainBinaryBase*>(base.get());
     const KernelInfo& kernelInfo = gpuBin->getKernelInfo(size_t(0));
     
     assertValue(testName, "KernelName", std::string(kernelName), kernelInfo.kernelName);
@@ -208,6 +294,15 @@ int main(int argc, const char** argv)
     retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes.clo",
             "myKernel", sizeof(expectedKernelArgs1)/sizeof(AmdKernelArg),
             expectedKernelArgs1);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_64.clo",
+            "myKernel", sizeof(expectedKernelArgs1)/sizeof(AmdKernelArg),
+            expectedKernelArgs1);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_cpu64.clo",
+            "myKernel", sizeof(expectedCPUKernelArgs1)/sizeof(AmdKernelArg),
+            expectedCPUKernelArgs1);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_cpu.clo",
+            "myKernel", sizeof(expectedCPUKernelArgs1)/sizeof(AmdKernelArg),
+            expectedCPUKernelArgs1);
     retVal |= callTest(testAmdGPUMetadataGen);
     return retVal;
 }

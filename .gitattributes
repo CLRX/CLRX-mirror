@@ -59,6 +59,9 @@ tests/GalliumBinGen.cpp -text
 tests/TestUtils.h -text
 tests/amdbins/alltypes.cl -text
 tests/amdbins/alltypes.clo -text svneol=unset#application/x-executable
+tests/amdbins/alltypes_64.clo -text svneol=unset#application/x-executable
+tests/amdbins/alltypes_cpu.clo -text svneol=unset#application/x-executable
+tests/amdbins/alltypes_cpu64.clo -text svneol=unset#application/x-executable
 tests/amdbins/prginfo1.cl -text
 tests/amdbins/prginfo1_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
 tests/amdbins/prginfo1_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
