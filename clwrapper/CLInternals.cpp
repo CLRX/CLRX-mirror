@@ -654,6 +654,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             }
             /* filter: only put unavailable devices (offline) */
             cl_uint k = platform->devicesNum-amdOfflineDevicesNum;
+            /* using std::vector, some strange fails on Catalyst 15.7 when
+             * NBody tries to dump kernel code */
             std::vector<cl_device_id> normalDevices(
                         amdDevices.begin(), amdDevices.begin()+k);
             std::sort(normalDevices.begin(), normalDevices.end());

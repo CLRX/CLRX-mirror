@@ -275,7 +275,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
     {
         case CLIArgType::BOOL:
             try
-            { optEntry.v.u32 = parseBoolOptArg(optArg); }
+            { optEntry.v.b = parseBoolOptArg(optArg); }
             catch(const ParseException& ex)
             { throw CLIException(ex.what(), option, chooseShortName); }
             break;

@@ -183,7 +183,11 @@ public:
         if (N != 0)
             newPtr = new T[N];
         try
-        { std::copy(ptr, ptr + std::min(N, size()), newPtr); }
+        {   /* move only if move constructor doesn't throw exceptions */
+            const size_t toMove = std::min(N, size());
+            for (size_t k = 0; k < toMove; k++)
+                newPtr[k] = std::move_if_noexcept(ptr[k]);
+        }
         catch(...)
         {
             delete[] newPtr;
