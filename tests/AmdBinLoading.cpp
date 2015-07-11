@@ -116,6 +116,19 @@ static const AmdKernelArg expectedKernelArgs1[] =
         "counter32_t", "v70" }
 };
 
+static const AmdKernelArg expectedKernelArgs2[] =
+{
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "struct mystruct", "b" },
+    { KernelArgType::UINT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint", "n" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, "float*", "inout" },
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "union myunion", "ddv" },
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "struct mystructsub2", "xdf" },
+    { KernelArgType::UINT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "EnumX", "enumx" }
+};
+
 static const AmdKernelArg expectedCPUKernelArgs1[] =
 {
     { KernelArgType::CHAR, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uchar", "v0" },
@@ -201,6 +214,20 @@ static const AmdKernelArg expectedCPUKernelArgs1[] =
     { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_VOLATILE, "void*", "v68" },
     { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_RESTRICT, "void*", "v69" }
 };
+
+static const AmdKernelArg expectedCPUKernelArgs2[] =
+{
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "struct mystruct", "b" },
+    { KernelArgType::INT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "uint", "n" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, "float*", "inout" },
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "union myunion", "ddv" },
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "struct mystructsub2", "xdf" },
+    { KernelArgType::INT, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "EnumX", "enumx" }
+};
+
 
 static void testKernelArgs(const char* filename, const char* kernelName,
                size_t expKernelArgsNum, const AmdKernelArg* expKernelArgs)
@@ -303,6 +330,18 @@ int main(int argc, const char** argv)
     retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_cpu.clo",
             "myKernel", sizeof(expectedCPUKernelArgs1)/sizeof(AmdKernelArg),
             expectedCPUKernelArgs1);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/structkernel2.clo",
+            "myKernel1", sizeof(expectedKernelArgs2)/sizeof(AmdKernelArg),
+            expectedKernelArgs2);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbins/structkernel2_64.clo", "myKernel1",
+            sizeof(expectedKernelArgs2)/sizeof(AmdKernelArg), expectedKernelArgs2);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbins/structkernel2_cpu.clo", "myKernel1",
+            sizeof(expectedCPUKernelArgs2)/sizeof(AmdKernelArg), expectedCPUKernelArgs2);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbins/structkernel2_cpu64.clo", "myKernel1",
+            sizeof(expectedCPUKernelArgs2)/sizeof(AmdKernelArg), expectedCPUKernelArgs2);
     retVal |= callTest(testAmdGPUMetadataGen);
     return retVal;
 }
