@@ -87,42 +87,46 @@ static const cxbyte disasmInput1Kernel1Data[40] =
 
 static uint32_t disasmInput1Kernel1ProgInfo[13] =
 {
-    0xffcd44dc, 0x4543,
-    0x456, 0x5663677,
-    0x3cd90c, 0x3958a85,
-    0x458c98d9, 0x344dbd9,
-    0xd0d9d9d, 0x234455,
-    0x1, 0x55, 0x4565
+    LEV(0xffcd44dcU), LEV(0x4543U),
+    LEV(0x456U), LEV(0x5663677U),
+    LEV(0x3cd90cU), LEV(0x3958a85U),
+    LEV(0x458c98d9U), LEV(0x344dbd9U),
+    LEV(0xd0d9d9dU), LEV(0x234455U),
+    LEV(0x1U), LEV(0x55U), LEV(0x4565U)
 };
 
 static uint32_t disasmInput1Kernel1Inputs[20] =
 {
-    1113, 1113, 1113, 1113, 1113, 1113, 1113, 1113,
-    1113, 1113, 1113, 1114, 1113, 1113, 1113, 1113,
-    1113, 1113, 1113, 1113
+    LEV(1113U), LEV(1113U), LEV(1113U), LEV(1113U),
+    LEV(1113U), LEV(1113U), LEV(1113U), LEV(1113U),
+    LEV(1113U), LEV(1113U), LEV(1113U), LEV(1114U),
+    LEV(1113U), LEV(1113U), LEV(1113U), LEV(1113U),
+    LEV(1113U), LEV(1113U), LEV(1113U), LEV(1113U)
 };
 
 static uint32_t disasmInput1Kernel1Outputs[17] =
 {
-    5, 6, 3, 13, 5, 117, 12, 3,
-    785, 46, 55, 5, 2, 3, 0, 0, 44
+    LEV(5U), LEV(6U), LEV(3U), LEV(13U), LEV(5U), LEV(117U), LEV(12U), LEV(3U),
+    LEV(785U), LEV(46U), LEV(55U), LEV(5U), LEV(2U), LEV(3U), LEV(0U), LEV(0U), LEV(44U)
 };
 
-static uint32_t disasmInput1Kernel1EarlyExit[3] = { 1355, 44, 444 };
+static uint32_t disasmInput1Kernel1EarlyExit[3] = { LEV(1355U), LEV(44U), LEV(444U) };
 
-static uint32_t disasmInput1Kernel2EarlyExit[3] = { 121 };
+static uint32_t disasmInput1Kernel2EarlyExit[3] = { LEV(121U) };
 
 static CALDataSegmentEntry disasmInput1Kernel1Float32Consts[6] =
 {
-    { 0, 5 }, { 66, 57 }, { 67, 334 }, { 1, 6 }, { 5, 86 }, { 2100, 466 }
+    { LEV(0U), LEV(5U) }, { LEV(66U), LEV(57U) }, { LEV(67U), LEV(334U) },
+    { LEV(1U), LEV(6U) }, { LEV(5U), LEV(86U) }, { LEV(2100U), LEV(466U) }
 };
 
 static CALSamplerMapEntry disasmInput1Kernel1InputSamplers[6] =
 {
-    { 0, 5 }, { 66, 57 }, { 67, 334 }, { 1, 6 }, { 5, 86 }, { 2100, 466 }
+    { LEV(0U), LEV(5U) }, { LEV(66U), LEV(57U) }, { LEV(67U), LEV(334U) },
+    { LEV(1U), LEV(6U) }, { LEV(5U), LEV(86U) }, { LEV(2100U), LEV(466U) }
 };
 
-static uint32_t disasmInput1Kernel1UavOpMask[1] = { 4556 };
+static uint32_t disasmInput1Kernel1UavOpMask[1] = { LEV(4556U) };
 
 static AmdDisasmInput disasmInput1 =
 {
