@@ -1587,7 +1587,6 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& 
         asmr.printError(macroNameStr, "Expected argument name");
         return;
     }
-    toLowerString(symName);
     string += symName.size();
     /* parse args */
     std::vector<std::string> symValues;
