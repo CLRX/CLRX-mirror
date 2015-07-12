@@ -1620,11 +1620,13 @@ bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
         printError(symbolStr, "Illegal section change for symbol '.'");
         return false;
     }
-    if (int64_t(currentOutPos) > int64_t(value))
-    {
+    if (currentSection != ASMSECT_ABS && int64_t(currentOutPos) > int64_t(value))
+    {   /* check attempt to move backwards only for section that is not absolute */
         printError(symbolStr, "Attempt to move backwards");
         return false;
     }
+    if (currentSection==ASMSECT_ABS && (fillValue&0xff)!=0)
+        printWarning(symbolStr, "Fill value is ignored inside absolute section");
     if (value-currentOutPos!=0)
         reserveData(value-currentOutPos, fillValue);
     currentOutPos = value;

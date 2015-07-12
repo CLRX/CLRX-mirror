@@ -2575,6 +2575,77 @@ In macro content:
         { { ".", 28U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
         { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
+    },
+    /* 72 - absolute section and errors */
+    {   R"ffDXD(        .struct 6
+label1:
+        .struct 7
+label2:
+        .org 3,44
+label3:
+        .offset .+20
+label4:)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { } } },
+        {
+            { ".", 23U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "label1", 6U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "label2", 7U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "label3", 3U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "label4", 23U, ASMSECT_ABS, 0U, true, true, false, 0, 0 }
+        },
+        true, "test.s:5:14: Warning: Fill value is ignored inside absolute section\n", ""
+    },
+    {   R"ffDXD(        .struct 6
+label1:
+        .struct 7
+label2:
+        .org 3,44
+label3:
+        .incbin "offset.s"
+        .byte 11,2,2,,44
+        .hword 11,2,2,,44
+        .int 11,2,2,,44
+        .long 11,2,2,,44
+        .half 11,2,2,,44
+        .single 11,2,2,,44
+        .double 11,2,2,,44
+        .string "ala","ma","kota"
+        .string16 "ala","ma","kota"
+        .string32 "ala","ma","kota"
+        .string64 "ala","ma","kota"
+        .ascii "ala","ma","kota"
+        .asciz "ala","ma","kota"
+        .offset .+20
+label4:
+        .offset %%%%)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { { nullptr, AsmSectionType::AMD_GLOBAL_DATA, { } } },
+        {
+            { ".", 23U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "label1", 6U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "label2", 7U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "label3", 3U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
+            { "label4", 23U, ASMSECT_ABS, 0U, true, true, false, 0, 0 }
+        },
+        false, R"ffDXD(test.s:5:14: Warning: Fill value is ignored inside absolute section
+test.s:7:9: Error: Writing data into absolute section is illegal
+test.s:8:9: Error: Writing data into absolute section is illegal
+test.s:9:9: Error: Writing data into absolute section is illegal
+test.s:10:9: Error: Writing data into absolute section is illegal
+test.s:11:9: Error: Writing data into absolute section is illegal
+test.s:12:9: Error: Writing data into absolute section is illegal
+test.s:13:9: Error: Writing data into absolute section is illegal
+test.s:14:9: Error: Writing data into absolute section is illegal
+test.s:15:9: Error: Writing data into absolute section is illegal
+test.s:16:9: Error: Writing data into absolute section is illegal
+test.s:17:9: Error: Writing data into absolute section is illegal
+test.s:18:9: Error: Writing data into absolute section is illegal
+test.s:19:9: Error: Writing data into absolute section is illegal
+test.s:20:9: Error: Writing data into absolute section is illegal
+test.s:23:17: Error: Expected primary expression before operator
+test.s:23:19: Error: Expected primary expression before operator
+)ffDXD", ""
     }
 };
 

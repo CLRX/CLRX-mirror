@@ -253,7 +253,7 @@ struct CLRX_INTERNAL AsmPseudoOps
     /* get absolute value arg resolved at this time.
        if empty expression value is not set */
     static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& string,
-                    bool requredExpr = false);
+                    bool requiredExpr = false);
     
     static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
                     const char*& string);
@@ -279,7 +279,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     /// include file
     static void includeFile(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // include binary file
-    static void includeBinFile(Assembler& asmr, const char*& string);
+    static void includeBinFile(Assembler& asmr, const char* pseudoOpStr,
+                       const char*& string);
     
     // fail
     static void doFail(Assembler& asmr, const char* pseudoOpStr, const char*& string);
@@ -290,20 +291,22 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     // .byte, .short, .int, .word, .long, .quad
     template<typename T>
-    static void putIntegers(Assembler& asmr, const char*& string);
+    static void putIntegers(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     
     // .half, .float, .double
     template<typename UIntType>
-    static void putFloats(Assembler& asmr, const char*& string);
+    static void putFloats(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     
     /// .string, ascii
-    static void putStrings(Assembler& asmr, const char*& string, bool addZero = false);
+    static void putStrings(Assembler& asmr, const char* pseudoOpStr,
+                   const char*& string, bool addZero = false);
     // .string16, .string32, .string64
     template<typename T>
-    static void putStringsToInts(Assembler& asmr, const char*& string);
+    static void putStringsToInts(Assembler& asmr, const char* pseudoOpStr,
+                   const char*& string);
     
     /// .octa
-    static void putUInt128s(Assembler& asmr, const char*& string);
+    static void putUInt128s(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     
     /// .set, .equ, .eqv, .equiv
     static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true,
@@ -363,6 +366,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doPurgeMacro(Assembler& asmr, const char*& string);
     
     static void doUndefSymbol(Assembler& asmr, const char*& string);
+    
+    static void setAbsoluteOffset(Assembler& asmr, const char*& string);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

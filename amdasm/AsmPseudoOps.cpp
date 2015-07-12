@@ -371,7 +371,8 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpStr,
     }
 }
 
-void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
+void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpStr,
+                          const char*& string)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -419,6 +420,12 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char*& string)
     
     if (!good || !checkGarbagesAtEnd(asmr, string)) // failed parsing
         return;
+    
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    }
     
     std::ifstream ifs;
     filesystemPath(filename);
@@ -547,10 +554,16 @@ void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoOpStr, const 
 }
 
 template<typename T>
-void AsmPseudoOps::putIntegers(Assembler& asmr, const char*& string)
+void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpStr,
+                   const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    }
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
@@ -626,10 +639,15 @@ uint64_t asmcstrtofCStyleLEV<uint64_t>(const char* str, const char* inend,
 }
 
 template<typename UIntType>
-void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
+void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    }
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
@@ -652,10 +670,16 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char*& string)
     checkGarbagesAtEnd(asmr, string);
 }
 
-void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
+void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpStr,
+                   const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    }
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
@@ -692,10 +716,16 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char*& string)
     checkGarbagesAtEnd(asmr, string);
 }
 
-void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero)
+void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpStr,
+                      const char*& string, bool addZero)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    }
     string = skipSpacesToEnd(string, end);
     if (string == end)
         return;
@@ -711,9 +741,15 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char*& string, bool addZero
 }
 
 template<typename T>
-void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char*& string)
+void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpStr,
+                    const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    }
     asmr.initializeOutputFormat();
     string = skipSpacesToEnd(string, end);
     if (string == end)
@@ -903,6 +939,12 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpStr, const char*&
     if (!good || !checkGarbagesAtEnd(asmr, string)) // if parsing failed
         return;
     
+    if (asmr.currentSection == ASMSECT_ABS)
+    {
+        asmr.printError(pseudoOpStr, "Writing data into absolute section is illegal");
+        return;
+    } 
+    
     if (int64_t(repeat) <= 0 || int64_t(size) <= 0)
         return;
     
@@ -951,8 +993,9 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& string)
     if (int64_t(size) < 0)
         return;
     
-    cxbyte* content = asmr.reserveData(size);
-    ::memset(content, value&0xff, size);
+    if (asmr.currentSection==ASMSECT_ABS && (value&0xff) != 0)
+        asmr.printWarning(string, "Fill value is ignored inside absolute section");
+    asmr.reserveData(size, value&0xff);
 }
 
 void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
@@ -1011,8 +1054,9 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& string, bool powerOf2)
     if (maxAlign!=0 && bytesToFill > maxAlign)
         return; // do not make alignment
     
-    cxbyte* content = asmr.reserveData(bytesToFill);
-    ::memset(content, value&0xff, bytesToFill);
+    if (asmr.currentSection==ASMSECT_ABS && (value&0xff) != 0)
+        asmr.printWarning(string, "Fill value is ignored inside absolute section");
+    asmr.reserveData(bytesToFill, value&0xff);
 }
 
 template<typename Word>
@@ -1069,11 +1113,16 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpStr,
     if (maxAlign!=0 && bytesToFill > maxAlign)
         return; // do not make alignment
     
+    if (asmr.currentSection==ASMSECT_ABS && value != 0)
+    {
+        asmr.printWarning(string, "Fill value is ignored inside absolute section");
+        asmr.reserveData(bytesToFill);
+        return;
+    }
     cxbyte* content = asmr.reserveData(bytesToFill);
-    Word word;
-    SLEV(word, value);
-    std::fill(reinterpret_cast<Word*>(content),
-              reinterpret_cast<Word*>(content + bytesToFill), word);
+    const uint64_t wordsToFill = bytesToFill / sizeof(Word);
+    for (size_t i = 0; i < wordsToFill; i++)
+        SULEV(((Word*)content)[i], value);
 }
 
 void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
@@ -1581,6 +1630,19 @@ void AsmPseudoOps::doUndefSymbol(Assembler& asmr, const char*& string)
         it->second.undefine();
 }
 
+void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    asmr.initializeOutputFormat();
+    string = skipSpacesToEnd(string, end);
+    uint64_t value = 0;
+    bool good = getAbsoluteValueArg(asmr, value, string, true);
+    if (!good || !checkGarbagesAtEnd(asmr, string))
+        return;
+    asmr.currentSection = ASMSECT_ABS;
+    asmr.currentOutPos = value;
+}
+
 };
 
 void Assembler::parsePseudoOps(const std::string firstName,
@@ -1607,10 +1669,10 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_ARCH:
             break;
         case ASMOP_ASCII:
-            AsmPseudoOps::putStrings(*this, string);
+            AsmPseudoOps::putStrings(*this, stmtStartStr, string);
             break;
         case ASMOP_ASCIZ:
-            AsmPseudoOps::putStrings(*this, string, true);
+            AsmPseudoOps::putStrings(*this, stmtStartStr, string, true);
             break;
         case ASMOP_BALIGNL:
             AsmPseudoOps::doAlignWord<uint32_t>(*this, stmtStartStr, string);
@@ -1619,7 +1681,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doAlignWord<uint16_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_BYTE:
-            AsmPseudoOps::putIntegers<cxbyte>(*this, string);
+            AsmPseudoOps::putIntegers<cxbyte>(*this, stmtStartStr, string);
             break;
         case ASMOP_AMD:
         case ASMOP_RAWCODE:
@@ -1654,7 +1716,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_DATA:
             break;
         case ASMOP_DOUBLE:
-            AsmPseudoOps::putFloats<uint64_t>(*this, string);
+            AsmPseudoOps::putFloats<uint64_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_ELSE:
             AsmPseudoOps::doElse(*this, stmtStartStr, string);
@@ -1759,7 +1821,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doFill(*this, stmtStartStr, string, true);
             break;
         case ASMOP_FLOAT:
-            AsmPseudoOps::putFloats<uint32_t>(*this, string);
+            AsmPseudoOps::putFloats<uint32_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_FORMAT:
             AsmPseudoOps::setOutFormat(*this, string);
@@ -1770,10 +1832,10 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_GPU:
             break;
         case ASMOP_HALF:
-            AsmPseudoOps::putFloats<uint16_t>(*this, string);
+            AsmPseudoOps::putFloats<uint16_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_HWORD:
-            AsmPseudoOps::putIntegers<uint16_t>(*this, string);
+            AsmPseudoOps::putIntegers<uint16_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_IF:
             AsmPseudoOps::doIfInt(*this, stmtStartStr, string,
@@ -1829,14 +1891,14 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doIfStrEqual(*this, stmtStartStr, string, true, false);
             break;
         case ASMOP_INCBIN:
-            AsmPseudoOps::includeBinFile(*this, string);
+            AsmPseudoOps::includeBinFile(*this, stmtStartStr, string);
             break;
         case ASMOP_INCLUDE:
             AsmPseudoOps::includeFile(*this, stmtStartStr, string);
             break;
         case ASMOP_INT:
         case ASMOP_LONG:
-            AsmPseudoOps::putIntegers<uint32_t>(*this, string);
+            AsmPseudoOps::putIntegers<uint32_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_KERNEL:
             AsmPseudoOps::goToKernel(*this, string);
@@ -1852,9 +1914,10 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doMacro(*this, stmtStartStr, string);
             break;
         case ASMOP_OCTA:
-            AsmPseudoOps::putUInt128s(*this, string);
+            AsmPseudoOps::putUInt128s(*this, stmtStartStr, string);
             break;
         case ASMOP_OFFSET:
+            AsmPseudoOps::setAbsoluteOffset(*this, string);
             break;
         case ASMOP_ORG:
             AsmPseudoOps::doOrganize(*this, string);
@@ -1869,7 +1932,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doPurgeMacro(*this, string);
             break;
         case ASMOP_QUAD:
-            AsmPseudoOps::putIntegers<uint64_t>(*this, string);
+            AsmPseudoOps::putIntegers<uint64_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_REPT:
             AsmPseudoOps::doRepeat(*this, stmtStartStr, string);
@@ -1877,10 +1940,10 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_SECTION:
             break;
         case ASMOP_SHORT:
-            AsmPseudoOps::putIntegers<uint16_t>(*this, string);
+            AsmPseudoOps::putIntegers<uint16_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_SINGLE:
-            AsmPseudoOps::putFloats<uint32_t>(*this, string);
+            AsmPseudoOps::putFloats<uint32_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_SIZE:
             AsmPseudoOps::setSymbolSize(*this, string);
@@ -1890,18 +1953,19 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doSkip(*this, string);
             break;
         case ASMOP_STRING:
-            AsmPseudoOps::putStrings(*this, string, true);
+            AsmPseudoOps::putStrings(*this, stmtStartStr, string, true);
             break;
         case ASMOP_STRING16:
-            AsmPseudoOps::putStringsToInts<uint16_t>(*this, string);
+            AsmPseudoOps::putStringsToInts<uint16_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_STRING32:
-            AsmPseudoOps::putStringsToInts<uint32_t>(*this, string);
+            AsmPseudoOps::putStringsToInts<uint32_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_STRING64:
-            AsmPseudoOps::putStringsToInts<uint64_t>(*this, string);
+            AsmPseudoOps::putStringsToInts<uint64_t>(*this, stmtStartStr, string);
             break;
         case ASMOP_STRUCT:
+            AsmPseudoOps::setAbsoluteOffset(*this, string);
             break;
         case ASMOP_TEXT:
             break;
@@ -1917,7 +1981,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::setSymbolBind(*this, string, STB_WEAK);
             break;
         case ASMOP_WORD:
-            AsmPseudoOps::putIntegers<uint32_t>(*this, string);
+            AsmPseudoOps::putIntegers<uint32_t>(*this, stmtStartStr, string);
             break;
         default:
             // macro substitution

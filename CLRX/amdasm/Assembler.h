@@ -1008,11 +1008,19 @@ private:
     
     cxbyte* reserveData(size_t size, cxbyte fillValue = 0)
     {
-        size_t oldOutPos = currentOutPos;
-        AsmSection& section = sections[currentSection];
-        section.content.insert(section.content.end(), size, fillValue);
-        currentOutPos += size;
-        return section.content.data() + oldOutPos;
+        if (currentSection != ASMSECT_ABS)
+        {
+            size_t oldOutPos = currentOutPos;
+            AsmSection& section = sections[currentSection];
+            section.content.insert(section.content.end(), size, fillValue);
+            currentOutPos += size;
+            return section.content.data() + oldOutPos;
+        }
+        else
+        {
+            currentOutPos += size;
+            return nullptr;
+        }
     }
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 
