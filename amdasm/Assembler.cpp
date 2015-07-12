@@ -2032,7 +2032,10 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
         if (!arg.vararg)
         {
             if (!parseMacroArgValue(string, argMap[i].second))
+            {
+                good = false;
                 continue;
+            }
         }
         else
         {   /* parse variadic arguments */
