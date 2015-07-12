@@ -546,7 +546,6 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         }
         else
         {   // backslash
-            //std::cout << "pos: " << pos << ", threshold: " << colTransThreshold << std::endl;
             if (pos >= colTransThreshold)
             {
                 curColTrans++;

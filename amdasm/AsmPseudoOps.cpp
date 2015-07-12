@@ -1119,10 +1119,13 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpStr,
         asmr.reserveData(bytesToFill);
         return;
     }
+    /* we assume that pointer to section is aligned to any built-in type
+     * thus, this fill doesn't not require SULEV writes */
     cxbyte* content = asmr.reserveData(bytesToFill);
-    const uint64_t wordsToFill = bytesToFill / sizeof(Word);
-    for (size_t i = 0; i < wordsToFill; i++)
-        SULEV(((Word*)content)[i], value);
+    Word word;
+    SLEV(word, value);
+    std::fill(reinterpret_cast<Word*>(content),
+              reinterpret_cast<Word*>(content + bytesToFill), word);
 }
 
 void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& string)
