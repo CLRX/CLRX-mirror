@@ -368,6 +368,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doUndefSymbol(Assembler& asmr, const char*& string);
     
     static void setAbsoluteOffset(Assembler& asmr, const char*& string);
+    
+    static void ignoreString(Assembler& asmr, const char*& string);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

@@ -89,20 +89,20 @@ static const char* pseudoOpNamesTbl[] =
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "format", "gallium", "global",
-    "gpu", "half", "hword", "if",
+    "globl", "gpu", "half", "hword", "if",
     "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "ifge", "ifgt", "ifle",
     "iflt", "ifnb", "ifnc", "ifndef",
     "ifne", "ifnes", "ifnotdef", "incbin",
-    "include", "int", "kernel", "line",
-    "ln", "local", "long",
+    "include", "int", "kernel", "lflags",
+    "line", "ln", "local", "long",
     "macro", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
-    "rawcode", "rept", "section", "set",
+    "rawcode", "rept", "sbttl", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
-    "undef", "warning", "weak", "word"
+    "undef", "version", "warning", "weak", "word"
 };
 
 enum
@@ -120,20 +120,20 @@ enum
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
-    ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF,
+    ASMOP_GLOBL, ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF,
     ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
     ASMOP_IFEQS, ASMOP_IFGE, ASMOP_IFGT, ASMOP_IFLE,
     ASMOP_IFLT, ASMOP_IFNB, ASMOP_IFNC, ASMOP_IFNDEF,
     ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNOTDEF, ASMOP_INCBIN,
-    ASMOP_INCLUDE, ASMOP_INT, ASMOP_KERNEL, ASMOP_LINE,
-    ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
+    ASMOP_INCLUDE, ASMOP_INT, ASMOP_KERNEL, ASMOP_LFLAGS,
+    ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
-    ASMOP_RAWCODE, ASMOP_REPT, ASMOP_SECTION, ASMOP_SET,
+    ASMOP_RAWCODE, ASMOP_REPT, ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
-    ASMOP_UNDEF, ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
+    ASMOP_UNDEF, ASMOP_VERSION, ASMOP_WARNING, ASMOP_WEAK, ASMOP_WORD
 };
 
 namespace CLRX
@@ -1120,7 +1120,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpStr,
         return;
     }
     /* we assume that pointer to section is aligned to any built-in type
-     * thus, this fill doesn't not require SULEV writes */
+     * thus, this fill doesn't require SULEV writes */
     cxbyte* content = asmr.reserveData(bytesToFill);
     Word word;
     SLEV(word, value);
@@ -1646,6 +1646,15 @@ void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char*& string)
     asmr.currentOutPos = value;
 }
 
+void AsmPseudoOps::ignoreString(Assembler& asmr, const char*& string)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    std::string out;
+    if (asmr.parseString(out, string, string))
+        checkGarbagesAtEnd(asmr, string);
+}
+
 };
 
 void Assembler::parsePseudoOps(const std::string firstName,
@@ -1830,6 +1839,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::setOutFormat(*this, string);
             break;
         case ASMOP_GLOBAL:
+        case ASMOP_GLOBL:
             AsmPseudoOps::setSymbolBind(*this, string, STB_GLOBAL);
             break;
         case ASMOP_GPU:
@@ -1906,6 +1916,9 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_KERNEL:
             AsmPseudoOps::goToKernel(*this, string);
             break;
+        case ASMOP_LFLAGS:
+            printWarning(stmtStartStr, "'.lflags' is ignored by this assembler.");
+            break;
         case ASMOP_LINE:
         case ASMOP_LN:
             printWarning(stmtStartStr, "'.line' is ignored by this assembler.");
@@ -1972,7 +1985,10 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_TEXT:
             break;
+        case ASMOP_SBTTL:
         case ASMOP_TITLE:
+        case ASMOP_VERSION:
+            AsmPseudoOps::ignoreString(*this, string);
             break;
         case ASMOP_UNDEF:
             AsmPseudoOps::doUndefSymbol(*this, string);
