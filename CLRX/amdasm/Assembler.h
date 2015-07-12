@@ -233,6 +233,7 @@ private:
 public:
     /// constructor
     AsmMacro(const AsmSourcePos& pos, const Array<AsmMacroArg>& args);
+    /// constructor with rlvalue for arguments
     AsmMacro(const AsmSourcePos& pos, Array<AsmMacroArg>&& args);
     
     /// adds line to macro from source
@@ -260,9 +261,10 @@ public:
     /// get source position
     const AsmSourcePos& getPos() const
     { return pos; }
-    
+    /// get number of arguments
     const size_t getArgsNum() const
     { return args.size(); }
+    /// get argument
     const AsmMacroArg& getArg(size_t i) const
     { return args[i]; }
 };
@@ -381,7 +383,7 @@ public:
         LineCol lineCol = translatePos(position);
         return { macroSubst, source, lineCol.lineNo, lineCol.colNo };
     }
-    
+    /// get input filter type
     AsmInputFilterType getType() const
     { return type; }
 };
@@ -430,6 +432,7 @@ typedef Array<std::pair<std::string, std::string> > AsmMacroArgMap;
 class AsmMacroInputFilter: public AsmInputFilter
 {
 public:
+    /// macro argument map type
     typedef Array<std::pair<std::string, std::string> > MacroArgMap;
 private:
     RefPtr<const AsmMacro> macro;  ///< input macro
@@ -443,6 +446,7 @@ public:
     /// constructor with input macro, source position and arguments map
     AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
         const MacroArgMap& argMap, uint64_t macroCount);
+    /// constructor with input macro, source position and rvalue of arguments map
     AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
         MacroArgMap&& argMap, uint64_t macroCount);
     
@@ -627,7 +631,7 @@ struct AsmSymbol
     void removeOccurrenceInExpr(AsmExpression* expr, size_t argIndex, size_t opIndex);
     /// clear list of occurrences in expression
     void clearOccurrencesInExpr();
-    
+    /// make symbol as undefined
     void undefine();
 };
 
@@ -713,6 +717,7 @@ public:
     /// destructor
     ~AsmExpression();
     
+    /// return true if expression is empty
     bool isEmpty() const
     { return ops.empty(); }
 
@@ -811,7 +816,7 @@ union AsmExprArg
     struct {
         uint64_t value;         ///< value
         cxuint sectionId;       ///< sectionId
-    } relValue; //< relative value (with section)
+    } relValue; ///< relative value (with section)
 };
 
 inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurrence,
