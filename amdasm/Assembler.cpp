@@ -129,6 +129,17 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
     contentLineNo++;
 }
 
+AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
+               const Array<std::string>& _symValues)
+        : AsmRepeat(_pos, _symValues.size()), symbolName(_symbolName), symValues(_symValues)
+{ }
+
+AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
+               Array<std::string>&& _symValues)
+        : AsmRepeat(_pos, _symValues.size()), symbolName(_symbolName),
+          symValues(std::move(_symValues))
+{ }
+
 /* AsmInputFilter */
 
 AsmInputFilter::~AsmInputFilter()
@@ -650,13 +661,13 @@ AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmRepeat* _repeat) :
     if (_repeat->getSourceTransSize()!=0)
     {
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
-                    _repeat->getSourceTrans(0).source, 0, repeat->getRepeatsNum()));
+                    _repeat->getSourceTrans(0).source, 0, _repeat->getRepeatsNum()));
         macroSubst = _repeat->getSourceTrans(0).macro;
     }
     else
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
-                    RefPtr<const AsmSource>(), 0, repeat->getRepeatsNum()));
-    curColTrans = repeat->getColTranslations().data();
+                    RefPtr<const AsmSource>(), 0, _repeat->getRepeatsNum()));
+    curColTrans = _repeat->getColTranslations().data();
     lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
 }
 
@@ -711,6 +722,165 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
     }
     contentLineNo++;
     return content + oldPos;
+}
+
+AsmIRPInputFilter::AsmIRPInputFilter(const AsmIRP* _irp) :
+        AsmInputFilter(AsmInputFilterType::REPEAT), irp(_irp),
+        repeatCount(0), contentLineNo(0), sourceTransIndex(0)
+{
+    if (_irp->getSourceTransSize()!=0)
+    {
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                    _irp->getSourceTrans(0).source, 0, _irp->getRepeatsNum()));
+        macroSubst = _irp->getSourceTrans(0).macro;
+    }
+    else
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                    RefPtr<const AsmSource>(), 0, _irp->getRepeatsNum()));
+    curColTrans = _irp->getColTranslations().data();
+    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
+}
+
+const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
+{
+    buffer.clear();
+    colTranslations.clear();
+    const std::vector<LineTrans>& macroColTrans = irp->getColTranslations();
+    const LineTrans* colTransEnd = macroColTrans.data()+ macroColTrans.size();
+    const size_t contentSize = irp->getContent().size();
+    if (pos == contentSize)
+    {
+        repeatCount++;
+        if (repeatCount == irp->getRepeatsNum() || contentSize==0)
+        {
+            lineSize = 0;
+            return nullptr;
+        }
+        sourceTransIndex = 0;
+        curColTrans = irp->getColTranslations().data();
+        lineNo = curColTrans[0].lineNo;
+        pos = 0;
+        contentLineNo = 0;
+        source = RefPtr<const AsmSource>(new AsmRepeatSource(
+            irp->getSourceTrans(0).source, repeatCount, irp->getRepeatsNum()));
+    }
+    
+    const std::string& expectedSymName = irp->getSymbolName();
+    const std::string& symValue = irp->getSymbolValue(repeatCount);
+    const char* content = irp->getContent().data();
+    
+    size_t nextLinePos = pos;
+    while (nextLinePos < contentSize && content[nextLinePos] != '\n')
+        nextLinePos++;
+    
+    const size_t linePos = pos;
+    size_t destPos = 0;
+    size_t toCopyPos = pos;
+    colTranslations.push_back({ curColTrans->position, curColTrans->lineNo});
+    size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
+            (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                    nextLinePos) : SIZE_MAX;
+    
+    while (pos < contentSize && content[pos] != '\n')
+    {
+        if (content[pos] != '\\')
+        {
+            if (pos >= colTransThreshold)
+            {
+                curColTrans++;
+                colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
+                            curColTrans->lineNo});
+                colTransThreshold = (curColTrans+1 != colTransEnd) ?
+                        (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                                nextLinePos) : SIZE_MAX;
+            }
+            pos++;
+        }
+        else
+        {   // backslash
+            if (pos >= colTransThreshold)
+            {
+                curColTrans++;
+                colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
+                            curColTrans->lineNo});
+                colTransThreshold = (curColTrans+1 != colTransEnd) ?
+                        (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                                nextLinePos) : SIZE_MAX;
+            }
+            // copy chars to buffer
+            if (pos > toCopyPos)
+            {
+                buffer.resize(destPos + pos-toCopyPos);
+                std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
+                destPos += pos-toCopyPos;
+            }
+            pos++;
+            bool skipColTransBetweenMacroArg = true;
+            if (pos < contentSize)
+            {
+                if (content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
+                    pos += 2;   // skip this separator
+                else
+                { // extract argName
+                    //ile (content[pos] >= '0'
+                    const std::string symName = extractSymName(
+                                content+pos, content+contentSize, false);
+                    if (expectedSymName == symName)
+                    {   // if found
+                        buffer.resize(destPos + symValue.size());
+                        std::copy(symValue.begin(), symValue.end(),
+                                  buffer.begin()+destPos);
+                        destPos += symValue.size();
+                        pos += symName.size();
+                    }
+                    else
+                    {
+                        buffer.push_back('\\');
+                        destPos++;
+                        skipColTransBetweenMacroArg = false;
+                    }
+                }
+            }
+            toCopyPos = pos;
+            // skip colTrans between macroarg or separator
+            if (skipColTransBetweenMacroArg)
+            {
+                while (pos > colTransThreshold)
+                {
+                    curColTrans++;
+                    colTransThreshold = (curColTrans+1 != colTransEnd) ?
+                            curColTrans[1].position : SIZE_MAX;
+                }
+            }
+        }
+    }
+    if (pos > toCopyPos)
+    {
+        buffer.resize(destPos + pos-toCopyPos);
+        std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
+        destPos += pos-toCopyPos;
+    }
+    if (pos < contentSize)
+    {
+        if (curColTrans+1 != colTransEnd)
+            curColTrans++;
+        pos++; // skip newline
+    }
+    lineSize = buffer.size();
+    lineNo = curColTrans->lineNo;
+    if (sourceTransIndex+1 < irp->getSourceTransSize())
+    {
+        const AsmRepeat::SourceTrans& fpos = irp->getSourceTrans(sourceTransIndex+1);
+        if (fpos.lineNo == contentLineNo)
+        {
+            macroSubst = fpos.macro;
+            sourceTransIndex++;
+            source = RefPtr<const AsmSource>(new AsmRepeatSource(
+                fpos.source, repeatCount, irp->getRepeatsNum()));
+        }
+    }
+    contentLineNo++;
+    return buffer.data();
 }
 
 /*

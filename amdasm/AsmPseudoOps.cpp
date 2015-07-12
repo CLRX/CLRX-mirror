@@ -94,7 +94,7 @@ static const char* pseudoOpNamesTbl[] =
     "ifeqs", "ifge", "ifgt", "ifle",
     "iflt", "ifnb", "ifnc", "ifndef",
     "ifne", "ifnes", "ifnotdef", "incbin",
-    "include", "int", "kernel", "lflags",
+    "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
     "macro", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
@@ -125,7 +125,7 @@ enum
     ASMOP_IFEQS, ASMOP_IFGE, ASMOP_IFGT, ASMOP_IFLE,
     ASMOP_IFLT, ASMOP_IFNB, ASMOP_IFNC, ASMOP_IFNDEF,
     ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNOTDEF, ASMOP_INCBIN,
-    ASMOP_INCLUDE, ASMOP_INT, ASMOP_KERNEL, ASMOP_LFLAGS,
+    ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
@@ -1391,15 +1391,15 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
     if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
     
+    if (asmr.repetitionLevel == 1000)
+    {
+        asmr.printError(pseudoOpStr, "Repetition level is greater than 1000");
+        return;
+    }
     asmr.pushClause(pseudoOpStr, AsmClauseType::REPEAT);
     if (repeatsNum == 0)
     {   /* skip it */
         asmr.skipClauses();
-        return;
-    }
-    if (asmr.repetitionLevel == 1000)
-    {
-        asmr.printError(pseudoOpStr, "Repetition level is greater than 1000");
         return;
     }
     /* create repetition (even if only 1 - for correct source position included
@@ -1509,7 +1509,10 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
             string = skipSpacesToEnd(string+1, end);
             const char* defaultValueStr = string;
             if (!asmr.parseMacroArgValue(string, defaultArgValue))
+            {
+                good = false;
                 continue; // error
+            }
             if (argRequired)
             {
                 std::string message = "Pointless default value for argument '";
@@ -1569,6 +1572,73 @@ void AsmPseudoOps::doExitMacro(Assembler& asmr, const char* pseudoOpStr,
             asmr.printWarning(pseudoOpStr, "Behavior of '.exitm' inside repeat is "
                     "undefined. Exiting from repeat...");
         asmr.skipClauses(true);
+    }
+}
+
+void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+              bool perChar)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* macroNameStr = string;
+    std::string symName = extractSymName(string, end, false);
+    if (symName.empty())
+    {
+        asmr.printError(macroNameStr, "Expected argument name");
+        return;
+    }
+    toLowerString(symName);
+    string += symName.size();
+    /* parse args */
+    std::vector<std::string> symValues;
+    
+    bool good = true;
+    string = skipSpacesToEnd(string, end);
+    if (string != end && *string == ',')
+        string = skipSpacesToEnd(string+1, end);
+    
+    if (!perChar)
+        while(string != end)
+        {
+            if (string != end && *string == ',')
+                string = skipSpacesToEnd(string+1, end);
+            std::string symValue;
+            if (!asmr.parseMacroArgValue(string, symValue))
+            {
+                good = false;
+                continue; // error
+            }
+            string = skipSpacesToEnd(string, end);
+            symValues.push_back(symValue);
+        }
+    else
+    {
+        std::string symValue = getStringToCompare(string, end);
+        for (const char c: symValue)
+            symValues.push_back(std::string(1, c));
+    }
+    
+    if (asmr.repetitionLevel == 1000)
+    {
+        asmr.printError(pseudoOpStr, "Repetition level is greater than 1000");
+        return;
+    }
+    
+    if (symValues.empty())
+        symValues.push_back("");
+    if (good)
+    {
+        asmr.pushClause(pseudoOpStr, AsmClauseType::REPEAT);
+        std::unique_ptr<AsmIRP> repeat(new AsmIRP(asmr.getSourcePos(pseudoOpStr),
+                  symName, Array<std::string>(symValues.begin(), symValues.end())));
+        if (asmr.putRepetitionContent(*repeat))
+        {   // and input stream filter
+            std::unique_ptr<AsmInputFilter> newInputFilter(
+                        new AsmIRPInputFilter(repeat.release()));
+            asmr.asmInputFilters.push(newInputFilter.release());
+            asmr.currentInputFilter = asmr.asmInputFilters.top();
+            asmr.repetitionLevel++;
+        }
     }
 }
 
@@ -1908,6 +1978,12 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_INCLUDE:
             AsmPseudoOps::includeFile(*this, stmtStartStr, string);
+            break;
+        case ASMOP_IRP:
+            AsmPseudoOps::doIRP(*this, stmtStartStr, string, false);
+            break;
+        case ASMOP_IRPC:
+            AsmPseudoOps::doIRP(*this, stmtStartStr, string, true);
             break;
         case ASMOP_INT:
         case ASMOP_LONG:

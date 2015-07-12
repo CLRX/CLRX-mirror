@@ -280,7 +280,7 @@ public:
         RefPtr<const AsmMacroSubst> macro;  ///< macro substitution
         RefPtr<const AsmSource> source;     ///< source
     };
-private:
+protected:
     uint64_t contentLineNo;
     AsmSourcePos pos;
     uint64_t repeatsNum;
@@ -319,6 +319,26 @@ public:
     /// get number of repetitions
     uint64_t getRepeatsNum() const
     { return repeatsNum; }
+};
+
+/// assembler IRP
+class AsmIRP: public AsmRepeat
+{
+private:
+    std::string symbolName;
+    Array<std::string> symValues;
+public:
+    /// constructor
+    explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
+               const Array<std::string>& symValues);
+    /// constructor
+    explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
+               Array<std::string>&& symValues);
+    /// get number of repetitions
+    const std::string& getSymbolName() const
+    { return symbolName; }
+    const std::string& getSymbolValue(size_t i) const
+    { return symValues[i]; }
 };
 
 enum class AsmInputFilterType
@@ -465,6 +485,25 @@ private:
 public:
     /// constructor
     explicit AsmRepeatInputFilter(const AsmRepeat* repeat);
+    
+    const char* readLine(Assembler& assembler, size_t& lineSize);
+    
+    /// get current repeat count
+    uint64_t getRepeatCount() const
+    { return repeatCount; }
+};
+
+class AsmIRPInputFilter: public AsmInputFilter
+{
+private:
+    std::unique_ptr<const AsmIRP> irp;
+    uint64_t repeatCount;
+    uint64_t contentLineNo;
+    size_t sourceTransIndex;
+    const LineTrans* curColTrans;
+public:
+    /// constructor
+    explicit AsmIRPInputFilter(const AsmIRP* irp);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
     

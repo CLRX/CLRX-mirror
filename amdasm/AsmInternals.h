@@ -364,6 +364,9 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void doExitMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // purge macro
     static void doPurgeMacro(Assembler& asmr, const char*& string);
+    // do IRP
+    static void doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+                      bool perChar = false);
     
     static void doUndefSymbol(Assembler& asmr, const char*& string);
     
