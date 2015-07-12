@@ -984,17 +984,24 @@ void AsmSymbol::undefine()
 Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
         BinaryFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
         std::ostream& _printStream)
-        : format(_format), deviceType(_deviceType), _64bit(false), isaAssembler(nullptr),
+        : format(_format),
+          deviceType(_deviceType),
+          _64bit(false),
+          isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
-          flags(_flags), macroCount(0), inclusionLevel(0), macroSubstLevel(0),
-          lineSize(0), line(nullptr), lineNo(0), endOfAssembly(false),
-          messageStream(msgStream), printStream(_printStream), outFormatInitialized(false),
+          flags(_flags), 
+          lineSize(0), line(nullptr), lineNo(0),
+          endOfAssembly(false),
+          messageStream(msgStream),
+          printStream(_printStream),
+          outFormatInitialized(false),
           inGlobal(_format != BinaryFormat::RAWCODE),
           inAmdConfig(false), currentKernel(0),
           // value reference and section reference from first symbol: '.'
           currentSection(symbolMap.begin()->second.sectionId),
           currentOutPos(symbolMap.begin()->second.value)
 {
+    macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
     amdOutput = nullptr;
@@ -1906,6 +1913,11 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     
     if (!good)
         return ParseState::FAILED;
+    if (macroSubstLevel == 1000)
+    {
+        printError(macroStartStr, "Macro substitution level is greater than 1000");
+        return ParseState::FAILED;
+    }
     // sort argmap before using
     mapSort(argMap.begin(), argMap.end());
     // create macro input filter and push to stack
@@ -1913,7 +1925,23 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
             getSourcePos(macroStartStr), std::move(argMap), macroCount++));
     asmInputFilters.push(macroFilter.release());
     currentInputFilter = asmInputFilters.top();
+    macroSubstLevel++;
     return ParseState::PARSED;
+}
+
+bool Assembler::includeFile(const char* pseudoOpStr, const std::string& filename)
+{
+    if (inclusionLevel == 500)
+    {
+        printError(pseudoOpStr, "Inclusion level is greater than 500");
+        return false;
+    }
+    std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
+                getSourcePos(pseudoOpStr), filename));
+    asmInputFilters.push(newInputFilter.release());
+    currentInputFilter = asmInputFilters.top();
+    inclusionLevel++;
+    return true;
 }
 
 bool Assembler::readLine()
@@ -1924,6 +1952,12 @@ bool Assembler::readLine()
     {   // no line
         if (asmInputFilters.size() > 1)
         {
+            if (currentInputFilter->getType() == AsmInputFilterType::MACROSUBST)
+                macroSubstLevel--;
+            else if (currentInputFilter->getType() == AsmInputFilterType::STREAM)
+                inclusionLevel--;
+            else if (currentInputFilter->getType() == AsmInputFilterType::REPEAT)
+                repetitionLevel--;
             delete asmInputFilters.top();
             asmInputFilters.pop();
         }

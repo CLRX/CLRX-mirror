@@ -883,6 +883,7 @@ private:
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;
+    cxuint repetitionLevel;
     bool lineAlreadyRead; // if line already read
     
     size_t lineSize;
@@ -985,6 +986,9 @@ private:
                   bool satisfied, bool& included);
      // return false when failed (for example no clauses)
     bool popClause(const char* string, AsmClauseType clauseType);
+    
+    /// returns false when includeLevel is too deep, throw error if failed a file opening
+    bool includeFile(const char* pseudoOpStr, const std::string& filename);
     
     ParseState makeMacroSubstitution(const char* string);
     

@@ -343,10 +343,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpStr,
         filesystemPath(filename);
         try
         {
-            std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
-                    asmr.getSourcePos(pseudoOpStr), filename));
-            asmr.asmInputFilters.push(newInputFilter.release());
-            asmr.currentInputFilter = asmr.asmInputFilters.top();
+            asmr.includeFile(pseudoOpStr, filename);
             return;
         }
         catch(const Exception& ex)
@@ -358,11 +355,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpStr,
             std::string inDirFilename;
             try
             {
-                inDirFilename = joinPaths(incDir, filename);
-                std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
-                        asmr.getSourcePos(pseudoOpStr), inDirFilename));
-                asmr.asmInputFilters.push(newInputFilter.release());
-                asmr.currentInputFilter = asmr.asmInputFilters.top();
+                asmr.includeFile(pseudoOpStr, joinPaths(incDir, filename));
                 break;
             }
             catch(const Exception& ex)
@@ -1352,6 +1345,11 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
         asmr.skipClauses();
         return;
     }
+    if (asmr.repetitionLevel == 1000)
+    {
+        asmr.printError(pseudoOpStr, "Repetition level is greater than 1000");
+        return;
+    }
     /* create repetition (even if only 1 - for correct source position included
      * to messages from repetition) */
     std::unique_ptr<AsmRepeat> repeat(new AsmRepeat(
@@ -1362,6 +1360,7 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
                     new AsmRepeatInputFilter(repeat.release()));
         asmr.asmInputFilters.push(newInputFilter.release());
         asmr.currentInputFilter = asmr.asmInputFilters.top();
+        asmr.repetitionLevel++;
     }
 }
 
