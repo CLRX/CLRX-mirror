@@ -89,7 +89,7 @@ void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource
            const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
-    if (lineSize > 0 && line[lineSize-1] != '\n')
+    if (lineSize==0 || (lineSize > 0 && line[lineSize-1] != '\n'))
         content.push_back('\n');
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (!macro)
@@ -120,7 +120,7 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
-    if (lineSize > 0 && line[lineSize-1] != '\n')
+    if (lineSize==0 || (lineSize > 0 && line[lineSize-1] != '\n'))
         content.push_back('\n');
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
     if (sourceTranslations.empty() || sourceTranslations.back().source != source ||
@@ -647,7 +647,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         }
     }
     contentLineNo++;
-    return buffer.data();
+    return buffer.data()!=nullptr?buffer.data():"";
 }
 
 /*
@@ -880,7 +880,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         }
     }
     contentLineNo++;
-    return buffer.data();
+    return buffer.data()!=nullptr?buffer.data():"";
 }
 
 /*

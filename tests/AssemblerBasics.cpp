@@ -2646,6 +2646,67 @@ test.s:20:9: Error: Writing data into absolute section is illegal
 test.s:23:17: Error: Expected primary expression before operator
 test.s:23:19: Error: Expected primary expression before operator
 )ffDXD", ""
+    },
+    /* empty lines inside macro,repeats */
+    {   R"ffDXD(            .rept 1
+
+.error "111"
+
+
+  .error "222"
+
+
+.error "333"
+            .endr
+            .irp xv,aa,bb,cc
+
+.error "111a"
+
+
+  .error "222a"
+
+
+.error "333a"
+            .endr
+            .macro macro
+
+.error "uurggg"
+
+.error "uurggg"
+            .endm
+            macro)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
+        { },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false, R"ffDXD(In repetition 1/1:
+test.s:3:1: Error: 111
+In repetition 1/1:
+test.s:6:3: Error: 222
+In repetition 1/1:
+test.s:9:1: Error: 333
+In repetition 1/3:
+test.s:13:1: Error: 111a
+In repetition 1/3:
+test.s:16:3: Error: 222a
+In repetition 1/3:
+test.s:19:1: Error: 333a
+In repetition 2/3:
+test.s:13:1: Error: 111a
+In repetition 2/3:
+test.s:16:3: Error: 222a
+In repetition 2/3:
+test.s:19:1: Error: 333a
+In repetition 3/3:
+test.s:13:1: Error: 111a
+In repetition 3/3:
+test.s:16:3: Error: 222a
+In repetition 3/3:
+test.s:19:1: Error: 333a
+In macro substituted from test.s:27:13:
+test.s:23:1: Error: uurggg
+In macro substituted from test.s:27:13:
+test.s:25:1: Error: uurggg
+)ffDXD", ""
     }
 };
 
