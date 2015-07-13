@@ -131,13 +131,20 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
 
 AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
                const Array<std::string>& _symValues)
-        : AsmRepeat(_pos, _symValues.size()), symbolName(_symbolName), symValues(_symValues)
+        : AsmRepeat(_pos, _symValues.size()), irpc(false),
+          symbolName(_symbolName), symValues(_symValues)
 { }
 
 AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
                Array<std::string>&& _symValues)
-        : AsmRepeat(_pos, _symValues.size()), symbolName(_symbolName),
+        : AsmRepeat(_pos, _symValues.size()), irpc(false), symbolName(_symbolName),
           symValues(std::move(_symValues))
+{ }
+
+AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
+               const std::string& _symValString)
+        : AsmRepeat(_pos, std::max(_symValString.size(), size_t(1))), irpc(true),
+          symbolName(_symbolName), symValues({_symValString})
 { }
 
 /* AsmInputFilter */
@@ -587,9 +594,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                     auto it = binaryMapFind(argMap.begin(), argMap.end(), symName);
                     if (it != argMap.end())
                     {   // if found
-                        buffer.resize(destPos + it->second.size());
-                        std::copy(it->second.begin(), it->second.end(),
-                                  buffer.begin()+destPos);
+                        buffer.insert(buffer.end(), it->second.begin(), it->second.end());
                         destPos += it->second.size();
                         pos += symName.size();
                     }
@@ -598,8 +603,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         char numBuf[32];
                         const size_t numLen = itocstrCStyle(macroCount, numBuf, 32);
                         pos++;
-                        buffer.resize(destPos + numLen);
-                        std::copy(numBuf, numBuf+numLen, buffer.begin()+destPos);
+                        buffer.insert(buffer.end(), numBuf, numBuf+numLen);
                         destPos += numLen;
                     }
                     else
@@ -767,7 +771,8 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     }
     
     const std::string& expectedSymName = irp->getSymbolName();
-    const std::string& symValue = irp->getSymbolValue(repeatCount);
+    const std::string& symValue = !irp->isIRPC() ? irp->getSymbolValue(repeatCount) :
+            irp->getSymbolValue(0);
     const char* content = irp->getContent().data();
     
     size_t nextLinePos = pos;
@@ -828,10 +833,16 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                                 content+pos, content+contentSize, false);
                     if (expectedSymName == symName)
                     {   // if found
-                        buffer.resize(destPos + symValue.size());
-                        std::copy(symValue.begin(), symValue.end(),
-                                  buffer.begin()+destPos);
-                        destPos += symValue.size();
+                        if (!irp->isIRPC())
+                        {
+                            buffer.insert(buffer.end(), symValue.begin(), symValue.end());
+                            destPos += symValue.size();
+                        }
+                        else if (!symValue.empty())
+                        {
+                            buffer.push_back(symValue[repeatCount]);
+                            destPos++;
+                        }
                         pos += symName.size();
                     }
                     else

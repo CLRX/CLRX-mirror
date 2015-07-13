@@ -1590,31 +1590,33 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& 
     string += symName.size();
     /* parse args */
     std::vector<std::string> symValues;
+    std::string symValString;
     
     bool good = true;
     string = skipSpacesToEnd(string, end);
     if (string != end && *string == ',')
         string = skipSpacesToEnd(string+1, end);
     
-    if (!perChar)
-        while(string != end)
-        {
-            if (string != end && *string == ',')
-                string = skipSpacesToEnd(string+1, end);
-            std::string symValue;
-            if (!asmr.parseMacroArgValue(string, symValue))
-            {
-                good = false;
-                continue; // error
-            }
-            string = skipSpacesToEnd(string, end);
-            symValues.push_back(symValue);
-        }
-    else
+    while(string != end)
     {
-        std::string symValue = getStringToCompare(string, end);
-        for (const char c: symValue)
-            symValues.push_back(std::string(1, c));
+        if (string != end && *string == ',')
+        {
+            if (perChar)
+                symValString.push_back(',');
+            string = skipSpacesToEnd(string+1, end);
+        }
+        std::string symValue;
+        if (!asmr.parseMacroArgValue(string, symValue))
+        {
+            good = false;
+            continue; // error
+        }
+        string = skipSpacesToEnd(string, end);
+        if (!perChar)
+            symValues.push_back(symValue);
+        else
+            for (const char c: symValue)
+                symValString.push_back(c);
     }
     
     if (asmr.repetitionLevel == 1000)
@@ -1628,8 +1630,14 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& 
     if (good)
     {
         asmr.pushClause(pseudoOpStr, AsmClauseType::REPEAT);
-        std::unique_ptr<AsmIRP> repeat(new AsmIRP(asmr.getSourcePos(pseudoOpStr),
-                  symName, Array<std::string>(symValues.begin(), symValues.end())));
+        std::unique_ptr<AsmIRP> repeat;
+        if (!perChar)
+            repeat.reset(new AsmIRP(asmr.getSourcePos(pseudoOpStr),
+                      symName, Array<std::string>(symValues.begin(), symValues.end())));
+        else // per char
+            repeat.reset(new AsmIRP(asmr.getSourcePos(pseudoOpStr),
+                      symName, symValString));
+        
         if (asmr.putRepetitionContent(*repeat))
         {   // and input stream filter
             std::unique_ptr<AsmInputFilter> newInputFilter(

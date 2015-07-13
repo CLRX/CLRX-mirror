@@ -325,9 +325,13 @@ public:
 class AsmIRP: public AsmRepeat
 {
 private:
+    bool irpc; // is irpc
     std::string symbolName;
     Array<std::string> symValues;
 public:
+    /// constructor
+    explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
+               const std::string& symValString);
     /// constructor
     explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
                const Array<std::string>& symValues);
@@ -337,8 +341,12 @@ public:
     /// get number of repetitions
     const std::string& getSymbolName() const
     { return symbolName; }
+    /// get symbol value or string
     const std::string& getSymbolValue(size_t i) const
     { return symValues[i]; }
+    /// get if IRPC
+    bool isIRPC() const
+    { return irpc; }
 };
 
 enum class AsmInputFilterType
