@@ -461,7 +461,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
          const AsmSourcePos& pos, const MacroArgMap& _argMap, uint64_t _macroCount)
         : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
-          argMap(_argMap), macroCount(_macroCount), contentLineNo(0), sourceTransIndex(0)
+          argMap(_argMap), macroCount(_macroCount), contentLineNo(0), sourceTransIndex(0),
+          realLinePos(0)
 {
     if (macro->getSourceTransSize()!=0)
         source = macro->getSourceTrans(0).source;
@@ -469,14 +470,16 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
                    pos.source, pos.lineNo, pos.colNo));
     curColTrans = macro->getColTranslations().data();
     buffer.reserve(300);
-    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
+    lineNo = !macro->getColTranslations().empty() ? curColTrans[0].lineNo : 0;
+    if (!macro->getColTranslations().empty())
+        realLinePos = -curColTrans[0].position;
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
          const AsmSourcePos& pos, MacroArgMap&& _argMap, uint64_t _macroCount)
         : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
           argMap(std::move(_argMap)), macroCount(_macroCount),
-          contentLineNo(0), sourceTransIndex(0)
+          contentLineNo(0), sourceTransIndex(0), realLinePos(0)
 {
     if (macro->getSourceTransSize()!=0)
         source = macro->getSourceTrans(0).source;
@@ -484,7 +487,9 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
                    pos.source, pos.lineNo, pos.colNo));
     curColTrans = macro->getColTranslations().data();
     buffer.reserve(300);
-    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
+    lineNo = !macro->getColTranslations().empty() ? curColTrans[0].lineNo : 0;
+    if (!macro->getColTranslations().empty())
+        realLinePos = -curColTrans[0].position;
 }
 
 const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
@@ -509,7 +514,9 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     const size_t linePos = pos;
     size_t destPos = 0;
     size_t toCopyPos = pos;
-    colTranslations.push_back({ curColTrans->position, curColTrans->lineNo});
+    size_t destLineStart = 0;
+    // first curColTrans
+    colTranslations.push_back({ ssize_t(-realLinePos), curColTrans->lineNo});
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
             (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                     nextLinePos) : SIZE_MAX;
@@ -523,6 +530,11 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
+                if (curColTrans->position >= 0)
+                {
+                    realLinePos = 0;
+                    destLineStart = destPos + pos-toCopyPos;
+                }
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
@@ -536,6 +548,11 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
+                if (curColTrans->position >= 0)
+                {
+                    realLinePos = 0;
+                    destLineStart = destPos + pos-toCopyPos;
+                }
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
@@ -588,6 +605,11 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 while (pos > colTransThreshold)
                 {
                     curColTrans++;
+                    if (curColTrans->position >= 0)
+                    {
+                        realLinePos = 0;
+                        destLineStart = destPos + pos-toCopyPos;
+                    }
                     colTransThreshold = (curColTrans+1 != colTransEnd) ?
                             curColTrans[1].position : SIZE_MAX;
                 }
@@ -600,13 +622,19 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
         destPos += pos-toCopyPos;
     }
+    lineSize = buffer.size();
     if (pos < contentSize)
     {
         if (curColTrans+1 != colTransEnd)
+        {
             curColTrans++;
+            if (curColTrans->position >= 0)
+                realLinePos = 0;
+            else
+                realLinePos += lineSize - destLineStart+1;
+        }
         pos++; // skip newline
     }
-    lineSize = buffer.size();
     lineNo = curColTrans->lineNo;
     if (sourceTransIndex+1 < macro->getSourceTransSize())
     {
@@ -639,7 +667,7 @@ AsmRepeatInputFilter::AsmRepeatInputFilter(const AsmRepeat* _repeat) :
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
                     RefPtr<const AsmSource>(), 0, _repeat->getRepeatsNum()));
     curColTrans = _repeat->getColTranslations().data();
-    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
+    lineNo = !_repeat->getColTranslations().empty() ? curColTrans[0].lineNo : 0;
 }
 
 const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSize)
@@ -697,7 +725,7 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 
 AsmIRPInputFilter::AsmIRPInputFilter(const AsmIRP* _irp) :
         AsmInputFilter(AsmInputFilterType::REPEAT), irp(_irp),
-        repeatCount(0), contentLineNo(0), sourceTransIndex(0)
+        repeatCount(0), contentLineNo(0), sourceTransIndex(0), realLinePos(0)
 {
     if (_irp->getSourceTransSize()!=0)
     {
@@ -709,7 +737,10 @@ AsmIRPInputFilter::AsmIRPInputFilter(const AsmIRP* _irp) :
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
                     RefPtr<const AsmSource>(), 0, _irp->getRepeatsNum()));
     curColTrans = _irp->getColTranslations().data();
-    lineNo = (curColTrans!=nullptr) ? curColTrans[0].lineNo : 0;
+    lineNo = !_irp->getColTranslations().empty() ? curColTrans[0].lineNo : 0;
+    
+    if (!_irp->getColTranslations().empty())
+        realLinePos = -curColTrans[0].position;
     buffer.reserve(300);
 }
 
@@ -731,8 +762,8 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         sourceTransIndex = 0;
         curColTrans = irp->getColTranslations().data();
         lineNo = curColTrans[0].lineNo;
-        pos = 0;
-        contentLineNo = 0;
+        realLinePos = -curColTrans[0].position;
+        pos = contentLineNo = 0;
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
             irp->getSourceTrans(0).source, repeatCount, irp->getRepeatsNum()));
     }
@@ -749,7 +780,8 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     const size_t linePos = pos;
     size_t destPos = 0;
     size_t toCopyPos = pos;
-    colTranslations.push_back({ curColTrans->position, curColTrans->lineNo});
+    size_t destLineStart = 0;
+    colTranslations.push_back({ ssize_t(-realLinePos), curColTrans->lineNo});
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
             (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                     nextLinePos) : SIZE_MAX;
@@ -763,6 +795,11 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
+                if (curColTrans->position >= 0)
+                {
+                    realLinePos = 0;
+                    destLineStart = destPos + pos-toCopyPos;
+                }
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
@@ -776,6 +813,11 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
+                if (curColTrans->position >= 0)
+                {
+                    realLinePos = 0;
+                    destLineStart = destPos + pos-toCopyPos;
+                }
                 colTransThreshold = (curColTrans+1 != colTransEnd) ?
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
@@ -827,6 +869,11 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 while (pos > colTransThreshold)
                 {
                     curColTrans++;
+                    if (curColTrans->position >= 0)
+                    {
+                        realLinePos = 0;
+                        destLineStart = destPos + pos-toCopyPos;
+                    }
                     colTransThreshold = (curColTrans+1 != colTransEnd) ?
                             curColTrans[1].position : SIZE_MAX;
                 }
@@ -839,13 +886,22 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
         destPos += pos-toCopyPos;
     }
+    lineSize = buffer.size();
     if (pos < contentSize)
     {
         if (curColTrans != colTransEnd)
+        {
             curColTrans++;
+            if (curColTrans != colTransEnd)
+            {
+                if (curColTrans->position >= 0)
+                    realLinePos = 0;
+                else
+                    realLinePos += lineSize - destLineStart+1;
+            }
+        }
         pos++; // skip newline
     }
-    lineSize = buffer.size();
     lineNo = (curColTrans != colTransEnd) ? curColTrans->lineNo : macroColTrans[0].lineNo;
     if (sourceTransIndex+1 < irp->getSourceTransSize())
     {
@@ -1087,5 +1143,3 @@ void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
         macroPos.print(os, indentLevel+1);
     }
 }
-
-

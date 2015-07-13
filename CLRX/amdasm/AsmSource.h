@@ -46,7 +46,8 @@ class Assembler;
 struct LineCol
 {
     uint64_t lineNo;    ///< line number
-    size_t colNo;       ///< column number
+    /// column number, for macro substitution and IRP points to column preprocessed line
+    size_t colNo;
 };
 
 /*
@@ -435,6 +436,7 @@ private:
     uint64_t contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
+    size_t realLinePos; ///< real line size
 public:
     /// constructor with input macro, source position and arguments map
     AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
@@ -446,7 +448,7 @@ public:
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
-/// assembler repeat input filter5
+/// assembler repeat input filter
 class AsmRepeatInputFilter: public AsmInputFilter
 {
 private:
@@ -466,6 +468,7 @@ public:
     { return repeatCount; }
 };
 
+/// assembler IRP pseudo-op input filter
 class AsmIRPInputFilter: public AsmInputFilter
 {
 private:
@@ -474,6 +477,7 @@ private:
     uint64_t contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
+    size_t realLinePos; ///< real line size
 public:
     /// constructor
     explicit AsmIRPInputFilter(const AsmIRP* irp);

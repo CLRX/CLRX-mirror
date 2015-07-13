@@ -2265,19 +2265,19 @@ test.s:10:25: Warning: No expression, zero has been put
                      from test.s:12:13:
 test.s:3:13: Error: simple error
 In macro substituted from test.s:6:13;
-                     from test.s:9:24;
+                     from test.s:9:23;
                      from test.s:12:13:
 test.s:3:13: Error: simple error
-In macro substituted from test.s:6:23;
-                     from test.s:9:24;
+In macro substituted from test.s:6:24;
+                     from test.s:9:23;
                      from test.s:12:13:
 test.s:3:13: Error: simple error
 In macro substituted from test.s:6:13;
-                     from test.s:9:35;
+                     from test.s:9:32;
                      from test.s:12:13:
 test.s:3:13: Error: simple error
-In macro substituted from test.s:6:23;
-                     from test.s:9:35;
+In macro substituted from test.s:6:24;
+                     from test.s:9:32;
                      from test.s:12:13:
 test.s:3:13: Error: simple error
 )ffDXD", ""

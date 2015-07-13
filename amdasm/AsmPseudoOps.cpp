@@ -536,7 +536,8 @@ void AsmPseudoOps::printError(Assembler& asmr, const char* pseudoOpStr, const ch
         asmr.printError(pseudoOpStr, ".error encountered");
 }
 
-void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+void AsmPseudoOps::printWarning(Assembler& asmr, const char* pseudoOpStr,
+                        const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
