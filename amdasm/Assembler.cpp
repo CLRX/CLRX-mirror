@@ -647,7 +647,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         }
     }
     contentLineNo++;
-    return buffer.data();
+    return (!buffer.empty()) ? buffer.data() : "";
 }
 
 /*
@@ -881,7 +881,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         }
     }
     contentLineNo++;
-    return buffer.data();
+    return (!buffer.empty()) ? buffer.data() : "";
 }
 
 /*
