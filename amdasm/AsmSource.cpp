@@ -841,12 +841,12 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     }
     if (pos < contentSize)
     {
-        if (curColTrans+1 != colTransEnd)
+        if (curColTrans != colTransEnd)
             curColTrans++;
         pos++; // skip newline
     }
     lineSize = buffer.size();
-    lineNo = curColTrans->lineNo;
+    lineNo = (curColTrans != colTransEnd) ? curColTrans->lineNo : macroColTrans[0].lineNo;
     if (sourceTransIndex+1 < irp->getSourceTransSize())
     {
         const AsmRepeat::SourceTrans& fpos = irp->getSourceTrans(sourceTransIndex+1);
