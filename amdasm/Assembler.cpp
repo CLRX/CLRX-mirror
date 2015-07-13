@@ -516,6 +516,7 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
 const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
     buffer.clear();
+    buffer.reserve(300);
     colTranslations.clear();
     const std::vector<LineTrans>& macroColTrans = macro->getColTranslations();
     const LineTrans* colTransEnd = macroColTrans.data()+ macroColTrans.size();
@@ -647,7 +648,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         }
     }
     contentLineNo++;
-    return buffer.data()!=nullptr?buffer.data():"";
+    return buffer.data();
 }
 
 /*
@@ -744,6 +745,7 @@ AsmIRPInputFilter::AsmIRPInputFilter(const AsmIRP* _irp) :
 const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
 {
     buffer.clear();
+    buffer.reserve(300);
     colTranslations.clear();
     const std::vector<LineTrans>& macroColTrans = irp->getColTranslations();
     const LineTrans* colTransEnd = macroColTrans.data()+ macroColTrans.size();
@@ -880,7 +882,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         }
     }
     contentLineNo++;
-    return buffer.data()!=nullptr?buffer.data():"";
+    return buffer.data();
 }
 
 /*
