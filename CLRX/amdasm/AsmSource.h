@@ -348,7 +348,7 @@ public:
     /// read line and returns line except newline character
     virtual const char* readLine(Assembler& assembler, size_t& lineSize) = 0;
     
-    /// get current line number before reading line
+    /// get current line number after reading line
     uint64_t getLineNo() const
     { return lineNo; }
     
@@ -363,10 +363,10 @@ public:
     const std::vector<LineTrans> getColTranslations() const
     { return colTranslations; }
     
-    /// get current source before reading line
+    /// get current source after reading line
     RefPtr<const AsmSource> getSource() const
     { return source; }
-    /// get current macro substitution before reading line
+    /// get current macro substitution after reading line
     RefPtr<const AsmMacroSubst> getMacroSubst() const
     { return macroSubst; }
     

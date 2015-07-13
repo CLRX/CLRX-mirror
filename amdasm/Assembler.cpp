@@ -114,7 +114,7 @@ Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _f
           isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
           flags(_flags), 
-          lineSize(0), line(nullptr), lineNo(0),
+          lineSize(0), line(nullptr),
           endOfAssembly(false),
           messageStream(msgStream),
           printStream(_printStream),
@@ -1075,7 +1075,6 @@ bool Assembler::includeFile(const char* pseudoOpStr, const std::string& filename
 
 bool Assembler::readLine()
 {
-    lineNo = currentInputFilter->getLineNo();
     line = currentInputFilter->readLine(*this, lineSize);
     while (line == nullptr)
     {   // no line
@@ -1093,7 +1092,6 @@ bool Assembler::readLine()
         else
             return false;
         currentInputFilter = asmInputFilters.top();
-        lineNo = currentInputFilter->getLineNo();
         line = currentInputFilter->readLine(*this, lineSize);
     }
     return true;

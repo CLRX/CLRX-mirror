@@ -498,7 +498,6 @@ private:
     
     size_t lineSize;
     const char* line;
-    uint64_t lineNo;
     bool endOfAssembly;
     
     std::stack<AsmInputFilter*> asmInputFilters;
