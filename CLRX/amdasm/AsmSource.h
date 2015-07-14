@@ -45,6 +45,7 @@ class Assembler;
 struct LineCol
 {
     uint64_t lineNo;    ///< line number
+    
     /// column number, for macro substitution and IRP points to column preprocessed line
     size_t colNo;
 };
@@ -246,12 +247,12 @@ public:
         RefPtr<const AsmSource> source;     ///< source
     };
 protected:
-    uint64_t contentLineNo;
-    AsmSourcePos pos;
-    uint64_t repeatsNum;
-    std::vector<char> content;
-    std::vector<SourceTrans> sourceTranslations;
-    std::vector<LineTrans> colTranslations;
+    uint64_t contentLineNo;     ///< number of content's line
+    AsmSourcePos pos;       ///< current source position
+    uint64_t repeatsNum;        ///< repeats number
+    std::vector<char> content;  ///< content
+    std::vector<SourceTrans> sourceTranslations;    ///< source translations
+    std::vector<LineTrans> colTranslations; ///< column translations
 public:
     /// constructor
     explicit AsmRepeat(const AsmSourcePos& pos, uint64_t repeatsNum);
@@ -314,11 +315,12 @@ public:
     { return irpc; }
 };
 
+/// type of AsmInputFilter
 enum class AsmInputFilterType
 {
-    STREAM = 0,
-    REPEAT,
-    MACROSUBST
+    STREAM = 0, ///< AsmStreamInputFilter
+    REPEAT,     ///< AsmRepeatInputFilter or AsmIRPInputFilter
+    MACROSUBST  ///< AsmMacroInputFilter
 };
 
 /// assembler input filter for reading lines
