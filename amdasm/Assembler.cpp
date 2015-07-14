@@ -791,9 +791,7 @@ bool Assembler::isAbsoluteSymbol(const AsmSymbol& symbol) const
     if (sections.empty())
         return false; // fallback
     const AsmSection& section = sections[symbol.sectionId];
-    return section.type!=AsmSectionType::AMD_KERNEL_CODE &&
-            section.type!=AsmSectionType::GALLIUM_CODE &&
-            section.type!=AsmSectionType::RAWCODE_CODE;
+    return section.type!=AsmSectionType::CODE;
 }
 
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)
@@ -1117,7 +1115,7 @@ void Assembler::initializeOutputFormat()
         amdOutput->is64Bit = _64bit;
         amdOutput->deviceType = deviceType;
         /* sections */
-        sections.push_back({ 0, AsmSectionType::AMD_GLOBAL_DATA });
+        sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
     }
     else if (format == BinaryFormat::GALLIUM && galliumOutput == nullptr)
     {
@@ -1128,17 +1126,41 @@ void Assembler::initializeOutputFormat()
         galliumOutput->disassemblySize = 0;
         galliumOutput->commentSize = 0;
         galliumOutput->comment = nullptr;
-        sections.push_back({ 0, AsmSectionType::GALLIUM_CODE});
+        sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE});
     }
     else if (format == BinaryFormat::RAWCODE && rawCode == nullptr)
     {
-        sections.push_back({ 0, AsmSectionType::RAWCODE_CODE});
+        sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE});
         rawCode = &sections;
     }
     else // FAIL
         abort();
     // define counter symbol
     symbolMap.find(".")->second.sectionId = 0;
+}
+
+void Assembler::putData(size_t size, const cxbyte* data)
+{
+    AsmSection& section = sections[currentSection];
+    section.content.insert(section.content.end(), data, data+size);
+    currentOutPos += size;
+}
+
+cxbyte* Assembler::reserveData(size_t size, cxbyte fillValue)
+{
+    if (currentSection != ASMSECT_ABS)
+    {
+        size_t oldOutPos = currentOutPos;
+        AsmSection& section = sections[currentSection];
+        section.content.insert(section.content.end(), size, fillValue);
+        currentOutPos += size;
+        return section.content.data() + oldOutPos;
+    }
+    else
+    {
+        currentOutPos += size;
+        return nullptr;
+    }
 }
 
 bool Assembler::assemble()

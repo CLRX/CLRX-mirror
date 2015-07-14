@@ -56,27 +56,145 @@ enum: cxuint
 
 enum: cxuint
 {
-    ASMSECT_ABS = UINT_MAX  ///< absolute section id
+    ASMSECT_ABS = UINT_MAX,  ///< absolute section id
+    ASMKERN_GLOBAL = UINT_MAX, ///< no kernel, global space
 };
 
 /// assembler section type
 enum class AsmSectionType: cxbyte
 {
-    AMD_GLOBAL_DATA = 0,    ///< global data
-    AMD_KERNEL_CODE,        ///< code (.text) of single kernel
-    AMD_KERNEL_DATA,        ///< data from single kernel inner exec (unusable)
-    AMD_KERNEL_HEADER,      ///< header of kernel
-    AMD_KERNEL_METADATA,    ///< metadata
+    DATA = 0,       ///< kernel or global data
+    CODE,           ///< code of program or kernel
+    CONFIG,         ///< configuration (global or for kernel)
+    LAST_COMMON = CONFIG,   ///< last common type
     
-    GALLIUM_GLOBAL_DATA = 64,   ///< global data
-    GALLIUM_COMMENT,            ///< comment section
-    GALLIUM_DISASSEMBLY,        ///< disasm section
-    GALLIUM_CODE,               ///< code of kernels
+    AMD_HEADER = LAST_COMMON+1, ///< AMD Catalyst kernel's header
+    AMD_METADATA,       ///< AMD Catalyst kernel's metadata
+    AMD_LLVMIR,         ///< LLVMIR for AMD binary
+    AMD_SOURCE,         ///< AMD source code
     
-    RAWCODE_CODE = 128          ///< code
+    GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
+    GALLIUM_DISASM,         ///< disassembly section
+    CUSTOM = 0xff
 };
 
 class Assembler;
+
+enum
+{
+    ASMSECT_WRITEABLE = 1,
+    ASMSECT_ABS_ADDRESSABLE = 2
+};
+
+/// assdembler format handler
+class AsmFormatHandler
+{
+protected:
+    GPUDeviceType deviceType;
+    bool _64Bit;
+    
+    cxuint kernel;
+    cxuint section;
+    
+    AsmFormatHandler(GPUDeviceType deviceType, bool is64Bit);
+public:
+    virtual ~AsmFormatHandler();
+    
+    /// set current kernel by name
+    virtual cxuint addKernel(const char* kernelName) = 0;
+    /// set current section by name
+    virtual cxuint addSection(const char* sectionName, cxuint kernelId,
+                      AsmSectionType type) = 0;
+    
+    void setKernel(cxuint kernel)
+    { this->kernel = kernel; }
+    
+    void setSection(cxuint section)
+    { this->section = section; }
+    
+    /// set data for current section
+    virtual void setSectionData(cxuint sectionId, size_t contentSize,
+                        const cxbyte* content) = 0;
+    // get current section flags
+    virtual cxuint getSectionFlags(cxuint sectionId) = 0;
+    /// parse pseudo-op
+    virtual bool parsePseudoOp(const char* string) = 0;
+    /// write binaery to output stream
+    virtual void writeBinary(std::ostream& os) = 0;
+};
+
+/// handles raw code format
+class AsmRawCodeHandler: public AsmFormatHandler
+{
+private:
+    size_t contentSize;
+    const cxbyte* content;
+public:
+    AsmRawCodeHandler(GPUDeviceType deviceType, bool is64Bit);
+    ~AsmRawCodeHandler();
+    
+    /// set current kernel by name
+    cxuint addKernel(const char* kernelName);
+    /// set current section by name
+    cxuint addSection(const char* sectionName, cxuint kernelId, AsmSectionType type);
+    
+    /// set data for current section
+    void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
+    // get current section flags
+    cxuint getSectionFlags(cxuint sectionId);
+    /// parse pseudo-op
+    bool parsePseudoOp(const char* string);
+    /// write binaery to output stream
+    void writeBinary(std::ostream& os);
+};
+
+/// handles AMD Catalyst format
+class AsmAmdHandler: public AsmFormatHandler
+{
+private:
+    AmdInput input;
+public:
+    AsmAmdHandler(GPUDeviceType deviceType, bool is64Bit);
+    ~AsmAmdHandler();
+    
+    /// set current kernel by name
+    cxuint addKernel(const char* kernelName);
+    /// set current section by name
+    cxuint addSection(const char* sectionName, cxuint kernelId, AsmSectionType type);
+    
+    /// set data for current section
+    void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
+    // get current section flags
+    cxuint getSectionFlags(cxuint sectionId);
+    /// parse pseudo-op
+    bool parsePseudoOp(const char* string);
+    /// write binaery to output stream
+    void writeBinary(std::ostream& os);
+};
+
+/// handles GalliumCompute format
+class AsmGalliumHandler: public AsmFormatHandler
+{
+private:
+    GalliumInput input;
+public:
+    AsmGalliumHandler(GPUDeviceType deviceType, bool is64Bit);
+    ~AsmGalliumHandler();
+    
+    /// set current kernel by name
+    cxuint addKernel(const char* kernelName);
+    /// set current section by name
+    cxuint addSection(const char* sectionName, cxuint kernelId, AsmSectionType type);
+    
+    /// set data for current section
+    void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
+    // get current section flags
+    cxuint getSectionFlags(cxuint sectionId);
+    /// parse pseudo-op
+    bool parsePseudoOp(const char* string);
+    /// write binaery to output stream
+    void writeBinary(std::ostream& os);
+};
 
 /// ISA assembler class
 class ISAAssembler
@@ -479,6 +597,8 @@ private:
     friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
     friend class AsmExpression;
+    friend class AsmFormatHandler;
+    
     friend struct AsmPseudoOps; // INTERNAL LOGIC
     BinaryFormat format;
     GPUDeviceType deviceType;
@@ -607,29 +727,8 @@ private:
     
     bool parseMacroArgValue(const char*& string, std::string& outStr);
     
-    void putData(size_t size, const cxbyte* data)
-    {
-        AsmSection& section = sections[currentSection];
-        section.content.insert(section.content.end(), data, data+size);
-        currentOutPos += size;
-    }
-    
-    cxbyte* reserveData(size_t size, cxbyte fillValue = 0)
-    {
-        if (currentSection != ASMSECT_ABS)
-        {
-            size_t oldOutPos = currentOutPos;
-            AsmSection& section = sections[currentSection];
-            section.content.insert(section.content.end(), size, fillValue);
-            currentOutPos += size;
-            return section.content.data() + oldOutPos;
-        }
-        else
-        {
-            currentOutPos += size;
-            return nullptr;
-        }
-    }
+    void putData(size_t size, const cxbyte* data);
+    cxbyte* reserveData(size_t size, cxbyte fillValue = 0);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 
     
