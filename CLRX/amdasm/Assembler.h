@@ -95,6 +95,8 @@ public:
                 std::vector<cxbyte>& output) = 0;
     /// resolve code with location, target and value
     virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
+    /// check if name is mnemonic
+    virtual bool checkMnemonic(const std::string& mnemonic) = 0;
 };
 
 /// GCN arch assembler
@@ -110,6 +112,8 @@ public:
     size_t assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
     /// resolve code with location, target and value
     bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
+    /// check if name is mnemonic
+    bool checkMnemonic(const std::string& mnemonic);
 };
 
 /*
@@ -628,6 +632,8 @@ private:
     }
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 
+    
+    bool checkReservedName(const std::string& name);
 protected:    
     /// helper for testing
     bool readLine();

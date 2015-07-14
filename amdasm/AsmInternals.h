@@ -373,6 +373,8 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void setAbsoluteOffset(Assembler& asmr, const char*& string);
     
     static void ignoreString(Assembler& asmr, const char*& string);
+    
+    static bool checkPseudoOpName(const std::string& string);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

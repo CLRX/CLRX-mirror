@@ -830,6 +830,11 @@ void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourc
     }
 }
 
+bool Assembler::checkReservedName(const std::string& name)
+{
+    return false;
+}
+
 void Assembler::addIncludeDir(const std::string& includeDir)
 {
     includeDirs.push_back(includeDir);

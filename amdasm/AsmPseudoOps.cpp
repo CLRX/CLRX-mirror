@@ -1541,7 +1541,25 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
     }
     }
     if (good)
-    {   // create a macro
+    {   
+        if (checkPseudoOpName(macroName))
+        {   // ignore
+            std::string message = "Attempt to redefine pseudo-op '";
+            message += macroName;
+            message += "' as macro. Ignoring it...";
+            asmr.printWarning(pseudoOpStr, message.c_str());
+            asmr.pushClause(pseudoOpStr, AsmClauseType::MACRO);
+            asmr.skipClauses();
+            return;
+        }
+        if (asmr.checkReservedName(macroName))
+        {
+            std::string message = "Attempt to redefine instruction or prefix '";
+            message += macroName;
+            message += "' as macro.";
+            asmr.printWarning(pseudoOpStr, message.c_str());
+        }
+        // create a macro
         RefPtr<const AsmMacro> macro(new AsmMacro(asmr.getSourcePos(pseudoOpStr),
                         Array<AsmMacroArg>(args.begin(), args.end())));
         asmr.pushClause(pseudoOpStr, AsmClauseType::MACRO);
@@ -1616,8 +1634,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& 
         if (!perChar)
             symValues.push_back(symValue);
         else
-            for (const char c: symValue)
-                symValString.push_back(c);
+            symValString += symValue;
     }
     
     if (asmr.repetitionLevel == 1000)
@@ -1731,6 +1748,14 @@ void AsmPseudoOps::ignoreString(Assembler& asmr, const char*& string)
     std::string out;
     if (asmr.parseString(out, string, string))
         checkGarbagesAtEnd(asmr, string);
+}
+
+bool AsmPseudoOps::checkPseudoOpName(const std::string& string)
+{
+    const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
+                    sizeof(pseudoOpNamesTbl)/sizeof(char*), string.c_str()+1,
+                   CStringLess()) - pseudoOpNamesTbl;
+    return pseudoOp < sizeof(pseudoOpNamesTbl)/sizeof(char*);
 }
 
 };
