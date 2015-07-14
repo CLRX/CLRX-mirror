@@ -162,7 +162,7 @@ static size_t unfinishedRegionOfStringTable(const cxbyte* table, size_t size)
 /* AMD inner GPU binary */
 
 AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
-         size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags)
+         size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName),
           encodingEntriesNum(0), encodingEntries(nullptr)
 {
@@ -514,7 +514,7 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
 }
 
 AmdInnerX86Binary32::AmdInnerX86Binary32(
-            size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags) :
+            size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags) :
             ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 { }
 
@@ -524,7 +524,7 @@ void AmdInnerX86Binary32::getKernelInfos(Array<KernelInfo>& kernelInfos) const
 }
 
 AmdInnerX86Binary64::AmdInnerX86Binary64(
-            size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags) :
+            size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags) :
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 { }
 
@@ -570,7 +570,7 @@ static const cxuint vectorIdTable[17] =
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
 static const KernelArgType determineKernelArgType(const char* typeString,
-           cxuint vectorSize, size_t lineNo)
+           cxuint vectorSize, LineNo lineNo)
 {
     KernelArgType outType;
     
@@ -627,7 +627,7 @@ typedef std::map<std::string, InitKernelArgMapEntry> InitKernelArgMap;
 static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
           const char* kernelDesc, KernelInfo& kernelInfo)
 {   /* parse kernel description */
-    size_t lineNo = 1;
+    LineNo lineNo = 1;
     size_t pos = 0;
     uint32_t argIndex = 0;
     
@@ -1265,7 +1265,7 @@ const AmdGPUKernelHeader& AmdMainGPUBinaryBase::getKernelHeaderEntry(
 /* AmdMainGPUBinary32 */
 
 AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
-       cxuint creationFlags) : AmdMainGPUBinaryBase(AmdMainType::GPU_BINARY),
+       Flags creationFlags) : AmdMainGPUBinaryBase(AmdMainType::GPU_BINARY),
           ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
     initMainGPUBinary<AmdGPU32Types>(*this);
@@ -1274,7 +1274,7 @@ AmdMainGPUBinary32::AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode
 /* AmdMainGPUBinary64 */
 
 AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-       cxuint creationFlags) : AmdMainGPUBinaryBase(AmdMainType::GPU_64_BINARY),
+       Flags creationFlags) : AmdMainGPUBinaryBase(AmdMainType::GPU_64_BINARY),
           ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     initMainGPUBinary<AmdGPU64Types>(*this);
@@ -1282,7 +1282,7 @@ AmdMainGPUBinary64::AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode
 
 /* AmdMainX86Binary32 */
 
-void AmdMainX86Binary32::initKernelInfos(cxuint creationFlags)
+void AmdMainX86Binary32::initKernelInfos(Flags creationFlags)
 {
     innerBinary.getKernelInfos(kernelInfos);
     if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
@@ -1295,7 +1295,7 @@ void AmdMainX86Binary32::initKernelInfos(cxuint creationFlags)
 }
 
 AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
-       cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::X86_BINARY),
+       Flags creationFlags) : AmdMainBinaryBase(AmdMainType::X86_BINARY),
        ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
 {
     cxuint textIndex = SHN_UNDEF;
@@ -1364,7 +1364,7 @@ AmdMainX86Binary32::AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode
 
 /* AmdMainX86Binary64 */
 
-void AmdMainX86Binary64::initKernelInfos(cxuint creationFlags)
+void AmdMainX86Binary64::initKernelInfos(Flags creationFlags)
 {
     innerBinary.getKernelInfos(kernelInfos);
     if ((creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0)
@@ -1377,7 +1377,7 @@ void AmdMainX86Binary64::initKernelInfos(cxuint creationFlags)
 }
 
 AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,
-       cxuint creationFlags) : AmdMainBinaryBase(AmdMainType::X86_64_BINARY),
+       Flags creationFlags) : AmdMainBinaryBase(AmdMainType::X86_64_BINARY),
        ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     cxuint textIndex = SHN_UNDEF;
@@ -1446,7 +1446,7 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
 /* create amd binary */
 
 AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* binaryCode,
-        cxuint creationFlags)
+        Flags creationFlags)
 {
     if (ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
         throw Exception("This is not ELF binary");

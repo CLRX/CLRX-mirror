@@ -39,7 +39,7 @@
 namespace CLRX
 {
 
-enum : cxuint {
+enum : Flags {
     AMDBIN_INNER_INT_CREATE_ALL = 0xff,
     AMDBIN_CREATE_CALNOTES = 0x10, ///< only for internal usage
     
@@ -268,7 +268,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdInnerGPUBinary32(const std::string& kernelName, size_t binaryCodeSize,
-            cxbyte* binaryCode, cxuint creationFlags = ELF_CREATE_ALL);
+            cxbyte* binaryCode, Flags creationFlags = ELF_CREATE_ALL);
     ~AmdInnerGPUBinary32() = default;
     
     /// return true if binary has CAL notes infos
@@ -348,7 +348,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdInnerX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = ELF_CREATE_ALL);
+            Flags creationFlags = ELF_CREATE_ALL);
     ~AmdInnerX86Binary32() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
@@ -369,7 +369,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdInnerX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = ELF_CREATE_ALL);
+            Flags creationFlags = ELF_CREATE_ALL);
     ~AmdInnerX86Binary64() = default;
     
     /// generate kernel info from this binary and save to KernelInfo array
@@ -550,7 +550,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdMainGPUBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
+            Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainGPUBinary32() = default;
     
     /// returns true if binary has kernel informations
@@ -591,7 +591,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdMainGPUBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
+            Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainGPUBinary64() = default;
     
     /// returns true if binary has kernel informations
@@ -628,7 +628,7 @@ class AmdMainX86Binary32: public AmdMainBinaryBase, public ElfBinary32
 private:
     AmdInnerX86Binary32 innerBinary;
     
-    void initKernelInfos(cxuint creationFlags);
+    void initKernelInfos(Flags creationFlags);
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -636,7 +636,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdMainX86Binary32(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
+            Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainX86Binary32() = default;
     
     /// returns true if binary has kernel informations
@@ -673,7 +673,7 @@ class AmdMainX86Binary64: public AmdMainBinaryBase, public ElfBinary64
 private:
     AmdInnerX86Binary64 innerBinary;
     
-    void initKernelInfos(cxuint creationFlags);
+    void initKernelInfos(Flags creationFlags);
 public:
     /** constructor
      * \param binaryCodeSize binary code size
@@ -681,7 +681,7 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
+            Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdMainX86Binary64() = default;
     
     /// returns true if binary has kernel informations
@@ -717,7 +717,7 @@ public:
  */
 extern AmdMainBinaryBase* createAmdBinaryFromCode(
             size_t binaryCodeSize, cxbyte* binaryCode,
-            cxuint creationFlags = AMDBIN_CREATE_ALL);
+            Flags creationFlags = AMDBIN_CREATE_ALL);
 
 };
 

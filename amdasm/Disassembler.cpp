@@ -253,7 +253,7 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[15] =
 };
 
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
-        AmdDisasmKernelInput& kernelInput, cxuint flags, GPUDeviceType inputDeviceType)
+        AmdDisasmKernelInput& kernelInput, Flags flags, GPUDeviceType inputDeviceType)
 {
     const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
     kernelInput.codeSize = kernelInput.dataSize = 0;
@@ -333,7 +333,7 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
 
 template<typename AmdMainBinary>
 static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
-           cxuint flags)
+           Flags flags)
 {
     AmdDisasmInput* input = new AmdDisasmInput;
     try
@@ -406,7 +406,7 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
 }
 
 static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
-           const GalliumBinary& binary, cxuint flags)
+           const GalliumBinary& binary, Flags flags)
 {
     GalliumDisasmInput* input = new GalliumDisasmInput;
     try
@@ -458,7 +458,7 @@ static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceT
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
-            cxuint _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
+            Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
             amdInput(nullptr), output(_output), flags(_flags)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
@@ -466,7 +466,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _outp
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
-            cxuint _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
+            Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
             amdInput(nullptr), output(_output), flags(_flags)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
@@ -474,14 +474,14 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
 }
 
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
-            cxuint _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
+            Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
             amdInput(disasmInput), output(_output), flags(_flags)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
 
 Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
-           std::ostream& _output, cxuint _flags) :
+           std::ostream& _output, Flags _flags) :
            fromBinary(true), binaryFormat(BinaryFormat::GALLIUM),
            galliumInput(nullptr), output(_output), flags(_flags)
 {
@@ -490,14 +490,14 @@ Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary
 }
 
 Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& _output,
-             cxuint _flags) : fromBinary(false), binaryFormat(BinaryFormat::GALLIUM),
+             Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::GALLIUM),
             galliumInput(disasmInput), output(_output), flags(_flags)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
 
 Disassembler::Disassembler(GPUDeviceType deviceType, size_t rawCodeSize,
-           const cxbyte* rawCode, std::ostream& _output, cxuint _flags)
+           const cxbyte* rawCode, std::ostream& _output, Flags _flags)
        : fromBinary(true), binaryFormat(BinaryFormat::RAWCODE),
          output(_output), flags(_flags)
 {

@@ -41,7 +41,7 @@
 namespace CLRX
 {
 
-enum : cxuint {
+enum : Flags {
     GALLIUM_INNER_CREATE_SECTIONMAP = 0x10, ///< create map of sections for inner binaries
     GALLIUM_INNER_CREATE_SYMBOLMAP = 0x20,  ///< create map of kernels for inner binaries
     /** create map of dynamic kernels for inner binaries */
@@ -147,7 +147,7 @@ public:
     /// empty constructor
     GalliumElfBinary();
     /// constructor
-    GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
+    GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
     /// destructor
     ~GalliumElfBinary() = default;
     
@@ -198,7 +198,7 @@ public:
 class GalliumBinary: public NonCopyableAndNonMovable
 {
 private:
-    cxuint creationFlags;
+    Flags creationFlags;
     size_t binaryCodeSize;
     cxbyte* binaryCode;
     uint32_t kernelsNum;
@@ -209,12 +209,12 @@ private:
     GalliumElfBinary elfBinary;
 public:
     /// constructor
-    GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, cxuint creationFlags);
+    GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
     /// destructor
     ~GalliumBinary() = default;
     
     /// get creation flags
-    cxuint getCreationFlags()
+    Flags getCreationFlags()
     { return creationFlags; }
     
     /// get size of binaries

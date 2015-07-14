@@ -609,7 +609,7 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     AmdInput amdInput;
     
     inputData = loadDataFromFile(origBinaryFilename);
-    const cxuint binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
+    const Flags binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |
                 ELF_CREATE_SECTIONMAP |

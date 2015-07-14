@@ -70,7 +70,7 @@ try
         return 1;
     }
     
-    cxuint disasmFlags = DISASM_DUMPCODE;
+    Flags disasmFlags = DISASM_DUMPCODE;
     if (cli.hasOption(PROGOPT_ALL))
         disasmFlags = DISASM_ALL;
     else
@@ -99,7 +99,7 @@ try
             
             if (!fromRawCode)
             {
-                cxuint binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
+                Flags binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                         AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                         AMDBIN_CREATE_KERNELHEADERMAP;
                 if ((disasmFlags & DISASM_CALNOTES) != 0)

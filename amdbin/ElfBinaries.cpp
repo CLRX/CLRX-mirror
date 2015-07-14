@@ -79,7 +79,7 @@ ElfBinaryTemplate<Types>::~ElfBinaryTemplate()
 
 template<typename Types>
 ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _binaryCode,
-             cxuint _creationFlags) : creationFlags(_creationFlags),
+             Flags _creationFlags) : creationFlags(_creationFlags),
         binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
         sectionStringTable(nullptr), symbolStringTable(nullptr),
         symbolTable(nullptr), dynSymStringTable(nullptr), dynSymTable(nullptr),

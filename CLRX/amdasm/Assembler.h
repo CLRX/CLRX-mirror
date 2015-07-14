@@ -46,7 +46,7 @@
 namespace CLRX
 {
 
-enum: cxuint
+enum: Flags
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
@@ -80,7 +80,7 @@ enum class AsmSectionType: cxbyte
 
 class Assembler;
 
-enum
+enum: Flags
 {
     ASMSECT_WRITEABLE = 1,
     ASMSECT_ABS_ADDRESSABLE = 2
@@ -117,7 +117,7 @@ public:
     virtual void setSectionData(cxuint sectionId, size_t contentSize,
                         const cxbyte* content) = 0;
     // get current section flags
-    virtual cxuint getSectionFlags(cxuint sectionId) = 0;
+    virtual Flags getSectionFlags(cxuint sectionId) = 0;
     /// parse pseudo-op
     virtual bool parsePseudoOp(const char* string) = 0;
     /// write binaery to output stream
@@ -142,7 +142,7 @@ public:
     /// set data for current section
     void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
     // get current section flags
-    cxuint getSectionFlags(cxuint sectionId);
+    Flags getSectionFlags(cxuint sectionId);
     /// parse pseudo-op
     bool parsePseudoOp(const char* string);
     /// write binaery to output stream
@@ -166,7 +166,7 @@ public:
     /// set data for current section
     void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
     // get current section flags
-    cxuint getSectionFlags(cxuint sectionId);
+    Flags getSectionFlags(cxuint sectionId);
     /// parse pseudo-op
     bool parsePseudoOp(const char* string);
     /// write binaery to output stream
@@ -190,7 +190,7 @@ public:
     /// set data for current section
     void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
     // get current section flags
-    cxuint getSectionFlags(cxuint sectionId);
+    Flags getSectionFlags(cxuint sectionId);
     /// parse pseudo-op
     bool parsePseudoOp(const char* string);
     /// write binaery to output stream
@@ -615,7 +615,7 @@ private:
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     MacroMap macroMap;
     KernelMap kernelMap;
-    cxuint flags;
+    Flags flags;
     uint64_t macroCount;
     
     cxuint inclusionLevel;
@@ -771,7 +771,7 @@ public:
      * \param msgStream stream for warnings and errors
      * \param printStream stream for printing message by .print pseudo-ops
      */
-    explicit Assembler(const std::string& filename, std::istream& input, cxuint flags = 0,
+    explicit Assembler(const std::string& filename, std::istream& input, Flags flags = 0,
               BinaryFormat format = BinaryFormat::AMD,
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
               std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
@@ -797,10 +797,10 @@ public:
     void set64Bit(bool this64Bit)
     {  _64bit = this64Bit; }
     /// get flags
-    cxuint getFlags() const
+    Flags getFlags() const
     { return flags; }
     /// set flags
-    void setFlags(cxuint flags)
+    void setFlags(Flags flags)
     { this->flags = flags; }
     /// get include directory list
     const std::vector<std::string>& getIncludeDirs() const

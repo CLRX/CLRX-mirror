@@ -45,7 +45,7 @@ const char* Exception::what() const throw()
 ParseException::ParseException(const std::string& message) : Exception(message)
 { }
 
-ParseException::ParseException(uint64_t lineNo, const std::string& message)
+ParseException::ParseException(LineNo lineNo, const std::string& message)
 {
     char buf[32];
     itocstrCStyle(lineNo, buf, 32);
@@ -54,7 +54,7 @@ ParseException::ParseException(uint64_t lineNo, const std::string& message)
     this->message += message;
 }
 
-ParseException::ParseException(uint64_t lineNo, size_t charNo, const std::string& message)
+ParseException::ParseException(LineNo lineNo, ColNo charNo, const std::string& message)
 {
     char buf[32];
     itocstrCStyle(lineNo, buf, 32);
@@ -75,7 +75,7 @@ std::mutex CLRX::DynLibrary::mutex;
 DynLibrary::DynLibrary() : handle(nullptr)
 { }
 
-DynLibrary::DynLibrary(const char* filename, cxuint flags) : handle(nullptr)
+DynLibrary::DynLibrary(const char* filename, Flags flags) : handle(nullptr)
 {
     load(filename, flags);
 }
@@ -85,12 +85,12 @@ DynLibrary::~DynLibrary()
     unload();
 }
 
-void DynLibrary::load(const char* filename, cxuint flags)
+void DynLibrary::load(const char* filename, Flags flags)
 {
     std::lock_guard<std::mutex> lock(mutex);
 #ifdef HAVE_LINUX
     dlerror(); // clear old errors
-    cxuint outFlags = (flags & DYNLIB_GLOBAL) ? RTLD_GLOBAL : RTLD_LOCAL;
+    int outFlags = (flags & DYNLIB_GLOBAL) ? RTLD_GLOBAL : RTLD_LOCAL;
     if ((flags & DYNLIB_MODE1_MASK) == DYNLIB_LAZY)
         outFlags |= RTLD_LAZY;
     if ((flags & DYNLIB_MODE1_MASK) == DYNLIB_NOW)

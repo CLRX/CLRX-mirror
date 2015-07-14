@@ -43,10 +43,10 @@ class Assembler;
 /// line and column
 struct LineCol
 {
-    uint64_t lineNo;    ///< line number
+    LineNo lineNo;    ///< line number
     
     /// column number, for macro substitution and IRP points to column preprocessed line
-    size_t colNo;
+    ColNo colNo;
 };
 
 /*
@@ -79,8 +79,8 @@ struct AsmFile: public AsmSource
     ///  parent source for this source (for file is parent file or macro substitution,
     /// for macro substitution is parent substitution
     RefPtr<const AsmSource> parent; ///< parent file (or null if root)
-    uint64_t lineNo; ///< place where file is included (0 if root)
-    size_t colNo; ///< place in line where file is included
+    LineNo lineNo; ///< place where file is included (0 if root)
+    ColNo colNo; ///< place in line where file is included
     const std::string file; ///< file path
     
     /// constructor
@@ -89,7 +89,7 @@ struct AsmFile: public AsmSource
     { }
     
     /// constructor with parent file inclustion
-    AsmFile(const RefPtr<const AsmSource> _parent, uint64_t _lineNo, size_t _colNo,
+    AsmFile(const RefPtr<const AsmSource> _parent, LineNo _lineNo, ColNo _colNo,
         const std::string& _file) : AsmSource(AsmSourceType::FILE),
         parent(_parent), lineNo(_lineNo), colNo(_colNo), file(_file)
     { }
@@ -104,16 +104,16 @@ struct AsmMacroSubst: public FastRefCountable
     /// for macro substitution is parent substitution
     RefPtr<const AsmMacroSubst> parent;   ///< parent macro substition
     RefPtr<const AsmSource> source; ///< source of content where macro substituted
-    uint64_t lineNo;  ///< place where macro substituted
-    size_t colNo; ///< place in line where macro substituted
+    LineNo lineNo;  ///< place where macro substituted
+    ColNo colNo; ///< place in line where macro substituted
     
     /// constructor
-    AsmMacroSubst(RefPtr<const AsmSource> _source, uint64_t _lineNo, size_t _colNo) :
+    AsmMacroSubst(RefPtr<const AsmSource> _source, LineNo _lineNo, ColNo _colNo) :
               source(_source), lineNo(_lineNo), colNo(_colNo)
     { }
     /// constructor with parent macro substitution
     AsmMacroSubst(RefPtr<const AsmMacroSubst> _parent, RefPtr<const AsmSource> _source,
-              uint64_t _lineNo, size_t _colNo) : parent(_parent), source(_source),
+              LineNo _lineNo, ColNo _colNo) : parent(_parent), source(_source),
               lineNo(_lineNo), colNo(_colNo)
     { }
 };
@@ -153,8 +153,8 @@ struct AsmSourcePos
 {
     RefPtr<const AsmMacroSubst> macro; ///< macro substitution in which message occurred
     RefPtr<const AsmSource> source;   ///< source in which message occurred
-    uint64_t lineNo;    ///< line number of top-most source
-    size_t colNo;       ///< column number
+    LineNo lineNo;    ///< line number of top-most source
+    ColNo colNo;       ///< column number
     const AsmSourcePos* exprSourcePos; ///< expression sourcepos from what evaluation made
     
     /// print source position
@@ -166,7 +166,7 @@ struct LineTrans
 {
     /// position in joined line, can be negative if filtered line is statement
     ssize_t position;
-    uint64_t lineNo;    ///< source code line number
+    LineNo lineNo;    ///< source code line number
 };
 
 /// assembler macro aegument
@@ -185,11 +185,11 @@ public:
     /// source translation
     struct SourceTrans
     {
-        uint64_t lineNo;    ///< line number
+        LineNo lineNo;    ///< line number
         RefPtr<const AsmSource> source; ///< source
     };
 private:
-    uint64_t contentLineNo;
+    LineNo contentLineNo;
     AsmSourcePos pos;
     Array<AsmMacroArg> args;
     std::vector<char> content;
@@ -241,12 +241,12 @@ public:
     /// source translations
     struct SourceTrans
     {
-        uint64_t lineNo;    ///< line number
+        LineNo lineNo;    ///< line number
         RefPtr<const AsmMacroSubst> macro;  ///< macro substitution
         RefPtr<const AsmSource> source;     ///< source
     };
 protected:
-    uint64_t contentLineNo;     ///< number of content's line
+    LineNo contentLineNo;     ///< number of content's line
     AsmSourcePos pos;       ///< current source position
     uint64_t repeatsNum;        ///< repeats number
     std::vector<char> content;  ///< content
@@ -332,7 +332,7 @@ protected:
     RefPtr<const AsmSource> source; ///< current source
     std::vector<char> buffer;   ///< buffer of line (can be not used)
     std::vector<LineTrans> colTranslations; ///< column translations
-    uint64_t lineNo;    ///< current line number
+    LineNo lineNo;    ///< current line number
     
     /// empty constructor
     explicit AsmInputFilter(AsmInputFilterType _type):  type(_type), pos(0), lineNo(1)
@@ -350,7 +350,7 @@ public:
     virtual const char* readLine(Assembler& assembler, size_t& lineSize) = 0;
     
     /// get current line number after reading line
-    uint64_t getLineNo() const
+    LineNo getLineNo() const
     { return lineNo; }
     
     /// translate position to line number and column number
@@ -433,7 +433,7 @@ private:
     AsmMacroArgMap argMap;  ///< input macro argument map
     
     uint64_t macroCount;
-    uint64_t contentLineNo;
+    LineNo contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
     size_t realLinePos; ///< real line size
@@ -454,7 +454,7 @@ class AsmRepeatInputFilter: public AsmInputFilter
 private:
     std::unique_ptr<const AsmRepeat> repeat;
     uint64_t repeatCount;
-    uint64_t contentLineNo;
+    LineNo contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
 public:
@@ -474,7 +474,7 @@ class AsmIRPInputFilter: public AsmInputFilter
 private:
     std::unique_ptr<const AsmIRP> irp;
     uint64_t repeatCount;
-    uint64_t contentLineNo;
+    LineNo contentLineNo;
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
     size_t realLinePos; ///< real line size

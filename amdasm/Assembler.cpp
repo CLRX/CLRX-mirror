@@ -105,7 +105,7 @@ void AsmSymbol::undefine()
  * Assembler
  */
 
-Assembler::Assembler(const std::string& filename, std::istream& input, cxuint _flags,
+Assembler::Assembler(const std::string& filename, std::istream& input, Flags _flags,
         BinaryFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
         std::ostream& _printStream)
         : format(_format),

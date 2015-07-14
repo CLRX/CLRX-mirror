@@ -45,7 +45,7 @@
 namespace CLRX
 {
 
-enum : cxuint {
+enum : Flags {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections
     ELF_CREATE_SYMBOLMAP = 2,   ///< create map of symbols
     ELF_CREATE_DYNSYMMAP = 4,   ///< create map of dynamic symbols
@@ -93,7 +93,7 @@ public:
     /// symbol index map
     typedef Array<std::pair<const char*, size_t> > SymbolIndexMap;
 protected:
-    cxuint creationFlags;   ///< creation flags holder
+    Flags creationFlags;   ///< creation flags holder
     size_t binaryCodeSize;  ///< binary code size
     cxbyte* binaryCode;       ///< pointer to binary code
     cxbyte* sectionStringTable;   ///< pointer to section's string table
@@ -118,11 +118,11 @@ public:
      * \param creationFlags flags that specified what will be created during creation
      */
     ElfBinaryTemplate(size_t binaryCodeSize, cxbyte* binaryCode,
-                cxuint creationFlags = ELF_CREATE_ALL);
+                Flags creationFlags = ELF_CREATE_ALL);
     virtual ~ElfBinaryTemplate();
     
     /// get creation flags
-    cxuint getCreationFlags() const
+    Flags getCreationFlags() const
     { return creationFlags; }
     
     /// returns true if object has a section's index map

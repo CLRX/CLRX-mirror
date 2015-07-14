@@ -40,7 +40,7 @@ GalliumElfBinary::GalliumElfBinary() :
 { }
 
 GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-               cxuint creationFlags) : 
+               Flags creationFlags) : 
        ElfBinary32(binaryCodeSize, binaryCode, creationFlags),
        progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0)
        
@@ -135,7 +135,7 @@ GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
 /* main GalliumBinary */
 
 GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
-                 cxuint _creationFlags) : creationFlags(_creationFlags),
+                 Flags _creationFlags) : creationFlags(_creationFlags),
          binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
          kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
 {

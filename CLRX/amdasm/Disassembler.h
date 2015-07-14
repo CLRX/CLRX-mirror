@@ -43,7 +43,7 @@ namespace CLRX
 
 class Disassembler;
 
-enum: cxuint
+enum: Flags
 {
     DISASM_DUMPCODE = 1,    ///< dump code
     DISASM_METADATA = 2,    ///< dump metadatas
@@ -183,7 +183,7 @@ private:
         const RawCodeInput* rawInput;
     };
     std::ostream& output;
-    cxuint flags;
+    Flags flags;
     
     void disassembleAmd(); // Catalyst format
     void disassembleGallium(); // Gallium format
@@ -196,7 +196,7 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(const AmdMainGPUBinary32& binary, std::ostream& output,
-                 cxuint flags = 0);
+                 Flags flags = 0);
     /// constructor for 64-bit GPU binary
     /**
      * \param binary main GPU binary
@@ -204,7 +204,7 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(const AmdMainGPUBinary64& binary, std::ostream& output,
-                 cxuint flags = 0);
+                 Flags flags = 0);
     /// constructor for AMD disassembler input
     /**
      * \param disasmInput disassembler input object
@@ -212,7 +212,7 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(const AmdDisasmInput* disasmInput, std::ostream& output,
-                 cxuint flags = 0);
+                 Flags flags = 0);
     
     /// constructor for bit GPU binary from Gallium
     /**
@@ -222,7 +222,7 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
-                 std::ostream& output, cxuint flags = 0);
+                 std::ostream& output, Flags flags = 0);
     
     /// constructor for Gallium disassembler input
     /**
@@ -231,11 +231,11 @@ public:
      * \param flags flags for disassembler
      */
     Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& output,
-                 cxuint flags = 0);
+                 Flags flags = 0);
     
     /// constructor for raw code
     Disassembler(GPUDeviceType deviceType, size_t rawCodeSize, const cxbyte* rawCode,
-                 std::ostream& output, cxuint flags = 0);
+                 std::ostream& output, Flags flags = 0);
     
     ~Disassembler();
     
@@ -243,10 +243,10 @@ public:
     void disassemble();
     
     /// get disassemblers flags
-    cxuint getFlags() const
+    Flags getFlags() const
     { return flags; }
     /// get disassemblers flags
-    void setFlags(cxuint flags)
+    void setFlags(Flags flags)
     { this->flags = flags; }
     
     /// get deviceType

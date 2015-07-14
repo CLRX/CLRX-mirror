@@ -70,6 +70,12 @@ public:
     const char* what() const throw();
 };
 
+/// line number type
+typedef uint64_t LineNo;
+
+/// column number type
+typedef size_t ColNo;
+
 /// parse exception class
 class ParseException: public Exception
 {
@@ -79,15 +85,17 @@ public:
     /// constructor with message
     explicit ParseException(const std::string& message);
     /// constructor with message and line number
-    ParseException(uint64_t lineNo, const std::string& message);
+    ParseException(LineNo lineNo, const std::string& message);
     /// constructor with message and line number and column number
-    ParseException(uint64_t lineNo, size_t charNo, const std::string& message);
+    ParseException(LineNo lineNo, ColNo charNo, const std::string& message);
     /// destructor
     virtual ~ParseException() throw() = default;
 };
 
+/// type for declaring various flags
+typedef uint32_t Flags;
 
-enum {
+enum: Flags {
     DYNLIB_LOCAL = 0,   ///< treat symbols locally
     DYNLIB_LAZY = 1,    ///< resolve symbols when is needed
     DYNLIB_NOW = 2,     ///< resolve symbols now
@@ -107,14 +115,14 @@ public:
      * \param filename library filename
      * \param flags flags specifies way to load library and a resolving symbols
      */
-    DynLibrary(const char* filename, cxuint flags = 0);
+    DynLibrary(const char* filename, Flags flags = 0);
     ~DynLibrary();
     
     /** loads library
      * \param filename library filename
      * \param flags flags specifies way to load library and a resolving symbols
      */
-    void load(const char* filename, cxuint flags = 0);
+    void load(const char* filename, Flags flags = 0);
     /// unload library
     void unload();
     
