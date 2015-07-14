@@ -469,7 +469,7 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
                    pos.source, pos.lineNo, pos.colNo));
     curColTrans = macro->getColTranslations().data();
-    buffer.reserve(300);
+    buffer.reserve(AsmParserLineMaxSize);
     lineNo = !macro->getColTranslations().empty() ? curColTrans[0].lineNo : 0;
     if (!macro->getColTranslations().empty())
         realLinePos = -curColTrans[0].position;
@@ -486,7 +486,7 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
     macroSubst = RefPtr<const AsmMacroSubst>(new AsmMacroSubst(pos.macro,
                    pos.source, pos.lineNo, pos.colNo));
     curColTrans = macro->getColTranslations().data();
-    buffer.reserve(300);
+    buffer.reserve(AsmParserLineMaxSize);
     lineNo = !macro->getColTranslations().empty() ? curColTrans[0].lineNo : 0;
     if (!macro->getColTranslations().empty())
         realLinePos = -curColTrans[0].position;
@@ -741,7 +741,7 @@ AsmIRPInputFilter::AsmIRPInputFilter(const AsmIRP* _irp) :
     
     if (!_irp->getColTranslations().empty())
         realLinePos = -curColTrans[0].position;
-    buffer.reserve(300);
+    buffer.reserve(AsmParserLineMaxSize);
 }
 
 const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
