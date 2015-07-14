@@ -19,10 +19,8 @@
 
 #include <CLRX/Config.h>
 #include <string>
-#include <cassert>
 #include <fstream>
 #include <vector>
-#include <stack>
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>

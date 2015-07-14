@@ -142,6 +142,12 @@ inline bool isDigit(unsigned char c);
 inline bool isDigit(unsigned char c)
 { return c>='0' && c<= '9'; }
 
+/// check whether character is hexadecimal digit
+inline bool isXDigit(unsigned char c);
+
+inline bool isXDigit(unsigned char c)
+{ return (c>='0' && c<= '9') || (c>='a' && c<='f') || (c>='A' && c<='F'); }
+
 /// check whether character is digit
 inline bool isAlpha(unsigned char c);
 

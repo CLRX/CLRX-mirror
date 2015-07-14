@@ -765,7 +765,8 @@ test.s:9:30: Error: Garbages at end of expression
             .string "alay",,"ma4","3kota"
             .string16 "alaz",,"ma3","4kota"
             .string32 "alad",,"ma2","5kota"
-            .string64 "alad",,"ma1","6kota")ffDXD",
+            .string64 "alad",,"ma1","6kota"
+            .string "\x9b23;" # changed hex character parsing)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
         { { nullptr, AsmSectionType::AMD_GLOBAL_DATA,
             {
@@ -834,9 +835,9 @@ test.s:9:30: Error: Garbages at end of expression
                 0x00, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00
+                0x00, 0x00, 0x00, 0x23, 0x3b, 0x00
             } } },
-        { { ".", 523U, 0, 0U, true, false, false, 0, 0 } },
+        { { ".", 526U, 0, 0U, true, false, false, 0, 0 } },
         true, R"ffDXD(test.s:1:27: Warning: Value 0xffda truncated to 0xda
 test.s:1:38: Warning: No expression, zero has been put
 test.s:1:39: Warning: No expression, zero has been put

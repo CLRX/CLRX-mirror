@@ -59,6 +59,7 @@ static AsmExprParseCase asmExprParseCases[] =
     { "'\\t'", "9", true, 9, "", "" },
     { "'\\132'", "90", true, 90, "", "" },
     { "'\\x9A'", "154", true, 154, "", "" },
+    { "'\\xaa9A'", "154", true, 154, "", "" }, // changed hex literal parsing
     { "'\\T'", "84", true, 84, "", "" },
     { "'\\\\'", "92", true, 92, "", "" },
     { "'\\''", "39", true, 39, "", "" },

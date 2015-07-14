@@ -197,24 +197,26 @@ bool Assembler::parseString(std::string& strarray, const char* string,
                     return false;
                 }
                 value = 0;
-                for (cxuint i = 0; outend != end && i < 2; i++, outend++)
-                {
-                    cxuint digit;
-                    if (*outend >= '0' && *outend <= '9')
-                        digit = *outend-'0';
-                    else if (*outend >= 'a' && *outend <= 'f')
-                        digit = *outend-'a'+10;
-                    else if (*outend >= 'A' && *outend <= 'F')
-                        digit = *outend-'A'+10;
-                    else if (*outend == '\'' && i != 0)
-                        break;
-                    else
+                if (isXDigit(*outend))
+                    for (; outend != end; outend++)
                     {
-                        printError(string, "Expected hexadecimal character code");
-                        return false;
+                        cxuint digit;
+                        if (*outend >= '0' && *outend <= '9')
+                            digit = *outend-'0';
+                        else if (*outend >= 'a' && *outend <= 'f')
+                            digit = *outend-'a'+10;
+                        else if (*outend >= 'A' && *outend <= 'F')
+                            digit = *outend-'A'+10;
+                        else
+                            break;
+                        value = (value<<4) + digit;
                     }
-                    value = (value<<4) + digit;
+                else
+                {
+                    printError(string, "Expected hexadecimal character code");
+                    return false;
                 }
+                value &= 0xff;
             }
             else if (isODigit(*outend))
             {   // octal
@@ -333,24 +335,26 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
                     return false;
                 }
                 value = 0;
-                for (cxuint i = 0; outend != end && i < 2; i++, outend++)
-                {
-                    cxuint digit;
-                    if (*outend >= '0' && *outend <= '9')
-                        digit = *outend-'0';
-                    else if (*outend >= 'a' && *outend <= 'f')
-                        digit = *outend-'a'+10;
-                    else if (*outend >= 'A' && *outend <= 'F')
-                        digit = *outend-'A'+10;
-                    else if (*outend == '\'' && i != 0)
-                        break;
-                    else
+                if (isXDigit(*outend))
+                    for (; outend != end; outend++)
                     {
-                        printError(string, "Expected hexadecimal character code");
-                        return false;
+                        cxuint digit;
+                        if (*outend >= '0' && *outend <= '9')
+                            digit = *outend-'0';
+                        else if (*outend >= 'a' && *outend <= 'f')
+                            digit = *outend-'a'+10;
+                        else if (*outend >= 'A' && *outend <= 'F')
+                            digit = *outend-'A'+10;
+                        else
+                            break; // end of literal
+                        value = (value<<4) + digit;
                     }
-                    value = (value<<4) + digit;
+                else
+                {
+                    printError(string, "Expected hexadecimal character code");
+                    return false;
                 }
+                value &= 0xff;
             }
             else if (isODigit(*outend))
             {   // octal
