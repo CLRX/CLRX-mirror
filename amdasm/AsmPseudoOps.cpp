@@ -1376,7 +1376,7 @@ void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpStr, const char*&
     }
 }
 
-void AsmPseudoOps::doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+void AsmPseudoOps::endIf(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     if (!checkGarbagesAtEnd(asmr, string))
         return;
@@ -1417,7 +1417,7 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpStr, const char
     }
 }
 
-void AsmPseudoOps::doEndRepeat(Assembler& asmr, const char* pseudoOpStr,
+void AsmPseudoOps::endRepeat(Assembler& asmr, const char* pseudoOpStr,
                    const char*& string)
 {
     if (!checkGarbagesAtEnd(asmr, string))
@@ -1551,14 +1551,14 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpStr, const char*
     }
 }
 
-void AsmPseudoOps::doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
+void AsmPseudoOps::endMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string)
 {
     if (!checkGarbagesAtEnd(asmr, string))
         return;
     asmr.popClause(pseudoOpStr, AsmClauseType::MACRO);
 }
 
-void AsmPseudoOps::doExitMacro(Assembler& asmr, const char* pseudoOpStr,
+void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpStr,
                    const char*& string)
 {
     if (!checkGarbagesAtEnd(asmr, string))
@@ -1650,7 +1650,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& 
     }
 }
 
-void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
+void AsmPseudoOps::purgeMacro(Assembler& asmr, const char*& string)
 {
     const char* end = asmr.line+asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -1675,7 +1675,7 @@ void AsmPseudoOps::doPurgeMacro(Assembler& asmr, const char*& string)
     }
 }
 
-void AsmPseudoOps::doUndefSymbol(Assembler& asmr, const char*& string)
+void AsmPseudoOps::undefSymbol(Assembler& asmr, const char*& string)
 {
     const char* end = asmr.line+asmr.lineSize;
     string = skipSpacesToEnd(string, end);
@@ -1868,13 +1868,13 @@ void Assembler::parsePseudoOps(const std::string firstName,
             endOfAssembly = true;
             break;
         case ASMOP_ENDIF:
-            AsmPseudoOps::doEndIf(*this, stmtStartStr, string);
+            AsmPseudoOps::endIf(*this, stmtStartStr, string);
             break;
         case ASMOP_ENDM:
-            AsmPseudoOps::doEndMacro(*this, stmtStartStr, string);
+            AsmPseudoOps::endMacro(*this, stmtStartStr, string);
             break;
         case ASMOP_ENDR:
-            AsmPseudoOps::doEndRepeat(*this, stmtStartStr, string);
+            AsmPseudoOps::endRepeat(*this, stmtStartStr, string);
             break;
         case ASMOP_EQU:
         case ASMOP_SET:
@@ -1893,7 +1893,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::printError(*this, stmtStartStr, string);
             break;
         case ASMOP_EXITM:
-            AsmPseudoOps::doExitMacro(*this, stmtStartStr, string);
+            AsmPseudoOps::exitMacro(*this, stmtStartStr, string);
             break;
         case ASMOP_EXTERN:
             AsmPseudoOps::ignoreExtern(*this, string);
@@ -2029,7 +2029,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doPrint(*this, string);
             break;
         case ASMOP_PURGEM:
-            AsmPseudoOps::doPurgeMacro(*this, string);
+            AsmPseudoOps::purgeMacro(*this, string);
             break;
         case ASMOP_QUAD:
             AsmPseudoOps::putIntegers<uint64_t>(*this, stmtStartStr, string);
@@ -2075,7 +2075,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::ignoreString(*this, string);
             break;
         case ASMOP_UNDEF:
-            AsmPseudoOps::doUndefSymbol(*this, string);
+            AsmPseudoOps::undefSymbol(*this, string);
             break;
         case ASMOP_WARNING:
             AsmPseudoOps::printWarning(*this, stmtStartStr, string);

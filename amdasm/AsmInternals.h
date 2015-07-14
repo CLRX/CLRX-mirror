@@ -351,24 +351,24 @@ struct CLRX_INTERNAL AsmPseudoOps
     // else
     static void doElse(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // endif
-    static void doEndIf(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void endIf(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     /// start repetition content
     static void doRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     /// end repetition content
-    static void doEndRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void endRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     /// start macro definition
     static void doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     /// ends macro definition
-    static void doEndMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void endMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // immediately exit from macro
-    static void doExitMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void exitMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
     // purge macro
-    static void doPurgeMacro(Assembler& asmr, const char*& string);
+    static void purgeMacro(Assembler& asmr, const char*& string);
     // do IRP
     static void doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& string,
                       bool perChar = false);
     
-    static void doUndefSymbol(Assembler& asmr, const char*& string);
+    static void undefSymbol(Assembler& asmr, const char*& string);
     
     static void setAbsoluteOffset(Assembler& asmr, const char*& string);
     
