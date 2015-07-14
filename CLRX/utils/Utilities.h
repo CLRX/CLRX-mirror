@@ -96,6 +96,10 @@ public:
 typedef uint32_t Flags;
 
 enum: Flags {
+    FLAGS_ALL = 0xffffffffU
+};
+
+enum: Flags {
     DYNLIB_LOCAL = 0,   ///< treat symbols locally
     DYNLIB_LAZY = 1,    ///< resolve symbols when is needed
     DYNLIB_NOW = 2,     ///< resolve symbols now

@@ -51,7 +51,7 @@ enum: Flags
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
     ASM_GNU_AS_COMPAT = 4, ///< compatibility with GNU as (expressions)
-    ASM_ALL = 0xff  ///< all flags
+    ASM_ALL = FLAGS_ALL  ///< all flags
 };
 
 enum: cxuint

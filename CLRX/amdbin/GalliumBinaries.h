@@ -50,7 +50,7 @@ enum : Flags {
     
     GALLIUM_ELF_CREATE_PROGINFOMAP = 0x10,  ///< create elf proginfomap
     
-    GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all Gallium binaries flalgs
+    GALLIUM_CREATE_ALL = ELF_CREATE_ALL | 0xfff0, ///< all Gallium binaries flags
     GALLIUM_INNER_SHIFT = 4 ///< shift for convert inner binary flags into elf binary flags
 };
 
