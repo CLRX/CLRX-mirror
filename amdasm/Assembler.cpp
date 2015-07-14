@@ -1139,30 +1139,6 @@ void Assembler::initializeOutputFormat()
     symbolMap.find(".")->second.sectionId = 0;
 }
 
-void Assembler::putData(size_t size, const cxbyte* data)
-{
-    AsmSection& section = sections[currentSection];
-    section.content.insert(section.content.end(), data, data+size);
-    currentOutPos += size;
-}
-
-cxbyte* Assembler::reserveData(size_t size, cxbyte fillValue)
-{
-    if (currentSection != ASMSECT_ABS)
-    {
-        size_t oldOutPos = currentOutPos;
-        AsmSection& section = sections[currentSection];
-        section.content.insert(section.content.end(), size, fillValue);
-        currentOutPos += size;
-        return section.content.data() + oldOutPos;
-    }
-    else
-    {
-        currentOutPos += size;
-        return nullptr;
-    }
-}
-
 bool Assembler::assemble()
 {
     good = true;

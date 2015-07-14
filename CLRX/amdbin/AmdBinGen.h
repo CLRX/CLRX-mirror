@@ -52,7 +52,7 @@ struct AmdKernelArgInput
     KernelArgType argType;  ///< argument type
     KernelArgType pointerType;  ///< pointer type
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
-    uint8_t ptrAccess;  ///< pointer access flags
+    cxbyte ptrAccess;  ///< pointer access flags
     cxuint structSize; ///< structure size (if structure)
     size_t constSpaceSize; ///< constant space size
     uint32_t resId; ///< uavid or cbid or counterId
@@ -67,7 +67,7 @@ struct AmdKernelArgInput
     }
     /// create global pointer
     static AmdKernelArgInput gptr(const std::string& argName, const std::string& typeName,
-         KernelArgType ptrType, cxuint structSize = 0, uint8_t ptrAccess = KARG_PTR_NORMAL,
+         KernelArgType ptrType, cxuint structSize = 0, cxbyte ptrAccess = KARG_PTR_NORMAL,
          uint32_t resId = AMDBIN_DEFAULT, bool used = true)
     {
         return { argName, typeName, KernelArgType::POINTER, ptrType,
@@ -75,7 +75,7 @@ struct AmdKernelArgInput
     }
     /// create constant pointer
     static AmdKernelArgInput cptr(const std::string& argName, const std::string& typeName,
-         KernelArgType ptrType, cxuint structSize = 0, uint8_t ptrAccess = KARG_PTR_NORMAL,
+         KernelArgType ptrType, cxuint structSize = 0, cxbyte ptrAccess = KARG_PTR_NORMAL,
          size_t constSpaceSize = 0, uint32_t resId = AMDBIN_DEFAULT, bool used = true)
     {
         return { argName, typeName, KernelArgType::POINTER, ptrType,
@@ -91,7 +91,7 @@ struct AmdKernelArgInput
     
     /// create image
     static AmdKernelArgInput img(const std::string& argName, const std::string& typeName,
-        KernelArgType imgType, uint8_t ptrAccess = KARG_PTR_READ_ONLY,
+        KernelArgType imgType, cxbyte ptrAccess = KARG_PTR_READ_ONLY,
         uint32_t resId = AMDBIN_DEFAULT, bool used = true)
     {
         return { argName, typeName, imgType, KernelArgType::VOID, KernelPtrSpace::NONE,

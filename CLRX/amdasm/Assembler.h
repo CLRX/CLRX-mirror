@@ -90,13 +90,14 @@ enum
 class AsmFormatHandler
 {
 protected:
+    Assembler& assembler;
     GPUDeviceType deviceType;
     bool _64Bit;
     
     cxuint kernel;
     cxuint section;
     
-    AsmFormatHandler(GPUDeviceType deviceType, bool is64Bit);
+    AsmFormatHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
 public:
     virtual ~AsmFormatHandler();
     
@@ -130,7 +131,7 @@ private:
     size_t contentSize;
     const cxbyte* content;
 public:
-    AsmRawCodeHandler(GPUDeviceType deviceType, bool is64Bit);
+    AsmRawCodeHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmRawCodeHandler();
     
     /// set current kernel by name
@@ -154,7 +155,7 @@ class AsmAmdHandler: public AsmFormatHandler
 private:
     AmdInput input;
 public:
-    AsmAmdHandler(GPUDeviceType deviceType, bool is64Bit);
+    AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmAmdHandler();
     
     /// set current kernel by name
@@ -178,7 +179,7 @@ class AsmGalliumHandler: public AsmFormatHandler
 private:
     GalliumInput input;
 public:
-    AsmGalliumHandler(GPUDeviceType deviceType, bool is64Bit);
+    AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmGalliumHandler();
     
     /// set current kernel by name
@@ -286,7 +287,9 @@ enum class AsmExprOp : cxbyte
 
 struct AsmExprTarget;
 
-enum : cxbyte
+typedef cxbyte AsmExprTargetType;
+
+enum : AsmExprTargetType
 {
     ASMXTGT_SYMBOL = 0, ///< target is symbol
     ASMXTGT_DATA8,      ///< target is byte
@@ -370,7 +373,7 @@ typedef AsmSymbolMap::value_type AsmSymbolEntry;
 /// target for assembler expression
 struct AsmExprTarget
 {
-    cxbyte type;    ///< type of target
+    AsmExprTargetType type;    ///< type of target
     union
     {
         AsmSymbolEntry* symbol; ///< symbol entry (if ASMXTGT_SYMBOL)
@@ -727,8 +730,29 @@ private:
     
     bool parseMacroArgValue(const char*& string, std::string& outStr);
     
-    void putData(size_t size, const cxbyte* data);
-    cxbyte* reserveData(size_t size, cxbyte fillValue = 0);
+    void putData(size_t size, const cxbyte* data)
+    {
+        AsmSection& section = sections[currentSection];
+        section.content.insert(section.content.end(), data, data+size);
+        currentOutPos += size;
+    }
+
+    cxbyte* reserveData(size_t size, cxbyte fillValue = 0)
+    {
+        if (currentSection != ASMSECT_ABS)
+        {
+            size_t oldOutPos = currentOutPos;
+            AsmSection& section = sections[currentSection];
+            section.content.insert(section.content.end(), size, fillValue);
+            currentOutPos += size;
+            return section.content.data() + oldOutPos;
+        }
+        else
+        {
+            currentOutPos += size;
+            return nullptr;
+        }
+    }
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 
     

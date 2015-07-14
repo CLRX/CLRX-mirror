@@ -34,7 +34,6 @@
 #include <CLRX/amdasm/Commons.h>
 #include <CLRX/utils/Utilities.h>
 
-
 /// main namespace
 namespace CLRX
 {

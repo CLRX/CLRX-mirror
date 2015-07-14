@@ -64,7 +64,7 @@ enum : cxuint {
 };
 
 /// kernel argument type
-enum class KernelArgType : uint8_t
+enum class KernelArgType : cxbyte
 {
     VOID = 0,
     UCHAR, CHAR, USHORT, SHORT, UINT, INT, ULONG, LONG, FLOAT, DOUBLE, POINTER, IMAGE,
@@ -86,7 +86,7 @@ enum class KernelArgType : uint8_t
 };
 
 /// kernel pointer type of argument
-enum class KernelPtrSpace : uint8_t
+enum class KernelPtrSpace : cxbyte
 {
     NONE = 0,   ///< no pointer
     LOCAL,      ///< pointer to local memory
@@ -95,7 +95,7 @@ enum class KernelPtrSpace : uint8_t
     MAX_VALUE = GLOBAL
 };
 
-enum : uint8_t
+enum : cxbyte
 {
     KARG_PTR_NORMAL = 0,    ///< no special flags
     KARG_PTR_READ_ONLY = 1, ///< read only image
@@ -112,7 +112,7 @@ struct AmdKernelArg
 {
     KernelArgType argType;  ///< argument type
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
-    uint8_t ptrAccess;  ///< pointer access flags
+    cxbyte ptrAccess;  ///< pointer access flags
     std::string typeName;   ///< name of type of argument
     std::string argName;    ///< argument name
 };
