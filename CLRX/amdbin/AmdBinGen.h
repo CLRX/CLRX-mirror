@@ -248,13 +248,10 @@ public:
     /// generates binary
     void generate(Array<cxbyte>& array) const;
     
-    /// generates binary
-    /**
-     * \param os output stream
-     */
+    /// generates binary to output stream
     void generate(std::ostream& os) const;
     
-    /// generates binary
+    /// generates binary to vector
     void generate(std::vector<char>& vector) const;
 };
 

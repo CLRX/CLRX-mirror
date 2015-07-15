@@ -353,22 +353,13 @@ public:
     /// set input
     void setInput(const GalliumInput* input);
     
-    /// generates binary
-    /**
-     * \param array output array
-     */
+    /// generates binary to array of bytes
     void generate(Array<cxbyte>& array) const;
     
-    /// generates binary
-    /**
-     * \param os output stream
-     */
+    /// generates binary to output stream
     void generate(std::ostream& os) const;
     
-    /// generates binary
-    /**
-     * \param vector output vector
-     */
+    /// generates binary to vector of char
     void generate(std::vector<char>& vector) const;
 };
 

@@ -117,11 +117,13 @@ public:
     virtual void setSectionData(cxuint sectionId, size_t contentSize,
                         const cxbyte* content) = 0;
     // get current section flags
-    virtual Flags getSectionFlags(cxuint sectionId) = 0;
+    virtual Flags getSectionFlags(cxuint sectionId) const = 0;
     /// parse pseudo-op
     virtual bool parsePseudoOp(const char* string) = 0;
     /// write binaery to output stream
-    virtual void writeBinary(std::ostream& os) = 0;
+    virtual void writeBinary(std::ostream& os) const = 0;
+    /// check whether name is pseudo-opname
+    virtual bool checkPseudoOpName(const std::string& name) const = 0;
 };
 
 /// handles raw code format
@@ -142,11 +144,13 @@ public:
     /// set data for current section
     void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
     // get current section flags
-    Flags getSectionFlags(cxuint sectionId);
+    Flags getSectionFlags(cxuint sectionId) const;
     /// parse pseudo-op
     bool parsePseudoOp(const char* string);
     /// write binaery to output stream
-    void writeBinary(std::ostream& os);
+    void writeBinary(std::ostream& os) const;
+    
+    bool checkPseudoOpName(const std::string& name) const;
 };
 
 /// handles AMD Catalyst format
@@ -166,11 +170,13 @@ public:
     /// set data for current section
     void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
     // get current section flags
-    Flags getSectionFlags(cxuint sectionId);
+    Flags getSectionFlags(cxuint sectionId) const;
     /// parse pseudo-op
     bool parsePseudoOp(const char* string);
     /// write binaery to output stream
-    void writeBinary(std::ostream& os);
+    void writeBinary(std::ostream& os) const;
+    
+    bool checkPseudoOpName(const std::string& name) const;
 };
 
 /// handles GalliumCompute format
@@ -190,11 +196,13 @@ public:
     /// set data for current section
     void setSectionData(cxuint sectionId, size_t contentSize, const cxbyte* content);
     // get current section flags
-    Flags getSectionFlags(cxuint sectionId);
+    Flags getSectionFlags(cxuint sectionId) const;
     /// parse pseudo-op
     bool parsePseudoOp(const char* string);
     /// write binaery to output stream
-    void writeBinary(std::ostream& os);
+    void writeBinary(std::ostream& os) const;
+    
+    bool checkPseudoOpName(const std::string& name) const;
 };
 
 /// ISA assembler class

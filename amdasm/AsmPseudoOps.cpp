@@ -1752,6 +1752,8 @@ void AsmPseudoOps::ignoreString(Assembler& asmr, const char*& string)
 
 bool AsmPseudoOps::checkPseudoOpName(const std::string& string)
 {
+    if (string.empty() || string[0] != '.')
+        return false;
     const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
                     sizeof(pseudoOpNamesTbl)/sizeof(char*), string.c_str()+1,
                    CStringLess()) - pseudoOpNamesTbl;
