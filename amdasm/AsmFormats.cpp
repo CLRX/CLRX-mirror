@@ -383,6 +383,28 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
             uint32_t(tgtSize), uint32_t(tgtAlign) });
 }
 
+void AsmFormatPseudoOps::galliumProgInfo(AsmGalliumHandler& handler,
+                 const char* pseudoOpStr, const char*& string)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    if (!checkGarbagesAtEnd(asmr, string))
+        return;
+    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpStr, "ProgInfo outside kernel definition");
+        return;
+    }
+    handler.insideArgs = false;
+    handler.insideProgInfo = true;
+}
+
+void AsmFormatPseudoOps::galliumDoEntry(AsmGalliumHandler& handler, const char* pseudoOpStr,
+                      const char*& string)
+{
+}
+
 }
 
 void AsmGalliumHandler::parsePseudoOp(const std::string firstName,
@@ -403,6 +425,7 @@ void AsmGalliumHandler::parsePseudoOp(const std::string firstName,
         case GALLIUMOP_ENTRY:
             break;
         case GALLIUM_PROGINFO:
+            AsmFormatPseudoOps::galliumProgInfo(*this, stmtStartStr, string);
             break;
         default:
             break;
@@ -444,7 +467,7 @@ bool AsmGalliumHandler::writeBinary(std::ostream& os)
         GalliumKernelInput& kinput = input.kernels[ki];
         auto it = symbolMap.find(kinput.kernelName);
         if (it == symbolMap.end() || !it->second.isDefined())
-        {
+        {   // error, undefined
             std::string message = "Symbol for kernel '";
             message += kinput.kernelName;
             message += "' is undefined";
@@ -454,7 +477,7 @@ bool AsmGalliumHandler::writeBinary(std::ostream& os)
         }
         const AsmSymbol& symbol = it->second;
         if (!symbol.hasValue)
-        {   // error, undefined
+        {   // error, unresolved
             std::string message = "Symbol for kernel '";
             message += kinput.kernelName;
             message += "' is not resolved";
@@ -462,8 +485,8 @@ bool AsmGalliumHandler::writeBinary(std::ostream& os)
             good = false;
             continue;
         }
-        if (!symbol.sectionId != codeSection)
-        {   /// error
+        if (symbol.sectionId != codeSection)
+        {   /// error, wrong section
             std::string message = "Symbol for kernel '";
             message += kinput.kernelName;
             message += "' is defined for section other than '.text'";

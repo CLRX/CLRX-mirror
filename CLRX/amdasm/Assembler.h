@@ -235,6 +235,7 @@ private:
     {
         cxuint defaultSection;
         bool hasProgInfo;
+        cxbyte progInfoEntries;
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;
