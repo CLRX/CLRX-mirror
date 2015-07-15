@@ -179,7 +179,7 @@ struct AsmMacroArg
 };
 
 /// assembler macro
-class AsmMacro: public FastRefCountable
+class AsmMacro: public FastRefCountable, public NonCopyableAndNonMovable
 {
 public:
     /// source translation
@@ -235,7 +235,7 @@ public:
 };
 
 /// assembler repeat
-class AsmRepeat
+class AsmRepeat: public NonCopyableAndNonMovable
 {
 public:
     /// source translations
@@ -323,7 +323,7 @@ enum class AsmInputFilterType
 };
 
 /// assembler input filter for reading lines
-class AsmInputFilter
+class AsmInputFilter: public NonCopyableAndNonMovable
 {
 protected:
     AsmInputFilterType type;        ///< input filter type

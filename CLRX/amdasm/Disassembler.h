@@ -55,7 +55,7 @@ enum: Flags
 };
 
 /// main class for
-class ISADisassembler
+class ISADisassembler: public NonCopyableAndNonMovable
 {
 protected:
     typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
@@ -171,7 +171,7 @@ struct RawCodeInput
 };
 
 /// disassembler class
-class Disassembler
+class Disassembler: public NonCopyableAndNonMovable
 {
 private:
     std::unique_ptr<ISADisassembler> isaDisassembler;

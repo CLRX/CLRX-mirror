@@ -87,7 +87,7 @@ enum: Flags
 };
 
 /// assdembler format handler
-class AsmFormatHandler
+class AsmFormatHandler: public NonCopyableAndNonMovable
 {
 protected:
     Assembler& assembler;
@@ -405,7 +405,7 @@ struct AsmExprTarget
 };
 
 /// assembler expression class
-class AsmExpression
+class AsmExpression: public NonCopyableAndNonMovable
 {
 private:
     class TempSymbolSnapshotMap;
@@ -587,7 +587,7 @@ struct AsmClause
 };
 
 /// main class of assembler
-class Assembler
+class Assembler: public NonCopyableAndNonMovable
 {
 public:
     /// defined symbol entry
