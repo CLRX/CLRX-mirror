@@ -228,7 +228,7 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     return true;
 }
 
-inline bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& string)
+bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& string)
 {
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
