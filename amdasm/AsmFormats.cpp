@@ -229,7 +229,21 @@ void AsmFormatPseudoOps::galliumDoArgs(AsmGalliumHandler& handler, const char* p
         return;
     }
     handler.insideArgs = true;
+    handler.insideProgInfo = false;
 }
+
+static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
+{
+    { "constant", GalliumArgType::CONSTANT },
+    { "global", GalliumArgType::GLOBAL },
+    { "image2d_rd", GalliumArgType::IMAGE2D_RDONLY },
+    { "image2d_wr", GalliumArgType::IMAGE2D_WRONLY },
+    { "image3d_rd", GalliumArgType::IMAGE3D_RDONLY },
+    { "image3d_wr", GalliumArgType::IMAGE3D_WRONLY },
+    { "scalar", GalliumArgType::SCALAR },
+    { "local", GalliumArgType::LOCAL },
+    { "sampler", GalliumArgType::SAMPLER }
+};
 
 void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* pseudoOpStr,
                       const char*& string)
@@ -237,6 +251,136 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
     string = skipSpacesToEnd(string, end);
+    std::string name;
+    bool good = true;
+    const char* nameStringPos = string;
+    GalliumArgType argType = GalliumArgType::GLOBAL;
+    if (getNameArg(asmr, name, string, "argument type"))
+    {
+        argType = GalliumArgType(binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
+                     name.c_str(), CStringLess())-galliumArgTypesMap);
+        if (int(argType) == 9) // end of this map
+        {
+            asmr.printError(nameStringPos, "Unknown argument type");
+            good = false;
+        }
+    }
+    else
+        good = false;
+    //
+    bool haveComma = false;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    string = skipSpacesToEnd(string, end);
+    const char* sizeStrPos = string;
+    uint64_t size = 4;
+    if (!getAbsoluteValueArg(asmr, size, string, true))
+        good = false;
+    
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    string = skipSpacesToEnd(string, end);
+    const char* tgtSizeStrPos = string;
+    uint64_t tgtSize = 4;
+    if (!getAbsoluteValueArg(asmr, tgtSize, string, true))
+        good = false;
+    
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected absolute value");
+        return;
+    }
+    string = skipSpacesToEnd(string, end);
+    const char* tgtAlignStrPos = string;
+    uint64_t tgtAlign = 4;
+    if (!getAbsoluteValueArg(asmr, tgtAlign, string, true))
+        good = false;
+    
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected numeric extension");
+        return;
+    }
+    bool sext = false;
+    string = skipSpacesToEnd(string, end);
+    const char* numExtStr = string;
+    if (getNameArg(asmr, name, string, "numeric extension"))
+    {
+        if (name == "sext")
+            sext = true;
+        else if (name != "zext")
+        {
+            asmr.printError(numExtStr, "Unknown numeric extension");
+            good = false;
+        }
+    }
+    else
+        good = false;
+    
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected argument semantic");
+        return;
+    }
+    
+    string = skipSpacesToEnd(string, end);
+    const char* semanticStrPos = string;
+    GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
+    if (getNameArg(asmr, name, string, "argument semantic"))
+    {
+        if (name == "griddim")
+            argSemantic = GalliumArgSemantic::GRID_DIMENSION;
+        else if (name == "gridoffset")
+            argSemantic = GalliumArgSemantic::GRID_OFFSET;
+        else if (name != "general")
+        {
+            asmr.printError(semanticStrPos, "Unknown argument semantic type");
+            good = false;
+        }
+    }
+    else
+        good = false;
+    
+    if (size > UINT32_MAX)
+        asmr.printWarning(sizeStrPos, "Size of argument out of range");
+    if (tgtSize > UINT32_MAX)
+        asmr.printWarning(tgtSizeStrPos, "Target size of argument out of range");
+    if (tgtAlign > UINT32_MAX)
+        asmr.printWarning(tgtAlignStrPos, "Target alignment of argument out of range");
+    
+    if (!good || !checkGarbagesAtEnd(asmr, string))
+        return;
+    
+    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpStr, "Argument definition outside kernel configuration");
+        return;
+    }
+    if (!handler.insideArgs)
+    {
+        asmr.printError(pseudoOpStr, "Argument definition outside arguments list");
+        return;
+    }
+    // put this definition to argument list
+    handler.input.kernels[handler.currentKernel].argInfos.push_back(
+        { argType, sext, argSemantic, uint32_t(size),
+            uint32_t(tgtSize), uint32_t(tgtAlign) });
 }
 
 }
@@ -251,9 +395,10 @@ void AsmGalliumHandler::parsePseudoOp(const std::string firstName,
     switch(pseudoOp)
     {
         case GALLIUMOP_ARG:
-            AsmFormatPseudoOps::galliumDoArgs(*this, stmtStartStr, string);
+            AsmFormatPseudoOps::galliumDoArg(*this, stmtStartStr, string);
             break;
         case GALLIUMOP_ARGS:
+            AsmFormatPseudoOps::galliumDoArgs(*this, stmtStartStr, string);
             break;
         case GALLIUMOP_ENTRY:
             break;

@@ -680,6 +680,7 @@ private:
     friend class AsmMacroInputFilter;
     friend class AsmExpression;
     friend class AsmFormatHandler;
+    friend class AsmAmdHandler;
     friend class AsmGalliumHandler;
     
     friend struct AsmPseudoOps; // INTERNAL LOGIC

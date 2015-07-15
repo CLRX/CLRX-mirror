@@ -384,6 +384,8 @@ struct CLRX_INTERNAL AsmFormatPseudoOps: AsmPseudoOps
                       const char*& string);
     static void galliumDoArg(AsmGalliumHandler& handler, const char* pseudoOpStr,
                       const char*& string);
+    static void galliumProgInfo(AsmGalliumHandler& handler, const char* pseudoOpStr,
+                      const char*& string);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;
