@@ -258,7 +258,7 @@ struct CLRX_INTERNAL AsmPseudoOps
                     const char*& string);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
-               const char* objName);
+               const char* objName, bool requiredExpr = true);
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& string);
     

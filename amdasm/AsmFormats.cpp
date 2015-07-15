@@ -106,23 +106,201 @@ bool AsmRawCodeHandler::writeBinary(std::ostream& os)
 }
 
 /*
+ * AmdCatalyst format handler
+ */
+
+AsmAmdHandler::AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit)
+            : AsmFormatHandler(assembler, deviceType, is64Bit), input{},
+              dataSection(ASMSECT_NONE), llvmirSection(ASMSECT_NONE),
+              sourceSection(ASMSECT_NONE)
+{ }
+
+cxuint AsmAmdHandler::addKernel(const char* kernelName)
+{
+    cxuint thisKernel = input.kernels.size();
+    cxuint thisSection = sections.size();
+    input.addEmptyKernel(kernelName);
+    kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
+            thisSection, ASMSECT_NONE, ASMSECT_NONE });
+    sections.push_back({ thisKernel, AsmSectionType::CODE });
+    currentKernel = thisKernel;
+    currentSection = thisSection;
+    return currentKernel;
+}
+
+static const char* amdFormatSectionNamesTbl[] =
+{ "config", "data", "header", "llvmir", "metadata", "source", "text", };
+
+enum {
+    AMDFMTSECT_CONFIG, AMDFMTSECT_DATA, AMDFMTSECT_HEADER, AMDFMTSECT_LLVMIR,
+    AMDFMTSECT_METADATA, AMDFMTSECT_SOURCE, AMDFMTSECT_TEXT
+};
+
+cxuint AsmAmdHandler::addSection(const char* name, cxuint kernelId)
+{
+    if (*name!='.')
+    {
+        std::string message = "Section '";
+        message += name;
+        message += "' is not supported";
+        throw AsmFormatException(message);
+    }
+    
+    const cxuint thisSection = sections.size();
+    size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
+            sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
+            amdFormatSectionNamesTbl;
+    
+    switch(sectionNameId)
+    {
+        case AMDFMTSECT_CONFIG:
+        {
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Kernel config must be defined inside kernel");
+            AsmAmdHandler::Kernel& kstate = kernelStates[currentKernel];
+            if (kstate.calNotesSection != ASMSECT_NONE ||
+                kstate.headerSection != ASMSECT_NONE ||
+                kstate.metadataSection != ASMSECT_NONE)
+                throw AsmFormatException("Config can be defined only if no "
+                        "kernel header, metadata, CALNotes");
+            kernelStates[currentKernel].configSection = thisSection;
+            sections.push_back({ currentKernel, AsmSectionType::CONFIG });
+            break;
+        }
+        case AMDFMTSECT_DATA:
+            if (currentKernel == ASMKERN_GLOBAL)
+                dataSection = thisSection;
+            else
+                kernelStates[currentKernel].dataSection = thisSection;
+            sections.push_back({ currentKernel, AsmSectionType::DATA });
+            break;
+        case AMDFMTSECT_HEADER:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Kernel header must be defined inside kernel");
+            if (kernelStates[currentKernel].configSection != ASMSECT_NONE)
+                throw AsmFormatException("Kernel header can be defined only "
+                            "if no configuration defined");
+            
+            kernelStates[currentKernel].headerSection = thisSection;
+            sections.push_back({ currentKernel, AsmSectionType::AMD_HEADER });
+            break;
+        case AMDFMTSECT_LLVMIR:
+            currentKernel = ASMKERN_GLOBAL;
+            llvmirSection = thisSection;
+            sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::AMD_LLVMIR });
+            break;
+        case AMDFMTSECT_METADATA:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Metadata must be defined inside kernel");
+            if (kernelStates[currentKernel].configSection != ASMSECT_NONE)
+                throw AsmFormatException("Kernel metadata can be defined only "
+                            "if no configuration defined");
+            
+            kernelStates[currentKernel].metadataSection = thisSection;
+            sections.push_back({ currentKernel, AsmSectionType::AMD_METADATA});
+            break;
+        case AMDFMTSECT_SOURCE:
+            currentKernel = ASMKERN_GLOBAL;
+            sourceSection = thisSection;
+            sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::AMD_SOURCE });
+            break;
+        case AMDFMTSECT_TEXT:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Section '.text' must be defined inside kernel");
+            kernelStates[currentKernel].codeSection = thisSection;
+            sections.push_back({ currentKernel, AsmSectionType::CODE });
+            break;
+        default:
+            std::string message = "Section '";
+            message += name;
+            message += "' is not supported";
+            throw AsmFormatException(message);
+            break;
+    }
+    return 0;
+}
+
+bool AsmAmdHandler::sectionIsDefined(const char* name) const
+{
+    if (*name!='.')
+        return false;
+    
+    size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
+            sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
+            amdFormatSectionNamesTbl;
+    switch (sectionNameId)
+    {
+        case AMDFMTSECT_CONFIG:
+            return currentKernel!=ASMKERN_GLOBAL &&
+                    kernelStates[currentKernel].configSection!=ASMSECT_NONE;
+        case AMDFMTSECT_DATA:
+            if (currentKernel!=ASMKERN_GLOBAL)
+                return kernelStates[currentKernel].dataSection!=ASMSECT_NONE;
+            else
+                return dataSection!=ASMSECT_NONE;
+        case AMDFMTSECT_HEADER:
+            return currentKernel!=ASMKERN_GLOBAL &&
+                    kernelStates[currentKernel].headerSection!=ASMSECT_NONE;
+        case AMDFMTSECT_LLVMIR:
+            return currentKernel==ASMKERN_GLOBAL && llvmirSection!=ASMSECT_NONE;
+        case AMDFMTSECT_METADATA:
+            return currentKernel!=ASMKERN_GLOBAL &&
+                    kernelStates[currentKernel].metadataSection!=ASMSECT_NONE;
+        case AMDFMTSECT_SOURCE:
+            return currentKernel==ASMKERN_GLOBAL && sourceSection!=ASMSECT_NONE;
+        case AMDFMTSECT_TEXT:
+            return currentKernel!=ASMKERN_GLOBAL &&
+                    kernelStates[currentKernel].codeSection!=ASMSECT_NONE;
+        default:
+            return false;
+    }
+}
+
+void AsmAmdHandler::setCurrentKernel(cxuint kernel)
+{
+}
+
+void AsmAmdHandler::setCurrentSection(const char* sectionName)
+{
+}
+
+AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
+{
+    return {};
+}
+
+void AsmAmdHandler::parsePseudoOp(const std::string firstName,
+       const char* stmtStartStr, const char*& string)
+{
+}
+
+bool AsmAmdHandler::writeBinary(std::ostream& os)
+{
+    return false;
+}
+
+/*
  * GalliumCompute format handler
  */
 
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType,
                      bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit),
-                 codeSection(ASMSECT_NONE), dataSection(ASMSECT_NONE),
-                 disasmSection(ASMSECT_NONE), commentSection(ASMSECT_NONE)
+             input{}, codeSection(ASMSECT_NONE), dataSection(ASMSECT_NONE),
+             disasmSection(ASMSECT_NONE), commentSection(ASMSECT_NONE)
 {
     insideArgs = insideProgInfo = false;
 }
 
 cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 {
-    input.kernels.push_back({ kernelName, {}, 0, {} });
-    cxuint thisKernel = input.kernels.size()-1;
-    /// add kernel config section
+    cxuint thisKernel = input.kernels.size();
     cxuint thisSection = sections.size();
+    input.kernels.push_back({ kernelName, {
+        /* default values */
+        { 0x0000b848U, 0x000c0000U },
+        { 0x0000b84cU, 0x00001788U },
+        { 0x0000b860U, 0 } }, 0, {} });
+    /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG });
     kernelStates.push_back({ thisSection, false });
     currentKernel = thisKernel;
@@ -279,90 +457,90 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
     string = skipSpacesToEnd(string, end);
     const char* sizeStrPos = string;
     uint64_t size = 4;
-    if (!getAbsoluteValueArg(asmr, size, string, true))
-        good = false;
+    good &= getAbsoluteValueArg(asmr, size, string, true);
     
-    if (!skipComma(asmr, haveComma, string))
-        return;
-    if (!haveComma)
-    {
-        asmr.printError(string, "Expected absolute value");
-        return;
-    }
-    string = skipSpacesToEnd(string, end);
-    const char* tgtSizeStrPos = string;
-    uint64_t tgtSize = 4;
-    if (!getAbsoluteValueArg(asmr, tgtSize, string, true))
-        good = false;
-    
-    if (!skipComma(asmr, haveComma, string))
-        return;
-    if (!haveComma)
-    {
-        asmr.printError(string, "Expected absolute value");
-        return;
-    }
-    string = skipSpacesToEnd(string, end);
-    const char* tgtAlignStrPos = string;
-    uint64_t tgtAlign = 4;
-    if (!getAbsoluteValueArg(asmr, tgtAlign, string, true))
-        good = false;
-    
-    if (!skipComma(asmr, haveComma, string))
-        return;
-    if (!haveComma)
-    {
-        asmr.printError(string, "Expected numeric extension");
-        return;
-    }
-    bool sext = false;
-    string = skipSpacesToEnd(string, end);
-    const char* numExtStr = string;
-    if (getNameArg(asmr, name, string, "numeric extension"))
-    {
-        if (name == "sext")
-            sext = true;
-        else if (name != "zext")
-        {
-            asmr.printError(numExtStr, "Unknown numeric extension");
-            good = false;
-        }
-    }
-    else
-        good = false;
-    
-    if (!skipComma(asmr, haveComma, string))
-        return;
-    if (!haveComma)
-    {
-        asmr.printError(string, "Expected argument semantic");
-        return;
-    }
-    
-    string = skipSpacesToEnd(string, end);
-    const char* semanticStrPos = string;
-    GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
-    if (getNameArg(asmr, name, string, "argument semantic"))
-    {
-        if (name == "griddim")
-            argSemantic = GalliumArgSemantic::GRID_DIMENSION;
-        else if (name == "gridoffset")
-            argSemantic = GalliumArgSemantic::GRID_OFFSET;
-        else if (name != "general")
-        {
-            asmr.printError(semanticStrPos, "Unknown argument semantic type");
-            good = false;
-        }
-    }
-    else
-        good = false;
-    
-    if (size > UINT32_MAX)
+    if (good && (size > UINT32_MAX || size == 0))
         asmr.printWarning(sizeStrPos, "Size of argument out of range");
-    if (tgtSize > UINT32_MAX)
-        asmr.printWarning(tgtSizeStrPos, "Target size of argument out of range");
-    if (tgtAlign > UINT32_MAX)
-        asmr.printWarning(tgtAlignStrPos, "Target alignment of argument out of range");
+    
+    uint64_t tgtSize = size;
+    uint64_t tgtAlign = 1U<<(31-CLZ32(size));
+    bool sext = false;
+    GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
+    
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (haveComma)
+    {
+        string = skipSpacesToEnd(string, end);
+        const char* tgtSizeStrPos = string;
+        uint64_t tgtSize = size;
+        good &= getAbsoluteValueArg(asmr, tgtSize, string, false);
+        
+        if (tgtSize > UINT32_MAX || tgtSize == 0)
+            asmr.printWarning(tgtSizeStrPos, "Target size of argument out of range");
+        
+        if (!skipComma(asmr, haveComma, string))
+            return;
+        if (haveComma)
+        {
+            string = skipSpacesToEnd(string, end);
+            const char* tgtAlignStrPos = string;
+            uint64_t tgtAlign = 4;
+            good &= getAbsoluteValueArg(asmr, tgtAlign, string, false);
+            
+            if (tgtAlign > UINT32_MAX || tgtAlign == 0)
+                asmr.printWarning(tgtAlignStrPos,
+                                  "Target alignment of argument out of range");
+            if (tgtAlign == (1U<<(31-CLZ32(tgtAlign))))
+            {
+                asmr.printError(tgtAlignStrPos, "Target alignment is not power of 2");
+                good = false;
+            }
+            
+            if (!skipComma(asmr, haveComma, string))
+                return;
+            if (haveComma)
+            {
+                string = skipSpacesToEnd(string, end);
+                const char* numExtStr = string;
+                if (getNameArg(asmr, name, string, "numeric extension", false))
+                {
+                    if (name == "sext")
+                        sext = true;
+                    else if (name != "zext")
+                    {
+                        asmr.printError(numExtStr, "Unknown numeric extension");
+                        good = false;
+                    }
+                }
+                else
+                    good = false;
+                
+                if (!skipComma(asmr, haveComma, string))
+                    return;
+                if (haveComma)
+                {
+                    string = skipSpacesToEnd(string, end);
+                    const char* semanticStrPos = string;
+                    if (getNameArg(asmr, name, string, "argument semantic", false))
+                    {
+                        if (name == "griddim")
+                            argSemantic = GalliumArgSemantic::GRID_DIMENSION;
+                        else if (name == "gridoffset")
+                            argSemantic = GalliumArgSemantic::GRID_OFFSET;
+                        else if (name != "general")
+                        {
+                            asmr.printError(semanticStrPos,
+                                    "Unknown argument semantic type");
+                            good = false;
+                        }
+                    }
+                    else
+                        good = false;
+                }
+            }
+        }
+    }
     
     if (!good || !checkGarbagesAtEnd(asmr, string))
         return;
@@ -398,11 +576,71 @@ void AsmFormatPseudoOps::galliumProgInfo(AsmGalliumHandler& handler,
     }
     handler.insideArgs = false;
     handler.insideProgInfo = true;
+    handler.kernelStates[handler.currentKernel].hasProgInfo = true;
+    handler.kernelStates[handler.currentKernel].progInfoEntries = 0;
 }
 
 void AsmFormatPseudoOps::galliumDoEntry(AsmGalliumHandler& handler, const char* pseudoOpStr,
                       const char*& string)
 {
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    string = skipSpacesToEnd(string, end);
+    const char* addrStr = string;
+    size_t entryAddr;
+    bool good = true;
+    if (getAbsoluteValueArg(asmr, entryAddr, string, true))
+    {
+        if (entryAddr > UINT32_MAX)
+            asmr.printWarning(addrStr, "64-bit value of address has been truncated");
+    }
+    else
+        good = false;
+    bool haveComma = false;
+    if (!skipComma(asmr, haveComma, string))
+        return;
+    if (!haveComma)
+    {
+        asmr.printError(string, "Expected value of entry");
+        return;
+    }
+    
+    string = skipSpacesToEnd(string, end);
+    const char* entryValStr = string;
+    uint64_t entryVal;
+    if (getAbsoluteValueArg(asmr, entryVal, string, true))
+    {
+        if (entryVal > UINT32_MAX)
+            asmr.printWarning(entryValStr, "64-bit value has been truncated");
+    }
+    else
+        good = false;
+    
+    if (!good || !checkGarbagesAtEnd(asmr, string))
+        return;
+    
+    // do operation
+    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpStr, "ProgInfo entry outside kernel configuration");
+        return;
+    }
+    if (!handler.insideProgInfo)
+    {
+        asmr.printError(pseudoOpStr, "ProgInfo entry definition outside ProgInfo");
+        return;
+    }
+    AsmGalliumHandler::Kernel& kstate = handler.kernelStates[handler.currentKernel];
+    kstate.hasProgInfo = true;
+    if (kstate.progInfoEntries == 3)
+    {
+        asmr.printError(pseudoOpStr, "Maximum 3 entries can be in ProgInfo");
+        return;
+    }
+    GalliumProgInfoEntry& pentry = handler.input.kernels[handler.currentKernel]
+            .progInfo[kstate.progInfoEntries++];
+    pentry.address = entryAddr;
+    pentry.value = entryVal;
 }
 
 }
@@ -423,6 +661,7 @@ void AsmGalliumHandler::parsePseudoOp(const std::string firstName,
             AsmFormatPseudoOps::galliumDoArgs(*this, stmtStartStr, string);
             break;
         case GALLIUMOP_ENTRY:
+            AsmFormatPseudoOps::galliumDoEntry(*this, stmtStartStr, string);
             break;
         case GALLIUM_PROGINFO:
             AsmFormatPseudoOps::galliumProgInfo(*this, stmtStartStr, string);
@@ -498,6 +737,9 @@ bool AsmGalliumHandler::writeBinary(std::ostream& os)
     }
     if (!good) // failed!!!
         return false;
+    
+    /* initialize progInfos */
+    //////////////////////////
     
     GalliumBinGenerator binGenerator(&input);
     binGenerator.generate(os);

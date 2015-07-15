@@ -195,9 +195,28 @@ class AsmAmdHandler: public AsmFormatHandler
 {
 private:
     AmdInput input;
+    struct Section
+    {
+        cxuint kernelId;
+        AsmSectionType type;
+    };
+    struct Kernel
+    {
+        cxuint headerSection;
+        cxuint metadataSection;
+        cxuint configSection;
+        cxuint codeSection;
+        cxuint dataSection;
+        cxuint calNotesSection;
+    };
+    std::vector<Section> sections;
+    std::vector<Kernel> kernelStates;
+    cxuint dataSection; // global
+    cxuint llvmirSection;
+    cxuint sourceSection;
 public:
     AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
-    ~AsmAmdHandler();
+    ~AsmAmdHandler() = default;
     
     /// set current kernel by name
     cxuint addKernel(const char* kernelName);

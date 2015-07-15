@@ -201,13 +201,15 @@ bool AsmPseudoOps::getAnyValueArg(Assembler& asmr, uint64_t& value,
 }
 
 bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
-            const char* objName)
+            const char* objName, bool requiredArg)
 {
     const char* end = asmr.line + asmr.lineSize;
     outStr.clear();
     string = skipSpacesToEnd(string, end);
     if (string == end)
     {
+        if (!requiredArg)
+            return true; // succeed
         std::string error("Expected");
         error += objName;
         asmr.printError(string, error.c_str());
@@ -221,6 +223,8 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     }
     else
     {
+        if (!requiredArg)
+            return true; // succeed
         asmr.printError(string, "Some garbages at name place");
         return false;
     }
