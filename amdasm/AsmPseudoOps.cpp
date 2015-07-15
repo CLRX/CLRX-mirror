@@ -49,12 +49,13 @@ static const char* offlinePseudoOpNamesTbl[] =
     "if", "ifb", "ifc", "ifdef", "ifeq",
     "ifeqs", "ifge", "ifgt", "ifle",
     "iflt", "ifnb", "ifnc", "ifndef",
-    "ifne", "ifnes", "ifnotdef", "macro", "rept"
+    "ifne", "ifnes", "ifnotdef",
+    "irp", "irpc", "macro", "rept"
 };
 
 static const char* macroRepeatPseudoOpNamesTbl[] =
 {
-    "endm", "endr", "macro", "rept"
+    "endm", "endr", "irp", "irpc", "macro", "rept"
 };
 
 
@@ -68,11 +69,12 @@ enum
     ASMCOP_IF, ASMCOP_IFB, ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
     ASMCOP_IFEQS, ASMCOP_IFGE, ASMCOP_IFGT, ASMCOP_IFLE,
     ASMCOP_IFLT, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
-    ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNOTDEF, ASMCOP_MACRO, ASMCOP_REPT
+    ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNOTDEF,
+    ASMCOP_IRP, ASMCOP_IRPC, ASMCOP_MACRO, ASMCOP_REPT
 };
 
 enum
-{ ASMMROP_ENDM, ASMMROP_ENDR, ASMMROP_MACRO, ASMMROP_REPT };
+{ ASMMROP_ENDM, ASMMROP_ENDR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
 
 static const char* pseudoOpNamesTbl[] =
 {
@@ -2232,6 +2234,8 @@ bool Assembler::skipClauses(bool exitm)
                 if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
+            case ASMCOP_IRP:
+            case ASMCOP_IRPC:
             case ASMCOP_REPT:
                 if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
@@ -2288,6 +2292,8 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
                 if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
+            case ASMMROP_IRP:
+            case ASMMROP_IRPC:
             case ASMMROP_REPT:
                 if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
@@ -2348,6 +2354,8 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
                 if (!pushClause(stmtString, AsmClauseType::MACRO))
                     good = false;
                 break;
+            case ASMMROP_IRP:
+            case ASMMROP_IRPC:
             case ASMMROP_REPT:
                 if (!pushClause(stmtString, AsmClauseType::REPEAT))
                     good = false;
