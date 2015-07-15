@@ -64,10 +64,10 @@ public:
     /// constructor with messasge
     explicit Exception(const std::string& message);
     /// destructor
-    virtual ~Exception() throw() = default;
+    virtual ~Exception() noexcept = default;
     
     /// get exception message
-    const char* what() const throw();
+    const char* what() const noexcept;
 };
 
 /// line number type
@@ -89,7 +89,7 @@ public:
     /// constructor with message and line number and column number
     ParseException(LineNo lineNo, ColNo charNo, const std::string& message);
     /// destructor
-    virtual ~ParseException() throw() = default;
+    virtual ~ParseException() noexcept = default;
 };
 
 /// type for declaring various flags

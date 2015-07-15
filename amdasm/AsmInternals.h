@@ -247,7 +247,6 @@ struct CLRX_INTERNAL AsmPseudoOps
      * processed by assembler
      * pseudoOpStr - points to first character from line of pseudo-op name
      */
-    
     static bool checkGarbagesAtEnd(Assembler& asmr, const char* string);
     /* parsing helpers */
     /* get absolute value arg resolved at this time.
@@ -375,6 +374,16 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void ignoreString(Assembler& asmr, const char*& string);
     
     static bool checkPseudoOpName(const std::string& string);
+};
+
+class AsmGalliumHandler;
+
+struct CLRX_INTERNAL AsmFormatPseudoOps: AsmPseudoOps
+{
+    static void galliumDoArgs(AsmGalliumHandler& handler, const char* pseudoOpStr,
+                      const char*& string);
+    static void galliumDoArg(AsmGalliumHandler& handler, const char* pseudoOpStr,
+                      const char*& string);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

@@ -49,7 +49,7 @@ enum : Flags {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections
     ELF_CREATE_SYMBOLMAP = 2,   ///< create map of symbols
     ELF_CREATE_DYNSYMMAP = 4,   ///< create map of dynamic symbols
-    ELF_CREATE_ALL = 0xf, ///< creation flags for ELF binaries
+    ELF_CREATE_ALL = 0xf  ///< creation flags for ELF binaries
 };
 
 /// ELF 32-bit types

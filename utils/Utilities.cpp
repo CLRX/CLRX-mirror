@@ -37,7 +37,7 @@ using namespace CLRX;
 Exception::Exception(const std::string& _message) : message(_message)
 { }
 
-const char* Exception::what() const throw()
+const char* Exception::what() const noexcept
 {
     return message.c_str();
 }

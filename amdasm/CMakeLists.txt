@@ -21,6 +21,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(LIBAMDASMSRC Assembler.cpp
         AsmExpression.cpp
+        AsmFormats.cpp
         AsmPseudoOps.cpp
         AsmSource.cpp
         Disassembler.cpp

@@ -90,7 +90,7 @@ public:
     CLIException(const std::string& message, const CLIOption& option,
              bool chooseShortName);
     /// destructor
-    virtual ~CLIException() throw() = default;
+    virtual ~CLIException() noexcept = default;
 };
 
 /// The Command Line Parser (parses options and their arguments)

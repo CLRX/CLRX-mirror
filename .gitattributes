@@ -22,6 +22,7 @@ CLRX/utils/Utilities.h -text
 /Int128Detect.c -text
 /README -text
 amdasm/AsmExpression.cpp -text
+amdasm/AsmFormats.cpp -text
 amdasm/AsmInternals.h -text
 amdasm/AsmPseudoOps.cpp -text
 amdasm/AsmSource.cpp -text

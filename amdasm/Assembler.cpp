@@ -449,21 +449,21 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
         initializeOutputFormat();
     
     Assembler::ParseState state = Assembler::ParseState::PARSED;
-    bool symIsDefined;
+    bool symHasValue;
     if (!dontCreateSymbol)
     {   // create symbol if not found
         std::pair<AsmSymbolMap::iterator, bool> res =
                 symbolMap.insert(std::make_pair(symName, AsmSymbol()));
         entry = &*res.first;
-        symIsDefined = res.first->second.hasValue;
+        symHasValue = res.first->second.hasValue;
     }
     else
     {   // only find symbol and set isDefined and entry
         AsmSymbolMap::iterator it = symbolMap.find(symName);
         entry = (it != symbolMap.end()) ? &*it : nullptr;
-        symIsDefined = (it != symbolMap.end() && it->second.hasValue);
+        symHasValue = (it != symbolMap.end() && it->second.hasValue);
     }
-    if (isDigit(symName.front()) && symName.back() == 'b' && !symIsDefined)
+    if (isDigit(symName.front()) && symName.back() == 'b' && !symHasValue)
     {   // failed at finding
         std::string error = "Undefined previous local label '";
         error.append(symName.begin(), symName.end()-1);
@@ -693,7 +693,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
     std::pair<AsmSymbolMap::iterator, bool> res =
             symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
-        (res.first->second.hasValue || res.first->second.expression!=nullptr)))
+        res.first->second.isDefined()))
     {   // found and can be only once defined
         std::string msg = "Symbol '";
         msg += symbolName;
@@ -1208,8 +1208,7 @@ bool Assembler::assemble()
                         symbolMap.insert(std::make_pair(firstName, AsmSymbol()));
                 if (!res.second)
                 {   // found
-                    if (res.first->second.onceDefined && (res.first->second.hasValue ||
-                        res.first->second.expression!=nullptr))
+                    if (res.first->second.onceDefined && res.first->second.isDefined())
                     {   // if label
                         std::string msg = "Symbol '";
                         msg += firstName;

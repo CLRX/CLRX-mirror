@@ -312,7 +312,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
         if (!checkGarbagesAtEnd(asmr, string))
             return;
         
-        if (asmr.format == BinaryFormat::AMD)
+        /*if (asmr.format == BinaryFormat::AMD)
         {
             asmr.kernelMap.insert(std::make_pair(kernelName,
                             asmr.amdOutput->kernels.size()));
@@ -323,7 +323,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& string)
             asmr.kernelMap.insert(std::make_pair(kernelName,
                         asmr.galliumOutput->kernels.size()));
             //galliumOutput->addEmptyKernel(kernelName.c_str());
-        }
+        }*/
     }
     else if (asmr.format == BinaryFormat::RAWCODE)
         asmr.printError(string, "Raw code can have only one unnamed kernel");
