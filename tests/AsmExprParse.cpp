@@ -550,8 +550,8 @@ static void testAsmExprParse(cxuint i, const AsmExprParseCase& testCase, bool ma
     std::ostringstream resultErrorsOut;
     MyAssembler assembler(iss, resultErrorsOut);
     size_t linePos;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(assembler,
-                     0, linePos, makeBase));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(assembler, 0,
+                 linePos, makeBase));
     std::string resultRpnExpr;
     std::string resultExtra = testCase.expression+linePos;
     uint64_t resultValue = 0;

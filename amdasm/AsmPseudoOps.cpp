@@ -340,7 +340,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
     linePtr = skipSpacesToEnd(linePtr, end);
     std::string filename;
     const char* namePlace = linePtr;
-    if (asmr.parseString(filename, linePtr, linePtr))
+    if (asmr.parseString(filename, linePtr))
     {
         if (!checkGarbagesAtEnd(asmr, linePtr))
             return;
@@ -388,7 +388,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     const char* offsetPlace = linePtr;
     const char* countPlace = linePtr;
     uint64_t offset = 0, count = INT64_MAX;
-    bool good = asmr.parseString(filename, linePtr, linePtr);
+    bool good = asmr.parseString(filename, linePtr);
     bool haveComma;
     
     if (!skipComma(asmr, haveComma, linePtr))
@@ -533,7 +533,7 @@ void AsmPseudoOps::doError(Assembler& asmr, const char* pseudoOpPlace,
     if (linePtr != end)
     {
         std::string outStr;
-        if (!asmr.parseString(outStr, linePtr, linePtr))
+        if (!asmr.parseString(outStr, linePtr))
             return; // error
         if (!checkGarbagesAtEnd(asmr, linePtr))
             return;
@@ -551,7 +551,7 @@ void AsmPseudoOps::doWarning(Assembler& asmr, const char* pseudoOpPlace,
     if (string != end)
     {
         std::string outStr;
-        if (!asmr.parseString(outStr, string, string))
+        if (!asmr.parseString(outStr, string))
             return; // error
         if (!checkGarbagesAtEnd(asmr, string))
             return;
@@ -742,7 +742,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
         std::string outStr;
         if (*linePtr != ',')
         {
-            if (asmr.parseString(outStr, linePtr, linePtr))
+            if (asmr.parseString(outStr, linePtr))
                 asmr.putData(outStr.size()+(addZero), (const cxbyte*)outStr.c_str());
         }
     } while (skipCommaForMultipleArgd(asmr, linePtr));
@@ -767,7 +767,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
         std::string outStr;
         if (*linePtr != ',')
         {
-            if (asmr.parseString(outStr, linePtr, linePtr))
+            if (asmr.parseString(outStr, linePtr))
             {
                 const size_t strSize = outStr.size()+1;
                 T* outData = reinterpret_cast<T*>(
@@ -814,7 +814,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& linePtr, cxbyte b
     do {
         const char* symNamePlace = linePtr;
         AsmSymbolEntry* symEntry;
-        Assembler::ParseState state = asmr.parseSymbol(linePtr, linePtr, symEntry, false);
+        Assembler::ParseState state = asmr.parseSymbol(linePtr, symEntry, false);
         bool good = (state != Assembler::ParseState::FAILED);
         if (symEntry == nullptr)
         {
@@ -847,7 +847,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& linePtr)
     linePtr = skipSpacesToEnd(linePtr, end);
     const char* symNamePlace = linePtr;
     AsmSymbolEntry* symEntry;
-    Assembler::ParseState state = asmr.parseSymbol(linePtr, linePtr, symEntry, false);
+    Assembler::ParseState state = asmr.parseSymbol(linePtr, symEntry, false);
     bool good = (state != Assembler::ParseState::FAILED);
     if (symEntry == nullptr)
     {
@@ -891,7 +891,7 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& linePtr)
     if (linePtr == end)
         return;
     do {
-        asmr.skipSymbol(linePtr, linePtr);
+        asmr.skipSymbol(linePtr);
     } while (skipCommaForMultipleArgd(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
@@ -1002,8 +1002,8 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& linePtr)
     if (int64_t(size) < 0)
         return;
     
-    if (asmr.currentSection==ASMSECT_ABS && (value&0xff) != 0)
-        asmr.printWarning(linePtr, "Fill value is ignored inside absolute section");
+    if (asmr.currentSection==ASMSECT_ABS && value != 0)
+        asmr.printWarning(fillValuePlace, "Fill value is ignored inside absolute section");
     asmr.reserveData(size, value&0xff);
 }
 
@@ -1063,8 +1063,8 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& linePtr, bool powerOf2
     if (maxAlign!=0 && bytesToFill > maxAlign)
         return; // do not make alignment
     
-    if (asmr.currentSection==ASMSECT_ABS && (value&0xff) != 0)
-        asmr.printWarning(linePtr, "Fill value is ignored inside absolute section");
+    if (asmr.currentSection==ASMSECT_ABS && value != 0)
+        asmr.printWarning(valuePlace, "Fill value is ignored inside absolute section");
     asmr.reserveData(bytesToFill, value&0xff);
 }
 
@@ -1124,7 +1124,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     
     if (asmr.currentSection==ASMSECT_ABS && value != 0)
     {
-        asmr.printWarning(linePtr, "Fill value is ignored inside absolute section");
+        asmr.printWarning(valuePlace, "Fill value is ignored inside absolute section");
         asmr.reserveData(bytesToFill);
         return;
     }
@@ -1169,7 +1169,7 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& linePtr)
 void AsmPseudoOps::doPrint(Assembler& asmr, const char*& linePtr)
 {
     std::string outStr;
-    if (!asmr.parseString(outStr, linePtr, linePtr))
+    if (!asmr.parseString(outStr, linePtr))
         return;
     if (!AsmPseudoOps::checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1230,7 +1230,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const cha
     const char* symNamePlace = linePtr;
     AsmSymbolEntry* entry;
     bool good = true;
-    Assembler::ParseState state = asmr.parseSymbol(linePtr, linePtr, entry, false, true);
+    Assembler::ParseState state = asmr.parseSymbol(linePtr, entry, false, true);
     if (state == Assembler::ParseState::FAILED)
         return;
     if (state == Assembler::ParseState::MISSING)
@@ -1347,7 +1347,7 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
     const char* end = asmr.line + asmr.lineSize;
     linePtr = skipSpacesToEnd(linePtr, end);
     std::string firstStr, secondStr;
-    bool good = asmr.parseString(firstStr, linePtr, linePtr);
+    bool good = asmr.parseString(firstStr, linePtr);
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
         return;
@@ -1357,7 +1357,7 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
         return;
     }
     linePtr = skipSpacesToEnd(linePtr, end);
-    good &= asmr.parseString(secondStr, linePtr, linePtr);
+    good &= asmr.parseString(secondStr, linePtr);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1756,7 +1756,7 @@ void AsmPseudoOps::ignoreString(Assembler& asmr, const char*& linePtr)
     const char* end = asmr.line+asmr.lineSize;
     linePtr = skipSpacesToEnd(linePtr, end);
     std::string out;
-    if (asmr.parseString(out, linePtr, linePtr))
+    if (asmr.parseString(out, linePtr))
         checkGarbagesAtEnd(asmr, linePtr);
 }
 

@@ -1283,9 +1283,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* linePtr,
                     expectedToken = XT_OP;
                     AsmSymbolEntry* symEntry;
                     
-                    const char* symEndStr;
-                    Assembler::ParseState parseState = assembler.parseSymbol(linePtr,
-                                     symEndStr, symEntry, true, dontResolveSymbolsLater);
+                    const char* symEndStr = linePtr;
+                    Assembler::ParseState parseState = assembler.parseSymbol(symEndStr,
+                                     symEntry, true, dontResolveSymbolsLater);
                     
                     if (parseState == Assembler::ParseState::FAILED) good = false;
                     AsmExprArg arg;
@@ -1331,7 +1331,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* linePtr,
                              *linePtr == '\'')
                     {   // other we try to parse number
                         const char* oldStr = linePtr;
-                        if (!assembler.parseLiteral(arg.value, linePtr, linePtr))
+                        if (!assembler.parseLiteral(arg.value, linePtr))
                         {
                             arg.value = 0;
                             if (linePtr != end && oldStr == linePtr)

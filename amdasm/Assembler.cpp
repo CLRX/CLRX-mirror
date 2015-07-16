@@ -162,83 +162,82 @@ Assembler::~Assembler()
         delete entry;
 }
 
-bool Assembler::parseString(std::string& strarray, const char* linePtr,
-            const char*& outend)
+bool Assembler::parseString(std::string& strarray, const char*& linePtr)
 {
     const char* end = line+lineSize;
-    outend = linePtr;
+    const char* startPlace = linePtr;
     strarray.clear();
-    if (outend == end || *outend != '"')
+    if (linePtr == end || *linePtr != '"')
     {
-        while (outend != end && !isSpace(*outend) && *outend != ',' &&
-            *outend != ':' && *outend != ';') outend++;
-        printError(linePtr, "Expected string");
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',' &&
+            *linePtr != ':' && *linePtr != ';') linePtr++;
+        printError(startPlace, "Expected string");
         return false;
     }
-    outend++;
+    linePtr++;
     
-    while (outend != end && *outend != '"')
+    while (linePtr != end && *linePtr != '"')
     {
-        if (*outend == '\\')
+        if (*linePtr == '\\')
         {   // escape
-            outend++;
+            linePtr++;
             uint16_t value;
-            if (outend == end)
+            if (linePtr == end)
             {
-                printError(linePtr, "Unterminated character of string");
+                printError(startPlace, "Unterminated character of string");
                 return false;
             }
-            if (*outend == 'x')
+            if (*linePtr == 'x')
             {   // hex
-                outend++;
-                if (outend == end)
+                linePtr++;
+                if (linePtr == end)
                 {
-                    printError(linePtr, "Unterminated character of string");
+                    printError(startPlace, "Unterminated character of string");
                     return false;
                 }
                 value = 0;
-                if (isXDigit(*outend))
-                    for (; outend != end; outend++)
+                if (isXDigit(*linePtr))
+                    for (; linePtr != end; linePtr++)
                     {
                         cxuint digit;
-                        if (*outend >= '0' && *outend <= '9')
-                            digit = *outend-'0';
-                        else if (*outend >= 'a' && *outend <= 'f')
-                            digit = *outend-'a'+10;
-                        else if (*outend >= 'A' && *outend <= 'F')
-                            digit = *outend-'A'+10;
+                        if (*linePtr >= '0' && *linePtr <= '9')
+                            digit = *linePtr-'0';
+                        else if (*linePtr >= 'a' && *linePtr <= 'f')
+                            digit = *linePtr-'a'+10;
+                        else if (*linePtr >= 'A' && *linePtr <= 'F')
+                            digit = *linePtr-'A'+10;
                         else
                             break;
                         value = (value<<4) + digit;
                     }
                 else
                 {
-                    printError(linePtr, "Expected hexadecimal character code");
+                    printError(startPlace, "Expected hexadecimal character code");
                     return false;
                 }
                 value &= 0xff;
             }
-            else if (isODigit(*outend))
+            else if (isODigit(*linePtr))
             {   // octal
                 value = 0;
-                for (cxuint i = 0; outend != end && i < 3; i++, outend++)
+                for (cxuint i = 0; linePtr != end && i < 3; i++, linePtr++)
                 {
-                    if (!isODigit(*outend))
+                    if (!isODigit(*linePtr))
                     {
-                        printError(linePtr, "Expected octal character code");
+                        printError(startPlace, "Expected octal character code");
                         return false;
                     }
-                    value = (value<<3) + uint64_t(*outend-'0');
+                    value = (value<<3) + uint64_t(*linePtr-'0');
                     if (value > 255)
                     {
-                        printError(linePtr, "Octal code out of range");
+                        printError(startPlace, "Octal code out of range");
                         return false;
                     }
                 }
             }
             else
             {   // normal escapes
-                const char c = *outend++;
+                const char c = *linePtr++;
                 switch (c)
                 {
                     case 'a':
@@ -278,105 +277,106 @@ bool Assembler::parseString(std::string& strarray, const char* linePtr,
             strarray.push_back(value);
         }
         else // regular character
-            strarray.push_back(*outend++);
+            strarray.push_back(*linePtr++);
     }
-    if (outend == end)
+    if (linePtr == end)
     {
-        printError(linePtr, "Unterminated string");
+        printError(startPlace, "Unterminated string");
         return false;
     }
-    outend++;
+    linePtr++;
     return true;
 }
 
-bool Assembler::parseLiteral(uint64_t& value, const char* linePtr, const char*& outend)
+bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
 {
-    outend = linePtr;
+    const char* startPlace = linePtr;
     const char* end = line+lineSize;
-    if (outend != end && *outend == '\'')
+    if (linePtr != end && *linePtr == '\'')
     {
-        outend++;
-        if (outend == end)
+        linePtr++;
+        if (linePtr == end)
         {
-            printError(linePtr, "Unterminated character literal");
+            printError(startPlace, "Unterminated character literal");
             return false;
         }
-        if (*outend == '\'')
+        if (*linePtr == '\'')
         {
-            printError(linePtr, "Empty character literal");
+            printError(startPlace, "Empty character literal");
             return false;
         }
         
-        if (*outend != '\\')
+        if (*linePtr != '\\')
         {
-            value = *outend++;
-            if (outend == end || *outend != '\'')
+            value = *linePtr++;
+            if (linePtr == end || *linePtr != '\'')
             {
-                printError(linePtr, "Missing ''' at end of literal");
+                printError(startPlace, "Missing ''' at end of literal");
                 return false;
             }
-            outend++;
+            linePtr++;
             return true;
         }
         else // escapes
         {
-            outend++;
-            if (outend == end)
+            linePtr++;
+            if (linePtr == end)
             {
-                printError(linePtr, "Unterminated character literal");
+                printError(startPlace, "Unterminated character literal");
                 return false;
             }
-            if (*outend == 'x')
+            if (*linePtr == 'x')
             {   // hex
-                outend++;
-                if (outend == end)
+                linePtr++;
+                if (linePtr == end)
                 {
-                    printError(linePtr, "Unterminated character literal");
+                    printError(startPlace, "Unterminated character literal");
                     return false;
                 }
                 value = 0;
-                if (isXDigit(*outend))
-                    for (; outend != end; outend++)
+                if (isXDigit(*linePtr))
+                    for (; linePtr != end; linePtr++)
                     {
                         cxuint digit;
-                        if (*outend >= '0' && *outend <= '9')
-                            digit = *outend-'0';
-                        else if (*outend >= 'a' && *outend <= 'f')
-                            digit = *outend-'a'+10;
-                        else if (*outend >= 'A' && *outend <= 'F')
-                            digit = *outend-'A'+10;
+                        if (*linePtr >= '0' && *linePtr <= '9')
+                            digit = *linePtr-'0';
+                        else if (*linePtr >= 'a' && *linePtr <= 'f')
+                            digit = *linePtr-'a'+10;
+                        else if (*linePtr >= 'A' && *linePtr <= 'F')
+                            digit = *linePtr-'A'+10;
                         else
                             break; // end of literal
                         value = (value<<4) + digit;
                     }
                 else
                 {
-                    printError(linePtr, "Expected hexadecimal character code");
+                    printError(startPlace, "Expected hexadecimal character code");
                     return false;
                 }
                 value &= 0xff;
             }
-            else if (isODigit(*outend))
+            else if (isODigit(*linePtr))
             {   // octal
                 value = 0;
-                for (cxuint i = 0; outend != end && i < 3 && *outend != '\''; i++, outend++)
+                for (cxuint i = 0; linePtr != end && i < 3 && *linePtr != '\'';
+                     i++, linePtr++)
                 {
-                    if (!isODigit(*outend))
+                    if (!isODigit(*linePtr))
                     {
-                        printError(linePtr, "Expected octal character code");
+                        printError(startPlace, "Expected octal character code");
                         return false;
                     }
-                    value = (value<<3) + uint64_t(*outend-'0');
+                    value = (value<<3) + uint64_t(*linePtr-'0');
                     if (value > 255)
                     {
-                        printError(linePtr, "Octal code out of range");
+                        printError(startPlace, "Octal code out of range");
                         return false;
                     }
                 }
             }
             else
             {   // normal escapes
-                const char c = *outend++;
+                const char c = *linePtr++;
                 switch (c)
                 {
                     case 'a':
@@ -413,38 +413,37 @@ bool Assembler::parseLiteral(uint64_t& value, const char* linePtr, const char*& 
                         value = c;
                 }
             }
-            if (outend == end || *outend != '\'')
+            if (linePtr == end || *linePtr != '\'')
             {
-                printError(linePtr, "Missing ''' at end of literal");
+                printError(startPlace, "Missing ''' at end of literal");
                 return false;
             }
-            outend++;
+            linePtr++;
             return true;
         }
     }
     try
-    { value = cstrtovCStyle<uint64_t>(linePtr, line+lineSize, outend); }
+    { value = cstrtovCStyle<uint64_t>(startPlace, line+lineSize, linePtr); }
     catch(const ParseException& ex)
     {
-        printError(linePtr, ex.what());
+        printError(startPlace, ex.what());
         return false;
     }
     return true;
 }
 
-Assembler::ParseState Assembler::parseSymbol(const char* linePtr, const char*& outend,
+Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
     const std::string symName = extractSymName(linePtr, line+lineSize, localLabel);
-    outend = linePtr;
     if (symName.empty())
     {   // this is not symbol or a missing symbol
-        while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
-            *outend != ':' && *outend != ';') outend++;
+        while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',' &&
+            *linePtr != ':' && *linePtr!= ';') linePtr++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
     }
-    outend = linePtr + symName.size();
+    linePtr += symName.size();
     if (symName == ".") // any usage of '.' causes format initialization
         initializeOutputFormat();
     
@@ -738,29 +737,29 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* symbolPl
     return true;
 }
 
-bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
+bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
             cxuint sectionId, cxbyte fillValue)
 {
     initializeOutputFormat();
     if (currentSection != sectionId && sectionId != ASMSECT_ABS)
     {
-        printError(symbolStr, "Illegal section change for symbol '.'");
+        printError(symbolPlace, "Illegal section change for symbol '.'");
         return false;
     }
     if (currentSection != ASMSECT_ABS && int64_t(currentOutPos) > int64_t(value))
     {   /* check attempt to move backwards only for section that is not absolute */
-        printError(symbolStr, "Attempt to move backwards");
+        printError(symbolPlace, "Attempt to move backwards");
         return false;
     }
-    if (currentSection==ASMSECT_ABS && (fillValue&0xff)!=0)
-        printWarning(symbolStr, "Fill value is ignored inside absolute section");
+    if (currentSection==ASMSECT_ABS && fillValue!=0)
+        printWarning(symbolPlace, "Fill value is ignored inside absolute section");
     if (value-currentOutPos!=0)
         reserveData(value-currentOutPos, fillValue);
     currentOutPos = value;
     return true;
 }
 
-bool Assembler::skipSymbol(const char* linePtr, const char*& outend)
+bool Assembler::skipSymbol(const char*& linePtr)
 {
     const char* end = line+lineSize;
     linePtr = skipSpacesToEnd(linePtr, end);
@@ -771,11 +770,10 @@ bool Assembler::skipSymbol(const char* linePtr, const char*& outend)
             for (linePtr++; linePtr != end && (isAlnum(*linePtr) || *linePtr == '_' ||
                  *linePtr == '.' || *linePtr == '$') ; linePtr++);
     }
-    outend = linePtr;
     if (start == linePtr)
     {   // this is not symbol name
-        while (outend != end && !isSpace(*outend) && *outend != ',' &&
-            *outend != ':' && *outend != ';') outend++;
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',' &&
+            *linePtr != ':' && *linePtr != ';') linePtr++;
         printError(start, "Expected symbol name");
         return false;
     }

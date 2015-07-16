@@ -781,8 +781,8 @@ private:
     LineCol translatePos(size_t pos) const
     { return currentInputFilter->translatePos(pos); }
     
-    bool parseLiteral(uint64_t& value, const char* linePtr, const char*& outend);
-    bool parseString(std::string& outString, const char* linePtr, const char*& outend);
+    bool parseLiteral(uint64_t& value, const char*& linePtr);
+    bool parseString(std::string& outString, const char*& linePtr);
     
     enum class ParseState
     {
@@ -794,20 +794,20 @@ private:
     /** parse symbol
      * \return state
      */
-    ParseState parseSymbol(const char* linePtr, const char*& outend,
-           AsmSymbolEntry*& entry, bool localLabel = true, bool dontCreateSymbol = false);
-    bool skipSymbol(const char* linePtr, const char*& outend);
+    ParseState parseSymbol(const char*& linePtr, AsmSymbolEntry*& entry,
+                   bool localLabel = true, bool dontCreateSymbol = false);
+    bool skipSymbol(const char*& linePtr);
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
     bool assignSymbol(const std::string& symbolName, const char* symbolPlace,
-                  const char* string, bool reassign = true, bool baseExpr = false);
+                  const char* linePtr, bool reassign = true, bool baseExpr = false);
     
-    bool assignOutputCounter(const char* symbolStr, uint64_t value, cxuint sectionId,
+    bool assignOutputCounter(const char* symbolPlace, uint64_t value, cxuint sectionId,
                      cxbyte fillValue = 0);
     
-    void parsePseudoOps(const std::string firstName, const char* stmtStartString,
-                const char*& string);
+    void parsePseudoOps(const std::string firstName, const char* stmtPlace,
+                const char*& linePtr);
     
     /// exitm - exit macro mode
     bool skipClauses(bool exitm = false);
