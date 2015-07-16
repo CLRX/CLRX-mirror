@@ -422,7 +422,7 @@ void AsmFormatPseudoOps::galliumDoArgs(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
@@ -452,7 +452,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     std::string name;
     bool good = true;
     const char* nameStringPlace = linePtr;
@@ -478,7 +478,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
         asmr.printError(linePtr, "Expected absolute value");
         return;
     }
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     const char* sizeStrPlace = linePtr;
     uint64_t size = 4;
     good &= getAbsoluteValueArg(asmr, size, linePtr, true);
@@ -495,7 +495,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
         return;
     if (haveComma)
     {
-        linePtr = skipSpacesToEnd(linePtr, end);
+        skipSpacesToEnd(linePtr, end);
         const char* targetSizePlace = linePtr;
         uint64_t tgtSize = size;
         good &= getAbsoluteValueArg(asmr, tgtSize, linePtr, false);
@@ -507,7 +507,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
             return;
         if (haveComma)
         {
-            linePtr = skipSpacesToEnd(linePtr, end);
+            skipSpacesToEnd(linePtr, end);
             const char* targetAlignPlace = linePtr;
             uint64_t tgtAlign = 4;
             good &= getAbsoluteValueArg(asmr, tgtAlign, linePtr, false);
@@ -525,7 +525,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
                 return;
             if (haveComma)
             {
-                linePtr = skipSpacesToEnd(linePtr, end);
+                skipSpacesToEnd(linePtr, end);
                 const char* numExtPlace = linePtr;
                 if (getNameArg(asmr, name, linePtr, "numeric extension", false))
                 {
@@ -544,7 +544,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
                     return;
                 if (haveComma)
                 {
-                    linePtr = skipSpacesToEnd(linePtr, end);
+                    skipSpacesToEnd(linePtr, end);
                     const char* semanticPlace = linePtr;
                     if (getNameArg(asmr, name, linePtr, "argument semantic", false))
                     {
@@ -590,7 +590,7 @@ void AsmFormatPseudoOps::galliumProgInfo(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
@@ -609,7 +609,7 @@ void AsmFormatPseudoOps::galliumDoEntry(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     const char* addrPlace = linePtr;
     size_t entryAddr;
     bool good = true;
@@ -629,7 +629,7 @@ void AsmFormatPseudoOps::galliumDoEntry(AsmGalliumHandler& handler,
         return;
     }
     
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     const char* entryValPlace = linePtr;
     uint64_t entryVal;
     if (getAbsoluteValueArg(asmr, entryVal, linePtr, true))

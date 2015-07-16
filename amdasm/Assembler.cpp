@@ -658,7 +658,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* symbolPl
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, linePtr, makeBaseExpr));
-    linePtr = skipSpacesToEnd(linePtr, line+lineSize);
+    skipSpacesToEnd(linePtr, line+lineSize);
     if (!expr) // no expression, errors
         return false;
     
@@ -761,7 +761,7 @@ bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
 bool Assembler::skipSymbol(const char*& linePtr)
 {
     const char* end = line+lineSize;
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     const char* start = linePtr;
     if (linePtr != end)
     {   /* skip only symbol name */
@@ -982,9 +982,9 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     {
         const AsmMacroArg& arg = macro->getArg(i);
         
-        linePtr = skipSpacesToEnd(linePtr, end);
+        skipSpacesToEnd(linePtr, end);
         if (linePtr!=end && *linePtr==',' && i!=0)
-            linePtr = skipSpacesToEnd(linePtr+1, end);
+            skipCharAndSpacesToEnd(linePtr, end);
         
         const char* argPlace = linePtr;
         if (!arg.vararg)
@@ -1005,12 +1005,12 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
                     argGood = good = false;
                     break;
                 }
-                linePtr = skipSpacesToEnd(linePtr, end);
+                skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end)
                 {
                     if(*linePtr==',')
                     {
-                        linePtr = skipSpacesToEnd(linePtr+1, end);
+                        skipCharAndSpacesToEnd(linePtr, end);
                         argMap[i].second.push_back(',');
                     }
                     else
@@ -1036,7 +1036,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
             argMap[i].second = arg.defaultValue;
     }
     
-    linePtr = skipSpacesToEnd(linePtr, end);
+    skipSpacesToEnd(linePtr, end);
     if (linePtr != end)
     {
         printError(linePtr, "Garbages at end of line");
@@ -1154,7 +1154,7 @@ bool Assembler::assemble()
         
         const char* linePtr = line; // string points to place of line
         const char* end = line+lineSize;
-        linePtr = skipSpacesToEnd(linePtr, end);
+        skipSpacesToEnd(linePtr, end);
         if (linePtr == end)
             continue; // only empty line
         
@@ -1163,13 +1163,13 @@ bool Assembler::assemble()
         std::string firstName = extractLabelName(linePtr, end);
         linePtr += firstName.size();
         
-        linePtr = skipSpacesToEnd(linePtr, end);
+        skipSpacesToEnd(linePtr, end);
         
         bool doNextLine = false;
         while (!firstName.empty() && linePtr != end && *linePtr == ':')
         {   // labels
             linePtr++;
-            linePtr = skipSpacesToEnd(linePtr, end);
+            skipSpacesToEnd(linePtr, end);
             initializeOutputFormat();
             if (firstName.front() >= '0' && firstName.front() <= '9')
             {   // handle local labels
@@ -1244,12 +1244,12 @@ bool Assembler::assemble()
         
         /* now stmtStartStr - points to first string of statement
          * (labels has been skipped) */
-        linePtr = skipSpacesToEnd(linePtr, end);
+        skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == '=' &&
             // not for local labels
             (firstName.front() < '0' || firstName.front() > '9'))
         {   // assignment
-            linePtr = skipSpacesToEnd(linePtr+1, line+lineSize);
+            skipCharAndSpacesToEnd(linePtr, line+lineSize);
             if (linePtr == end)
             {
                 printError(linePtr, "Expected assignment expression");

@@ -184,11 +184,14 @@ struct CLRX_INTERNAL GCNInstruction
 
 CLRX_INTERNAL extern const GCNInstruction gcnInstrsTable[];
 
-static inline const char* skipSpacesToEnd(const char* string, const char* end)
+static inline void skipCharAndSpacesToEnd(const char*& string, const char* end)
 {
+    ++string;
     while (string!=end && *string == ' ') string++;
-    return string;
 }
+
+static inline void skipSpacesToEnd(const char*& string, const char* end)
+{ while (string!=end && *string == ' ') string++; }
 
 // extract sybol name or argument name or other identifier
 static inline const std::string extractSymName(const char* startString, const char* end,

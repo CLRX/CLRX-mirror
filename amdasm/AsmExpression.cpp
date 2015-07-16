@@ -1068,7 +1068,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     
     while (linePtr != end)
     {
-        linePtr = skipSpacesToEnd(linePtr, end);
+        skipSpacesToEnd(linePtr, end);
         if (linePtr == end) break;
         
         LineCol lineCol = { 0, 0 };
