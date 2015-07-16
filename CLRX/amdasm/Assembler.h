@@ -71,6 +71,7 @@ enum class AsmSectionType: cxbyte
     
     AMD_HEADER = LAST_COMMON+1, ///< AMD Catalyst kernel's header
     AMD_METADATA,       ///< AMD Catalyst kernel's metadata
+    AMD_CALNOTE,        ///< AMD CALNote
     AMD_LLVMIR,         ///< LLVMIR for AMD binary
     AMD_SOURCE,         ///< AMD source code
     

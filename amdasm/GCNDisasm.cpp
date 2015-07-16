@@ -394,9 +394,8 @@ union CLRX_INTERNAL FloatUnion
     uint32_t u;
 };
 
-static inline size_t putByteToBuf(cxuint op, char* buf)
+static inline void putByteToBuf(cxuint op, char* buf, size_t& pos)
 {
-    size_t pos = 0;
     cxuint val = op;
     if (val >= 100U)
     {
@@ -410,12 +409,10 @@ static inline size_t putByteToBuf(cxuint op, char* buf)
             buf[pos++] = digit1 + '0';
         buf[pos++] = val-digit1*10U + '0';
     }
-    return pos;
 }
 
-static inline size_t putHexByteToBuf(cxuint op, char* buf)
+static inline void putHexByteToBuf(cxuint op, char* buf, size_t& bufPos)
 {
-    size_t bufPos = 0;
     const cxuint digit0 = op&0xf;
     const cxuint digit1 = (op&0xf0)>>4;
     buf[bufPos++] = '0';
@@ -423,7 +420,6 @@ static inline size_t putHexByteToBuf(cxuint op, char* buf)
     if (digit1 != 0)
         buf[bufPos++] = (digit1<=9)?'0'+digit1:'a'+digit1-10;
     buf[bufPos++] = (digit0<=9)?'0'+digit0:'a'+digit0-10;
-    return bufPos;
 }
 
 static size_t regRanges(cxuint op, cxuint vregNum, char* buf)
@@ -431,14 +427,14 @@ static size_t regRanges(cxuint op, cxuint vregNum, char* buf)
     size_t pos = 0;
     if (vregNum!=1)
         buf[pos++] = '[';
-    pos += putByteToBuf(op, buf+pos);
+    putByteToBuf(op, buf, pos);
     if (vregNum!=1)
     {
         buf[pos++] = ':';
         op += vregNum-1;
         if (op > 255)
             op -= 256; // fix for VREGS
-        pos += putByteToBuf(op, buf+pos);
+        putByteToBuf(op, buf, pos);
         buf[pos++] = ']';
     }
     return pos;
@@ -666,7 +662,7 @@ static void decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     buf[bufPos++] = ',';
     buf[bufPos++] = ' ';
     if ((gcnInsn.mode & GCN_SRC1_IMM) != 0)
-        bufPos += putHexByteToBuf((insnCode>>8)&0xff, buf+bufPos);
+        putHexByteToBuf((insnCode>>8)&0xff, buf, bufPos);
     else
         bufPos += decodeGCNOperand((insnCode>>8)&0xff,
                (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf + bufPos, arch, literal);
@@ -901,10 +897,10 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         }
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += putByteToBuf((imm16>>6)&31, buf+bufPos);
+        putByteToBuf((imm16>>6)&31, buf, bufPos);
         buf[bufPos++] = ',';
         buf[bufPos++] = ' ';
-        bufPos += putByteToBuf(((imm16>>11)&31)+1, buf+bufPos);
+        putByteToBuf(((imm16>>11)&31)+1, buf, bufPos);
         buf[bufPos++] = ')';
     }
     else
@@ -1023,7 +1019,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
         bufPos += addSpaces(buf, spacesToAdd);
         if (mode1 & GCN_SMEM_SDATA_IMM)
-            bufPos += putHexByteToBuf((insnCode>>6)&0x7f, buf + bufPos);
+            putHexByteToBuf((insnCode>>6)&0x7f, buf, bufPos);
         else
             bufPos += decodeGCNOperand((insnCode>>6)&0x7f, dregsNum, buf + bufPos, arch);
         buf[bufPos++] = ',';
@@ -1217,7 +1213,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
             putChars(buf, bufPos, " row_shr:", 9);
         else
             putChars(buf, bufPos, " row_ror:", 9);
-        bufPos += putByteToBuf(dppCtrl&0xf, buf+bufPos);
+        putByteToBuf(dppCtrl&0xf, buf, bufPos);
     }
     else if (dppCtrl >= 0x130 && dppCtrl <= 0x143 && dppCtrl130Tbl[dppCtrl-0x130]!=nullptr)
         putChars(buf, bufPos, dppCtrl130Tbl[dppCtrl-0x130],
@@ -1232,9 +1228,9 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
         putChars(buf, bufPos, " bound_ctrl", 11);
     
     putChars(buf, bufPos, " bank_mask:", 11);
-    bufPos += putByteToBuf((insnCode2>>24)&0xf, buf+bufPos);
+    putByteToBuf((insnCode2>>24)&0xf, buf, bufPos);
     putChars(buf, bufPos, " row_mask:", 10);
-    bufPos += putByteToBuf((insnCode2>>28)&0xf, buf+bufPos);
+    putByteToBuf((insnCode2>>28)&0xf, buf, bufPos);
     
     if (!src0Used)
     {
@@ -1636,7 +1632,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 buf[bufPos++] = ')';
             putChars(buf, bufPos, ", attr", 6);
             const cxuint attr = vsrc0&63;
-            bufPos += putByteToBuf(attr, buf+bufPos);
+            putByteToBuf(attr, buf, bufPos);
             buf[bufPos++] = '.';
             buf[bufPos++] = "xyzw"[((vsrc0>>6)&3)]; // attrchannel
             
@@ -1786,7 +1782,7 @@ static void decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch,
         bufPos += decodeGCNVRegOperand(insnCode&0xff, 1, buf+bufPos);
     putChars(buf, bufPos, ", attr", 6);
     const cxuint attr = (insnCode>>10)&63;
-    bufPos += putByteToBuf(attr, buf+bufPos);
+    putByteToBuf(attr, buf, bufPos);
     buf[bufPos++] = '.';
     buf[bufPos++] = "xyzw"[((insnCode>>8)&3)]; // attrchannel
     output.forward(bufPos);
@@ -1868,12 +1864,12 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
             if ((offset&0xff) != 0)
             {
                 putChars(buf, bufPos, " offset0:", 9);
-                bufPos += putByteToBuf(offset&0xff, buf+bufPos);
+                putByteToBuf(offset&0xff, buf, bufPos);
             }
             if ((offset&0xff00) != 0)
             {
                 putChars(buf, bufPos, " offset1:", 9);
-                bufPos += putByteToBuf((offset>>8)&0xff, buf+bufPos);
+                putByteToBuf((offset>>8)&0xff, buf, bufPos);
             }
         }
     }
