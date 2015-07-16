@@ -479,11 +479,18 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     const char* end = line+lineSize;
     bool firstNonSpace = false;
     cxbyte prevTok = 0;
+    cxuint backslash = 0;
     if (string != end && *string=='"')
     {
         string++;
-        while (string != end && *string != '\"')
+        while (string != end && (*string != '\"' || (backslash&1)!=0))
+        {
+            if (*string=='\\')
+                backslash++;
+            else
+                backslash = 0;
             outStr.push_back(*string++);
+        }
         if (string == end)
         {
             printError(string, "Unterminated quoted string");
