@@ -569,27 +569,24 @@ public:
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
-     * \param linePos position in line
-     * \param outLinePos position in line after parsing
+     * \param linePos position in line and output position in line
      * \param makeBase do not evaluate resolved symbols, put them to expression
      * \param dontReolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
-    static AsmExpression* parse(Assembler& assembler, size_t linePos, size_t& outLinePos,
+    static AsmExpression* parse(Assembler& assembler, size_t& linePos,
                     bool makeBase = false, bool dontReolveSymbolsLater = false);
     
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
-     * \param linePtr string at position in line
-     * \param outend string at position in line after parsing
+     * \param linePtr string at position in line (returns output line pointer)
      * \param makeBase do not evaluate resolved symbols, put them to expression
      * \param dontReolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
-    static AsmExpression* parse(Assembler& assembler, const char* linePtr,
-              const char*& outend, bool makeBase = false,
-              bool dontReolveSymbolsLater = false);
+    static AsmExpression* parse(Assembler& assembler, const char*& linePtr,
+              bool makeBase = false, bool dontReolveSymbolsLater = false);
     
     /// return true if is argument op
     static bool isArg(AsmExprOp op)

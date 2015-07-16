@@ -158,8 +158,7 @@ bool AsmPseudoOps::getAbsoluteValueArg(Assembler& asmr, uint64_t& value,
     const char* end = asmr.line + asmr.lineSize;
     linePtr = skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, linePtr,
-                 false, true));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, true));
     if (expr == nullptr)
         return false;
     if (expr->isEmpty() && requiredExpr)
@@ -186,8 +185,7 @@ bool AsmPseudoOps::getAnyValueArg(Assembler& asmr, uint64_t& value,
     const char* end = asmr.line + asmr.lineSize;
     linePtr = skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, linePtr,
-                 false, true));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, true));
     if (expr == nullptr)
         return false;
     if (expr->isEmpty())
@@ -577,7 +575,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
         return;
     do {
         const char* exprPlace = linePtr;
-        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, linePtr));
+        std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
         if (expr)
         {
             if (expr->isEmpty()) // empty expression print warning

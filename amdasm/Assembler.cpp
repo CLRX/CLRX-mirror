@@ -657,8 +657,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* symbolPl
     const char* exprPlace = linePtr;
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
-                    *this, linePtr, linePtr, makeBaseExpr));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, linePtr, makeBaseExpr));
     linePtr = skipSpacesToEnd(linePtr, line+lineSize);
     if (!expr) // no expression, errors
         return false;

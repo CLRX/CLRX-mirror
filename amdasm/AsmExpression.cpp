@@ -785,13 +785,12 @@ static const cxbyte asmOpPrioritiesTbl[] =
     0 // CHOICE_END
 };
 
-AsmExpression* AsmExpression::parse(Assembler& assembler, size_t linePos,
-                size_t& outLinePos, bool makeBase, bool dontResolveSymbolsLater)
+AsmExpression* AsmExpression::parse(Assembler& assembler, size_t& linePos,
+                bool makeBase, bool dontResolveSymbolsLater)
 {
-    const char* outend;
-    AsmExpression* expr = parse(assembler, assembler.line+linePos, outend,
-                makeBase, dontResolveSymbolsLater);
-    outLinePos = outend-(assembler.line+linePos);
+    const char* outend = assembler.line+linePos;
+    AsmExpression* expr = parse(assembler, outend, makeBase, dontResolveSymbolsLater);
+    linePos = outend-(assembler.line+linePos);
     return expr;
 }   
 
@@ -1030,8 +1029,8 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
     return good;
 }
 
-AsmExpression* AsmExpression::parse(Assembler& assembler, const char* linePtr,
-            const char*& outend, bool makeBase, bool dontResolveSymbolsLater)
+AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
+            bool makeBase, bool dontResolveSymbolsLater)
 {
     struct ConExprOpEntry
     {
@@ -1477,7 +1476,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* linePtr,
             stack.pop();
         }
     }
-    outend = linePtr;
+    //outend = linePtr;
     
     if (good)
     {
