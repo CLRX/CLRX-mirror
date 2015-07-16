@@ -1030,7 +1030,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
     return good;
 }
 
-AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
+AsmExpression* AsmExpression::parse(Assembler& assembler, const char* linePtr,
             const char*& outend, bool makeBase, bool dontResolveSymbolsLater)
 {
     struct ConExprOpEntry
@@ -1050,7 +1050,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     
     try
     {
-    const char* startString = string;
+    const char* startString = linePtr;
     const char* end = assembler.line + assembler.lineSize;
     size_t parenthesisCount = 0;
     size_t symOccursNum = 0;
@@ -1067,10 +1067,10 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     std::unique_ptr<AsmExpression> expr(new AsmExpression);
     expr->sourcePos = assembler.getSourcePos(startString);
     
-    while (string != end)
+    while (linePtr != end)
     {
-        string = skipSpacesToEnd(string, end);
-        if (string == end) break;
+        linePtr = skipSpacesToEnd(linePtr, end);
+        if (linePtr == end) break;
         
         LineCol lineCol = { 0, 0 };
         AsmExprOp op = AsmExprOp::NONE;
@@ -1078,13 +1078,13 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
         //const size_t oldParenthesisCount = parenthesisCount;
         bool doExit = false;
         
-        const char* beforeToken = string;
-        switch(*string)
+        const char* beforeToken = linePtr;
+        switch(*linePtr)
         {
             case '(':
                 if (expectedToken == XT_OP)
                 {
-                    assembler.printError(string, "Expected operator");
+                    assembler.printError(linePtr, "Expected operator");
                     good = false;
                 }
                 else
@@ -1092,12 +1092,12 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     expectedToken = XT_FIRST;
                     parenthesisCount++;
                 }
-                string++;
+                linePtr++;
                 break;
             case ')':
                 if (expectedToken != XT_OP)
                 {
-                    assembler.printError(string, "Expected operator or value or symbol");
+                    assembler.printError(linePtr, "Expected operator or value or symbol");
                     good = false;
                 }
                 else
@@ -1106,175 +1106,175 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     { doExit = true; break; }
                     parenthesisCount--;
                 }
-                string++;
+                linePtr++;
                 break;
             case '+':
                 op = (expectedToken == XT_OP) ? AsmExprOp::ADDITION : AsmExprOp::PLUS;
-                string++;
+                linePtr++;
                 break;
             case '-':
                 op = (expectedToken == XT_OP) ? AsmExprOp::SUBTRACT : AsmExprOp::NEGATE;
-                string++;
+                linePtr++;
                 break;
             case '*':
                 op = AsmExprOp::MULTIPLY;
-                string++;
+                linePtr++;
                 break;
             case '/':
-                lineCol = assembler.translatePos(string);
-                if (string+1 != end && string[1] == '/')
+                lineCol = assembler.translatePos(linePtr);
+                if (linePtr+1 != end && linePtr[1] == '/')
                 {
                     op = AsmExprOp::DIVISION;
-                    string++;
+                    linePtr++;
                 }
                 else // standard GNU as signed division
                     op = AsmExprOp::SIGNED_DIVISION;
-                string++;
+                linePtr++;
                 break;
             case '%':
-                lineCol = assembler.translatePos(string);
-                if (string+1 != end && string[1] == '%')
+                lineCol = assembler.translatePos(linePtr);
+                if (linePtr+1 != end && linePtr[1] == '%')
                 {
                     op = AsmExprOp::MODULO;
-                    string++;
+                    linePtr++;
                 }
                 else // standard GNU as signed division
                     op = AsmExprOp::SIGNED_MODULO;
-                string++;
+                linePtr++;
                 break;
             case '&':
-                if (string+1 != end && string[1] == '&')
+                if (linePtr+1 != end && linePtr[1] == '&')
                 {
                     op = AsmExprOp::LOGICAL_AND;
-                    string++;
+                    linePtr++;
                 }
                 else // standard GNU as signed division
                     op = AsmExprOp::BIT_AND;
-                string++;
+                linePtr++;
                 break;
             case '|':
-                if (string+1 != end && string[1] == '|')
+                if (linePtr+1 != end && linePtr[1] == '|')
                 {
                     op = AsmExprOp::LOGICAL_OR;
-                    string++;
+                    linePtr++;
                 }
                 else // standard GNU as signed division
                     op = AsmExprOp::BIT_OR;
-                string++;
+                linePtr++;
                 break;
             case '!':
                 if (expectedToken == XT_OP) // ORNOT or logical not
                 {
-                    if (string+1 != end && string[1] == '=')
+                    if (linePtr+1 != end && linePtr[1] == '=')
                     {
                         op = AsmExprOp::NOT_EQUAL;
-                        string++;
+                        linePtr++;
                     }
                     else
                         op = AsmExprOp::BIT_ORNOT;
                 }
                 else
                     op = AsmExprOp::LOGICAL_NOT;
-                string++;
+                linePtr++;
                 break;
             case '~':
                 if (expectedToken != XT_OP)
                     op = AsmExprOp::BIT_NOT;
                 else
                 {
-                    assembler.printError(string,
+                    assembler.printError(linePtr,
                         "Expected non-unary operator, '(', or end of expression");
                     good = false;
                 }
-                string++;
+                linePtr++;
                 break;
             case '^':
                 op = AsmExprOp::BIT_XOR;
-                string++;
+                linePtr++;
                 break;
             case '<':
-                if (string+1 != end && string[1] == '<')
+                if (linePtr+1 != end && linePtr[1] == '<')
                 {
-                    lineCol = assembler.translatePos(string);
+                    lineCol = assembler.translatePos(linePtr);
                     op = AsmExprOp::SHIFT_LEFT;
-                    string++;
+                    linePtr++;
                 }
-                else if (string+1 != end && string[1] == '>')
+                else if (linePtr+1 != end && linePtr[1] == '>')
                 {
                     op = AsmExprOp::NOT_EQUAL;
-                    string++;
+                    linePtr++;
                 }
-                else if (string+1 != end && string[1] == '=')
+                else if (linePtr+1 != end && linePtr[1] == '=')
                 {
-                    if (string+2 != end && string[2] == '@')
+                    if (linePtr+2 != end && linePtr[2] == '@')
                     {
                         op = AsmExprOp::BELOW_EQ;
-                        string++;
+                        linePtr++;
                     }
                     else
                         op = AsmExprOp::LESS_EQ;
-                    string++;
+                    linePtr++;
                 }
-                else if (string+1 != end && string[1] == '@')
+                else if (linePtr+1 != end && linePtr[1] == '@')
                 {
                     op = AsmExprOp::BELOW;
-                    string++;
+                    linePtr++;
                 }
                 else
                     op = AsmExprOp::LESS;
-                string++;
+                linePtr++;
                 break;
             case '>':
-                if (string+1 != end && string[1] == '>')
+                if (linePtr+1 != end && linePtr[1] == '>')
                 {
-                    lineCol = assembler.translatePos(string);
-                    if (string+2 != end && string[2] == '>')
+                    lineCol = assembler.translatePos(linePtr);
+                    if (linePtr+2 != end && linePtr[2] == '>')
                     {
                         op = AsmExprOp::SIGNED_SHIFT_RIGHT;
-                        string++;
+                        linePtr++;
                     }
                     else
                         op = AsmExprOp::SHIFT_RIGHT;
-                    string++;
+                    linePtr++;
                 }
-                else if (string+1 != end && string[1] == '=')
+                else if (linePtr+1 != end && linePtr[1] == '=')
                 {
-                    if (string+2 != end && string[2] == '@')
+                    if (linePtr+2 != end && linePtr[2] == '@')
                     {
                         op = AsmExprOp::ABOVE_EQ;
-                        string++;
+                        linePtr++;
                     }
                     else
                         op = AsmExprOp::GREATER_EQ;
-                    string++;
+                    linePtr++;
                 }
-                else if (string+1 != end && string[1] == '@')
+                else if (linePtr+1 != end && linePtr[1] == '@')
                 {
                     op = AsmExprOp::ABOVE;
-                    string++;
+                    linePtr++;
                 }
                 else
                     op = AsmExprOp::GREATER;
-                string++;
+                linePtr++;
                 break;
             case '=':
-                if (string+1 != end && string[1] == '=')
+                if (linePtr+1 != end && linePtr[1] == '=')
                 {
                     op = AsmExprOp::EQUAL;
-                    string++;
+                    linePtr++;
                 }
                 else
                     expectedPrimaryExpr = true;
-                string++;
+                linePtr++;
                 break;
             case '?':
-                lineCol = assembler.translatePos(string);
+                lineCol = assembler.translatePos(linePtr);
                 op = AsmExprOp::CHOICE_START;
-                string++;
+                linePtr++;
                 break;
             case ':':
                 op = AsmExprOp::CHOICE;
-                string++;
+                linePtr++;
                 break;
             default: // parse symbol or value
                 if (expectedToken != XT_OP)
@@ -1284,7 +1284,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     AsmSymbolEntry* symEntry;
                     
                     const char* symEndStr;
-                    Assembler::ParseState parseState = assembler.parseSymbol(string,
+                    Assembler::ParseState parseState = assembler.parseSymbol(linePtr,
                                      symEndStr, symEntry, true, dontResolveSymbolsLater);
                     
                     if (parseState == Assembler::ParseState::FAILED) good = false;
@@ -1299,9 +1299,9 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                             (!symEntry->second.hasValue && dontResolveSymbolsLater))
                         {   // no symbol not found
                             std::string errorMsg("Expression have unresolved symbol '");
-                            errorMsg.append(string, symEndStr);
+                            errorMsg.append(linePtr, symEndStr);
                             errorMsg += '\'';
-                            assembler.printError(string, errorMsg.c_str());
+                            assembler.printError(linePtr, errorMsg.c_str());
                             good = false;
                         }
                         else
@@ -1325,19 +1325,19 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                                 ops.push_back(AsmExprOp::ARG_SYMBOL);
                             }
                         }
-                        string = symEndStr;
+                        linePtr = symEndStr;
                     }
-                    else if (parenthesisCount != 0 || (*string >= '0' && *string <= '9') ||
-                             *string == '\'')
+                    else if (parenthesisCount != 0 || (*linePtr >= '0' && *linePtr <= '9') ||
+                             *linePtr == '\'')
                     {   // other we try to parse number
-                        const char* oldStr = string;
-                        if (!assembler.parseLiteral(arg.value, string, string))
+                        const char* oldStr = linePtr;
+                        if (!assembler.parseLiteral(arg.value, linePtr, linePtr))
                         {
                             arg.value = 0;
-                            if (string != end && oldStr == string)
+                            if (linePtr != end && oldStr == linePtr)
                                 // skip one character when end is in this same place
                                 // (avoids infinity loops)
-                                string++;
+                                linePtr++;
                             good = false;
                         }
                         args.push_back(arg);
@@ -1355,8 +1355,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
                     { doExit = true; break; }
                     else
                     {
-                        string++;
-                        assembler.printError(string, "Garbages at end of expression");
+                        linePtr++;
+                        assembler.printError(linePtr, "Garbages at end of expression");
                         good = false;
                     }
                 }
@@ -1447,14 +1447,14 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
     }
     if (parenthesisCount != 0)
     {   // print error
-        assembler.printError(string, "Missing ')'");
+        assembler.printError(linePtr, "Missing ')'");
         good = false;
     }
     if (expectedToken != XT_OP)
     {
         if (!ops.empty() || !stack.empty())
         {
-            assembler.printError(string, "Unterminated expression");
+            assembler.printError(linePtr, "Unterminated expression");
             good = false;
         }
     }
@@ -1477,7 +1477,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char* string,
             stack.pop();
         }
     }
-    outend = string;
+    outend = linePtr;
     
     if (good)
     {

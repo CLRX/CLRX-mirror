@@ -152,8 +152,8 @@ public:
     // get current section flags and type
     virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;
     /// parse pseudo-op
-    virtual void parsePseudoOp(const std::string firstName,
-           const char* stmtStartStr, const char*& string) = 0;
+    virtual void parsePseudoOp(const std::string& firstName,
+           const char* stmtPlace, const char*& linePtr) = 0;
     /// write binaery to output stream
     virtual bool writeBinary(std::ostream& os) = 0;
 };
@@ -184,8 +184,8 @@ public:
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
-    void parsePseudoOp(const std::string firstName,
-           const char* stmtStartStr, const char*& string);
+    void parsePseudoOp(const std::string& firstName,
+           const char* stmtPlace, const char*& linePtr);
     /// write binaery to output stream
     bool writeBinary(std::ostream& os);
 };
@@ -233,8 +233,8 @@ public:
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
-    void parsePseudoOp(const std::string firstName,
-           const char* stmtStartStr, const char*& string);
+    void parsePseudoOp(const std::string& firstName,
+           const char* stmtPlace, const char*& linePtr);
     /// write binaery to output stream
     bool writeBinary(std::ostream& os);
 };
@@ -283,8 +283,8 @@ public:
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
-    void parsePseudoOp(const std::string firstName,
-           const char* stmtStartStr, const char*& string);
+    void parsePseudoOp(const std::string& firstName,
+           const char* stmtPlace, const char*& linePtr);
     /// write binaery to output stream
     bool writeBinary(std::ostream& os);
 };
@@ -581,13 +581,13 @@ public:
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
-     * \param linePlace string at position in line
+     * \param linePtr string at position in line
      * \param outend string at position in line after parsing
      * \param makeBase do not evaluate resolved symbols, put them to expression
      * \param dontReolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
-    static AsmExpression* parse(Assembler& assembler, const char* linePlace,
+    static AsmExpression* parse(Assembler& assembler, const char* linePtr,
               const char*& outend, bool makeBase = false,
               bool dontReolveSymbolsLater = false);
     
@@ -760,29 +760,29 @@ private:
     
     AsmSourcePos getSourcePos(size_t pos) const
     { return currentInputFilter->getSourcePos(pos); }
-    AsmSourcePos getSourcePos(const char* string) const
-    { return getSourcePos(string-line); }
+    AsmSourcePos getSourcePos(const char* linePtr) const
+    { return getSourcePos(linePtr-line); }
     
     void printWarning(const AsmSourcePos& pos, const char* message);
     void printError(const AsmSourcePos& pos, const char* message);
     
-    void printWarning(const char* linePlace, const char* message)
-    { printWarning(getSourcePos(linePlace), message); }
-    void printError(const char* linePlace, const char* message)
-    { printError(getSourcePos(linePlace), message); }
+    void printWarning(const char* linePtr, const char* message)
+    { printWarning(getSourcePos(linePtr), message); }
+    void printError(const char* linePtr, const char* message)
+    { printError(getSourcePos(linePtr), message); }
     
     void printWarning(LineCol lineCol, const char* message)
     { printWarning(getSourcePos(lineCol), message); }
     void printError(LineCol lineCol, const char* message)
     { printError(getSourcePos(lineCol), message); }
     
-    LineCol translatePos(const char* linePlace) const
-    { return currentInputFilter->translatePos(linePlace-line); }
+    LineCol translatePos(const char* linePtr) const
+    { return currentInputFilter->translatePos(linePtr-line); }
     LineCol translatePos(size_t pos) const
     { return currentInputFilter->translatePos(pos); }
     
-    bool parseLiteral(uint64_t& value, const char* linePlace, const char*& outend);
-    bool parseString(std::string& strarray, const char* linePlace, const char*& outend);
+    bool parseLiteral(uint64_t& value, const char* linePtr, const char*& outend);
+    bool parseString(std::string& outString, const char* linePtr, const char*& outend);
     
     enum class ParseState
     {
@@ -794,13 +794,13 @@ private:
     /** parse symbol
      * \return state
      */
-    ParseState parseSymbol(const char* linePlace, const char*& outend,
+    ParseState parseSymbol(const char* linePtr, const char*& outend,
            AsmSymbolEntry*& entry, bool localLabel = true, bool dontCreateSymbol = false);
-    bool skipSymbol(const char* linePlace, const char*& outend);
+    bool skipSymbol(const char* linePtr, const char*& outend);
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
-    bool assignSymbol(const std::string& symbolName, const char* placeAtSymbol,
+    bool assignSymbol(const std::string& symbolName, const char* symbolPlace,
                   const char* string, bool reassign = true, bool baseExpr = false);
     
     bool assignOutputCounter(const char* symbolStr, uint64_t value, cxuint sectionId,
@@ -827,11 +827,11 @@ private:
     bool popClause(const char* string, AsmClauseType clauseType);
     
     /// returns false when includeLevel is too deep, throw error if failed a file opening
-    bool includeFile(const char* pseudoOpStr, const std::string& filename);
+    bool includeFile(const char* pseudoOpPlace, const std::string& filename);
     
     ParseState makeMacroSubstitution(const char* string);
     
-    bool parseMacroArgValue(const char*& string, std::string& outStr);
+    bool parseMacroArgValue(const char*& linePtr, std::string& outStr);
     
     void putData(size_t size, const cxbyte* data)
     {

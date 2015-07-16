@@ -245,133 +245,141 @@ struct CLRX_INTERNAL AsmPseudoOps
     /* IMPORTANT:
      * about string argumenbt - string points to place of current line
      * processed by assembler
-     * pseudoOpStr - points to first character from line of pseudo-op name
+     * pseudoOpPlace - points to first character from line of pseudo-op name
      */
-    static bool checkGarbagesAtEnd(Assembler& asmr, const char* string);
+    static bool checkGarbagesAtEnd(Assembler& asmr, const char* linePtr);
     /* parsing helpers */
     /* get absolute value arg resolved at this time.
        if empty expression value is not set */
-    static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& string,
+    static bool getAbsoluteValueArg(Assembler& asmr, uint64_t& value, const char*& linePtr,
                     bool requiredExpr = false);
     
     static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
-                    const char*& string);
+                    const char*& linePtr);
     // get name (not symbol name)
-    static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& string,
+    static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& linePtr,
                const char* objName, bool requiredExpr = true);
     // skip comma
-    static bool skipComma(Assembler& asmr, bool& haveComma, const char*& string);
+    static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
     
     // skip comma for multiple argument pseudo-ops
-    static bool skipCommaForMultipleArgd(Assembler& asmr, const char*& string);
+    static bool skipCommaForMultipleArgd(Assembler& asmr, const char*& linePtr);
     
     /*
      * pseudo-ops logic
      */
     // set bitnesss
-    static void setBitness(Assembler& asmr, const char*& string, bool _64Bit);
+    static void setBitness(Assembler& asmr, const char*& linePtr, bool _64Bit);
     // set output format
-    static void setOutFormat(Assembler& asmr, const char*& string);
+    static void setOutFormat(Assembler& asmr, const char*& linePtr);
     // change kernel
-    static void goToKernel(Assembler& asmr, const char*& string);
+    static void goToKernel(Assembler& asmr, const char*& linePtr);
     
     /// include file
-    static void includeFile(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void includeFile(Assembler& asmr, const char* pseudoOpPlace,
+                            const char*& linePtr);
     // include binary file
-    static void includeBinFile(Assembler& asmr, const char* pseudoOpStr,
-                       const char*& string);
+    static void includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
+                       const char*& linePtr);
     
     // fail
-    static void doFail(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doFail(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     // .error
-    static void printError(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doError(Assembler& asmr, const char* pseudoOpPlace,
+                           const char*& linePtr);
     // .warning
-    static void printWarning(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doWarning(Assembler& asmr, const char* pseudoOpPlace,
+                     const char*& linePtr);
     
     // .byte, .short, .int, .word, .long, .quad
     template<typename T>
-    static void putIntegers(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void putIntegers(Assembler& asmr, const char* pseudoOpPlace,
+                    const char*& linePtr);
     
     // .half, .float, .double
     template<typename UIntType>
-    static void putFloats(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void putFloats(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     
     /// .string, ascii
-    static void putStrings(Assembler& asmr, const char* pseudoOpStr,
-                   const char*& string, bool addZero = false);
+    static void putStrings(Assembler& asmr, const char* pseudoOpPlace,
+                   const char*& linePtr, bool addZero = false);
     // .string16, .string32, .string64
     template<typename T>
-    static void putStringsToInts(Assembler& asmr, const char* pseudoOpStr,
-                   const char*& string);
+    static void putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
+                   const char*& linePtr);
     
     /// .octa
-    static void putUInt128s(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
+                        const char*& linePtr);
     
     /// .set, .equ, .eqv, .equiv
-    static void setSymbol(Assembler& asmr, const char*& string, bool reassign = true,
+    static void setSymbol(Assembler& asmr, const char*& linePtr, bool reassign = true,
                 bool baseExpr = false);
     
     // .global, .local, .extern
-    static void setSymbolBind(Assembler& asmr, const char*& string, cxbyte elfInfo);
+    static void setSymbolBind(Assembler& asmr, const char*& linePtr, cxbyte elfInfo);
     
-    static void setSymbolSize(Assembler& asmr, const char*& string);
+    static void setSymbolSize(Assembler& asmr, const char*& linePtr);
     
-    static void ignoreExtern(Assembler& asmr, const char*& string);
+    static void ignoreExtern(Assembler& asmr, const char*& linePtr);
     
-    static void doFill(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+    static void doFill(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
                bool _64bit = false);
-    static void doSkip(Assembler& asmr, const char*& string);
+    static void doSkip(Assembler& asmr, const char*& linePtr);
     
     /* TODO: add no-op fillin for text sections */
-    static void doAlign(Assembler& asmr,  const char*& string, bool powerOf2 = false);
+    static void doAlign(Assembler& asmr,  const char*& linePtr, bool powerOf2 = false);
     
     /* TODO: add no-op fillin for text sections */
     template<typename Word>
-    static void doAlignWord(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
+                            const char*& linePtr);
     
-    static void doOrganize(Assembler& asmr, const char*& string);
+    static void doOrganize(Assembler& asmr, const char*& linePtr);
     
-    static void doPrint(Assembler& asmr, const char*& string);
+    static void doPrint(Assembler& asmr, const char*& linePtr);
     
-    static void doIfInt(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+    static void doIfInt(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
                 IfIntComp compType, bool elseIfClause);
     
-    static void doIfDef(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+    static void doIfDef(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
                 bool negation, bool elseIfClause);
     
-    static void doIfBlank(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+    static void doIfBlank(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
                 bool negation, bool elseIfClause);
     /// .ifc
-    static void doIfCmpStr(Assembler& asmr, const char* pseudoOpStr, const char*& string,
-                bool negation, bool elseIfClause);
+    static void doIfCmpStr(Assembler& asmr, const char* pseudoOpPlace,
+               const char*& linePtr, bool negation, bool elseIfClause);
     /// ifeqs, ifnes
-    static void doIfStrEqual(Assembler& asmr, const char* pseudoOpStr, const char*& string,
-                bool negation, bool elseIfClause);
+    static void doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
+                     const char*& linePtr, bool negation, bool elseIfClause);
     // else
-    static void doElse(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doElse(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     // endif
-    static void endIf(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void endIf(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     /// start repetition content
-    static void doRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doRepeat(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     /// end repetition content
-    static void endRepeat(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void endRepeat(Assembler& asmr, const char* pseudoOpPlace,
+                          const char*& linePtr);
     /// start macro definition
-    static void doMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void doMacro(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     /// ends macro definition
-    static void endMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void endMacro(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     // immediately exit from macro
-    static void exitMacro(Assembler& asmr, const char* pseudoOpStr, const char*& string);
+    static void exitMacro(Assembler& asmr, const char* pseudoOpPlace,
+                      const char*& linePtr);
     // purge macro
-    static void purgeMacro(Assembler& asmr, const char*& string);
+    static void purgeMacro(Assembler& asmr, const char*& linePtr);
     // do IRP
-    static void doIRP(Assembler& asmr, const char* pseudoOpStr, const char*& string,
+    static void doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
                       bool perChar = false);
     
-    static void undefSymbol(Assembler& asmr, const char*& string);
+    static void undefSymbol(Assembler& asmr, const char*& linePtr);
     
-    static void setAbsoluteOffset(Assembler& asmr, const char*& string);
+    static void setAbsoluteOffset(Assembler& asmr, const char*& linePtr);
     
-    static void ignoreString(Assembler& asmr, const char*& string);
+    static void ignoreString(Assembler& asmr, const char*& linePtr);
     
     static bool checkPseudoOpName(const std::string& string);
 };
@@ -380,14 +388,14 @@ class AsmGalliumHandler;
 
 struct CLRX_INTERNAL AsmFormatPseudoOps: AsmPseudoOps
 {
-    static void galliumDoArgs(AsmGalliumHandler& handler, const char* pseudoOpStr,
-                      const char*& string);
-    static void galliumDoArg(AsmGalliumHandler& handler, const char* pseudoOpStr,
-                      const char*& string);
-    static void galliumProgInfo(AsmGalliumHandler& handler, const char* pseudoOpStr,
-                      const char*& string);
-    static void galliumDoEntry(AsmGalliumHandler& handler, const char* pseudoOpStr,
-                      const char*& string);
+    static void galliumDoArgs(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char*& linePtr);
+    static void galliumDoArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char*& linePtr);
+    static void galliumProgInfo(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char*& linePtr);
+    static void galliumDoEntry(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char*& linePtr);
 };
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;

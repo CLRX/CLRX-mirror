@@ -162,17 +162,17 @@ Assembler::~Assembler()
         delete entry;
 }
 
-bool Assembler::parseString(std::string& strarray, const char* string,
+bool Assembler::parseString(std::string& strarray, const char* linePtr,
             const char*& outend)
 {
     const char* end = line+lineSize;
-    outend = string;
+    outend = linePtr;
     strarray.clear();
     if (outend == end || *outend != '"')
     {
         while (outend != end && !isSpace(*outend) && *outend != ',' &&
             *outend != ':' && *outend != ';') outend++;
-        printError(string, "Expected string");
+        printError(linePtr, "Expected string");
         return false;
     }
     outend++;
@@ -185,7 +185,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
             uint16_t value;
             if (outend == end)
             {
-                printError(string, "Unterminated character of string");
+                printError(linePtr, "Unterminated character of string");
                 return false;
             }
             if (*outend == 'x')
@@ -193,7 +193,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
                 outend++;
                 if (outend == end)
                 {
-                    printError(string, "Unterminated character of string");
+                    printError(linePtr, "Unterminated character of string");
                     return false;
                 }
                 value = 0;
@@ -213,7 +213,7 @@ bool Assembler::parseString(std::string& strarray, const char* string,
                     }
                 else
                 {
-                    printError(string, "Expected hexadecimal character code");
+                    printError(linePtr, "Expected hexadecimal character code");
                     return false;
                 }
                 value &= 0xff;
@@ -225,13 +225,13 @@ bool Assembler::parseString(std::string& strarray, const char* string,
                 {
                     if (!isODigit(*outend))
                     {
-                        printError(string, "Expected octal character code");
+                        printError(linePtr, "Expected octal character code");
                         return false;
                     }
                     value = (value<<3) + uint64_t(*outend-'0');
                     if (value > 255)
                     {
-                        printError(string, "Octal code out of range");
+                        printError(linePtr, "Octal code out of range");
                         return false;
                     }
                 }
@@ -282,28 +282,28 @@ bool Assembler::parseString(std::string& strarray, const char* string,
     }
     if (outend == end)
     {
-        printError(string, "Unterminated string");
+        printError(linePtr, "Unterminated string");
         return false;
     }
     outend++;
     return true;
 }
 
-bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& outend)
+bool Assembler::parseLiteral(uint64_t& value, const char* linePtr, const char*& outend)
 {
-    outend = string;
+    outend = linePtr;
     const char* end = line+lineSize;
     if (outend != end && *outend == '\'')
     {
         outend++;
         if (outend == end)
         {
-            printError(string, "Unterminated character literal");
+            printError(linePtr, "Unterminated character literal");
             return false;
         }
         if (*outend == '\'')
         {
-            printError(string, "Empty character literal");
+            printError(linePtr, "Empty character literal");
             return false;
         }
         
@@ -312,7 +312,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
             value = *outend++;
             if (outend == end || *outend != '\'')
             {
-                printError(string, "Missing ''' at end of literal");
+                printError(linePtr, "Missing ''' at end of literal");
                 return false;
             }
             outend++;
@@ -323,7 +323,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
             outend++;
             if (outend == end)
             {
-                printError(string, "Unterminated character literal");
+                printError(linePtr, "Unterminated character literal");
                 return false;
             }
             if (*outend == 'x')
@@ -331,7 +331,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
                 outend++;
                 if (outend == end)
                 {
-                    printError(string, "Unterminated character literal");
+                    printError(linePtr, "Unterminated character literal");
                     return false;
                 }
                 value = 0;
@@ -351,7 +351,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
                     }
                 else
                 {
-                    printError(string, "Expected hexadecimal character code");
+                    printError(linePtr, "Expected hexadecimal character code");
                     return false;
                 }
                 value &= 0xff;
@@ -363,13 +363,13 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
                 {
                     if (!isODigit(*outend))
                     {
-                        printError(string, "Expected octal character code");
+                        printError(linePtr, "Expected octal character code");
                         return false;
                     }
                     value = (value<<3) + uint64_t(*outend-'0');
                     if (value > 255)
                     {
-                        printError(string, "Octal code out of range");
+                        printError(linePtr, "Octal code out of range");
                         return false;
                     }
                 }
@@ -415,7 +415,7 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
             }
             if (outend == end || *outend != '\'')
             {
-                printError(string, "Missing ''' at end of literal");
+                printError(linePtr, "Missing ''' at end of literal");
                 return false;
             }
             outend++;
@@ -423,20 +423,20 @@ bool Assembler::parseLiteral(uint64_t& value, const char* string, const char*& o
         }
     }
     try
-    { value = cstrtovCStyle<uint64_t>(string, line+lineSize, outend); }
+    { value = cstrtovCStyle<uint64_t>(linePtr, line+lineSize, outend); }
     catch(const ParseException& ex)
     {
-        printError(string, ex.what());
+        printError(linePtr, ex.what());
         return false;
     }
     return true;
 }
 
-Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& outend,
+Assembler::ParseState Assembler::parseSymbol(const char* linePtr, const char*& outend,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
-    const std::string symName = extractSymName(string, line+lineSize, localLabel);
-    outend = string;
+    const std::string symName = extractSymName(linePtr, line+lineSize, localLabel);
+    outend = linePtr;
     if (symName.empty())
     {   // this is not symbol or a missing symbol
         while (outend != line+lineSize && !isSpace(*outend) && *outend != ',' &&
@@ -444,7 +444,7 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
         entry = nullptr;
         return Assembler::ParseState::MISSING;
     }
-    outend = string + symName.size();
+    outend = linePtr + symName.size();
     if (symName == ".") // any usage of '.' causes format initialization
         initializeOutputFormat();
     
@@ -468,7 +468,7 @@ Assembler::ParseState Assembler::parseSymbol(const char* string, const char*& ou
         std::string error = "Undefined previous local label '";
         error.append(symName.begin(), symName.end()-1);
         error += "'";
-        printError(string, error.c_str());
+        printError(linePtr, error.c_str());
         state = Assembler::ParseState::FAILED;
     }
     
@@ -652,26 +652,26 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     return good;
 }
 
-bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAtSymbol,
-             const char* string, bool reassign, bool baseExpr)
+bool Assembler::assignSymbol(const std::string& symbolName, const char* symbolPlace,
+             const char* linePtr, bool reassign, bool baseExpr)
 {
-    const char* exprStr = string;
+    const char* exprPlace = linePtr;
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(
-                    *this, string, string, makeBaseExpr));
-    string = skipSpacesToEnd(string, line+lineSize);
+                    *this, linePtr, linePtr, makeBaseExpr));
+    linePtr = skipSpacesToEnd(linePtr, line+lineSize);
     if (!expr) // no expression, errors
         return false;
     
-    if (string != line+lineSize)
+    if (linePtr != line+lineSize)
     {
-        printError(string, "Garbages at end of expression");
+        printError(linePtr, "Garbages at end of expression");
         return false;
     }
     if (expr->isEmpty()) // empty expression, we treat as error
     {
-        printError(exprStr, "Expected assignment expression");
+        printError(exprPlace, "Expected assignment expression");
         return false;
     }
     
@@ -682,10 +682,10 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         if (!expr->evaluate(*this, value, sectionId))
             return false;
         if (expr->getSymOccursNum()==0)
-            return assignOutputCounter(stringAtSymbol, value, sectionId);
+            return assignOutputCounter(symbolPlace, value, sectionId);
         else
         {
-            printError(stringAtSymbol, "Symbol '.' requires a resolved expression");
+            printError(symbolPlace, "Symbol '.' requires a resolved expression");
             return false;
         }
     }
@@ -698,7 +698,7 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         std::string msg = "Symbol '";
         msg += symbolName;
         msg += "' is already defined";
-        printError(stringAtSymbol, msg.c_str());
+        printError(symbolPlace, msg.c_str());
         return false;
     }
     AsmSymbolEntry& symEntry = *res.first;
@@ -760,19 +760,19 @@ bool Assembler::assignOutputCounter(const char* symbolStr, uint64_t value,
     return true;
 }
 
-bool Assembler::skipSymbol(const char* string, const char*& outend)
+bool Assembler::skipSymbol(const char* linePtr, const char*& outend)
 {
     const char* end = line+lineSize;
-    string = skipSpacesToEnd(string, end);
-    const char* start = string;
-    if (string != end)
+    linePtr = skipSpacesToEnd(linePtr, end);
+    const char* start = linePtr;
+    if (linePtr != end)
     {   /* skip only symbol name */
-        if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
-            for (string++; string != end && (isAlnum(*string) || *string == '_' ||
-                 *string == '.' || *string == '$') ; string++);
+        if(isAlpha(*linePtr) || *linePtr == '_' || *linePtr == '.' || *linePtr == '$')
+            for (linePtr++; linePtr != end && (isAlnum(*linePtr) || *linePtr == '_' ||
+                 *linePtr == '.' || *linePtr == '$') ; linePtr++);
     }
-    outend = string;
-    if (start == string)
+    outend = linePtr;
+    if (start == linePtr)
     {   // this is not symbol name
         while (outend != end && !isSpace(*outend) && *outend != ',' &&
             *outend != ':' && *outend != ';') outend++;
@@ -959,15 +959,15 @@ bool Assembler::popClause(const char* string, AsmClauseType clauseType)
     return true;
 }
 
-Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
+Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
 {
     const char* end = line+lineSize;
-    const char* macroStartStr = string;
+    const char* macroStartPlace = linePtr;
     
-    std::string macroName = extractSymName(string, end, false);
+    std::string macroName = extractSymName(linePtr, end, false);
     if (macroName.empty())
         return ParseState::MISSING;
-    string += macroName.size();
+    linePtr += macroName.size();
     toLowerString(macroName);
     MacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
@@ -985,14 +985,14 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
     {
         const AsmMacroArg& arg = macro->getArg(i);
         
-        string = skipSpacesToEnd(string, end);
-        if (string!=end && *string==',' && i!=0)
-            string = skipSpacesToEnd(string+1, end);
+        linePtr = skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr==',' && i!=0)
+            linePtr = skipSpacesToEnd(linePtr+1, end);
         
-        const char* argStr = string;
+        const char* argPlace = linePtr;
         if (!arg.vararg)
         {
-            if (!parseMacroArgValue(string, argMap[i].second))
+            if (!parseMacroArgValue(linePtr, argMap[i].second))
             {
                 good = false;
                 continue;
@@ -1001,24 +1001,24 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
         else
         {   /* parse variadic arguments */
             bool argGood = true;
-            while (string != end)
+            while (linePtr != end)
             {
-                if (!parseMacroArgValue(string, argMap[i].second))
+                if (!parseMacroArgValue(linePtr, argMap[i].second))
                 {
                     argGood = good = false;
                     break;
                 }
-                string = skipSpacesToEnd(string, end);
-                if (string!=end)
+                linePtr = skipSpacesToEnd(linePtr, end);
+                if (linePtr!=end)
                 {
-                    if(*string==',')
+                    if(*linePtr==',')
                     {
-                        string = skipSpacesToEnd(string+1, end);
+                        linePtr = skipSpacesToEnd(linePtr+1, end);
                         argMap[i].second.push_back(',');
                     }
                     else
                     {
-                        printError(string, "Garbages at end of line");
+                        printError(linePtr, "Garbages at end of line");
                         argGood = good = false;
                         break;
                     }
@@ -1032,17 +1032,17 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
             std::string message = "Value required for macro argument '";
             message += arg.name;
             message += '\'';
-            printError(argStr, message.c_str());
+            printError(argPlace, message.c_str());
             good = false;
         }
         else if (argMap[i].second.empty())
             argMap[i].second = arg.defaultValue;
     }
     
-    string = skipSpacesToEnd(string, end);
-    if (string != end)
+    linePtr = skipSpacesToEnd(linePtr, end);
+    if (linePtr != end)
     {
-        printError(string, "Garbages at end of line");
+        printError(linePtr, "Garbages at end of line");
         return ParseState::FAILED;
     }
     
@@ -1050,29 +1050,29 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* string)
         return ParseState::FAILED;
     if (macroSubstLevel == 1000)
     {
-        printError(macroStartStr, "Macro substitution level is greater than 1000");
+        printError(macroStartPlace, "Macro substitution level is greater than 1000");
         return ParseState::FAILED;
     }
     // sort argmap before using
     mapSort(argMap.begin(), argMap.end());
     // create macro input filter and push to stack
     std::unique_ptr<AsmInputFilter> macroFilter(new AsmMacroInputFilter(macro,
-            getSourcePos(macroStartStr), std::move(argMap), macroCount++));
+            getSourcePos(macroStartPlace), std::move(argMap), macroCount++));
     asmInputFilters.push(macroFilter.release());
     currentInputFilter = asmInputFilters.top();
     macroSubstLevel++;
     return ParseState::PARSED;
 }
 
-bool Assembler::includeFile(const char* pseudoOpStr, const std::string& filename)
+bool Assembler::includeFile(const char* pseudoOpPlace, const std::string& filename)
 {
     if (inclusionLevel == 500)
     {
-        printError(pseudoOpStr, "Inclusion level is greater than 500");
+        printError(pseudoOpPlace, "Inclusion level is greater than 500");
         return false;
     }
     std::unique_ptr<AsmInputFilter> newInputFilter(new AsmStreamInputFilter(
-                getSourcePos(pseudoOpStr), filename));
+                getSourcePos(pseudoOpPlace), filename));
     asmInputFilters.push(newInputFilter.release());
     currentInputFilter = asmInputFilters.top();
     inclusionLevel++;
@@ -1155,38 +1155,36 @@ bool Assembler::assemble()
                 break; // end of stream
         }
         
-        const char* string = line; // string points to place of line
+        const char* linePtr = line; // string points to place of line
         const char* end = line+lineSize;
-        string = skipSpacesToEnd(string, end);
-        if (string == end)
+        linePtr = skipSpacesToEnd(linePtr, end);
+        if (linePtr == end)
             continue; // only empty line
         
         // statement start (except labels). in this time can point to labels
-        const char* stmtStartStr = string;
-        std::string firstName = extractLabelName(string, end);
-        string += firstName.size();
+        const char* stmtPlace = linePtr;
+        std::string firstName = extractLabelName(linePtr, end);
+        linePtr += firstName.size();
         
-        string = skipSpacesToEnd(string, end);
+        linePtr = skipSpacesToEnd(linePtr, end);
         
         bool doNextLine = false;
-        while (!firstName.empty() && string != end && *string == ':')
+        while (!firstName.empty() && linePtr != end && *linePtr == ':')
         {   // labels
-            string++;
-            string = skipSpacesToEnd(string, end);
+            linePtr++;
+            linePtr = skipSpacesToEnd(linePtr, end);
             initializeOutputFormat();
             if (firstName.front() >= '0' && firstName.front() <= '9')
             {   // handle local labels
                 if (sections.empty())
                 {
-                    printError(stmtStartStr,
-                               "Local label can't be defined outside section");
+                    printError(stmtPlace, "Local label can't be defined outside section");
                     doNextLine = true;
                     break;
                 }
                 if (inAmdConfig)
                 {
-                    printError(stmtStartStr,
-                               "Local label can't defined in AMD config place");
+                    printError(stmtPlace, "Local label can't defined in AMD config place");
                     doNextLine = true;
                     break;
                 }
@@ -1215,21 +1213,21 @@ bool Assembler::assemble()
                         std::string msg = "Symbol '";
                         msg += firstName;
                         msg += "' is already defined";
-                        printError(stmtStartStr, msg.c_str());
+                        printError(stmtPlace, msg.c_str());
                         doNextLine = true;
                         break;
                     }
                 }
                 if (sections.empty())
                 {
-                    printError(stmtStartStr,
+                    printError(stmtPlace,
                                "Label can't be defined outside section");
                     doNextLine = true;
                     break;
                 }
                 if (inAmdConfig)
                 {
-                    printError(stmtStartStr,
+                    printError(stmtPlace,
                                "Label can't defined in AMD config place");
                     doNextLine = true;
                     break;
@@ -1240,39 +1238,39 @@ bool Assembler::assemble()
                 res.first->second.sectionId = currentSection;
             }
             // new label or statement
-            stmtStartStr = string;
-            firstName = extractLabelName(string, end);
-            string += firstName.size();
+            stmtPlace = linePtr;
+            firstName = extractLabelName(linePtr, end);
+            linePtr += firstName.size();
         }
         if (doNextLine)
             continue;
         
         /* now stmtStartStr - points to first string of statement
          * (labels has been skipped) */
-        string = skipSpacesToEnd(string, end);
-        if (string != end && *string == '=' &&
+        linePtr = skipSpacesToEnd(linePtr, end);
+        if (linePtr != end && *linePtr == '=' &&
             // not for local labels
             (firstName.front() < '0' || firstName.front() > '9'))
         {   // assignment
-            string = skipSpacesToEnd(string+1, line+lineSize);
-            if (string == end)
+            linePtr = skipSpacesToEnd(linePtr+1, line+lineSize);
+            if (linePtr == end)
             {
-                printError(string, "Expected assignment expression");
+                printError(linePtr, "Expected assignment expression");
                 continue;
             }
-            assignSymbol(firstName, stmtStartStr, string);
+            assignSymbol(firstName, stmtPlace, linePtr);
             continue;
         }
         // make firstname as lowercase
         toLowerString(firstName);
         
         if (firstName.size() >= 2 && firstName[0] == '.') // check for pseudo-op
-            parsePseudoOps(firstName, stmtStartStr, string);
+            parsePseudoOps(firstName, stmtPlace, linePtr);
         else if (firstName.size() >= 1 && isDigit(firstName[0]))
-            printError(stmtStartStr, "Illegal number at statement begin");
+            printError(stmtPlace, "Illegal number at statement begin");
         else
         {   // try to parse processor instruction or macro substitution
-            if (makeMacroSubstitution(stmtStartStr) == ParseState::MISSING)
+            if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
             {  // try parse instruction
                 //initializeOutputFormat();
                 /*isaAssembler->assemble(lineNo, stmtStartStr,
