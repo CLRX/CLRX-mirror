@@ -111,9 +111,11 @@ bool AsmRawCodeHandler::writeBinary(std::ostream& os)
 
 AsmAmdHandler::AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit)
             : AsmFormatHandler(assembler, deviceType, is64Bit), input{},
-              dataSection(ASMSECT_NONE), llvmirSection(ASMSECT_NONE),
+              dataSection(0), llvmirSection(ASMSECT_NONE),
               sourceSection(ASMSECT_NONE)
-{ }
+{
+    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
+}
 
 cxuint AsmAmdHandler::addKernel(const char* kernelName)
 {
@@ -121,7 +123,7 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     cxuint thisSection = sections.size();
     input.addEmptyKernel(kernelName);
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
-            thisSection, ASMSECT_NONE, ASMSECT_NONE });
+            thisSection, ASMSECT_NONE, { } });
     sections.push_back({ thisKernel, AsmSectionType::CODE });
     currentKernel = thisKernel;
     currentSection = thisSection;
@@ -158,7 +160,7 @@ cxuint AsmAmdHandler::addSection(const char* name, cxuint kernelId)
             if (currentKernel == ASMKERN_GLOBAL)
                 throw AsmFormatException("Kernel config must be defined inside kernel");
             AsmAmdHandler::Kernel& kstate = kernelStates[currentKernel];
-            if (kstate.calNotesSection != ASMSECT_NONE ||
+            if (!kstate.calNoteSections.empty() ||
                 kstate.headerSection != ASMSECT_NONE ||
                 kstate.metadataSection != ASMSECT_NONE)
                 throw AsmFormatException("Config can be defined only if no "
@@ -258,10 +260,31 @@ bool AsmAmdHandler::sectionIsDefined(const char* name) const
 
 void AsmAmdHandler::setCurrentKernel(cxuint kernel)
 {
+    currentKernel = kernel;
+    currentSection = kernelStates[kernel].codeSection;
 }
 
-void AsmAmdHandler::setCurrentSection(const char* sectionName)
+void AsmAmdHandler::setCurrentSection(const char* name)
 {
+    if (*name!='.')
+    {
+        std::string message = "Section '";
+        message += name;
+        message += "' is not supported";
+        throw AsmFormatException(message);
+    }
+    
+    const cxuint thisSection = sections.size();
+    size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
+            sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
+            amdFormatSectionNamesTbl;
+    switch(sectionNameId)
+    {
+        case AMDFMTSECT_CONFIG:
+            break;
+        default:
+            break;
+    }
 }
 
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
@@ -285,9 +308,10 @@ bool AsmAmdHandler::writeBinary(std::ostream& os)
 
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType,
                      bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit),
-             input{}, codeSection(ASMSECT_NONE), dataSection(ASMSECT_NONE),
+             input{}, codeSection(ASMSECT_NONE), dataSection(0),
              disasmSection(ASMSECT_NONE), commentSection(ASMSECT_NONE)
 {
+    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
     insideArgs = insideProgInfo = false;
 }
 

@@ -721,12 +721,11 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* stringAt
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = baseExpr;
         if (baseExpr && !symEntry.second.occurrencesInExprs.empty())
-        {
+        {   /* make snapshot now resolving dependencies */
             AsmSymbolEntry* tempSymEntry;
             if (!AsmExpression::makeSymbolSnapshot(*this, symEntry, tempSymEntry,
                     &symEntry.second.occurrencesInExprs[0].expression->getSourcePos()))
                 return false;
-            //std::unique_ptr<AsmSymbolEntry> tempSymEntry(tempSymEntryPtr);
             tempSymEntry->second.occurrencesInExprs =
                         symEntry.second.occurrencesInExprs;
             // clear occurrences after copy
@@ -767,7 +766,7 @@ bool Assembler::skipSymbol(const char* string, const char*& outend)
     string = skipSpacesToEnd(string, end);
     const char* start = string;
     if (string != end)
-    {
+    {   /* skip only symbol name */
         if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
             for (string++; string != end && (isAlnum(*string) || *string == '_' ||
                  *string == '.' || *string == '$') ; string++);
@@ -1086,7 +1085,7 @@ bool Assembler::readLine()
     while (line == nullptr)
     {   // no line
         if (asmInputFilters.size() > 1)
-        {
+        {   /* decrease some level of a nesting */
             if (currentInputFilter->getType() == AsmInputFilterType::MACROSUBST)
                 macroSubstLevel--;
             else if (currentInputFilter->getType() == AsmInputFilterType::STREAM)
@@ -1195,11 +1194,14 @@ bool Assembler::assemble()
                         symbolMap.insert(std::make_pair(firstName+"b", AsmSymbol()));
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
                         symbolMap.insert(std::make_pair(firstName+"f", AsmSymbol()));
+                /* resolve forward symbol of label now */
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
+                /// setup backward symbol of label */
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.value = nextLRes.first->second.value;
                 prevLRes.first->second.hasValue = true;
                 prevLRes.first->second.sectionId = currentSection;
+                /// make forward symbol of label as undefined
                 nextLRes.first->second.hasValue = false;
             }
             else

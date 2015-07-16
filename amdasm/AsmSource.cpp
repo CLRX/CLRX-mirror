@@ -512,6 +512,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     const size_t linePos = pos;
     size_t destPos = 0;
     size_t toCopyPos = pos;
+    // determine start of destination line (real line, with real newline)
     size_t destLineStart = 0;
     // first curColTrans
     colTranslations.push_back({ ssize_t(-realLinePos), curColTrans->lineNo});
@@ -529,7 +530,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
                 if (curColTrans->position >= 0)
-                {
+                {   /// real new line, reset real line position
                     realLinePos = 0;
                     destLineStart = destPos + pos-toCopyPos;
                 }
@@ -547,7 +548,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
                 if (curColTrans->position >= 0)
-                {
+                {   /// real new line, reset real line position
                     realLinePos = 0;
                     destLineStart = destPos + pos-toCopyPos;
                 }
@@ -604,7 +605,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 {
                     curColTrans++;
                     if (curColTrans->position >= 0)
-                    {
+                    {   /// real new line, reset real line position
                         realLinePos = 0;
                         destLineStart = destPos + pos-toCopyPos;
                     }
@@ -626,9 +627,9 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         if (curColTrans+1 != colTransEnd)
         {
             curColTrans++;
-            if (curColTrans->position >= 0)
+            if (curColTrans->position >= 0) /// real new line, reset real line position
                 realLinePos = 0;
-            else
+            else    // otherwise determine position in destination source
                 realLinePos += lineSize - destLineStart+1;
         }
         pos++; // skip newline
@@ -778,6 +779,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     const size_t linePos = pos;
     size_t destPos = 0;
     size_t toCopyPos = pos;
+    // determine start of destination line (real line, with real newline)
     size_t destLineStart = 0;
     colTranslations.push_back({ ssize_t(-realLinePos), curColTrans->lineNo});
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
@@ -794,7 +796,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
                 if (curColTrans->position >= 0)
-                {
+                {   /// real new line, reset real line position
                     realLinePos = 0;
                     destLineStart = destPos + pos-toCopyPos;
                 }
@@ -812,7 +814,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
                 if (curColTrans->position >= 0)
-                {
+                {   /// real new line, reset real line position
                     realLinePos = 0;
                     destLineStart = destPos + pos-toCopyPos;
                 }
@@ -868,7 +870,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                 {
                     curColTrans++;
                     if (curColTrans->position >= 0)
-                    {
+                    {   /// real new line, reset real line position
                         realLinePos = 0;
                         destLineStart = destPos + pos-toCopyPos;
                     }
@@ -893,8 +895,9 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
             if (curColTrans != colTransEnd)
             {
                 if (curColTrans->position >= 0)
+                    /// real new line, reset real line position
                     realLinePos = 0;
-                else
+                else // otherwise determine position in destination source
                     realLinePos += lineSize - destLineStart+1;
             }
         }

@@ -207,7 +207,7 @@ private:
         cxuint configSection;
         cxuint codeSection;
         cxuint dataSection;
-        cxuint calNotesSection;
+        std::vector<cxuint> calNoteSections;
     };
     std::vector<Section> sections;
     std::vector<Kernel> kernelStates;
