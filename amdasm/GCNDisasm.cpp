@@ -2432,8 +2432,8 @@ void GCNDisassembler::disassemble()
                     putChars(buf, "SMEM", 4);
                 putChars(buf, "_ill_", 5);
                 buf += itocstrCStyle(opcode, buf , 6);
-                spacesToAdd = spacesToAdd >= (buf-bufStart+1)?
-                            spacesToAdd - (buf-bufStart) : 1;
+                const size_t linePos = buf-bufStart;
+                spacesToAdd = spacesToAdd >= (linePos+1)? spacesToAdd - linePos : 1;
                 gcnInsn = &defaultInsn;
                 output.forward(buf-bufStart);
             }
