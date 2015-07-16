@@ -64,12 +64,18 @@ void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource
     }
     else
     {   // with macro
-        if (sourceTranslations.empty() ||
-            sourceTranslations.back().source->type != AsmSourceType::MACRO ||
-            sourceTranslations.back().source.
-                    staticCast<const AsmMacroSource>()->source != source ||
-            sourceTranslations.back().source.
-                    staticCast<const AsmMacroSource>()->macro != macro)
+        bool doAdd = sourceTranslations.empty();
+        if (!doAdd)
+        {
+            doAdd = sourceTranslations.back().source->type != AsmSourceType::MACRO;
+            if (!doAdd)
+            {
+                RefPtr<const AsmMacroSource> macroSource = sourceTranslations.back()
+                            .source.staticCast<const AsmMacroSource>();
+                doAdd = macroSource->source!=source || macroSource->macro!=macro;
+            }
+        }
+        if (doAdd)
             sourceTranslations.push_back({contentLineNo, RefPtr<const AsmSource>(
                 new AsmMacroSource{macro, source})});
     }

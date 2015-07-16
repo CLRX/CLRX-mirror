@@ -611,7 +611,7 @@ void AsmFormatPseudoOps::galliumDoEntry(AsmGalliumHandler& handler,
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* addrPlace = linePtr;
-    size_t entryAddr;
+    uint64_t entryAddr;
     bool good = true;
     if (getAbsoluteValueArg(asmr, entryAddr, linePtr, true))
     {
