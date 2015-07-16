@@ -868,7 +868,7 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
                 printError(string, "'.elseif' after '.else'");
             else // else
                 printError(string, "Duplicate of '.else'");
-            printError(clause.pos, "here is previous '.else'"); 
+            printError(clause.sourcePos, "here is previous '.else'"); 
             printError(clause.prevIfPos, "here is begin of conditional clause"); 
             return false;
         case AsmClauseType::MACRO:
@@ -893,9 +893,9 @@ bool Assembler::pushClause(const char* string, AsmClauseType clauseType, bool sa
     included = satisfied && !clause.condSatisfied;
     clause.condSatisfied |= included;
     if (clause.type == AsmClauseType::IF)
-        clause.prevIfPos = clause.pos;
+        clause.prevIfPos = clause.sourcePos;
     clause.type = clauseType;
-    clause.pos = getSourcePos(string);
+    clause.sourcePos = getSourcePos(string);
     return true;
 }
 
@@ -1285,21 +1285,21 @@ bool Assembler::assemble()
         switch(clause.type)
         {
             case AsmClauseType::IF:
-                printError(clause.pos, "Unterminated '.if'");
+                printError(clause.sourcePos, "Unterminated '.if'");
                 break;
             case AsmClauseType::ELSEIF:
-                printError(clause.pos, "Unterminated '.elseif'");
+                printError(clause.sourcePos, "Unterminated '.elseif'");
                 printError(clause.prevIfPos, "here is begin of conditional clause"); 
                 break;
             case AsmClauseType::ELSE:
-                printError(clause.pos, "Unterminated '.else'");
+                printError(clause.sourcePos, "Unterminated '.else'");
                 printError(clause.prevIfPos, "here is begin of conditional clause"); 
                 break;
             case AsmClauseType::MACRO:
-                printError(clause.pos, "Unterminated macro definition");
+                printError(clause.sourcePos, "Unterminated macro definition");
                 break;
             case AsmClauseType::REPEAT:
-                printError(clause.pos, "Unterminated repetition");
+                printError(clause.sourcePos, "Unterminated repetition");
             default:
                 break;
         }

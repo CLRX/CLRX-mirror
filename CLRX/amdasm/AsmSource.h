@@ -190,7 +190,7 @@ public:
     };
 private:
     LineNo contentLineNo;
-    AsmSourcePos pos;
+    AsmSourcePos sourcePos;
     Array<AsmMacroArg> args;
     std::vector<char> content;
     std::vector<SourceTrans> sourceTranslations;
@@ -224,8 +224,8 @@ public:
     const SourceTrans&  getSourceTrans(uint64_t index) const
     { return sourceTranslations[index]; }
     /// get source position
-    const AsmSourcePos& getPos() const
-    { return pos; }
+    const AsmSourcePos& getSourcePos() const
+    { return sourcePos; }
     /// get number of arguments
     const size_t getArgsNum() const
     { return args.size(); }
@@ -247,7 +247,7 @@ public:
     };
 protected:
     LineNo contentLineNo;     ///< number of content's line
-    AsmSourcePos pos;       ///< current source position
+    AsmSourcePos sourcePos;       ///< current source position
     uint64_t repeatsNum;        ///< repeats number
     std::vector<char> content;  ///< content
     std::vector<SourceTrans> sourceTranslations;    ///< source translations
@@ -279,8 +279,8 @@ public:
     const SourceTrans&  getSourceTrans(uint64_t index) const
     { return sourceTranslations[index]; }
     /// get source position
-    const AsmSourcePos& getPos() const
-    { return pos; }
+    const AsmSourcePos& getSourcePos() const
+    { return sourcePos; }
     /// get number of repetitions
     uint64_t getRepeatsNum() const
     { return repeatsNum; }

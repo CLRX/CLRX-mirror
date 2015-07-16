@@ -43,11 +43,11 @@ AsmRepeatSource::~AsmRepeatSource()
 
 /* Asm Macro */
 AsmMacro::AsmMacro(const AsmSourcePos& _pos, const Array<AsmMacroArg>& _args)
-        : contentLineNo(0), pos(_pos), args(_args)
+        : contentLineNo(0), sourcePos(_pos), args(_args)
 { }
 
 AsmMacro::AsmMacro(const AsmSourcePos& _pos, Array<AsmMacroArg>&& _args)
-        : contentLineNo(0), pos(_pos), args(std::move(_args))
+        : contentLineNo(0), sourcePos(_pos), args(std::move(_args))
 { }
 
 void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,
@@ -78,7 +78,7 @@ void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource
 
 /* Asm Repeat */
 AsmRepeat::AsmRepeat(const AsmSourcePos& _pos, uint64_t _repeatsNum)
-        : contentLineNo(0), pos(_pos), repeatsNum(_repeatsNum)
+        : contentLineNo(0), sourcePos(_pos), repeatsNum(_repeatsNum)
 { }
 
 void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource> source,

@@ -680,7 +680,7 @@ enum class AsmClauseType
 struct AsmClause
 {
     AsmClauseType type; ///< type of clause
-    AsmSourcePos pos;   ///< position
+    AsmSourcePos sourcePos;   ///< position in source code
     bool condSatisfied; ///< if conditional clause has already been satisfied
     AsmSourcePos prevIfPos; ///< position of previous if-clause
 };
