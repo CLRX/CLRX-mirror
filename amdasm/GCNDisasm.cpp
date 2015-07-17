@@ -394,54 +394,54 @@ union CLRX_INTERNAL FloatUnion
     uint32_t u;
 };
 
-static inline void putByteToBuf(cxuint op, char*& buf)
+static inline void putByteToBuf(cxuint op, char*& bufPtr)
 {
     cxuint val = op;
     if (val >= 100U)
     {
         cxuint digit2 = val/100U;
-        *buf++ = digit2+'0';
+        *bufPtr++ = digit2+'0';
         val -= digit2*100U;
     }
     {
         const cxuint digit1 = val/10U;
         if (digit1 != 0 || op >= 100U)
-            *buf++ = digit1 + '0';
-        *buf++ = val-digit1*10U + '0';
+            *bufPtr++ = digit1 + '0';
+        *bufPtr++ = val-digit1*10U + '0';
     }
 }
 
-static inline void putHexByteToBuf(cxuint op, char*& buf)
+static inline void putHexByteToBuf(cxuint op, char*& bufPtr)
 {
     const cxuint digit0 = op&0xf;
     const cxuint digit1 = (op&0xf0)>>4;
-    *buf++ = '0';
-    *buf++ = 'x';
+    *bufPtr++ = '0';
+    *bufPtr++ = 'x';
     if (digit1 != 0)
-        *buf++ = (digit1<=9)?'0'+digit1:'a'+digit1-10;
-    *buf++ = (digit0<=9)?'0'+digit0:'a'+digit0-10;
+        *bufPtr++ = (digit1<=9)?'0'+digit1:'a'+digit1-10;
+    *bufPtr++ = (digit0<=9)?'0'+digit0:'a'+digit0-10;
 }
 
-static void regRanges(cxuint op, cxuint vregNum, char*& buf)
+static void regRanges(cxuint op, cxuint vregNum, char*& bufPtr)
 {
     if (vregNum!=1)
-        *buf++ = '[';
-    putByteToBuf(op, buf);
+        *bufPtr++ = '[';
+    putByteToBuf(op, bufPtr);
     if (vregNum!=1)
     {
-        *buf++ = ':';
+        *bufPtr++ = ':';
         op += vregNum-1;
         if (op > 255)
             op -= 256; // fix for VREGS
-        putByteToBuf(op, buf);
-        *buf++ = ']';
+        putByteToBuf(op, bufPtr);
+        *bufPtr++ = ']';
     }
 }
 
-static void decodeGCNVRegOperand(cxuint op, cxuint vregNum, char*& buf)
+static void decodeGCNVRegOperand(cxuint op, cxuint vregNum, char*& bufPtr)
 {
-    *buf++ = 'v';
-    return regRanges(op, vregNum, buf);
+    *bufPtr++ = 'v';
+    return regRanges(op, vregNum, bufPtr);
 }
 
 enum FloatLitType: cxbyte
@@ -451,24 +451,24 @@ enum FloatLitType: cxbyte
     FLTLIT_F16,
 };
 
-static void printLiteral(char*& buf, uint32_t literal, FloatLitType floatLit)
+static void printLiteral(char*& bufPtr, uint32_t literal, FloatLitType floatLit)
 {
-    buf += itocstrCStyle(literal, buf, 11, 16);
+    bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
     if (floatLit != FLTLIT_NONE)
     {
         FloatUnion fu;
         fu.u = literal;
-        putChars(buf, " /* ", 4);
+        putChars(bufPtr, " /* ", 4);
         if (floatLit == FLTLIT_F32)
-            buf += ftocstrCStyle(fu.f, buf, 20);
+            bufPtr += ftocstrCStyle(fu.f, bufPtr, 20);
         else
-            buf += htocstrCStyle(fu.u, buf, 20);
-        *buf++ = (floatLit == FLTLIT_F32)?'f':'h';
-        putChars(buf, " */", 3);
+            bufPtr += htocstrCStyle(fu.u, bufPtr, 20);
+        *bufPtr++ = (floatLit == FLTLIT_F32)?'f':'h';
+        putChars(bufPtr, " */", 3);
     }
 }
 
-static void decodeGCNOperand(cxuint op, cxuint regNum, char*& buf, uint16_t arch,
+static void decodeGCNOperand(cxuint op, cxuint regNum, char*& bufPtr, uint16_t arch,
            uint32_t literal = 0, FloatLitType floatLit = FLTLIT_NONE)
 {
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
@@ -476,12 +476,12 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& buf, uint16_t arch
     {   // scalar
         if (op >= 256)
         {
-            *buf++ = 'v';
+            *bufPtr++ = 'v';
             op -= 256;
         }
         else
-            *buf++ = 's';
-        regRanges(op, regNum, buf);
+            *bufPtr++ = 's';
+        regRanges(op, regNum, bufPtr);
         return;
     }
     
@@ -493,71 +493,71 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& buf, uint16_t arch
         switch(op2)
         {
             case 102:
-                putChars(buf, "flat_scratch", 12);
+                putChars(bufPtr, "flat_scratch", 12);
                 break;
             case 104:
                 if (isGCN12) // GCN1.2
-                    putChars(buf, "xnack_mask", 10);
+                    putChars(bufPtr, "xnack_mask", 10);
                 else // GCN1.1
-                    putChars(buf, "flat_scratch", 12);
+                    putChars(bufPtr, "flat_scratch", 12);
                 break;
             case 106:
-                *buf++ = 'v';
-                *buf++ = 'c';
-                *buf++ = 'c';
+                *bufPtr++ = 'v';
+                *bufPtr++ = 'c';
+                *bufPtr++ = 'c';
                 break;
             case 108:
-                *buf++ = 't';
-                *buf++ = 'b';
-                *buf++ = 'a';
+                *bufPtr++ = 't';
+                *bufPtr++ = 'b';
+                *bufPtr++ = 'a';
                 break;
             case 110:
-                *buf++ = 't';
-                *buf++ = 'm';
-                *buf++ = 'a';
+                *bufPtr++ = 't';
+                *bufPtr++ = 'm';
+                *bufPtr++ = 'a';
                 break;
             case 126:
-                putChars(buf, "exec", 4);
+                putChars(bufPtr, "exec", 4);
                 break;
         }
         if (regNum >= 2)
         {
             if (op&1) // unaligned!!
             {
-                *buf++ = '_';
-                *buf++ = 'u';
-                *buf++ = '!';
+                *bufPtr++ = '_';
+                *bufPtr++ = 'u';
+                *bufPtr++ = '!';
             }
             if (regNum > 2)
-                putChars(buf, "&ill!", 5);
+                putChars(bufPtr, "&ill!", 5);
             return;
         }
-        *buf++ = '_';
+        *bufPtr++ = '_';
         if ((op&1) == 0)
-        { *buf++ = 'l'; *buf++ = 'o'; }
+        { *bufPtr++ = 'l'; *bufPtr++ = 'o'; }
         else
-        { *buf++ = 'h'; *buf++ = 'i'; }
+        { *bufPtr++ = 'h'; *bufPtr++ = 'i'; }
         return;
     }
     
     if (op == 255) // if literal
     {
-        printLiteral(buf, literal, floatLit);
+        printLiteral(bufPtr, literal, floatLit);
         return;
     }
     
     if (op >= 112 && op < 124)
     {
-        putChars(buf, "ttmp", 4);
-        regRanges(op-112, regNum, buf);
+        putChars(bufPtr, "ttmp", 4);
+        regRanges(op-112, regNum, bufPtr);
         return;
     }
     if (op == 124)
     {
-        *buf++ = 'm';
-        *buf++ = '0';
+        *bufPtr++ = 'm';
+        *bufPtr++ = '0';
         if (regNum > 1)
-            putChars(buf, "&ill!", 5);
+            putChars(bufPtr, "&ill!", 5);
         return;
     }
     
@@ -566,26 +566,26 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& buf, uint16_t arch
         op -= 128;
         const cxuint digit1 = op/10U;
         if (digit1 != 0)
-            *buf++ = digit1 + '0';
-        *buf++ = op-digit1*10U + '0';
+            *bufPtr++ = digit1 + '0';
+        *bufPtr++ = op-digit1*10U + '0';
         return;
     }
     if (op > 192 && op <= 208)
     {
-        *buf++ = '-';
+        *bufPtr++ = '-';
         if (op >= 202)
         {
-            *buf++ = '1';
-            *buf++ = op-202+'0';
+            *bufPtr++ = '1';
+            *bufPtr++ = op-202+'0';
         }
         else
-            *buf++ = op-192+'0';
+            *bufPtr++ = op-192+'0';
         return;
     }
     if (op >= 240 && op < 248)
     {
         const char* inOp = gcnOperandFloatTable[op-240];
-        putChars(buf, inOp, ::strlen(inOp));
+        putChars(bufPtr, inOp, ::strlen(inOp));
         return;
     }
     
@@ -594,33 +594,33 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& buf, uint16_t arch
         case 248:
             if (isGCN12)
             {   // 1/(2*PI)
-                putChars(buf, "0.15915494", 10);
+                putChars(bufPtr, "0.15915494", 10);
                 return;
             }
             break;
         case 251:
-            putChars(buf, "vccz", 4);
+            putChars(bufPtr, "vccz", 4);
             return;
         case 252:
-            putChars(buf, "execz", 5);
+            putChars(bufPtr, "execz", 5);
             return;
         case 253:
-            *buf++ = 's';
-            *buf++ = 'c';
-            *buf++ = 'c';
+            *bufPtr++ = 's';
+            *bufPtr++ = 'c';
+            *bufPtr++ = 'c';
             return;
         case 254:
-            *buf++ = 'l';
-            *buf++ = 'd';
-            *buf++ = 's';
+            *bufPtr++ = 'l';
+            *bufPtr++ = 'd';
+            *bufPtr++ = 's';
             return;
     }
     
     // reserved value (illegal)
-    putChars(buf, "ill_", 4);
-    *buf++ = '0'+op/100U;
-    *buf++ = '0'+(op/10U)%10U;
-    *buf++ = '0'+op%10U;
+    putChars(bufPtr, "ill_", 4);
+    *bufPtr++ = '0'+op/100U;
+    *bufPtr++ = '0'+(op/10U)%10U;
+    *bufPtr++ = '0'+op%10U;
 }
 
 static const char* sendMsgCodeMessageTable[16] =
@@ -637,16 +637,16 @@ static const char* sendGsOpMessageTable[4] =
 
 /* encoding routines */
 
-static void addSpaces(char*& buf, cxuint spacesToAdd)
+static void addSpaces(char*& bufPtr, cxuint spacesToAdd)
 {
     for (cxuint k = spacesToAdd; k>0; k--)
-        *buf++ = ' ';
+        *bufPtr++ = ' ';
 }
 
-static size_t addSpacesOld(char* buf, cxuint spacesToAdd)
+static size_t addSpacesOld(char* bufPtr, cxuint spacesToAdd)
 {
     for (cxuint k = spacesToAdd; k>0; k--)
-        *buf++ = ' ';
+        *bufPtr++ = ' ';
     return spacesToAdd;
 }
 
@@ -654,17 +654,18 @@ static void decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     char* bufStart = output.reserve(80);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
-    decodeGCNOperand(insnCode&0xff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf, arch, literal);
-    *buf++ = ',';
-    *buf++ = ' ';
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
+    decodeGCNOperand(insnCode&0xff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, bufPtr,
+                     arch, literal);
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
     if ((gcnInsn.mode & GCN_SRC1_IMM) != 0)
-        putHexByteToBuf((insnCode>>8)&0xff, buf);
+        putHexByteToBuf((insnCode>>8)&0xff, bufPtr);
     else
         decodeGCNOperand((insnCode>>8)&0xff,
-               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf, arch, literal);
-    output.forward(buf-bufStart);
+               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch, literal);
+    output.forward(bufPtr-bufStart);
 }
 
 
@@ -674,43 +675,43 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          uint32_t literal, size_t pos)
 {
     char* bufStart = output.reserve(60);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const cxuint imm16 = insnCode&0xffff;
     switch(gcnInsn.mode&GCN_MASK1)
     {
         case GCN_IMM_REL:
         {
             const size_t branchPos = (pos + int16_t(imm16))<<2;
-            addSpaces(buf, spacesToAdd);
-            output.forward(buf-bufStart);
+            addSpaces(bufPtr, spacesToAdd);
+            output.forward(bufPtr-bufStart);
             labelWriter(branchPos);
             return;
         }
         case GCN_IMM_LOCKS:
         {
             bool prevLock = false;
-            addSpaces(buf, spacesToAdd);
+            addSpaces(bufPtr, spacesToAdd);
             if ((imm16&15) != 15)
             {
                 const cxuint lockCnt = imm16&15;
-                putChars(buf, "vmcnt(", 6);
+                putChars(bufPtr, "vmcnt(", 6);
                 if (lockCnt >= 10)
-                    *buf++ = '1';
-                *buf++ = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
-                *buf++ = ')';
+                    *bufPtr++ = '1';
+                *bufPtr++ = '0' + ((lockCnt>=10)?lockCnt-10:lockCnt);
+                *bufPtr++ = ')';
                 prevLock = true;
             }
             if (((imm16>>4)&7) != 7)
             {
                 if (prevLock)
                 {
-                    *buf++ = ' ';
-                    *buf++ = '&';
-                    *buf++ = ' ';
+                    *bufPtr++ = ' ';
+                    *bufPtr++ = '&';
+                    *bufPtr++ = ' ';
                 }
-                putChars(buf, "expcnt(", 7);
-                *buf++ = '0' + ((imm16>>4)&7);
-                *buf++ = ')';
+                putChars(bufPtr, "expcnt(", 7);
+                *bufPtr++ = '0' + ((imm16>>4)&7);
+                *bufPtr++ = ')';
                 prevLock = true;
             }
             if (((imm16>>8)&15) != 15)
@@ -718,134 +719,137 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 const cxuint lockCnt = (imm16>>8)&15;
                 if (prevLock)
                 {
-                    *buf++ = ' ';
-                    *buf++ = '&';
-                    *buf++ = ' ';
+                    *bufPtr++ = ' ';
+                    *bufPtr++ = '&';
+                    *bufPtr++ = ' ';
                 }
-                putChars(buf, "lgkmcnt(", 8);
+                putChars(bufPtr, "lgkmcnt(", 8);
                 const cxuint digit2 = lockCnt/10U;
                 if (lockCnt >= 10)
-                    *buf++ = '0'+digit2;
-                *buf++= '0' + lockCnt-digit2*10U;
-                *buf++ = ')';
+                    *bufPtr++ = '0'+digit2;
+                *bufPtr++= '0' + lockCnt-digit2*10U;
+                *bufPtr++ = ')';
                 prevLock = true;
             }
             if ((imm16&0xf080) != 0 || (imm16==0xf7f))
             {   /* additional info about imm16 */
                 if (prevLock)
                 {
-                    *buf++ = ' ';
-                    *buf++ = ':';
+                    *bufPtr++ = ' ';
+                    *bufPtr++ = ':';
                 }
-                buf += itocstrCStyle(imm16, buf, 11, 16);
+                bufPtr += itocstrCStyle(imm16, bufPtr, 11, 16);
             }
             break;
         }
         case GCN_IMM_MSGS:
         {
             cxuint illMask = 0xfff0;
-            addSpaces(buf, spacesToAdd);
-            putChars(buf, "sendmsg(", 8);
+            addSpaces(bufPtr, spacesToAdd);
+            putChars(bufPtr, "sendmsg(", 8);
             const cxuint msgType = imm16&15;
             const char* msgName = sendMsgCodeMessageTable[msgType];
             while (*msgName != 0)
-                *buf++ = *msgName++;
+                *bufPtr++ = *msgName++;
             if ((msgType&14) == 2 || (msgType >= 4 && msgType <= 14) ||
                 (imm16&0x3f0) != 0) // gs ops
             {
-                *buf++ = ',';
-                *buf++ = ' ';
+                *bufPtr++ = ',';
+                *bufPtr++ = ' ';
                 illMask = 0xfcc0;
                 const char* gsopName = sendGsOpMessageTable[(imm16>>4)&3];
                 while (*gsopName != 0)
-                    *buf++ = *gsopName++;
-                *buf++ = ',';
-                *buf++ = ' ';
-                *buf++ = '0' + ((imm16>>8)&3);
+                    *bufPtr++ = *gsopName++;
+                *bufPtr++ = ',';
+                *bufPtr++ = ' ';
+                *bufPtr++ = '0' + ((imm16>>8)&3);
             }
-            *buf++ = ')';
+            *bufPtr++ = ')';
             if ((imm16&illMask) != 0)
             {
-                *buf++ = ' ';
-                *buf++ = ':';
-                buf += itocstrCStyle(imm16, buf, 11, 16);
+                *bufPtr++ = ' ';
+                *bufPtr++ = ':';
+                bufPtr += itocstrCStyle(imm16, bufPtr, 11, 16);
             }
             break;
         }
         case GCN_IMM_NONE:
             if (imm16 != 0)
             {
-                addSpaces(buf, spacesToAdd);
-                buf += itocstrCStyle(imm16, buf, 11, 16);
+                addSpaces(bufPtr, spacesToAdd);
+                bufPtr += itocstrCStyle(imm16, bufPtr, 11, 16);
             }
             break;
         default:
-            addSpaces(buf, spacesToAdd);
-            buf += itocstrCStyle(imm16, buf, 11, 16);
+            addSpaces(bufPtr, spacesToAdd);
+            bufPtr += itocstrCStyle(imm16, bufPtr, 11, 16);
             break;
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     char* bufStart = output.reserve(70);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     bool isDst = (gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE;
     if (isDst)
-        decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
+        decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
+                         bufPtr, arch);
     
     if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
     {
         if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
         {
-            *buf++ = ',';
-            *buf++ = ' ';
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
         }
-        decodeGCNOperand(insnCode&0xff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf,
+        decodeGCNOperand(insnCode&0xff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, bufPtr,
                      arch, literal);
     }
     else if ((insnCode&0xff) != 0)
     {
-        putChars(buf," ssrc=", 6);
-        buf += itocstrCStyle((insnCode&0xff), buf, 6, 16);
+        putChars(bufPtr," ssrc=", 6);
+        bufPtr += itocstrCStyle((insnCode&0xff), bufPtr, 6, 16);
     }
     
     if (!isDst && ((insnCode>>16)&0x7f) != 0)
     {
-        putChars(buf, " sdst=", 6);
-        buf += itocstrCStyle(((insnCode>>16)&0x7f), buf, 6, 16);
+        putChars(bufPtr, " sdst=", 6);
+        bufPtr += itocstrCStyle(((insnCode>>16)&0x7f), bufPtr, 6, 16);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t literal)
 {
     char* bufStart = output.reserve(80);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
     {
-        decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
+        decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
+                         bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
     }
-    decodeGCNOperand(insnCode&0xff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, buf, arch, literal);
-    *buf++ = ',';
-    *buf++ = ' ';
-    decodeGCNOperand((insnCode>>8)&0xff, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf,
+    decodeGCNOperand(insnCode&0xff, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
+                     bufPtr, arch, literal);
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
+    decodeGCNOperand((insnCode>>8)&0xff, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr,
                      arch, literal);
     
     if ((gcnInsn.mode & GCN_MASK1) == GCN_REG_S1_JMP &&
         ((insnCode>>16)&0x7f) != 0)
     {
-        putChars(buf, " sdst=", 6);
-        buf += itocstrCStyle(((insnCode>>16)&0x7f), buf, 6, 16);
+        putChars(bufPtr, " sdst=", 6);
+        bufPtr += itocstrCStyle(((insnCode>>16)&0x7f), bufPtr, 6, 16);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static const char* hwregNames[13] =
@@ -862,70 +866,71 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          uint32_t literal, size_t pos)
 {
     char* bufStart = output.reserve(80);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
-        decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
+        decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
+                         bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
     }
     const cxuint imm16 = insnCode&0xffff;
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
         const size_t branchPos = (pos + int16_t(imm16))<<2;
-        output.forward(buf-bufStart);
+        output.forward(bufPtr-bufStart);
         labelWriter(branchPos);
-        buf = bufStart = output.reserve(60);
+        bufPtr = bufStart = output.reserve(60);
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
-        putChars(buf, "hwreg(", 6);
+        putChars(bufPtr, "hwreg(", 6);
         const cxuint hwregId = imm16&0x3f;
         if (hwregId < 13)
-            putChars(buf, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
+            putChars(bufPtr, hwregNames[hwregId], ::strlen(hwregNames[hwregId]));
         else
         {
             const cxuint digit2 = hwregId/10U;
-            *buf++ = '0' + digit2;
-            *buf++ = '0' + hwregId - digit2*10U;
+            *bufPtr++ = '0' + digit2;
+            *bufPtr++ = '0' + hwregId - digit2*10U;
         }
-        *buf++ = ',';
-        *buf++ = ' ';
-        putByteToBuf((imm16>>6)&31, buf);
-        *buf++ = ',';
-        *buf++ = ' ';
-        putByteToBuf(((imm16>>11)&31)+1, buf);
-        *buf++ = ')';
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        putByteToBuf((imm16>>6)&31, bufPtr);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        putByteToBuf(((imm16>>11)&31)+1, bufPtr);
+        *bufPtr++ = ')';
     }
     else
-        buf += itocstrCStyle(imm16, buf, 11, 16);
+        bufPtr += itocstrCStyle(imm16, bufPtr, 11, 16);
     
     if (gcnInsn.mode & GCN_IMM_DST)
     {
-        *buf++ = ',';
-        *buf++ = ' ';
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
         if (gcnInsn.mode & GCN_SOPK_CONST)
         {
-            buf += itocstrCStyle(literal, buf, 11, 16);
+            bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
             if (((insnCode>>16)&0x7f) != 0)
             {
-                putChars(buf, " sdst=", 6);
-                buf += itocstrCStyle((insnCode>>16)&0x7f, buf, 6, 16);
+                putChars(bufPtr, " sdst=", 6);
+                bufPtr += itocstrCStyle((insnCode>>16)&0x7f, bufPtr, 6, 16);
             }
         }
         else
             decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
-                     buf, arch);
+                     bufPtr, arch);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
     char* bufStart = output.reserve(100);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     bool useDst = false;
     bool useOthers = false;
@@ -933,25 +938,26 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     bool spacesAdded = false;
     if (mode1 == GCN_SMRD_ONLYDST)
     {
-        addSpaces(buf, spacesToAdd);
-        decodeGCNOperand((insnCode>>15)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
+        addSpaces(bufPtr, spacesToAdd);
+        decodeGCNOperand((insnCode>>15)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
+                         bufPtr, arch);
         useDst = true;
         spacesAdded = true;
     }
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
-        addSpaces(buf, spacesToAdd);
-        decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
-        decodeGCNOperand((insnCode>>8)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
+        addSpaces(bufPtr, spacesToAdd);
+        decodeGCNOperand((insnCode>>15)&0x7f, dregsNum, bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        decodeGCNOperand((insnCode>>8)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2, bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
         if (insnCode&0x100) // immediate value
-            buf += itocstrCStyle(insnCode&0xff, buf, 11, 16);
+            bufPtr += itocstrCStyle(insnCode&0xff, bufPtr, 11, 16);
         else // S register
-            decodeGCNOperand(insnCode&0xff, 1, buf, arch);
+            decodeGCNOperand(insnCode&0xff, 1, bufPtr, arch);
         useDst = true;
         useOthers = true;
         spacesAdded = true;
@@ -959,70 +965,71 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     
     if (!useDst && (insnCode & 0x3f8000U) != 0)
     {
-        addSpaces(buf, spacesToAdd-1);
+        addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " sdst=", 6);
-        buf += itocstrCStyle((insnCode>>15)&0x7f, buf, 6, 16);
+        putChars(bufPtr, " sdst=", 6);
+        bufPtr += itocstrCStyle((insnCode>>15)&0x7f, bufPtr, 6, 16);
     }
     if (!useOthers && (insnCode & 0x7e00U)!=0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " sbase=", 7);
-        buf += itocstrCStyle((insnCode>>9)&0x3f, buf, 6, 16);
+        putChars(bufPtr, " sbase=", 7);
+        bufPtr += itocstrCStyle((insnCode>>9)&0x3f, bufPtr, 6, 16);
     }
     if (!useOthers && (insnCode & 0xffU)!=0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " offset=", 8);
-        buf += itocstrCStyle(insnCode&0xff, buf, 6, 16);
+        putChars(bufPtr, " offset=", 8);
+        bufPtr += itocstrCStyle(insnCode&0xff, bufPtr, 6, 16);
     }
     if (!useOthers && (insnCode & 0x100U)!=0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " imm=1", 6);
+        putChars(bufPtr, " imm=1", 6);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
     char* bufStart = output.reserve(100);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     bool useDst = false;
     bool useOthers = false;
     bool spacesAdded = false;
     if (mode1 == GCN_SMRD_ONLYDST)
     {
-        addSpaces(buf, spacesToAdd);
-        decodeGCNOperand((insnCode>>6)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
+        addSpaces(bufPtr, spacesToAdd);
+        decodeGCNOperand((insnCode>>6)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
+                         bufPtr, arch);
         useDst = true;
         spacesAdded = true;
     }
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
-        addSpaces(buf, spacesToAdd);
+        addSpaces(bufPtr, spacesToAdd);
         if (mode1 & GCN_SMEM_SDATA_IMM)
-            putHexByteToBuf((insnCode>>6)&0x7f, buf);
+            putHexByteToBuf((insnCode>>6)&0x7f, bufPtr);
         else
-            decodeGCNOperand((insnCode>>6)&0x7f, dregsNum, buf , arch);
-        *buf++ = ',';
-        *buf++ = ' ';
-        decodeGCNOperand((insnCode<<1)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
+            decodeGCNOperand((insnCode>>6)&0x7f, dregsNum, bufPtr , arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        decodeGCNOperand((insnCode<<1)&0x7e, (gcnInsn.mode&GCN_SBASE4)?4:2, bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
         if (insnCode&0x20000) // immediate value
-            buf += itocstrCStyle(insnCode2&0xfffff, buf, 11, 16);
+            bufPtr += itocstrCStyle(insnCode2&0xfffff, bufPtr, 11, 16);
         else // S register
-            decodeGCNOperand(insnCode2&0xff, 1, buf, arch);
+            decodeGCNOperand(insnCode2&0xff, 1, bufPtr, arch);
         useDst = true;
         useOthers = true;
         spacesAdded = true;
@@ -1031,44 +1038,44 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if ((insnCode & 0x10000) != 0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " glc", 4);
+        putChars(bufPtr, " glc", 4);
     }
     
     if (!useDst && (insnCode & 0x1fc0U) != 0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " sdata=", 7);
-        buf += itocstrCStyle((insnCode>>6)&0x7f, buf, 6, 16);
+        putChars(bufPtr, " sdata=", 7);
+        bufPtr += itocstrCStyle((insnCode>>6)&0x7f, bufPtr, 6, 16);
     }
     if (!useOthers && (insnCode & 0x3fU)!=0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " sbase=", 7);
-        buf += itocstrCStyle(insnCode&0x3f, buf, 6, 16);
+        putChars(bufPtr, " sbase=", 7);
+        bufPtr += itocstrCStyle(insnCode&0x3f, bufPtr, 6, 16);
     }
     if (!useOthers && insnCode2!=0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " offset=", 8);
-        buf += itocstrCStyle(insnCode2, buf, 12, 16);
+        putChars(bufPtr, " offset=", 8);
+        bufPtr += itocstrCStyle(insnCode2, bufPtr, 12, 16);
     }
     if (!useOthers && (insnCode & 0x20000U)!=0)
     {
         if (!spacesAdded)
-            addSpaces(buf, spacesToAdd-1);
+            addSpaces(bufPtr, spacesToAdd-1);
         spacesAdded = true;
-        putChars(buf, " imm=1", 6);
+        putChars(bufPtr, " imm=1", 6);
     }
     
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 struct CLRX_INTERNAL VOPExtraWordOut
@@ -1104,55 +1111,59 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint32_t insnCode2,
           bool src0Used, bool src1Used)
 {
     char* bufStart = output.reserve(90);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const cxuint dstSel = (insnCode2>>8)&7;
     const cxuint dstUnused = (insnCode2>>11)&3;
     const cxuint src0Sel = (insnCode2>>16)&7;
     const cxuint src1Sel = (insnCode2>>24)&7;
     if (insnCode2 & 0x2000)
-        putChars(buf, " clamp", 6);
+        putChars(bufPtr, " clamp", 6);
     
     if (dstSel != 6)
     {
-        putChars(buf, " dst_sel:", 9);
-        putChars(buf, sdwaSelChoicesTbl[dstSel], ::strlen(sdwaSelChoicesTbl[dstSel]));
+        putChars(bufPtr, " dst_sel:", 9);
+        putChars(bufPtr, sdwaSelChoicesTbl[dstSel],
+                 ::strlen(sdwaSelChoicesTbl[dstSel]));
     }
     if (dstUnused!=0)
     {
-        putChars(buf, " dst_unused:", 12);
-        putChars(buf, sdwaDstUnusedTbl[dstUnused], ::strlen(sdwaDstUnusedTbl[dstUnused]));
+        putChars(bufPtr, " dst_unused:", 12);
+        putChars(bufPtr, sdwaDstUnusedTbl[dstUnused],
+                 ::strlen(sdwaDstUnusedTbl[dstUnused]));
     }
     if (src0Sel != 6)
     {
-        putChars(buf, " src0_sel:", 10);
-        putChars(buf, sdwaSelChoicesTbl[src0Sel], ::strlen(sdwaSelChoicesTbl[src0Sel]));
+        putChars(bufPtr, " src0_sel:", 10);
+        putChars(bufPtr, sdwaSelChoicesTbl[src0Sel],
+                 ::strlen(sdwaSelChoicesTbl[src0Sel]));
     }
     if (src1Sel != 6)
     {
-        putChars(buf, " src1_sel:", 10);
-        putChars(buf, sdwaSelChoicesTbl[src1Sel], ::strlen(sdwaSelChoicesTbl[src1Sel]));
+        putChars(bufPtr, " src1_sel:", 10);
+        putChars(bufPtr, sdwaSelChoicesTbl[src1Sel],
+                 ::strlen(sdwaSelChoicesTbl[src1Sel]));
     }
     
     if (!src0Used)
     {
         if ((insnCode2&(1U<<20))!=0)
-            putChars(buf, " sext0", 6);
+            putChars(bufPtr, " sext0", 6);
         if ((insnCode2&(1U<<20))!=0)
-            putChars(buf, " neg0", 5);
+            putChars(bufPtr, " neg0", 5);
         if ((insnCode2&(1U<<21))!=0)
-            putChars(buf, " abs0", 5);
+            putChars(bufPtr, " abs0", 5);
     }
     if (!src1Used)
     {
         if ((insnCode2&(1U<<27))!=0)
-            putChars(buf, " sext1", 6);
+            putChars(bufPtr, " sext1", 6);
         if ((insnCode2&(1U<<28))!=0)
-            putChars(buf, " neg1", 5);
+            putChars(bufPtr, " neg1", 5);
         if ((insnCode2&(1U<<29))!=0)
-            putChars(buf, " abs1", 5);
+            putChars(bufPtr, " abs1", 5);
     }
     
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static const char* dppCtrl130Tbl[] =
@@ -1176,63 +1187,64 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
         bool src0Used, bool src1Used)
 {
     char* bufStart = output.reserve(100);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const cxuint dppCtrl = (insnCode2>>8)&0x1ff;
     
     if (dppCtrl<256)
     {   // quadperm
-        putChars(buf, " quad_perm:[", 12);
-        *buf++ = '0' + (dppCtrl&3);
-        *buf++ = ',';
-        *buf++ = '0' + ((dppCtrl>>2)&3);
-        *buf++ = ',';
-        *buf++ = '0' + ((dppCtrl>>4)&3);
-        *buf++ = ',';
-        *buf++ = '0' + ((dppCtrl>>6)&3);
-        *buf++ = ']';
+        putChars(bufPtr, " quad_perm:[", 12);
+        *bufPtr++ = '0' + (dppCtrl&3);
+        *bufPtr++ = ',';
+        *bufPtr++ = '0' + ((dppCtrl>>2)&3);
+        *bufPtr++ = ',';
+        *bufPtr++ = '0' + ((dppCtrl>>4)&3);
+        *bufPtr++ = ',';
+        *bufPtr++ = '0' + ((dppCtrl>>6)&3);
+        *bufPtr++ = ']';
     }
     else if ((dppCtrl >= 0x101 && dppCtrl <= 0x12f) && ((dppCtrl&0xf) != 0))
     {   // row_shl
         if ((dppCtrl&0xf0) == 0)
-            putChars(buf, " row_shl:", 9);
+            putChars(bufPtr, " row_shl:", 9);
         else if ((dppCtrl&0xf0) == 16)
-            putChars(buf, " row_shr:", 9);
+            putChars(bufPtr, " row_shr:", 9);
         else
-            putChars(buf, " row_ror:", 9);
-        putByteToBuf(dppCtrl&0xf, buf);
+            putChars(bufPtr, " row_ror:", 9);
+        putByteToBuf(dppCtrl&0xf, bufPtr);
     }
     else if (dppCtrl >= 0x130 && dppCtrl <= 0x143 && dppCtrl130Tbl[dppCtrl-0x130]!=nullptr)
-        putChars(buf, dppCtrl130Tbl[dppCtrl-0x130], ::strlen(dppCtrl130Tbl[dppCtrl-0x130]));
+        putChars(bufPtr, dppCtrl130Tbl[dppCtrl-0x130],
+                 ::strlen(dppCtrl130Tbl[dppCtrl-0x130]));
     else if (dppCtrl != 0x100)
     {
-        putChars(buf, " dppctrl:", 9);
-        buf += itocstrCStyle(dppCtrl, buf, 10, 16);
+        putChars(bufPtr, " dppctrl:", 9);
+        bufPtr += itocstrCStyle(dppCtrl, bufPtr, 10, 16);
     }
     
     if (insnCode2 & (0x80000U)) // bound ctrl
-        putChars(buf, " bound_ctrl", 11);
+        putChars(bufPtr, " bound_ctrl", 11);
     
-    putChars(buf, " bank_mask:", 11);
-    putByteToBuf((insnCode2>>24)&0xf, buf);
-    putChars(buf, " row_mask:", 10);
-    putByteToBuf((insnCode2>>28)&0xf, buf);
+    putChars(bufPtr, " bank_mask:", 11);
+    putByteToBuf((insnCode2>>24)&0xf, bufPtr);
+    putChars(bufPtr, " row_mask:", 10);
+    putByteToBuf((insnCode2>>28)&0xf, bufPtr);
     
     if (!src0Used)
     {
         if ((insnCode2&(1U<<20))!=0)
-            putChars(buf, " neg0", 5);
+            putChars(bufPtr, " neg0", 5);
         if ((insnCode2&(1U<<21))!=0)
-            putChars(buf, " abs0", 5);
+            putChars(bufPtr, " abs0", 5);
     }
     if (!src1Used)
     {
         if ((insnCode2&(1U<<22))!=0)
-            putChars(buf, " neg1", 5);
+            putChars(bufPtr, " neg1", 5);
         if ((insnCode2&(1U<<23))!=0)
-            putChars(buf, " abs1", 5);
+            putChars(bufPtr, " abs1", 5);
     }
     
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
@@ -1241,12 +1253,12 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 {
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     char* bufStart = output.reserve(100);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     
     const cxuint src0Field = (insnCode&0x1ff);
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
-    putChars(buf, "vcc, ", 5);
+    putChars(bufPtr, "vcc, ", 5);
     if (isGCN12)
     {
         if (src0Field == 0xf9)
@@ -1260,36 +1272,36 @@ static void decodeVOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         extraFlags.src0 = src0Field;
     
     if (extraFlags.sextSrc0)
-        putChars(buf, "sext(", 5);
+        putChars(bufPtr, "sext(", 5);
     if (extraFlags.negSrc0)
-        *buf++ = '-';
+        *bufPtr++ = '-';
     if (extraFlags.absSrc0)
-        putChars(buf, "abs(", 4);
+        putChars(bufPtr, "abs(", 4);
     
     decodeGCNOperand(extraFlags.src0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                           buf, arch, literal, displayFloatLits);
+                           bufPtr, arch, literal, displayFloatLits);
     if (extraFlags.absSrc0)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     if (extraFlags.sextSrc0)
-        *buf++ = ')';
-    *buf++ = ',';
-    *buf++ = ' ';
+        *bufPtr++ = ')';
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
     
     if (extraFlags.sextSrc1)
-        putChars(buf, "sext(", 5);
+        putChars(bufPtr, "sext(", 5);
     
     if (extraFlags.negSrc1)
-        *buf++ = '-';
+        *bufPtr++ = '-';
     if (extraFlags.absSrc1)
-        putChars(buf, "abs(", 4);
+        putChars(bufPtr, "abs(", 4);
     
-    decodeGCNVRegOperand(((insnCode>>9)&0xff), (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf);
+    decodeGCNVRegOperand(((insnCode>>9)&0xff), (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr);
     if (extraFlags.absSrc1)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     if (extraFlags.sextSrc1)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
     if (isGCN12)
     {
         if (src0Field == 0xf9)
@@ -1305,7 +1317,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 {
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     char* bufStart = output.reserve(110);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     
     const cxuint src0Field = (insnCode&0x1ff);
     VOPExtraWordOut extraFlags = { 0, 0, 0, 0, 0, 0, 0 };
@@ -1325,47 +1337,47 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     bool argsUsed = true;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_VOP_ARG_NONE)
     {
-        addSpaces(buf, spacesToAdd);
+        addSpaces(bufPtr, spacesToAdd);
         if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_SGPR)
             decodeGCNVRegOperand(((insnCode>>17)&0xff),
-                     (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf);
+                     (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr);
         else
             decodeGCNOperand(((insnCode>>17)&0xff),
-                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
         if (extraFlags.sextSrc0)
-            putChars(buf, "sext(", 5);
+            putChars(bufPtr, "sext(", 5);
         
         if (extraFlags.negSrc0)
-            *buf++ = '-';
+            *bufPtr++ = '-';
         if (extraFlags.absSrc0)
-            putChars(buf, "abs(", 4);
+            putChars(bufPtr, "abs(", 4);
         decodeGCNOperand(extraFlags.src0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                           buf, arch, literal, displayFloatLits);
+                           bufPtr, arch, literal, displayFloatLits);
         if (extraFlags.absSrc0)
-            *buf++ = ')';
+            *bufPtr++ = ')';
         if (extraFlags.sextSrc0)
-            *buf++ = ')';
+            *bufPtr++ = ')';
     }
     else if ((insnCode & 0x1fe01ffU) != 0)
     {
-        addSpaces(buf, spacesToAdd);
+        addSpaces(bufPtr, spacesToAdd);
         if ((insnCode & 0x1fe0000U) != 0)
         {
-            putChars(buf, "vdst=", 5);
-            buf += itocstrCStyle((insnCode>>17)&0xff, buf, 6, 16);
+            putChars(bufPtr, "vdst=", 5);
+            bufPtr += itocstrCStyle((insnCode>>17)&0xff, bufPtr, 6, 16);
             if ((insnCode & 0x1ff) != 0)
-                *buf++ = ' ';
+                *bufPtr++ = ' ';
         }
         if ((insnCode & 0x1ff) != 0)
         {
-            putChars(buf, "src0=", 5);
-            buf += itocstrCStyle(insnCode&0x1ff, buf, 6, 16);
+            putChars(bufPtr, "src0=", 5);
+            bufPtr += itocstrCStyle(insnCode&0x1ff, bufPtr, 6, 16);
         }
         argsUsed = false;
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
     if (isGCN12)
     {
         if (src0Field == 0xf9)
@@ -1381,9 +1393,9 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 {
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     char* bufStart = output.reserve(130);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     
-    addSpaces(buf, spacesToAdd);
+    addSpaces(bufPtr, spacesToAdd);
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     
     const cxuint src0Field = (insnCode&0x1ff);
@@ -1403,59 +1415,61 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     
     if (mode1 == GCN_DS1_SGPR)
         decodeGCNOperand(((insnCode>>17)&0xff),
-                 (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf, arch);
+                 (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr, arch);
     else
-        decodeGCNVRegOperand(((insnCode>>17)&0xff), (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf);
+        decodeGCNVRegOperand(((insnCode>>17)&0xff),
+                     (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr);
     if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)
-        putChars(buf, ", vcc", 5);
-    *buf++ = ',';
-    *buf++ = ' ';
+        putChars(bufPtr, ", vcc", 5);
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
     if (extraFlags.sextSrc0)
-        putChars(buf, "sext(", 5);
+        putChars(bufPtr, "sext(", 5);
     if (extraFlags.negSrc0)
-        *buf++ = '-';
+        *bufPtr++ = '-';
     if (extraFlags.absSrc0)
-        putChars(buf, "abs(", 4);
+        putChars(bufPtr, "abs(", 4);
     decodeGCNOperand(extraFlags.src0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                       buf, arch, literal, displayFloatLits);
+                       bufPtr, arch, literal, displayFloatLits);
     if (extraFlags.absSrc0)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     if (extraFlags.sextSrc0)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     if (mode1 == GCN_ARG1_IMM)
     {
-        *buf++ = ',';
-        *buf++ = ' ';
-        printLiteral(buf, literal, displayFloatLits);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        printLiteral(bufPtr, literal, displayFloatLits);
     }
-    *buf++ = ',';
-    *buf++ = ' ';
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
     if (extraFlags.sextSrc1)
-        putChars(buf, "sext(", 5);
+        putChars(bufPtr, "sext(", 5);
     
     if (extraFlags.negSrc1)
-        *buf++ = '-';
+        *bufPtr++ = '-';
     if (extraFlags.absSrc1)
-        putChars(buf, "abs(", 4);
+        putChars(bufPtr, "abs(", 4);
     if (mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR)
         decodeGCNOperand(((insnCode>>9)&0xff),
-               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf, arch);
+               (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch);
     else
-        decodeGCNVRegOperand(((insnCode>>9)&0xff), (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf);
+        decodeGCNVRegOperand(((insnCode>>9)&0xff),
+                     (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr);
     if (extraFlags.absSrc1)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     if (extraFlags.sextSrc1)
-        *buf++ = ')';
+        *bufPtr++ = ')';
     if (mode1 == GCN_ARG2_IMM)
     {
-        *buf++ = ',';
-        *buf++ = ' ';
-        printLiteral(buf, literal, displayFloatLits);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        printLiteral(bufPtr, literal, displayFloatLits);
     }
     else if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
-        putChars(buf, ", vcc", 5);
+        putChars(bufPtr, ", vcc", 5);
     
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
     if (isGCN12)
     {
         if (src0Field == 0xf9)
@@ -1468,15 +1482,15 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 static const char* vintrpParamsTbl[] =
 { "p10", "p20", "p0" };
 
-static void decodeVINTRPParam(uint16_t p, char*& buf)
+static void decodeVINTRPParam(uint16_t p, char*& bufPtr)
 {
     if (p > 3)
     {
-        putChars(buf, "invalid_", 8);
-        buf += itocstrCStyle(p, buf, 8);
+        putChars(bufPtr, "invalid_", 8);
+        bufPtr += itocstrCStyle(p, bufPtr, 8);
     }
     else
-        putChars(buf, vintrpParamsTbl[p], ::strlen(vintrpParamsTbl[p]));
+        putChars(bufPtr, vintrpParamsTbl[p], ::strlen(vintrpParamsTbl[p]));
 }
 
 static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
@@ -1484,7 +1498,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
          FloatLitType displayFloatLits)
 {
     char* bufStart = output.reserve(140);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     const cxuint opcode = (isGCN12) ? ((insnCode>>16)&0x3ff) : ((insnCode>>17)&0x1ff);
     
@@ -1508,69 +1522,69 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
-        addSpaces(buf, spacesToAdd);
+        addSpaces(bufPtr, spacesToAdd);
         
         if (opcode < 256 || (gcnInsn.mode&GCN_VOP3_DST_SGPR)!=0) /* if compares */
-            decodeGCNOperand(vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1, buf, arch);
+            decodeGCNOperand(vdst, ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)?2:1, bufPtr, arch);
         else /* regular instruction */
-            decodeGCNVRegOperand(vdst, (gcnInsn.mode&GCN_REG_DST_64)?2:1, buf);
+            decodeGCNVRegOperand(vdst, (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr);
         
         if (gcnInsn.encoding == GCNENC_VOP3B &&
             (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
              mode1 == GCN_S0EQS12)) /* VOP3b */
         {
-            *buf++ = ',';
-            *buf++ = ' ';
-            decodeGCNOperand(((insnCode>>8)&0x7f), 2, buf, arch);
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
+            decodeGCNOperand(((insnCode>>8)&0x7f), 2, bufPtr, arch);
         }
-        *buf++ = ',';
-        *buf++ = ' ';
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
         if (vop3Mode != GCN_VOP3_VINTRP)
         {
             if ((insnCode2 & (1U<<29)) != 0)
-                *buf++ = '-';
+                *bufPtr++ = '-';
             if (absFlags & 1)
-                putChars(buf, "abs(", 4);
+                putChars(bufPtr, "abs(", 4);
             decodeGCNOperand(vsrc0, (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
-                                   buf, arch, 0, displayFloatLits);
+                                   bufPtr, arch, 0, displayFloatLits);
             if (absFlags & 1)
-                *buf++ = ')';
+                *bufPtr++ = ')';
             vsrc0Used = true;
         }
         
         if (mode1 != GCN_SRC12_NONE && (vop3Mode != GCN_VOP3_VINTRP))
         {
-            *buf++ = ',';
-            *buf++ = ' ';
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
             if ((insnCode2 & (1U<<30)) != 0)
-                *buf++ = '-';
+                *bufPtr++ = '-';
             if (absFlags & 2)
-                putChars(buf, "abs(", 4);
-            decodeGCNOperand(vsrc1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf, arch,
+                putChars(bufPtr, "abs(", 4);
+            decodeGCNOperand(vsrc1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr, arch,
                      0, displayFloatLits);
             if (absFlags & 2)
-                *buf++ = ')';
+                *bufPtr++ = ')';
             /* GCN_DST_VCC - only sdst is used, no vsrc2 */
             if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC && opcode >= 256)
             {
-                *buf++ = ',';
-                *buf++ = ' ';
+                *bufPtr++ = ',';
+                *bufPtr++ = ' ';
                 
                 if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
                 {
-                    decodeGCNOperand(vsrc2, 2, buf, arch);
+                    decodeGCNOperand(vsrc2, 2, bufPtr, arch);
                     vsrc2CC = true;
                 }
                 else
                 {
                     if ((insnCode2 & (1U<<31)) != 0)
-                        *buf++ = '-';
+                        *bufPtr++ = '-';
                     if (absFlags & 4)
-                        putChars(buf, "abs(", 4);
+                        putChars(bufPtr, "abs(", 4);
                     decodeGCNOperand(vsrc2, (gcnInsn.mode&GCN_REG_SRC2_64)?2:1,
-                                     buf, arch, 0, displayFloatLits);
+                                     bufPtr, arch, 0, displayFloatLits);
                     if (absFlags & 4)
-                        *buf++ = ')';
+                        *bufPtr++ = ')';
                 }
                 vsrc2Used = true;
             }
@@ -1579,99 +1593,99 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         else if (vop3Mode == GCN_VOP3_VINTRP)
         {
             if ((insnCode2 & (1U<<30)) != 0)
-                *buf++ = '-';
+                *bufPtr++ = '-';
             if (absFlags & 2)
-                putChars(buf, "abs(", 4);
+                putChars(bufPtr, "abs(", 4);
             if (mode1 == GCN_P0_P10_P20)
-                decodeVINTRPParam(vsrc1, buf);
+                decodeVINTRPParam(vsrc1, bufPtr);
             else
-                decodeGCNOperand(vsrc1, 1, buf, arch, 0, displayFloatLits);
+                decodeGCNOperand(vsrc1, 1, bufPtr, arch, 0, displayFloatLits);
             if (absFlags & 2)
-                *buf++ = ')';
-            putChars(buf, ", attr", 6);
+                *bufPtr++ = ')';
+            putChars(bufPtr, ", attr", 6);
             const cxuint attr = vsrc0&63;
-            putByteToBuf(attr, buf);
-            *buf++ = '.';
-            *buf++ = "xyzw"[((vsrc0>>6)&3)]; // attrchannel
+            putByteToBuf(attr, bufPtr);
+            *bufPtr++ = '.';
+            *bufPtr++ = "xyzw"[((vsrc0>>6)&3)]; // attrchannel
             
             if ((gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2)
             {
-                *buf++ = ',';
-                *buf++ = ' ';
+                *bufPtr++ = ',';
+                *bufPtr++ = ' ';
                 if ((insnCode2 & (1U<<31)) != 0)
-                    *buf++ = '-';
+                    *bufPtr++ = '-';
                 if (absFlags & 4)
-                    putChars(buf, "abs(", 4);
-                decodeGCNOperand(vsrc2, 1, buf, arch, 0, displayFloatLits);
+                    putChars(bufPtr, "abs(", 4);
+                decodeGCNOperand(vsrc2, 1, bufPtr, arch, 0, displayFloatLits);
                 if (absFlags & 4)
-                    *buf++ = ')';
+                    *bufPtr++ = ')';
                 vsrc2Used = true;
             }
             
             if (vsrc0 & 0x100)
-                putChars(buf, " high", 5);
+                putChars(bufPtr, " high", 5);
             vsrc0Used = true;
             vsrc1Used = true;
         }
         vdstUsed = true;
     }
     else
-        addSpaces(buf, spacesToAdd-1);
+        addSpaces(bufPtr, spacesToAdd-1);
     
     const cxuint omod = (insnCode2>>27)&3;
     if (omod != 0)
     {
         const char* omodStr = (omod==3)?" div:2":(omod==2)?" mul:4":" mul:2";
-        putChars(buf, omodStr, 6);
+        putChars(bufPtr, omodStr, 6);
     }
     
     const bool clamp = (!isGCN12 && gcnInsn.encoding == GCNENC_VOP3A &&
             (insnCode&0x800) != 0) || (isGCN12 && (insnCode&0x8000) != 0);
     if (clamp)
-        putChars(buf, " clamp", 6);
+        putChars(bufPtr, " clamp", 6);
     
     /* as field */
     if (!vdstUsed && vdst != 0)
     {
-        putChars(buf, " dst=", 5);
-        buf += itocstrCStyle(vdst, buf, 6, 16);
+        putChars(bufPtr, " dst=", 5);
+        bufPtr += itocstrCStyle(vdst, bufPtr, 6, 16);
     }
         
     if (!vsrc0Used)
     {
         if (vsrc0 != 0)
         {
-            putChars(buf, " src0=", 6);
-            buf += itocstrCStyle(vsrc0, buf, 6, 16);
+            putChars(bufPtr, " src0=", 6);
+            bufPtr += itocstrCStyle(vsrc0, bufPtr, 6, 16);
         }
         if (absFlags & 1)
-            putChars(buf, " abs0", 5);
+            putChars(bufPtr, " abs0", 5);
         if ((insnCode2 & (1U<<29)) != 0)
-            putChars(buf, " neg0", 5);
+            putChars(bufPtr, " neg0", 5);
     }
     if (!vsrc1Used)
     {
         if (vsrc1 != 0)
         {
-            putChars(buf, " vsrc1=", 7);
-            buf += itocstrCStyle(vsrc1, buf, 6, 16);
+            putChars(bufPtr, " vsrc1=", 7);
+            bufPtr += itocstrCStyle(vsrc1, bufPtr, 6, 16);
         }
         if (absFlags & 2)
-            putChars(buf, " abs1", 5);
+            putChars(bufPtr, " abs1", 5);
         if ((insnCode2 & (1U<<30)) != 0)
-            putChars(buf, " neg1", 5);
+            putChars(bufPtr, " neg1", 5);
     }
     if (!vsrc2Used)
     {
         if (vsrc2 != 0)
         {
-            putChars(buf, " vsrc2=", 7);
-            buf += itocstrCStyle(vsrc2, buf, 6, 16);
+            putChars(bufPtr, " vsrc2=", 7);
+            bufPtr += itocstrCStyle(vsrc2, bufPtr, 6, 16);
         }
         if (absFlags & 4)
-            putChars(buf, " abs2", 5);
+            putChars(bufPtr, " abs2", 5);
         if ((insnCode2 & (1U<<31)) != 0)
-            putChars(buf, " neg2", 5);
+            putChars(bufPtr, " neg2", 5);
     }
     
     const cxuint usedMask = 7 & ~(vsrc2CC?4:0);
@@ -1681,7 +1695,8 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     {
         if (mode1 != GCN_NEW_OPCODE) /* check clamp and abs flags */
             isVOP1Word = !((insnCode&(7<<8)) != 0 || (insnCode2&(7<<29)) != 0 ||
-                    clamp || ((vsrc1 < 256 && mode1!=GCN_P0_P10_P20) || (mode1==GCN_P0_P10_P20 && vsrc1 >= 256)) ||
+                    clamp || ((vsrc1 < 256 && mode1!=GCN_P0_P10_P20) ||
+                    (mode1==GCN_P0_P10_P20 && vsrc1 >= 256)) ||
                     vsrc0 >= 256 || vsrc2 != 0);
     }
     else if (mode1 != GCN_ARG1_IMM && mode1 != GCN_ARG2_IMM)
@@ -1720,39 +1735,39 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         isVOP1Word = true;
     
     if (isVOP1Word) // add vop3 for distinguishing encoding
-        putChars(buf, " vop3", 5);
+        putChars(bufPtr, " vop3", 5);
     
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeVINTRPEncoding(cxuint spacesToAdd, uint16_t arch,
            FastOutputBuffer& output, const GCNInstruction& gcnInsn, uint32_t insnCode)
 {
     char* bufStart = output.reserve(80);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
-    decodeGCNVRegOperand((insnCode>>18)&0xff, 1, buf);
-    *buf++ = ',';
-    *buf++ = ' ';
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
+    decodeGCNVRegOperand((insnCode>>18)&0xff, 1, bufPtr);
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
     if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
-        decodeVINTRPParam(insnCode&0xff, buf);
+        decodeVINTRPParam(insnCode&0xff, bufPtr);
     else
-        decodeGCNVRegOperand(insnCode&0xff, 1, buf);
-    putChars(buf, ", attr", 6);
+        decodeGCNVRegOperand(insnCode&0xff, 1, bufPtr);
+    putChars(bufPtr, ", attr", 6);
     const cxuint attr = (insnCode>>10)&63;
-    putByteToBuf(attr, buf);
-    *buf++ = '.';
-    *buf++ = "xyzw"[((insnCode>>8)&3)]; // attrchannel
-    output.forward(buf-bufStart);
+    putByteToBuf(attr, bufPtr);
+    *bufPtr++ = '.';
+    *bufPtr++ = "xyzw"[((insnCode>>8)&3)]; // attrchannel
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
            const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
     char* bufStart = output.reserve(90);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
-    addSpaces(buf, spacesToAdd);
+    addSpaces(bufPtr, spacesToAdd);
     bool vdstUsed = false;
     bool vaddrUsed = false;
     bool vdata0Used = false;
@@ -1769,17 +1784,17 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
-        decodeGCNVRegOperand(vdst, regsNum, buf);
+        decodeGCNVRegOperand(vdst, regsNum, bufPtr);
         vdstUsed = true;
     }
     if ((gcnInsn.mode & GCN_ONLYDST) == 0)
     {
         if (vdstUsed)
         {
-            *buf++ = ',';
-            *buf++ = ' ';
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
         }
-        decodeGCNVRegOperand(vaddr, 1, buf);
+        decodeGCNVRegOperand(vaddr, 1, bufPtr);
         vaddrUsed = true;
     }
     
@@ -1790,21 +1805,21 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
     {   /* two vdata */
         if (vaddrUsed || vdstUsed)
         {
-            *buf++ = ',';
-            *buf++ = ' ';
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
         }
         cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
         if ((gcnInsn.mode&GCN_DS_96) != 0)
             regsNum = 3;
         if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
-        decodeGCNVRegOperand(vdata0, regsNum, buf);
+        decodeGCNVRegOperand(vdata0, regsNum, bufPtr);
         vdata0Used = true;
         if (srcMode == GCN_2SRCS)
         {
-            *buf++ = ',';
-            *buf++ = ' ';
-            decodeGCNVRegOperand(vdata1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, buf);
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
+            decodeGCNVRegOperand(vdata1, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr);
             vdata1Used = true;
         }
     }
@@ -1814,48 +1829,48 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
     {
         if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
         {
-            putChars(buf, " offset:", 8);
-            buf += itocstrCStyle(offset, buf, 7, 10);
+            putChars(bufPtr, " offset:", 8);
+            bufPtr += itocstrCStyle(offset, bufPtr, 7, 10);
         }
         else
         {
             if ((offset&0xff) != 0)
             {
-                putChars(buf, " offset0:", 9);
-                putByteToBuf(offset&0xff, buf);
+                putChars(bufPtr, " offset0:", 9);
+                putByteToBuf(offset&0xff, bufPtr);
             }
             if ((offset&0xff00) != 0)
             {
-                putChars(buf, " offset1:", 9);
-                putByteToBuf((offset>>8)&0xff, buf);
+                putChars(bufPtr, " offset1:", 9);
+                putByteToBuf((offset>>8)&0xff, bufPtr);
             }
         }
     }
     
     if ((!isGCN12 && (insnCode&0x20000)!=0) || (isGCN12 && (insnCode&0x10000)!=0))
-        putChars(buf, " gds", 4);
+        putChars(bufPtr, " gds", 4);
     
     if (!vaddrUsed && vaddr != 0)
     {
-        putChars(buf, " vaddr=", 7);
-        buf += itocstrCStyle(vaddr, buf, 6, 16);
+        putChars(bufPtr, " vaddr=", 7);
+        bufPtr += itocstrCStyle(vaddr, bufPtr, 6, 16);
     }
     if (!vdata0Used && vdata0 != 0)
     {
-        putChars(buf, " vdata0=", 8);
-        buf += itocstrCStyle(vdata0, buf, 6, 16);
+        putChars(bufPtr, " vdata0=", 8);
+        bufPtr += itocstrCStyle(vdata0, bufPtr, 6, 16);
     }
     if (!vdata1Used && vdata1 != 0)
     {
-        putChars(buf, " vdata1=", 8);
-        buf += itocstrCStyle(vdata1, buf, 6, 16);
+        putChars(bufPtr, " vdata1=", 8);
+        bufPtr += itocstrCStyle(vdata1, bufPtr, 6, 16);
     }
     if (!vdstUsed && vdst != 0)
     {
-        putChars(buf, " vdst=", 6);
-        buf += itocstrCStyle(vdst, buf, 6, 16);
+        putChars(bufPtr, " vdst=", 6);
+        bufPtr += itocstrCStyle(vdst, bufPtr, 6, 16);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static const char* mtbufDFMTTable[] =
@@ -1876,7 +1891,7 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
       uint32_t insnCode2, bool mtbuf)
 {
     char* bufStart = output.reserve(150);
-    char* buf = bufStart;
+    char* bufPtr = bufStart;
     const bool isGCN12 = ((arch&ARCH_RX3X0)!=0);
     const cxuint vaddr = insnCode2&0xff;
     const cxuint vdata = (insnCode2>>8)&0xff;
@@ -1885,103 +1900,103 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     if (mode1 != GCN_ARG_NONE)
     {
-        addSpaces(buf, spacesToAdd);
+        addSpaces(bufPtr, spacesToAdd);
         if (mode1 != GCN_MUBUF_NOVAD)
         {
             cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
             if (insnCode2 & 0x800000U)
                 dregsNum++; // tfe
             
-            decodeGCNVRegOperand(vdata, dregsNum, buf);
-            *buf++ = ',';
-            *buf++ = ' ';
+            decodeGCNVRegOperand(vdata, dregsNum, bufPtr);
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
             // determine number of vaddr registers
             /* for addr32 - idxen+offen or 1, for addr64 - 2 (idxen and offen is illegal) */
             const cxuint aregsNum = ((insnCode & 0x3000U)==0x3000U ||
                     /* addr64 only for older GCN than 1.2 */
                     (!isGCN12 && (insnCode & 0x8000U)))? 2 : 1;
             
-            decodeGCNVRegOperand(vaddr, aregsNum, buf);
-            *buf++ = ',';
-            *buf++ = ' ';
+            decodeGCNVRegOperand(vaddr, aregsNum, bufPtr);
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
         }
-        decodeGCNOperand(srsrc<<2, 4, buf, arch);
-        *buf++ = ',';
-        *buf++ = ' ';
-        decodeGCNOperand(soffset, 1, buf, arch);
+        decodeGCNOperand(srsrc<<2, 4, bufPtr, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        decodeGCNOperand(soffset, 1, bufPtr, arch);
     }
     else
-        addSpaces(buf, spacesToAdd-1);
+        addSpaces(bufPtr, spacesToAdd-1);
     
     if (insnCode & 0x1000U)
-        putChars(buf, " offen", 6);
+        putChars(bufPtr, " offen", 6);
     if (insnCode & 0x2000U)
-        putChars(buf, " idxen", 6);
+        putChars(bufPtr, " idxen", 6);
     const cxuint offset = insnCode&0xfff;
     if (offset != 0)
     {
-        putChars(buf, " offset:", 8);
-        buf += itocstrCStyle(offset, buf, 7, 10);
+        putChars(bufPtr, " offset:", 8);
+        bufPtr += itocstrCStyle(offset, bufPtr, 7, 10);
     }
     if (insnCode & 0x4000U)
-        putChars(buf, " glc", 4);
+        putChars(bufPtr, " glc", 4);
     
     if (((!isGCN12 || mtbuf) && (insnCode2 & 0x400000U)!=0) ||
         ((isGCN12 && !mtbuf) && (insnCode & 0x20000)!=0))
-        putChars(buf, " slc", 4);
+        putChars(bufPtr, " slc", 4);
     
     if (!isGCN12 && (insnCode & 0x8000U)!=0)
-        putChars(buf, " addr64", 7);
+        putChars(bufPtr, " addr64", 7);
     if (!mtbuf && (insnCode & 0x10000U) != 0)
-        putChars(buf, " lds", 4);
+        putChars(bufPtr, " lds", 4);
     if (insnCode2 & 0x800000U)
-        putChars(buf, " tfe", 4);
+        putChars(bufPtr, " tfe", 4);
     if (mtbuf)
     {
-        putChars(buf, " format:[", 9);
+        putChars(bufPtr, " format:[", 9);
         const char* dfmtStr = mtbufDFMTTable[(insnCode>>19)&15];
-        putChars(buf, dfmtStr, ::strlen(dfmtStr));
-        *buf++ = ',';
+        putChars(bufPtr, dfmtStr, ::strlen(dfmtStr));
+        *bufPtr++ = ',';
         const char* nfmtStr = mtbufNFMTTable[(insnCode>>23)&7];
-        putChars(buf, nfmtStr, ::strlen(nfmtStr));
-        *buf++ = ']';
+        putChars(bufPtr, nfmtStr, ::strlen(nfmtStr));
+        *bufPtr++ = ']';
     }
     
     if (mode1 == GCN_ARG_NONE || mode1 == GCN_MUBUF_NOVAD)
     {
         if (vaddr != 0)
         {
-            putChars(buf, " vaddr=", 7);
-            buf += itocstrCStyle(vaddr, buf, 6, 16);
+            putChars(bufPtr, " vaddr=", 7);
+            bufPtr += itocstrCStyle(vaddr, bufPtr, 6, 16);
         }
         if (vdata != 0)
         {
-            putChars(buf, " vdata=", 7);
-            buf += itocstrCStyle(vdata, buf, 6, 16);
+            putChars(bufPtr, " vdata=", 7);
+            bufPtr += itocstrCStyle(vdata, bufPtr, 6, 16);
         }
     }
     if (mode1 == GCN_ARG_NONE)
     {
         if (srsrc != 0)
         {
-            putChars(buf, " srsrc=", 7);
-            buf += itocstrCStyle(srsrc, buf, 6, 16);
+            putChars(bufPtr, " srsrc=", 7);
+            bufPtr += itocstrCStyle(srsrc, bufPtr, 6, 16);
         }
         if (soffset != 0)
         {
-            putChars(buf, " soffset=", 9);
-            buf += itocstrCStyle(soffset, buf, 6, 16);
+            putChars(bufPtr, " soffset=", 9);
+            bufPtr += itocstrCStyle(soffset, bufPtr, 6, 16);
         }
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
     char* bufStart = output.reserve(150);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     
     const cxuint dmask =  (insnCode>>8)&15;
     cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
@@ -1990,135 +2005,135 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (insnCode & 0x10000)
         dregsNum++; // tfe
     
-    decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, buf);
-    *buf++ = ',';
-    *buf++ = ' ';
+    decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
     // determine number of vaddr registers
-    decodeGCNVRegOperand(insnCode2&0xff, 4, buf);
-    *buf++ = ',';
-    *buf++ = ' ';
-    decodeGCNOperand(((insnCode2>>14)&0x7c), (insnCode & 0x8000)?4:8, buf, arch);
+    decodeGCNVRegOperand(insnCode2&0xff, 4, bufPtr);
+    *bufPtr++ = ',';
+    *bufPtr++ = ' ';
+    decodeGCNOperand(((insnCode2>>14)&0x7c), (insnCode & 0x8000)?4:8, bufPtr, arch);
     
     const cxuint ssamp = (insnCode2>>21)&0x1f;
     
     if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
     {
-        *buf++ = ',';
-        *buf++ = ' ';
-        decodeGCNOperand(ssamp<<2, 4, buf, arch);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        decodeGCNOperand(ssamp<<2, 4, bufPtr, arch);
     }
     if (dmask != 1)
     {
-        putChars(buf, " dmask:", 7);
+        putChars(bufPtr, " dmask:", 7);
         if (dmask >= 10)
         {
-            *buf++ = '1';
-            *buf++ = '0' + dmask - 10;
+            *bufPtr++ = '1';
+            *bufPtr++ = '0' + dmask - 10;
         }
         else
-            *buf++ = '0' + dmask;
+            *bufPtr++ = '0' + dmask;
     }
     
     if (insnCode & 0x1000)
-        putChars(buf, " unorm", 6);
+        putChars(bufPtr, " unorm", 6);
     if (insnCode & 0x2000)
-        putChars(buf, " glc", 4);
+        putChars(bufPtr, " glc", 4);
     if (insnCode & 0x2000000)
-        putChars(buf, " slc", 4);
+        putChars(bufPtr, " slc", 4);
     if (insnCode & 0x8000)
-        putChars(buf, " r128", 5);
+        putChars(bufPtr, " r128", 5);
     if (insnCode & 0x10000)
-        putChars(buf, " tfe", 4);
+        putChars(bufPtr, " tfe", 4);
     if (insnCode & 0x20000)
-        putChars(buf, " lwe", 4);
+        putChars(bufPtr, " lwe", 4);
     if (insnCode & 0x4000)
     {
-        *buf++ = ' ';
-        *buf++ = 'd';
-        *buf++ = 'a';
+        *bufPtr++ = ' ';
+        *bufPtr++ = 'd';
+        *bufPtr++ = 'a';
     }
     if ((arch & ARCH_RX3X0)!=0 && (insnCode2 & (1U<<31)) != 0)
-        putChars(buf, " d16", 4);
+        putChars(bufPtr, " d16", 4);
     
     if ((gcnInsn.mode & GCN_MASK2) != GCN_MIMG_SAMPLE && ssamp != 0)
     {
-        putChars(buf, " ssamp=", 7);
-        buf += itocstrCStyle(ssamp, buf, 6, 16);
+        putChars(bufPtr, " ssamp=", 7);
+        bufPtr += itocstrCStyle(ssamp, bufPtr, 6, 16);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
         const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
     char* bufStart = output.reserve(90);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     /* export target */
     const cxuint target = (insnCode>>4)&63;
     if (target >= 32)
     {
-        putChars(buf, "param", 5);
+        putChars(bufPtr, "param", 5);
         const cxuint tpar = target-32;
         const cxuint digit2 = tpar/10;
         if (digit2 != 0)
-            *buf++ = '0' + digit2;
-        *buf++ = '0' + tpar - 10*digit2;
+            *bufPtr++ = '0' + digit2;
+        *bufPtr++ = '0' + tpar - 10*digit2;
     }
     else if (target >= 12 && target <= 15)
     {
-        putChars(buf, "pos0", 4);
-        buf[-1] = '0' + target-12;
+        putChars(bufPtr, "pos0", 4);
+        bufPtr[-1] = '0' + target-12;
     }
     else if (target < 8)
     {
-        putChars(buf, "mrt0", 4);
-        buf[-1] = '0' + target;
+        putChars(bufPtr, "mrt0", 4);
+        bufPtr[-1] = '0' + target;
     }
     else if (target == 8)
-        putChars(buf, "mrtz", 4);
+        putChars(bufPtr, "mrtz", 4);
     else if (target == 9)
-        putChars(buf, "null", 4);
+        putChars(bufPtr, "null", 4);
     else
     {   /* reserved */
-        putChars(buf, "ill_", 4);
+        putChars(bufPtr, "ill_", 4);
         const cxuint digit2 = target/10U;
-        *buf++ = '0' + digit2;
-        *buf++ = '0' + target - 10U*digit2;
+        *bufPtr++ = '0' + digit2;
+        *bufPtr++ = '0' + target - 10U*digit2;
     }
     
     /* vdata registers */
     cxuint vsrcsUsed = 0;
     for (cxuint i = 0; i < 4; i++)
     {
-        *buf++ = ',';
-        *buf++ = ' ';
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
         if (insnCode & (1U<<i))
         {
             if ((insnCode&0x400)==0)
             {
-                decodeGCNVRegOperand((insnCode2>>(i<<3))&0xff, 1, buf);
+                decodeGCNVRegOperand((insnCode2>>(i<<3))&0xff, 1, bufPtr);
                 vsrcsUsed |= 1<<i;
             }
             else // if compr=1
             {
-                decodeGCNVRegOperand(((i>=2)?(insnCode2>>8):insnCode2)&0xff, 1, buf);
+                decodeGCNVRegOperand(((i>=2)?(insnCode2>>8):insnCode2)&0xff, 1, bufPtr);
                 vsrcsUsed |= 1U<<(i>>1);
             }
         }
         else
-            putChars(buf, "off", 3);
+            putChars(bufPtr, "off", 3);
     }
     
     if (insnCode&0x800)
-        putChars(buf, " done", 5);
+        putChars(bufPtr, " done", 5);
     if (insnCode&0x400)
-        putChars(buf, " compr", 6);
+        putChars(bufPtr, " compr", 6);
     if (insnCode&0x1000)
     {
-        *buf++ = ' ';
-        *buf++ = 'v';
-        *buf++ = 'm';
+        *bufPtr++ = ' ';
+        *bufPtr++ = 'v';
+        *bufPtr++ = 'm';
     }
     
     for (cxuint i = 0; i < 4; i++)
@@ -2126,20 +2141,20 @@ static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffe
         const cxuint val = (insnCode2>>(i<<3))&0xff;
         if ((vsrcsUsed&(1U<<i))==0 && val!=0)
         {
-            putChars(buf, " vsrc0=", 7);
-            buf[-2] += i; // number
-            buf += itocstrCStyle(val, buf, 6, 16);
+            putChars(bufPtr, " vsrc0=", 7);
+            bufPtr[-2] += i; // number
+            bufPtr += itocstrCStyle(val, bufPtr, 6, 16);
         }
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 static void decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
              const GCNInstruction& gcnInsn, uint32_t insnCode, uint32_t insnCode2)
 {
     char* bufStart = output.reserve(130);
-    char* buf = bufStart;
-    addSpaces(buf, spacesToAdd);
+    char* bufPtr = bufStart;
+    addSpaces(bufPtr, spacesToAdd);
     bool vdstUsed = false;
     bool vdataUsed = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
@@ -2149,49 +2164,49 @@ static void decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {
         vdstUsed = true;
-        decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, buf);
-        *buf++ = ',';
-        *buf++ = ' ';
-        decodeGCNVRegOperand(insnCode2&0xff, 2, buf); // addr
+        decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, bufPtr);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        decodeGCNVRegOperand(insnCode2&0xff, 2, bufPtr); // addr
     }
     else
     {   /* two vregs, because 64-bitness stored in PTR32 mode (at runtime) */
-        decodeGCNVRegOperand(insnCode2&0xff, 2, buf); // addr
+        decodeGCNVRegOperand(insnCode2&0xff, 2, bufPtr); // addr
         if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
         {
             vdstUsed = true;
-            *buf++ = ',';
-            *buf++ = ' ';
-            decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, buf);
+            *bufPtr++ = ',';
+            *bufPtr++ = ' ';
+            decodeGCNVRegOperand(insnCode2>>24, dstRegsNum, bufPtr);
         }
     }
     
     if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0) /* print data */
     {
         vdataUsed = true;
-        *buf++ = ',';
-        *buf++ = ' ';
-        decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, buf);
+        *bufPtr++ = ',';
+        *bufPtr++ = ' ';
+        decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     }
     
     if (insnCode & 0x10000U)
-        putChars(buf, " glc", 4);
+        putChars(bufPtr, " glc", 4);
     if (insnCode & 0x20000U)
-        putChars(buf, " slc", 4);
+        putChars(bufPtr, " slc", 4);
     if (insnCode2 & 0x800000U)
-        putChars(buf, " tfe", 4);
+        putChars(bufPtr, " tfe", 4);
     
     if (!vdataUsed && ((insnCode2>>8)&0xff) != 0)
     {
-        putChars(buf, " vdata=", 7);
-        buf += itocstrCStyle((insnCode2>>8)&0xff, buf, 6, 16);
+        putChars(bufPtr, " vdata=", 7);
+        bufPtr += itocstrCStyle((insnCode2>>8)&0xff, bufPtr, 6, 16);
     }
     if (!vdstUsed && (insnCode2>>24) != 0)
     {
-        putChars(buf, " vdst=", 6);
-        buf += itocstrCStyle(insnCode2>>24, buf, 6, 16);
+        putChars(bufPtr, " vdst=", 6);
+        bufPtr += itocstrCStyle(insnCode2>>24, bufPtr, 6, 16);
     }
-    output.forward(buf-bufStart);
+    output.forward(bufPtr-bufStart);
 }
 
 /* main routine */
@@ -2424,18 +2439,18 @@ void GCNDisassembler::disassemble()
             else
             {
                 char* bufStart = output.reserve(40);
-                char* buf = bufStart;
+                char* bufPtr = bufStart;
                 if (!isGCN12 || gcnEncoding != GCNENC_SMEM)
-                    putChars(buf, gcnEncodingNames[gcnEncoding],
+                    putChars(bufPtr, gcnEncodingNames[gcnEncoding],
                             ::strlen(gcnEncodingNames[gcnEncoding]));
                 else /* SMEM encoding */
-                    putChars(buf, "SMEM", 4);
-                putChars(buf, "_ill_", 5);
-                buf += itocstrCStyle(opcode, buf , 6);
-                const size_t linePos = buf-bufStart;
+                    putChars(bufPtr, "SMEM", 4);
+                putChars(bufPtr, "_ill_", 5);
+                bufPtr += itocstrCStyle(opcode, bufPtr , 6);
+                const size_t linePos = bufPtr-bufStart;
                 spacesToAdd = spacesToAdd >= (linePos+1)? spacesToAdd - linePos : 1;
                 gcnInsn = &defaultInsn;
-                output.forward(buf-bufStart);
+                output.forward(bufPtr-bufStart);
             }
             
             const FloatLitType displayFloatLits = 
