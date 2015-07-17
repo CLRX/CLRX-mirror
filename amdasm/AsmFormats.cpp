@@ -49,16 +49,14 @@ AsmFormatHandler::~AsmFormatHandler()
 /* raw code handler */
 
 AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler, GPUDeviceType deviceType,
-                 bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit),
-                 haveCode(false)
+                 bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit)
 { }
 
 cxuint AsmRawCodeHandler::addKernel(const char* kernelName)
 {
-    if (haveCode && !this->kernelName.empty() && this->kernelName != kernelName)
+    if (!this->kernelName.empty() && this->kernelName != kernelName)
         throw AsmFormatException("Only one kernel can be defined for raw code");
     this->kernelName = kernelName;
-    haveCode = true;
     return 0; // default zero kernel
 }
 
@@ -66,15 +64,16 @@ cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
 {
     if (::strcmp(name, ".text")!=0)
         throw AsmFormatException("Only section '.text' can be in raw code");
-    haveCode = true;
     return 0;
 }
 
 bool AsmRawCodeHandler::sectionIsDefined(const char* sectionName) const
-{ return haveCode; }
+{ return true; }
 
 void AsmRawCodeHandler::setCurrentKernel(cxuint kernel)
 {   // do nothing, no checks (assembler checks kernel id before call)
+    if (kernel >= 1)
+        throw AsmFormatException("KernelId out of range");
 }
 
 void AsmRawCodeHandler::setCurrentSection(const char* name)
@@ -90,6 +89,8 @@ void AsmRawCodeHandler::setCurrentSection(const char* name)
 
 AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId) const
 {
+    if (sectionId >= 1)
+        throw AsmFormatException("Section doesn't exists");
     return { ".text", AsmSectionType::CODE, ASMSECT_WRITEABLE };
 }
 
@@ -277,42 +278,44 @@ void AsmAmdHandler::setCurrentSection(const char* name)
     size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
             sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
             amdFormatSectionNamesTbl;
+    
+    cxuint thisSection = ASMSECT_NONE;
     switch(sectionNameId)
     {
         case AMDFMTSECT_CONFIG:
             if (currentKernel == ASMKERN_GLOBAL)
                 throw AsmFormatException("Kernel configuration doesn't "
                             "exists outside kernel");
-            currentSection = kernelStates[currentKernel].configSection;
+            thisSection = kernelStates[currentKernel].configSection;
             break;
         case AMDFMTSECT_DATA:
-            currentSection = (currentKernel!=ASMKERN_GLOBAL) ?
+            thisSection = (currentKernel!=ASMKERN_GLOBAL) ?
                     kernelStates[currentKernel].dataSection : dataSection;
             break;
         case AMDFMTSECT_HEADER:
             if (currentKernel == ASMKERN_GLOBAL)
                 throw AsmFormatException("Kernel header doesn't exists outside kernel");
-            currentSection = kernelStates[currentKernel].headerSection;
+            thisSection = kernelStates[currentKernel].headerSection;
             break;
         case AMDFMTSECT_METADATA:
             if (currentKernel == ASMKERN_GLOBAL)
                 throw AsmFormatException("Kernel metadata doesn't exists outside kernel");
-            currentSection = kernelStates[currentKernel].metadataSection;
+            thisSection  = kernelStates[currentKernel].metadataSection;
             break;
         case AMDFMTSECT_TEXT:
             if (currentKernel == ASMKERN_GLOBAL)
                 throw AsmFormatException("Kernel code doesn't exists outside kernel");
-            currentSection = kernelStates[currentKernel].codeSection;
+            thisSection = kernelStates[currentKernel].codeSection;
             break;
         case AMDFMTSECT_LLVMIR:
             if (currentKernel != ASMKERN_GLOBAL)
                 throw AsmFormatException("LLVMIR bytecode exists only on global space");
-            currentSection = llvmirSection;
+            thisSection = llvmirSection;
             break;
         case AMDFMTSECT_SOURCE:
             if (currentKernel != ASMKERN_GLOBAL)
                 throw AsmFormatException("Source exists only on global space");
-            currentSection = sourceSection;
+            thisSection = sourceSection;
             break;
         default:
             std::string message = "Section '";
@@ -321,13 +324,23 @@ void AsmAmdHandler::setCurrentSection(const char* name)
             throw AsmFormatException(message);
             break;
     }
+    if (thisSection==ASMSECT_NONE)
+    {
+        std::string message = "Section '";
+        message += name;
+        message += "' is not defined";
+        throw AsmFormatException(message);
+    }
+    currentSection = thisSection;
 }
 
 //static 
 
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
 {   /* find section */
-    const char* name;
+    if (sectionId >= sections.size())
+        throw AsmFormatException("Section doesn't exists");
+    const char* name = nullptr;
     const Section& section = sections[sectionId];
     Flags flags = 0;
     switch (section.type)
@@ -455,21 +468,23 @@ bool AsmGalliumHandler::sectionIsDefined(const char* sectionName) const
 
 void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
 {   // set kernel and their default section
+    if (kernel >= kernelStates.size())
+        throw AsmFormatException("KernelId out of range");
     currentKernel = kernel;
     currentSection = kernelStates[kernel].defaultSection;
 }
 
 void AsmGalliumHandler::setCurrentSection(const char* sectionName)
 {
-    currentKernel = ASMKERN_GLOBAL;
+    cxuint thisSection = ASMSECT_NONE;
     if (::strcmp(sectionName, ".data") == 0) // data
-        currentSection = dataSection;
+        thisSection = dataSection;
     else if (::strcmp(sectionName, ".text") == 0) // code
-        currentSection = codeSection;
+        thisSection = codeSection;
     else if (::strcmp(sectionName, ".disasm") == 0) // disassembly
-        currentSection = disasmSection;
+        thisSection = disasmSection;
     else if (::strcmp(sectionName, ".comment") == 0) // comment
-        currentSection = commentSection;
+        thisSection = commentSection;
     else
     {   /* kernel configuration section has been set via '.kernel' pseudo-op */
         std::string message = "Section '";
@@ -477,12 +492,24 @@ void AsmGalliumHandler::setCurrentSection(const char* sectionName)
         message += "' is not supported";
         throw AsmFormatException(message);
     }
+    
+    if (thisSection==ASMSECT_NONE)
+    {
+        std::string message = "Section '";
+        message += sectionName;
+        message += "' is not defined";
+        throw AsmFormatException(message);
+    }
+    
+    currentSection = thisSection;
     currentKernel = ASMKERN_GLOBAL;
     insideArgs = insideProgInfo = false;
 }
 
 AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId) const
 {
+    if (sectionId >= sections.size())
+        throw AsmFormatException("Section doesn't exists");
     if (sectionId == codeSection)
         return { ".text", AsmSectionType::CODE, ASMSECT_WRITEABLE };
     else if (sectionId == dataSection)

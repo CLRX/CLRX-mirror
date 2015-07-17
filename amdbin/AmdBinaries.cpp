@@ -550,20 +550,6 @@ const KernelInfo& AmdMainBinaryBase::getKernelInfo(const char* name) const
     return kernelInfos[it->second];
 }
 
-struct InitKernelArgMapEntry {
-    uint32_t index;
-    KernelArgType argType;
-    KernelArgType origArgType;
-    KernelPtrSpace ptrSpace;
-    uint32_t ptrAccess;
-    const char* nameStr;
-    
-    InitKernelArgMapEntry() : index(0), argType(KernelArgType::VOID),
-        origArgType(KernelArgType::VOID),
-        ptrSpace(KernelPtrSpace::NONE), ptrAccess(0), nameStr(nullptr)
-    { }
-};
-
 static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
@@ -621,11 +607,26 @@ static inline std::string stringFromCStringDelim(const char* c1,
     return std::string(c1, i);
 }
 
-typedef std::map<std::string, InitKernelArgMapEntry> InitKernelArgMap;
-
 static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
           const char* kernelDesc, KernelInfo& kernelInfo)
-{   /* parse kernel description */
+{
+    struct InitKernelArgMapEntry
+    {
+        uint32_t index;
+        KernelArgType argType;
+        KernelArgType origArgType;
+        KernelPtrSpace ptrSpace;
+        uint32_t ptrAccess;
+        const char* nameStr;
+        
+        InitKernelArgMapEntry() : index(0), argType(KernelArgType::VOID),
+            origArgType(KernelArgType::VOID),
+            ptrSpace(KernelPtrSpace::NONE), ptrAccess(0), nameStr(nullptr)
+        { }
+    };
+    typedef std::map<std::string, InitKernelArgMapEntry> InitKernelArgMap;
+    
+    /* parse kernel description */
     LineNo lineNo = 1;
     uint32_t argIndex = 0;
     

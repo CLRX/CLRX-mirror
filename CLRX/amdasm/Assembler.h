@@ -164,7 +164,6 @@ class AsmRawCodeHandler: public AsmFormatHandler
 {
 private:
     std::string kernelName;
-    bool haveCode;
 public:
     AsmRawCodeHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmRawCodeHandler() = default;
