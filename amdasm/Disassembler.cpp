@@ -731,12 +731,9 @@ void Disassembler::disassembleAmd()
     
     for (const AmdDisasmKernelInput& kinput: amdInput->kernels)
     {
-        {
-            
-            output.write(".kernel ", 8);
-            output.write(kinput.kernelName.c_str(), kinput.kernelName.size());
-            output.put('\n');
-        }
+        output.write(".kernel ", 8);
+        output.write(kinput.kernelName.c_str(), kinput.kernelName.size());
+        output.put('\n');
         if (doMetadata)
         {
             if (kinput.header != nullptr && kinput.headerSize != 0)

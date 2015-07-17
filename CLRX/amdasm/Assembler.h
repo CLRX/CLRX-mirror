@@ -111,7 +111,7 @@ public:
         Flags flags;
     };
 protected:
-    friend struct AsmFormatPseudoOps;
+    friend struct AsmGalliumPseudoOps;
     
     Assembler& assembler;
     GPUDeviceType deviceType;
@@ -194,6 +194,7 @@ public:
 class AsmAmdHandler: public AsmFormatHandler
 {
 private:
+    friend struct AsmAmdPseudoOps;
     AmdInput input;
     struct Section
     {
@@ -243,7 +244,7 @@ public:
 class AsmGalliumHandler: public AsmFormatHandler
 {
 private:
-    friend struct AsmFormatPseudoOps;
+    friend struct AsmGalliumPseudoOps;
     GalliumInput input;
     struct Section
     {
@@ -701,8 +702,10 @@ private:
     friend class AsmGalliumHandler;
     
     friend struct AsmPseudoOps; // INTERNAL LOGIC
-    friend struct AsmFormatPseudoOps; // INTERNAL LOGIC
+    friend struct AsmGalliumPseudoOps; // INTERNAL LOGIC
+    friend struct AsmAmdPseudoOps; // INTERNAL LOGIC
     BinaryFormat format;
+    
     GPUDeviceType deviceType;
     bool _64bit;    ///
     bool good;

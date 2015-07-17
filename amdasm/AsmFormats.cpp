@@ -526,7 +526,7 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
 
 namespace CLRX
 {
-void AsmFormatPseudoOps::galliumDoArgs(AsmGalliumHandler& handler,
+void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
                const char* pseudoOpPlace, const char*& linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -556,7 +556,7 @@ static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
     { "sampler", GalliumArgType::SAMPLER }
 };
 
-void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char*& linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -694,7 +694,7 @@ void AsmFormatPseudoOps::galliumDoArg(AsmGalliumHandler& handler, const char* ps
             uint32_t(targetSize), uint32_t(targetAlign) });
 }
 
-void AsmFormatPseudoOps::galliumProgInfo(AsmGalliumHandler& handler,
+void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
                  const char* pseudoOpPlace, const char*& linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -713,7 +713,7 @@ void AsmFormatPseudoOps::galliumProgInfo(AsmGalliumHandler& handler,
     handler.kernelStates[handler.currentKernel].progInfoEntries = 0;
 }
 
-void AsmFormatPseudoOps::galliumDoEntry(AsmGalliumHandler& handler,
+void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
                     const char* pseudoOpPlace, const char*& linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -788,16 +788,16 @@ void AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
     switch(pseudoOp)
     {
         case GALLIUMOP_ARG:
-            AsmFormatPseudoOps::galliumDoArg(*this, stmtPlace, linePtr);
+            AsmGalliumPseudoOps::doArg(*this, stmtPlace, linePtr);
             break;
         case GALLIUMOP_ARGS:
-            AsmFormatPseudoOps::galliumDoArgs(*this, stmtPlace, linePtr);
+            AsmGalliumPseudoOps::doArgs(*this, stmtPlace, linePtr);
             break;
         case GALLIUMOP_ENTRY:
-            AsmFormatPseudoOps::galliumDoEntry(*this, stmtPlace, linePtr);
+            AsmGalliumPseudoOps::doEntry(*this, stmtPlace, linePtr);
             break;
         case GALLIUM_PROGINFO:
-            AsmFormatPseudoOps::galliumProgInfo(*this, stmtPlace, linePtr);
+            AsmGalliumPseudoOps::doProgInfo(*this, stmtPlace, linePtr);
             break;
         default:
             break;
