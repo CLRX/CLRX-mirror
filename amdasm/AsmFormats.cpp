@@ -98,12 +98,20 @@ void AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char*& string)
 { }  // not recognized any pseudo-op
 
-bool AsmRawCodeHandler::writeBinary(std::ostream& os)
+bool AsmRawCodeHandler::prepareBinary()
+{ return true; }
+
+void AsmRawCodeHandler::writeBinary(std::ostream& os)
 {
     const AsmSection& section = assembler.getSections()[0];
     if (!section.content.empty())
         os.write((char*)section.content.data(), section.content.size());
-    return true;
+}
+
+void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array)
+{
+    const AsmSection& section = assembler.getSections()[0];
+    array.assign(section.content.begin(), section.content.end());
 }
 
 /*
@@ -111,7 +119,7 @@ bool AsmRawCodeHandler::writeBinary(std::ostream& os)
  */
 
 AsmAmdHandler::AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit)
-            : AsmFormatHandler(assembler, deviceType, is64Bit), input{},
+            : AsmFormatHandler(assembler, deviceType, is64Bit), output{},
               dataSection(0), llvmirSection(ASMSECT_NONE),
               sourceSection(ASMSECT_NONE)
 {
@@ -120,9 +128,9 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, boo
 
 cxuint AsmAmdHandler::addKernel(const char* kernelName)
 {
-    cxuint thisKernel = input.kernels.size();
+    cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    input.addEmptyKernel(kernelName);
+    output.addEmptyKernel(kernelName);
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
             thisSection, ASMSECT_NONE, { } });
     sections.push_back({ thisKernel, AsmSectionType::CODE });
@@ -388,13 +396,19 @@ void AsmAmdHandler::parsePseudoOp(const std::string& firstName,
 {
 }
 
-bool AsmAmdHandler::writeBinary(std::ostream& os)
-{   // before call we initialize pointers and datas
-    //for (const AsmSection& section: assembler.getSections())
-    
-    AmdGPUBinGenerator binGenerator(&input);
+bool AsmAmdHandler::prepareBinary()
+{ return true; }
+
+void AsmAmdHandler::writeBinary(std::ostream& os)
+{
+    AmdGPUBinGenerator binGenerator(&output);
     binGenerator.generate(os);
-    return true;
+}
+
+void AsmAmdHandler::writeBinary(Array<cxbyte>& array)
+{
+    AmdGPUBinGenerator binGenerator(&output);
+    binGenerator.generate(array);
 }
 
 /*
@@ -403,7 +417,7 @@ bool AsmAmdHandler::writeBinary(std::ostream& os)
 
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType,
                      bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit),
-             input{}, codeSection(ASMSECT_NONE), dataSection(0),
+             output{}, codeSection(ASMSECT_NONE), dataSection(0),
              disasmSection(ASMSECT_NONE), commentSection(ASMSECT_NONE)
 {
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
@@ -412,9 +426,9 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceT
 
 cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 {
-    cxuint thisKernel = input.kernels.size();
+    cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    input.kernels.push_back({ kernelName, {
+    output.kernels.push_back({ kernelName, {
         /* default values */
         { 0x0000b848U, 0x000c0000U },
         { 0x0000b84cU, 0x00001788U },
@@ -689,7 +703,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         return;
     }
     // put this definition to argument list
-    handler.input.kernels[handler.currentKernel].argInfos.push_back(
+    handler.output.kernels[handler.currentKernel].argInfos.push_back(
         { argType, sext, argSemantic, uint32_t(size),
             uint32_t(targetSize), uint32_t(targetAlign) });
 }
@@ -770,7 +784,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "Maximum 3 entries can be in ProgInfo");
         return;
     }
-    GalliumProgInfoEntry& pentry = handler.input.kernels[handler.currentKernel]
+    GalliumProgInfoEntry& pentry = handler.output.kernels[handler.currentKernel]
             .progInfo[kstate.progInfoEntries++];
     pentry.address = entryAddr;
     pentry.value = entryVal;
@@ -804,27 +818,27 @@ void AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
     }
 }
 
-bool AsmGalliumHandler::writeBinary(std::ostream& os)
+bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
     for (const AsmSection& section: assembler.getSections())
     {
         switch(section.type)
         {
             case AsmSectionType::CODE:
-                input.codeSize = section.content.size();
-                input.code = section.content.data();
+                output.codeSize = section.content.size();
+                output.code = section.content.data();
                 break;
             case AsmSectionType::DATA:
-                input.globalDataSize = section.content.size();
-                input.globalData = section.content.data();
+                output.globalDataSize = section.content.size();
+                output.globalData = section.content.data();
                 break;
             case AsmSectionType::GALLIUM_COMMENT:
-                input.commentSize = section.content.size();
-                input.comment = (const char*)section.content.data();
+                output.commentSize = section.content.size();
+                output.comment = (const char*)section.content.data();
                 break;
             case AsmSectionType::GALLIUM_DISASM:
-                input.disassemblySize = section.content.size();
-                input.disassembly = (const char*)section.content.data();
+                output.disassemblySize = section.content.size();
+                output.disassembly = (const char*)section.content.data();
                 break;
             default:
                 abort(); /// fatal error
@@ -834,9 +848,9 @@ bool AsmGalliumHandler::writeBinary(std::ostream& os)
     /// checking symbols and set offset for kernels
     bool good = true;
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
-    for (size_t ki = 0; ki < input.kernels.size(); ki++)
+    for (size_t ki = 0; ki < output.kernels.size(); ki++)
     {
-        GalliumKernelInput& kinput = input.kernels[ki];
+        GalliumKernelInput& kinput = output.kernels[ki];
         auto it = symbolMap.find(kinput.kernelName);
         if (it == symbolMap.end() || !it->second.isDefined())
         {   // error, undefined
@@ -868,13 +882,19 @@ bool AsmGalliumHandler::writeBinary(std::ostream& os)
         }
         kinput.offset = symbol.value;
     }
-    if (!good) // failed!!!
-        return false;
-    
+    return good;
     /* initialize progInfos */
     //////////////////////////
-    
-    GalliumBinGenerator binGenerator(&input);
+}
+
+void AsmGalliumHandler::writeBinary(std::ostream& os)
+{
+    GalliumBinGenerator binGenerator(&output);
     binGenerator.generate(os);
-    return true;
+}
+
+void AsmGalliumHandler::writeBinary(Array<cxbyte>& array)
+{
+    GalliumBinGenerator binGenerator(&output);
+    binGenerator.generate(array);
 }

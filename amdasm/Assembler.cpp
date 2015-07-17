@@ -119,8 +119,6 @@ Assembler::Assembler(const std::string& filename, std::istream& input, Flags _fl
           messageStream(msgStream),
           printStream(_printStream),
           outFormatInitialized(false),
-          inGlobal(_format != BinaryFormat::RAWCODE),
-          inAmdConfig(false), currentKernel(0),
           // value reference and section reference from first symbol: '.'
           currentSection(symbolMap.begin()->second.sectionId),
           currentOutPos(symbolMap.begin()->second.value)
@@ -1186,12 +1184,12 @@ bool Assembler::assemble()
                     doNextLine = true;
                     break;
                 }
-                if (inAmdConfig)
+                /*if (inAmdConfig)
                 {
                     printError(stmtPlace, "Local label can't defined in AMD config place");
                     doNextLine = true;
                     break;
-                }
+                }*/
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
                         symbolMap.insert(std::make_pair(firstName+"b", AsmSymbol()));
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
@@ -1229,13 +1227,13 @@ bool Assembler::assemble()
                     doNextLine = true;
                     break;
                 }
-                if (inAmdConfig)
+                /*if (inAmdConfig)
                 {
                     printError(stmtPlace,
                                "Label can't defined in AMD config place");
                     doNextLine = true;
                     break;
-                }
+                }*/
                 
                 setSymbol(*res.first, currentOutPos, currentSection);
                 res.first->second.onceDefined = true;

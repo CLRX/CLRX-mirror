@@ -155,8 +155,12 @@ public:
     /// parse pseudo-op
     virtual void parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char*& linePtr) = 0;
+    /// prepare binary for use
+    virtual bool prepareBinary() = 0;
+    /// write binary to output stream
+    virtual void writeBinary(std::ostream& os) = 0;
     /// write binaery to output stream
-    virtual bool writeBinary(std::ostream& os) = 0;
+    virtual void writeBinary(Array<cxbyte>& array) = 0;
 };
 
 /// handles raw code format
@@ -186,8 +190,12 @@ public:
     /// parse pseudo-op
     void parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char*& linePtr);
-    /// write binaery to output stream
-    bool writeBinary(std::ostream& os);
+    
+    bool prepareBinary();
+    /// write binary to output stream
+    void writeBinary(std::ostream& os);
+    /// write binary to array
+    void writeBinary(Array<cxbyte>& array);
 };
 
 /// handles AMD Catalyst format
@@ -195,7 +203,7 @@ class AsmAmdHandler: public AsmFormatHandler
 {
 private:
     friend struct AsmAmdPseudoOps;
-    AmdInput input;
+    AmdInput output;
     struct Section
     {
         cxuint kernelId;
@@ -236,8 +244,15 @@ public:
     /// parse pseudo-op
     void parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char*& linePtr);
-    /// write binaery to output stream
-    bool writeBinary(std::ostream& os);
+    
+    bool prepareBinary();
+    /// write binary to output stream
+    void writeBinary(std::ostream& os);
+    /// write binary to array
+    void writeBinary(Array<cxbyte>& array);
+    /// get output object (input for bingenerator)
+    const AmdInput* getOutput() const
+    { return &output; }
 };
 
 /// handles GalliumCompute format
@@ -245,7 +260,7 @@ class AsmGalliumHandler: public AsmFormatHandler
 {
 private:
     friend struct AsmGalliumPseudoOps;
-    GalliumInput input;
+    GalliumInput output;
     struct Section
     {
         cxuint kernelId;
@@ -286,8 +301,15 @@ public:
     /// parse pseudo-op
     void parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char*& linePtr);
-    /// write binaery to output stream
-    bool writeBinary(std::ostream& os);
+    
+    bool prepareBinary();
+    /// write binary to output stream
+    void writeBinary(std::ostream& os);
+    /// write binary to array
+    void writeBinary(Array<cxbyte>& array);
+    /// get output object (input for bingenerator)
+    const GalliumInput* getOutput() const
+    { return &output; }
 };
 
 /// ISA assembler class
@@ -746,8 +768,6 @@ private:
     
     bool outFormatInitialized;
     
-    bool inGlobal;
-    bool inAmdConfig;
     cxuint currentKernel;
     cxuint& currentSection;
     uint64_t& currentOutPos;
@@ -857,7 +877,10 @@ private:
         }
     }
     
-    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos); 
+    void gotoKernel(const char* kernelName);
+    void gotoSection(const char* sectionName);
+    
+    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
     
     bool checkReservedName(const std::string& name);
 protected:    
@@ -919,7 +942,7 @@ public:
     /// get kernel map
     const KernelMap& getKernelMap() const
     { return kernelMap; }
-    
+    /// get kernel position
     const AsmSourcePos& getKernelPosition(cxuint kernelId) const
     { return kernelPositions[kernelId]; }
     

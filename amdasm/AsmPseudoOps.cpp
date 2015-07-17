@@ -1828,11 +1828,11 @@ void Assembler::parsePseudoOps(const std::string firstName,
                 if (format == BinaryFormat::AMD)
                 {
                     initializeOutputFormat();
-                    if (inGlobal)
+                    /*if (inGlobal)
                         printError(linePtr,
                                "Configuration in global layout is illegal");
                     else
-                        inAmdConfig = true; // inside Amd Config
+                        inAmdConfig = true; // inside Amd Config*/
                 }
                 else
                     printError(linePtr,
