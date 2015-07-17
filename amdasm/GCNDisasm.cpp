@@ -26,7 +26,7 @@
 #include <CLRX/utils/GPUId.h>
 #include <CLRX/amdasm/Disassembler.h>
 #include <CLRX/utils/MemAccess.h>
-#include "AsmInternals.h"
+#include "GCNInternals.h"
 
 using namespace CLRX;
 

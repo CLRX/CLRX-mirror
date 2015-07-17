@@ -31,6 +31,7 @@ amdasm/CMakeLists.txt -text svneol=unset#text/plain
 amdasm/Disassembler.cpp -text
 amdasm/GCNDisasm.cpp -text
 amdasm/GCNInstructions.cpp -text
+amdasm/GCNInternals.h -text
 amdbin/AmdBinGen.cpp -text
 amdbin/AmdBinaries.cpp -text
 amdbin/CMakeLists.txt -text svneol=unset#text/plain

@@ -18,7 +18,7 @@
  */
 
 #include <CLRX/Config.h>
-#include "AsmInternals.h"
+#include "GCNInternals.h"
 
 using namespace CLRX;
 
