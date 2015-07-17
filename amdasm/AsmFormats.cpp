@@ -274,22 +274,100 @@ void AsmAmdHandler::setCurrentSection(const char* name)
         throw AsmFormatException(message);
     }
     
-    const cxuint thisSection = sections.size();
     size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
             sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
             amdFormatSectionNamesTbl;
     switch(sectionNameId)
     {
         case AMDFMTSECT_CONFIG:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Kernel configuration doesn't "
+                            "exists outside kernel");
+            currentSection = kernelStates[currentKernel].configSection;
+            break;
+        case AMDFMTSECT_DATA:
+            currentSection = (currentKernel!=ASMKERN_GLOBAL) ?
+                    kernelStates[currentKernel].dataSection : dataSection;
+            break;
+        case AMDFMTSECT_HEADER:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Kernel header doesn't exists outside kernel");
+            currentSection = kernelStates[currentKernel].headerSection;
+            break;
+        case AMDFMTSECT_METADATA:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Kernel metadata doesn't exists outside kernel");
+            currentSection = kernelStates[currentKernel].metadataSection;
+            break;
+        case AMDFMTSECT_TEXT:
+            if (currentKernel == ASMKERN_GLOBAL)
+                throw AsmFormatException("Kernel code doesn't exists outside kernel");
+            currentSection = kernelStates[currentKernel].codeSection;
+            break;
+        case AMDFMTSECT_LLVMIR:
+            if (currentKernel != ASMKERN_GLOBAL)
+                throw AsmFormatException("LLVMIR bytecode exists only on global space");
+            currentSection = llvmirSection;
+            break;
+        case AMDFMTSECT_SOURCE:
+            if (currentKernel != ASMKERN_GLOBAL)
+                throw AsmFormatException("Source exists only on global space");
+            currentSection = sourceSection;
             break;
         default:
+            std::string message = "Section '";
+            message += name;
+            message += "' is not supported";
+            throw AsmFormatException(message);
             break;
     }
 }
 
+//static 
+
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
-{
-    return {};
+{   /* find section */
+    const char* name;
+    const Section& section = sections[sectionId];
+    Flags flags = 0;
+    switch (section.type)
+    {
+        case AsmSectionType::CODE:
+            name = ".text";
+            flags = ASMSECT_WRITEABLE;
+            break;
+        case AsmSectionType::DATA:
+            name = ".data";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        case AsmSectionType::CONFIG:
+            name = ".config";
+            break;
+        case AsmSectionType::AMD_HEADER:
+            name = ".header";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        case AsmSectionType::AMD_METADATA:
+            name = ".metadata";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        case AsmSectionType::AMD_LLVMIR:
+            name = ".llvmir";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        case AsmSectionType::AMD_SOURCE:
+            name = ".source";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        case AsmSectionType::AMD_CALNOTE:
+            name = ".calnote";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        default:
+            // error
+            break;
+    }
+    return { name, section.type, flags };
 }
 
 void AsmAmdHandler::parsePseudoOp(const std::string& firstName,
@@ -298,8 +376,12 @@ void AsmAmdHandler::parsePseudoOp(const std::string& firstName,
 }
 
 bool AsmAmdHandler::writeBinary(std::ostream& os)
-{
-    return false;
+{   // before call we initialize pointers and datas
+    //for (const AsmSection& section: assembler.getSections())
+    
+    AmdGPUBinGenerator binGenerator(&input);
+    binGenerator.generate(os);
+    return true;
 }
 
 /*
@@ -389,7 +471,7 @@ void AsmGalliumHandler::setCurrentSection(const char* sectionName)
     else if (::strcmp(sectionName, ".comment") == 0) // comment
         currentSection = commentSection;
     else
-    {
+    {   /* kernel configuration section has been set via '.kernel' pseudo-op */
         std::string message = "Section '";
         message += sectionName;
         message += "' is not supported";

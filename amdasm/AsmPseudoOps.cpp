@@ -1024,9 +1024,9 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& linePtr, bool powerOf2
                 asmr.printError(alignPlace, "Power of 2 of alignment is greater than 63");
                 good = false;
             }
-            alignment = (1ULL<< alignment);
+            alignment = (1ULL<<alignment);
         }
-        if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
+        else if (alignment == 0 || (1ULL<<(63-CLZ64(alignment))) != alignment)
         {
             asmr.printError(alignPlace, "Alignment is not power of 2");
             good = false;
