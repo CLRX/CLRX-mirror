@@ -27,6 +27,7 @@
 #include <elf.h>
 #include <cstddef>
 #include <cstdint>
+#include <climits>
 #include <string>
 #include <utility>
 #include <ostream>
@@ -407,6 +408,54 @@ typedef ElfHeaderTemplate<Elf32Types> ElfHeader32;
 /// 64-bit elf header
 typedef ElfHeaderTemplate<Elf64Types> ElfHeader64;
 
+
+enum: cxuint {
+    ELFSECTID_START = UINT_MAX-255,
+    ELFSECTID_SHSTRTAB = UINT_MAX-255,
+    ELFSECTID_STRTAB,
+    ELFSECTID_SYMTAB,
+    ELFSECTID_DYNSTR,
+    ELFSECTID_DYNSYM,
+    ELFSECTID_TEXT,
+    ELFSECTID_RODATA,
+    ELFSECTID_DATA,
+    ELFSECTID_COMMENT,
+    ELFSECTID_STD_MAX = ELFSECTID_COMMENT,
+    ELFSECTID_OTHER_BUILTIN = ELFSECTID_STD_MAX+1,
+    ELFSECTID_NULL = UINT_MAX-2,
+    ELFSECTID_ABS = UINT_MAX-1,
+    ELFSECTID_UNDEF = UINT_MAX
+};
+
+/// section structure to external usage (for example in the binary generator input)
+struct BinSection
+{
+    std::string name;   ///< name of section
+    size_t size;    ///< size of content
+    const cxbyte* data; ///< data content
+    size_t align;  ///< region alignment
+    uint32_t type;  ///< section type
+    uint32_t flags; ///< section flags
+    cxuint linkId; ///< link section id (ELFSECTID_* or an extra section index)
+    uint32_t info;  ///< section info
+    size_t entSize;    ///< entries size
+};
+
+/// symbol structure to external usage (fo example in the binary generator input)
+struct BinSymbol
+{
+    std::string name;   ///< name
+    uint64_t value;  ///< symbol value
+    uint64_t size;   ///< symbol size
+    cxuint sectionId; ///< section id (ELFSECTID_* or an extra section index)
+    bool valueIsAddr;   ///< true if value should be treats as address
+    cxbyte info;    ///< info
+    cxbyte other;   ///< other
+};
+
+extern uint64_t convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
+                  cxuint maxBuiltinSection, cxuint extraSectionIndex);
+
 /// template of ElfRegion
 template<typename Types>
 struct ElfRegionTemplate
@@ -488,6 +537,17 @@ struct ElfRegionTemplate
         section = {inName, _type, _flags, _link, _info, _addrBase, _entSize};
     }
     
+    ElfRegionTemplate(const BinSection& binSection, const uint16_t* builtinSections,
+                  cxuint maxBuiltinSection, cxuint startExtraIndex)
+            : type(ElfRegionType::SECTION), dataFromPointer(true), size(binSection.size),
+              align(binSection.align), data(binSection.data)
+    {
+        section = { binSection.name.c_str(), binSection.type, binSection.flags,
+            uint32_t(convertSectionId(binSection.linkId, builtinSections,
+                             maxBuiltinSection, startExtraIndex)),
+            binSection.info, 0, typename Types::Word(binSection.entSize) };
+    }
+    
     /// get program header table region
     static ElfRegionTemplate programHeaderTable()
     { return ElfRegionTemplate(ElfRegionType::PHDR_TABLE, 0, (const cxbyte*)nullptr,
@@ -527,31 +587,6 @@ typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
 /// 64-bit region (for 64-bit elf)
 typedef ElfRegionTemplate<Elf64Types> ElfRegion64;
 
-/// section structure to external usage (for example binary generator)
-struct BinSection
-{
-    std::string name;   ///< name of section
-    size_t size;    ///< size of content
-    const cxbyte* data; ///< data content
-    size_t align;  ///< region alignment
-    uint32_t type;  ///< section type
-    uint32_t flags; ///< section flags
-    uint32_t link;  ///< section link
-    uint32_t info;  ///< section info
-    size_t entSize;    ///< entries size
-};
-
-struct BinSymbol
-{
-    std::string name;
-    uint16_t sectionIndex;  ///< section index for which symbol is
-    cxbyte info;    ///< info
-    cxbyte other;   ///< other
-    bool valueIsAddr;   ///< true if value should be treats as address
-    uint64_t value;  ///< symbol value
-    uint64_t size;   ///< symbol size
-};
-
 /// template of ELF program header
 template<typename Types>
 struct ElfProgramHeaderTemplate
@@ -582,6 +617,26 @@ struct ElfSymbolTemplate
     bool valueIsAddr;   ///< true if value should be treats as address
     typename Types::Word value;  ///< symbol value
     typename Types::Word size;   ///< symbol size
+    
+    ElfSymbolTemplate(const char* _name, uint16_t _sectionIndex,
+                cxbyte _info, cxbyte _other, bool _valueIsAddr,
+                typename Types::Word _value, typename Types::Word _size)
+        : name(_name), sectionIndex(_sectionIndex), info(_info), other(_other),
+          valueIsAddr(_valueIsAddr), value(_value), size(_size)
+    { }
+    
+    ElfSymbolTemplate(const BinSymbol& binSymbol, const uint16_t* builtinSections,
+                  cxuint maxBuiltinSection, cxuint startExtraIndex)
+    {
+        name = binSymbol.name.c_str();
+        sectionIndex = convertSectionId(binSymbol.sectionId, builtinSections,
+                    maxBuiltinSection, startExtraIndex);
+        info = binSymbol.info;
+        other = binSymbol.other;
+        valueIsAddr = binSymbol.valueIsAddr;
+        value = binSymbol.value;
+        size = binSymbol.size;
+    }
 };
 
 /// 32-bit elf symbol

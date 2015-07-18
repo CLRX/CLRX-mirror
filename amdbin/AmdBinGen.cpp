@@ -266,6 +266,33 @@ struct CLRX_INTERNAL TempAmdKernelConfig
     uint32_t calNotesSize;
 };
 
+
+static const uint16_t mainBuiltinSectionTable[] =
+{
+    1, // ELFSECTID_SHSTRTAB
+    2, // ELFSECTID_STRTAB
+    3, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    5, // ELFSECTID_TEXT
+    4, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    6 // ELFSECTID_COMMENT
+};
+
+static const uint16_t kernelBuiltinSectionTable[] =
+{
+    1, // ELFSECTID_SHSTRTAB
+    5, // ELFSECTID_STRTAB
+    4, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    2, // ELFSECTID_TEXT
+    SHN_UNDEF, // ELFSECTID_RODATA
+    3, // ELFSECTID_DATA
+    SHN_UNDEF // ELFSECTID_COMMENT
+};
+
 static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
          cxuint driverVersion, const AmdKernelInput& kernel,
          const TempAmdKernelConfig& tempConfig);
@@ -350,6 +377,8 @@ public:
         
         for (size_t i = 0; i < input->kernels.size(); i++)
             size += input->kernels[i].kernelName.size()*3 + 19 + 17 + 17;
+        for (const BinSymbol& symbol: input->extraSymbols)
+            size += symbol.name.size()+1;
         return size;
     }
     
@@ -373,6 +402,8 @@ public:
             fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
             fob.write(8, "_header");
         }
+        for (const BinSymbol& symbol: input->extraSymbols)
+            fob.write(symbol.name.size()+1, symbol.name.c_str());
     }
 };
 
@@ -392,7 +423,8 @@ public:
     size_t size() const
     {
         return sizeof(typename Types::Sym)*(1 + (!input->compileOptions.empty()) +
-                (input->globalData != nullptr) + 3*input->kernels.size());
+                (input->globalData != nullptr) + 3*input->kernels.size() +
+                input->extraSymbols.size());
     }
     
     void operator()(FastOutputBuffer& fob) const
@@ -462,6 +494,19 @@ public:
             fob.writeObject(sym);
             nameIndex += kernel.kernelName.size() + 17;
             rodataPos += headerSize;
+        }
+        
+        for (const BinSymbol& symbol: input->extraSymbols)
+        {
+            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
+                            ELFSECTID_STD_MAX, 7));
+            SLEV(sym.st_size, symbol.size);
+            SLEV(sym.st_value, symbol.value);
+            sym.st_info = symbol.info;
+            sym.st_other = symbol.other;
+            nameIndex += symbol.name.size()+1;
+            fob.writeObject(sym);
         }
     }
 };
@@ -553,12 +598,9 @@ static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint drive
     elfBinGen.addRegion(ElfRegionTemplate<Types>(
                 input->compileOptions.size()+driverInfo.size(), &commentGen, 1,
                 ".comment", SHT_PROGBITS, 0));
-    if (input->sourceCode != nullptr)
-        elfBinGen.addRegion(ElfRegionTemplate<Types>(input->sourceCodeSize,
-                (const cxbyte*)input->sourceCode, 1, ".source", SHT_PROGBITS, 0));
-    if (input->llvmir != nullptr)
-        elfBinGen.addRegion(ElfRegionTemplate<Types>(input->llvmirSize, input->llvmir,
-                1, ".llvmir", SHT_PROGBITS, 0));
+    for (const BinSection& section: input->extraSections)
+        elfBinGen.addRegion(ElfRegionTemplate<Types>(section, mainBuiltinSectionTable,
+                         ELFSECTID_STD_MAX, 7));
     elfBinGen.addRegion(ElfRegionTemplate<Types>::sectionHeaderTable());
 }
 
@@ -1581,12 +1623,26 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
                  SHT_PROGBITS, 0, 0, 0, 0, kinput.dataSize));
         kelfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 0,
                  ".symtab", SHT_SYMTAB, 0, 0, 1));
-        kelfBinGen.addRegion(ElfRegion32(2, (const cxbyte*)"\000\000", 0,
-                 ".strtab", SHT_STRTAB, 0));
+        if (kinput.extraSymbols.empty()) // default content (2 bytes)
+            kelfBinGen.addRegion(ElfRegion32(2, (const cxbyte*)"\000\000", 0,
+                     ".strtab", SHT_STRTAB, 0));
+        else    // allow to overwirte by elfbingen if some symbol must be put)
+            kelfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 0,
+                     ".strtab", SHT_STRTAB, 0));
+        
+        /* extra sections */
+        for (const BinSection& section: kinput.extraSections)
+            kelfBinGen.addRegion(ElfRegion32(section, kernelBuiltinSectionTable,
+                         ELFSECTID_STD_MAX, 6));
         /* program headers */
         kelfBinGen.addProgramHeader({ 0x70000002U, 0, 1, 1, false, 0, 0, 0});
         kelfBinGen.addProgramHeader({ PT_NOTE, 0, 4, 1, false, 0, 0, 0 });
         kelfBinGen.addProgramHeader({ PT_LOAD, 0, 5, 4, true, 0, 0, 0 });
+        
+        /* extra symbols */
+        for (const BinSymbol& symbol: kinput.extraSymbols)
+            kelfBinGen.addSymbol(ElfSymbol32(symbol, kernelBuiltinSectionTable,
+                         ELFSECTID_STD_MAX, 6));
         
         const uint64_t innerBinSize = kelfBinGen.countSize();
         if (innerBinSize > UINT32_MAX)

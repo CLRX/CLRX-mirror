@@ -516,29 +516,35 @@ static AmdInput genAmdInput(bool useConfig, const AmdGpuBin* amdGpuBin,
     amdInput.driverVersion = 0;
     amdInput.driverInfo = amdGpuBin->getDriverInfo();
     amdInput.compileOptions = amdGpuBin->getCompileOptions();
-    amdInput.sourceCode = nullptr;
-    amdInput.sourceCodeSize = 0;
+    //amdInput.sourceCode = nullptr;
+    //amdInput.sourceCodeSize = 0;
     if (haveSource)
     {
         try
         {
             const auto& shdr = amdGpuBin->getSectionHeader(".source");
-            amdInput.sourceCodeSize = ULEV(shdr.sh_size);
-            amdInput.sourceCode = (char*)amdGpuBin->getBinaryCode() + ULEV(shdr.sh_offset);
+            amdInput.extraSections.push_back(BinSection{ ".source", ULEV(shdr.sh_size),
+                amdGpuBin->getBinaryCode() + ULEV(shdr.sh_offset), 1,
+                SHT_PROGBITS, 0, ELFSECTID_NULL, 0 });
+            //amdInput.sourceCodeSize = ULEV(shdr.sh_size);
+            //amdInput.sourceCode = (char*)amdGpuBin->getBinaryCode() + ULEV(shdr.sh_offset);
         }
         catch(const Exception& ex)
         { }
     }
     
-    amdInput.llvmir = nullptr;
-    amdInput.llvmirSize = 0;
+    //amdInput.llvmir = nullptr;
+    //amdInput.llvmirSize = 0;
     if (haveLLVMIR)
     {
         try
         {
             const auto& shdr = amdGpuBin->getSectionHeader(".llvmir");
-            amdInput.llvmirSize = ULEV(shdr.sh_size);
-            amdInput.llvmir = amdGpuBin->getBinaryCode() + ULEV(shdr.sh_offset);
+            amdInput.extraSections.push_back(BinSection{ ".llvmir", ULEV(shdr.sh_size),
+                amdGpuBin->getBinaryCode() + ULEV(shdr.sh_offset), 1,
+                SHT_PROGBITS, 0, ELFSECTID_NULL, 0 });
+            //amdInput.llvmirSize = ULEV(shdr.sh_size);
+            //amdInput.llvmir = amdGpuBin->getBinaryCode() + ULEV(shdr.sh_offset);
         }
         catch(const Exception& ex)
         { }

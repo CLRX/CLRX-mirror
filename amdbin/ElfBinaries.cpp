@@ -302,6 +302,29 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
 /*
  * Elf binary generator
  */
+
+uint64_t CLRX::convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
+                  cxuint maxBuiltinSection, cxuint extraSectionIndex)
+{
+    if (sectionIndex == ELFSECTID_NULL)
+        return 0;
+    if (sectionIndex == ELFSECTID_ABS)
+        return SHN_ABS;
+    if (sectionIndex == ELFSECTID_UNDEF)
+        return SHN_UNDEF;
+    if (sectionIndex < ELFSECTID_SHSTRTAB)
+        return sectionIndex+extraSectionIndex;
+    else if (sectionIndex >= ELFSECTID_START && sectionIndex <= maxBuiltinSection)
+    {
+        const uint16_t shndx = builtinSections[sectionIndex-ELFSECTID_START];
+        if (shndx == SHN_UNDEF) // if table entry for sectionIndex is not defined
+            throw Exception("Wrong BinSection:sectionId");
+        return builtinSections[sectionIndex-ELFSECTID_START];
+    }
+    else // failed
+        throw Exception("Wrong BinSection:sectionId");
+}
+
 ElfRegionContent::~ElfRegionContent()
 { }
 

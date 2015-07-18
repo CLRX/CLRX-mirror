@@ -150,6 +150,8 @@ struct AmdKernelInput
     AmdKernelConfig config; ///< kernel's configuration
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
+    std::vector<BinSection> extraSections;
+    std::vector<BinSymbol> extraSymbols;
 };
 
 /// main Input for AmdGPUBinGenerator
@@ -163,10 +165,8 @@ struct AmdInput
     std::string compileOptions; ///< compile options
     std::string driverInfo;     ///< driver info
     std::vector<AmdKernelInput> kernels;    ///< kernels
-    size_t sourceCodeSize;  ///< source code size (can be zero)
-    const char* sourceCode; ///< string of source (if size==0 then must be null-terminated)
-    size_t llvmirSize;  ///< LLVMIR content size
-    const cxbyte* llvmir;   ///< LLVMIR content
+    std::vector<BinSection> extraSections;  ///< extra sections
+    std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     
     /// add kernel to input
     void addKernel(const AmdKernelInput& kernelInput);
