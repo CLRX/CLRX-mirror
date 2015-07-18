@@ -56,20 +56,8 @@ static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galli
         input.globalData = nullptr;
     }
     
-    if (disassembly)
-    {
-        input.disassembly = "This is folk!!!!\nThis program causes error!\n";
-        input.disassemblySize = ::strlen(input.disassembly);
-    }
-    else
-    {
-        input.disassemblySize = 0;
-        input.disassembly = nullptr;
-    }
-    
     input.commentSize = ULEV(commentHdr.sh_size);
     input.comment = (const char*)elfBin.getSectionContent(".comment");
-    //input.comment = nullptr;
     
     // kernel input
     const cxuint kernelsNum = galliumBin->getKernelsNum();

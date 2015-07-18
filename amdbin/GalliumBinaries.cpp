@@ -302,24 +302,20 @@ GalliumBinGenerator::GalliumBinGenerator(const GalliumInput* galliumInput)
 
 GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
-        const std::vector<GalliumKernelInput>& kernels,
-        size_t disassemblySize, const char* disassembly,
-        size_t commentSize, const char* comment)
+        const std::vector<GalliumKernelInput>& kernels)
         : manageable(true), input(nullptr)
 {
     input = new GalliumInput{ globalDataSize, globalData, kernels,
-        disassemblySize, disassembly, commentSize, comment, codeSize, code };
+            codeSize, code, 0, nullptr };
 }
 
 GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
-        std::vector<GalliumKernelInput>&& kernels,
-        size_t disassemblySize, const char* disassembly,
-        size_t commentSize, const char* comment)
+        std::vector<GalliumKernelInput>&& kernels)
         : manageable(true), input(nullptr)
 {
     input = new GalliumInput{ globalDataSize, globalData, std::move(kernels),
-        disassemblySize, disassembly, commentSize, comment, codeSize, code };
+        codeSize, code, 0, nullptr };
 }
 
 
@@ -336,6 +332,38 @@ void GalliumBinGenerator::setInput(const GalliumInput* input)
     manageable = false;
     this->input = input;
 }
+
+static const uint16_t mainBuiltinSectionTable[] =
+{
+    8, // ELFSECTID_SHSTRTAB
+    10, // ELFSECTID_STRTAB
+    9, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    1, // ELFSECTID_TEXT
+    5, // ELFSECTID_RODATA
+    2, // ELFSECTID_DATA
+    3, // ELFSECTID_BSS
+    6, // ELFSECTID_COMMENT
+    4, // GALLIUMSECTID_GPUCONFIG
+    7  // GALLIUMSECTID_NOTEGNUSTACK
+};
+
+static const uint16_t mainBuiltinSectionTable2[] =
+{
+    7, // ELFSECTID_SHSTRTAB
+    9, // ELFSECTID_STRTAB
+    8, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    1, // ELFSECTID_TEXT
+    SHN_UNDEF, // ELFSECTID_RODATA
+    2, // ELFSECTID_DATA
+    3, // ELFSECTID_BSS
+    5, // ELFSECTID_COMMENT
+    4, // GALLIUMSECTID_GPUCONFIG
+    6  // GALLIUMSECTID_NOTEGNUSTACK
+};
 
 void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
@@ -396,18 +424,11 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     AmdGpuConfigContent amdGpuConfigContent(kernelsOrder, *input);
     elfBinGen.addRegion(ElfRegion32(uint64_t(24U)*kernelsNum, &amdGpuConfigContent, 1,
             ".AMDGPU.config", SHT_PROGBITS, 0));
-    if (input->disassembly!=nullptr)
-    {
-        size_t disassemblySize = input->disassemblySize;
-        if (disassemblySize==0)
-            disassemblySize = ::strlen(input->disassembly);
-        elfBinGen.addRegion(ElfRegion32(disassemblySize,
-                (const cxbyte*)input->disassembly, 1, ".AMDGPU.disasm",
-                SHT_PROGBITS, SHF_ALLOC));
-    }
+    
     if (input->globalData!=nullptr)
         elfBinGen.addRegion(ElfRegion32(input->globalDataSize, input->globalData, 4,
                 ".rodata", SHT_PROGBITS, SHF_ALLOC));
+    
     if (input->comment!=nullptr)
     {
         comment = input->comment;
@@ -426,8 +447,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     /* symbols */
     elfBinGen.addSymbol({"EndOfTextLabel", 1, ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE),
             0, false, uint32_t(input->codeSize), 0});
-    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr) +
-                (input->disassembly!=nullptr);
+    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr);
     // local symbols for sections
     for (cxuint i = 0; i < sectSymsNum; i++)
         elfBinGen.addSymbol({"", uint16_t(i+1), ELF32_ST_INFO(STB_LOCAL, STT_SECTION),
@@ -438,6 +458,21 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
         elfBinGen.addSymbol({kernel.kernelName.c_str(), 1,
                 ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0, false, kernel.offset, 0});
     }
+    
+    /* choose builtin section table and extraSectionStartIndex */
+    const uint16_t* curMainBuiltinSections = (input->globalData!=nullptr) ?
+            mainBuiltinSectionTable : mainBuiltinSectionTable2;
+    cxuint startSectionIndex = (input->globalData!=nullptr) ? 11 : 10;
+    
+    /* extra sections */
+    for (const BinSection& section: input->extraSections)
+        elfBinGen.addRegion(ElfRegion32(section, curMainBuiltinSections,
+                         GALLIUMSECTID_MAX, startSectionIndex));
+    /* extra symbols */
+    for (const BinSymbol& symbol: input->extraSymbols)
+        elfBinGen.addSymbol(ElfSymbol32(symbol, curMainBuiltinSections,
+                         GALLIUMSECTID_MAX, startSectionIndex));
+    
     elfSize = elfBinGen.countSize();
     binarySize += elfSize;
     

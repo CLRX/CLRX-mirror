@@ -147,9 +147,9 @@ tests/amdbins/structkernel2_64.clo -text svneol=unset#application/x-executable
 tests/amdbins/structkernel2_cpu.clo -text svneol=unset#application/x-executable
 tests/amdbins/structkernel2_cpu64.clo -text svneol=unset#application/x-executable
 tests/cstrtofXTest.cpp -text
-tests/galliumbins/BlackScholes.0.reconf.orig -text
-tests/galliumbins/DCT.0.reconf.orig -text
-tests/galliumbins/MatrixMultiplication.0.reconf.orig -text
+tests/galliumbins/BlackScholes.0.reconf.orig.old -text
+tests/galliumbins/DCT.0.reconf.orig.old -text
+tests/galliumbins/MatrixMultiplication.0.reconf.orig.old -text
 tests/incdir0/inc1.s -text
 tests/incdir0/inc2.s -text
 tests/incdir0/incbin1 -text svneol=unset#application/octet-stream

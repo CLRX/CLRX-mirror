@@ -281,6 +281,12 @@ public:
     { return kernels[getKernelIndex(name)]; }
 };
 
+enum: cxuint {
+    GALLIUMSECTID_GPUCONFIG = ELFSECTID_OTHER_BUILTIN,
+    GALLIUMSECTID_NOTEGNUSTACK,
+    GALLIUMSECTID_MAX = GALLIUMSECTID_NOTEGNUSTACK
+};
+
 /*
  * Gallium Binary generator
  */
@@ -299,12 +305,14 @@ struct GalliumInput
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     std::vector<GalliumKernelInput> kernels;    ///< input kernel list
-    size_t disassemblySize; ///< disassembly size (can be null)
-    const char* disassembly;    ///< program disasembly
-    size_t commentSize; ///< comment size (can be null)
-    const char* comment; ///< comment
+    //size_t disassemblySize; ///< disassembly size (can be null)
+    //const char* disassembly;    ///< program disasembly
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
+    size_t commentSize; ///< comment size (can be null)
+    const char* comment; ///< comment
+    std::vector<BinSection> extraSections;
+    std::vector<BinSymbol> extraSymbols;
 };
 
 /// gallium code binary generator
@@ -328,22 +336,14 @@ public:
      * \param globalDataSize global data size
      * \param globalData global data pointer
      * \param kernels vector of kernels
-     * \param disassemblySize size of disassembly string (may be zero)
-     * \param disassembly string of disassembly
-     * \param commentSize size of comment
-     * \param comment comment section data
      */
     GalliumBinGenerator(size_t codeSize, const cxbyte* code,
             size_t globalDataSize, const cxbyte* globalData,
-            const std::vector<GalliumKernelInput>& kernels,
-            size_t disassemblySize = 0, const char* disassembly = nullptr,
-            size_t commentSize = 0, const char* comment = nullptr);
+            const std::vector<GalliumKernelInput>& kernels);
     /// constructor
     GalliumBinGenerator(size_t codeSize, const cxbyte* code,
             size_t globalDataSize, const cxbyte* globalData,
-            std::vector<GalliumKernelInput>&& kernels,
-            size_t disassemblySize = 0, const char* disassembly = nullptr,
-            size_t commentSize = 0, const char* comment = nullptr);
+            std::vector<GalliumKernelInput>&& kernels);
     ~GalliumBinGenerator();
     
     /// get input

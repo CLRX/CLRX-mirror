@@ -277,6 +277,7 @@ static const uint16_t mainBuiltinSectionTable[] =
     5, // ELFSECTID_TEXT
     4, // ELFSECTID_RODATA
     SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
     6 // ELFSECTID_COMMENT
 };
 
@@ -290,6 +291,7 @@ static const uint16_t kernelBuiltinSectionTable[] =
     2, // ELFSECTID_TEXT
     SHN_UNDEF, // ELFSECTID_RODATA
     3, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
     SHN_UNDEF // ELFSECTID_COMMENT
 };
 

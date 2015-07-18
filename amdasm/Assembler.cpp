@@ -1123,10 +1123,10 @@ void Assembler::initializeOutputFormat()
         galliumOutput = new GalliumInput{};
         galliumOutput->code = nullptr;
         galliumOutput->codeSize = 0;
-        galliumOutput->disassembly = nullptr;
+        /*galliumOutput->disassembly = nullptr;
         galliumOutput->disassemblySize = 0;
         galliumOutput->commentSize = 0;
-        galliumOutput->comment = nullptr;
+        galliumOutput->comment = nullptr;*/
         sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE});
     }
     else if (format == BinaryFormat::RAWCODE && rawCode == nullptr)

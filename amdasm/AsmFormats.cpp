@@ -833,12 +833,12 @@ bool AsmGalliumHandler::prepareBinary()
                 output.globalData = section.content.data();
                 break;
             case AsmSectionType::GALLIUM_COMMENT:
-                output.commentSize = section.content.size();
-                output.comment = (const char*)section.content.data();
+                //output.commentSize = section.content.size();
+                //output.comment = (const char*)section.content.data();
                 break;
             case AsmSectionType::GALLIUM_DISASM:
-                output.disassemblySize = section.content.size();
-                output.disassembly = (const char*)section.content.data();
+                //output.disassemblySize = section.content.size();
+                //output.disassembly = (const char*)section.content.data();
                 break;
             default:
                 abort(); /// fatal error
