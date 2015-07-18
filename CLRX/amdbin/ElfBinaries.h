@@ -527,6 +527,31 @@ typedef ElfRegionTemplate<Elf32Types> ElfRegion32;
 /// 64-bit region (for 64-bit elf)
 typedef ElfRegionTemplate<Elf64Types> ElfRegion64;
 
+/// section structure to external usage (for example binary generator)
+struct BinSection
+{
+    std::string name;   ///< name of section
+    size_t size;    ///< size of content
+    const cxbyte* data; ///< data content
+    size_t align;  ///< region alignment
+    uint32_t type;  ///< section type
+    uint32_t flags; ///< section flags
+    uint32_t link;  ///< section link
+    uint32_t info;  ///< section info
+    size_t entSize;    ///< entries size
+};
+
+struct BinSymbol
+{
+    std::string name;
+    uint16_t sectionIndex;  ///< section index for which symbol is
+    cxbyte info;    ///< info
+    cxbyte other;   ///< other
+    bool valueIsAddr;   ///< true if value should be treats as address
+    uint64_t value;  ///< symbol value
+    uint64_t size;   ///< symbol size
+};
+
 /// template of ELF program header
 template<typename Types>
 struct ElfProgramHeaderTemplate

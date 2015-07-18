@@ -426,8 +426,8 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     /* symbols */
     elfBinGen.addSymbol({"EndOfTextLabel", 1, ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE),
             0, false, uint32_t(input->codeSize), 0});
-    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr) + (
-                input->disassembly!=nullptr);
+    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr) +
+                (input->disassembly!=nullptr);
     // local symbols for sections
     for (cxuint i = 0; i < sectSymsNum; i++)
         elfBinGen.addSymbol({"", uint16_t(i+1), ELF32_ST_INFO(STB_LOCAL, STT_SECTION),
