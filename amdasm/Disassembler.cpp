@@ -725,7 +725,7 @@ void Disassembler::disassembleAmd()
     
     if (doDumpData && amdInput->globalData != nullptr && amdInput->globalDataSize != 0)
     {   //
-        output.write(".data\n", 6);
+        output.write(".globaldata\n", 12);
         printDisasmData(amdInput->globalDataSize, amdInput->globalData, output);
     }
     

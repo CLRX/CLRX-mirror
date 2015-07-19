@@ -246,7 +246,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 .64bit
 .compile_options "-O ccc"
 .driver_info "This\nis my\3001 stupid\r\"driver"
-.data
+.globaldata
     .byte 0x0d, 0x38, 0x42, 0xd5, 0x37, 0x5d, 0x7b, 0x55
     .byte 0xa4, 0xea, 0x15, 0x25, 0x2c, 0xbc
 .kernel kernelxVCR
