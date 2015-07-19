@@ -749,7 +749,7 @@ void Disassembler::disassembleAmd()
         }
         if (doDumpData && kinput.data != nullptr && kinput.dataSize != 0)
         {   // if kernel data available
-            output.write("    .kerneldata\n", 16);
+            output.write("    .data\n", 10);
             printDisasmData(kinput.dataSize, kinput.data, output, true);
         }
         
@@ -1012,7 +1012,7 @@ void Disassembler::disassembleGallium()
     if (doDumpData && galliumInput->globalData != nullptr &&
         galliumInput->globalDataSize != 0)
     {   //
-        output.write(".data\n", 6);
+        output.write(".rodata\n", 8);
         printDisasmData(galliumInput->globalDataSize, galliumInput->globalData, output);
     }
     

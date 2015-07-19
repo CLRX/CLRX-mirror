@@ -287,7 +287,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .ascii "dessss9843re88888888888888888uuuuuuuufdddessss9843re88888888888888888uuu"
         .ascii "uuuuufdddessss9843re88888888888888888uuuuuuuufdd444444444444444444444444"
         .ascii "\r\r\t\t\t\t\txx\f\f\f\3777x833334441\n"
-    .kerneldata
+    .data
         .byte 0x01, 0x04, 0x05, 0x06, 0x06, 0x06, 0x04, 0x03
         .byte 0x03, 0x05, 0x41, 0x0d, 0x05, 0x05, 0x0b, 0x39
         .byte 0x05, 0x41, 0x05, 0x00, 0x00, 0x00, 0x00, 0x05
@@ -382,7 +382,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .ascii ";reflection:2:uint*\n"
         .ascii ";reflection:3:uint*\n"
         .ascii ";ARGEND:__OpenCL_add_kernel\n"
-    .kerneldata
+    .data
         .fill 4736, 1, 0x00
     .inputs
     .outputs
@@ -532,7 +532,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .ascii ";reflection:2:uint*\n"
         .ascii ";reflection:3:uint*\n"
         .ascii ";ARGEND:__OpenCL_multiply_kernel\n"
-    .kerneldata
+    .data
         .fill 4736, 1, 0x00
     .inputs
     .outputs
@@ -690,7 +690,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .ascii ";reflection:2:uint*\n"
         .ascii ";reflection:3:uint*\n"
         .ascii ";ARGEND:__OpenCL_add_kernel\n"
-    .kerneldata
+    .data
         .fill 4736, 1, 0x00
     .inputs
     .outputs
@@ -850,7 +850,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .ascii ";reflection:2:uint*\n"
         .ascii ";reflection:3:uint*\n"
         .ascii ";ARGEND:__OpenCL_multiply_kernel\n"
-    .kerneldata
+    .data
         .fill 4736, 1, 0x00
     .inputs
     .outputs
@@ -985,7 +985,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     { nullptr, &galliumDisasmData, nullptr,
         R"fxDfx(.gallium
 .gpu Pitcairn
-.data
+.rodata
     .byte 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
     .byte 0x09, 0x0a, 0x0b, 0x21, 0x2c, 0x37
 .kernel kernel1
