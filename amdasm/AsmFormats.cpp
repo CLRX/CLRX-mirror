@@ -67,8 +67,10 @@ cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
     return 0;
 }
 
-bool AsmRawCodeHandler::sectionIsDefined(const char* sectionName) const
-{ return true; }
+cxuint AsmRawCodeHandler::getSectionId(const char* sectionName) const
+{
+    return ::strcmp(sectionName, ".text") ? ASMSECT_NONE : 0;
+}
 
 void AsmRawCodeHandler::setCurrentKernel(cxuint kernel)
 {   // do nothing, no checks (assembler checks kernel id before call)
@@ -76,15 +78,10 @@ void AsmRawCodeHandler::setCurrentKernel(cxuint kernel)
         throw AsmFormatException("KernelId out of range");
 }
 
-void AsmRawCodeHandler::setCurrentSection(const char* name)
+void AsmRawCodeHandler::setCurrentSection(cxuint sectionId)
 {
-    if (::strcmp(name, ".text")!=0)
-    {
-        std::string message = "Section '";
-        message += name;
-        message += "' doesn't exists";
-        throw AsmFormatException(message);
-    }
+    if (sectionId!=0)
+        throw AsmFormatException("Section doesn't exists");
 }
 
 AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId) const
@@ -120,8 +117,7 @@ void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array)
 
 AsmAmdHandler::AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit)
             : AsmFormatHandler(assembler, deviceType, is64Bit), output{},
-              dataSection(0), llvmirSection(ASMSECT_NONE),
-              sourceSection(ASMSECT_NONE)
+              dataSection(0)
 {
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
 }
@@ -195,11 +191,6 @@ cxuint AsmAmdHandler::addSection(const char* name, cxuint kernelId)
             kernelStates[currentKernel].headerSection = thisSection;
             sections.push_back({ currentKernel, AsmSectionType::AMD_HEADER });
             break;
-        case AMDFMTSECT_LLVMIR:
-            currentKernel = ASMKERN_GLOBAL;
-            llvmirSection = thisSection;
-            sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::AMD_LLVMIR });
-            break;
         case AMDFMTSECT_METADATA:
             if (currentKernel == ASMKERN_GLOBAL)
                 throw AsmFormatException("Metadata must be defined inside kernel");
@@ -209,11 +200,6 @@ cxuint AsmAmdHandler::addSection(const char* name, cxuint kernelId)
             
             kernelStates[currentKernel].metadataSection = thisSection;
             sections.push_back({ currentKernel, AsmSectionType::AMD_METADATA});
-            break;
-        case AMDFMTSECT_SOURCE:
-            currentKernel = ASMKERN_GLOBAL;
-            sourceSection = thisSection;
-            sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::AMD_SOURCE });
             break;
         case AMDFMTSECT_TEXT:
             if (currentKernel == ASMKERN_GLOBAL)
@@ -231,7 +217,7 @@ cxuint AsmAmdHandler::addSection(const char* name, cxuint kernelId)
     return 0;
 }
 
-bool AsmAmdHandler::sectionIsDefined(const char* name) const
+cxuint AsmAmdHandler::getSectionId(const char* name) const
 {
     if (*name!='.')
         return false;
@@ -242,28 +228,22 @@ bool AsmAmdHandler::sectionIsDefined(const char* name) const
     switch (sectionNameId)
     {
         case AMDFMTSECT_CONFIG:
-            return currentKernel!=ASMKERN_GLOBAL &&
-                    kernelStates[currentKernel].configSection!=ASMSECT_NONE;
+            return (currentKernel!=ASMKERN_GLOBAL) ?
+                    kernelStates[currentKernel].configSection : ASMSECT_NONE;
         case AMDFMTSECT_DATA:
-            if (currentKernel!=ASMKERN_GLOBAL)
-                return kernelStates[currentKernel].dataSection!=ASMSECT_NONE;
-            else
-                return dataSection!=ASMSECT_NONE;
+            return (currentKernel!=ASMKERN_GLOBAL) ?
+                    kernelStates[currentKernel].dataSection : dataSection;
         case AMDFMTSECT_HEADER:
-            return currentKernel!=ASMKERN_GLOBAL &&
-                    kernelStates[currentKernel].headerSection!=ASMSECT_NONE;
-        case AMDFMTSECT_LLVMIR:
-            return currentKernel==ASMKERN_GLOBAL && llvmirSection!=ASMSECT_NONE;
+            return currentKernel!=ASMKERN_GLOBAL ?
+                    kernelStates[currentKernel].headerSection : ASMSECT_NONE;
         case AMDFMTSECT_METADATA:
-            return currentKernel!=ASMKERN_GLOBAL &&
-                    kernelStates[currentKernel].metadataSection!=ASMSECT_NONE;
-        case AMDFMTSECT_SOURCE:
-            return currentKernel==ASMKERN_GLOBAL && sourceSection!=ASMSECT_NONE;
+            return currentKernel!=ASMKERN_GLOBAL ?
+                    kernelStates[currentKernel].metadataSection : ASMSECT_NONE;
         case AMDFMTSECT_TEXT:
-            return currentKernel!=ASMKERN_GLOBAL &&
-                    kernelStates[currentKernel].codeSection!=ASMSECT_NONE;
+            return currentKernel!=ASMKERN_GLOBAL ?
+                    kernelStates[currentKernel].codeSection : ASMSECT_NONE;
         default:
-            return false;
+            return ASMSECT_NONE;
     }
 }
 
@@ -273,73 +253,12 @@ void AsmAmdHandler::setCurrentKernel(cxuint kernel)
     currentSection = kernelStates[kernel].codeSection;
 }
 
-void AsmAmdHandler::setCurrentSection(const char* name)
+void AsmAmdHandler::setCurrentSection(cxuint sectionId)
 {
-    if (*name!='.')
-    {
-        std::string message = "Section '";
-        message += name;
-        message += "' is not supported";
-        throw AsmFormatException(message);
-    }
-    
-    size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
-            sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
-            amdFormatSectionNamesTbl;
-    
-    cxuint thisSection = ASMSECT_NONE;
-    switch(sectionNameId)
-    {
-        case AMDFMTSECT_CONFIG:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Kernel configuration doesn't "
-                            "exists outside kernel");
-            thisSection = kernelStates[currentKernel].configSection;
-            break;
-        case AMDFMTSECT_DATA:
-            thisSection = (currentKernel!=ASMKERN_GLOBAL) ?
-                    kernelStates[currentKernel].dataSection : dataSection;
-            break;
-        case AMDFMTSECT_HEADER:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Kernel header doesn't exists outside kernel");
-            thisSection = kernelStates[currentKernel].headerSection;
-            break;
-        case AMDFMTSECT_METADATA:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Kernel metadata doesn't exists outside kernel");
-            thisSection  = kernelStates[currentKernel].metadataSection;
-            break;
-        case AMDFMTSECT_TEXT:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Kernel code doesn't exists outside kernel");
-            thisSection = kernelStates[currentKernel].codeSection;
-            break;
-        case AMDFMTSECT_LLVMIR:
-            if (currentKernel != ASMKERN_GLOBAL)
-                throw AsmFormatException("LLVMIR bytecode exists only on global space");
-            thisSection = llvmirSection;
-            break;
-        case AMDFMTSECT_SOURCE:
-            if (currentKernel != ASMKERN_GLOBAL)
-                throw AsmFormatException("Source exists only on global space");
-            thisSection = sourceSection;
-            break;
-        default:
-            std::string message = "Section '";
-            message += name;
-            message += "' is not supported";
-            throw AsmFormatException(message);
-            break;
-    }
-    if (thisSection==ASMSECT_NONE)
-    {
-        std::string message = "Section '";
-        message += name;
-        message += "' is not defined";
-        throw AsmFormatException(message);
-    }
-    currentSection = thisSection;
+    if (sectionId >= sections.size())
+        throw AsmFormatException("SectionId out of range");
+    currentKernel = sections[sectionId].kernelId;
+    currentSection = sectionId;
 }
 
 //static 
@@ -370,14 +289,6 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
             break;
         case AsmSectionType::AMD_METADATA:
             name = ".metadata";
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        case AsmSectionType::AMD_LLVMIR:
-            name = ".llvmir";
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        case AsmSectionType::AMD_SOURCE:
-            name = ".source";
             flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::AMD_CALNOTE:
@@ -418,7 +329,7 @@ void AsmAmdHandler::writeBinary(Array<cxbyte>& array)
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType,
                      bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit),
              output{}, codeSection(ASMSECT_NONE), dataSection(0),
-             disasmSection(ASMSECT_NONE), commentSection(ASMSECT_NONE)
+             commentSection(ASMSECT_NONE), extraSectionCount(0)
 {
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
     insideArgs = insideProgInfo = false;
@@ -445,39 +356,60 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
 {
     const cxuint thisSection = sections.size();
-    if (::strcmp(sectionName, ".data") == 0) // data
+    Section section;
+    section.kernelId = ASMKERN_GLOBAL;
+    if (::strcmp(sectionName, ".rodata") == 0) // data
+    {
         dataSection = thisSection;
+        section.type = AsmSectionType::DATA;
+        section.name = ".rodata"; // set static name (available by whole lifecycle)
+    }
     else if (::strcmp(sectionName, ".text") == 0) // code
+    {
         codeSection = thisSection;
-    else if (::strcmp(sectionName, ".disasm") == 0) // disassembly
-        disasmSection = thisSection;
+        section.type = AsmSectionType::CODE;
+        section.name = ".text"; // set static name (available by whole lifecycle)
+    }
     else if (::strcmp(sectionName, ".comment") == 0) // comment
+    {
         commentSection = thisSection;
+        section.type = AsmSectionType::GALLIUM_COMMENT;
+        section.name = ".comment"; // set static name (available by whole lifecycle)
+    }
     else
     {
-        std::string message = "Section '";
-        message += sectionName;
-        message += "' is not supported";
-        throw AsmFormatException(message);
+        auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
+                    thisSection));
+        if (!out.second)
+            throw AsmFormatException("Section  is already exists");
+        section.type = AsmSectionType::EXTRA_SECTION;
+        section.extraSectionIndex = extraSectionCount++;
+        /// referfence entry is available and unchangeable by whole lifecycle of section map
+        section.name = out.first->first.c_str();
     }
+    sections.push_back(section);
+    
     currentKernel = ASMKERN_GLOBAL;
     currentSection = thisSection;
     insideArgs = insideProgInfo = false;
     return thisSection;
 }
 
-bool AsmGalliumHandler::sectionIsDefined(const char* sectionName) const
+cxuint AsmGalliumHandler::getSectionId(const char* sectionName) const
 {
-    if (::strcmp(sectionName, ".data") == 0) // data
-        return dataSection!=ASMSECT_NONE;
+    if (::strcmp(sectionName, ".rodata") == 0) // data
+        return dataSection;
     else if (::strcmp(sectionName, ".text") == 0) // code
-        return codeSection!=ASMSECT_NONE;
-    else if (::strcmp(sectionName, ".disasm") == 0) // disassembly
-        return disasmSection!=ASMSECT_NONE;
+        return codeSection;
     else if (::strcmp(sectionName, ".comment") == 0) // comment
-        return commentSection!=ASMSECT_NONE;
+        return commentSection;
     else
-        return false;
+    {
+        SectionMap::const_iterator it = extraSectionMap.find(sectionName);
+        if (it != extraSectionMap.end())
+            return it->second;
+    }
+    return ASMSECT_NONE;
 }
 
 void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
@@ -488,35 +420,12 @@ void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
     currentSection = kernelStates[kernel].defaultSection;
 }
 
-void AsmGalliumHandler::setCurrentSection(const char* sectionName)
+void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
 {
-    cxuint thisSection = ASMSECT_NONE;
-    if (::strcmp(sectionName, ".data") == 0) // data
-        thisSection = dataSection;
-    else if (::strcmp(sectionName, ".text") == 0) // code
-        thisSection = codeSection;
-    else if (::strcmp(sectionName, ".disasm") == 0) // disassembly
-        thisSection = disasmSection;
-    else if (::strcmp(sectionName, ".comment") == 0) // comment
-        thisSection = commentSection;
-    else
-    {   /* kernel configuration section has been set via '.kernel' pseudo-op */
-        std::string message = "Section '";
-        message += sectionName;
-        message += "' is not supported";
-        throw AsmFormatException(message);
-    }
-    
-    if (thisSection==ASMSECT_NONE)
-    {
-        std::string message = "Section '";
-        message += sectionName;
-        message += "' is not defined";
-        throw AsmFormatException(message);
-    }
-    
-    currentSection = thisSection;
-    currentKernel = ASMKERN_GLOBAL;
+    if (sectionId >= sections.size())
+        throw AsmFormatException("SectionId out of range");
+    currentSection = sectionId;
+    currentKernel = sections[sectionId].kernelId;
     insideArgs = insideProgInfo = false;
 }
 
@@ -524,18 +433,18 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("Section doesn't exists");
+    
+    AsmFormatHandler::SectionInfo info;
+    info.type = sections[sectionId].type;
+    info.flags = 0;
     if (sectionId == codeSection)
-        return { ".text", AsmSectionType::CODE, ASMSECT_WRITEABLE };
+        info.flags = ASMSECT_WRITEABLE;
     else if (sectionId == dataSection)
-        return { ".data", AsmSectionType::DATA, ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE };
+        info.flags = ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE;
     else if (sectionId == commentSection)
-        return { ".comment", AsmSectionType::GALLIUM_COMMENT,
-            ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE };
-    else if (sectionId == disasmSection)
-        return { ".disasm", AsmSectionType::GALLIUM_DISASM,
-            ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE };
-    else // kernel configuration
-        return { ".config", AsmSectionType::CONFIG, 0 };
+        info.flags = ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE;
+    info.name = sections[sectionId].name;
+    return info;
 }
 
 namespace CLRX
@@ -820,25 +729,31 @@ void AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
 
 bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
-    for (const AsmSection& section: assembler.getSections())
+    size_t sectionsNum = sections.size();
+    for (size_t i = 0; i < sectionsNum; i++)
     {
-        switch(section.type)
+        const AsmSection& asmSection = assembler.sections[i];
+        const Section& section = sections[i];
+        switch(asmSection.type)
         {
             case AsmSectionType::CODE:
-                output.codeSize = section.content.size();
-                output.code = section.content.data();
+                output.codeSize = asmSection.content.size();
+                output.code = asmSection.content.data();
                 break;
             case AsmSectionType::DATA:
-                output.globalDataSize = section.content.size();
-                output.globalData = section.content.data();
+                output.globalDataSize = asmSection.content.size();
+                output.globalData = asmSection.content.data();
                 break;
+            case AsmSectionType::EXTRA_SECTION:
+            {
+                output.extraSections.push_back({section.name,
+                    asmSection.content.size(), asmSection.content.data(),
+                    1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
+                break;
+            }
             case AsmSectionType::GALLIUM_COMMENT:
-                //output.commentSize = section.content.size();
-                //output.comment = (const char*)section.content.data();
-                break;
-            case AsmSectionType::GALLIUM_DISASM:
-                //output.disassemblySize = section.content.size();
-                //output.disassembly = (const char*)section.content.data();
+                output.commentSize = asmSection.content.size();
+                output.comment = (const char*)asmSection.content.data();
                 break;
             default:
                 abort(); /// fatal error
@@ -882,9 +797,9 @@ bool AsmGalliumHandler::prepareBinary()
         }
         kinput.offset = symbol.value;
     }
-    return good;
     /* initialize progInfos */
     //////////////////////////
+    return good;
 }
 
 void AsmGalliumHandler::writeBinary(std::ostream& os)

@@ -57,7 +57,7 @@ enum: Flags
 enum: cxuint
 {
     ASMSECT_ABS = UINT_MAX,  ///< absolute section id
-    ASMSECT_NONE = UINT_MAX,  ///< absolute section id
+    ASMSECT_NONE = UINT_MAX,  ///< none section id
     ASMKERN_GLOBAL = UINT_MAX ///< no kernel, global space
 };
 
@@ -72,12 +72,9 @@ enum class AsmSectionType: cxbyte
     AMD_HEADER = LAST_COMMON+1, ///< AMD Catalyst kernel's header
     AMD_METADATA,       ///< AMD Catalyst kernel's metadata
     AMD_CALNOTE,        ///< AMD CALNote
-    AMD_LLVMIR,         ///< LLVMIR for AMD binary
-    AMD_SOURCE,         ///< AMD source code
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
-    GALLIUM_DISASM,         ///< disassembly section
-    CUSTOM = 0xff
+    EXTRA_SECTION = 0xff
 };
 
 class Assembler;
@@ -135,13 +132,13 @@ public:
      * duplicate of name. */
     virtual cxuint addSection(const char* sectionName, cxuint kernelId) = 0;
     
-    /// determine whether section has been defined in current state
-    virtual bool sectionIsDefined(const char* sectionName) const = 0;
+    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
+    virtual cxuint getSectionId(const char* sectionName) const = 0;
     
     /// set current kernel
     virtual void setCurrentKernel(cxuint kernel) = 0;
     /// set current section, this method can change current kernel if that required 
-    virtual void setCurrentSection(const char* sectionName) = 0;
+    virtual void setCurrentSection(cxuint sectionId) = 0;
     
     /// get current section
     cxuint getCurrentSection() const
@@ -176,14 +173,14 @@ public:
     cxuint addKernel(const char* kernelName);
     /// set current section by name
     cxuint addSection(const char* sectionName, cxuint kernelId);
-    
-    /// determine whether section has been defined in current state
-    bool sectionIsDefined(const char* sectionName) const;
+
+    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
+    cxuint getSectionId(const char* sectionName) const;
     
     /// set current kernel
     void setCurrentKernel(cxuint kernel);
     /// set current section, this method can change current kernel if that required 
-    void setCurrentSection(const char* sectionName);
+    void setCurrentSection(cxuint sectionId);
     
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -201,6 +198,9 @@ public:
 /// handles AMD Catalyst format
 class AsmAmdHandler: public AsmFormatHandler
 {
+public:
+    /// section map type
+    typedef std::unordered_map<std::string, cxuint> SectionMap;
 private:
     friend struct AsmAmdPseudoOps;
     AmdInput output;
@@ -208,6 +208,7 @@ private:
     {
         cxuint kernelId;
         AsmSectionType type;
+        cxuint extraSectionId;
     };
     struct Kernel
     {
@@ -217,12 +218,12 @@ private:
         cxuint codeSection;
         cxuint dataSection;
         std::vector<cxuint> calNoteSections;
+        SectionMap extraSections;
     };
     std::vector<Section> sections;
     std::vector<Kernel> kernelStates;
     cxuint dataSection; // global
-    cxuint llvmirSection;
-    cxuint sourceSection;
+    SectionMap extraSections;
 public:
     AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmAmdHandler() = default;
@@ -232,12 +233,12 @@ public:
     /// set current section by name
     cxuint addSection(const char* sectionName, cxuint kernelId);
     
-    /// determine whether section has been defined in current state
-    bool sectionIsDefined(const char* sectionName) const;
+    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
+    cxuint getSectionId(const char* sectionName) const;
     /// set current kernel
     void setCurrentKernel(cxuint kernel);
     /// set current section, this method can change current kernel if that required 
-    void setCurrentSection(const char* sectionName);
+    void setCurrentSection(cxuint sectionId);
     
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
@@ -258,6 +259,9 @@ public:
 /// handles GalliumCompute format
 class AsmGalliumHandler: public AsmFormatHandler
 {
+public:
+    /// kernel map type
+    typedef std::unordered_map<std::string, cxuint> SectionMap;
 private:
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
@@ -265,6 +269,8 @@ private:
     {
         cxuint kernelId;
         AsmSectionType type;
+        cxuint extraSectionIndex;
+        const char* name;    // must be available by whole lifecycle
     };
     struct Kernel
     {
@@ -274,12 +280,13 @@ private:
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;
+    SectionMap extraSectionMap;
     cxuint codeSection;
     cxuint dataSection;
-    cxuint disasmSection;
     cxuint commentSection;
     bool insideProgInfo;
     bool insideArgs;
+    cxuint extraSectionCount;
 public:
     AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmGalliumHandler() = default;
@@ -289,12 +296,12 @@ public:
     /// set current section by name
     cxuint addSection(const char* sectionName, cxuint kernelId);
     
-    /// determine whether section has been defined in current state
-    bool sectionIsDefined(const char* sectionName) const;
+    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
+    cxuint getSectionId(const char* sectionName) const;
     /// set current kernel
     void setCurrentKernel(cxuint kernel);
     /// set current section, this method can change current kernel if that required 
-    void setCurrentSection(const char* sectionName);
+    void setCurrentSection(cxuint sectionId);
     
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
