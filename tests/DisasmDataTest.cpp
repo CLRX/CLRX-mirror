@@ -486,7 +486,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*4a000000         */ v_add_i32       v0, vcc, s0, v0
 /*7d880004         */ v_cmp_gt_u32    vcc, s4, v0
 /*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
-/*bf880011         */ s_cbranch_execz .L128
+/*bf880011         */ s_cbranch_execz .L128_0
 /*c0840360         */ s_load_dwordx4  s[8:11], s[2:3], 0x60
 /*c0860368         */ s_load_dwordx4  s[12:15], s[2:3], 0x68
 /*34000082         */ v_lshlrev_b32   v0, 2, v0
@@ -501,7 +501,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*4a000007         */ v_add_i32       v0, vcc, s7, v0
 /*bf8c007f         */ s_waitcnt       lgkmcnt(0)
 /*eba41000 80020100*/ tbuffer_store_format_x v1, v0, s[8:11], 0 offen format:[32,float]
-.L128:
+.L128_0:
 /*bf810000         */ s_endpgm
 .kernel multiply
     .header
@@ -636,7 +636,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*4a000000         */ v_add_i32       v0, vcc, s0, v0
 /*7d880004         */ v_cmp_gt_u32    vcc, s4, v0
 /*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
-/*bf880011         */ s_cbranch_execz .L128
+/*bf880011         */ s_cbranch_execz .L128_1
 /*c0840360         */ s_load_dwordx4  s[8:11], s[2:3], 0x60
 /*c0860368         */ s_load_dwordx4  s[12:15], s[2:3], 0x68
 /*c0880370         */ s_load_dwordx4  s[16:19], s[2:3], 0x70
@@ -650,7 +650,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf8c0f70         */ s_waitcnt       vmcnt(0)
 /*d2d60001 00020302*/ v_mul_lo_i32    v1, v2, v1
 /*eba41000 80040100*/ tbuffer_store_format_x v1, v0, s[16:19], 0 offen format:[32,float]
-.L128:
+.L128_1:
 /*bf810000         */ s_endpgm
 )xxFxx"
     },
@@ -797,7 +797,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*7e060280         */ v_mov_b32       v3, 0
 /*7dc20500         */ v_cmp_lt_u64    vcc, v[0:1], v[2:3]
 /*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
-/*bf880018         */ s_cbranch_execz .L168
+/*bf880018         */ s_cbranch_execz .L168_0
 /*c0840360         */ s_load_dwordx4  s[8:11], s[2:3], 0x60
 /*c0880368         */ s_load_dwordx4  s[16:19], s[2:3], 0x68
 /*d2c20000 00010500*/ v_lshl_b64      v[0:1], v[0:1], 2
@@ -818,7 +818,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*50020303         */ v_addc_u32      v1, vcc, v3, v1, vcc
 /*bf8c007f         */ s_waitcnt       lgkmcnt(0)
 /*eba48000 80010200*/ tbuffer_store_format_x v2, v[0:1], s[4:7], 0 addr64 format:[32,float]
-.L168:
+.L168_0:
 /*bf810000         */ s_endpgm
 .kernel multiply
     .header
@@ -957,7 +957,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*7e060280         */ v_mov_b32       v3, 0
 /*7dc20500         */ v_cmp_lt_u64    vcc, v[0:1], v[2:3]
 /*be80246a         */ s_and_saveexec_b64 s[0:1], vcc
-/*bf880019         */ s_cbranch_execz .L172
+/*bf880019         */ s_cbranch_execz .L172_1
 /*c0840360         */ s_load_dwordx4  s[8:11], s[2:3], 0x60
 /*c0880368         */ s_load_dwordx4  s[16:19], s[2:3], 0x68
 /*d2c20000 00010500*/ v_lshl_b64      v[0:1], v[0:1], 2
@@ -978,7 +978,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*50020303         */ v_addc_u32      v1, vcc, v3, v1, vcc
 /*bf8c007f         */ s_waitcnt       lgkmcnt(0)
 /*eba48000 80010200*/ tbuffer_store_format_x v2, v[0:1], s[4:7], 0 addr64 format:[32,float]
-.L172:
+.L172_1:
 /*bf810000         */ s_endpgm
 )xxFxx"
     },

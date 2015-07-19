@@ -70,11 +70,14 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             if (numberedPos <= namedPos && haveNumberedLabel)
             {
                 curPos = *labelIter;
-                char* buf = output.reserve(50);
+                char* buf = output.reserve(70);
                 size_t bufPos = 0;
                 buf[bufPos++] = '.';
                 buf[bufPos++] = 'L';
                 bufPos += itocstrCStyle(*labelIter, buf+bufPos, 22, 10, 0, false);
+                buf[bufPos++] = '_';
+                bufPos += itocstrCStyle(disassembler.sectionCount,
+                                buf+bufPos, 22, 10, 0, false);
                 if (curPos != pos)
                 {
                     buf[bufPos++] = '=';
@@ -149,11 +152,14 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
             }
-            char* buf = output.reserve(26);
+            char* buf = output.reserve(50);
             size_t bufPos = 0;
             buf[bufPos++] = '.';
             buf[bufPos++] = 'L';
             bufPos += itocstrCStyle(*labelIter, buf+bufPos, 22, 10, 0, false);
+            buf[bufPos++] = '_';
+            bufPos += itocstrCStyle(disassembler.sectionCount,
+                            buf+bufPos, 22, 10, 0, false);
             buf[bufPos++] = ':';
             buf[bufPos++] = '\n';
             output.forward(bufPos);
@@ -192,11 +198,14 @@ void ISADisassembler::writeLocation(size_t pos)
         return;
     }
     /* otherwise we print numbered label */
-    char* buf = output.reserve(25);
+    char* buf = output.reserve(50);
     size_t bufPos = 0;
     buf[bufPos++] = '.';
     buf[bufPos++] = 'L';
     bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
+    buf[bufPos++] = '_';
+                bufPos += itocstrCStyle(disassembler.sectionCount,
+                                buf+bufPos, 22, 10, 0, false);
     output.forward(bufPos);
 }
 
@@ -459,7 +468,7 @@ static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceT
 
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
             Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
-            amdInput(nullptr), output(_output), flags(_flags)
+            amdInput(nullptr), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
     amdInput = getAmdDisasmInputFromBinary(binary, flags);
@@ -467,7 +476,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _outp
 
 Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _output,
             Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMD),
-            amdInput(nullptr), output(_output), flags(_flags)
+            amdInput(nullptr), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
     amdInput = getAmdDisasmInputFromBinary(binary, flags);
@@ -475,7 +484,7 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
 
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
             Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
-            amdInput(disasmInput), output(_output), flags(_flags)
+            amdInput(disasmInput), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
@@ -483,7 +492,7 @@ Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _out
 Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary,
            std::ostream& _output, Flags _flags) :
            fromBinary(true), binaryFormat(BinaryFormat::GALLIUM),
-           galliumInput(nullptr), output(_output), flags(_flags)
+           galliumInput(nullptr), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
     galliumInput = getGalliumDisasmInputFromBinary(deviceType, binary, flags);
@@ -491,7 +500,7 @@ Disassembler::Disassembler(GPUDeviceType deviceType, const GalliumBinary& binary
 
 Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& _output,
              Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::GALLIUM),
-            galliumInput(disasmInput), output(_output), flags(_flags)
+            galliumInput(disasmInput), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
@@ -499,7 +508,7 @@ Disassembler::Disassembler(const GalliumDisasmInput* disasmInput, std::ostream& 
 Disassembler::Disassembler(GPUDeviceType deviceType, size_t rawCodeSize,
            const cxbyte* rawCode, std::ostream& _output, Flags _flags)
        : fromBinary(true), binaryFormat(BinaryFormat::RAWCODE),
-         output(_output), flags(_flags)
+         output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
     rawInput = new RawCodeInput{ deviceType, rawCodeSize, rawCode };
@@ -964,6 +973,7 @@ void Disassembler::disassembleAmd()
             isaDisassembler->setInput(kinput.codeSize, kinput.code);
             isaDisassembler->beforeDisassemble();
             isaDisassembler->disassemble();
+            sectionCount++;
         }
     }
 }

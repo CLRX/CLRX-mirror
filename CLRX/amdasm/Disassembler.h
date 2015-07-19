@@ -174,6 +174,7 @@ struct RawCodeInput
 class Disassembler: public NonCopyableAndNonMovable
 {
 private:
+    friend class ISADisassembler;
     std::unique_ptr<ISADisassembler> isaDisassembler;
     bool fromBinary;
     BinaryFormat binaryFormat;
@@ -184,6 +185,7 @@ private:
     };
     std::ostream& output;
     Flags flags;
+    size_t sectionCount;
     
     void disassembleAmd(); // Catalyst format
     void disassembleGallium(); // Gallium format
