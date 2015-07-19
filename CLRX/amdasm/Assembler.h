@@ -49,8 +49,7 @@ namespace CLRX
 enum: Flags
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
-    ASM_64BIT_MODE = 2, ///< assemble to 64-bit addressing mode
-    ASM_GNU_AS_COMPAT = 4, ///< compatibility with GNU as (expressions)
+    ASM_FORCE_ADD_SYMBOLS = 2,
     ASM_ALL = FLAGS_ALL  ///< all flags
 };
 
@@ -208,7 +207,8 @@ private:
     {
         cxuint kernelId;
         AsmSectionType type;
-        cxuint extraSectionId;
+        cxuint elfBinSectId;
+        const char* name;
     };
     struct Kernel
     {
@@ -218,12 +218,14 @@ private:
         cxuint codeSection;
         cxuint dataSection;
         std::vector<cxuint> calNoteSections;
-        SectionMap extraSections;
+        SectionMap extraSectionMap;
+        cxuint extraSectionCount;
     };
     std::vector<Section> sections;
     std::vector<Kernel> kernelStates;
+    SectionMap extraSectionMap;
     cxuint dataSection; // global
-    SectionMap extraSections;
+    cxuint extraSectionCount;
 public:
     AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
     ~AsmAmdHandler() = default;
@@ -269,7 +271,7 @@ private:
     {
         cxuint kernelId;
         AsmSectionType type;
-        cxuint extraSectionIndex;
+        cxuint elfBinSectId;
         const char* name;    // must be available by whole lifecycle
     };
     struct Kernel

@@ -100,7 +100,8 @@ static const char* pseudoOpNamesTbl[] =
     "line", "ln", "local", "long",
     "macro", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
-    "rawcode", "rept", "sbttl", "section", "set",
+    "rawcode", "rept", "rodata",
+    "sbttl", "section", "set",
     "short", "single", "size", "skip",
     "space", "string", "string16", "string32",
     "string64", "struct", "text", "title",
@@ -131,7 +132,8 @@ enum
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
-    ASMOP_RAWCODE, ASMOP_REPT, ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
+    ASMOP_RAWCODE, ASMOP_REPT, ASMOP_RODATA,
+    ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
     ASMOP_SHORT, ASMOP_SINGLE, ASMOP_SIZE, ASMOP_SKIP,
     ASMOP_SPACE, ASMOP_STRING, ASMOP_STRING16, ASMOP_STRING32,
     ASMOP_STRING64, ASMOP_STRUCT, ASMOP_TEXT, ASMOP_TITLE,
@@ -2072,6 +2074,8 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_REPT:
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_RODATA:
             break;
         case ASMOP_SECTION:
             break;

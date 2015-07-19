@@ -129,121 +129,90 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
             thisSection, ASMSECT_NONE, { } });
-    sections.push_back({ thisKernel, AsmSectionType::CODE });
+    sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     currentKernel = thisKernel;
     currentSection = thisSection;
     return currentKernel;
 }
 
-static const char* amdFormatSectionNamesTbl[] =
-{ "config", "data", "header", "llvmir", "metadata", "source", "text", };
-
-enum {
-    AMDFMTSECT_CONFIG, AMDFMTSECT_DATA, AMDFMTSECT_HEADER, AMDFMTSECT_LLVMIR,
-    AMDFMTSECT_METADATA, AMDFMTSECT_SOURCE, AMDFMTSECT_TEXT
-};
-
-cxuint AsmAmdHandler::addSection(const char* name, cxuint kernelId)
+cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
 {
-    if (*name!='.')
-    {
-        std::string message = "Section '";
-        message += name;
-        message += "' is not supported";
-        throw AsmFormatException(message);
-    }
-    
     const cxuint thisSection = sections.size();
-    size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
-            sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
-            amdFormatSectionNamesTbl;
-    
-    switch(sectionNameId)
+    Section section;
+    section.kernelId = kernelId;
+    if (::strcmp(sectionName, ".data") == 0) // data
     {
-        case AMDFMTSECT_CONFIG:
-        {
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Kernel config must be defined inside kernel");
-            AsmAmdHandler::Kernel& kstate = kernelStates[currentKernel];
-            if (!kstate.calNoteSections.empty() ||
-                kstate.headerSection != ASMSECT_NONE ||
-                kstate.metadataSection != ASMSECT_NONE)
-                throw AsmFormatException("Config can be defined only if no "
-                        "kernel header, metadata, CALNotes");
-            kernelStates[currentKernel].configSection = thisSection;
-            sections.push_back({ currentKernel, AsmSectionType::CONFIG });
-            break;
-        }
-        case AMDFMTSECT_DATA:
-            if (currentKernel == ASMKERN_GLOBAL)
-                dataSection = thisSection;
-            else
-                kernelStates[currentKernel].dataSection = thisSection;
-            sections.push_back({ currentKernel, AsmSectionType::DATA });
-            break;
-        case AMDFMTSECT_HEADER:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Kernel header must be defined inside kernel");
-            if (kernelStates[currentKernel].configSection != ASMSECT_NONE)
-                throw AsmFormatException("Kernel header can be defined only "
-                            "if no configuration defined");
-            
-            kernelStates[currentKernel].headerSection = thisSection;
-            sections.push_back({ currentKernel, AsmSectionType::AMD_HEADER });
-            break;
-        case AMDFMTSECT_METADATA:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Metadata must be defined inside kernel");
-            if (kernelStates[currentKernel].configSection != ASMSECT_NONE)
-                throw AsmFormatException("Kernel metadata can be defined only "
-                            "if no configuration defined");
-            
-            kernelStates[currentKernel].metadataSection = thisSection;
-            sections.push_back({ currentKernel, AsmSectionType::AMD_METADATA});
-            break;
-        case AMDFMTSECT_TEXT:
-            if (currentKernel == ASMKERN_GLOBAL)
-                throw AsmFormatException("Section '.text' must be defined inside kernel");
-            kernelStates[currentKernel].codeSection = thisSection;
-            sections.push_back({ currentKernel, AsmSectionType::CODE });
-            break;
-        default:
-            std::string message = "Section '";
-            message += name;
-            message += "' is not supported";
-            throw AsmFormatException(message);
-            break;
+        if (kernelId == ASMKERN_GLOBAL)
+            throw AsmFormatException("Section '.data' permitted only inside kernels");
+        Kernel& kernelState = kernelStates[kernelId];
+        kernelState.codeSection = thisSection;
+        section.type = AsmSectionType::CODE;
+        section.elfBinSectId = ELFSECTID_TEXT;
+        section.name = ".text"; // set static name (available by whole lifecycle)*/
     }
-    return 0;
+    else if (::strcmp(sectionName, ".text") == 0) // code
+    {
+        if (kernelId == ASMKERN_GLOBAL)
+            throw AsmFormatException("Section '.text' permitted only inside kernels");
+        Kernel& kernelState = kernelStates[kernelId];
+        kernelState.codeSection = thisSection;
+        section.type = AsmSectionType::CODE;
+        section.elfBinSectId = ELFSECTID_TEXT;
+        section.name = ".text"; // set static name (available by whole lifecycle)*/
+    }
+    else if (kernelId == ASMKERN_GLOBAL)
+    {
+        auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
+                    thisSection));
+        if (!out.second)
+            throw AsmFormatException("Section  is already exists");
+        section.type = AsmSectionType::EXTRA_SECTION;
+        section.elfBinSectId = extraSectionCount++;
+        /// referfence entry is available and unchangeable by whole lifecycle of section map
+        section.name = out.first->first.c_str();
+    }
+    else
+    {   /* inside kernel binary */
+        Kernel& kernelState = kernelStates[kernelId];
+        auto out = kernelState.extraSectionMap.insert(std::make_pair(
+                    std::string(sectionName), thisSection));
+        if (!out.second)
+            throw AsmFormatException("Section  is already exists");
+        section.type = AsmSectionType::EXTRA_SECTION;
+        section.elfBinSectId = kernelState.extraSectionCount++;
+        /// referfence entry is available and unchangeable by whole lifecycle of section map
+        section.name = out.first->first.c_str();
+    }
+    sections.push_back(section);
+    
+    currentKernel = kernelId;
+    currentSection = thisSection;
+    return thisSection;
 }
 
-cxuint AsmAmdHandler::getSectionId(const char* name) const
+cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 {
-    if (*name!='.')
-        return false;
-    
-    size_t sectionNameId = binaryFind(amdFormatSectionNamesTbl, amdFormatSectionNamesTbl +
-            sizeof(amdFormatSectionNamesTbl)/sizeof(char*), name+1, CStringLess()) -
-            amdFormatSectionNamesTbl;
-    switch (sectionNameId)
+    if (currentKernel == ASMKERN_GLOBAL)
     {
-        case AMDFMTSECT_CONFIG:
-            return (currentKernel!=ASMKERN_GLOBAL) ?
-                    kernelStates[currentKernel].configSection : ASMSECT_NONE;
-        case AMDFMTSECT_DATA:
-            return (currentKernel!=ASMKERN_GLOBAL) ?
-                    kernelStates[currentKernel].dataSection : dataSection;
-        case AMDFMTSECT_HEADER:
-            return currentKernel!=ASMKERN_GLOBAL ?
-                    kernelStates[currentKernel].headerSection : ASMSECT_NONE;
-        case AMDFMTSECT_METADATA:
-            return currentKernel!=ASMKERN_GLOBAL ?
-                    kernelStates[currentKernel].metadataSection : ASMSECT_NONE;
-        case AMDFMTSECT_TEXT:
-            return currentKernel!=ASMKERN_GLOBAL ?
-                    kernelStates[currentKernel].codeSection : ASMSECT_NONE;
-        default:
-            return ASMSECT_NONE;
+        SectionMap::const_iterator it = extraSectionMap.find(sectionName);
+        if (it != extraSectionMap.end())
+            return it->second;
+        return ASMSECT_NONE;
+    }
+    else
+    {
+        const Kernel& kernelState = kernelStates[currentKernel];
+        if (::strcmp(sectionName, ".text") == 0)
+            return kernelState.codeSection;
+        else if (::strcmp(sectionName, ".data") == 0)
+            return kernelState.dataSection;
+        else
+        {
+            SectionMap::const_iterator it = kernelState.extraSectionMap.find(sectionName);
+            if (it != extraSectionMap.end())
+                return it->second;
+        }
+        return ASMSECT_NONE;
     }
 }
 
@@ -260,8 +229,6 @@ void AsmAmdHandler::setCurrentSection(cxuint sectionId)
     currentKernel = sections[sectionId].kernelId;
     currentSection = sectionId;
 }
-
-//static 
 
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
 {   /* find section */
@@ -284,15 +251,15 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
             name = ".config";
             break;
         case AsmSectionType::AMD_HEADER:
-            name = ".header";
             flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::AMD_METADATA:
-            name = ".metadata";
             flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::AMD_CALNOTE:
-            name = ".calnote";
+            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            break;
+        case AsmSectionType::EXTRA_SECTION:
             flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         default:
@@ -331,7 +298,8 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceT
              output{}, codeSection(ASMSECT_NONE), dataSection(0),
              commentSection(ASMSECT_NONE), extraSectionCount(0)
 {
-    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
+    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA,
+                ELFSECTID_RODATA, ".rodata" });
     insideArgs = insideProgInfo = false;
 }
 
@@ -355,6 +323,8 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 
 cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
 {
+    if (kernelId != ASMKERN_GLOBAL)
+        throw AsmFormatException("Adding sections permitted only for global space");
     const cxuint thisSection = sections.size();
     Section section;
     section.kernelId = ASMKERN_GLOBAL;
@@ -362,18 +332,21 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     {
         dataSection = thisSection;
         section.type = AsmSectionType::DATA;
+        section.elfBinSectId = ELFSECTID_RODATA;
         section.name = ".rodata"; // set static name (available by whole lifecycle)
     }
     else if (::strcmp(sectionName, ".text") == 0) // code
     {
         codeSection = thisSection;
         section.type = AsmSectionType::CODE;
+        section.elfBinSectId = ELFSECTID_TEXT;
         section.name = ".text"; // set static name (available by whole lifecycle)
     }
     else if (::strcmp(sectionName, ".comment") == 0) // comment
     {
         commentSection = thisSection;
         section.type = AsmSectionType::GALLIUM_COMMENT;
+        section.elfBinSectId = ELFSECTID_COMMENT;
         section.name = ".comment"; // set static name (available by whole lifecycle)
     }
     else
@@ -383,7 +356,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
         if (!out.second)
             throw AsmFormatException("Section  is already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
-        section.extraSectionIndex = extraSectionCount++;
+        section.elfBinSectId = extraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
         section.name = out.first->first.c_str();
     }
@@ -760,6 +733,22 @@ bool AsmGalliumHandler::prepareBinary()
                 break;
         }
     }
+    // if set adds symbols to binary
+    if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
+        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        {
+            if (!symEntry.second.isDefined())
+                continue; // undefined
+            if (assembler.kernelMap.find(symEntry.first) != assembler.kernelMap.end())
+                continue; // if kernel name
+            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+                    sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            
+            output.extraSymbols.push_back({ symEntry.first, symEntry.second.value,
+                    symEntry.second.size, binSectId, false, symEntry.second.info,
+                    symEntry.second.other });
+        }
+    
     /// checking symbols and set offset for kernels
     bool good = true;
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
