@@ -251,7 +251,7 @@ bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& line
     return true;
 }
 
-bool AsmPseudoOps::skipCommaForMultipleArgd(Assembler& asmr, const char*& linePtr)
+bool AsmPseudoOps::skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end); // spaces before ','
@@ -272,7 +272,7 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char*& linePtr, bool _64Bit
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    if (asmr.outFormatInitialized)
+    if (asmr.formatHandler != nullptr)
         asmr.printError(linePtr, "Bitness is already defined");
     else if (asmr.format != BinaryFormat::AMD)
         asmr.printWarning(linePtr, "Bitness ignored for other formats than AMD Catalyst");
@@ -298,7 +298,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& linePtr)
         asmr.format = BinaryFormat::RAWCODE;
     else
         asmr.printError(linePtr, "Unknown output format type");
-    if (asmr.outFormatInitialized)
+    if (asmr.formatHandler!=nullptr)
         asmr.printError(linePtr, "Output format type is already defined");
     
     checkGarbagesAtEnd(asmr, linePtr);
@@ -427,9 +427,10 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     if (!good || !checkGarbagesAtEnd(asmr, linePtr)) // failed parsing
         return;
     
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                        "Writing data into non-writeable section is illegal");
         return;
     }
     
@@ -567,9 +568,10 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                "Writing data into non-writeable section is illegal");
         return;
     }
     skipSpacesToEnd(linePtr, end);
@@ -610,7 +612,7 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
                 asmr.reserveData(sizeof(T));
             }
         }
-    } while(skipCommaForMultipleArgd(asmr, linePtr));
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -652,9 +654,10 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                    "Writing data into non-writeable section is illegal");
         return;
     }
     skipSpacesToEnd(linePtr, end);
@@ -675,7 +678,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
                       "No floating point literal, zero has been put");
         asmr.putData(sizeof(UIntType), reinterpret_cast<const cxbyte*>(&out));
         
-    } while (skipCommaForMultipleArgd(asmr, linePtr));
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -684,9 +687,10 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                    "Writing data into non-writeable section is illegal");
         return;
     }
     skipSpacesToEnd(linePtr, end);
@@ -721,7 +725,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
         SLEV(out.lo, value.lo);
         SLEV(out.hi, value.hi);
         asmr.putData(16, reinterpret_cast<const cxbyte*>(&out));
-    } while (skipCommaForMultipleArgd(asmr, linePtr));
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -730,9 +734,10 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                    "Writing data into non-writeable section is illegal");
         return;
     }
     skipSpacesToEnd(linePtr, end);
@@ -745,7 +750,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
             if (asmr.parseString(outStr, linePtr))
                 asmr.putData(outStr.size()+(addZero), (const cxbyte*)outStr.c_str());
         }
-    } while (skipCommaForMultipleArgd(asmr, linePtr));
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -754,9 +759,10 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
                     const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                    "Writing data into non-writeable section is illegal");
         return;
     }
     asmr.initializeOutputFormat();
@@ -777,7 +783,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
             }
         }
         
-    } while (skipCommaForMultipleArgd(asmr, linePtr));
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -837,7 +843,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& linePtr, cxbyte b
                 asmr.printWarning(symNamePlace, "Symbol '.' is ignored");
         }
         
-    } while(skipCommaForMultipleArgd(asmr, linePtr));
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -892,7 +898,7 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& linePtr)
         return;
     do {
         asmr.skipSymbol(linePtr);
-    } while (skipCommaForMultipleArgd(asmr, linePtr));
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
@@ -948,11 +954,12 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     if (!good || !checkGarbagesAtEnd(asmr, linePtr)) // if parsing failed
         return;
     
-    if (asmr.currentSection == ASMSECT_ABS)
+    if (!asmr.isWriteableSection())
     {
-        asmr.printError(pseudoOpPlace, "Writing data into absolute section is illegal");
+        asmr.printError(pseudoOpPlace,
+                    "Writing data into non-writeable section is illegal");
         return;
-    } 
+    }
     
     if (int64_t(repeat) <= 0 || int64_t(size) <= 0)
         return;
@@ -973,7 +980,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     }
 }
 
-void AsmPseudoOps::doSkip(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -999,6 +1006,13 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& linePtr)
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (!asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Change output counter inside non-addressable section is illegal");
+        return;
+    }
+    
     if (int64_t(size) < 0)
         return;
     
@@ -1007,7 +1021,8 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char*& linePtr)
     asmr.reserveData(size, value&0xff);
 }
 
-void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& linePtr, bool powerOf2)
+void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
+                           const char*& linePtr, bool powerOf2)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1058,6 +1073,13 @@ void AsmPseudoOps::doAlign(Assembler& asmr,  const char*& linePtr, bool powerOf2
     if (!good || !checkGarbagesAtEnd(asmr, linePtr)) //if parsing failed
         return;
     
+    if (!asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Change output counter inside non-addressable section is illegal");
+        return;
+    }
+    
     uint64_t outPos = asmr.currentOutPos;
     const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
             alignment - (outPos&(alignment-1)) : 0;
@@ -1106,6 +1128,13 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
+    
+    if (!asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Change output counter inside non-addressable section is illegal");
+        return;
+    }
     
     if (alignment == 0)
         return; // do nothing
@@ -1792,7 +1821,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_ALIGN:
         case ASMOP_BALIGN:
-            AsmPseudoOps::doAlign(*this, linePtr);
+            AsmPseudoOps::doAlign(*this, stmtPlace, linePtr);
             break;
         case ASMOP_ARCH:
             break;
@@ -1816,7 +1845,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
         case ASMOP_GALLIUM:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
             {
-                if (outFormatInitialized)
+                if (formatHandler!=nullptr)
                     printError(linePtr, "Output format type is already defined");
                 else
                     format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
@@ -2061,7 +2090,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doOrganize(*this, linePtr);
             break;
         case ASMOP_P2ALIGN:
-            AsmPseudoOps::doAlign(*this, linePtr, true);
+            AsmPseudoOps::doAlign(*this, stmtPlace, linePtr, true);
             break;
         case ASMOP_PRINT:
             AsmPseudoOps::doPrint(*this, linePtr);
@@ -2090,7 +2119,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_SKIP:
         case ASMOP_SPACE:
-            AsmPseudoOps::doSkip(*this, linePtr);
+            AsmPseudoOps::doSkip(*this, stmtPlace, linePtr);
             break;
         case ASMOP_STRING:
             AsmPseudoOps::putStrings(*this, stmtPlace, linePtr, true);

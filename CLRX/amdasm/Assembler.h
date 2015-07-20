@@ -81,7 +81,8 @@ class Assembler;
 enum: Flags
 {
     ASMSECT_WRITEABLE = 1,
-    ASMSECT_ABS_ADDRESSABLE = 2
+    ASMSECT_ADDRESSABLE = 2,
+    ASMSECT_ABS_ADDRESSABLE = 4
 };
 
 /// assembler format exception
@@ -110,10 +111,8 @@ protected:
     friend struct AsmGalliumPseudoOps;
     
     Assembler& assembler;
-    GPUDeviceType deviceType;
-    bool _64Bit;
     
-    AsmFormatHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
+    explicit AsmFormatHandler(Assembler& assembler);
 public:
     virtual ~AsmFormatHandler();
     
@@ -155,7 +154,7 @@ class AsmRawCodeHandler: public AsmFormatHandler
 private:
     std::string kernelName;
 public:
-    AsmRawCodeHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
+    explicit AsmRawCodeHandler(Assembler& assembler);
     ~AsmRawCodeHandler() = default;
     
     /// set current kernel by name
@@ -217,7 +216,7 @@ private:
     cxuint dataSection; // global
     cxuint extraSectionCount;
 public:
-    AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
+    explicit AsmAmdHandler(Assembler& assembler);
     ~AsmAmdHandler() = default;
     
     /// set current kernel by name
@@ -280,7 +279,7 @@ private:
     bool insideArgs;
     cxuint extraSectionCount;
 public:
-    AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
+    explicit AsmGalliumHandler(Assembler& assembler);
     ~AsmGalliumHandler() = default;
     
     /// set current kernel by name
@@ -682,6 +681,7 @@ struct AsmSection
 {
     cxuint kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
+    Flags flags;   ///< section flags
     std::vector<cxbyte> content;    ///< content of section
 };
 
@@ -757,15 +757,9 @@ private:
     std::ostream& messageStream;
     std::ostream& printStream;
     
-    union {
-        AmdInput* amdOutput;
-        GalliumInput* galliumOutput;
-        std::vector<AsmSection>* rawCode;
-    };
+    AsmFormatHandler* formatHandler;
     
     std::stack<AsmClause> clauses;
-    
-    bool outFormatInitialized;
     
     cxuint currentKernel;
     cxuint& currentSection;
@@ -876,12 +870,25 @@ private:
         }
     }
     
-    void gotoKernel(const char* kernelName);
-    void gotoSection(const char* sectionName);
+    void gotoKernel(const char* pseudoOpPlace, const char* kernelName);
+    void gotoSection(const char* pseudoOpPlace, const char* sectionName);
+    void gotoSection(cxuint sectionId);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
     
     bool checkReservedName(const std::string& name);
+    
+    bool isAddressableSection() const
+    {
+        return currentSection==ASMSECT_ABS ||
+                    (sections[currentSection].flags & ASMSECT_ADDRESSABLE);
+    }
+    bool isWriteableSection() const
+    {
+        return currentSection!=ASMSECT_ABS &&
+                sections[currentSection].flags & ASMSECT_WRITEABLE;
+    }
+    
 protected:    
     /// helper for testing
     bool readLine();
@@ -950,12 +957,7 @@ public:
     
     /// add initiali defsyms
     void addInitialDefSym(const std::string& symName, uint64_t name);
-    /// get AMD Catalyst output
-    const AmdInput* getAmdOutput() const
-    { return amdOutput; }
-    /// get GalliumCompute output
-    const GalliumInput* getGalliumOutput() const
-    { return galliumOutput; }
+    
     /// main routine to assemble code
     bool assemble();
 };

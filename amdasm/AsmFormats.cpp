@@ -38,9 +38,7 @@ enum
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
 { }
 
-AsmFormatHandler::AsmFormatHandler(Assembler& _assembler, GPUDeviceType _deviceType,
-                   bool _is64Bit) : assembler(_assembler), deviceType(_deviceType),
-                   _64Bit(_is64Bit)
+AsmFormatHandler::AsmFormatHandler(Assembler& _assembler) : assembler(_assembler)
 { }
 
 AsmFormatHandler::~AsmFormatHandler()
@@ -48,8 +46,7 @@ AsmFormatHandler::~AsmFormatHandler()
 
 /* raw code handler */
 
-AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler, GPUDeviceType deviceType,
-                 bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit)
+AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler): AsmFormatHandler(assembler)
 { }
 
 cxuint AsmRawCodeHandler::addKernel(const char* kernelName)
@@ -88,7 +85,7 @@ AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId
 {
     if (sectionId >= 1)
         throw AsmFormatException("Section doesn't exists");
-    return { ".text", AsmSectionType::CODE, ASMSECT_WRITEABLE };
+    return { ".text", AsmSectionType::CODE, ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE };
 }
 
 void AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
@@ -115,9 +112,8 @@ void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array)
  * AmdCatalyst format handler
  */
 
-AsmAmdHandler::AsmAmdHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit)
-            : AsmFormatHandler(assembler, deviceType, is64Bit), output{},
-              dataSection(0)
+AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler),
+                output{}, dataSection(0)
 {
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
 }
@@ -241,26 +237,26 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
     {
         case AsmSectionType::CODE:
             name = ".text";
-            flags = ASMSECT_WRITEABLE;
+            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
             break;
         case AsmSectionType::DATA:
             name = ".data";
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::CONFIG:
             name = ".config";
             break;
         case AsmSectionType::AMD_HEADER:
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::AMD_METADATA:
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::AMD_CALNOTE:
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::EXTRA_SECTION:
-            flags = ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         default:
             // error
@@ -293,8 +289,7 @@ void AsmAmdHandler::writeBinary(Array<cxbyte>& array)
  * GalliumCompute format handler
  */
 
-AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler, GPUDeviceType deviceType,
-                     bool is64Bit): AsmFormatHandler(assembler, deviceType, is64Bit),
+AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(assembler),
              output{}, codeSection(ASMSECT_NONE), dataSection(0),
              commentSection(ASMSECT_NONE), extraSectionCount(0)
 {
@@ -411,11 +406,11 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
     info.type = sections[sectionId].type;
     info.flags = 0;
     if (sectionId == codeSection)
-        info.flags = ASMSECT_WRITEABLE;
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
     else if (sectionId == dataSection)
-        info.flags = ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE;
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     else if (sectionId == commentSection)
-        info.flags = ASMSECT_WRITEABLE|ASMSECT_ABS_ADDRESSABLE;
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     info.name = sections[sectionId].name;
     return info;
 }

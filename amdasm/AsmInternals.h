@@ -110,7 +110,7 @@ struct CLRX_INTERNAL AsmPseudoOps
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
     
     // skip comma for multiple argument pseudo-ops
-    static bool skipCommaForMultipleArgd(Assembler& asmr, const char*& linePtr);
+    static bool skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr);
     
     /*
      * pseudo-ops logic
@@ -172,10 +172,11 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void doFill(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
                bool _64bit = false);
-    static void doSkip(Assembler& asmr, const char*& linePtr);
+    static void doSkip(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr);
     
     /* TODO: add no-op fillin for text sections */
-    static void doAlign(Assembler& asmr,  const char*& linePtr, bool powerOf2 = false);
+    static void doAlign(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
+                    bool powerOf2 = false);
     
     /* TODO: add no-op fillin for text sections */
     template<typename Word>

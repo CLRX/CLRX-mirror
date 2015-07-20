@@ -2631,20 +2631,20 @@ label4:
             { "label4", 23U, ASMSECT_ABS, 0U, true, true, false, 0, 0 }
         },
         false, R"ffDXD(test.s:5:14: Warning: Fill value is ignored inside absolute section
-test.s:7:9: Error: Writing data into absolute section is illegal
-test.s:8:9: Error: Writing data into absolute section is illegal
-test.s:9:9: Error: Writing data into absolute section is illegal
-test.s:10:9: Error: Writing data into absolute section is illegal
-test.s:11:9: Error: Writing data into absolute section is illegal
-test.s:12:9: Error: Writing data into absolute section is illegal
-test.s:13:9: Error: Writing data into absolute section is illegal
-test.s:14:9: Error: Writing data into absolute section is illegal
-test.s:15:9: Error: Writing data into absolute section is illegal
-test.s:16:9: Error: Writing data into absolute section is illegal
-test.s:17:9: Error: Writing data into absolute section is illegal
-test.s:18:9: Error: Writing data into absolute section is illegal
-test.s:19:9: Error: Writing data into absolute section is illegal
-test.s:20:9: Error: Writing data into absolute section is illegal
+test.s:7:9: Error: Writing data into non-writeable section is illegal
+test.s:8:9: Error: Writing data into non-writeable section is illegal
+test.s:9:9: Error: Writing data into non-writeable section is illegal
+test.s:10:9: Error: Writing data into non-writeable section is illegal
+test.s:11:9: Error: Writing data into non-writeable section is illegal
+test.s:12:9: Error: Writing data into non-writeable section is illegal
+test.s:13:9: Error: Writing data into non-writeable section is illegal
+test.s:14:9: Error: Writing data into non-writeable section is illegal
+test.s:15:9: Error: Writing data into non-writeable section is illegal
+test.s:16:9: Error: Writing data into non-writeable section is illegal
+test.s:17:9: Error: Writing data into non-writeable section is illegal
+test.s:18:9: Error: Writing data into non-writeable section is illegal
+test.s:19:9: Error: Writing data into non-writeable section is illegal
+test.s:20:9: Error: Writing data into non-writeable section is illegal
 test.s:23:17: Error: Expected primary expression before operator
 test.s:23:19: Error: Expected primary expression before operator
 )ffDXD", ""

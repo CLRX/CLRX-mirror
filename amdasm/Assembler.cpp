@@ -118,7 +118,6 @@ Assembler::Assembler(const std::string& filename, std::istream& input, Flags _fl
           endOfAssembly(false),
           messageStream(msgStream),
           printStream(_printStream),
-          outFormatInitialized(false),
           // value reference and section reference from first symbol: '.'
           currentSection(symbolMap.begin()->second.sectionId),
           currentOutPos(symbolMap.begin()->second.value)
@@ -126,7 +125,7 @@ Assembler::Assembler(const std::string& filename, std::istream& input, Flags _fl
     macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
-    amdOutput = nullptr;
+    formatHandler = nullptr;
     input.exceptions(std::ios::badbit);
     currentInputFilter = new AsmStreamInputFilter(input, filename);
     asmInputFilters.push(currentInputFilter);
@@ -134,13 +133,7 @@ Assembler::Assembler(const std::string& filename, std::istream& input, Flags _fl
 
 Assembler::~Assembler()
 {
-    if (amdOutput != nullptr)
-    {
-        if (format == BinaryFormat::GALLIUM)
-            delete galliumOutput;
-        else if (format == BinaryFormat::AMD)
-            delete amdOutput;
-    }
+    delete formatHandler;
     if (isaAssembler != nullptr)
         delete isaAssembler;
     while (!asmInputFilters.empty())
@@ -755,6 +748,12 @@ bool Assembler::assignOutputCounter(const char* symbolPlace, uint64_t value,
         printError(symbolPlace, "Attempt to move backwards");
         return false;
     }
+    if (!isAddressableSection())
+    {
+        printError(symbolPlace,
+                   "Change output counter inside non-addressable section is illegal");
+        return false;
+    }
     if (currentSection==ASMSECT_ABS && fillValue!=0)
         printWarning(symbolPlace, "Fill value is ignored inside absolute section");
     if (value-currentOutPos!=0)
@@ -1105,39 +1104,72 @@ bool Assembler::readLine()
     return true;
 }
 
+void Assembler::gotoKernel(const char* pseudoOpPlace, const char* kernelName)
+{
+    auto kmit = kernelMap.find(kernelName);
+    if (kmit == kernelMap.end())
+    {   // not found, add new kernel
+        cxuint kernelId;
+        try
+        { kernelId = formatHandler->addKernel(kernelName); }
+        catch(const AsmFormatException& ex)
+        {   // error!
+            printError(pseudoOpPlace, ex.what());
+            return;
+        }
+        // add new kernel entries and section entry
+        kernelMap.insert(std::make_pair(kernelName, kernelId));
+        kernelPositions.push_back(getSourcePos(pseudoOpPlace));
+        auto info = formatHandler->getSectionInfo(currentSection);
+        sections.push_back({ currentKernel, info.type, info.flags });
+    }
+    else
+    {   // found
+        try
+        { formatHandler->setCurrentKernel(kmit->second); }
+        catch(const AsmFormatException& ex) // if error
+        { printError(pseudoOpPlace, ex.what()); }
+    }
+}
+
+void Assembler::gotoSection(const char* pseudoOpPlace, const char* sectionName)
+{
+    const cxuint sectionId = formatHandler->getSectionId(sectionName);
+    if (sectionId == ASMSECT_NONE)
+    {   // try to add new section
+        cxuint sectionId;
+        try
+        { sectionId = formatHandler->addSection(sectionName, currentKernel); }
+        catch(const AsmFormatException& ex)
+        {   // error!
+            printError(pseudoOpPlace, ex.what());
+            return;
+        }
+        auto info = formatHandler->getSectionInfo(sectionId);
+        sections.push_back({ currentKernel, info.type, info.flags });
+    }
+    else // if section exists
+    {   // found, try to set
+        try
+        { formatHandler->setCurrentKernel(sectionId); }
+        catch(const AsmFormatException& ex) // if error
+        { printError(pseudoOpPlace, ex.what()); }
+    }
+}
+
 void Assembler::initializeOutputFormat()
 {
-    if (outFormatInitialized)
+    if (formatHandler!=nullptr)
         return;
-    outFormatInitialized = true;
-    if (format == BinaryFormat::AMD && amdOutput == nullptr)
-    {   // if not created
-        amdOutput = new AmdInput{};
-        amdOutput->is64Bit = _64bit;
-        amdOutput->deviceType = deviceType;
-        /* sections */
-        sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
-    }
-    else if (format == BinaryFormat::GALLIUM && galliumOutput == nullptr)
-    {
-        galliumOutput = new GalliumInput{};
-        galliumOutput->code = nullptr;
-        galliumOutput->codeSize = 0;
-        /*galliumOutput->disassembly = nullptr;
-        galliumOutput->disassemblySize = 0;
-        galliumOutput->commentSize = 0;
-        galliumOutput->comment = nullptr;*/
-        sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE});
-    }
-    else if (format == BinaryFormat::RAWCODE && rawCode == nullptr)
-    {
-        sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE});
-        rawCode = &sections;
-    }
-    else // FAIL
-        abort();
-    // define counter symbol
-    symbolMap.find(".")->second.sectionId = 0;
+    if (format == BinaryFormat::AMD)
+        formatHandler = new AsmAmdHandler(*this);
+    else if (format == BinaryFormat::GALLIUM)
+        formatHandler = new AsmGalliumHandler(*this);
+    else // raw code
+        formatHandler = new AsmRawCodeHandler(*this);
+    // add first section
+    auto info = formatHandler->getSectionInfo(currentSection);
+    sections.push_back({ currentKernel, info.type, info.flags });
 }
 
 bool Assembler::assemble()
@@ -1184,12 +1216,13 @@ bool Assembler::assemble()
                     doNextLine = true;
                     break;
                 }
-                /*if (inAmdConfig)
+                if (!isAddressableSection())
                 {
-                    printError(stmtPlace, "Local label can't defined in AMD config place");
+                    printError(stmtPlace, "Local label can't be defined in "
+                            "non-addressable section ");
                     doNextLine = true;
                     break;
-                }*/
+                }
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
                         symbolMap.insert(std::make_pair(firstName+"b", AsmSymbol()));
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
@@ -1227,13 +1260,13 @@ bool Assembler::assemble()
                     doNextLine = true;
                     break;
                 }
-                /*if (inAmdConfig)
+                if (!isAddressableSection())
                 {
-                    printError(stmtPlace,
-                               "Label can't defined in AMD config place");
+                    printError(stmtPlace, "Label can't be defined in "
+                            "non-addressable section ");
                     doNextLine = true;
                     break;
-                }*/
+                }
                 
                 setSymbol(*res.first, currentOutPos, currentSection);
                 res.first->second.onceDefined = true;
