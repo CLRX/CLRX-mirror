@@ -47,7 +47,10 @@ AsmFormatHandler::~AsmFormatHandler()
 /* raw code handler */
 
 AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler): AsmFormatHandler(assembler)
-{ }
+{
+    assembler.currentKernel = 0;
+    assembler.currentSection = 0;
+}
 
 cxuint AsmRawCodeHandler::addKernel(const char* kernelName)
 {
@@ -115,6 +118,8 @@ void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array)
 AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler),
                 output{}, dataSection(0)
 {
+    assembler.currentKernel = ASMKERN_GLOBAL;
+    assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
 }
 
@@ -293,6 +298,8 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
              output{}, codeSection(ASMSECT_NONE), dataSection(0),
              commentSection(ASMSECT_NONE), extraSectionCount(0)
 {
+    assembler.currentKernel = ASMKERN_GLOBAL;
+    assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA,
                 ELFSECTID_RODATA, ".rodata" });
     insideArgs = insideProgInfo = false;
@@ -410,6 +417,8 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
     else if (sectionId == dataSection)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     else if (sectionId == commentSection)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+    else if (sections[sectionId].type == AsmSectionType::EXTRA_SECTION)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     info.name = sections[sectionId].name;
     return info;

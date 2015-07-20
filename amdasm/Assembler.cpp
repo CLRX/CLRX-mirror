@@ -1104,7 +1104,7 @@ bool Assembler::readLine()
     return true;
 }
 
-void Assembler::gotoKernel(const char* pseudoOpPlace, const char* kernelName)
+void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
 {
     auto kmit = kernelMap.find(kernelName);
     if (kmit == kernelMap.end())
@@ -1122,6 +1122,7 @@ void Assembler::gotoKernel(const char* pseudoOpPlace, const char* kernelName)
         kernelPositions.push_back(getSourcePos(pseudoOpPlace));
         auto info = formatHandler->getSectionInfo(currentSection);
         sections.push_back({ currentKernel, info.type, info.flags });
+        currentOutPos = 0;
     }
     else
     {   // found
@@ -1129,10 +1130,12 @@ void Assembler::gotoKernel(const char* pseudoOpPlace, const char* kernelName)
         { formatHandler->setCurrentKernel(kmit->second); }
         catch(const AsmFormatException& ex) // if error
         { printError(pseudoOpPlace, ex.what()); }
+        
+        currentOutPos = sections[currentSection].content.size();
     }
 }
 
-void Assembler::gotoSection(const char* pseudoOpPlace, const char* sectionName)
+void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
 {
     const cxuint sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
@@ -1147,13 +1150,16 @@ void Assembler::gotoSection(const char* pseudoOpPlace, const char* sectionName)
         }
         auto info = formatHandler->getSectionInfo(sectionId);
         sections.push_back({ currentKernel, info.type, info.flags });
+        currentOutPos = 0;
     }
     else // if section exists
     {   // found, try to set
         try
-        { formatHandler->setCurrentKernel(sectionId); }
+        { formatHandler->setCurrentSection(sectionId); }
         catch(const AsmFormatException& ex) // if error
         { printError(pseudoOpPlace, ex.what()); }
+        
+        currentOutPos = sections[currentSection].content.size();
     }
 }
 
@@ -1170,6 +1176,7 @@ void Assembler::initializeOutputFormat()
     // add first section
     auto info = formatHandler->getSectionInfo(currentSection);
     sections.push_back({ currentKernel, info.type, info.flags });
+    currentOutPos = 0;
 }
 
 bool Assembler::assemble()

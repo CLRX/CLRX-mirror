@@ -719,6 +719,7 @@ private:
     friend class AsmMacroInputFilter;
     friend class AsmExpression;
     friend class AsmFormatHandler;
+    friend class AsmRawCodeHandler;
     friend class AsmAmdHandler;
     friend class AsmGalliumHandler;
     
@@ -870,9 +871,9 @@ private:
         }
     }
     
-    void gotoKernel(const char* pseudoOpPlace, const char* kernelName);
-    void gotoSection(const char* pseudoOpPlace, const char* sectionName);
-    void gotoSection(cxuint sectionId);
+    void goToKernel(const char* pseudoOpPlace, const char* kernelName);
+    void goToSection(const char* pseudoOpPlace, const char* sectionName);
+    void goToSection(cxuint sectionId);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
     

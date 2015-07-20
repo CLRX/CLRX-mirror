@@ -216,10 +216,11 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
         return false;
     }
     const char* nameStr = linePtr;
-    if (isAlpha(*linePtr) || *linePtr == '_')
+    if (isAlpha(*linePtr) || *linePtr == '_' || *linePtr == '.')
     {
         linePtr++;
-        while (linePtr != end && (isAlnum(*linePtr) || *linePtr == '_')) linePtr++;
+        while (linePtr != end && (isAlnum(*linePtr) ||
+            *linePtr == '_' || *linePtr == '.')) linePtr++;
     }
     else
     {
@@ -315,7 +316,21 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    asmr.gotoKernel(pseudoOpPlace, kernelName.c_str());
+    asmr.goToSection(pseudoOpPlace, kernelName.c_str());
+}
+
+void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
+                   const char* linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string sectionName;
+    if (!getNameArg(asmr, sectionName, linePtr, "section name"))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    asmr.goToSection(pseudoOpPlace, sectionName.c_str());
 }
 
 void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
@@ -1856,6 +1871,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             }
             break;
         case ASMOP_DATA:
+            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace);
             break;
         case ASMOP_DOUBLE:
             AsmPseudoOps::putFloats<uint64_t>(*this, stmtPlace, linePtr);
@@ -2090,8 +2106,10 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);
             break;
         case ASMOP_RODATA:
+            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace);
             break;
         case ASMOP_SECTION:
+            AsmPseudoOps::goToSection(*this, stmtPlace, linePtr);
             break;
         case ASMOP_SHORT:
             AsmPseudoOps::putIntegers<uint16_t>(*this, stmtPlace, linePtr);
@@ -2122,6 +2140,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::setAbsoluteOffset(*this, linePtr);
             break;
         case ASMOP_TEXT:
+            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace);
             break;
         case ASMOP_SBTTL:
         case ASMOP_TITLE:

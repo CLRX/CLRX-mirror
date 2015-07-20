@@ -122,6 +122,9 @@ struct CLRX_INTERNAL AsmPseudoOps
     // change kernel
     static void goToKernel(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr);
+    // change section
+    static void goToSection(Assembler& asmr, const char* pseudoOpPlace,
+                   const char* linePtr);
     
     /// include file
     static void includeFile(Assembler& asmr, const char* pseudoOpPlace,
