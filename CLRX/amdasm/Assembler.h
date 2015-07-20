@@ -139,7 +139,7 @@ public:
     virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;
     /// parse pseudo-op
     virtual void parsePseudoOp(const std::string& firstName,
-           const char* stmtPlace, const char*& linePtr) = 0;
+           const char* stmtPlace, const char* linePtr) = 0;
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
@@ -174,7 +174,7 @@ public:
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
     void parsePseudoOp(const std::string& firstName,
-           const char* stmtPlace, const char*& linePtr);
+           const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
     /// write binary to output stream
@@ -235,7 +235,7 @@ public:
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
     void parsePseudoOp(const std::string& firstName,
-           const char* stmtPlace, const char*& linePtr);
+           const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
     /// write binary to output stream
@@ -298,7 +298,7 @@ public:
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
     void parsePseudoOp(const std::string& firstName,
-           const char* stmtPlace, const char*& linePtr);
+           const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
     /// write binary to output stream
@@ -820,7 +820,7 @@ private:
                      cxbyte fillValue = 0);
     
     void parsePseudoOps(const std::string firstName, const char* stmtPlace,
-                const char*& linePtr);
+                const char* linePtr);
     
     /// exitm - exit macro mode
     bool skipClauses(bool exitm = false);

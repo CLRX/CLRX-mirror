@@ -268,7 +268,7 @@ bool AsmPseudoOps::skipCommaForMultipleArgs(Assembler& asmr, const char*& linePt
     return true;
 }
 
-void AsmPseudoOps::setBitness(Assembler& asmr, const char*& linePtr, bool _64Bit)
+void AsmPseudoOps::setBitness(Assembler& asmr, const char* linePtr, bool _64Bit)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -281,7 +281,7 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char*& linePtr, bool _64Bit
     
 }
 
-void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -304,37 +304,22 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char*& linePtr)
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
-void AsmPseudoOps::goToKernel(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
+                  const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.format == BinaryFormat::AMD || asmr.format == BinaryFormat::GALLIUM)
-    {
-        skipSpacesToEnd(linePtr, end);
-        std::string kernelName;
-        if (!getNameArg(asmr, kernelName, linePtr, "kernel name"))
-            return;
-        if (!checkGarbagesAtEnd(asmr, linePtr))
-            return;
-        
-        /*if (asmr.format == BinaryFormat::AMD)
-        {
-            asmr.kernelMap.insert(std::make_pair(kernelName,
-                            asmr.amdOutput->kernels.size()));
-            asmr.amdOutput->addEmptyKernel(kernelName.c_str());
-        }
-        else
-        {
-            asmr.kernelMap.insert(std::make_pair(kernelName,
-                        asmr.galliumOutput->kernels.size()));
-            //galliumOutput->addEmptyKernel(kernelName.c_str());
-        }*/
-    }
-    else if (asmr.format == BinaryFormat::RAWCODE)
-        asmr.printError(linePtr, "Raw code can have only one unnamed kernel");
+    skipSpacesToEnd(linePtr, end);
+    std::string kernelName;
+    if (!getNameArg(asmr, kernelName, linePtr, "kernel name"))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    asmr.gotoKernel(pseudoOpPlace, kernelName.c_str());
 }
 
 void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
-                   const char*& linePtr)
+                   const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -378,7 +363,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
-                          const char*& linePtr)
+                          const char* linePtr)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -506,7 +491,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     }
 }
 
-void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr)
+void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -527,7 +512,7 @@ void AsmPseudoOps::doFail(Assembler& asmr, const char* pseudoOpPlace, const char
 }
 
 void AsmPseudoOps::doError(Assembler& asmr, const char* pseudoOpPlace,
-                      const char*& linePtr)
+                      const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -545,7 +530,7 @@ void AsmPseudoOps::doError(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::doWarning(Assembler& asmr, const char* pseudoOpPlace,
-                        const char*& linePtr)
+                        const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -564,7 +549,7 @@ void AsmPseudoOps::doWarning(Assembler& asmr, const char* pseudoOpPlace,
 
 template<typename T>
 void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
-                   const char*& linePtr)
+                   const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -650,7 +635,7 @@ uint64_t asmcstrtofCStyleLEV<uint64_t>(const char* str, const char* inend,
 
 template<typename UIntType>
 void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
-                     const char*& linePtr)
+                     const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -683,7 +668,7 @@ void AsmPseudoOps::putFloats(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
-                   const char*& linePtr)
+                   const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -730,7 +715,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
-                      const char*& linePtr, bool addZero)
+                      const char* linePtr, bool addZero)
 {
     const char* end = asmr.line + asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -756,7 +741,7 @@ void AsmPseudoOps::putStrings(Assembler& asmr, const char* pseudoOpPlace,
 
 template<typename T>
 void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
-                    const char*& linePtr)
+                    const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     if (!asmr.isWriteableSection())
@@ -787,7 +772,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
-void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& linePtr, bool reassign,
+void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign,
                  bool baseExpr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -813,7 +798,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char*& linePtr, bool reassig
         asmr.assignSymbol(symName, strAtSymName, linePtr, reassign, baseExpr);
 }
 
-void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& linePtr, cxbyte bind)
+void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char* linePtr, cxbyte bind)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -847,7 +832,7 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char*& linePtr, cxbyte b
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
-void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -890,7 +875,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char*& linePtr)
         symEntry->second.size = size;
 }
 
-void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -902,7 +887,7 @@ void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char*& linePtr)
     checkGarbagesAtEnd(asmr, linePtr);
 }
 
-void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
+void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
           bool _64bit)
 {
     asmr.initializeOutputFormat();
@@ -980,7 +965,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     }
 }
 
-void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr)
+void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1022,7 +1007,7 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
 }
 
 void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
-                           const char*& linePtr, bool powerOf2)
+                           const char* linePtr, bool powerOf2)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1093,7 +1078,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
 
 template<typename Word>
 void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
-                       const char*& linePtr)
+                       const char* linePtr)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1167,7 +1152,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
               reinterpret_cast<Word*>(content + bytesToFill), word);
 }
 
-void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::doOrganize(Assembler& asmr, const char* linePtr)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -1196,7 +1181,7 @@ void AsmPseudoOps::doOrganize(Assembler& asmr, const char*& linePtr)
     asmr.assignOutputCounter(valuePlace, value, sectionId, fillValue);
 }
 
-void AsmPseudoOps::doPrint(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::doPrint(Assembler& asmr, const char* linePtr)
 {
     std::string outStr;
     if (!asmr.parseString(outStr, linePtr))
@@ -1207,7 +1192,7 @@ void AsmPseudoOps::doPrint(Assembler& asmr, const char*& linePtr)
     asmr.printStream.put('\n');
 }
 
-void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
+void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                IfIntComp compType, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -1252,7 +1237,7 @@ void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpPlace, const cha
     }
 }
 
-void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
+void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -1285,7 +1270,7 @@ void AsmPseudoOps::doIfDef(Assembler& asmr, const char* pseudoOpPlace, const cha
 }
 
 void AsmPseudoOps::doIfBlank(Assembler& asmr, const char* pseudoOpPlace,
-             const char*& linePtr, bool negation, bool elseIfClause)
+             const char* linePtr, bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1341,7 +1326,7 @@ static std::string getStringToCompare(const char* strStart, const char* strEnd)
 }
 
 void AsmPseudoOps::doIfCmpStr(Assembler& asmr, const char* pseudoOpPlace,
-               const char*& linePtr, bool negation, bool elseIfClause)
+               const char* linePtr, bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1372,7 +1357,7 @@ void AsmPseudoOps::doIfCmpStr(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
-                const char*& linePtr, bool negation, bool elseIfClause)
+                const char* linePtr, bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1402,7 +1387,7 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
     }
 }
 
-void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr)
+void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1414,7 +1399,7 @@ void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpPlace, const char
     }
 }
 
-void AsmPseudoOps::endIf(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr)
+void AsmPseudoOps::endIf(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1422,7 +1407,7 @@ void AsmPseudoOps::endIf(Assembler& asmr, const char* pseudoOpPlace, const char*
 }
 
 void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpPlace,
-                    const char*& linePtr)
+                    const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1457,14 +1442,14 @@ void AsmPseudoOps::doRepeat(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::endRepeat(Assembler& asmr, const char* pseudoOpPlace,
-                   const char*& linePtr)
+                   const char* linePtr)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     asmr.popClause(pseudoOpPlace, AsmClauseType::REPEAT);
 }
 
-void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr)
+void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1609,7 +1594,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
 }
 
 void AsmPseudoOps::endMacro(Assembler& asmr, const char* pseudoOpPlace,
-                    const char*& linePtr)
+                    const char* linePtr)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1617,7 +1602,7 @@ void AsmPseudoOps::endMacro(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
-                   const char*& linePtr)
+                   const char* linePtr)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1634,7 +1619,7 @@ void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
     }
 }
 
-void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*& linePtr,
+void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
               bool perChar)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -1707,7 +1692,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     }
 }
 
-void AsmPseudoOps::purgeMacro(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1732,7 +1717,7 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char*& linePtr)
     }
 }
 
-void AsmPseudoOps::undefSymbol(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1768,7 +1753,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char*& linePtr)
         it->second.undefine();
 }
 
-void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     asmr.initializeOutputFormat();
@@ -1781,7 +1766,7 @@ void AsmPseudoOps::setAbsoluteOffset(Assembler& asmr, const char*& linePtr)
     asmr.currentOutPos = value;
 }
 
-void AsmPseudoOps::ignoreString(Assembler& asmr, const char*& linePtr)
+void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1803,7 +1788,7 @@ bool AsmPseudoOps::checkPseudoOpName(const std::string& string)
 };
 
 void Assembler::parsePseudoOps(const std::string firstName,
-       const char* stmtPlace, const char*& linePtr)
+       const char* stmtPlace, const char* linePtr)
 {
     const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
                     sizeof(pseudoOpNamesTbl)/sizeof(char*), firstName.c_str()+1,
@@ -2065,7 +2050,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::putIntegers<uint32_t>(*this, stmtPlace, linePtr);
             break;
         case ASMOP_KERNEL:
-            AsmPseudoOps::goToKernel(*this, linePtr);
+            AsmPseudoOps::goToKernel(*this, stmtPlace, linePtr);
             break;
         case ASMOP_LFLAGS:
             printWarning(stmtPlace, "'.lflags' is ignored by this assembler.");

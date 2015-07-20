@@ -89,7 +89,7 @@ AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId
 }
 
 void AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
-           const char* stmtPlace, const char*& string)
+           const char* stmtPlace, const char* linePtr)
 { }  // not recognized any pseudo-op
 
 bool AsmRawCodeHandler::prepareBinary()
@@ -266,7 +266,7 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
 }
 
 void AsmAmdHandler::parsePseudoOp(const std::string& firstName,
-       const char* stmtPlace, const char*& string)
+       const char* stmtPlace, const char* linePtr)
 {
 }
 
@@ -418,7 +418,7 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
 namespace CLRX
 {
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
-               const char* pseudoOpPlace, const char*& linePtr)
+               const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -448,7 +448,7 @@ static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
 };
 
 void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char*& linePtr)
+                      const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -586,7 +586,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
 }
 
 void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
-                 const char* pseudoOpPlace, const char*& linePtr)
+                 const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -605,7 +605,7 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
 }
 
 void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
-                    const char* pseudoOpPlace, const char*& linePtr)
+                    const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -670,7 +670,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
 }
 
 void AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
-           const char* stmtPlace, const char*& linePtr)
+           const char* stmtPlace, const char* linePtr)
 {
     const size_t pseudoOp = binaryFind(galliumPseudoOpNamesTbl, galliumPseudoOpNamesTbl +
                     sizeof(galliumPseudoOpNamesTbl)/sizeof(char*), firstName.c_str()+1,
