@@ -392,17 +392,17 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                         break;
                     }
                     case AsmExprOp::SUBTRACT:
-                        for (const RelMultiply& r2: relatives2)
+                        for (RelMultiply& r: relatives)
                         {
                             bool rfound = false;
-                            for (RelMultiply& r: relatives)
+                            for (const RelMultiply& r2: relatives2)
                                 if (r.sectionId == r2.sectionId)
                                 {
                                     r.multiply = r2.multiply - r.multiply;
                                     rfound = true;
                                 }
                            if (!rfound)
-                               relatives.push_back(r2);
+                               r.multiply = -r.multiply;
                         }
                         // remove zeroes from relatives
                         relatives.resize(std::remove_if(relatives.begin(), relatives.end(),

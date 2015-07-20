@@ -328,6 +328,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
                   const char* linePtr)
 {
+    asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     std::string kernelName;
@@ -342,6 +343,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
 void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr)
 {
+    asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     std::string sectionName;
