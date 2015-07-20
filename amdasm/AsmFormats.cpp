@@ -737,8 +737,8 @@ bool AsmGalliumHandler::prepareBinary()
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
-            if (!symEntry.second.isDefined())
-                continue; // undefined
+            if (!symEntry.second.hasValue)
+                continue; // unresolved or local
             if (assembler.kernelMap.find(symEntry.first) != assembler.kernelMap.end())
                 continue; // if kernel name
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
