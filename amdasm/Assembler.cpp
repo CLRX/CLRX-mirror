@@ -1121,7 +1121,7 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
         kernelMap.insert(std::make_pair(kernelName, kernelId));
         kernelPositions.push_back(getSourcePos(pseudoOpPlace));
         auto info = formatHandler->getSectionInfo(currentSection);
-        sections.push_back({ currentKernel, info.type, info.flags });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags });
         currentOutPos = 0;
     }
     else
@@ -1149,7 +1149,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
             return;
         }
         auto info = formatHandler->getSectionInfo(sectionId);
-        sections.push_back({ currentKernel, info.type, info.flags });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags });
         currentOutPos = 0;
     }
     else // if section exists
@@ -1175,7 +1175,7 @@ void Assembler::initializeOutputFormat()
         formatHandler = new AsmRawCodeHandler(*this);
     // add first section
     auto info = formatHandler->getSectionInfo(currentSection);
-    sections.push_back({ currentKernel, info.type, info.flags });
+    sections.push_back({ info.name, currentKernel, info.type, info.flags });
     currentOutPos = 0;
 }
 

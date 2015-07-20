@@ -316,7 +316,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    asmr.goToSection(pseudoOpPlace, kernelName.c_str());
+    asmr.goToKernel(pseudoOpPlace, kernelName.c_str());
 }
 
 void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,

@@ -679,6 +679,7 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurren
 /// assembler section
 struct AsmSection
 {
+    const char* name;
     cxuint kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
     Flags flags;   ///< section flags
