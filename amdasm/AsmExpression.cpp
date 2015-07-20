@@ -371,7 +371,14 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                 switch (op)
                 {
                     case AsmExprOp::ADDITION:
+                    case AsmExprOp::SUBTRACT:
                     {
+                        if (op == AsmExprOp::SUBTRACT)
+                        {
+                            for (RelMultiply& r: relatives)
+                                r.multiply = -r.multiply; // negate before subtraction
+                            value = -value;
+                        }
                         for (const RelMultiply& r2: relatives2)
                         {
                             bool rfound = false;
@@ -391,27 +398,6 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                         value = value2 + value;
                         break;
                     }
-                    case AsmExprOp::SUBTRACT:
-                        for (RelMultiply& r: relatives)
-                            r.multiply = -r.multiply; // negate before subtraction
-                        for (const RelMultiply& r2: relatives2)
-                        {
-                            bool rfound = false;
-                            for (RelMultiply& r: relatives)
-                                if (r.sectionId == r2.sectionId)
-                                {   /* r has been negated */
-                                    r.multiply = r2.multiply + r.multiply;
-                                    rfound = true;
-                                }
-                           if (!rfound)
-                               relatives.push_back(r2);
-                        }
-                        // remove zeroes from relatives
-                        relatives.resize(std::remove_if(relatives.begin(), relatives.end(),
-                           [](const RelMultiply& r) { return r.multiply==0; }) -
-                           relatives.begin());
-                        value = value2 - value;
-                        break;
                     case AsmExprOp::MULTIPLY:
                         if (!relatives.empty() && !relatives2.empty())
                         {
@@ -699,7 +685,6 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                     default:
                         break;
                 }
-                
             }
             else if (op == AsmExprOp::CHOICE)
             {
