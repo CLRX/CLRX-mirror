@@ -113,9 +113,6 @@ protected:
     GPUDeviceType deviceType;
     bool _64Bit;
     
-    cxuint currentKernel;
-    cxuint currentSection;
-    
     AsmFormatHandler(Assembler& assembler, GPUDeviceType deviceType, bool is64Bit);
 public:
     virtual ~AsmFormatHandler();
@@ -138,13 +135,6 @@ public:
     virtual void setCurrentKernel(cxuint kernel) = 0;
     /// set current section, this method can change current kernel if that required 
     virtual void setCurrentSection(cxuint sectionId) = 0;
-    
-    /// get current section
-    cxuint getCurrentSection() const
-    { return currentSection; }
-    /// get current kertnel
-    cxuint getCurrentKernel() const
-    { return currentKernel; }
     
     // get current section flags and type
     virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;

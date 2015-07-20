@@ -40,7 +40,7 @@ AsmFormatException::AsmFormatException(const std::string& message) : Exception(m
 
 AsmFormatHandler::AsmFormatHandler(Assembler& _assembler, GPUDeviceType _deviceType,
                    bool _is64Bit) : assembler(_assembler), deviceType(_deviceType),
-                   _64Bit(_is64Bit), currentKernel(0), currentSection(0)
+                   _64Bit(_is64Bit)
 { }
 
 AsmFormatHandler::~AsmFormatHandler()
@@ -130,9 +130,9 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
             thisSection, ASMSECT_NONE, { } });
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
-    currentKernel = thisKernel;
-    currentSection = thisSection;
-    return currentKernel;
+    assembler.currentKernel = thisKernel;
+    assembler.currentSection = thisSection;
+    return thisSection;
 }
 
 cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
@@ -185,14 +185,14 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     sections.push_back(section);
     
-    currentKernel = kernelId;
-    currentSection = thisSection;
+    assembler.currentKernel = kernelId;
+    assembler.currentSection = thisSection;
     return thisSection;
 }
 
 cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 {
-    if (currentKernel == ASMKERN_GLOBAL)
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
     {
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
@@ -201,7 +201,7 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
     }
     else
     {
-        const Kernel& kernelState = kernelStates[currentKernel];
+        const Kernel& kernelState = kernelStates[assembler.currentKernel];
         if (::strcmp(sectionName, ".text") == 0)
             return kernelState.codeSection;
         else if (::strcmp(sectionName, ".data") == 0)
@@ -218,16 +218,16 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 
 void AsmAmdHandler::setCurrentKernel(cxuint kernel)
 {
-    currentKernel = kernel;
-    currentSection = kernelStates[kernel].codeSection;
+    assembler.currentKernel = kernel;
+    assembler.currentSection = kernelStates[kernel].codeSection;
 }
 
 void AsmAmdHandler::setCurrentSection(cxuint sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
-    currentKernel = sections[sectionId].kernelId;
-    currentSection = sectionId;
+    assembler.currentKernel = sections[sectionId].kernelId;
+    assembler.currentSection = sectionId;
 }
 
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
@@ -315,10 +315,10 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG });
     kernelStates.push_back({ thisSection, false });
-    currentKernel = thisKernel;
-    currentSection = thisSection;
+    assembler.currentKernel = thisKernel;
+    assembler.currentSection = thisSection;
     insideArgs = insideProgInfo = false;
-    return currentKernel;
+    return thisKernel;
 }
 
 cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
@@ -362,8 +362,8 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     sections.push_back(section);
     
-    currentKernel = ASMKERN_GLOBAL;
-    currentSection = thisSection;
+    assembler.currentKernel = ASMKERN_GLOBAL;
+    assembler.currentSection = thisSection;
     insideArgs = insideProgInfo = false;
     return thisSection;
 }
@@ -389,16 +389,16 @@ void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
 {   // set kernel and their default section
     if (kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");
-    currentKernel = kernel;
-    currentSection = kernelStates[kernel].defaultSection;
+    assembler.currentKernel = kernel;
+    assembler.currentSection = kernelStates[kernel].defaultSection;
 }
 
 void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
-    currentSection = sectionId;
-    currentKernel = sections[sectionId].kernelId;
+    assembler.currentSection = sectionId;
+    assembler.currentKernel = sections[sectionId].kernelId;
     insideArgs = insideProgInfo = false;
 }
 
@@ -430,7 +430,7 @@ void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Arguments outside kernel definition");
         return;
@@ -574,7 +574,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Argument definition outside kernel configuration");
         return;
@@ -585,7 +585,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         return;
     }
     // put this definition to argument list
-    handler.output.kernels[handler.currentKernel].argInfos.push_back(
+    handler.output.kernels[asmr.currentKernel].argInfos.push_back(
         { argType, sext, argSemantic, uint32_t(size),
             uint32_t(targetSize), uint32_t(targetAlign) });
 }
@@ -598,15 +598,15 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "ProgInfo outside kernel definition");
         return;
     }
     handler.insideArgs = false;
     handler.insideProgInfo = true;
-    handler.kernelStates[handler.currentKernel].hasProgInfo = true;
-    handler.kernelStates[handler.currentKernel].progInfoEntries = 0;
+    handler.kernelStates[asmr.currentKernel].hasProgInfo = true;
+    handler.kernelStates[asmr.currentKernel].progInfoEntries = 0;
 }
 
 void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
@@ -649,7 +649,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         return;
     
     // do operation
-    if (handler.sections[handler.currentSection].type != AsmSectionType::CONFIG)
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "ProgInfo entry outside kernel configuration");
         return;
@@ -659,14 +659,14 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "ProgInfo entry definition outside ProgInfo");
         return;
     }
-    AsmGalliumHandler::Kernel& kstate = handler.kernelStates[handler.currentKernel];
+    AsmGalliumHandler::Kernel& kstate = handler.kernelStates[asmr.currentKernel];
     kstate.hasProgInfo = true;
     if (kstate.progInfoEntries == 3)
     {
         asmr.printError(pseudoOpPlace, "Maximum 3 entries can be in ProgInfo");
         return;
     }
-    GalliumProgInfoEntry& pentry = handler.output.kernels[handler.currentKernel]
+    GalliumProgInfoEntry& pentry = handler.output.kernels[asmr.currentKernel]
             .progInfo[kstate.progInfoEntries++];
     pentry.address = entryAddr;
     pentry.value = entryVal;
@@ -737,7 +737,8 @@ bool AsmGalliumHandler::prepareBinary()
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
-            if (!symEntry.second.hasValue)
+            if (!symEntry.second.hasValue &&
+                ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // unresolved or local
             if (assembler.kernelMap.find(symEntry.first) != assembler.kernelMap.end())
                 continue; // if kernel name
