@@ -393,16 +393,18 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                     }
                     case AsmExprOp::SUBTRACT:
                         for (RelMultiply& r: relatives)
+                            r.multiply = -r.multiply; // negate before subtraction
+                        for (const RelMultiply& r2: relatives2)
                         {
                             bool rfound = false;
-                            for (const RelMultiply& r2: relatives2)
+                            for (RelMultiply& r: relatives)
                                 if (r.sectionId == r2.sectionId)
-                                {
-                                    r.multiply = r2.multiply - r.multiply;
+                                {   /* r has been negated */
+                                    r.multiply = r2.multiply + r.multiply;
                                     rfound = true;
                                 }
                            if (!rfound)
-                               r.multiply = -r.multiply;
+                               relatives.push_back(r2);
                         }
                         // remove zeroes from relatives
                         relatives.resize(std::remove_if(relatives.begin(), relatives.end(),
