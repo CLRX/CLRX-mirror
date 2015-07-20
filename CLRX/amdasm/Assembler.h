@@ -209,11 +209,13 @@ private:
         std::vector<cxuint> calNoteSections;
         SectionMap extraSectionMap;
         cxuint extraSectionCount;
+        cxuint savedSection;
     };
     std::vector<Section> sections;
     std::vector<Kernel> kernelStates;
     SectionMap extraSectionMap;
     cxuint dataSection; // global
+    cxuint savedSection;
     cxuint extraSectionCount;
 public:
     explicit AsmAmdHandler(Assembler& assembler);
@@ -275,6 +277,7 @@ private:
     cxuint codeSection;
     cxuint dataSection;
     cxuint commentSection;
+    cxuint savedSection;
     bool insideProgInfo;
     bool insideArgs;
     cxuint extraSectionCount;
@@ -872,6 +875,7 @@ private:
         }
     }
     
+    void goToMain(const char* pseudoOpPlace);
     void goToKernel(const char* pseudoOpPlace, const char* kernelName);
     void goToSection(const char* pseudoOpPlace, const char* sectionName);
     void goToSection(cxuint sectionId);

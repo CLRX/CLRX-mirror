@@ -1104,6 +1104,16 @@ bool Assembler::readLine()
     return true;
 }
 
+void Assembler::goToMain(const char* pseudoOpPlace)
+{
+    try
+    { formatHandler->setCurrentKernel(ASMKERN_GLOBAL); }
+    catch(const AsmFormatException& ex) // if error
+    { printError(pseudoOpPlace, ex.what()); }
+    
+    currentOutPos = sections[currentSection].content.size();
+}
+
 void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
 {
     auto kmit = kernelMap.find(kernelName);

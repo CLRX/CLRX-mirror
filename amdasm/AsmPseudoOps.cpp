@@ -98,7 +98,7 @@ static const char* pseudoOpNamesTbl[] =
     "ifne", "ifnes", "ifnotdef", "incbin",
     "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
-    "macro", "octa", "offset", "org",
+    "macro", "main", "octa", "offset", "org",
     "p2align", "print", "purgem", "quad",
     "rawcode", "rept", "rodata",
     "sbttl", "section", "set",
@@ -130,7 +130,7 @@ enum
     ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNOTDEF, ASMOP_INCBIN,
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
-    ASMOP_MACRO, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
+    ASMOP_MACRO, ASMOP_MAIN, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
     ASMOP_P2ALIGN, ASMOP_PRINT, ASMOP_PURGEM, ASMOP_QUAD,
     ASMOP_RAWCODE, ASMOP_REPT, ASMOP_RODATA,
     ASMOP_SBTTL, ASMOP_SECTION, ASMOP_SET,
@@ -353,6 +353,18 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
         return;
     
     asmr.goToSection(pseudoOpPlace, sectionName.c_str());
+}
+
+void AsmPseudoOps::goToMain(Assembler& asmr, const char* pseudoOpPlace,
+                   const char* linePtr)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    asmr.goToMain(pseudoOpPlace);
 }
 
 void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
@@ -2084,6 +2096,9 @@ void Assembler::parsePseudoOps(const std::string firstName,
             break;
         case ASMOP_MACRO:
             AsmPseudoOps::doMacro(*this, stmtPlace, linePtr);
+            break;
+        case ASMOP_MAIN:
+            AsmPseudoOps::goToMain(*this, stmtPlace, linePtr);
             break;
         case ASMOP_OCTA:
             AsmPseudoOps::putUInt128s(*this, stmtPlace, linePtr);

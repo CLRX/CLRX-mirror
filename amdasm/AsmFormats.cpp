@@ -121,6 +121,7 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler)
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
+    savedSection = 0;
 }
 
 cxuint AsmAmdHandler::addKernel(const char* kernelName)
@@ -131,6 +132,12 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
             thisSection, ASMSECT_NONE, { } });
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
+    /// save previous section
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    else
+        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
+    
     assembler.currentKernel = thisKernel;
     assembler.currentSection = thisSection;
     return thisSection;
@@ -186,6 +193,12 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     sections.push_back(section);
     
+    /// save previous section
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    else
+        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
+    
     assembler.currentKernel = kernelId;
     assembler.currentSection = thisSection;
     return thisSection;
@@ -220,13 +233,29 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 void AsmAmdHandler::setCurrentKernel(cxuint kernel)
 {
     assembler.currentKernel = kernel;
-    assembler.currentSection = kernelStates[kernel].codeSection;
+    /// save previous section
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    else
+        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
+    
+    if (kernel != ASMKERN_GLOBAL)
+        assembler.currentSection = kernelStates[kernel].savedSection;
+    else
+        assembler.currentSection = savedSection;
 }
 
 void AsmAmdHandler::setCurrentSection(cxuint sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
+    
+    /// save previous section
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    else
+        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
+    
     assembler.currentKernel = sections[sectionId].kernelId;
     assembler.currentSection = sectionId;
 }
@@ -303,6 +332,7 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA,
                 ELFSECTID_RODATA, ".rodata" });
     insideArgs = insideProgInfo = false;
+    savedSection = 0;
 }
 
 cxuint AsmGalliumHandler::addKernel(const char* kernelName)
@@ -317,6 +347,10 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG });
     kernelStates.push_back({ thisSection, false });
+    
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    
     assembler.currentKernel = thisKernel;
     assembler.currentSection = thisSection;
     insideArgs = insideProgInfo = false;
@@ -389,16 +423,27 @@ cxuint AsmGalliumHandler::getSectionId(const char* sectionName) const
 
 void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
 {   // set kernel and their default section
-    if (kernel >= kernelStates.size())
+    if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");
+    
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    
     assembler.currentKernel = kernel;
-    assembler.currentSection = kernelStates[kernel].defaultSection;
+    if (kernel != ASMKERN_GLOBAL)
+        assembler.currentSection = kernelStates[kernel].defaultSection;
+    else // default main section
+        assembler.currentSection = savedSection;
 }
 
 void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
+    
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    
     assembler.currentSection = sectionId;
     assembler.currentKernel = sections[sectionId].kernelId;
     insideArgs = insideProgInfo = false;
