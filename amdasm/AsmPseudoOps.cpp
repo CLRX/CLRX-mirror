@@ -252,6 +252,26 @@ bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& line
     return true;
 }
 
+bool AsmPseudoOps::skipRequiredComma(Assembler& asmr, const char*& linePtr, const char* nameArg)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end)
+    {
+        std::string message = "Expected ";
+        message += nameArg;
+        asmr.printError(linePtr, message.c_str());
+        return false;
+    }
+    if (*linePtr != ',')
+    {
+        asmr.printError(linePtr, "Expected ',' before argument");
+        return false;
+    }
+    linePtr++;
+    return true;
+}
+
 bool AsmPseudoOps::skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -801,14 +821,8 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign
         good = false;
     }
     linePtr += symName.size();
-    bool haveComma;
-    if (!skipComma(asmr, haveComma, linePtr))
+    if (!skipRequiredComma(asmr, linePtr, "expression"))
         return;
-    if (!haveComma)
-    {
-        asmr.printError(linePtr, "Expected expression");
-        return;
-    }
     if (good) // is not so good
         asmr.assignSymbol(symName, strAtSymName, linePtr, reassign, baseExpr);
 }
@@ -860,14 +874,8 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
         asmr.printError(symNamePlace, "Expected symbol name");
         good = false;
     }
-    bool haveComma;
-    if (!skipComma(asmr, haveComma, linePtr))
+    if (!skipRequiredComma(asmr, linePtr, "expression"))
         return;
-    if (!haveComma)
-    {
-        asmr.printError(symNamePlace, "Expected expression");
-        return;
-    }
     // parse size
     uint64_t size;
     good &= getAbsoluteValueArg(asmr, size, linePtr, true);
@@ -1378,14 +1386,8 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     std::string firstStr, secondStr;
     bool good = asmr.parseString(firstStr, linePtr);
-    bool haveComma;
-    if (!skipComma(asmr, haveComma, linePtr))
+    if (!skipRequiredComma(asmr, linePtr, "two strings"))
         return;
-    if (!haveComma)
-    {
-        asmr.printError(linePtr, "Expected two strings");
-        return;
-    }
     skipSpacesToEnd(linePtr, end);
     good &= asmr.parseString(secondStr, linePtr);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))

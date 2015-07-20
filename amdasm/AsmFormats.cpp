@@ -479,14 +479,8 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     else
         good = false;
     //
-    bool haveComma = false;
-    if (!skipComma(asmr, haveComma, linePtr))
+    if (!skipRequiredComma(asmr, linePtr, "absolute value"))
         return;
-    if (!haveComma)
-    {
-        asmr.printError(linePtr, "Expected absolute value");
-        return;
-    }
     skipSpacesToEnd(linePtr, end);
     const char* sizeStrPlace = linePtr;
     uint64_t size = 4;
@@ -500,6 +494,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     bool sext = false;
     GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
     
+    bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
         return;
     if (haveComma)
@@ -629,14 +624,8 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     }
     else
         good = false;
-    bool haveComma = false;
-    if (!skipComma(asmr, haveComma, linePtr))
+    if (!skipRequiredComma(asmr, linePtr, "value of entry"))
         return;
-    if (!haveComma)
-    {
-        asmr.printError(linePtr, "Expected value of entry");
-        return;
-    }
     
     skipSpacesToEnd(linePtr, end);
     const char* entryValPlace = linePtr;

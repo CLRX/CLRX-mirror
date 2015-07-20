@@ -108,6 +108,9 @@ struct CLRX_INTERNAL AsmPseudoOps
                const char* objName, bool requiredExpr = true);
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
+    // skip required comma, (returns false if not found comma)
+    static bool skipRequiredComma(Assembler& asmr, const char*& linePtr,
+                      const char* nameArg);
     
     // skip comma for multiple argument pseudo-ops
     static bool skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr);
