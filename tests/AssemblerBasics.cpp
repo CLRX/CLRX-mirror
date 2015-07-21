@@ -2986,6 +2986,52 @@ test.s:38:18: Error: For comparisons two values must have this same relatives!
 test.s:39:18: Error: For comparisons two values must have this same relatives!
 test.s:40:18: Error: Choice is not allowed for first relative value
 )ffDXD", ""
+    },
+    /* 79 - relatives inside '.eqv' expressions */
+    {   R"ffDXD(            .amd
+            .kernel a
+            .ascii "xx1"
+al:         .ascii "aaabbccdd"
+ae:
+            .kernel b
+            .ascii "x1212"
+bl:         .ascii "bbcc"
+be:
+            .kernel c
+            .ascii "1234355667"
+cl:         .ascii "abbcc"
+ce:
+            .eqv v0, cl-ce
+            .eqv v1, be+v0
+            .eqv v2, 5+v0
+            x0 = v1-v2
+            x1 = v1+7)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
+        {
+            { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { ".text", 0, AsmSectionType::CODE,
+                {   0x78, 0x78, 0x31, 0x61, 0x61, 0x61, 0x62, 0x62,
+                    0x63, 0x63, 0x64, 0x64 } },
+            { ".text", 1, AsmSectionType::CODE,
+                { 0x78, 0x31, 0x32, 0x31, 0x32, 0x62, 0x62, 0x63, 0x63 } },
+            { ".text", 2, AsmSectionType::CODE,
+                {   0x31, 0x32, 0x33, 0x34, 0x33, 0x35, 0x35, 0x36,
+                    0x36, 0x37, 0x61, 0x62, 0x62, 0x63, 0x63 } }
+        },
+        {
+            { ".", 15U, 3, 0U, true, false, false, 0, 0 },
+            { "ae", 12U, 1, 0U, true, true, false, 0, 0 },
+            { "al", 3U, 1, 0U, true, true, false, 0, 0 },
+            { "be", 9U, 2, 0U, true, true, false, 0, 0 },
+            { "bl", 5U, 2, 0U, true, true, false, 0, 0 },
+            { "ce", 15U, 3, 0U, true, true, false, 0, 0 },
+            { "cl", 10U, 3, 0U, true, true, false, 0, 0 },
+            { "v0", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "v1", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "v2", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
+            { "x0", 4U, 2, 0U, true, false, false, 0, 0 },
+            { "x1", 11U, 2, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
     }
 };
 
