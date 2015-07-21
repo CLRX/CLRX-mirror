@@ -64,7 +64,18 @@ static inline void assertString(const std::string& testName, const std::string& 
         if (result != nullptr)
         {
             std::ostringstream oss;
-            oss << "Failed " << testName << ":" << caseName << "\n" << "null!=null";
+            oss << "Failed " << testName << ":" << caseName << "\n" << "null!=" << result;
+            oss.flush();
+            throw Exception(oss.str());
+        }
+    }
+    else if (result == nullptr)
+    {
+        if (expected != nullptr)
+        {
+            std::ostringstream oss;
+            oss << "Failed " << testName << ":" << caseName << "\n" <<
+                    expected << "!=null";
             oss.flush();
             throw Exception(oss.str());
         }
