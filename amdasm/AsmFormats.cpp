@@ -274,7 +274,7 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
             flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
             break;
         case AsmSectionType::DATA:
-            name = ".data";
+            name = (section.kernelId != ASMKERN_GLOBAL) ? ".data" : nullptr;
             flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
             break;
         case AsmSectionType::CONFIG:

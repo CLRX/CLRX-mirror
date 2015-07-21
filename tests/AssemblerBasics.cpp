@@ -31,6 +31,7 @@ using namespace CLRX;
 
 struct Section
 {
+    const char* name;
     cxuint kernelId;
     AsmSectionType type;
     Array<cxbyte> content;
@@ -130,7 +131,7 @@ label2: .int 3,6,7
 3:      vx8 = 3b
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { 0, AsmSectionType::CODE,
+        { { ".text", 0, AsmSectionType::CODE,
             { 3, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0,
               3, 0, 0 ,0, 4, 0, 0, 0, 3, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0,
               11, 0, 0, 0, 12, 0, 0, 0 } } },
@@ -158,7 +159,7 @@ label2: .int 3,6,7
 3:      v1 = label1
         v2 = 3b)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         {
             { ".", 0, 0, 0, true, false, false, 0, 0 },
             { "3b", 0, 0, 0, true, false, false, 0, 0 },
@@ -219,7 +220,7 @@ labelx:
         .eqv labelx,f+f
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { 0, AsmSectionType::CODE,
+        { { ".text", 0, AsmSectionType::CODE,
             { 0xfa, 0xfd, 0xfb, 0xda, 0x09, 0x09, 0x0a, 0x0a, 0x0a, 0x0b, 0x64, 0x64,
               0x78, 0x82, 0x82, 0x82 } } },
         {
@@ -272,7 +273,7 @@ labelx:
         y=2
         .int v1+v)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
           { 0x16, 0, 0, 0, 0x1e, 0, 0, 0, 0x30, 0, 0, 0, 0x22, 0, 0, 0,
             0x2c, 0, 0, 0 } } },
         {
@@ -312,7 +313,7 @@ labelx:
         .eqv out2,x1*2
         .int out2)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
           { 0x21, 0, 0, 0, 0x32, 0, 0, 0, 0x2c, 0, 0, 0, 0x25, 0, 0, 0,
             0x30, 0, 0, 0, 0x04, 0, 0, 0 } } },
         {
@@ -389,7 +390,7 @@ labelx:
             x50u = x50t+19
             )ffDXD", /* TODO: GNU as incorrectly calculates x40 and x50 symbols */
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
           { 0x0d, 0x5, 0, 0, 0xe7, 0x11, 0, 0, 0xdb, 0x3b, 1, 0, 0xf7, 0x12, 0, 0,
             0x23, 0x47, 0, 0, 0xc1, 0x32, 0, 0 } } },
         {
@@ -494,7 +495,7 @@ labelx:
             x50u = x50t+19
             )ffDXD", /* TODO: GNU as incorrectly calculates x40 and x50 symbols */
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
           { 0x47, 0xd8, 0x01, 0x00, 0x5f, 0x63, 0x05, 0x00, 0x9f, 0x34, 0x0a, 0x00,
             0x67, 0xc9, 0xe7, 0x01, 0xfd, 0x17, 0x1c, 0x03, 0xc5, 0xf8, 0x35, 0x00 } } },
         {
@@ -575,7 +576,7 @@ labelx:
             z30 = x10+x20+x30*x30
         )ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } } },
         {
             { ".", 20U, 0, 0, true, false, false, 0, 0 },
@@ -629,7 +630,8 @@ x1:
 x2:
             x2_1 = 7)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 0x94, 0, 0, 0, 0xe, 0, 0, 0 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 0x94, 0, 0, 0, 0xe, 0, 0, 0 } } },
         {
             { ".", 8U, 0, 0U, true, false, false, 0, 0 },
             { "x0", 5U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
@@ -664,7 +666,7 @@ test.s:19:1: Error: Symbol 'x2' is already defined
             .eqv t20, t1+t1
             .int t20)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 0, 0, 0, 0, 0, 0, 0, 0 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 0, 0, 0, 0, 0, 0, 0, 0 } } },
         {
             { ".", 8U, 0, 0U, true, false, false, 0, 0 },
             { "t0", 0U, ASMSECT_ABS, 0U, false, true, true, 0, 0 },
@@ -702,7 +704,7 @@ test.s:6:24: Warning: Shift count out of range (between 0 and 63)
             a11 = 7
             a12 = 0)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 0, 0, 0, 0, 0, 0, 0, 0 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 0, 0, 0, 0, 0, 0, 0, 0 } } },
         {
             { ".", 8U, 0, 0U, true, false, false, 0, 0 },
             { "a00", 3U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
@@ -732,7 +734,7 @@ aaa: aaa:
             uuxu = 34 ````
             .set udu, 3445   ``````)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
             { "aaa", 0U, 0, 0U, true, true, false, 0, 0 },
@@ -769,7 +771,7 @@ test.s:9:30: Error: Garbages at end of expression
             .string64 "alad",,"ma1","6kota"
             .string "\x9b23;" # changed hex character parsing)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x00, 0x01, 0x02, 0x04, 0xda, 0xf4, 0x00, 0x00,
                 0xd2, 0x04, 0x33, 0x05, 0xb1, 0xee, 0x33, 0x05,
@@ -882,7 +884,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
             .fill 5,5,0x12baca901155
             .fillq 5,5,0x12baca901155)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xdc,
@@ -976,7 +978,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
         .long 1
         .balignl 8,0x1313321fecda)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00, 0x00,
                 0x01, 0x02, 0x03, 0x04, 0x05, 0xfa, 0xfa, 0xfa,
@@ -1015,7 +1017,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
             .space 12,-0xfd
             .space 7)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd,
                 0xfd, 0xfd, 0xfd, 0xfd, 0x00, 0x00, 0x00, 0x00,
@@ -1049,7 +1051,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
             .org .+4,0xcdaaa
             .eqv .,.+6)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c,
@@ -1085,7 +1087,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
             .org .+4,0xcdaaa
             .eqv .,.+6)ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { 0, AsmSectionType::CODE,
+        { { ".text", 0, AsmSectionType::CODE,
             {
                 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c,
@@ -1130,7 +1132,7 @@ wvl:
             # extern should ignored
             .extern ala,ma,kota)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
             { "ddvt", 77U, ASMSECT_ABS, 0U, true, true, false, 16, 0 },
@@ -1220,7 +1222,7 @@ test.s:9:13: Error: Aborted!
             .fill -1,0`
             .fill 0,-1`)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x16, 0x37, 0x07, 0x00, 0x16, 0x00, 0x37, 0x00,
                 0x07, 0x00, 0x00, 0x00, 0x16, 0x00, 0x37, 0x00,
@@ -1382,7 +1384,7 @@ test.s:38:23: Error: Expected ',' before argument
             . = 7
             . = .-6)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
               0x04, 0x00, 0x00, 0x00 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
@@ -1405,7 +1407,7 @@ test.s:38:23: Error: Expected ',' before argument
             . = 7
             . = .-6)ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { 0, AsmSectionType::CODE,
+        { { ".text", 0, AsmSectionType::CODE,
             { 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
               0x04, 0x00, 0x00, 0x00 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
@@ -1425,7 +1427,7 @@ test.s:38:23: Error: Expected ',' before argument
            .space -73,4
            .skip -563,14)ffDXD",
        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, {  } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, {  } } },
         { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
         true, "test.s:1:18: Warning: Negative repeat has no effect\n"
         "test.s:2:20: Warning: Negative size has no effect\n"
@@ -1438,7 +1440,7 @@ test.s:38:23: Error: Expected ',' before argument
     {   "           z =  (1 << 7\\\n7) + (343 /\\\n* */ << 64 ) + (11<\\\n\\\n\\\n<77)\n"
         "        .string \"aaa\\\nvvv\":",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x61, 0x61, 0x61, 0x76, 0x76, 0x76, 0x00
             } } },
@@ -1454,7 +1456,7 @@ test.s:38:23: Error: Expected ',' before argument
     /* 28 - Upper pseudo-ops names */
     {   ".FILL 5,,15\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 15, 15, 15, 15, 15 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 15, 15, 15, 15, 15 } } },
         { { ".", 5U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
@@ -1465,7 +1467,7 @@ test.s:38:23: Error: Expected ',' before argument
                 .equ x,y1+y2*z-z2
                 .fill x,5,6)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         {
             { ".", 0U, 0, 0U, true, false, false, 0, 0 },
             { "x", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
@@ -1486,7 +1488,7 @@ test.s:38:23: Error: Expected ',' before argument
             .equ vy,9
             .fill x,1,93)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x21, 0x5d,
                 0x5d, 0x5d, 0x5d, 0x5d, 0x5d, 0x5d, 0x5d, 0x5d,
@@ -1505,7 +1507,7 @@ test.s:38:23: Error: Expected ',' before argument
             .byte '\''; .byte ';'; .byte 0x8a
             .byte 1; .int 2; ;)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x61, 0x62, 0x63, 0x3b, 0x00, 0x61, 0x62, 0x22,
                 0x3b, 0x00, 0x61, 0x62, 0x5c, 0x00, 0xff, 0x27,
@@ -1519,7 +1521,7 @@ test.s:38:23: Error: Expected ',' before argument
             .byte '\''; .byte ';',; .byte 0x8a
             .byte 1; .int 2 x; ;)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x61, 0x62, 0x63, 0x3b, 0x00, 0x61, 0x62, 0x22,
                 0x3b, 0x00, 0x61, 0x62, 0x5c, 0x00, 0xff, 0x27,
@@ -1536,7 +1538,7 @@ test.s:38:23: Error: Expected ',' before argument
             .byte 1; .fill uuu,; \
 .int , 2 x; ; .fill xxx,; .fill yyy)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 
                 0x61, 0x62, 0x63, 0x3b, 0x00, 0x61, 0x62, 0x22,
                 0x3b, 0x00, 0x61, 0x62, 0x5c, 0x00, 0xff, 0x27,
@@ -1711,7 +1713,7 @@ test.s:38:23: Error: Expected ',' before argument
             .byte 58
             .endif)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 
                 0x01, 0x03, 0x06, 0x07, 0x0a, 0x0b, 0x0c, 0x0e,
                 0x12, 0x15, 0x18, 0x1a, 0x1b, 0x1c, 0x1f, 0x29,
@@ -1738,7 +1740,7 @@ test.s:38:23: Error: Expected ',' before argument
                 .endif
             .endif)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 4 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 4 } } },
         { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
@@ -1767,7 +1769,7 @@ test.s:38:23: Error: Expected ',' before argument
             .byte 9
             .endif)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 2, 4, 9 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 2, 4, 9 } } },
         { { ".", 3U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
@@ -1777,7 +1779,7 @@ test.s:38:23: Error: Expected ',' before argument
             .else
             .byte 22)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 1 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 1 } } },
         { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:3:13: Error: Unterminated '.else'\n"
         "test.s:1:13: Error: here is begin of conditional clause\n", ""
@@ -1788,7 +1790,7 @@ test.s:38:23: Error: Expected ',' before argument
             .elseif 12
             .byte 22)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 1 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 1 } } },
         { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:3:13: Error: Unterminated '.elseif'\n"
         "test.s:1:13: Error: here is begin of conditional clause\n", ""
@@ -1797,7 +1799,7 @@ test.s:38:23: Error: Expected ',' before argument
     {   R"ffDXD(            .if 123
             .byte 1)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 1 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 1 } } },
         { { ".", 1U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:1:13: Error: Unterminated '.if'\n", ""
     },
@@ -1813,7 +1815,7 @@ test.s:38:23: Error: Expected ',' before argument
             .else
             .byte 10)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 0, 1 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 0, 1 } } },
         { { ".", 2U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:9:13: Error: Unterminated '.else'\n"
         "test.s:7:13: Error: here is begin of conditional clause\n"
@@ -1915,7 +1917,7 @@ test.s:27:13: Error: Unterminated '.if'
                 .byte 19
                 .endif)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 0x0b, 0x0e, 0x12, 0x13 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 0x0b, 0x0e, 0x12, 0x13 } } },
         { { ".", 4U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
@@ -1934,7 +1936,7 @@ test.s:27:13: Error: Unterminated '.if'
             reptCnt = reptCnt + 1
             .endr)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x81, 0x00, 0x82, 0x00, 0x02, 0x01, 0x83, 0x00,
                 0x03, 0x01, 0x83, 0x02, 0x84, 0x00, 0x04, 0x01,
@@ -1969,7 +1971,7 @@ test.s:27:13: Error: Unterminated '.if'
             reptCnt = reptCnt + 1
             .endr)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x81, 0x00, 0xc3, 0xc2, 0xc1, 0x82, 0x00, 0x02,
                 0x01, 0xc3, 0xc2, 0xc1, 0x83, 0x00, 0x03, 0x01,
@@ -2003,7 +2005,7 @@ test.s:27:13: Error: Unterminated '.if'
             .endr
             .endr)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 0x61, 0x6c, 0x61, 0x00, 0x61, 0x6c, 0x61, 0x00 } } },
         { { ".", 8U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:4:13: Error: No '.rept' before '.endr'\n", ""
@@ -2048,7 +2050,7 @@ test.s:27:13: Error: Unterminated '.if'
                 .endr
             .endr)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 2, 2, 2 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 2, 2, 2 } } },
         {
             { ".", 3U, 0, 0U, true, false, false, 0, 0 },
             { "d", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
@@ -2129,7 +2131,7 @@ test.s:9:27: Error: Unterminated expression
             am1_3 -3,  , 7
             am1_3 12,77)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x03, 0x05, 0x07, 0x00, 0x00, 0x00, 0x0c, 0x4d,
                 0x00, 0x03, 0x05, 0x07, 0x38, 0xfd, 0x07, 0x0c,
@@ -2162,7 +2164,7 @@ test.s:10:25: Warning: No expression, zero has been put
             varArgs 7,3,2,4,-5,14
             varArgs 7 3 2,4,-5,14 # without ',')ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0xcb, 0x02, 0x04, 0x00, 0x18, 0x00, 0x00, 0x00,
                 0x18, 0x00, 0x02, 0x00, 0x04, 0x00, 0xfb, 0xff,
@@ -2191,7 +2193,7 @@ test.s:10:25: Warning: No expression, zero has been put
             reqArg2 ,32
             reqArg2 1,,4)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x31, 0x3a, 0x33, 0x32, 0x3a, 0x34, 0x3b, 0x3a,
                 0x33, 0x32, 0x3a, 0x3b, 0x31, 0x3a, 0x33, 0x32,
@@ -2212,7 +2214,7 @@ test.s:10:25: Warning: No expression, zero has been put
             passer aa * aa "aa * aa" XaF %%%
             passer aa +,ff,^^,33 + 33 - -)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x3a, 0x3a, 0x3a, 0x3a, 0x3a, 0x00, 0x61, 0x61,
                 0x3a, 0x66, 0x67, 0x66, 0x3a, 0x61, 0x21, 0x41,
@@ -2241,7 +2243,7 @@ test.s:10:25: Warning: No expression, zero has been put
             
             three 9)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 0x20, 0x00, 0x21, 0x00, 0x22, 0x00, 0x60, 0x00, 0x61, 0x00 } } },
         { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
@@ -2260,7 +2262,7 @@ test.s:10:25: Warning: No expression, zero has been put
             
             three 9)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 0x20, 0x00, 0x21, 0x00, 0x22, 0x00, 0x60, 0x00, 0x61, 0x00 } } },
         { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
         false, R"ffDXD(In macro substituted from test.s:9:13;
@@ -2291,7 +2293,7 @@ test.s:3:13: Error: simple error
         .macro t1; t2; t2; .int \@, \@; .endm
         .rept 5; t1; .endr)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x07, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00,
@@ -2317,7 +2319,7 @@ test.s:3:13: Error: simple error
         mymac 3,7
         mymax 3,7)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x0c, 0x00, 0x00, 0x00, 0x54, 0x00, 0x00, 0x00,
                 0x0c, 0x2c, 0x00, 0x00, 0x00, 0x7e, 0x00, 0x00, 0x00, 0x0c,
@@ -2339,7 +2341,7 @@ test.s:3:13: Error: simple error
             next1 -3 -5
             next1next2 13 37)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0xdb, 0xff, 0xff, 0xff, 0x49, 0xff, 0xff, 0xff,
                 0xdd, 0xff, 0xff, 0xff, 0x4c, 0xff, 0xff, 0xff
@@ -2362,7 +2364,7 @@ test.s:3:13: Error: simple error
             next1 -3 -5
             next1next2 13 37)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0xdb, 0xff, 0xff, 0xff, 0x49, 0xff, 0xff, 0xff,
                 0xdd, 0xff, 0xff, 0xff, 0x4c, 0xff, 0xff, 0xff
@@ -2387,7 +2389,7 @@ In macro content:
         bStr ala,alax
         bStr alaU,ala)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x61, 0x6c, 0x61, 0x61, 0x6c, 0x61, 0x78, 0x6f,
                 0x6f, 0x61, 0x6c, 0x61, 0x55, 0x61, 0x6c, 0x61
@@ -2407,7 +2409,7 @@ In macro content:
             exiter 30,70
             exiter 23,15)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 0x1e, 0x46, 0x0c, 0x06, 0x17, 0x0f, 0xad, 0x08 } } },
         { { ".", 8U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
@@ -2422,7 +2424,7 @@ In macro content:
             .macro xxx
             .endm)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { 3, 4, 5 } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { 3, 4, 5 } } },
         { { ".", 3U, 0, 0U, true, false, false, 0, 0 } },
         true, "In macro substituted from test.s:6:13:\n"
         "test.s:3:21: Warning: Macro 'xxx' already doesn't exist\n", ""
@@ -2438,7 +2440,7 @@ In macro content:
             test1 1 2 3 4
             test2 1 "" 3 4)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00,
                 0x01, 0x00, 0x06, 0x00, 0x03, 0x00, 0x04, 0x00
@@ -2486,7 +2488,7 @@ In macro content:
         .undef xz2
         .undef xz2)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0xc0, 0x00, 0x00, 0x00, 0x40, 0x02, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00,
@@ -2511,7 +2513,7 @@ In macro content:
             .include "inc2.s"
             .include "inc3.s")ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 11,22,44,55, 11,22,44,58, 31,23,44,55 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
@@ -2522,7 +2524,7 @@ In macro content:
             .include "incdir0/inc2.s"
             .include "incdir1\\inc3.s")ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             { 11,22,44,55, 11,22,44,58, 31,23,44,55 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
@@ -2548,7 +2550,7 @@ In macro content:
             .incbin "incbin2"
             .incbin "incbin3")ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x12, 0x87, 0x17, 0x87, 0x8C, 0xD8, 0xA8, 0x93,
                 0x89, 0xA9, 0x81, 0xA8, 0x94, 0xD3, 0x89, 0xC8,
@@ -2567,7 +2569,7 @@ In macro content:
             .incbin "incbin2",2
             .incbin "incbin3", 0, 9)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA,
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
                 0x87, 0x8C, 0xD8, 0xA8, 0x12, 0x1D, 0xCD, 0xAF,
                 0x12, 0xCD, 0xCD, 0x33, 0x81, 0xA8, 0x11, 0xD3,
@@ -2588,7 +2590,7 @@ label3:
         .offset .+20
 label4:)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         {
             { ".", 23U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "label1", 6U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
@@ -2623,7 +2625,7 @@ label3:
 label4:
         .offset %%%%)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         {
             { ".", 23U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "label1", 6U, ASMSECT_ABS, 0U, true, true, false, 0, 0 },
@@ -2731,7 +2733,7 @@ test.s:25:1: Error: uurggg
         .string "::\Xv\()__"
         .endr)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ASMKERN_GLOBAL, AsmSectionType::DATA, {
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, {
             0x3a, 0x3a, 0x61, 0x61, 0x5f, 0x5f, 0x00, 0x3a,
             0x3a, 0x63, 0x76, 0x5f, 0x5f, 0x00, 0x3a, 0x3a,
             0x64, 0x64, 0x5f, 0x5f, 0x00, 0x3a, 0x3a, 0x31,
@@ -2769,9 +2771,10 @@ be:
             z1 = (ae*7+be*19)-3*be-(be<<4)-6*ae)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b" },
         {
-            { ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
-            { 0, AsmSectionType::CODE, { 0x61, 0x61, 0x61, 0x62, 0x62, 0x63, 0x63 } },
-            { 1, AsmSectionType::CODE,
+            { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { ".text", 0, AsmSectionType::CODE,
+                { 0x61, 0x61, 0x61, 0x62, 0x62, 0x63, 0x63 } },
+            { ".text", 1, AsmSectionType::CODE,
                 {   0x61, 0x61, 0x61, 0x62, 0x62, 0x63, 0x63, 0x00,
                     0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00
                 } }
@@ -2838,13 +2841,13 @@ ce:
             z0 = al-ae ? bl : ce)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
         {
-            { ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
-            { 0, AsmSectionType::CODE,
+            { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { ".text", 0, AsmSectionType::CODE,
                 {   0x78, 0x78, 0x31, 0x61, 0x61, 0x61, 0x62, 0x62,
                     0x63, 0x63, 0x64, 0x64 } },
-            { 1, AsmSectionType::CODE,
+            { ".text", 1, AsmSectionType::CODE,
                 { 0x78, 0x31, 0x32, 0x31, 0x32, 0x62, 0x62, 0x63, 0x63 } },
-            { 2, AsmSectionType::CODE,
+            { ".text", 2, AsmSectionType::CODE,
                 {   0x31, 0x32, 0x33, 0x34, 0x33, 0x35, 0x35, 0x36,
                     0x36, 0x37, 0x61, 0x62, 0x62, 0x63, 0x63 } }
         },
@@ -2934,13 +2937,13 @@ ce:
             z0 = al-bl ? bl : ce)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
         {
-            { ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
-            { 0, AsmSectionType::CODE,
+            { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { ".text", 0, AsmSectionType::CODE,
                 {   0x78, 0x78, 0x31, 0x61, 0x61, 0x61, 0x62, 0x62,
                     0x63, 0x63, 0x64, 0x64 } },
-            { 1, AsmSectionType::CODE,
+            { ".text", 1, AsmSectionType::CODE,
                 { 0x78, 0x31, 0x32, 0x31, 0x32, 0x62, 0x62, 0x63, 0x63 } },
-            { 2, AsmSectionType::CODE,
+            { ".text", 2, AsmSectionType::CODE,
                 {   0x31, 0x32, 0x33, 0x34, 0x33, 0x35, 0x35, 0x36,
                     0x36, 0x37, 0x61, 0x62, 0x62, 0x63, 0x63 } }
         },
@@ -3033,6 +3036,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
         
         const AsmSection& resSection = resSections[i];
         const Section& expSection = testCase.sections[i];
+        assertString(testName, caseName+"name", expSection.name, resSection.name);
         assertValue(testName, caseName+"kernelId", expSection.kernelId,
                     resSection.kernelId);
         assertValue(testName, caseName+"type", int(expSection.type), int(resSection.type));

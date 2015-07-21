@@ -59,7 +59,17 @@ static void assertValue(const std::string& testName, const std::string& caseName
 static inline void assertString(const std::string& testName, const std::string& caseName,
              const char* expected, const char* result)
 {
-    if (::strcmp(expected, result) != 0)
+    if (expected == nullptr)
+    {
+        if (result != nullptr)
+        {
+            std::ostringstream oss;
+            oss << "Failed " << testName << ":" << caseName << "\n" << "null!=null";
+            oss.flush();
+            throw Exception(oss.str());
+        }
+    }
+    else if (::strcmp(expected, result) != 0)
     {
         std::ostringstream oss;
         oss << "Failed " << testName << ":" << caseName << "\n" <<
