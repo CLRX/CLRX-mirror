@@ -2755,7 +2755,40 @@ test.s:25:1: Error: uurggg
         { { ".", 150U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 76 - IRP errors */
+    /* 76 - section arithmetics */
+    {   R"ffDXD(            .amd
+            .kernel a
+al:
+            .ascii "aaabbcc"
+ae:
+            .kernel b
+bl:
+            .ascii "aaabbcc"
+be:
+            .int al-ae-bl+be
+            .int -bl+be
+            z = al*7-(ae-al)*al
+            z1 = (ae*7+be*19)-3*be-(be<<4)-6*ae)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b" },
+        {
+            { ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { 0, AsmSectionType::CODE, { 0x61, 0x61, 0x61, 0x62, 0x62, 0x63, 0x63 } },
+            { 1, AsmSectionType::CODE,
+                {   0x61, 0x61, 0x61, 0x62, 0x62, 0x63, 0x63, 0x00,
+                    0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00
+                } }
+        },
+        {
+            { ".", 15U, 2, 0U, true, false, false, 0, 0 },
+            { "ae", 7U, 1, 0U, true, true, false, 0, 0 },
+            { "al", 0U, 1, 0U, true, true, false, 0, 0 },
+            { "be", 7U, 2, 0U, true, true, false, 0, 0 },
+            { "bl", 0U, 2, 0U, true, true, false, 0, 0 },
+            { "z", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "z1", 7U, 1, 0U, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    }
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
