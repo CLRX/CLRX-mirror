@@ -1128,8 +1128,8 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
             return;
         }
         // add new kernel entries and section entry
-        kernelMap.insert(std::make_pair(kernelName, kernelId));
-        kernelPositions.push_back(getSourcePos(pseudoOpPlace));
+        auto it = kernelMap.insert(std::make_pair(kernelName, kernelId)).first;
+        kernels.push_back({ it->first.c_str(),  getSourcePos(pseudoOpPlace) });
         auto info = formatHandler->getSectionInfo(currentSection);
         sections.push_back({ info.name, currentKernel, info.type, info.flags });
         currentOutPos = 0;

@@ -98,14 +98,14 @@ void AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
 bool AsmRawCodeHandler::prepareBinary()
 { return true; }
 
-void AsmRawCodeHandler::writeBinary(std::ostream& os)
+void AsmRawCodeHandler::writeBinary(std::ostream& os) const
 {
     const AsmSection& section = assembler.getSections()[0];
     if (!section.content.empty())
         os.write((char*)section.content.data(), section.content.size());
 }
 
-void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array)
+void AsmRawCodeHandler::writeBinary(Array<cxbyte>& array) const
 {
     const AsmSection& section = assembler.getSections()[0];
     array.assign(section.content.begin(), section.content.end());
@@ -307,13 +307,13 @@ void AsmAmdHandler::parsePseudoOp(const std::string& firstName,
 bool AsmAmdHandler::prepareBinary()
 { return true; }
 
-void AsmAmdHandler::writeBinary(std::ostream& os)
+void AsmAmdHandler::writeBinary(std::ostream& os) const
 {
     AmdGPUBinGenerator binGenerator(&output);
     binGenerator.generate(os);
 }
 
-void AsmAmdHandler::writeBinary(Array<cxbyte>& array)
+void AsmAmdHandler::writeBinary(Array<cxbyte>& array) const
 {
     AmdGPUBinGenerator binGenerator(&output);
     binGenerator.generate(array);
@@ -800,7 +800,7 @@ bool AsmGalliumHandler::prepareBinary()
             std::string message = "Symbol for kernel '";
             message += kinput.kernelName;
             message += "' is undefined";
-            assembler.printError(assembler.getKernelPosition(ki), message.c_str());
+            assembler.printError(assembler.kernels[ki].sourcePos, message.c_str());
             good = false;
             continue;
         }
@@ -810,7 +810,7 @@ bool AsmGalliumHandler::prepareBinary()
             std::string message = "Symbol for kernel '";
             message += kinput.kernelName;
             message += "' is not resolved";
-            assembler.printError(assembler.getKernelPosition(ki), message.c_str());
+            assembler.printError(assembler.kernels[ki].sourcePos, message.c_str());
             good = false;
             continue;
         }
@@ -819,7 +819,7 @@ bool AsmGalliumHandler::prepareBinary()
             std::string message = "Symbol for kernel '";
             message += kinput.kernelName;
             message += "' is defined for section other than '.text'";
-            assembler.printError(assembler.getKernelPosition(ki), message.c_str());
+            assembler.printError(assembler.kernels[ki].sourcePos, message.c_str());
             good = false;
             continue;
         }
@@ -830,13 +830,13 @@ bool AsmGalliumHandler::prepareBinary()
     return good;
 }
 
-void AsmGalliumHandler::writeBinary(std::ostream& os)
+void AsmGalliumHandler::writeBinary(std::ostream& os) const
 {
     GalliumBinGenerator binGenerator(&output);
     binGenerator.generate(os);
 }
 
-void AsmGalliumHandler::writeBinary(Array<cxbyte>& array)
+void AsmGalliumHandler::writeBinary(Array<cxbyte>& array) const
 {
     GalliumBinGenerator binGenerator(&output);
     binGenerator.generate(array);

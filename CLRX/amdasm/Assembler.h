@@ -143,9 +143,9 @@ public:
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
-    virtual void writeBinary(std::ostream& os) = 0;
+    virtual void writeBinary(std::ostream& os) const = 0;
     /// write binaery to output stream
-    virtual void writeBinary(Array<cxbyte>& array) = 0;
+    virtual void writeBinary(Array<cxbyte>& array) const = 0;
 };
 
 /// handles raw code format
@@ -178,9 +178,9 @@ public:
     
     bool prepareBinary();
     /// write binary to output stream
-    void writeBinary(std::ostream& os);
+    void writeBinary(std::ostream& os) const;
     /// write binary to array
-    void writeBinary(Array<cxbyte>& array);
+    void writeBinary(Array<cxbyte>& array) const;
 };
 
 /// handles AMD Catalyst format
@@ -241,9 +241,9 @@ public:
     
     bool prepareBinary();
     /// write binary to output stream
-    void writeBinary(std::ostream& os);
+    void writeBinary(std::ostream& os) const;
     /// write binary to array
-    void writeBinary(Array<cxbyte>& array);
+    void writeBinary(Array<cxbyte>& array) const;
     /// get output object (input for bingenerator)
     const AmdInput* getOutput() const
     { return &output; }
@@ -305,9 +305,9 @@ public:
     
     bool prepareBinary();
     /// write binary to output stream
-    void writeBinary(std::ostream& os);
+    void writeBinary(std::ostream& os) const;
     /// write binary to array
-    void writeBinary(Array<cxbyte>& array);
+    void writeBinary(Array<cxbyte>& array) const;
     /// get output object (input for bingenerator)
     const GalliumInput* getOutput() const
     { return &output; }
@@ -699,6 +699,12 @@ enum class AsmClauseType
     MACRO   ///< macro clause
 };
 
+struct AsmKernel
+{
+    const char* name;
+    AsmSourcePos sourcePos;
+};
+
 /// assembler's clause (if,else,macro,rept)
 struct AsmClause
 {
@@ -743,7 +749,7 @@ private:
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
     MacroMap macroMap;
     KernelMap kernelMap;
-    std::vector<AsmSourcePos> kernelPositions;
+    std::vector<AsmKernel> kernels;
     Flags flags;
     uint64_t macroCount;
     
@@ -954,9 +960,9 @@ public:
     /// get kernel map
     const KernelMap& getKernelMap() const
     { return kernelMap; }
-    /// get kernel position
-    const AsmSourcePos& getKernelPosition(cxuint kernelId) const
-    { return kernelPositions[kernelId]; }
+    /// get kernels
+    const std::vector<AsmKernel>& getKernels() const
+    { return kernels; }
     
     /// returns true if symbol contains absolute value
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
