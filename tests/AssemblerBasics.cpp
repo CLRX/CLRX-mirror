@@ -2758,12 +2758,10 @@ test.s:25:1: Error: uurggg
     /* 76 - section arithmetics */
     {   R"ffDXD(            .amd
             .kernel a
-al:
-            .ascii "aaabbcc"
+al:         .ascii "aaabbcc"
 ae:
             .kernel b
-bl:
-            .ascii "aaabbcc"
+bl:         .ascii "aaabbcc"
 be:
             .int al-ae-bl+be
             .int -bl+be
@@ -2788,6 +2786,203 @@ be:
             { "z1", 7U, 1, 0U, true, false, false, 0, 0 }
         },
         true, "", ""
+    },
+    /* 77 - next test of sections' arithmetics */
+    {   R"ffDXD(.amd
+            .kernel a
+            .ascii "xx1"
+al:         .ascii "aaabbccdd"
+ae:
+            .kernel b
+            .ascii "x1212"
+bl:         .ascii "bbcc"
+be:
+            .kernel c
+            .ascii "1234355667"
+cl:         .ascii "abbcc"
+ce:
+            x0 = ae-al
+            x1 = 5-(-al)
+            x2 = al-7
+            x3 = ce-al-be+ae+bl-cl+9
+            x4 = (-21*al+21*bl-7*cl)  - ((ae*7 - 12*bl)*-3 - 8*be + 7*(-ce-bl))
+            x5 = (ae<<5 + bl<<2) - al*32 - be*4
+            y00 = al-bl==al-bl
+            y01 = al+cl+bl!=cl+al+bl
+            y02 = al+cl+bl<cl+al+bl
+            y03 = al+cl+bl>cl+al+bl
+            y04 = al+cl+bl<=cl+al+bl
+            y05 = al+cl+bl>=cl+al+bl
+            y06 = al+cl+bl<@cl+al+bl
+            y07 = al+cl+bl>@cl+al+bl
+            y08 = al+cl+bl<=@cl+al+bl
+            y09 = al+cl+bl>=@cl+al+bl
+            
+            y12 = al+cl+bl<cl+al+bl+99
+            y13 = al+cl+bl>cl+al+bl+99
+            y14 = al+cl+bl<=cl+al+bl+99
+            y15 = al+cl+bl>=cl+al+bl+99
+            y16 = al+cl+bl<@cl+al+bl+99
+            y17 = al+cl+bl>@cl+al+bl+99
+            y18 = al+cl+bl<=@cl+al+bl+99
+            y19 = al+cl+bl>=@cl+al+bl+99
+            
+            y22 = al+cl+bl<cl+al+bl-99
+            y23 = al+cl+bl>cl+al+bl-99
+            y24 = al+cl+bl<=cl+al+bl-99
+            y25 = al+cl+bl>=cl+al+bl-99
+            y26 = al+cl+bl<@cl+al+bl-99
+            y27 = al+cl+bl>@cl+al+bl-99
+            y28 = al+cl+bl<=@cl+al+bl-99
+            y29 = al+cl+bl>=@cl+al+bl-99
+            z0 = al-ae ? bl : ce)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
+        {
+            { ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { 0, AsmSectionType::CODE,
+                {   0x78, 0x78, 0x31, 0x61, 0x61, 0x61, 0x62, 0x62,
+                    0x63, 0x63, 0x64, 0x64 } },
+            { 1, AsmSectionType::CODE,
+                { 0x78, 0x31, 0x32, 0x31, 0x32, 0x62, 0x62, 0x63, 0x63 } },
+            { 2, AsmSectionType::CODE,
+                {   0x31, 0x32, 0x33, 0x34, 0x33, 0x35, 0x35, 0x36,
+                    0x36, 0x37, 0x61, 0x62, 0x62, 0x63, 0x63 } }
+        },
+        {
+            { ".", 15U, 3, 0U, true, false, false, 0, 0 },
+            { "ae", 12U, 1, 0U, true, true, false, 0, 0 },
+            { "al", 3U, 1, 0U, true, true, false, 0, 0 },
+            { "be", 9U, 2, 0U, true, true, false, 0, 0 },
+            { "bl", 5U, 2, 0U, true, true, false, 0, 0 },
+            { "ce", 15U, 3, 0U, true, true, false, 0, 0 },
+            { "cl", 10U, 3, 0U, true, true, false, 0, 0 },
+            { "x0", 9U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x1", 8U, 1, 0U, true, false, false, 0, 0 },
+            { "x2", 18446744073709551612U, 1, 0U, true, false, false, 0, 0 },
+            { "x3", 19U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x4", 256U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "x5", 272U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y00", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y01", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y02", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y03", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y04", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y05", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y06", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y07", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y08", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y09", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y12", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y13", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y14", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y15", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y16", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y17", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y18", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y19", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y22", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y23", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y24", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y25", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y26", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y27", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y28", 18446744073709551615U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "y29", 0U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "z0", 5U, 2, 0U, true, false, false, 0, 0 }
+        }, true, "", ""
+    },
+    /* 78 - error of section arithmetics */
+    {   R"ffDXD(            .amd
+            .kernel a
+            .ascii "xx1"
+al:         .ascii "aaabbccdd"
+ae:
+            .kernel b
+            .ascii "x1212"
+bl:         .ascii "bbcc"
+be:
+            .kernel c
+            .ascii "1234355667"
+cl:         .ascii "abbcc"
+ce:
+            e0 = al-be+be*7
+            e0 = ~al
+            e0 = (-23*al+21*bl-7*cl)  - ((ae*7 - 12*bl)*-3 - 8*be + 7*(-ce-bl))
+            e0 = (ae<<5 + bl<<2) - al*32 - be*7
+            e0 = al>>7
+            e0 = al/7
+            e0 = al%7
+            e0 = al>>>7
+            e0 = al//6
+            e0 = al%%6
+            e0 = al|6
+            e0 = al&6
+            e0 = al^6
+            e0 = al&&6
+            e0 = al||6
+            e0 = al!6
+            e0 = al==7
+            e0 = al!=7
+            e0 = al<7
+            e0 = al>7
+            e0 = al<=7
+            e0 = al>=7
+            e0 = al<@7
+            e0 = al>@7
+            e0 = al<=@7
+            e0 = al>=@7
+            z0 = al-bl ? bl : ce)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "a", "b", "c" },
+        {
+            { ASMKERN_GLOBAL, AsmSectionType::DATA, { } },
+            { 0, AsmSectionType::CODE,
+                {   0x78, 0x78, 0x31, 0x61, 0x61, 0x61, 0x62, 0x62,
+                    0x63, 0x63, 0x64, 0x64 } },
+            { 1, AsmSectionType::CODE,
+                { 0x78, 0x31, 0x32, 0x31, 0x32, 0x62, 0x62, 0x63, 0x63 } },
+            { 2, AsmSectionType::CODE,
+                {   0x31, 0x32, 0x33, 0x34, 0x33, 0x35, 0x35, 0x36,
+                    0x36, 0x37, 0x61, 0x62, 0x62, 0x63, 0x63 } }
+        },
+        {
+            { ".", 15U, 3, 0U, true, false, false, 0, 0 },
+            { "ae", 12U, 1, 0U, true, true, false, 0, 0 },
+            { "al", 3U, 1, 0U, true, true, false, 0, 0 },
+            { "be", 9U, 2, 0U, true, true, false, 0, 0 },
+            { "bl", 5U, 2, 0U, true, true, false, 0, 0 },
+            { "ce", 15U, 3, 0U, true, true, false, 0, 0 },
+            { "cl", 10U, 3, 0U, true, true, false, 0, 0 },
+            { "e0", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 },
+            { "z0", 0U, ASMSECT_ABS, 0U, false, false, false, 0, 0 }
+        }, false, 
+R"ffDXD(test.s:14:18: Error: Only one relative=1 (section) can be result of expression
+test.s:15:18: Error: Only one relative=1 (section) can be result of expression
+test.s:16:18: Error: Only one relative=1 (section) can be result of expression
+test.s:17:18: Error: Only one relative=1 (section) can be result of expression
+test.s:18:18: Error: Shift right is not allowed for any relative value
+test.s:19:18: Error: Signed division is not allowed for any relative value
+test.s:20:18: Error: Signed Modulo is not allowed for any relative value
+test.s:21:18: Error: Signed shift right is not allowed for any relative value
+test.s:22:18: Error: Division is not allowed for any relative value
+test.s:23:18: Error: Modulo is not allowed for any relative value
+test.s:24:18: Error: Binary OR is not allowed for any relative value
+test.s:25:18: Error: Binary AND is not allowed for any relative value
+test.s:26:18: Error: Binary XOR is not allowed for any relative value
+test.s:27:18: Error: Logical AND is not allowed for any relative value
+test.s:28:18: Error: Logical OR is not allowed for any relative value
+test.s:29:18: Error: Binary ORNOT is not allowed for any relative value
+test.s:30:18: Error: For comparisons two values must have this same relatives!
+test.s:31:18: Error: For comparisons two values must have this same relatives!
+test.s:32:18: Error: For comparisons two values must have this same relatives!
+test.s:33:18: Error: For comparisons two values must have this same relatives!
+test.s:34:18: Error: For comparisons two values must have this same relatives!
+test.s:35:18: Error: For comparisons two values must have this same relatives!
+test.s:36:18: Error: For comparisons two values must have this same relatives!
+test.s:37:18: Error: For comparisons two values must have this same relatives!
+test.s:38:18: Error: For comparisons two values must have this same relatives!
+test.s:39:18: Error: For comparisons two values must have this same relatives!
+test.s:40:18: Error: Choice is not allowed for first relative value
+)ffDXD", ""
     }
 };
 

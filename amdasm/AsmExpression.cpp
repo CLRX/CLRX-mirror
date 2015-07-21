@@ -620,8 +620,8 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                         size_t requals = 0;
                         if (relatives2.size() != relatives.size())
                         {
-                            assembler.printError(sourcePos,
-                                 "For comparisons two values must have same relatives!");
+                            assembler.printError(sourcePos, "For comparisons "
+                                        "two values must have this same relatives!");
                             failed = true;
                         }
                         else
@@ -638,7 +638,7 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                             if (requals != relatives.size())
                             {
                                 assembler.printError(sourcePos, "For comparisons "
-                                        "two values must have same relatives!");
+                                        "two values must have this same relatives!");
                                 failed = true;
                             }
                         }
