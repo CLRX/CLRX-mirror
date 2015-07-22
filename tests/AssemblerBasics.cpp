@@ -3086,7 +3086,9 @@ ce:
             .globaldata
             .ascii "endofdata"
             .section .test1
-            .string "this is test")ffDXD",
+            .string "this is test"
+            .section .test1
+            .string "aa")ffDXD",
         BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false, { "aa1", "bb2" },
         {
             { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
@@ -3112,10 +3114,26 @@ ce:
             { nullptr, 1, AsmSectionType::CONFIG, { } },
             { ".test1", ASMKERN_GLOBAL, AsmSectionType::EXTRA_SECTION,
                 { 0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
-                  0x74, 0x65, 0x73, 0x74, 0x00 } }
+                  0x74, 0x65, 0x73, 0x74, 0x00, 0x61, 0x61, 0x00 } }
         },
-        { { ".", 13U, 5, 0U, true, false, false, 0, 0 } },
+        { { ".", 16U, 5, 0U, true, false, false, 0, 0 } },
         true, "", ""
+    },
+    {   R"ffDXD(            .gallium
+            .kernel aa22
+            .int 24,5,6
+            .fill 10,4,0xff
+            .p2align 4)ffDXD",
+        BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false, { "aa22" },
+        {
+            { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE, { } },
+            { nullptr, 0, AsmSectionType::CONFIG, { } }
+        },
+        { { ".", 0U, 1, 0U, true, false, false, 0, 0 } },
+        false, "test.s:3:13: Error: Writing data into non-writeable section is illegal\n"
+        "test.s:4:13: Error: Writing data into non-writeable section is illegal\n"
+        "test.s:5:13: Error: Change output counter inside non-addressable "
+        "section is illegal\n", ""
     }
 };
 
