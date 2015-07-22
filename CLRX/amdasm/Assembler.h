@@ -137,8 +137,8 @@ public:
     
     // get current section flags and type
     virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;
-    /// parse pseudo-op
-    virtual void parsePseudoOp(const std::string& firstName,
+    /// parse pseudo-op (return true if recognized pseudo-op)
+    virtual bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr) = 0;
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
@@ -173,7 +173,7 @@ public:
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
-    void parsePseudoOp(const std::string& firstName,
+    bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
@@ -236,7 +236,7 @@ public:
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
-    void parsePseudoOp(const std::string& firstName,
+    bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
@@ -300,7 +300,7 @@ public:
     // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
     /// parse pseudo-op
-    void parsePseudoOp(const std::string& firstName,
+    bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();

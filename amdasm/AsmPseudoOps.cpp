@@ -2179,13 +2179,16 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::putIntegers<uint32_t>(*this, stmtPlace, linePtr);
             break;
         default:
-            // macro substitution
-            // try to parse processor instruction or macro substitution
-            if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
-            {  // try parse instruction
-                //initializeOutputFormat();
-                /*isaAssembler->assemble(lineNo, stmtStartStr,
-                           sections[currentSection].content);*/
+            if (!formatHandler->parsePseudoOp(firstName, stmtPlace, linePtr))
+            {
+                // macro substitution
+                // try to parse processor instruction or macro substitution
+                if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
+                {  // try parse instruction
+                    //initializeOutputFormat();
+                    /*isaAssembler->assemble(lineNo, stmtStartStr,
+                               sections[currentSection].content);*/
+                }
             }
             break;
     }

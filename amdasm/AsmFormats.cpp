@@ -30,10 +30,13 @@
 using namespace CLRX;
 
 static const char* galliumPseudoOpNamesTbl[] =
-{ "arg", "args", "entry", "proginfo" };
+{ "arg", "args", "entry", "globaldata", "proginfo" };
 
 enum
-{ GALLIUMOP_ARG, GALLIUMOP_ARGS, GALLIUMOP_ENTRY, GALLIUM_PROGINFO };
+{
+    GALLIUMOP_ARG, GALLIUMOP_ARGS, GALLIUMOP_ENTRY,
+    GALLIUM_GLOBALDATA, GALLIUM_PROGINFO
+};
 
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
 { }
@@ -88,9 +91,11 @@ AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId
     return { ".text", AsmSectionType::CODE, ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE };
 }
 
-void AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
+bool AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr)
-{ }  // not recognized any pseudo-op
+{   // not recognized any pseudo-op
+    return false;
+}
 
 bool AsmRawCodeHandler::prepareBinary()
 { return true; }
@@ -296,9 +301,10 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
     return { name, section.type, flags };
 }
 
-void AsmAmdHandler::parsePseudoOp(const std::string& firstName,
+bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
        const char* stmtPlace, const char* linePtr)
 {
+    return false;
 }
 
 bool AsmAmdHandler::prepareBinary()
@@ -321,7 +327,7 @@ void AsmAmdHandler::writeBinary(Array<cxbyte>& array) const
  */
 
 AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(assembler),
-             output{}, codeSection(ASMSECT_NONE), dataSection(0),
+             output{}, codeSection(0), dataSection(ASMSECT_NONE),
              commentSection(ASMSECT_NONE), extraSectionCount(0)
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
@@ -468,6 +474,21 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
 
 namespace CLRX
 {
+    
+void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string sectionName;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    asmr.goToSection(pseudoOpPlace, ".rodata");
+}
+    
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
                const char* pseudoOpPlace, const char* linePtr)
 {
@@ -709,7 +730,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
 
 }
 
-void AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
+bool AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr)
 {
     const size_t pseudoOp = binaryFind(galliumPseudoOpNamesTbl, galliumPseudoOpNamesTbl +
@@ -727,12 +748,16 @@ void AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
         case GALLIUMOP_ENTRY:
             AsmGalliumPseudoOps::doEntry(*this, stmtPlace, linePtr);
             break;
+        case GALLIUM_GLOBALDATA:
+            AsmGalliumPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
+            break;
         case GALLIUM_PROGINFO:
             AsmGalliumPseudoOps::doProgInfo(*this, stmtPlace, linePtr);
             break;
         default:
-            break;
+            return false;
     }
+    return true;
 }
 
 bool AsmGalliumHandler::prepareBinary()

@@ -246,6 +246,8 @@ class AsmGalliumHandler;
 
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
+    static void doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     // open argument list
     static void doArgs(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

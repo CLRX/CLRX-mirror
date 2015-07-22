@@ -3032,6 +3032,90 @@ ce:
             { "x0", 4U, 2, 0U, true, false, false, 0, 0 },
             { "x1", 11U, 2, 0U, true, false, false, 0, 0 }
         }, true, "", ""
+    },
+    /* 80 - raw code section tests */
+    {   R"ffDXD(            .rawcode
+            .text
+            .byte 1,2,2,3,4
+            .main
+            .byte 0xf,0xf0,0xdd
+            .section .text
+            .byte 12,14)ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+            { 0x01, 0x02, 0x02, 0x03, 0x04, 0x0f, 0xf0, 0xdd, 0x0c, 0x0e } } },
+        { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
+        true, "", ""
+    },
+    /* 81 - raw code section tests (errors) */
+    {   R"ffDXD(            .rawcode
+            .data
+            .rodata
+            .section .notes
+            .kernel test1
+            .main)ffDXD",
+        BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE, { } } },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:2:13: Error: Only section '.text' can be in raw code\n"
+        "test.s:3:13: Error: Only section '.text' can be in raw code\n"
+        "test.s:4:13: Error: Only section '.text' can be in raw code\n"
+        "test.s:5:13: Error: In rawcode defining kernels is not allowed\n", ""
+    },
+    /* 82 - Gallium format (sections) */
+    {   R"ffDXD(            .gallium
+            .ascii "some text"
+            .main
+            .rodata
+            .ascii "some data"
+            .text
+            .byte 220
+            .rodata
+            .byte 211
+            .section .comment
+            .string "this is comment"
+            .kernel aa1
+            .kernel bb2
+            .main
+            .string "next comment"
+            .kernel aa1
+            .kernel bb2
+            .text
+            .ascii "next text"
+            .kernel bb2
+            .globaldata
+            .ascii "endofdata"
+            .section .test1
+            .string "this is test")ffDXD",
+        BinaryFormat::GALLIUM, GPUDeviceType::CAPE_VERDE, false, { "aa1", "bb2" },
+        {
+            { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
+                {
+                    0x73, 0x6f, 0x6d, 0x65, 0x20, 0x74, 0x65, 0x78,
+                    0x74, 0xdc, 0x6e, 0x65, 0x78, 0x74, 0x20, 0x74,
+                    0x65, 0x78, 0x74
+                } },
+            { ".rodata", ASMKERN_GLOBAL, AsmSectionType::DATA,
+                {
+                    0x73, 0x6f, 0x6d, 0x65, 0x20, 0x64, 0x61, 0x74,
+                    0x61, 0xd3, 0x65, 0x6e, 0x64, 0x6f, 0x66, 0x64,
+                    0x61, 0x74, 0x61
+                } },
+            { ".comment", ASMKERN_GLOBAL, AsmSectionType::GALLIUM_COMMENT,
+                {
+                    0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
+                    0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e, 0x74, 0x00,
+                    0x6e, 0x65, 0x78, 0x74, 0x20, 0x63, 0x6f, 0x6d,
+                    0x6d, 0x65, 0x6e, 0x74, 0x00
+                } },
+            { nullptr, 0, AsmSectionType::CONFIG, { } },
+            { nullptr, 1, AsmSectionType::CONFIG, { } },
+            { ".test1", ASMKERN_GLOBAL, AsmSectionType::EXTRA_SECTION,
+                { 0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
+                  0x74, 0x65, 0x73, 0x74, 0x00 } }
+        },
+        { { ".", 13U, 5, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 
