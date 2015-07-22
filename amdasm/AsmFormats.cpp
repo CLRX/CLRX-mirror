@@ -35,7 +35,17 @@ static const char* galliumPseudoOpNamesTbl[] =
 enum
 {
     GALLIUMOP_ARG, GALLIUMOP_ARGS, GALLIUMOP_ENTRY,
-    GALLIUM_GLOBALDATA, GALLIUM_PROGINFO
+    GALLIUMOP_GLOBALDATA, GALLIUMOP_PROGINFO
+};
+
+static const char* amdPseudoOpNamesTbl[] =
+{
+    "globaldata"
+};
+
+enum
+{
+    AMDOP_GLOBALDATA
 };
 
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
@@ -64,6 +74,8 @@ cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
 {
     if (::strcmp(name, ".text")!=0)
         throw AsmFormatException("Only section '.text' can be in raw code");
+    else
+        throw AsmFormatException("Section '.text' is already exists");
     return 0;
 }
 
@@ -369,6 +381,8 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     section.kernelId = ASMKERN_GLOBAL;
     if (::strcmp(sectionName, ".rodata") == 0) // data
     {
+        if (dataSection!=ASMSECT_NONE)
+            throw AsmFormatException("Only section '.rodata' can be in raw code");
         dataSection = thisSection;
         section.type = AsmSectionType::DATA;
         section.elfBinSectId = ELFSECTID_RODATA;
@@ -376,6 +390,8 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     else if (::strcmp(sectionName, ".text") == 0) // code
     {
+        if (codeSection!=ASMSECT_NONE)
+            throw AsmFormatException("Only section '.text' can be in raw code");
         codeSection = thisSection;
         section.type = AsmSectionType::CODE;
         section.elfBinSectId = ELFSECTID_TEXT;
@@ -383,6 +399,8 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     else if (::strcmp(sectionName, ".comment") == 0) // comment
     {
+        if (commentSection!=ASMSECT_NONE)
+            throw AsmFormatException("Only section '.comment' can be in raw code");
         commentSection = thisSection;
         section.type = AsmSectionType::GALLIUM_COMMENT;
         section.elfBinSectId = ELFSECTID_COMMENT;
@@ -393,7 +411,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
-            throw AsmFormatException("Section  is already exists");
+            throw AsmFormatException("Section is already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
         section.elfBinSectId = extraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
@@ -748,10 +766,10 @@ bool AsmGalliumHandler::parsePseudoOp(const std::string& firstName,
         case GALLIUMOP_ENTRY:
             AsmGalliumPseudoOps::doEntry(*this, stmtPlace, linePtr);
             break;
-        case GALLIUM_GLOBALDATA:
+        case GALLIUMOP_GLOBALDATA:
             AsmGalliumPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
             break;
-        case GALLIUM_PROGINFO:
+        case GALLIUMOP_PROGINFO:
             AsmGalliumPseudoOps::doProgInfo(*this, stmtPlace, linePtr);
             break;
         default:
