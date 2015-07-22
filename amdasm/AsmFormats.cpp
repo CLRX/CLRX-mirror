@@ -48,16 +48,13 @@ AsmFormatHandler::~AsmFormatHandler()
 
 AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler): AsmFormatHandler(assembler)
 {
-    assembler.currentKernel = 0;
+    assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
 }
 
 cxuint AsmRawCodeHandler::addKernel(const char* kernelName)
 {
-    if (!this->kernelName.empty() && this->kernelName != kernelName)
-        throw AsmFormatException("Only one kernel can be defined for raw code");
-    this->kernelName = kernelName;
-    return 0; // default zero kernel
+    throw AsmFormatException("In rawcode defining kernels is not allowed");
 }
 
 cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
@@ -73,9 +70,9 @@ cxuint AsmRawCodeHandler::getSectionId(const char* sectionName) const
 }
 
 void AsmRawCodeHandler::setCurrentKernel(cxuint kernel)
-{   // do nothing, no checks (assembler checks kernel id before call)
-    if (kernel >= 1)
-        throw AsmFormatException("KernelId out of range");
+{
+    if (kernel != ASMKERN_GLOBAL)
+        throw AsmFormatException("No kernels available");
 }
 
 void AsmRawCodeHandler::setCurrentSection(cxuint sectionId)

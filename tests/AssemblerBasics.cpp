@@ -131,7 +131,7 @@ label2: .int 3,6,7
 3:      vx8 = 3b
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ".text", 0, AsmSectionType::CODE,
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
             { 3, 0, 0, 0, 5, 0, 0, 0, 6, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0,
               3, 0, 0 ,0, 4, 0, 0, 0, 3, 0, 0, 0, 6, 0, 0, 0, 7, 0, 0, 0,
               11, 0, 0, 0, 12, 0, 0, 0 } } },
@@ -220,7 +220,7 @@ labelx:
         .eqv labelx,f+f
         )ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ".text", 0, AsmSectionType::CODE,
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
             { 0xfa, 0xfd, 0xfb, 0xda, 0x09, 0x09, 0x0a, 0x0a, 0x0a, 0x0b, 0x64, 0x64,
               0x78, 0x82, 0x82, 0x82 } } },
         {
@@ -1087,7 +1087,7 @@ test.s:12:30: Warning: No floating point literal, zero has been put
             .org .+4,0xcdaaa
             .eqv .,.+6)ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ".text", 0, AsmSectionType::CODE,
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
             {
                 0x00, 0x02, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c,
@@ -1407,7 +1407,7 @@ test.s:38:23: Error: Expected ',' before argument
             . = 7
             . = .-6)ffDXD",
         BinaryFormat::RAWCODE, GPUDeviceType::CAPE_VERDE, false, { },
-        { { ".text", 0, AsmSectionType::CODE,
+        { { ".text", ASMKERN_GLOBAL, AsmSectionType::CODE,
             { 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
               0x04, 0x00, 0x00, 0x00 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
