@@ -329,8 +329,8 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
-    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA,
-                ELFSECTID_RODATA, ".rodata" });
+    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE,
+                ELFSECTID_TEXT, ".text" });
     insideArgs = insideProgInfo = false;
     savedSection = 0;
 }
