@@ -569,7 +569,9 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         asmr.printWarning(sizeStrPlace, "Size of argument out of range");
     
     uint64_t targetSize = size;
-    uint64_t targetAlign = 1U<<(31-CLZ32(size));
+    uint64_t targetAlign = (size!=0) ? 1U<<(31-CLZ32(size)) : 1;
+    if (size > targetAlign)
+        targetAlign <<= 1;
     bool sext = false;
     GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
     
@@ -592,7 +594,6 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         {
             skipSpacesToEnd(linePtr, end);
             const char* targetAlignPlace = linePtr;
-            targetAlign = 4;
             good &= getAbsoluteValueArg(asmr, targetAlign, linePtr, false);
             
             if (targetAlign > UINT32_MAX || targetAlign == 0)

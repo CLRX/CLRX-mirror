@@ -274,14 +274,6 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     static void setDriverVersion(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    static void setSource(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setLLVMIR(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    
-    static void doKernelData(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    
     static void addCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, uint32_t calNoteId);
     
@@ -289,8 +281,6 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
                       const char* linePtr);
     
     static void addHeader(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void addKernelData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     /// add any entry with two 32-bit integers
     static void doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
