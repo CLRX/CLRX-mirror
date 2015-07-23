@@ -40,12 +40,34 @@ enum
 
 static const char* amdPseudoOpNamesTbl[] =
 {
-    "globaldata"
+    "arg", "boolconsts", "calnote", "cbid",
+    "cbmask", "compile_options", "condout", "config",
+    "constantbuffers", "cws", "driver_info", "driver_version",
+    "earlyexit", "entry", "floatconsts", "floatmode",
+    "globalbuffers", "globaldata", "header", "hwlocal",
+    "hwregion", "ieeemode", "inputs", "inputsamplers",
+    "intconsts", "metadata", "outputs", "persistentbuffers",
+    "pgmrsrc2", "printfid", "privateid", "proginfo",
+    "sampler", "scratchbuffer", "scratchbuffers", "segment",
+    "sgprsnum", "subconstantbuffers", "uav", "uavid",
+    "uavmailboxsize", "uavopmask", "uavprivate", "useconstdata",
+    "useprintf", "userdata", "vgprsnum"
 };
 
 enum
 {
-    AMDOP_GLOBALDATA = 0
+    AMDOP_ARG = 0, AMDOP_BOOLCONSTS, AMDOP_CALNOTE, AMDOP_CBID,
+    AMDOP_CBMASK, AMDOP_COMPILE_OPTIONS, AMDOP_CONDOUT, AMDOP_CONFIG,
+    AMDOP_CONSTANTBUFFERS, AMDOP_CWS, AMDOP_DRIVER_INFO, AMDOP_DRIVER_VERSION,
+    AMDOP_EARLYEXIT, AMDOP_ENTRY, AMDOP_FLOATCONSTS, AMDOP_FLOATMODE,
+    AMDOP_GLOBALBUFFERS, AMDOP_GLOBALDATA, AMDOP_HEADER, AMDOP_HWLOCAL,
+    AMDOP_HWREGION, AMDOP_IEEEMODE, AMDOP_INPUTS, AMDOP_INPUTSAMPLERS,
+    AMDOP_INTCONSTS, AMDOP_METADATA, AMDOP_OUTPUTS, AMDOP_PERSISTENTBUFFERS,
+    AMDOP_PGMRSRC2, AMDOP_PRINTFID, AMDOP_PRIVATEID, AMDOP_PROGINFO,
+    AMDOP_SAMPLER, AMDOP_SCRATCHBUFFER, AMDOP_SCRATCHBUFFERS, AMDOP_SEGMENT,
+    AMDOP_SGPRSNUM, AMDOP_SUBCONSTANTBUFFERS, AMDOP_UAV, AMDOP_UAVID,
+    AMDOP_UAVMAILBOXSIZE, AMDOP_UAVOPMASK, AMDOP_UAVPRIVATE, AMDOP_USECONSTDATA,
+    AMDOP_USEPRINTF, AMDOP_USERDATA, AMDOP_VGPRSNUM
 };
 
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
@@ -294,9 +316,125 @@ void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpP
         return;
     
     if (handler.dataSection==ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
-            ELFSECTID_UNDEF, nullptr});
+            ELFSECTID_UNDEF, nullptr });
+        handler.dataSection = thisSection;
+    }
     asmr.goToSection(pseudoOpPlace, handler.dataSection);
+}
+
+void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "Metadata can be defined only inside kernel");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel].configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Metadata can't be defined if configuration defined");
+        return;
+    }
+    
+    cxuint& metadataSection = handler.kernelStates[asmr.currentKernel].metadataSection;
+    if (metadataSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_METADATA,
+            ELFSECTID_UNDEF, nullptr });
+        metadataSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, metadataSection);
+}
+
+static const uint32_t singleValueCALNotesMask =
+        (1U<<CALNOTE_ATI_EARLYEXIT) | (1U<<CALNOTE_ATI_CONDOUT) |
+        (1U<<CALNOTE_ATI_UAV_OP_MASK) | (1U<<CALNOTE_ATI_UAV_MAILBOX_SIZE);
+
+void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, uint32_t calNoteId)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value = 0;
+    skipSpacesToEnd(linePtr, end);
+    const char* valuePlace = linePtr;
+    const bool singleValue = calNoteId < 32 &&
+            (singleValueCALNotesMask & (1U<<calNoteId)) && linePtr != end;
+    if (singleValue)
+    {
+        if (!getAbsoluteValueArg(asmr, value, linePtr, false))
+            return; // error
+        if (value > UINT32_MAX)
+            asmr.printWarning(valuePlace, "64-bit value of address has been truncated");
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
+        return;
+    }
+    AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    if (kernel.configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace, "CALNote can't be defined if configuration defined");
+        return;
+    }
+    // always add new CALnote
+    const cxuint thisSection = handler.sections.size();
+    handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_CALNOTE,
+            ELFSECTID_UNDEF, nullptr, calNoteId });
+    kernel.calNoteSections.push_back({thisSection});
+    asmr.goToSection(pseudoOpPlace, thisSection);
+    if (singleValue)
+    {   // with single value
+        uint32_t outValue = LEV(uint32_t(value));
+        asmr.putData(4, (const cxbyte*)&outValue);
+    }
+}
+
+void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                  const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "Header can be defined only inside kernel");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel].configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace, "Header can't be defined if configuration defined");
+        return;
+    }
+    
+    cxuint& headerSection = handler.kernelStates[asmr.currentKernel].headerSection;
+    if (headerSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_HEADER,
+            ELFSECTID_UNDEF, nullptr });
+        headerSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, headerSection);
 }
 
 }
@@ -310,8 +448,134 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
     
     switch(pseudoOp)
     {
+        case AMDOP_ARG:
+            break;
+        case AMDOP_BOOLCONSTS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_BOOL32CONSTS);
+            break;
+        case AMDOP_CALNOTE:
+            break;
+        case AMDOP_CBID:
+            break;
+        case AMDOP_CBMASK:
+            break;
+        case AMDOP_COMPILE_OPTIONS:
+            break;
+        case AMDOP_CONDOUT:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_CONDOUT);
+            break;
+        case AMDOP_CONFIG:
+            break;
+        case AMDOP_CONSTANTBUFFERS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_CONSTANT_BUFFERS);
+            break;
+        case AMDOP_CWS:
+            break;
+        case AMDOP_DRIVER_INFO:
+            break;
+        case AMDOP_DRIVER_VERSION:
+            break;
+        case AMDOP_EARLYEXIT:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_EARLYEXIT);
+            break;
+        case AMDOP_ENTRY:
+            break;
+        case AMDOP_FLOATCONSTS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_FLOAT32CONSTS);
+            break;
+        case AMDOP_FLOATMODE:
+            break;
+        case AMDOP_GLOBALBUFFERS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_GLOBAL_BUFFERS);
+            break;
         case AMDOP_GLOBALDATA:
             AsmAmdPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
+            break;
+        case AMDOP_HEADER:
+            AsmAmdPseudoOps::addHeader(*this, stmtPlace, linePtr);
+            break;
+        case AMDOP_HWLOCAL:
+            break;
+        case AMDOP_HWREGION:
+            break;
+        case AMDOP_IEEEMODE:
+            break;
+        case AMDOP_INPUTS:
+            break;
+        case AMDOP_INPUTSAMPLERS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_INPUT_SAMPLERS);
+            break;
+        case AMDOP_INTCONSTS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_INT32CONSTS);
+            break;
+        case AMDOP_METADATA:
+            AsmAmdPseudoOps::addMetadata(*this, stmtPlace, linePtr);
+            break;
+        case AMDOP_OUTPUTS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_OUTPUTS);
+            break;
+        case AMDOP_PERSISTENTBUFFERS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_PERSISTENT_BUFFERS);
+            break;
+        case AMDOP_PGMRSRC2:
+            break;
+        case AMDOP_PRINTFID:
+            break;
+        case AMDOP_PRIVATEID:
+            break;
+        case AMDOP_PROGINFO:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_PROGINFO);
+            break;
+        case AMDOP_SAMPLER:
+            break;
+        case AMDOP_SCRATCHBUFFER:
+            break;
+        case AMDOP_SCRATCHBUFFERS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_SCRATCH_BUFFERS);
+            break;
+        case AMDOP_SEGMENT:
+            break;
+        case AMDOP_SGPRSNUM:
+            break;
+        case AMDOP_SUBCONSTANTBUFFERS:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_SUB_CONSTANT_BUFFERS);
+            break;
+        case AMDOP_UAV:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_UAV);
+            break;
+        case AMDOP_UAVID:
+            break;
+        case AMDOP_UAVMAILBOXSIZE:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_UAV_MAILBOX_SIZE);
+            break;
+        case AMDOP_UAVOPMASK:
+            AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
+                            CALNOTE_ATI_UAV_OP_MASK);
+            break;
+        case AMDOP_UAVPRIVATE:
+            break;
+        case AMDOP_USECONSTDATA:
+            break;
+        case AMDOP_USEPRINTF:
+            break;
+        case AMDOP_USERDATA:
+            break;
+        case AMDOP_VGPRSNUM:
             break;
         default:
             return false;
@@ -569,7 +833,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         asmr.printWarning(sizeStrPlace, "Size of argument out of range");
     
     uint64_t targetSize = size;
-    uint64_t targetAlign = (size!=0) ? 1U<<(31-CLZ32(size)) : 1;
+    uint64_t targetAlign = (size!=0) ? 1ULL<<(63-CLZ64(size)) : 1;
     if (size > targetAlign)
         targetAlign <<= 1;
     bool sext = false;
@@ -599,7 +863,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
             if (targetAlign > UINT32_MAX || targetAlign == 0)
                 asmr.printWarning(targetAlignPlace,
                                   "Target alignment of argument out of range");
-            if (targetAlign != (1U<<(31-CLZ32(targetAlign))))
+            if (targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
             {
                 asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
                 good = false;

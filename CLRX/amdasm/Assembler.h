@@ -198,6 +198,7 @@ private:
         AsmSectionType type;
         cxuint elfBinSectId;
         const char* name;
+        uint32_t extraId; // for example CALNote id
     };
     struct Kernel
     {

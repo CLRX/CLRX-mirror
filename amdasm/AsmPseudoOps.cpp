@@ -81,7 +81,7 @@ static const char* pseudoOpNamesTbl[] =
     "32bit", "64bit", "abort", "align",
     "amd", "arch", "ascii", "asciz",
     "balign", "balignl", "balignw", "byte",
-    "config", "data", "double", "else",
+    "data", "double", "else",
     "elseif", "elseifb", "elseifc", "elseifdef",
     "elseifeq", "elseifeqs", "elseifge", "elseifgt",
     "elseifle", "elseiflt", "elseifnb", "elseifnc",
@@ -113,7 +113,7 @@ enum
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN,
     ASMOP_AMD, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
     ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE,
-    ASMOP_CONFIG, ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
+    ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
     ASMOP_ELSEIF, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
     ASMOP_ELSEIFEQ, ASMOP_ELSEIFEQS, ASMOP_ELSEIFGE, ASMOP_ELSEIFGT,
     ASMOP_ELSEIFLE, ASMOP_ELSEIFLT, ASMOP_ELSEIFNB, ASMOP_ELSEIFNC,
@@ -1867,23 +1867,6 @@ void Assembler::parsePseudoOps(const std::string firstName,
                     format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
                         (pseudoOp == ASMOP_AMD) ? BinaryFormat::AMD :
                         BinaryFormat::RAWCODE;
-            }
-            break;
-        case ASMOP_CONFIG:
-            if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
-            {
-                if (format == BinaryFormat::AMD)
-                {
-                    initializeOutputFormat();
-                    /*if (inGlobal)
-                        printError(linePtr,
-                               "Configuration in global layout is illegal");
-                    else
-                        inAmdConfig = true; // inside Amd Config*/
-                }
-                else
-                    printError(linePtr,
-                       "Configuration section only for AMD Catalyst binaries");
             }
             break;
         case ASMOP_DATA:

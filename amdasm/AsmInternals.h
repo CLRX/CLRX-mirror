@@ -289,7 +289,7 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     static void doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    /* user condfiguration pseudo-ops */
+    /* user configuration pseudo-ops */
     static void doArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
