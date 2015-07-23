@@ -972,7 +972,9 @@ public:
     /// add initiali defsyms
     void addInitialDefSym(const std::string& symName, uint64_t name);
     
-    const AsmFormatHandler* getFormatHandler();
+    /// get format handler
+    const AsmFormatHandler* getFormatHandler() const
+    { return formatHandler; }
     
     /// main routine to assemble code
     bool assemble();
