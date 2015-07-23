@@ -76,7 +76,6 @@ cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
         throw AsmFormatException("Only section '.text' can be in raw code");
     else
         throw AsmFormatException("Section '.text' is already exists");
-    return 0;
 }
 
 cxuint AsmRawCodeHandler::getSectionId(const char* sectionName) const
@@ -171,8 +170,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     {
         if (kernelId == ASMKERN_GLOBAL)
             throw AsmFormatException("Section '.data' permitted only inside kernels");
-        Kernel& kernelState = kernelStates[kernelId];
-        kernelState.dataSection = thisSection;
+        kernelStates[kernelId].dataSection = thisSection;
         section.type = AsmSectionType::DATA;
         section.elfBinSectId = ELFSECTID_DATA;
         section.name = ".data"; // set static name (available by whole lifecycle)*/
@@ -181,8 +179,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     {
         if (kernelId == ASMKERN_GLOBAL)
             throw AsmFormatException("Section '.text' permitted only inside kernels");
-        Kernel& kernelState = kernelStates[kernelId];
-        kernelState.codeSection = thisSection;
+        kernelStates[kernelId].codeSection = thisSection;
         section.type = AsmSectionType::CODE;
         section.elfBinSectId = ELFSECTID_TEXT;
         section.name = ".text"; // set static name (available by whole lifecycle)*/
@@ -249,6 +246,9 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 
 void AsmAmdHandler::setCurrentKernel(cxuint kernel)
 {
+    if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
+        throw AsmFormatException("KernelId out of range");
+        
     saveCurrentSection();
     assembler.currentKernel = kernel;
     if (kernel != ASMKERN_GLOBAL)
