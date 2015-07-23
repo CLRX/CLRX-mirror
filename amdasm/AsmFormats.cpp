@@ -175,7 +175,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
         kernelState.dataSection = thisSection;
         section.type = AsmSectionType::DATA;
         section.elfBinSectId = ELFSECTID_DATA;
-        section.name = ".text"; // set static name (available by whole lifecycle)*/
+        section.name = ".data"; // set static name (available by whole lifecycle)*/
     }
     else if (::strcmp(sectionName, ".text") == 0) // code
     {
@@ -200,6 +200,8 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     else
     {   /* inside kernel binary */
+        if (kernelId >= kernelStates.size())
+            throw AsmFormatException("KernelId out of range");
         Kernel& kernelState = kernelStates[kernelId];
         auto out = kernelState.extraSectionMap.insert(std::make_pair(
                     std::string(sectionName), thisSection));
