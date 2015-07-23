@@ -455,6 +455,7 @@ void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
         assembler.currentSection = kernelStates[kernel].defaultSection;
     else // default main section
         assembler.currentSection = savedSection;
+    insideArgs = insideProgInfo = false;
 }
 
 void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
@@ -801,8 +802,7 @@ bool AsmGalliumHandler::prepareBinary()
                 output.commentSize = asmSection.content.size();
                 output.comment = (const char*)asmSection.content.data();
                 break;
-            default:
-                abort(); /// fatal error
+            default: // ignore other sections
                 break;
         }
     }

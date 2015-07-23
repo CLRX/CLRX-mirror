@@ -3069,6 +3069,7 @@ ce:
             .rodata
             .ascii "some data"
             .text
+aa1: bb2:   # kernel labels
             .byte 220
             .rodata
             .byte 211
@@ -3116,9 +3117,14 @@ ce:
                 { 0x74, 0x68, 0x69, 0x73, 0x20, 0x69, 0x73, 0x20,
                   0x74, 0x65, 0x73, 0x74, 0x00, 0x61, 0x61, 0x00 } }
         },
-        { { ".", 16U, 5, 0U, true, false, false, 0, 0 } },
+        {
+            { ".", 16U, 5, 0U, true, false, false, 0, 0 },
+            { "aa1", 9U, 0, 0U, true, true, false, 0, 0 },
+            { "bb2", 9U, 0, 0U, true, true, false, 0, 0 }
+        },
         true, "", ""
     },
+    /* 82 - Gallium format (sections, errors) */
     {   R"ffDXD(            .gallium
             .kernel aa22
             .int 24,5,6

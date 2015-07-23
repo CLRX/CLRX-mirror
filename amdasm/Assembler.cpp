@@ -1367,5 +1367,8 @@ bool Assembler::assemble()
         }
         clauses.pop();
     }
+    if (good && formatHandler!=nullptr)
+        formatHandler->prepareBinary();
+        
     return good;
 }
