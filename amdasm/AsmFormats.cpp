@@ -610,11 +610,11 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
             {
                 skipSpacesToEnd(linePtr, end);
                 const char* numExtPlace = linePtr;
-                if (getNameArg(asmr, name, linePtr, "numeric extension", true))
+                if (getNameArg(asmr, name, linePtr, "numeric extension", false))
                 {
                     if (name == "sext")
                         sext = true;
-                    else if (name != "zext")
+                    else if (name != "zext" && !name.empty())
                     {
                         asmr.printError(numExtPlace, "Unknown numeric extension");
                         good = false;
@@ -629,13 +629,13 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 {
                     skipSpacesToEnd(linePtr, end);
                     const char* semanticPlace = linePtr;
-                    if (getNameArg(asmr, name, linePtr, "argument semantic", true))
+                    if (getNameArg(asmr, name, linePtr, "argument semantic", false))
                     {
                         if (name == "griddim")
                             argSemantic = GalliumArgSemantic::GRID_DIMENSION;
                         else if (name == "gridoffset")
                             argSemantic = GalliumArgSemantic::GRID_OFFSET;
-                        else if (name != "general")
+                        else if (name != "general" && !name.empty())
                         {
                             asmr.printError(semanticPlace,
                                     "Unknown argument semantic type");
