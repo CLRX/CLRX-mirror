@@ -528,9 +528,9 @@ static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
     { "image2d_wr", GalliumArgType::IMAGE2D_WRONLY },
     { "image3d_rd", GalliumArgType::IMAGE3D_RDONLY },
     { "image3d_wr", GalliumArgType::IMAGE3D_WRONLY },
-    { "scalar", GalliumArgType::SCALAR },
     { "local", GalliumArgType::LOCAL },
-    { "sampler", GalliumArgType::SAMPLER }
+    { "sampler", GalliumArgType::SAMPLER },
+    { "scalar", GalliumArgType::SCALAR }
 };
 
 void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
@@ -545,13 +545,15 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     GalliumArgType argType = GalliumArgType::GLOBAL;
     if (getNameArg(asmr, name, linePtr, "argument type"))
     {
-        argType = GalliumArgType(binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
-                     name.c_str(), CStringLess())-galliumArgTypesMap);
-        if (int(argType) == 9) // end of this map
+        cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
+                     name.c_str(), CStringLess())-galliumArgTypesMap;
+        if (index == 9) // end of this map
         {
             asmr.printError(nameStringPlace, "Unknown argument type");
             good = false;
         }
+        else
+            argType = galliumArgTypesMap[index].second;
     }
     else
         good = false;
@@ -578,10 +580,10 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     {
         skipSpacesToEnd(linePtr, end);
         const char* targetSizePlace = linePtr;
-        uint64_t tgtSize = size;
-        good &= getAbsoluteValueArg(asmr, tgtSize, linePtr, false);
+        targetSize = size;
+        good &= getAbsoluteValueArg(asmr, targetSize, linePtr, false);
         
-        if (tgtSize > UINT32_MAX || tgtSize == 0)
+        if (targetSize > UINT32_MAX || targetSize == 0)
             asmr.printWarning(targetSizePlace, "Target size of argument out of range");
         
         if (!skipComma(asmr, haveComma, linePtr))
@@ -590,13 +592,13 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         {
             skipSpacesToEnd(linePtr, end);
             const char* targetAlignPlace = linePtr;
-            uint64_t tgtAlign = 4;
-            good &= getAbsoluteValueArg(asmr, tgtAlign, linePtr, false);
+            targetAlign = 4;
+            good &= getAbsoluteValueArg(asmr, targetAlign, linePtr, false);
             
-            if (tgtAlign > UINT32_MAX || tgtAlign == 0)
+            if (targetAlign > UINT32_MAX || targetAlign == 0)
                 asmr.printWarning(targetAlignPlace,
                                   "Target alignment of argument out of range");
-            if (tgtAlign == (1U<<(31-CLZ32(tgtAlign))))
+            if (targetAlign != (1U<<(31-CLZ32(targetAlign))))
             {
                 asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
                 good = false;
@@ -608,7 +610,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
             {
                 skipSpacesToEnd(linePtr, end);
                 const char* numExtPlace = linePtr;
-                if (getNameArg(asmr, name, linePtr, "numeric extension", false))
+                if (getNameArg(asmr, name, linePtr, "numeric extension", true))
                 {
                     if (name == "sext")
                         sext = true;
@@ -627,7 +629,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 {
                     skipSpacesToEnd(linePtr, end);
                     const char* semanticPlace = linePtr;
-                    if (getNameArg(asmr, name, linePtr, "argument semantic", false))
+                    if (getNameArg(asmr, name, linePtr, "argument semantic", true))
                     {
                         if (name == "griddim")
                             argSemantic = GalliumArgSemantic::GRID_DIMENSION;

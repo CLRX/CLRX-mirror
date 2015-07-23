@@ -210,7 +210,7 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     {
         if (!requiredArg)
             return true; // succeed
-        std::string error("Expected");
+        std::string error("Expected ");
         error += objName;
         asmr.printError(linePtr, error.c_str());
         return false;
