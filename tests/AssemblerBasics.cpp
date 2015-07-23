@@ -3134,6 +3134,78 @@ ce:
         "test.s:4:13: Error: Writing data into non-writeable section is illegal\n"
         "test.s:5:13: Error: Change output counter inside non-addressable "
         "section is illegal\n", ""
+    },
+    /* AmdFormat (sections) */
+    {   R"ffDXD(            .amd
+            .globaldata
+            .ascii "aaabbb"
+            .section .ulu
+            .ascii "server"
+            .kernel aaa1
+            .section .ulu2
+            .ascii "linux"
+            .main
+            .section .ulu
+            .ascii "xserver"
+            .kernel aaa1
+            .ascii "oops"
+            .data
+            .string "dd777dd"
+            .section .ulu
+            .ascii "uline"
+            .main
+            .ascii "..xXx.."
+            .kernel aaa1
+            .ascii "nfx"
+            
+            .kernel bxv
+            .asciz "zeroOne"
+            .rodata
+            .asciz "zeroTwo"
+            .kernel aaa1
+            .ascii "33"
+            .main
+            .asciz "top1"
+            .globaldata
+            .ascii "nextType"
+            .kernel aaa1
+            .text
+            .main
+            .ascii "yetAnother"
+            .kernel aaa1
+            .asciz "burger"
+            .main
+            .kernel aaa1
+            .asciz "radeon"
+            .kernel bxv
+            .asciz "fury")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { "aaa1", "bxv" },
+        {
+            { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+                {   0x61, 0x61, 0x61, 0x62, 0x62, 0x62, 0x6e, 0x65,
+                    0x78, 0x74, 0x54, 0x79, 0x70, 0x65, 0x79, 0x65,
+                    0x74, 0x41, 0x6e, 0x6f, 0x74, 0x68, 0x65, 0x72 } },
+            { ".ulu", ASMKERN_GLOBAL, AsmSectionType::EXTRA_SECTION,
+                {   0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x78, 0x73,
+                    0x65, 0x72, 0x76, 0x65, 0x72, 0x2e, 0x2e, 0x78,
+                    0x58, 0x78, 0x2e, 0x2e, 0x74, 0x6f, 0x70, 0x31, 0x00 } },
+            { ".text", 0, AsmSectionType::CODE,
+                {   0x62, 0x75, 0x72, 0x67, 0x65, 0x72, 0x00, 0x72,
+                    0x61, 0x64, 0x65, 0x6f, 0x6e, 0x00 } },
+            { ".ulu2", 0, AsmSectionType::EXTRA_SECTION,
+                {   0x6c, 0x69, 0x6e, 0x75, 0x78, 0x6f, 0x6f, 0x70, 0x73 } },
+            { ".data", 0, AsmSectionType::DATA,
+                {   0x64, 0x64, 0x37, 0x37, 0x37, 0x64, 0x64, 0x00 } },
+            { ".ulu", 0, AsmSectionType::EXTRA_SECTION,
+                { 0x75, 0x6c, 0x69, 0x6e, 0x65, 0x6e, 0x66, 0x78, 0x33, 0x33 } },
+            { ".text", 1, AsmSectionType::CODE,
+                { 0x7a, 0x65, 0x72, 0x6f, 0x4f, 0x6e, 0x65, 0x00 } },
+            { ".rodata", 1, AsmSectionType::EXTRA_SECTION,
+                {   0x7a, 0x65, 0x72, 0x6f, 0x54, 0x77, 0x6f, 0x00,
+                    0x66, 0x75, 0x72, 0x79, 0x00 } }
+        },
+        { { ".", 14U, 2, 0U, true, false, false, 0, 0 } },
+        true, "", ""
     }
 };
 
