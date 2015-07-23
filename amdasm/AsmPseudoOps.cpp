@@ -61,7 +61,7 @@ static const char* macroRepeatPseudoOpNamesTbl[] =
 
 enum
 {
-    ASMCOP_ELSE, ASMCOP_ELSEIF, ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
+    ASMCOP_ELSE = 0, ASMCOP_ELSEIF, ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
     ASMCOP_ELSEIFEQ, ASMCOP_ELSEIFEQS, ASMCOP_ELSEIFGE, ASMCOP_ELSEIFGT,
     ASMCOP_ELSEIFLE, ASMCOP_ELSEIFLT, ASMCOP_ELSEIFNB, ASMCOP_ELSEIFNC,
     ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES, ASMCOP_ELSEIFNOTDEF,
@@ -74,7 +74,7 @@ enum
 };
 
 enum
-{ ASMMROP_ENDM, ASMMROP_ENDR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
+{ ASMMROP_ENDM = 0, ASMMROP_ENDR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
 
 static const char* pseudoOpNamesTbl[] =
 {
@@ -2179,6 +2179,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::putIntegers<uint32_t>(*this, stmtPlace, linePtr);
             break;
         default:
+            initializeOutputFormat();
             if (!formatHandler->parsePseudoOp(firstName, stmtPlace, linePtr))
             {
                 // macro substitution

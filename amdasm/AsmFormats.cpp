@@ -34,7 +34,7 @@ static const char* galliumPseudoOpNamesTbl[] =
 
 enum
 {
-    GALLIUMOP_ARG, GALLIUMOP_ARGS, GALLIUMOP_ENTRY,
+    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_ENTRY,
     GALLIUMOP_GLOBALDATA, GALLIUMOP_PROGINFO
 };
 
@@ -45,7 +45,7 @@ static const char* amdPseudoOpNamesTbl[] =
 
 enum
 {
-    AMDOP_GLOBALDATA
+    AMDOP_GLOBALDATA = 0
 };
 
 AsmFormatException::AsmFormatException(const std::string& message) : Exception(message)
@@ -134,8 +134,16 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler)
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
-    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA });
+    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
     savedSection = 0;
+}
+
+void AsmAmdHandler::saveCurrentSection()
+{   /// save previous section
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+        savedSection = assembler.currentSection;
+    else
+        kernelStates[assembler.currentKernel].savedSection = assembler.currentSection;
 }
 
 cxuint AsmAmdHandler::addKernel(const char* kernelName)
@@ -144,17 +152,14 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
-            thisSection, ASMSECT_NONE, { } });
+            thisSection, ASMSECT_NONE, { }, { }, 0, thisSection });
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
-    /// save previous section
-    if (assembler.currentKernel == ASMKERN_GLOBAL)
-        savedSection = assembler.currentSection;
-    else
-        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
+    
+    saveCurrentSection();
     
     assembler.currentKernel = thisKernel;
     assembler.currentSection = thisSection;
-    return thisSection;
+    return thisKernel;
 }
 
 cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
@@ -167,9 +172,9 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
         if (kernelId == ASMKERN_GLOBAL)
             throw AsmFormatException("Section '.data' permitted only inside kernels");
         Kernel& kernelState = kernelStates[kernelId];
-        kernelState.codeSection = thisSection;
-        section.type = AsmSectionType::CODE;
-        section.elfBinSectId = ELFSECTID_TEXT;
+        kernelState.dataSection = thisSection;
+        section.type = AsmSectionType::DATA;
+        section.elfBinSectId = ELFSECTID_DATA;
         section.name = ".text"; // set static name (available by whole lifecycle)*/
     }
     else if (::strcmp(sectionName, ".text") == 0) // code
@@ -187,7 +192,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
-            throw AsmFormatException("Section  is already exists");
+            throw AsmFormatException("Section is already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
         section.elfBinSectId = extraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
@@ -199,7 +204,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
         auto out = kernelState.extraSectionMap.insert(std::make_pair(
                     std::string(sectionName), thisSection));
         if (!out.second)
-            throw AsmFormatException("Section  is already exists");
+            throw AsmFormatException("Section is already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
         section.elfBinSectId = kernelState.extraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
@@ -207,11 +212,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     sections.push_back(section);
     
-    /// save previous section
-    if (assembler.currentKernel == ASMKERN_GLOBAL)
-        savedSection = assembler.currentSection;
-    else
-        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
+    saveCurrentSection();
     
     assembler.currentKernel = kernelId;
     assembler.currentSection = thisSection;
@@ -246,13 +247,8 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
 
 void AsmAmdHandler::setCurrentKernel(cxuint kernel)
 {
+    saveCurrentSection();
     assembler.currentKernel = kernel;
-    /// save previous section
-    if (assembler.currentKernel == ASMKERN_GLOBAL)
-        savedSection = assembler.currentSection;
-    else
-        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
-    
     if (kernel != ASMKERN_GLOBAL)
         assembler.currentSection = kernelStates[kernel].savedSection;
     else
@@ -264,12 +260,7 @@ void AsmAmdHandler::setCurrentSection(cxuint sectionId)
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
     
-    /// save previous section
-    if (assembler.currentKernel == ASMKERN_GLOBAL)
-        savedSection = assembler.currentSection;
-    else
-        kernelStates[assembler.currentSection].savedSection = assembler.currentSection;
-    
+    saveCurrentSection();
     assembler.currentKernel = sections[sectionId].kernelId;
     assembler.currentSection = sectionId;
 }
@@ -278,45 +269,52 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
 {   /* find section */
     if (sectionId >= sections.size())
         throw AsmFormatException("Section doesn't exists");
-    const char* name = nullptr;
-    const Section& section = sections[sectionId];
-    Flags flags = 0;
-    switch (section.type)
-    {
-        case AsmSectionType::CODE:
-            name = ".text";
-            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
-            break;
-        case AsmSectionType::DATA:
-            name = (section.kernelId != ASMKERN_GLOBAL) ? ".data" : nullptr;
-            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        case AsmSectionType::CONFIG:
-            name = ".config";
-            break;
-        case AsmSectionType::AMD_HEADER:
-            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        case AsmSectionType::AMD_METADATA:
-            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        case AsmSectionType::AMD_CALNOTE:
-            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        case AsmSectionType::EXTRA_SECTION:
-            flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-            break;
-        default:
-            // error
-            break;
-    }
-    return { name, section.type, flags };
+    AsmFormatHandler::SectionInfo info;
+    info.type = sections[sectionId].type;
+    info.flags = 0;
+    if (info.type == AsmSectionType::CODE)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    else if (info.type != AsmSectionType::CONFIG)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+    info.name = sections[sectionId].name;
+    return info;
+}
+
+namespace CLRX
+{
+void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.dataSection==ASMSECT_NONE)
+        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
+            ELFSECTID_UNDEF, nullptr});
+    asmr.goToSection(pseudoOpPlace, handler.dataSection);
+}
+
 }
 
 bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
        const char* stmtPlace, const char* linePtr)
 {
-    return false;
+    const size_t pseudoOp = binaryFind(amdPseudoOpNamesTbl, amdPseudoOpNamesTbl +
+                    sizeof(amdPseudoOpNamesTbl)/sizeof(char*), firstName.c_str()+1,
+                   CStringLess()) - amdPseudoOpNamesTbl;
+    
+    switch(pseudoOp)
+    {
+        case AMDOP_GLOBALDATA:
+            AsmAmdPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
+            break;
+        default:
+            return false;
+    }
+    return true;
 }
 
 bool AsmAmdHandler::prepareBinary()
@@ -360,7 +358,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
         { 0x0000b84cU, 0x00001788U },
         { 0x0000b860U, 0 } }, 0, {} });
     /// add kernel config section
-    sections.push_back({ thisKernel, AsmSectionType::CONFIG });
+    sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
     kernelStates.push_back({ thisSection, false });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
@@ -478,14 +476,11 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
     AsmFormatHandler::SectionInfo info;
     info.type = sections[sectionId].type;
     info.flags = 0;
-    if (sectionId == codeSection)
+    if (info.type == AsmSectionType::CODE)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
-    else if (sectionId == dataSection)
+    else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-    else if (sectionId == commentSection)
-        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
-    else if (sections[sectionId].type == AsmSectionType::EXTRA_SECTION)
-        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+    
     info.name = sections[sectionId].name;
     return info;
 }
@@ -497,10 +492,8 @@ void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler, const char* p
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    std::string sectionName;
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

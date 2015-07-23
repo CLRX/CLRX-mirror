@@ -1173,6 +1173,16 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
     }
 }
 
+void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId)
+{
+    try
+    { formatHandler->setCurrentSection(sectionId); }
+    catch(const AsmFormatException& ex) // if error
+    { printError(pseudoOpPlace, ex.what()); }
+    
+    currentOutPos = sections[currentSection].content.size();
+}
+
 void Assembler::initializeOutputFormat()
 {
     if (formatHandler!=nullptr)

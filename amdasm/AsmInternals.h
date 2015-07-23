@@ -264,6 +264,9 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 
 struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
 {
+    static void doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void setCompileOptions(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void setDriverInfo(AsmAmdHandler& handler, const char* pseudoOpPlace,

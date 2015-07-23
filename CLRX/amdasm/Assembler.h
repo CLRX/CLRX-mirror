@@ -217,6 +217,8 @@ private:
     cxuint dataSection; // global
     cxuint savedSection;
     cxuint extraSectionCount;
+    
+    void saveCurrentSection();
 public:
     explicit AsmAmdHandler(Assembler& assembler);
     ~AsmAmdHandler() = default;
@@ -884,7 +886,7 @@ private:
     void goToMain(const char* pseudoOpPlace);
     void goToKernel(const char* pseudoOpPlace, const char* kernelName);
     void goToSection(const char* pseudoOpPlace, const char* sectionName);
-    void goToSection(cxuint sectionId);
+    void goToSection(const char* pseudoOpPlace, cxuint sectionId);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
     
