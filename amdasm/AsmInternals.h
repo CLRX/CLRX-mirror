@@ -262,6 +262,26 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
                       const char* linePtr);
 };
 
+enum AmdConfigValueTarget
+{
+    AMDCVAL_SAMPLER,
+    AMDCVAL_SGPRSNUM,
+    AMDCVAL_VGPRSNUM,
+    AMDCVAL_PGMRSRC2,
+    AMDCVAL_IEEEMODE,
+    AMDCVAL_FLOATMODE,
+    AMDCVAL_HWLOCAL,
+    AMDCVAL_HWREGION,
+    AMDCVAL_PRIVATEID,
+    AMDCVAL_SCRATCHBUFFER,
+    AMDCVAL_UAVPRIVATE,
+    AMDCVAL_UAVID,
+    AMDCVAL_CBID,
+    AMDCVAL_PRINTFID,
+    AMDCVAL_EARLYEXIT,
+    AMDCVAL_CONDOUT
+};
+
 struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
 {
     static void doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -282,56 +302,30 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     
     static void addHeader(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
+    static void doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     /// add any entry with two 32-bit integers
     static void doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
+                      const char* linePtr, uint32_t requiredCalNoteIdMask);
     /// add any entry with two 32-bit integers
     static void doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     /* user configuration pseudo-ops */
-    static void doArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+    static void doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    static void doSampler(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+    static void setConfigValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, AmdConfigValueTarget target);
+    
+    static void setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    static void setCWS(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+    static void setUseConstData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    static void setSPGRsNum(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+    static void setUsePrintf(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    static void setVPGRsNum(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setPgmRsrc2(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setIeeeMode(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setFloatMode(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setHwLocal(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setHwRegion(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setScratchBuffer(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setUavPrivate(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setPrivateId(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setUavId(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setCbId(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setPrintfId(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setEarlyExit(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setUseConstData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setCondOut(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setUsePrintf(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setUserData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+    static void setUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };
 
