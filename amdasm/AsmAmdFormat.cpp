@@ -66,7 +66,7 @@ enum
  */
 
 AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler),
-                output{}, dataSection(0)
+                output{}, dataSection(0), extraSectionCount(0)
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
@@ -87,8 +87,10 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
-    kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
-            thisSection, ASMSECT_NONE });
+    Kernel kernel{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
+            thisSection, ASMSECT_NONE };
+    kernel.extraSectionCount = 0;
+    kernelStates.push_back(std::move(kernel));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
     saveCurrentSection();
@@ -378,8 +380,7 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     {
         if (!getAbsoluteValueArg(asmr, value, linePtr, false))
             return; // error
-        if (value > UINT32_MAX)
-            asmr.printWarning(valuePlace, "64-bit CALNoteId has been truncated");
+        asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
     }
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -450,15 +451,13 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     uint64_t value1, value2;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
     
-    if (value1 > UINT32_MAX)
-        asmr.printWarning(value1Place, "First 64-bit value has been truncated");
+    asmr.printWarningForRange(32, value1, asmr.getSourcePos(value1Place));
     
     if (!skipRequiredComma(asmr, linePtr, "second value"))
         return;
     const char* value2Place = linePtr;
     good &= getAbsoluteValueArg(asmr, value2, linePtr, true);
-    if (value2 > UINT32_MAX)
-        asmr.printWarning(value2Place, "Second 64-bit value has been truncated");
+    asmr.printWarningForRange(32, value2, asmr.getSourcePos(value2Place));
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -486,8 +485,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     const char* valuePlace = linePtr;
     uint64_t value;
     bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
-    if ((target != AMDCVAL_HWLOCAL && value > UINT32_MAX))
-        asmr.printWarning(valuePlace, "64-bit configuration value has been truncated");
+    asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -591,8 +589,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     uint64_t value3 = 0;
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
-    if (good && value1 > UINT_MAX)
-        asmr.printWarning(valuePlace, "64-bit value has been truncated");
+    asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
         return;
@@ -601,8 +598,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
         good &= getAbsoluteValueArg(asmr, value2, linePtr, false);
-        if (value2 > UINT_MAX)
-            asmr.printWarning(valuePlace, "64-bit value has been truncated");
+        asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;
@@ -610,8 +606,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
         {
             valuePlace = linePtr;
             good &= getAbsoluteValueArg(asmr, value3, linePtr, false);
-            if (value3 > UINT_MAX)
-                asmr.printWarning(valuePlace, "64-bit value has been truncated");
+            asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
         }   
     }
     
@@ -804,6 +799,9 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
 
 bool AsmAmdHandler::prepareBinary()
 {
+    output.is64Bit = assembler.is64Bit();
+    output.deviceType = assembler.getDeviceType();
+    /* initialize sections */
     size_t sectionsNum = sections.size();
     for (size_t i = 0; i < sectionsNum; i++)
     {
@@ -831,12 +829,12 @@ bool AsmAmdHandler::prepareBinary()
                 break;
             case AsmSectionType::DATA:
                 if (section.kernelId == ASMKERN_GLOBAL)
-                {
+                {   // this is global data
                     output.globalDataSize = sectionSize;
                     output.globalData = sectionData;
                 }
                 else
-                {
+                {   // this is kernel data
                     kernel->dataSize = sectionSize;
                     kernel->data = sectionData;
                 }
@@ -866,6 +864,29 @@ bool AsmAmdHandler::prepareBinary()
                 break;
         }
     }
+    /* put extra symbols */
+    if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
+        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        {
+            if (!symEntry.second.hasValue ||
+                ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
+                continue; // unresolved or local
+            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+                    sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            if (binSectId==ELFSECTID_UNDEF)
+                continue; // no section
+            
+            const BinSymbol binSym = { symEntry.first, symEntry.second.value,
+                        symEntry.second.size, binSectId, false, symEntry.second.info,
+                        symEntry.second.other };
+            
+            if (symEntry.second.sectionId == ASMSECT_ABS ||
+                sections[symEntry.second.sectionId].kernelId == ASMKERN_GLOBAL)
+                output.extraSymbols.push_back(std::move(binSym));
+            else // to kernel extra symbols
+                output.kernels[sections[symEntry.second.sectionId].kernelId].extraSymbols
+                            .push_back(std::move(binSym));
+        }
     return true;
 }
 
@@ -880,4 +901,3 @@ void AsmAmdHandler::writeBinary(Array<cxbyte>& array) const
     AmdGPUBinGenerator binGenerator(&output);
     binGenerator.generate(array);
 }
-

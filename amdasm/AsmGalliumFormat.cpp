@@ -416,10 +416,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     uint64_t entryAddr;
     bool good = true;
     if (getAbsoluteValueArg(asmr, entryAddr, linePtr, true))
-    {
-        if (entryAddr > UINT32_MAX)
-            asmr.printWarning(addrPlace, "64-bit value of address has been truncated");
-    }
+        asmr.printWarningForRange(32, entryAddr, asmr.getSourcePos(addrPlace));
     else
         good = false;
     if (!skipRequiredComma(asmr, linePtr, "value of entry"))
@@ -429,10 +426,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     const char* entryValPlace = linePtr;
     uint64_t entryVal;
     if (getAbsoluteValueArg(asmr, entryVal, linePtr, true))
-    {
-        if (entryVal > UINT32_MAX)
-            asmr.printWarning(entryValPlace, "64-bit value has been truncated");
-    }
+        asmr.printWarningForRange(32, entryVal, asmr.getSourcePos(entryValPlace));
     else
         good = false;
     
@@ -523,7 +517,7 @@ bool AsmGalliumHandler::prepareBinary()
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
-            if (!symEntry.second.hasValue &&
+            if (!symEntry.second.hasValue ||
                 ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // unresolved or local
             if (assembler.kernelMap.find(symEntry.first) != assembler.kernelMap.end())
