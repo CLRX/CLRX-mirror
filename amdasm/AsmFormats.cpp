@@ -370,9 +370,6 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
@@ -385,6 +382,10 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
                     "Metadata can't be defined if configuration defined");
         return;
     }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     cxuint& metadataSection = handler.kernelStates[asmr.currentKernel].metadataSection;
     if (metadataSection == ASMSECT_NONE)
@@ -402,15 +403,13 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
         asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
         return;
     }
+    skipSpacesToEnd(linePtr, end);
     AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.headerSection!=ASMSECT_NONE ||
         !kernel.calNoteSections.empty())
@@ -419,7 +418,10 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
                         " CALnotes section exists");
         return;
     }
-    
+
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+        
     if (kernel.configSection == ASMSECT_NONE)
     {
         cxuint thisSection = handler.sections.size();
@@ -440,6 +442,18 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL)
+    {
+        asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
+        return;
+    }
+    AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    if (kernel.configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace, "CALNote can't be defined if configuration defined");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     uint64_t value = 0;
     const char* valuePlace = linePtr;
@@ -452,20 +466,11 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
         if (value > UINT32_MAX)
             asmr.printWarning(valuePlace, "64-bit CALNoteId has been truncated");
     }
+    
+    
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if (asmr.currentKernel==ASMKERN_GLOBAL)
-    {
-        asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
-        return;
-    }
-    AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
-    if (kernel.configSection!=ASMSECT_NONE)
-    {
-        asmr.printError(pseudoOpPlace, "CALNote can't be defined if configuration defined");
-        return;
-    }
     // always add new CALnote
     const cxuint thisSection = handler.sections.size();
     handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMD_CALNOTE,
@@ -484,9 +489,6 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL)
     {
@@ -498,6 +500,10 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
         asmr.printError(pseudoOpPlace, "Header can't be defined if configuration defined");
         return;
     }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     cxuint& headerSection = handler.kernelStates[asmr.currentKernel].headerSection;
     if (headerSection == ASMSECT_NONE)
@@ -515,6 +521,17 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
+    
+    /* check place where is entry */
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        handler.sections[asmr.currentKernel].type != AsmSectionType::AMD_CALNOTE ||
+        (handler.sections[asmr.currentKernel].extraId >= 32 ||
+            handler.sections[asmr.currentKernel].extraId & (1U<<requiredCalNoteIdMask)))
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of entry");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     const char* value1Place = linePtr;
     uint64_t value1, value2;
@@ -533,15 +550,6 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    /* check place where is entry */
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        handler.sections[asmr.currentKernel].type != AsmSectionType::AMD_CALNOTE ||
-        (handler.sections[asmr.currentKernel].extraId >= 32 ||
-            handler.sections[asmr.currentKernel].extraId & (1U<<requiredCalNoteIdMask)))
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of entry");
-        return;
-    }
     uint32_t outVals[2];
     SLEV(outVals[0], value1);
     SLEV(outVals[1], value2);
@@ -553,15 +561,6 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    const char* valuePlace = linePtr;
-    uint64_t value;
-    bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
-    if ((target != AMDCVAL_HWLOCAL && value > UINT32_MAX))
-        asmr.printWarning(valuePlace, "64-bit configuration value has been truncated");
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
@@ -569,6 +568,16 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    
+    skipSpacesToEnd(linePtr, end);
+    const char* valuePlace = linePtr;
+    uint64_t value;
+    bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
+    if ((target != AMDCVAL_HWLOCAL && value > UINT32_MAX))
+        asmr.printWarning(valuePlace, "64-bit configuration value has been truncated");
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     // set value
@@ -632,9 +641,6 @@ void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pse
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
@@ -642,6 +648,10 @@ void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pse
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     if (target == AMDCVAL_USECONSTDATA)
@@ -655,6 +665,13 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration value");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     uint64_t value1 = 1;
     uint64_t value2 = 0;
@@ -687,13 +704,6 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
-    
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration value");
-        return;
-    }
     
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
     config.reqdWorkGroupSize[0] = value1;
@@ -940,7 +950,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     if (::strcmp(sectionName, ".rodata") == 0) // data
     {
         if (dataSection!=ASMSECT_NONE)
-            throw AsmFormatException("Only section '.rodata' can be in raw code");
+            throw AsmFormatException("Only section '.rodata' can be in binary");
         dataSection = thisSection;
         section.type = AsmSectionType::DATA;
         section.elfBinSectId = ELFSECTID_RODATA;
@@ -949,7 +959,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".text") == 0) // code
     {
         if (codeSection!=ASMSECT_NONE)
-            throw AsmFormatException("Only section '.text' can be in raw code");
+            throw AsmFormatException("Only one section '.text' can be in binary");
         codeSection = thisSection;
         section.type = AsmSectionType::CODE;
         section.elfBinSectId = ELFSECTID_TEXT;
@@ -958,7 +968,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".comment") == 0) // comment
     {
         if (commentSection!=ASMSECT_NONE)
-            throw AsmFormatException("Only section '.comment' can be in raw code");
+            throw AsmFormatException("Only section '.comment' can be in binary");
         commentSection = thisSection;
         section.type = AsmSectionType::GALLIUM_COMMENT;
         section.elfBinSectId = ELFSECTID_COMMENT;
@@ -1066,14 +1076,15 @@ void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Arguments outside kernel definition");
         return;
     }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
     handler.insideArgs = true;
     handler.insideProgInfo = false;
 }
@@ -1096,6 +1107,18 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
+    
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Argument definition outside kernel configuration");
+        return;
+    }
+    if (!handler.insideArgs)
+    {
+        asmr.printError(pseudoOpPlace, "Argument definition outside arguments list");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     std::string name;
     bool good = true;
@@ -1211,16 +1234,6 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Argument definition outside kernel configuration");
-        return;
-    }
-    if (!handler.insideArgs)
-    {
-        asmr.printError(pseudoOpPlace, "Argument definition outside arguments list");
-        return;
-    }
     // put this definition to argument list
     handler.output.kernels[asmr.currentKernel].argInfos.push_back(
         { argType, sext, argSemantic, uint32_t(size),
@@ -1232,14 +1245,15 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
-        return;
     if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "ProgInfo outside kernel definition");
         return;
     }
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
     handler.insideArgs = false;
     handler.insideProgInfo = true;
     handler.kernelStates[asmr.currentKernel].hasProgInfo = true;
@@ -1251,6 +1265,18 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
+    
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "ProgInfo entry outside kernel configuration");
+        return;
+    }
+    if (!handler.insideProgInfo)
+    {
+        asmr.printError(pseudoOpPlace, "ProgInfo entry definition outside ProgInfo");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     const char* addrPlace = linePtr;
     uint64_t entryAddr;
@@ -1280,16 +1306,6 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         return;
     
     // do operation
-    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "ProgInfo entry outside kernel configuration");
-        return;
-    }
-    if (!handler.insideProgInfo)
-    {
-        asmr.printError(pseudoOpPlace, "ProgInfo entry definition outside ProgInfo");
-        return;
-    }
     AsmGalliumHandler::Kernel& kstate = handler.kernelStates[asmr.currentKernel];
     kstate.hasProgInfo = true;
     if (kstate.progInfoEntries == 3)

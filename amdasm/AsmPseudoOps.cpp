@@ -416,12 +416,21 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
+    
+    if (!asmr.isWriteableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                        "Writing data into non-writeable section is illegal");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     std::string filename;
     const char* namePlace = linePtr;
     const char* offsetPlace = linePtr;
     const char* countPlace = linePtr;
     uint64_t offset = 0, count = INT64_MAX;
+    
     bool good = asmr.parseString(filename, linePtr);
     bool haveComma;
     
@@ -452,19 +461,13 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
             }
         }
     }
-    if (count == 0)
-    {
-        asmr.printWarning(namePlace, "Number of bytes is zero, ignoring .incbin");
-        return;
-    }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr)) // failed parsing
         return;
     
-    if (!asmr.isWriteableSection())
+    if (count == 0)
     {
-        asmr.printError(pseudoOpPlace,
-                        "Writing data into non-writeable section is illegal");
+        asmr.printWarning(namePlace, "Number of bytes is zero, ignoring .incbin");
         return;
     }
     
@@ -929,6 +932,14 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
+    
+    if (!asmr.isWriteableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Writing data into non-writeable section is illegal");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     uint64_t repeat = 0, size = 1, value = 0;
     
@@ -976,13 +987,6 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     if (!good || !checkGarbagesAtEnd(asmr, linePtr)) // if parsing failed
         return;
     
-    if (!asmr.isWriteableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Writing data into non-writeable section is illegal");
-        return;
-    }
-    
     if (int64_t(repeat) <= 0 || int64_t(size) <= 0)
         return;
     
@@ -1006,6 +1010,14 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
+    
+    if (!asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Change output counter inside non-addressable section is illegal");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     uint64_t size = 1, value = 0;
     
@@ -1028,13 +1040,6 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if (!asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Change output counter inside non-addressable section is illegal");
-        return;
-    }
-    
     if (int64_t(size) < 0)
         return;
     
@@ -1048,8 +1053,15 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
     
+    if (!asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Change output counter inside non-addressable section is illegal");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignPlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, alignment, linePtr, true);
@@ -1095,13 +1107,6 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     if (!good || !checkGarbagesAtEnd(asmr, linePtr)) //if parsing failed
         return;
     
-    if (!asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Change output counter inside non-addressable section is illegal");
-        return;
-    }
-    
     uint64_t outPos = asmr.currentOutPos;
     const uint64_t bytesToFill = ((outPos&(alignment-1))!=0) ?
             alignment - (outPos&(alignment-1)) : 0;
@@ -1119,6 +1124,14 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
+    
+    if (!asmr.isAddressableSection())
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Change output counter inside non-addressable section is illegal");
+        return;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     uint64_t alignment, value = 0, maxAlign = 0;
     const char* alignPlace = linePtr;
@@ -1150,13 +1163,6 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
-    
-    if (!asmr.isAddressableSection())
-    {
-        asmr.printError(pseudoOpPlace,
-                    "Change output counter inside non-addressable section is illegal");
-        return;
-    }
     
     if (alignment == 0)
         return; // do nothing
