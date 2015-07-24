@@ -522,9 +522,9 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     
     /* check place where is entry */
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        handler.sections[asmr.currentKernel].type != AsmSectionType::AMD_CALNOTE ||
-        (handler.sections[asmr.currentKernel].extraId >= 32 ||
-            handler.sections[asmr.currentKernel].extraId & (1U<<requiredCalNoteIdMask)))
+        handler.sections[asmr.currentSection].type != AsmSectionType::AMD_CALNOTE ||
+        (handler.sections[asmr.currentSection].extraId >= 32 ||
+        ((1U<<handler.sections[asmr.currentSection].extraId) & requiredCalNoteIdMask))==0)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of entry");
         return;
@@ -551,7 +551,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     uint32_t outVals[2];
     SLEV(outVals[0], value1);
     SLEV(outVals[1], value2);
-    asmr.putData(4, (const cxbyte*)outVals);
+    asmr.putData(8, (const cxbyte*)outVals);
 }
 
 void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -888,7 +888,71 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
 }
 
 bool AsmAmdHandler::prepareBinary()
-{ return true; }
+{
+    size_t sectionsNum = sections.size();
+    for (size_t i = 0; i < sectionsNum; i++)
+    {
+        const AsmSection& asmSection = assembler.sections[i];
+        const Section& section = sections[i];
+        const size_t sectionSize = asmSection.content.size();
+        const cxbyte* sectionData = (!asmSection.content.empty()) ?
+                asmSection.content.data() : (const cxbyte*)"";
+        AmdKernelInput* kernel = (section.kernelId!=ASMKERN_GLOBAL) ?
+                    &output.kernels[section.kernelId] : nullptr;
+                
+        switch(asmSection.type)
+        {
+            case AsmSectionType::CODE:
+                kernel->codeSize = sectionSize;
+                kernel->code = sectionData;
+                break;
+            case AsmSectionType::AMD_HEADER:
+                kernel->headerSize = sectionSize;
+                kernel->header = sectionData;
+                break;
+            case AsmSectionType::AMD_METADATA:
+                kernel->metadataSize = sectionSize;
+                kernel->metadata = (const char*)sectionData;
+                break;
+            case AsmSectionType::DATA:
+                if (section.kernelId == ASMKERN_GLOBAL)
+                {
+                    output.globalDataSize = sectionSize;
+                    output.globalData = sectionData;
+                }
+                else
+                {
+                    kernel->dataSize = sectionSize;
+                    kernel->data = sectionData;
+                }
+                break;
+            case AsmSectionType::AMD_CALNOTE:
+            {
+                CALNoteInput calNote;
+                calNote.header.type = section.extraId;
+                calNote.header.descSize = sectionSize;
+                calNote.header.nameSize = 8;
+                ::memcpy(calNote.header.name, "ATI CAL", 8);
+                calNote.data = sectionData;
+                kernel->calNotes.push_back(calNote);
+                break;
+            }
+            case AsmSectionType::EXTRA_SECTION:
+                if (section.kernelId == ASMKERN_GLOBAL)
+                    output.extraSections.push_back({section.name,
+                            asmSection.content.size(), asmSection.content.data(),
+                            1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
+                else
+                    kernel->extraSections.push_back({section.name,
+                            asmSection.content.size(), asmSection.content.data(),
+                            1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
+                break;
+            default: // ignore other sections
+                break;
+        }
+    }
+    return true;
+}
 
 void AsmAmdHandler::writeBinary(std::ostream& os) const
 {
@@ -1356,26 +1420,28 @@ bool AsmGalliumHandler::prepareBinary()
     {
         const AsmSection& asmSection = assembler.sections[i];
         const Section& section = sections[i];
+        const size_t sectionSize = asmSection.content.size();
+        const cxbyte* sectionData = (!asmSection.content.empty()) ?
+                asmSection.content.data() : (const cxbyte*)"";
         switch(asmSection.type)
         {
             case AsmSectionType::CODE:
-                output.codeSize = asmSection.content.size();
-                output.code = asmSection.content.data();
+                output.codeSize = sectionSize;
+                output.code = sectionData;
                 break;
             case AsmSectionType::DATA:
-                output.globalDataSize = asmSection.content.size();
-                output.globalData = asmSection.content.data();
+                output.globalDataSize = sectionSize;
+                output.globalData = sectionData;
                 break;
             case AsmSectionType::EXTRA_SECTION:
             {
-                output.extraSections.push_back({section.name,
-                    asmSection.content.size(), asmSection.content.data(),
+                output.extraSections.push_back({section.name, sectionSize, sectionData,
                     1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
                 break;
             }
             case AsmSectionType::GALLIUM_COMMENT:
-                output.commentSize = asmSection.content.size();
-                output.comment = (const char*)asmSection.content.data();
+                output.commentSize = sectionSize;
+                output.comment = (const char*)sectionData;
                 break;
             default: // ignore other sections
                 break;
