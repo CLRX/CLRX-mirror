@@ -151,8 +151,6 @@ public:
 /// handles raw code format
 class AsmRawCodeHandler: public AsmFormatHandler
 {
-private:
-    std::string kernelName;
 public:
     explicit AsmRawCodeHandler(Assembler& assembler);
     ~AsmRawCodeHandler() = default;
@@ -186,10 +184,8 @@ public:
 /// handles AMD Catalyst format
 class AsmAmdHandler: public AsmFormatHandler
 {
-public:
-    /// section map type
-    typedef std::unordered_map<std::string, cxuint> SectionMap;
 private:
+    typedef std::unordered_map<std::string, cxuint> SectionMap;
     friend struct AsmAmdPseudoOps;
     AmdInput output;
     struct Section

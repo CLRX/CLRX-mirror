@@ -295,6 +295,8 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     
     static void addCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, uint32_t calNoteId);
+    static void addCustomCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     
     static void addMetadata(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
@@ -307,8 +309,17 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     /// add any entry with two 32-bit integers
     static void doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, uint32_t requiredCalNoteIdMask);
-    /// add any entry with two 32-bit integers
+    /// add any entry with four 32-bit integers
     static void doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    /* dual pseudo-ops (for configured kernels and non-config kernels) */
+    static void doCBId(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doCondOut(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doEarlyExit(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doSampler(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     /* user configuration pseudo-ops */
