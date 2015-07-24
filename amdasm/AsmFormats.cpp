@@ -466,8 +466,6 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
         if (value > UINT32_MAX)
             asmr.printWarning(valuePlace, "64-bit CALNoteId has been truncated");
     }
-    
-    
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     

@@ -1179,6 +1179,11 @@ void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId)
     { formatHandler->setCurrentSection(sectionId); }
     catch(const AsmFormatException& ex) // if error
     { printError(pseudoOpPlace, ex.what()); }
+    if (sectionId >= sections.size())
+    {
+        auto info = formatHandler->getSectionInfo(sectionId);
+        sections.push_back({ info.name, currentKernel, info.type, info.flags });
+    }
     
     currentOutPos = sections[currentSection].content.size();
 }
