@@ -934,8 +934,6 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 
 cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
 {
-    if (kernelId != ASMKERN_GLOBAL)
-        throw AsmFormatException("Adding sections permitted only for global space");
     const cxuint thisSection = sections.size();
     Section section;
     section.kernelId = ASMKERN_GLOBAL;
