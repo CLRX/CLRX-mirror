@@ -19,11 +19,14 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-SET(LIBAMDASMSRC Assembler.cpp
+SET(LIBAMDASMSRC 
+        AsmAmdFormat.cpp
         AsmExpression.cpp
         AsmFormats.cpp
+        AsmGalliumFormat.cpp
         AsmPseudoOps.cpp
         AsmSource.cpp
+        Assembler.cpp
         Disassembler.cpp
         GCNDisasm.cpp
         GCNInstructions.cpp)
