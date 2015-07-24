@@ -173,7 +173,7 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     cxuint thisSection = sections.size();
     output.addEmptyKernel(kernelName);
     kernelStates.push_back({ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
-            thisSection, ASMSECT_NONE, { }, { }, 0, thisSection });
+            thisSection, ASMSECT_NONE });
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
     saveCurrentSection();
@@ -306,6 +306,46 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
 
 namespace CLRX
 {
+
+void AsmAmdPseudoOps::setCompileOptions(AsmAmdHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string out;
+    if (!asmr.parseString(out, linePtr))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.compileOptions = out;
+}
+
+void AsmAmdPseudoOps::setDriverInfo(AsmAmdHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string out;
+    if (!asmr.parseString(out, linePtr))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.driverInfo = out;
+}
+
+void AsmAmdPseudoOps::setDriverVersion(AsmAmdHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.driverVersion = value;
+}
+
 void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -526,7 +566,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration value");
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
     
@@ -587,6 +627,80 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     }
 }
 
+void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, AmdConfigValueTarget target)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    if (target == AMDCVAL_USECONSTDATA)
+        config.useConstantData = true;
+    else if (target == AMDCVAL_USEPRINTF)
+        config.usePrintf = true;
+}
+
+void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value1 = 1;
+    uint64_t value2 = 0;
+    uint64_t value3 = 0;
+    const char* valuePlace = linePtr;
+    bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
+    if (good && value1 > UINT_MAX)
+        asmr.printWarning(valuePlace, "64-bit value has been truncated");
+    bool haveComma;
+    if (!skipComma(asmr, haveComma, linePtr))
+        return;
+    if (haveComma)
+    {
+        skipSpacesToEnd(linePtr, end);
+        valuePlace = linePtr;
+        good &= getAbsoluteValueArg(asmr, value2, linePtr, false);
+        if (value2 > UINT_MAX)
+            asmr.printWarning(valuePlace, "64-bit value has been truncated");
+        
+        if (!skipComma(asmr, haveComma, linePtr))
+            return;
+        if (haveComma)
+        {
+            valuePlace = linePtr;
+            good &= getAbsoluteValueArg(asmr, value3, linePtr, false);
+            if (value3 > UINT_MAX)
+                asmr.printWarning(valuePlace, "64-bit value has been truncated");
+        }   
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration value");
+        return;
+    }
+    
+    AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    config.reqdWorkGroupSize[0] = value1;
+    config.reqdWorkGroupSize[1] = value2;
+    config.reqdWorkGroupSize[2] = value3;
+}
+
 }
 
 bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
@@ -614,6 +728,7 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
                          1U<<CALNOTE_ATI_CONSTANT_BUFFERS);
             break;
         case AMDOP_COMPILE_OPTIONS:
+            AsmAmdPseudoOps::setCompileOptions(*this, linePtr);
             break;
         case AMDOP_CONDOUT:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
@@ -627,10 +742,13 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
                             CALNOTE_ATI_CONSTANT_BUFFERS);
             break;
         case AMDOP_CWS:
+            AsmAmdPseudoOps::setCWS(*this, stmtPlace, linePtr);
             break;
         case AMDOP_DRIVER_INFO:
+            AsmAmdPseudoOps::setDriverInfo(*this, linePtr);
             break;
         case AMDOP_DRIVER_VERSION:
+            AsmAmdPseudoOps::setDriverVersion(*this, linePtr);
             break;
         case AMDOP_EARLYEXIT:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
@@ -743,8 +861,12 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
             AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_UAVPRIVATE);
             break;
         case AMDOP_USECONSTDATA:
+            AsmAmdPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                            AMDCVAL_USECONSTDATA);
             break;
         case AMDOP_USEPRINTF:
+            AsmAmdPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                            AMDCVAL_USEPRINTF);
             break;
         case AMDOP_USERDATA:
             break;

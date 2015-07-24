@@ -279,7 +279,9 @@ enum AmdConfigValueTarget
     AMDCVAL_CBID,
     AMDCVAL_PRINTFID,
     AMDCVAL_EARLYEXIT,
-    AMDCVAL_CONDOUT
+    AMDCVAL_CONDOUT,
+    AMDCVAL_USECONSTDATA,
+    AMDCVAL_USEPRINTF
 };
 
 struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
@@ -287,12 +289,9 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     static void doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    static void setCompileOptions(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setDriverInfo(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setDriverVersion(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
+    static void setCompileOptions(AsmAmdHandler& handler, const char* linePtr);
+    static void setDriverInfo(AsmAmdHandler& handler, const char* linePtr);
+    static void setDriverVersion(AsmAmdHandler& handler, const char* linePtr);
     
     static void addCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, uint32_t calNoteId);
@@ -321,10 +320,8 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     
     static void setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
-    static void setUseConstData(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
-    static void setUsePrintf(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr);
+    static void setConfigBoolValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, AmdConfigValueTarget target);
     static void setUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };
