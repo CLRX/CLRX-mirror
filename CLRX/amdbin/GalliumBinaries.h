@@ -311,8 +311,8 @@ struct GalliumInput
     const cxbyte* code;     ///< code
     size_t commentSize; ///< comment size (can be null)
     const char* comment; ///< comment
-    std::vector<BinSection> extraSections;
-    std::vector<BinSymbol> extraSymbols;
+    std::vector<BinSection> extraSections;  ///< extra sections
+    std::vector<BinSymbol> extraSymbols;    ///< extra symbols
 };
 
 /// gallium code binary generator

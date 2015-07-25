@@ -454,7 +454,8 @@ struct BinSymbol
     cxbyte other;   ///< other
 };
 
-extern uint64_t convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
+/// convert section id to elf section id
+extern uint16_t convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
                   cxuint maxBuiltinSection, cxuint extraSectionIndex);
 
 /// template of ElfRegion
@@ -537,7 +538,13 @@ struct ElfRegionTemplate
     {
         section = {inName, _type, _flags, _link, _info, _addrBase, _entSize};
     }
-    
+    /// constructor for external section (BinSection)
+    /**
+     * \param binSection external section
+     * \param builtinSections ELF section indices for builtin sections
+     * \param maxBuiltinSection maximal id of builtin section (as ELFSECTID_STD_MAX)
+     * \param startExtraIndex first ELF section id for extra section
+     */
     ElfRegionTemplate(const BinSection& binSection, const uint16_t* builtinSections,
                   cxuint maxBuiltinSection, cxuint startExtraIndex)
             : type(ElfRegionType::SECTION), dataFromPointer(true), size(binSection.size),
@@ -619,13 +626,20 @@ struct ElfSymbolTemplate
     typename Types::Word value;  ///< symbol value
     typename Types::Word size;   ///< symbol size
     
+    /// constructor (to replace initializer list construction)
     ElfSymbolTemplate(const char* _name, uint16_t _sectionIndex,
                 cxbyte _info, cxbyte _other, bool _valueIsAddr,
                 typename Types::Word _value, typename Types::Word _size)
         : name(_name), sectionIndex(_sectionIndex), info(_info), other(_other),
           valueIsAddr(_valueIsAddr), value(_value), size(_size)
     { }
-    
+    /// constructor for extra symbol
+    /**
+     * \param binSymbol external symbol
+     * \param builtinSections ELF section indices for builtin sections
+     * \param maxBuiltinSection maximal id of builtin section (as ELFSECTID_STD_MAX)
+     * \param startExtraIndex first ELF section id for extra section
+     */
     ElfSymbolTemplate(const BinSymbol& binSymbol, const uint16_t* builtinSections,
                   cxuint maxBuiltinSection, cxuint startExtraIndex)
     {

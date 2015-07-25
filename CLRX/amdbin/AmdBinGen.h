@@ -150,8 +150,8 @@ struct AmdKernelInput
     AmdKernelConfig config; ///< kernel's configuration
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
-    std::vector<BinSection> extraSections;
-    std::vector<BinSymbol> extraSymbols;
+    std::vector<BinSection> extraSections;      ///< list of extra sections
+    std::vector<BinSymbol> extraSymbols;        ///< list of extra symbols
 };
 
 /// main Input for AmdGPUBinGenerator

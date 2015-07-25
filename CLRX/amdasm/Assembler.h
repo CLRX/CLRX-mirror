@@ -101,17 +101,17 @@ public:
 class AsmFormatHandler: public NonCopyableAndNonMovable
 {
 public:
+    /// section information
     struct SectionInfo
     {
-        const char* name;
-        AsmSectionType type;
-        Flags flags;
+        const char* name;   ///< section name
+        AsmSectionType type;    ///< section type
+        Flags flags;        ///< section flags
     };
 protected:
-    friend struct AsmGalliumPseudoOps;
+    Assembler& assembler;   ///< assembler reference
     
-    Assembler& assembler;
-    
+    /// constructor
     explicit AsmFormatHandler(Assembler& assembler);
 public:
     virtual ~AsmFormatHandler();
@@ -119,12 +119,19 @@ public:
     /// add/set kernel
     /** adds new kernel. throw AsmFormatException when addition failed.
      * Method should handles any constraint that doesn't allow to add kernel except
-     * duplicate of name. */
+     * duplicate of name.
+     * \param kernelName kernel name
+     * \return kernel id
+     */
     virtual cxuint addKernel(const char* kernelName) = 0;
     /// add section
     /** adds new section . throw AsmFormatException when addition failed.
      * Method should handles any constraint that doesn't allow to add section except
-     * duplicate of name. */
+     * duplicate of name.
+     * \param sectionName section name
+     * \param kernelId kernel id (may ASMKERN_GLOBAL)
+     * \return section id
+     */
     virtual cxuint addSection(const char* sectionName, cxuint kernelId) = 0;
     
     /// get section id if exists in current context, otherwise returns ASMSECT_NONE
@@ -135,7 +142,7 @@ public:
     /// set current section, this method can change current kernel if that required 
     virtual void setCurrentSection(cxuint sectionId) = 0;
     
-    // get current section flags and type
+    /// get current section flags and type
     virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;
     /// parse pseudo-op (return true if recognized pseudo-op)
     virtual bool parsePseudoOp(const std::string& firstName,
@@ -152,32 +159,25 @@ public:
 class AsmRawCodeHandler: public AsmFormatHandler
 {
 public:
+    /// constructor
     explicit AsmRawCodeHandler(Assembler& assembler);
+    /// destructor
     ~AsmRawCodeHandler() = default;
     
-    /// set current kernel by name
     cxuint addKernel(const char* kernelName);
-    /// set current section by name
     cxuint addSection(const char* sectionName, cxuint kernelId);
 
-    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
     cxuint getSectionId(const char* sectionName) const;
     
-    /// set current kernel
     void setCurrentKernel(cxuint kernel);
-    /// set current section, this method can change current kernel if that required 
     void setCurrentSection(cxuint sectionId);
     
-    // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
-    /// parse pseudo-op
     bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
-    /// write binary to output stream
     void writeBinary(std::ostream& os) const;
-    /// write binary to array
     void writeBinary(Array<cxbyte>& array) const;
 };
 
@@ -217,33 +217,26 @@ private:
     
     void saveCurrentSection();
 public:
+    /// constructor
     explicit AsmAmdHandler(Assembler& assembler);
+    /// destructor
     ~AsmAmdHandler() = default;
     
-    /// set current kernel by name
     cxuint addKernel(const char* kernelName);
-    /// set current section by name
     cxuint addSection(const char* sectionName, cxuint kernelId);
     
-    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
     cxuint getSectionId(const char* sectionName) const;
-    /// set current kernel
     void setCurrentKernel(cxuint kernel);
-    /// set current section, this method can change current kernel if that required 
     void setCurrentSection(cxuint sectionId);
     
-    // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
-    /// parse pseudo-op
     bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
-    /// write binary to output stream
     void writeBinary(std::ostream& os) const;
-    /// write binary to array
     void writeBinary(Array<cxbyte>& array) const;
-    /// get output object (input for bingenerator)
+    /// get output structure pointer
     const AmdInput* getOutput() const
     { return &output; }
 };
@@ -281,31 +274,24 @@ private:
     bool insideArgs;
     cxuint extraSectionCount;
 public:
+    /// construcror
     explicit AsmGalliumHandler(Assembler& assembler);
+    /// destructor
     ~AsmGalliumHandler() = default;
     
-    /// set current kernel by name
     cxuint addKernel(const char* kernelName);
-    /// set current section by name
     cxuint addSection(const char* sectionName, cxuint kernelId);
     
-    /// get section id if exists in current context, otherwise returns ASMSECT_NONE
     cxuint getSectionId(const char* sectionName) const;
-    /// set current kernel
     void setCurrentKernel(cxuint kernel);
-    /// set current section, this method can change current kernel if that required 
     void setCurrentSection(cxuint sectionId);
     
-    // get current section flags and type
     SectionInfo getSectionInfo(cxuint sectionId) const;
-    /// parse pseudo-op
     bool parsePseudoOp(const std::string& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
-    /// write binary to output stream
     void writeBinary(std::ostream& os) const;
-    /// write binary to array
     void writeBinary(Array<cxbyte>& array) const;
     /// get output object (input for bingenerator)
     const GalliumInput* getOutput() const
@@ -331,7 +317,7 @@ public:
     virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const std::string& mnemonic) const = 0;
-    
+    /// get allocated register after assemblying
     virtual cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
 };
 
@@ -344,13 +330,9 @@ public:
     /// destructor
     ~GCNAssembler();
     
-    /// assemble single line
     size_t assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
-    /// resolve code with location, target and value
     bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
-    /// check if name is mnemonic
     bool checkMnemonic(const std::string& mnemonic) const;
-    
     cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
 };
 
@@ -406,6 +388,7 @@ enum class AsmExprOp : cxbyte
 
 struct AsmExprTarget;
 
+/// expression target type (one byte)
 typedef cxbyte AsmExprTargetType;
 
 enum : AsmExprTargetType
@@ -482,7 +465,7 @@ struct AsmSymbol
     void clearOccurrencesInExpr();
     /// make symbol as undefined
     void undefine();
-    
+    /// return true if symbol defined (have value or expression)
     bool isDefined() const
     { return hasValue || expression!=nullptr; }
 };
@@ -681,7 +664,7 @@ inline void AsmExpression::substituteOccurrence(AsmExprSymbolOccurrence occurren
 /// assembler section
 struct AsmSection
 {
-    const char* name;
+    const char* name;       ///< section name
     cxuint kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
     Flags flags;   ///< section flags
@@ -694,14 +677,15 @@ enum class AsmClauseType
     IF,     ///< if clause
     ELSEIF, ///< elseif clause
     ELSE,   ///< else clause
-    REPEAT, ///< rept clause
+    REPEAT, ///< rept clause or irp/irpc clause
     MACRO   ///< macro clause
 };
 
+/// kernel entry structure
 struct AsmKernel
 {
-    const char* name;
-    AsmSourcePos sourcePos;
+    const char* name;   ///< name of kernel
+    AsmSourcePos sourcePos; ///< source position of definition
 };
 
 /// assembler's clause (if,else,macro,rept)

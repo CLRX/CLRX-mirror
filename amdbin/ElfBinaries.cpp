@@ -303,7 +303,7 @@ template class CLRX::ElfBinaryTemplate<CLRX::Elf64Types>;
  * Elf binary generator
  */
 
-uint64_t CLRX::convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
+uint16_t CLRX::convertSectionId(cxuint sectionIndex, const uint16_t* builtinSections,
                   cxuint maxBuiltinSection, cxuint extraSectionIndex)
 {
     if (sectionIndex == ELFSECTID_NULL)
