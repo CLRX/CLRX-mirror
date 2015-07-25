@@ -264,7 +264,6 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 
 enum AmdConfigValueTarget
 {
-    AMDCVAL_SAMPLER,
     AMDCVAL_SGPRSNUM,
     AMDCVAL_VGPRSNUM,
     AMDCVAL_PGMRSRC2,
@@ -333,7 +332,7 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
                       const char* linePtr);
     static void setConfigBoolValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target);
-    static void setUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
+    static void addUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };
 

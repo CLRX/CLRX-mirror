@@ -260,6 +260,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     GalliumArgType argType = GalliumArgType::GLOBAL;
     if (getNameArg(asmr, name, linePtr, "argument type"))
     {
+        toLowerString(name);
         cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
                      name.c_str(), CStringLess())-galliumArgTypesMap;
         if (index == 9) // end of this map
@@ -328,6 +329,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 const char* numExtPlace = linePtr;
                 if (getNameArg(asmr, name, linePtr, "numeric extension", false))
                 {
+                    toLowerString(name);
                     if (name == "sext")
                         sext = true;
                     else if (name != "zext" && !name.empty())
@@ -347,6 +349,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                     const char* semanticPlace = linePtr;
                     if (getNameArg(asmr, name, linePtr, "argument semantic", false))
                     {
+                        toLowerString(name);
                         if (name == "griddim")
                             argSemantic = GalliumArgSemantic::GRID_DIMENSION;
                         else if (name == "gridoffset")

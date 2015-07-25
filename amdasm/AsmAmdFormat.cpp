@@ -586,7 +586,33 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
     Assembler& asmr = handler.assembler;
     if (asmr.currentKernel!=ASMKERN_GLOBAL &&
         asmr.sections[asmr.currentSection].type == AsmSectionType::CONFIG)
-        setConfigValue(handler, pseudoOpPlace, linePtr, AMDCVAL_SAMPLER);
+    {   // accepts many values (this same format like
+        const char* end = asmr.line + asmr.lineSize;
+        
+        if (asmr.currentKernel==ASMKERN_GLOBAL ||
+            asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+        {
+            asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+            return;
+        }
+        
+        AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+        
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr == end)
+            return;
+        do {
+            uint64_t value = 0;
+            const char* valuePlace = linePtr;
+            if (getAbsoluteValueArg(asmr, value, linePtr, true))
+            {
+                asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                                 asmr.getSourcePos(valuePlace));
+                config.samplers.push_back(value);
+            }
+        } while(skipCommaForMultipleArgs(asmr, linePtr));
+        checkGarbagesAtEnd(asmr, linePtr);
+    }
     else // add entry to input samplers CALNote
         doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_INPUT_SAMPLERS);
 }
@@ -618,9 +644,6 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     // set value
     switch(target)
     {
-        case AMDCVAL_SAMPLER:
-            config.samplers.push_back(value);
-            break;
         case AMDCVAL_SGPRSNUM:
             config.usedSGPRsNum = value;
             break;
@@ -741,6 +764,119 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     config.reqdWorkGroupSize[0] = value1;
     config.reqdWorkGroupSize[1] = value2;
     config.reqdWorkGroupSize[2] = value3;
+}
+
+static const std::pair<const char*, uint32_t> dataClassMap[] =
+{
+    { "imm_alu_bool32_const", 0x06 },
+    { "imm_alu_float_const", 0x05 },
+    { "imm_const_buffer", 0x02 },
+    { "imm_context_base", 0x1d },
+    { "imm_dispatch_id", 0x0c },
+    { "imm_gds_counter_range", 0x07 },
+    { "imm_gds_memory_range", 0x08 },
+    { "imm_generic_user_data", 0x20 },
+    { "imm_global_offset", 0x1f },
+    { "imm_gws_base", 0x09 },
+    { "imm_heap_buffer", 0x0e },
+    { "imm_kernel_arg", 0x0f },
+    { "imm_lds_esgs_size", 0x1e },
+    { "imm_resource", 0x00 },
+    { "imm_sampler", 0x01 },
+    { "imm_scratch_buffer", 0x0d },
+    { "imm_uav", 0x04 },
+    { "imm_vertex_buffer", 0x03 },
+    { "imm_work_group_range", 0x0b },
+    { "imm_work_item_range", 0x0a },
+    { "ptr_const_buffer_table", 0x14 },
+    { "ptr_extended_user_data", 0x19 },
+    { "ptr_indirect_internal_resource", 0x1b },
+    { "ptr_indirect_resource", 0x1a },
+    { "ptr_indirect_uav", 0x1c },
+    { "ptr_internal_global_table", 0x18 },
+    { "ptr_internal_resource_table", 0x12 },
+    { "ptr_resource_table", 0x11 },
+    { "ptr_sampler_table", 0x13 },
+    { "ptr_so_buffer_table", 0x16 },
+    { "ptr_uav_table", 0x17 },
+    { "ptr_vertex_buffer_table", 0x15 },
+    { "sub_ptr_fetch_shader", 0x10 }
+};
+
+static const size_t dataClassMapSize = sizeof(dataClassMap) /
+        sizeof(std::pair<const char*, uint32_t>);
+
+void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of UserData");
+        return;
+    }
+    
+    uint32_t dataClass;
+    bool good = true;
+    std::string name;
+    skipSpacesToEnd(linePtr, end);
+    const char* dataClassPlace = linePtr;
+    if (getNameArg(asmr, name, linePtr, "Data Class"))
+    {
+        toLowerString(name);
+        cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,
+                     name.c_str(), CStringLess())-dataClassMap;
+        if (index == dataClassMapSize) // end of this map
+        {
+            asmr.printError(dataClassPlace, "Unknown Data Class");
+            good = false;
+        }
+        else
+            dataClass = dataClassMap[index].second;
+    }
+    else
+        good = false;
+    
+    if (!skipRequiredComma(asmr, linePtr, "ApiSlot"))
+        return;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t apiSlot = 0;
+    const char* apiSlotPlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, apiSlot, linePtr, true);
+    asmr.printWarningForRange(32, apiSlot, asmr.getSourcePos(apiSlotPlace));
+    
+    if (!skipRequiredComma(asmr, linePtr, "RegStart"))
+        return;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t regStart = 0;
+    const char* regStartPlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, regStart, linePtr, true);
+    asmr.printWarningForRange(32, regStart, asmr.getSourcePos(regStartPlace));
+    
+    if (!skipRequiredComma(asmr, linePtr, "RegSize"))
+        return;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t regSize = 0;
+    const char* regSizePlace = linePtr;
+    good &= getAbsoluteValueArg(asmr, regSize, linePtr, true);
+    asmr.printWarningForRange(32, regSize, asmr.getSourcePos(regSizePlace));
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    if (config.userDataElemsNum == 16)
+    {
+        asmr.printError(pseudoOpPlace, "Too many UserData elements");
+        return;
+    }
+    AmdUserData& userData = config.userDatas[config.userDataElemsNum++];
+    userData.dataClass = dataClass;
+    userData.apiSlot = apiSlot;
+    userData.regStart = regStart;
+    userData.regSize = regSize;
 }
 
 }
@@ -911,6 +1047,7 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
                             AMDCVAL_USEPRINTF);
             break;
         case AMDOP_USERDATA:
+            AsmAmdPseudoOps::addUserData(*this, stmtPlace, linePtr);
             break;
         case AMDOP_VGPRSNUM:
             AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_VGPRSNUM);
