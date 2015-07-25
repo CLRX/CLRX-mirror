@@ -86,10 +86,34 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    output.addEmptyKernel(kernelName);
-    Kernel kernel{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE, thisSection, ASMSECT_NONE };
-    kernel.extraSectionCount = 0;
-    kernelStates.push_back(std::move(kernel));
+    AmdKernelInput kernel;
+    /* default values setup */
+    kernel.kernelName = kernelName;
+    kernel.dataSize = kernel.headerSize = kernel.metadataSize = kernel.codeSize = 0;
+    kernel.data = kernel.header = kernel.code = nullptr;
+    kernel.metadata = nullptr;
+    kernel.useConfig = false;
+    kernel.config.pgmRSRC2 = 0;
+    kernel.config.ieeeMode = 0;
+    kernel.config.floatMode = 0xc0;
+    kernel.config.reqdWorkGroupSize[0] = 0;
+    kernel.config.reqdWorkGroupSize[1] = 0;
+    kernel.config.reqdWorkGroupSize[2] = 0;
+    kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = 0;
+    kernel.config.hwLocalSize = 0;
+    kernel.config.hwRegion = kernel.config.scratchBufferSize =
+         kernel.config.condOut = kernel.config.earlyExit = 0;
+    kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
+        kernel.config.uavPrivate = kernel.config.constBufferId = AMDBIN_NOTSUPPLIED;
+    kernel.config.usePrintf = kernel.config.useConstantData = false;
+    kernel.config.userDataElemsNum = 0;
+    // end of default values setup
+    
+    output.addKernel(kernel);
+    Kernel kernelState{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
+            thisSection, ASMSECT_NONE };
+    kernelState.extraSectionCount = 0;
+    kernelStates.push_back(std::move(kernelState));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
     saveCurrentSection();
@@ -634,8 +658,62 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     const char* valuePlace = linePtr;
     uint64_t value;
     bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
-    asmr.printWarningForRange(target==AMDCVAL_HWLOCAL?  sizeof(size_t)*8 : 32,
-                      value, asmr.getSourcePos(valuePlace));
+    /* ranges checking */
+    switch(target)
+    {
+        case AMDCVAL_SGPRSNUM:
+            if (value > 102)
+            {
+                asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-102)");
+                good = false;
+            }
+            break;
+        case AMDCVAL_VGPRSNUM:
+            if (value > 256)
+            {
+                asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-256)");
+                good = false;
+            }
+            break;
+        case AMDCVAL_HWLOCAL:
+            if (value > 32768)
+            {
+                asmr.printError(pseudoOpPlace, "HWLocalSize out of range (0-32768)");
+                good = false;
+            }
+            break;
+        case AMDCVAL_UAVID:
+            if (value >= 1024)
+            {
+                asmr.printError(pseudoOpPlace, "UAVId out of range (0-1023)");
+                good = false;
+            }
+            break;
+        case AMDCVAL_CBID:
+            if (value >= 1024)
+            {
+                asmr.printError(pseudoOpPlace, "ConstBufferId out of range (0-1023)");
+                good = false;
+            }
+            break;
+        case AMDCVAL_PRINTFID:
+            if (value >= 1024)
+            {
+                asmr.printError(pseudoOpPlace, "PrintfId out of range (0-1023)");
+                good = false;
+            }
+            break;
+        case AMDCVAL_PRIVATEID:
+            if (value >= 1024)
+            {
+                asmr.printError(pseudoOpPlace, "PrivateId out of range (0-1023)");
+                good = false;
+            }
+            break;
+        default:
+            asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
+            break;
+    }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -818,7 +896,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
         return;
     }
     
-    uint32_t dataClass;
+    uint32_t dataClass = 0;
     bool good = true;
     std::string name;
     skipSpacesToEnd(linePtr, end);
@@ -853,15 +931,23 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     uint64_t regStart = 0;
     const char* regStartPlace = linePtr;
     good &= getAbsoluteValueArg(asmr, regStart, linePtr, true);
-    asmr.printWarningForRange(32, regStart, asmr.getSourcePos(regStartPlace));
+    
+    if (regStart > 15)
+    {
+        asmr.printError(regStartPlace, "RegStart out of range (0-15)");
+        good = false;
+    }
     
     if (!skipRequiredComma(asmr, linePtr, "RegSize"))
         return;
-    skipSpacesToEnd(linePtr, end);
     uint64_t regSize = 0;
-    const char* regSizePlace = linePtr;
     good &= getAbsoluteValueArg(asmr, regSize, linePtr, true);
-    asmr.printWarningForRange(32, regSize, asmr.getSourcePos(regSizePlace));
+    
+    if (usumGt(regStart, regSize, 16U))
+    {
+        asmr.printError(regStartPlace, "RegStart+RegSize out of range (0-16)");
+        good = false;
+    }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -879,6 +965,11 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     userData.regSize = regSize;
 }
 
+void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+}
+
 }
 
 bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
@@ -891,6 +982,7 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
     switch(pseudoOp)
     {
         case AMDOP_ARG:
+            AsmAmdPseudoOps::doArg(*this, stmtPlace, linePtr);
             break;
         case AMDOP_BOOLCONSTS:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,

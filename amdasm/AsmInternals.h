@@ -332,6 +332,7 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
                       const char* linePtr);
     static void setConfigBoolValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target);
+    
     static void addUserData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };
