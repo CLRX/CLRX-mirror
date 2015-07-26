@@ -1293,7 +1293,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     const AmdKernelArgInput argInput = { argName, typeName,
         (pointer) ? KernelArgType::POINTER :  argType,
         (pointer) ? argType : KernelArgType::VOID, ptrSpace, ptrAccess,
-        cxuint(structSizeVal), constSpaceSizeVal, uint32_t(resIdVal), usedArg };
+        cxuint(structSizeVal), size_t(constSpaceSizeVal), uint32_t(resIdVal), usedArg };
     config.args.push_back(std::move(argInput));
 }
 
