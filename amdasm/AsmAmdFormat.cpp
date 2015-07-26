@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -100,11 +101,11 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     kernel.config.reqdWorkGroupSize[1] = 0;
     kernel.config.reqdWorkGroupSize[2] = 0;
     kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = 0;
-    kernel.config.hwLocalSize = 0;
+    kernel.config.hwLocalSize = AMDBIN_DEFAULT;
     kernel.config.hwRegion = kernel.config.scratchBufferSize =
          kernel.config.condOut = kernel.config.earlyExit = 0;
     kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
-        kernel.config.uavPrivate = kernel.config.constBufferId = AMDBIN_NOTSUPPLIED;
+        kernel.config.uavPrivate = kernel.config.constBufferId = AMDBIN_DEFAULT;
     kernel.config.usePrintf = kernel.config.useConstantData = false;
     kernel.config.userDataElemsNum = 0;
     // end of default values setup
@@ -965,9 +966,335 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     userData.regSize = regSize;
 }
 
+static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
+{
+    { "char", KernelArgType::CHAR },
+    { "char16", KernelArgType::CHAR16 },
+    { "char2", KernelArgType::CHAR2 },
+    { "char3", KernelArgType::CHAR3 },
+    { "char4", KernelArgType::CHAR4 },
+    { "char8", KernelArgType::CHAR8 },
+    { "counter32", KernelArgType::COUNTER32 },
+    { "counter64", KernelArgType::COUNTER64 },
+    { "double", KernelArgType::DOUBLE },
+    { "double16", KernelArgType::DOUBLE16 },
+    { "double2", KernelArgType::DOUBLE2 },
+    { "double3", KernelArgType::DOUBLE3 },
+    { "double4", KernelArgType::DOUBLE4 },
+    { "double8", KernelArgType::DOUBLE8 },
+    { "float", KernelArgType::FLOAT },
+    { "float16", KernelArgType::FLOAT16 },
+    { "float2", KernelArgType::FLOAT2 },
+    { "float3", KernelArgType::FLOAT3 },
+    { "float4", KernelArgType::FLOAT4 },
+    { "float8", KernelArgType::FLOAT8 },
+    { "image", KernelArgType::IMAGE },
+    { "image1d", KernelArgType::IMAGE1D },
+    { "image1d_array", KernelArgType::IMAGE1D_ARRAY },
+    { "image1d_buffer", KernelArgType::IMAGE1D_BUFFER },
+    { "image2d", KernelArgType::IMAGE2D },
+    { "image2d_array", KernelArgType::IMAGE2D_ARRAY },
+    { "image3d", KernelArgType::IMAGE3D },
+    { "int", KernelArgType::INT },
+    { "int16", KernelArgType::INT16 },
+    { "int2", KernelArgType::INT2 },
+    { "int3", KernelArgType::INT3 },
+    { "int4", KernelArgType::INT4 },
+    { "int8", KernelArgType::INT8 },
+    { "long", KernelArgType::LONG },
+    { "long16", KernelArgType::LONG16 },
+    { "long2", KernelArgType::LONG2 },
+    { "long3", KernelArgType::LONG3 },
+    { "long4", KernelArgType::LONG4 },
+    { "long8", KernelArgType::LONG8 },
+    { "sampler", KernelArgType::SAMPLER },
+    { "short", KernelArgType::SHORT },
+    { "short16", KernelArgType::SHORT16 },
+    { "short2", KernelArgType::SHORT2 },
+    { "short3", KernelArgType::SHORT3 },
+    { "short4", KernelArgType::SHORT4 },
+    { "short8", KernelArgType::SHORT8 },
+    { "structure", KernelArgType::STRUCTURE },
+    { "uchar", KernelArgType::UCHAR },
+    { "uchar16", KernelArgType::UCHAR16 },
+    { "uchar2", KernelArgType::UCHAR2 },
+    { "uchar3", KernelArgType::UCHAR3 },
+    { "uchar4", KernelArgType::UCHAR4 },
+    { "uchar8", KernelArgType::UCHAR8 },
+    { "uint", KernelArgType::UINT },
+    { "uint16", KernelArgType::UINT16 },
+    { "uint2", KernelArgType::UINT2 },
+    { "uint3", KernelArgType::UINT3 },
+    { "uint4", KernelArgType::UINT4 },
+    { "uint8", KernelArgType::UINT8 },
+    { "ulong", KernelArgType::ULONG},
+    { "ulong16", KernelArgType::ULONG16 },
+    { "ulong2", KernelArgType::ULONG2 },
+    { "ulong3", KernelArgType::ULONG3 },
+    { "ulong4", KernelArgType::ULONG4 },
+    { "ulong8", KernelArgType::ULONG8 },
+    { "ushort", KernelArgType::USHORT },
+    { "ushort16", KernelArgType::USHORT16 },
+    { "ushort2", KernelArgType::USHORT2 },
+    { "ushort3", KernelArgType::USHORT3 },
+    { "ushort4", KernelArgType::USHORT4 },
+    { "ushort8", KernelArgType::USHORT8 },
+    { "void", KernelArgType::VOID }
+};
+
+static const size_t argTypeNameMapSize = sizeof(argTypeNameMap) /
+        sizeof(std::pair<const char*, KernelArgType>);
+
 void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of UserData");
+        return;
+    }
+    
+    std::string argName;
+    bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
+    if (!skipRequiredComma(asmr, linePtr, "type name"))
+        return;
+    skipSpacesToEnd(linePtr, end);
+    std::string typeName;
+    good &= asmr.parseString(typeName, linePtr);
+    
+    if (!skipRequiredComma(asmr, linePtr, "argument type"))
+        return;
+    
+    std::string name;
+    bool pointer = false;
+    KernelArgType argType = KernelArgType::VOID;
+    std::string argTypeName;
+    skipSpacesToEnd(linePtr, end);
+    const char* argTypePlace = linePtr;
+    if (getNameArg(asmr, argTypeName, linePtr, "argument type", true))
+    {
+        toLowerString(argTypeName);
+        cxuint index = binaryMapFind(argTypeNameMap, argTypeNameMap + argTypeNameMapSize,
+                     argTypeName.c_str(), CStringLess())-argTypeNameMap;
+        if (index == argTypeNameMapSize) // end of this map
+        {
+            asmr.printError(argTypePlace, "Unknown argument type name");
+            good = false;
+        }
+        else
+        {   // if found
+            argType = argTypeNameMap[index].second;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end && *linePtr == '*')
+            {
+                pointer = true; // if is pointer
+                linePtr++;
+            }
+        }
+    }
+    else // if failed
+        good = false;
+    
+    KernelPtrSpace ptrSpace = KernelPtrSpace::NONE;
+    cxbyte ptrAccess = 0;
+    uint64_t structSizeVal = 0;
+    uint64_t constSpaceSizeVal = 0;
+    uint64_t resIdVal = AMDBIN_DEFAULT;
+    bool usedArg = true;
+    
+    bool haveComma;
+    bool haveLastArgument = false;
+    if (pointer)
+    {   
+        if (!skipRequiredComma(asmr, linePtr, "pointer space"))
+            return;
+        skipSpacesToEnd(linePtr, end);
+        const char* ptrSpacePlace = linePtr;
+        // parse ptrSpace
+        if (getNameArg(asmr, name, linePtr, "argument type", true))
+        {
+            toLowerString(name);
+            if (name == "local")
+                ptrSpace = KernelPtrSpace::LOCAL;
+            else if (name == "global")
+                ptrSpace = KernelPtrSpace::GLOBAL;
+            else if (name == "constant")
+                ptrSpace = KernelPtrSpace::CONSTANT;
+            else
+            {   // not known or not given
+                asmr.printError(ptrSpacePlace, "Unknown or not given pointer space");
+                good = false;
+            }
+        }
+        else
+            good = false;
+        
+        if (!skipComma(asmr, haveComma, linePtr))
+            return;
+        if (haveComma)
+        {
+            skipSpacesToEnd(linePtr, end);
+            // parse ptr access
+            while (linePtr!=end && *linePtr!=',')
+            {
+                const char* ptrAccessPlace = linePtr;
+                good &= getNameArg(asmr, name, linePtr, "access qualifier", true);
+                if (name == "const")
+                    ptrAccess |= KARG_PTR_CONST;
+                else if (name == "restrict")
+                    ptrAccess |= KARG_PTR_RESTRICT;
+                else if (name == "volatile")
+                    ptrAccess |= KARG_PTR_VOLATILE;
+                else
+                {
+                    asmr.printError(ptrAccessPlace, "Unknown access qualifier type");
+                    good = false;
+                }
+                skipSpacesToEnd(linePtr, end);
+            }
+            if (!skipComma(asmr, haveComma, linePtr))
+                return;
+            if (haveComma)
+            {
+                skipSpacesToEnd(linePtr, end);
+                const char* structSizePlace = linePtr;
+                good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, false);
+                asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
+                                  asmr.getSourcePos(structSizePlace));
+                
+                const char* place;
+                bool havePrevArgument = true;
+                if (ptrSpace == KernelPtrSpace::CONSTANT)
+                {
+                    if (!skipComma(asmr, haveComma, linePtr))
+                        return;
+                    if (haveComma)
+                    {
+                        skipSpacesToEnd(linePtr, end);
+                        const char* place = linePtr;
+                        good &= getAbsoluteValueArg(asmr, constSpaceSizeVal, linePtr, false);
+                        asmr.printWarningForRange(sizeof(cxuint)<<3, constSpaceSizeVal,
+                                          asmr.getSourcePos(place));
+                    }
+                    else
+                        havePrevArgument = false;
+                }
+                
+                if (havePrevArgument)
+                {
+                    if (!skipComma(asmr, haveComma, linePtr))
+                        return;
+                    if (haveComma)
+                    {
+                        haveLastArgument = true;
+                        skipSpacesToEnd(linePtr, end);
+                        place = linePtr;
+                        good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, false);
+                        const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
+                                159 : 1023;
+                        
+                        if (resIdVal != AMDBIN_DEFAULT && resIdVal > maxUavId)
+                        {
+                            char buf[80];
+                            snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
+                            asmr.printError(place, buf);
+                            good = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else if (!pointer && argType >= KernelArgType::MIN_IMAGE &&
+             argType <= KernelArgType::MAX_IMAGE)
+    {
+        ptrAccess = KARG_PTR_READ_ONLY;
+        if (!skipComma(asmr, haveComma, linePtr))
+            return;
+        if (haveComma)
+        {
+            skipSpacesToEnd(linePtr, end);
+            const char* ptrAccessPlace = linePtr;
+            if (getNameArg(asmr, name, linePtr, "access qualifier", true))
+            {
+                if (name == "read_only")
+                    ptrAccess = KARG_PTR_READ_ONLY;
+                else if (name == "write_only")
+                    ptrAccess = KARG_PTR_WRITE_ONLY;
+                else
+                {   // unknown
+                    asmr.printError(ptrAccessPlace, "Unknown access qualifier");
+                    good = false;
+                }
+            }
+            else
+                good = false;
+            
+            if (!skipComma(asmr, haveComma, linePtr))
+                return;
+            if (haveComma)
+            {
+                haveLastArgument = true;
+                skipSpacesToEnd(linePtr, end);
+                const char* place = linePtr;
+                good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, false);
+                cxuint maxResId = (ptrAccess == KARG_PTR_READ_ONLY) ? 127 : 7;
+                if (resIdVal!=AMDBIN_DEFAULT && resIdVal > maxResId)
+                {
+                    char buf[80];
+                    snprintf(buf, 80, "Resource Id out of range (0-%u)", maxResId);
+                    asmr.printError(place, buf);
+                    good = false;
+                }
+            }
+        }
+    }
+    else if (!pointer && argType == KernelArgType::COUNTER32)
+    {   // counter uavId
+        if (!skipComma(asmr, haveComma, linePtr))
+            return;
+        if (haveComma)
+        {
+            haveLastArgument = true;
+            skipSpacesToEnd(linePtr, end);
+            const char* place = linePtr;
+            good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, true);
+            if (resIdVal!=AMDBIN_DEFAULT && resIdVal > 7)
+            {
+                asmr.printError(place, "Resource Id out of range (0-7)");
+                good = false;
+            }
+        }
+    }
+    
+    if (haveLastArgument)
+    {
+        if (!skipComma(asmr, haveComma, linePtr))
+            return;
+        if (haveComma)
+        {
+            skipSpacesToEnd(linePtr, end);
+            good &= getNameArg(asmr, name, linePtr, "unused specifier");
+            if (name == "unused")
+                usedArg = false;
+            else
+                good = false;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    /* setup argument */
+    AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    const AmdKernelArgInput argInput = { argName, typeName,
+        (pointer) ? KernelArgType::POINTER :  argType,
+        (pointer) ? argType : KernelArgType::VOID, ptrSpace, ptrAccess,
+        cxuint(structSizeVal), constSpaceSizeVal, uint32_t(resIdVal), usedArg };
+    config.args.push_back(std::move(argInput));
 }
 
 }
