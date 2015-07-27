@@ -61,7 +61,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
-    kernelStates.push_back({ thisSection, false });
+    kernelStates.push_back({ thisSection, false, 0 });
     
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
@@ -76,7 +76,8 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
 {
     const cxuint thisSection = sections.size();
     Section section;
-    section.kernelId = ASMKERN_GLOBAL;
+    section.kernelId = ASMKERN_GLOBAL;  // we ignore input kernelId, we go to main
+    
     if (::strcmp(sectionName, ".rodata") == 0) // data
     {
         if (dataSection!=ASMSECT_NONE)
@@ -98,7 +99,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".comment") == 0) // comment
     {
         if (commentSection!=ASMSECT_NONE)
-            throw AsmFormatException("Only section '.comment' can be in binary");
+            throw AsmFormatException("Only one section '.comment' can be in binary");
         commentSection = thisSection;
         section.type = AsmSectionType::GALLIUM_COMMENT;
         section.elfBinSectId = ELFSECTID_COMMENT;
@@ -275,7 +276,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         else
         {
             cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
-                         name.c_str(), CStringLess())-galliumArgTypesMap;
+                         name.c_str(), CStringLess()) - galliumArgTypesMap;
             if (index == 9) // end of this map
             {
                 asmr.printError(nameStringPlace, "Unknown argument type");
@@ -288,14 +289,14 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     else
         good = false;
     //
-    if (!skipRequiredComma(asmr, linePtr, "absolute value"))
+    if (!skipRequiredComma(asmr, linePtr, "argument size"))
         return;
     skipSpacesToEnd(linePtr, end);
     const char* sizeStrPlace = linePtr;
     uint64_t size = 4;
     good &= getAbsoluteValueArg(asmr, size, linePtr, true);
     
-    if (good && (size > UINT32_MAX || size == 0))
+    if (size > UINT32_MAX || size == 0)
         asmr.printWarning(sizeStrPlace, "Size of argument out of range");
     
     uint64_t targetSize = size;
@@ -311,7 +312,6 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     {
         skipSpacesToEnd(linePtr, end);
         const char* targetSizePlace = linePtr;
-        targetSize = size;
         good &= getAbsoluteValueArg(asmr, targetSize, linePtr, false);
         
         if (targetSize > UINT32_MAX || targetSize == 0)

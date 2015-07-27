@@ -78,7 +78,7 @@ void AsmRawCodeHandler::setCurrentSection(cxuint sectionId)
 
 AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId) const
 {
-    if (sectionId >= 1)
+    if (sectionId!=0)
         throw AsmFormatException("Section doesn't exists");
     return { ".text", AsmSectionType::CODE, ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE };
 }
