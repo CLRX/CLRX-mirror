@@ -1206,7 +1206,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                         havePrevArgument = false;
                 }
                 
-                if (havePrevArgument)
+                if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
                 {
                     if (!skipComma(asmr, haveComma, linePtr))
                         return;
