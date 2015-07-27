@@ -99,6 +99,17 @@ template<typename T>
 static void assertArray(const std::string& testName, const std::string& caseName,
             const Array<T>& expected, size_t resultSize, const T* result)
 {
+    if (result == nullptr)
+    {
+        if (!expected.empty())
+        {
+            std::ostringstream oss;
+            oss << "Failed " << testName << ":" << caseName << " \n" <<
+                    "Array is nullptr";
+            oss.flush();
+            throw Exception(oss.str());
+        }
+    }
     if (expected.size() != resultSize)
     {
         std::ostringstream oss;

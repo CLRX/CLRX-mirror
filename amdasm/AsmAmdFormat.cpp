@@ -1070,7 +1070,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         good = false;
     }
     
-    if (!skipRequiredComma(asmr, linePtr, "type name"))
+    if (!skipRequiredComma(asmr, linePtr, "type name/argument type"))
         return;
     
     skipSpacesToEnd(linePtr, end);
