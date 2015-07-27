@@ -24,7 +24,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
-#include "TestUtils.h"
+#include "../TestUtils.h"
 
 using namespace CLRX;
 
@@ -318,29 +318,34 @@ static void testAmdGPUMetadataGen()
 int main(int argc, const char** argv)
 {
     int retVal = 0;
-    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes.clo",
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/alltypes.clo",
             "myKernel", sizeof(expectedKernelArgs1)/sizeof(AmdKernelArg),
             expectedKernelArgs1);
-    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_64.clo",
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/alltypes_64.clo",
             "myKernel", sizeof(expectedKernelArgs1)/sizeof(AmdKernelArg),
             expectedKernelArgs1);
-    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_cpu64.clo",
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/alltypes_cpu64.clo",
             "myKernel", sizeof(expectedCPUKernelArgs1)/sizeof(AmdKernelArg),
             expectedCPUKernelArgs1);
-    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/alltypes_cpu.clo",
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/alltypes_cpu.clo",
             "myKernel", sizeof(expectedCPUKernelArgs1)/sizeof(AmdKernelArg),
             expectedCPUKernelArgs1);
-    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR "/tests/amdbins/structkernel2.clo",
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/structkernel2.clo",
             "myKernel1", sizeof(expectedKernelArgs2)/sizeof(AmdKernelArg),
             expectedKernelArgs2);
     retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
-            "/tests/amdbins/structkernel2_64.clo", "myKernel1",
+            "/tests/amdbin/amdbins/structkernel2_64.clo", "myKernel1",
             sizeof(expectedKernelArgs2)/sizeof(AmdKernelArg), expectedKernelArgs2);
     retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
-            "/tests/amdbins/structkernel2_cpu.clo", "myKernel1",
+            "/tests/amdbin/amdbins/structkernel2_cpu.clo", "myKernel1",
             sizeof(expectedCPUKernelArgs2)/sizeof(AmdKernelArg), expectedCPUKernelArgs2);
     retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
-            "/tests/amdbins/structkernel2_cpu64.clo", "myKernel1",
+            "/tests/amdbin/amdbins/structkernel2_cpu64.clo", "myKernel1",
             sizeof(expectedCPUKernelArgs2)/sizeof(AmdKernelArg), expectedCPUKernelArgs2);
     retVal |= callTest(testAmdGPUMetadataGen);
     return retVal;

@@ -28,9 +28,9 @@ using namespace CLRX;
 
 static const char* origBinaryFiles[3] =
 {
-    CLRX_SOURCE_DIR "/tests/galliumbins/BlackScholes.0.reconf.orig",
-    CLRX_SOURCE_DIR "/tests/galliumbins/DCT.0.reconf.orig",
-    CLRX_SOURCE_DIR "/tests/galliumbins/MatrixMultiplication.0.reconf.orig"
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/BlackScholes.0.reconf.orig",
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/DCT.0.reconf.orig",
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig"
 };
 
 static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galliumBin)

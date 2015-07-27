@@ -23,7 +23,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <CLRX/utils/CLIParser.h>
-#include "TestUtils.h"
+#include "../TestUtils.h"
 
 using namespace CLRX;
 

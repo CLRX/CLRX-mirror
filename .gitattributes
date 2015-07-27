@@ -49,118 +49,121 @@ clwrapper/DispatchStruct.h -text
 clwrapper/InternalDecls.h -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxdisasm.cpp -text
-tests/AmdBinGen.cpp -text
-tests/AmdBinLoading.cpp -text
-tests/AsmExprParse.cpp -text
-tests/AssemblerBasics.cpp -text
-tests/CLIParser.cpp -text
 tests/CMakeLists.txt -text svneol=unset#text/plain
-tests/DisasmDataTest.cpp -text
-tests/GCNDisasmLabels.cpp -text
-tests/GCNDisasmOpc.h -text
-tests/GCNDisasmOpc11.cpp -text
-tests/GCNDisasmOpc12.cpp -text
-tests/GCNDisasmOpcodes.cpp -text
-tests/GalliumBinGen.cpp -text
 tests/TestUtils.h -text
-tests/amdbins/alltypes.cl -text
-tests/amdbins/alltypes.clo -text svneol=unset#application/x-executable
-tests/amdbins/alltypes_64.clo -text svneol=unset#application/x-executable
-tests/amdbins/alltypes_cpu.clo -text svneol=unset#application/x-executable
-tests/amdbins/alltypes_cpu64.clo -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1.cl -text
-tests/amdbins/prginfo1_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo1_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4.cl -text
-tests/amdbins/prginfo4_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_4.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_4.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_4_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_13_4_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo4_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7.cl -text
-tests/amdbins/prginfo7_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo7_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8.cl -text
-tests/amdbins/prginfo8_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
-tests/amdbins/prginfo8_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
-tests/amdbins/samplekernels.cl -text
-tests/amdbins/samplekernels.clo -text svneol=unset#application/x-executable
-tests/amdbins/samplekernels_64.clo -text svneol=unset#application/x-executable
-tests/amdbins/structkernel2.cl -text
-tests/amdbins/structkernel2.clo -text svneol=unset#application/x-executable
-tests/amdbins/structkernel2_64.clo -text svneol=unset#application/x-executable
-tests/amdbins/structkernel2_cpu.clo -text svneol=unset#application/x-executable
-tests/amdbins/structkernel2_cpu64.clo -text svneol=unset#application/x-executable
-tests/cstrtofXTest.cpp -text
-tests/galliumbins/BlackScholes.0.reconf.orig -text
-tests/galliumbins/BlackScholes.0.reconf.orig.old -text
-tests/galliumbins/DCT.0.reconf.orig -text
-tests/galliumbins/DCT.0.reconf.orig.old -text
-tests/galliumbins/MatrixMultiplication.0.reconf.orig -text
-tests/galliumbins/MatrixMultiplication.0.reconf.orig.old -text
-tests/incdir0/inc1.s -text
-tests/incdir0/inc2.s -text
-tests/incdir0/incbin1 -text svneol=unset#application/octet-stream
-tests/incdir0/incbin2 -text svneol=unset#application/octet-stream
-tests/incdir1/inc3.s -text
-tests/incdir1/incbin3 -text svneol=unset#application/octet-stream
+tests/amdasm/AsmExprParse.cpp -text
+tests/amdasm/AssemblerBasics.cpp -text
+tests/amdasm/CMakeLists.txt -text svneol=unset#text/plain
+tests/amdasm/DisasmDataTest.cpp -text
+tests/amdasm/GCNDisasmLabels.cpp -text
+tests/amdasm/GCNDisasmOpc.h -text
+tests/amdasm/GCNDisasmOpc11.cpp -text
+tests/amdasm/GCNDisasmOpc12.cpp -text
+tests/amdasm/GCNDisasmOpcodes.cpp -text
+tests/amdasm/amdbins/samplekernels.cl -text
+tests/amdasm/amdbins/samplekernels.clo -text svneol=unset#application/x-executable
+tests/amdasm/amdbins/samplekernels_64.clo -text svneol=unset#application/x-executable
+tests/amdasm/incdir0/inc1.s -text
+tests/amdasm/incdir0/inc2.s -text
+tests/amdasm/incdir0/incbin1 -text svneol=unset#application/octet-stream
+tests/amdasm/incdir0/incbin2 -text svneol=unset#application/octet-stream
+tests/amdasm/incdir1/inc3.s -text
+tests/amdasm/incdir1/incbin3 -text svneol=unset#application/octet-stream
+tests/amdbin/AmdBinGen.cpp -text
+tests/amdbin/AmdBinLoading.cpp -text
+tests/amdbin/CMakeLists.txt -text svneol=unset#text/plain
+tests/amdbin/GalliumBinGen.cpp -text
+tests/amdbin/amdbins/alltypes.cl -text
+tests/amdbin/amdbins/alltypes.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/alltypes_64.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/alltypes_cpu.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/alltypes_cpu64.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1.cl -text
+tests/amdbin/amdbins/prginfo1_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo1_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4.cl -text
+tests/amdbin/amdbins/prginfo4_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_4.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_4.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_4_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_13_4_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo4_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7.cl -text
+tests/amdbin/amdbins/prginfo7_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo7_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8.cl -text
+tests/amdbin/amdbins/prginfo8_12_10.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_12_10.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_12_10_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_12_10_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_13_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_13_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_13_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_13_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_12_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_12_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_9.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_9.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_9_64.clo.1_0.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/prginfo8_14_9_64.clo.1_0.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/structkernel2.cl -text
+tests/amdbin/amdbins/structkernel2.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/structkernel2_64.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/structkernel2_cpu.clo -text svneol=unset#application/x-executable
+tests/amdbin/amdbins/structkernel2_cpu64.clo -text svneol=unset#application/x-executable
+tests/amdbin/galliumbins/BlackScholes.0.reconf.orig -text
+tests/amdbin/galliumbins/BlackScholes.0.reconf.orig.old -text
+tests/amdbin/galliumbins/DCT.0.reconf.orig -text
+tests/amdbin/galliumbins/DCT.0.reconf.orig.old -text
+tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig -text
+tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig.old -text
+tests/utils/CLIParser.cpp -text
+tests/utils/CMakeLists.txt -text svneol=unset#text/plain
+tests/utils/cstrtofXTest.cpp -text
 utils/CLIParser.cpp -text
 utils/CMakeLists.txt -text svneol=unset#text/plain
 utils/GPUId.cpp -text

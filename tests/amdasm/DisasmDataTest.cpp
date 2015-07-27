@@ -347,7 +347,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     .uavopmask 4556
 )xxFxx"
     },
-    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdbins/samplekernels.clo",
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels.clo",
         R"xxFxx(.amd
 .gpu Pitcairn
 .32bit
@@ -654,7 +654,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*bf810000         */ s_endpgm
 )xxFxx"
     },
-    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdbins/samplekernels_64.clo",
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels_64.clo",
         R"xxFxx(.amd
 .gpu Pitcairn
 .64bit

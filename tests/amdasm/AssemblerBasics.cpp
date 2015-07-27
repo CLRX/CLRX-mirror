@@ -25,7 +25,7 @@
 #include <memory>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
-#include "TestUtils.h"
+#include "../TestUtils.h"
 
 using namespace CLRX;
 
@@ -2517,7 +2517,7 @@ In macro content:
             { 11,22,44,55, 11,22,44,58, 31,23,44,55 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
-        { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
+        { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
     /* 68 - include test 2 */
     {   R"ffDXD(            .include "incdir0\\inc1.s"
@@ -2528,7 +2528,7 @@ In macro content:
             { 11,22,44,55, 11,22,44,58, 31,23,44,55 } } },
         { { ".", 12U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
-        { CLRX_SOURCE_DIR "/tests" }
+        { CLRX_SOURCE_DIR "/tests/amdasm" }
     },
     /* 69 - failed include */
     {   R"ffDXD(            .include "incdir0\\incx.s"
@@ -2543,7 +2543,7 @@ In macro content:
         "not found or unavailable in any directory\n"
         "test.s:3:22: Error: Include file 'xxxa.s' "
         "not found or unavailable in any directory\n", "",
-        { CLRX_SOURCE_DIR "/tests" }
+        { CLRX_SOURCE_DIR "/tests/amdasm" }
     },
     /* 70 - incbin */
     {   R"ffDXD(            .incbin "incbin1"
@@ -2562,7 +2562,7 @@ In macro content:
             } } },
         { { ".", 52U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
-        { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
+        { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
     /* 71 - incbin (choose offset and size) */
     {   R"ffDXD(            .incbin "incbin1",3,4
@@ -2578,7 +2578,7 @@ In macro content:
             } } },
         { { ".", 28U, 0, 0U, true, false, false, 0, 0 } },
         true, "", "",
-        { CLRX_SOURCE_DIR "/tests/incdir0", CLRX_SOURCE_DIR "/tests/incdir1" }
+        { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
     /* 72 - absolute section and errors */
     {   R"ffDXD(        .struct 6
