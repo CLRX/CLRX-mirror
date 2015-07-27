@@ -619,10 +619,8 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
         doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_INPUT_SAMPLERS);
 }
 
-static const uint32_t argIsOptionalMask = 
-    (1U<<AMDCVAL_HWREGION) | (1U<<AMDCVAL_PRIVATEID) | (1U<<AMDCVAL_UAVPRIVATE) |
-    (1U<<AMDCVAL_UAVID) | (1U<<AMDCVAL_CBID) | (1U<<AMDCVAL_PRINTFID) |
-    (1U<<AMDCVAL_EARLYEXIT);
+static const uint32_t argIsOptionalMask =  (1U<<AMDCVAL_PRIVATEID) |
+        (1U<<AMDCVAL_UAVID) | (1U<<AMDCVAL_CBID) | (1U<<AMDCVAL_PRINTFID);
 
 void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target)
