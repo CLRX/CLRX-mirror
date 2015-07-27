@@ -101,8 +101,8 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     kernel.config.reqdWorkGroupSize[1] = 0;
     kernel.config.reqdWorkGroupSize[2] = 0;
     kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = 0;
-    kernel.config.hwLocalSize = AMDBIN_DEFAULT;
-    kernel.config.hwRegion = kernel.config.scratchBufferSize =
+    kernel.config.hwRegion = AMDBIN_DEFAULT;
+    kernel.config.hwLocalSize = kernel.config.scratchBufferSize =
          kernel.config.condOut = kernel.config.earlyExit = 0;
     kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
         kernel.config.uavPrivate = kernel.config.constBufferId = AMDBIN_DEFAULT;
