@@ -619,6 +619,11 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
         doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_INPUT_SAMPLERS);
 }
 
+static const uint32_t argIsOptionalMask = 
+    (1U<<AMDCVAL_HWREGION) | (1U<<AMDCVAL_PRIVATEID) | (1U<<AMDCVAL_UAVPRIVATE) |
+    (1U<<AMDCVAL_UAVID) | (1U<<AMDCVAL_CBID) | (1U<<AMDCVAL_PRINTFID) |
+    (1U<<AMDCVAL_EARLYEXIT);
+
 void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target)
 {
@@ -634,8 +639,9 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
-    uint64_t value;
-    bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
+    uint64_t value = AMDBIN_NOTSUPPLIED;
+    const bool argIsOptional = ((1U<<target) & argIsOptionalMask)!=0;
+    bool good = getAbsoluteValueArg(asmr, value, linePtr, !argIsOptional);
     /* ranges checking */
     switch(target)
     {
@@ -661,28 +667,28 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
             }
             break;
         case AMDCVAL_UAVID:
-            if (value >= 1024)
+            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
             {
                 asmr.printError(pseudoOpPlace, "UAVId out of range (0-1023)");
                 good = false;
             }
             break;
         case AMDCVAL_CBID:
-            if (value >= 1024)
+            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
             {
                 asmr.printError(pseudoOpPlace, "ConstBufferId out of range (0-1023)");
                 good = false;
             }
             break;
         case AMDCVAL_PRINTFID:
-            if (value >= 1024)
+            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
             {
                 asmr.printError(pseudoOpPlace, "PrintfId out of range (0-1023)");
                 good = false;
             }
             break;
         case AMDCVAL_PRIVATEID:
-            if (value >= 1024)
+            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
             {
                 asmr.printError(pseudoOpPlace, "PrivateId out of range (0-1023)");
                 good = false;
