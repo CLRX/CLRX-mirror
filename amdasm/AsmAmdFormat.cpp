@@ -1228,6 +1228,8 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                         }
                     }
                 }
+                else
+                    haveLastArgument = havePrevArgument;
             }
         }
     }
