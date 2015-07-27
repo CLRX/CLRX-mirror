@@ -1023,6 +1023,25 @@ static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
     { "void", KernelArgType::VOID }
 };
 
+static const char* defaultArgTypeNames[] = 
+{
+    "void", "uchar", "char", "ushort", "short", "uint", "int",
+    "ulong", "long", "float", "double", "pointer", "image",
+    "image1d_t", "image1d_array_t", "image1d_buffer_t",
+    "image2d_t", "image2d_array_t", "image3d_t",
+    "uchar2", "uchar3", "uchar4", "uchar8", "uchar16",
+    "char2", "char3", "char4", "char8", "char16",
+    "ushort2", "ushort3", "ushort4", "ushort8", "ushort16",
+    "short2", "short3", "short4", "short8", "short16",
+    "uint2", "uint3", "uint4", "uint8", "uint16",
+    "int2", "int3", "int4", "int8", "int16",
+    "ulong2", "ulong3", "ulong4", "ulong8", "ulong16",
+    "long2", "long3", "long4", "long8", "long16",
+    "float2", "float3", "float4", "float8", "float16",
+    "double2", "double3", "double4", "double8", "double16",
+    "sampler_t", "structure", "counter32_t", "counter64_t"
+};
+
 static const size_t argTypeNameMapSize = sizeof(argTypeNameMap) /
         sizeof(std::pair<const char*, KernelArgType>);
 
@@ -1041,9 +1060,6 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     std::string argName;
     const char* argNamePlace = linePtr;
     bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
-    if (!skipRequiredComma(asmr, linePtr, "type name"))
-        return;
-    
     auto& kernelState = handler.kernelStates[asmr.currentKernel];
     if (kernelState.argNamesSet.find(argName) != kernelState.argNamesSet.end())
     {   // if found kernel arg with this same name
@@ -1054,12 +1070,19 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         good = false;
     }
     
-    skipSpacesToEnd(linePtr, end);
-    std::string typeName;
-    good &= asmr.parseString(typeName, linePtr);
-    
-    if (!skipRequiredComma(asmr, linePtr, "argument type"))
+    if (!skipRequiredComma(asmr, linePtr, "type name"))
         return;
+    
+    skipSpacesToEnd(linePtr, end);
+    bool typeNameDefined = false;
+    std::string typeName;
+    if (linePtr!=end && *linePtr=='"')
+    {   // if type name defined by user
+        good &= asmr.parseString(typeName, linePtr);
+        if (!skipRequiredComma(asmr, linePtr, "argument type"))
+            return;
+        typeNameDefined = true;
+    }
     
     std::string name;
     bool pointer = false;
@@ -1091,6 +1114,13 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     else // if failed
         good = false;
     
+    if (!typeNameDefined)
+    {
+        typeName = defaultArgTypeNames[cxuint(argType)];
+        if (pointer)
+            typeName.push_back('*');
+    }
+    
     KernelPtrSpace ptrSpace = KernelPtrSpace::NONE;
     cxbyte ptrAccess = 0;
     uint64_t structSizeVal = 0;
@@ -1101,7 +1131,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     bool haveComma;
     bool haveLastArgument = false;
     if (pointer)
-    {   
+    {
         if (!skipRequiredComma(asmr, linePtr, "pointer space"))
             return;
         skipSpacesToEnd(linePtr, end);
@@ -1261,6 +1291,16 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 good = false;
             }
         }
+    }
+    else if (!pointer && argType == KernelArgType::STRUCTURE)
+    {   /* parse structure size */
+        if (!skipRequiredComma(asmr, linePtr, "structure size"))
+            return;
+        skipSpacesToEnd(linePtr, end);
+        const char* structSizePlace = linePtr;
+        good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, true);
+        asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
+                          asmr.getSourcePos(structSizePlace));
     }
     
     if (haveLastArgument)
