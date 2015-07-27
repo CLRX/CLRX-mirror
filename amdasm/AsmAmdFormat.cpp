@@ -1039,9 +1039,21 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     }
     
     std::string argName;
+    const char* argNamePlace = linePtr;
     bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
     if (!skipRequiredComma(asmr, linePtr, "type name"))
         return;
+    
+    auto& kernelState = handler.kernelStates[asmr.currentKernel];
+    if (kernelState.argNamesSet.find(argName) != kernelState.argNamesSet.end())
+    {   // if found kernel arg with this same name
+        std::string message = "Kernel argument '";
+        message += argName;
+        message += "' is already defined";
+        asmr.printError(argNamePlace, message.c_str());
+        good = false;
+    }
+    
     skipSpacesToEnd(linePtr, end);
     std::string typeName;
     good &= asmr.parseString(typeName, linePtr);
@@ -1276,6 +1288,8 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         (pointer) ? argType : KernelArgType::VOID, ptrSpace, ptrAccess,
         cxuint(structSizeVal), size_t(constSpaceSizeVal), uint32_t(resIdVal), usedArg };
     config.args.push_back(std::move(argInput));
+    /// put argName
+    kernelState.argNamesSet.insert(argName);
 }
 
 }

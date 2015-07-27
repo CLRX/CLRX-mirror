@@ -33,6 +33,7 @@
 #include <vector>
 #include <utility>
 #include <stack>
+#include <set>
 #include <unordered_set>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
@@ -207,6 +208,7 @@ private:
         SectionMap extraSectionMap;
         cxuint extraSectionCount;
         cxuint savedSection;
+        std::set<std::string> argNamesSet;
     };
     std::vector<Section> sections;
     std::vector<Kernel> kernelStates;
