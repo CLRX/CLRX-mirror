@@ -313,6 +313,9 @@ struct GalliumInput
     const char* comment; ///< comment
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
+    
+    /// add empty kernel with default values
+    void addEmptyKernel(const char* kernelName);
 };
 
 /// gallium code binary generator

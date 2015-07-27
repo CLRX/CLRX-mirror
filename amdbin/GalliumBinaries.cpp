@@ -289,6 +289,15 @@ uint32_t GalliumBinary::getKernelIndex(const char* name) const
     return it-kernels.get();
 }
 
+void GalliumInput::addEmptyKernel(const char* kernelName)
+{
+    kernels.push_back({ kernelName, {
+        /* default values */
+        { 0x0000b848U, 0x000c0000U },
+        { 0x0000b84cU, 0x00001788U },
+        { 0x0000b860U, 0 } }, 0, {} });
+}
+
 /*
  * GalliumBinGenerator 
  */

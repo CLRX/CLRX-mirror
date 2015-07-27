@@ -58,11 +58,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    output.kernels.push_back({ kernelName, {
-        /* default values */
-        { 0x0000b848U, 0x000c0000U },
-        { 0x0000b84cU, 0x00001788U },
-        { 0x0000b860U, 0 } }, 0, {} });
+    output.addEmptyKernel(kernelName);
     /// add kernel config section
     sections.push_back({ thisKernel, AsmSectionType::CONFIG, ELFSECTID_UNDEF, nullptr });
     kernelStates.push_back({ thisSection, false });
@@ -258,18 +254,36 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     bool good = true;
     const char* nameStringPlace = linePtr;
     GalliumArgType argType = GalliumArgType::GLOBAL;
+    
+    GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
+    bool semanticDefined = false;
     if (getNameArg(asmr, name, linePtr, "argument type"))
     {
         toLowerString(name);
-        cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
-                     name.c_str(), CStringLess())-galliumArgTypesMap;
-        if (index == 9) // end of this map
-        {
-            asmr.printError(nameStringPlace, "Unknown argument type");
-            good = false;
+        if (name == "griddim")
+        {   // shortcur for grid dimension
+            argSemantic = GalliumArgSemantic::GRID_DIMENSION;
+            argType = GalliumArgType::SCALAR;
+            semanticDefined = true;
+        }
+        else if (name == "gridoffset")
+        {   // shortcur for grid dimension
+            argSemantic = GalliumArgSemantic::GRID_OFFSET;
+            argType = GalliumArgType::SCALAR;
+            semanticDefined = true;
         }
         else
-            argType = galliumArgTypesMap[index].second;
+        {
+            cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
+                         name.c_str(), CStringLess())-galliumArgTypesMap;
+            if (index == 9) // end of this map
+            {
+                asmr.printError(nameStringPlace, "Unknown argument type");
+                good = false;
+            }
+            else
+                argType = galliumArgTypesMap[index].second;
+        }
     }
     else
         good = false;
@@ -289,7 +303,6 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     if (size > targetAlign)
         targetAlign <<= 1;
     bool sext = false;
-    GalliumArgSemantic argSemantic = GalliumArgSemantic::GENERAL;
     
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
@@ -341,28 +354,31 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 else
                     good = false;
                 
-                if (!skipComma(asmr, haveComma, linePtr))
-                    return;
-                if (haveComma)
-                {
-                    skipSpacesToEnd(linePtr, end);
-                    const char* semanticPlace = linePtr;
-                    if (getNameArg(asmr, name, linePtr, "argument semantic", false))
+                if (!semanticDefined)
+                {   /// if semantic has not been defined in the first argument
+                    if (!skipComma(asmr, haveComma, linePtr))
+                        return;
+                    if (haveComma)
                     {
-                        toLowerString(name);
-                        if (name == "griddim")
-                            argSemantic = GalliumArgSemantic::GRID_DIMENSION;
-                        else if (name == "gridoffset")
-                            argSemantic = GalliumArgSemantic::GRID_OFFSET;
-                        else if (name != "general" && !name.empty())
+                        skipSpacesToEnd(linePtr, end);
+                        const char* semanticPlace = linePtr;
+                        if (getNameArg(asmr, name, linePtr, "argument semantic", false))
                         {
-                            asmr.printError(semanticPlace,
-                                    "Unknown argument semantic type");
-                            good = false;
+                            toLowerString(name);
+                            if (name == "griddim")
+                                argSemantic = GalliumArgSemantic::GRID_DIMENSION;
+                            else if (name == "gridoffset")
+                                argSemantic = GalliumArgSemantic::GRID_OFFSET;
+                            else if (name != "general" && !name.empty())
+                            {
+                                asmr.printError(semanticPlace,
+                                        "Unknown argument semantic type");
+                                good = false;
+                            }
                         }
+                        else
+                            good = false;
                     }
-                    else
-                        good = false;
                 }
             }
         }

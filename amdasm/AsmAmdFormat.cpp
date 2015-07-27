@@ -87,30 +87,7 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
     cxuint thisSection = sections.size();
-    AmdKernelInput kernel;
-    /* default values setup */
-    kernel.kernelName = kernelName;
-    kernel.dataSize = kernel.headerSize = kernel.metadataSize = kernel.codeSize = 0;
-    kernel.data = kernel.header = kernel.code = nullptr;
-    kernel.metadata = nullptr;
-    kernel.useConfig = false;
-    kernel.config.pgmRSRC2 = 0;
-    kernel.config.ieeeMode = 0;
-    kernel.config.floatMode = 0xc0;
-    kernel.config.reqdWorkGroupSize[0] = 0;
-    kernel.config.reqdWorkGroupSize[1] = 0;
-    kernel.config.reqdWorkGroupSize[2] = 0;
-    kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = 0;
-    kernel.config.hwRegion = AMDBIN_DEFAULT;
-    kernel.config.hwLocalSize = kernel.config.scratchBufferSize =
-         kernel.config.condOut = kernel.config.earlyExit = 0;
-    kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
-        kernel.config.uavPrivate = kernel.config.constBufferId = AMDBIN_DEFAULT;
-    kernel.config.usePrintf = kernel.config.useConstantData = false;
-    kernel.config.userDataElemsNum = 0;
-    // end of default values setup
-    
-    output.addKernel(kernel);
+    output.addEmptyKernel(kernelName);
     Kernel kernelState{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
             thisSection, ASMSECT_NONE };
     kernelState.extraSectionCount = 0;

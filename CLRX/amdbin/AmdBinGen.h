@@ -202,7 +202,7 @@ struct AmdInput
            size_t metadataSize, const char* metadata,
            size_t dataSize = 0, const cxbyte* data = nullptr);
 
-    /// add empty kernel
+    /// add empty kernel with default values (even for configuration)
     void addEmptyKernel(const char* kernelName);
 };
 
