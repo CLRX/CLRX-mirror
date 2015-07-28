@@ -41,3 +41,7 @@ ADD_TEST(AsmExprParse AsmExprParse)
 ADD_EXECUTABLE(AssemblerBasics AssemblerBasics.cpp)
 TARGET_LINK_LIBRARIES(AssemblerBasics ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(AssemblerBasics AssemblerBasics)
+
+ADD_EXECUTABLE(AsmFormats AsmFormats.cpp)
+TARGET_LINK_LIBRARIES(AsmFormats ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+ADD_TEST(AsmFormats AsmFormats)

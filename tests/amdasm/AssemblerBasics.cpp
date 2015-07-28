@@ -65,7 +65,7 @@ struct AsmTestCase
     Array<const char*> includeDirs;
 };
 
-static AsmTestCase asmTestCases1Tbl[] =
+static const AsmTestCase asmTestCases1Tbl[] =
 {
     /* 0 empty */
     { "", BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false,
