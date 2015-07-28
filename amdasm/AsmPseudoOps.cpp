@@ -254,19 +254,11 @@ bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& line
     return true;
 }
 
-bool AsmPseudoOps::skipRequiredComma(Assembler& asmr, const char*& linePtr,
-                     const char* nameArg)
+bool AsmPseudoOps::skipRequiredComma(Assembler& asmr, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    if (linePtr == end)
-    {
-        std::string message = "Expected ";
-        message += nameArg;
-        asmr.printError(linePtr, message.c_str());
-        return false;
-    }
-    if (*linePtr != ',')
+    if (linePtr == end || *linePtr != ',')
     {
         asmr.printError(linePtr, "Expected ',' before argument");
         return false;
@@ -841,7 +833,7 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign
         good = false;
     }
     linePtr += symName.size();
-    if (!skipRequiredComma(asmr, linePtr, "expression"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     if (good) // is not so good
         asmr.assignSymbol(symName, strAtSymName, linePtr, reassign, baseExpr);
@@ -894,7 +886,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
         asmr.printError(symNamePlace, "Expected symbol name");
         good = false;
     }
-    if (!skipRequiredComma(asmr, linePtr, "expression"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     // parse size
     uint64_t size;
@@ -1409,7 +1401,7 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
     skipSpacesToEnd(linePtr, end);
     std::string firstStr, secondStr;
     bool good = asmr.parseString(firstStr, linePtr);
-    if (!skipRequiredComma(asmr, linePtr, "two strings"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     skipSpacesToEnd(linePtr, end);
     good &= asmr.parseString(secondStr, linePtr);

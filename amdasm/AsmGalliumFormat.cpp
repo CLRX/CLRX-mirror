@@ -289,7 +289,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     else
         good = false;
     //
-    if (!skipRequiredComma(asmr, linePtr, "argument size"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     skipSpacesToEnd(linePtr, end);
     const char* sizeStrPlace = linePtr;
@@ -438,7 +438,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         asmr.printWarningForRange(32, entryAddr, asmr.getSourcePos(addrPlace));
     else
         good = false;
-    if (!skipRequiredComma(asmr, linePtr, "value of entry"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);

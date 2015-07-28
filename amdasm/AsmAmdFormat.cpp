@@ -492,7 +492,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     
     asmr.printWarningForRange(32, value1, asmr.getSourcePos(value1Place));
     
-    if (!skipRequiredComma(asmr, linePtr, "second value"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     const char* value2Place = linePtr;
     good &= getAbsoluteValueArg(asmr, value2, linePtr, true);
@@ -519,7 +519,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
     asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "f1 value"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -527,7 +527,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     good &= getAbsoluteValueArg(asmr, value2, linePtr, true);
     asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "f2 value"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -535,7 +535,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     good &= getAbsoluteValueArg(asmr, value3, linePtr, true);
     asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "type"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -904,7 +904,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     else
         good = false;
     
-    if (!skipRequiredComma(asmr, linePtr, "RegStart"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     skipSpacesToEnd(linePtr, end);
     uint64_t apiSlot = 0;
@@ -912,7 +912,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     good &= getAbsoluteValueArg(asmr, apiSlot, linePtr, true);
     asmr.printWarningForRange(32, apiSlot, asmr.getSourcePos(apiSlotPlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "RegSize"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     skipSpacesToEnd(linePtr, end);
     uint64_t regStart = 0;
@@ -925,7 +925,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
         good = false;
     }
     
-    if (!skipRequiredComma(asmr, linePtr, "RegSize"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     uint64_t regSize = 0;
     good &= getAbsoluteValueArg(asmr, regSize, linePtr, true);
@@ -1075,7 +1075,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         good = false;
     }
     
-    if (!skipRequiredComma(asmr, linePtr, "type name/argument type"))
+    if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -1084,7 +1084,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     if (linePtr!=end && *linePtr=='"')
     {   // if type name defined by user
         good &= asmr.parseString(typeName, linePtr);
-        if (!skipRequiredComma(asmr, linePtr, "argument type"))
+        if (!skipRequiredComma(asmr, linePtr))
             return;
         typeNameDefined = true;
     }
@@ -1137,7 +1137,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     bool haveLastArgument = false;
     if (pointer)
     {
-        if (!skipRequiredComma(asmr, linePtr, "pointer space"))
+        if (!skipRequiredComma(asmr, linePtr))
             return;
         skipSpacesToEnd(linePtr, end);
         const char* ptrSpacePlace = linePtr;
@@ -1301,7 +1301,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     }
     else if (!pointer && argType == KernelArgType::STRUCTURE)
     {   /* parse structure size */
-        if (!skipRequiredComma(asmr, linePtr, "structure size"))
+        if (!skipRequiredComma(asmr, linePtr))
             return;
         skipSpacesToEnd(linePtr, end);
         const char* structSizePlace = linePtr;

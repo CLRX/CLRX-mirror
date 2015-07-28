@@ -741,8 +741,8 @@ aaa: aaa:
         },
         false, R"ffDXD(test.s:1:19: Error: Expected assignment expression
 test.s:2:17: Error: Expected symbol
-test.s:2:17: Error: Expected expression
-test.s:3:21: Error: Expected expression
+test.s:2:17: Error: Expected ',' before argument
+test.s:3:21: Error: Expected ',' before argument
 test.s:4:22: Error: Expected assignment expression
 test.s:5:1: Error: Illegal number at statement begin
 test.s:6:6: Error: Symbol 'aaa' is already defined
@@ -1870,11 +1870,11 @@ test.s:11:21: Error: Expression have unresolved symbol 'aa'
 test.s:12:18: Error: Expected expression
 test.s:14:21: Error: Missing second string
 test.s:15:20: Error: Expected string
-test.s:15:24: Error: Expected two strings
+test.s:15:24: Error: Expected ',' before argument
 test.s:16:25: Error: Expected string
 test.s:17:20: Error: Expected string
 test.s:19:20: Error: Expected string
-test.s:19:24: Error: Expected two strings
+test.s:19:24: Error: Expected ',' before argument
 test.s:20:25: Error: Expected string
 test.s:21:20: Error: Expected string
 test.s:23:20: Error: Expected symbol
