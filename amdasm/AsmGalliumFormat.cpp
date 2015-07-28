@@ -410,7 +410,6 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
     handler.insideArgs = false;
     handler.insideProgInfo = true;
     handler.kernelStates[asmr.currentKernel].hasProgInfo = true;
-    handler.kernelStates[asmr.currentKernel].progInfoEntries = 0;
 }
 
 void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,

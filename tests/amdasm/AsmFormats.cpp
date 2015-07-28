@@ -268,6 +268,7 @@ static const AsmTestCase asmTestCases1Tbl[] =
             .arg scalar,8, , , ,griddim
             .arg griddim,4
             .arg gridoffset,4
+            .arg scalar, 11111111111, 22222222222222, 4
             .section .comment
             .ascii "nocomments"
             .globaldata
@@ -282,10 +283,16 @@ static const AsmTestCase asmTestCases1Tbl[] =
             .arg scalar,4
             .arg griddim,4
             .arg gridoffset,4
+            .kernel thirdKernel
+            .proginfo
+            .entry 0xfffffaaaaa, 0x12233
+            .entry 0xff, 0x111223030
+            .entry 1,2
             .text
 firstKernel: .byte 1,22,3,4
             .p2align 4
 secondKernel:.byte 77,76,75,90,11
+thirdKernel:
             .section .info1
             .ascii "noinfo"
             .section .infox
@@ -310,12 +317,15 @@ secondKernel:.byte 77,76,75,90,11
     Arg: scalar, false, griddim, size=8, tgtSize=8, tgtAlign=8
     Arg: scalar, false, griddim, size=4, tgtSize=4, tgtAlign=4
     Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
+    Arg: scalar, false, general, size=2521176519, tgtSize=61432718, tgtAlign=4
   Kernel: name=secondKernel, offset=16
     ProgInfo: 0xc=0x16, 0xe=0x120, 0x10=0xa0
     Arg: scalar, false, general, size=4, tgtSize=4, tgtAlign=4
     Arg: scalar, false, general, size=4, tgtSize=4, tgtAlign=4
     Arg: scalar, false, griddim, size=4, tgtSize=4, tgtAlign=4
     Arg: scalar, false, gridoffset, size=4, tgtSize=4, tgtAlign=4
+  Kernel: name=thirdKernel, offset=21
+    ProgInfo: 0xfffaaaaa=0x12233, 0xff=0x11223030, 0x1=0x2
   Comment:
   6e6f636f6d6d656e7473
   GlobalData:
@@ -327,7 +337,10 @@ secondKernel:.byte 77,76,75,90,11
   Section .infox:
   726566657220746f20736f6d65206c696e6b
 )ffDXD",
-        "", true
+        "test.s:20:26: Warning: Size of argument out of range\n"
+        "test.s:20:39: Warning: Target size of argument out of range\n"
+        "test.s:37:20: Warning: Value 0xfffffaaaaa truncated to 0xfffaaaaa\n"
+        "test.s:38:26: Warning: Value 0x111223030 truncated to 0x11223030\n", true
     },
     /* 1 - gallium (errors) */
     {
@@ -346,7 +359,16 @@ secondKernel:.byte 77,76,75,90,11
             .proginfo
             .entry ,
             .entry  ,66
-            .entry 66,)ffDXD",
+            .entry 66,
+            .kernel secondKernel
+            .proginfo
+            .entry 1,2
+            .entry 2,3
+            .entry 3,4
+            .entry 5,6
+            .args
+            .proginfo
+            .entry 7,8)ffDXD",
         /* dump */
         "",
         /* errors */
@@ -365,6 +387,8 @@ test.s:14:20: Error: Expected expression
 test.s:14:21: Error: Expected expression
 test.s:15:21: Error: Expected expression
 test.s:16:23: Error: Expected expression
+test.s:22:13: Error: Maximum 3 entries can be in ProgInfo
+test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
 )ffDXD", false
     }
 };
