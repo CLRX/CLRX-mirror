@@ -1031,7 +1031,7 @@ static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
 static const char* defaultArgTypeNames[] = 
 {
     "void", "uchar", "char", "ushort", "short", "uint", "int",
-    "ulong", "long", "float", "double", "pointer", "image",
+    "ulong", "long", "float", "double", "pointer", "image2d_t",
     "image1d_t", "image1d_array_t", "image1d_buffer_t",
     "image2d_t", "image2d_array_t", "image3d_t",
     "uchar2", "uchar3", "uchar4", "uchar8", "uchar16",
@@ -1118,6 +1118,20 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     }
     else // if failed
         good = false;
+    
+    if (!pointer && argType == KernelArgType::COUNTER64)
+    {
+        asmr.printError(argTypePlace, "Unsupported counter64 type");
+        good = false;
+    }
+    if (pointer && ((argType >= KernelArgType::MIN_IMAGE &&
+            argType <= KernelArgType::MAX_IMAGE) ||
+            argType == KernelArgType::SAMPLER || argType == KernelArgType::POINTER ||
+            argType == KernelArgType::COUNTER32 || argType == KernelArgType::COUNTER64))
+    {
+        asmr.printError(argTypePlace, "Illegal pointer type");
+        good = false;
+    }
     
     if (!typeNameDefined)
     {
