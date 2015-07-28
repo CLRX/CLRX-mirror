@@ -160,8 +160,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
     strarray.clear();
     if (linePtr == end || *linePtr != '"')
     {
-        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',' &&
-            *linePtr != ':' && *linePtr != ';') linePtr++;
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         printError(startPlace, "Expected string");
         return false;
     }
@@ -429,8 +428,7 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     const std::string symName = extractSymName(linePtr, line+lineSize, localLabel);
     if (symName.empty())
     {   // this is not symbol or a missing symbol
-        while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',' &&
-            *linePtr != ':' && *linePtr!= ';') linePtr++;
+        while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
     }
@@ -775,8 +773,7 @@ bool Assembler::skipSymbol(const char*& linePtr)
     }
     if (start == linePtr)
     {   // this is not symbol name
-        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',' &&
-            *linePtr != ':' && *linePtr != ';') linePtr++;
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         printError(start, "Expected symbol name");
         return false;
     }

@@ -227,8 +227,7 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
         if (!requiredArg)
             return true; // succeed
         asmr.printError(linePtr, "Some garbages at name place");
-        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',' &&
-            *linePtr != ':' && *linePtr!= ';') linePtr++;
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         return false;
     }
     outStr.assign(nameStr, linePtr);

@@ -1318,23 +1318,23 @@ test.s:11:56: Error: Expected ',' before next value
 test.s:12:25: Error: Missing number
 test.s:12:25: Error: Expected ',' before next value
 test.s:13:35: Error: Expected string
-test.s:13:35: Error: Expected ',' before next value
-test.s:13:36: Error: Garbages at end of line
+test.s:13:39: Error: Expected string
+test.s:13:45: Error: Expected string
 test.s:14:35: Error: Expected string
-test.s:14:35: Error: Expected ',' before next value
-test.s:14:36: Error: Garbages at end of line
+test.s:14:39: Error: Expected string
+test.s:14:45: Error: Expected string
 test.s:15:36: Error: Expected string
-test.s:15:36: Error: Expected ',' before next value
-test.s:15:37: Error: Garbages at end of line
+test.s:15:40: Error: Expected string
+test.s:15:46: Error: Expected string
 test.s:16:38: Error: Expected string
-test.s:16:38: Error: Expected ',' before next value
-test.s:16:39: Error: Garbages at end of line
+test.s:16:42: Error: Expected string
+test.s:16:48: Error: Expected string
 test.s:17:38: Error: Expected string
-test.s:17:38: Error: Expected ',' before next value
-test.s:17:39: Error: Garbages at end of line
+test.s:17:42: Error: Expected string
+test.s:17:48: Error: Expected string
 test.s:18:38: Error: Expected string
-test.s:18:38: Error: Expected ',' before next value
-test.s:18:39: Error: Garbages at end of line
+test.s:18:42: Error: Expected string
+test.s:18:48: Error: Expected string
 test.s:19:19: Error: Expected expression
 test.s:20:20: Error: Expected expression
 test.s:22:21: Error: Garbages at end of line

@@ -519,11 +519,9 @@ bool AsmGalliumHandler::prepareBinary()
                 output.globalData = sectionData;
                 break;
             case AsmSectionType::EXTRA_SECTION:
-            {
                 output.extraSections.push_back({section.name, sectionSize, sectionData,
                     1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
                 break;
-            }
             case AsmSectionType::GALLIUM_COMMENT:
                 output.commentSize = sectionSize;
                 output.comment = (const char*)sectionData;
