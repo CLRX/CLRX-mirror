@@ -1058,7 +1058,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
-        asmr.printError(pseudoOpPlace, "Illegal place of UserData");
+        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
         return;
     }
     
@@ -1099,7 +1099,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     {
         toLowerString(argTypeName);
         cxuint index = binaryMapFind(argTypeNameMap, argTypeNameMap + argTypeNameMapSize,
-                     argTypeName.c_str(), CStringLess())-argTypeNameMap;
+                     argTypeName.c_str(), CStringLess()) - argTypeNameMap;
         if (index == argTypeNameMapSize) // end of this map
         {
             asmr.printError(argTypePlace, "Unknown argument type name");
@@ -1588,12 +1588,10 @@ bool AsmAmdHandler::prepareBinary()
             }
             case AsmSectionType::EXTRA_SECTION:
                 if (section.kernelId == ASMKERN_GLOBAL)
-                    output.extraSections.push_back({section.name,
-                            asmSection.content.size(), asmSection.content.data(),
+                    output.extraSections.push_back({section.name, sectionSize, sectionData,
                             1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
                 else
-                    kernel->extraSections.push_back({section.name,
-                            asmSection.content.size(), asmSection.content.data(),
+                    kernel->extraSections.push_back({section.name, sectionSize, sectionData,
                             1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
                 break;
             default: // ignore other sections
