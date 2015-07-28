@@ -91,6 +91,7 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     Kernel kernelState{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
             thisSection, ASMSECT_NONE };
     kernelState.extraSectionCount = 0;
+    /* add new kernel and their section (.text) */
     kernelStates.push_back(std::move(kernelState));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
@@ -274,7 +275,7 @@ void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpP
         return;
     
     if (handler.dataSection==ASMSECT_NONE)
-    {
+    {   /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
             ELFSECTID_UNDEF, nullptr });
@@ -297,7 +298,7 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
     if (handler.kernelStates[asmr.currentKernel].configSection!=ASMSECT_NONE)
     {
         asmr.printError(pseudoOpPlace,
-                    "Metadata can't be defined if configuration defined");
+                    "Metadata can't be defined if configuration was defined");
         return;
     }
     
@@ -368,7 +369,8 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
     if (kernel.configSection!=ASMSECT_NONE)
     {
-        asmr.printError(pseudoOpPlace, "CALNote can't be defined if configuration defined");
+        asmr.printError(pseudoOpPlace,
+                    "CALNote can't be defined if configuration was defined");
         return;
     }
     
@@ -392,6 +394,7 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
             ELFSECTID_UNDEF, nullptr, calNoteId });
     kernel.calNoteSections.push_back({thisSection});
     asmr.goToSection(pseudoOpPlace, thisSection);
+    
     if (singleValue)
     {   // with single value
         uint32_t outValue = LEV(uint32_t(value));
@@ -414,7 +417,8 @@ void AsmAmdPseudoOps::addCustomCALNote(AsmAmdHandler& handler, const char* pseud
     AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
     if (kernel.configSection!=ASMSECT_NONE)
     {
-        asmr.printError(pseudoOpPlace, "CALNote can't be defined if configuration defined");
+        asmr.printError(pseudoOpPlace,
+                    "CALNote can't be defined if configuration was defined");
         return;
     }
     
@@ -439,7 +443,8 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
     }
     if (handler.kernelStates[asmr.currentKernel].configSection!=ASMSECT_NONE)
     {
-        asmr.printError(pseudoOpPlace, "Header can't be defined if configuration defined");
+        asmr.printError(pseudoOpPlace,
+                "Header can't be defined if configuration was defined");
         return;
     }
     
@@ -514,7 +519,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
     asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "uavid"))
+    if (!skipRequiredComma(asmr, linePtr, "f1 value"))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -522,7 +527,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     good &= getAbsoluteValueArg(asmr, value2, linePtr, true);
     asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "f1 value"))
+    if (!skipRequiredComma(asmr, linePtr, "f2 value"))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -530,7 +535,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     good &= getAbsoluteValueArg(asmr, value3, linePtr, true);
     asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "f2 value"))
+    if (!skipRequiredComma(asmr, linePtr, "type"))
         return;
     
     skipSpacesToEnd(linePtr, end);
@@ -883,7 +888,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     std::string name;
     skipSpacesToEnd(linePtr, end);
     const char* dataClassPlace = linePtr;
-    if (getNameArg(asmr, name, linePtr, "Data Class"))
+    if (getNameArg(asmr, name, linePtr, "ApiSlot"))
     {
         toLowerString(name);
         cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,
@@ -899,7 +904,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     else
         good = false;
     
-    if (!skipRequiredComma(asmr, linePtr, "ApiSlot"))
+    if (!skipRequiredComma(asmr, linePtr, "RegStart"))
         return;
     skipSpacesToEnd(linePtr, end);
     uint64_t apiSlot = 0;
@@ -907,7 +912,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     good &= getAbsoluteValueArg(asmr, apiSlot, linePtr, true);
     asmr.printWarningForRange(32, apiSlot, asmr.getSourcePos(apiSlotPlace));
     
-    if (!skipRequiredComma(asmr, linePtr, "RegStart"))
+    if (!skipRequiredComma(asmr, linePtr, "RegSize"))
         return;
     skipSpacesToEnd(linePtr, end);
     uint64_t regStart = 0;
