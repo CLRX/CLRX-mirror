@@ -56,7 +56,7 @@ cxuint AsmRawCodeHandler::addSection(const char* name, cxuint kernelId)
     if (::strcmp(name, ".text")!=0)
         throw AsmFormatException("Only section '.text' can be in raw code");
     else
-        throw AsmFormatException("Section '.text' is already exists");
+        throw AsmFormatException("Section '.text' already exists");
 }
 
 cxuint AsmRawCodeHandler::getSectionId(const char* sectionName) const

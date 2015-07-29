@@ -110,7 +110,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
-            throw AsmFormatException("Section is already exists");
+            throw AsmFormatException("Section already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
         section.elfBinSectId = extraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
