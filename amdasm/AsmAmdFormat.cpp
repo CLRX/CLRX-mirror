@@ -1197,18 +1197,30 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 }
                 skipSpacesToEnd(linePtr, end);
             }
-            if (!skipComma(asmr, haveComma, linePtr))
-                return;
-            if (haveComma)
+            
+            bool havePrevArgument = false;
+            if (argType == KernelArgType::STRUCTURE)
             {
-                skipSpacesToEnd(linePtr, end);
-                const char* structSizePlace = linePtr;
-                good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, false);
-                asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
-                                  asmr.getSourcePos(structSizePlace));
-                
+                if (!skipComma(asmr, haveComma, linePtr))
+                    return;
+                if (haveComma)
+                {
+                    skipSpacesToEnd(linePtr, end);
+                    const char* structSizePlace = linePtr;
+                    good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, false);
+                    asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
+                                      asmr.getSourcePos(structSizePlace));
+                    havePrevArgument = true;
+                }
+            }
+            else
+                havePrevArgument = true;
+            
+            // other
+            if (havePrevArgument)
+            {
+                havePrevArgument = false;
                 const char* place;
-                bool havePrevArgument = true;
                 if (ptrSpace == KernelPtrSpace::CONSTANT)
                 {
                     if (!skipComma(asmr, haveComma, linePtr))
@@ -1220,10 +1232,11 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                         good &= getAbsoluteValueArg(asmr, constSpaceSizeVal, linePtr, false);
                         asmr.printWarningForRange(sizeof(cxuint)<<3, constSpaceSizeVal,
                                           asmr.getSourcePos(place));
+                        havePrevArgument = true;
                     }
-                    else
-                        havePrevArgument = false;
                 }
+                else
+                    havePrevArgument = true;
                 
                 if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
                 {
@@ -1250,6 +1263,8 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 else
                     haveLastArgument = havePrevArgument;
             }
+            else // noprev argument
+                haveLastArgument = false;
         }
     }
     else if (!pointer && argType >= KernelArgType::MIN_IMAGE &&
@@ -1262,13 +1277,13 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         {
             skipSpacesToEnd(linePtr, end);
             const char* ptrAccessPlace = linePtr;
-            if (getNameArg(asmr, name, linePtr, "access qualifier", true))
+            if (getNameArg(asmr, name, linePtr, "access qualifier", false))
             {
                 if (name == "read_only")
                     ptrAccess = KARG_PTR_READ_ONLY;
                 else if (name == "write_only")
                     ptrAccess = KARG_PTR_WRITE_ONLY;
-                else
+                else if (!name.empty())
                 {   // unknown
                     asmr.printError(ptrAccessPlace, "Unknown access qualifier");
                     good = false;
@@ -1322,7 +1337,10 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, true);
         asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
                           asmr.getSourcePos(structSizePlace));
+        haveLastArgument = true;
     }
+    else
+        haveLastArgument = true;
     
     if (haveLastArgument)
     {
