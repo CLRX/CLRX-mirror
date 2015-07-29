@@ -542,23 +542,23 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
             .arg v43,ulong16  *,global, restrict volatile
             .arg v44,ulong16  *,global, restrict restrict volatile const
             .arg v45,ulong16  *,global,
-            .arg v46,structure*,global,
-            .arg v47,structure*,global,const, 14
-            .arg v48,structure*,global,const, 14, 17
+            .arg v46,structure*,0,global,
+            .arg v47,structure*,14,global,const
+            .arg v48,structure*,14,global,const, 17
             .arg v49,ulong16  *,global,,18
-            .arg v50,structure*,global,const, 14, 17, unused
+            .arg v50,structure*,14,global,const, 17, unused
             .arg v51,float*,global,,,unused
             .arg v52,float*,local,restrict,unused
             .arg v53,float*,local,restrict
             .arg v54,float*,constant,,40
             .arg v55,float*,constant,,40,20
             .arg v56,float*,constant,,40,20,unused
-            .arg v57,structure*,global,,82,,unused
-            .arg v58,structure*,local,restrict,78,unused
-            .arg v59,structure*,local,restrict,110
-            .arg v60,structure*,constant,,17,40
-            .arg v61,structure*,constant,,19,40,20
-            .arg v62,structure*,constant,,22,40,20,unused
+            .arg v57,structure*,82,global,,,unused
+            .arg v58,structure*,78,local,restrict,unused
+            .arg v59,structure*,110,local,restrict
+            .arg v60,structure*,17,constant,,40
+            .arg v61,structure*,19,constant,,40,20
+            .arg v62,structure*,22,constant,,40,20,unused
             .section .notknown
             .ascii "notknownsection")ffDXD",
         /* dump */

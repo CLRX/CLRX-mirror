@@ -1151,12 +1151,23 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     bool haveLastArgument = false;
     if (pointer)
     {
+        if (argType == KernelArgType::STRUCTURE)
+        {
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            skipSpacesToEnd(linePtr, end);
+            const char* structSizePlace = linePtr;
+            good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, true);
+            asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
+                              asmr.getSourcePos(structSizePlace));
+        }
+        
         if (!skipRequiredComma(asmr, linePtr))
             return;
         skipSpacesToEnd(linePtr, end);
         const char* ptrSpacePlace = linePtr;
         // parse ptrSpace
-        if (getNameArg(asmr, name, linePtr, "argument type", true))
+        if (getNameArg(asmr, name, linePtr, "pointer space", true))
         {
             toLowerString(name);
             if (name == "local")
@@ -1199,72 +1210,48 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             }
             
             bool havePrevArgument = false;
-            if (argType == KernelArgType::STRUCTURE)
+            const char* place;
+            if (ptrSpace == KernelPtrSpace::CONSTANT)
             {
                 if (!skipComma(asmr, haveComma, linePtr))
                     return;
                 if (haveComma)
                 {
                     skipSpacesToEnd(linePtr, end);
-                    const char* structSizePlace = linePtr;
-                    good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, false);
-                    asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
-                                      asmr.getSourcePos(structSizePlace));
+                    const char* place = linePtr;
+                    good &= getAbsoluteValueArg(asmr, constSpaceSizeVal, linePtr, false);
+                    asmr.printWarningForRange(sizeof(cxuint)<<3, constSpaceSizeVal,
+                                      asmr.getSourcePos(place));
                     havePrevArgument = true;
                 }
             }
             else
                 havePrevArgument = true;
             
-            // other
-            if (havePrevArgument)
+            if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
             {
-                havePrevArgument = false;
-                const char* place;
-                if (ptrSpace == KernelPtrSpace::CONSTANT)
+                if (!skipComma(asmr, haveComma, linePtr))
+                    return;
+                if (haveComma)
                 {
-                    if (!skipComma(asmr, haveComma, linePtr))
-                        return;
-                    if (haveComma)
+                    haveLastArgument = true;
+                    skipSpacesToEnd(linePtr, end);
+                    place = linePtr;
+                    good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, false);
+                    const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
+                            159 : 1023;
+                    
+                    if (resIdVal != AMDBIN_DEFAULT && resIdVal > maxUavId)
                     {
-                        skipSpacesToEnd(linePtr, end);
-                        const char* place = linePtr;
-                        good &= getAbsoluteValueArg(asmr, constSpaceSizeVal, linePtr, false);
-                        asmr.printWarningForRange(sizeof(cxuint)<<3, constSpaceSizeVal,
-                                          asmr.getSourcePos(place));
-                        havePrevArgument = true;
+                        char buf[80];
+                        snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
+                        asmr.printError(place, buf);
+                        good = false;
                     }
                 }
-                else
-                    havePrevArgument = true;
-                
-                if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
-                {
-                    if (!skipComma(asmr, haveComma, linePtr))
-                        return;
-                    if (haveComma)
-                    {
-                        haveLastArgument = true;
-                        skipSpacesToEnd(linePtr, end);
-                        place = linePtr;
-                        good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, false);
-                        const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
-                                159 : 1023;
-                        
-                        if (resIdVal != AMDBIN_DEFAULT && resIdVal > maxUavId)
-                        {
-                            char buf[80];
-                            snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
-                            asmr.printError(place, buf);
-                            good = false;
-                        }
-                    }
-                }
-                else
-                    haveLastArgument = havePrevArgument;
             }
-            else // noprev argument
-                haveLastArgument = false;
+            else
+                haveLastArgument = havePrevArgument;
         }
     }
     else if (!pointer && argType >= KernelArgType::MIN_IMAGE &&
