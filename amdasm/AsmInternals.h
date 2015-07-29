@@ -306,7 +306,7 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
                       const char* linePtr);
     /// add any entry with two 32-bit integers
     static void doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr, uint32_t requiredCalNoteIdMask);
+              const char* linePtr, uint32_t requiredCalNoteIdMask, const char* entryName);
     /// add any entry with four 32-bit integers
     static void doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

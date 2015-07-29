@@ -711,6 +711,196 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
       6e6f746b6e6f776e73656374696f6e
   GlobalData:
 )ffDXD", "", true
+    },
+    /* 3 - amd format - errors */
+    {
+        R"ffDXD(            .amd
+            
+            .kernel non_config
+            .header
+            .byte 0,2,3,4,5,65,6,6,8
+            
+            .config
+            
+            .boolconsts 4
+            .intconsts 55
+            .floatconsts 51
+            .earlyexit
+            .segment 3,4
+            .cbid 4,32
+            .entry 4,2
+            .sampler 21,1
+            .cbmask 431,33
+            
+            .calnote 
+            .inputsamplers
+            .sampler 3,
+            .sampler ,4
+            .sampler ,
+            .sampler 45
+            .uav
+            .entry 1,2,3
+            .entry 1,2,3,
+            .entry 1,2,
+            .entry 1,2
+            .entry 1,
+            .entry 1
+            .entry
+            .calnote 45,5
+            
+            .sgprsnum 2
+            
+            .kernel configuredKernel
+            .config
+            .metadata
+            .header
+            .proginfo
+            .calnote 34
+            .sgprsnum -4
+            .sgprsnum 103
+            .vgprsnum -4
+            .vgprsnum 102
+            .vgprsnum 257
+            .vgprsnum 256
+            .uavid 1024
+            .cbid 1024
+            .printfid 1024
+            .privateid 1024
+            .uavprivate 333
+            .hwlocal 120303
+            .hwlocal
+            .sgprsnum
+            .vgprsnum
+            .earlyexit
+            .condout
+            .printfid
+            .uavid
+            .cbid
+            .privateid
+            .cws
+            .cws 1
+            .cws 1,
+            .cws 1,2
+            .cws 1,2,
+            
+            .userdata 0,0,2,112
+            .userdata imm_sampler,0,14,2
+            .userdata imm_sampler,0,14,3
+            .userdata imm_sampler,0,16,1
+            .userdata imm_sampler
+            .userdata imm_sampler,0
+            .userdata imm_sampler,0,1
+            .userdata imm_sampler,0,3,
+            
+            .arg 
+            .arg v0, "test1", t
+            .arg v0, ucharx
+            .arg v0, uchar*, glocal
+            .arg v0, uchar*,, restrict
+            .arg v0, uchar*,global, ::
+            .arg v0, uchar*,global,,XXX
+            .arg v0, uchar*,global,,5,unx
+            .arg v0, structure
+            .arg v0, structure,
+            .arg v0, image, const
+            .arg v0, image, local
+            .arg v0, counter32, 111
+            .arg v0, uchar*,global,,,
+            .arg vx, int
+            .arg vx, uint
+            .arg v0, structure*,global
+            .arg v0, structure*,global,const
+            .arg v0, ulong*, global,,1024
+            .arg v0, image2d,read_only,128
+            .arg v0, image2d,write_only,8
+            .arg v0, short*, constant,,,160
+            .text
+            .sgprsnum 103)ffDXD",
+        "",
+        /* errors */
+        R"ffDXD(test.s:7:13: Error: Config can't be defined if metadata,header and/or CALnotes section exists
+test.s:9:25: Error: Garbages at end of line
+test.s:10:24: Error: Garbages at end of line
+test.s:11:26: Error: Garbages at end of line
+test.s:13:13: Error: Illegal place of segment
+test.s:14:13: Error: Illegal place of cbid
+test.s:15:13: Error: Illegal place of entry
+test.s:16:13: Error: Illegal place of sampler
+test.s:17:13: Error: Illegal place of cbmask
+test.s:19:22: Error: Expected expression
+test.s:21:24: Error: Expected expression
+test.s:22:22: Error: Expected expression
+test.s:23:22: Error: Expected expression
+test.s:23:23: Error: Expected expression
+test.s:24:24: Error: Expected ',' before argument
+test.s:26:25: Error: Expected ',' before argument
+test.s:27:26: Error: Expected expression
+test.s:28:24: Error: Expected expression
+test.s:28:24: Error: Expected ',' before argument
+test.s:29:23: Error: Expected ',' before argument
+test.s:30:22: Error: Expected expression
+test.s:30:22: Error: Expected ',' before argument
+test.s:31:21: Error: Expected ',' before argument
+test.s:32:19: Error: Expected expression
+test.s:32:19: Error: Expected ',' before argument
+test.s:33:24: Error: Garbages at end of line
+test.s:35:13: Error: Illegal place of configuration pseudo-op
+test.s:39:13: Error: Metadata can't be defined if configuration was defined
+test.s:40:13: Error: Header can't be defined if configuration was defined
+test.s:41:13: Error: CALNote can't be defined if configuration was defined
+test.s:42:13: Error: CALNote can't be defined if configuration was defined
+test.s:43:13: Error: Used SGPRs number out of range (0-102)
+test.s:44:13: Error: Used SGPRs number out of range (0-102)
+test.s:45:13: Error: Used VGPRs number out of range (0-256)
+test.s:47:13: Error: Used VGPRs number out of range (0-256)
+test.s:49:13: Error: UAVId out of range (0-1023)
+test.s:50:13: Error: ConstBufferId out of range (0-1023)
+test.s:51:13: Error: PrintfId out of range (0-1023)
+test.s:52:13: Error: PrivateId out of range (0-1023)
+test.s:54:13: Error: HWLocalSize out of range (0-32768)
+test.s:55:21: Error: Expected expression
+test.s:56:22: Error: Expected expression
+test.s:57:22: Error: Expected expression
+test.s:58:23: Error: Expected expression
+test.s:59:21: Error: Expected expression
+test.s:64:17: Error: Expected expression
+test.s:70:23: Error: Some garbages at name place
+test.s:70:27: Error: RegStart+RegSize out of range (0-16)
+test.s:72:37: Error: RegStart+RegSize out of range (0-16)
+test.s:73:37: Error: RegStart out of range (0-15)
+test.s:73:37: Error: RegStart+RegSize out of range (0-16)
+test.s:74:34: Error: Expected ',' before argument
+test.s:75:36: Error: Expected ',' before argument
+test.s:76:38: Error: Expected ',' before argument
+test.s:77:39: Error: Expected expression
+test.s:79:18: Error: Expected argument name
+test.s:79:18: Error: Expected ',' before argument
+test.s:80:31: Error: Unknown argument type name
+test.s:81:22: Error: Unknown argument type name
+test.s:82:30: Error: Unknown or not given pointer space
+test.s:83:29: Error: Some garbages at name place
+test.s:84:37: Error: Some garbages at name place
+test.s:84:37: Error: Unknown or not given access qualifier type
+test.s:85:37: Error: Expression have unresolved symbol 'XXX'
+test.s:86:39: Error: This is not 'unused' specifier
+test.s:87:31: Error: Expected ',' before argument
+test.s:88:32: Error: Expected expression
+test.s:89:29: Error: Unknown access qualifier
+test.s:90:29: Error: Unknown access qualifier
+test.s:91:33: Error: Resource Id out of range (0-7)
+test.s:92:38: Error: Expected unused specifier
+test.s:92:38: Error: This is not 'unused' specifier
+test.s:94:18: Error: Kernel argument 'vx' is already defined
+test.s:95:33: Error: Expression have unresolved symbol 'global'
+test.s:95:39: Error: Expected ',' before argument
+test.s:96:33: Error: Expression have unresolved symbol 'global'
+test.s:96:40: Error: Unknown or not given pointer space
+test.s:97:38: Error: UAVId out of range (0-1023)
+test.s:98:40: Error: Resource Id out of range (0-127)
+test.s:99:41: Error: Resource Id out of range (0-7)
+test.s:100:41: Error: UAVId out of range (0-159)
+test.s:102:13: Error: Illegal place of configuration pseudo-op
+)ffDXD", false
     }
 };
 

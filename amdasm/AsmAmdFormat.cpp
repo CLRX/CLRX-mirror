@@ -464,7 +464,7 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
 }
 
 void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr, uint32_t requiredCalNoteIdMask)
+              const char* linePtr, uint32_t requiredCalNoteIdMask, const char* entryName)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -475,7 +475,9 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
         (handler.sections[asmr.currentSection].extraId >= 32 ||
         ((1U<<handler.sections[asmr.currentSection].extraId) & requiredCalNoteIdMask))==0)
     {
-        asmr.printError(pseudoOpPlace, "Illegal place of entry");
+        std::string message = "Illegal place of ";
+        message += entryName;
+        asmr.printError(pseudoOpPlace, message.c_str());
         return;
     }
     
@@ -487,7 +489,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     
     skipSpacesToEnd(linePtr, end);
     const char* value1Place = linePtr;
-    uint64_t value1, value2;
+    uint64_t value1 = 0, value2 = 0;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
     
     asmr.printWarningForRange(32, value1, asmr.getSourcePos(value1Place));
@@ -515,7 +517,7 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
-    uint64_t value1, value2, value3, value4;
+    uint64_t value1 = 0, value2 = 0, value3 = 0, value4 = 0;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
     asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
     
@@ -562,7 +564,7 @@ void AsmAmdPseudoOps::doCBId(AsmAmdHandler& handler, const char* pseudoOpPlace,
         asmr.sections[asmr.currentSection].type == AsmSectionType::CONFIG)
         setConfigValue(handler, pseudoOpPlace, linePtr, AMDCVAL_CBID);
     else // do entry (if no configuration)
-        doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_CONSTANT_BUFFERS);
+        doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_CONSTANT_BUFFERS, "cbid");
 }
 
 void AsmAmdPseudoOps::doCondOut(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -621,7 +623,7 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
         checkGarbagesAtEnd(asmr, linePtr);
     }
     else // add entry to input samplers CALNote
-        doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_INPUT_SAMPLERS);
+        doEntry(handler, pseudoOpPlace, linePtr, 1U<<CALNOTE_ATI_INPUT_SAMPLERS, "sampler");
 }
 
 static const uint32_t argIsOptionalMask =  (1U<<AMDCVAL_PRIVATEID) |
@@ -649,21 +651,21 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     switch(target)
     {
         case AMDCVAL_SGPRSNUM:
-            if (value > 102)
+            if (value != AMDBIN_NOTSUPPLIED && value > 102)
             {
-                asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-102)");
+                asmr.printError(pseudoOpPlace, "Used SGPRs number out of range (0-102)");
                 good = false;
             }
             break;
         case AMDCVAL_VGPRSNUM:
-            if (value > 256)
+            if (value != AMDBIN_NOTSUPPLIED && value > 256)
             {
                 asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-256)");
                 good = false;
             }
             break;
         case AMDCVAL_HWLOCAL:
-            if (value > 32768)
+            if (value != AMDBIN_NOTSUPPLIED && value > 32768)
             {
                 asmr.printError(pseudoOpPlace, "HWLocalSize out of range (0-32768)");
                 good = false;
@@ -1203,7 +1205,8 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                     ptrAccess |= KARG_PTR_VOLATILE;
                 else
                 {
-                    asmr.printError(ptrAccessPlace, "Unknown access qualifier type");
+                    asmr.printError(ptrAccessPlace,
+                            "Unknown or not given access qualifier type");
                     good = false;
                 }
                 skipSpacesToEnd(linePtr, end);
@@ -1336,11 +1339,16 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         if (haveComma)
         {
             skipSpacesToEnd(linePtr, end);
+            const char* place = linePtr;
             good &= getNameArg(asmr, name, linePtr, "unused specifier");
+            toLowerString(name);
             if (name == "unused")
                 usedArg = false;
             else
+            {
+                asmr.printError(place, "This is not 'unused' specifier");
                 good = false;
+            }
         }
     }
     
@@ -1384,7 +1392,7 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
             break;
         case AMDOP_CBMASK:
             AsmAmdPseudoOps::doEntry(*this, stmtPlace, linePtr,
-                         1U<<CALNOTE_ATI_CONSTANT_BUFFERS);
+                         1U<<CALNOTE_ATI_CONSTANT_BUFFERS, "cbmask");
             break;
         case AMDOP_COMPILE_OPTIONS:
             AsmAmdPseudoOps::setCompileOptions(*this, linePtr);
@@ -1413,7 +1421,7 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
             break;
         case AMDOP_ENTRY:
             AsmAmdPseudoOps::doEntry(*this, stmtPlace, linePtr,
-                         (1U<<CALNOTE_ATI_PROGINFO) | (1<<CALNOTE_ATI_UAV));
+                         (1U<<CALNOTE_ATI_PROGINFO) | (1<<CALNOTE_ATI_UAV), "entry");
             break;
         case AMDOP_FLOATCONSTS:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
@@ -1491,7 +1499,7 @@ bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
         case AMDOP_SEGMENT:
             AsmAmdPseudoOps::doEntry(*this, stmtPlace, linePtr,
                     (1U<<CALNOTE_ATI_INT32CONSTS) | (1U<<CALNOTE_ATI_FLOAT32CONSTS) |
-                    (1U<<CALNOTE_ATI_BOOL32CONSTS));
+                    (1U<<CALNOTE_ATI_BOOL32CONSTS), "segment");
             break;
         case AMDOP_SGPRSNUM:
             AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_SGPRSNUM);
