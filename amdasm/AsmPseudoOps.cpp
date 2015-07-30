@@ -1028,8 +1028,10 @@ void AsmPseudoOps::doSkip(Assembler& asmr, const char* pseudoOpPlace, const char
     {
         skipSpacesToEnd(linePtr, end);
         fillValuePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, value, linePtr);
-        asmr.printWarningForRange(8, value, asmr.getSourcePos(fillValuePlace));
+        if (getAbsoluteValueArg(asmr, value, linePtr))
+            asmr.printWarningForRange(8, value, asmr.getSourcePos(fillValuePlace));
+        else
+            good = false;
     }
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1087,8 +1089,10 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, value, linePtr);
-        asmr.printWarningForRange(8, value, asmr.getSourcePos(valuePlace));
+        if (getAbsoluteValueArg(asmr, value, linePtr))
+            asmr.printWarningForRange(8, value, asmr.getSourcePos(valuePlace));
+        else
+            good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;
@@ -1144,8 +1148,10 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, value, linePtr);
-        asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valuePlace));
+        if (getAbsoluteValueArg(asmr, value, linePtr))
+            asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valuePlace));
+        else
+            good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;

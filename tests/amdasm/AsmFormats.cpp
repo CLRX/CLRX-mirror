@@ -814,6 +814,12 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
             .arg v0, image2d,read_only,128
             .arg v0, image2d,write_only,8
             .arg v0, short*, constant,,,160
+            .arg v0, short*, local,,,,
+            .arg v0, short*, local, const,4
+            .arg v0, sampler*, global
+            .arg v0, image3d*, global
+            .arg v0, sampler*, global
+            .arg v0, counter32*, global
             .text
             .sgprsnum 103)ffDXD",
         "",
@@ -899,7 +905,15 @@ test.s:97:38: Error: UAVId out of range (0-1023)
 test.s:98:40: Error: Resource Id out of range (0-127)
 test.s:99:41: Error: Resource Id out of range (0-7)
 test.s:100:41: Error: UAVId out of range (0-159)
-test.s:102:13: Error: Illegal place of configuration pseudo-op
+test.s:101:37: Error: Some garbages at name place
+test.s:101:37: Error: This is not 'unused' specifier
+test.s:102:43: Error: Some garbages at name place
+test.s:102:43: Error: This is not 'unused' specifier
+test.s:103:22: Error: Illegal pointer type
+test.s:104:22: Error: Illegal pointer type
+test.s:105:22: Error: Illegal pointer type
+test.s:106:22: Error: Illegal pointer type
+test.s:108:13: Error: Illegal place of configuration pseudo-op
 )ffDXD", false
     }
 };
