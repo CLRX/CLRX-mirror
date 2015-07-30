@@ -491,14 +491,16 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
     const char* value1Place = linePtr;
     uint64_t value1 = 0, value2 = 0;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
-    
-    asmr.printWarningForRange(32, value1, asmr.getSourcePos(value1Place));
+    if (good)
+        asmr.printWarningForRange(32, value1, asmr.getSourcePos(value1Place));
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     const char* value2Place = linePtr;
-    good &= getAbsoluteValueArg(asmr, value2, linePtr, true);
-    asmr.printWarningForRange(32, value2, asmr.getSourcePos(value2Place));
+    if (getAbsoluteValueArg(asmr, value2, linePtr, true))
+        asmr.printWarningForRange(32, value2, asmr.getSourcePos(value2Place));
+    else
+        good = false;
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -519,31 +521,38 @@ void AsmAmdPseudoOps::doUavEntry(AsmAmdHandler& handler, const char* pseudoOpPla
     const char* valuePlace = linePtr;
     uint64_t value1 = 0, value2 = 0, value3 = 0, value4 = 0;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
-    asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
+    if (good)
+        asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
     valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, value2, linePtr, true);
-    asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
+    if (getAbsoluteValueArg(asmr, value2, linePtr, true))
+        asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
+    else
+        good = false;
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
     valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, value3, linePtr, true);
-    asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
+    if (getAbsoluteValueArg(asmr, value3, linePtr, true))
+        asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
+    else
+        good = false;
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
     valuePlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, value4, linePtr, true);
-    asmr.printWarningForRange(32, value4, asmr.getSourcePos(valuePlace));
+    if (getAbsoluteValueArg(asmr, value4, linePtr, true))
+        asmr.printWarningForRange(32, value4, asmr.getSourcePos(valuePlace));
+    else
+        good = false;
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -806,7 +815,8 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     uint64_t value3 = 0;
     const char* valuePlace = linePtr;
     bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
-    asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
+    if (good)
+        asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace));
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
         return;
@@ -814,16 +824,20 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, value2, linePtr, false);
-        asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
+        if (getAbsoluteValueArg(asmr, value2, linePtr, false))
+            asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace));
+        else
+            good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;
         if (haveComma)
         {
             valuePlace = linePtr;
-            good &= getAbsoluteValueArg(asmr, value3, linePtr, false);
-            asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
+            if (getAbsoluteValueArg(asmr, value3, linePtr, false))
+                asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace));
+            else
+                good = false;
         }   
     }
     
@@ -914,8 +928,10 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     skipSpacesToEnd(linePtr, end);
     uint64_t apiSlot = 0;
     const char* apiSlotPlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, apiSlot, linePtr, true);
-    asmr.printWarningForRange(32, apiSlot, asmr.getSourcePos(apiSlotPlace));
+    if (getAbsoluteValueArg(asmr, apiSlot, linePtr, true))
+        asmr.printWarningForRange(32, apiSlot, asmr.getSourcePos(apiSlotPlace));
+    else
+        good = false;
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
@@ -1162,9 +1178,11 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 return;
             skipSpacesToEnd(linePtr, end);
             const char* structSizePlace = linePtr;
-            good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, true);
-            asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
-                              asmr.getSourcePos(structSizePlace));
+            if (getAbsoluteValueArg(asmr, structSizeVal, linePtr, true))
+                asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
+                                  asmr.getSourcePos(structSizePlace));
+            else
+                good = false;
         }
         
         if (!skipRequiredComma(asmr, linePtr))
@@ -1225,9 +1243,11 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 {
                     skipSpacesToEnd(linePtr, end);
                     const char* place = linePtr;
-                    good &= getAbsoluteValueArg(asmr, constSpaceSizeVal, linePtr, false);
-                    asmr.printWarningForRange(sizeof(cxuint)<<3, constSpaceSizeVal,
-                                      asmr.getSourcePos(place));
+                    if (getAbsoluteValueArg(asmr, constSpaceSizeVal, linePtr, false))
+                        asmr.printWarningForRange(sizeof(cxuint)<<3, constSpaceSizeVal,
+                                          asmr.getSourcePos(place));
+                    else
+                        good = false;
                     havePrevArgument = true;
                 }
             }
@@ -1327,9 +1347,11 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             return;
         skipSpacesToEnd(linePtr, end);
         const char* structSizePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, structSizeVal, linePtr, true);
-        asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
-                          asmr.getSourcePos(structSizePlace));
+        if (getAbsoluteValueArg(asmr, structSizeVal, linePtr, true))
+            asmr.printWarningForRange(sizeof(cxuint)<<3, structSizeVal,
+                              asmr.getSourcePos(structSizePlace));
+        else
+            good = false;
         haveLastArgument = true;
     }
     else
