@@ -648,60 +648,63 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     const bool argIsOptional = ((1U<<target) & argIsOptionalMask)!=0;
     bool good = getAbsoluteValueArg(asmr, value, linePtr, !argIsOptional);
     /* ranges checking */
-    switch(target)
+    if (good)
     {
-        case AMDCVAL_SGPRSNUM:
-            if (value != AMDBIN_NOTSUPPLIED && value > 102)
-            {
-                asmr.printError(pseudoOpPlace, "Used SGPRs number out of range (0-102)");
-                good = false;
-            }
-            break;
-        case AMDCVAL_VGPRSNUM:
-            if (value != AMDBIN_NOTSUPPLIED && value > 256)
-            {
-                asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-256)");
-                good = false;
-            }
-            break;
-        case AMDCVAL_HWLOCAL:
-            if (value != AMDBIN_NOTSUPPLIED && value > 32768)
-            {
-                asmr.printError(pseudoOpPlace, "HWLocalSize out of range (0-32768)");
-                good = false;
-            }
-            break;
-        case AMDCVAL_UAVID:
-            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
-            {
-                asmr.printError(pseudoOpPlace, "UAVId out of range (0-1023)");
-                good = false;
-            }
-            break;
-        case AMDCVAL_CBID:
-            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
-            {
-                asmr.printError(pseudoOpPlace, "ConstBufferId out of range (0-1023)");
-                good = false;
-            }
-            break;
-        case AMDCVAL_PRINTFID:
-            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
-            {
-                asmr.printError(pseudoOpPlace, "PrintfId out of range (0-1023)");
-                good = false;
-            }
-            break;
-        case AMDCVAL_PRIVATEID:
-            if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
-            {
-                asmr.printError(pseudoOpPlace, "PrivateId out of range (0-1023)");
-                good = false;
-            }
-            break;
-        default:
-            asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
-            break;
+        switch(target)
+        {
+            case AMDCVAL_SGPRSNUM:
+                if (value > 102)
+                {
+                    asmr.printError(pseudoOpPlace, "Used SGPRs number out of range (0-102)");
+                    good = false;
+                }
+                break;
+            case AMDCVAL_VGPRSNUM:
+                if (value > 256)
+                {
+                    asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-256)");
+                    good = false;
+                }
+                break;
+            case AMDCVAL_HWLOCAL:
+                if (value > 32768)
+                {
+                    asmr.printError(pseudoOpPlace, "HWLocalSize out of range (0-32768)");
+                    good = false;
+                }
+                break;
+            case AMDCVAL_UAVID:
+                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                {
+                    asmr.printError(pseudoOpPlace, "UAVId out of range (0-1023)");
+                    good = false;
+                }
+                break;
+            case AMDCVAL_CBID:
+                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                {
+                    asmr.printError(pseudoOpPlace, "ConstBufferId out of range (0-1023)");
+                    good = false;
+                }
+                break;
+            case AMDCVAL_PRINTFID:
+                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                {
+                    asmr.printError(pseudoOpPlace, "PrintfId out of range (0-1023)");
+                    good = false;
+                }
+                break;
+            case AMDCVAL_PRIVATEID:
+                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                {
+                    asmr.printError(pseudoOpPlace, "PrivateId out of range (0-1023)");
+                    good = false;
+                }
+                break;
+            default:
+                asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
+                break;
+        }
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
