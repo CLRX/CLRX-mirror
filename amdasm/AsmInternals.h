@@ -245,6 +245,8 @@ class AsmGalliumHandler;
 
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
+    static bool checkPseudoOpName(const std::string& string);
+    
     static void doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     // open argument list
@@ -284,6 +286,8 @@ enum AmdConfigValueTarget
 
 struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
 {
+    static bool checkPseudoOpName(const std::string& string);
+    
     static void doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     

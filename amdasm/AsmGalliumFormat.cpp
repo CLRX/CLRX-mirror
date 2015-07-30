@@ -189,7 +189,17 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
 
 namespace CLRX
 {
-    
+
+bool AsmGalliumPseudoOps::checkPseudoOpName(const std::string& string)
+{
+    if (string.empty() || string[0] != '.')
+        return false;
+    const size_t pseudoOp = binaryFind(galliumPseudoOpNamesTbl, galliumPseudoOpNamesTbl +
+                sizeof(galliumPseudoOpNamesTbl)/sizeof(char*), string.c_str()+1,
+               CStringLess()) - galliumPseudoOpNamesTbl;
+    return pseudoOp < sizeof(galliumPseudoOpNamesTbl)/sizeof(char*);
+}
+
 void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {

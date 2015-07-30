@@ -1819,7 +1819,13 @@ bool AsmPseudoOps::checkPseudoOpName(const std::string& string)
     const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
                     sizeof(pseudoOpNamesTbl)/sizeof(char*), string.c_str()+1,
                    CStringLess()) - pseudoOpNamesTbl;
-    return pseudoOp < sizeof(pseudoOpNamesTbl)/sizeof(char*);
+    if (pseudoOp < sizeof(pseudoOpNamesTbl)/sizeof(char*))
+        return true;
+    if (AsmGalliumPseudoOps::checkPseudoOpName(string))
+        return true;
+    if (AsmAmdPseudoOps::checkPseudoOpName(string))
+        return true;
+    return false;
 }
 
 };
@@ -2170,7 +2176,25 @@ void Assembler::parsePseudoOps(const std::string firstName,
         default:
             initializeOutputFormat();
             if (!formatHandler->parsePseudoOp(firstName, stmtPlace, linePtr))
-            {
+            {   // check other
+                if (format != BinaryFormat::GALLIUM)
+                {   // check gallium pseudo-op
+                    if (AsmGalliumPseudoOps::checkPseudoOpName(firstName))
+                    {
+                        printError(stmtPlace, "Gallium pseudo-op can be defined only in "
+                                "Gallium format code");
+                        break;
+                    }
+                }
+                if (format != BinaryFormat::AMD)
+                {   // check amd pseudo-op
+                    if (AsmAmdPseudoOps::checkPseudoOpName(firstName))
+                    {
+                        printError(stmtPlace, "AMD pseudo-op can be defined only in "
+                                "AMD format code");
+                        break;
+                    }
+                }
                 // macro substitution
                 // try to parse processor instruction or macro substitution
                 if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
