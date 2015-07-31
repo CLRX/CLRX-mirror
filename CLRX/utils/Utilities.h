@@ -868,6 +868,15 @@ inline void toLowerString(std::string& string);
 inline void toLowerString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toLower); }
 
+/// convert string to lowercase
+inline void toLowerCString(char* cstr);
+
+inline void toLowerCString(char* cstr)
+{
+    for (; *cstr!=0; cstr++)
+        *cstr = toLower(*cstr);
+}
+
 /// convert character to uppercase
 inline char toUpper(char c);
 
@@ -880,7 +889,14 @@ inline void toUpperString(std::string& string);
 inline void toUpperString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toUpper); }
 
+/// convert string to uppercase
+inline void toUpperCString(char* cstr);
 
+inline void toUpperCString(char* cstr)
+{
+    for (; *cstr!=0; cstr++)
+        *cstr = toUpper(*cstr);
+}
 
 };
 

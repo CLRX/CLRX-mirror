@@ -914,14 +914,14 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     
     uint32_t dataClass = 0;
     bool good = true;
-    std::string name;
+    char name[40];
     skipSpacesToEnd(linePtr, end);
     const char* dataClassPlace = linePtr;
-    if (getNameArg(asmr, name, linePtr, "ApiSlot"))
+    if (getNameArg(asmr, 40, name, linePtr, "ApiSlot"))
     {
-        toLowerString(name);
+        toLowerCString(name);
         cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,
-                     name.c_str(), CStringLess())-dataClassMap;
+                     name, CStringLess()) - dataClassMap;
         if (index == dataClassMapSize) // end of this map
         {
             asmr.printError(dataClassPlace, "Unknown Data Class");
@@ -1120,17 +1120,16 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         typeNameDefined = true;
     }
     
-    std::string name;
     bool pointer = false;
     KernelArgType argType = KernelArgType::VOID;
-    std::string argTypeName;
+    char name[20];
     skipSpacesToEnd(linePtr, end);
     const char* argTypePlace = linePtr;
-    if (getNameArg(asmr, argTypeName, linePtr, "argument type", true))
+    if (getNameArg(asmr, 20, name, linePtr, "argument type", true))
     {
-        toLowerString(argTypeName);
+        toLowerCString(name);
         cxuint index = binaryMapFind(argTypeNameMap, argTypeNameMap + argTypeNameMapSize,
-                     argTypeName.c_str(), CStringLess()) - argTypeNameMap;
+                     name, CStringLess()) - argTypeNameMap;
         if (index == argTypeNameMapSize) // end of this map
         {
             asmr.printError(argTypePlace, "Unknown argument type name");
@@ -1200,14 +1199,14 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         skipSpacesToEnd(linePtr, end);
         const char* ptrSpacePlace = linePtr;
         // parse ptrSpace
-        if (getNameArg(asmr, name, linePtr, "pointer space", true))
+        if (getNameArg(asmr, 10, name, linePtr, "pointer space", true))
         {
-            toLowerString(name);
-            if (name == "local")
+            toLowerCString(name);
+            if (::strcmp(name, "local")==0)
                 ptrSpace = KernelPtrSpace::LOCAL;
-            else if (name == "global")
+            else if (::strcmp(name, "global")==0)
                 ptrSpace = KernelPtrSpace::GLOBAL;
-            else if (name == "constant")
+            else if (::strcmp(name, "constant")==0)
                 ptrSpace = KernelPtrSpace::CONSTANT;
             else
             {   // not known or not given
@@ -1227,12 +1226,12 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             while (linePtr!=end && *linePtr!=',')
             {
                 const char* ptrAccessPlace = linePtr;
-                good &= getNameArg(asmr, name, linePtr, "access qualifier", true);
-                if (name == "const")
+                good &= getNameArg(asmr, 10, name, linePtr, "access qualifier", true);
+                if (::strcmp(name, "const")==0)
                     ptrAccess |= KARG_PTR_CONST;
-                else if (name == "restrict")
+                else if (::strcmp(name, "restrict")==0)
                     ptrAccess |= KARG_PTR_RESTRICT;
-                else if (name == "volatile")
+                else if (::strcmp(name, "volatile")==0)
                     ptrAccess |= KARG_PTR_VOLATILE;
                 else
                 {
@@ -1300,13 +1299,13 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         {
             skipSpacesToEnd(linePtr, end);
             const char* ptrAccessPlace = linePtr;
-            if (getNameArg(asmr, name, linePtr, "access qualifier", false))
+            if (getNameArg(asmr,15, name, linePtr, "access qualifier", false))
             {
-                if (name == "read_only")
+                if (::strcmp(name, "read_only")==0)
                     ptrAccess = KARG_PTR_READ_ONLY;
-                else if (name == "write_only")
+                else if (::strcmp(name, "write_only")==0)
                     ptrAccess = KARG_PTR_WRITE_ONLY;
-                else if (!name.empty())
+                else if (*name!=0)
                 {   // unknown
                     asmr.printError(ptrAccessPlace, "Unknown access qualifier");
                     good = false;
@@ -1375,9 +1374,9 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         {
             skipSpacesToEnd(linePtr, end);
             const char* place = linePtr;
-            good &= getNameArg(asmr, name, linePtr, "unused specifier");
-            toLowerString(name);
-            if (name == "unused")
+            good &= getNameArg(asmr, 10, name, linePtr, "unused specifier");
+            toLowerCString(name);
+            if (::strcmp(name, "unused")==0)
                 usedArg = false;
             else
             {

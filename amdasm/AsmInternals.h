@@ -38,7 +38,7 @@ static inline void skipSpacesToEnd(const char*& string, const char* end)
 { while (string!=end && *string == ' ') string++; }
 
 // extract sybol name or argument name or other identifier
-static inline const std::string extractSymName(const char* startString, const char* end,
+static inline std::string extractSymName(const char* startString, const char* end,
            bool localLabelSymName)
 {
     const char* string = startString;
@@ -58,13 +58,10 @@ static inline const std::string extractSymName(const char* startString, const ch
                 string = startString;
         }
     }
-    if (startString == string) // not parsed
-        return std::string();
-    
     return std::string(startString, string);
 }
 
-static inline const std::string extractLabelName(const char* startString, const char* end)
+static inline std::string extractLabelName(const char* startString, const char* end)
 {
     if (startString != end && isDigit(*startString))
     {
@@ -105,7 +102,11 @@ struct CLRX_INTERNAL AsmPseudoOps
                     const char*& linePtr);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& linePtr,
-               const char* objName, bool requiredExpr = true);
+               const char* objName, bool requiredArg = true);
+    
+    // get name (not symbol name)
+    static bool getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
+               const char*& linePtr, const char* objName, bool requiredArg = true);
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
     // skip required comma, (returns false if not found comma)

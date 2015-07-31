@@ -234,6 +234,52 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     return true;
 }
 
+bool AsmPseudoOps::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
+               const char*& linePtr, const char* objName, bool requiredArg)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end)
+    {
+        if (!requiredArg)
+        {
+            outStr[0] = 0;
+            return true; // succeed
+        }
+        std::string error("Expected ");
+        error += objName;
+        asmr.printError(linePtr, error.c_str());
+        return false;
+    }
+    const char* nameStr = linePtr;
+    if (isAlpha(*linePtr) || *linePtr == '_' || *linePtr == '.')
+    {
+        linePtr++;
+        while (linePtr != end && (isAlnum(*linePtr) ||
+            *linePtr == '_' || *linePtr == '.')) linePtr++;
+    }
+    else
+    {
+        if (!requiredArg)
+        {
+            outStr[0] = 0;
+            return true; // succeed
+        }
+        asmr.printError(linePtr, "Some garbages at name place");
+        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        return false;
+    }
+    if (maxOutStrSize < size_t(linePtr-nameStr))
+    {
+        asmr.printError(linePtr, "Name is too long");
+        return false;
+    }
+    const size_t outStrSize = std::min(maxOutStrSize-1, size_t(linePtr-nameStr));
+    std::copy(nameStr, nameStr+outStrSize, outStr);
+    outStr[outStrSize] = 0; // null-char
+    return true;
+}
+
 bool AsmPseudoOps::skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -300,16 +346,16 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    std::string formatName;
-    if (!getNameArg(asmr, formatName, linePtr, "output format type"))
+    char formatName[10];
+    if (!getNameArg(asmr, 10, formatName, linePtr, "output format type"))
         return;
     
-    toLowerString(formatName);
-    if (formatName == "catalyst" || formatName == "amd")
+    toLowerCString(formatName);
+    if (::strcmp(formatName, "catalyst")==0 || ::strcmp(formatName, "amd")==0)
         asmr.format = BinaryFormat::AMD;
-    else if (formatName == "gallium")
+    else if (::strcmp(formatName, "gallium")==0)
         asmr.format = BinaryFormat::GALLIUM;
-    else if (formatName == "raw")
+    else if (::strcmp(formatName, "raw")==0)
         asmr.format = BinaryFormat::RAWCODE;
     else
         asmr.printError(linePtr, "Unknown output format type");
