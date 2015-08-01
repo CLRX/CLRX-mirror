@@ -641,9 +641,9 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename, bool
     if (output.size() != inputData.size())
     {
         std::ostringstream oss;
-            oss << "Failed for #" << testCase << " file=" << origBinaryFilename <<
-                    ": expectedSize=" << inputData.size() <<
-                    ", resultSize=" << output.size();
+        oss << "Failed for #" << testCase << " file=" << origBinaryFilename <<
+                ": expectedSize=" << inputData.size() <<
+                ", resultSize=" << output.size();
         throw Exception(oss.str());
     }
     for (size_t i = 0; i < inputData.size(); i++)

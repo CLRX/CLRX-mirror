@@ -315,6 +315,68 @@ static void testAmdGPUMetadataGen()
 ;value:stage:u32:1:)blaB");
 }
 
+struct BinLoadingFailCase
+{
+    const char* filename;
+    size_t changeOffset;
+    Array<cxbyte> change;
+    const char* exception;
+};
+
+static const BinLoadingFailCase binLoadingTestCases[] =
+{
+    { CLRX_SOURCE_DIR "/tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf",
+      /* change section header offset in main binary */
+      0x21, { 0x4a }, "SectionHeaders offset out of range!" },
+    { CLRX_SOURCE_DIR "/tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf",
+      /* add non-null character in last symbol name (main binary) */
+      0x484, { 0x2a }, "Unfinished symbol name!" },
+    { CLRX_SOURCE_DIR "/tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf",
+      /* change program header offset in main binary */
+      0x1c, { 0xff, 0xbb, 0xdd }, "ProgramHeaders offset out of range!" },
+    { CLRX_SOURCE_DIR "/tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf",
+      /* change section shstrndx in main binary */
+      0x32, { 0x7 }, "Shstrndx out of range!" },
+    { CLRX_SOURCE_DIR "/tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf",
+      /* change name offset of the symbol __OpenCL_global_0 in main binary */
+      0x498, { 0x44, 0x42 }, "Symbol name index out of range!" },
+    { CLRX_SOURCE_DIR "/tests/amdbin/amdbins/prginfo8_14_12.clo.1_0.reconf",
+      /* change size of the symbol __OpenCL_global_0 in main binary */
+      0x4a0, { 0x20, 0x22 }, "globalData value+size out of range" }
+};
+
+static void testBinLoadingFailCase(cxuint testCaseId, const BinLoadingFailCase& testCase)
+{
+    Array<cxbyte> data = loadDataFromFile(testCase.filename);
+    for (size_t i = 0; i < testCase.change.size(); i++)
+        data[testCase.changeOffset+i] = testCase.change[i];
+    bool failed = false;
+    try
+    {
+        std::unique_ptr<AmdMainBinaryBase> base(createAmdBinaryFromCode(
+                data.size(), data.data(), 0));
+    }
+    catch(const Exception& ex)
+    {
+        if (::strcmp(testCase.exception, ex.what())!=0)
+        {
+            std::ostringstream oss;
+            oss << "Exception not match for #" << testCaseId <<
+                    " file=" << testCase.filename <<
+                    ": expectedException=" << testCase.exception  <<
+                    ", resultException=" << ex.what();
+            throw Exception(oss.str());
+        }
+        failed = true;
+    }
+    if (!failed)
+    {
+        std::ostringstream oss;
+        oss << "Not failed for #" << testCaseId << " file=" << testCase.filename;
+        throw Exception(oss.str());
+    }
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -348,5 +410,17 @@ int main(int argc, const char** argv)
             "/tests/amdbin/amdbins/structkernel2_cpu64.clo", "myKernel1",
             sizeof(expectedCPUKernelArgs2)/sizeof(AmdKernelArg), expectedCPUKernelArgs2);
     retVal |= callTest(testAmdGPUMetadataGen);
+    
+    for (cxuint i = 0; i < sizeof(binLoadingTestCases)/sizeof(BinLoadingFailCase); i++)
+    {
+        try
+        { testBinLoadingFailCase(i, binLoadingTestCases[i]); }
+        catch(const Exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    }
+    
     return retVal;
 }

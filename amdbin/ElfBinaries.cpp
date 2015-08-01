@@ -183,7 +183,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             symbolEntSize = ULEV(symTableHdr->sh_entsize);
             symbolTable = binaryCode + ULEV(symTableHdr->sh_offset);
             if (ULEV(symTableHdr->sh_link) == SHN_UNDEF)
-                throw Exception("Symbol table doesnt have string table");
+                throw Exception("Symbol table doesn't have string table");
             
             typename Types::Shdr& symstrShdr = getSectionHeader(ULEV(symTableHdr->sh_link));
             symbolStringTable = binaryCode + ULEV(symstrShdr.sh_offset);
@@ -220,7 +220,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             dynSymEntSize = ULEV(dynSymTableHdr->sh_entsize);
             dynSymTable = binaryCode + ULEV(dynSymTableHdr->sh_offset);
             if (ULEV(dynSymTableHdr->sh_link) == SHN_UNDEF)
-                throw Exception("DynSymbol table doesnt have string table");
+                throw Exception("DynSymbol table doesn't have string table");
             
             typename Types::Shdr& dynSymstrShdr =
                     getSectionHeader(ULEV(dynSymTableHdr->sh_link));
