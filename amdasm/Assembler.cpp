@@ -105,7 +105,7 @@ void AsmSymbol::undefine()
  * Assembler
  */
 
-Assembler::Assembler(const std::string& filename, std::istream& input, Flags _flags,
+Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
         BinaryFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
         std::ostream& _printStream)
         : format(_format),
@@ -830,12 +830,12 @@ bool Assembler::checkReservedName(const std::string& name)
     return false;
 }
 
-void Assembler::addIncludeDir(const std::string& includeDir)
+void Assembler::addIncludeDir(const CString& includeDir)
 {
     includeDirs.push_back(includeDir);
 }
 
-void Assembler::addInitialDefSym(const std::string& symName, uint64_t value)
+void Assembler::addInitialDefSym(const CString& symName, uint64_t value)
 {
     defSyms.push_back({symName, value});
 }

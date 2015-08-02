@@ -728,7 +728,7 @@ private:
     bool good;
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
-    std::vector<std::string> includeDirs;
+    std::vector<CString> includeDirs;
     std::vector<AsmSection> sections;
     AsmSymbolMap symbolMap;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
@@ -900,7 +900,7 @@ public:
      * \param msgStream stream for warnings and errors
      * \param printStream stream for printing message by .print pseudo-ops
      */
-    explicit Assembler(const std::string& filename, std::istream& input, Flags flags = 0,
+    explicit Assembler(const CString& filename, std::istream& input, Flags flags = 0,
               BinaryFormat format = BinaryFormat::AMD,
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
               std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
@@ -932,10 +932,10 @@ public:
     void setFlags(Flags flags)
     { this->flags = flags; }
     /// get include directory list
-    const std::vector<std::string>& getIncludeDirs() const
+    const std::vector<CString>& getIncludeDirs() const
     { return includeDirs; }
     /// adds include directory
-    void addIncludeDir(const std::string& includeDir);
+    void addIncludeDir(const CString& includeDir);
     /// get symbols map
     const AsmSymbolMap& getSymbolMap() const
     { return symbolMap; }
@@ -953,7 +953,7 @@ public:
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
     
     /// add initiali defsyms
-    void addInitialDefSym(const std::string& symName, uint64_t name);
+    void addInitialDefSym(const CString& symName, uint64_t name);
     
     /// get format handler
     const AsmFormatHandler* getFormatHandler() const

@@ -429,13 +429,14 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
         catch(const Exception& ex)
         { failedOpen = true; }
         
-        for (const std::string& incDir: asmr.includeDirs)
+        for (const CString& incDir: asmr.includeDirs)
         {
             failedOpen = false;
             std::string inDirFilename;
             try
             {
-                asmr.includeFile(pseudoOpPlace, joinPaths(incDir, filename));
+                asmr.includeFile(pseudoOpPlace, joinPaths(
+                            std::string(incDir.c_str()), filename));
                 break;
             }
             catch(const Exception& ex)
@@ -516,9 +517,9 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     ifs.open(filename.c_str(), std::ios::binary);
     if (!ifs)
     {
-        for (const std::string& incDir: asmr.includeDirs)
+        for (const CString& incDir: asmr.includeDirs)
         {
-            std::string inDirFilename = joinPaths(incDir, filename);
+            std::string inDirFilename = joinPaths(incDir.c_str(), filename);
             ifs.open(inDirFilename.c_str(), std::ios::binary);
             if (ifs)
                 break;
