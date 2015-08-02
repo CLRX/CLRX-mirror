@@ -47,7 +47,7 @@ private:
     char* ptr;
 public:
     /// constructor
-    explicit CString(): ptr(nullptr)
+    CString(): ptr(nullptr)
     { }
     
     /// constructor from C-style string pointer
@@ -301,6 +301,9 @@ public:
         const char* p = ::strstr(ptr+pos, str);
         return (p!=nullptr) ? p-ptr : npos;
     }
+    
+    CString substr(size_t pos, size_t n)
+    { return CString(ptr+pos, n); }
     
     /// swap this string with another
     void swap(CString& s2) noexcept

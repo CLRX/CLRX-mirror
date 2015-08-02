@@ -89,7 +89,7 @@ static const size_t openclArgTypeNamesTblLength =
         sizeof(openclArgTypeNamesTbl)/sizeof(const char*);
 
 static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metadata,
-            const AmdInnerGPUBinary32& innerBin, const std::string& driverInfo,
+            const AmdInnerGPUBinary32& innerBin, const CString& driverInfo,
             const cxbyte* kernelHeader)
 {
     cxuint driverVersion = 9999909U;
@@ -341,7 +341,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.pointerType == KernelArgType::VOID)
             {
                 cxuint found  = 0;
-                std::string ptrTypeName = arg.typeName.substr(0, arg.typeName.size()-1);
+                CString ptrTypeName = arg.typeName.substr(0, arg.typeName.size()-1);
                 for (found = 0; found < openclArgTypeNamesTblLength; found++)
                     if (openclArgTypeNamesTbl[found]!=nullptr &&
                         ::strcmp(ptrTypeName.c_str(), openclArgTypeNamesTbl[found]) == 0)

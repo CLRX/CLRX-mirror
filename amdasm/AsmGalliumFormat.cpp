@@ -566,7 +566,7 @@ bool AsmGalliumHandler::prepareBinary()
         if (it == symbolMap.end() || !it->second.isDefined())
         {   // error, undefined
             std::string message = "Symbol for kernel '";
-            message += kinput.kernelName;
+            message += kinput.kernelName.c_str();
             message += "' is undefined";
             assembler.printError(assembler.kernels[ki].sourcePos, message.c_str());
             good = false;
@@ -576,7 +576,7 @@ bool AsmGalliumHandler::prepareBinary()
         if (!symbol.hasValue)
         {   // error, unresolved
             std::string message = "Symbol for kernel '";
-            message += kinput.kernelName;
+            message += kinput.kernelName.c_str();
             message += "' is not resolved";
             assembler.printError(assembler.kernels[ki].sourcePos, message.c_str());
             good = false;
@@ -585,7 +585,7 @@ bool AsmGalliumHandler::prepareBinary()
         if (symbol.sectionId != codeSection)
         {   /// error, wrong section
             std::string message = "Symbol for kernel '";
-            message += kinput.kernelName;
+            message += kinput.kernelName.c_str();
             message += "' is defined for section other than '.text'";
             assembler.printError(assembler.kernels[ki].sourcePos, message.c_str());
             good = false;

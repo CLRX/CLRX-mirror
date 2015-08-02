@@ -161,7 +161,7 @@ static size_t unfinishedRegionOfStringTable(const cxbyte* table, size_t size)
 
 /* AMD inner GPU binary */
 
-AmdInnerGPUBinary32::AmdInnerGPUBinary32(const std::string& _kernelName,
+AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
          size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags)
         : ElfBinary32(binaryCodeSize, binaryCode, creationFlags), kernelName(_kernelName),
           encodingEntriesNum(0), encodingEntries(nullptr)
@@ -624,7 +624,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             ptrSpace(KernelPtrSpace::NONE), ptrAccess(0), nameStr(nullptr)
         { }
     };
-    typedef std::map<std::string, InitKernelArgMapEntry> InitKernelArgMap;
+    typedef std::map<CString, InitKernelArgMapEntry> InitKernelArgMap;
     
     /* parse kernel description */
     LineNo lineNo = 1;
@@ -984,7 +984,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             if (argInfo.argName.compare(0, 8, "unknown_") == 0 &&
                 argInfo.typeName != "sampler_t" &&
                 argInfo.argType == KernelArgType::SAMPLER)
-            {   InitKernelArgMap::const_iterator argIt =
+            {
+                InitKernelArgMap::const_iterator argIt =
                             initKernelArgs.find(argInfo.argName);
                 if (argIt != initKernelArgs.end() &&
                     argIt->second.origArgType != KernelArgType::VOID)

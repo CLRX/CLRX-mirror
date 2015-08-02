@@ -370,6 +370,10 @@ extern std::string escapeStringCStyle(size_t strSize, const char* str);
 inline std::string escapeStringCStyle(const std::string& str)
 { return escapeStringCStyle(str.size(), str.c_str()); }
 
+/// escape string into C-style string
+inline std::string escapeStringCStyle(const CString& str)
+{ return escapeStringCStyle(str.size(), str.c_str()); }
+
 
 /// escapes string into C-style string
 /**

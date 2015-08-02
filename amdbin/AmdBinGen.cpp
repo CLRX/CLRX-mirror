@@ -582,9 +582,9 @@ class CLRX_INTERNAL MainCommentGen: public ElfRegionContent
 {
 private:
     const AmdInput* input;
-    const std::string& driverInfo;
+    const CString& driverInfo;
 public:
-    MainCommentGen(const AmdInput* _input, const std::string& _driverInfo)
+    MainCommentGen(const AmdInput* _input, const CString& _driverInfo)
             : input(_input), driverInfo(_driverInfo)
     { }
     
@@ -598,7 +598,7 @@ public:
 template<typename Types>
 static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint driverVersion,
         const AmdInput* input, size_t allInnerBinSize, const MainTextGen& textGen,
-        size_t rodataSize, const MainRoDataGen& rodataGen, const std::string& driverInfo,
+        size_t rodataSize, const MainRoDataGen& rodataGen, const CString& driverInfo,
         const MainCommentGen& commentGen, const MainStrTabGen& mainStrGen,
         const MainSymTabGen<Types>& mainSymGen)
 {
@@ -904,7 +904,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     std::string metadata;
     metadata.reserve(100);
     metadata += ";ARGSTART:__OpenCL_";
-    metadata += kinput.kernelName;
+    metadata += kinput.kernelName.c_str();
     metadata += "_kernel\n";
     if (isOlderThan1124)
         metadata += ";version:3:1:104\n";
@@ -950,7 +950,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         if (arg.argType == KernelArgType::STRUCTURE)
         {
             metadata += ";value:";
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += ":struct:";
             itocstrCStyle(arg.structSize, numBuf, 21);
             metadata += numBuf;
@@ -963,7 +963,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         else if (arg.argType == KernelArgType::POINTER)
         {
             metadata += ";pointer:";
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += ':';
             const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.pointerType)];
             if (tp.kindOfType == KT_UNKNOWN)
@@ -1011,7 +1011,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             (arg.argType <= KernelArgType::MAX_IMAGE))
         {
             metadata += ";image:";
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += ':';
             metadata += imgTypeNamesTable[
                     cxuint(arg.argType)-cxuint(KernelArgType::IMAGE)];
@@ -1036,7 +1036,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         else if (arg.argType == KernelArgType::COUNTER32)
         {
             metadata += ";counter:";
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += ":32:";
             itocstrCStyle(tempConfig.argResIds[k], numBuf, 21);
             metadata += numBuf;
@@ -1049,7 +1049,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         else
         {
             metadata += ";value:";
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += ':';
             const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
             if (tp.kindOfType == KT_UNKNOWN)
@@ -1073,7 +1073,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             itocstrCStyle(k, numBuf, 21);
             metadata += numBuf;
             metadata += ':';
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += '\n';
         }
     }
@@ -1107,7 +1107,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         if (arg.argType == KernelArgType::SAMPLER)
         {
             metadata += ";sampler:";
-            metadata += arg.argName;
+            metadata += arg.argName.c_str();
             metadata += ':';
             itocstrCStyle(sampId, numBuf, 21);
             metadata += numBuf;
@@ -1152,12 +1152,12 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         itocstrCStyle(k, numBuf, 21);
         metadata += numBuf;
         metadata += ':';
-        metadata += arg.typeName;
+        metadata += arg.typeName.c_str();
         metadata += '\n';
     }
     
     metadata += ";ARGEND:__OpenCL_";
-    metadata += kinput.kernelName;
+    metadata += kinput.kernelName.c_str();
     metadata += "_kernel\n";
     
     return metadata;
@@ -1477,7 +1477,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
              Array<cxbyte>* aPtr) const
 {
     const size_t kernelsNum = input->kernels.size();
-    std::string driverInfo;
+    CString driverInfo;
     uint32_t driverVersion = 99999909U;
     if (input->driverInfo.empty())
     {

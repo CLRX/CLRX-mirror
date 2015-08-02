@@ -47,8 +47,8 @@ enum: cxuint {
 /// AMD OpenCL kernel argument description
 struct AmdKernelArgInput
 {
-    std::string argName;    ///< argument name
-    std::string typeName;   ///< name of type of argument
+    CString argName;    ///< argument name
+    CString typeName;   ///< name of type of argument
     KernelArgType argType;  ///< argument type
     KernelArgType pointerType;  ///< pointer type
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
@@ -59,14 +59,14 @@ struct AmdKernelArgInput
     bool used; ///< used by kernel
     
     /// create simple type argument
-    static AmdKernelArgInput arg(const std::string& argName, const std::string& typeName,
+    static AmdKernelArgInput arg(const CString& argName, const CString& typeName,
          KernelArgType argType)
     {
         return { argName, typeName, argType, KernelArgType::VOID, KernelPtrSpace::NONE,
             KARG_PTR_NORMAL, 0, 0, 0, true };
     }
     /// create global pointer
-    static AmdKernelArgInput gptr(const std::string& argName, const std::string& typeName,
+    static AmdKernelArgInput gptr(const CString& argName, const CString& typeName,
          KernelArgType ptrType, cxuint structSize = 0, cxbyte ptrAccess = KARG_PTR_NORMAL,
          uint32_t resId = AMDBIN_DEFAULT, bool used = true)
     {
@@ -74,7 +74,7 @@ struct AmdKernelArgInput
             KernelPtrSpace::GLOBAL, ptrAccess, structSize, 0, resId, used };
     }
     /// create constant pointer
-    static AmdKernelArgInput cptr(const std::string& argName, const std::string& typeName,
+    static AmdKernelArgInput cptr(const CString& argName, const CString& typeName,
          KernelArgType ptrType, cxuint structSize = 0, cxbyte ptrAccess = KARG_PTR_NORMAL,
          size_t constSpaceSize = 0, uint32_t resId = AMDBIN_DEFAULT, bool used = true)
     {
@@ -82,7 +82,7 @@ struct AmdKernelArgInput
             KernelPtrSpace::CONSTANT, ptrAccess, structSize, constSpaceSize, resId, used };
     }
     /// create local pointer
-    static AmdKernelArgInput lptr(const std::string& argName, const std::string& typeName,
+    static AmdKernelArgInput lptr(const CString& argName, const CString& typeName,
          KernelArgType ptrType, cxuint structSize = 0)
     {
         return { argName, typeName, KernelArgType::POINTER, ptrType,
@@ -90,7 +90,7 @@ struct AmdKernelArgInput
     }
     
     /// create image
-    static AmdKernelArgInput img(const std::string& argName, const std::string& typeName,
+    static AmdKernelArgInput img(const CString& argName, const CString& typeName,
         KernelArgType imgType, cxbyte ptrAccess = KARG_PTR_READ_ONLY,
         uint32_t resId = AMDBIN_DEFAULT, bool used = true)
     {
@@ -138,7 +138,7 @@ struct AmdKernelConfig
 /// AMD kernel input
 struct AmdKernelInput
 {
-    std::string kernelName; ///< kernel name
+    CString kernelName; ///< kernel name
     size_t dataSize;    ///< data size
     const cxbyte* data; ///< data
     size_t headerSize;  ///< kernel header size (used if useConfig=false)
@@ -162,8 +162,8 @@ struct AmdInput
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     uint32_t driverVersion;     ///< driver version (majorVersion*100 + minorVersion)
-    std::string compileOptions; ///< compile options
-    std::string driverInfo;     ///< driver info
+    CString compileOptions; ///< compile options
+    CString driverInfo;     ///< driver info
     std::vector<AmdKernelInput> kernels;    ///< kernels
     std::vector<BinSection> extraSections;  ///< extra sections
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols

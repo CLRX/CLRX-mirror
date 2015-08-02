@@ -61,13 +61,13 @@ protected:
     typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
     
     /// named label iterator
-    typedef std::vector<std::pair<size_t, std::string> >::const_iterator NamedLabelIter;
+    typedef std::vector<std::pair<size_t, CString> >::const_iterator NamedLabelIter;
     
     Disassembler& disassembler; ///< disassembler instance
     size_t inputSize;   ///< size of input
     const cxbyte* input;    ///< input code
     std::vector<size_t> labels; ///< list of local labels
-    std::vector<std::pair<size_t, std::string> > namedLabels;   ///< named labels
+    std::vector<std::pair<size_t, CString> > namedLabels;   ///< named labels
     FastOutputBuffer output;    ///< output buffer
     
     /// constructor
@@ -96,10 +96,10 @@ public:
     virtual void disassemble() = 0;
 
     /// add named label to list (must be called before disassembly)
-    void addNamedLabel(size_t pos, const std::string& name)
+    void addNamedLabel(size_t pos, const CString& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
     /// add named label to list (must be called before disassembly)
-    void addNamedLabel(size_t pos, std::string&& name)
+    void addNamedLabel(size_t pos, CString&& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
 };
 
@@ -125,7 +125,7 @@ public:
  * No management of data */
 struct AmdDisasmKernelInput
 {
-    std::string kernelName; ///< kernel name
+    CString kernelName; ///< kernel name
     size_t metadataSize;    ///< metadata size
     const char* metadata;   ///< kernel's metadata
     size_t headerSize;  ///< kernel header size
@@ -144,8 +144,8 @@ struct AmdDisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
     bool is64BitMode;       ///< true if 64-bit mode of addressing
-    std::string driverInfo; ///< driver info (for AMD Catalyst drivers)
-    std::string compileOptions; ///< compile options which used by in clBuildProgram
+    CString driverInfo; ///< driver info (for AMD Catalyst drivers)
+    CString compileOptions; ///< compile options which used by in clBuildProgram
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs

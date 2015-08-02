@@ -279,8 +279,8 @@ void GCNDisassembler::beforeDisassemble()
     const auto newEnd = std::unique(labels.begin(), labels.end());
     labels.resize(newEnd-labels.begin());
     std::sort(namedLabels.begin(), namedLabels.end(), [](
-                const std::pair<size_t, std::string>& a1,
-                const std::pair<size_t, std::string>& a2) 
+                const std::pair<size_t, CString>& a1,
+                const std::pair<size_t, CString>& a2) 
         { return a1.first < a2.first; });
 }
 

@@ -99,7 +99,7 @@ struct GalliumArgInfo
 /// kernel info structure (Gallium binaries)
 struct GalliumKernel
 {
-    std::string kernelName;   ///< kernel's name
+    CString kernelName;   ///< kernel's name
     uint32_t sectionId; ///< section id
     uint32_t offset;    ///< offset in ElfBinary
     Array<GalliumArgInfo> argInfos;   ///< arguments
@@ -293,7 +293,7 @@ enum: cxuint {
 /// kernel info structure (Gallium binaries)
 struct GalliumKernelInput
 {
-    std::string kernelName;   ///< kernel's name
+    CString kernelName;   ///< kernel's name
     GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
     uint32_t offset;    ///< offset of kernel code
     std::vector<GalliumArgInfo> argInfos;   ///< arguments

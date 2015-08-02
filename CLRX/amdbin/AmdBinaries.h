@@ -113,8 +113,8 @@ struct AmdKernelArg
     KernelArgType argType;  ///< argument type
     KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
     cxbyte ptrAccess;  ///< pointer access flags
-    std::string typeName;   ///< name of type of argument
-    std::string argName;    ///< argument name
+    CString typeName;   ///< name of type of argument
+    CString argName;    ///< argument name
 };
 
 /// X86_64 kernel argument symbol
@@ -242,7 +242,7 @@ struct CALSamplerMapEntry
  */
 struct KernelInfo
 {
-    std::string kernelName; ///< kernel name
+    CString kernelName; ///< kernel name
     Array<AmdKernelArg> argInfos;    ///< array of argument informations
 };
 
@@ -255,7 +255,7 @@ class AmdInnerGPUBinary32: public ElfBinary32
 private:
     /// ATTENTION: Do not put non-copyable stuff (likes pointers, arrays),
     /// because this object will copied
-    std::string kernelName; ///< kernel name
+    CString kernelName; ///< kernel name
     uint32_t encodingEntriesNum;
     CALEncodingEntry* encodingEntries;
     Array<Array<CALNote> > calNotesTable;
@@ -267,7 +267,7 @@ public:
      * \param binaryCode pointer to binary code
      * \param creationFlags flags that specified what will be created during creation
      */
-    AmdInnerGPUBinary32(const std::string& kernelName, size_t binaryCodeSize,
+    AmdInnerGPUBinary32(const CString& kernelName, size_t binaryCodeSize,
             cxbyte* binaryCode, Flags creationFlags = ELF_CREATE_ALL);
     ~AmdInnerGPUBinary32() = default;
     
@@ -276,7 +276,7 @@ public:
     { return (creationFlags & AMDBIN_CREATE_CALNOTES) != 0; }
     
     /// get kernel name
-    const std::string& getKernelName() const
+    const CString& getKernelName() const
     { return kernelName; }
     
     /// get CALEncoding entries number
@@ -390,14 +390,14 @@ class AmdMainBinaryBase: public NonCopyableAndNonMovable
 {
 public:
     /// Kernel info map
-    typedef Array<std::pair<std::string, size_t> > KernelInfoMap;
+    typedef Array<std::pair<CString, size_t> > KernelInfoMap;
 protected:
     AmdMainType type;   ///< type of binaries
     Array<KernelInfo> kernelInfos;    ///< kernel informations
     KernelInfoMap kernelInfosMap;   ///< kernel informations map
     
-    std::string driverInfo; ///< driver info string
-    std::string compileOptions; ///< compiler options string
+    CString driverInfo; ///< driver info string
+    CString compileOptions; ///< compiler options string
     
     /// constructor
     explicit AmdMainBinaryBase(AmdMainType type);
@@ -424,11 +424,11 @@ public:
     const KernelInfo& getKernelInfo(const char* name) const;
     
     /// get driver info string
-    const std::string& getDriverInfo() const
+    const CString& getDriverInfo() const
     { return driverInfo; }
     
     /// get compile options string
-    const std::string& getCompileOptions() const
+    const CString& getCompileOptions() const
     { return compileOptions; }
 };
 
@@ -442,7 +442,7 @@ struct AmdGPUKernelMetadata
 /// AMD GPU header for kernel
 struct AmdGPUKernelHeader
 {
-    std::string kernelName; ///< kernel name
+    CString kernelName; ///< kernel name
     size_t size;    ///< size
     cxbyte* data;   ///< data
 };
@@ -452,9 +452,9 @@ class AmdMainGPUBinaryBase: public AmdMainBinaryBase
 {
 public:
     /// inner binary map type
-    typedef Array<std::pair<std::string, size_t> > InnerBinaryMap;
+    typedef Array<std::pair<CString, size_t> > InnerBinaryMap;
     /// kernel header map type
-    typedef Array<std::pair<std::string, size_t> > KernelHeaderMap;
+    typedef Array<std::pair<CString, size_t> > KernelHeaderMap;
 protected:
     Array<AmdInnerGPUBinary32> innerBinaries;   ///< inner binaries
     InnerBinaryMap innerBinaryMap;  ///< inner binary map

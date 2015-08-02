@@ -240,7 +240,7 @@ static void testKernelArgs(const char* filename, const char* kernelName,
     AmdMainBinaryBase* gpuBin = static_cast<AmdMainBinaryBase*>(base.get());
     const KernelInfo& kernelInfo = gpuBin->getKernelInfo(size_t(0));
     
-    assertValue(testName, "KernelName", std::string(kernelName), kernelInfo.kernelName);
+    assertValue(testName, "KernelName", CString(kernelName), kernelInfo.kernelName);
     assertValue(testName, "argInfosNum", expKernelArgsNum, kernelInfo.argInfos.size());
     
     const auto& argInfos = kernelInfo.argInfos;
