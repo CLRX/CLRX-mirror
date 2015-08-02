@@ -781,10 +781,10 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, size_t& linePos,
     return expr;
 }   
 
-struct CLRX_INTERNAL SymbolSnapshotHash: std::hash<std::string>
+struct CLRX_INTERNAL SymbolSnapshotHash: std::hash<CString>
 {
     size_t operator()(const AsmSymbolEntry* e1) const
-    { return static_cast<const std::hash<std::string>&>(*this)(e1->first); }
+    { return static_cast<const std::hash<CString>&>(*this)(e1->first); }
 };
 
 struct CLRX_INTERNAL SymbolSnapshotEqual

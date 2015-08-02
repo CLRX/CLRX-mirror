@@ -81,16 +81,16 @@ struct AsmFile: public AsmSource
     RefPtr<const AsmSource> parent; ///< parent file (or null if root)
     LineNo lineNo; ///< place where file is included (0 if root)
     ColNo colNo; ///< place in line where file is included
-    const std::string file; ///< file path
+    const CString file; ///< file path
     
     /// constructor
-    explicit AsmFile(const std::string& _file) : 
+    explicit AsmFile(const CString& _file) : 
             AsmSource(AsmSourceType::FILE), lineNo(1), file(_file)
     { }
     
     /// constructor with parent file inclustion
     AsmFile(const RefPtr<const AsmSource> _parent, LineNo _lineNo, ColNo _colNo,
-        const std::string& _file) : AsmSource(AsmSourceType::FILE),
+        const CString& _file) : AsmSource(AsmSourceType::FILE),
         parent(_parent), lineNo(_lineNo), colNo(_colNo), file(_file)
     { }
     /// destructor
@@ -172,8 +172,8 @@ struct LineTrans
 /// assembler macro aegument
 struct AsmMacroArg
 {
-    std::string name;   ///< name
-    std::string defaultValue;   ///< default value
+    CString name;   ///< name
+    CString defaultValue;   ///< default value
     bool vararg;        ///< is variadic argument
     bool required;      ///< is required
 };
@@ -291,23 +291,23 @@ class AsmIRP: public AsmRepeat
 {
 private:
     bool irpc; // is irpc
-    std::string symbolName;
-    Array<std::string> symValues;
+    CString symbolName;
+    Array<CString> symValues;
 public:
     /// constructor
-    explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
-               const std::string& symValString);
+    explicit AsmIRP(const AsmSourcePos& pos, const CString& symbolName,
+               const CString& symValString);
     /// constructor
-    explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
-               const Array<std::string>& symValues);
+    explicit AsmIRP(const AsmSourcePos& pos, const CString& symbolName,
+               const Array<CString>& symValues);
     /// constructor
-    explicit AsmIRP(const AsmSourcePos& pos, const std::string& symbolName,
-               Array<std::string>&& symValues);
+    explicit AsmIRP(const AsmSourcePos& pos, const CString& symbolName,
+               Array<CString>&& symValues);
     /// get number of repetitions
-    const std::string& getSymbolName() const
+    const CString& getSymbolName() const
     { return symbolName; }
     /// get symbol value or string
-    const std::string& getSymbolValue(size_t i) const
+    const CString& getSymbolValue(size_t i) const
     { return symValues[i]; }
     /// get if IRPC
     bool isIRPC() const
@@ -405,32 +405,29 @@ private:
     
 public:
     /// constructor with input stream and their filename
-    explicit AsmStreamInputFilter(std::istream& is, const std::string& filename = "");
+    explicit AsmStreamInputFilter(std::istream& is, const CString& filename = "");
     /// constructor with input filename
-    explicit AsmStreamInputFilter(const std::string& filename);
+    explicit AsmStreamInputFilter(const CString& filename);
     /// constructor with source position, input stream and their filename
     AsmStreamInputFilter(const AsmSourcePos& pos, std::istream& is,
-             const std::string& filename = "");
+             const CString& filename = "");
     /// constructor with source position and input filename
-    AsmStreamInputFilter(const AsmSourcePos& pos, const std::string& filename);
+    AsmStreamInputFilter(const AsmSourcePos& pos, const CString& filename);
     /// destructor
     ~AsmStreamInputFilter();
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
 };
 
-/// assembler macro map
-typedef Array<std::pair<std::string, std::string> > AsmMacroArgMap;
-
 /// assembler macro input filter (for macro filtering)
 class AsmMacroInputFilter: public AsmInputFilter
 {
 public:
     /// macro argument map type
-    typedef Array<std::pair<std::string, std::string> > MacroArgMap;
+    typedef Array<std::pair<CString, CString> > MacroArgMap;
 private:
     RefPtr<const AsmMacro> macro;  ///< input macro
-    AsmMacroArgMap argMap;  ///< input macro argument map
+    MacroArgMap argMap;  ///< input macro argument map
     
     uint64_t macroCount;
     LineNo contentLineNo;

@@ -100,20 +100,20 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
     contentLineNo++;
 }
 
-AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
-               const Array<std::string>& _symValues)
+AsmIRP::AsmIRP(const AsmSourcePos& _pos, const CString& _symbolName,
+               const Array<CString>& _symValues)
         : AsmRepeat(_pos, _symValues.size()), irpc(false),
           symbolName(_symbolName), symValues(_symValues)
 { }
 
-AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
-               Array<std::string>&& _symValues)
+AsmIRP::AsmIRP(const AsmSourcePos& _pos, const CString& _symbolName,
+               Array<CString>&& _symValues)
         : AsmRepeat(_pos, _symValues.size()), irpc(false), symbolName(_symbolName),
           symValues(std::move(_symValues))
 { }
 
-AsmIRP::AsmIRP(const AsmSourcePos& _pos, const std::string& _symbolName,
-               const std::string& _symValString)
+AsmIRP::AsmIRP(const AsmSourcePos& _pos, const CString& _symbolName,
+               const CString& _symValString)
         : AsmRepeat(_pos, std::max(_symValString.size(), size_t(1))), irpc(true),
           symbolName(_symbolName), symValues({_symValString})
 { }
@@ -138,7 +138,7 @@ LineCol AsmInputFilter::translatePos(size_t position) const
 
 static const size_t AsmParserLineMaxSize = 100;
 
-AsmStreamInputFilter::AsmStreamInputFilter(const std::string& filename)
+AsmStreamInputFilter::AsmStreamInputFilter(const CString& filename)
 try : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
         stream(nullptr), mode(LineMode::NORMAL)
 {
@@ -154,7 +154,7 @@ catch(...)
     delete stream;
 }
 
-AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& filename)
+AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const CString& filename)
     : AsmInputFilter(AsmInputFilterType::STREAM),
       managed(false), stream(&is), mode(LineMode::NORMAL), stmtPos(0)
 {
@@ -164,7 +164,7 @@ AsmStreamInputFilter::AsmStreamInputFilter(std::istream& is, const std::string& 
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos,
-           const std::string& filename)
+           const CString& filename)
 try : AsmInputFilter(AsmInputFilterType::STREAM),
       managed(true), stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
@@ -188,7 +188,7 @@ catch(...)
 }
 
 AsmStreamInputFilter::AsmStreamInputFilter(const AsmSourcePos& pos, std::istream& is,
-        const std::string& filename) : AsmInputFilter(AsmInputFilterType::STREAM),
+        const CString& filename) : AsmInputFilter(AsmInputFilterType::STREAM),
         managed(false), stream(&is), mode(LineMode::NORMAL), stmtPos(0)
 {
     if (!pos.macro)
@@ -583,7 +583,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                     auto it = binaryMapFind(argMap.begin(), argMap.end(), symName);
                     if (it != argMap.end())
                     {   // if found
-                        buffer.insert(buffer.end(), it->second.begin(), it->second.end());
+                        buffer.insert(buffer.end(), it->second.begin(),
+                              it->second.begin() + it->second.size());
                         destPos += it->second.size();
                         pos += symName.size();
                     }
@@ -773,9 +774,10 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
             irp->getSourceTrans(0).source, repeatCount, irp->getRepeatsNum()));
     }
     
-    const std::string& expectedSymName = irp->getSymbolName();
-    const std::string& symValue = !irp->isIRPC() ? irp->getSymbolValue(repeatCount) :
+    const CString& expectedSymName = irp->getSymbolName();
+    const CString& symValue = !irp->isIRPC() ? irp->getSymbolValue(repeatCount) :
             irp->getSymbolValue(0);
+    size_t symValueSize = symValue.size();
     const char* content = irp->getContent().data();
     
     size_t nextLinePos = pos;
@@ -850,8 +852,9 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                     {   // if found
                         if (!irp->isIRPC())
                         {
-                            buffer.insert(buffer.end(), symValue.begin(), symValue.end());
-                            destPos += symValue.size();
+                            buffer.insert(buffer.end(), symValue.begin(),
+                                  symValue.begin() + symValueSize);
+                            destPos += symValueSize;
                         }
                         else if (!symValue.empty())
                         {

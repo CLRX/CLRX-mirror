@@ -431,7 +431,7 @@ enum: cxuint {
 /// section structure to external usage (for example in the binary generator input)
 struct BinSection
 {
-    std::string name;   ///< name of section
+    CString name;   ///< name of section
     size_t size;    ///< size of content
     const cxbyte* data; ///< data content
     size_t align;  ///< region alignment
@@ -445,7 +445,7 @@ struct BinSection
 /// symbol structure to external usage (fo example in the binary generator input)
 struct BinSymbol
 {
-    std::string name;   ///< name
+    CString name;   ///< name
     uint64_t value;  ///< symbol value
     uint64_t size;   ///< symbol size
     cxuint sectionId; ///< section id (ELFSECTID_* or an extra section index)

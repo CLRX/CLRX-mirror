@@ -95,6 +95,11 @@ static inline void assertString(const std::string& testName, const std::string& 
              const char* expected, const std::string& result)
 { assertString(testName, caseName, expected, result.c_str()); }
 
+static inline void assertString(const std::string& testName, const std::string& caseName,
+             const char* expected, const CString& result)
+{ assertString(testName, caseName, expected, result.c_str()); }
+
+
 template<typename T>
 static void assertArray(const std::string& testName, const std::string& caseName,
             const Array<T>& expected, size_t resultSize, const T* result)

@@ -75,12 +75,18 @@ AsmAmdHandler::AsmAmdHandler(Assembler& assembler) : AsmFormatHandler(assembler)
     savedSection = 0;
 }
 
+AsmAmdHandler::~AsmAmdHandler()
+{
+    for (Kernel* kernel: kernelStates)
+        delete kernel;
+}
+
 void AsmAmdHandler::saveCurrentSection()
 {   /// save previous section
     if (assembler.currentKernel == ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
     else
-        kernelStates[assembler.currentKernel].savedSection = assembler.currentSection;
+        kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
 }
 
 cxuint AsmAmdHandler::addKernel(const char* kernelName)
@@ -92,7 +98,7 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
             thisSection, ASMSECT_NONE };
     kernelState.extraSectionCount = 0;
     /* add new kernel and their section (.text) */
-    kernelStates.push_back(std::move(kernelState));
+    kernelStates.push_back(new Kernel(std::move(kernelState)));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
     saveCurrentSection();
@@ -111,7 +117,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     {
         if (kernelId == ASMKERN_GLOBAL)
             throw AsmFormatException("Section '.data' permitted only inside kernels");
-        kernelStates[kernelId].dataSection = thisSection;
+        kernelStates[kernelId]->dataSection = thisSection;
         section.type = AsmSectionType::DATA;
         section.elfBinSectId = ELFSECTID_DATA;
         section.name = ".data"; // set static name (available by whole lifecycle)*/
@@ -120,7 +126,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     {
         if (kernelId == ASMKERN_GLOBAL)
             throw AsmFormatException("Section '.text' permitted only inside kernels");
-        kernelStates[kernelId].codeSection = thisSection;
+        kernelStates[kernelId]->codeSection = thisSection;
         section.type = AsmSectionType::CODE;
         section.elfBinSectId = ELFSECTID_TEXT;
         section.name = ".text"; // set static name (available by whole lifecycle)*/
@@ -140,7 +146,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     {   /* inside kernel binary */
         if (kernelId >= kernelStates.size())
             throw AsmFormatException("KernelId out of range");
-        Kernel& kernelState = kernelStates[kernelId];
+        Kernel& kernelState = *kernelStates[kernelId];
         auto out = kernelState.extraSectionMap.insert(std::make_pair(
                     std::string(sectionName), thisSection));
         if (!out.second)
@@ -170,7 +176,7 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
     }
     else
     {
-        const Kernel& kernelState = kernelStates[assembler.currentKernel];
+        const Kernel& kernelState = *kernelStates[assembler.currentKernel];
         if (::strcmp(sectionName, ".text") == 0)
             return kernelState.codeSection;
         else if (::strcmp(sectionName, ".data") == 0)
@@ -193,7 +199,7 @@ void AsmAmdHandler::setCurrentKernel(cxuint kernel)
     saveCurrentSection();
     assembler.currentKernel = kernel;
     if (kernel != ASMKERN_GLOBAL)
-        assembler.currentSection = kernelStates[kernel].savedSection;
+        assembler.currentSection = kernelStates[kernel]->savedSection;
     else
         assembler.currentSection = savedSection;
 }
@@ -305,7 +311,7 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
         asmr.printError(pseudoOpPlace, "Metadata can be defined only inside kernel");
         return;
     }
-    if (handler.kernelStates[asmr.currentKernel].configSection!=ASMSECT_NONE)
+    if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
     {
         asmr.printError(pseudoOpPlace,
                     "Metadata can't be defined if configuration was defined");
@@ -316,7 +322,7 @@ void AsmAmdPseudoOps::addMetadata(AsmAmdHandler& handler, const char* pseudoOpPl
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& metadataSection = handler.kernelStates[asmr.currentKernel].metadataSection;
+    cxuint& metadataSection = handler.kernelStates[asmr.currentKernel]->metadataSection;
     if (metadataSection == ASMSECT_NONE)
     {
         cxuint thisSection = handler.sections.size();
@@ -339,7 +345,7 @@ void AsmAmdPseudoOps::doConfig(AsmAmdHandler& handler, const char* pseudoOpPlace
         return;
     }
     skipSpacesToEnd(linePtr, end);
-    AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.headerSection!=ASMSECT_NONE ||
         !kernel.calNoteSections.empty())
     {
@@ -376,7 +382,7 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
         asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
         return;
     }
-    AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.configSection!=ASMSECT_NONE)
     {
         asmr.printError(pseudoOpPlace,
@@ -424,7 +430,7 @@ void AsmAmdPseudoOps::addCustomCALNote(AsmAmdHandler& handler, const char* pseud
         asmr.printError(pseudoOpPlace, "CALNote can be defined only inside kernel");
         return;
     }
-    AsmAmdHandler::Kernel& kernel = handler.kernelStates[asmr.currentKernel];
+    AsmAmdHandler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
     if (kernel.configSection!=ASMSECT_NONE)
     {
         asmr.printError(pseudoOpPlace,
@@ -451,7 +457,7 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
         asmr.printError(pseudoOpPlace, "Header can be defined only inside kernel");
         return;
     }
-    if (handler.kernelStates[asmr.currentKernel].configSection!=ASMSECT_NONE)
+    if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
     {
         asmr.printError(pseudoOpPlace,
                 "Header can't be defined if configuration was defined");
@@ -462,7 +468,7 @@ void AsmAmdPseudoOps::addHeader(AsmAmdHandler& handler, const char* pseudoOpPlac
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint& headerSection = handler.kernelStates[asmr.currentKernel].headerSection;
+    cxuint& headerSection = handler.kernelStates[asmr.currentKernel]->headerSection;
     if (headerSection == ASMSECT_NONE)
     {
         cxuint thisSection = handler.sections.size();
@@ -1096,7 +1102,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     std::string argName;
     const char* argNamePlace = linePtr;
     bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
-    auto& kernelState = handler.kernelStates[asmr.currentKernel];
+    auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     if (kernelState.argNamesSet.find(argName) != kernelState.argNamesSet.end())
     {   // if found kernel arg with this same name
         std::string message = "Kernel argument '";

@@ -987,10 +987,11 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
         if (linePtr!=end && *linePtr==',' && i!=0)
             skipCharAndSpacesToEnd(linePtr, end);
         
+        std::string macroArg;
         const char* argPlace = linePtr;
         if (!arg.vararg)
         {
-            if (!parseMacroArgValue(linePtr, argMap[i].second))
+            if (!parseMacroArgValue(linePtr, macroArg))
             {
                 good = false;
                 continue;
@@ -1001,7 +1002,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
             bool argGood = true;
             while (linePtr != end)
             {
-                if (!parseMacroArgValue(linePtr, argMap[i].second))
+                if (!parseMacroArgValue(linePtr, macroArg))
                 {
                     argGood = good = false;
                     break;
@@ -1012,7 +1013,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
                     if(*linePtr==',')
                     {
                         skipCharAndSpacesToEnd(linePtr, end);
-                        argMap[i].second.push_back(',');
+                        macroArg.push_back(',');
                     }
                     else
                     {
@@ -1025,10 +1026,11 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
             if (!argGood) // not so good
                 continue;
         }
+        argMap[i].second = macroArg;
         if (arg.required && argMap[i].second.empty())
         {   // error, value required
             std::string message = "Value required for macro argument '";
-            message += arg.name;
+            message += arg.name.c_str();
             message += '\'';
             printError(argPlace, message.c_str());
             good = false;

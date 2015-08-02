@@ -1716,7 +1716,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     }
     linePtr += symName.size();
     /* parse args */
-    std::vector<std::string> symValues;
+    std::vector<CString> symValues;
     std::string symValString;
     
     bool good = true;
@@ -1759,7 +1759,7 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
         std::unique_ptr<AsmIRP> repeat;
         if (!perChar)
             repeat.reset(new AsmIRP(asmr.getSourcePos(pseudoOpPlace),
-                      symName, Array<std::string>(symValues.begin(), symValues.end())));
+                      symName, Array<CString>(symValues.begin(), symValues.end())));
         else // per char
             repeat.reset(new AsmIRP(asmr.getSourcePos(pseudoOpPlace),
                       symName, symValString));

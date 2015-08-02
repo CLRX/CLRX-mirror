@@ -53,6 +53,8 @@ public:
     /// constructor from C-style string pointer
     CString(const char* str) : ptr(nullptr)
     {
+        if (str == nullptr)
+            return;
         const size_t n = ::strlen(str);
         if (n == 0)
             return;
@@ -165,6 +167,12 @@ public:
     /// assign string
     CString& assign(const char* str)
     {
+        if (str==nullptr)
+        {
+            delete[] ptr;
+            ptr = nullptr;
+            return *this;
+        }
         size_t length = ::strlen(str);
         return assign(str, length);
     }
@@ -232,6 +240,9 @@ public:
     /// return C-style string pointer
     const char* begin() const
     { return ptr!=nullptr ? ptr : ""; }
+    
+    const char& operator[](size_t i) const
+    { return ptr[i]; }
     
     /// return C-style string pointer
     char* begin()

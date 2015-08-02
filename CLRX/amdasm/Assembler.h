@@ -186,7 +186,7 @@ public:
 class AsmAmdHandler: public AsmFormatHandler
 {
 private:
-    typedef std::unordered_map<std::string, cxuint> SectionMap;
+    typedef std::unordered_map<CString, cxuint> SectionMap;
     friend struct AsmAmdPseudoOps;
     AmdInput output;
     struct Section
@@ -208,10 +208,11 @@ private:
         SectionMap extraSectionMap;
         cxuint extraSectionCount;
         cxuint savedSection;
-        std::set<std::string> argNamesSet;
+        std::set<CString> argNamesSet;
     };
     std::vector<Section> sections;
-    std::vector<Kernel> kernelStates;
+    // use pointer to prevents copying Kernel objects
+    std::vector<Kernel*> kernelStates;
     SectionMap extraSectionMap;
     cxuint dataSection; // global
     cxuint savedSection;
@@ -222,7 +223,7 @@ public:
     /// constructor
     explicit AsmAmdHandler(Assembler& assembler);
     /// destructor
-    ~AsmAmdHandler() = default;
+    ~AsmAmdHandler();
     
     cxuint addKernel(const char* kernelName);
     cxuint addSection(const char* sectionName, cxuint kernelId);
@@ -248,7 +249,7 @@ class AsmGalliumHandler: public AsmFormatHandler
 {
 public:
     /// kernel map type
-    typedef std::unordered_map<std::string, cxuint> SectionMap;
+    typedef std::unordered_map<CString, cxuint> SectionMap;
 private:
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
@@ -473,7 +474,7 @@ struct AsmSymbol
 };
 
 /// assembler symbol map
-typedef std::unordered_map<std::string, AsmSymbol> AsmSymbolMap;
+typedef std::unordered_map<CString, AsmSymbol> AsmSymbolMap;
 /// assembler symbol entry
 typedef AsmSymbolMap::value_type AsmSymbolEntry;
 
@@ -704,11 +705,11 @@ class Assembler: public NonCopyableAndNonMovable
 {
 public:
     /// defined symbol entry
-    typedef std::pair<std::string, uint64_t> DefSym;
+    typedef std::pair<CString, uint64_t> DefSym;
     /// macro map type
-    typedef std::unordered_map<std::string, RefPtr<const AsmMacro> > MacroMap;
+    typedef std::unordered_map<CString, RefPtr<const AsmMacro> > MacroMap;
     /// kernel map type
-    typedef std::unordered_map<std::string, cxuint> KernelMap;
+    typedef std::unordered_map<CString, cxuint> KernelMap;
 private:
     friend class AsmStreamInputFilter;
     friend class AsmMacroInputFilter;
