@@ -350,7 +350,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     if (!getNameArg(asmr, 10, formatName, linePtr, "output format type"))
         return;
     
-    toLowerCString(formatName);
+    toLowerString(formatName);
     if (::strcmp(formatName, "catalyst")==0 || ::strcmp(formatName, "amd")==0)
         asmr.format = BinaryFormat::AMD;
     else if (::strcmp(formatName, "gallium")==0)

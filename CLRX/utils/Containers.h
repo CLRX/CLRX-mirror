@@ -24,6 +24,7 @@
 #define __CLRX_CONTAINERS_H__
 
 #include <CLRX/Config.h>
+#include <cstddef>
 #include <iterator>
 #include <algorithm>
 #include <initializer_list>
@@ -207,7 +208,7 @@ public:
     
     /// assign from range of iterators
     template<typename It>
-    void assign(It b, It e)
+    Array& assign(It b, It e)
     {
         const size_t N = e-b;
         if (N != size())
@@ -228,6 +229,7 @@ public:
         }
         else // no size changed only copy
             std::copy(b, e, ptr);
+        return *this;
     }
     
     /// get data
@@ -263,6 +265,13 @@ public:
     /// get last element
     T& back()
     { return ptrEnd[-1]; }
+    
+    /// swap two arrays
+    void swap(Array& array)
+    {
+        std::swap(ptr, array.ptr);
+        std::swap(ptrEnd, array.ptrEnd);
+    }
 };
 
 /// binary find helper
@@ -425,5 +434,15 @@ void mapSort(Iter begin, Iter end, Comp comp)
 }
 
 };
+
+namespace std
+{
+
+/// std::swap specialization for CLRX::Array
+template<typename T>
+void swap(CLRX::Array<T>& a1, CLRX::Array<T>& a2)
+{ a1.swap(a2); }
+
+}
 
 #endif

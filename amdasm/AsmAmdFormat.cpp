@@ -919,7 +919,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     const char* dataClassPlace = linePtr;
     if (getNameArg(asmr, 40, name, linePtr, "ApiSlot"))
     {
-        toLowerCString(name);
+        toLowerString(name);
         cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,
                      name, CStringLess()) - dataClassMap;
         if (index == dataClassMapSize) // end of this map
@@ -1127,7 +1127,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     const char* argTypePlace = linePtr;
     if (getNameArg(asmr, 20, name, linePtr, "argument type", true))
     {
-        toLowerCString(name);
+        toLowerString(name);
         cxuint index = binaryMapFind(argTypeNameMap, argTypeNameMap + argTypeNameMapSize,
                      name, CStringLess()) - argTypeNameMap;
         if (index == argTypeNameMapSize) // end of this map
@@ -1201,7 +1201,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         // parse ptrSpace
         if (getNameArg(asmr, 10, name, linePtr, "pointer space", true))
         {
-            toLowerCString(name);
+            toLowerString(name);
             if (::strcmp(name, "local")==0)
                 ptrSpace = KernelPtrSpace::LOCAL;
             else if (::strcmp(name, "global")==0)
@@ -1375,7 +1375,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             skipSpacesToEnd(linePtr, end);
             const char* place = linePtr;
             good &= getNameArg(asmr, 10, name, linePtr, "unused specifier");
-            toLowerCString(name);
+            toLowerString(name);
             if (::strcmp(name, "unused")==0)
                 usedArg = false;
             else

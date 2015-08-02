@@ -270,7 +270,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     bool semanticDefined = false;
     if (getNameArg(asmr, 20, name, linePtr, "argument type"))
     {
-        toLowerCString(name);
+        toLowerString(name);
         if (::strcmp(name, "griddim")==0)
         {   // shortcur for grid dimension
             argSemantic = GalliumArgSemantic::GRID_DIMENSION;
@@ -352,7 +352,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                 const char* numExtPlace = linePtr;
                 if (getNameArg(asmr, 5, name, linePtr, "numeric extension", false))
                 {
-                    toLowerCString(name);
+                    toLowerString(name);
                     if (::strcmp(name, "sext")==0)
                         sext = true;
                     else if (::strcmp(name, "zext")!=0 && *name!=0)
@@ -374,7 +374,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                         const char* semanticPlace = linePtr;
                         if (getNameArg(asmr, 15, name, linePtr, "argument semantic", false))
                         {
-                            toLowerCString(name);
+                            toLowerString(name);
                             if (::strcmp(name, "griddim")==0)
                                 argSemantic = GalliumArgSemantic::GRID_DIMENSION;
                             else if (::strcmp(name, "gridoffset")==0)

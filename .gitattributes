@@ -10,6 +10,7 @@ CLRX/amdbin/AmdBinaries.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
 CLRX/utils/CLIParser.h -text
+CLRX/utils/CString.h -text
 CLRX/utils/Containers.h -text
 CLRX/utils/GPUId.h -text
 CLRX/utils/InputOutput.h -text

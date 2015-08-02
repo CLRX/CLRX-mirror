@@ -33,6 +33,7 @@
 #include <mutex>
 #include <atomic>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/utils/CString.h>
 
 /// main namespace
 namespace CLRX
@@ -320,7 +321,7 @@ struct CStringHash
         size_t hash = 0;
         
         for (const char* p = c; *p != 0; p++)
-            hash = ((hash<<8)^(cxbyte)*p)*size_t(0x93cda145bf146a3dULL);
+            hash = ((hash<<8)^(cxbyte)*p)*size_t(0xbf146a3dU);
         return hash;
     }
 };
@@ -869,13 +870,17 @@ inline void toLowerString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toLower); }
 
 /// convert string to lowercase
-inline void toLowerCString(char* cstr);
+inline void toLowerString(char* cstr);
 
-inline void toLowerCString(char* cstr)
+inline void toLowerString(char* cstr)
 {
     for (; *cstr!=0; cstr++)
         *cstr = toLower(*cstr);
 }
+
+inline void toLowerString(CString& string)
+{ if (!string.empty())
+    toLowerString(string.begin()); }
 
 /// convert character to uppercase
 inline char toUpper(char c);
@@ -890,13 +895,17 @@ inline void toUpperString(std::string& string)
 { std::transform(string.begin(), string.end(), string.begin(), toUpper); }
 
 /// convert string to uppercase
-inline void toUpperCString(char* cstr);
+inline void toUpperString(char* cstr);
 
-inline void toUpperCString(char* cstr)
+inline void toUpperString(char* cstr)
 {
     for (; *cstr!=0; cstr++)
         *cstr = toUpper(*cstr);
 }
+
+inline void toUpperString(CString& string)
+{ if (!string.empty())
+    toUpperString(string.begin()); }
 
 };
 
