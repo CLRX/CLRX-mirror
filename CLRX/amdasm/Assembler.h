@@ -33,7 +33,6 @@
 #include <vector>
 #include <utility>
 #include <stack>
-#include <set>
 #include <unordered_set>
 #include <unordered_map>
 #include <CLRX/amdbin/AmdBinaries.h>
@@ -208,7 +207,7 @@ private:
         SectionMap extraSectionMap;
         cxuint extraSectionCount;
         cxuint savedSection;
-        std::set<CString> argNamesSet;
+        std::unordered_set<CString> argNamesSet;
     };
     std::vector<Section> sections;
     // use pointer to prevents copying Kernel objects

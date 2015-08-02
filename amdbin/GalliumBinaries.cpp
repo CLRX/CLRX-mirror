@@ -22,7 +22,6 @@
 #include <climits>
 #include <algorithm>
 #include <cstdint>
-#include <string>
 #include <utility>
 #include <memory>
 #include <CLRX/utils/Utilities.h>

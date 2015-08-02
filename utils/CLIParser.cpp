@@ -775,7 +775,7 @@ void CLIParser::parse()
                 
                 const char* lastEq = arg+::strlen(arg);
                 size_t optLongNameLen = lastEq-arg-2;
-                std::string curArgStr;
+                CString curArgStr;
                 while(lastEq != arg+1)
                 {
                     optLongNameLen = lastEq-arg-2;

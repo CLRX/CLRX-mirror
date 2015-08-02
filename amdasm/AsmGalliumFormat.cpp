@@ -107,7 +107,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     else
     {
-        auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
+        auto out = extraSectionMap.insert(std::make_pair(CString(sectionName),
                     thisSection));
         if (!out.second)
             throw AsmFormatException("Section already exists");
@@ -546,7 +546,7 @@ bool AsmGalliumHandler::prepareBinary()
             if (!symEntry.second.hasValue ||
                 ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
                 continue; // unresolved or local
-            if (assembler.kernelMap.find(std::string(symEntry.first.c_str())) != assembler.kernelMap.end())
+            if (assembler.kernelMap.find(symEntry.first.c_str()) != assembler.kernelMap.end())
                 continue; // if kernel name
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;

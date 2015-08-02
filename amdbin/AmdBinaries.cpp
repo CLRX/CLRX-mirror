@@ -25,7 +25,6 @@
 #include <cstdint>
 #include <map>
 #include <utility>
-#include <string>
 #include <vector>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
@@ -599,12 +598,11 @@ static const KernelArgType determineKernelArgType(const char* typeString,
     return outType;
 }
 
-static inline std::string stringFromCStringDelim(const char* c1,
-                 size_t maxSize, char delim)
+static inline CString stringFromCStringDelim(const char* c1, size_t maxSize, char delim)
 {
     size_t i = 0;
     for (i = 0; i < maxSize && c1[i] != delim; i++);
-    return std::string(c1, i);
+    return CString(c1, i);
 }
 
 static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
@@ -665,7 +663,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 entry.index = argIndex++;
                 entry.nameStr = kptr;
                 std::pair<InitKernelArgMap::iterator, bool> result = 
-                    initKernelArgs.insert(std::make_pair(std::string(kptr, tokPtr), entry));
+                    initKernelArgs.insert(std::make_pair(CString(kptr, tokPtr), entry));
                 if (!result.second)
                     throw ParseException(lineNo, "Argument has been duplicated");
                 argIt = result.first;
@@ -720,7 +718,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 entry.nameStr = kptr;
                 entry.argType = KernelArgType::POINTER;
                 std::pair<InitKernelArgMap::iterator, bool> result = 
-                    initKernelArgs.insert(std::make_pair(std::string(kptr, tokPtr), entry));
+                    initKernelArgs.insert(std::make_pair(CString(kptr, tokPtr), entry));
                 if (!result.second)
                     throw ParseException(lineNo, "Argument has been duplicated");
                 argIt = result.first;
@@ -792,7 +790,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             entry.index = argIndex++;
             entry.nameStr = kptr;
             entry.ptrSpace = KernelPtrSpace::GLOBAL;
-            std::string name = std::string(kptr, tokPtr);
+            CString name(kptr, tokPtr);
             
             kptr = ++tokPtr;
             if (kptr+3 < kend)
@@ -855,7 +853,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             if (tokPtr >= kend)
                 throw ParseException(lineNo, "No separator after name");
             
-            std::string argName(kptr, tokPtr);
+            CString argName(kptr, tokPtr);
             InitKernelArgMap::iterator argIt = initKernelArgs.find(argName);
             if (argIt != initKernelArgs.end())
             {
@@ -882,7 +880,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 throw ParseException(lineNo, "End of data");
             
             /// put constant
-            const std::string thisName(kptr, tokPtr);
+            const CString thisName(kptr, tokPtr);
             InitKernelArgMap::iterator argIt = initKernelArgs.find(thisName);
             if (argIt == initKernelArgs.end())
                 throw ParseException(lineNo, "Can't find constant argument");
@@ -900,7 +898,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             if (tokPtr >= kend)
                 throw ParseException(lineNo, "No separator after name");
             
-            std::string argName(kptr, tokPtr);
+            CString argName(kptr, tokPtr);
             // extract arg name
             InitKernelArgMap::iterator argIt;
             {
@@ -909,7 +907,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                 entry.nameStr = kptr;
                 entry.argType = KernelArgType::COUNTER32;
                 std::pair<InitKernelArgMap::iterator, bool> result = 
-                    initKernelArgs.insert(std::make_pair(std::string(kptr, tokPtr), entry));
+                    initKernelArgs.insert(std::make_pair(CString(kptr, tokPtr), entry));
                 if (!result.second)
                     throw ParseException(lineNo, "Argument has been duplicated");
                 argIt = result.first;
@@ -1124,7 +1122,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
             if (usumGt(symvalue, symsize, ULEV(textHdr.sh_size)))
                 throw Exception("Inner binary offset+size out of range!");
             
-            innerBinaries[ki++] = AmdInnerGPUBinary32(std::string(symName+9, len-16),
+            innerBinaries[ki++] = AmdInnerGPUBinary32(CString(symName+9, len-16),
                 symsize, textContent+symvalue,
                 (creationFlags >> AMDBIN_INNER_SHIFT) & AMDBIN_INNER_INT_CREATE_ALL);
         }

@@ -148,7 +148,7 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
             throw AsmFormatException("KernelId out of range");
         Kernel& kernelState = *kernelStates[kernelId];
         auto out = kernelState.extraSectionMap.insert(std::make_pair(
-                    std::string(sectionName), thisSection));
+                    CString(sectionName), thisSection));
         if (!out.second)
             throw AsmFormatException("Section already exists");
         section.type = AsmSectionType::EXTRA_SECTION;
