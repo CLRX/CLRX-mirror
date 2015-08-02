@@ -424,11 +424,11 @@ public:
     const KernelInfo& getKernelInfo(const char* name) const;
     
     /// get driver info string
-    const std::string getDriverInfo() const
+    const std::string& getDriverInfo() const
     { return driverInfo; }
     
     /// get compile options string
-    const std::string getCompileOptions() const
+    const std::string& getCompileOptions() const
     { return compileOptions; }
 };
 

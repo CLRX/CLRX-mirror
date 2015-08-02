@@ -41,6 +41,8 @@ public:
     typedef char* iterator;    ///< type of iterator
     typedef const char* const_iterator;    ///< type of constant iterator
     typedef char element_type; ///< element type
+    typedef std::string::size_type size_type;
+    static const size_type npos = -1;
 private:
     char* ptr;
 public:
@@ -266,6 +268,28 @@ public:
     /// compare with string
     int compare(const char* str) const
     { return ::strcmp(c_str(), str); }
+    
+    /// compare with string
+    int compare(size_t pos, size_t n, const char* str) const
+    { return ::strncmp(c_str()+pos, str, n); }
+    
+    size_type find(char ch, size_t pos = 0) const
+    { 
+        const char* p = ::strchr(ptr+pos, ch);
+        return (p!=nullptr) ? p-ptr : npos;
+    }
+    
+    size_type find(const CString& str, size_t pos = 0) const
+    { 
+        const char* p = ::strstr(ptr+pos, str.c_str());
+        return (p!=nullptr) ? p-ptr : npos;
+    }
+    
+    size_type find(const char* str, size_t pos = 0) const
+    { 
+        const char* p = ::strstr(ptr+pos, str);
+        return (p!=nullptr) ? p-ptr : npos;
+    }
     
     /// swap this string with another
     void swap(CString& s2) noexcept
