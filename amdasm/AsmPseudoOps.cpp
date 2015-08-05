@@ -1562,7 +1562,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     }
     
     {
-    std::set<std::string> macroArgSet;
+    std::unordered_set<CString> macroArgSet;
     while(linePtr != end)
     {
         skipSpacesToEnd(linePtr, end);
