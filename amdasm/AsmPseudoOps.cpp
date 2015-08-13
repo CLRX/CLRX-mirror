@@ -375,7 +375,10 @@ void AsmPseudoOps::setGPUDevice(Assembler& asmr, const char* linePtr)
     if (!getNameArg(asmr, 64, deviceName, linePtr, "GPU device name"))
         return;
     try
-    { asmr.deviceType = getGPUDeviceTypeFromName(deviceName); }
+    {
+        asmr.deviceType = getGPUDeviceTypeFromName(deviceName);
+        checkGarbagesAtEnd(asmr, linePtr);
+    }
     catch(const Exception& ex)
     { asmr.printError(deviceNamePlace, ex.what()); }
 }
@@ -393,6 +396,7 @@ void AsmPseudoOps::setGPUArchitecture(Assembler& asmr, const char* linePtr)
     {
         arch = getGPUArchitectureFromName(deviceName);
         asmr.deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
+        checkGarbagesAtEnd(asmr, linePtr);
     }
     catch(const Exception& ex)
     { asmr.printError(archNamePlace, ex.what()); }
