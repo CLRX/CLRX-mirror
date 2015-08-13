@@ -19,12 +19,15 @@
 
 #include <CLRX/Config.h>
 #include <cstring>
+#include <utility>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/GPUId.h>
 
 using namespace CLRX;
 
-static const char* gpuDeviceNameTable[15] =
+static const size_t gpuDeviceTableSize = 15;
+
+static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
     "CapeVerde",
     "Pitcairn",
@@ -43,7 +46,26 @@ static const char* gpuDeviceNameTable[15] =
     "Carrizo"
 };
 
-static const GPUArchitecture gpuDeviceArchTable[15] =
+static std::pair<const char*, GPUDeviceType> gpuDeviceEntryTable[gpuDeviceTableSize] =
+{
+    { "Bonaire", GPUDeviceType::BONAIRE },
+    { "CapeVerde", GPUDeviceType::CAPE_VERDE },
+    { "Carrizo", GPUDeviceType::CARRIZO },
+    { "Fiji", GPUDeviceType::FIJI },
+    { "Hainan", GPUDeviceType::HAINAN },
+    { "Hawaii", GPUDeviceType::HAWAII },
+    { "Iceland", GPUDeviceType::ICELAND },
+    { "Kalindi", GPUDeviceType::KALINDI },
+    { "Mullins", GPUDeviceType::MULLINS },
+    { "Oland", GPUDeviceType::OLAND },
+    { "Pitcairn", GPUDeviceType::PITCAIRN },
+    { "Spectre", GPUDeviceType::SPECTRE },
+    { "Spooky", GPUDeviceType::SPOOKY },
+    { "Tahiti", GPUDeviceType::TAHITI },
+    { "Tonga", GPUDeviceType::TONGA }
+};
+
+static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
 {
     GPUArchitecture::GCN1_0, // CapeVerde
     GPUArchitecture::GCN1_0, // Pitcairn
@@ -78,13 +100,11 @@ static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 {
-    cxuint found = 0;
-    for (; found < sizeof gpuDeviceNameTable / sizeof(const char*); found++)
-        if (::strcmp(name, gpuDeviceNameTable[found]) == 0)
-            break;
-    if (found == sizeof(gpuDeviceNameTable) / sizeof(const char*))
+    auto it = binaryMapFind(gpuDeviceEntryTable,
+                         gpuDeviceEntryTable+gpuDeviceTableSize, name, CStringLess());
+    if (it == gpuDeviceEntryTable+gpuDeviceTableSize)
         throw Exception("Unknown GPU device type");
-    return GPUDeviceType(found);
+    return it->second;
 }
 
 GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
