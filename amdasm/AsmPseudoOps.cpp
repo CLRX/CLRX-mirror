@@ -347,6 +347,7 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     char formatName[10];
+    const char* formatPlace = linePtr;
     if (!getNameArg(asmr, 10, formatName, linePtr, "output format type"))
         return;
     
@@ -358,11 +359,43 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     else if (::strcmp(formatName, "raw")==0)
         asmr.format = BinaryFormat::RAWCODE;
     else
-        asmr.printError(linePtr, "Unknown output format type");
+        asmr.printError(formatPlace, "Unknown output format type");
     if (asmr.formatHandler!=nullptr)
-        asmr.printError(linePtr, "Output format type is already defined");
+        asmr.printError(formatPlace, "Output format type is already defined");
     
     checkGarbagesAtEnd(asmr, linePtr);
+}
+
+void AsmPseudoOps::setGPUDevice(Assembler& asmr, const char* linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    char deviceName[64];
+    const char* deviceNamePlace = linePtr;
+    if (!getNameArg(asmr, 64, deviceName, linePtr, "GPU device name"))
+        return;
+    try
+    { asmr.deviceType = getGPUDeviceTypeFromName(deviceName); }
+    catch(const Exception& ex)
+    { asmr.printError(deviceNamePlace, ex.what()); }
+}
+
+void AsmPseudoOps::setGPUArchitecture(Assembler& asmr, const char* linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    char deviceName[64];
+    const char* archNamePlace = linePtr;
+    if (!getNameArg(asmr, 64, deviceName, linePtr, "GPU architecture name"))
+        return;
+    GPUArchitecture arch;
+    try
+    {
+        arch = getGPUArchitectureFromName(deviceName);
+        asmr.deviceType = getLowestGPUDeviceTypeFromArchitecture(arch);
+    }
+    catch(const Exception& ex)
+    { asmr.printError(archNamePlace, ex.what()); }
 }
 
 void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
@@ -1899,6 +1932,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::doAlign(*this, stmtPlace, linePtr);
             break;
         case ASMOP_ARCH:
+            AsmPseudoOps::setGPUArchitecture(*this, linePtr);
             break;
         case ASMOP_ASCII:
             AsmPseudoOps::putStrings(*this, stmtPlace, linePtr);
@@ -2047,6 +2081,7 @@ void Assembler::parsePseudoOps(const std::string firstName,
             AsmPseudoOps::setSymbolBind(*this, linePtr, STB_GLOBAL);
             break;
         case ASMOP_GPU:
+            AsmPseudoOps::setGPUDevice(*this, linePtr);
             break;
         case ASMOP_HALF:
             AsmPseudoOps::putFloats<uint16_t>(*this, stmtPlace, linePtr);
@@ -2280,12 +2315,12 @@ bool Assembler::skipClauses(bool exitm)
         if (linePtr == end || *linePtr != '.')
             continue;
         
-        std::string pseudOpName = extractSymName(linePtr, end, false);
-        toLowerString(pseudOpName);
+        std::string pseudoOpName = extractSymName(linePtr, end, false);
+        toLowerString(pseudoOpName);
         
         const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
                offlinePseudoOpNamesTbl + sizeof(offlinePseudoOpNamesTbl)/sizeof(char*),
-               pseudOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
+               pseudoOpName.c_str()+1, CStringLess()) - offlinePseudoOpNamesTbl;
         
         // any conditional inside macro or repeat will be ignored
         bool insideMacroOrRepeat = !clauses.empty() && 
@@ -2398,12 +2433,12 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
             continue;
         }
         
-        std::string pseudOpName = extractSymName(linePtr, end, false);
-        toLowerString(pseudOpName);
+        std::string pseudoOpName = extractSymName(linePtr, end, false);
+        toLowerString(pseudoOpName);
         
         const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,
                macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
-               sizeof(char*), pseudOpName.c_str()+1, CStringLess()) -
+               sizeof(char*), pseudoOpName.c_str()+1, CStringLess()) -
                macroRepeatPseudoOpNamesTbl;
         switch(pseudoOp)
         {
@@ -2460,12 +2495,12 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             continue;
         }
         
-        std::string pseudOpName = extractSymName(linePtr, end, false);
-        toLowerString(pseudOpName);
+        std::string pseudoOpName = extractSymName(linePtr, end, false);
+        toLowerString(pseudoOpName);
         
         const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,
                macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
-               sizeof(char*), pseudOpName.c_str()+1, CStringLess()) -
+               sizeof(char*), pseudoOpName.c_str()+1, CStringLess()) -
                macroRepeatPseudoOpNamesTbl;
         switch(pseudoOp)
         {

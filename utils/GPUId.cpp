@@ -64,9 +64,9 @@ static const GPUArchitecture gpuDeviceArchTable[15] =
 
 static const char* gpuArchitectureNameTable[3] =
 {
-    "GCN 1.0",
-    "GCN 1.1",
-    "GCN 1.2"
+    "GCN1.0",
+    "GCN1.1",
+    "GCN1.2"
 };
 
 static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
@@ -78,7 +78,7 @@ static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 {
-    cxuint found = 1;
+    cxuint found = 0;
     for (; found < sizeof gpuDeviceNameTable / sizeof(const char*); found++)
         if (::strcmp(name, gpuDeviceNameTable[found]) == 0)
             break;
@@ -89,7 +89,7 @@ GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 
 GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
 {
-    cxuint found = 1;
+    cxuint found = 0;
     for (; found < sizeof gpuArchitectureNameTable / sizeof(const char*); found++)
         if (::strcmp(name, gpuArchitectureNameTable[found]) == 0)
             break;

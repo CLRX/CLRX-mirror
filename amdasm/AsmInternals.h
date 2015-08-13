@@ -122,6 +122,11 @@ struct CLRX_INTERNAL AsmPseudoOps
     static void setBitness(Assembler& asmr, const char* linePtr, bool _64Bit);
     // set output format
     static void setOutFormat(Assembler& asmr, const char* linePtr);
+    // set GPU architecture type
+    static void setGPUDevice(Assembler& asmr, const char* linePtr);
+    // set GPU architecture
+    static void setGPUArchitecture(Assembler& asmr, const char* linePtr);
+    
     // change kernel
     static void goToKernel(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr);
