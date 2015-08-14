@@ -1276,10 +1276,8 @@ bool Assembler::assemble()
                 {   // found
                     if (res.first->second.onceDefined && res.first->second.isDefined())
                     {   // if label
-                        std::string msg = "Symbol '";
-                        msg += firstName;
-                        msg += "' is already defined";
-                        printError(stmtPlace, msg.c_str());
+                        printError(stmtPlace, (std::string("Symbol '")+firstName+
+                                    "' is already defined").c_str());
                         doNextLine = true;
                         break;
                     }

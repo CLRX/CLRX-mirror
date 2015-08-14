@@ -210,9 +210,7 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     {
         if (!requiredArg)
             return true; // succeed
-        std::string error("Expected ");
-        error += objName;
-        asmr.printError(linePtr, error.c_str());
+        asmr.printError(linePtr, (std::string("Expected ")+objName).c_str());
         return false;
     }
     const char* nameStr = linePtr;
@@ -226,10 +224,8 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     {
         if (!requiredArg)
             return true; // succeed
-        std::string error("Some garbages at ");
-        error += objName;
-        error += " place";
-        asmr.printError(linePtr, error.c_str());
+        asmr.printError(linePtr, (std::string("Some garbages at ")+objName+
+                        " place").c_str());
         while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         return false;
     }
@@ -249,9 +245,7 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outSt
             outStr[0] = 0;
             return true; // succeed
         }
-        std::string error("Expected ");
-        error += objName;
-        asmr.printError(linePtr, error.c_str());
+        asmr.printError(linePtr, (std::string("Expected ")+objName).c_str());
         return false;
     }
     const char* nameStr = linePtr;
@@ -268,18 +262,14 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outSt
             outStr[0] = 0;
             return true; // succeed
         }
-        std::string error("Some garbages at ");
-        error += objName;
-        error += " place";
-        asmr.printError(linePtr, error.c_str());
+        asmr.printError(linePtr, (std::string("Some garbages at ")+objName+
+                " place").c_str());
         while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         return false;
     }
     if (maxOutStrSize < size_t(linePtr-nameStr))
     {
-        std::string error(objName);
-        error += " is too long";
-        asmr.printError(linePtr, error.c_str());
+        asmr.printError(linePtr, (std::string(objName)+" is too long").c_str());
         return false;
     }
     const size_t outStrSize = std::min(maxOutStrSize-1, size_t(linePtr-nameStr));
@@ -571,12 +561,8 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
         }
     }
     if (!ifs)
-    {
-        std::string error("Binary file '");
-        error += filename;
-        error += "' not found or unavailable in any directory";
-        asmr.printError(namePlace, error.c_str());
-    }
+        asmr.printError(namePlace, (std::string("Binary file '") + filename +
+                    "' not found or unavailable in any directory").c_str());
     // exception for checking file seeking
     bool seekingIsWorking = true;
     ifs.exceptions(std::ios::badbit | std::ios::failbit); // exceptions
@@ -1599,10 +1585,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     
     if (asmr.macroMap.find(macroName) != asmr.macroMap.end())
     {
-        std::string message = "Macro '";
-        message += macroName;
-        message += "' is already defined";
-        asmr.printError(macroNamePlace, message.c_str());
+        asmr.printError(macroNamePlace, (std::string("Macro '") + macroName +
+                "' is already defined").c_str());
         good = false;
     }
     
@@ -1628,10 +1612,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         
         if (!macroArgSet.insert(argName).second)
         {   // duplicate!
-            std::string message = "Duplicates macro argument '";
-            message += argName;
-            message += '\'';
-            asmr.printError(argPlace, message.c_str());
+            asmr.printError(argPlace, std::string("Duplicates macro argument '"+
+                    argName+'\'').c_str());
             argGood = false;
         }
         
@@ -1668,12 +1650,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
                 continue; // error
             }
             if (argRequired)
-            {
-                std::string message = "Pointless default value for argument '";
-                message += argName;
-                message += "'";
-                asmr.printWarning(defaultValueStr, message.c_str());
-            }
+                asmr.printWarning(defaultValueStr, (std::string(
+                    "Pointless default value for argument '") +argName+'\'').c_str());
         }
         
         if (argGood) // push to arguments
@@ -1697,21 +1675,17 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     {   
         if (checkPseudoOpName(macroName))
         {   // ignore
-            std::string message = "Attempt to redefine pseudo-op '";
-            message += macroName;
-            message += "' as macro. Ignoring it...";
-            asmr.printWarning(pseudoOpPlace, message.c_str());
+            asmr.printWarning(pseudoOpPlace, (std::string(
+                        "Attempt to redefine pseudo-op '")+macroName+
+                        "' as macro. Ignoring it...").c_str());
             asmr.pushClause(pseudoOpPlace, AsmClauseType::MACRO);
             asmr.skipClauses();
             return;
         }
         if (asmr.checkReservedName(macroName))
-        {
-            std::string message = "Attempt to redefine instruction or prefix '";
-            message += macroName;
-            message += "' as macro.";
-            asmr.printWarning(pseudoOpPlace, message.c_str());
-        }
+            asmr.printWarning(pseudoOpPlace, (std::string(
+                    "Attempt to redefine instruction or prefix '")+macroName+
+                    "' as macro.").c_str());
         // create a macro
         RefPtr<const AsmMacro> macro(new AsmMacro(asmr.getSourcePos(pseudoOpPlace),
                         Array<AsmMacroArg>(args.begin(), args.end())));
@@ -1838,12 +1812,8 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
         return;
     toLowerString(macroName); // macro name is lowered
     if (!asmr.macroMap.erase(macroName))
-    {
-        std::string message = "Macro '";
-        message += macroName;
-        message += "' already doesn't exist";
-        asmr.printWarning(macroNamePlace, message.c_str());
-    }
+        asmr.printWarning(macroNamePlace, std::string("Macro '"+macroName+
+                "' already doesn't exist").c_str());
 }
 
 void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
@@ -1870,12 +1840,8 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     auto it = asmr.symbolMap.find(symName);
     if (it == asmr.symbolMap.end() ||
         (!it->second.hasValue && it->second.expression==nullptr))
-    {
-        std::string message = "Symbol '";
-        message += symName;
-        message += "' already doesn't exist";
-        asmr.printWarning(symNamePlace, message.c_str());
-    }
+        asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName +
+                "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())
         asmr.symbolMap.erase(it);
     else

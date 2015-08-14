@@ -491,9 +491,7 @@ void AsmAmdPseudoOps::doEntry(AsmAmdHandler& handler, const char* pseudoOpPlace,
         (handler.sections[asmr.currentSection].extraId >= 32 ||
         ((1U<<handler.sections[asmr.currentSection].extraId) & requiredCalNoteIdMask))==0)
     {
-        std::string message = "Illegal place of ";
-        message += entryName;
-        asmr.printError(pseudoOpPlace, message.c_str());
+        asmr.printError(pseudoOpPlace, (std::string("Illegal place of ")+entryName).c_str());
         return;
     }
     
@@ -1105,10 +1103,8 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     if (kernelState.argNamesSet.find(argName) != kernelState.argNamesSet.end())
     {   // if found kernel arg with this same name
-        std::string message = "Kernel argument '";
-        message += argName;
-        message += "' is already defined";
-        asmr.printError(argNamePlace, message.c_str());
+        asmr.printError(argNamePlace, (std::string("Kernel argument '")+argName+
+                    "' is already defined").c_str());
         good = false;
     }
     
