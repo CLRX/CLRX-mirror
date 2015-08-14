@@ -83,7 +83,7 @@ AsmFormatHandler::SectionInfo AsmRawCodeHandler::getSectionInfo(cxuint sectionId
     return { ".text", AsmSectionType::CODE, ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE };
 }
 
-bool AsmRawCodeHandler::parsePseudoOp(const std::string& firstName,
+bool AsmRawCodeHandler::parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr)
 {   // not recognized any pseudo-op
     return false;

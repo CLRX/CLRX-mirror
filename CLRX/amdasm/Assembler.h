@@ -145,7 +145,7 @@ public:
     /// get current section flags and type
     virtual SectionInfo getSectionInfo(cxuint sectionId) const = 0;
     /// parse pseudo-op (return true if recognized pseudo-op)
-    virtual bool parsePseudoOp(const std::string& firstName,
+    virtual bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr) = 0;
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
@@ -173,7 +173,7 @@ public:
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
-    bool parsePseudoOp(const std::string& firstName,
+    bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
@@ -232,7 +232,7 @@ public:
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
-    bool parsePseudoOp(const std::string& firstName,
+    bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
@@ -289,7 +289,7 @@ public:
     void setCurrentSection(cxuint sectionId);
     
     SectionInfo getSectionInfo(cxuint sectionId) const;
-    bool parsePseudoOp(const std::string& firstName,
+    bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
     bool prepareBinary();
@@ -809,13 +809,13 @@ private:
     
     bool setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId);
     
-    bool assignSymbol(const std::string& symbolName, const char* symbolPlace,
+    bool assignSymbol(const CString& symbolName, const char* symbolPlace,
                   const char* linePtr, bool reassign = true, bool baseExpr = false);
     
     bool assignOutputCounter(const char* symbolPlace, uint64_t value, cxuint sectionId,
                      cxbyte fillValue = 0);
     
-    void parsePseudoOps(const std::string firstName, const char* stmtPlace,
+    void parsePseudoOps(const CString& firstName, const char* stmtPlace,
                 const char* linePtr);
     
     /// exitm - exit macro mode
@@ -873,7 +873,7 @@ private:
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
     
-    bool checkReservedName(const std::string& name);
+    bool checkReservedName(const CString& name);
     
     bool isAddressableSection() const
     {

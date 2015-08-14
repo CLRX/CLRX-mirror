@@ -232,7 +232,7 @@ AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) co
 namespace CLRX
 {
 
-bool AsmAmdPseudoOps::checkPseudoOpName(const std::string& string)
+bool AsmAmdPseudoOps::checkPseudoOpName(const CString& string)
 {
     if (string.empty() || string[0] != '.')
         return false;
@@ -1404,7 +1404,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
 
 }
 
-bool AsmAmdHandler::parsePseudoOp(const std::string& firstName,
+bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
        const char* stmtPlace, const char* linePtr)
 {
     const size_t pseudoOp = binaryFind(amdPseudoOpNamesTbl, amdPseudoOpNamesTbl +

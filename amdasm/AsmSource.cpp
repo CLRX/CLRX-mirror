@@ -577,16 +577,16 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                     pos += 2;   // skip this separator
                 else
                 { // extract argName
-                    //ile (content[pos] >= '0'
-                    const std::string symName = extractSymName(
-                                content+pos, content+contentSize, false);
+                    const char* thisPos = content + pos;
+                    const CString symName = extractSymName(
+                                thisPos, content+contentSize, false);
                     auto it = binaryMapFind(argMap.begin(), argMap.end(), symName);
                     if (it != argMap.end())
                     {   // if found
                         buffer.insert(buffer.end(), it->second.begin(),
                               it->second.begin() + it->second.size());
                         destPos += it->second.size();
-                        pos += symName.size();
+                        pos = thisPos-content;
                     }
                     else if (content[pos] == '@')
                     {
@@ -845,9 +845,9 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                     pos += 2;   // skip this separator
                 else
                 { // extract argName
-                    //ile (content[pos] >= '0'
-                    const std::string symName = extractSymName(
-                                content+pos, content+contentSize, false);
+                    const char* thisPos = content+pos;
+                    const CString symName = extractSymName(
+                                thisPos, content+contentSize, false);
                     if (expectedSymName == symName)
                     {   // if found
                         if (!irp->isIRPC())
@@ -861,7 +861,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                             buffer.push_back(symValue[repeatCount]);
                             destPos++;
                         }
-                        pos += symName.size();
+                        pos = thisPos-content;
                     }
                     else
                     {

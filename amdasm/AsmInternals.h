@@ -38,10 +38,10 @@ static inline void skipSpacesToEnd(const char*& string, const char* end)
 { while (string!=end && *string == ' ') string++; }
 
 // extract sybol name or argument name or other identifier
-static inline std::string extractSymName(const char* startString, const char* end,
+static inline CString extractSymName(const char*& string, const char* end,
            bool localLabelSymName)
 {
-    const char* string = startString;
+    const char* startString = string;
     if (string != end)
     {
         if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
@@ -58,18 +58,18 @@ static inline std::string extractSymName(const char* startString, const char* en
                 string = startString;
         }
     }
-    return std::string(startString, string);
+    return CString(startString, string);
 }
 
-static inline std::string extractLabelName(const char* startString, const char* end)
+static inline CString extractLabelName(const char*& string, const char* end)
 {
-    if (startString != end && isDigit(*startString))
+    if (string != end && isDigit(*string))
     {
-        const char* string = startString;
+        const char* startString = string;
         while (string != end && isDigit(*string)) string++;
-        return std::string(startString, string);
+        return CString(startString, string);
     }
-    return extractSymName(startString, end, false);
+    return extractSymName(string, end, false);
 }
 
 class Assembler;
@@ -244,14 +244,14 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     static void ignoreString(Assembler& asmr, const char* linePtr);
     
-    static bool checkPseudoOpName(const std::string& string);
+    static bool checkPseudoOpName(const CString& string);
 };
 
 class AsmGalliumHandler;
 
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
-    static bool checkPseudoOpName(const std::string& string);
+    static bool checkPseudoOpName(const CString& string);
     
     static void doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
@@ -292,7 +292,7 @@ enum AmdConfigValueTarget
 
 struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
 {
-    static bool checkPseudoOpName(const std::string& string);
+    static bool checkPseudoOpName(const CString& string);
     
     static void doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

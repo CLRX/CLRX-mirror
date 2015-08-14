@@ -272,6 +272,12 @@ public:
     bool empty() const
     { return ptr==nullptr; }
     
+    const char& front() const
+    { return ptr[0]; }
+    
+    char& front()
+    { return ptr[0]; }
+    
     /// compare with string
     int compare(const CString& cstr) const
     { return ::strcmp(c_str(), cstr.c_str()); }

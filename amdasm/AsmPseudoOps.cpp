@@ -903,14 +903,13 @@ void AsmPseudoOps::setSymbol(Assembler& asmr, const char* linePtr, bool reassign
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* strAtSymName = linePtr;
-    std::string symName = extractSymName(linePtr, end, false);
+    CString symName = extractSymName(linePtr, end, false);
     bool good = true;
     if (symName.empty())
     {
         asmr.printError(linePtr, "Expected symbol");
         good = false;
     }
-    linePtr += symName.size();
     if (!skipRequiredComma(asmr, linePtr))
         return;
     if (good) // is not so good
@@ -1570,14 +1569,13 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* macroNamePlace = linePtr;
-    std::string macroName = extractSymName(linePtr, end, false);
+    CString macroName = extractSymName(linePtr, end, false);
     if (macroName.empty())
     {
         asmr.printError(macroNamePlace, "Expected macro name");
         return;
     }
     toLowerString(macroName);
-    linePtr += macroName.size();
     /* parse args */
     std::vector<AsmMacroArg> args;
     
@@ -1586,7 +1584,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
     
     if (asmr.macroMap.find(macroName) != asmr.macroMap.end())
     {
-        asmr.printError(macroNamePlace, (std::string("Macro '") + macroName +
+        asmr.printError(macroNamePlace, (std::string("Macro '") + macroName.c_str() +
                 "' is already defined").c_str());
         good = false;
     }
@@ -1599,13 +1597,12 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         if (linePtr != end && *linePtr == ',')
             skipCharAndSpacesToEnd(linePtr, end);
         const char* argPlace = linePtr;
-        std::string argName = extractSymName(linePtr, end, false);
+        CString argName = extractSymName(linePtr, end, false);
         if (argName.empty())
         {
             asmr.printError(argPlace, "Expected macro argument name");
             return; //
         }
-        linePtr += argName.size();
         bool argRequired = false;
         bool argVarArgs = false;
         bool argGood = true;
@@ -1613,8 +1610,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         
         if (!macroArgSet.insert(argName).second)
         {   // duplicate!
-            asmr.printError(argPlace, std::string("Duplicates macro argument '"+
-                    argName+'\'').c_str());
+            asmr.printError(argPlace, (std::string("Duplicates macro argument '")+
+                    argName.c_str()+'\'').c_str());
             argGood = false;
         }
         
@@ -1652,7 +1649,8 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
             }
             if (argRequired)
                 asmr.printWarning(defaultValueStr, (std::string(
-                    "Pointless default value for argument '") +argName+'\'').c_str());
+                        "Pointless default value for argument '") +
+                        argName.c_str()+'\'').c_str());
         }
         
         if (argGood) // push to arguments
@@ -1677,7 +1675,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         if (checkPseudoOpName(macroName))
         {   // ignore
             asmr.printWarning(pseudoOpPlace, (std::string(
-                        "Attempt to redefine pseudo-op '")+macroName+
+                        "Attempt to redefine pseudo-op '")+macroName.c_str()+
                         "' as macro. Ignoring it...").c_str());
             asmr.pushClause(pseudoOpPlace, AsmClauseType::MACRO);
             asmr.skipClauses();
@@ -1685,7 +1683,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         }
         if (asmr.checkReservedName(macroName))
             asmr.printWarning(pseudoOpPlace, (std::string(
-                    "Attempt to redefine instruction or prefix '")+macroName+
+                    "Attempt to redefine instruction or prefix '")+macroName.c_str()+
                     "' as macro.").c_str());
         // create a macro
         RefPtr<const AsmMacro> macro(new AsmMacro(asmr.getSourcePos(pseudoOpPlace),
@@ -1729,13 +1727,12 @@ void AsmPseudoOps::doIRP(Assembler& asmr, const char* pseudoOpPlace, const char*
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* symNamePlace = linePtr;
-    std::string symName = extractSymName(linePtr, end, false);
+    CString symName = extractSymName(linePtr, end, false);
     if (symName.empty())
     {
         asmr.printError(symNamePlace, "Expected argument name");
         return;
     }
-    linePtr += symName.size();
     /* parse args */
     std::vector<CString> symValues;
     std::string symValString;
@@ -1801,19 +1798,18 @@ void AsmPseudoOps::purgeMacro(Assembler& asmr, const char* linePtr)
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* macroNamePlace = linePtr;
-    std::string macroName = extractSymName(linePtr, end, false);
+    CString macroName = extractSymName(linePtr, end, false);
     bool good = true;
     if (macroName.empty())
     {
         asmr.printError(macroNamePlace, "Expected macro name");
         good = false;
     }
-    linePtr += macroName.size();
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     toLowerString(macroName); // macro name is lowered
     if (!asmr.macroMap.erase(macroName))
-        asmr.printWarning(macroNamePlace, std::string("Macro '"+macroName+
+        asmr.printWarning(macroNamePlace, (std::string("Macro '")+macroName.c_str()+
                 "' already doesn't exist").c_str());
 }
 
@@ -1822,7 +1818,7 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* symNamePlace = linePtr;
-    std::string symName = extractSymName(linePtr, end, false);
+    CString symName = extractSymName(linePtr, end, false);
     bool good = true;
     if (symName.empty())
     {
@@ -1834,14 +1830,13 @@ void AsmPseudoOps::undefSymbol(Assembler& asmr, const char* linePtr)
         asmr.printError(symNamePlace, "Symbol '.' can not be undefined");
         good = false;
     }
-    linePtr += symName.size();
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     auto it = asmr.symbolMap.find(symName);
     if (it == asmr.symbolMap.end() ||
         (!it->second.hasValue && it->second.expression==nullptr))
-        asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName +
+        asmr.printWarning(symNamePlace, (std::string("Symbol '") + symName.c_str() +
                 "' already doesn't exist").c_str());
     else if (it->second.occurrencesInExprs.empty())
         asmr.symbolMap.erase(it);
@@ -1871,7 +1866,7 @@ void AsmPseudoOps::ignoreString(Assembler& asmr, const char* linePtr)
         checkGarbagesAtEnd(asmr, linePtr);
 }
 
-bool AsmPseudoOps::checkPseudoOpName(const std::string& string)
+bool AsmPseudoOps::checkPseudoOpName(const CString& string)
 {
     if (string.empty() || string[0] != '.')
         return false;
@@ -1889,7 +1884,7 @@ bool AsmPseudoOps::checkPseudoOpName(const std::string& string)
 
 };
 
-void Assembler::parsePseudoOps(const std::string firstName,
+void Assembler::parsePseudoOps(const CString& firstName,
        const char* stmtPlace, const char* linePtr)
 {
     const size_t pseudoOp = binaryFind(pseudoOpNamesTbl, pseudoOpNamesTbl +
@@ -2294,7 +2289,7 @@ bool Assembler::skipClauses(bool exitm)
         if (linePtr == end || *linePtr != '.')
             continue;
         
-        std::string pseudoOpName = extractSymName(linePtr, end, false);
+        CString pseudoOpName = extractSymName(linePtr, end, false);
         toLowerString(pseudoOpName);
         
         const size_t pseudoOp = binaryFind(offlinePseudoOpNamesTbl,
@@ -2412,7 +2407,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
             continue;
         }
         
-        std::string pseudoOpName = extractSymName(linePtr, end, false);
+        CString pseudoOpName = extractSymName(linePtr, end, false);
         toLowerString(pseudoOpName);
         
         const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,
@@ -2474,7 +2469,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
             continue;
         }
         
-        std::string pseudoOpName = extractSymName(linePtr, end, false);
+        CString pseudoOpName = extractSymName(linePtr, end, false);
         toLowerString(pseudoOpName);
         
         const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,

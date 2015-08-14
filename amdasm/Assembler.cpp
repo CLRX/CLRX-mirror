@@ -425,14 +425,14 @@ bool Assembler::parseLiteral(uint64_t& value, const char*& linePtr)
 Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
                 AsmSymbolEntry*& entry, bool localLabel, bool dontCreateSymbol)
 {
-    const std::string symName = extractSymName(linePtr, line+lineSize, localLabel);
+    const char* startPlace = linePtr;
+    const CString symName = extractSymName(linePtr, line+lineSize, localLabel);
     if (symName.empty())
     {   // this is not symbol or a missing symbol
         while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
     }
-    linePtr += symName.size();
     if (symName == ".") // any usage of '.' causes format initialization
         initializeOutputFormat();
     
@@ -451,10 +451,10 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
         entry = (it != symbolMap.end()) ? &*it : nullptr;
         symHasValue = (it != symbolMap.end() && it->second.hasValue);
     }
-    if (isDigit(symName.front()) && symName.back() == 'b' && !symHasValue)
+    if (isDigit(symName.front()) && symName[linePtr-startPlace-1] == 'b' && !symHasValue)
     {   // failed at finding
         std::string error = "Undefined previous local label '";
-        error.append(symName.begin(), symName.end()-1);
+        error.append(symName.begin(), linePtr-startPlace);
         error += "'";
         printError(linePtr, error.c_str());
         state = Assembler::ParseState::FAILED;
@@ -647,7 +647,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     return good;
 }
 
-bool Assembler::assignSymbol(const std::string& symbolName, const char* symbolPlace,
+bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
              const char* linePtr, bool reassign, bool baseExpr)
 {
     const char* exprPlace = linePtr;
@@ -689,10 +689,8 @@ bool Assembler::assignSymbol(const std::string& symbolName, const char* symbolPl
     if (!res.second && ((res.first->second.onceDefined || !reassign) &&
         res.first->second.isDefined()))
     {   // found and can be only once defined
-        std::string msg = "Symbol '";
-        msg += symbolName;
-        msg += "' is already defined";
-        printError(symbolPlace, msg.c_str());
+        printError(symbolPlace, (std::string("Symbol '") + symbolName.c_str() +
+                    "' is already defined").c_str());
         return false;
     }
     AsmSymbolEntry& symEntry = *res.first;
@@ -825,7 +823,7 @@ void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourc
     }
 }
 
-bool Assembler::checkReservedName(const std::string& name)
+bool Assembler::checkReservedName(const CString& name)
 {
     return false;
 }
@@ -962,10 +960,9 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     const char* end = line+lineSize;
     const char* macroStartPlace = linePtr;
     
-    std::string macroName = extractSymName(linePtr, end, false);
+    CString macroName = extractSymName(linePtr, end, false);
     if (macroName.empty())
         return ParseState::MISSING;
-    linePtr += macroName.size();
     toLowerString(macroName);
     MacroMap::const_iterator it = macroMap.find(macroName);
     if (it == macroMap.end())
@@ -1029,10 +1026,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
         argMap[i].second = macroArg;
         if (arg.required && argMap[i].second.empty())
         {   // error, value required
-            std::string message = "Value required for macro argument '";
-            message += arg.name.c_str();
-            message += '\'';
-            printError(argPlace, message.c_str());
+            printError(argPlace, (std::string("Value required for macro argument '") +
+                    arg.name.c_str() + '\'').c_str());
             good = false;
         }
         else if (argMap[i].second.empty())
@@ -1228,8 +1223,7 @@ bool Assembler::assemble()
         
         // statement start (except labels). in this time can point to labels
         const char* stmtPlace = linePtr;
-        std::string firstName = extractLabelName(linePtr, end);
-        linePtr += firstName.size();
+        CString firstName = extractLabelName(linePtr, end);
         
         skipSpacesToEnd(linePtr, end);
         
@@ -1255,9 +1249,11 @@ bool Assembler::assemble()
                     break;
                 }
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
-                        symbolMap.insert(std::make_pair(firstName+"b", AsmSymbol()));
+                        symbolMap.insert(std::make_pair(
+                            std::string(firstName.c_str())+"b", AsmSymbol()));
                 std::pair<AsmSymbolMap::iterator, bool> nextLRes =
-                        symbolMap.insert(std::make_pair(firstName+"f", AsmSymbol()));
+                        symbolMap.insert(std::make_pair(
+                            std::string(firstName.c_str())+"f", AsmSymbol()));
                 /* resolve forward symbol of label now */
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
                 /// setup backward symbol of label */
@@ -1276,7 +1272,7 @@ bool Assembler::assemble()
                 {   // found
                     if (res.first->second.onceDefined && res.first->second.isDefined())
                     {   // if label
-                        printError(stmtPlace, (std::string("Symbol '")+firstName+
+                        printError(stmtPlace, (std::string("Symbol '")+firstName.c_str()+
                                     "' is already defined").c_str());
                         doNextLine = true;
                         break;
@@ -1304,7 +1300,6 @@ bool Assembler::assemble()
             // new label or statement
             stmtPlace = linePtr;
             firstName = extractLabelName(linePtr, end);
-            linePtr += firstName.size();
         }
         if (doNextLine)
             continue;
