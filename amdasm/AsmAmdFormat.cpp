@@ -1097,13 +1097,13 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         return;
     }
     
-    std::string argName;
+    CString argName;
     const char* argNamePlace = linePtr;
     bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
     auto& kernelState = *handler.kernelStates[asmr.currentKernel];
     if (kernelState.argNamesSet.find(argName) != kernelState.argNamesSet.end())
     {   // if found kernel arg with this same name
-        asmr.printError(argNamePlace, (std::string("Kernel argument '")+argName+
+        asmr.printError(argNamePlace, (std::string("Kernel argument '")+argName.c_str()+
                     "' is already defined").c_str());
         good = false;
     }

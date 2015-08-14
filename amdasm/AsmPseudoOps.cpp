@@ -200,7 +200,7 @@ bool AsmPseudoOps::getAnyValueArg(Assembler& asmr, uint64_t& value,
     return true;
 }
 
-bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*& linePtr,
+bool AsmPseudoOps::getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
             const char* objName, bool requiredArg)
 {
     const char* end = asmr.line + asmr.lineSize;
@@ -407,7 +407,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    std::string kernelName;
+    CString kernelName;
     if (!getNameArg(asmr, kernelName, linePtr, "kernel name"))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))
@@ -422,7 +422,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    std::string sectionName;
+    CString sectionName;
     if (!getNameArg(asmr, sectionName, linePtr, "section name"))
         return;
     if (!checkGarbagesAtEnd(asmr, linePtr))

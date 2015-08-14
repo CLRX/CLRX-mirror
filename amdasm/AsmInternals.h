@@ -101,7 +101,7 @@ struct CLRX_INTERNAL AsmPseudoOps
     static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
                     const char*& linePtr);
     // get name (not symbol name)
-    static bool getNameArg(Assembler& asmr, std::string& outStr, const char*& linePtr,
+    static bool getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
                const char* objName, bool requiredArg = true);
     
     // get name (not symbol name)
