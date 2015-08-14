@@ -226,7 +226,10 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, std::string& outStr, const char*&
     {
         if (!requiredArg)
             return true; // succeed
-        asmr.printError(linePtr, "Some garbages at name place");
+        std::string error("Some garbages at ");
+        error += objName;
+        error += " place";
+        asmr.printError(linePtr, error.c_str());
         while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         return false;
     }
@@ -265,13 +268,18 @@ bool AsmPseudoOps::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outSt
             outStr[0] = 0;
             return true; // succeed
         }
-        asmr.printError(linePtr, "Some garbages at name place");
+        std::string error("Some garbages at ");
+        error += objName;
+        error += " place";
+        asmr.printError(linePtr, error.c_str());
         while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
         return false;
     }
     if (maxOutStrSize < size_t(linePtr-nameStr))
     {
-        asmr.printError(linePtr, "Name is too long");
+        std::string error(objName);
+        error += " is too long";
+        asmr.printError(linePtr, error.c_str());
         return false;
     }
     const size_t outStrSize = std::min(maxOutStrSize-1, size_t(linePtr-nameStr));

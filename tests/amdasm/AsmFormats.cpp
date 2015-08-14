@@ -870,7 +870,7 @@ test.s:57:22: Error: Expected expression
 test.s:58:23: Error: Expected expression
 test.s:59:21: Error: Expected expression
 test.s:64:17: Error: Expected expression
-test.s:70:23: Error: Some garbages at name place
+test.s:70:23: Error: Some garbages at ApiSlot place
 test.s:70:27: Error: RegStart+RegSize out of range (0-16)
 test.s:72:37: Error: RegStart+RegSize out of range (0-16)
 test.s:73:37: Error: RegStart out of range (0-15)
@@ -884,8 +884,8 @@ test.s:79:18: Error: Expected ',' before argument
 test.s:80:31: Error: Unknown argument type name
 test.s:81:22: Error: Unknown argument type name
 test.s:82:30: Error: Unknown or not given pointer space
-test.s:83:29: Error: Some garbages at name place
-test.s:84:37: Error: Some garbages at name place
+test.s:83:29: Error: Some garbages at pointer space place
+test.s:84:37: Error: Some garbages at access qualifier place
 test.s:84:37: Error: Unknown or not given access qualifier type
 test.s:85:37: Error: Expression have unresolved symbol 'XXX'
 test.s:86:39: Error: This is not 'unused' specifier
@@ -905,9 +905,9 @@ test.s:97:38: Error: UAVId out of range (0-1023)
 test.s:98:40: Error: Resource Id out of range (0-127)
 test.s:99:41: Error: Resource Id out of range (0-7)
 test.s:100:41: Error: UAVId out of range (0-159)
-test.s:101:37: Error: Some garbages at name place
+test.s:101:37: Error: Some garbages at unused specifier place
 test.s:101:37: Error: This is not 'unused' specifier
-test.s:102:43: Error: Some garbages at name place
+test.s:102:43: Error: Some garbages at unused specifier place
 test.s:102:43: Error: This is not 'unused' specifier
 test.s:103:22: Error: Illegal pointer type
 test.s:104:22: Error: Illegal pointer type
