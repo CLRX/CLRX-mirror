@@ -409,7 +409,17 @@ enum : AsmExprTargetType
     ASMXTGT_DATA8,      ///< target is byte
     ASMXTGT_DATA16,     ///< target is 16-bit word
     ASMXTGT_DATA32,     ///< target is 32-bit word
-    ASMXTGT_DATA64      ///< target is 64-bit word
+    ASMXTGT_DATA64,     ///< target is 64-bit word
+    
+    GCNTGT_NEXTIMM = 16,
+    GCNTGT_SOPKSIMM16,
+    GCNTGT_SOPJMP,
+    GCNTGT_SMRDOFFSET,
+    GCNTGT_DSOFFSET16,
+    GCNTGT_DSOFFSET8_0,
+    GCNTGT_DSOFFSET8_1,
+    GCNTGT_MXBUFOFFSET,
+    GCNTGT_SMEMOFFSET
 };
 
 union AsmExprArg;
