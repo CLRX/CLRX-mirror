@@ -30,7 +30,7 @@
 
 using namespace CLRX;
 
-static std::once_flag clrxGCNDisasmOnceFlag; 
+static std::once_flag clrxGCNDisasmOnceFlag;
 static std::unique_ptr<GCNInstruction[]> gcnInstrTableByCode = nullptr;
 
 struct GCNEncodingSpace

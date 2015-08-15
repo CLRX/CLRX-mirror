@@ -36,7 +36,8 @@ enum {
     PROGOPT_HEXCODE,
     PROGOPT_ALL,
     PROGOPT_RAWCODE,
-    PROGOPT_GPUTYPE
+    PROGOPT_GPUTYPE,
+    PROGOPT_ARCH
 };
 
 static const CLIOption programOptions[] =
@@ -51,7 +52,9 @@ static const CLIOption programOptions[] =
         "dump all (including hexcode and float literals)", nullptr },
     { "raw", 'r', CLIArgType::NONE, false, false, "treat input as raw GCN code", nullptr },
     { "gpuType", 'g', CLIArgType::TRIMMED_STRING, false, false,
-        "set GPU type for raw binaries", nullptr },
+        "set GPU type for Gallium/raw binaries", nullptr },
+    { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
+        "set GPU architecture for Gallium/raw binaries", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
 };
@@ -85,6 +88,10 @@ try
     if (cli.hasOption(PROGOPT_GPUTYPE))
         gpuDeviceType = getGPUDeviceTypeFromName(
                 cli.getOptArg<const char*>(PROGOPT_GPUTYPE));
+    else if (cli.hasOption(PROGOPT_ARCH))
+        gpuDeviceType = getLowestGPUDeviceTypeFromArchitecture(
+                    getGPUArchitectureFromName(
+                            cli.getOptArg<const char*>(PROGOPT_ARCH)));
     
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)

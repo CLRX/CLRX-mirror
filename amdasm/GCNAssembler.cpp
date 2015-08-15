@@ -18,21 +18,47 @@
  */
 
 #include <CLRX/Config.h>
+#include <vector>
+#include <cstring>
 #include <algorithm>
 #include <CLRX/amdasm/Assembler.h>
+#include "AsmInternals.h"
+#include "GCNInternals.h"
 
 using namespace CLRX;
 
-GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler)
-{ }
+static std::once_flag clrxGCNAssemblerOnceFlag;
+static cxuint gcnInstrsTableSize = 0;
+static std::unique_ptr<GCNInstruction[]> gcnInstrSortedTable = nullptr;
+
+static void initializeGCNAssembler()
+{
+    while (gcnInstrsTable[gcnInstrsTableSize].mnemonic!=nullptr)
+        gcnInstrsTableSize++;
+    gcnInstrSortedTable.reset(new GCNInstruction[gcnInstrsTableSize]);
+    std::copy(gcnInstrsTable, gcnInstrsTable + gcnInstrsTableSize,
+              gcnInstrSortedTable.get());
+    /// sort this table
+    std::sort(gcnInstrSortedTable.get(), gcnInstrSortedTable.get()+gcnInstrsTableSize,
+            [](const GCNInstruction& instr1, const GCNInstruction& instr2)
+            {   // compare mnemonic and if mnemonic is equal then architectur mask
+                int r = ::strcmp(instr1.mnemonic, instr2.mnemonic);
+                return (r < 0) || (r==0 && instr1.archMask < instr2.archMask);
+            });
+}
+
+GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
+        sgprsNum(0), vgprsNum(0)
+{
+    std::call_once(clrxGCNAssemblerOnceFlag, initializeGCNAssembler);
+}
 
 GCNAssembler::~GCNAssembler()
 { }
 
-size_t GCNAssembler::assemble(uint64_t lineNo, const char* line,
+void GCNAssembler::assemble(uint64_t lineNo, const char* line,
                       std::vector<cxbyte>& output)
 {
-    return 0;
 }
 
 bool GCNAssembler::resolveCode(cxbyte* location, cxbyte targetType, uint64_t value)
@@ -42,10 +68,15 @@ bool GCNAssembler::resolveCode(cxbyte* location, cxbyte targetType, uint64_t val
 
 bool GCNAssembler::checkMnemonic(const CString& mnemonic) const
 {
-    return false;
+    return std::binary_search(gcnInstrSortedTable.get(),
+              gcnInstrSortedTable.get()+gcnInstrsTableSize,
+               GCNInstruction{mnemonic.c_str()},
+               [](const GCNInstruction& instr1, const GCNInstruction& instr2)
+               { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
 }
 
-cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum) const
+const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum) const
 {
-    return nullptr;
+    regTypesNum = 2;
+    return regTable;
 }

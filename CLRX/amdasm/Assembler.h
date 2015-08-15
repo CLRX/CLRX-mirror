@@ -301,10 +301,13 @@ public:
 };
 
 /// ISA assembler class
-class ISAAssembler
+class ISAAssembler: public NonCopyableAndNonMovable
 {
 protected:
     Assembler& assembler;       ///< assembler
+    
+    void printWarning(const char* linePtr, const char* message);
+    void printError(const char* linePtr, const char* message);
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
 public:
@@ -312,29 +315,37 @@ public:
     virtual ~ISAAssembler();
     
     /// assemble single line
-    virtual size_t assemble(uint64_t lineNo, const char* line,
+    virtual void assemble(uint64_t lineNo, const char* line,
                 std::vector<cxbyte>& output) = 0;
     /// resolve code with location, target and value
     virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// get allocated register after assemblying
-    virtual cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
+    virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
 };
 
 /// GCN arch assembler
 class GCNAssembler: public ISAAssembler
 {
+private:
+    union {
+        struct {
+            cxuint sgprsNum;
+            cxuint vgprsNum;
+        };
+        cxuint regTable[2];
+    };
 public:
     /// constructor
     explicit GCNAssembler(Assembler& assembler);
     /// destructor
     ~GCNAssembler();
     
-    size_t assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
+    void assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
     bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
-    cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
+    const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
 };
 
 /*
@@ -716,6 +727,7 @@ private:
     friend class AsmRawCodeHandler;
     friend class AsmAmdHandler;
     friend class AsmGalliumHandler;
+    friend class ISAAssembler;
     
     friend struct AsmParseUtils; // INTERNAL LOGIC
     friend struct AsmPseudoOps; // INTERNAL LOGIC
@@ -962,6 +974,12 @@ public:
     /// main routine to assemble code
     bool assemble();
 };
+
+inline void ISAAssembler::printWarning(const char* linePtr, const char* message)
+{ return assembler.printWarning(linePtr, message); }
+
+inline void ISAAssembler::printError(const char* linePtr, const char* message)
+{ return assembler.printError(linePtr, message); }
 
 };
 
