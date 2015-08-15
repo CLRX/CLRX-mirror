@@ -305,7 +305,6 @@ class ISAAssembler
 {
 protected:
     Assembler& assembler;       ///< assembler
-    
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
 public:
@@ -318,7 +317,7 @@ public:
     /// resolve code with location, target and value
     virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
     /// check if name is mnemonic
-    virtual bool checkMnemonic(const std::string& mnemonic) const = 0;
+    virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// get allocated register after assemblying
     virtual cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
 };
@@ -334,7 +333,7 @@ public:
     
     size_t assemble(uint64_t lineNo, const char* line, std::vector<cxbyte>& output);
     bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
-    bool checkMnemonic(const std::string& mnemonic) const;
+    bool checkMnemonic(const CString& mnemonic) const;
     cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
 };
 
@@ -718,6 +717,7 @@ private:
     friend class AsmAmdHandler;
     friend class AsmGalliumHandler;
     
+    friend struct AsmParseUtils; // INTERNAL LOGIC
     friend struct AsmPseudoOps; // INTERNAL LOGIC
     friend struct AsmGalliumPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdPseudoOps; // INTERNAL LOGIC

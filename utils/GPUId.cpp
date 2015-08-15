@@ -46,23 +46,24 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "Carrizo"
 };
 
-static std::pair<const char*, GPUDeviceType> gpuDeviceEntryTable[gpuDeviceTableSize] =
+static std::pair<const char*, GPUDeviceType>
+lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
 {
-    { "Bonaire", GPUDeviceType::BONAIRE },
-    { "CapeVerde", GPUDeviceType::CAPE_VERDE },
-    { "Carrizo", GPUDeviceType::CARRIZO },
-    { "Fiji", GPUDeviceType::FIJI },
-    { "Hainan", GPUDeviceType::HAINAN },
-    { "Hawaii", GPUDeviceType::HAWAII },
-    { "Iceland", GPUDeviceType::ICELAND },
-    { "Kalindi", GPUDeviceType::KALINDI },
-    { "Mullins", GPUDeviceType::MULLINS },
-    { "Oland", GPUDeviceType::OLAND },
-    { "Pitcairn", GPUDeviceType::PITCAIRN },
-    { "Spectre", GPUDeviceType::SPECTRE },
-    { "Spooky", GPUDeviceType::SPOOKY },
-    { "Tahiti", GPUDeviceType::TAHITI },
-    { "Tonga", GPUDeviceType::TONGA }
+    { "bonaire", GPUDeviceType::BONAIRE },
+    { "capeverde", GPUDeviceType::CAPE_VERDE },
+    { "carrizo", GPUDeviceType::CARRIZO },
+    { "fiji", GPUDeviceType::FIJI },
+    { "hainan", GPUDeviceType::HAINAN },
+    { "hawaii", GPUDeviceType::HAWAII },
+    { "iceland", GPUDeviceType::ICELAND },
+    { "kalindi", GPUDeviceType::KALINDI },
+    { "mullins", GPUDeviceType::MULLINS },
+    { "oland", GPUDeviceType::OLAND },
+    { "pitcairn", GPUDeviceType::PITCAIRN },
+    { "spectre", GPUDeviceType::SPECTRE },
+    { "spooky", GPUDeviceType::SPOOKY },
+    { "tahiti", GPUDeviceType::TAHITI },
+    { "tonga", GPUDeviceType::TONGA }
 };
 
 static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
@@ -100,9 +101,9 @@ static const GPUDeviceType gpuLowestDeviceFromArchTable[3] =
 
 GPUDeviceType CLRX::getGPUDeviceTypeFromName(const char* name)
 {
-    auto it = binaryMapFind(gpuDeviceEntryTable,
-                         gpuDeviceEntryTable+gpuDeviceTableSize, name, CStringLess());
-    if (it == gpuDeviceEntryTable+gpuDeviceTableSize)
+    auto it = binaryMapFind(lowerCaseGpuDeviceEntryTable,
+                 lowerCaseGpuDeviceEntryTable+gpuDeviceTableSize, name, CStringCaseLess());
+    if (it == lowerCaseGpuDeviceEntryTable+gpuDeviceTableSize)
         throw Exception("Unknown GPU device type");
     return it->second;
 }
@@ -111,7 +112,7 @@ GPUArchitecture CLRX::getGPUArchitectureFromName(const char* name)
 {
     cxuint found = 0;
     for (; found < sizeof gpuArchitectureNameTable / sizeof(const char*); found++)
-        if (::strcmp(name, gpuArchitectureNameTable[found]) == 0)
+        if (::strcasecmp(name, gpuArchitectureNameTable[found]) == 0)
             break;
     if (found == sizeof(gpuArchitectureNameTable) / sizeof(const char*))
         throw Exception("Unknown GPU architecture");

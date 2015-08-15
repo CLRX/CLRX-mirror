@@ -84,13 +84,8 @@ enum class IfIntComp
     GREATER_EQUAL
 };
 
-struct CLRX_INTERNAL AsmPseudoOps
+struct CLRX_INTERNAL AsmParseUtils
 {
-    /* IMPORTANT:
-     * about string argumenbt - string points to place of current line
-     * processed by assembler
-     * pseudoOpPlace - points to first character from line of pseudo-op name
-     */
     static bool checkGarbagesAtEnd(Assembler& asmr, const char* linePtr);
     /* parsing helpers */
     /* get absolute value arg resolved at this time.
@@ -114,7 +109,10 @@ struct CLRX_INTERNAL AsmPseudoOps
     
     // skip comma for multiple argument pseudo-ops
     static bool skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr);
-    
+};
+
+struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
+{
     /*
      * pseudo-ops logic
      */

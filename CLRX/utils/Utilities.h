@@ -302,6 +302,14 @@ struct CStringLess
     { return ::strcmp(c1, c2)<0; }
 };
 
+/// function class that returns true if first C string is less than second (ignore case)
+struct CStringCaseLess
+{
+    /// operator of call
+    inline bool operator()(const char* c1, const char* c2) const
+    { return ::strcasecmp(c1, c2)<0; }
+};
+
 /// function class that returns true if C strings are equal
 struct CStringEqual
 {

@@ -364,7 +364,7 @@ bool CLRX::isDirectory(const char* path)
     return S_ISDIR(stBuf.st_mode);
 }
 
-extern Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
+Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
 {
     uint64_t size;
     if (isDirectory(filename))
