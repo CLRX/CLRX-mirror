@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <string>
 #include <CLRX/utils/Utilities.h>
+#include "GCNInternals.h"
 
 namespace CLRX
 {
@@ -115,7 +116,7 @@ struct CLRX_INTERNAL AsmParseUtils
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
-    /*static void getRegister();
+    static void getRegister();
     static void getRegisterRange();
     
     static void parseSOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
@@ -151,7 +152,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static void parseEXPEncoding(Assembler& asmr, const GCNInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
     static void parseFLATEncoding(Assembler& asmr, const GCNInstruction& insn,
-                      const char* linePtr, std::vector<cxbyte>& output);*/
+                      const char* linePtr, std::vector<cxbyte>& output);
 };
 
 struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
