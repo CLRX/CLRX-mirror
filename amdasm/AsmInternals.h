@@ -117,7 +117,8 @@ struct CLRX_INTERNAL AsmParseUtils
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
     static uint16_t getRegister(Assembler& asmr, const char* linePtr);
-    static uint16_t getRegisterRange(Assembler& asmr, const char* linePtr);
+    static std::pair<uint16_t,uint16_t> getRegisterRange(
+                Assembler& asmr, const char* linePtr);
     
     static void parseSOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
