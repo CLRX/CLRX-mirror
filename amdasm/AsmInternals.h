@@ -95,6 +95,8 @@ struct CLRX_INTERNAL AsmParseUtils
     
     static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
                     const char*& linePtr);
+    
+    static bool getJumpValueArg(Assembler& asmr, uint64_t& value, const char*& linePtr);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
                const char* objName, bool requiredArg = true);
@@ -109,6 +111,47 @@ struct CLRX_INTERNAL AsmParseUtils
     
     // skip comma for multiple argument pseudo-ops
     static bool skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr);
+};
+
+struct GCNAsmUtils: AsmParseUtils
+{
+    static void getRegister();
+    static void getRegisterRange();
+    
+    static void parseSOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseSOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseSOPKEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseSOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseSOPPEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    
+    static void parseSMRDEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    
+    static void parseVOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseVOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseVOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseVOP3Encoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseVINTRPEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseDSEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseMXBUFEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseMIMGEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseEXPEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseFLATEncoding(Assembler& asmr, const GCNInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
 };
 
 struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils

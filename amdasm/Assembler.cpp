@@ -118,6 +118,30 @@ bool AsmParseUtils::getAnyValueArg(Assembler& asmr, uint64_t& value,
     return true;
 }
 
+bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value, const char*& linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* exprPlace = linePtr;
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, true));
+    if (expr == nullptr)
+        return false;
+    if (expr->isEmpty())
+    {
+        asmr.printError(exprPlace, "Expected expression");
+        return false;
+    }
+    cxuint sectionId;
+    if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+        return false;
+    if (sectionId != asmr.currentSection)
+    {   // if jump outside current section (.text)
+        asmr.printError(exprPlace, "Jump over current section!");
+        return false;
+    }
+    return true;
+}
+
 bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
             const char* objName, bool requiredArg)
 {
