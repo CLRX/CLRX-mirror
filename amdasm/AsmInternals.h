@@ -116,43 +116,43 @@ struct CLRX_INTERNAL AsmParseUtils
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
-    static uint16_t getRegister(Assembler& asmr, const char* linePtr);
-    static std::pair<uint16_t,uint16_t> getRegisterRange(Assembler& asmr,
+    static uint16_t parseRegister(Assembler& asmr, const char* linePtr);
+    static std::pair<uint16_t,uint16_t> parseRegisterRange(Assembler& asmr,
                          const char* linePtr);
     
-    static void parseSOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseSOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseSOPKEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseSOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseSOPPEncoding(Assembler& asmr, const GCNInstruction& insn,
-                      const char* linePtr, std::vector<cxbyte>& output);
-    
-    static void parseSMRDEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
     
-    static void parseVOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseVOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+    
+    static void parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseVOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseVOP3Encoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseVINTRPEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseDSEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseMXBUFEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseMIMGEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseEXPEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
-    static void parseFLATEncoding(Assembler& asmr, const GCNInstruction& insn,
+    static void parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
+                      const char* linePtr, std::vector<cxbyte>& output);
+    static void parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
 };
 

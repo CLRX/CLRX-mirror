@@ -93,7 +93,8 @@ static void initializeGCNAssembler()
 }
 
 GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
-        sgprsNum(0), vgprsNum(0)
+        sgprsNum(0), vgprsNum(0), curArchMask(
+                    1U<<cxuint(getGPUArchitectureFromDeviceType(assembler.getDeviceType())))
 {
     std::call_once(clrxGCNAssemblerOnceFlag, initializeGCNAssembler);
 }
@@ -103,139 +104,153 @@ GCNAssembler::~GCNAssembler()
 
 namespace CLRX
 {
-void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
-void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNInstruction& insn,
+void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {
 }
 
 };
 
-void GCNAssembler::assemble(const CString& mnemonic, const char* linePtr,
-            const char* lineEnd, std::vector<cxbyte>& output)
+void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
+            const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output)
 {
     auto it = binaryFind(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
                GCNAsmInstruction{mnemonic.c_str()},
                [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
                { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
     
-    if (it == gcnInstrSortedTable.end())
+    if (it == gcnInstrSortedTable.end() || (it->archMask & curArchMask)==0)
     {   // unrecognized mnemonic
-        printError(linePtr - mnemonic.size(), "Unrecognized instruction");
+        printError(mnemPlace, "Unrecognized instruction");
         return;
     }
-    // check architecture
     /* decode instruction line */
-    
     switch(it->encoding)
     {
         case GCNENC_SOPC:
+            GCNAsmUtils::parseSOPCEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_SOPP:
+            GCNAsmUtils::parseSOPPEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_SOP1:
+            GCNAsmUtils::parseSOP1Encoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_SOP2:
+            GCNAsmUtils::parseSOP2Encoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_SOPK:
+            GCNAsmUtils::parseSOPKEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_SMRD:
+            GCNAsmUtils::parseSMRDEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_VOPC:
+            GCNAsmUtils::parseVOPCEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_VOP1:
+            GCNAsmUtils::parseVOP1Encoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_VOP2:
+            GCNAsmUtils::parseVOP2Encoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_VOP3A:
         case GCNENC_VOP3B:
+            GCNAsmUtils::parseVOP3Encoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_VINTRP:
+            GCNAsmUtils::parseVINTRPEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_DS:
+            GCNAsmUtils::parseDSEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_MUBUF:
         case GCNENC_MTBUF:
+            GCNAsmUtils::parseMXBUFEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_MIMG:
+            GCNAsmUtils::parseMIMGEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_EXP:
+            GCNAsmUtils::parseEXPEncoding(assembler, *it, linePtr, output);
             break;
         case GCNENC_FLAT:
+            GCNAsmUtils::parseFLATEncoding(assembler, *it, linePtr, output);
             break;
         default:
             break;

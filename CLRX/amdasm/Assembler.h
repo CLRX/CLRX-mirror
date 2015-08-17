@@ -315,8 +315,8 @@ public:
     virtual ~ISAAssembler();
     
     /// assemble single line
-    virtual void assemble(const CString& mnemonic, const char* linePtr,
-              const char* lineEnd, std::vector<cxbyte>& output) = 0;
+    virtual void assemble(const CString& mnemonic, const char* mnemPlace,
+              const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output) = 0;
     /// resolve code with location, target and value
     virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
     /// check if name is mnemonic
@@ -336,14 +336,15 @@ private:
         };
         cxuint regTable[2];
     };
+    uint16_t curArchMask;
 public:
     /// constructor
     explicit GCNAssembler(Assembler& assembler);
     /// destructor
     ~GCNAssembler();
     
-    void assemble(const CString& mnemonic, const char* linePtr, const char* lineEnd,
-                  std::vector<cxbyte>& output);
+    void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
+                  const char* lineEnd, std::vector<cxbyte>& output);
     bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
     const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
