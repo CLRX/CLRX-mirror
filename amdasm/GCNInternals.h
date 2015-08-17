@@ -182,6 +182,15 @@ struct CLRX_INTERNAL GCNInstruction
     uint16_t archMask; // mask of architectures whose have instruction
 };
 
+struct CLRX_INTERNAL GCNAsmInstruction
+{
+    const char* mnemonic;
+    cxbyte encoding;
+    uint16_t mode;
+    uint16_t code1, code2; // code1 - first code, code2 - VOP3 encoding code
+    uint16_t archMask; // mask of architectures whose have instruction
+};
+
 CLRX_INTERNAL extern const GCNInstruction gcnInstrsTable[];
 
 };

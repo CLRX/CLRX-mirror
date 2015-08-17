@@ -28,23 +28,68 @@
 using namespace CLRX;
 
 static std::once_flag clrxGCNAssemblerOnceFlag;
-static cxuint gcnInstrsTableSize = 0;
-static std::unique_ptr<GCNInstruction[]> gcnInstrSortedTable = nullptr;
+static Array<GCNAsmInstruction> gcnInstrSortedTable;
 
 static void initializeGCNAssembler()
 {
-    while (gcnInstrsTable[gcnInstrsTableSize].mnemonic!=nullptr)
-        gcnInstrsTableSize++;
-    gcnInstrSortedTable.reset(new GCNInstruction[gcnInstrsTableSize]);
-    std::copy(gcnInstrsTable, gcnInstrsTable + gcnInstrsTableSize,
-              gcnInstrSortedTable.get());
-    /// sort this table
-    std::sort(gcnInstrSortedTable.get(), gcnInstrSortedTable.get()+gcnInstrsTableSize,
-            [](const GCNInstruction& instr1, const GCNInstruction& instr2)
-            {   // compare mnemonic and if mnemonic is equal then architectur mask
+    size_t tableSize = 0;
+    while (gcnInstrsTable[tableSize].mnemonic!=nullptr)
+        tableSize++;
+    
+    gcnInstrSortedTable.resize(tableSize);
+    for (cxuint i = 0; gcnInstrsTable[i].mnemonic!=nullptr; i++)
+    {
+        const GCNInstruction& insn = gcnInstrsTable[i];
+        gcnInstrSortedTable[i] = {insn.mnemonic, insn.encoding, insn.mode,
+                    insn.code, 0, insn.archMask};
+    }
+    
+    std::sort(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
+            [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
+            {   // compare mnemonic and if mnemonic
                 int r = ::strcmp(instr1.mnemonic, instr2.mnemonic);
-                return (r < 0) || (r==0 && instr1.archMask < instr2.archMask);
+                return (r < 0) || (r==0 && instr1.encoding < instr2.encoding) ||
+                            (instr1.encoding < instr2.encoding &&
+                             instr1.archMask < instr2.archMask);
             });
+    
+    cxuint j = 0;
+    cxuint lastVOPX = UINT_MAX;
+    
+    /* join VOP3A instr with VOP2/VOPC/VOP1 instr together to faster encoding. */
+    for (cxuint i = 0; i < tableSize; i++)
+    {   // get value, not reference, because can be replaced
+        GCNAsmInstruction insn = gcnInstrSortedTable[i];
+        if (lastVOPX == UINT_MAX) // normal
+        {
+            gcnInstrSortedTable[j++] = insn;
+            if (insn.encoding == GCNENC_VOPC || insn.encoding == GCNENC_VOP1 ||
+                insn.encoding == GCNENC_VOP2)
+                lastVOPX = i;
+        }
+        else // we have VOP2/VOP1/VOPC instruction, we find duplicates in VOP3
+            for (i++ ; i < tableSize; i++)
+            {
+                if (::strcmp(gcnInstrSortedTable[i].mnemonic, insn.mnemonic)==0 &&
+                    gcnInstrSortedTable[i].encoding == GCNENC_VOP3A)
+                {   // put new double instruction entry
+                    GCNAsmInstruction& outInsn = gcnInstrSortedTable[j++];
+                    outInsn.mnemonic = insn.mnemonic;
+                    outInsn.encoding = insn.encoding;
+                    outInsn.mode = insn.mode;
+                    outInsn.code1 = insn.code1;
+                    outInsn.code2 = gcnInstrSortedTable[i].code1; // VOP3 code
+                    outInsn.archMask &= gcnInstrSortedTable[i].archMask;
+                }
+                else
+                {   // otherwise, end of instruction encoding
+                    gcnInstrSortedTable[j++] = insn;
+                    lastVOPX = UINT_MAX;
+                    break;
+                }
+            }
+    }
+    gcnInstrSortedTable.resize(j); // final size
 }
 
 GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
@@ -56,9 +101,145 @@ GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
 GCNAssembler::~GCNAssembler()
 { }
 
-void GCNAssembler::assemble(uint64_t lineNo, const char* line,
-                      std::vector<cxbyte>& output)
+namespace CLRX
 {
+void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNInstruction& insn,
+                  const char* linePtr, std::vector<cxbyte>& output)
+{
+}
+
+};
+
+void GCNAssembler::assemble(const CString& mnemonic, const char* linePtr,
+            const char* lineEnd, std::vector<cxbyte>& output)
+{
+    auto it = binaryFind(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
+               GCNAsmInstruction{mnemonic.c_str()},
+               [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
+               { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
+    
+    if (it == gcnInstrSortedTable.end())
+    {   // unrecognized mnemonic
+        printError(linePtr - mnemonic.size(), "Unrecognized instruction");
+        return;
+    }
+    // check architecture
+    /* decode instruction line */
+    
+    switch(it->encoding)
+    {
+        case GCNENC_SOPC:
+            break;
+        case GCNENC_SOPP:
+            break;
+        case GCNENC_SOP1:
+            break;
+        case GCNENC_SOP2:
+            break;
+        case GCNENC_SOPK:
+            break;
+        case GCNENC_SMRD:
+            break;
+        case GCNENC_VOPC:
+            break;
+        case GCNENC_VOP1:
+            break;
+        case GCNENC_VOP2:
+            break;
+        case GCNENC_VOP3A:
+        case GCNENC_VOP3B:
+            break;
+        case GCNENC_VINTRP:
+            break;
+        case GCNENC_DS:
+            break;
+        case GCNENC_MUBUF:
+        case GCNENC_MTBUF:
+            break;
+        case GCNENC_MIMG:
+            break;
+        case GCNENC_EXP:
+            break;
+        case GCNENC_FLAT:
+            break;
+        default:
+            break;
+    }
 }
 
 bool GCNAssembler::resolveCode(cxbyte* location, cxbyte targetType, uint64_t value)
@@ -68,10 +249,9 @@ bool GCNAssembler::resolveCode(cxbyte* location, cxbyte targetType, uint64_t val
 
 bool GCNAssembler::checkMnemonic(const CString& mnemonic) const
 {
-    return std::binary_search(gcnInstrSortedTable.get(),
-              gcnInstrSortedTable.get()+gcnInstrsTableSize,
-               GCNInstruction{mnemonic.c_str()},
-               [](const GCNInstruction& instr1, const GCNInstruction& instr2)
+    return std::binary_search(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
+               GCNAsmInstruction{mnemonic.c_str()},
+               [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
                { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
 }
 

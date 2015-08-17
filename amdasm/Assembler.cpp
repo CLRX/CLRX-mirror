@@ -1520,7 +1520,7 @@ bool Assembler::assemble()
         skipSpacesToEnd(linePtr, end);
         if (linePtr != end && *linePtr == '=' &&
             // not for local labels
-            (firstName.front() < '0' || firstName.front() > '9'))
+            !isDigit(firstName.front()))
         {   // assignment
             skipCharAndSpacesToEnd(linePtr, line+lineSize);
             if (linePtr == end)
