@@ -2046,37 +2046,39 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::putIntegers<uint32_t>(*this, stmtPlace, linePtr);
             break;
         default:
-            initializeOutputFormat();
-            if (!formatHandler->parsePseudoOp(firstName, stmtPlace, linePtr))
-            {   // check other
-                if (format != BinaryFormat::GALLIUM)
-                {   // check gallium pseudo-op
-                    if (AsmGalliumPseudoOps::checkPseudoOpName(firstName))
-                    {
-                        printError(stmtPlace, "Gallium pseudo-op can be defined only in "
-                                "Gallium format code");
-                        break;
+        {
+            bool isGalliumPseudoOp = AsmGalliumPseudoOps::checkPseudoOpName(firstName);
+            bool isAmdPseudoOp = AsmAmdPseudoOps::checkPseudoOpName(firstName);
+            if (isGalliumPseudoOp || isAmdPseudoOp)
+            {   // initialize only if gallium pseudo-op or AMD pseudo-op
+                initializeOutputFormat();
+                /// try to parse
+                if (!formatHandler->parsePseudoOp(firstName, stmtPlace, linePtr))
+                {   // check other
+                    if (format != BinaryFormat::GALLIUM)
+                    {   // check gallium pseudo-op
+                        if (isGalliumPseudoOp)
+                        {
+                            printError(stmtPlace, "Gallium pseudo-op can be defined only in "
+                                    "Gallium format code");
+                            break;
+                        }
                     }
-                }
-                if (format != BinaryFormat::AMD)
-                {   // check amd pseudo-op
-                    if (AsmAmdPseudoOps::checkPseudoOpName(firstName))
-                    {
-                        printError(stmtPlace, "AMD pseudo-op can be defined only in "
-                                "AMD format code");
-                        break;
+                    if (format != BinaryFormat::AMD)
+                    {   // check amd pseudo-op
+                        if (isAmdPseudoOp)
+                        {
+                            printError(stmtPlace, "AMD pseudo-op can be defined only in "
+                                    "AMD format code");
+                            break;
+                        }
                     }
-                }
-                // macro substitution
-                // try to parse processor instruction or macro substitution
-                if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
-                {  // try parse instruction
-                    //initializeOutputFormat();
-                    /*isaAssembler->assemble(lineNo, stmtStartStr,
-                               sections[currentSection].content);*/
                 }
             }
+            else if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
+                printError(stmtPlace, "This is neither pseudo-op and nor macro");
             break;
+        }
     }
 }
 
