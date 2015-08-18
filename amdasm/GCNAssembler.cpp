@@ -35,9 +35,8 @@ static void initializeGCNAssembler()
     size_t tableSize = 0;
     while (gcnInstrsTable[tableSize].mnemonic!=nullptr)
         tableSize++;
-    
     gcnInstrSortedTable.resize(tableSize);
-    for (cxuint i = 0; gcnInstrsTable[i].mnemonic!=nullptr; i++)
+    for (cxuint i = 0; i < tableSize; i++)
     {
         const GCNInstruction& insn = gcnInstrsTable[i];
         gcnInstrSortedTable[i] = {insn.mnemonic, insn.encoding, insn.mode,
@@ -49,7 +48,7 @@ static void initializeGCNAssembler()
             {   // compare mnemonic and if mnemonic
                 int r = ::strcmp(instr1.mnemonic, instr2.mnemonic);
                 return (r < 0) || (r==0 && instr1.encoding < instr2.encoding) ||
-                            (instr1.encoding < instr2.encoding &&
+                            (r == 0 && instr1.encoding == instr2.encoding &&
                              instr1.archMask < instr2.archMask);
             });
     
