@@ -1403,6 +1403,7 @@ void Assembler::initializeOutputFormat()
         formatHandler = new AsmGalliumHandler(*this);
     else // raw code
         formatHandler = new AsmRawCodeHandler(*this);
+    isaAssembler = new GCNAssembler(*this);
     // add first section
     auto info = formatHandler->getSectionInfo(currentSection);
     sections.push_back({ info.name, currentKernel, info.type, info.flags });
@@ -1541,10 +1542,13 @@ bool Assembler::assemble()
         else
         {   // try to parse processor instruction or macro substitution
             if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
-            {  // try parse instruction
-                //initializeOutputFormat();
-                /*isaAssembler->assemble(lineNo, stmtStartStr,
-                           sections[currentSection].content);*/
+            {  
+                if (firstName.empty()) // if name is empty (empty line)
+                    continue;
+                initializeOutputFormat();
+                // try parse instruction
+                isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
+                           sections[currentSection].content);
             }
         }
     }

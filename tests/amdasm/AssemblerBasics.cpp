@@ -746,6 +746,7 @@ test.s:3:21: Error: Expected ',' before argument
 test.s:4:22: Error: Expected assignment expression
 test.s:5:1: Error: Illegal number at statement begin
 test.s:6:6: Error: Symbol 'aaa' is already defined
+test.s:7:13: Error: Unrecognized instruction
 test.s:8:23: Error: Garbages at end of expression
 test.s:9:30: Error: Garbages at end of expression
 )ffDXD", ""
@@ -2456,14 +2457,16 @@ In macro content:
             .macro test1 a1,num=5,xx= xx   ""
             test1 33, 554 , aa)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
-        { },
+        /* test1 - initializes output format, hence new section */
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
         { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:1:44: Error: Variadic argument must be last\n"
         "test.s:2:31: Error: Expected macro argument name\n"
         "test.s:3:30: Error: Duplicates macro argument 'b'\n"
         "test.s:3:32: Error: Expected macro argument name\n"
         "test.s:4:41: Error: Expected macro argument name\n"
-        "test.s:5:44: Error: Expected macro argument name\n", ""
+        "test.s:5:44: Error: Expected macro argument name\n"
+        "test.s:6:13: Error: Unrecognized instruction\n", ""
     },
     /* 66 - undef test */
     {   R"ffDXD(.eqv xz, a*b
