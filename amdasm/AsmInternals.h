@@ -132,7 +132,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                 const char*& linePtr, bool required = true);
     
     static std::pair<uint16_t, uint16_t> parseSRegRange(Assembler& asmr,
-                const char*& linePtr, bool required = true);
+                const char*& linePtr, uint16_t arch, bool required = true);
     
     static std::pair<uint16_t, uint16_t> parseOperand(Assembler& asmr, const char*& linePtr,
                   Flags instrOpMask);

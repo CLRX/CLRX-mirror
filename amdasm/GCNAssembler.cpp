@@ -113,118 +113,222 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
+    const char* vgprRangePlace = linePtr;
     if (linePtr == end)
     {
         if (required)
-            asmr.printError(linePtr, "VRegister range is required");
+            asmr.printError(vgprRangePlace, "VRegister range is required");
         return std::make_pair(0, 0);
     }
     if (toLower(*linePtr) != 'v') // if
     {
         if (required)
-            asmr.printError(linePtr, "VRegister range is required");
+            asmr.printError(vgprRangePlace, "VRegister range is required");
         return std::make_pair(0, 0);
     }
     if (++linePtr == end)
     {
         if (required)
-            asmr.printError(linePtr, "VRegister range is required");
+            asmr.printError(vgprRangePlace, "VRegister range is required");
         return std::make_pair(0, 0);
     }
     
-    if (isDigit(*linePtr))
+    try /* for handling parse exception */
+    {
+    if (isDigit(*vgprRangePlace))
     {   // if single register
-        cxbyte value = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
-        return std::make_pair(value, value+1);
+        cxuint value = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        if (value >= 256)
+        {
+            asmr.printError(vgprRangePlace, "VRegister number of out range (0-255)");
+            std::make_pair(0, 0);
+        }
+        return std::make_pair(256+value, 256+value+1);
     }
     else if (*linePtr == '[')
     {   // many registers
         ++linePtr;
-        cxbyte value1, value2;
+        cxuint value1, value2;
         skipSpacesToEnd(linePtr, end);
-        value1 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        value1 = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ':')
         {   // error
-            asmr.printError(linePtr, "Unterminated VRegister range");
+            asmr.printError(vgprRangePlace, "Unterminated VRegister range");
             return std::make_pair(0, 0);
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
-        value2 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
-        if (value2 <= value1)
+        value2 = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        if (value2 <= value1 || value2 >= 256 || value1 >= 256)
         {   // error (illegal register range)
-            asmr.printError(linePtr, "Illegal VRegister range");
+            asmr.printError(vgprRangePlace, "Illegal VRegister range");
             return std::make_pair(0, 0);
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
-            asmr.printError(linePtr, "Unterminated VRegister range");
+            asmr.printError(vgprRangePlace, "Unterminated VRegister range");
             return std::make_pair(0, 0);
         }
-        return std::make_pair(value1, uint16_t(value2)+1);
+        return std::make_pair(256+value1, 256+value2+1);
     }
+    } catch(const ParseException& ex)
+    { asmr.printError(linePtr, ex.what()); }
+    
     return std::make_pair(0, 0);
 }
 
 std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
-              const char*& linePtr, bool required)
+              const char*& linePtr, uint16_t arch, bool required)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
+    const char* sgprRangePlace = linePtr;
     if (linePtr == end)
     {
         if (required)
-            asmr.printError(linePtr, "SRegister range is required");
+            asmr.printError(sgprRangePlace, "SRegister range is required");
         return std::make_pair(0, 0);
     }
+    
+    try
+    {
     if (toLower(*linePtr) != 's') // if
     {
-        if (required)
-            asmr.printError(linePtr, "SRegister range is required");
-        return std::make_pair(0, 0);
+        char regName[20];
+        if (!getNameArg(asmr, 20, regName, linePtr, "register name", required))
+            return std::make_pair(0, 0);
+        toLowerString(regName);
+        
+        if (regName[0] == 'v' && regName[1] == 'c' && regName[2] == 'c')
+        {   /// vcc
+            if (regName[3] == '_')
+            {
+                if (regName[4] == 'l' && regName[5] == 'o' && regName[6] == 0)
+                    return std::make_pair(106, 107);
+                if (regName[4] == 'h' && regName[5] == 'i' && regName[6] == 0)
+                    return std::make_pair(107, 108);
+            }
+            else if (regName[3] == 0)
+                return std::make_pair(106, 108);
+        }
+        else if (regName[0] == 'e' && regName[1] == 'x' && regName[2] == 'e' &&
+            regName[3] == 'c')
+        {   /* exec* */
+            if (regName[4] == '_')
+            {
+                if (regName[5] == 'l' && regName[6] == 'o' && regName[7] == 0)
+                    return std::make_pair(126, 127);
+                if (regName[5] == 'h' && regName[6] == 'i' && regName[7] == 0)
+                    return std::make_pair(127, 128);
+            }
+            else if (regName[4] == 0)
+                return std::make_pair(126, 128);
+        }
+        else if (regName[0]=='t')
+        {   /* tma,tba, ttmpX */
+            if (regName[1] == 'b' && regName[2] == 'a')
+            {
+                if (regName[3] == '_')
+                {
+                    if (regName[4] == 'l' && regName[5] == 'o' && regName[6] == 0)
+                        return std::make_pair(108, 109);
+                    if (regName[4] == 'h' && regName[5] == 'i' && regName[6] == 0)
+                        return std::make_pair(109, 110);
+                }
+                else if (regName[3] == 0)
+                    return std::make_pair(108, 110);
+            }
+            else if (regName[1] == 'm' && regName[2] == 'a')
+            {
+                if (regName[3] == '_')
+                {
+                    if (regName[4] == 'l' && regName[5] == 'o' && regName[6] == 0)
+                        return std::make_pair(110, 111);
+                    if (regName[4] == 'h' && regName[5] == 'i' && regName[6] == 0)
+                        return std::make_pair(111, 112);
+                }
+                else if (regName[4] == 0)
+                    return std::make_pair(110, 112);
+            }
+            else if (regName[1] == 't' && regName[2] == 'm' && regName[3] == 'p')
+            {
+                cxbyte value = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+                if (value > 11)
+                {
+                    asmr.printError(linePtr, "TTMP register number out of range");
+                    return std::make_pair(0, 0);
+                }
+            }
+        }
+        else if (regName[0] == 'm' || regName[1] == '0' || regName[2] == 0)
+            return std::make_pair(124, 125);
+        else if (arch&ARCH_GCN_1_1_2)
+        {
+            if (::memcmp(regName, "flat_scratch", 12)==0)
+            {   // flat
+            }
+            //if ((arch&ARCH_RX3X0) && ::memcmp(regName, "flat_scratch", 12)==0
+        }
+        /*if (required)
+            asmr.printError(sgprRangePlace, "SRegister range is required");
+        return std::make_pair(0, 0);*/
+        /* check other codes */
+        
     }
     if (++linePtr == end)
     {
         if (required)
-            asmr.printError(linePtr, "SRegister range is required");
+            asmr.printError(sgprRangePlace, "SRegister range is required");
         return std::make_pair(0, 0);
     }
     
     if (isDigit(*linePtr))
     {   // if single register
-        cxbyte value = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        cxuint value = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
         return std::make_pair(value, value+1);
     }
     else if (*linePtr == '[')
     {   // many registers
         ++linePtr;
-        cxbyte value1, value2;
+        cxuint value1, value2;
         skipSpacesToEnd(linePtr, end);
         value1 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ':')
         {   // error
-            asmr.printError(linePtr, "Unterminated SRegister range");
+            asmr.printError(sgprRangePlace, "Unterminated SRegister range");
             return std::make_pair(0, 0);
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
-        value2 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
-        if (value2 <= value1 || value1 >= 102 || value2 >= 102)
+        value2 = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        
+        const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
+        if (value2 <= value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
         {   // error (illegal register range)
-            asmr.printError(linePtr, "Illegal SRegister range");
+            asmr.printError(sgprRangePlace, "Illegal SRegister range");
             return std::make_pair(0, 0);
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
-            asmr.printError(linePtr, "Unterminated SRegister range");
+            asmr.printError(sgprRangePlace, "Unterminated SRegister range");
+            return std::make_pair(0, 0);
+        }
+        /// check alignment
+        if ((value2-value1==1 && (value1&1)!=0) ||
+            (value2-value1>1 && (value1&3)!=0))
+        {
+            asmr.printError(sgprRangePlace, "Unaligned SRegister range");
             return std::make_pair(0, 0);
         }
         return std::make_pair(value1, uint16_t(value2)+1);
     }
+    } catch(const ParseException& ex)
+    { asmr.printError(linePtr, ex.what()); }
+    
     return std::make_pair(0, 0);
 }
 
