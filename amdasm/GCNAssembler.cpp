@@ -18,6 +18,7 @@
  */
 
 #include <CLRX/Config.h>
+//#include <iostream>
 #include <vector>
 #include <cstring>
 #include <algorithm>
@@ -39,56 +40,60 @@ static void initializeGCNAssembler()
     for (cxuint i = 0; i < tableSize; i++)
     {
         const GCNInstruction& insn = gcnInstrsTable[i];
-        gcnInstrSortedTable[i] = {insn.mnemonic, insn.encoding, insn.mode,
-                    insn.code, 0, insn.archMask};
+        gcnInstrSortedTable[i] = {insn.mnemonic, insn.encoding, GCNENC_NONE, insn.mode,
+                    insn.code, UINT16_MAX, insn.archMask};
     }
     
     std::sort(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
             [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
             {   // compare mnemonic and if mnemonic
                 int r = ::strcmp(instr1.mnemonic, instr2.mnemonic);
-                return (r < 0) || (r==0 && instr1.encoding < instr2.encoding) ||
-                            (r == 0 && instr1.encoding == instr2.encoding &&
+                return (r < 0) || (r==0 && instr1.encoding1 < instr2.encoding1) ||
+                            (r == 0 && instr1.encoding1 == instr2.encoding1 &&
                              instr1.archMask < instr2.archMask);
             });
     
     cxuint j = 0;
-    cxuint lastVOPX = UINT_MAX;
-    
     /* join VOP3A instr with VOP2/VOPC/VOP1 instr together to faster encoding. */
     for (cxuint i = 0; i < tableSize; i++)
-    {   // get value, not reference, because can be replaced
+    {   
         GCNAsmInstruction insn = gcnInstrSortedTable[i];
-        if (lastVOPX == UINT_MAX) // normal
-        {
-            gcnInstrSortedTable[j++] = insn;
-            if (insn.encoding == GCNENC_VOPC || insn.encoding == GCNENC_VOP1 ||
-                insn.encoding == GCNENC_VOP2)
-                lastVOPX = i;
-        }
-        else // we have VOP2/VOP1/VOPC instruction, we find duplicates in VOP3
-            for (i++ ; i < tableSize; i++)
-            {
-                if (::strcmp(gcnInstrSortedTable[i].mnemonic, insn.mnemonic)==0 &&
-                    gcnInstrSortedTable[i].encoding == GCNENC_VOP3A)
-                {   // put new double instruction entry
-                    GCNAsmInstruction& outInsn = gcnInstrSortedTable[j++];
-                    outInsn.mnemonic = insn.mnemonic;
-                    outInsn.encoding = insn.encoding;
-                    outInsn.mode = insn.mode;
-                    outInsn.code1 = insn.code1;
-                    outInsn.code2 = gcnInstrSortedTable[i].code1; // VOP3 code
-                    outInsn.archMask &= gcnInstrSortedTable[i].archMask;
+        if ((insn.encoding1 == GCNENC_VOP3A || insn.encoding1 == GCNENC_VOP3B))
+        {   // check duplicates
+            cxuint k = j-1;
+            while (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
+                    (gcnInstrSortedTable[k].archMask & insn.archMask)!=insn.archMask) k--;
+            
+            if (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
+                (gcnInstrSortedTable[k].archMask & insn.archMask)==insn.archMask)
+            {   // we found duplicate, we apply
+                if (gcnInstrSortedTable[k].code2==UINT16_MAX)
+                {   // if second slot for opcode is not filled
+                    gcnInstrSortedTable[k].code2 = insn.code1;
+                    gcnInstrSortedTable[k].encoding2 = insn.encoding1;
+                    gcnInstrSortedTable[k].archMask &= insn.archMask;
                 }
                 else
-                {   // otherwise, end of instruction encoding
-                    gcnInstrSortedTable[j++] = insn;
-                    lastVOPX = UINT_MAX;
-                    break;
+                {   // if filled we create new entry
+                    gcnInstrSortedTable[j] = gcnInstrSortedTable[k];
+                    gcnInstrSortedTable[j].archMask &= insn.archMask;
+                    gcnInstrSortedTable[j].encoding2 = insn.encoding1;
+                    gcnInstrSortedTable[j++].code2 = insn.code1;
                 }
             }
+            else // not found
+                gcnInstrSortedTable[j++] = insn;
+        }
+        else // normal instruction
+            gcnInstrSortedTable[j++] = insn;
     }
     gcnInstrSortedTable.resize(j); // final size
+    /*
+    for (const GCNAsmInstruction& instr: gcnInstrSortedTable)
+        std::cout << "{ " << instr.mnemonic << ", " << cxuint(instr.encoding1) << ", " <<
+                cxuint(instr.encoding2) <<
+                std::hex << ", 0x" << instr.mode << ", 0x" << instr.code1 << ", 0x" <<
+                instr.code2 << std::dec << ", " << instr.archMask << "}" << std::endl;*/
 }
 
 GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
@@ -199,7 +204,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
         return;
     }
     /* decode instruction line */
-    switch(it->encoding)
+    switch(it->encoding1)
     {
         case GCNENC_SOPC:
             GCNAsmUtils::parseSOPCEncoding(assembler, *it, linePtr, output);
