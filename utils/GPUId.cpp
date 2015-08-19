@@ -146,3 +146,14 @@ const char* CLRX::getGPUArchitectureName(GPUArchitecture architecture)
         throw Exception("Unknown GPU architecture");
     return gpuArchitectureNameTable[cxuint(architecture)];
 }
+
+cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
+                         Flags flags)
+{
+    if (architecture > GPUArchitecture::GPUARCH_MAX)
+        throw Exception("Unknown GPU architecture");
+    if (architecture != GPUArchitecture::GCN1_2)
+        return (regType == 0) ? ((flags & REGCOUNT_INCLUDE_VCC) ? 104  : 102) : 256;
+    else    /* really 102 sgprsNum only for GCN1.2 ??? (check) */
+        return (regType == 0) ? ((flags & REGCOUNT_INCLUDE_VCC) ? 102 : 100) : 256;
+}

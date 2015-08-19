@@ -676,19 +676,33 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
         switch(target)
         {
             case AMDCVAL_SGPRSNUM:
-                if (value > 102)
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value > maxSGPRsNum)
                 {
-                    asmr.printError(pseudoOpPlace, "Used SGPRs number out of range (0-102)");
+                    char buf[64];
+                    snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                    asmr.printError(pseudoOpPlace, buf);
                     good = false;
                 }
                 break;
+            }
             case AMDCVAL_VGPRSNUM:
-                if (value > 256)
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+                if (value > maxVGPRsNum)
                 {
-                    asmr.printError(pseudoOpPlace, "Used VGPRs number out of range (0-256)");
+                    char buf[64];
+                    snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                    asmr.printError(pseudoOpPlace, buf);
                     good = false;
                 }
                 break;
+            }
             case AMDCVAL_HWLOCAL:
                 if (value > 32768)
                 {

@@ -162,8 +162,8 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
             }
             os << "      cws=" << config.reqdWorkGroupSize[0] << " " <<
                     config.reqdWorkGroupSize[1] << " " << config.reqdWorkGroupSize[2] << ", "
-                    "SGPRS=" << config.usedSGPRsNum << ", "
-                    "VGPRS=" << config.usedVGPRsNum << ", "
+                    "SGPRS=" << confValueToString(config.usedSGPRsNum) << ", "
+                    "VGPRS=" << confValueToString(config.usedVGPRsNum) << ", "
                     "pgmRSRC2=" << std::hex << "0x" << config.pgmRSRC2 << ", "
                     "ieeeMode=0x" << config.ieeeMode << "\n      "
                     "floatMode=0x" << config.floatMode<< std::dec << ", "
@@ -625,7 +625,7 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
     Code:
     7468697320697320636f6465
     Config:
-      cws=0 0 0, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
+      cws=0 0 0, SGPRS=default, VGPRS=default, pgmRSRC2=0x0, ieeeMode=0x0
       floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
       uavPrivate=default, uavId=default, constBufferId=default, printfId=default
       privateId=default, earlyExit=0,condOut=0, 

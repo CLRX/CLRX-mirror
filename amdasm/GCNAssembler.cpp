@@ -107,6 +107,133 @@ GCNAssembler::~GCNAssembler()
 
 namespace CLRX
 {
+    
+std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
+              const char*& linePtr, bool required)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end)
+    {
+        if (required)
+            asmr.printError(linePtr, "VRegister range is required");
+        return std::make_pair(0, 0);
+    }
+    if (toLower(*linePtr) != 'v') // if
+    {
+        if (required)
+            asmr.printError(linePtr, "VRegister range is required");
+        return std::make_pair(0, 0);
+    }
+    if (++linePtr == end)
+    {
+        if (required)
+            asmr.printError(linePtr, "VRegister range is required");
+        return std::make_pair(0, 0);
+    }
+    
+    if (isDigit(*linePtr))
+    {   // if single register
+        cxbyte value = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        return std::make_pair(value, value+1);
+    }
+    else if (*linePtr == '[')
+    {   // many registers
+        ++linePtr;
+        cxbyte value1, value2;
+        skipSpacesToEnd(linePtr, end);
+        value1 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr == end || *linePtr != ':')
+        {   // error
+            asmr.printError(linePtr, "Unterminated VRegister range");
+            return std::make_pair(0, 0);
+        }
+        ++linePtr;
+        skipSpacesToEnd(linePtr, end);
+        value2 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        if (value2 <= value1)
+        {   // error (illegal register range)
+            asmr.printError(linePtr, "Illegal VRegister range");
+            return std::make_pair(0, 0);
+        }
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr == end || *linePtr != ']')
+        {   // error
+            asmr.printError(linePtr, "Unterminated VRegister range");
+            return std::make_pair(0, 0);
+        }
+        return std::make_pair(value1, uint16_t(value2)+1);
+    }
+    return std::make_pair(0, 0);
+}
+
+std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
+              const char*& linePtr, bool required)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end)
+    {
+        if (required)
+            asmr.printError(linePtr, "SRegister range is required");
+        return std::make_pair(0, 0);
+    }
+    if (toLower(*linePtr) != 's') // if
+    {
+        if (required)
+            asmr.printError(linePtr, "SRegister range is required");
+        return std::make_pair(0, 0);
+    }
+    if (++linePtr == end)
+    {
+        if (required)
+            asmr.printError(linePtr, "SRegister range is required");
+        return std::make_pair(0, 0);
+    }
+    
+    if (isDigit(*linePtr))
+    {   // if single register
+        cxbyte value = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        return std::make_pair(value, value+1);
+    }
+    else if (*linePtr == '[')
+    {   // many registers
+        ++linePtr;
+        cxbyte value1, value2;
+        skipSpacesToEnd(linePtr, end);
+        value1 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr == end || *linePtr != ':')
+        {   // error
+            asmr.printError(linePtr, "Unterminated SRegister range");
+            return std::make_pair(0, 0);
+        }
+        ++linePtr;
+        skipSpacesToEnd(linePtr, end);
+        value2 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        if (value2 <= value1 || value1 >= 102 || value2 >= 102)
+        {   // error (illegal register range)
+            asmr.printError(linePtr, "Illegal SRegister range");
+            return std::make_pair(0, 0);
+        }
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr == end || *linePtr != ']')
+        {   // error
+            asmr.printError(linePtr, "Unterminated SRegister range");
+            return std::make_pair(0, 0);
+        }
+        return std::make_pair(value1, uint16_t(value2)+1);
+    }
+    return std::make_pair(0, 0);
+}
+
+std::pair<uint16_t, uint16_t> GCNAsmUtils::parseOperand(Assembler& asmr,
+            const char*& linePtr, Flags instrOpMask)
+{
+    return std::make_pair(0, 0);
+}
+
 void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, std::vector<cxbyte>& output)
 {

@@ -150,7 +150,7 @@ void AmdInput::addEmptyKernel(const char* kernelName)
     kernel.config.reqdWorkGroupSize[0] = 0;
     kernel.config.reqdWorkGroupSize[1] = 0;
     kernel.config.reqdWorkGroupSize[2] = 0;
-    kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = 0;
+    kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = AMDBIN_DEFAULT;
     kernel.config.hwRegion = AMDBIN_DEFAULT;
     kernel.config.hwLocalSize = kernel.config.scratchBufferSize =
          kernel.config.condOut = kernel.config.earlyExit = 0;
@@ -631,6 +631,10 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
     const bool isOlderThan1348 = driverVersion < 134805;
     const bool isOlderThan1598 = driverVersion < 159805;
     
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
+    cxuint maxSGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    cxuint maxVGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+    
     for (size_t i = 0; i < input->kernels.size(); i++)
     {
         const AmdKernelInput& kinput = input->kernels[i];
@@ -648,9 +652,9 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
         if (config.userDataElemsNum > 16)
             throw Exception("UserDataElemsNum must not be greater than 16");
-        if (config.usedVGPRsNum > 256)
+        if (config.usedVGPRsNum > maxVGPRSNum)
             throw Exception("Used VGPRs number out of range");
-        if (config.usedSGPRsNum > 102)
+        if (config.usedSGPRsNum > maxSGPRSNum)
             throw Exception("Used SGPRs number out of range");
         if (config.hwLocalSize > 32768)
             throw Exception("HWLocalSize out of range");

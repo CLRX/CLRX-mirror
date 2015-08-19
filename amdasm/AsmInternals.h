@@ -23,6 +23,7 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <CLRX/utils/Utilities.h>
 #include "GCNInternals.h"
 
@@ -116,9 +117,25 @@ struct CLRX_INTERNAL AsmParseUtils
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
-    static uint16_t parseRegister(Assembler& asmr, const char* linePtr);
-    static std::pair<uint16_t,uint16_t> parseRegisterRange(Assembler& asmr,
-                         const char* linePtr);
+    enum : Flags {
+        INSTROP_SREGS = 1,
+        INSTROP_SSOURCE = 2,
+        INSTROP_VREGS = 4,
+        INSTROP_VSOURCE = 8,
+        
+        INSTROP_INT = 0x00,    // integer literal
+        INSTROP_FLOAT = 0x100, // floating point literal
+        INSTROP_F16 = 0x200,   // half floating point literal
+    };
+    
+    static std::pair<uint16_t, uint16_t> parseVRegRange(Assembler& asmr,
+                const char*& linePtr, bool required = true);
+    
+    static std::pair<uint16_t, uint16_t> parseSRegRange(Assembler& asmr,
+                const char*& linePtr, bool required = true);
+    
+    static std::pair<uint16_t, uint16_t> parseOperand(Assembler& asmr, const char*& linePtr,
+                  Flags instrOpMask);
     
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);

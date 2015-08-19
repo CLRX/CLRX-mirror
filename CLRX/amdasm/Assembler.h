@@ -745,6 +745,7 @@ private:
     friend struct AsmPseudoOps; // INTERNAL LOGIC
     friend struct AsmGalliumPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdPseudoOps; // INTERNAL LOGIC
+    friend struct GCNAsmUtils; // INTERNAL LOGIC
     BinaryFormat format;
     
     GPUDeviceType deviceType;

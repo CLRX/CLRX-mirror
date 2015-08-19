@@ -88,6 +88,19 @@ extern GPUDeviceType getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture arch
 /// get GPU architecture name
 extern const char* getGPUArchitectureName(GPUArchitecture architecture);
 
+enum: Flags {
+    REGCOUNT_INCLUDE_VCC = 1
+};
+
+enum: cxuint {
+    REGTYPE_SGPR = 0,
+    REGTYPE_VGPR
+};
+
+/// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
+extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
+                         Flags flags = 0);
+
 };
 
 #endif
