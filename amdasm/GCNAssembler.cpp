@@ -88,12 +88,11 @@ static void initializeGCNAssembler()
             gcnInstrSortedTable[j++] = insn;
     }
     gcnInstrSortedTable.resize(j); // final size
-    /*
-    for (const GCNAsmInstruction& instr: gcnInstrSortedTable)
+    /* for (const GCNAsmInstruction& instr: gcnInstrSortedTable)
         std::cout << "{ " << instr.mnemonic << ", " << cxuint(instr.encoding1) << ", " <<
                 cxuint(instr.encoding2) <<
                 std::hex << ", 0x" << instr.mode << ", 0x" << instr.code1 << ", 0x" <<
-                instr.code2 << std::dec << ", " << instr.archMask << "}" << std::endl;*/
+                instr.code2 << std::dec << ", " << instr.archMask << " }" << std::endl;*/
 }
 
 GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
@@ -198,11 +197,19 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
                [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
                { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
     
-    if (it == gcnInstrSortedTable.end() || (it->archMask & curArchMask)==0)
+    // find matched entry
+    if (it != gcnInstrSortedTable.end() && (it->archMask & curArchMask)==0)
+        // if not match current arch mask
+        for (++it ;it != gcnInstrSortedTable.end() &&
+               ::strcmp(it->mnemonic, mnemonic.c_str())==0 &&
+               (it->archMask & curArchMask)==0; ++it);
+
+    if (it == gcnInstrSortedTable.end() || ::strcmp(it->mnemonic, mnemonic.c_str())!=0)
     {   // unrecognized mnemonic
         printError(mnemPlace, "Unrecognized instruction");
         return;
     }
+    
     /* decode instruction line */
     switch(it->encoding1)
     {
