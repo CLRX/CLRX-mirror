@@ -105,11 +105,24 @@ GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
 GCNAssembler::~GCNAssembler()
 { }
 
+static cxbyte cstrtobyte(const char*& str, const char* end)
+{
+    uint16_t value = 0;
+    if (str==end || !isDigit(*str))
+        throw ParseException("Missing number");
+    while (str!=end && isDigit(*str))
+    {
+        value = value*10 + *str-'0';
+        if (value >= 256)
+            throw ParseException("Number is too big");
+    }
+    return value;
+}
+
 namespace CLRX
 {
-    
-std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
-              const char*& linePtr, bool required)
+
+RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, bool required)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -137,7 +150,7 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
     {
     if (isDigit(*vgprRangePlace))
     {   // if single register
-        cxuint value = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        cxuint value = cstrtobyte(linePtr, end);
         if (value >= 256)
         {
             asmr.printError(vgprRangePlace, "VRegister number of out range (0-255)");
@@ -150,7 +163,7 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
         ++linePtr;
         cxuint value1, value2;
         skipSpacesToEnd(linePtr, end);
-        value1 = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        value1 = cstrtobyte(linePtr, end);
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ':')
         {   // error
@@ -159,7 +172,7 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
-        value2 = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        value2 = cstrtobyte(linePtr, end);
         if (value2 <= value1 || value2 >= 256 || value1 >= 256)
         {   // error (illegal register range)
             asmr.printError(vgprRangePlace, "Illegal VRegister range");
@@ -179,8 +192,8 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseVRegRange(Assembler& asmr,
     return std::make_pair(0, 0);
 }
 
-std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
-              const char*& linePtr, uint16_t arch, bool required)
+RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
+                    uint16_t arch, bool required)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -197,67 +210,41 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
     if (toLower(*linePtr) != 's') // if
     {
         char regName[20];
-        if (!getNameArg(asmr, 20, regName, linePtr, "register name", required))
+        if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, false))
             return std::make_pair(0, 0);
         toLowerString(regName);
         
+        size_t loHiRegSuffix = 0;
+        cxuint loHiReg = 0;
         if (regName[0] == 'v' && regName[1] == 'c' && regName[2] == 'c')
         {   /// vcc
-            if (regName[3] == '_')
-            {
-                if (regName[4] == 'l' && regName[5] == 'o' && regName[6] == 0)
-                    return std::make_pair(106, 107);
-                if (regName[4] == 'h' && regName[5] == 'i' && regName[6] == 0)
-                    return std::make_pair(107, 108);
-            }
-            else if (regName[3] == 0)
-                return std::make_pair(106, 108);
+            loHiRegSuffix = 3;
+            loHiReg = 106;
         }
         else if (regName[0] == 'e' && regName[1] == 'x' && regName[2] == 'e' &&
             regName[3] == 'c')
         {   /* exec* */
-            if (regName[4] == '_')
-            {
-                if (regName[5] == 'l' && regName[6] == 'o' && regName[7] == 0)
-                    return std::make_pair(126, 127);
-                if (regName[5] == 'h' && regName[6] == 'i' && regName[7] == 0)
-                    return std::make_pair(127, 128);
-            }
-            else if (regName[4] == 0)
-                return std::make_pair(126, 128);
+            loHiRegSuffix = 4;
+            loHiReg = 126;
         }
         else if (regName[0]=='t')
         {   /* tma,tba, ttmpX */
             if (regName[1] == 'b' && regName[2] == 'a')
             {
-                if (regName[3] == '_')
-                {
-                    if (regName[4] == 'l' && regName[5] == 'o' && regName[6] == 0)
-                        return std::make_pair(108, 109);
-                    if (regName[4] == 'h' && regName[5] == 'i' && regName[6] == 0)
-                        return std::make_pair(109, 110);
-                }
-                else if (regName[3] == 0)
-                    return std::make_pair(108, 110);
+                loHiRegSuffix = 3;
+                loHiReg = 108;
             }
             else if (regName[1] == 'm' && regName[2] == 'a')
             {
-                if (regName[3] == '_')
-                {
-                    if (regName[4] == 'l' && regName[5] == 'o' && regName[6] == 0)
-                        return std::make_pair(110, 111);
-                    if (regName[4] == 'h' && regName[5] == 'i' && regName[6] == 0)
-                        return std::make_pair(111, 112);
-                }
-                else if (regName[4] == 0)
-                    return std::make_pair(110, 112);
+                loHiRegSuffix = 3;
+                loHiReg = 110;
             }
             else if (regName[1] == 't' && regName[2] == 'm' && regName[3] == 'p')
             {
-                cxbyte value = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+                cxbyte value = cstrtobyte(linePtr, end);
                 if (value > 11)
                 {
-                    asmr.printError(linePtr, "TTMP register number out of range");
+                    asmr.printError(sgprRangePlace, "TTMP register number out of range");
                     return std::make_pair(0, 0);
                 }
             }
@@ -268,14 +255,36 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
         {
             if (::memcmp(regName, "flat_scratch", 12)==0)
             {   // flat
+                loHiRegSuffix = 12;
+                loHiReg = (arch&ARCH_RX3X0)?102:104;
             }
-            //if ((arch&ARCH_RX3X0) && ::memcmp(regName, "flat_scratch", 12)==0
+            else if ((arch&ARCH_RX3X0)!=0 && ::memcmp(regName, "xnack_mask", 10)==0)
+            {   // xnack
+                loHiRegSuffix = 10;
+                loHiReg = 104;
+            }
         }
-        /*if (required)
-            asmr.printError(sgprRangePlace, "SRegister range is required");
-        return std::make_pair(0, 0);*/
-        /* check other codes */
         
+        if (loHiRegSuffix != 0) // handle 64-bit registers
+        {
+            if (regName[loHiRegSuffix] == '_')
+            {
+                if (regName[loHiRegSuffix+1] == 'l' && regName[loHiRegSuffix+2] == 'o' &&
+                    regName[loHiRegSuffix+3] == 0)
+                    return std::make_pair(loHiReg, loHiReg+1);
+                if (regName[loHiRegSuffix+1] == 'h' && regName[loHiRegSuffix+2] == 'i' &&
+                    regName[loHiRegSuffix+3] == 0)
+                    return std::make_pair(loHiReg+1, loHiReg+2);
+            }
+            else if (regName[loHiRegSuffix] == 0)
+                return std::make_pair(loHiReg, loHiReg+2);
+        }
+        else
+        {   // otherwise
+            if (required)
+                asmr.printError(sgprRangePlace, "SRegister range is required");
+            return std::make_pair(0, 0);
+        }
     }
     if (++linePtr == end)
     {
@@ -286,7 +295,7 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
     
     if (isDigit(*linePtr))
     {   // if single register
-        cxuint value = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        cxuint value = cstrtobyte(linePtr, end);
         return std::make_pair(value, value+1);
     }
     else if (*linePtr == '[')
@@ -294,7 +303,7 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
         ++linePtr;
         cxuint value1, value2;
         skipSpacesToEnd(linePtr, end);
-        value1 = cstrtovCStyle<cxbyte>(linePtr, end, linePtr);
+        value1 = cstrtobyte(linePtr, end);
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ':')
         {   // error
@@ -303,7 +312,7 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
-        value2 = cstrtovCStyle<cxuint>(linePtr, end, linePtr);
+        value2 = cstrtobyte(linePtr, end);
         
         const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
         if (value2 <= value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
@@ -332,10 +341,134 @@ std::pair<uint16_t, uint16_t> GCNAsmUtils::parseSRegRange(Assembler& asmr,
     return std::make_pair(0, 0);
 }
 
-std::pair<uint16_t, uint16_t> GCNAsmUtils::parseOperand(Assembler& asmr,
-            const char*& linePtr, Flags instrOpMask)
+GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, uint16_t arch,
+                      Flags instrOpMask)
 {
-    return std::make_pair(0, 0);
+    if (instrOpMask == INSTROP_SREGS)
+        return { parseSRegRange(asmr, linePtr, arch) };
+    else if (instrOpMask == INSTROP_VREGS)
+        return { parseVRegRange(asmr, linePtr) };
+    // otherwise
+    RegPair pair;
+    if (instrOpMask & INSTROP_SREGS)
+    {
+        pair = parseSRegRange(asmr, linePtr, arch, false);
+        if (pair.first!=0 || pair.second!=0)
+            return { pair };
+    }
+    if (instrOpMask & INSTROP_SSOURCE)
+    {   // check rest of the positions in SSRC
+    }
+    if (instrOpMask & INSTROP_VREGS)
+    {
+        pair = parseVRegRange(asmr, linePtr, false);
+        if (pair.first!=0 || pair.second!=0)
+            return { pair };
+    }
+    if (instrOpMask & INSTROP_VSOURCE)
+    {   // check rest of the positions in VSRC
+    }
+    
+    const char* end = asmr.line+asmr.lineSize;
+    if ((instrOpMask & INSTROP_SSOURCE)!=0)
+    {   char regName[20];
+        const char* regNamePlace = linePtr;
+        if (getNameArg(asmr, 20, regName, linePtr, "register name", false, false))
+        {
+            toLowerString(regName);
+            if (::memcmp(regName, "vccz", 5) == 0)
+                return { std::make_pair(251, 252) };
+            else if (::memcmp(regName, "execz", 6) == 0)
+                return { std::make_pair(252, 253) };
+            else if (::memcmp(regName, "scc", 4) == 0)
+                return { std::make_pair(253, 254) };
+            /* check expression, back to before regName */
+            linePtr = regNamePlace;
+        }
+        // treat argument as expression
+        if (linePtr!=end && *linePtr=='@')
+            linePtr++;
+        skipSpacesToEnd(linePtr, end);
+        const char* exprPlace = linePtr;
+        uint64_t value;
+        if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+            return { std::make_pair(0, 0) };
+        if (value <= 64)
+            return { std::make_pair(128+value, 0) };
+        else if (int64_t(value) >= -16)
+            return { std::make_pair(192-value, 0) };
+        // not in range
+        asmr.printWarningForRange(32, value, asmr.getSourcePos(exprPlace));
+        
+        /* if floating point literal can be processed */
+        try
+        {
+            if ((instrOpMask & (INSTROP_TYPE_MASK)) == INSTROP_F16)
+            {
+                value = cstrtohCStyle(linePtr, end, linePtr);
+                switch (value)
+                {
+                    case 0x0:
+                        return { std::make_pair(128, 0) };
+                    case 0x3800: // 0.5
+                        return { std::make_pair(240, 0) };
+                    case 0xb800: // -0.5
+                        return { std::make_pair(241, 0) };
+                    case 0x3c00: // 1.0
+                        return { std::make_pair(242, 0) };
+                    case 0xbc00: // -1.0
+                        return { std::make_pair(243, 0) };
+                    case 0x4000: // 2.0
+                        return { std::make_pair(244, 0) };
+                    case 0xc000: // -2.0
+                        return { std::make_pair(245, 0) };
+                    case 0x4400: // 4.0
+                        return { std::make_pair(246, 0) };
+                    case 0xc400: // -4.0
+                        return { std::make_pair(247, 0) };
+                }
+            }
+            else /* otherwise, FLOAT */
+            {
+                union FloatUnion { uint32_t i; float f; };
+                FloatUnion v;
+                v.f = cstrtovCStyle<float>(linePtr, end, linePtr);
+                value = v.i;
+                
+                switch (value)
+                {
+                    case 0x0:
+                        return { std::make_pair(128, 0) };
+                    case 0x3f000000: // 0.5
+                        return { std::make_pair(240, 0) };
+                    case 0xbf000000: // -0.5
+                        return { std::make_pair(241, 0) };
+                    case 0x3f800000: // 1.0
+                        return { std::make_pair(242, 0) };
+                    case 0xbf800000: // -1.0
+                        return { std::make_pair(243, 0) };
+                    case 0x40000000: // 2.0
+                        return { std::make_pair(244, 0) };
+                    case 0xc0000000: // -2.0
+                        return { std::make_pair(245, 0) };
+                    case 0x40800000: // 4.0
+                        return { std::make_pair(246, 0) };
+                    case 0xc0800000: // -4.0
+                        return { std::make_pair(247, 0) };
+                }
+            }
+        }
+        catch(const ParseException& ex)
+        {
+            asmr.printError(regNamePlace, ex.what());
+            return { std::make_pair(0, 0) };
+        }
+        
+        return { std::make_pair(255, 0), uint32_t(value) };
+    }
+    
+    // check otherwise
+    return { std::make_pair(0, 0) };
 }
 
 void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,

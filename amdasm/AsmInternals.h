@@ -105,7 +105,8 @@ struct CLRX_INTERNAL AsmParseUtils
     
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
-               const char*& linePtr, const char* objName, bool requiredArg = true);
+               const char*& linePtr, const char* objName, bool requiredArg = true,
+               bool ignoreLongerName = false);
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
     // skip required comma, (returns false if not found comma)
@@ -115,27 +116,37 @@ struct CLRX_INTERNAL AsmParseUtils
     static bool skipCommaForMultipleArgs(Assembler& asmr, const char*& linePtr);
 };
 
+enum : Flags {
+    INSTROP_SREGS = 1,
+    INSTROP_SSOURCE = 2,
+    INSTROP_VREGS = 4,
+    INSTROP_VSOURCE = 8,
+    
+    INSTROP_TYPE_MASK = 0x300,
+    INSTROP_INT = 0x00,    // integer literal
+    INSTROP_FLOAT = 0x100, // floating point literal
+    INSTROP_F16 = 0x200,   // half floating point literal
+};
+
+typedef std::pair<uint16_t, uint16_t> RegPair;
+
+struct GCNOperand {
+    RegPair pair;
+    uint32_t value;
+};
+
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
-    enum : Flags {
-        INSTROP_SREGS = 1,
-        INSTROP_SSOURCE = 2,
-        INSTROP_VREGS = 4,
-        INSTROP_VSOURCE = 8,
-        
-        INSTROP_INT = 0x00,    // integer literal
-        INSTROP_FLOAT = 0x100, // floating point literal
-        INSTROP_F16 = 0x200,   // half floating point literal
-    };
     
-    static std::pair<uint16_t, uint16_t> parseVRegRange(Assembler& asmr,
-                const char*& linePtr, bool required = true);
+    /* return VReg range, first vreg begin from 256 value */
+    static RegPair parseVRegRange(Assembler& asmr, const char*& linePtr,
+                      bool required = true);
     
-    static std::pair<uint16_t, uint16_t> parseSRegRange(Assembler& asmr,
-                const char*& linePtr, uint16_t arch, bool required = true);
+    static RegPair parseSRegRange(Assembler& asmr, const char*& linePtr, uint16_t arch,
+                      bool required = true);
     
-    static std::pair<uint16_t, uint16_t> parseOperand(Assembler& asmr, const char*& linePtr,
-                  Flags instrOpMask);
+    static GCNOperand parseOperand(Assembler& asmr, const char*& linePtr, uint16_t arch,
+                      Flags instrOpMask);
     
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);

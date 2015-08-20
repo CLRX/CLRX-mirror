@@ -176,7 +176,8 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& li
 }
 
 bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
-               const char*& linePtr, const char* objName, bool requiredArg)
+               const char*& linePtr, const char* objName, bool requiredArg,
+               bool ignoreLongerName)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -211,6 +212,11 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outS
     }
     if (maxOutStrSize < size_t(linePtr-nameStr))
     {
+        if (ignoreLongerName)
+        {   // return empty string
+            outStr[0] = 0; // null-char
+            return true;
+        }
         asmr.printError(linePtr, (std::string(objName)+" is too long").c_str());
         return false;
     }
