@@ -341,6 +341,70 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
     return std::make_pair(0, 0);
 }
 
+/* check whether string is exclusively floating point value
+ * (only floating point, and neither integer and nor symbol) */
+static bool isOnlyFloat(const char* str, const char* end)
+{
+    if (str == end)
+        return false;
+    if (*str=='-' || *str=='+')
+        str++; // skip '-' or '+'
+    if (str+2 >= end && *str=='0' && (str[1]=='X' || str[1]=='x'))
+    {   // hexadecimal
+        str += 2;
+        const char* beforeComma = str;
+        while (str!=end && isXDigit(*str)) str++;
+        const char* point = str;
+        if (str == end || *str!='.')
+        {
+            if (beforeComma-point!=0 && str!=end && (*str=='p' || *str=='P'))
+            {
+                str++;
+                if (str!=end && (*str=='-' || *str=='+'))
+                    str++;
+                const char* expPlace = str;
+                while (str!=end && isDigit(*str)) str++;
+                if (str-expPlace!=0)
+                    return true; // if 'XXXp[+|-]XXX'
+            }
+            return false; // no '.'
+        }
+        str++;
+        while (str!=end && isXDigit(*str)) str++;
+        const char* afterComma = str;
+        
+        if (point-beforeComma!=0 || afterComma-(point+1)!=0)
+            return true;
+    }
+    else
+    {   // decimal
+        const char* beforeComma = str;
+        while (str!=end && isDigit(*str)) str++;
+        const char* point = str;
+        if (str == end || *str!='.')
+        {
+            if (beforeComma-point!=0 && str!=end && (*str=='e' || *str=='E'))
+            {
+                str++;
+                if (str!=end && (*str=='-' || *str=='+'))
+                    str++;
+                const char* expPlace = str;
+                while (str!=end && isDigit(*str)) str++;
+                if (str-expPlace!=0)
+                    return true; // if 'XXXe[+|-]XXX'
+            }
+            return false; // no '.'
+        }
+        str++;
+        while (str!=end && isDigit(*str)) str++;
+        const char* afterComma = str;
+        
+        if (point-beforeComma!=0 || afterComma-(point+1)!=0)
+            return true;
+    }
+    return false;
+}
+
 GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, uint16_t arch,
                       Flags instrOpMask)
 {
@@ -389,81 +453,99 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, uint
         if (linePtr!=end && *linePtr=='@')
             linePtr++;
         skipSpacesToEnd(linePtr, end);
-        const char* exprPlace = linePtr;
+        
         uint64_t value;
-        if (!getAbsoluteValueArg(asmr, value, linePtr, true))
-            return { std::make_pair(0, 0) };
-        if (value <= 64)
-            return { std::make_pair(128+value, 0) };
-        else if (int64_t(value) >= -16)
-            return { std::make_pair(192-value, 0) };
-        // not in range
-        asmr.printWarningForRange(32, value, asmr.getSourcePos(exprPlace));
-        
-        /* if floating point literal can be processed */
-        try
-        {
-            if ((instrOpMask & (INSTROP_TYPE_MASK)) == INSTROP_F16)
+        if (isOnlyFloat(linePtr, end))
+        {   // if only floating point value
+            /* if floating point literal can be processed */
+            try
             {
-                value = cstrtohCStyle(linePtr, end, linePtr);
-                switch (value)
+                if ((instrOpMask & INSTROP_TYPE_MASK) == INSTROP_F16)
                 {
-                    case 0x0:
-                        return { std::make_pair(128, 0) };
-                    case 0x3800: // 0.5
-                        return { std::make_pair(240, 0) };
-                    case 0xb800: // -0.5
-                        return { std::make_pair(241, 0) };
-                    case 0x3c00: // 1.0
-                        return { std::make_pair(242, 0) };
-                    case 0xbc00: // -1.0
-                        return { std::make_pair(243, 0) };
-                    case 0x4000: // 2.0
-                        return { std::make_pair(244, 0) };
-                    case 0xc000: // -2.0
-                        return { std::make_pair(245, 0) };
-                    case 0x4400: // 4.0
-                        return { std::make_pair(246, 0) };
-                    case 0xc400: // -4.0
-                        return { std::make_pair(247, 0) };
+                    value = cstrtohCStyle(linePtr, end, linePtr);
+                    switch (value)
+                    {
+                        case 0x0:
+                            return { std::make_pair(128, 0) };
+                        case 0x3800: // 0.5
+                            return { std::make_pair(240, 0) };
+                        case 0xb800: // -0.5
+                            return { std::make_pair(241, 0) };
+                        case 0x3c00: // 1.0
+                            return { std::make_pair(242, 0) };
+                        case 0xbc00: // -1.0
+                            return { std::make_pair(243, 0) };
+                        case 0x4000: // 2.0
+                            return { std::make_pair(244, 0) };
+                        case 0xc000: // -2.0
+                            return { std::make_pair(245, 0) };
+                        case 0x4400: // 4.0
+                            return { std::make_pair(246, 0) };
+                        case 0xc400: // -4.0
+                            return { std::make_pair(247, 0) };
+                        case 0x3118: // 1/(2*PI)
+                            if (arch&ARCH_RX3X0)
+                                return { std::make_pair(248, 0) };
+                    }
                 }
-            }
-            else /* otherwise, FLOAT */
-            {
-                union FloatUnion { uint32_t i; float f; };
-                FloatUnion v;
-                v.f = cstrtovCStyle<float>(linePtr, end, linePtr);
-                value = v.i;
+                else /* otherwise, FLOAT */
+                {
+                    union FloatUnion { uint32_t i; float f; };
+                    FloatUnion v;
+                    v.f = cstrtovCStyle<float>(linePtr, end, linePtr);
+                    value = v.i;
+                    
+                    switch (value)
+                    {
+                        case 0x0:
+                            return { std::make_pair(128, 0) };
+                        case 0x3f000000: // 0.5
+                            return { std::make_pair(240, 0) };
+                        case 0xbf000000: // -0.5
+                            return { std::make_pair(241, 0) };
+                        case 0x3f800000: // 1.0
+                            return { std::make_pair(242, 0) };
+                        case 0xbf800000: // -1.0
+                            return { std::make_pair(243, 0) };
+                        case 0x40000000: // 2.0
+                            return { std::make_pair(244, 0) };
+                        case 0xc0000000: // -2.0
+                            return { std::make_pair(245, 0) };
+                        case 0x40800000: // 4.0
+                            return { std::make_pair(246, 0) };
+                        case 0xc0800000: // -4.0
+                            return { std::make_pair(247, 0) };
+                        case 0x3e22f983: // 1/(2*PI)
+                            if (arch&ARCH_RX3X0)
+                                return { std::make_pair(248, 0) };
+                    }
+                }
                 
-                switch (value)
-                {
-                    case 0x0:
-                        return { std::make_pair(128, 0) };
-                    case 0x3f000000: // 0.5
-                        return { std::make_pair(240, 0) };
-                    case 0xbf000000: // -0.5
-                        return { std::make_pair(241, 0) };
-                    case 0x3f800000: // 1.0
-                        return { std::make_pair(242, 0) };
-                    case 0xbf800000: // -1.0
-                        return { std::make_pair(243, 0) };
-                    case 0x40000000: // 2.0
-                        return { std::make_pair(244, 0) };
-                    case 0xc0000000: // -2.0
-                        return { std::make_pair(245, 0) };
-                    case 0x40800000: // 4.0
-                        return { std::make_pair(246, 0) };
-                    case 0xc0800000: // -4.0
-                        return { std::make_pair(247, 0) };
-                }
+            }
+            catch(const ParseException& ex)
+            {
+                asmr.printError(regNamePlace, ex.what());
+                return { std::make_pair(0, 0) };
             }
         }
-        catch(const ParseException& ex)
-        {
-            asmr.printError(regNamePlace, ex.what());
+        else
+        {   // if expression
+            if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+                return { std::make_pair(0, 0) };
+            if (value <= 64)
+                return { std::make_pair(128+value, 0) };
+            else if (int64_t(value) >= -16)
+                return { std::make_pair(192-value, 0) };
+        }
+        
+        if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
+        {   // error
+            asmr.printError(regNamePlace, "Literal constant is illegal in this place");
             return { std::make_pair(0, 0) };
         }
         
+        // not in range
+        asmr.printWarningForRange(32, value, asmr.getSourcePos(regNamePlace));
         return { std::make_pair(255, 0), uint32_t(value) };
     }
     

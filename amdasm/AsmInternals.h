@@ -122,6 +122,9 @@ enum : Flags {
     INSTROP_VREGS = 4,
     INSTROP_VSOURCE = 8,
     
+    INSTROP_RESOLVEDEXPR = 0x40, // accepts only resolved expressions
+    INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
+    
     INSTROP_TYPE_MASK = 0x300,
     INSTROP_INT = 0x00,    // integer literal
     INSTROP_FLOAT = 0x100, // floating point literal
