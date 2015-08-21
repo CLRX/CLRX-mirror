@@ -413,7 +413,7 @@ enum : AsmExprTargetType
     ASMXTGT_DATA32,     ///< target is 32-bit word
     ASMXTGT_DATA64,     ///< target is 64-bit word
     
-    GCNTGT_NEXTIMM = 16,
+    GCNTGT_LITIMM = 16,
     GCNTGT_SOPKSIMM16,
     GCNTGT_SOPJMP,
     GCNTGT_SMRDOFFSET,
@@ -511,6 +511,12 @@ struct AsmExprTarget
             size_t offset;      ///< offset of destination
         };
     };
+    AsmExprTarget() { }
+    
+    AsmExprTarget(AsmExprTargetType _type, cxuint _sectionId, size_t _offset)
+            : type(_type), sectionId(_sectionId), offset(_offset)
+    { }
+    
     /// make symbol target for expression
     static AsmExprTarget symbolTarget(AsmSymbolEntry* entry)
     { 

@@ -1555,6 +1555,7 @@ bool Assembler::assemble()
                 // try parse instruction
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content);
+                currentOutPos = sections[currentSection].content.size();
             }
         }
     }
