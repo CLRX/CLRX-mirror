@@ -479,9 +479,6 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
         if (pair.first!=0 || pair.second!=0)
             return { pair };
     }
-    if (instrOpMask & INSTROP_SSOURCE)
-    {   // check rest of the positions in SSRC
-    }
     if (instrOpMask & INSTROP_VREGS)
     {
         pair = parseVRegRange(asmr, linePtr, regsNum, false);
@@ -673,11 +670,11 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& in
     }
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op = parseOperand(asmr, linePtr, src0Expr, arch,
-             (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE);
+             (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op = parseOperand(asmr, linePtr, src1Expr, arch,
-             (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE |
+             (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
@@ -735,7 +732,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& in
     if ((insn.mode & GCN_MASK1) != GCN_SRC_NONE)
     {
         src0Op = parseOperand(asmr, linePtr, src0Expr, arch,
-                 (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE);
+                 (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
@@ -769,6 +766,50 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& in
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    std::unique_ptr<AsmExpression> src0Expr, src1Expr;
+    GCNOperand src0Op = parseOperand(asmr, linePtr, src0Expr, arch,
+             (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    GCNOperand src1Op = parseOperand(asmr, linePtr, src1Expr, arch,
+             (insn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
+             (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
+    
+    /// if errors
+    if ((src0Op.pair.first==0 && src0Op.pair.second==0) ||
+        (src1Op.pair.first==0 && src1Op.pair.second==0) ||
+        !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    // put data
+    cxuint wordsNum = 1;
+    uint32_t words[2];
+    SLEV(words[0], 0xbf000000U | (uint32_t(insn.code1)<<16) | src0Op.pair.first |
+            (src1Op.pair.first<<8));
+    if (src0Op.pair.first==255 || src1Op.pair.first==255)
+    {
+        if (src0Expr==nullptr && src1Expr==nullptr)
+            SLEV(words[1], src0Op.pair.first==255 ? src0Op.value : src1Op.value);
+        else    // zero if unresolved value
+            SLEV(words[1], 0);
+        wordsNum++;
+    }
+    // set expression targets
+    if (src0Expr!=nullptr)
+        src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
+                      output.size()+4));
+    else if (src1Expr!=nullptr)
+        src1Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
+                      output.size()+4));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
+            reinterpret_cast<cxbyte*>(words + wordsNum));
+    // prevent freeing expressions
+    src0Expr.release();
+    src1Expr.release();
 }
 
 void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& insn,
