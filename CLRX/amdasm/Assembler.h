@@ -616,7 +616,7 @@ public:
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, const char*& linePtr,
-              bool makeBase = false, bool dontReolveSymbolsLater = false);
+              bool makeBase = false, bool dontResolveSymbolsLater = false);
     
     /// return true if is argument op
     static bool isArg(AsmExprOp op)

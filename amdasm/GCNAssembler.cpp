@@ -405,9 +405,12 @@ static bool isOnlyFloat(const char* str, const char* end)
     return false;
 }
 
-GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, uint16_t arch,
-                      Flags instrOpMask)
+GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
+             std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
+             Flags instrOpMask)
 {
+    outTargetExpr.reset();
+    
     if (instrOpMask == INSTROP_SREGS)
         return { parseSRegRange(asmr, linePtr, arch) };
     else if (instrOpMask == INSTROP_VREGS)
@@ -428,9 +431,6 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, uint
         pair = parseVRegRange(asmr, linePtr, false);
         if (pair.first!=0 || pair.second!=0)
             return { pair };
-    }
-    if (instrOpMask & INSTROP_VSOURCE)
-    {   // check rest of the positions in VSRC
     }
     
     const char* end = asmr.line+asmr.lineSize;
@@ -530,6 +530,38 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, uint
         }
         else
         {   // if expression
+            const char* exprPlace = linePtr;
+            std::unique_ptr<AsmExpression> expr(AsmExpression::parse( asmr, linePtr));
+            if (expr==nullptr) // error
+                return { std::make_pair(0, 0) };
+            if (expr->isEmpty())
+            {
+                asmr.printError(exprPlace, "Expected expression");
+                return { std::make_pair(0, 0) };
+            }
+            if (expr->getSymOccursNum()==0)
+            {   // resolved now
+                cxuint sectionId; // for getting
+                if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+                    return { std::make_pair(0, 0) };
+                else if (sectionId != ASMSECT_ABS)
+                {   // if not absolute value
+                    asmr.printError(exprPlace, "Expression must be absolute!");
+                    return { std::make_pair(0, 0) };
+                }
+            }
+            else
+            {   // return output expression with symbols to resolve
+                if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
+                {   // error
+                    asmr.printError(regNamePlace,
+                            "Literal constant is illegal in this place");
+                    return { std::make_pair(0, 0) };
+                }
+                outTargetExpr = std::move(expr);
+                return { std::make_pair(255, 0) };
+            }
+            
             if (!getAbsoluteValueArg(asmr, value, linePtr, true))
                 return { std::make_pair(0, 0) };
             if (value <= 64)

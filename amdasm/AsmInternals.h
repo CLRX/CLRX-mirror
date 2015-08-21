@@ -120,7 +120,6 @@ enum : Flags {
     INSTROP_SREGS = 1,
     INSTROP_SSOURCE = 2,
     INSTROP_VREGS = 4,
-    INSTROP_VSOURCE = 8,
     
     INSTROP_RESOLVEDEXPR = 0x40, // accepts only resolved expressions
     INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
@@ -148,8 +147,9 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static RegPair parseSRegRange(Assembler& asmr, const char*& linePtr, uint16_t arch,
                       bool required = true);
     
-    static GCNOperand parseOperand(Assembler& asmr, const char*& linePtr, uint16_t arch,
-                      Flags instrOpMask);
+    static GCNOperand parseOperand(Assembler& asmr, const char*& linePtr,
+               std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
+               Flags instrOpMask);
     
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& insn,
                       const char* linePtr, std::vector<cxbyte>& output);
