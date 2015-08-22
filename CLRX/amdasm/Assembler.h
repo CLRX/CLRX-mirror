@@ -300,6 +300,28 @@ public:
     { return &output; }
 };
 
+/// expression target type (one byte)
+typedef cxbyte AsmExprTargetType;
+
+enum : AsmExprTargetType
+{
+    ASMXTGT_SYMBOL = 0, ///< target is symbol
+    ASMXTGT_DATA8,      ///< target is byte
+    ASMXTGT_DATA16,     ///< target is 16-bit word
+    ASMXTGT_DATA32,     ///< target is 32-bit word
+    ASMXTGT_DATA64,     ///< target is 64-bit word
+    
+    GCNTGT_LITIMM = 16,
+    GCNTGT_SOPKSIMM16,
+    GCNTGT_SOPJMP,
+    GCNTGT_SMRDOFFSET,
+    GCNTGT_DSOFFSET16,
+    GCNTGT_DSOFFSET8_0,
+    GCNTGT_DSOFFSET8_1,
+    GCNTGT_MXBUFOFFSET,
+    GCNTGT_SMEMOFFSET
+};
+
 /// ISA assembler class
 class ISAAssembler: public NonCopyableAndNonMovable
 {
@@ -318,7 +340,8 @@ public:
     virtual void assemble(const CString& mnemonic, const char* mnemPlace,
               const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output) = 0;
     /// resolve code with location, target and value
-    virtual bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value) = 0;
+    virtual bool resolveCode(cxbyte* location, AsmExprTargetType targetType,
+                 uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// get allocated register after assemblying
@@ -345,7 +368,7 @@ public:
     
     void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
                   const char* lineEnd, std::vector<cxbyte>& output);
-    bool resolveCode(cxbyte* location, cxbyte targetType, uint64_t value);
+    bool resolveCode(cxbyte* location, AsmExprTargetType targetType, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
     const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
 };
@@ -401,28 +424,6 @@ enum class AsmExprOp : cxbyte
 };
 
 struct AsmExprTarget;
-
-/// expression target type (one byte)
-typedef cxbyte AsmExprTargetType;
-
-enum : AsmExprTargetType
-{
-    ASMXTGT_SYMBOL = 0, ///< target is symbol
-    ASMXTGT_DATA8,      ///< target is byte
-    ASMXTGT_DATA16,     ///< target is 16-bit word
-    ASMXTGT_DATA32,     ///< target is 32-bit word
-    ASMXTGT_DATA64,     ///< target is 64-bit word
-    
-    GCNTGT_LITIMM = 16,
-    GCNTGT_SOPKSIMM16,
-    GCNTGT_SOPJMP,
-    GCNTGT_SMRDOFFSET,
-    GCNTGT_DSOFFSET16,
-    GCNTGT_DSOFFSET8_0,
-    GCNTGT_DSOFFSET8_1,
-    GCNTGT_MXBUFOFFSET,
-    GCNTGT_SMEMOFFSET
-};
 
 union AsmExprArg;
 

@@ -126,6 +126,7 @@ namespace CLRX
 bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
                     cxuint regsNum, bool required)
 {
+    const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* vgprRangePlace = linePtr;
@@ -137,6 +138,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return false;
         }
         regPair = { 0, 0 };
+        linePtr = oldLinePtr;
         return true;
     }
     if (toLower(*linePtr) != 'v') // if
@@ -147,6 +149,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return false;
         }
         regPair = { 0, 0 };
+        linePtr = oldLinePtr;
         return true;
     }
     if (++linePtr == end)
@@ -157,6 +160,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return false;
         }
         regPair = { 0, 0 };
+        linePtr = oldLinePtr;
         return true;
     }
     
@@ -227,6 +231,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
                     uint16_t arch, cxuint regsNum, bool required)
 {
+    const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* sgprRangePlace = linePtr;
@@ -238,6 +243,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return false;
         }
         regPair = { 0, 0 };
+        linePtr = oldLinePtr;
         return true;
     }
     
@@ -351,6 +357,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 return false;
             }
             regPair = { 0, 0 };
+            linePtr = oldLinePtr;
             return true;
         }
     }
@@ -362,6 +369,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return false;
         }
         regPair = { 0, 0 };
+        linePtr = oldLinePtr;
         return true;
     }
     
@@ -547,21 +555,17 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
-        const char* oldLinePtr = linePtr;
         if (!parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum, false))
             return false;
         if (operand.pair.first!=0 || operand.pair.second!=0)
             return true;
-        linePtr = oldLinePtr;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
-        const char* oldLinePtr = linePtr;
         if (!parseVRegRange(asmr, linePtr, operand.pair, regsNum, false))
             return false;
         if (operand.pair.first!=0 || operand.pair.second!=0)
             return true;
-        linePtr = oldLinePtr;
     }
     
     const char* end = asmr.line+asmr.lineSize;
@@ -821,10 +825,10 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
-                      output.size()+4));
+                      output.size()));
     else if (src1Expr!=nullptr)
         src1Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
-                      output.size()+4));
+                      output.size()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -871,7 +875,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
-                      output.size()+4));
+                      output.size()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -972,10 +976,10 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
-                      output.size()+4));
+                      output.size()));
     else if (src1Expr!=nullptr)
         src1Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
-                      output.size()+4));
+                      output.size()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -1125,8 +1129,15 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     }
 }
 
-bool GCNAssembler::resolveCode(cxbyte* location, cxbyte targetType, uint64_t value)
+bool GCNAssembler::resolveCode(cxbyte* location, AsmExprTargetType targetType,
+                   uint64_t value)
 {
+    switch(targetType)
+    {
+        case GCNTGT_LITIMM:
+            SULEV(*reinterpret_cast<uint32_t*>(location+4), value);
+            return true;
+    }
     return false;
 }
 

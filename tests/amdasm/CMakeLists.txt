@@ -45,3 +45,7 @@ ADD_TEST(AssemblerBasics AssemblerBasics)
 ADD_EXECUTABLE(AsmFormats AsmFormats.cpp)
 TARGET_LINK_LIBRARIES(AsmFormats ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
 ADD_TEST(AsmFormats AsmFormats)
+
+ADD_EXECUTABLE(GCNAsmOpcodes GCNAsmOpcodes.cpp)
+TARGET_LINK_LIBRARIES(GCNAsmOpcodes ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+ADD_TEST(GCNAsmOpcodes GCNAsmOpcodes)
