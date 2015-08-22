@@ -547,17 +547,21 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
+        const char* oldLinePtr = linePtr;
         if (!parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum, false))
             return false;
         if (operand.pair.first!=0 || operand.pair.second!=0)
             return true;
+        linePtr = oldLinePtr;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
+        const char* oldLinePtr = linePtr;
         if (!parseVRegRange(asmr, linePtr, operand.pair, regsNum, false))
             return false;
         if (operand.pair.first!=0 || operand.pair.second!=0)
             return true;
+        linePtr = oldLinePtr;
     }
     
     const char* end = asmr.line+asmr.lineSize;
@@ -602,6 +606,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         // treat argument as expression
         if (linePtr!=end && *linePtr=='@')
             linePtr++;
+        const char* exprPlace = linePtr;
         skipSpacesToEnd(linePtr, end);
         
         uint64_t value;
@@ -704,8 +709,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
         else
         {   // if expression
-            const char* exprPlace = linePtr;
-            std::unique_ptr<AsmExpression> expr(AsmExpression::parse( asmr, linePtr));
+            std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
             if (expr==nullptr) // error
                 return false;
             if (expr->isEmpty())
