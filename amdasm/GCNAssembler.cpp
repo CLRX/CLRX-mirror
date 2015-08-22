@@ -253,10 +253,12 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         return true;
     }
     
+    bool ttmpReg = false;
     try
     {
     if (toLower(*linePtr) != 's') // if
     {
+        const char* oldLinePtr = linePtr;
         char regName[20];
         if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, false))
             return false;
@@ -289,12 +291,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             }
             else if (regName[1] == 't' && regName[2] == 'm' && regName[3] == 'p')
             {
-                cxbyte value = cstrtobyte(linePtr, end);
-                if (value > 11)
-                {
-                    asmr.printError(sgprRangePlace, "TTMP register number out of range");
-                    return false;
-                }
+                ttmpReg = true;
+                linePtr = oldLinePtr;
             }
         }
         else if (regName[0] == 'm' && regName[1] == '0' && regName[2] == 0)
@@ -355,7 +353,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 return true;
             }
         }
-        else
+        else if (!ttmpReg)
         {   // otherwise
             if (required)
             {
@@ -367,7 +365,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return true;
         }
     }
-    if (++linePtr == end)
+    linePtr += (ttmpReg)?4:1; // skip
+    if (linePtr == end)
     {
         if (required)
         {
@@ -379,13 +378,25 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         return true;
     }
     
+    const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
     if (isDigit(*linePtr))
     {   // if single register
         cxuint value = cstrtobyte(linePtr, end);
-        if (value >= 104)
+        if (!ttmpReg)
         {
-            asmr.printError(sgprRangePlace, "SRegister number of out range (0-104)");
-            return false;
+            if (value >= maxSGPRsNum)
+            {
+                asmr.printError(sgprRangePlace, "SRegister number of out range");
+                return false;
+            }
+        }
+        else
+        {
+            if (value >= 12)
+            {
+                asmr.printError(sgprRangePlace, "TTMPRegister number of out range (0-11)");
+                return false;
+            }
         }
         if (regsNum!=0 && regsNum != 1)
         {
@@ -394,7 +405,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             asmr.printError(sgprRangePlace, buf);
             return false;
         }
-        regPair = { value, value+1 };
+        if (!ttmpReg)
+            regPair =  { value, value+1 };
+        else
+            regPair = { 112+value, 112+value+1 };
         return true;
     }
     else if (*linePtr == '[')
@@ -418,16 +432,27 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         else
             value2 = value1;
         
-        const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
-        if (value2 < value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
-        {   // error (illegal register range)
-            asmr.printError(sgprRangePlace, "Illegal SRegister range");
-            return false;
+        if (!ttmpReg)
+        {
+            if (value2 < value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
+            {   // error (illegal register range)
+                asmr.printError(sgprRangePlace, "Illegal SRegister range");
+                return false;
+            }
+        }
+        else
+        {
+            if (value2 < value1 || value1 >= 12 || value2 >= 12)
+            {   // error (illegal register range)
+                asmr.printError(sgprRangePlace, "Illegal TTMPRegister range");
+                return false;
+            }
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
-            asmr.printError(sgprRangePlace, "Unterminated SRegister range");
+            asmr.printError(sgprRangePlace, (!ttmpReg) ? "Unterminated SRegister range" :
+                        "Unterminated TTMPRegister range");
             return false;
         }
         ++linePtr;
@@ -435,18 +460,22 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         if (regsNum!=0 && regsNum != value2-value1+1)
         {
             char buf[64];
-            snprintf(buf, 64, "Required %u SRegisters", regsNum);
+            snprintf(buf, 64, "Required %u Registers", regsNum);
             asmr.printError(sgprRangePlace, buf);
             return false;
         }
         /// check alignment
-        if ((value2-value1==1 && (value1&1)!=0) ||
-            (value2-value1>1 && (value1&3)!=0))
-        {
-            asmr.printError(sgprRangePlace, "Unaligned SRegister range");
-            return false;
-        }
-        regPair = { value1, uint16_t(value2)+1 };
+        if (!ttmpReg)
+            if ((value2-value1==1 && (value1&1)!=0) ||
+                (value2-value1>1 && (value1&3)!=0))
+            {
+                asmr.printError(sgprRangePlace, "Unaligned SRegister range");
+                return false;
+            }
+        if (!ttmpReg)
+            regPair = { value1, uint16_t(value2)+1 };
+        else
+            regPair = { 112+value1, 112+uint16_t(value2)+1 };
         return true;
     }
     } catch(const ParseException& ex)

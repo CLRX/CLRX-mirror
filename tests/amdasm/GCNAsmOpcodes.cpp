@@ -38,6 +38,17 @@ struct GCNAsmOpcodeCase
 static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
 {
     { "    s_add_u32       s21, s4, s61", 0x80153d04U, 0, false, true, "" },
+    /* registers */
+    { "    s_add_u32       vcc_lo, s4, s61", 0x806a3d04U, 0, false, true, "" },
+    { "    s_add_u32       vcc_hi, s4, s61", 0x806b3d04U, 0, false, true, "" },
+    { "    s_add_u32       tba_lo, s4, s61", 0x806c3d04U, 0, false, true, "" },
+    { "    s_add_u32       tba_hi, s4, s61", 0x806d3d04U, 0, false, true, "" },
+    { "    s_add_u32       tma_lo, s4, s61", 0x806e3d04U, 0, false, true, "" },
+    { "    s_add_u32       tma_hi, s4, s61", 0x806f3d04U, 0, false, true, "" },
+    { "    s_add_u32       ttmp0, s4, s61", 0x80703d04U, 0, false, true, "" },
+    { "    s_add_u32       ttmp1, s4, s61", 0x80713d04U, 0, false, true, "" },
+    { "    s_add_u32       ttmp[2:2], s4, s61", 0x80723d04U, 0, false, true, "" },
+    { "    s_add_u32       ttmp[2], s4, s61", 0x80723d04U, 0, false, true, "" },
     { "    s_add_u32       s[21:21], s4, s61", 0x80153d04U, 0, false, true, "" },
     { "    s_add_u32       s[21], s[4], s[61]", 0x80153d04U, 0, false, true, "" },
     { "    s_add_u32       s21, s4, 1234", 0x8015ff04U, 1234, true, true, "" },
