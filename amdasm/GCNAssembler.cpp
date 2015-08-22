@@ -191,15 +191,21 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         skipSpacesToEnd(linePtr, end);
         value1 = cstrtobyte(linePtr, end);
         skipSpacesToEnd(linePtr, end);
-        if (linePtr == end || *linePtr != ':')
+        if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
         {   // error
             asmr.printError(vgprRangePlace, "Unterminated VRegister range");
             return false;
         }
-        ++linePtr;
-        skipSpacesToEnd(linePtr, end);
-        value2 = cstrtobyte(linePtr, end);
-        if (value2 <= value1 || value2 >= 256 || value1 >= 256)
+        if (linePtr!=end && *linePtr==':')
+        {
+            ++linePtr;
+            skipSpacesToEnd(linePtr, end);
+            value2 = cstrtobyte(linePtr, end);
+        }
+        else
+            value2 = value1;
+        
+        if (value2 < value1 || value2 >= 256 || value1 >= 256)
         {   // error (illegal register range)
             asmr.printError(vgprRangePlace, "Illegal VRegister range");
             return false;
@@ -398,17 +404,22 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         skipSpacesToEnd(linePtr, end);
         value1 = cstrtobyte(linePtr, end);
         skipSpacesToEnd(linePtr, end);
-        if (linePtr == end || *linePtr != ':')
+        if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
         {   // error
             asmr.printError(sgprRangePlace, "Unterminated SRegister range");
             return false;
         }
-        ++linePtr;
-        skipSpacesToEnd(linePtr, end);
-        value2 = cstrtobyte(linePtr, end);
+        if (linePtr!=end && *linePtr==':')
+        {
+            ++linePtr;
+            skipSpacesToEnd(linePtr, end);
+            value2 = cstrtobyte(linePtr, end);
+        }
+        else
+            value2 = value1;
         
         const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
-        if (value2 <= value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
+        if (value2 < value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
         {   // error (illegal register range)
             asmr.printError(sgprRangePlace, "Illegal SRegister range");
             return false;

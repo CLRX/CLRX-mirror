@@ -38,7 +38,11 @@ struct GCNAsmOpcodeCase
 static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
 {
     { "    s_add_u32       s21, s4, s61", 0x80153d04U, 0, false, true, "" },
+    { "    s_add_u32       s[21:21], s4, s61", 0x80153d04U, 0, false, true, "" },
+    { "    s_add_u32       s[21], s[4], s[61]", 0x80153d04U, 0, false, true, "" },
     { "    s_add_u32       s21, s4, 1234", 0x8015ff04U, 1234, true, true, "" },
+    { "    s_add_u32       s21, 1234, s4", 0x801504ffU, 1234, true, true, "" },
+    
     { nullptr, 0, 0, false, false, 0 }
 };
 
@@ -64,7 +68,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     }
     const AsmSection& section = assembler.getSections()[0];
     const size_t codeSize = section.content.size();
-    const size_t expectedSize = ((testCase.twoWords)?8:4);
+    const size_t expectedSize = (testCase.good) ? ((testCase.twoWords)?8:4) : 0;
     if (codeSize != expectedSize)
     {
         std::ostringstream oss;
@@ -74,22 +78,28 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
         throw Exception(oss.str());
     }
     // check content
-    uint32_t expectedWord0 = testCase.expWord0;
-    uint32_t expectedWord1 = testCase.expWord1;
-    uint32_t resultWord0 = ULEV(*reinterpret_cast<const uint32_t*>(
-                section.content.data()));
-    uint32_t resultWord1 = ULEV(*reinterpret_cast<const uint32_t*>(
-                section.content.data()+4));
-    
-    if (expectedWord0!=resultWord0 || (expectedSize==8 && expectedWord1!=resultWord1))
+    if (expectedSize!=0)
     {
-        std::ostringstream oss;
-        oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
-            " encGCNCase#" << i << ". Content doesn't match: 0x" <<
-            std::hex << expectedWord0 << "!=0x" << resultWord0 << std::dec;
+        uint32_t expectedWord0 = testCase.expWord0;
+        uint32_t expectedWord1 = testCase.expWord1;
+        uint32_t resultWord0 = ULEV(*reinterpret_cast<const uint32_t*>(
+                    section.content.data()));
+        uint32_t resultWord1;
         if (expectedSize==8)
-            oss << ", 0x" << std::hex << expectedWord1 << "!=0x" << resultWord1 << std::dec;
-        throw Exception(oss.str());
+            resultWord1 = ULEV(*reinterpret_cast<const uint32_t*>(
+                        section.content.data()+4));
+        
+        if (expectedWord0!=resultWord0 || (expectedSize==8 && expectedWord1!=resultWord1))
+        {
+            std::ostringstream oss;
+            oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
+                " encGCNCase#" << i << ". Content doesn't match: 0x" <<
+                std::hex << expectedWord0 << "!=0x" << resultWord0 << std::dec;
+            if (expectedSize==8)
+                oss << ", 0x" << std::hex << expectedWord1 << "!=0x" <<
+                            resultWord1 << std::dec;
+            throw Exception(oss.str());
+        }
     }
     assertString("testEncGCNOpcodes", testCaseName+".errorMessages",
               testCase.errorMessages, errorStream.str());
