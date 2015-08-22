@@ -478,7 +478,7 @@ static bool isOnlyFloat(const char* str, const char* end)
         return false;
     if (*str=='-' || *str=='+')
         str++; // skip '-' or '+'
-    if (str+2 >= end && *str=='0' && (str[1]=='X' || str[1]=='x'))
+    if (str+2 < end && *str=='0' && (str[1]=='X' || str[1]=='x'))
     {   // hexadecimal
         str += 2;
         const char* beforeComma = str;
