@@ -123,7 +123,7 @@ static cxbyte cstrtobyte(const char*& str, const char* end)
 namespace CLRX
 {
 
-RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr,
+bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
                     cxuint regsNum, bool required)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -132,20 +132,32 @@ RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr,
     if (linePtr == end)
     {
         if (required)
+        {
             asmr.printError(vgprRangePlace, "VRegister range is required");
-        return { 0, 0 };
+            return false;
+        }
+        regPair = { 0, 0 };
+        return true;
     }
     if (toLower(*linePtr) != 'v') // if
     {
         if (required)
+        {
             asmr.printError(vgprRangePlace, "VRegister range is required");
-        return { 0, 0 };
+            return false;
+        }
+        regPair = { 0, 0 };
+        return true;
     }
     if (++linePtr == end)
     {
         if (required)
+        {
             asmr.printError(vgprRangePlace, "VRegister range is required");
-        return { 0, 0 };
+            return false;
+        }
+        regPair = { 0, 0 };
+        return true;
     }
     
     try /* for handling parse exception */
@@ -156,16 +168,17 @@ RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr,
         if (value >= 256)
         {
             asmr.printError(vgprRangePlace, "VRegister number of out range (0-255)");
-            return { 0, 0 };
+            return false;
         }
         if (regsNum!=0 && regsNum != 1)
         {
             char buf[64];
             snprintf(buf, 64, "Required %u VRegisters", regsNum);
             asmr.printError(vgprRangePlace, buf);
-            return { 0, 0 };
+            return false;
         }
-        return std::make_pair(256+value, 256+value+1);
+        regPair = { 256+value, 256+value+1 };
+        return true;
     }
     else if (*linePtr == '[')
     {   // many registers
@@ -177,7 +190,7 @@ RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr,
         if (linePtr == end || *linePtr != ':')
         {   // error
             asmr.printError(vgprRangePlace, "Unterminated VRegister range");
-            return { 0, 0 };
+            return false;
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
@@ -185,13 +198,13 @@ RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr,
         if (value2 <= value1 || value2 >= 256 || value1 >= 256)
         {   // error (illegal register range)
             asmr.printError(vgprRangePlace, "Illegal VRegister range");
-            return { 0, 0 };
+            return false;
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
             asmr.printError(vgprRangePlace, "Unterminated VRegister range");
-            return { 0, 0 };
+            return false;
         }
         ++linePtr;
         
@@ -200,17 +213,18 @@ RegPair GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr,
             char buf[64];
             snprintf(buf, 64, "Required %u VRegisters", regsNum);
             asmr.printError(vgprRangePlace, buf);
-            return { 0, 0 };
+            return false;
         }
-        return std::make_pair(256+value1, 256+value2+1);
+        regPair = { 256+value1, 256+value2+1 };
+        return true;
     }
     } catch(const ParseException& ex)
     { asmr.printError(linePtr, ex.what()); }
     
-    return { 0, 0 };
+    return false;
 }
 
-RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
+bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
                     uint16_t arch, cxuint regsNum, bool required)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -219,8 +233,12 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
     if (linePtr == end)
     {
         if (required)
+        {
             asmr.printError(sgprRangePlace, "SRegister range is required");
-        return { 0, 0 };
+            return false;
+        }
+        regPair = { 0, 0 };
+        return true;
     }
     
     try
@@ -229,7 +247,7 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
     {
         char regName[20];
         if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, false))
-            return { 0, 0 };
+            return false;
         toLowerString(regName);
         
         size_t loHiRegSuffix = 0;
@@ -263,7 +281,7 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
                 if (value > 11)
                 {
                     asmr.printError(sgprRangePlace, "TTMP register number out of range");
-                    return { 0, 0 };
+                    return false;
                 }
             }
         }
@@ -274,9 +292,10 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
                 char buf[64];
                 snprintf(buf, 64, "Required %u SRegisters", regsNum);
                 asmr.printError(sgprRangePlace, buf);
-                return { 0, 0 };
+                return false;
             }
-            return { 124, 125 };
+            regPair = { 124, 125 };
+            return true;
         }
         else if (arch&ARCH_GCN_1_1_2)
         {
@@ -296,21 +315,20 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
         {
             if (regName[loHiRegSuffix] == '_')
             {
-                RegPair p;
                 if (regName[loHiRegSuffix+1] == 'l' && regName[loHiRegSuffix+2] == 'o' &&
                     regName[loHiRegSuffix+3] == 0)
-                    p = std::make_pair(loHiReg, loHiReg+1);
+                    regPair = std::make_pair(loHiReg, loHiReg+1);
                 else if (regName[loHiRegSuffix+1] == 'h' &&
                     regName[loHiRegSuffix+2] == 'i' && regName[loHiRegSuffix+3] == 0)
-                    p = std::make_pair(loHiReg+1, loHiReg+2);
+                    regPair = std::make_pair(loHiReg+1, loHiReg+2);
                 if (regsNum!=0 && regsNum != 1)
                 {
                     char buf[64];
                     snprintf(buf, 64, "Required %u SRegisters", regsNum);
                     asmr.printError(sgprRangePlace, buf);
-                    return { 0, 0 };
+                    return false;
                 }
-                return p;
+                return true;
             }
             else if (regName[loHiRegSuffix] == 0)
             {
@@ -319,23 +337,32 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
                     char buf[64];
                     snprintf(buf, 64, "Required %u SRegisters", regsNum);
                     asmr.printError(sgprRangePlace, buf);
-                    return { 0, 0 };
+                    return false;
                 }
-                return std::make_pair(loHiReg, loHiReg+2);
+                regPair = { loHiReg, loHiReg+2 };
+                return true;
             }
         }
         else
         {   // otherwise
             if (required)
+            {
                 asmr.printError(sgprRangePlace, "SRegister range is required");
-            return { 0, 0 };
+                return false;
+            }
+            regPair = { 0, 0 };
+            return true;
         }
     }
     if (++linePtr == end)
     {
         if (required)
+        {
             asmr.printError(sgprRangePlace, "SRegister range is required");
-        return { 0, 0 };
+            return false;
+        }
+        regPair = { 0, 0 };
+        return true;
     }
     
     if (isDigit(*linePtr))
@@ -344,16 +371,17 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
         if (value >= 104)
         {
             asmr.printError(sgprRangePlace, "SRegister number of out range (0-104)");
-            return { 0, 0 };
+            return false;
         }
         if (regsNum!=0 && regsNum != 1)
         {
             char buf[64];
             snprintf(buf, 64, "Required %u SRegisters", regsNum);
             asmr.printError(sgprRangePlace, buf);
-            return { 0, 0 };
+            return false;
         }
-        return std::make_pair(value, value+1);
+        regPair = { value, value+1 };
+        return true;
     }
     else if (*linePtr == '[')
     {   // many registers
@@ -365,7 +393,7 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
         if (linePtr == end || *linePtr != ':')
         {   // error
             asmr.printError(sgprRangePlace, "Unterminated SRegister range");
-            return { 0, 0 };
+            return false;
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
@@ -375,28 +403,37 @@ RegPair GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr,
         if (value2 <= value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
         {   // error (illegal register range)
             asmr.printError(sgprRangePlace, "Illegal SRegister range");
-            return { 0, 0 };
+            return false;
         }
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
             asmr.printError(sgprRangePlace, "Unterminated SRegister range");
-            return { 0, 0 };
+            return false;
         }
         ++linePtr;
+        
+        if (regsNum!=0 && regsNum != value2-value1+1)
+        {
+            char buf[64];
+            snprintf(buf, 64, "Required %u SRegisters", regsNum);
+            asmr.printError(sgprRangePlace, buf);
+            return false;
+        }
         /// check alignment
         if ((value2-value1==1 && (value1&1)!=0) ||
             (value2-value1>1 && (value1&3)!=0))
         {
             asmr.printError(sgprRangePlace, "Unaligned SRegister range");
-            return { 0, 0 };
+            return false;
         }
-        return std::make_pair(value1, uint16_t(value2)+1);
+        regPair = { value1, uint16_t(value2)+1 };
+        return true;
     }
     } catch(const ParseException& ex)
     { asmr.printError(linePtr, ex.what()); }
     
-    return { 0, 0 };
+    return false;
 }
 
 bool GCNAsmUtils::parseImm16(Assembler& asmr, const char*& linePtr, uint16_t& value16,
@@ -497,29 +534,30 @@ static bool isOnlyFloat(const char* str, const char* end)
     return false;
 }
 
-GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
+bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
              std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
              cxuint regsNum, Flags instrOpMask)
 {
     outTargetExpr.reset();
     
     if (instrOpMask == INSTROP_SREGS)
-        return { parseSRegRange(asmr, linePtr, arch, regsNum) };
+        return parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum);
     else if (instrOpMask == INSTROP_VREGS)
-        return { parseVRegRange(asmr, linePtr, regsNum) };
+        return parseVRegRange(asmr, linePtr, operand.pair, regsNum);
     // otherwise
-    RegPair pair;
     if (instrOpMask & INSTROP_SREGS)
     {
-        pair = parseSRegRange(asmr, linePtr, arch, regsNum, false);
-        if (pair.first!=0 || pair.second!=0)
-            return { pair };
+        if (!parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum, false))
+            return false;
+        if (operand.pair.first!=0 || operand.pair.second!=0)
+            return true;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
-        pair = parseVRegRange(asmr, linePtr, regsNum, false);
-        if (pair.first!=0 || pair.second!=0)
-            return { pair };
+        if (!parseVRegRange(asmr, linePtr, operand.pair, regsNum, false))
+            return false;
+        if (operand.pair.first!=0 || operand.pair.second!=0)
+            return true;
     }
     
     const char* end = asmr.line+asmr.lineSize;
@@ -531,23 +569,32 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
         if (getNameArg(asmr, 20, regName, linePtr, "register name", false, false))
         {
             toLowerString(regName);
-            RegPair p(0, 0);
+            operand.pair = {0, 0};
             if (::memcmp(regName, "vccz", 5) == 0)
-                p = { 251, 252 };
+            {
+                operand = { { 251, 252 } };
+                return true;
+            }
             else if (::memcmp(regName, "execz", 6) == 0)
-                p = { 252, 253 };
+            {
+                operand = { { 252, 253 } };
+                return true;
+            }
             else if (::memcmp(regName, "scc", 4) == 0)
-                p = { 253, 254 };
-            if (p.first!=0 || p.second!=0)
+            {
+                operand = { { 253, 254 } };
+                return true;
+            }
+            if (operand.pair.first!=0 || operand.pair.second!=0)
             {
                 if (regsNum!=0 && regsNum != 1)
                 {
                     char buf[64];
                     snprintf(buf, 64, "Required %u SRegisters", regsNum);
                     asmr.printError(regNamePlace, buf);
-                    return { { 0, 0 } };
+                    return false;
                 }
-                return { p };
+                return true;
             }
             /* check expression, back to before regName */
             linePtr = regNamePlace;
@@ -569,26 +616,38 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
                     switch (value)
                     {
                         case 0x0:
-                            return { { 128, 0 } };
+                            operand = { { 128, 0 } };
+                            return true;
                         case 0x3800: // 0.5
-                            return { { 240, 0 } };
+                            operand = { { 240, 0 } };
+                            return true;
                         case 0xb800: // -0.5
-                            return { { 241, 0 } };
+                            operand = { { 241, 0 } };
+                            return true;
                         case 0x3c00: // 1.0
-                            return { { 242, 0 } };
+                            operand = { { 242, 0 } };
+                            return true;
                         case 0xbc00: // -1.0
-                            return { { 243, 0 } };
+                            operand = { { 243, 0 } };
+                            return true;
                         case 0x4000: // 2.0
-                            return { { 244, 0 } };
+                            operand = { { 244, 0 } };
+                            return true;
                         case 0xc000: // -2.0
-                            return { { 245, 0 } };
+                            operand = { { 245, 0 } };
+                            return true;
                         case 0x4400: // 4.0
-                            return { { 246, 0 } };
+                            operand = { { 246, 0 } };
+                            return true;
                         case 0xc400: // -4.0
-                            return { { 247, 0 } };
+                            operand = { { 247, 0 } };
+                            return true;
                         case 0x3118: // 1/(2*PI)
                             if (arch&ARCH_RX3X0)
-                                return { { 248, 0 } };
+                            {
+                                operand = { { 248, 0 } };
+                                return true;
+                            }
                     }
                 }
                 else /* otherwise, FLOAT */
@@ -601,26 +660,38 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
                     switch (value)
                     {
                         case 0x0:
-                            return { { 128, 0 } };
+                            operand = { { 128, 0 } };
+                            return true;
                         case 0x3f000000: // 0.5
-                            return { { 240, 0 } };
+                            operand = { { 240, 0 } };
+                            return true;
                         case 0xbf000000: // -0.5
-                            return { { 241, 0 } };
+                            operand = { { 241, 0 } };
+                            return true;
                         case 0x3f800000: // 1.0
-                            return { { 242, 0 } };
+                            operand = { { 242, 0 } };
+                            return true;
                         case 0xbf800000: // -1.0
-                            return { { 243, 0 } };
+                            operand = { { 243, 0 } };
+                            return true;
                         case 0x40000000: // 2.0
-                            return { { 244, 0 } };
+                            operand = { { 244, 0 } };
+                            return true;
                         case 0xc0000000: // -2.0
-                            return { { 245, 0 } };
+                            operand = { { 245, 0 } };
+                            return true;
                         case 0x40800000: // 4.0
-                            return { { 246, 0 } };
+                            operand = { { 246, 0 } };
+                            return true;
                         case 0xc0800000: // -4.0
-                            return { { 247, 0 } };
+                            operand = { { 247, 0 } };
+                            return true;
                         case 0x3e22f983: // 1/(2*PI)
                             if (arch&ARCH_RX3X0)
-                                return { { 248, 0 } };
+                            {
+                                operand = { { 248, 0 } };
+                                return true;
+                            }
                     }
                 }
                 
@@ -628,7 +699,7 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
             catch(const ParseException& ex)
             {
                 asmr.printError(regNamePlace, ex.what());
-                return { { 0, 0 } };
+                return false;
             }
         }
         else
@@ -636,21 +707,21 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
             const char* exprPlace = linePtr;
             std::unique_ptr<AsmExpression> expr(AsmExpression::parse( asmr, linePtr));
             if (expr==nullptr) // error
-                return { { 0, 0 } };
+                return false;
             if (expr->isEmpty())
             {
                 asmr.printError(exprPlace, "Expected expression");
-                return { { 0, 0 } };
+                return false;
             }
             if (expr->getSymOccursNum()==0)
             {   // resolved now
                 cxuint sectionId; // for getting
                 if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
-                    return { { 0, 0 } };
+                    return false;
                 else if (sectionId != ASMSECT_ABS)
                 {   // if not absolute value
                     asmr.printError(exprPlace, "Expression must be absolute!");
-                    return { { 0, 0 } };
+                    return false;
                 }
             }
             else
@@ -659,31 +730,40 @@ GCNOperand GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr,
                 {   // error
                     asmr.printError(regNamePlace,
                             "Literal constant is illegal in this place");
-                    return { { 0, 0 } };
+                    return false;
                 }
                 outTargetExpr = std::move(expr);
-                return { { 255, 0 } };
+                operand = { { 255, 0 } };
+                return true;
             }
             
             if (value <= 64)
-                return { std::make_pair(128+value, 0) };
+            {
+                operand = { { 128+value, 0 } };
+                return true;
+            }
             else if (int64_t(value) >= -16 && int64_t(value) < 0)
-                return { std::make_pair(192-value, 0) };
+            {
+                operand = { { 192-value, 0 } };
+                return true;
+            }
         }
         
         if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
         {   // error
             asmr.printError(regNamePlace, "Literal constant is illegal in this place");
-            return { { 0, 0 } };
+            return false;
         }
         
         // not in range
         asmr.printWarningForRange(32, value, asmr.getSourcePos(regNamePlace));
-        return { { 255, 0 }, uint32_t(value) };
+        operand = { { 255, 0 }, uint32_t(value) };
+        return true;
     }
     
     // check otherwise
-    return { { 0, 0 } };
+    asmr.printError(linePtr, "Unrecognized operand");
+    return false;
 }
 
 static inline bool isXRegRange(RegPair pair, cxuint regsNum = 1)
@@ -697,27 +777,28 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
+    bool good = true;
     RegPair dstReg(0, 1);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
     {
-        dstReg = parseSRegRange(asmr, linePtr, arch, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
-    GCNOperand src0Op = parseOperand(asmr, linePtr, src0Expr, arch,
+    GCNOperand src0Op;
+    good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    GCNOperand src1Op = parseOperand(asmr, linePtr, src1Expr, arch,
+    GCNOperand src1Op;
+    good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
-    if ((dstReg.first==0 && dstReg.second==0) ||
-        (src0Op.pair.first==0 && src0Op.pair.second==0) ||
-        (src1Op.pair.first==0 && src1Op.pair.second==0) ||
-        !checkGarbagesAtEnd(asmr, linePtr))
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     // put data
@@ -754,10 +835,12 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
+    bool good = true;
     RegPair dstReg(0, 1);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
-        dstReg = parseSRegRange(asmr, linePtr, arch, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
         if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
             if (!skipRequiredComma(asmr, linePtr))
                 return;
@@ -767,16 +850,14 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src0Expr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
     {
-        src0Op = parseOperand(asmr, linePtr, src0Expr, arch,
+        good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
     
     /// if errors
-    if ((dstReg.first==0 && dstReg.second==0) ||
-        (src0Op.pair.first==0 && src0Op.pair.second==0) ||
-        !checkGarbagesAtEnd(asmr, linePtr))
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     cxuint wordsNum = 1;
@@ -817,16 +898,17 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
+    bool good = true;
     RegPair dstReg(0, 1);
     if ((gcnInsn.mode & GCN_MASK1) == GCN_IMM_DST)
     {
-        dstReg = parseSRegRange(asmr, linePtr, arch, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
     
     uint16_t imm16;
-    bool good = true;
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
         uint64_t value;
@@ -854,19 +936,20 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
+    bool good = true;
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
-    GCNOperand src0Op = parseOperand(asmr, linePtr, src0Expr, arch,
+    GCNOperand src0Op;
+    good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    GCNOperand src1Op = parseOperand(asmr, linePtr, src1Expr, arch,
+    GCNOperand src1Op;
+    good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
-    if ((src0Op.pair.first==0 && src0Op.pair.second==0) ||
-        (src1Op.pair.first==0 && src1Op.pair.second==0) ||
-        !checkGarbagesAtEnd(asmr, linePtr))
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     // put data

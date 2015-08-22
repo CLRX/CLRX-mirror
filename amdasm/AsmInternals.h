@@ -140,17 +140,17 @@ struct GCNOperand {
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
     
-    /* return VReg range, first vreg begin from 256 value */
-    static RegPair parseVRegRange(Assembler& asmr, const char*& linePtr, cxuint regsNum,
-                      bool required = true);
-    
-    static RegPair parseSRegRange(Assembler& asmr, const char*& linePtr, uint16_t arch,
-                      cxuint regsNum, bool required = true);
-    
+    /* return true if no error */
+    static bool parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
+                   cxuint regsNum, bool required = true);
+    /* return true if no error */
+    static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
+                   uint16_t arch, cxuint regsNum, bool required = true);
+    /* return true if no error */
     static bool parseImm16(Assembler& asmr, const char*& linePtr, uint16_t& value,
             std::unique_ptr<AsmExpression>& outTargetExpr);
     
-    static GCNOperand parseOperand(Assembler& asmr, const char*& linePtr,
+    static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
                cxuint regsNum, Flags instrOpMask);
     
