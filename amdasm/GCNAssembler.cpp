@@ -231,7 +231,14 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     } catch(const ParseException& ex)
     { asmr.printError(linePtr, ex.what()); }
     
-    return false;
+    if (required)
+    {
+        asmr.printError(vgprRangePlace, "Required VRegisters range");
+        return false;
+    }
+    regPair = { 0, 0 };
+    linePtr = oldLinePtr;
+    return true;
 }
 
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
@@ -350,6 +357,12 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                     return false;
                 }
                 regPair = { loHiReg, loHiReg+2 };
+                return true;
+            }
+            else
+            {   // this is not this register
+                linePtr = oldLinePtr;
+                regPair = { 0, 0 };
                 return true;
             }
         }
@@ -481,7 +494,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     } catch(const ParseException& ex)
     { asmr.printError(linePtr, ex.what()); }
     
-    return false;
+    if (required)
+    {
+        asmr.printError(sgprRangePlace, "Required SRegisters range");
+        return false;
+    }
+    regPair = { 0, 0 };
+    linePtr = oldLinePtr;
+    return true;
 }
 
 bool GCNAsmUtils::parseImm16(Assembler& asmr, const char*& linePtr, uint16_t& value16,
