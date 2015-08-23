@@ -38,7 +38,7 @@ struct GCNAsmOpcodeCase
 static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
 {
     { "    s_add_u32       s21, s4, s61", 0x80153d04U, 0, false, true, "" },
-    /* registers */
+    /* registers and literals */
     { "    s_add_u32       vcc_lo, s4, s61", 0x806a3d04U, 0, false, true, "" },
     { "    s_add_u32       vcc_hi, s4, s61", 0x806b3d04U, 0, false, true, "" },
     { "    s_add_u32       tba_lo, s4, s61", 0x806c3d04U, 0, false, true, "" },
@@ -53,7 +53,19 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32       s[21], s[4], s[61]", 0x80153d04U, 0, false, true, "" },
     { "    s_add_u32       s21, s4, 1234", 0x8015ff04U, 1234, true, true, "" },
     { "    s_add_u32       s21, 1234, s4", 0x801504ffU, 1234, true, true, "" },
-    
+    /* 64-bit registers and literals */
+    { "        s_xor_b64       s[22:23], s[4:5], s[62:63]\n",
+        0x89963e04U, 0, false, true, "" },
+    { "        s_xor_b64       vcc, s[4:5], s[62:63]\n",
+        0x89ea3e04U, 0, false, true, "" },
+    { "        s_xor_b64       tba, s[4:5], s[62:63]\n",
+        0x89ec3e04U, 0, false, true, "" },
+    { "        s_xor_b64       tma, s[4:5], s[62:63]\n",
+        0x89ee3e04U, 0, false, true, "" },
+    { "        s_xor_b64       ttmp[4:5], s[4:5], s[62:63]\n",
+        0x89f43e04U, 0, false, true, "" },
+    { "        s_xor_b64       exec, s[4:5], s[62:63]\n",
+        0x89fe3e04U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

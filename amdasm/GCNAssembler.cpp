@@ -297,7 +297,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         }
         else if (regName[0] == 'm' && regName[1] == '0' && regName[2] == 0)
         {
-            if (regsNum!=0 && regsNum != 1)
+            if (regsNum!=0 && regsNum!=1 && regsNum!=2)
             {
                 char buf[64];
                 snprintf(buf, 64, "Required %u SRegisters", regsNum);
@@ -334,7 +334,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 if (regsNum!=0 && regsNum != 1)
                 {
                     char buf[64];
-                    snprintf(buf, 64, "Required %u SRegisters", regsNum);
+                    snprintf(buf, 64, "Required %u XRegisters", regsNum);
                     asmr.printError(sgprRangePlace, buf);
                     return false;
                 }
@@ -345,7 +345,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 if (regsNum!=0 && regsNum != 2)
                 {
                     char buf[64];
-                    snprintf(buf, 64, "Required %u SRegisters", regsNum);
+                    snprintf(buf, 64, "Required %u XRegisters", regsNum);
                     asmr.printError(sgprRangePlace, buf);
                     return false;
                 }
@@ -635,7 +635,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             }
             if (operand.pair.first!=0 || operand.pair.second!=0)
             {
-                if (regsNum!=0 && regsNum != 1)
+                if (regsNum!=0 && regsNum!=1 && regsNum!=2)
                 {
                     char buf[64];
                     snprintf(buf, 64, "Required %u SRegisters", regsNum);
