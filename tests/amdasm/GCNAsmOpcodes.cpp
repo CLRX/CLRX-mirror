@@ -99,6 +99,12 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0x89963eccU, 0, false, true, "" },
     { "        s_xor_b64       s[22:23], 1.0, s[62:63]\n",
         0x89963ef2U, 0, false, true, "" },
+    { "        s_xor_b64       s[22:23], vccz, s[62:63]\n",
+        0x89963efbU, 0, false, true, "" },
+    { "        s_xor_b64       s[22:23], execz, s[62:63]\n",
+        0x89963efcU, 0, false, true, "" },
+    { "        s_xor_b64       s[22:23], scc, s[62:63]\n",
+        0x89963efdU, 0, false, true, "" },
     /* errors */
     { nullptr, 0, 0, false, false, 0 }
 };

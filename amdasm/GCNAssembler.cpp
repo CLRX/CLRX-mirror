@@ -229,7 +229,10 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         return true;
     }
     } catch(const ParseException& ex)
-    { asmr.printError(linePtr, ex.what()); }
+    {
+        asmr.printError(linePtr, ex.what());
+        return false;
+    }
     
     if (required)
     {
@@ -492,7 +495,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         return true;
     }
     } catch(const ParseException& ex)
-    { asmr.printError(linePtr, ex.what()); }
+    {
+        asmr.printError(linePtr, ex.what());
+        return false;
+    }
     
     if (required)
     {
