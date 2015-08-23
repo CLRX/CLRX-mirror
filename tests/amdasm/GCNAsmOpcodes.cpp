@@ -51,6 +51,17 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32       ttmp[2], s4, s61", 0x80723d04U, 0, false, true, "" },
     { "    s_add_u32       s[21:21], s4, s61", 0x80153d04U, 0, false, true, "" },
     { "    s_add_u32       s[21], s[4], s[61]", 0x80153d04U, 0, false, true, "" },
+    { "    s_add_u32       s21, s4, 0", 0x80158004U, 0, false, true, "" },
+    { "    s_add_u32       s21, s4, 1", 0x80158104U, 0, false, true, "" },
+    { "    s_add_u32       s21, s4, 0x2a", 0x8015aa04U, 0, false, true, "" },
+    { "    s_add_u32       s21, s4, -7", 0x8015c704U, 0, false, true, "" },
+    { "t=0x2b;    s_add_u32       s21, s4, t", 0x8015ab04U, 0, false, true, "" },
+    { "s0=0x2b;    s_add_u32       s21, s4, @s0", 0x8015ab04U, 0, false, true, "" },
+    { "s0=0x2c;    s_add_u32       s21, s4, @s0-1", 0x8015ab04U, 0, false, true, "" },
+    /* parse second source as expression ('@' force that) */
+    { ".5=0x2b;    s_add_u32       s21, s4, @.5", 0x8015ab04U, 0, false, true, "" },
+    { "    s_add_u32       s21, s4, -.5", 0x8015f104U, 0, false, true, "" },
+    { "    s_add_u32       s21, s4, .5", 0x8015f004U, 0, false, true, "" },
     { "    s_add_u32       s21, s4, 1234", 0x8015ff04U, 1234, true, true, "" },
     { "    s_add_u32       s21, 1234, s4", 0x801504ffU, 1234, true, true, "" },
     /* 64-bit registers and literals */

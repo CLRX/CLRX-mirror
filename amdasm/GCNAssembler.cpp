@@ -648,13 +648,17 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             linePtr = regNamePlace;
         }
         // treat argument as expression
+        bool forceExpression = false;
         if (linePtr!=end && *linePtr=='@')
+        {
+            forceExpression = true;
             linePtr++;
-        const char* exprPlace = linePtr;
+        }
         skipSpacesToEnd(linePtr, end);
+        const char* exprPlace = linePtr;
         
         uint64_t value;
-        if (isOnlyFloat(linePtr, end))
+        if (!forceExpression && isOnlyFloat(linePtr, end))
         {   // if only floating point value
             /* if floating point literal can be processed */
             try
