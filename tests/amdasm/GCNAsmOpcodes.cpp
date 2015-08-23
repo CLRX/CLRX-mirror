@@ -97,17 +97,51 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:16: Error: SRegister range is required\n" },
     { "    s_add_u32  s[2:3], s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Required 1 Registers\n" },
+    { "    s_add_u32  ttmp[2:3], s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Required 1 Registers\n" },
     { "    s_add_u32  s[3:4], s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Required 1 Registers\n" },
+    { "    s_add_u32  ttmp[3:4], s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Required 1 Registers\n" },
     { "    s_add_u32  s104, s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: SRegister number of out range\n" },
+    { "    s_add_u32  ttmp12, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: TTMPRegister number of out range (0-11)\n" },
     { "    s_add_u32  s[104:105], s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Illegal SRegister range\n" },
+    { "    s_add_u32  ttmp[12:13], s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Illegal TTMPRegister range\n" },
     { "    s_add_u32  s[44:42], s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Illegal SRegister range\n" },
+    { "    s_add_u32  ttmp[10:8], s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Illegal TTMPRegister range\n" },
     { "    s_add_u32  s[z], s4, s61", 0, 0, false, false,
         "test.s:1:18: Error: Missing number\n"
         "test.s:1:18: Error: Expected ',' before argument\n" },
+    { "    s_add_u32  ttmp[z], s4, s61", 0, 0, false, false,
+        "test.s:1:21: Error: Missing number\n"
+        "test.s:1:21: Error: Expected ',' before argument\n" },
+    { "    s_add_u32  sxzz, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Required SRegisters range\n"
+        "test.s:1:17: Error: Expected ',' before argument\n" },
+    { "    s_add_u32  ttmpxzz, s4, s61", 0, 0, false, false,
+        "test.s:1:16: Error: Required SRegisters range\n"
+        "test.s:1:20: Error: Expected ',' before argument\n" },
+    { "    s_add_u32  s30, s[4, s[61", 0, 0, false, false,
+        "test.s:1:21: Error: Unterminated SRegister range\n"
+        "test.s:1:26: Error: Unterminated SRegister range\n" },
+    { "    s_xor_b64  s[30:31], s[3:4], s[15:16]", 0, 0, false, false,
+        "test.s:1:26: Error: Unaligned SRegister range\n"
+        "test.s:1:34: Error: Unaligned SRegister range\n" },
+    { "    s_xor_b64  s[30:31], vcc_lo, s[14:15]", 0, 0, false, false,
+        "test.s:1:26: Error: Required 2 SRegisters\n" },
+    { "    s_xor_b64  s[30:31], vcc_hi, s[14:15]", 0, 0, false, false,
+        "test.s:1:26: Error: Required 2 SRegisters\n" },
+    { "    s_add_u32  s10, xfdd+a*, s61", 0, 0, false, false,
+        "test.s:1:28: Error: Unterminated expression\n" },
+    { "    s_add_u32  s10, , ", 0, 0, false, false,
+        "test.s:1:21: Error: Expected instruction operand\n"
+        "test.s:1:23: Error: Expected instruction operand\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

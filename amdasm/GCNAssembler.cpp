@@ -642,7 +642,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     skipSpacesToEnd(linePtr, end);
     
     if ((instrOpMask & INSTROP_SSOURCE)!=0)
-    {   char regName[20];
+    {
+        char regName[20];
         const char* regNamePlace = linePtr;
         if (getNameArg(asmr, 20, regName, linePtr, "register name", false, false))
         {
@@ -685,6 +686,12 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             linePtr++;
         }
         skipSpacesToEnd(linePtr, end);
+        
+        if (linePtr==end || *linePtr==',')
+        {
+            asmr.printError(linePtr, "Expected instruction operand");
+            return false;
+        }
         const char* exprPlace = linePtr;
         
         uint64_t value;
