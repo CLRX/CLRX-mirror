@@ -154,23 +154,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* vgprRangePlace = linePtr;
-    if (linePtr == end)
-    {
-        if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
-            return false;
-        regPair = { 0, 0 }; // no range
-        linePtr = oldLinePtr; // revert current line pointer
-        return true;
-    }
-    if (toLower(*linePtr) != 'v') // if
-    {
-        if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
-            return false;
-        regPair = { 0, 0 }; // no range
-        linePtr = oldLinePtr; // revert current line pointer
-        return true;
-    }
-    if (++linePtr == end)
+    if (linePtr == end || toLower(*linePtr) != 'v' || ++linePtr == end)
     {
         if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
@@ -675,9 +659,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             {
                 if (regsNum!=0 && regsNum!=1 && regsNum!=2)
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "Required %u SRegisters", regsNum);
-                    asmr.printError(regNamePlace, buf);
+                    printXRegistersRequired(asmr, regNamePlace, "scalar", regsNum);
                     return false;
                 }
                 return true;
@@ -791,7 +773,6 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                             }
                     }
                 }
-                
             }
             catch(const ParseException& ex)
             {
