@@ -871,7 +871,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     GCNOperand src1Op;
     good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
+             (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
