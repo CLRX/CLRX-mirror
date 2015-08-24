@@ -139,6 +139,11 @@ struct GCNOperand {
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
+    static bool printRegisterRangeExpected(Assembler& asmr, const char* linePtr,
+               const char* regPoolName, cxuint regsNum, bool required);
+    
+    static void printXRegistersRequired(Assembler& asmr, const char* linePtr,
+               const char* regPoolName, cxuint requiredRegsNum);
     
     /* return true if no error */
     static bool parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,

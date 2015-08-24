@@ -123,6 +123,30 @@ static cxbyte cstrtobyte(const char*& str, const char* end)
 namespace CLRX
 {
 
+bool GCNAsmUtils::printRegisterRangeExpected(Assembler& asmr, const char* linePtr,
+               const char* regPoolName, cxuint regsNum, bool required)
+{
+    if (!required)
+        return false;
+    char buf[60];
+    if (regsNum!=0)
+        snprintf(buf, 50, "Expected %u %s register%s", regsNum, regPoolName,
+                 (regsNum==1)?"":"s");
+    else
+        snprintf(buf, 50, "Expected %s registers", regPoolName);
+    asmr.printError(linePtr, buf);
+    return true;
+}
+
+void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
+              const char* regPoolName, cxuint regsNum)
+{
+    char buf[60];
+    snprintf(buf, 60, "Required %u %s register%s", regsNum, regPoolName,
+             (regsNum==1)?"":"s");
+    asmr.printError(linePtr, buf);
+}
+
 bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
                     cxuint regsNum, bool required)
 {
@@ -132,33 +156,24 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     const char* vgprRangePlace = linePtr;
     if (linePtr == end)
     {
-        if (required)
-        {
-            asmr.printError(vgprRangePlace, "VRegister range is required");
+        if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
-        }
         regPair = { 0, 0 }; // no range
         linePtr = oldLinePtr; // revert current line pointer
         return true;
     }
     if (toLower(*linePtr) != 'v') // if
     {
-        if (required)
-        {
-            asmr.printError(vgprRangePlace, "VRegister range is required");
+        if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
-        }
         regPair = { 0, 0 }; // no range
         linePtr = oldLinePtr; // revert current line pointer
         return true;
     }
     if (++linePtr == end)
     {
-        if (required)
-        {
-            asmr.printError(vgprRangePlace, "VRegister range is required");
+        if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
-        }
         regPair = { 0, 0 }; // no range
         linePtr = oldLinePtr; // revert current line pointer
         return true;
@@ -171,14 +186,12 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         cxuint value = cstrtobyte(linePtr, end);
         if (value >= 256)
         {
-            asmr.printError(vgprRangePlace, "VRegister number of out range (0-255)");
+            asmr.printError(vgprRangePlace, "Vector register number out of range (0-255)");
             return false;
         }
         if (regsNum!=0 && regsNum != 1)
         {
-            char buf[64];
-            snprintf(buf, 64, "Required %u VRegisters", regsNum);
-            asmr.printError(vgprRangePlace, buf);
+            printXRegistersRequired(asmr, vgprRangePlace, "vector", regsNum);
             return false;
         }
         regPair = { 256+value, 256+value+1 };
@@ -193,7 +206,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
         {   // error
-            asmr.printError(vgprRangePlace, "Unterminated VRegister range");
+            asmr.printError(vgprRangePlace, "Unterminated vector register range");
             return false;
         }
         if (linePtr!=end && *linePtr==':')
@@ -208,22 +221,26 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
-            asmr.printError(vgprRangePlace, "Unterminated VRegister range");
+            asmr.printError(vgprRangePlace, "Unterminated vector register range");
             return false;
         }
         ++linePtr;
         
-        if (value2 < value1 || value2 >= 256 || value1 >= 256)
+        if (value2 < value1)
         {   // error (illegal register range)
-            asmr.printError(vgprRangePlace, "Illegal VRegister range");
+            asmr.printError(vgprRangePlace, "Illegal vector register range");
+            return false;
+        }
+        if (value2 >= 256 || value1 >= 256)
+        {
+            asmr.printError(vgprRangePlace,
+                        "Some vector register number out of range (0-255)");
             return false;
         }
         
         if (regsNum!=0 && regsNum != value2-value1+1)
         {
-            char buf[64];
-            snprintf(buf, 64, "Required %u VRegisters", regsNum);
-            asmr.printError(vgprRangePlace, buf);
+            printXRegistersRequired(asmr, vgprRangePlace, "vector", regsNum);
             return false;
         }
         regPair = { 256+value1, 256+value2+1 };
@@ -235,11 +252,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         return false;
     }
     
-    if (required)
-    {
-        asmr.printError(vgprRangePlace, "Required VRegisters range");
+    if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
         return false;
-    }
     regPair = { 0, 0 }; // no range
     linePtr = oldLinePtr; // revert current line pointer
     return true;
@@ -254,11 +268,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     const char* sgprRangePlace = linePtr;
     if (linePtr == end)
     {
-        if (required)
-        {
-            asmr.printError(sgprRangePlace, "SRegister range is required");
+        if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
             return false;
-        }
         regPair = { 0, 0 };
         linePtr = oldLinePtr; // revert current line pointer
         return true;
@@ -310,9 +321,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         {
             if (regsNum!=0 && regsNum!=1 && regsNum!=2)
             {
-                char buf[64];
-                snprintf(buf, 64, "Required %u SRegisters", regsNum);
-                asmr.printError(sgprRangePlace, buf);
+                printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
                 return false;
             }
             regPair = { 124, 125 };
@@ -344,9 +353,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                     regPair = std::make_pair(loHiReg+1, loHiReg+2);
                 if (regsNum!=0 && regsNum != 1)
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "Required %u SRegisters", regsNum);
-                    asmr.printError(sgprRangePlace, buf);
+                    printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
                     return false;
                 }
                 return true;
@@ -355,9 +362,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             {
                 if (regsNum!=0 && regsNum != 2)
                 {
-                    char buf[64];
-                    snprintf(buf, 64, "Required %u SRegisters", regsNum);
-                    asmr.printError(sgprRangePlace, buf);
+                    printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
                     return false;
                 }
                 regPair = { loHiReg, loHiReg+2 };
@@ -372,11 +377,9 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         }
         else if (!ttmpReg)
         {   // otherwise
-            if (required)
-            {
-                asmr.printError(sgprRangePlace, "SRegister range is required");
+            if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
+                            regsNum, required))
                 return false;
-            }
             regPair = { 0, 0 };
             linePtr = oldLinePtr; // revert current line pointer
             return true;
@@ -385,11 +388,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     linePtr += (ttmpReg)?4:1; // skip
     if (linePtr == end)
     {
-        if (required)
-        {
-            asmr.printError(sgprRangePlace, "SRegister range is required");
+        if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
             return false;
-        }
         regPair = { 0, 0 };
         linePtr = oldLinePtr; // revert current line pointer
         return true;
@@ -403,7 +403,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         {
             if (value >= maxSGPRsNum)
             {
-                asmr.printError(sgprRangePlace, "SRegister number of out range");
+                asmr.printError(sgprRangePlace, "Scalar register number of out range");
                 return false;
             }
         }
@@ -411,15 +411,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         {
             if (value >= 12)
             {
-                asmr.printError(sgprRangePlace, "TTMPRegister number of out range (0-11)");
+                asmr.printError(sgprRangePlace, "TTMPRegister number out of range (0-11)");
                 return false;
             }
         }
         if (regsNum!=0 && regsNum != 1)
         {
-            char buf[64];
-            snprintf(buf, 64, "Required %u SRegisters", regsNum);
-            asmr.printError(sgprRangePlace, buf);
+            printXRegistersRequired(asmr, linePtr, "scalar", regsNum);
             return false;
         }
         if (!ttmpReg)
@@ -437,7 +435,9 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
         {   // error
-            asmr.printError(sgprRangePlace, "Unterminated SRegister range");
+            asmr.printError(sgprRangePlace, (!ttmpReg) ?
+                        "Unterminated scalar register range" :
+                        "Unterminated TTMPRegister range");
             return false;
         }
         if (linePtr!=end && *linePtr==':')
@@ -452,7 +452,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || *linePtr != ']')
         {   // error
-            asmr.printError(sgprRangePlace, (!ttmpReg) ? "Unterminated SRegister range" :
+            asmr.printError(sgprRangePlace, (!ttmpReg) ?
+                        "Unterminated scalar register range" :
                         "Unterminated TTMPRegister range");
             return false;
         }
@@ -460,34 +461,43 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         
         if (!ttmpReg)
         {
-            if (value2 < value1 || value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
+            if (value2 < value1)
             {   // error (illegal register range)
-                asmr.printError(sgprRangePlace, "Illegal SRegister range");
+                asmr.printError(sgprRangePlace, "Illegal scalar register range");
+                return false;
+            }
+            if (value1 >= maxSGPRsNum || value2 >= maxSGPRsNum)
+            {
+                asmr.printError(sgprRangePlace,
+                            "Some scalar register number out of range");
                 return false;
             }
         }
         else
         {
-            if (value2 < value1 || value1 >= 12 || value2 >= 12)
+            if (value2 < value1)
             {   // error (illegal register range)
                 asmr.printError(sgprRangePlace, "Illegal TTMPRegister range");
+                return false;
+            }
+            if (value1 >= 12 || value2 >= 12)
+            {
+                asmr.printError(sgprRangePlace,
+                                "Some TTMPRegister number out of range (0-11)");
                 return false;
             }
         }
         
         if (regsNum!=0 && regsNum != value2-value1+1)
         {
-            char buf[64];
-            snprintf(buf, 64, "Required %u Registers", regsNum);
-            asmr.printError(sgprRangePlace, buf);
+            printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
             return false;
         }
         /// check alignment
         if (!ttmpReg)
-            if ((value2-value1==1 && (value1&1)!=0) ||
-                (value2-value1>1 && (value1&3)!=0))
+            if ((value2-value1==1 && (value1&1)!=0) || (value2-value1>1 && (value1&3)!=0))
             {
-                asmr.printError(sgprRangePlace, "Unaligned SRegister range");
+                asmr.printError(sgprRangePlace, "Unaligned scalar register range");
                 return false;
             }
         if (!ttmpReg)
@@ -502,11 +512,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         return false;
     }
     
-    if (required)
-    {
-        asmr.printError(sgprRangePlace, "Required SRegisters range");
+    if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
         return false;
-    }
     regPair = { 0, 0 };
     linePtr = oldLinePtr; // revert current line pointer
     return true;
