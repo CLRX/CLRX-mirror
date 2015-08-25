@@ -250,6 +250,22 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_cmp_eq_i32  xx, s69; xx=12222", 0xbf0045ffU, 12222, true, true, "" },
     { "    s_cmp_eq_i32  s29, 32545", 0xbf00ff1dU, 32545, true, true, "" },
     { "    s_cmp_eq_i32  s29, xx; xx=32545", 0xbf00ff1dU, 32545, true, true, "" },
+    { "    s_cmp_lg_i32  s29, s69", 0xbf01451dU, 0, false, true, "" },
+    { "    s_cmp_gt_i32  s29, s69", 0xbf02451dU, 0, false, true, "" },
+    { "    s_cmp_ge_i32  s29, s69", 0xbf03451dU, 0, false, true, "" },
+    { "    s_cmp_lt_i32  s29, s69", 0xbf04451dU, 0, false, true, "" },
+    { "    s_cmp_le_i32  s29, s69", 0xbf05451dU, 0, false, true, "" },
+    { "    s_cmp_eq_u32  s29, s69", 0xbf06451dU, 0, false, true, "" },
+    { "    s_cmp_lg_u32  s29, s69", 0xbf07451dU, 0, false, true, "" },
+    { "    s_cmp_gt_u32  s29, s69", 0xbf08451dU, 0, false, true, "" },
+    { "    s_cmp_ge_u32  s29, s69", 0xbf09451dU, 0, false, true, "" },
+    { "    s_cmp_lt_u32  s29, s69", 0xbf0a451dU, 0, false, true, "" },
+    { "    s_cmp_le_u32  s29, s69", 0xbf0b451dU, 0, false, true, "" },
+    { "    s_bitcmp0_b32  s29, s69", 0xbf0c451dU, 0, false, true, "" },
+    { "    s_bitcmp1_b32  s29, s69", 0xbf0d451dU, 0, false, true, "" },
+    { "    s_bitcmp0_b64  s[28:29], s69", 0xbf0e451cU, 0, false, true, "" },
+    { "    s_bitcmp1_b64  s[28:29], s69", 0xbf0f451cU, 0, false, true, "" },
+    { "    s_setvskip  s29, s69", 0xbf10451dU, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
