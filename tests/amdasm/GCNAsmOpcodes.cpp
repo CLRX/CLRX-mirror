@@ -142,6 +142,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  s10, , ", 0, 0, false, false,
         "test.s:1:21: Error: Expected instruction operand\n"
         "test.s:1:23: Error: Expected instruction operand\n" },
+    { "  s_add_u32  s35, 400000, 1111116", 0, 0, false, false,
+        "test.s:1:27: Error: Only one literal constant can be used in instruction\n" },
     /* SOP2 encodings */
     { "    s_sub_u32  s21, s4, s61", 0x80953d04U, 0, false, true, "" },
     { "    s_add_i32  s21, s4, s61", 0x81153d04U, 0, false, true, "" },
@@ -185,6 +187,9 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_bfe_i64  s[20:21], s[4:5], s61", 0x95143d04U, 0, false, true, "" },
     { "    s_cbranch_g_fork  s[4:5], s[62:63]", 0x95803e04U, 0, false, true, "" },
     { "    s_absdiff_i32  s21, s4, s61", 0x96153d04U, 0, false, true, "" },
+    /* SOP1 */
+    { "    s_mov_b32       s86, s20", 0xbed60314U, 0, false, true, "" },
+    { "    s_mov_b32       s86, 0xadbc", 0xbed603ff, 0xadbc, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
@@ -226,7 +231,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
         uint32_t expectedWord1 = testCase.expWord1;
         uint32_t resultWord0 = ULEV(*reinterpret_cast<const uint32_t*>(
                     section.content.data()));
-        uint32_t resultWord1;
+        uint32_t resultWord1 = 0;
         if (expectedSize==8)
             resultWord1 = ULEV(*reinterpret_cast<const uint32_t*>(
                         section.content.data()+4));

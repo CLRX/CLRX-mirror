@@ -806,7 +806,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
                 {   // error
                     asmr.printError(regNamePlace,
-                            "Literal constant is illegal in this place");
+                            "Only one literal constant can be used in instruction");
                     return false;
                 }
                 outTargetExpr = std::move(expr);
@@ -828,7 +828,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
         {   // error
-            asmr.printError(regNamePlace, "Literal constant is illegal in this place");
+            asmr.printError(regNamePlace,
+                        "Only one literal constant can be used in instruction");
             return false;
         }
         
@@ -926,12 +927,8 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src0Op = { std::make_pair(0,1) };
     std::unique_ptr<AsmExpression> src0Expr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
-    {
         good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
-        if (!skipRequiredComma(asmr, linePtr))
-            return;
-    }
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -939,8 +936,16 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     cxuint wordsNum = 1;
     uint32_t words[2];
-    SLEV(words[0], 0xbe800000U | (uint32_t(gcnInsn.code1)<<16) | src0Op.pair.first |
+    SLEV(words[0], 0xbe800000U | (uint32_t(gcnInsn.code1)<<8) | src0Op.pair.first |
             uint32_t(dstReg.first)<<16);
+    if (src0Op.pair.first==255)
+    {
+        if (src0Expr==nullptr)
+            SLEV(words[1], src0Op.value);
+        else    // zero if unresolved value
+            SLEV(words[1], 0);
+        wordsNum++;
+    }
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
