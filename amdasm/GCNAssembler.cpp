@@ -1027,7 +1027,7 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     GCNOperand src1Op;
     good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
+             (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
@@ -1203,13 +1203,14 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     }
 }
 
-bool GCNAssembler::resolveCode(cxbyte* location, AsmExprTargetType targetType,
-                   uint64_t value)
+bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxbyte* location,
+               AsmExprTargetType targetType, uint64_t value)
 {
     switch(targetType)
     {
         case GCNTGT_LITIMM:
             SULEV(*reinterpret_cast<uint32_t*>(location+4), value);
+            printWarningForRange(32, value, sourcePos);
             return true;
     }
     return false;

@@ -839,8 +839,9 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                                     .content.data() + target.offset), uint64_t(value));
                         break;
                     default: // ISA assembler resolves this dependency
-                        if (!isaAssembler->resolveCode(sections[target.sectionId]
-                                .content.data() + target.offset, target.type, value))
+                        if (!isaAssembler->resolveCode(expr->getSourcePos(),
+                                sections[target.sectionId].content.data() + target.offset,
+                                target.type, value))
                             good = false;
                         break;
                 }

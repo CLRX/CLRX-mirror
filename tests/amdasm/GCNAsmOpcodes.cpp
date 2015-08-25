@@ -62,8 +62,12 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "t=0x2b;    s_add_u32  s21, s4, t", 0x8015ab04U, 0, false, true, "" },
     { "s0=0x2b;    s_add_u32  s21, s4, @s0", 0x8015ab04U, 0, false, true, "" },
     { "s0=0x2c;    s_add_u32  s21, s4, @s0-1", 0x8015ab04U, 0, false, true, "" },
-    { "s_add_u32       s21, s4, @s0-1; s0=600", 0x8015ff04U, 599, true, true, "" },
-    { "s_add_u32       s21, s4, @s0-1; s0=40", 0x8015ff04U, 39, true, true, "" },
+    { "s_add_u32  s21, s4, @s0-1; s0=600", 0x8015ff04U, 599, true, true, "" },
+    { "s_add_u32  s21, s4, @s0-1; s0=40", 0x8015ff04U, 39, true, true, "" },
+    { "s_add_u32  s21, s4, 3254500000000", 0x8015ff04U, 0xbf510100U, true, true,
+        "test.s:1:21: Warning: Value 0x2f5bf510100 truncated to 0xbf510100\n" },
+    { "s_add_u32  s21, s4, xx\nxx=3254500000000", 0x8015ff04U, 0xbf510100U, true, true,
+        "test.s:1:21: Warning: Value 0x2f5bf510100 truncated to 0xbf510100\n" },
     /* parse second source as expression ('@' force that) */
     { ".5=0x2b;    s_add_u32       s21, s4, @.5", 0x8015ab04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, .5", 0x8015f004U, 0, false, true, "" },
@@ -190,6 +194,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* SOP1 */
     { "    s_mov_b32  s86, s20", 0xbed60314U, 0, false, true, "" },
     { "    s_mov_b32  s86, 0xadbc", 0xbed603ff, 0xadbc, true, true, "" },
+    { "    s_mov_b32  s86, xx; xx=0xadbc", 0xbed603ff, 0xadbc, true, true, "" },
     { "    s_mov_b64  s[86:87], s[20:21]", 0xbed60414U, 0, false, true, "" },
     { "    s_cmov_b32  s86, s20", 0xbed60514U, 0, false, true, "" },
     { "    s_cmov_b64  s[86:87], s[20:21]", 0xbed60614U, 0, false, true, "" },
@@ -239,6 +244,12 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_mov_regrd_b32 s86, s20", 0xbed63314U, 0, false, true, "" },
     { "    s_abs_i32  s86, s20", 0xbed63414U, 0, false, true, "" },
     { "    s_mov_fed_b32  s86, s20", 0xbed63514U, 0, false, true, "" },
+    /* SOPC */
+    { "    s_cmp_eq_i32  s29, s69", 0xbf00451dU, 0, false, true, "" },
+    { "    s_cmp_eq_i32  12222, s69", 0xbf0045ffU, 12222, true, true, "" },
+    { "    s_cmp_eq_i32  xx, s69; xx=12222", 0xbf0045ffU, 12222, true, true, "" },
+    { "    s_cmp_eq_i32  s29, 32545", 0xbf00ff1dU, 32545, true, true, "" },
+    { "    s_cmp_eq_i32  s29, xx; xx=32545", 0xbf00ff1dU, 32545, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
