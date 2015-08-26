@@ -1003,6 +1003,11 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         if (imm16Expr==nullptr)
         {
+            if (value & 3)
+            {
+                asmr.printError(linePtr, "Jump is not aligned to word!");
+                good = false;
+            }
             value = (int64_t(value)-int64_t(output.size())-4)>>2;
             if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
             {
@@ -1315,6 +1320,11 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxbyte* sectionDat
             printWarningForRange(16, value, sourcePos);
             return true;
         case GCNTGT_SOPJMP:
+            if (value & 3)
+            {
+                printError(sourcePos, "Jump is not aligned to word!");
+                return false;
+            }
             value = (int64_t(value)-int64_t(offset)-4)>>2;
             if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
             {
