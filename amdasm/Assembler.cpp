@@ -849,8 +849,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     default: // ISA assembler resolves this dependency
                         if (!isaAssembler->resolveCode(expr->getSourcePos(),
-                                sections[target.sectionId].content.data(), target.offset,
-                                target.type, value))
+                                target.sectionId, sections[target.sectionId].content.data(),
+                                target.offset, target.type, sectionId, value))
                             good = false;
                         break;
                 }

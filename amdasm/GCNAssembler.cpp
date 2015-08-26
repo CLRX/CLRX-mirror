@@ -1307,20 +1307,36 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     }
 }
 
-bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxbyte* sectionData,
-               size_t offset, AsmExprTargetType targetType, uint64_t value)
+bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
+             cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
+             cxuint sectionId, uint64_t value)
 {
     switch(targetType)
     {
         case GCNTGT_LITIMM:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in data expressions");
+                return false;
+            }
             SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value);
             printWarningForRange(32, value, sourcePos);
             return true;
         case GCNTGT_SOPKSIMM16:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in data expressions");
+                return false;
+            }
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
             printWarningForRange(16, value, sourcePos);
             return true;
         case GCNTGT_SOPJMP:
+            if (sectionId != targetSectionId)
+            {   // if jump outside current section (.text)
+                printError(sourcePos, "Jump over current section!");
+                return false;
+            }
             value = (int64_t(value)-int64_t(offset)-4);
             if (value & 3)
             {
