@@ -503,7 +503,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     return true;
 }
 
-bool GCNAsmUtils::parseImm16(Assembler& asmr, const char*& linePtr, uint16_t& value16,
+template<typename T>
+bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
             std::unique_ptr<AsmExpression>& outTargetExpr)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -528,8 +529,8 @@ bool GCNAsmUtils::parseImm16(Assembler& asmr, const char*& linePtr, uint16_t& va
             asmr.printError(exprPlace, "Expression must be absolute!");
             return false;
         }
-        asmr.printWarningForRange(16, value, asmr.getSourcePos(exprPlace));
-        // not finished
+        asmr.printWarningForRange(sizeof(T)<<3, value, asmr.getSourcePos(exprPlace));
+        outValue = value;
         return true;
     }
     else
@@ -959,20 +960,22 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 static const std::pair<const char*, uint16_t> hwregNamesMap[] =
 {
-    { "0", 0 },
-    { "mode", 1 },
-    { "status", 2 },
-    { "trapsts", 3 },
-    { "hw_id", 4 },
     { "gpr_alloc", 5 },
-    { "lds_alloc", 6 },
+    { "hw_id", 4 },
+    { "ib_dbg0", 12 },
     { "ib_sts", 7 },
-    { "pc_lo", 8 },
-    { "pc_hi", 9 },
     { "inst_dw0", 10 },
     { "inst_dw1", 11 },
-    { "ib_dbg0", 12 }
+    { "lds_alloc", 6 },
+    { "mode", 1 },
+    { "pc_hi", 9 },
+    { "pc_lo", 8 },
+    { "status", 2 },
+    { "trapsts", 3 }
 };
+
+static const size_t hwregNamesMapSize = sizeof(hwregNamesMap) /
+            sizeof(std::pair<const char*, uint16_t>);
 
 void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
@@ -982,7 +985,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool good = true;
     RegPair dstReg(0, 1);
-    if ((gcnInsn.mode & GCN_MASK1) == GCN_IMM_DST)
+    if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                    (gcnInsn.mode&GCN_REG_DST_64)?2:1);
@@ -990,26 +993,121 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
     }
     
-    /*uint16_t imm16;
+    uint16_t imm16 = 0;
+    std::unique_ptr<AsmExpression> imm16Expr;
+    
     if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL)
     {
-        uint64_t value;
-        if (!getJumpValueArg(asmr, value, linePtr))
+        uint64_t value = 0;
+        if (!getJumpValueArg(asmr, value, imm16Expr, linePtr))
             return;
-        value = (value-output.size()-4)>>2;
-        if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+        if (imm16Expr==nullptr)
         {
-            asmr.printError(linePtr, "Jump out of range");
-            good = false;
+            value = (int64_t(value)-int64_t(output.size())-4)>>2;
+            if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+            {
+                asmr.printError(linePtr, "Jump out of range");
+                good = false;
+            }
+            imm16 = value;
         }
-        imm16 =value;
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
     {
+        skipSpacesToEnd(linePtr, end);
+        char name[20];
+        const char* funcNamePlace = linePtr;
+        if (!getNameArg(asmr, 20, name, linePtr, "function name", true))
+            return;
+        toLowerString(name);
+        if (::strcmp(name, "hwreg")!=0 || linePtr==end || *linePtr!='(')
+        {
+            asmr.printError(funcNamePlace, "Expected hwreg function");
+            return;
+        }
+        ++linePtr;
+        skipSpacesToEnd(linePtr, end);
+        const char* funcArg1Place = linePtr;
+        if (!getNameArg(asmr, 20, name, linePtr, "HWRegister name", true))
+            return;
+        toLowerString(name);
+        size_t hwregId = 0;
+        const size_t hwregNameIndex = (::strncmp(name, "hwreg_", 6) == 0) ? 6 : 0;
+        size_t index = binaryMapFind(hwregNamesMap, hwregNamesMap + hwregNamesMapSize,
+              name+hwregNameIndex) - hwregNamesMap;
+        if (index == hwregNamesMapSize)
+        {
+            asmr.printError(funcArg1Place, "Unrecognized HWRegister");
+            return;
+        }
+        hwregId = hwregNamesMap[index].second;
+        
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        uint64_t arg2Value = 0;
+        skipSpacesToEnd(linePtr, end);
+        const char* funcArg2Place = linePtr;
+        good &= getAbsoluteValueArg(asmr, arg2Value, linePtr, true);
+        if (arg2Value >= 32)
+            asmr.printWarning(funcArg2Place, "Second argument out of range (0-31)");
+        
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        uint64_t arg3Value = 0;
+        skipSpacesToEnd(linePtr, end);
+        const char* funcArg3Place = linePtr;
+        good &= getAbsoluteValueArg(asmr, arg3Value, linePtr, true);
+        if (arg3Value >= 33 || arg3Value < 1)
+            asmr.printWarning(funcArg3Place, "Third argument out of range (1-32)");
+        
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!=')')
+        {
+            asmr.printError(linePtr, "Unterminated hwreg function call");
+            return;
+        }
+        
+        imm16 = hwregId | (arg2Value<<6) | ((arg3Value-1)<<11);
     }
-    else
+    else // otherwise we parse expression
+        good &= parseImm<uint16_t>(asmr, linePtr, imm16, imm16Expr);
+    
+    uint32_t imm32 = 0;
+    std::unique_ptr<AsmExpression> imm32Expr;
+    if (gcnInsn.mode & GCN_IMM_DST)
     {
-    }*/
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        if (gcnInsn.mode & GCN_SOPK_CONST)
+            good &= parseImm<uint32_t>(asmr, linePtr, imm32, imm32Expr);
+        else
+            good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    const cxuint wordsNum = (gcnInsn.mode & GCN_SOPK_CONST) ? 2 : 1;
+    uint32_t words[2];
+    SLEV(words[0], 0xb0000000U | imm16 | uint32_t(dstReg.first)<<16 |
+                uint32_t(gcnInsn.code1)<<23);
+    if (wordsNum==2)
+        SLEV(words[1], imm32);
+    
+    if (imm32Expr!=nullptr)
+        imm32Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
+                           output.size()));
+    if (imm16Expr!=nullptr)
+        imm16Expr->setTarget(AsmExprTarget(((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL) ?
+                GCNTGT_SOPJMP : GCNTGT_SOPKSIMM16, asmr.currentSection,
+                           output.size()));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
+            reinterpret_cast<cxbyte*>(words + wordsNum));
+    /// prevent freeing expression
+    imm32Expr.release();
+    imm16Expr.release();
 }
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1203,17 +1301,31 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     }
 }
 
-bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxbyte* location,
-               AsmExprTargetType targetType, uint64_t value)
+bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxbyte* sectionData,
+               size_t offset, AsmExprTargetType targetType, uint64_t value)
 {
     switch(targetType)
     {
         case GCNTGT_LITIMM:
-            SULEV(*reinterpret_cast<uint32_t*>(location+4), value);
+            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value);
             printWarningForRange(32, value, sourcePos);
             return true;
+        case GCNTGT_SOPKSIMM16:
+            SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
+            printWarningForRange(16, value, sourcePos);
+            return true;
+        case GCNTGT_SOPJMP:
+            value = (int64_t(value)-int64_t(offset)-4)>>2;
+            if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+            {
+                printError(sourcePos, "Jump out of range!");
+                return false;
+            }
+            SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
+            return true;
+        default:
+            return false;
     }
-    return false;
 }
 
 bool GCNAssembler::checkMnemonic(const CString& mnemonic) const

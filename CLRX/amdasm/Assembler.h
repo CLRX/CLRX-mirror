@@ -330,6 +330,8 @@ protected:
     
     void printWarning(const char* linePtr, const char* message);
     void printError(const char* linePtr, const char* message);
+    void printWarning(const AsmSourcePos& sourcePos, const char* message);
+    void printError(const AsmSourcePos& sourcePos, const char* message);
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
@@ -341,8 +343,8 @@ public:
     virtual void assemble(const CString& mnemonic, const char* mnemPlace,
               const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output) = 0;
     /// resolve code with location, target and value
-    virtual bool resolveCode(const AsmSourcePos& sourcePos, cxbyte* location,
-                 AsmExprTargetType targetType, uint64_t value) = 0;
+    virtual bool resolveCode(const AsmSourcePos& sourcePos, cxbyte* sectionData,
+                 size_t offset, AsmExprTargetType targetType, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// get allocated register after assemblying
@@ -369,8 +371,8 @@ public:
     
     void assemble(const CString& mnemonic, const char* mnemPlace, const char* linePtr,
                   const char* lineEnd, std::vector<cxbyte>& output);
-    bool resolveCode(const AsmSourcePos& sourcePos, cxbyte* location,
-                     AsmExprTargetType targetType, uint64_t value);
+    bool resolveCode(const AsmSourcePos& sourcePos, cxbyte* sectionData,
+                 size_t offset, AsmExprTargetType targetType, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
     const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
 };
@@ -1006,6 +1008,12 @@ inline void ISAAssembler::printError(const char* linePtr, const char* message)
 inline void ISAAssembler::printWarningForRange(cxuint bits, uint64_t value,
                    const AsmSourcePos& pos)
 { return assembler.printWarningForRange(bits, value, pos); }
+
+inline void ISAAssembler::printWarning(const AsmSourcePos& sourcePos, const char* message)
+{ return assembler.printWarning(sourcePos, message); }
+
+inline void ISAAssembler::printError(const AsmSourcePos& sourcePos, const char* message)
+{ return assembler.printError(sourcePos, message); }
 
 };
 

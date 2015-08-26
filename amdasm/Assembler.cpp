@@ -118,12 +118,13 @@ bool AsmParseUtils::getAnyValueArg(Assembler& asmr, uint64_t& value,
     return true;
 }
 
-bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value, const char*& linePtr)
+bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value,
+            std::unique_ptr<AsmExpression>& outTargetExpr, const char*& linePtr)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, true));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr, false, false));
     if (expr == nullptr)
         return false;
     if (expr->isEmpty())
@@ -131,15 +132,23 @@ bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value, const char
         asmr.printError(exprPlace, "Expected expression");
         return false;
     }
-    cxuint sectionId;
-    if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
-        return false;
-    if (sectionId != asmr.currentSection)
-    {   // if jump outside current section (.text)
-        asmr.printError(exprPlace, "Jump over current section!");
-        return false;
+    if (expr->getSymOccursNum()==0)
+    {
+        cxuint sectionId;
+        if (!expr->evaluate(asmr, value, sectionId)) // failed evaluation!
+            return false;
+        if (sectionId != asmr.currentSection)
+        {   // if jump outside current section (.text)
+            asmr.printError(exprPlace, "Jump over current section!");
+            return false;
+        }
+        return true;
     }
-    return true;
+    else
+    {
+        outTargetExpr = std::move(expr);
+        return true;
+    }
 }
 
 bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
@@ -840,7 +849,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         break;
                     default: // ISA assembler resolves this dependency
                         if (!isaAssembler->resolveCode(expr->getSourcePos(),
-                                sections[target.sectionId].content.data() + target.offset,
+                                sections[target.sectionId].content.data(), target.offset,
                                 target.type, value))
                             good = false;
                         break;

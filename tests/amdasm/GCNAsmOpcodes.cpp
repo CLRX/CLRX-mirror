@@ -266,6 +266,32 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_bitcmp0_b64  s[28:29], s69", 0xbf0e451cU, 0, false, true, "" },
     { "    s_bitcmp1_b64  s[28:29], s69", 0xbf0f451cU, 0, false, true, "" },
     { "    s_setvskip  s29, s69", 0xbf10451dU, 0, false, true, "" },
+    /* SOPK */
+    { "    s_movk_i32  s43, 0xd3b9", 0xb02bd3b9U, 0, false, true, "" },
+    { "xc = 0xd4ba\n    s_movk_i32  s43, xc", 0xb02bd4baU, 0, false, true, "" },
+    { "    s_movk_i32  s43, xc; xc = 0xd4ba", 0xb02bd4baU, 0, false, true, "" },
+    { "xc = 0x11d4ba\n    s_movk_i32  s43, xc", 0xb02bd4baU, 0, false, true,
+        "test.s:2:22: Warning: Value 0x11d4ba truncated to 0xd4ba\n" },
+    { "    s_movk_i32  s43, xc; xc = 0x22d4ba", 0xb02bd4baU, 0, false, true,
+        "test.s:1:22: Warning: Value 0x22d4ba truncated to 0xd4ba\n" },
+    { "    s_cmovk_i32  s43, 0xd3b9", 0xb12bd3b9U, 0, false, true, "" },
+    { "    s_cmpk_eq_i32  s43, 0xd3b9", 0xb1abd3b9U, 0, false, true, "" },
+    { "    s_cmpk_lg_i32  s43, 0xd3b9", 0xb22bd3b9U, 0, false, true, "" },
+    { "    s_cmpk_gt_i32  s43, 0xd3b9", 0xb2abd3b9U, 0, false, true, "" },
+    { "    s_cmpk_ge_i32  s43, 0xd3b9", 0xb32bd3b9U, 0, false, true, "" },
+    { "    s_cmpk_lt_i32  s43, 0xd3b9", 0xb3abd3b9U, 0, false, true, "" },
+    { "    s_cmpk_le_i32  s43, 0xd3b9", 0xb42bd3b9U, 0, false, true, "" },
+    { "    s_cmpk_eq_u32  s43, 0xd3b9", 0xb4abd3b9U, 0, false, true, "" },
+    { "    s_cmpk_lg_u32  s43, 0xd3b9", 0xb52bd3b9U, 0, false, true, "" },
+    { "    s_cmpk_gt_u32  s43, 0xd3b9", 0xb5abd3b9U, 0, false, true, "" },
+    { "    s_cmpk_ge_u32  s43, 0xd3b9", 0xb62bd3b9U, 0, false, true, "" },
+    { "    s_cmpk_lt_u32  s43, 0xd3b9", 0xb6abd3b9U, 0, false, true, "" },
+    { "    s_cmpk_le_u32  s43, 0xd3b9", 0xb72bd3b9U, 0, false, true, "" },
+    { "    s_addk_i32  s43, 0xd3b9", 0xb7abd3b9U, 0, false, true, "" },
+    { "    s_mulk_i32  s43, 0xd3b9", 0xb82bd3b9U, 0, false, true, "" },
+    { "    s_cbranch_i_fork s[44:45], xxxx+8\nxxxx:\n", 0xb8ac0002U, 0, false, true, "" },
+    { "xxxx:    s_cbranch_i_fork s[44:45], xxxx+16\n", 0xb8ac0003U, 0, false, true, "" },
+    /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
     { nullptr, 0, 0, false, false, 0 }
 };
 

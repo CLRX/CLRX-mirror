@@ -98,7 +98,8 @@ struct CLRX_INTERNAL AsmParseUtils
     static bool getAnyValueArg(Assembler& asmr, uint64_t& value, cxuint& sectionId,
                     const char*& linePtr);
     
-    static bool getJumpValueArg(Assembler& asmr, uint64_t& value, const char*& linePtr);
+    static bool getJumpValueArg(Assembler& asmr, uint64_t& value,
+            std::unique_ptr<AsmExpression>& outTargetExpr, const char*& linePtr);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
                const char* objName, bool requiredArg = true);
@@ -152,7 +153,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
                    uint16_t arch, cxuint regsNum, bool required = true);
     /* return true if no error */
-    static bool parseImm16(Assembler& asmr, const char*& linePtr, uint16_t& value,
+    template<typename T>
+    static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>& outTargetExpr);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
