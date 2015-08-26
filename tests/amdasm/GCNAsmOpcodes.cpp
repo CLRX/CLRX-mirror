@@ -291,6 +291,75 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_mulk_i32  s43, 0xd3b9", 0xb82bd3b9U, 0, false, true, "" },
     { "    s_cbranch_i_fork s[44:45], xxxx+8\nxxxx:\n", 0xb8ac0002U, 0, false, true, "" },
     { "xxxx:    s_cbranch_i_fork s[44:45], xxxx+16\n", 0xb8ac0003U, 0, false, true, "" },
+    { "    s_cbranch_i_fork s[44:45], xxxx+9\nxxxx:\n", 0, 0, false, false,
+        "test.s:1:32: Error: Jump is not aligned to word!\n" },
+    { "    s_cbranch_i_fork s[44:45], xxxx+10\nxxxx:\n", 0, 0, false, false,
+        "test.s:1:32: Error: Jump is not aligned to word!\n" },
+    { "xxxx:    s_cbranch_i_fork s[44:45], xxxx+17\n", 0, 0, false, false,
+        "test.s:1:44: Error: Jump is not aligned to word!\n" },
+    { "    s_cbranch_i_fork s[44:45], xxxx+8\n.rodata\nxxxx:\n", 0, 0, false, false,
+        "test.s:1:32: Error: Jump over current section!\n" },
+    { ".rodata\nxxxx:.text\n    s_cbranch_i_fork s[44:45], xxxx+8", 0, 0, false, false,
+        "test.s:3:32: Error: Jump over current section!\n" },
+    /* hwregs */
+    { "    s_getreg_b32    s43, hwreg(mode, 0, 1)", 0xb92b0001U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg  (mode, 0, 1)", 0xb92b0001U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg  (mode  ,   0  , 1  )",
+                    0xb92b0001U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_MODE, 0, 1)", 0xb92b0001U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(status, 0, 1)", 0xb92b0002U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_STATUS, 0, 1)", 0xb92b0002U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(trapsts, 0, 1)", 0xb92b0003U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_TRAPSTS, 0, 1)",
+                    0xb92b0003U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(hw_id, 0, 1)", 0xb92b0004U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_HW_ID, 0, 1)",
+                    0xb92b0004U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(gpr_alloc, 0, 1)", 0xb92b0005U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_GPR_ALLOC, 0, 1)",
+                    0xb92b0005U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(lds_alloc, 0, 1)", 0xb92b0006U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_LDS_ALLOC, 0, 1)",
+                    0xb92b0006U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(ib_sts, 0, 1)", 0xb92b0007U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_IB_STS, 0, 1)",
+                    0xb92b0007U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(pc_lo, 0, 1)", 0xb92b0008U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_PC_LO, 0, 1)",
+                    0xb92b0008U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(pc_hi, 0, 1)", 0xb92b0009U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_PC_HI, 0, 1)",
+                    0xb92b0009U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(inst_dw0, 0, 1)", 0xb92b000aU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_INST_DW0, 0, 1)",
+                    0xb92b000aU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(inst_dw1, 0, 1)", 0xb92b000bU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_INST_DW1, 0, 1)",
+                    0xb92b000bU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(ib_dbg0, 0, 1)", 0xb92b000cU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_IB_DBG0, 0, 1)",
+                    0xb92b000cU, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(trapsts, 10, 1)", 0xb92b0283u, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(trapsts, 3, 10)", 0xb92b48c3u, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(trapsts, 3, 32)", 0xb92bf8c3u, 0, false, true, "" },
+    { "    s_setreg_imm32_b32 hwreg(trapsts, 3, 10), 0x24da4f",
+                    0xba8048c3u, 0x24da4fU, true, true, "" },
+    { "    s_setreg_imm32_b32 hwreg(trapsts, 3, 10), xx; xx=0x24da4f",
+                    0xba8048c3u, 0x24da4fU, true, true, "" },
+    { "xx=0x24da4e;    s_setreg_imm32_b32 hwreg(trapsts, 3, 10), xx",
+                    0xba8048c3u, 0x24da4eU, true, true, "" },
+    { "     s_setreg_b32  hwreg(trapsts, 3, 10), s43", 0xb9ab48c3u, 0, false, true, "" },
+    /* hw regs errors */
+    { "    s_getreg_b32  s43, hwreg   (HWREG_MODE, 0, 2", 0, 0, false, false,
+        "test.s:1:49: Error: Unterminated hwreg function call\n" },
+    { "    s_getreg_b32  s43, hwrX(mode, 0, 1)", 0, 0, false, false,
+        "test.s:1:24: Error: Expected hwreg function\n" },
+    { "    s_getreg_b32  s43, hwreg(mode, , )", 0, 0, false, false,
+        "test.s:1:36: Error: Expected expression\n"
+        "test.s:1:38: Error: Expected operator or value or symbol\n"
+        "test.s:1:39: Error: Unterminated hwreg function call\n" },
+    { "    s_getreg_b32  s43, hwreg(XXX,6,8)", 0, 0, false, false,
+        "test.s:1:30: Error: Unrecognized HWRegister\n" },
     /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
     { nullptr, 0, 0, false, false, 0 }
 };
@@ -308,7 +377,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     oss << getGPUDeviceTypeName(deviceType) << " encGCNCase#" << i;
     const std::string testCaseName = oss.str();
     assertValue<bool>("testEncGCNOpcodes", testCaseName+".good", testCase.good, good);
-    if (assembler.getSections().size()!=1)
+    if (assembler.getSections().size()<1)
     {
         std::ostringstream oss;
         oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<
@@ -318,7 +387,7 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     const AsmSection& section = assembler.getSections()[0];
     const size_t codeSize = section.content.size();
     const size_t expectedSize = (testCase.good) ? ((testCase.twoWords)?8:4) : 0;
-    if (codeSize != expectedSize)
+    if (good && codeSize != expectedSize)
     {
         std::ostringstream oss;
         oss << "FAILED for " << getGPUDeviceTypeName(deviceType) <<

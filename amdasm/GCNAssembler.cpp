@@ -1026,6 +1026,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!getNameArg(asmr, 20, name, linePtr, "function name", true))
             return;
         toLowerString(name);
+        skipSpacesToEnd(linePtr, end);
         if (::strcmp(name, "hwreg")!=0 || linePtr==end || *linePtr!='(')
         {
             asmr.printError(funcNamePlace, "Expected hwreg function");
@@ -1034,37 +1035,48 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
         const char* funcArg1Place = linePtr;
-        if (!getNameArg(asmr, 20, name, linePtr, "HWRegister name", true))
-            return;
-        toLowerString(name);
         size_t hwregId = 0;
-        const size_t hwregNameIndex = (::strncmp(name, "hwreg_", 6) == 0) ? 6 : 0;
-        size_t index = binaryMapFind(hwregNamesMap, hwregNamesMap + hwregNamesMapSize,
-              name+hwregNameIndex) - hwregNamesMap;
-        if (index == hwregNamesMapSize)
+        if (getNameArg(asmr, 20, name, linePtr, "HWRegister name", true))
         {
-            asmr.printError(funcArg1Place, "Unrecognized HWRegister");
-            return;
+            toLowerString(name);
+            const size_t hwregNameIndex = (::strncmp(name, "hwreg_", 6) == 0) ? 6 : 0;
+            size_t index = binaryMapFind(hwregNamesMap, hwregNamesMap + hwregNamesMapSize,
+                  name+hwregNameIndex, CStringLess()) - hwregNamesMap;
+            if (index == hwregNamesMapSize)
+            {
+                asmr.printError(funcArg1Place, "Unrecognized HWRegister");
+                good = false;
+            }
+            hwregId = hwregNamesMap[index].second;
         }
-        hwregId = hwregNamesMap[index].second;
+        else
+            good = false;
         
         if (!skipRequiredComma(asmr, linePtr))
             return;
         uint64_t arg2Value = 0;
         skipSpacesToEnd(linePtr, end);
         const char* funcArg2Place = linePtr;
-        good &= getAbsoluteValueArg(asmr, arg2Value, linePtr, true);
-        if (arg2Value >= 32)
-            asmr.printWarning(funcArg2Place, "Second argument out of range (0-31)");
+        if (getAbsoluteValueArg(asmr, arg2Value, linePtr, true))
+        {
+            if (arg2Value >= 32)
+                asmr.printWarning(funcArg2Place, "Second argument out of range (0-31)");
+        }
+        else
+            good = false;
         
         if (!skipRequiredComma(asmr, linePtr))
             return;
         uint64_t arg3Value = 0;
         skipSpacesToEnd(linePtr, end);
         const char* funcArg3Place = linePtr;
-        good &= getAbsoluteValueArg(asmr, arg3Value, linePtr, true);
-        if (arg3Value >= 33 || arg3Value < 1)
-            asmr.printWarning(funcArg3Place, "Third argument out of range (1-32)");
+        if (getAbsoluteValueArg(asmr, arg3Value, linePtr, true))
+        {
+            if (arg3Value >= 33 || arg3Value < 1)
+                asmr.printWarning(funcArg3Place, "Third argument out of range (1-32)");
+        }
+        else
+            good = false;
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!=')')
@@ -1072,7 +1084,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             asmr.printError(linePtr, "Unterminated hwreg function call");
             return;
         }
-        
+        ++linePtr;
         imm16 = hwregId | (arg2Value<<6) | ((arg3Value-1)<<11);
     }
     else // otherwise we parse expression
