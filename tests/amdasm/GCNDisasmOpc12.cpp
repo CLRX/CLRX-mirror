@@ -2399,9 +2399,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xd992cd67U, 0x00000047U, true, "        ds_and_src2_b64 v71 offset:52583\n" },
     { 0xd994cd67U, 0x00000047U, true, "        ds_or_src2_b64  v71 offset:52583\n" },
     { 0xd996cd67U, 0x00000047U, true, "        ds_xor_src2_b64 v71 offset:52583\n" },
-    { 0xd998cd67U, 0x00000047U, true, "        ds_write_src2_b64 v71 offset:52583\n" },
-    { 0xd99acd67U, 0x8b27a947U, true, "        DS_ill_205      "
+    { 0xd998cd67U, 0x8b27a947U, true, "        DS_ill_204      "
                 "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
+    { 0xd99acd67U, 0x00000047U, true, "        ds_write_src2_b64 v71 offset:52583\n" },
     { 0xd99ccd67U, 0x8b27a947U, true, "        DS_ill_206      "
                 "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
     { 0xd99ecd67U, 0x8b27a947U, true, "        DS_ill_207      "

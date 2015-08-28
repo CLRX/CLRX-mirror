@@ -1858,7 +1858,8 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "ds_or_src2_b64",      GCNENC_DS,     GCN_SRC_ADDR2_64,         202,  ARCH_GCN_ALL  },
     { "ds_xor_src2_b64",     GCNENC_DS,     GCN_SRC_ADDR2_64,         203,  ARCH_GCN_ALL  },
     /* for RX3X0 ds_write_src2_b64 is 205 (check!) */
-    { "ds_write_src2_b64",   GCNENC_DS,     GCN_SRC_ADDR2_64,         204,  ARCH_GCN_ALL  },
+    { "ds_write_src2_b64",   GCNENC_DS,     GCN_SRC_ADDR2_64,         204,  ARCH_GCN_1_0_1  },
+    { "ds_write_src2_b64",   GCNENC_DS,     GCN_SRC_ADDR2_64,         205,  ARCH_RX3X0  },
     { "ds_min_src2_f64",     GCNENC_DS,     GCN_SRC_ADDR2_64,         210,  ARCH_GCN_ALL  },
     { "ds_max_src2_f64",     GCNENC_DS,     GCN_SRC_ADDR2_64,         211,  ARCH_GCN_ALL  },
     { "ds_write_b96",        GCNENC_DS,     GCN_ADDR_DST|GCN_DS_96,   222,  ARCH_GCN_1_1_2  },
