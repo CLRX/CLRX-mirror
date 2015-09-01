@@ -287,13 +287,13 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         {
             cxuint index = binaryMapFind(galliumArgTypesMap, galliumArgTypesMap + 9,
                          name, CStringLess()) - galliumArgTypesMap;
-            if (index == 9) // end of this map
+            if (index != 9) // end of this map
+                argType = galliumArgTypesMap[index].second;
+            else
             {
                 asmr.printError(nameStringPlace, "Unknown argument type");
                 good = false;
             }
-            else
-                argType = galliumArgTypesMap[index].second;
         }
     }
     else

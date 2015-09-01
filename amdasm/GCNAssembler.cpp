@@ -1042,12 +1042,13 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             const size_t hwregNameIndex = (::strncmp(name, "hwreg_", 6) == 0) ? 6 : 0;
             size_t index = binaryMapFind(hwregNamesMap, hwregNamesMap + hwregNamesMapSize,
                   name+hwregNameIndex, CStringLess()) - hwregNamesMap;
-            if (index == hwregNamesMapSize)
+            if (index != hwregNamesMapSize)
+                hwregId = hwregNamesMap[index].second;
+            else
             {
                 asmr.printError(funcArg1Place, "Unrecognized HWRegister");
                 good = false;
             }
-            hwregId = hwregNamesMap[index].second;
         }
         else
             good = false;
@@ -1118,8 +1119,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                            output.size()));
     if (imm16Expr!=nullptr)
         imm16Expr->setTarget(AsmExprTarget(((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL) ?
-                GCNTGT_SOPJMP : GCNTGT_SOPKSIMM16, asmr.currentSection,
-                           output.size()));
+                GCNTGT_SOPJMP : GCNTGT_SOPKSIMM16, asmr.currentSection, output.size()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -1178,9 +1178,243 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     src1Expr.release();
 }
 
+static const std::pair<const char*, uint16_t> sendMessageNamesMap[] =
+{
+    { "gs", 2 },
+    { "gs_done", 3 },
+    { "interrupt", 1 },
+    { "system", 15 }
+};
+
+static const size_t sendMessageNamesMapSize = sizeof(sendMessageNamesMap) /
+            sizeof(std::pair<const char*, uint16_t>);
+
+static const char* sendMsgGSOPTable[] =
+{ "nop", "cut", "emit", "emit_cut" };
+
 void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    bool good = true;
+    uint16_t imm16 = 0;
+    std::unique_ptr<AsmExpression> imm16Expr;
+    switch (gcnInsn.mode&GCN_MASK1)
+    {
+        case GCN_IMM_REL:
+        {
+            uint64_t value = 0;
+            if (!getJumpValueArg(asmr, value, imm16Expr, linePtr))
+                return;
+            if (imm16Expr==nullptr)
+            {
+                value = (int64_t(value)-int64_t(output.size())-4);
+                if (value & 3)
+                {
+                    asmr.printError(linePtr, "Jump is not aligned to word!");
+                    good = false;
+                }
+                value >>= 2;
+                if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+                {
+                    asmr.printError(linePtr, "Jump out of range");
+                    good = false;
+                }
+                imm16 = value;
+            }
+            break;
+        }
+        case GCN_IMM_LOCKS:
+        {   /* parse locks for s_waitcnt */
+            char name[20];
+            bool haveLgkmCnt = false;
+            bool haveExpCnt = false;
+            bool haveVMCnt = false;
+            while (true)
+            {
+                const char* funcNamePlace = linePtr;
+                if (!getNameArg(asmr, 20, name, linePtr, "function name", true))
+                    return;
+                toLowerString(name);
+                
+                cxuint bitPos = 0, bitMask = 0;
+                if (::strcmp(name, "vmcnt")==0)
+                {
+                    if (haveVMCnt)
+                        asmr.printWarning(funcNamePlace, "vmcnt was already defined");
+                    bitPos = 0;
+                    bitMask = 15;
+                    haveVMCnt = true;
+                }
+                else if (::strcmp(name, "lgkmcnt")==0)
+                {
+                    if (haveLgkmCnt)
+                        asmr.printWarning(funcNamePlace, "lgkmcnt was already defined");
+                    bitPos = 8;
+                    bitMask = 15;
+                    haveLgkmCnt = true;
+                }
+                else if (::strcmp(name, "expcnt")==0)
+                {
+                    if (haveExpCnt)
+                        asmr.printWarning(funcNamePlace, "expcnt was already defined");
+                    bitPos = 4;
+                    bitMask = 7;
+                    haveExpCnt = true;
+                }
+                else
+                {
+                    asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
+                    return;
+                }
+                
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr==end || *linePtr!='(')
+                {
+                    asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
+                    return;
+                }
+                ++linePtr;
+                skipSpacesToEnd(linePtr, end);
+                const char* argPlace = linePtr;
+                uint64_t value;
+                if (getAbsoluteValueArg(asmr, value, linePtr))
+                {
+                    if (value > bitMask)
+                        asmr.printWarning(argPlace, "Value out of range");
+                    imm16 = (imm16 & ~(bitMask<<bitPos)) | ((value&bitMask)<<bitPos);
+                }
+                else
+                    good = false;
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr==end || *linePtr!=')')
+                {
+                    asmr.printError(linePtr, "Unterminated function call");
+                    return;
+                }
+                ++linePtr;
+                
+                // ampersand
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr==end)
+                    break;
+                if (linePtr[0] != '&')
+                {
+                    asmr.printError(linePtr, "Expected '&' before lock function");
+                    return;
+                }
+                ++linePtr;
+            }
+            break;
+        }
+        case GCN_IMM_MSGS:
+        {
+            char name[20];
+            const char* funcNamePlace = linePtr;
+            if (!getNameArg(asmr, 20, name, linePtr, "function name", true))
+                return;
+            toLowerString(name);
+            skipSpacesToEnd(linePtr, end);
+            if (::strcmp(name, "sendmsg")!=0 || linePtr==end || *linePtr!='(')
+            {
+                asmr.printError(funcNamePlace, "Expected sendmsg function");
+                return;
+            }
+            ++linePtr;
+            skipSpacesToEnd(linePtr, end);
+            
+            const char* funcArg1Place = linePtr;
+            size_t sendMessage = 0;
+            if (getNameArg(asmr, 20, name, linePtr, "message name", true))
+            {
+                toLowerString(name);
+                const size_t msgNameIndex = (::strncmp(name, "msg_", 4) == 0) ? 4 : 0;
+                size_t index = binaryMapFind(sendMessageNamesMap,
+                         sendMessageNamesMap + sendMessageNamesMapSize,
+                         name+msgNameIndex, CStringLess()) - sendMessageNamesMap;
+                if (index == sendMessageNamesMapSize)
+                {
+                    asmr.printError(funcArg1Place, "Unrecognized message");
+                    good = false;
+                }
+                sendMessage = sendMessageNamesMap[index].second;
+            }
+            else
+                good = false;
+            
+            cxuint gsopIndex = 0;
+            cxuint streamId = 0;
+            if (sendMessage == 2 || sendMessage == 3)
+            {
+                if (!skipRequiredComma(asmr, linePtr))
+                    return;
+                skipSpacesToEnd(linePtr, end);
+                const char* funcArg2Place = linePtr;
+                if (getNameArg(asmr, 20, name, linePtr, "GSOP", true))
+                {
+                    toLowerString(name);
+                    const size_t gsopNameIndex = (::strncmp(name, "gs_op_", 6) == 0)
+                                ? 6 : 0;
+                    for (gsopIndex = 0; gsopIndex < 4; gsopIndex++)
+                        if (::strcmp(name+gsopNameIndex, sendMsgGSOPTable[gsopIndex])==0)
+                            break;
+                    if (gsopIndex == 4)
+                    {   // not found
+                        asmr.printError(funcArg2Place, "Unrecognized GSOP");
+                        good = false;
+                    }
+                }
+                else
+                    good = false;
+                
+                if (gsopIndex!=0)
+                {
+                    if (!skipRequiredComma(asmr, linePtr))
+                        return;
+                    
+                    uint64_t value;
+                    skipSpacesToEnd(linePtr, end);
+                    const char* func3ArgPlace = linePtr;
+                    good &= getAbsoluteValueArg(asmr, value, linePtr, true);
+                    if (value > 3)
+                        asmr.printWarning(func3ArgPlace,
+                                  "StreamId (3rd function argument) out of range");
+                    streamId = value&3;
+                }
+            }
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr==end || *linePtr!=')')
+            {
+                asmr.printError(linePtr, "Unterminated sendmsg function call");
+                return;
+            }
+            ++linePtr;
+            imm16 = sendMessage | (gsopIndex<<4) | (streamId<<8);
+            break;
+        }
+        case GCN_IMM_NONE:
+            break;
+        default:
+            good &= parseImm<uint16_t>(asmr, linePtr, imm16, imm16Expr);
+            break;
+    }
+    /// if errors
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    uint32_t word;
+    SLEV(word, 0xbf800000U | imm16 | uint32_t(gcnInsn.code1)<<16);
+    
+    if (imm16Expr!=nullptr)
+        imm16Expr->setTarget(AsmExprTarget(((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL) ?
+                GCNTGT_SOPJMP : GCNTGT_SOPKSIMM16, asmr.currentSection, output.size()));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
+            reinterpret_cast<cxbyte*>(&word)+4);
+    /// prevent freeing expression
+    imm16Expr.release();
 }
 
 void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,

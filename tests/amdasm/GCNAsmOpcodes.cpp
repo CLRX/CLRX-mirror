@@ -361,6 +361,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_getreg_b32  s43, hwreg(XXX,6,8)", 0, 0, false, false,
         "test.s:1:30: Error: Unrecognized HWRegister\n" },
     /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
+    /* SOPP */
     { nullptr, 0, 0, false, false, 0 }
 };
 

@@ -294,6 +294,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xbf8f032bU, 0, false, "        s_setprio       0x32b\n" },
     { 0xbf90001bU, 0, false, "        s_sendmsg       sendmsg(11, cut, 0)\n" },
     { 0xbf90000bU, 0, false, "        s_sendmsg       sendmsg(11, nop, 0)\n" },
+    { 0xbf900001U, 0, false, "        s_sendmsg       sendmsg(interrupt)\n" },
     { 0xbf90000fU, 0, false, "        s_sendmsg       sendmsg(system)\n" },
     { 0xbf90021fU, 0, false, "        s_sendmsg       sendmsg(system, cut, 2)\n" },
     { 0xbf900a1fU, 0, false, "        s_sendmsg       sendmsg(system, cut, 2) :0xa1f\n" },

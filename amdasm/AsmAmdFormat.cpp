@@ -940,13 +940,13 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
         toLowerString(name);
         cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,
                      name, CStringLess()) - dataClassMap;
-        if (index == dataClassMapSize) // end of this map
+        if (index != dataClassMapSize) // end of this map
+            dataClass = dataClassMap[index].second;
+        else
         {
             asmr.printError(dataClassPlace, "Unknown Data Class");
             good = false;
         }
-        else
-            dataClass = dataClassMap[index].second;
     }
     else
         good = false;
@@ -1315,7 +1315,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         {
             skipSpacesToEnd(linePtr, end);
             const char* ptrAccessPlace = linePtr;
-            if (getNameArg(asmr,15, name, linePtr, "access qualifier", false))
+            if (getNameArg(asmr, 15, name, linePtr, "access qualifier", false))
             {
                 if (::strcmp(name, "read_only")==0)
                     ptrAccess = KARG_PTR_READ_ONLY;
