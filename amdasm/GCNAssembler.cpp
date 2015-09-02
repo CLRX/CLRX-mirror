@@ -1183,6 +1183,7 @@ static const std::pair<const char*, uint16_t> sendMessageNamesMap[] =
     { "gs", 2 },
     { "gs_done", 3 },
     { "interrupt", 1 },
+    { "sysmsg", 15 },
     { "system", 15 }
 };
 
@@ -1232,6 +1233,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             bool haveLgkmCnt = false;
             bool haveExpCnt = false;
             bool haveVMCnt = false;
+            imm16 = 0xf7f;
             while (true)
             {
                 const char* funcNamePlace = linePtr;
@@ -1362,6 +1364,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                             break;
                     if (gsopIndex == 4)
                     {   // not found
+                        gsopIndex = 0;
                         asmr.printError(funcArg2Place, "Unrecognized GSOP");
                         good = false;
                     }
@@ -1380,7 +1383,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     good &= getAbsoluteValueArg(asmr, value, linePtr, true);
                     if (value > 3)
                         asmr.printWarning(func3ArgPlace,
-                                  "StreamId (3rd function argument) out of range");
+                                  "StreamId (3rd argument) out of range");
                     streamId = value&3;
                 }
             }

@@ -757,12 +757,16 @@ static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                 *bufPtr++ = ',';
                 *bufPtr++ = ' ';
                 illMask = 0xfcc0;
-                const char* gsopName = sendGsOpMessageTable[(imm16>>4)&3];
+                const cxuint gsopId = (imm16>>4)&3;
+                const char* gsopName = sendGsOpMessageTable[gsopId];
                 while (*gsopName != 0)
                     *bufPtr++ = *gsopName++;
-                *bufPtr++ = ',';
-                *bufPtr++ = ' ';
-                *bufPtr++ = '0' + ((imm16>>8)&3);
+                if (gsopId!=0 || ((imm16>>8)&3)!=0)
+                {
+                    *bufPtr++ = ',';
+                    *bufPtr++ = ' ';
+                    *bufPtr++ = '0' + ((imm16>>8)&3);
+                }
             }
             *bufPtr++ = ')';
             if ((imm16&illMask) != 0)
