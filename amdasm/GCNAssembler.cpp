@@ -1003,19 +1003,19 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         if (imm16Expr==nullptr)
         {
-            value = (int64_t(value)-int64_t(output.size())-4);
-            if (value & 3)
+            int64_t offset = (int64_t(value)-int64_t(output.size())-4);
+            if (offset & 3)
             {
                 asmr.printError(linePtr, "Jump is not aligned to word!");
                 good = false;
             }
-            value = int64_t(value)>>2;
-            if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+            offset >>= 2;
+            if (offset > INT16_MAX || offset < INT16_MIN)
             {
                 asmr.printError(linePtr, "Jump out of range");
                 good = false;
             }
-            imm16 = value;
+            imm16 = offset;
         }
     }
     else if ((gcnInsn.mode&GCN_MASK1) == GCN_IMM_SREG)
@@ -1210,19 +1210,19 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 return;
             if (imm16Expr==nullptr)
             {
-                value = (int64_t(value)-int64_t(output.size())-4);
-                if (value & 3)
+                int64_t offset = (int64_t(value)-int64_t(output.size())-4);
+                if (offset & 3)
                 {
                     asmr.printError(linePtr, "Jump is not aligned to word!");
                     good = false;
                 }
-                value = int64_t(value)>>2;
-                if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+                offset >>= 2;
+                if (offset > INT16_MAX || offset < INT16_MIN)
                 {
                     asmr.printError(linePtr, "Jump out of range");
                     good = false;
                 }
-                imm16 = value;
+                imm16 = offset;
             }
             break;
         }
@@ -1578,25 +1578,27 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             printWarningForRange(16, value, sourcePos);
             return true;
         case GCNTGT_SOPJMP:
+        {
             if (sectionId != targetSectionId)
             {   // if jump outside current section (.text)
                 printError(sourcePos, "Jump over current section!");
                 return false;
             }
-            value = (int64_t(value)-int64_t(offset)-4);
-            if (value & 3)
+            int64_t outOffset = (int64_t(value)-int64_t(offset)-4);
+            if (outOffset & 3)
             {
                 printError(sourcePos, "Jump is not aligned to word!");
                 return false;
             }
-            value = int64_t(value)>>2;
-            if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
+            outOffset >>= 2;
+            if (outOffset > INT16_MAX || outOffset < INT16_MIN)
             {
                 printError(sourcePos, "Jump out of range!");
                 return false;
             }
-            SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
+            SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), outOffset);
             return true;
+        }
         default:
             return false;
     }
