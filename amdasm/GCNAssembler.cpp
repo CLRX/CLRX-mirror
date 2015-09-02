@@ -1009,7 +1009,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 asmr.printError(linePtr, "Jump is not aligned to word!");
                 good = false;
             }
-            value >>= 2;
+            value = int64_t(value)>>2;
             if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
             {
                 asmr.printError(linePtr, "Jump out of range");
@@ -1216,7 +1216,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     asmr.printError(linePtr, "Jump is not aligned to word!");
                     good = false;
                 }
-                value >>= 2;
+                value = int64_t(value)>>2;
                 if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
                 {
                     asmr.printError(linePtr, "Jump out of range");
@@ -1589,7 +1589,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 printError(sourcePos, "Jump is not aligned to word!");
                 return false;
             }
-            value >>= 2;
+            value = int64_t(value)>>2;
             if (int64_t(value) > INT16_MAX || int64_t(value) < INT16_MIN)
             {
                 printError(sourcePos, "Jump out of range!");

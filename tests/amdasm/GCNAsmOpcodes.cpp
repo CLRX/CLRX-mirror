@@ -362,6 +362,13 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:30: Error: Unrecognized HWRegister\n" },
     /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
     /* SOPP */
+    { "s_nop  0x0", 0xbf800000U, 0, false, true, "" },
+    { "s_nop  7", 0xbf800007U, 0, false, true, "" },
+    { "s_nop  644", 0xbf800284U, 0, false, true, "" },
+    { "xv=6; xt=65; s_nop  xv+xt", 0xbf800047U, 0, false, true, "" },
+    { "s_nop  xv+xt; xv=6; xt=65", 0xbf800047U, 0, false, true, "" },
+    { "s_endpgm", 0xbf810000U, 0, false, true, "" },
+    //{ "s_branch  xyz+8; xyz:", 
     { nullptr, 0, 0, false, false, 0 }
 };
 
