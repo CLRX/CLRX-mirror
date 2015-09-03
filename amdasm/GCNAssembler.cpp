@@ -354,6 +354,9 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             }
             else
             {   // this is not this register
+                if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
+                            regsNum, required))
+                    return false;
                 linePtr = oldLinePtr;
                 regPair = { 0, 0 };
                 return true;
@@ -1423,6 +1426,60 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    bool good = true;
+    RegPair dstReg(0, 1);
+    RegPair sbaseReg(0, 1);
+    RegPair soffsetReg(0, 0);
+    cxbyte soffsetVal = 0;
+    std::unique_ptr<AsmExpression> soffsetExpr;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    if (mode1 == GCN_SMRD_ONLYDST)
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+    else if (mode1 != GCN_ARG_NONE)
+    {
+        const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch, dregsNum);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        good &= parseSRegRange(asmr, linePtr, sbaseReg, arch,
+                   (gcnInsn.mode&GCN_SBASE4)?4:2);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!='@')
+            good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1, false);
+        else
+        {   // '@' prefix
+            ++linePtr;
+            skipSpacesToEnd(linePtr, end);
+        }
+        if (soffsetReg.first==0 && soffsetReg.second==0)
+        {   // parse immediate
+            soffsetReg.first = 255; // indicate an immediate
+            good &= parseImm<cxbyte>(asmr, linePtr, soffsetVal, soffsetExpr);
+        }
+    }
+    /// if errors
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (soffsetExpr!=nullptr)
+        soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMRDOFFSET, asmr.currentSection,
+                       output.size()));
+    
+    uint32_t word = 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (dstReg.first<<15) |
+            ((sbaseReg.first<<8)&~1) | ((soffsetReg.first==255) ? 0x100 : 0) |
+            ((soffsetReg.first==255) ? soffsetVal : soffsetReg.first);
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
+            reinterpret_cast<cxbyte*>(&word)+4);
+    /// prevent freeing expression
+    soffsetExpr.release();
 }
 
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1565,7 +1622,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_LITIMM:
             if (sectionId != ASMSECT_ABS)
             {
-                printError(sourcePos, "Relative value is illegal in data expressions");
+                printError(sourcePos, "Relative value is illegal in literal expressions");
                 return false;
             }
             SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value);
@@ -1574,7 +1631,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_SOPKSIMM16:
             if (sectionId != ASMSECT_ABS)
             {
-                printError(sourcePos, "Relative value is illegal in data expressions");
+                printError(sourcePos, "Relative value is illegal in immediate expressions");
                 return false;
             }
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
@@ -1602,6 +1659,15 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), outOffset);
             return true;
         }
+        case GCNTGT_SMRDOFFSET:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            sectionData[offset] = value;
+            printWarningForRange(8, value, sourcePos);
+            return true;
         default:
             return false;
     }

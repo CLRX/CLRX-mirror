@@ -472,6 +472,43 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_incperflevel  0x1234", 0xbf941234U, 0, false, true, "" },
     { "    s_decperflevel  0x1234", 0xbf951234U, 0, false, true, "" },
     { "    s_ttracedata", 0xbf960000U, 0, false, true, "" },
+    /* SMRD encoding */
+    { "    s_load_dword    s50, s[58:59], 0x5b", 0xc0193b5bU, 0, false, true, "" },
+    { "    s_load_dword    s50, s[58:59], s91", 0xc0193a5bU, 0, false, true, "" },
+    { "    s_load_dword    s51, s[58:59], s91", 0xc019ba5bU, 0, false, true, "" },
+    { "s0=191;    s_load_dword    s50, s[58:59], @s0", 0xc0193bbfU, 0, false, true, "" },
+    { "    s_load_dword    s50, s[58:59], @s0; s0=191", 0xc0193bbfU, 0, false, true, "" },
+    { "x0=191;    s_load_dword    s50, s[58:59], x0", 0xc0193bbfU, 0, false, true, "" },
+    { "    s_load_dword    s50, s[58:59], x0; x0=191", 0xc0193bbfU, 0, false, true, "" },
+    { "    s_load_dwordx2  s[52:53], s[58:59], s83", 0xc05a3a53U, 0, false, true, "" },
+    { "    s_load_dwordx4  s[52:55], s[58:59], s83", 0xc09a3a53U, 0, false, true, "" },
+    { "    s_load_dwordx8  s[52:59], s[58:59], s83", 0xc0da3a53U, 0, false, true, "" },
+    { "    s_load_dwordx16  s[52:67], s[58:59], s83", 0xc11a3a53U, 0, false, true, "" },
+    { "    s_buffer_load_dword    s50, s[60:63], 191", 0xc2193dbfU, 0, false, true, "" },
+    { "    s_buffer_load_dwordx2  s[52:53], s[60:63], s83",
+        0xc25a3c53U, 0, false, true, "" },
+    { "    s_buffer_load_dwordx4  s[52:55], s[60:63], s83",
+        0xc29a3c53U, 0, false, true, "" },
+    { "    s_buffer_load_dwordx8  s[52:59], s[60:63], s83",
+        0xc2da3c53U, 0, false, true, "" },
+    { "    s_buffer_load_dwordx16  s[52:67], s[60:63], s83",
+        0xc31a3c53U, 0, false, true, "" },
+    /* vccz as variable */
+    { "    s_load_dword    s50, s[58:59], vccz; vccz=33",
+        0xc0193b21U, 0, false, true, "" },
+    /* other with only sdst */
+    { "    s_memtime  s[50:51]", 0xc7990000U, 0, false, true, "" },
+    { "    s_dcache_inv", 0xc7c00000U, 0, false, true, "" },
+    /* SMRD warnings */
+    { "s0=3191; s_load_dword    s50, s[58:59], @s0", 0xc0193b77U, 0, false, true,
+        "test.s:1:42: Warning: Value 0xc77 truncated to 0x77\n" },
+    { "s_load_dword    s50, s[58:59], @s0; s0=3191", 0xc0193b77U, 0, false, true,
+        "test.s:1:33: Warning: Value 0xc77 truncated to 0x77\n" },
+    /* SMRD errors */
+    { "    s_load_dword    vccz, s[58:59], 0x5b", 0, 0, false, false,
+        "test.s:1:21: Error: Expected 1 scalar register\n" },
+    { "    s_load_dword    s50, s[59:60], 0x5b", 0, 0, false, false,
+        "test.s:1:26: Error: Unaligned scalar register range\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
