@@ -1473,9 +1473,10 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMRDOFFSET, asmr.currentSection,
                        output.size()));
     
-    uint32_t word = 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (dstReg.first<<15) |
+    uint32_t word;
+    SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (dstReg.first<<15) |
             ((sbaseReg.first<<8)&~1) | ((soffsetReg.first==255) ? 0x100 : 0) |
-            ((soffsetReg.first==255) ? soffsetVal : soffsetReg.first);
+            ((soffsetReg.first==255) ? soffsetVal : soffsetReg.first));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
             reinterpret_cast<cxbyte*>(&word)+4);
     /// prevent freeing expression
@@ -1485,6 +1486,10 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    bool good = true;
 }
 
 void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
