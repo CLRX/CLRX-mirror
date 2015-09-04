@@ -97,8 +97,8 @@ static void initializeGCNAssembler()
 }
 
 GCNAssembler::GCNAssembler(Assembler& assembler): ISAAssembler(assembler),
-        sgprsNum(0), vgprsNum(0), curArchMask(
-                    1U<<cxuint(getGPUArchitectureFromDeviceType(assembler.getDeviceType())))
+        regs({0, 0}), curArchMask(1U<<cxuint(
+                    getGPUArchitectureFromDeviceType(assembler.getDeviceType())))
 {
     std::call_once(clrxGCNAssemblerOnceFlag, initializeGCNAssembler);
 }
@@ -853,8 +853,21 @@ static inline bool isXRegRange(RegPair pair, cxuint regsNum = 1)
     return (pair.second==0) || cxuint(pair.second-pair.first)==regsNum;
 }
 
+static inline void updateVGPRsNum(cxuint& vgprsNum, cxuint vgpr)
+{
+    vgprsNum = std::max(std::max(vgprsNum, vgpr+1), 256U);
+}
+
+static inline void updateSGPRsNum(cxuint& sgprsNum, cxuint sgpr, uint16_t arch)
+{
+    cxuint maxSGPRsNum = arch&ARCH_RX3X0 ? 102U: 104U;
+    if (sgpr < maxSGPRsNum)
+        sgprsNum = std::max(std::max(sgprsNum, sgpr+1), arch&ARCH_RX3X0 ? 100U: 102U);
+}
+
 void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -868,6 +881,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return;
     }
+    
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op;
     good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
@@ -909,10 +923,12 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // prevent freeing expressions
     src0Expr.release();
     src1Expr.release();
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
 
 void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -959,6 +975,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + wordsNum));
     // prevent freeing expressions
     src0Expr.release();
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
 
 static const std::pair<const char*, uint16_t> hwregNamesMap[] =
@@ -981,7 +998,8 @@ static const size_t hwregNamesMapSize = sizeof(hwregNamesMap) /
             sizeof(std::pair<const char*, uint16_t>);
 
 void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1129,10 +1147,12 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     imm32Expr.release();
     imm16Expr.release();
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1197,7 +1217,8 @@ static const char* sendMsgGSOPTable[] =
 { "nop", "cut", "emit", "emit_cut" };
 
 void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1411,7 +1432,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     uint32_t word;
-    SLEV(word, 0xbf800000U | imm16 | uint32_t(gcnInsn.code1)<<16);
+    SLEV(word, 0xbf800000U | imm16 | (uint32_t(gcnInsn.code1)<<16));
     
     if (imm16Expr!=nullptr)
         imm16Expr->setTarget(AsmExprTarget(((gcnInsn.mode&GCN_MASK1) == GCN_IMM_REL) ?
@@ -1424,7 +1445,8 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1481,59 +1503,107 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(&word)+4);
     /// prevent freeing expression
     soffsetExpr.release();
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
 
+enum: cxbyte {
+    VOPOPFLAG_ABS = 1,
+    VOPOPFLAG_NEG = 2,
+    VOPOPFLAG_SEXT = 4
+};
+
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
     bool good = true;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    RegPair dstReg(0, 1);
+    RegPair ccReg(0, 1);
+    if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+    else // if VGPRS as destination
+        good &= parseVRegRange(asmr, linePtr, dstReg, arch,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+    
+    if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC) /* VOP3b */
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2);
+    }
+    
+    GCNOperand src0Op, src1Op;
+    std::unique_ptr<AsmExpression> src0OpExpr, src1OpExpr;
+    cxbyte src0OpFlags = 0;
+    cxbyte src1OpFlags = 0;
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
+                (gcnInsn.mode&GCN_REG_SRC0_64)?2:1,
+                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS);
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
 }
 
 void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
 void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output)
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
 {
 }
 
@@ -1564,54 +1634,70 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     switch(it->encoding1)
     {
         case GCNENC_SOPC:
-            GCNAsmUtils::parseSOPCEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseSOPCEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_SOPP:
-            GCNAsmUtils::parseSOPPEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseSOPPEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_SOP1:
-            GCNAsmUtils::parseSOP1Encoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseSOP1Encoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_SOP2:
-            GCNAsmUtils::parseSOP2Encoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseSOP2Encoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_SOPK:
-            GCNAsmUtils::parseSOPKEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseSOPKEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_SMRD:
-            GCNAsmUtils::parseSMRDEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseSMRDEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_VOPC:
-            GCNAsmUtils::parseVOPCEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseVOPCEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_VOP1:
-            GCNAsmUtils::parseVOP1Encoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseVOP1Encoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_VOP2:
-            GCNAsmUtils::parseVOP2Encoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseVOP2Encoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_VOP3A:
         case GCNENC_VOP3B:
-            GCNAsmUtils::parseVOP3Encoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseVOP3Encoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_VINTRP:
-            GCNAsmUtils::parseVINTRPEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseVINTRPEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_DS:
-            GCNAsmUtils::parseDSEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseDSEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_MUBUF:
         case GCNENC_MTBUF:
-            GCNAsmUtils::parseMXBUFEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseMXBUFEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_MIMG:
-            GCNAsmUtils::parseMIMGEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseMIMGEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_EXP:
-            GCNAsmUtils::parseEXPEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseEXPEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         case GCNENC_FLAT:
-            GCNAsmUtils::parseFLATEncoding(assembler, *it, linePtr, curArchMask, output);
+            GCNAsmUtils::parseFLATEncoding(assembler, *it, linePtr,
+                                   curArchMask, output, regs);
             break;
         default:
             break;

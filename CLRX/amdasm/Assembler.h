@@ -355,12 +355,14 @@ public:
 /// GCN arch assembler
 class GCNAssembler: public ISAAssembler
 {
+public:
+    struct Regs {
+        cxuint sgprsNum;
+        cxuint vgprsNum;
+    };
 private:
     union {
-        struct {
-            cxuint sgprsNum;
-            cxuint vgprsNum;
-        };
+        Regs regs;
         cxuint regTable[2];
     };
     uint16_t curArchMask;
