@@ -855,14 +855,14 @@ static inline bool isXRegRange(RegPair pair, cxuint regsNum = 1)
 
 static inline void updateVGPRsNum(cxuint& vgprsNum, cxuint vgpr)
 {
-    vgprsNum = std::max(std::max(vgprsNum, vgpr+1), 256U);
+    vgprsNum = std::min(std::max(vgprsNum, vgpr+1), 256U);
 }
 
 static inline void updateSGPRsNum(cxuint& sgprsNum, cxuint sgpr, uint16_t arch)
 {
     cxuint maxSGPRsNum = arch&ARCH_RX3X0 ? 102U: 104U;
     if (sgpr < maxSGPRsNum)
-        sgprsNum = std::max(std::max(sgprsNum, sgpr+1), arch&ARCH_RX3X0 ? 100U: 102U);
+        sgprsNum = std::min(std::max(sgprsNum, sgpr+1), arch&ARCH_RX3X0 ? 100U: 102U);
 }
 
 void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
