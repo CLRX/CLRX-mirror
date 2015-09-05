@@ -122,7 +122,6 @@ enum : Flags {
     INSTROP_SSOURCE = 2,
     INSTROP_VREGS = 4,
     
-    INSTROP_RESOLVEDEXPR = 0x40, // accepts only resolved expressions
     INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
     
     INSTROP_TYPE_MASK = 0x300,
@@ -156,6 +155,11 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     template<typename T>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>& outTargetExpr);
+    
+    static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
+            std::unique_ptr<AsmExpression>& outTargetExpr, Flags instropMask = 0);
+    
+    static bool parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
