@@ -1822,7 +1822,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
-        SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code2)<<17) |
+        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
             (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
             ((src0OpFlags & VOPOPFLAG_ABS) ? 0x100 : 0) |
             ((src1OpFlags & VOPOPFLAG_ABS) ? 0x200 : 0));
@@ -1841,7 +1841,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     immExpr.release();
     // update register pool
     if (dstReg.first>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.second-1);
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.second-257);
     else // sgprs
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
     updateSGPRsNum(gcnRegs.sgprsNum, dstCCReg.second-1, arch);
