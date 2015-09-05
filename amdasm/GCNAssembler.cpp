@@ -600,6 +600,7 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
             std::unique_ptr<AsmExpression>& outTargetExpr, Flags instropMask)
 {
     const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
     if (isOnlyFloat(linePtr, end))
     {
         try
@@ -1781,6 +1782,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if ((haveDstCC || haveSrcCC) && (src0OpFlags|src1OpFlags) != VOPOPFLAG_ABS)
+    {
+        asmr.printError(argsPlace, "Absolute values in VOP3B encoding is illegal");
+        return;
+    }
+    
     const bool vop3 = (modifiers&VOP3_VOP3)!=0|| (src1Op.pair.first<256) ||
         src0OpFlags!=0 || src1OpFlags!=0 || modifiers!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
@@ -1822,6 +1829,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
+        //if (
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
             (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
             ((src0OpFlags & VOPOPFLAG_ABS) ? 0x100 : 0) |
