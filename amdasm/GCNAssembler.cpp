@@ -1677,6 +1677,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
+    skipSpacesToEnd(linePtr, end);
     /* source0 */
     if (linePtr!=end && *linePtr=='-')
     {
@@ -1724,6 +1725,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
+    
+    skipSpacesToEnd(linePtr, end);
     /* source1 */
     if (linePtr!=end && *linePtr=='-')
     {
@@ -1844,8 +1847,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 ((src1OpFlags & VOPOPFLAG_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
             (uint32_t(srcCCReg.first)<<18) | ((modifiers & 3) << 27) |
-            ((src0OpFlags & VOPOPFLAG_NEG) ? (1U<<30) : 0) |
-            ((src1OpFlags & VOPOPFLAG_NEG) ? (1U<<31) : 0));
+            ((src0OpFlags & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
+            ((src1OpFlags & VOPOPFLAG_NEG) ? (1U<<30) : 0));
         wordsNum++;
     }
     
