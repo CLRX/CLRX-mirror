@@ -694,7 +694,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     skipSpacesToEnd(linePtr, end);
     const char* negPlace = linePtr;
     if (instrOpMask & INSTROP_VOP3NEG)
-        operand.vop3Mods = 0;
+        operand.vop3Mods = 0; // clear modifier (VOP3NEG)
+        /// PARSEWITHNEG used to continuing operand parsing with modifiers
     if (instrOpMask & (INSTROP_PARSEWITHNEG|INSTROP_VOP3NEG))
     {
         if (linePtr!=end && *linePtr=='-')
