@@ -533,6 +533,28 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_readlane_b32  s26, v21, s94", 0x0234bd15U, 0, false, true, "" },
     { "    v_writelane_b32  v26, v21, s94", 0x0434bd15U, 0, false, true, "" },
     { "    v_add_f32  v154, v21, v107", 0x0734d715U, 0, false, true, "" },
+    { "    v_add_f32  v154, s21, v107", 0x0734d615U, 0, false, true, "" },
+    { "    v_add_f32  v154, v21, v107 vop3", 0xd206009aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, s98", 0xd206009aU, 0x0000c515U, true, true, "" },
+    { "    v_add_f32  v154, abs(v21), v107", 0xd206019aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32  v154, abs(v21), abs(v107)",
+        0xd206039aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32  v154, -v21, v107", 0xd206009aU, 0x2002d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, -v107", 0xd206009aU, 0x4002d715U, true, true, "" },
+    { "    v_add_f32  v154, -v21, -v107", 0xd206009aU, 0x6002d715U, true, true, "" },
+    { "    v_add_f32  v154, -abs(v21), -abs(v107)",
+        0xd206039aU, 0x6002d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 mul:2", 0xd206009aU, 0x0802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 mul:002", 0xd206009aU, 0x0802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 mul:4", 0xd206009aU, 0x1002d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 div:2", 0xd206009aU, 0x1802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 div:002", 0xd206009aU, 0x1802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 mul:2 clamp",
+        0xd206089aU, 0x0802d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, v107 clamp", 0xd206089aU, 0x0002d715U, true, true, "" },
+    { "    v_cndmask_b32   v154, v21, v107, s[6:7]",
+        0xd200009aU, 0x001ad715U, true, true, "" },
+    /* VOP2 errors */
     { nullptr, 0, 0, false, false, 0 }
 };
 
