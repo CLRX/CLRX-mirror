@@ -1766,10 +1766,11 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
+    bool sgprRegInSrc1 = mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR;
     skipSpacesToEnd(linePtr, end);
     good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags |
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
                 ((haveDstCC || haveSrcCC) ? INSTROP_VOP3NEG : INSTROP_VOP3MODS) |
                 (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
@@ -1793,7 +1794,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    const bool vop3 = (modifiers&VOP3_VOP3)!=0|| (src1Op.pair.first<256) ||
+    const bool vop3 = (modifiers&VOP3_VOP3)!=0||
+        /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
+        ((src1Op.pair.first<256) ^ (mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR)) ||
         src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
         (haveDstCC && dstCCReg.first!=106) || (haveSrcCC && srcCCReg.first!=106);
