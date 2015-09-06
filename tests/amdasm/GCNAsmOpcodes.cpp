@@ -96,6 +96,19 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "        s_xor_b64 s[22:23], vccz, s[62:63]\n", 0x89963efbU, 0, false, true, "" },
     { "        s_xor_b64 s[22:23], execz, s[62:63]\n", 0x89963efcU, 0, false, true, "" },
     { "        s_xor_b64 s[22:23], scc, s[62:63]\n", 0x89963efdU, 0, false, true, "" },
+    /* long var names */
+    { "s1111111111111111111222222222=67777\n"
+      "s_add_u32  s21, s4, s1111111111111111111222222222\n",
+      0x8015ff04U, 67777, true, true, "" },
+    { "sx1111111111111111111222222222=67777\n"
+      "s_add_u32  s21, s4, sx1111111111111111111222222222\n",
+      0x8015ff04U, 67777, true, true, "" },
+    { "vx1111111111111111111222222222=67777\n"
+      "s_add_u32  s21, s4, vx1111111111111111111222222222\n",
+      0x8015ff04U, 67777, true, true, "" },
+    { "ttmp1111111111111111111222222222=67777\n"
+      "s_add_u32  s21, s4, ttmp1111111111111111111222222222\n",
+      0x8015ff04U, 67777, true, true, "" },
     /* errors */
     { "    s_add_u32  xx, s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Expected 1 scalar register\n" },
@@ -539,6 +552,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32  v154, abs(v21), v107", 0xd206019aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, abs(v21), abs(v107)",
         0xd206039aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32  v154, v21, abs(v107)", 0xd206029aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, -v21, v107", 0xd206009aU, 0x2002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, -v107", 0xd206009aU, 0x4002d715U, true, true, "" },
     { "    v_add_f32  v154, -v21, -v107", 0xd206009aU, 0x6002d715U, true, true, "" },
@@ -554,7 +568,49 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32  v154, v21, v107 clamp", 0xd206089aU, 0x0002d715U, true, true, "" },
     { "    v_cndmask_b32   v154, v21, v107, s[6:7]",
         0xd200009aU, 0x001ad715U, true, true, "" },
+    /* negated expressions */
+    { "vx=7;    v_add_f32  v154, -vx, v107", 0x0734d6c7U, 0, false, true, "" },
+    { "v_add_f32  v154, -vx, v107; vx=7", 0x0734d6ffU, uint32_t(-7), true, true, "" },
+    { "vx=7737;    v_add_f32  v154, -vx, v107",
+        0x0734d6ffU, uint32_t(-7737), true, true, "" },
+    /* var long names */
+    { "s1111111111111111111222222222=67777\n"
+        "v_add_f32  v154, s1111111111111111111222222222, v107",
+        0x0734d6ffU, 67777, true, true, "" },
+    { "v1111111111111111111222222222=67777\n"
+        "v_add_f32  v154, v1111111111111111111222222222, v107",
+        0x0734d6ffU, 67777, true, true, "" },
+    { "ttmp1111111111111111111222222222=67777\n"
+        "v_add_f32  v154, ttmp1111111111111111111222222222, v107",
+        0x0734d6ffU, 67777, true, true, "" },
     /* VOP2 errors */
+    { "    v_cndmask_b32   v[154:155], v21, v107, vcc", 0, 0, false, false,
+        "test.s:1:21: Error: Required 1 vector register\n" },
+    { "    v_cndmask_b32   v154, v[21:22], v107, vcc", 0, 0, false, false,
+        "test.s:1:27: Error: Required 1 vector register\n" },
+    { "    v_cndmask_b32   v154, v21, v[107:108], vcc", 0, 0, false, false,
+        "test.s:1:32: Error: Required 1 vector register\n" },
+    { "    v_cndmask_b32   v[154:, v21, v107, vcc", 0, 0, false, false,
+        "test.s:1:27: Error: Missing number\n" },
+    { "    v_cndmask_b32   v[14, v21, v107, vcc", 0, 0, false, false,
+        "test.s:1:21: Error: Unterminated vector register range\n" },
+    { "    v_cndmask_b32   v[14:15, v21, v107, vcc", 0, 0, false, false,
+        "test.s:1:21: Error: Unterminated vector register range\n" },
+    { "    v_cndmask_b32   v256, v21, v107, vcc", 0, 0, false, false,
+        "test.s:1:24: Error: Number is too big\n"
+        "test.s:1:24: Error: Expected ',' before argument\n" },
+    { "    v_cndmask_b32   v[255:256], v21, v107, vcc", 0, 0, false, false,
+        "test.s:1:29: Error: Number is too big\n"
+        "test.s:1:29: Error: Expected ',' before argument\n" },
+    /* VOP2 in VOP3 errors */
+    { "    v_add_f32  v154, v21, v107 mul:3", 0, 0, false, false,
+        "test.s:1:32: Error: Unrecognized VOP3 mul:X modifier\n" },
+    { "    v_add_f32  v154, v21, v107 mul:", 0, 0, false, false,
+        "test.s:1:36: Error: Missing number\n" },
+    { "    v_add_f32  v154, v21, v107 mul", 0, 0, false, false,
+        "test.s:1:35: Error: Expected ':' before multiplier number\n" },
+    { "    v_add_f32  v154, v21, v107 mxl", 0, 0, false, false,
+        "test.s:1:32: Error: Unrecognized VOP3 modifier\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

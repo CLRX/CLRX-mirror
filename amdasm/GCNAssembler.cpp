@@ -221,8 +221,13 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     }
     } catch(const ParseException& ex)
     {
-        asmr.printError(linePtr, ex.what());
-        return false;
+        if (required)
+        {
+            asmr.printError(linePtr, ex.what());
+            return false;
+        }
+        linePtr = oldLinePtr; // revert current line pointer
+        return true;
     }
     
     if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
@@ -255,7 +260,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     {
         const char* oldLinePtr = linePtr;
         char regName[20];
-        if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, false))
+        if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, true))
             return false;
         toLowerString(regName);
         
@@ -484,8 +489,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     }
     } catch(const ParseException& ex)
     {
-        asmr.printError(linePtr, ex.what());
-        return false;
+        if (required)
+        {
+            asmr.printError(linePtr, ex.what());
+            return false;
+        }
+        linePtr = oldLinePtr; // revert current line pointer
+        return true;
     }
     
     if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
@@ -727,7 +737,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     {
         char regName[20];
         const char* regNamePlace = linePtr;
-        if (getNameArg(asmr, 20, regName, linePtr, "register name", false, false))
+        if (getNameArg(asmr, 20, regName, linePtr, "register name", false, true))
         {
             toLowerString(regName);
             operand.pair = {0, 0};
@@ -1649,7 +1659,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                     }
                     else
                     {
-                        asmr.printError(modPlace, "Expected ':' before multiplier number");
+                        asmr.printError(linePtr, "Expected ':' before multiplier number");
                         good = false;
                     }
                 }
