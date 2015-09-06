@@ -97,9 +97,6 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "        s_xor_b64 s[22:23], execz, s[62:63]\n", 0x89963efcU, 0, false, true, "" },
     { "        s_xor_b64 s[22:23], scc, s[62:63]\n", 0x89963efdU, 0, false, true, "" },
     /* long var names */
-    { "s1111111111111111111222222222=67777\n"
-      "s_add_u32  s21, s4, s1111111111111111111222222222\n",
-      0x8015ff04U, 67777, true, true, "" },
     { "sx1111111111111111111222222222=67777\n"
       "s_add_u32  s21, s4, sx1111111111111111111222222222\n",
       0x8015ff04U, 67777, true, true, "" },
@@ -574,12 +571,6 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "vx=7737;    v_add_f32  v154, -vx, v107",
         0x0734d6ffU, uint32_t(-7737), true, true, "" },
     /* var long names */
-    { "s1111111111111111111222222222=67777\n"
-        "v_add_f32  v154, s1111111111111111111222222222, v107",
-        0x0734d6ffU, 67777, true, true, "" },
-    { "v1111111111111111111222222222=67777\n"
-        "v_add_f32  v154, v1111111111111111111222222222, v107",
-        0x0734d6ffU, 67777, true, true, "" },
     { "ttmp1111111111111111111222222222=67777\n"
         "v_add_f32  v154, ttmp1111111111111111111222222222, v107",
         0x0734d6ffU, 67777, true, true, "" },

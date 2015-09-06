@@ -221,13 +221,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     }
     } catch(const ParseException& ex)
     {
-        if (required)
-        {
-            asmr.printError(linePtr, ex.what());
-            return false;
-        }
-        linePtr = oldLinePtr; // revert current line pointer
-        return true;
+        asmr.printError(linePtr, ex.what());
+        return false;
     }
     
     if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
@@ -489,13 +484,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     }
     } catch(const ParseException& ex)
     {
-        if (required)
-        {
-            asmr.printError(linePtr, ex.what());
-            return false;
-        }
-        linePtr = oldLinePtr; // revert current line pointer
-        return true;
+        asmr.printError(linePtr, ex.what());
+        return false;
     }
     
     if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
