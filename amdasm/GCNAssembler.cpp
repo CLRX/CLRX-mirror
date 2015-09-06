@@ -744,9 +744,13 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 operand.pair = { 253, 254 };
                 return true;
             }
-            else if ((instrOpMask&INSTROP_VREGS)!=0 &&
-                (::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
+            else if ((::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
             {
+                if ((instrOpMask&INSTROP_LDS)==0)
+                {
+                    asmr.printError(regNamePlace, "LDS_Direct in this place is illegal");
+                    return false;
+                }
                 operand.pair = { 254, 255 };
                 return true;
             }
@@ -1739,7 +1743,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         good &= parseSRegRange(asmr, linePtr, dstCCReg, arch, 2);
     }
     
-    GCNOperand src0Op, src1Op;
+    GCNOperand src0Op{}, src1Op{};
     std::unique_ptr<AsmExpression> src0OpExpr, src1OpExpr;
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
             (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
@@ -1749,7 +1753,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags |
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
                 ((haveDstCC || haveSrcCC) ? INSTROP_VOP3NEG : INSTROP_VOP3MODS));
     
     uint32_t immValue = 0;
@@ -1796,6 +1800,22 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         /* srcCC!=VCC or dstCC!=VCC */
         (haveDstCC && dstCCReg.first!=106) || (haveSrcCC && srcCCReg.first!=106);
     
+    cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
+    
+    if ((src0Op.pair.first==255 || src1Op.pair.first==255) &&
+        (src0Op.pair.first<maxSgprsNum || src0Op.pair.first==124 ||
+         src1Op.pair.first<maxSgprsNum || src1Op.pair.first==124))
+    {
+        asmr.printError(argsPlace, "Literal constant with SGPR or M0 is illegal");
+        return;
+    }
+    if (src0Op.pair.first<maxSgprsNum && src1Op.pair.first<maxSgprsNum &&
+        src0Op.pair.first!=src1Op.pair.first)
+    {   /* include VCCs (???) */
+        asmr.printError(argsPlace, "More than one SGPR to read in instruction");
+        return;
+    }
+    
     if (vop3)
     {   // use VOP3 encoding
         if (src0Op.pair.first==255 || src1Op.pair.first==255 ||
@@ -1821,8 +1841,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!vop3)
     {   // VOP2 encoding
         SLEV(words[0], (uint32_t(gcnInsn.code1)<<25) | uint32_t(src0Op.pair.first) |
-                (uint32_t(src1Op.pair.first&0xff)<<9) |
-                (uint32_t(dstReg.first&0xff)<<17));
+            (uint32_t(src1Op.pair.first&0xff)<<9) | (uint32_t(dstReg.first&0xff)<<17));
         if (src0Op.pair.first==255)
             SLEV(words[wordsNum++], src0Op.value);
         else if (src1Op.pair.first==255)
