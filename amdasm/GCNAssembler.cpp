@@ -675,7 +675,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         {
             linePtr = negPlace;
             good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
-                             (instrOpMask & ~INSTROP_VOP3MODS) | INSTROP_VOP3NEG);
+                             (instrOpMask & ~INSTROP_VOP3MODS) | INSTROP_PARSEWITHNEG);
         }
         
         if (operand.vop3Mods & VOPOPFLAG_ABS)
@@ -694,9 +694,13 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     skipSpacesToEnd(linePtr, end);
     const char* negPlace = linePtr;
     if (instrOpMask & INSTROP_VOP3NEG)
+        operand.vop3Mods = 0;
+    if (instrOpMask & (INSTROP_PARSEWITHNEG|INSTROP_VOP3NEG))
     {
         if (linePtr!=end && *linePtr=='-')
             skipCharAndSpacesToEnd(linePtr, end);
+        else
+            operand.vop3Mods |= VOPOPFLAG_NEG;
     }
     
     // otherwise
@@ -773,9 +777,11 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         const char* exprPlace = linePtr;
         
         uint64_t value;
-        if (!forceExpression && isOnlyFloat(linePtr, end))
+        operand.vop3Mods = 0; // zeroing operand modifiers
+        if (!forceExpression && isOnlyFloat(negPlace, end))
         {   // if only floating point value
             /* if floating point literal can be processed */
+            linePtr = negPlace;
             try
             {
                 if ((instrOpMask & INSTROP_TYPE_MASK) == INSTROP_F16)
@@ -871,7 +877,6 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
         else
         {   // if expression
-            operand.vop3Mods = 0; // zeroing operand modifiers
             std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
             if (expr==nullptr) // error
                 return false;
@@ -1600,7 +1605,8 @@ enum:  cxbyte {
     VOP3_VOP3 = 32
 };
 
-bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods)
+bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
+                bool withClamp)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -1669,7 +1675,15 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                     }
                 }
                 else if (::strcmp(mod, "clamp")==0) // clamp
-                    mods |= VOP3_CLAMP;
+                {
+                    if (withClamp)
+                        mods |= VOP3_CLAMP;
+                    else
+                    {
+                        asmr.printError(modPlace, "Modifier CLAMP in VOP3B is illegal");
+                        good = false;
+                    }
+                }
                 else if (::strcmp(mod, "vop3")==0)
                     mods |= VOP3_VOP3;
                 else
@@ -1717,6 +1731,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1);
     
     const bool haveDstCC = mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC;
+    const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
     if (haveDstCC) /* VOP3b */
     {
         if (!skipRequiredComma(asmr, linePtr))
@@ -1734,7 +1749,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags |
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS);
+                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                ((haveDstCC || haveSrcCC) ? INSTROP_VOP3NEG : INSTROP_VOP3MODS));
     
     uint32_t immValue = 0;
     std::unique_ptr<AsmExpression> immExpr;
@@ -1751,10 +1767,10 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags |
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS|
+                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                ((haveDstCC || haveSrcCC) ? INSTROP_VOP3NEG : INSTROP_VOP3MODS) |
                 (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
-    const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
     if (mode1 == GCN_ARG2_IMM)
     {
         if (!skipRequiredComma(asmr, linePtr))
@@ -1770,21 +1786,10 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // modifiers
     cxbyte modifiers = 0;
-    good &= parseVOP3Modifiers(asmr, linePtr, modifiers);
+    good &= parseVOP3Modifiers(asmr, linePtr, modifiers, !(haveDstCC || haveSrcCC));
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
-    
-    if ((haveDstCC || haveSrcCC) && (src0Op.vop3Mods|src1Op.vop3Mods) == VOPOPFLAG_ABS)
-    {
-        asmr.printError(argsPlace, "Absolute values in VOP3B encoding is illegal");
-        return;
-    }
-    if ((haveDstCC || haveSrcCC) && (modifiers&VOP3_CLAMP) != 0)
-    {
-        asmr.printError(argsPlace, "Clamp modifier in VOP3B is illegal");
-        return;
-    }
     
     const bool vop3 = (modifiers&VOP3_VOP3)!=0|| (src1Op.pair.first<256) ||
         src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0 ||
