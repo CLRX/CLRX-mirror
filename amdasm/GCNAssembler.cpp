@@ -746,13 +746,9 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 operand.pair = { 253, 254 };
                 return true;
             }
-            else if ((::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
+            else if ((instrOpMask&INSTROP_LDS)!=0 &&
+                (::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
             {
-                if ((instrOpMask&INSTROP_LDS)==0)
-                {
-                    asmr.printError(regNamePlace, "LDS_Direct in this place is illegal");
-                    return false;
-                }
                 operand.pair = { 254, 255 };
                 return true;
             }
