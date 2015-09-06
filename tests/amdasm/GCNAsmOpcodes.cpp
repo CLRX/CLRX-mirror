@@ -103,9 +103,6 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "vx1111111111111111111222222222=67777\n"
       "s_add_u32  s21, s4, vx1111111111111111111222222222\n",
       0x8015ff04U, 67777, true, true, "" },
-    { "ttmp1111111111111111111222222222=67777\n"
-      "s_add_u32  s21, s4, ttmp1111111111111111111222222222\n",
-      0x8015ff04U, 67777, true, true, "" },
     /* errors */
     { "    s_add_u32  xx, s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Expected 1 scalar register\n" },
@@ -571,8 +568,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "vx=7737;    v_add_f32  v154, -vx, v107",
         0x0734d6ffU, uint32_t(-7737), true, true, "" },
     /* var long names */
-    { "ttmp1111111111111111111222222222=67777\n"
-        "v_add_f32  v154, ttmp1111111111111111111222222222, v107",
+    { "xtmp1111111111111111111222222222=67777\n"
+        "v_add_f32  v154, xtmp1111111111111111111222222222, v107",
         0x0734d6ffU, 67777, true, true, "" },
     /* VOP2 errors */
     { "    v_cndmask_b32   v[154:155], v21, v107, vcc", 0, 0, false, false,

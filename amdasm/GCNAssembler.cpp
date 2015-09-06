@@ -251,7 +251,14 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     bool ttmpReg = false;
     try
     {
-    if (toLower(*linePtr) != 's') // if
+    if (linePtr+4 <= end && toLower(linePtr[0]) == 't' &&
+        toLower(linePtr[1]) == 't' && toLower(linePtr[2]) == 'm' &&
+        toLower(linePtr[3]) == 'p')
+    {
+        ttmpReg = true;
+        linePtr = oldLinePtr;
+    }
+    else if (toLower(*linePtr) != 's') // if
     {
         const char* oldLinePtr = linePtr;
         char regName[20];
@@ -284,11 +291,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 loHiRegSuffix = 3;
                 loHiReg = 110;
             }
-            else if (regName[1] == 't' && regName[2] == 'm' && regName[3] == 'p')
-            {
-                ttmpReg = true;
-                linePtr = oldLinePtr;
-            }
+            
         }
         else if (regName[0] == 'm' && regName[1] == '0' && regName[2] == 0)
         {
