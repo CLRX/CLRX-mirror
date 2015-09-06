@@ -644,13 +644,12 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (linePtr!=end && *linePtr=='@') // treat this operand as expression
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                              instrOpMask & ~INSTROP_VOP3MODS);
-        
+        const char* negPlace = linePtr;
         if (linePtr!=end && *linePtr=='-')
         {
             operand.vop3Mods |= VOPOPFLAG_NEG;
-            ++linePtr;
+            skipCharAndSpacesToEnd(linePtr, end);
         }
-        skipSpacesToEnd(linePtr, end);
         if (linePtr+3 <= end && toLower(linePtr[0])=='a' &&
             toLower(linePtr[1])=='b' && toLower(linePtr[2])=='s')
         {
@@ -658,8 +657,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr=='(')
             {
-                ++linePtr;
                 operand.vop3Mods |= VOPOPFLAG_ABS;
+                ++linePtr;
             }
             else
             {
@@ -668,8 +667,16 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             }
         }
         
-        bool good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
-                                 instrOpMask & ~INSTROP_VOP3MODS);
+        bool good;
+        if (operand.vop3Mods != VOPOPFLAG_NEG)
+            good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
+                                     instrOpMask & ~INSTROP_VOP3MODS);
+        else //
+        {
+            linePtr = negPlace;
+            good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
+                             (instrOpMask & ~INSTROP_VOP3MODS) | INSTROP_VOP3NEG);
+        }
         
         if (operand.vop3Mods & VOPOPFLAG_ABS)
         {
@@ -685,6 +692,13 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         return good;
     }
     skipSpacesToEnd(linePtr, end);
+    const char* negPlace = linePtr;
+    if (instrOpMask & INSTROP_VOP3NEG)
+    {
+        if (linePtr!=end && *linePtr=='-')
+            skipCharAndSpacesToEnd(linePtr, end);
+    }
+    
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
@@ -713,23 +727,23 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             operand.pair = {0, 0};
             if (::strcmp(regName, "vccz") == 0)
             {
-                operand = { { 251, 252 } };
+                operand.pair = { 251, 252 };
                 return true;
             }
             else if (::strcmp(regName, "execz") == 0)
             {
-                operand = { { 252, 253 } };
+                operand.pair = { 252, 253 };
                 return true;
             }
             else if (::strcmp(regName, "scc") == 0)
             {
-                operand = { { 253, 254 } };
+                operand.pair = { 253, 254 };
                 return true;
             }
             else if ((instrOpMask&INSTROP_VREGS)!=0 &&
                 (::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
             {
-                operand = { { 254, 255 } };
+                operand.pair = { 254, 255 };
                 return true;
             }
             if (operand.pair.first!=0 || operand.pair.second!=0)
@@ -742,16 +756,15 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 return true;
             }
             /* check expression, back to before regName */
-            linePtr = regNamePlace;
+            linePtr = negPlace;
         }
         // treat argument as expression
         bool forceExpression = false;
         if (linePtr!=end && *linePtr=='@')
         {
             forceExpression = true;
-            linePtr++;
+            skipCharAndSpacesToEnd(linePtr, end);
         }
-        skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr==',')
         {
             asmr.printError(linePtr, "Expected instruction operand");
@@ -771,36 +784,36 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     switch (value)
                     {
                         case 0x0:
-                            operand = { { 128, 0 } };
+                            operand.pair = { 128, 0 };
                             return true;
                         case 0x3800: // 0.5
-                            operand = { { 240, 0 } };
+                            operand.pair = { 240, 0 };
                             return true;
                         case 0xb800: // -0.5
-                            operand = { { 241, 0 } };
+                            operand.pair = { 241, 0 };
                             return true;
                         case 0x3c00: // 1.0
-                            operand = { { 242, 0 } };
+                            operand.pair = { 242, 0 };
                             return true;
                         case 0xbc00: // -1.0
-                            operand = { { 243, 0 } };
+                            operand.pair = { 243, 0 };
                             return true;
                         case 0x4000: // 2.0
-                            operand = { { 244, 0 } };
+                            operand.pair = { 244, 0 };
                             return true;
                         case 0xc000: // -2.0
-                            operand = { { 245, 0 } };
+                            operand.pair = { 245, 0 };
                             return true;
                         case 0x4400: // 4.0
-                            operand = { { 246, 0 } };
+                            operand.pair = { 246, 0 };
                             return true;
                         case 0xc400: // -4.0
-                            operand = { { 247, 0 } };
+                            operand.pair = { 247, 0 };
                             return true;
                         case 0x3118: // 1/(2*PI)
                             if (arch&ARCH_RX3X0)
                             {
-                                operand = { { 248, 0 } };
+                                operand.pair = { 248, 0 };
                                 return true;
                             }
                     }
@@ -815,36 +828,36 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     switch (value)
                     {
                         case 0x0:
-                            operand = { { 128, 0 } };
+                            operand.pair = { 128, 0 };
                             return true;
                         case 0x3f000000: // 0.5
-                            operand = { { 240, 0 } };
+                            operand.pair = { 240, 0 };
                             return true;
                         case 0xbf000000: // -0.5
-                            operand = { { 241, 0 } };
+                            operand.pair = { 241, 0 };
                             return true;
                         case 0x3f800000: // 1.0
-                            operand = { { 242, 0 } };
+                            operand.pair = { 242, 0 };
                             return true;
                         case 0xbf800000: // -1.0
-                            operand = { { 243, 0 } };
+                            operand.pair = { 243, 0 };
                             return true;
                         case 0x40000000: // 2.0
-                            operand = { { 244, 0 } };
+                            operand.pair = { 244, 0 };
                             return true;
                         case 0xc0000000: // -2.0
-                            operand = { { 245, 0 } };
+                            operand.pair = { 245, 0 };
                             return true;
                         case 0x40800000: // 4.0
-                            operand = { { 246, 0 } };
+                            operand.pair = { 246, 0 };
                             return true;
                         case 0xc0800000: // -4.0
-                            operand = { { 247, 0 } };
+                            operand.pair = { 247, 0 };
                             return true;
                         case 0x3e22f983: // 1/(2*PI)
                             if (arch&ARCH_RX3X0)
                             {
-                                operand = { { 248, 0 } };
+                                operand.pair = { 248, 0 };
                                 return true;
                             }
                     }
@@ -858,6 +871,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
         else
         {   // if expression
+            operand.vop3Mods = 0; // zeroing operand modifiers
             std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
             if (expr==nullptr) // error
                 return false;
@@ -886,18 +900,18 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     return false;
                 }
                 outTargetExpr = std::move(expr);
-                operand = { { 255, 0 } };
+                operand.pair = { 255, 0 };
                 return true;
             }
             
             if (value <= 64)
             {
-                operand = { { 128+value, 0 } };
+                operand.pair = { 128+value, 0 };
                 return true;
             }
             else if (int64_t(value) >= -16 && int64_t(value) < 0)
             {
-                operand = { { 192-value, 0 } };
+                operand.pair = { 192-value, 0 };
                 return true;
             }
         }
@@ -911,7 +925,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         // not in range
         asmr.printWarningForRange(32, value, asmr.getSourcePos(regNamePlace));
-        operand = { { 255, 0 }, uint32_t(value) };
+        operand = { { 255, 0 }, uint32_t(value), operand.vop3Mods };
         return true;
     }
     

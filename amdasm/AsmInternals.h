@@ -122,6 +122,7 @@ enum : Flags {
     INSTROP_SSOURCE = 2,
     INSTROP_VREGS = 4,
     INSTROP_VOP3MODS = 8,
+    INSTROP_VOP3NEG = 16,
     
     INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
     
