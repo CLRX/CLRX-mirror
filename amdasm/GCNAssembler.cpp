@@ -1782,9 +1782,14 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if ((haveDstCC || haveSrcCC) && (src0OpFlags|src1OpFlags) != VOPOPFLAG_ABS)
+    if ((haveDstCC || haveSrcCC) && (src0OpFlags|src1OpFlags) == VOPOPFLAG_ABS)
     {
         asmr.printError(argsPlace, "Absolute values in VOP3B encoding is illegal");
+        return;
+    }
+    if ((haveDstCC || haveSrcCC) && (modifiers&VOP3_CLAMP) != 0)
+    {
+        asmr.printError(argsPlace, "Clamp modifier in VOP3B is illegal");
         return;
     }
     
@@ -1829,13 +1834,16 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
-        //if (
-        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-            (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-            ((src0OpFlags & VOPOPFLAG_ABS) ? 0x100 : 0) |
-            ((src1OpFlags & VOPOPFLAG_ABS) ? 0x200 : 0));
+        if (haveDstCC || haveSrcCC)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
+                (dstReg.first&0xff) | (uint32_t(dstCCReg.first)<<8));
+        else
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
+                (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+                ((src0OpFlags & VOPOPFLAG_ABS) ? 0x100 : 0) |
+                ((src1OpFlags & VOPOPFLAG_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
-            ((modifiers & 3) << 27) |
+            (uint32_t(srcCCReg.first)<<18) | ((modifiers & 3) << 27) |
             ((src0OpFlags & VOPOPFLAG_NEG) ? (1U<<30) : 0) |
             ((src1OpFlags & VOPOPFLAG_NEG) ? (1U<<31) : 0));
         wordsNum++;
