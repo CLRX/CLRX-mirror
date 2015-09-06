@@ -635,6 +635,56 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         return parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum);
     else if (instrOpMask == INSTROP_VREGS)
         return parseVRegRange(asmr, linePtr, operand.pair, regsNum);
+    
+    const char* end = asmr.line+asmr.lineSize;
+    if (instrOpMask & INSTROP_VOP3MODS)
+    {
+        operand.vop3Mods = 0;
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr=='@') // treat this operand as expression
+            return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
+                             instrOpMask & ~INSTROP_VOP3MODS);
+        
+        if (linePtr!=end && *linePtr=='-')
+        {
+            operand.vop3Mods |= VOPOPFLAG_NEG;
+            ++linePtr;
+        }
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr+3 <= end && toLower(linePtr[0])=='a' &&
+            toLower(linePtr[1])=='b' && toLower(linePtr[2])=='s')
+        {
+            linePtr += 3;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end && *linePtr=='(')
+            {
+                ++linePtr;
+                operand.vop3Mods |= VOPOPFLAG_ABS;
+            }
+            else
+            {
+                asmr.printError(linePtr, "Expected '(' after abs");
+                return false;
+            }
+        }
+        
+        bool good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
+                                 instrOpMask & ~INSTROP_VOP3MODS);
+        
+        if (operand.vop3Mods & VOPOPFLAG_ABS)
+        {
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end && *linePtr==')')
+                linePtr++;
+            else
+            {
+                asmr.printError(linePtr, "Unterminated abs() modifier call");
+                return false;
+            }
+        }
+        return good;
+    }
+    skipSpacesToEnd(linePtr, end);
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
@@ -651,7 +701,6 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             return true;
     }
     
-    const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
     if ((instrOpMask & INSTROP_SSOURCE)!=0)
@@ -703,7 +752,6 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             linePtr++;
         }
         skipSpacesToEnd(linePtr, end);
-        
         if (linePtr==end || *linePtr==',')
         {
             asmr.printError(linePtr, "Expected instruction operand");
@@ -1530,12 +1578,6 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
 
-enum: cxbyte {
-    VOPOPFLAG_ABS = 1,
-    VOPOPFLAG_NEG = 2,
-    VOPOPFLAG_SEXT = 4
-};
-
 enum:  cxbyte {
     VOP3_MUL2 = 1,
     VOP3_MUL4 = 2,
@@ -1670,49 +1712,15 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     GCNOperand src0Op, src1Op;
     std::unique_ptr<AsmExpression> src0OpExpr, src1OpExpr;
-    cxbyte src0OpFlags = 0;
-    cxbyte src1OpFlags = 0;
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
             (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     skipSpacesToEnd(linePtr, end);
-    /* source0 */
-    if (linePtr!=end && *linePtr=='-')
-    {
-        src0OpFlags |= VOPOPFLAG_NEG;
-        linePtr++;
-    }
-    if (linePtr+3 <= end && toLower(linePtr[0])=='a' && toLower(linePtr[1])=='b' &&
-        toLower(linePtr[2])=='s')
-    {
-        linePtr += 3;
-        skipSpacesToEnd(linePtr, end);
-        if (linePtr!=end && *linePtr=='(')
-        {
-            ++linePtr;
-            src0OpFlags |= VOPOPFLAG_ABS;
-        }
-        else
-        {
-            asmr.printError(linePtr, "Expected '(' after abs");
-            good = false;
-        }
-    }
     good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags |
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS);
-    if (src0OpFlags & VOPOPFLAG_ABS)
-    {
-        if (linePtr!=end && *linePtr==')')
-            ++linePtr;
-        else
-        {
-            asmr.printError(linePtr, "Unterminated abs() modifier call");
-            good = false;
-        }
-    }
+                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS);
     
     uint32_t immValue = 0;
     std::unique_ptr<AsmExpression> immExpr;
@@ -1727,42 +1735,10 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     skipSpacesToEnd(linePtr, end);
-    /* source1 */
-    if (linePtr!=end && *linePtr=='-')
-    {
-        src1OpFlags |= VOPOPFLAG_NEG;
-        linePtr++;
-    }
-    if (linePtr+3 <= end && toLower(linePtr[0])=='a' && toLower(linePtr[1])=='b' &&
-        toLower(linePtr[2])=='s')
-    {
-        linePtr += 3;
-        skipSpacesToEnd(linePtr, end);
-        if (linePtr!=end && *linePtr=='(')
-        {
-            ++linePtr;
-            src1OpFlags |= VOPOPFLAG_ABS;
-        }
-        else
-        {
-            asmr.printError(linePtr, "Expected '(' after abs");
-            good = false;
-        }
-    }
     good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags |
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS|
                 (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
-    if (src1OpFlags & VOPOPFLAG_ABS)
-    {
-        if (linePtr!=end && *linePtr==')')
-            ++linePtr;
-        else
-        {
-            asmr.printError(linePtr, "Unterminated abs() modifier call");
-            good = false;
-        }
-    }
     
     const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
     if (mode1 == GCN_ARG2_IMM)
@@ -1785,7 +1761,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if ((haveDstCC || haveSrcCC) && (src0OpFlags|src1OpFlags) == VOPOPFLAG_ABS)
+    if ((haveDstCC || haveSrcCC) && (src0Op.vop3Mods|src1Op.vop3Mods) == VOPOPFLAG_ABS)
     {
         asmr.printError(argsPlace, "Absolute values in VOP3B encoding is illegal");
         return;
@@ -1797,7 +1773,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     const bool vop3 = (modifiers&VOP3_VOP3)!=0|| (src1Op.pair.first<256) ||
-        src0OpFlags!=0 || src1OpFlags!=0 || modifiers!=0 ||
+        src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
         (haveDstCC && dstCCReg.first!=106) || (haveSrcCC && srcCCReg.first!=106);
     
@@ -1843,12 +1819,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         else
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
                 (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-                ((src0OpFlags & VOPOPFLAG_ABS) ? 0x100 : 0) |
-                ((src1OpFlags & VOPOPFLAG_ABS) ? 0x200 : 0));
+                ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
+                ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
             (uint32_t(srcCCReg.first)<<18) | ((modifiers & 3) << 27) |
-            ((src0OpFlags & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
-            ((src1OpFlags & VOPOPFLAG_NEG) ? (1U<<30) : 0));
+            ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
+            ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
         wordsNum++;
     }
     

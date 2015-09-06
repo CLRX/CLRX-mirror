@@ -121,6 +121,7 @@ enum : Flags {
     INSTROP_SREGS = 1,
     INSTROP_SSOURCE = 2,
     INSTROP_VREGS = 4,
+    INSTROP_VOP3MODS = 8,
     
     INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
     
@@ -130,11 +131,18 @@ enum : Flags {
     INSTROP_F16 = 0x200,   // half floating point literal
 };
 
+enum: cxbyte {
+    VOPOPFLAG_ABS = 1,
+    VOPOPFLAG_NEG = 2,
+    VOPOPFLAG_SEXT = 4
+};
+
 typedef std::pair<uint16_t, uint16_t> RegPair;
 
 struct GCNOperand {
     RegPair pair;
     uint32_t value;
+    cxbyte vop3Mods;
 };
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
@@ -164,7 +172,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
                cxuint regsNum, Flags instrOpMask);
-    
+        
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                       GCNAssembler::Regs& gcnRegs);
