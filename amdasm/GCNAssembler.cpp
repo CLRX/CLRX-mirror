@@ -1602,7 +1602,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
 
-enum:  cxbyte {
+enum: cxbyte {
     VOP3_MUL2 = 1,
     VOP3_MUL4 = 2,
     VOP3_DIV2 = 3,
@@ -1810,7 +1810,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         (src0Op.pair.first<maxSgprsNum || src0Op.pair.first==124 ||
          src1Op.pair.first<maxSgprsNum || src1Op.pair.first==124))
     {
-        asmr.printError(argsPlace, "Literal constant with SGPR or M0 is illegal");
+        asmr.printError(argsPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
     if (src0Op.pair.first<maxSgprsNum && src1Op.pair.first<maxSgprsNum &&
