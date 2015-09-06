@@ -698,9 +698,10 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     if (instrOpMask & (INSTROP_PARSEWITHNEG|INSTROP_VOP3NEG))
     {
         if (linePtr!=end && *linePtr=='-')
+        {
             skipCharAndSpacesToEnd(linePtr, end);
-        else
             operand.vop3Mods |= VOPOPFLAG_NEG;
+        }
     }
     
     // otherwise

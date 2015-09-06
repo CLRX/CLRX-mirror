@@ -509,6 +509,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:21: Error: Expected 1 scalar register\n" },
     { "    s_load_dword    s50, s[59:60], 0x5b", 0, 0, false, false,
         "test.s:1:26: Error: Unaligned scalar register range\n" },
+    /* VOP2/(VOP2 in VOP3) encoding */
     { nullptr, 0, 0, false, false, 0 }
 };
 
