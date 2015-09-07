@@ -360,13 +360,13 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "     s_setreg_b32  hwreg(trapsts, 3, 10), s43", 0xb9ab48c3u, 0, false, true, "" },
     /* hw regs errors */
     { "    s_getreg_b32  s43, hwreg   (HWREG_MODE, 0, 2", 0, 0, false, false,
-        "test.s:1:49: Error: Unterminated hwreg function call\n" },
+        "test.s:1:49: Error: Unterminated hwreg function\n" },
     { "    s_getreg_b32  s43, hwrX(mode, 0, 1)", 0, 0, false, false,
         "test.s:1:24: Error: Expected hwreg function\n" },
     { "    s_getreg_b32  s43, hwreg(mode, , )", 0, 0, false, false,
         "test.s:1:36: Error: Expected expression\n"
         "test.s:1:38: Error: Expected operator or value or symbol\n"
-        "test.s:1:39: Error: Unterminated hwreg function call\n" },
+        "test.s:1:39: Error: Unterminated hwreg function\n" },
     { "    s_getreg_b32  s43, hwreg(XXX,6,8)", 0, 0, false, false,
         "test.s:1:30: Error: Unrecognized HWRegister\n" },
     /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
@@ -429,9 +429,9 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:33: Error: Expected primary expression before operator\n"
         "test.s:1:35: Error: Expression have unresolved symbol 'lgkmcnt'\n"
         "test.s:1:42: Error: Expected operator\n"
-        "test.s:1:43: Error: Unterminated function call\n" },
+        "test.s:1:43: Error: Unterminated function\n" },
     { "s_waitcnt  vmcnt(11) & expcnt(3", 0, 0, false, false,
-        "test.s:1:32: Error: Unterminated function call\n" },
+        "test.s:1:32: Error: Unterminated function\n" },
     { "s_waitcnt  vmcxxnt(11)", 0, 0, false, false,
         "test.s:1:12: Error: Expected vmcnt, lgkmcnt or expcnt\n" },
     { "s_waitcnt  vmcnt(11) _", 0, 0, false, false,
@@ -470,7 +470,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:28: Error: Unrecognized GSOP\n" },
     { "    s_sendmsg  sendmsg(gs, nop__x", 0, 0, false, false,
         "test.s:1:28: Error: Unrecognized GSOP\n"
-        "test.s:1:34: Error: Unterminated sendmsg function call\n" },
+        "test.s:1:34: Error: Unterminated sendmsg function\n" },
     { "    s_sendmsg  sendmsg(gs, cut, 122)", 0xbf900212U, 0, false, true,
         "test.s:1:33: Warning: StreamId (3rd argument) out of range\n" },
     /* other SOPP encoding */

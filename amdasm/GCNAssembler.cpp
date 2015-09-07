@@ -190,8 +190,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         }
         if (linePtr!=end && *linePtr==':')
         {
-            ++linePtr;
-            skipSpacesToEnd(linePtr, end);
+            skipCharAndSpacesToEnd(linePtr, end);
             value2 = cstrtobyte(linePtr, end);
         }
         else
@@ -254,11 +253,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     if (linePtr+4 <= end && toLower(linePtr[0]) == 't' &&
         toLower(linePtr[1]) == 't' && toLower(linePtr[2]) == 'm' &&
         toLower(linePtr[3]) == 'p')
-    {
-        ttmpReg = true;
-        linePtr = oldLinePtr;
-    }
-    else if (toLower(*linePtr) != 's') // if
+        ttmpReg = true; // we have ttmp registers
+    else if (toLower(*linePtr) != 's') // if not sgprs
     {
         const char* oldLinePtr = linePtr;
         char regName[20];
@@ -280,7 +276,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             loHiReg = 126;
         }
         else if (regName[0]=='t')
-        {   /* tma,tba, ttmpX */
+        {   /* tma,tba */
             if (regName[1] == 'b' && regName[2] == 'a')
             {
                 loHiRegSuffix = 3;
@@ -291,7 +287,6 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 loHiRegSuffix = 3;
                 loHiReg = 110;
             }
-            
         }
         else if (regName[0] == 'm' && regName[1] == '0' && regName[2] == 0)
         {
@@ -354,7 +349,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 return true;
             }
         }
-        else if (!ttmpReg)
+        else
         {   // otherwise
             if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
                             regsNum, required))
@@ -394,7 +389,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
                 return false;
             }
         }
-        if (regsNum!=0 && regsNum != 1)
+        if (regsNum!=0 && regsNum!=1)
         {
             printXRegistersRequired(asmr, linePtr, "scalar", regsNum);
             return false;
@@ -421,8 +416,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         }
         if (linePtr!=end && *linePtr==':')
         {
-            ++linePtr;
-            skipSpacesToEnd(linePtr, end);
+            skipCharAndSpacesToEnd(linePtr, end);
             value2 = cstrtobyte(linePtr, end);
         }
         else
@@ -503,6 +497,7 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
             std::unique_ptr<AsmExpression>& outTargetExpr)
 {
     const char* end = asmr.line+asmr.lineSize;
+    outTargetExpr.reset();
     skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse( asmr, linePtr));
@@ -602,6 +597,7 @@ static bool isOnlyFloat(const char* str, const char* end)
 bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>& outTargetExpr, Flags instropMask)
 {
+    outTargetExpr.reset();
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     if (isOnlyFloat(linePtr, end))
@@ -647,6 +643,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (linePtr!=end && *linePtr=='@') // treat this operand as expression
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                              instrOpMask & ~INSTROP_VOP3MODS);
+        
         const char* negPlace = linePtr;
         if (linePtr!=end && *linePtr=='-')
         {
@@ -688,7 +685,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 linePtr++;
             else
             {
-                asmr.printError(linePtr, "Unterminated abs() modifier call");
+                asmr.printError(linePtr, "Unterminated abs() modifier");
                 return false;
             }
         }
@@ -969,7 +966,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     
     bool good = true;
-    RegPair dstReg(0, 1);
+    RegPair dstReg(0, 0);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -1030,7 +1027,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     
     bool good = true;
-    RegPair dstReg(0, 1);
+    RegPair dstReg(0, 0);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -1101,7 +1098,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     
     bool good = true;
-    RegPair dstReg(0, 1);
+    RegPair dstReg(0, 0);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -1199,7 +1196,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!=')')
         {
-            asmr.printError(linePtr, "Unterminated hwreg function call");
+            asmr.printError(linePtr, "Unterminated hwreg function");
             return;
         }
         ++linePtr;
@@ -1413,7 +1410,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr==end || *linePtr!=')')
                 {
-                    asmr.printError(linePtr, "Unterminated function call");
+                    asmr.printError(linePtr, "Unterminated function");
                     return;
                 }
                 ++linePtr;
@@ -1444,8 +1441,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 asmr.printError(funcNamePlace, "Expected sendmsg function");
                 return;
             }
-            ++linePtr;
-            skipSpacesToEnd(linePtr, end);
+            skipCharAndSpacesToEnd(linePtr, end);
             
             const char* funcArg1Place = linePtr;
             size_t sendMessage = 0;
@@ -1510,7 +1506,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=')')
             {
-                asmr.printError(linePtr, "Unterminated sendmsg function call");
+                asmr.printError(linePtr, "Unterminated sendmsg function");
                 return;
             }
             ++linePtr;
@@ -1521,7 +1517,6 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             break;
         default:
             good &= parseImm<uint16_t>(asmr, linePtr, imm16, imm16Expr);
-            break;
     }
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1572,11 +1567,9 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='@')
             good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1, false);
-        else
-        {   // '@' prefix
-            ++linePtr;
-            skipSpacesToEnd(linePtr, end);
-        }
+        else // '@' prefix
+            skipCharAndSpacesToEnd(linePtr, end);
+        
         if (soffsetReg.first==0 && soffsetReg.second==0)
         {   // parse immediate
             soffsetReg.first = 255; // indicate an immediate
@@ -1871,7 +1864,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
-            reinterpret_cast<cxbyte*>(words) + (wordsNum<<2));
+            reinterpret_cast<cxbyte*>(words + wordsNum));
     /// prevent freeing expression
     src0OpExpr.release();
     src1OpExpr.release();
