@@ -1801,14 +1801,11 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     }
     
-    if (vop3)
-    {   // use VOP3 encoding
-        if (src0Op.pair.first==255 || src1Op.pair.first==255 ||
-            mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM)
-        {
-            asmr.printError(argsPlace, "Literal in VOP3 encoding is illegal");
-            return;
-        }
+    if (vop3 && (src0Op.pair.first==255 || src1Op.pair.first==255 ||
+            mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM))
+    {
+        asmr.printError(argsPlace, "Literal in VOP3 encoding is illegal");
+        return;
     }
     
     if (src0OpExpr!=nullptr)
@@ -1869,6 +1866,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* argsPlace = linePtr;
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
@@ -1906,6 +1904,12 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if ((src0Op.vop3Mods!=0 || modifiers!=0) && src0Op.pair.first==255)
+    {
+        asmr.printError(argsPlace, "Literal in VOP3 encoding is illegal");
+        return;
+    }
+    
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
                       output.size()));
@@ -1914,7 +1918,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     if (!(src0Op.vop3Mods!=0 || modifiers!=0))
     {   // VOP1 encoding
-        SLEV(words[0], 0x7f000000U | (uint32_t(gcnInsn.code1)<<9) |
+        SLEV(words[0], 0x7e000000U | (uint32_t(gcnInsn.code1)<<9) |
             uint32_t(src0Op.pair.first) | (uint32_t(dstReg.first&0xff)<<17));
         if (src0Op.pair.first==255)
             SLEV(words[wordsNum++], src0Op.value);

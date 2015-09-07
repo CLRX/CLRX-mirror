@@ -738,6 +738,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cvt_pk_u16_u32  v55, s27, -v90", 0xd2600037U, 0x4002b41bU, true, true, "" },
     { "    v_cvt_pk_i16_i32  v154, v21, v107", 0x6334d715U, 0, false, true, "" },
     { "    v_cvt_pk_i16_i32  v55, s27, -v90", 0xd2620037U, 0x4002b41bU, true, true, "" },
+    /* VOP1 and VOP1 in VOP3 */
+    { "    v_nop", 0x7e000000U, 0, false, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
