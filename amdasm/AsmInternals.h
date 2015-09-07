@@ -140,6 +140,14 @@ enum: cxbyte {
     VOPOPFLAG_SEXT = 4
 };
 
+enum: cxbyte {
+    VOP3_MUL2 = 1,
+    VOP3_MUL4 = 2,
+    VOP3_DIV2 = 3,
+    VOP3_CLAMP = 16,
+    VOP3_VOP3 = 32
+};
+
 typedef std::pair<uint16_t, uint16_t> RegPair;
 
 struct GCNOperand {

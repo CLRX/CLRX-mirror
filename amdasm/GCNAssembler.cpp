@@ -1395,8 +1395,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
                     return;
                 }
-                ++linePtr;
-                skipSpacesToEnd(linePtr, end);
+                skipCharAndSpacesToEnd(linePtr, end);
                 const char* argPlace = linePtr;
                 uint64_t value;
                 if (getAbsoluteValueArg(asmr, value, linePtr))
@@ -1413,10 +1412,8 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     asmr.printError(linePtr, "Unterminated function");
                     return;
                 }
-                ++linePtr;
-                
                 // ampersand
-                skipSpacesToEnd(linePtr, end);
+                skipCharAndSpacesToEnd(linePtr, end);
                 if (linePtr==end)
                     break;
                 if (linePtr[0] != '&')
@@ -1452,12 +1449,13 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 size_t index = binaryMapFind(sendMessageNamesMap,
                          sendMessageNamesMap + sendMessageNamesMapSize,
                          name+msgNameIndex, CStringLess()) - sendMessageNamesMap;
-                if (index == sendMessageNamesMapSize)
+                if (index != sendMessageNamesMapSize)
+                    sendMessage = sendMessageNamesMap[index].second;
+                else
                 {
                     asmr.printError(funcArg1Place, "Unrecognized message");
                     good = false;
                 }
-                sendMessage = sendMessageNamesMap[index].second;
             }
             else
                 good = false;
@@ -1543,8 +1541,8 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     skipSpacesToEnd(linePtr, end);
     
     bool good = true;
-    RegPair dstReg(0, 1);
-    RegPair sbaseReg(0, 1);
+    RegPair dstReg(0, 0);
+    RegPair sbaseReg(0, 0);
     RegPair soffsetReg(0, 0);
     cxbyte soffsetVal = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
@@ -1594,14 +1592,6 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     soffsetExpr.release();
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
 }
-
-enum: cxbyte {
-    VOP3_MUL2 = 1,
-    VOP3_MUL4 = 2,
-    VOP3_DIV2 = 3,
-    VOP3_CLAMP = 16,
-    VOP3_VOP3 = 32
-};
 
 bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
                 bool withClamp)
@@ -1718,7 +1708,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    RegPair dstReg(0, 1);
+    RegPair dstReg(0, 0);
     RegPair dstCCReg(0, 0);
     RegPair srcCCReg(0, 0);
     if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
