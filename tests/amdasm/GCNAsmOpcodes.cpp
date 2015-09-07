@@ -368,7 +368,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:38: Error: Expected operator or value or symbol\n"
         "test.s:1:39: Error: Unterminated hwreg function\n" },
     { "    s_getreg_b32  s43, hwreg(XXX,6,8)", 0, 0, false, false,
-        "test.s:1:30: Error: Unrecognized HWRegister\n" },
+        "test.s:1:30: Error: Unknown HWRegister\n" },
     /// s_getreg_b32  s43, hwreg(HW_REG_IB_DBG0, 0, 1)
     /* SOPP */
     { "s_nop  0x0", 0xbf800000U, 0, false, true, "" },
@@ -465,11 +465,11 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_sendmsghalt  sendmsg(interrupt)", 0xbf910001U, 0, false, true, "" },
     /* msg errors */
     { "    s_sendmsg  sendmsg(interrupxt)", 0, 0, false, false,
-        "test.s:1:24: Error: Unrecognized message\n" },
+        "test.s:1:24: Error: Unknown message\n" },
     { "    s_sendmsg  sendmsg(gs, nop__x)", 0, 0, false, false,
-        "test.s:1:28: Error: Unrecognized GSOP\n" },
+        "test.s:1:28: Error: Unknown GSOP\n" },
     { "    s_sendmsg  sendmsg(gs, nop__x", 0, 0, false, false,
-        "test.s:1:28: Error: Unrecognized GSOP\n"
+        "test.s:1:28: Error: Unknown GSOP\n"
         "test.s:1:34: Error: Unterminated sendmsg function\n" },
     { "    s_sendmsg  sendmsg(gs, cut, 122)", 0xbf900212U, 0, false, true,
         "test.s:1:33: Warning: StreamId (3rd argument) out of range\n" },
@@ -593,13 +593,13 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:29: Error: Expected ',' before argument\n" },
     /* VOP2 in VOP3 errors */
     { "    v_add_f32  v154, v21, v107 mul:3", 0, 0, false, false,
-        "test.s:1:32: Error: Unrecognized VOP3 mul:X modifier\n" },
+        "test.s:1:32: Error: Unknown VOP3 mul:X modifier\n" },
     { "    v_add_f32  v154, v21, v107 mul:", 0, 0, false, false,
         "test.s:1:36: Error: Missing number\n" },
     { "    v_add_f32  v154, v21, v107 mul", 0, 0, false, false,
         "test.s:1:35: Error: Expected ':' before multiplier number\n" },
     { "    v_add_f32  v154, v21, v107 mxl", 0, 0, false, false,
-        "test.s:1:32: Error: Unrecognized VOP3 modifier\n" },
+        "test.s:1:32: Error: Unknown VOP3 modifier\n" },
     { "    v_add_f32  v154, abs(v21), 12343", 0, 0, false, false,
         "test.s:1:16: Error: Literal in VOP3 encoding is illegal\n" },
     { "    v_add_f32  v154, 13243, abs(v21)", 0, 0, false, false,
@@ -711,7 +711,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* VOP3B errors */
     { "    v_add_i32  v55, s[10:11], s27, abs(v90)", 0, 0, false, false,
         "test.s:1:39: Error: Expected operator\n"
-        "test.s:1:40: Error: Unrecognized VOP3 modifier\n"
+        "test.s:1:40: Error: Unknown VOP3 modifier\n"
         "test.s:1:43: Error: Some garbages at modifier place\n" },
     { "    v_add_i32  v55, s[10:11], abs(s27), v90", 0, 0, false, false,
         "test.s:1:34: Error: Expected operator\n"

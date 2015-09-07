@@ -937,7 +937,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     }
     
     // check otherwise
-    asmr.printError(linePtr, "Unrecognized operand");
+    asmr.printError(linePtr, "Unknown operand");
     return false;
 }
 
@@ -1160,7 +1160,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 hwregId = hwregNamesMap[index].second;
             else
             {
-                asmr.printError(funcArg1Place, "Unrecognized HWRegister");
+                asmr.printError(funcArg1Place, "Unknown HWRegister");
                 good = false;
             }
         }
@@ -1453,7 +1453,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     sendMessage = sendMessageNamesMap[index].second;
                 else
                 {
-                    asmr.printError(funcArg1Place, "Unrecognized message");
+                    asmr.printError(funcArg1Place, "Unknown message");
                     good = false;
                 }
             }
@@ -1479,7 +1479,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     if (gsopIndex == 4)
                     {   // not found
                         gsopIndex = 0;
-                        asmr.printError(funcArg2Place, "Unrecognized GSOP");
+                        asmr.printError(funcArg2Place, "Unknown GSOP");
                         good = false;
                     }
                 }
@@ -1629,7 +1629,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                         }
                         else
                         {
-                            asmr.printError(modPlace, "Unrecognized VOP3 mul:X modifier");
+                            asmr.printError(modPlace, "Unknown VOP3 mul:X modifier");
                             good = false;
                         }
                     }
@@ -1652,7 +1652,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                         }
                         else
                         {
-                            asmr.printError(modPlace, "Unrecognized VOP3 div:X modifier");
+                            asmr.printError(modPlace, "Unknown VOP3 div:X modifier");
                             good = false;
                         }
                     }
@@ -1676,7 +1676,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                     mods |= VOP3_VOP3;
                 else
                 {   /// unknown modifier
-                    asmr.printError(modPlace, "Unrecognized VOP3 modifier");
+                    asmr.printError(modPlace, "Unknown VOP3 modifier");
                     good = false;
                 }
                 
@@ -1940,7 +1940,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
 
     if (it == gcnInstrSortedTable.end() || ::strcmp(it->mnemonic, mnemonic.c_str())!=0)
     {   // unrecognized mnemonic
-        printError(mnemPlace, "Unrecognized instruction");
+        printError(mnemPlace, "Unknown instruction");
         return;
     }
     

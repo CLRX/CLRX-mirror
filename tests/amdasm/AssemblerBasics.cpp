@@ -746,7 +746,7 @@ test.s:3:21: Error: Expected ',' before argument
 test.s:4:22: Error: Expected assignment expression
 test.s:5:1: Error: Illegal number at statement begin
 test.s:6:6: Error: Symbol 'aaa' is already defined
-test.s:7:13: Error: Unrecognized instruction
+test.s:7:13: Error: Unknown instruction
 test.s:8:23: Error: Garbages at end of expression
 test.s:9:30: Error: Garbages at end of expression
 )ffDXD", ""
@@ -2466,7 +2466,7 @@ In macro content:
         "test.s:3:32: Error: Expected macro argument name\n"
         "test.s:4:41: Error: Expected macro argument name\n"
         "test.s:5:44: Error: Expected macro argument name\n"
-        "test.s:6:13: Error: Unrecognized instruction\n", ""
+        "test.s:6:13: Error: Unknown instruction\n", ""
     },
     /* 66 - undef test */
     {   R"ffDXD(.eqv xz, a*b
