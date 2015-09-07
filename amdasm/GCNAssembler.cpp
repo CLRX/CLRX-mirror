@@ -1715,8 +1715,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1);
     else // if VGPRS as destination
-        good &= parseVRegRange(asmr, linePtr, dstReg,
-                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
     
     const bool haveDstCC = mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC;
     const bool haveSrcCC = mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC;
@@ -1884,7 +1883,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
-        if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
+        if (mode1 == GCN_DST_SGPR) // if SGPRS as destination
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                            (gcnInsn.mode&GCN_REG_DST_64)?2:1);
         else // if VGPRS as destination
