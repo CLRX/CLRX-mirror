@@ -903,7 +903,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
                 {   // error
                     asmr.printError(regNamePlace,
-                            "Only one literal constant can be used in instruction");
+                            "Only one literal can be used in instruction");
                     return false;
                 }
                 outTargetExpr = std::move(expr);
@@ -925,8 +925,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
         {   // error
-            asmr.printError(regNamePlace,
-                        "Only one literal constant can be used in instruction");
+            asmr.printError(regNamePlace, "Only one literal can be used in instruction");
             return false;
         }
         
