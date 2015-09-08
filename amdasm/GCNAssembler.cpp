@@ -1698,12 +1698,11 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
 }
 
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    const char* argsPlace = linePtr;
     
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
@@ -1791,20 +1790,20 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         (src0Op.pair.first<maxSgprsNum || src0Op.pair.first==124 ||
          src1Op.pair.first<maxSgprsNum || src1Op.pair.first==124))
     {
-        asmr.printError(argsPlace, "Literal with SGPR or M0 is illegal");
+        asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
     if (src0Op.pair.first<maxSgprsNum && src1Op.pair.first<maxSgprsNum &&
         src0Op.pair.first!=src1Op.pair.first)
     {   /* include VCCs (???) */
-        asmr.printError(argsPlace, "More than one SGPR to read in instruction");
+        asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
     
     if (vop3 && (src0Op.pair.first==255 || src1Op.pair.first==255 ||
             mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM))
     {
-        asmr.printError(argsPlace, "Literal in VOP3 encoding is illegal");
+        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
     }
     
@@ -1863,10 +1862,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
-    const char* argsPlace = linePtr;
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
@@ -1906,7 +1904,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if ((src0Op.vop3Mods!=0 || modifiers!=0) && src0Op.pair.first==255)
     {
-        asmr.printError(argsPlace, "Literal in VOP3 encoding is illegal");
+        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
     }
     
@@ -2047,11 +2045,11 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
                                    curArchMask, output, regs);
             break;
         case GCNENC_VOP1:
-            GCNAsmUtils::parseVOP1Encoding(assembler, *it, linePtr,
+            GCNAsmUtils::parseVOP1Encoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs);
             break;
         case GCNENC_VOP2:
-            GCNAsmUtils::parseVOP2Encoding(assembler, *it, linePtr,
+            GCNAsmUtils::parseVOP2Encoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs);
             break;
         case GCNENC_VOP3A:

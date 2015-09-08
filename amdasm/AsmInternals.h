@@ -206,11 +206,11 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                       GCNAssembler::Regs& gcnRegs);
     
     static void parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                      const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      const char* instrPlace, const char* linePtr, uint16_t arch,
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
     static void parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                      const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      const char* instrPlace, const char* linePtr, uint16_t arch,
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
     static void parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                       GCNAssembler::Regs& gcnRegs);
