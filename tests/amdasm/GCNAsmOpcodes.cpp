@@ -907,6 +907,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_mov_b32  v[48:59], s[80:81]", 0, 0, false, false,
         "test.s:1:16: Error: Required 1 vector register\n"
         "test.s:1:26: Error: Required 1 scalar register\n" },
+    /* VOPC encoding */
     { nullptr, 0, 0, false, false, 0 }
 };
 
