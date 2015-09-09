@@ -2133,7 +2133,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         src0Op.pair.first!=src2Op.pair.first))
     {
         asmr.printError(instrPlace,
-                    "First operand must be equal to second or third operand");
+                    "First source must be equal to second or third source");
         return;
     }
     
