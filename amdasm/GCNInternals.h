@@ -185,7 +185,7 @@ struct CLRX_INTERNAL GCNInstruction
 struct CLRX_INTERNAL GCNAsmInstruction
 {
     const char* mnemonic;
-    cxbyte encoding1, encoding2;
+    cxbyte encoding;
     uint16_t mode;
     uint16_t code1, code2; // code1 - first code, code2 - VOP3 encoding code
     uint16_t archMask; // mask of architectures whose have instruction

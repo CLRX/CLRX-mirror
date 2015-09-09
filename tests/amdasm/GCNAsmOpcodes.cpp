@@ -1526,6 +1526,9 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cmpx_class_f64  vcc, v[79:80], v[201:202]", 0x7d71934fU, 0, false, true, "" },
     { "    v_cmpx_class_f64  s[42:43], v[50:51], v[107:108]",
         0xd170002aU, 0x0002d732U, true, true, "" },
+    
+    /* VOP3 encoding */
+    
     { nullptr, 0, 0, false, false, 0 }
 };
 

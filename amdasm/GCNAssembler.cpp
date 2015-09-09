@@ -41,7 +41,7 @@ static void initializeGCNAssembler()
     for (cxuint i = 0; i < tableSize; i++)
     {
         const GCNInstruction& insn = gcnInstrsTable[i];
-        gcnInstrSortedTable[i] = {insn.mnemonic, insn.encoding, GCNENC_NONE, insn.mode,
+        gcnInstrSortedTable[i] = {insn.mnemonic, insn.encoding, insn.mode,
                     insn.code, UINT16_MAX, insn.archMask};
     }
     
@@ -49,8 +49,8 @@ static void initializeGCNAssembler()
             [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
             {   // compare mnemonic and if mnemonic
                 int r = ::strcmp(instr1.mnemonic, instr2.mnemonic);
-                return (r < 0) || (r==0 && instr1.encoding1 < instr2.encoding1) ||
-                            (r == 0 && instr1.encoding1 == instr2.encoding1 &&
+                return (r < 0) || (r==0 && instr1.encoding < instr2.encoding) ||
+                            (r == 0 && instr1.encoding == instr2.encoding &&
                              instr1.archMask < instr2.archMask);
             });
     
@@ -59,7 +59,7 @@ static void initializeGCNAssembler()
     for (cxuint i = 0; i < tableSize; i++)
     {   
         GCNAsmInstruction insn = gcnInstrSortedTable[i];
-        if ((insn.encoding1 == GCNENC_VOP3A || insn.encoding1 == GCNENC_VOP3B))
+        if ((insn.encoding == GCNENC_VOP3A || insn.encoding == GCNENC_VOP3B))
         {   // check duplicates
             cxuint k = j-1;
             while (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
@@ -71,14 +71,14 @@ static void initializeGCNAssembler()
                 if (gcnInstrSortedTable[k].code2==UINT16_MAX)
                 {   // if second slot for opcode is not filled
                     gcnInstrSortedTable[k].code2 = insn.code1;
-                    gcnInstrSortedTable[k].encoding2 = insn.encoding1;
+                    //gcnInstrSortedTable[k].encoding2 = insn.encoding1;
                     gcnInstrSortedTable[k].archMask &= insn.archMask;
                 }
                 else
                 {   // if filled we create new entry
                     gcnInstrSortedTable[j] = gcnInstrSortedTable[k];
                     gcnInstrSortedTable[j].archMask &= insn.archMask;
-                    gcnInstrSortedTable[j].encoding2 = insn.encoding1;
+                    //gcnInstrSortedTable[j].encoding2 = insn.encoding1;
                     gcnInstrSortedTable[j++].code2 = insn.code1;
                 }
             }
@@ -1731,7 +1731,6 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    skipSpacesToEnd(linePtr, end);
     good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags |
                 INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
@@ -1890,7 +1889,6 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        skipSpacesToEnd(linePtr, end);
         good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
                     INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS);
@@ -1961,7 +1959,6 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseSRegRange(asmr, linePtr, dstReg, arch, 2);
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    skipSpacesToEnd(linePtr, end);
     
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
@@ -1972,8 +1969,6 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    
-    skipSpacesToEnd(linePtr, end);
     good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | INSTROP_VOP3MODS|
                 INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
@@ -2050,6 +2045,33 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    bool good = true;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    
+    RegPair dstReg(0, 0);
+    GCNOperand src0Op{};
+    std::unique_ptr<AsmExpression> src0OpExpr;
+    GCNOperand src1Op{};
+    std::unique_ptr<AsmExpression> src1OpExpr;
+    GCNOperand src2Op{};
+    std::unique_ptr<AsmExpression> src2OpExpr;
+    cxbyte modifiers = 0;
+    
+    if (mode1 != GCN_VOP_ARG_NONE)
+    {
+        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        if (gcnInsn.encoding == GCNENC_VOP3B &&
+            (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
+             mode1 == GCN_S0EQS12)) /* VOP3b */
+        {
+        }
+    }
 }
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2112,7 +2134,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     }
     
     /* decode instruction line */
-    switch(it->encoding1)
+    switch(it->encoding)
     {
         case GCNENC_SOPC:
             GCNAsmUtils::parseSOPCEncoding(assembler, *it, linePtr,
