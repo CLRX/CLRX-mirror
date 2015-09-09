@@ -127,11 +127,12 @@ enum : Flags {
     INSTROP_VOP3NEG = 0x40,
     
     INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
+    INSTROP_NOLITERALERROR = 0x100, /// accepts only inline constants
     
-    INSTROP_TYPE_MASK = 0x300,
-    INSTROP_INT = 0x00,    // integer literal
-    INSTROP_FLOAT = 0x100, // floating point literal
-    INSTROP_F16 = 0x200,   // half floating point literal
+    INSTROP_TYPE_MASK = 0x3000,
+    INSTROP_INT = 0x000,    // integer literal
+    INSTROP_FLOAT = 0x1000, // floating point literal
+    INSTROP_F16 = 0x2000,   // half floating point literal
 };
 
 enum: cxbyte {
@@ -215,8 +216,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                       const char* instrPlace, const char* linePtr, uint16_t arch,
                       std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
     static void parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                      const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      const char* instrPlace, const char* linePtr, uint16_t arch,
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
     static void parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                       GCNAssembler::Regs& gcnRegs);

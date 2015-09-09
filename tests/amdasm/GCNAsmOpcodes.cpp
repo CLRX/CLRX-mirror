@@ -115,7 +115,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  ttmp[3:4], s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Required 1 scalar register\n" },
     { "    s_add_u32  s104, s4, s61", 0, 0, false, false,
-        "test.s:1:16: Error: Scalar register number of out range\n" },
+        "test.s:1:16: Error: Scalar register number out of range\n" },
     { "    s_add_u32  ttmp12, s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: TTMPRegister number out of range (0-11)\n" },
     { "    s_add_u32  s[104:105], s4, s61", 0, 0, false, false,

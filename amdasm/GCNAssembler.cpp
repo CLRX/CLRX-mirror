@@ -377,7 +377,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
         {
             if (value >= maxSGPRsNum)
             {
-                asmr.printError(sgprRangePlace, "Scalar register number of out range");
+                asmr.printError(sgprRangePlace, "Scalar register number out of range");
                 return false;
             }
         }
@@ -902,8 +902,11 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             {   // return output expression with symbols to resolve
                 if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
                 {   // error
-                    asmr.printError(regNamePlace,
-                            "Only one literal can be used in instruction");
+                    if ((instrOpMask & INSTROP_NOLITERALERROR)!=0)
+                        asmr.printError(regNamePlace, "Literal in VOP3 is illegal");
+                    else
+                        asmr.printError(regNamePlace,
+                                "Only one literal can be used in instruction");
                     return false;
                 }
                 outTargetExpr = std::move(expr);
@@ -925,7 +928,11 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
         {   // error
-            asmr.printError(regNamePlace, "Only one literal can be used in instruction");
+            if ((instrOpMask & INSTROP_NOLITERALERROR)!=0)
+                asmr.printError(regNamePlace, "Literal in VOP3 is illegal");
+            else
+                asmr.printError(regNamePlace,
+                        "Only one literal can be used in instruction");
             return false;
         }
         
@@ -1772,7 +1779,6 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // modifiers
     cxbyte modifiers = 0;
     good &= parseVOP3Modifiers(asmr, linePtr, modifiers, !(haveDstCC || haveSrcCC));
-    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1895,7 +1901,6 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     // modifiers
     good &= parseVOP3Modifiers(asmr, linePtr, modifiers, true);
-    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -1975,7 +1980,6 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
     // modifiers
     good &= parseVOP3Modifiers(asmr, linePtr, modifiers, true);
-    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -2042,22 +2046,25 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 }
 
 void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     
     RegPair dstReg(0, 0);
+    RegPair sdstReg(0, 0);
     GCNOperand src0Op{};
-    std::unique_ptr<AsmExpression> src0OpExpr;
     GCNOperand src1Op{};
-    std::unique_ptr<AsmExpression> src1OpExpr;
     GCNOperand src2Op{};
+    std::unique_ptr<AsmExpression> src0OpExpr;
+    std::unique_ptr<AsmExpression> src1OpExpr;
     std::unique_ptr<AsmExpression> src2OpExpr;
+    
     cxbyte modifiers = 0;
     
     if (mode1 != GCN_VOP_ARG_NONE)
@@ -2070,8 +2077,90 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
              mode1 == GCN_S0EQS12)) /* VOP3b */
         {
+            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2);
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+        }
+        const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
+                (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
+        
+        good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
+                    (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS|
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+        
+        if (mode1 != GCN_SRC12_NONE)
+        {
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
+                    (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS |
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+         
+            if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC)
+            {
+                if (!skipRequiredComma(asmr, linePtr))
+                    return;
+                good &= parseOperand(asmr, linePtr, src2Op, src2OpExpr, arch,
+                        (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
+                        INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS |
+                        INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+            }
         }
     }
+    // modifiers
+    good &= parseVOP3Modifiers(asmr, linePtr, modifiers, gcnInsn.encoding!=GCNENC_VOP3B);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
+    cxuint numSgprToRead = 0;
+    if (src0Op.pair.first<maxSgprsNum)
+        numSgprToRead++;
+    if (src1Op.pair.first<maxSgprsNum && src0Op.pair.first!=src1Op.pair.first)
+        numSgprToRead++;
+    if (src2Op.pair.first<maxSgprsNum && src0Op.pair.first!=src2Op.pair.first &&
+                src1Op.pair.first!=src2Op.pair.first)
+        numSgprToRead++;
+    
+    if (numSgprToRead>=2)
+    {
+        asmr.printError(instrPlace, "More than one SGPR to read in instruction");
+        return;
+    }
+    if (mode1 == GCN_S0EQS12 && (src0Op.pair.first!=src1Op.pair.first &&
+        src0Op.pair.first!=src2Op.pair.first))
+    {
+        asmr.printError(instrPlace,
+                    "First operand must be equal to second or third operand");
+        return;
+    }
+    
+    uint32_t words[2];
+    if (gcnInsn.encoding == GCNENC_VOP3B)
+        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
+            (dstReg.first&0xff) | (uint32_t(sdstReg.first)<<8));
+    else // VOP3A
+        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
+            (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+            ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
+            ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0) |
+            ((src2Op.vop3Mods & VOPOPFLAG_ABS) ? 0x400 : 0));
+    SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
+        (uint32_t(src2Op.pair.first)<<18) | ((modifiers & 3) << 27) |
+        ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
+        ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0) |
+        ((src2Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<31) : 0));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + 2));
+    // update register pool
+    if (dstReg.first>=256)
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.second-257);
+    else // sgprs
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.second-1, arch);
 }
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2174,7 +2263,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
             break;
         case GCNENC_VOP3A:
         case GCNENC_VOP3B:
-            GCNAsmUtils::parseVOP3Encoding(assembler, *it, linePtr,
+            GCNAsmUtils::parseVOP3Encoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs);
             break;
         case GCNENC_VINTRP:
