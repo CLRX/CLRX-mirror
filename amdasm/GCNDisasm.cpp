@@ -110,18 +110,21 @@ static void initializeGCNDisassembler()
         {
             if (gcnInstrTableByCode[encSpace.offset + instr.code].mnemonic == nullptr)
                 gcnInstrTableByCode[encSpace.offset + instr.code] = instr;
-            else /* otherwise we for GCN1.1 */
+            else if((instr.archMask & ARCH_RX2X0) != 0) /* otherwise we for GCN1.1 */
             {
                 const GCNEncodingSpace& encSpace2 =
                         gcnInstrTableByCodeSpaces[GCNENC_MAXVAL+1];
                 gcnInstrTableByCode[encSpace2.offset + instr.code] = instr;
             }
+            // otherwise we ignore this entry
         }
         if ((instr.archMask & ARCH_RX3X0) != 0)
         {
             const GCNEncodingSpace& encSpace3 = gcnInstrTableByCodeSpaces[
                         GCNENC_MAXVAL+3+instr.encoding];
-            gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
+            if (gcnInstrTableByCode[encSpace3.offset + instr.code].mnemonic == nullptr)
+                gcnInstrTableByCode[encSpace3.offset + instr.code] = instr;
+            // otherwise we ignore this entry
         }
     }
 }
