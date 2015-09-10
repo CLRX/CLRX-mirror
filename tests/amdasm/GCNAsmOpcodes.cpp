@@ -1568,6 +1568,52 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xd2800037U, 0x02b74d4fU, true, true, "" },
     { "gg=22;v_mad_legacy_f32 v55, v79, v166, 2*gg+1",
         0xd2800037U, 0x02b74d4fU, true, true, "" },
+    /* one SGPR */
+    { "    v_mad_legacy_f32 v55, s79, v166, s79",
+        0xd2800037U, 0x013f4c4fU, true, true, "" },
+    { "    v_mad_legacy_f32 v55, s79, s79, s79",
+        0xd2800037U, 0x013c9e4fU, true, true, "" },
+    /* VOP3 errors */
+    { "v_mad_legacy_f32 v55, 66, v166, v229", 0, 0, false, false,
+        "test.s:1:23: Error: Literal in VOP3 is illegal\n" },
+    { "v_mad_legacy_f32 v55, s79, 743, v229", 0, 0, false, false,
+        "test.s:1:28: Error: Literal in VOP3 is illegal\n" },
+    { "v_mad_legacy_f32 v55, s79, v44, 6434", 0, 0, false, false,
+        "test.s:1:33: Error: Literal in VOP3 is illegal\n" },
+    { "    v_mad_legacy_f32 v55, s79, s166, v229", 0, 0, false, false,
+        "test.s:1:32: Error: Scalar register number out of range\n" },
+    { "    v_mad_legacy_f32 v55, s79, s100, v229", 0, 0, false, false,
+        "test.s:1:5: Error: More than one SGPR to read in instruction\n" },
+    { "    v_mad_legacy_f32 v55, s79, v166, s91", 0, 0, false, false,
+        "test.s:1:5: Error: More than one SGPR to read in instruction\n" },
+    { "    v_mad_legacy_f32 v55, s79, v166, s52", 0, 0, false, false,
+        "test.s:1:5: Error: More than one SGPR to read in instruction\n" },
+    { "   v_fma_f64  v[55], v[79], v[166], v[229]", 0, 0, false, false,
+        "test.s:1:15: Error: Required 2 vector registers\n"
+        "test.s:1:22: Error: Required 2 vector registers\n"
+        "test.s:1:29: Error: Required 2 vector registers\n"
+        "test.s:1:37: Error: Required 2 vector registers\n" },
+    { "   v_fma_f64  v[55:56], s[79:80], v[166:167], s[29:30]", 0, 0, false, false,
+        "test.s:1:25: Error: Unaligned scalar register range\n"
+        "test.s:1:47: Error: Unaligned scalar register range\n" },
+    /* VOP3 instructions */
+    { "   v_mad_f32  v55, v79, v166, v229", 0xd2820037U, 0x07974d4fU, true, true, "" },
+    { "   v_mad_i32_i24  v55, v79, v166, v229", 0xd2840037U, 0x07974d4fU, true, true, "" },
+    { "   v_mad_u32_u24  v55, v79, v166, v229", 0xd2860037U, 0x07974d4fU, true, true, "" },
+    { "   v_cubeid_f32  v55, v79, v166, v229", 0xd2880037U, 0x07974d4fU, true, true, "" },
+    { "   v_cubesc_f32  v55, v79, v166, v229", 0xd28a0037U, 0x07974d4fU, true, true, "" },
+    { "   v_cubetc_f32  v55, v79, v166, v229", 0xd28c0037U, 0x07974d4fU, true, true, "" },
+    { "   v_cubema_f32  v55, v79, v166, v229", 0xd28e0037U, 0x07974d4fU, true, true, "" },
+    { "   v_bfe_u32  v55, v79, v166, v229", 0xd2900037U, 0x07974d4fU, true, true, "" },
+    { "   v_bfe_i32  v55, v79, v166, v229", 0xd2920037U, 0x07974d4fU, true, true, "" },
+    { "   v_bfi_b32  v55, v79, v166, v229", 0xd2940037U, 0x07974d4fU, true, true, "" },
+    { "   v_fma_f32  v55, v79, v166, v229", 0xd2960037U, 0x07974d4fU, true, true, "" },
+    { "   v_fma_f64  v[55:56], v[79:80], v[166:167], v[229:230]",
+        0xd2980037U, 0x07974d4fU, true, true, "" },
+    { "   v_lerp_u8  v55, v79, v166, v229", 0xd29a0037U, 0x07974d4fU, true, true, "" },
+    { "   v_alignbit_b32  v55, v79, v166, v229", 0xd29c0037U, 0x07974d4fU, true, true, "" },
+    { "   v_alignbyte_b32  v55, v79, v166, v229",
+        0xd29e0037U, 0x07974d4fU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
