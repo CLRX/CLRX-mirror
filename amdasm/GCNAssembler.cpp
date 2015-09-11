@@ -2160,7 +2160,7 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         skipSpacesToEnd(linePtr, end);
         const char* p0Place = linePtr;
         char pxName[5];
-        if (getNameArg(asmr, 5, pxName, linePtr, "parameter"))
+        if (getNameArg(asmr, 5, pxName, linePtr, "VINTRP parameter"))
         {
             cxuint p0Code = 0;
             toLowerString(pxName);
@@ -2171,7 +2171,7 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
                 srcReg = { p0Code, p0Code+1 };
             else
             {
-                asmr.printError(p0Place, "Unknown p0 parameter");
+                asmr.printError(p0Place, "Unknown VINTRP parameter");
                 good = false;
             }
         }
@@ -2207,7 +2207,7 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
     cxbyte attrVal = 0;
     if (goodAttr)
     {
-        const char* attrNumPlace = 0;
+        const char* attrNumPlace = linePtr;
         try
         { attrVal = cstrtobyte(linePtr, end); }
         catch(const ParseException& ex)
@@ -2226,7 +2226,7 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='.')
         {
-            asmr.printError(attrPlace, "Expected '.' after attribute number");
+            asmr.printError(linePtr, "Expected '.' after attribute number");
             goodAttr = good = false;
         }
         else
@@ -2237,19 +2237,20 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
         {
-            asmr.printError(attrPlace, "Expected attribute component");
+            asmr.printError(linePtr, "Expected attribute component");
             goodAttr = good = false;
         }
     }
     char attrCmpName = 0;
     if (goodAttr)
     {
-        attrCmpName = toLower(*linePtr++);
+        attrCmpName = toLower(*linePtr);
         if (attrCmpName!='x' && attrCmpName!='y' && attrCmpName!='z' && attrCmpName!='w')
         {
-            asmr.printError(attrPlace, "Expected attribute component");
+            asmr.printError(linePtr, "Expected attribute component");
             good = false;
         }
+        linePtr++;
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
