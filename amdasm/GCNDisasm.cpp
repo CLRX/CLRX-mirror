@@ -1491,7 +1491,7 @@ static const char* vintrpParamsTbl[] =
 
 static void decodeVINTRPParam(uint16_t p, char*& bufPtr)
 {
-    if (p > 3)
+    if (p >= 3)
     {
         putChars(bufPtr, "invalid_", 8);
         bufPtr += itocstrCStyle(p, bufPtr, 8);

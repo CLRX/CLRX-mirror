@@ -2139,11 +2139,134 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
 }
 
+static const char* vintrpParamsTbl[] =
+{ "p10", "p20", "p0" };
+
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    RegRange dstReg(0, 0);
+    RegRange srcReg(0, 0);
+    
+    good &= parseVRegRange(asmr, linePtr, dstReg, 1);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
+    {
+        skipSpacesToEnd(linePtr, end);
+        const char* p0Place = linePtr;
+        char pxName[5];
+        if (getNameArg(asmr, 5, pxName, linePtr, "parameter"))
+        {
+            cxuint p0Code = 0;
+            toLowerString(pxName);
+            for (p0Code = 0; p0Code < 3; p0Code++)
+                if (::strcmp(vintrpParamsTbl[p0Code], pxName)==0)
+                    break;
+            if (p0Code < 3) // as srcReg
+                srcReg = { p0Code, p0Code+1 };
+            else
+            {
+                asmr.printError(p0Place, "Unknown p0 parameter");
+                good = false;
+            }
+        }
+        else
+            good = false;
+    }
+    else
+        good &= parseVRegRange(asmr, linePtr, srcReg, 1);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    skipSpacesToEnd(linePtr, end);
+    bool goodAttr = true;
+    const char* attrPlace = linePtr;
+    if (linePtr+4 > end)
+    {
+        asmr.printError(attrPlace, "Expected 'attr' keyword");
+        goodAttr = good = false;
+    }
+    char buf[5];
+    if (goodAttr)
+    {
+        std::transform(linePtr, linePtr+4, buf, toLower);
+        if (::memcmp(buf, "attr", 4)!=0)
+        {
+            asmr.printError(attrPlace, "Expected 'attr' keyword");
+            goodAttr = good = false;
+        }
+        else
+            linePtr+=4;
+    }
+    
+    cxbyte attrVal = 0;
+    if (goodAttr)
+    {
+        const char* attrNumPlace = 0;
+        try
+        { attrVal = cstrtobyte(linePtr, end); }
+        catch(const ParseException& ex)
+        {
+            asmr.printError(linePtr, ex.what());
+            good = false;
+        }
+        if (attrVal >= 64)
+        {
+            asmr.printError(attrNumPlace, "Attribute number out of range (0-63)");
+            good = false;
+        }
+    }
+    if (goodAttr)
+    {
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!='.')
+        {
+            asmr.printError(attrPlace, "Expected '.' after attribute number");
+            goodAttr = good = false;
+        }
+        else
+            ++linePtr;
+    }
+    if (goodAttr)
+    {
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end)
+        {
+            asmr.printError(attrPlace, "Expected attribute component");
+            goodAttr = good = false;
+        }
+    }
+    char attrCmpName = 0;
+    if (goodAttr)
+    {
+        attrCmpName = toLower(*linePtr++);
+        if (attrCmpName!='x' && attrCmpName!='y' && attrCmpName!='z' && attrCmpName!='w')
+        {
+            asmr.printError(attrPlace, "Expected attribute component");
+            good = false;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    const cxbyte attrChan = (attrCmpName=='x') ? 0 : (attrCmpName=='y') ? 1 :
+            (attrCmpName=='z') ? 2 : 3;
+    
+    /* */
+    uint32_t word;
+    SLEV(word, 0xc8000000U | (srcReg.start&0xff) | (uint32_t(attrChan&3)<<8) |
+            (uint32_t(attrVal&0x3f)<<10) | (uint32_t(gcnInsn.code1)<<16) |
+            (uint32_t(dstReg.start&0xff)<<18));
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(&word),
+            reinterpret_cast<cxbyte*>(&word)+4);
+    
+    updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
 void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
