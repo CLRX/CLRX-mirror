@@ -2067,6 +2067,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     cxbyte modifiers = 0;
     
+    const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
+            INSTROP_VOP3NEG : INSTROP_VOP3MODS;
     if (mode1 != GCN_VOP_ARG_NONE)
     {
         good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
@@ -2086,7 +2088,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS|
+                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
         
         if (mode1 != GCN_SRC12_NONE)
@@ -2095,7 +2097,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 return;
             good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS |
+                    INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
          
             if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC)
@@ -2104,7 +2106,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     return;
                 good &= parseOperand(asmr, linePtr, src2Op, src2OpExpr, arch,
                         (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
-                        INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_VOP3MODS |
+                        INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                         INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
             }
         }
