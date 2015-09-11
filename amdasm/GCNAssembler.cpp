@@ -318,10 +318,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             {
                 if (regName[loHiRegSuffix+1] == 'l' && regName[loHiRegSuffix+2] == 'o' &&
                     regName[loHiRegSuffix+3] == 0)
-                    regPair = std::make_pair(loHiReg, loHiReg+1);
+                    regPair = { loHiReg, loHiReg+1 };
                 else if (regName[loHiRegSuffix+1] == 'h' &&
                     regName[loHiRegSuffix+2] == 'i' && regName[loHiRegSuffix+3] == 0)
-                    regPair = std::make_pair(loHiReg+1, loHiReg+2);
+                    regPair = { loHiReg+1, loHiReg+2 };
                 if (regsNum!=0 && regsNum != 1)
                 {
                     printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
@@ -395,7 +395,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair&
             return false;
         }
         if (!ttmpReg)
-            regPair =  { value, value+1 };
+            regPair = { value, value+1 };
         else
             regPair = { 112+value, 112+value+1 };
         return true;
@@ -710,14 +710,14 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     {
         if (!parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum, false))
             return false;
-        if (operand.pair.first!=0 || operand.pair.second!=0)
+        if (operand)
             return true;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
         if (!parseVRegRange(asmr, linePtr, operand.pair, regsNum, false))
             return false;
-        if (operand.pair.first!=0 || operand.pair.second!=0)
+        if (operand)
             return true;
     }
     
@@ -752,7 +752,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 operand.pair = { 254, 255 };
                 return true;
             }
-            if (operand.pair.first!=0 || operand.pair.second!=0)
+            if (operand)
             {
                 if (regsNum!=0 && regsNum!=1 && regsNum!=2)
                 {
@@ -1574,7 +1574,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         else // '@' prefix
             skipCharAndSpacesToEnd(linePtr, end);
         
-        if (soffsetReg.first==0 && soffsetReg.second==0)
+        if (!soffsetReg)
         {   // parse immediate
             soffsetReg.first = 255; // indicate an immediate
             good &= parseImm<cxbyte>(asmr, linePtr, soffsetVal, soffsetExpr);
@@ -2118,9 +2118,9 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxuint numSgprToRead = 0;
     if (src0Op.pair.first<maxSgprsNum)
         numSgprToRead++;
-    if (src1Op.pair.first<maxSgprsNum && src0Op.pair.first!=src1Op.pair.first)
+    if (src1Op && src1Op.pair.first<maxSgprsNum && src0Op.pair.first!=src1Op.pair.first)
         numSgprToRead++;
-    if (src2Op.pair.first<maxSgprsNum && src0Op.pair.first!=src2Op.pair.first &&
+    if (src2Op && src2Op.pair.first<maxSgprsNum && src0Op.pair.first!=src2Op.pair.first &&
                 src1Op.pair.first!=src2Op.pair.first)
         numSgprToRead++;
     

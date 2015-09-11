@@ -1614,6 +1614,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   v_alignbit_b32  v55, v79, v166, v229", 0xd29c0037U, 0x07974d4fU, true, true, "" },
     { "   v_alignbyte_b32  v55, v79, v166, v229",
         0xd29e0037U, 0x07974d4fU, true, true, "" },
+    { "   v_mullit_f32    v55, v79, v166", 0xd2a00037U, 0x00034d4fU, true, true, "" },
+    { "   v_mullit_f32    v55, s79, v166", 0xd2a00037U, 0x00034c4fU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

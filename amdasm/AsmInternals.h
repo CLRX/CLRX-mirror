@@ -149,12 +149,29 @@ enum: cxbyte {
     VOP3_VOP3 = 32
 };
 
-typedef std::pair<uint16_t, uint16_t> RegPair;
+struct RegPair
+{
+    uint16_t first, second;
+    
+    RegPair(): first(0), second(0) { }
+    template<typename U1, typename U2>
+    RegPair(U1 t1, U2 t2 = 0) : first(t1), second(t2) { }
+    
+    bool operator!() const
+    { return first==0 && second==0; }
+    operator bool() const
+    { return first!=0 || second!=0; }
+};
 
 struct GCNOperand {
     RegPair pair;
     uint32_t value;
     cxbyte vop3Mods;
+    
+    bool operator!() const
+    { return !pair; }
+    operator bool() const
+    { return pair; }
 };
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
