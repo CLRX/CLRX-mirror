@@ -149,29 +149,29 @@ enum: cxbyte {
     VOP3_VOP3 = 32
 };
 
-struct RegPair
+struct RegRange
 {
-    uint16_t first, second;
+    uint16_t begin, end;
     
-    RegPair(): first(0), second(0) { }
+    RegRange(): begin(0), end(0) { }
     template<typename U1, typename U2>
-    RegPair(U1 t1, U2 t2 = 0) : first(t1), second(t2) { }
+    RegRange(U1 t1, U2 t2 = 0) : begin(t1), end(t2) { }
     
     bool operator!() const
-    { return first==0 && second==0; }
+    { return begin==0 && end==0; }
     operator bool() const
-    { return first!=0 || second!=0; }
+    { return begin!=0 || end!=0; }
 };
 
 struct GCNOperand {
-    RegPair pair;
+    RegRange range;
     uint32_t value;
     cxbyte vop3Mods;
     
     bool operator!() const
-    { return !pair; }
+    { return !range; }
     operator bool() const
-    { return pair; }
+    { return range; }
 };
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
@@ -183,10 +183,10 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                const char* regPoolName, cxuint requiredRegsNum);
     
     /* return true if no error */
-    static bool parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
+    static bool parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                    cxuint regsNum, bool required = true);
     /* return true if no error */
-    static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
+    static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                    uint16_t arch, cxuint regsNum, bool required = true);
     /* return true if no error */
     template<typename T>

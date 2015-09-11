@@ -1677,6 +1677,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xd2e60037U, 0x07974d4fU, true, true, "" },
     { "   v_trig_preop_f64  v[55:56], v[79:80], v166",
         0xd2e80037U, 0x00034d4fU, true, true, "" },
+    /* VINTRP encoding */
     { nullptr, 0, 0, false, false, 0 }
 };
 

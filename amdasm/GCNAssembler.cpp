@@ -147,7 +147,7 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
     asmr.printError(linePtr, buf);
 }
 
-bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
+bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                     cxuint regsNum, bool required)
 {
     const char* oldLinePtr = linePtr;
@@ -231,7 +231,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegPair&
     return true;
 }
 
-bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegPair& regPair,
+bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                     uint16_t arch, cxuint regsNum, bool required)
 {
     const char* oldLinePtr = linePtr;
@@ -631,9 +631,9 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     outTargetExpr.reset();
     
     if (instrOpMask == INSTROP_SREGS)
-        return parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum);
+        return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum);
     else if (instrOpMask == INSTROP_VREGS)
-        return parseVRegRange(asmr, linePtr, operand.pair, regsNum);
+        return parseVRegRange(asmr, linePtr, operand.range, regsNum);
     
     const char* end = asmr.line+asmr.lineSize;
     if (instrOpMask & INSTROP_VOP3MODS)
@@ -708,14 +708,14 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
-        if (!parseSRegRange(asmr, linePtr, operand.pair, arch, regsNum, false))
+        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, false))
             return false;
         if (operand)
             return true;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
-        if (!parseVRegRange(asmr, linePtr, operand.pair, regsNum, false))
+        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, false))
             return false;
         if (operand)
             return true;
@@ -730,26 +730,26 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (getNameArg(asmr, 20, regName, linePtr, "register name", false, true))
         {
             toLowerString(regName);
-            operand.pair = {0, 0};
+            operand.range = {0, 0};
             if (::strcmp(regName, "vccz") == 0)
             {
-                operand.pair = { 251, 252 };
+                operand.range = { 251, 252 };
                 return true;
             }
             else if (::strcmp(regName, "execz") == 0)
             {
-                operand.pair = { 252, 253 };
+                operand.range = { 252, 253 };
                 return true;
             }
             else if (::strcmp(regName, "scc") == 0)
             {
-                operand.pair = { 253, 254 };
+                operand.range = { 253, 254 };
                 return true;
             }
             else if ((instrOpMask&INSTROP_LDS)!=0 &&
                 (::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
             {
-                operand.pair = { 254, 255 };
+                operand.range = { 254, 255 };
                 return true;
             }
             if (operand)
@@ -792,36 +792,36 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     switch (value)
                     {
                         case 0x0:
-                            operand.pair = { 128, 0 };
+                            operand.range = { 128, 0 };
                             return true;
                         case 0x3800: // 0.5
-                            operand.pair = { 240, 0 };
+                            operand.range  = { 240, 0 };
                             return true;
                         case 0xb800: // -0.5
-                            operand.pair = { 241, 0 };
+                            operand.range = { 241, 0 };
                             return true;
                         case 0x3c00: // 1.0
-                            operand.pair = { 242, 0 };
+                            operand.range = { 242, 0 };
                             return true;
                         case 0xbc00: // -1.0
-                            operand.pair = { 243, 0 };
+                            operand.range = { 243, 0 };
                             return true;
                         case 0x4000: // 2.0
-                            operand.pair = { 244, 0 };
+                            operand.range = { 244, 0 };
                             return true;
                         case 0xc000: // -2.0
-                            operand.pair = { 245, 0 };
+                            operand.range = { 245, 0 };
                             return true;
                         case 0x4400: // 4.0
-                            operand.pair = { 246, 0 };
+                            operand.range = { 246, 0 };
                             return true;
                         case 0xc400: // -4.0
-                            operand.pair = { 247, 0 };
+                            operand.range = { 247, 0 };
                             return true;
                         case 0x3118: // 1/(2*PI)
                             if (arch&ARCH_RX3X0)
                             {
-                                operand.pair = { 248, 0 };
+                                operand.range = { 248, 0 };
                                 return true;
                             }
                     }
@@ -836,36 +836,36 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     switch (value)
                     {
                         case 0x0:
-                            operand.pair = { 128, 0 };
+                            operand.range = { 128, 0 };
                             return true;
                         case 0x3f000000: // 0.5
-                            operand.pair = { 240, 0 };
+                            operand.range = { 240, 0 };
                             return true;
                         case 0xbf000000: // -0.5
-                            operand.pair = { 241, 0 };
+                            operand.range = { 241, 0 };
                             return true;
                         case 0x3f800000: // 1.0
-                            operand.pair = { 242, 0 };
+                            operand.range = { 242, 0 };
                             return true;
                         case 0xbf800000: // -1.0
-                            operand.pair = { 243, 0 };
+                            operand.range = { 243, 0 };
                             return true;
                         case 0x40000000: // 2.0
-                            operand.pair = { 244, 0 };
+                            operand.range = { 244, 0 };
                             return true;
                         case 0xc0000000: // -2.0
-                            operand.pair = { 245, 0 };
+                            operand.range = { 245, 0 };
                             return true;
                         case 0x40800000: // 4.0
-                            operand.pair = { 246, 0 };
+                            operand.range = { 246, 0 };
                             return true;
                         case 0xc0800000: // -4.0
-                            operand.pair = { 247, 0 };
+                            operand.range = { 247, 0 };
                             return true;
                         case 0x3e22f983: // 1/(2*PI)
                             if (arch&ARCH_RX3X0)
                             {
-                                operand.pair = { 248, 0 };
+                                operand.range = { 248, 0 };
                                 return true;
                             }
                     }
@@ -910,18 +910,18 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     return false;
                 }
                 outTargetExpr = std::move(expr);
-                operand.pair = { 255, 0 };
+                operand.range = { 255, 0 };
                 return true;
             }
             
             if (value <= 64)
             {
-                operand.pair = { 128+value, 0 };
+                operand.range = { 128+value, 0 };
                 return true;
             }
             else if (int64_t(value) >= -16 && int64_t(value) < 0)
             {
-                operand.pair = { 192-value, 0 };
+                operand.range = { 192-value, 0 };
                 return true;
             }
         }
@@ -947,9 +947,9 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     return false;
 }
 
-static inline bool isXRegRange(RegPair pair, cxuint regsNum = 1)
+static inline bool isXRegRange(RegRange pair, cxuint regsNum = 1)
 {   // second==0 - we assume that first is inline constant, otherwise we check range
-    return (pair.second==0) || cxuint(pair.second-pair.first)==regsNum;
+    return (pair.end==0) || cxuint(pair.end-pair.begin)==regsNum;
 }
 
 static inline void updateVGPRsNum(cxuint& vgprsNum, cxuint vgpr)
@@ -968,11 +968,8 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
-    const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
-    RegPair dstReg(0, 0);
+    RegRange dstReg(0, 0);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -990,7 +987,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src1Op{};
     good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-             (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
+             (src0Op.range.begin==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -999,12 +996,12 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // put data
     cxuint wordsNum = 1;
     uint32_t words[2];
-    SLEV(words[0], 0x80000000U | (uint32_t(gcnInsn.code1)<<23) | src0Op.pair.first |
-            (src1Op.pair.first<<8) | uint32_t(dstReg.first)<<16);
-    if (src0Op.pair.first==255 || src1Op.pair.first==255)
+    SLEV(words[0], 0x80000000U | (uint32_t(gcnInsn.code1)<<23) | src0Op.range.begin |
+            (src1Op.range.begin<<8) | uint32_t(dstReg.begin)<<16);
+    if (src0Op.range.begin==255 || src1Op.range.begin==255)
     {
         if (src0Expr==nullptr && src1Expr==nullptr)
-            SLEV(words[1], src0Op.pair.first==255 ? src0Op.value : src1Op.value);
+            SLEV(words[1], src0Op.range.begin==255 ? src0Op.value : src1Op.value);
         else    // zero if unresolved value
             SLEV(words[1], 0);
         wordsNum++;
@@ -1022,18 +1019,15 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // prevent freeing expressions
     src0Expr.release();
     src1Expr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
-    const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
-    RegPair dstReg(0, 0);
+    RegRange dstReg(0, 0);
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -1055,9 +1049,9 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     cxuint wordsNum = 1;
     uint32_t words[2];
-    SLEV(words[0], 0xbe800000U | (uint32_t(gcnInsn.code1)<<8) | src0Op.pair.first |
-            uint32_t(dstReg.first)<<16);
-    if (src0Op.pair.first==255)
+    SLEV(words[0], 0xbe800000U | (uint32_t(gcnInsn.code1)<<8) | src0Op.range.begin |
+            uint32_t(dstReg.begin)<<16);
+    if (src0Op.range.begin==255)
     {
         if (src0Expr==nullptr)
             SLEV(words[1], src0Op.value);
@@ -1074,7 +1068,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + wordsNum));
     // prevent freeing expressions
     src0Expr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 static const std::pair<const char*, uint16_t> hwregNamesMap[] =
@@ -1101,10 +1095,8 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
-    RegPair dstReg(0, 0);
+    RegRange dstReg(0, 0);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -1229,7 +1221,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     const cxuint wordsNum = (gcnInsn.mode & GCN_SOPK_CONST) ? 2 : 1;
     uint32_t words[2];
-    SLEV(words[0], 0xb0000000U | imm16 | uint32_t(dstReg.first)<<16 |
+    SLEV(words[0], 0xb0000000U | imm16 | uint32_t(dstReg.begin)<<16 |
                 uint32_t(gcnInsn.code1)<<23);
     if (wordsNum==2)
         SLEV(words[1], imm32);
@@ -1246,16 +1238,13 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     imm32Expr.release();
     imm16Expr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
-    const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
@@ -1266,7 +1255,7 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src1Op{};
     good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-             (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
+             (src0Op.range.begin==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1275,12 +1264,12 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     // put data
     cxuint wordsNum = 1;
     uint32_t words[2];
-    SLEV(words[0], 0xbf000000U | (uint32_t(gcnInsn.code1)<<16) | src0Op.pair.first |
-            (src1Op.pair.first<<8));
-    if (src0Op.pair.first==255 || src1Op.pair.first==255)
+    SLEV(words[0], 0xbf000000U | (uint32_t(gcnInsn.code1)<<16) | src0Op.range.begin |
+            (src1Op.range.begin<<8));
+    if (src0Op.range.begin==255 || src1Op.range.begin==255)
     {
         if (src0Expr==nullptr && src1Expr==nullptr)
-            SLEV(words[1], src0Op.pair.first==255 ? src0Op.value : src1Op.value);
+            SLEV(words[1], src0Op.range.begin==255 ? src0Op.value : src1Op.value);
         else    // zero if unresolved value
             SLEV(words[1], 0);
         wordsNum++;
@@ -1320,8 +1309,6 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
     uint16_t imm16 = 0;
     std::unique_ptr<AsmExpression> imm16Expr;
@@ -1544,12 +1531,10 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
-    RegPair dstReg(0, 0);
-    RegPair sbaseReg(0, 0);
-    RegPair soffsetReg(0, 0);
+    RegRange dstReg(0, 0);
+    RegRange sbaseReg(0, 0);
+    RegRange soffsetReg(0, 0);
     cxbyte soffsetVal = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
@@ -1576,7 +1561,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         if (!soffsetReg)
         {   // parse immediate
-            soffsetReg.first = 255; // indicate an immediate
+            soffsetReg.begin = 255; // indicate an immediate
             good &= parseImm<cxbyte>(asmr, linePtr, soffsetVal, soffsetExpr);
         }
     }
@@ -1589,14 +1574,14 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                        output.size()));
     
     uint32_t word;
-    SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (dstReg.first<<15) |
-            ((sbaseReg.first<<8)&~1) | ((soffsetReg.first==255) ? 0x100 : 0) |
-            ((soffsetReg.first==255) ? soffsetVal : soffsetReg.first));
+    SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (dstReg.begin<<15) |
+            ((sbaseReg.begin<<8)&~1) | ((soffsetReg.begin==255) ? 0x100 : 0) |
+            ((soffsetReg.begin==255) ? soffsetVal : soffsetReg.begin));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
             reinterpret_cast<cxbyte*>(&word)+4);
     /// prevent freeing expression
     soffsetExpr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
@@ -1708,14 +1693,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    RegPair dstReg(0, 0);
-    RegPair dstCCReg(0, 0);
-    RegPair srcCCReg(0, 0);
+    RegRange dstReg(0, 0);
+    RegRange dstCCReg(0, 0);
+    RegRange srcCCReg(0, 0);
     if (mode1 == GCN_DS1_SGPR) // if SGPRS as destination
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1);
@@ -1761,7 +1744,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags |
                 (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
                 ((haveDstCC || haveSrcCC) ? INSTROP_VOP3NEG : INSTROP_VOP3MODS) |
-                (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
+                (src0Op.range.begin==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     if (mode1 == GCN_ARG2_IMM)
     {
@@ -1783,28 +1766,28 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     const bool vop3 = /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
-        ((src1Op.pair.first<256) ^ sgprRegInSrc1) ||
+        ((src1Op.range.begin<256) ^ sgprRegInSrc1) ||
         src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
-        (haveDstCC && dstCCReg.first!=106) || (haveSrcCC && srcCCReg.first!=106);
+        (haveDstCC && dstCCReg.begin!=106) || (haveSrcCC && srcCCReg.begin!=106);
     
     cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
     
-    if ((src0Op.pair.first==255 || src1Op.pair.first==255) &&
-        (src0Op.pair.first<maxSgprsNum || src0Op.pair.first==124 ||
-         src1Op.pair.first<maxSgprsNum || src1Op.pair.first==124))
+    if ((src0Op.range.begin==255 || src1Op.range.begin==255) &&
+        (src0Op.range.begin<maxSgprsNum || src0Op.range.begin==124 ||
+         src1Op.range.begin<maxSgprsNum || src1Op.range.begin==124))
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
-    if (src0Op.pair.first<maxSgprsNum && src1Op.pair.first<maxSgprsNum &&
-        src0Op.pair.first!=src1Op.pair.first)
+    if (src0Op.range.begin<maxSgprsNum && src1Op.range.begin<maxSgprsNum &&
+        src0Op.range.begin!=src1Op.range.begin)
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
     
-    if (vop3 && (src0Op.pair.first==255 || src1Op.pair.first==255 ||
+    if (vop3 && (src0Op.range.begin==255 || src1Op.range.begin==255 ||
             mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM))
     {
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
@@ -1825,11 +1808,11 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     if (!vop3)
     {   // VOP2 encoding
-        SLEV(words[0], (uint32_t(gcnInsn.code1)<<25) | uint32_t(src0Op.pair.first) |
-            (uint32_t(src1Op.pair.first&0xff)<<9) | (uint32_t(dstReg.first&0xff)<<17));
-        if (src0Op.pair.first==255)
+        SLEV(words[0], (uint32_t(gcnInsn.code1)<<25) | uint32_t(src0Op.range.begin) |
+            (uint32_t(src1Op.range.begin&0xff)<<9) | (uint32_t(dstReg.begin&0xff)<<17));
+        if (src0Op.range.begin==255)
             SLEV(words[wordsNum++], src0Op.value);
-        else if (src1Op.pair.first==255)
+        else if (src1Op.range.begin==255)
             SLEV(words[wordsNum++], src1Op.value);
         else if (mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM)
             SLEV(words[wordsNum++], immValue);
@@ -1838,14 +1821,14 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {   // VOP3 encoding
         if (haveDstCC || haveSrcCC)
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                (dstReg.first&0xff) | (uint32_t(dstCCReg.first)<<8));
+                (dstReg.begin&0xff) | (uint32_t(dstCCReg.begin)<<8));
         else
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+                (dstReg.begin&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
                 ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
                 ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0));
-        SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
-            (uint32_t(srcCCReg.first)<<18) | ((modifiers & 3) << 27) |
+        SLEV(words[1], src0Op.range.begin | (uint32_t(src1Op.range.begin)<<9) |
+            (uint32_t(srcCCReg.begin)<<18) | ((modifiers & 3) << 27) |
             ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
             ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
         wordsNum++;
@@ -1858,25 +1841,22 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     src1OpExpr.release();
     immExpr.release();
     // update register pool
-    if (dstReg.first>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.second-257);
+    if (dstReg.begin>=256)
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
     else // sgprs
-        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
-    updateSGPRsNum(gcnRegs.sgprsNum, dstCCReg.second-1, arch);
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, dstCCReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
-    const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     
-    RegPair dstReg(0, 0);
+    RegRange dstReg(0, 0);
     GCNOperand src0Op{};
     std::unique_ptr<AsmExpression> src0OpExpr;
     cxbyte modifiers = 0;
@@ -1904,7 +1884,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if ((src0Op.vop3Mods!=0 || modifiers!=0) && src0Op.pair.first==255)
+    if ((src0Op.vop3Mods!=0 || modifiers!=0) && src0Op.range.begin==255)
     {
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
@@ -1919,16 +1899,16 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!(src0Op.vop3Mods!=0 || modifiers!=0))
     {   // VOP1 encoding
         SLEV(words[0], 0x7e000000U | (uint32_t(gcnInsn.code1)<<9) |
-            uint32_t(src0Op.pair.first) | (uint32_t(dstReg.first&0xff)<<17));
-        if (src0Op.pair.first==255)
+            uint32_t(src0Op.range.begin) | (uint32_t(dstReg.begin&0xff)<<17));
+        if (src0Op.range.begin==255)
             SLEV(words[wordsNum++], src0Op.value);
     }
     else
     {   // VOP3 encoding
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-            (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+            (dstReg.begin&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
             ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0));
-        SLEV(words[1], src0Op.pair.first | ((modifiers & 3) << 27) |
+        SLEV(words[1], src0Op.range.begin | ((modifiers & 3) << 27) |
             ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0));
         wordsNum++;
     }
@@ -1938,23 +1918,20 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     src0OpExpr.release();
     // update register pool
-    if (dstReg.first>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.second-257);
+    if (dstReg.begin>=256)
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
     else // sgprs
-        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
-    const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     
-    RegPair dstReg(0, 0);
+    RegRange dstReg(0, 0);
     GCNOperand src0Op{};
     std::unique_ptr<AsmExpression> src0OpExpr;
     GCNOperand src1Op{};
@@ -1977,31 +1954,31 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | INSTROP_VOP3MODS|
                 INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
-                (src0Op.pair.first==255 ? INSTROP_ONLYINLINECONSTS : 0));
+                (src0Op.range.begin==255 ? INSTROP_ONLYINLINECONSTS : 0));
     // modifiers
     good &= parseVOP3Modifiers(asmr, linePtr, modifiers, true);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    const bool vop3 = (dstReg.first!=106) || (src1Op.pair.first<256) ||
+    const bool vop3 = (dstReg.begin!=106) || (src1Op.range.begin<256) ||
         src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0;
     
     cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
-    if ((src0Op.pair.first==255 || src1Op.pair.first==255) &&
-        (src0Op.pair.first<maxSgprsNum || src0Op.pair.first==124 ||
-         src1Op.pair.first<maxSgprsNum || src1Op.pair.first==124))
+    if ((src0Op.range.begin==255 || src1Op.range.begin==255) &&
+        (src0Op.range.begin<maxSgprsNum || src0Op.range.begin==124 ||
+         src1Op.range.begin<maxSgprsNum || src1Op.range.begin==124))
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
-    if (src0Op.pair.first<maxSgprsNum && src1Op.pair.first<maxSgprsNum &&
-        src0Op.pair.first!=src1Op.pair.first)
+    if (src0Op.range.begin<maxSgprsNum && src1Op.range.begin<maxSgprsNum &&
+        src0Op.range.begin!=src1Op.range.begin)
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
     
-    if (vop3 && (src0Op.pair.first==255 || src1Op.pair.first==255))
+    if (vop3 && (src0Op.range.begin==255 || src1Op.range.begin==255))
     {
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
@@ -2018,20 +1995,20 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     if (!vop3)
     {   // VOPC encoding
-        SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code1)<<17) | src0Op.pair.first |
-                (uint32_t(src1Op.pair.first&0xff)<<9));
-        if (src0Op.pair.first==255)
+        SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code1)<<17) | src0Op.range.begin |
+                (uint32_t(src1Op.range.begin&0xff)<<9));
+        if (src0Op.range.begin==255)
             SLEV(words[wordsNum++], src0Op.value);
-        else if (src1Op.pair.first==255)
+        else if (src1Op.range.begin==255)
             SLEV(words[wordsNum++], src1Op.value);
     }
     else
     {   // VOP3 encoding
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-            (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+            (dstReg.begin&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
             ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
             ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0));
-        SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
+        SLEV(words[1], src0Op.range.begin | (uint32_t(src1Op.range.begin)<<9) |
             ((modifiers & 3) << 27) | ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
             ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
         wordsNum++;
@@ -2042,22 +2019,19 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     src0OpExpr.release();
     src1OpExpr.release();
     // update register pool
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
-    const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     
-    RegPair dstReg(0, 0);
-    RegPair sdstReg(0, 0);
+    RegRange dstReg(0, 0);
+    RegRange sdstReg(0, 0);
     GCNOperand src0Op{};
     GCNOperand src1Op{};
     GCNOperand src2Op{};
@@ -2066,9 +2040,9 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     std::unique_ptr<AsmExpression> src2OpExpr;
     
     cxbyte modifiers = 0;
-    
     const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
             INSTROP_VOP3NEG : INSTROP_VOP3MODS;
+    
     if (mode1 != GCN_VOP_ARG_NONE)
     {
         good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
@@ -2118,12 +2092,12 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
     cxuint numSgprToRead = 0;
-    if (src0Op.pair.first<maxSgprsNum)
+    if (src0Op.range.begin<maxSgprsNum)
         numSgprToRead++;
-    if (src1Op && src1Op.pair.first<maxSgprsNum && src0Op.pair.first!=src1Op.pair.first)
+    if (src1Op && src1Op.range.begin<maxSgprsNum && src0Op.range.begin!=src1Op.range.begin)
         numSgprToRead++;
-    if (src2Op && src2Op.pair.first<maxSgprsNum && src0Op.pair.first!=src2Op.pair.first &&
-                src1Op.pair.first!=src2Op.pair.first)
+    if (src2Op && src2Op.range.begin<maxSgprsNum && src0Op.range.begin!=src2Op.range.begin &&
+                src1Op.range.begin!=src2Op.range.begin)
         numSgprToRead++;
     
     if (numSgprToRead>=2)
@@ -2131,8 +2105,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
-    if (mode1 == GCN_S0EQS12 && (src0Op.pair.first!=src1Op.pair.first &&
-        src0Op.pair.first!=src2Op.pair.first))
+    if (mode1 == GCN_S0EQS12 && (src0Op.range.begin!=src1Op.range.begin &&
+        src0Op.range.begin!=src2Op.range.begin))
     {
         asmr.printError(instrPlace,
                     "First source must be equal to second or third source");
@@ -2142,15 +2116,15 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     if (gcnInsn.encoding == GCNENC_VOP3B)
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
-            (dstReg.first&0xff) | (uint32_t(sdstReg.first)<<8));
+            (dstReg.begin&0xff) | (uint32_t(sdstReg.begin)<<8));
     else // VOP3A
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
-            (dstReg.first&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+            (dstReg.begin&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
             ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
             ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0) |
             ((src2Op.vop3Mods & VOPOPFLAG_ABS) ? 0x400 : 0));
-    SLEV(words[1], src0Op.pair.first | (uint32_t(src1Op.pair.first)<<9) |
-        (uint32_t(src2Op.pair.first)<<18) | ((modifiers & 3) << 27) |
+    SLEV(words[1], src0Op.range.begin | (uint32_t(src1Op.range.begin)<<9) |
+        (uint32_t(src2Op.range.begin)<<18) | ((modifiers & 3) << 27) |
         ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
         ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0) |
         ((src2Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<31) : 0));
@@ -2158,17 +2132,18 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
     // update register pool
-    if (dstReg.first>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.second-257);
+    if (dstReg.begin>=256)
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
     else // sgprs
-        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.second-1, arch);
-    updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.second-1, arch);
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    bool good = true;
 }
 
 void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
