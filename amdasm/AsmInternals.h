@@ -151,16 +151,16 @@ enum: cxbyte {
 
 struct RegRange
 {
-    uint16_t begin, end;
+    uint16_t start, end;
     
-    RegRange(): begin(0), end(0) { }
+    RegRange(): start(0), end(0) { }
     template<typename U1, typename U2>
-    RegRange(U1 t1, U2 t2 = 0) : begin(t1), end(t2) { }
+    RegRange(U1 t1, U2 t2 = 0) : start(t1), end(t2) { }
     
     bool operator!() const
-    { return begin==0 && end==0; }
+    { return start==0 && end==0; }
     operator bool() const
-    { return begin!=0 || end!=0; }
+    { return start!=0 || end!=0; }
 };
 
 struct GCNOperand {
