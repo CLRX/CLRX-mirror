@@ -1604,9 +1604,10 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                 bool alreadyModDefined = false;
                 if (::strcmp(mod, "mul")==0)
                 {
+                    skipSpacesToEnd(linePtr, end);
                     if (linePtr!=end && *linePtr==':')
                     {
-                        ++linePtr;
+                        skipCharAndSpacesToEnd(linePtr, end);
                         cxbyte count = cstrtobyte(linePtr, end);
                         if (count==2)
                         {
@@ -1632,9 +1633,10 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                 }
                 else if (::strcmp(mod, "div")==0)
                 {
+                    skipSpacesToEnd(linePtr, end);
                     if (linePtr!=end && *linePtr==':')
                     {
-                        ++linePtr;
+                        skipCharAndSpacesToEnd(linePtr, end);
                         cxbyte count = cstrtobyte(linePtr, end);
                         if (count==2)
                         {
@@ -2156,7 +2158,7 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         return;
     
     if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
-    {
+    {   // vintrp parameter
         skipSpacesToEnd(linePtr, end);
         const char* p0Place = linePtr;
         char pxName[5];
@@ -2178,8 +2180,9 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         else
             good = false;
     }
-    else
+    else // regular vector register
         good &= parseVRegRange(asmr, linePtr, srcReg, 1);
+    
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
@@ -2213,12 +2216,12 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         catch(const ParseException& ex)
         {
             asmr.printError(linePtr, ex.what());
-            good = false;
+            goodAttr = good = false;
         }
         if (attrVal >= 64)
         {
             asmr.printError(attrNumPlace, "Attribute number out of range (0-63)");
-            good = false;
+            goodAttr = good = false;
         }
     }
     if (goodAttr)
@@ -2274,6 +2277,114 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    bool good = true;
+    RegRange dstReg(0, 0);
+    RegRange addrReg(0, 0);
+    RegRange data0Reg(0, 0), data1Reg(0, 0);
+    
+    bool beforeData = false;
+    
+    if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
+    {   /* vdst is dst */
+        cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
+        if ((gcnInsn.mode&GCN_DS_96) != 0)
+            regsNum = 3;
+        if ((gcnInsn.mode&GCN_DS_128) != 0)
+            regsNum = 4;
+        good &= parseVRegRange(asmr, linePtr, dstReg, regsNum);
+        beforeData = true;
+    }
+    
+    if ((gcnInsn.mode & GCN_ONLYDST) == 0)
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        good &= parseVRegRange(asmr, linePtr, addrReg, 1);
+        beforeData = true;
+    }
+    
+    const uint16_t srcMode = (gcnInsn.mode & GCN_SRCS_MASK);
+    
+    if ((gcnInsn.mode & GCN_ONLYDST) == 0 &&
+        (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0 && srcMode != GCN_NOSRC)
+    {   /* two vdata */
+        if (beforeData)
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+        
+        cxuint regsNum = (gcnInsn.mode&GCN_REG_SRC0_64)?2:1;
+        if ((gcnInsn.mode&GCN_DS_96) != 0)
+            regsNum = 3;
+        if ((gcnInsn.mode&GCN_DS_128) != 0)
+            regsNum = 4;
+        good &= parseVRegRange(asmr, linePtr, data0Reg, regsNum);
+        if (srcMode == GCN_2SRCS)
+        {
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            good &= parseVRegRange(asmr, linePtr, data1Reg,
+                       (gcnInsn.mode&GCN_REG_SRC1_64)?2:1);
+        }
+    }
+    
+    bool haveGds = false;
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    const char* offsetPlace = linePtr;
+    char name[10];
+    while (true)
+    {
+        if (!getNameArg(asmr, 10, name, linePtr, "attribute"))
+        {
+            good = false;
+            continue;
+        }
+        toLowerString(name);
+        if (::strcmp(name, "gds")==0)
+            haveGds = true;
+        else if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
+        {
+            if (::strcmp(name, "offset") != 0)
+            {
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr!=end && *linePtr==':')
+                {
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    uint64_t value;
+                    if (!getAbsoluteValueArg(asmr, value, linePtr))
+                    {
+                    }
+                }
+                else
+                {
+                    asmr.printError(offsetPlace, "Expected ':' before offset");
+                    good = false;
+                }
+            }
+            else
+            {
+                asmr.printError(offsetPlace, "Expected 'offset'");
+                good = false;
+            }
+        }
+        else
+        {   // two offsets (offset0, offset1)
+            if (::memcmp(name, "offset", 6)!=0 ||
+                name[6]!='0' || name[6]!='1' || name[7]!=0)
+            {
+                asmr.printError(offsetPlace,
+                                "Expected 'offset', 'offset0' or 'offset1'");
+                good = false;
+            }
+            uint64_t value;
+            if (!getAbsoluteValueArg(asmr, value, linePtr))
+            {
+            }
+        }
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+    }
 }
 
 void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,

@@ -1699,8 +1699,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   v_interp_p1_f32 v93, v211, ", 0, 0, false, false,
         "test.s:1:31: Error: Expected 'attr' keyword\n" },
     { "   v_interp_p1_f32 v93, v211, attr22111.x", 0, 0, false, false,
-        "test.s:1:38: Error: Number is too big\n"
-        "test.s:1:38: Error: Expected '.' after attribute number\n" },
+        "test.s:1:38: Error: Number is too big\n" },
     { "   v_interp_p1_f32 v93, v211, attr64.w", 0, 0, false, false,
         "test.s:1:35: Error: Attribute number out of range (0-63)\n" },
     { "   v_interp_p1_f32 v93, v211, attr26", 0, 0, false, false,
