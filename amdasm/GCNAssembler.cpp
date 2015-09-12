@@ -2284,6 +2284,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     RegRange data0Reg(0, 0), data1Reg(0, 0);
     
     bool beforeData = false;
+    bool vdstUsed = false;
     
     if ((gcnInsn.mode & GCN_ADDR_SRC) != 0 || (gcnInsn.mode & GCN_ONLYDST) != 0)
     {   /* vdst is dst */
@@ -2293,13 +2294,14 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         if ((gcnInsn.mode&GCN_DS_128) != 0)
             regsNum = 4;
         good &= parseVRegRange(asmr, linePtr, dstReg, regsNum);
-        beforeData = true;
+        vdstUsed = beforeData = true;
     }
     
     if ((gcnInsn.mode & GCN_ONLYDST) == 0)
     {
-        if (!skipRequiredComma(asmr, linePtr))
-            return;
+        if (vdstUsed)
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
         good &= parseVRegRange(asmr, linePtr, addrReg, 1);
         beforeData = true;
     }
@@ -2329,11 +2331,12 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     }
     
     bool haveGds = false;
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
     const char* offsetPlace = linePtr;
+    std::unique_ptr<AsmExpression> offsetExpr, offset2Expr;
     char name[10];
-    while (true)
+    uint16_t offset = 0;
+    cxbyte offset1 = 0, offset2 = 0;
+    while (linePtr!=end)
     {
         if (!getNameArg(asmr, 10, name, linePtr, "attribute"))
         {
@@ -2345,16 +2348,13 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             haveGds = true;
         else if ((gcnInsn.mode & GCN_2OFFSETS) == 0) /* single offset */
         {
-            if (::strcmp(name, "offset") != 0)
+            if (::strcmp(name, "offset") == 0)
             {
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end && *linePtr==':')
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
-                    uint64_t value;
-                    if (!getAbsoluteValueArg(asmr, value, linePtr))
-                    {
-                    }
+                    good &= parseImm<uint16_t>(asmr, linePtr, offset, offsetExpr);
                 }
                 else
                 {
@@ -2370,21 +2370,61 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         }
         else
         {   // two offsets (offset0, offset1)
-            if (::memcmp(name, "offset", 6)!=0 ||
-                name[6]!='0' || name[6]!='1' || name[7]!=0)
+            if (::memcmp(name, "offset", 6)==0 &&
+                (name[6]=='0' || name[6]=='1') && name[7]==0)
+            {
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr!=end && *linePtr==':')
+                {
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    if (name[6]=='0')
+                        good &= parseImm<cxbyte>(asmr, linePtr, offset1, offsetExpr);
+                    else
+                        good &= parseImm<cxbyte>(asmr, linePtr, offset2, offset2Expr);
+                }
+                else
+                {
+                    asmr.printError(offsetPlace, "Expected ':' before offset");
+                    good = false;
+                }
+            }
+            else
             {
                 asmr.printError(offsetPlace,
                                 "Expected 'offset', 'offset0' or 'offset1'");
                 good = false;
             }
-            uint64_t value;
-            if (!getAbsoluteValueArg(asmr, value, linePtr))
-            {
-            }
         }
-        if (!skipRequiredComma(asmr, linePtr))
-            return;
+        
+        skipSpacesToEnd(linePtr, end);
     }
+    
+    if ((gcnInsn.mode & GCN_2OFFSETS) != 0)
+        offset = offset1 | (offset2<<8);
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (offsetExpr!=nullptr)
+        offsetExpr->setTarget(AsmExprTarget((gcnInsn.mode & GCN_2OFFSETS) ?
+                    GCNTGT_DSOFFSET8_0 : GCNTGT_DSOFFSET16, asmr.currentSection,
+                    output.size()));
+    if (offset2Expr!=nullptr)
+        offset2Expr->setTarget(AsmExprTarget(GCNTGT_DSOFFSET8_1, asmr.currentSection,
+                    output.size()));
+    
+    uint32_t words[2];
+    SLEV(words[0], 0xd8000000U | uint32_t(offset) | (haveGds ? 0x20000U : 0U) |
+            (uint32_t(gcnInsn.code1)<<18));
+    SLEV(words[1], (addrReg.start&0xff) | (uint32_t(data0Reg.start&0xff)<<8) |
+            (uint32_t(data1Reg.start&0xff)<<16) | (uint32_t(dstReg.start&0xff)<<24));
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + 2));
+    
+    offsetExpr.release();
+    offset2Expr.release();
+    // update register pool
+    updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
 void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2561,6 +2601,28 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 return false;
             }
             sectionData[offset] = value;
+            printWarningForRange(8, value, sourcePos);
+            return true;
+        case GCNTGT_DSOFFSET16:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
+            printWarningForRange(16, value, sourcePos);
+            return true;
+        case GCNTGT_DSOFFSET8_0:
+        case GCNTGT_DSOFFSET8_1:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            if (targetType==GCNTGT_DSOFFSET8_0)
+                sectionData[offset] = value;
+            else
+                sectionData[offset+1] = value;
             printWarningForRange(8, value, sourcePos);
             return true;
         default:
