@@ -1733,6 +1733,17 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
       " offset0:1+aa offset1:bb+1", 0xd9bc4b21U, 0x8b56a947U, true, true, "" },
     { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset0:1+aa "
         "offset1:bb+1;aa=32; bb=74", 0xd9bc4b21U, 0x8b56a947U, true, true, "" },
+    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset0:1+aa "
+        "gds offset1:bb+1;aa=32; bb=74", 0xd9be4b21U, 0x8b56a947U, true, true, "" },
+    /* DS warnings */
+    { "   ds_add_u32  v71, v169 offset:52 offset:42",
+        0xd800002aU, 0x0000a947U, true, true,
+        "test.s:1:36: Warning: Offset is already defined\n" },
+    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] "
+        "offset0:103 offset1:205 offset1:51 offset0:6",
+        0xd9bc3306U, 0x8b56a947U, true, true,
+        "test.s:1:89: Warning: Offset1 is already defined\n"
+        "test.s:1:100: Warning: Offset0 is already defined\n" },
     /* DS errors */
     { "   ds_add_u32  v71, v169 xdff:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
@@ -1743,6 +1754,21 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_add_u32  v71, v169 offset1:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
         "test.s:1:33: Error: Some garbages at attribute place\n" },
+    { "   ds_wrxchg2st64_rtn_b64 v139, v[71:72], v169, v86"
+      " offset0:103 offset1:205", 0, 0, false, false,
+        "test.s:1:27: Error: Required 2 vector registers\n"
+        "test.s:1:33: Error: Required 1 vector register\n"
+        "test.s:1:43: Error: Required 2 vector registers\n"
+        "test.s:1:49: Error: Required 2 vector registers\n" },
+    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset2:103 "
+        "offsetx:205 offset:3221 oxxs", 0, 0, false, false,
+        "test.s:1:65: Error: Expected 'offset', 'offset0' or 'offset1'\n"
+        "test.s:1:72: Error: Some garbages at attribute place\n"
+        "test.s:1:77: Error: Expected 'offset', 'offset0' or 'offset1'\n"
+        "test.s:1:84: Error: Some garbages at attribute place\n"
+        "test.s:1:89: Error: Expected 'offset', 'offset0' or 'offset1'\n"
+        "test.s:1:95: Error: Some garbages at attribute place\n"
+        "test.s:1:101: Error: Expected 'offset', 'offset0' or 'offset1'\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

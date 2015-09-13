@@ -2345,6 +2345,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         if (!getNameArg(asmr, 10, name, linePtr, "attribute"))
         {
             good = false;
+            skipSpacesToEnd(linePtr, end);
             continue;
         }
         toLowerString(name);
@@ -2393,7 +2394,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                         if (parseImm<cxbyte>(asmr, linePtr, offset1, offsetExpr))
                         {
                             if (haveOffset)
-                                asmr.printWarning(attrPlace, "Offset1 is already defined");
+                                asmr.printWarning(attrPlace, "Offset0 is already defined");
                             haveOffset = true;
                         }
                         else
@@ -2404,7 +2405,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                         if (parseImm<cxbyte>(asmr, linePtr, offset2, offset2Expr))
                         {
                             if (haveOffset2)
-                                asmr.printWarning(attrPlace, "Offset2 is already defined");
+                                asmr.printWarning(attrPlace, "Offset1 is already defined");
                             haveOffset2 = true;
                         }
                         else
