@@ -140,6 +140,7 @@ enum : uint16_t
     GCN_DSMASK = 0x3f0,
     GCN_DSMASK2 = 0x3c0,
     GCN_SRCS_MASK = 0xc0,
+    GCN_ONLYGDS = 0x2000,
     // others
     GCN_SBASE4 = 0x10,
     GCN_FLOATLIT = 0x100,

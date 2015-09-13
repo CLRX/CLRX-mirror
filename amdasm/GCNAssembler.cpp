@@ -2274,8 +2274,8 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
 }
 
 void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
@@ -2434,6 +2434,12 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if ((gcnInsn.mode&GCN_ONLYGDS) != 0 && !haveGds)
+    {
+        asmr.printError(instrPlace, "Instruction requires GDS modifier");
+        return;
+    }
+    
     if (offsetExpr!=nullptr)
         offsetExpr->setTarget(AsmExprTarget((gcnInsn.mode & GCN_2OFFSETS) ?
                     GCNTGT_DSOFFSET8_0 : GCNTGT_DSOFFSET16, asmr.currentSection,
@@ -2552,7 +2558,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
                                    curArchMask, output, regs);
             break;
         case GCNENC_DS:
-            GCNAsmUtils::parseDSEncoding(assembler, *it, linePtr,
+            GCNAsmUtils::parseDSEncoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs);
             break;
         case GCNENC_MUBUF:

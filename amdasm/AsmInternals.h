@@ -239,8 +239,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                       GCNAssembler::Regs& gcnRegs);
     static void parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                      const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      const char* instrPlace, const char* linePtr, uint16_t arch,
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
     static void parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                       GCNAssembler::Regs& gcnRegs);

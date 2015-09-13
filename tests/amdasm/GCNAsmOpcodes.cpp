@@ -1714,6 +1714,35 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:26: Error: Unknown VINTRP parameter\n" },
     { "   v_interp_mov_f32 v93, xxffff, attr26.w", 0, 0, false, false,
         "test.s:1:32: Error: VINTRP parameter is too long\n" },
+    /* DS encoding */
+    { "   ds_add_u32  v71, v169 offset:52583", 0xd800cd67U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32  v71, v169 offset :  52583",
+        0xd800cd67U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32  v71, v169", 0xd8000000U, 0x0000a947U, true, true, "" },
+    { "dct=771; ds_add_u32  v71, v169 offset:dct+2",
+        0xd8000305U, 0x0000a947U, true, true, "" },
+    { "ds_add_u32  v71, v169 offset:dct+2; dct=771",
+        0xd8000305U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32  v71, v169 gds", 0xd8020000U, 0x0000a947U, true, true, "" },
+    { "   ds_consume  v155 offset:52583", 0xd8f4cd67U, 0x9b000000U, true, true, "" },
+    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87]"
+      " offset0:103 offset1:205", 0xd9bccd67U, 0x8b56a947U, true, true, "" },
+    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87]"
+      " offset1:205 offset0:103", 0xd9bccd67U, 0x8b56a947U, true, true, "" },
+    { "aa=32; bb=74;ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87]"
+      " offset0:1+aa offset1:bb+1", 0xd9bc4b21U, 0x8b56a947U, true, true, "" },
+    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset0:1+aa "
+        "offset1:bb+1;aa=32; bb=74", 0xd9bc4b21U, 0x8b56a947U, true, true, "" },
+    /* DS errors */
+    { "   ds_add_u32  v71, v169 xdff:5444", 0, 0, false, false,
+        "test.s:1:26: Error: Expected 'offset'\n"
+        "test.s:1:30: Error: Some garbages at attribute place\n" },
+    { "   ds_add_u32  v71, v169 offset0:5444", 0, 0, false, false,
+        "test.s:1:26: Error: Expected 'offset'\n"
+        "test.s:1:33: Error: Some garbages at attribute place\n" },
+    { "   ds_add_u32  v71, v169 offset1:5444", 0, 0, false, false,
+        "test.s:1:26: Error: Expected 'offset'\n"
+        "test.s:1:33: Error: Some garbages at attribute place\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
