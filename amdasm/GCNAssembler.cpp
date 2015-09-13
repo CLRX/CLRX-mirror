@@ -2331,13 +2331,17 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     }
     
     bool haveGds = false;
-    const char* offsetPlace = linePtr;
     std::unique_ptr<AsmExpression> offsetExpr, offset2Expr;
     char name[10];
     uint16_t offset = 0;
     cxbyte offset1 = 0, offset2 = 0;
+    bool haveOffset = false, haveOffset2 = false;
+    
+    skipSpacesToEnd(linePtr, end);
+    
     while (linePtr!=end)
     {
+        const char* attrPlace = linePtr;
         if (!getNameArg(asmr, 10, name, linePtr, "attribute"))
         {
             good = false;
@@ -2354,17 +2358,24 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 if (linePtr!=end && *linePtr==':')
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
-                    good &= parseImm<uint16_t>(asmr, linePtr, offset, offsetExpr);
+                    if (parseImm<uint16_t>(asmr, linePtr, offset, offsetExpr))
+                    {
+                        if (haveOffset)
+                            asmr.printWarning(attrPlace, "Offset is already defined");
+                        haveOffset = true;
+                    }
+                    else
+                        good = false;
                 }
                 else
                 {
-                    asmr.printError(offsetPlace, "Expected ':' before offset");
+                    asmr.printError(attrPlace, "Expected ':' before offset");
                     good = false;
                 }
             }
             else
             {
-                asmr.printError(offsetPlace, "Expected 'offset'");
+                asmr.printError(attrPlace, "Expected 'offset'");
                 good = false;
             }
         }
@@ -2378,19 +2389,37 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
                     if (name[6]=='0')
-                        good &= parseImm<cxbyte>(asmr, linePtr, offset1, offsetExpr);
+                    {
+                        if (parseImm<cxbyte>(asmr, linePtr, offset1, offsetExpr))
+                        {
+                            if (haveOffset)
+                                asmr.printWarning(attrPlace, "Offset1 is already defined");
+                            haveOffset = true;
+                        }
+                        else
+                            good = false;
+                    }
                     else
-                        good &= parseImm<cxbyte>(asmr, linePtr, offset2, offset2Expr);
+                    {
+                        if (parseImm<cxbyte>(asmr, linePtr, offset2, offset2Expr))
+                        {
+                            if (haveOffset2)
+                                asmr.printWarning(attrPlace, "Offset2 is already defined");
+                            haveOffset2 = true;
+                        }
+                        else
+                            good = false;
+                    }
                 }
                 else
                 {
-                    asmr.printError(offsetPlace, "Expected ':' before offset");
+                    asmr.printError(attrPlace, "Expected ':' before offset");
                     good = false;
                 }
             }
             else
             {
-                asmr.printError(offsetPlace,
+                asmr.printError(attrPlace,
                                 "Expected 'offset', 'offset0' or 'offset1'");
                 good = false;
             }
