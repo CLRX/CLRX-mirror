@@ -2391,7 +2391,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
                     if (name[6]=='0')
-                    {
+                    {   /* offset0 */
                         if (parseImm<cxbyte>(asmr, linePtr, offset1, offsetExpr))
                         {
                             if (haveOffset)
@@ -2402,7 +2402,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                             good = false;
                     }
                     else
-                    {
+                    {   /* offset1 */
                         if (parseImm<cxbyte>(asmr, linePtr, offset2, offset2Expr))
                         {
                             if (haveOffset2)
@@ -2464,10 +2464,20 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
-void GCNAsmUtils::parseMXBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    bool good = true;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    
+    if (mode1 != GCN_ARG_NONE)
+    {
+        if (mode1 != GCN_MUBUF_NOVAD)
+        {
+        }
+    }
 }
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2565,7 +2575,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
             break;
         case GCNENC_MUBUF:
         case GCNENC_MTBUF:
-            GCNAsmUtils::parseMXBUFEncoding(assembler, *it, linePtr,
+            GCNAsmUtils::parseMUBUFEncoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs);
             break;
         case GCNENC_MIMG:

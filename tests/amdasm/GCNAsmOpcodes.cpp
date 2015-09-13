@@ -1774,6 +1774,11 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_xor_b64  v71, v[169:170], v3 offset:52583", 0, 0, false, false,
         "test.s:1:31: Error: Some garbages at attribute place\n"
         "test.s:1:33: Error: Expected 'offset'\n" },
+    { "   ds_gws_init  v71 offset:52583", 0, 0, false, false,
+        "test.s:1:4: Error: Instruction requires GDS modifier\n" },
+    { "   ds_add_u32  v71, v169 offset:,", 0, 0, false, false,
+        "test.s:1:33: Error: Expected expression\n"
+        "test.s:1:33: Error: Some garbages at attribute place\n" },
     /* DS instructions */
     { "   ds_sub_u32  v71, v169 offset:52583", 0xd804cd67U, 0x0000a947U, true, true, "" },
     { "   ds_rsub_u32 v71, v169 offset:52583", 0xd808cd67U, 0x0000a947U, true, true, "" },
@@ -1979,6 +1984,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_write_src2_b64 v71 offset:52583", 0xdb30cd67U, 0x00000047U, true, true, "" },
     { "   ds_min_src2_f64 v71 offset:52583", 0xdb48cd67U, 0x00000047U, true, true, "" },
     { "   ds_max_src2_f64 v71 offset:52583", 0xdb4ccd67U, 0x00000047U, true, true, "" },
+    /* MUBUF */
     { nullptr, 0, 0, false, false, 0 }
 };
 
