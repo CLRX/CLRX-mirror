@@ -1605,6 +1605,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:40: Error: Expected ',' before argument\n" },
     { "   v_div_scale_f32  v55, s[38:39], v79, v166, v99", 0, 0, false, false,
         "test.s:1:4: Error: First source must be equal to second or third source\n" },
+    { "   v_mad_legacy_f32 v55, v79, v166, v229 clamp ,", 0, 0, false, false,
+        "test.s:1:48: Error: Some garbages at modifier place\n" },
     /* VOP3 instructions */
     { "   v_mad_f32  v55, v79, v166, v229", 0xd2820037U, 0x07974d4fU, true, true, "" },
     { "   v_mad_i32_i24  v55, v79, v166, v229", 0xd2840037U, 0x07974d4fU, true, true, "" },
@@ -1769,6 +1771,9 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:89: Error: Expected 'offset', 'offset0' or 'offset1'\n"
         "test.s:1:95: Error: Some garbages at attribute place\n"
         "test.s:1:101: Error: Expected 'offset', 'offset0' or 'offset1'\n" },
+    { "   ds_xor_b64  v71, v[169:170], v3 offset:52583", 0, 0, false, false,
+        "test.s:1:31: Error: Some garbages at attribute place\n"
+        "test.s:1:33: Error: Expected 'offset'\n" },
     /* DS instructions */
     { "   ds_sub_u32  v71, v169 offset:52583", 0xd804cd67U, 0x0000a947U, true, true, "" },
     { "   ds_rsub_u32 v71, v169 offset:52583", 0xd808cd67U, 0x0000a947U, true, true, "" },

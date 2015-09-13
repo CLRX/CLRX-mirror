@@ -152,7 +152,7 @@ bool AsmParseUtils::getJumpValueArg(Assembler& asmr, uint64_t& value,
 }
 
 bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
-            const char* objName, bool requiredArg)
+            const char* objName, bool requiredArg, bool skipCommaAtError)
 {
     const char* end = asmr.line + asmr.lineSize;
     outStr.clear();
@@ -177,7 +177,10 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& li
             return true; // succeed
         asmr.printError(linePtr, (std::string("Some garbages at ")+objName+
                         " place").c_str());
-        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        if (!skipCommaAtError)
+            while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        else
+            while (linePtr != end && !isSpace(*linePtr)) linePtr++;
         return false;
     }
     outStr.assign(nameStr, linePtr);
@@ -186,7 +189,7 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, CString& outStr, const char*& li
 
 bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName, bool requiredArg,
-               bool ignoreLongerName)
+               bool ignoreLongerName, bool skipCommaAtError)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
@@ -216,7 +219,11 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outS
         }
         asmr.printError(linePtr, (std::string("Some garbages at ")+objName+
                 " place").c_str());
-        while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        
+        if (!skipCommaAtError)
+            while (linePtr != end && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        else
+            while (linePtr != end && !isSpace(*linePtr)) linePtr++;
         return false;
     }
     if (maxOutStrSize < size_t(linePtr-nameStr))

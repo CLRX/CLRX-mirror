@@ -102,12 +102,28 @@ struct CLRX_INTERNAL AsmParseUtils
             std::unique_ptr<AsmExpression>& outTargetExpr, const char*& linePtr);
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, CString& outStr, const char*& linePtr,
-               const char* objName, bool requiredArg = true);
+               const char* objName, bool requiredArg = true,
+               bool skipCommaAtError = false);
     
     // get name (not symbol name)
     static bool getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName, bool requiredArg = true,
-               bool ignoreLongerName = false);
+               bool ignoreLongerName = false, bool skipCommaAtError = false);
+    
+    // get name (not symbol name), skipping spaces at error by default
+    static bool getNameArgS(Assembler& asmr, CString& outStr, const char*& linePtr,
+               const char* objName, bool requiredArg = true)
+    { return getNameArg(asmr, outStr, linePtr, objName, requiredArg, true); }
+    
+    // get name (not symbol name), skipping spaces at error by default
+    static bool getNameArgS(Assembler& asmr, size_t maxOutStrSize, char* outStr,
+               const char*& linePtr, const char* objName, bool requiredArg = true,
+               bool ignoreLongerName = false)
+    {
+        return getNameArg(asmr, maxOutStrSize, outStr, linePtr, objName,
+                    requiredArg, ignoreLongerName, true);
+    }
+    
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
     // skip required comma, (returns false if not found comma)

@@ -27,8 +27,6 @@
 #include "AsmInternals.h"
 #include "GCNInternals.h"
 
-/* TODO: fix getNameArg on loops!!, they can infinite loops due to ',' */
-
 using namespace CLRX;
 
 static std::once_flag clrxGCNAssemblerOnceFlag;
@@ -1349,7 +1347,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             while (true)
             {
                 const char* funcNamePlace = linePtr;
-                if (!getNameArg(asmr, 20, name, linePtr, "function name", true))
+                if (!getNameArgS(asmr, 20, name, linePtr, "function name", true))
                     return;
                 toLowerString(name);
                 
@@ -1598,7 +1596,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
     {
         char mod[6];
         const char* modPlace = linePtr;
-        if (getNameArg(asmr, 6, mod, linePtr, "modifier"))
+        if (getNameArgS(asmr, 6, mod, linePtr, "modifier"))
         {
             toLowerString(mod);
             try
@@ -2345,7 +2343,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     while (linePtr!=end)
     {
         const char* attrPlace = linePtr;
-        if (!getNameArg(asmr, 10, name, linePtr, "attribute"))
+        if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
         {
             good = false;
             skipSpacesToEnd(linePtr, end);
