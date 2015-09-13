@@ -1895,7 +1895,7 @@ static const char* mtbufNFMTTable[] =
 
 static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
       FastOutputBuffer& output, const GCNInstruction& gcnInsn, uint32_t insnCode,
-      uint32_t insnCode2, bool mtbuf)
+      uint32_t insnCode2)
 {
     char* bufStart = output.reserve(150);
     char* bufPtr = bufStart;
@@ -1948,17 +1948,17 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
     if (insnCode & 0x4000U)
         putChars(bufPtr, " glc", 4);
     
-    if (((!isGCN12 || mtbuf) && (insnCode2 & 0x400000U)!=0) ||
-        ((isGCN12 && !mtbuf) && (insnCode & 0x20000)!=0))
+    if (((!isGCN12 || gcnInsn.encoding==GCNENC_MTBUF) && (insnCode2 & 0x400000U)!=0) ||
+        ((isGCN12 && gcnInsn.encoding!=GCNENC_MTBUF) && (insnCode & 0x20000)!=0))
         putChars(bufPtr, " slc", 4);
     
     if (!isGCN12 && (insnCode & 0x8000U)!=0)
         putChars(bufPtr, " addr64", 7);
-    if (!mtbuf && (insnCode & 0x10000U) != 0)
+    if (gcnInsn.encoding!=GCNENC_MTBUF && (insnCode & 0x10000U) != 0)
         putChars(bufPtr, " lds", 4);
     if (insnCode2 & 0x800000U)
         putChars(bufPtr, " tfe", 4);
-    if (mtbuf)
+    if (gcnInsn.encoding==GCNENC_MTBUF)
     {
         putChars(bufPtr, " format:[", 9);
         const char* dfmtStr = mtbufDFMTTable[(insnCode>>19)&15];
@@ -2526,11 +2526,11 @@ void GCNDisassembler::disassemble()
                     break;
                 case GCNENC_MUBUF:
                     decodeMUBUFEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
-                                 insnCode, insnCode2, false);
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_MTBUF:
                     decodeMUBUFEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
-                                 insnCode, insnCode2, true);
+                                 insnCode, insnCode2);
                     break;
                 case GCNENC_MIMG:
                     decodeMIMGEncoding(spacesToAdd, curArchMask, output, *gcnInsn,
