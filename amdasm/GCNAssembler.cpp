@@ -27,6 +27,8 @@
 #include "AsmInternals.h"
 #include "GCNInternals.h"
 
+/* TODO: fix getNameArg on loops!!, they can infinite loops due to ',' */
+
 using namespace CLRX;
 
 static std::once_flag clrxGCNAssemblerOnceFlag;
@@ -2098,8 +2100,9 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         numSgprToRead++;
     if (src1Op && src1Op.range.start<maxSgprsNum && src0Op.range.start!=src1Op.range.start)
         numSgprToRead++;
-    if (src2Op && src2Op.range.start<maxSgprsNum && src0Op.range.start!=src2Op.range.start &&
-                src1Op.range.start!=src2Op.range.start)
+    if (src2Op && src2Op.range.start<maxSgprsNum &&
+            src0Op.range.start!=src2Op.range.start &&
+            src1Op.range.start!=src2Op.range.start)
         numSgprToRead++;
     
     if (numSgprToRead>=2)
