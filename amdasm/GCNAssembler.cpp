@@ -2646,7 +2646,9 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
                                mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
                                CStringLess())-mtbufNFMTNamesMap;
-                        if (nfmtIdx==8)
+                        if (nfmtIdx!=8)
+                            nfmt = mtbufNFMTNamesMap[nfmtIdx].second;
+                        else
                         {
                             asmr.printError(fmtPlace, "Unknown data/number format");
                             attrGood = good = false;
@@ -2666,8 +2668,9 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     {
                         size_t nfmtNameIndex = (::strcmp(fmtName,
                                  "buf_num_format_")==0) ? 15 : 0;
-                        size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap, mtbufNFMTNamesMap+8,
-                               fmtName+nfmtNameIndex, CStringLess())-mtbufNFMTNamesMap;
+                        size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
+                               mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
+                               CStringLess()) - mtbufNFMTNamesMap;
                         if (nfmtIdx!=8)
                             nfmt = mtbufNFMTNamesMap[nfmtIdx].second;
                         else
@@ -2742,7 +2745,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         asmr.printWarning(instrPlace, "Offset will be ignored for enabled offen");
     
     if (offsetExpr!=nullptr)
-        offsetExpr->setTarget(AsmExprTarget(GCNTGT_DSOFFSET8_1, asmr.currentSection,
+        offsetExpr->setTarget(AsmExprTarget(GCNTGT_MXBUFOFFSET, asmr.currentSection,
                     output.size()));
     uint32_t words[2];
     uint32_t enc = 0xe0000000U | ((gcnInsn.encoding==GCNENC_MUBUF) ? 0x8000000U : 0);
@@ -2968,7 +2971,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 return false;
             }
             sectionData[offset] = value&0xff;
-            sectionData[offset+1] = (sectionData[offset+1]&0xf0) | (value>>8);
+            sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value>>8)&0xf);
             printWarningForRange(12, value, sourcePos);
             return true;
         default:
