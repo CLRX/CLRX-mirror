@@ -205,7 +205,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                    uint16_t arch, cxuint regsNum, bool required = true);
     /* return true if no error */
-    template<typename T>
+    template<typename T, cxuint Bits = (sizeof(T)<<3)>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>& outTargetExpr);
     
@@ -218,7 +218,10 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
                cxuint regsNum, Flags instrOpMask);
-        
+    
+    static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
+               const char*& linePtr, const char* objName);
+    
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                       GCNAssembler::Regs& gcnRegs);

@@ -492,7 +492,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     return true;
 }
 
-template<typename T>
+template<typename T, cxuint Bits>
 bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
             std::unique_ptr<AsmExpression>& outTargetExpr)
 {
@@ -519,7 +519,7 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
             asmr.printError(exprPlace, "Expression must be absolute!");
             return false;
         }
-        asmr.printWarningForRange(sizeof(T)<<3, value, asmr.getSourcePos(exprPlace));
+        asmr.printWarningForRange(Bits, value, asmr.getSourcePos(exprPlace));
         outValue = value;
         return true;
     }
@@ -1588,12 +1588,12 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                 bool withClamp)
 {
     const char* end = asmr.line+asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
     
     bool good = true;
     mods = 0;
     while (linePtr != end)
     {
+        skipSpacesToEnd(linePtr, end);
         char mod[6];
         const char* modPlace = linePtr;
         if (getNameArgS(asmr, 6, mod, linePtr, "modifier"))
@@ -1684,8 +1684,6 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
         }
         else
             good = false;
-        
-        skipSpacesToEnd(linePtr, end);
     }
     return good;
 }
@@ -2338,15 +2336,13 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     cxbyte offset1 = 0, offset2 = 0;
     bool haveOffset = false, haveOffset2 = false;
     
-    skipSpacesToEnd(linePtr, end);
-    
     while (linePtr!=end)
     {
+        skipSpacesToEnd(linePtr, end);
         const char* attrPlace = linePtr;
         if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
         {
             good = false;
-            skipSpacesToEnd(linePtr, end);
             continue;
         }
         toLowerString(name);
@@ -2426,8 +2422,6 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 good = false;
             }
         }
-        
-        skipSpacesToEnd(linePtr, end);
     }
     
     if ((gcnInsn.mode & GCN_2OFFSETS) != 0)
@@ -2464,6 +2458,71 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
+bool GCNAsmUtils::getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
+               const char*& linePtr, const char* objName)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end)
+    {
+        asmr.printError(linePtr, (std::string("Expected ")+objName).c_str());
+        return false;
+    }
+    const char* nameStr = linePtr;
+    if (isAlnum(*linePtr) || *linePtr == '_' || *linePtr == '.')
+    {
+        linePtr++;
+        while (linePtr != end && (isAlnum(*linePtr) ||
+            *linePtr == '_' || *linePtr == '.')) linePtr++;
+    }
+    else
+    {
+        asmr.printError(linePtr, (std::string("Some garbages at ")+objName+
+                " place").c_str());
+        while (linePtr != end && !isSpace(*linePtr)) linePtr++;
+        return false;
+    }
+    if (maxOutStrSize < size_t(linePtr-nameStr))
+    {
+        asmr.printError(linePtr, (std::string(objName)+" is too long").c_str());
+        return false;
+    }
+    const size_t outStrSize = std::min(maxOutStrSize-1, size_t(linePtr-nameStr));
+    std::copy(nameStr, nameStr+outStrSize, outStr);
+    outStr[outStrSize] = 0; // null-char
+    return true;
+}
+
+static const std::pair<const char*, uint16_t> mtbufDFMTNamesMap[] =
+{
+    { "10_10_10_2", 8 },
+    { "10_11_11", 6 },
+    { "11_11_10", 7 },
+    { "16", 2 },
+    { "16_16", 5 },
+    { "16_16_16_16", 12 },
+    { "2_10_10_10", 9 },
+    { "32", 4 },
+    { "32_32", 11 },
+    { "32_32_32", 13 },
+    { "32_32_32_32", 14 },
+    { "8", 1 },
+    { "8_8", 3 },
+    { "8_8_8_8", 10 }
+};
+
+static const std::pair<const char*, uint16_t> mtbufNFMTNamesMap[] =
+{
+    { "float", 7 },
+    { "sint", 5 },
+    { "sscaled", 3 },
+    { "snorm", 1 },
+    { "snorm_ogl", 6 },
+    { "uint", 4 },
+    { "unorm", 0 },
+    { "uscaled", 2 }
+};
+
 void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
                   std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
@@ -2471,13 +2530,243 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    RegRange vaddrReg(0, 0);
+    RegRange vdataReg(0, 0);
+    RegRange soffsetReg(0, 0);
+    RegRange srsrcReg(0, 0);
     
+    skipSpacesToEnd(linePtr, end);
+    const char* vdataPlace = linePtr;
+    const char* vaddrPlace = nullptr;
     if (mode1 != GCN_ARG_NONE)
     {
         if (mode1 != GCN_MUBUF_NOVAD)
         {
+            good &= parseVRegRange(asmr, linePtr, vdataReg, 0);
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            
+            skipSpacesToEnd(linePtr, end);
+            vaddrPlace = linePtr;
+            good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+        }
+        good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1);
+    }
+    
+    bool haveOffset = false, haveFormat = false;
+    cxbyte dfmt = 1, nfmt = 0;
+    cxuint offset = 0;
+    std::unique_ptr<AsmExpression> offsetExpr;
+    bool haveAddr64 = false, haveTfe = false, haveSlc = false, haveLds = false;
+    bool haveGlc = false, haveOffen = false, haveIdxen = false;
+    while(linePtr!=end)
+    {
+        skipSpacesToEnd(linePtr, end);
+        char name[10];
+        const char* attrPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
+        {
+            good = false;
+            continue;
+        }
+        toLowerString(name);
+        
+        if (name[0] == 'o')
+        {   // offen, offset
+            if (::strcmp(name+1, "ffen")==0)
+                haveOffen = true;
+            else if (::strcmp(name+1, "ffset")==0)
+            {   // parse offset
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr!=end && *linePtr==':')
+                {   /* parse offset immediate */
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    if (parseImm<cxuint, 12>(asmr, linePtr, offset, offsetExpr))
+                    {
+                        if (haveOffset)
+                            asmr.printWarning(attrPlace, "Offset is already defined");
+                        haveOffset = true;
+                    }
+                    else
+                        good = false;
+                }
+                else
+                {
+                    asmr.printError(attrPlace, "Expected ':' before offset");
+                    good = false;
+                }
+            }
+            else
+            {
+                asmr.printError(attrPlace, "Unknown MUBUF attribute");
+                good = false;
+            }
+        }
+        else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
+        {   // parse format
+            bool attrGood = true;
+            if (linePtr==end || *linePtr!=':')
+            {
+                asmr.printError(attrPlace, "Expected ':' before format");
+                attrGood = good = false;
+            }
+            if (attrGood)
+            {
+                skipCharAndSpacesToEnd(linePtr, end);
+                if (linePtr==end || *linePtr!='[')
+                {
+                    asmr.printError(attrPlace, "Expected '[' before format");
+                    attrGood = good = false;
+                }
+            }
+            if (attrGood)
+            {
+                skipCharAndSpacesToEnd(linePtr, end);
+                const char* fmtPlace = linePtr;
+                char fmtName[20];
+                bool haveNFMT = false;
+                if (getMUBUFFmtNameArg(asmr, 20, fmtName, linePtr, "data/number format"))
+                {
+                    size_t dfmtNameIndex = (::strcmp(fmtName,
+                                 "buf_data_format_")==0) ? 16 : 0;
+                    size_t dfmtIdx = binaryMapFind(mtbufDFMTNamesMap, mtbufDFMTNamesMap+14,
+                                fmtName+dfmtNameIndex, CStringLess())-mtbufDFMTNamesMap;
+                    if (dfmtIdx != 14)
+                        dfmt = mtbufDFMTNamesMap[dfmtIdx].second;
+                    else
+                    {   // nfmt
+                        haveNFMT = true;
+                        size_t nfmtNameIndex = (::strcmp(fmtName,
+                                 "buf_num_format_")==0) ? 15 : 0;
+                        size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
+                               mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
+                               CStringLess())-mtbufNFMTNamesMap;
+                        if (nfmtIdx==8)
+                        {
+                            asmr.printError(fmtPlace, "Unknown data/number format");
+                            attrGood = good = false;
+                        }
+                    }
+                }
+                else
+                    attrGood = good = false;
+                
+                skipSpacesToEnd(linePtr, end);
+                if (attrGood && !haveNFMT && linePtr!=end && *linePtr==',')
+                {
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    fmtPlace = linePtr;
+                    
+                    if (getMUBUFFmtNameArg(asmr, 20, fmtName, linePtr, "number format"))
+                    {
+                        size_t nfmtNameIndex = (::strcmp(fmtName,
+                                 "buf_num_format_")==0) ? 15 : 0;
+                        size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap, mtbufNFMTNamesMap+8,
+                               fmtName+nfmtNameIndex, CStringLess())-mtbufNFMTNamesMap;
+                        if (nfmtIdx!=8)
+                            nfmt = mtbufNFMTNamesMap[nfmtIdx].second;
+                        else
+                        {
+                            asmr.printError(fmtPlace, "Unknown number format");
+                            attrGood = good = false;
+                        }
+                    }
+                    else
+                        good = false;
+                }
+                if (linePtr!=end && *linePtr==']')
+                    linePtr++;
+                else
+                {
+                    asmr.printError(linePtr, "Unterminated format attribute");
+                    good = false;
+                }
+                if (attrGood)
+                {
+                    if (haveFormat)
+                        asmr.printWarning(attrPlace, "Format is already defined");
+                    haveFormat = true;
+                }
+            }
+        }
+        else if (::strcmp(name, "addr64")==0)
+            haveAddr64 = true;
+        else if (::strcmp(name, "tfe")==0)
+            haveTfe = true;
+        else if (::strcmp(name, "glc")==0)
+            haveGlc = true;
+        else if (::strcmp(name, "slc")==0)
+            haveSlc = true;
+        else if (gcnInsn.encoding==GCNENC_MUBUF && ::strcmp(name, "lds")==0)
+            haveLds = true;
+        else if (::strcmp(name, "idxen")==0)
+            haveIdxen = true;
+        else
+        {
+            asmr.printError(attrPlace, "Unknown MUBUF attribute");
+            good = false;
         }
     }
+    
+    /* checking addr range and vdata range */
+    if (!isXRegRange(vdataReg, 1+haveTfe) && !isXRegRange(vdataReg, 2+haveTfe) &&
+        !isXRegRange(vdataReg, 4+haveTfe))
+    {
+        asmr.printError(vdataPlace, (haveTfe) ? "Required 2,3,5 vector registers" :
+            "Required 1,2,4 vector registers");
+        good = false;
+    }
+    const cxuint vaddrSize = (haveOffen&&haveIdxen) ? 2 : 1;
+    if (!isXRegRange(vaddrReg, vaddrSize))
+    {
+        asmr.printError(vaddrPlace, (vaddrSize) ? "Required 2 vector registers" : 
+                    "Required 1 vector register");
+        good = false;
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    /* checking attributes conditions */
+    if (haveAddr64 && (haveOffen | haveIdxen)!=0)
+    {
+        asmr.printError(instrPlace, "Idxen and offen must be zero in 64-bit address mode");
+        return;
+    }
+    if (haveOffen && offset!=0)
+        asmr.printWarning(instrPlace, "Offset will be ignored for enabled offen");
+    
+    if (offsetExpr!=nullptr)
+        offsetExpr->setTarget(AsmExprTarget(GCNTGT_DSOFFSET8_1, asmr.currentSection,
+                    output.size()));
+    uint32_t words[2];
+    uint32_t enc = 0xe0000000U | ((gcnInsn.encoding==GCNENC_MUBUF) ? 0x8000000U : 0);
+    if (gcnInsn.encoding==GCNENC_MUBUF)
+        SLEV(words[0],  enc | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+                (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
+                (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
+                (uint32_t(gcnInsn.code1)<<18));
+    else // MTBUF
+        SLEV(words[0],  enc | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+                (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
+                (haveAddr64 ? 0x8000U : 0U) | (uint32_t(gcnInsn.code1)<<16) |
+                (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
+    
+    SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
+            (uint32_t(srsrcReg.start>>2)<<16) | (haveSlc ? (1U<<22) : 0) |
+            (haveTfe ? (1U<<23) : 0) | (uint32_t(soffsetReg.start)<<24));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + 2));
+    
+    offsetExpr.release();
+    // update register pool
+    //updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
 }
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2671,6 +2960,16 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             else
                 sectionData[offset+1] = value;
             printWarningForRange(8, value, sourcePos);
+            return true;
+        case GCNTGT_MXBUFOFFSET:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            sectionData[offset] = value&0xff;
+            sectionData[offset+1] = (sectionData[offset+1]&0xf0) | (value>>8);
+            printWarningForRange(12, value, sourcePos);
             return true;
         default:
             return false;
