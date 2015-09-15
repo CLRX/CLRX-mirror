@@ -2514,9 +2514,9 @@ static const std::pair<const char*, uint16_t> mtbufNFMTNamesMap[] =
 {
     { "float", 7 },
     { "sint", 5 },
-    { "sscaled", 3 },
     { "snorm", 1 },
     { "snorm_ogl", 6 },
+    { "sscaled", 3 },
     { "uint", 4 },
     { "unorm", 0 },
     { "uscaled", 2 }
@@ -2602,8 +2602,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             }
             else
             {
-                asmr.printError(attrPlace, "Unknown MUBUF attribute");
-                good = false;
+                asmr.printError(attrPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
+                    "Unknown MUBUF attribute" : "Unknown MTBUF attribute");
             }
         }
         else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
@@ -2714,7 +2714,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             haveIdxen = true;
         else
         {
-            asmr.printError(attrPlace, "Unknown MUBUF attribute");
+            asmr.printError(attrPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
+                    "Unknown MUBUF attribute" : "Unknown MTBUF attribute");
             good = false;
         }
     }
