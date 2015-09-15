@@ -2307,6 +2307,9 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe format:[10_11_11,sscaled]", 0xe9b067d4U, 0x23d43d12U, true, true, "" },
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
+        "glc slc tfe format  : [  10_11_11 , sscaled  ]",
+        0xe9b067d4U, 0x23d43d12U, true, true, "" },
+    { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe format:[BUF_DATA_FORMAT_10_11_11,BUF_NUM_FORMAT_SSCALED]",
         0xe9b067d4U, 0x23d43d12U, true, true, "" },
     /* MTBUF format errors */

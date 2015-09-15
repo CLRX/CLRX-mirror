@@ -2609,6 +2609,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
         {   // parse format
             bool attrGood = true;
+            skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=':')
             {
                 asmr.printError(linePtr, "Expected ':' before format");
@@ -2685,6 +2686,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     else
                         good = false;
                 }
+                skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end && *linePtr==']')
                     linePtr++;
                 else
@@ -2721,28 +2723,34 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     }
     
     /* checking addr range and vdata range */
-    cxuint dregsNum = (((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1) + (haveTfe);
-    if (!isXRegRange(vdataReg, dregsNum))
+    if (vdataReg)
     {
-        char errorMsg[40];
-        snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
-                 (dregsNum>1) ? "s" : "");
-        asmr.printError(vdataPlace, errorMsg);
-        good = false;
+        cxuint dregsNum = (((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1) + (haveTfe);
+        if (!isXRegRange(vdataReg, dregsNum))
+        {
+            char errorMsg[40];
+            snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
+                     (dregsNum>1) ? "s" : "");
+            asmr.printError(vdataPlace, errorMsg);
+            good = false;
+        }
     }
-    const cxuint vaddrSize = ((haveOffen&&haveIdxen) || haveAddr64) ? 2 : 1;
-    if (!isXRegRange(vaddrReg, vaddrSize))
+    if (vaddrReg)
     {
-        asmr.printError(vaddrPlace, (vaddrSize==2) ? "Required 2 vector registers" : 
-                    "Required 1 vector register");
-        good = false;
+        const cxuint vaddrSize = ((haveOffen&&haveIdxen) || haveAddr64) ? 2 : 1;
+        if (!isXRegRange(vaddrReg, vaddrSize))
+        {
+            asmr.printError(vaddrPlace, (vaddrSize==2) ? "Required 2 vector registers" : 
+                        "Required 1 vector register");
+            good = false;
+        }
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     /* checking attributes conditions */
-    if (haveAddr64 && (haveOffen | haveIdxen)!=0)
+    if (haveAddr64 && (haveOffen || haveIdxen))
     {
         asmr.printError(instrPlace, "Idxen and offen must be zero in 64-bit address mode");
         return;
@@ -2753,14 +2761,15 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     if (offsetExpr!=nullptr)
         offsetExpr->setTarget(AsmExprTarget(GCNTGT_MXBUFOFFSET, asmr.currentSection,
                     output.size()));
+    
     uint32_t words[2];
     if (gcnInsn.encoding==GCNENC_MUBUF)
-        SLEV(words[0],  0xe0000000U | uint32_t(offset&0xfffU) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0], 0xe0000000U | uint32_t(offset&0xfffU) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
                 (uint32_t(gcnInsn.code1)<<18));
     else // MTBUF
-        SLEV(words[0],  0xe8000000U | uint32_t(offset&0xfffU) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0], 0xe8000000U | uint32_t(offset&0xfffU) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (uint32_t(gcnInsn.code1)<<16) |
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
@@ -2773,7 +2782,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             reinterpret_cast<cxbyte*>(words + 2));
     
     offsetExpr.release();
-    // update register pool
+    // TODO: update register pool
     //updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
 }
 
