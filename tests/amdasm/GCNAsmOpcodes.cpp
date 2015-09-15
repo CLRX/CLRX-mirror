@@ -594,6 +594,12 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cndmask_b32   v[255:256], v21, v107, vcc", 0, 0, false, false,
         "test.s:1:29: Error: Number is too big\n"
         "test.s:1:29: Error: Expected ',' before argument\n" },
+    { "    v_add_f32  v154, v21, v107 mul,", 0, 0, false, false,
+        "test.s:1:35: Error: Expected ':' before multiplier number\n"
+        "test.s:1:35: Error: Some garbages at modifier place\n" },
+    { "    v_add_f32  v154, v21, v107 div,", 0, 0, false, false,
+        "test.s:1:35: Error: Expected ':' before divider number\n"
+        "test.s:1:35: Error: Some garbages at modifier place\n" },
     /* VOP2 in VOP3 errors */
     { "    v_add_f32  v154, v21, v107 mul:3", 0, 0, false, false,
         "test.s:1:32: Error: Unknown VOP3 mul:X modifier\n" },
@@ -1782,6 +1788,15 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_add_u32  v71, v169 offset:,", 0, 0, false, false,
         "test.s:1:33: Error: Expected expression\n"
         "test.s:1:33: Error: Some garbages at attribute place\n" },
+    { "   ds_add_u32  v71, v169 offset,", 0, 0, false, false,
+        "test.s:1:32: Error: Expected ':' before offset\n"
+        "test.s:1:32: Error: Some garbages at attribute place\n" },
+    { "   ds_write2_b32  v71, v169, v39 offset0, offset1,",
+        0, 0, false, false,
+        "test.s:1:41: Error: Expected ':' before offset\n"
+        "test.s:1:41: Error: Some garbages at attribute place\n"
+        "test.s:1:50: Error: Expected ':' before offset\n"
+        "test.s:1:50: Error: Some garbages at attribute place\n" },
     /* DS instructions */
     { "   ds_sub_u32  v71, v169 offset:52583", 0xd804cd67U, 0x0000a947U, true, true, "" },
     { "   ds_rsub_u32 v71, v169 offset:52583", 0xd808cd67U, 0x0000a947U, true, true, "" },
@@ -1996,6 +2011,49 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xe000c25bU, 0x23543d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:603",
         0xe000025bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset  :  603",
+        0xe000025bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 OfFset  :  603",
+        0xe000025bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "glc slc addr64 lds tfe", 0xe001c000U, 0x23d43d12U, true, true, "" },
+    { "xx=5; yy=7;buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:xx+yy glc slc addr64 lds tfe", 0xe001c00cU, 0x23d43d12U, true, true, "" },
+    { "buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 offset:xx+yy "
+        "glc slc addr64 lds tfe;xx=5; yy=7", 0xe001c00cU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offen idxen "
+        "glc slc lds tfe", 0xe0017000U, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x v[61:62], v18, s[80:83], s35 offset:577 idxen "
+        "glc slc lds tfe", 0xe0016241U, 0x23d43d12U, true, true, "" },
+    /* MUBUF/MTBUF offset warnings */
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:4603",
+        0xe00001fbU, 0x23143d12U, true, true,
+        "test.s:1:58: Warning: Value 0x11fb truncated to 0x1fb\n" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:x; x=4603",
+        0xe00001fbU, 0x23143d12U, true, true,
+        "test.s:1:58: Warning: Value 0x11fb truncated to 0x1fb\n" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:x glc; x=4603",
+        0xe00041fbU, 0x23143d12U, true, true,
+        "test.s:1:58: Warning: Value 0x11fb truncated to 0x1fb\n" },
+    { "    buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offset:577 offen idxen "
+        "glc slc lds tfe", 0xe0017241U, 0x23d43d12U, true, true,
+        "test.s:1:5: Warning: Offset will be ignored for enabled offen\n" },
+    { "    buffer_load_format_x v[61:62], v18, s[80:83], s35 offset:577 offen "
+        "glc slc lds tfe", 0xe0015241U, 0x23d43d12U, true, true,
+        "test.s:1:5: Warning: Offset will be ignored for enabled offen\n" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:1779 offset:603",
+        0xe000025bU, 0x23143d12U, true, true,
+        "test.s:1:63: Warning: Offset is already defined\n" },
+    /* MUBUF errors */
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 lds tfe idxen", 0, 0, false, false,
+        "test.s:1:5: Error: Idxen and offen must be zero in 64-bit address mode\n" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 lds tfe offen", 0, 0, false, false,
+        "test.s:1:5: Error: Idxen and offen must be zero in 64-bit address mode\n" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset,", 0, 0, false, false,
+        "test.s:1:57: Error: Expected ':' before offset\n"
+        "test.s:1:57: Error: Some garbages at attribute place\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

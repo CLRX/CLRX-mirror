@@ -1650,7 +1650,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
                     }
                     else
                     {
-                        asmr.printError(modPlace, "Expected ':' before divider number");
+                        asmr.printError(linePtr, "Expected ':' before divider number");
                         good = false;
                     }
                 }
@@ -2366,7 +2366,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 }
                 else
                 {
-                    asmr.printError(attrPlace, "Expected ':' before offset");
+                    asmr.printError(linePtr, "Expected ':' before offset");
                     good = false;
                 }
             }
@@ -2410,7 +2410,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 }
                 else
                 {
-                    asmr.printError(attrPlace, "Expected ':' before offset");
+                    asmr.printError(linePtr, "Expected ':' before offset");
                     good = false;
                 }
             }
@@ -2596,7 +2596,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 }
                 else
                 {
-                    asmr.printError(attrPlace, "Expected ':' before offset");
+                    asmr.printError(linePtr, "Expected ':' before offset");
                     good = false;
                 }
             }
@@ -2611,7 +2611,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             bool attrGood = true;
             if (linePtr==end || *linePtr!=':')
             {
-                asmr.printError(attrPlace, "Expected ':' before format");
+                asmr.printError(linePtr, "Expected ':' before format");
                 attrGood = good = false;
             }
             if (attrGood)
@@ -2754,12 +2754,12 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     output.size()));
     uint32_t words[2];
     if (gcnInsn.encoding==GCNENC_MUBUF)
-        SLEV(words[0],  0xe0000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0],  0xe0000000U | uint32_t(offset&0xfffU) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
                 (uint32_t(gcnInsn.code1)<<18));
     else // MTBUF
-        SLEV(words[0],  0xe8000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0],  0xe8000000U | uint32_t(offset&0xfffU) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (uint32_t(gcnInsn.code1)<<16) |
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
