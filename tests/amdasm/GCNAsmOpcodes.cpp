@@ -1988,6 +1988,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_min_src2_f64 v71 offset:52583", 0xdb48cd67U, 0x00000047U, true, true, "" },
     { "   ds_max_src2_f64 v71 offset:52583", 0xdb4ccd67U, 0x00000047U, true, true, "" },
     /* MUBUF */
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 lds tfe", 0xe001f25bU, 0x23d43d12U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

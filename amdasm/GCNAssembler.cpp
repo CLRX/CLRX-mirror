@@ -2754,12 +2754,12 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     output.size()));
     uint32_t words[2];
     if (gcnInsn.encoding==GCNENC_MUBUF)
-        SLEV(words[0],  0xe8000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0],  0xe0000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
                 (uint32_t(gcnInsn.code1)<<18));
     else // MTBUF
-        SLEV(words[0],  0xe0000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0],  0xe8000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (uint32_t(gcnInsn.code1)<<16) |
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
