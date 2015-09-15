@@ -2720,17 +2720,19 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     }
     
     /* checking addr range and vdata range */
-    if (!isXRegRange(vdataReg, 1+haveTfe) && !isXRegRange(vdataReg, 2+haveTfe) &&
-        !isXRegRange(vdataReg, 4+haveTfe))
+    cxuint dregsNum = (((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1) + (haveTfe);
+    if (!isXRegRange(vdataReg, dregsNum))
     {
-        asmr.printError(vdataPlace, (haveTfe) ? "Required 2,3,5 vector registers" :
-            "Required 1,2,4 vector registers");
+        char errorMsg[40];
+        snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
+                 (dregsNum>1) ? "s" : "");
+        asmr.printError(vdataPlace, errorMsg);
         good = false;
     }
-    const cxuint vaddrSize = (haveOffen&&haveIdxen) ? 2 : 1;
+    const cxuint vaddrSize = ((haveOffen&&haveIdxen) || haveAddr64) ? 2 : 1;
     if (!isXRegRange(vaddrReg, vaddrSize))
     {
-        asmr.printError(vaddrPlace, (vaddrSize) ? "Required 2 vector registers" : 
+        asmr.printError(vaddrPlace, (vaddrSize==2) ? "Required 2 vector registers" : 
                     "Required 1 vector register");
         good = false;
     }

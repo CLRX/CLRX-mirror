@@ -436,6 +436,9 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:12: Error: Expected vmcnt, lgkmcnt or expcnt\n" },
     { "s_waitcnt  vmcnt(11) _", 0, 0, false, false,
         "test.s:1:22: Error: Expected '&' before lock function\n" },
+    { "s_waitcnt  vmcnt  (14  ) & expcnt(  2) & aaaa(6) & vmcnt(4)", 0, 0, false, false,
+        "test.s:1:41: Error: Expected vmcnt, lgkmcnt or expcnt\n"
+        "test.s:1:51: Warning: vmcnt was already defined\n" },
     /* other SOPP opcodes */
     { "    s_sethalt       0x32b", 0xbf8d032bU, 0, false, true, "" },
     { "    s_sleep         0x32b", 0xbf8e032bU, 0, false, true, "" },
