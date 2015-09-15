@@ -2482,7 +2482,7 @@ bool GCNAsmUtils::getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char
         while (linePtr != end && !isSpace(*linePtr)) linePtr++;
         return false;
     }
-    if (maxOutStrSize < size_t(linePtr-nameStr))
+    if (maxOutStrSize-1 < size_t(linePtr-nameStr))
     {
         asmr.printError(linePtr, (std::string(objName)+" is too long").c_str());
         return false;
@@ -2632,7 +2632,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 bool haveNFMT = false;
                 if (getMUBUFFmtNameArg(asmr, 25, fmtName, linePtr, "data/number format"))
                 {
-                    size_t dfmtNameIndex = (::memcmp(fmtName,
+                    size_t dfmtNameIndex = (::strncmp(fmtName,
                                  "buf_data_format_", 16)==0) ? 16 : 0;
                     size_t dfmtIdx = binaryMapFind(mtbufDFMTNamesMap, mtbufDFMTNamesMap+14,
                                 fmtName+dfmtNameIndex, CStringLess())-mtbufDFMTNamesMap;
@@ -2641,7 +2641,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     else
                     {   // nfmt
                         haveNFMT = true;
-                        size_t nfmtNameIndex = (::memcmp(fmtName,
+                        size_t nfmtNameIndex = (::strncmp(fmtName,
                                  "buf_num_format_", 15)==0) ? 15 : 0;
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
                                mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,

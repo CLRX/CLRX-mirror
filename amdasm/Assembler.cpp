@@ -226,7 +226,7 @@ bool AsmParseUtils::getNameArg(Assembler& asmr, size_t maxOutStrSize, char* outS
             while (linePtr != end && !isSpace(*linePtr)) linePtr++;
         return false;
     }
-    if (maxOutStrSize < size_t(linePtr-nameStr))
+    if (maxOutStrSize-1 < size_t(linePtr-nameStr))
     {
         if (ignoreLongerName)
         {   // return empty string
