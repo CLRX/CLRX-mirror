@@ -1347,11 +1347,10 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             while (true)
             {
                 const char* funcNamePlace = linePtr;
-                if (!getNameArgS(asmr, 20, name, linePtr, "function name", true))
-                    return;
+                good &= getNameArgS(asmr, 20, name, linePtr, "function name", true);
                 toLowerString(name);
                 
-                cxuint bitPos = 0, bitMask = 0;
+                cxuint bitPos = 0, bitMask = UINT_MAX;
                 if (::strcmp(name, "vmcnt")==0)
                 {
                     if (haveVMCnt)
@@ -1379,7 +1378,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 else
                 {
                     asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
-                    return;
+                    good = false;
                 }
                 
                 skipSpacesToEnd(linePtr, end);
@@ -2641,14 +2640,16 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                         dfmt = mtbufDFMTNamesMap[dfmtIdx].second;
                     else
                     {   // nfmt
-                        haveNFMT = true;
                         size_t nfmtNameIndex = (::strncmp(fmtName,
                                  "buf_num_format_", 15)==0) ? 15 : 0;
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
                                mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
                                CStringLess())-mtbufNFMTNamesMap;
                         if (nfmtIdx!=8)
+                        {
                             nfmt = mtbufNFMTNamesMap[nfmtIdx].second;
+                            haveNFMT = true;
+                        }
                         else
                         {
                             asmr.printError(fmtPlace, "Unknown data/number format");
@@ -2660,7 +2661,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     attrGood = good = false;
                 
                 skipSpacesToEnd(linePtr, end);
-                if (attrGood && !haveNFMT && linePtr!=end && *linePtr==',')
+                if (!haveNFMT && linePtr!=end && *linePtr==',')
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
                     fmtPlace = linePtr;
@@ -2673,7 +2674,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
                                mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
                                CStringLess()) - mtbufNFMTNamesMap;
-                        if (nfmtIdx!=8)
+                        if (nfmtIdx!=8 && attrGood)
                             nfmt = mtbufNFMTNamesMap[nfmtIdx].second;
                         else
                         {
