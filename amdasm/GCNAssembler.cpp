@@ -2628,12 +2628,12 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             {
                 skipCharAndSpacesToEnd(linePtr, end);
                 const char* fmtPlace = linePtr;
-                char fmtName[20];
+                char fmtName[25];
                 bool haveNFMT = false;
-                if (getMUBUFFmtNameArg(asmr, 20, fmtName, linePtr, "data/number format"))
+                if (getMUBUFFmtNameArg(asmr, 25, fmtName, linePtr, "data/number format"))
                 {
-                    size_t dfmtNameIndex = (::strcmp(fmtName,
-                                 "buf_data_format_")==0) ? 16 : 0;
+                    size_t dfmtNameIndex = (::memcmp(fmtName,
+                                 "buf_data_format_", 16)==0) ? 16 : 0;
                     size_t dfmtIdx = binaryMapFind(mtbufDFMTNamesMap, mtbufDFMTNamesMap+14,
                                 fmtName+dfmtNameIndex, CStringLess())-mtbufDFMTNamesMap;
                     if (dfmtIdx != 14)
@@ -2641,8 +2641,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     else
                     {   // nfmt
                         haveNFMT = true;
-                        size_t nfmtNameIndex = (::strcmp(fmtName,
-                                 "buf_num_format_")==0) ? 15 : 0;
+                        size_t nfmtNameIndex = (::memcmp(fmtName,
+                                 "buf_num_format_", 15)==0) ? 15 : 0;
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
                                mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
                                CStringLess())-mtbufNFMTNamesMap;
@@ -2664,10 +2664,10 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     skipCharAndSpacesToEnd(linePtr, end);
                     fmtPlace = linePtr;
                     
-                    if (getMUBUFFmtNameArg(asmr, 20, fmtName, linePtr, "number format"))
+                    if (getMUBUFFmtNameArg(asmr, 25, fmtName, linePtr, "number format"))
                     {
-                        size_t nfmtNameIndex = (::strcmp(fmtName,
-                                 "buf_num_format_")==0) ? 15 : 0;
+                        size_t nfmtNameIndex = (::memcmp(fmtName,
+                                 "buf_num_format_", 15)==0) ? 15 : 0;
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
                                mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
                                CStringLess()) - mtbufNFMTNamesMap;
@@ -2748,14 +2748,13 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         offsetExpr->setTarget(AsmExprTarget(GCNTGT_MXBUFOFFSET, asmr.currentSection,
                     output.size()));
     uint32_t words[2];
-    uint32_t enc = 0xe0000000U | ((gcnInsn.encoding==GCNENC_MUBUF) ? 0x8000000U : 0);
     if (gcnInsn.encoding==GCNENC_MUBUF)
-        SLEV(words[0],  enc | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0],  0xe8000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
                 (uint32_t(gcnInsn.code1)<<18));
     else // MTBUF
-        SLEV(words[0],  enc | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
+        SLEV(words[0],  0xe0000000U | uint32_t(offset) | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (uint32_t(gcnInsn.code1)<<16) |
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
