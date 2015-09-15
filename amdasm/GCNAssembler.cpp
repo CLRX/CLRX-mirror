@@ -2628,10 +2628,11 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             {
                 skipCharAndSpacesToEnd(linePtr, end);
                 const char* fmtPlace = linePtr;
-                char fmtName[25];
+                char fmtName[30];
                 bool haveNFMT = false;
-                if (getMUBUFFmtNameArg(asmr, 25, fmtName, linePtr, "data/number format"))
+                if (getMUBUFFmtNameArg(asmr, 30, fmtName, linePtr, "data/number format"))
                 {
+                    toLowerString(fmtName);
                     size_t dfmtNameIndex = (::strncmp(fmtName,
                                  "buf_data_format_", 16)==0) ? 16 : 0;
                     size_t dfmtIdx = binaryMapFind(mtbufDFMTNamesMap, mtbufDFMTNamesMap+14,
@@ -2664,8 +2665,9 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     skipCharAndSpacesToEnd(linePtr, end);
                     fmtPlace = linePtr;
                     
-                    if (getMUBUFFmtNameArg(asmr, 25, fmtName, linePtr, "number format"))
+                    if (getMUBUFFmtNameArg(asmr, 30, fmtName, linePtr, "number format"))
                     {
+                        toLowerString(fmtName);
                         size_t nfmtNameIndex = (::memcmp(fmtName,
                                  "buf_num_format_", 15)==0) ? 15 : 0;
                         size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
