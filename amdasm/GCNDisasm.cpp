@@ -2005,7 +2005,7 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
     
-    const cxuint dmask =  (insnCode>>8)&15;
+    const cxuint dmask = (insnCode>>8)&15;
     cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
             ((dmask & 8)?1:0);
     dregsNum = (dregsNum == 0) ? 1 : dregsNum;

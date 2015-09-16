@@ -2782,14 +2782,134 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             reinterpret_cast<cxbyte*>(words + 2));
     
     offsetExpr.release();
-    // TODO: update register pool
-    //updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
+    // update register pool (instr loads or save old value) */
+    if ((gcnInsn.mode&GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc))
+        updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
 }
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    bool good = true;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    RegRange vaddrReg(0, 0);
+    RegRange vdataReg(0, 0);
+    RegRange ssampReg(0, 0);
+    RegRange srsrcReg(0, 0);
+    
+    skipSpacesToEnd(linePtr, end);
+    const char* vdataPlace = linePtr;
+    const char* vaddrPlace = nullptr;
+    
+    good &= parseVRegRange(asmr, linePtr, vdataReg, 0);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    skipSpacesToEnd(linePtr, end);
+    vaddrPlace = linePtr;
+    good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
+    
+    if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        good &= parseSRegRange(asmr, linePtr, ssampReg, arch, 4);
+    }
+    
+    bool haveTfe = false, haveSlc = false, haveGlc = false;
+    bool haveDa = false, haveR128 = false, haveLwe = false, haveUnorm = false;
+    bool haveDMask = false;
+    cxbyte dmask = 0xf;
+    /* attributes and modifiers */
+    while(linePtr!=end)
+    {
+        skipSpacesToEnd(linePtr, end);
+        char name[10];
+        const char* attrPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
+        {
+            good = false;
+            continue;
+        }
+        toLowerString(name);
+        
+        if (name[0] == 'd')
+        {
+            if (name[1]=='a' && name[2]==0)
+                haveDa = true;
+            if (::strcmp(name+1, "mask")==0)
+            {
+                // parse offset
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr!=end && *linePtr==':')
+                {   /* parse offset immediate */
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    const char* valuePlace = linePtr;
+                    uint64_t value;
+                    if (getAbsoluteValueArg(asmr, value, linePtr, true))
+                    {
+                        if (haveDMask)
+                            asmr.printWarning(attrPlace, "Offset is already defined");
+                        haveDMask = true;
+                        if (value>0xf)
+                            asmr.printWarning(linePtr, "DMask out of range (0-15)");
+                        dmask = value&0xf;
+                    }
+                    else
+                        good = false;
+                }
+                else
+                {
+                    asmr.printError(linePtr, "Expected ':' before offset");
+                    good = false;
+                }
+            }
+            else
+            {
+                asmr.printError(attrPlace, "Unknown MIMG attribute");
+                good = false;
+            }
+        }
+        if (name[0] < 's')
+        {
+            if (::strcmp(name, "glc")==0)
+                haveGlc = true;
+            else if (::strcmp(name, "lwe")==0)
+                haveLwe = true;
+            else if (::strcmp(name, "r128")==0)
+                haveR128 = true;
+            else
+            {
+                asmr.printError(attrPlace, "Unknown MIMG attribute");
+                good = false;
+            }
+        }
+        else if (::strcmp(name, "tfe")==0)
+            haveTfe = true;
+        else if (::strcmp(name, "slc")==0)
+            haveSlc = true;
+        else if (::strcmp(name, "unorm")==0)
+            haveUnorm = true;
+        else
+        {
+            asmr.printError(attrPlace, "Unknown MIMG attribute");
+            good = false;
+        }
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    /* checking attributes conditions */
+    
+    // update register pool (instr loads or save old value) */
+    if ((gcnInsn.mode&GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc))
+        updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
 }
 
 void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,

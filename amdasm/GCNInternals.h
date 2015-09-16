@@ -162,6 +162,8 @@ enum : uint16_t
     GCN_MUBUF_MX3 = 0x200,
     GCN_MUBUF_MX4 = 0x300,
     GCN_MIMG_SAMPLE = 0x100,
+    GCN_MLOAD = 0x1000, // instruction load data to vgprs
+    GCN_MATOMIC = 0x2000, // instructin perform atomics and returns data if glc==1
     GCN_FLAT_DDST = 0x00,
     GCN_FLAT_ADST = 0x10,
     GCN_FLAT_NODATA = 0x20,
