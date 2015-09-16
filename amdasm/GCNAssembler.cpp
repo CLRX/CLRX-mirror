@@ -2788,12 +2788,11 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
 }
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
     RegRange ssampReg(0, 0);
@@ -2801,19 +2800,18 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     skipSpacesToEnd(linePtr, end);
     const char* vdataPlace = linePtr;
-    const char* vaddrPlace = nullptr;
-    
     good &= parseVRegRange(asmr, linePtr, vdataReg, 0);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     
     skipSpacesToEnd(linePtr, end);
-    vaddrPlace = linePtr;
-    good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
+    good &= parseVRegRange(asmr, linePtr, vaddrReg, 4);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
+    skipSpacesToEnd(linePtr, end);
+    const char* srsrcPlace = linePtr;
+    good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 0);
     
     if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
     {
@@ -2843,7 +2841,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             if (name[1]=='a' && name[2]==0)
                 haveDa = true;
-            if (::strcmp(name+1, "mask")==0)
+            else if (::strcmp(name+1, "mask")==0)
             {
                 // parse offset
                 skipSpacesToEnd(linePtr, end);
@@ -2855,10 +2853,10 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     if (getAbsoluteValueArg(asmr, value, linePtr, true))
                     {
                         if (haveDMask)
-                            asmr.printWarning(attrPlace, "Offset is already defined");
+                            asmr.printWarning(attrPlace, "Dmask is already defined");
                         haveDMask = true;
                         if (value>0xf)
-                            asmr.printWarning(linePtr, "DMask out of range (0-15)");
+                            asmr.printWarning(valuePlace, "Dmask out of range (0-15)");
                         dmask = value&0xf;
                     }
                     else
@@ -2866,7 +2864,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 }
                 else
                 {
-                    asmr.printError(linePtr, "Expected ':' before offset");
+                    asmr.printError(linePtr, "Expected ':' before dmask");
                     good = false;
                 }
             }
@@ -2876,7 +2874,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 good = false;
             }
         }
-        if (name[0] < 's')
+        else if (name[0] < 's')
         {
             if (::strcmp(name, "glc")==0)
                 haveGlc = true;
@@ -2902,10 +2900,45 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             good = false;
         }
     }
+    
+    cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
+            ((dmask & 8)?1:0);
+    dregsNum = (dregsNum == 0) ? 1 : dregsNum;
+    dregsNum += (haveTfe);
+    if (!isXRegRange(vdataReg, dregsNum))
+    {
+        char errorMsg[40];
+        snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
+                 (dregsNum>1) ? "s" : "");
+        asmr.printError(vdataPlace, errorMsg);
+        good = false;
+    }
+    if (!isXRegRange(srsrcReg, (haveR128)?4:8))
+    {
+        asmr.printError(srsrcPlace, (haveR128) ? "Required 4 scalar registers" :
+                    "Required 8 scalar registers");
+        good = false;
+    }
+    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     /* checking attributes conditions */
+    if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
+    {   // unorm is not set for this instruction
+        asmr.printError(instrPlace, "Unorm is not set for store or atomic instruction");
+        return;
+    }
+    
+    uint32_t words[2];
+    SLEV(words[0], 0xf0000000U | (uint32_t(dmask&0xf)<<8) | (haveUnorm ? 0x1000U : 0) |
+        (haveGlc ? 0x2000U : 0) | (haveDa ? 0x4000U : 0) | (haveR128 ? 0x8000U : 0) |
+        (haveTfe ? 0x10000U : 0) | (haveLwe ? 0x20000U : 0) |
+        (uint32_t(gcnInsn.code1)<<18) | (haveSlc ? (1U<<25) : 0));
+    SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
+            (uint32_t(srsrcReg.start>>2)<<16) | (uint32_t(ssampReg.start>>2)<<21));
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + 2));
     
     // update register pool (instr loads or save old value) */
     if ((gcnInsn.mode&GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc))
@@ -3005,7 +3038,7 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
                                    curArchMask, output, regs);
             break;
         case GCNENC_MIMG:
-            GCNAsmUtils::parseMIMGEncoding(assembler, *it, linePtr,
+            GCNAsmUtils::parseMIMGEncoding(assembler, *it, mnemPlace, linePtr,
                                    curArchMask, output, regs);
             break;
         case GCNENC_EXP:

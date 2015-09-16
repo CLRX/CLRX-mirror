@@ -2258,6 +2258,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     /* MUBUF encoding */
     { 0xe001f25bU, 0x23f43d12U, true, "        buffer_load_format_x "
     "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc addr64 lds tfe\n" },
+    /* zero reserved bit */
+    { 0xe001f25bU, 0x23d43d12U, true, "        buffer_load_format_x "
+    "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:603 glc slc addr64 lds tfe\n" },
     /* vaddr sizing */
     { 0xe001c25bU, 0x23f43d12U, true, "        buffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offset:603 glc slc addr64 lds tfe\n" },

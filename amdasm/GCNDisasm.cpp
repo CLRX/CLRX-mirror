@@ -2015,7 +2015,6 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
-    // determine number of vaddr registers
     decodeGCNVRegOperand(insnCode2&0xff, 4, bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
