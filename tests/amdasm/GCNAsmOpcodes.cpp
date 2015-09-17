@@ -317,7 +317,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
                     0xb92b0001U, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(HWREG_MODE, 0, 1)", 0xb92b0001U, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(status, 0, 1)", 0xb92b0002U, 0, false, true, "" },
-    { "    s_getreg_b32    s43, hwreg(HWREG_STATUS, 0, 1)", 0xb92b0002U, 0, false, true, "" },
+    { "    s_getreg_b32    s43, hwreg(HWREG_STATUS, 0, 1)",
+        0xb92b0002U, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(trapsts, 0, 1)", 0xb92b0003U, 0, false, true, "" },
     { "    s_getreg_b32    s43, hwreg(HWREG_TRAPSTS, 0, 1)",
                     0xb92b0003U, 0, false, true, "" },
@@ -2363,8 +2364,6 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "dmask=5;image_load  v[157:158], v[121:124], s[84:87] dmask:dmask unorm glc "
         "slc r128 lwe da", 0xf202f500U, 0x00159d79U, true, true, "" },
     /* dmask */
-    { "    image_load  v157, v[121:124], s[84:87] dmask:0 unorm glc slc r128 lwe da",
-        0xf202f000U, 0x00159d79U, true, true, "" },
     { "    image_load  v157, v[121:124], s[84:87] dmask:1 unorm glc slc r128 lwe da",
         0xf202f100U, 0x00159d79U, true, true, "" },
     { "    image_load  v157, v[121:124], s[84:87] dmask:2 unorm glc slc r128 lwe da",
@@ -2434,6 +2433,11 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0, 0, false, false, "test.s:1:17: Error: Required 1 vector register\n" },
     { "    image_load  v[157:158], v[121:124], s[84:87] dmask:11 unorm r128 lwe da",
         0, 0, false, false, "test.s:1:17: Error: Required 3 vector registers\n" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:0 unorm glc slc r128 lwe da",
+        0, 0, false, false, "test.s:1:50: Error: Zero in dmask is illegal\n" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:0x1ab0 unorm glc slc r128 lwe da",
+        0, 0, false, false, "test.s:1:50: Warning: Dmask out of range (0-15)\n"
+        "test.s:1:50: Error: Zero in dmask is illegal\n" },
     /* MIMG warnings */
     { "    image_load  v[157:161], v[121:124], s[84:87] dmask:0xdaf unorm glc tfe slc r128 "
         "lwe da", 0xf203ff00U, 0x00159d79U, true, true,

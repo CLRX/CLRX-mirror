@@ -2858,6 +2858,11 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                         if (value>0xf)
                             asmr.printWarning(valuePlace, "Dmask out of range (0-15)");
                         dmask = value&0xf;
+                        if (dmask == 0)
+                        {
+                            asmr.printError(valuePlace, "Zero in dmask is illegal");
+                            good = false;
+                        }
                     }
                     else
                         good = false;
@@ -2901,17 +2906,18 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     
-    cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
-            ((dmask & 8)?1:0);
-    dregsNum = (dregsNum == 0) ? 1 : dregsNum;
-    dregsNum += (haveTfe);
-    if (!isXRegRange(vdataReg, dregsNum))
+    if (dmask!=0)
     {
-        char errorMsg[40];
-        snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
-                 (dregsNum>1) ? "s" : "");
-        asmr.printError(vdataPlace, errorMsg);
-        good = false;
+        cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
+                ((dmask & 8)?1:0) + (haveTfe);
+        if (!isXRegRange(vdataReg, dregsNum))
+        {
+            char errorMsg[40];
+            snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
+                     (dregsNum>1) ? "s" : "");
+            asmr.printError(vdataPlace, errorMsg);
+            good = false;
+        }
     }
     if (!isXRegRange(srsrcReg, (haveR128)?4:8))
     {
