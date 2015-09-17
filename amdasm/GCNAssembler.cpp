@@ -2339,7 +2339,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     {
         skipSpacesToEnd(linePtr, end);
         const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
+        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
         {
             good = false;
             continue;
@@ -2568,7 +2568,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         skipSpacesToEnd(linePtr, end);
         char name[10];
         const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
+        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
         {
             good = false;
             continue;
@@ -2603,7 +2603,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             else
             {
                 asmr.printError(attrPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
-                    "Unknown MUBUF attribute" : "Unknown MTBUF attribute");
+                    "Unknown MUBUF modifier" : "Unknown MTBUF modifier");
             }
         }
         else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
@@ -2691,7 +2691,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     linePtr++;
                 else
                 {
-                    asmr.printError(linePtr, "Unterminated format attribute");
+                    asmr.printError(linePtr, "Unterminated format modifier");
                     good = false;
                 }
                 if (attrGood)
@@ -2717,7 +2717,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         else
         {
             asmr.printError(attrPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
-                    "Unknown MUBUF attribute" : "Unknown MTBUF attribute");
+                    "Unknown MUBUF modifier" : "Unknown MTBUF modifier");
             good = false;
         }
     }
@@ -2749,7 +2749,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    /* checking attributes conditions */
+    /* checking modifiers conditions */
     if (haveAddr64 && (haveOffen || haveIdxen))
     {
         asmr.printError(instrPlace, "Idxen and offen must be zero in 64-bit address mode");
@@ -2823,14 +2823,14 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveTfe = false, haveSlc = false, haveGlc = false;
     bool haveDa = false, haveR128 = false, haveLwe = false, haveUnorm = false;
     bool haveDMask = false;
-    cxbyte dmask = 0xf;
-    /* attributes and modifiers */
+    cxbyte dmask = 0x1;
+    /* modifiers and modifiers */
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
         char name[10];
         const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "attribute"))
+        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
         {
             good = false;
             continue;
@@ -2870,7 +2870,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
             else
             {
-                asmr.printError(attrPlace, "Unknown MIMG attribute");
+                asmr.printError(attrPlace, "Unknown MIMG modifier");
                 good = false;
             }
         }
@@ -2884,7 +2884,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 haveR128 = true;
             else
             {
-                asmr.printError(attrPlace, "Unknown MIMG attribute");
+                asmr.printError(attrPlace, "Unknown MIMG modifier");
                 good = false;
             }
         }
@@ -2896,7 +2896,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             haveUnorm = true;
         else
         {
-            asmr.printError(attrPlace, "Unknown MIMG attribute");
+            asmr.printError(attrPlace, "Unknown MIMG modifier");
             good = false;
         }
     }
@@ -2923,7 +2923,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    /* checking attributes conditions */
+    /* checking modifiers conditions */
     if (!haveUnorm && ((gcnInsn.mode&GCN_MLOAD) == 0 || (gcnInsn.mode&GCN_MATOMIC)!=0))
     {   // unorm is not set for this instruction
         asmr.printError(instrPlace, "Unorm is not set for store or atomic instruction");

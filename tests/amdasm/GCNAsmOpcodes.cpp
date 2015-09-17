@@ -1758,13 +1758,13 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* DS errors */
     { "   ds_add_u32  v71, v169 xdff:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
-        "test.s:1:30: Error: Some garbages at attribute place\n" },
+        "test.s:1:30: Error: Some garbages at modifier place\n" },
     { "   ds_add_u32  v71, v169 offset0:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
-        "test.s:1:33: Error: Some garbages at attribute place\n" },
+        "test.s:1:33: Error: Some garbages at modifier place\n" },
     { "   ds_add_u32  v71, v169 offset1:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
-        "test.s:1:33: Error: Some garbages at attribute place\n" },
+        "test.s:1:33: Error: Some garbages at modifier place\n" },
     { "   ds_wrxchg2st64_rtn_b64 v139, v[71:72], v169, v86"
       " offset0:103 offset1:205", 0, 0, false, false,
         "test.s:1:27: Error: Required 2 vector registers\n"
@@ -1774,29 +1774,29 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset2:103 "
         "offsetx:205 offset:3221 oxxs", 0, 0, false, false,
         "test.s:1:65: Error: Expected 'offset', 'offset0' or 'offset1'\n"
-        "test.s:1:72: Error: Some garbages at attribute place\n"
+        "test.s:1:72: Error: Some garbages at modifier place\n"
         "test.s:1:77: Error: Expected 'offset', 'offset0' or 'offset1'\n"
-        "test.s:1:84: Error: Some garbages at attribute place\n"
+        "test.s:1:84: Error: Some garbages at modifier place\n"
         "test.s:1:89: Error: Expected 'offset', 'offset0' or 'offset1'\n"
-        "test.s:1:95: Error: Some garbages at attribute place\n"
+        "test.s:1:95: Error: Some garbages at modifier place\n"
         "test.s:1:101: Error: Expected 'offset', 'offset0' or 'offset1'\n" },
     { "   ds_xor_b64  v71, v[169:170], v3 offset:52583", 0, 0, false, false,
-        "test.s:1:31: Error: Some garbages at attribute place\n"
+        "test.s:1:31: Error: Some garbages at modifier place\n"
         "test.s:1:33: Error: Expected 'offset'\n" },
     { "   ds_gws_init  v71 offset:52583", 0, 0, false, false,
         "test.s:1:4: Error: Instruction requires GDS modifier\n" },
     { "   ds_add_u32  v71, v169 offset:,", 0, 0, false, false,
         "test.s:1:33: Error: Expected expression\n"
-        "test.s:1:33: Error: Some garbages at attribute place\n" },
+        "test.s:1:33: Error: Some garbages at modifier place\n" },
     { "   ds_add_u32  v71, v169 offset,", 0, 0, false, false,
         "test.s:1:32: Error: Expected ':' before offset\n"
-        "test.s:1:32: Error: Some garbages at attribute place\n" },
+        "test.s:1:32: Error: Some garbages at modifier place\n" },
     { "   ds_write2_b32  v71, v169, v39 offset0, offset1,",
         0, 0, false, false,
         "test.s:1:41: Error: Expected ':' before offset\n"
-        "test.s:1:41: Error: Some garbages at attribute place\n"
+        "test.s:1:41: Error: Some garbages at modifier place\n"
         "test.s:1:50: Error: Expected ':' before offset\n"
-        "test.s:1:50: Error: Some garbages at attribute place\n" },
+        "test.s:1:50: Error: Some garbages at modifier place\n" },
     /* DS instructions */
     { "   ds_sub_u32  v71, v169 offset:52583", 0xd804cd67U, 0x0000a947U, true, true, "" },
     { "   ds_rsub_u32 v71, v169 offset:52583", 0xd808cd67U, 0x0000a947U, true, true, "" },
@@ -2053,7 +2053,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:5: Error: Idxen and offen must be zero in 64-bit address mode\n" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset,", 0, 0, false, false,
         "test.s:1:57: Error: Expected ':' before offset\n"
-        "test.s:1:57: Error: Some garbages at attribute place\n" },
+        "test.s:1:57: Error: Some garbages at modifier place\n" },
     { "    buffer_load_format_x  v[61:63], v[18:20], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0, 0, false, false,
         "test.s:1:27: Error: Required 2 vector registers\n"
@@ -2062,7 +2062,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "offset:603 glc slc addr64 lds", 0, 0, false, false,
         "test.s:1:27: Error: Required 1 vector register\n" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:603 tfx",
-        0, 0, false, false, "test.s:1:62: Error: Unknown MUBUF attribute\n" },
+        0, 0, false, false, "test.s:1:62: Error: Unknown MUBUF modifier\n" },
     { "    buffer_store_format_xyz v[61:63], v18, s[80:83], s35 idxen offset:603 tfe",
         0, 0, false, false, "test.s:1:29: Error: Required 4 vector registers\n" },
     { "    buffer_store_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:603 tfe",
@@ -2316,7 +2316,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe format:[]", 0, 0, false, false,
         "test.s:1:94: Error: Some garbages at data/number format place\n"
-        "test.s:1:95: Error: Unterminated format attribute\n" },
+        "test.s:1:95: Error: Unterminated format modifier\n" },
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe format:[xxx]", 0, 0, false, false,
         "test.s:1:94: Error: Unknown data/number format\n" },
@@ -2325,19 +2325,19 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:100: Error: Unknown number format\n" },
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe format:[16_16", 0, 0, false, false,
-        "test.s:1:99: Error: Unterminated format attribute\n" },
+        "test.s:1:99: Error: Unterminated format modifier\n" },
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe format:[xx,yy", 0, 0, false, false,
         "test.s:1:94: Error: Unknown data/number format\n"
         "test.s:1:97: Error: Unknown number format\n"
-        "test.s:1:99: Error: Unterminated format attribute\n" },
+        "test.s:1:99: Error: Unterminated format modifier\n" },
     /* MTBUF errors */
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe lds", 0, 0, false, false,
-        "test.s:1:86: Error: Unknown MTBUF attribute\n" },
+        "test.s:1:86: Error: Unknown MTBUF modifier\n" },
     { "    tbuffer_load_format_x v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc tfe offenx", 0, 0, false, false,
-        "test.s:1:86: Error: Unknown MTBUF attribute\n" },
+        "test.s:1:86: Error: Unknown MTBUF modifier\n" },
     /* MTBUF instructions */
     { "    tbuffer_load_format_xy v[61:62], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc", 0xe80967d4U, 0x23543d12U, true, true, "" },
@@ -2354,6 +2354,10 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    tbuffer_store_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc", 0xe80f67d4U, 0x23543d12U, true, true, "" },
     /* MIMG encoding */
+    { "    image_load      v[157:160], v[121:124], s[84:87] dmask:11 unorm glc slc r128 "
+        "tfe lwe da", 0xf203fb00U, 0x00159d79U, true, true, "" },
+    { "    image_load      v[157:158], v[121:124], s[84:87] unorm glc slc r128 tfe lwe da",
+        0xf203f100U, 0x00159d79U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
