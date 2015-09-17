@@ -3031,15 +3031,15 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             return;
         skipSpacesToEnd(linePtr, end);
         vsrcPlaces[i] = linePtr;
-        if (linePtr+3<=end && toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
-            toLower(linePtr[2])=='f')
-        {
+        if (linePtr+4>end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
+            toLower(linePtr[2])!='f' || linePtr[3]!=' ')
+            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1);
+        else
+        {   // if vsrcX is off
             enMask &= ~(1U<<i);
             vsrcsReg[i] = { 0, 0 };
             linePtr += 3;
         }
-        else
-            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1);
     }
     
     /* EXP modifiers */
