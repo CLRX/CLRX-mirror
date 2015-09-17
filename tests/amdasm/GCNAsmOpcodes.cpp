@@ -2354,10 +2354,277 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    tbuffer_store_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc", 0xe80f67d4U, 0x23543d12U, true, true, "" },
     /* MIMG encoding */
-    { "    image_load      v[157:160], v[121:124], s[84:87] dmask:11 unorm glc slc r128 "
+    { "    image_load  v[157:160], v[121:124], s[84:87] dmask:11 unorm glc slc r128 "
         "tfe lwe da", 0xf203fb00U, 0x00159d79U, true, true, "" },
     { "    image_load      v[157:158], v[121:124], s[84:87] unorm glc slc r128 tfe lwe da",
         0xf203f100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc slc r128 "
+        "lwe da", 0xf202fb00U, 0x00159d79U, true, true, "" },
+    { "dmask=5;image_load  v[157:158], v[121:124], s[84:87] dmask:dmask unorm glc "
+        "slc r128 lwe da", 0xf202f500U, 0x00159d79U, true, true, "" },
+    /* dmask */
+    { "    image_load  v157, v[121:124], s[84:87] dmask:0 unorm glc slc r128 lwe da",
+        0xf202f000U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:1 unorm glc slc r128 lwe da",
+        0xf202f100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:2 unorm glc slc r128 lwe da",
+        0xf202f200U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:3 unorm glc slc r128 "
+        "lwe da", 0xf202f300U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:4 unorm glc slc r128 lwe da",
+        0xf202f400U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:5 unorm glc slc r128 "
+        "lwe da", 0xf202f500U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:6 unorm glc slc r128 "
+        "lwe da", 0xf202f600U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:159], v[121:124], s[84:87] dmask:7 unorm glc slc r128 "
+        "lwe da", 0xf202f700U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] dmask:8 unorm glc slc r128 lwe da",
+        0xf202f800U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:9 unorm glc slc r128 "
+        "lwe da", 0xf202f900U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:10 unorm glc slc r128 "
+        "lwe da", 0xf202fa00U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:0xa unorm glc slc r128 "
+        "lwe da", 0xf202fa00U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:160], v[121:124], s[84:87] dmask:15 unorm glc slc r128 "
+        "lwe da", 0xf202ff00U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:160], v[121:124], s[84:87] dmask:0xf unorm glc slc r128 "
+        "lwe da", 0xf202ff00U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:161], v[121:124], s[84:87] dmask:0xf unorm glc tfe slc r128 "
+        "lwe da", 0xf203ff00U, 0x00159d79U, true, true, "" },
+    /* MIMG flags */
+    { "    image_load  v157, v[121:124], s[84:91]",
+        0xf0000100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] unorm",
+        0xf0001100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] glc",
+        0xf0002100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] da",
+        0xf0004100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:87] r128",
+        0xf0008100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v[157:158], v[121:124], s[84:91] tfe",
+        0xf0010100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] lwe",
+        0xf0020100U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91] slc",
+        0xf2000100U, 0x00159d79U, true, true, "" },
+    /* MIMG errors */
+    { "    image_load  v157, v[121:124], s[84:91] sxc", 0, 0, false, false,
+        "test.s:1:44: Error: Unknown MIMG modifier\n" },
+    { "    image_load  v157, v[121:124], s[84:91] g53 aa3 daa db", 0, 0, false, false,
+        "test.s:1:44: Error: Unknown MIMG modifier\n"
+        "test.s:1:48: Error: Unknown MIMG modifier\n"
+        "test.s:1:52: Error: Unknown MIMG modifier\n"
+        "test.s:1:56: Error: Unknown MIMG modifier\n" },
+    { "    image_load  v157, v[121:124], s[84:91] dmask:", 0, 0, false, false,
+        "test.s:1:50: Error: Expected expression\n" },
+    { "    image_load  v157, v[121:124], s[84:91] dmask", 0, 0, false, false,
+        "test.s:1:49: Error: Expected ':' before dmask\n" },
+    { "    image_load  v157, v[121:124], s[84:90]", 0, 0, false, false,
+        "test.s:1:35: Error: Required 8 scalar registers\n" },
+    { "    image_load  v157, v[121:124], s[84:90] r128", 0, 0, false, false,
+        "test.s:1:35: Error: Required 4 scalar registers\n" },
+    { "    image_store v157, v[121:124], s[84:91]", 0, 0, false, false,
+        "test.s:1:5: Error: Unorm is not set for store or atomic instruction\n" },
+    { "    image_atomic_add v157, v[121:124], s[84:91]", 0, 0, false, false,
+        "test.s:1:5: Error: Unorm is not set for store or atomic instruction\n" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:8 unorm r128 lwe da",
+        0, 0, false, false, "test.s:1:17: Error: Required 1 vector register\n" },
+    { "    image_load  v[157:158], v[121:124], s[84:87] dmask:11 unorm r128 lwe da",
+        0, 0, false, false, "test.s:1:17: Error: Required 3 vector registers\n" },
+    /* MIMG warnings */
+    { "    image_load  v[157:161], v[121:124], s[84:87] dmask:0xdaf unorm glc tfe slc r128 "
+        "lwe da", 0xf203ff00U, 0x00159d79U, true, true,
+        "test.s:1:56: Warning: Dmask out of range (0-15)\n" },
+    /* MIMG instructions */
+    { "    image_load_mip  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf004fb00U, 0x00159d79U, true, true, "" },
+    { "    image_load_pck  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf008fb00U, 0x00159d79U, true, true, "" },
+    { "    image_load_pck_sgn  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf00cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_load_mip_pck  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf010fb00U, 0x00159d79U, true, true, "" },
+    { "    image_load_mip_pck_sgn  v[157:159], v[121:124], s[84:87] dmask:11 unorm "
+        "glc r128 da", 0xf014fb00U, 0x00159d79U, true, true, "" },
+    { "    image_store  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf020fb00U, 0x00159d79U, true, true, "" },
+    { "    image_store_mip  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf024fb00U, 0x00159d79U, true, true, "" },
+    { "    image_store_pck  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf028fb00U, 0x00159d79U, true, true, "" },
+    { "    image_store_mip_pck  v[157:159], v[121:124], s[84:87] dmask:11 unorm "
+        "glc r128 da", 0xf02cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_get_resinfo  v[157:159], v[121:124], s[84:87] dmask:11 unorm "
+        "glc r128 da", 0xf038fb00U, 0x00159d79U, true, true, "" },
+    { "    image_get_resinfo  v[157:159], v[121:124], s[84:87] dmask:11 glc r128 da",
+        0xf038eb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_swap  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf03cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_cmpswap  v[157:159], v[121:124], s[84:87] dmask:11 unorm "
+        "glc r128 da", 0xf040fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_add  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf044fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_sub  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf048fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_rsub  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf04cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_smin  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf050fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_umin  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf054fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_smax  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf058fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_umax  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf05cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_and  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf060fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_or v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf064fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_xor  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf068fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_inc  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf06cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_dec  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf070fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_fcmpswap  v[157:159], v[121:124], s[84:87] dmask:11 unorm "
+        "glc r128 da", 0xf074fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_fmin  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf078fb00U, 0x00159d79U, true, true, "" },
+    { "    image_atomic_fmax  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
+        0xf07cfb00U, 0x00159d79U, true, true, "" },
+    { "    image_sample  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf080fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf084fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_d  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf088fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_d_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf08cfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_l  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf090fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_b  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf094fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_b_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf098fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_lz  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf09cfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0a0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0a4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_d  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0a8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_d_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0acfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_l  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0b0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_b  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0b4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_b_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0b8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_lz  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0bcfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0c0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0c4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_d_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0c8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_d_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0ccfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_l_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0d0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_b_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0d4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_b_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0d8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_lz_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0dcfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0e0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0e4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_d_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0e8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_d_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf0ecfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_l_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0f0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_b_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0f4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_b_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf0f8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_lz_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf0fcfb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf100fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf104fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_l  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf110fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_b  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf114fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_b_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf118fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_lz  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf11cfb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf120fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf124fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_l  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf130fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_b  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf134fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_b_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf138fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_lz  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf13cfb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf140fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf144fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_l_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf150fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_b_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf154fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_b_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf158fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_lz_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf15cfb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf160fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf164fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_l_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf170fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_b_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf174fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_b_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf178fb00U, 0x02559d79U, true, true, "" },
+    { "    image_gather4_c_lz_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf17cfb00U, 0x02559d79U, true, true, "" },
+    { "    image_get_lod  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf180fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_cd  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf1a0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_cd_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf1a4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_cd  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+        "glc r128 da", 0xf1a8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_cd_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf1acfb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_cd_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf1b0fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_cd_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf1b4fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_cd_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf1b8fb00U, 0x02559d79U, true, true, "" },
+    { "    image_sample_c_cd_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+        "unorm glc r128 da", 0xf1bcfb00U, 0x02559d79U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 
