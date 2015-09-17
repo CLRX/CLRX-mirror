@@ -322,10 +322,13 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     {
         skipSpacesToEnd(linePtr, end);
         const char* targetSizePlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, targetSize, linePtr, false);
-        
-        if (targetSize > UINT32_MAX || targetSize == 0)
-            asmr.printWarning(targetSizePlace, "Target size of argument out of range");
+        if (getAbsoluteValueArg(asmr, targetSize, linePtr, false))
+        {
+            if (targetSize > UINT32_MAX || targetSize == 0)
+                asmr.printWarning(targetSizePlace, "Target size of argument out of range");
+        }
+        else
+            good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;
@@ -333,16 +336,19 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         {
             skipSpacesToEnd(linePtr, end);
             const char* targetAlignPlace = linePtr;
-            good &= getAbsoluteValueArg(asmr, targetAlign, linePtr, false);
-            
-            if (targetAlign > UINT32_MAX || targetAlign == 0)
-                asmr.printWarning(targetAlignPlace,
-                                  "Target alignment of argument out of range");
-            if (targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
+            if (getAbsoluteValueArg(asmr, targetAlign, linePtr, false))
             {
-                asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
-                good = false;
+                if (targetAlign > UINT32_MAX || targetAlign == 0)
+                    asmr.printWarning(targetAlignPlace,
+                                      "Target alignment of argument out of range");
+                if (targetAlign != (1ULL<<(63-CLZ64(targetAlign))))
+                {
+                    asmr.printError(targetAlignPlace, "Target alignment is not power of 2");
+                    good = false;
+                }
             }
+            else
+                good = false;
             
             if (!skipComma(asmr, haveComma, linePtr))
                 return;

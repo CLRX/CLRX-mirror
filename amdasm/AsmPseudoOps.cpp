@@ -333,12 +333,16 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     {
         skipSpacesToEnd(linePtr, end);
         offsetPlace = linePtr;
-        good &= getAbsoluteValueArg(asmr, offset, linePtr);
-        if (int64_t(offset) < 0)
+        if (getAbsoluteValueArg(asmr, offset, linePtr))
         {
-            asmr.printError(offsetPlace, "Offset is negative!");
-            good = false;
+            if (int64_t(offset) < 0)
+            {
+                asmr.printError(offsetPlace, "Offset is negative!");
+                good = false;
+            }
         }
+        else
+            good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;
@@ -846,10 +850,13 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     {
         skipSpacesToEnd(linePtr, end);
         sizePlace = linePtr; //
-        good &= getAbsoluteValueArg(asmr, size, linePtr);
-        
-        if (int64_t(size) < 0)
-            asmr.printWarning(sizePlace, "Negative size has no effect");
+        if (getAbsoluteValueArg(asmr, size, linePtr))
+        {
+            if (int64_t(size) < 0)
+                asmr.printWarning(sizePlace, "Negative size has no effect");
+        }
+        else
+            good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
             return;

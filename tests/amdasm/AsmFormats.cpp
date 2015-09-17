@@ -820,6 +820,7 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
             .arg v0, image3d*, global
             .arg v0, sampler*, global
             .arg v0, counter32*, global
+            .arg v52,float*,local,rexstrict,unused
             .text
             .sgprsnum 103)ffDXD",
         "",
@@ -883,10 +884,9 @@ test.s:79:18: Error: Expected argument name
 test.s:79:18: Error: Expected ',' before argument
 test.s:80:31: Error: Unknown argument type name
 test.s:81:22: Error: Unknown argument type name
-test.s:82:30: Error: Unknown or not given pointer space
+test.s:82:30: Error: Unknown pointer space
 test.s:83:29: Error: Some garbages at pointer space place
 test.s:84:37: Error: Some garbages at access qualifier place
-test.s:84:37: Error: Unknown or not given access qualifier type
 test.s:85:37: Error: Expression have unresolved symbol 'XXX'
 test.s:86:39: Error: This is not 'unused' specifier
 test.s:87:31: Error: Expected ',' before argument
@@ -900,7 +900,7 @@ test.s:94:18: Error: Kernel argument 'vx' is already defined
 test.s:95:33: Error: Expression have unresolved symbol 'global'
 test.s:95:39: Error: Expected ',' before argument
 test.s:96:33: Error: Expression have unresolved symbol 'global'
-test.s:96:40: Error: Unknown or not given pointer space
+test.s:96:40: Error: Unknown pointer space
 test.s:97:38: Error: UAVId out of range (0-1023)
 test.s:98:40: Error: Resource Id out of range (0-127)
 test.s:99:41: Error: Resource Id out of range (0-7)
@@ -913,7 +913,8 @@ test.s:103:22: Error: Illegal pointer type
 test.s:104:22: Error: Illegal pointer type
 test.s:105:22: Error: Illegal pointer type
 test.s:106:22: Error: Illegal pointer type
-test.s:108:13: Error: Illegal place of configuration pseudo-op
+test.s:107:35: Error: Unknown access qualifier
+test.s:109:13: Error: Illegal place of configuration pseudo-op
 )ffDXD", false
     }
 };

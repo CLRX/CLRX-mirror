@@ -966,24 +966,30 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     skipSpacesToEnd(linePtr, end);
     uint64_t regStart = 0;
     const char* regStartPlace = linePtr;
-    good &= getAbsoluteValueArg(asmr, regStart, linePtr, true);
-    
-    if (regStart > 15)
+    if (getAbsoluteValueArg(asmr, regStart, linePtr, true))
     {
-        asmr.printError(regStartPlace, "RegStart out of range (0-15)");
-        good = false;
+        if (regStart > 15)
+        {
+            asmr.printError(regStartPlace, "RegStart out of range (0-15)");
+            good = false;
+        }
     }
+    else
+        good = false;
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     uint64_t regSize = 0;
-    good &= getAbsoluteValueArg(asmr, regSize, linePtr, true);
-    
-    if (usumGt(regStart, regSize, 16U))
+    if (getAbsoluteValueArg(asmr, regSize, linePtr, true))
     {
-        asmr.printError(regStartPlace, "RegStart+RegSize out of range (0-16)");
-        good = false;
+        if (usumGt(regStart, regSize, 16U))
+        {
+            asmr.printError(regStartPlace, "RegStart+RegSize out of range (0-16)");
+            good = false;
+        }
     }
+    else
+        good = false;
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1226,7 +1232,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 ptrSpace = KernelPtrSpace::CONSTANT;
             else
             {   // not known or not given
-                asmr.printError(ptrSpacePlace, "Unknown or not given pointer space");
+                asmr.printError(ptrSpacePlace, "Unknown pointer space");
                 good = false;
             }
         }
@@ -1242,19 +1248,22 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             while (linePtr!=end && *linePtr!=',')
             {
                 const char* ptrAccessPlace = linePtr;
-                good &= getNameArg(asmr, 10, name, linePtr, "access qualifier", true);
-                if (::strcmp(name, "const")==0)
-                    ptrAccess |= KARG_PTR_CONST;
-                else if (::strcmp(name, "restrict")==0)
-                    ptrAccess |= KARG_PTR_RESTRICT;
-                else if (::strcmp(name, "volatile")==0)
-                    ptrAccess |= KARG_PTR_VOLATILE;
-                else
+                if (getNameArg(asmr, 10, name, linePtr, "access qualifier", true))
                 {
-                    asmr.printError(ptrAccessPlace,
-                            "Unknown or not given access qualifier type");
-                    good = false;
+                    if (::strcmp(name, "const")==0)
+                        ptrAccess |= KARG_PTR_CONST;
+                    else if (::strcmp(name, "restrict")==0)
+                        ptrAccess |= KARG_PTR_RESTRICT;
+                    else if (::strcmp(name, "volatile")==0)
+                        ptrAccess |= KARG_PTR_VOLATILE;
+                    else
+                    {
+                        asmr.printError(ptrAccessPlace, "Unknown access qualifier");
+                        good = false;
+                    }
                 }
+                else
+                    good = false;
                 skipSpacesToEnd(linePtr, end);
             }
             
@@ -1288,17 +1297,21 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                     haveLastArgument = true;
                     skipSpacesToEnd(linePtr, end);
                     place = linePtr;
-                    good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, false);
-                    const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
-                            159 : 1023;
-                    
-                    if (resIdVal != AMDBIN_DEFAULT && resIdVal > maxUavId)
+                    if (getAbsoluteValueArg(asmr, resIdVal, linePtr, false))
                     {
-                        char buf[80];
-                        snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
-                        asmr.printError(place, buf);
-                        good = false;
+                        const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
+                                159 : 1023;
+                        
+                        if (resIdVal != AMDBIN_DEFAULT && resIdVal > maxUavId)
+                        {
+                            char buf[80];
+                            snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
+                            asmr.printError(place, buf);
+                            good = false;
+                        }
                     }
+                    else
+                        good = false;
                 }
             }
             else
@@ -1337,15 +1350,19 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 haveLastArgument = true;
                 skipSpacesToEnd(linePtr, end);
                 const char* place = linePtr;
-                good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, false);
-                cxuint maxResId = (ptrAccess == KARG_PTR_READ_ONLY) ? 127 : 7;
-                if (resIdVal!=AMDBIN_DEFAULT && resIdVal > maxResId)
+                if (getAbsoluteValueArg(asmr, resIdVal, linePtr, false))
                 {
-                    char buf[80];
-                    snprintf(buf, 80, "Resource Id out of range (0-%u)", maxResId);
-                    asmr.printError(place, buf);
-                    good = false;
+                    cxuint maxResId = (ptrAccess == KARG_PTR_READ_ONLY) ? 127 : 7;
+                    if (resIdVal!=AMDBIN_DEFAULT && resIdVal > maxResId)
+                    {
+                        char buf[80];
+                        snprintf(buf, 80, "Resource Id out of range (0-%u)", maxResId);
+                        asmr.printError(place, buf);
+                        good = false;
+                    }
                 }
+                else
+                    good = false;
             }
         }
     }
@@ -1358,12 +1375,16 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             haveLastArgument = true;
             skipSpacesToEnd(linePtr, end);
             const char* place = linePtr;
-            good &= getAbsoluteValueArg(asmr, resIdVal, linePtr, true);
-            if (resIdVal!=AMDBIN_DEFAULT && resIdVal > 7)
+            if (getAbsoluteValueArg(asmr, resIdVal, linePtr, true))
             {
-                asmr.printError(place, "Resource Id out of range (0-7)");
-                good = false;
+                if (resIdVal!=AMDBIN_DEFAULT && resIdVal > 7)
+                {
+                    asmr.printError(place, "Resource Id out of range (0-7)");
+                    good = false;
+                }
             }
+            else
+                good = false;
         }
     }
     else if (!pointer && argType == KernelArgType::STRUCTURE)

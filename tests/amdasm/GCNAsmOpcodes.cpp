@@ -2353,6 +2353,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "glc slc", 0xe80e67d4U, 0x23543d12U, true, true, "" },
     { "    tbuffer_store_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc", 0xe80f67d4U, 0x23543d12U, true, true, "" },
+    /* MIMG encoding */
     { nullptr, 0, 0, false, false, 0 }
 };
 
