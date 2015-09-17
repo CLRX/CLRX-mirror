@@ -2955,6 +2955,147 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    bool good = true;
+    cxbyte enMask = 0xf;
+    cxbyte target = 0;
+    RegRange vsrcsReg[4];
+    const char* vsrcPlaces[4];
+    
+    char name[20];
+    skipSpacesToEnd(linePtr, end);
+    const char* targetPlace = linePtr;
+    
+    try
+    {
+    if (getNameArg(asmr, 20, name, linePtr, "target"))
+    {
+        size_t nameSize = linePtr-targetPlace;
+        const char* nameStart = name;
+        toLowerString(name);
+        if (name[0]=='m' && name[1]=='r' && name[2]=='t')
+        {   // mrt
+            if (name[3]!='z' || name[4]!=0)
+            {
+                nameStart+=3;
+                target = cstrtobyte(nameStart, name+nameSize);
+                if (target>=8)
+                {
+                    asmr.printError(targetPlace, "MRT number out of range (0-7)");
+                    good = false;
+                }
+            }
+            else
+                target = 8; // mrtz
+        }
+        else if (name[0]=='p' && name[1]=='o' && name[2]=='s')
+        {
+            nameStart+=3;
+            cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
+            if (posNum>=4)
+            {
+                asmr.printError(targetPlace, "POS number out of range (0-3)");
+                good = false;
+            }
+            else
+                target = posNum+12;
+        }
+        else if (strcmp(name, "null")==0)
+            target = 9;
+        else if (memcmp(name, "param", 5)==0)
+        {
+            nameStart+=5;
+            cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
+            if (posNum>=32)
+            {
+                asmr.printError(targetPlace, "POS number out of range (0-31)");
+                good = false;
+            }
+            else
+                target = posNum+32;
+        }
+    }
+    else
+        good = false;
+    }
+    catch (const ParseException& ex)
+    {   // number parsing error
+        asmr.printError(targetPlace, ex.what());
+        good = false;
+    }
+    
+    /* registers */
+    for (cxuint i = 0; i < 4; i++)
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        skipSpacesToEnd(linePtr, end);
+        vsrcPlaces[i] = linePtr;
+        if (linePtr+3<=end && toLower(linePtr[0])=='o' && toLower(linePtr[1])=='f' &&
+            toLower(linePtr[2])=='f')
+        {
+            enMask &= ~(1U<<i);
+            vsrcsReg[i] = { 0, 0 };
+            linePtr += 3;
+        }
+        else
+            good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1);
+    }
+    
+    /* EXP modifiers */
+    bool haveVM = false, haveCompr = false, haveDone = false;
+    while(linePtr!=end)
+    {
+        skipSpacesToEnd(linePtr, end);
+        const char* attrPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        {
+            good = false;
+            continue;
+        }
+        toLowerString(name);
+        if (name[0]=='v' && name[1]=='m' && name[2]==0)
+            haveVM = true;
+        else if (::strcmp(name, "done")==0)
+            haveDone = true;
+        else if (::strcmp(name, "compr")==0)
+            haveCompr = true;
+        else
+        {
+            asmr.printError(attrPlace, "Unknown EXP modifier");
+            good = false;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (haveCompr)
+    {
+        if (vsrcsReg[0].start!=vsrcsReg[1].start && (enMask&3)==3)
+        {   // error (vsrc1!=vsrc0)
+            asmr.printError(vsrcPlaces[1], "VSRC1 must be equal to VSRC0 in compr mode");
+            return;
+        }
+        if (vsrcsReg[2].start!=vsrcsReg[3].start && (enMask&12)==12)
+        {   // error (vsrc3!=vsrc2)
+            asmr.printError(vsrcPlaces[3], "VSRC3 must be equal to VSRC2 in compr mode");
+            return;
+        }
+        vsrcsReg[1] = vsrcsReg[2];
+        vsrcsReg[2] = vsrcsReg[3] = { 0, 0 };
+    }
+    
+    uint32_t words[2];
+    SLEV(words[0], 0xf8000000U | enMask | (uint32_t(target)<<4) |
+            (haveCompr ? 0x400 : 0) | (haveDone ? 0x800 : 0) | (haveVM ? 0x1000U : 0));
+    SLEV(words[1], uint32_t(vsrcsReg[0].start&0xff) |
+            (uint32_t(vsrcsReg[1].start&0xff)<<8) |
+            (uint32_t(vsrcsReg[2].start&0xff)<<16) |
+            (uint32_t(vsrcsReg[3].start&0xff)<<24));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + 2));
 }
 
 void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
