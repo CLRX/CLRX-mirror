@@ -1242,11 +1242,12 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         if (!skipComma(asmr, haveComma, linePtr))
             return;
         if (haveComma)
-        {
-            skipSpacesToEnd(linePtr, end);
-            // parse ptr access
+        {   // parse ptr access
             while (linePtr!=end && *linePtr!=',')
             {
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr==end || *linePtr==',')
+                    break;
                 const char* ptrAccessPlace = linePtr;
                 if (getNameArg(asmr, 10, name, linePtr, "access qualifier", true))
                 {
@@ -1264,7 +1265,6 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 }
                 else
                     good = false;
-                skipSpacesToEnd(linePtr, end);
             }
             
             bool havePrevArgument = false;

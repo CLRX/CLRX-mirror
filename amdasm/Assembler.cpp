@@ -390,6 +390,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
 {
     const char* end = line+lineSize;
     const char* startPlace = linePtr;
+    skipSpacesToEnd(linePtr, end);
     strarray.clear();
     if (linePtr == end || *linePtr != '"')
     {
