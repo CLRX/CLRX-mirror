@@ -1728,6 +1728,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:32: Error: VINTRP parameter is too long\n" },
     /* DS encoding */
     { "   ds_add_u32  v71, v169 offset:52583", 0xd800cd67U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32  v71, v169   ", 0xd8000000U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169 offset :  52583",
         0xd800cd67U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169", 0xd8000000U, 0x0000a947U, true, true, "" },
@@ -2006,6 +2007,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* MUBUF */
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0xe001c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v61, v18, s[80:83], s35   ",
+        0xe0000000U, 0x23143d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 offset:603 glc slc addr64",
@@ -2363,6 +2366,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "lwe da", 0xf202fb00U, 0x00159d79U, true, true, "" },
     { "dmask=5;image_load  v[157:158], v[121:124], s[84:87] dmask:dmask unorm glc "
         "slc r128 lwe da", 0xf202f500U, 0x00159d79U, true, true, "" },
+    { "    image_load  v157, v[121:124], s[84:91]    ",
+        0xf0000100U, 0x00159d79U, true, true, "" },
     /* dmask */
     { "    image_load  v157, v[121:124], s[84:87] dmask:1 unorm glc slc r128 lwe da",
         0xf202f100U, 0x00159d79U, true, true, "" },
@@ -2657,6 +2662,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* EXP encoding: flags */
     { "exp  param5, v116, v93, v27, v124 done", 0xf8000a5fU, 0x7c1b5d74U, true, true, "" },
     { "exp  param5, v116, v93, v27, v124", 0xf800025fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  param5, v116, v93, v27, v124   ", 0xf800025fU, 0x7c1b5d74U, true, true, "" },
     { "exp  mrt0, v116, v116, v93, off done compr vm",
         0xf8001c07U, 0x00005d74U, true, true, "" },
     { "exp  mrt0, v116, v116, v93, v93 done compr vm",
@@ -2678,6 +2684,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xf8001c04U, 0x00005d00U, true, true, "" },
     { "exp  mrt0, v116, off, off, off done compr vm",
         0xf8001c01U, 0x00000074U, true, true, "" },
+    { "exp  param5, v116, v93, off, off", 
+        0xf8000253U, 0x00005d74U, true, true, "" },
     /* EXP encoding errors */
     { "exp  param5, v116, v93, v27, v124 xxx", 0, 0, false, false,
         "test.s:1:35: Error: Unknown EXP modifier\n" },

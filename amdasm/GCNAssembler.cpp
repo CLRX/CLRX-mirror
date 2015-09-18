@@ -2334,7 +2334,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     uint16_t offset = 0;
     cxbyte offset1 = 0, offset2 = 0;
     bool haveOffset = false, haveOffset2 = false;
-    
+    skipSpacesToEnd(linePtr, end);
     while (linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
@@ -2563,6 +2563,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     std::unique_ptr<AsmExpression> offsetExpr;
     bool haveAddr64 = false, haveTfe = false, haveSlc = false, haveLds = false;
     bool haveGlc = false, haveOffen = false, haveIdxen = false;
+    skipSpacesToEnd(linePtr, end);
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
@@ -2825,6 +2826,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveDMask = false;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
+    skipSpacesToEnd(linePtr, end);
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
@@ -3036,8 +3038,8 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             return;
         skipSpacesToEnd(linePtr, end);
         vsrcPlaces[i] = linePtr;
-        if (linePtr+4>end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
-            toLower(linePtr[2])!='f' || isAlnum(linePtr[3]))
+        if (linePtr+2>=end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
+            toLower(linePtr[2])!='f' || (linePtr+3!=end && isAlnum(linePtr[3])))
             good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1);
         else
         {   // if vsrcX is off
@@ -3049,6 +3051,7 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     
     /* EXP modifiers */
     bool haveVM = false, haveCompr = false, haveDone = false;
+    skipSpacesToEnd(linePtr, end);
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
