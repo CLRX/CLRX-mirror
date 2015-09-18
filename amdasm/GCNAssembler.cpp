@@ -2994,7 +2994,7 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
             if (posNum>=4)
             {
-                asmr.printError(targetPlace, "POS number out of range (0-3)");
+                asmr.printError(targetPlace, "Pos number out of range (0-3)");
                 good = false;
             }
             else
@@ -3008,11 +3008,16 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             cxbyte posNum = cstrtobyte(nameStart, name+nameSize);
             if (posNum>=32)
             {
-                asmr.printError(targetPlace, "POS number out of range (0-31)");
+                asmr.printError(targetPlace, "Param number out of range (0-31)");
                 good = false;
             }
             else
                 target = posNum+32;
+        }
+        else
+        {
+            asmr.printError(targetPlace, "Unknown EXP target");
+            good = false;
         }
     }
     else
