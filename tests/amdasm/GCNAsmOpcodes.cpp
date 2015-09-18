@@ -423,7 +423,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "s_waitcnt  vmcnt(14) & expcnt(2)&vmcnt(12)", 0xbf8c0f2cU, 0, false, true,
         "test.s:1:34: Warning: vmcnt was already defined\n" },
     { "s_waitcnt  lgkmcnt(13) & expcnt(2) & lgkmcnt(11)", 0xbf8c0b2fU, 0, false, true,
-        "test.s:1:37: Warning: lgkmcnt was already defined\n" },
+        "test.s:1:38: Warning: lgkmcnt was already defined\n" },
     /* waitcnt errors */
     { "s_waitcnt  vmcnt(11) & expcnt() & lgkmcnt(12)", 0, 0, false, false,
         "test.s:1:31: Error: Expected operator or value or symbol\n"
@@ -438,8 +438,8 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "s_waitcnt  vmcnt(11) _", 0, 0, false, false,
         "test.s:1:22: Error: Expected '&' before lock function\n" },
     { "s_waitcnt  vmcnt  (14  ) & expcnt(  2) & aaaa(6) & vmcnt(4)", 0, 0, false, false,
-        "test.s:1:41: Error: Expected vmcnt, lgkmcnt or expcnt\n"
-        "test.s:1:51: Warning: vmcnt was already defined\n" },
+        "test.s:1:42: Error: Expected vmcnt, lgkmcnt or expcnt\n"
+        "test.s:1:52: Warning: vmcnt was already defined\n" },
     /* other SOPP opcodes */
     { "    s_sethalt       0x32b", 0xbf8d032bU, 0, false, true, "" },
     { "    s_sleep         0x32b", 0xbf8e032bU, 0, false, true, "" },
@@ -2707,6 +2707,55 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { nullptr, 0, 0, false, false, 0 }
 };
 
+static const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
+{   /* flat registers */
+    { "    s_add_u32  flat_scratch_lo, s4, s61", 0x80683d04U, 0, false, true, "" },
+    { "    s_add_u32  flat_scratch_hi, s4, s61", 0x80693d04U, 0, false, true, "" },
+    { "    s_xor_b64 s[22:23], flat_scratch, s[62:63]\n",
+        0x89963e68U, 0, false, true, "" },
+    /* SOPP encoding */
+    { "    s_setkill  0x32b", 0xbf8b032bU, 0, false, true, "" },
+    { "xxx: s_cbranch_cdbgsys xxx+16", 0xbf970003U, 0, false, true, "" },
+    { "xxx: s_cbranch_cdbguser xxx+16", 0xbf980003U, 0, false, true, "" },
+    { "xxx: s_cbranch_cdbgsys_or_user xxx+16", 0xbf990003U, 0, false, true, "" },
+    { "xxx: s_cbranch_cdbgsys_and_user xxx+16", 0xbf9a0003U, 0, false, true, "" },
+    /* SMRD */
+    { "   s_dcache_inv_vol", 0xc7400000U, 0, false, true, "" },
+    /* VOP1 encoding */
+    { "    v_trunc_f64  v[158:159], v[79:80]", 0x7f3c2f4fU, 0, false, true, "" },
+    { "    v_ceil_f64  v[158:159], v[79:80]", 0x7f3c314fU, 0, false, true, "" },
+    { "    v_rndne_f64  v[158:159], v[79:80]", 0x7f3c334fU, 0, false, true, "" },
+    { "    v_floor_f64  v[158:159], v[79:80]", 0x7f3c354fU, 0, false, true, "" },
+    { "    v_log_legacy_f32 v158, v79", 0x7f3c8b4fU, 0, false, true, "" },
+    { "    v_exp_legacy_f32 v158, v79", 0x7f3c8d4fU, 0, false, true, "" },
+    /* VOP1 in VOP3 */
+    { "    v_trunc_f64  v[55:56], v[27:28] vop3",
+        0xd32e0037U, 0x0000011bU, true, true, "" },
+    { "    v_ceil_f64  v[55:56], v[27:28] vop3",
+        0xd3300037U, 0x0000011bU, true, true, "" },
+    { "    v_rndne_f64  v[55:56], v[27:28] vop3",
+        0xd3320037U, 0x0000011bU, true, true, "" },
+    { "    v_floor_f64  v[55:56], v[27:28] vop3",
+        0xd3340037U, 0x0000011bU, true, true, "" },
+    { "    v_log_legacy_f32 v55, v27 vop3",
+        0xd38a0037U, 0x0000011bU, true, true, "" },
+    { "    v_exp_legacy_f32 v55, v27 vop3",
+        0xd38c0037U, 0x0000011bU, true, true, "" },
+    /* VOP3 encoding */
+    { "   v_msad_u8  v55, v79, v166, v229", 0xd2e20037U, 0x07974d4fU, true, true, "" },
+    { "    v_qsad_pk_u16_u8  v[55:56], v[79:80], v166, v[229:230]",
+        0xd2e40037U, 0x07974d4fU, true, true, "" },
+    { "    v_mqsad_pk_u16_u8  v[55:56], v[79:80], v166, v[229:230]",
+        0xd2e60037U, 0x07974d4fU, true, true, "" },
+    { "    v_mqsad_u32_u8  v[55:56], v[79:80], v166, v[229:230]",
+        0xd2ea0037U, 0x07974d4fU, true, true, "" },
+    { "    v_mad_u64_u32  v[55:56], s[46:47], v79, v166, v[229:230]",
+        0xd2ec2e37U, 0x07974d4fU, true, true, "" },
+    { "    v_mad_i64_i32  v[55:56], s[46:47], v79, v166, v[229:230]",
+        0xd2ee2e37U, 0x07974d4fU, true, true, "" },
+    { nullptr, 0, 0, false, false, 0 }
+};
+
 static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
                       GPUDeviceType deviceType)
 {
@@ -2772,6 +2821,14 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; encGCNOpcodeCases[i].input!=nullptr; i++)
         try
         { testEncGCNOpcodes(i, encGCNOpcodeCases[i], GPUDeviceType::PITCAIRN); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
+    for (cxuint i = 0; encGCN11OpcodeCases[i].input!=nullptr; i++)
+        try
+        { testEncGCNOpcodes(i, encGCN11OpcodeCases[i], GPUDeviceType::BONAIRE); }
         catch(const std::exception& ex)
         {
             std::cerr << ex.what() << std::endl;

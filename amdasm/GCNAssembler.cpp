@@ -1346,6 +1346,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             imm16 = 0xf7f;
             while (true)
             {
+                skipSpacesToEnd(linePtr, end);
                 const char* funcNamePlace = linePtr;
                 good &= getNameArgS(asmr, 20, name, linePtr, "function name", true);
                 toLowerString(name);
@@ -1390,7 +1391,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 skipCharAndSpacesToEnd(linePtr, end);
                 const char* argPlace = linePtr;
                 uint64_t value;
-                if (getAbsoluteValueArg(asmr, value, linePtr))
+                if (getAbsoluteValueArg(asmr, value, linePtr, true))
                 {
                     if (value > bitMask)
                         asmr.printWarning(argPlace, "Value out of range");
