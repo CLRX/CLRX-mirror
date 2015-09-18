@@ -2753,6 +2753,35 @@ static const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
         0xd2ec2e37U, 0x07974d4fU, true, true, "" },
     { "    v_mad_i64_i32  v[55:56], s[46:47], v79, v166, v[229:230]",
         0xd2ee2e37U, 0x07974d4fU, true, true, "" },
+    /* DS encoding */
+    { "    ds_nop  v71 offset:52583", 0xd850cd67U, 0x00000047U, true, true, "" },
+    { "    ds_gws_sema_release_all v71 gds offset:52583",
+        0xd862cd67U, 0x00000047U, true, true, "" },
+    { "    ds_wrap_rtn_b32  v155, v71, v169, v86 offset:52583",
+        0xd8d0cd67U, 0x9b56a947U, true, true, "" },
+    { "   ds_condxchg32_rtn_b64 v[155:156], v71, v[169:170] offset:52583",
+        0xd9f8cd67U, 0x9b00a947U, true, true, "" },
+    { "    ds_write_b96  v71, v[169:171] offset:52583",
+        0xdb78cd67U, 0x0000a947U, true, true, "" },
+    { "    ds_write_b128  v71, v[169:172] offset:52583",
+        0xdb7ccd67U, 0x0000a947U, true, true, "" },
+    { "    ds_condxchg32_rtn_b128  v[155:158] offset:52583",
+        0xdbf4cd67U, 0x9b000000U, true, true, "" },
+    { "    ds_read_b96  v[155:157], v71 offset:52583",
+        0xdbf8cd67U, 0x9b000047U, true, true, "" },
+    { "    ds_read_b128  v[155:158], v71 offset:52583",
+        0xdbfccd67U, 0x9b000047U, true, true, "" },
+    /* MUBUF encoding */
+    { "    buffer_load_dwordx3 v[61:63], v18, s[80:83], s35 idxen offset:603",
+        0xe03c225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_store_dwordx3 v[61:63], v18, s[80:83], s35 idxen offset:603",
+        0xe07c225bU, 0x23143d12U, true, true, "" },
+    /* MUBUF unknown instrunctions */
+    { "    buffer_atomic_rsub v61, v18, s[80:83], s35 idxen offset:603",
+        0, 0, false, false, "test.s:1:5: Error: Unknown instruction\n" },
+    { "    buffer_atomic_rsub v[61:62], v18, s[80:83], s35 idxen offset:603",
+        0, 0, false, false, "test.s:1:5: Error: Unknown instruction\n" },
+    /* FLAT encoding */
     { nullptr, 0, 0, false, false, 0 }
 };
 
