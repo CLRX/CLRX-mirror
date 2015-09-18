@@ -2629,6 +2629,42 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "unorm glc r128 da", 0xf1b8fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_cd_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf1bcfb00U, 0x02559d79U, true, true, "" },
+    /* EXP encoding */
+    { "exp  param5, v116, v93, v27, v124 done vm",
+        0xf8001a5fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  param25, v116, v93, v27, v124 done vm",
+        0xf8001b9fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  param0025, v116, v93, v27, v124 done vm",
+        0xf8001b9fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  mrt0, v116, v93, v27, v124 done vm",
+        0xf800180fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  mrt6, v116, v93, v27, v124 done vm",
+        0xf800186fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  pos0, v116, v93, v27, v124 done vm",
+        0xf80018cfU, 0x7c1b5d74U, true, true, "" },
+    { "exp  pos1, v116, v93, v27, v124 done vm",
+        0xf80018dfU, 0x7c1b5d74U, true, true, "" },
+    { "exp  pos2, v116, v93, v27, v124 done vm",
+        0xf80018efU, 0x7c1b5d74U, true, true, "" },
+    { "exp  pos02, v116, v93, v27, v124 done vm",
+        0xf80018efU, 0x7c1b5d74U, true, true, "" },
+    { "exp  pos3, v116, v93, v27, v124 done vm",
+        0xf80018ffU, 0x7c1b5d74U, true, true, "" },
+    { "exp  null, v116, v93, v27, v124 done vm",
+        0xf800189fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  mrtz, v116, v93, v27, v124 done vm",
+        0xf800188fU, 0x7c1b5d74U, true, true, "" },
+    /* EXP encoding: flags */
+    { "exp  param5, v116, v93, v27, v124 done", 0xf8000a5fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  param5, v116, v93, v27, v124", 0xf800025fU, 0x7c1b5d74U, true, true, "" },
+    { "exp  mrt0, v116, v116, v93, off done compr vm",
+        0xf8001c07U, 0x00005d74U, true, true, "" },
+    /* EXP encoding src enables */
+    { "exp  param5, v116, v93, v27, off done", 0xf8000a57U, 0x001b5d74U, true, true, "" },
+    { "exp  param5, v116, v93, off, v124 done", 0xf8000a5bU, 0x7c005d74U, true, true, "" },
+    { "exp  param5, v116, off, off, v124 done", 0xf8000a59U, 0x7c000074U, true, true, "" },
+    { "exp  param5, off, v93, v27, off done", 0xf8000a56U, 0x001b5d00U, true, true, "" },
+    { "exp  param5, off, v93, off, off done", 0xf8000a52U, 0x00005d00U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
 

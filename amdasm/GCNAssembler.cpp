@@ -3032,7 +3032,7 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         skipSpacesToEnd(linePtr, end);
         vsrcPlaces[i] = linePtr;
         if (linePtr+4>end || toLower(linePtr[0])!='o' || toLower(linePtr[1])!='f' ||
-            toLower(linePtr[2])!='f' || linePtr[3]!=' ')
+            toLower(linePtr[2])!='f' || isAlnum(linePtr[3]))
             good &= parseVRegRange(asmr, linePtr, vsrcsReg[i], 1);
         else
         {   // if vsrcX is off
