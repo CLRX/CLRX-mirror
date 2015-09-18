@@ -2685,7 +2685,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xf8001c04U, 0x00005d00U, true, true, "" },
     { "exp  mrt0, v116, off, off, off done compr vm",
         0xf8001c01U, 0x00000074U, true, true, "" },
-    { "exp  param5, v116, v93, off, off", 
+    { "exp  param5, v116, v93, off, off",
         0xf8000253U, 0x00005d74U, true, true, "" },
     /* EXP encoding errors */
     { "exp  param5, v116, v93, v27, v124 xxx", 0, 0, false, false,

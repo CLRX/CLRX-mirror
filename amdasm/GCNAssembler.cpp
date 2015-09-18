@@ -1590,10 +1590,11 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
     
     bool good = true;
     mods = 0;
-    skipSpacesToEnd(linePtr, end);
     while (linePtr != end)
     {
         skipSpacesToEnd(linePtr, end);
+        if (linePtr == end)
+            break;
         char mod[6];
         const char* modPlace = linePtr;
         if (getNameArgS(asmr, 6, mod, linePtr, "modifier"))
@@ -2335,10 +2336,11 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     uint16_t offset = 0;
     cxbyte offset1 = 0, offset2 = 0;
     bool haveOffset = false, haveOffset2 = false;
-    skipSpacesToEnd(linePtr, end);
     while (linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
+        if (linePtr==end)
+            break;
         const char* attrPlace = linePtr;
         if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
         {
@@ -2564,10 +2566,11 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     std::unique_ptr<AsmExpression> offsetExpr;
     bool haveAddr64 = false, haveTfe = false, haveSlc = false, haveLds = false;
     bool haveGlc = false, haveOffen = false, haveIdxen = false;
-    skipSpacesToEnd(linePtr, end);
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
+        if (linePtr==end)
+            break;
         char name[10];
         const char* attrPlace = linePtr;
         if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
@@ -2827,10 +2830,11 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool haveDMask = false;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
-    skipSpacesToEnd(linePtr, end);
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
+        if (linePtr==end)
+            break;
         char name[10];
         const char* attrPlace = linePtr;
         if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
@@ -3052,10 +3056,11 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     
     /* EXP modifiers */
     bool haveVM = false, haveCompr = false, haveDone = false;
-    skipSpacesToEnd(linePtr, end);
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
+        if (linePtr==end)
+            break;
         const char* attrPlace = linePtr;
         if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
         {
