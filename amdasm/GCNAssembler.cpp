@@ -3117,6 +3117,97 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs)
 {
+    const char* end = asmr.line+asmr.lineSize;
+    bool good = true;
+    RegRange vaddrReg(0, 0);
+    RegRange vdstReg(0, 0);
+    RegRange vdataReg(0, 0);
+    
+    skipSpacesToEnd(linePtr, end);
+    const char* vdstPlace = nullptr;
+    
+    const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
+    if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
+    {
+        vdstPlace = linePtr;
+        good &= parseVRegRange(asmr, linePtr, vdstReg, 0);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2);
+    }
+    else
+    {
+        good &= parseVRegRange(asmr, linePtr, vaddrReg, 2);
+        if ((gcnInsn.mode & GCN_FLAT_NODST) == 0)
+        {
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            skipSpacesToEnd(linePtr, end);
+            vdstPlace = linePtr;
+            good &= parseVRegRange(asmr, linePtr, vdstReg, 0);
+        }
+    }
+    
+    if ((gcnInsn.mode & GCN_FLAT_NODATA) == 0) /* print data */
+    {
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        good &= parseVRegRange(asmr, linePtr, vdataReg, dregsNum);
+    }
+    
+    bool haveTfe = false, haveSlc = false, haveGlc = false;
+    while(linePtr!=end)
+    {
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end)
+            break;
+        char name[10];
+        const char* attrPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        {
+            good = false;
+            continue;
+        }
+        if (::strcmp(name, "tfe") == 0)
+            haveTfe = true;
+        else if (::strcmp(name, "glc") == 0)
+            haveGlc = true;
+        else if (::strcmp(name, "slc") == 0)
+            haveSlc = true;
+        else
+        {
+            asmr.printError(attrPlace, "Unknown FLAT modifier");
+            good = false;
+        }
+    }
+    /* check register ranges */
+    
+    if (vdstReg)
+    {
+        const cxuint dstRegsNum = (haveTfe) ? dregsNum+1:dregsNum; // include tfe 
+        if (!isXRegRange(vdstReg, dstRegsNum))
+        {
+            char errorMsg[40];
+            snprintf(errorMsg, 40, "Required %u vector register%s", dstRegsNum,
+                     (dstRegsNum>1) ? "s" : "");
+            asmr.printError(vdstPlace, errorMsg);
+            good = false;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    uint32_t words[2];
+    SLEV(words[0], 0xdc000000U | (haveGlc ? 0x10000 : 0) | (haveSlc ? 0x20000: 0) |
+            (uint32_t(gcnInsn.code1)<<18));
+    SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
+            (haveTfe ? (1U<<23) : 0) | (uint32_t(vdstReg.start&0xff)<<24));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + 2));
+    // update register pool
+    updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
 }
 
 };
