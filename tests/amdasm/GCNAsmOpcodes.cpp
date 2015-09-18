@@ -522,6 +522,7 @@ static const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:26: Error: Unaligned scalar register range\n" },
     /* VOP2/(VOP2 in VOP3) encoding */
     { "    v_cndmask_b32   v154, v21, v107, vcc", 0x0134d715U, 0, false, true, "" },
+    { "    v_cndmask_b32   v154, v21, v107, vcc     ", 0x0134d715U, 0, false, true, "" },
     { "    v_cndmask_b32   v[154:154], v[21:21], v[107], vcc",
         0x0134d715U, 0, false, true, "" },
     { "    v_cndmask_b32   v[  154 : 154], v[ 21:21 ], v[ 107  ], vcc",

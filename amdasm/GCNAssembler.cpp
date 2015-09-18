@@ -1590,6 +1590,7 @@ bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxby
     
     bool good = true;
     mods = 0;
+    skipSpacesToEnd(linePtr, end);
     while (linePtr != end)
     {
         skipSpacesToEnd(linePtr, end);
