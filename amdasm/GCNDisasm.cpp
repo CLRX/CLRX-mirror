@@ -1420,12 +1420,12 @@ static void decodeVOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     else
         extraFlags.src0 = src0Field;
     
-    if (mode1 == GCN_DS1_SGPR)
-        decodeGCNOperand(((insnCode>>17)&0xff),
-                 (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr, arch);
-    else
+    if (mode1 != GCN_DS1_SGPR)
         decodeGCNVRegOperand(((insnCode>>17)&0xff),
                      (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr);
+    else
+        decodeGCNOperand(((insnCode>>17)&0xff),
+                 (gcnInsn.mode&GCN_REG_DST_64)?2:1, bufPtr, arch);
     if (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC)
         putChars(bufPtr, ", vcc", 5);
     *bufPtr++ = ',';

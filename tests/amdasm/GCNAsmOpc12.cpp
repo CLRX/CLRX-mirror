@@ -218,5 +218,6 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0xc09e0c9cU, 0xfff5b, true, true, "" },
     { "    s_atc_probe  0xb2, s[58:59], 0xfff5b", 0xc09a0c9dU, 0xfff5b, true, true,
         "test.s:1:18: Warning: Value 0xb2 truncated to 0x32\n" },
+    /* VOP2 encoding - VOP_SDWA */
     { nullptr, 0, 0, false, false, 0 }
 };

@@ -1257,13 +1257,9 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                  (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
-    else
-    {   // immediate
-        cxbyte imm8 = 0;
-        good &= parseImm<cxbyte>(asmr, linePtr, imm8, src1Expr);
-        src1Op.range.start = imm8;
-    }
-        
+    else // immediate
+        good &= parseImm<uint16_t, 8>(asmr, linePtr, src1Op.range.start, src1Expr);
+    
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1615,11 +1611,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
             good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum);
         else
-        {
-            cxbyte simm7 = 0;
-            good &= parseImm<cxbyte, 7>(asmr, linePtr, simm7, simm7Expr);
-            dataReg.start = simm7;
-        }
+            good &= parseImm<uint16_t, 7>(asmr, linePtr, dataReg.start, simm7Expr);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
