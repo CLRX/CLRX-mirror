@@ -150,5 +150,14 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    s_setreg_imm32_b32 hwreg(trapsts, 3, 10), 0x24da4f",
                     0xba0048c3u, 0x24da4fU, true, true, "" },
     /* SOPP encoding */
+    { "    s_nop  7", 0xbf800007U, 0, false, true, "" },
+    { "    s_cbranch_execnz  xxxx-8\nxxxx:\n", 0xbf89fffeU, 0, false, true, "" },
+    { "    s_wakeup\n", 0xbf830000U, 0, false, true, "" },
+    { "    s_setkill  0x32b\n", 0xbf8b032bU, 0, false, true, "" },
+    { "    s_cbranch_execnz  xxxx-8\nxxxx:\n", 0xbf89fffeU, 0, false, true, "" },
+    { "    s_endpgm_saved", 0xbf9b0000U, 0, false, true, "" },
+    { "    s_set_gpr_idx_off", 0xbf9c0000U, 0, false, true, "" },
+    { "    s_set_gpr_idx_mode 332", 0xbf9d014cU, 0, false, true, "" },
+    /* SMEM encoding */
     { nullptr, 0, 0, false, false, 0 }
 };

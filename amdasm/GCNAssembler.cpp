@@ -1582,7 +1582,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                        output.size()));
     
     uint32_t word;
-    SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (dstReg.start<<15) |
+    SLEV(word, 0xc0000000U | (uint32_t(gcnInsn.code1)<<22) | (uint32_t(dstReg.start)<<15) |
             ((sbaseReg.start<<8)&~1) | ((soffsetReg.start==255) ? 0x100 : 0) |
             ((soffsetReg.start==255) ? soffsetVal : soffsetReg.start));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(&word), 
@@ -1590,6 +1590,95 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     soffsetExpr.release();
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+}
+
+void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    bool good = true;
+    RegRange dataReg(0, 0);
+    RegRange sbaseReg(0, 0);
+    RegRange soffsetReg(0, 0);
+    uint32_t soffsetVal = 0;
+    cxbyte simm7 = 0;
+    std::unique_ptr<AsmExpression> soffsetExpr;
+    std::unique_ptr<AsmExpression> simm7Expr;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    if (mode1 == GCN_SMRD_ONLYDST)
+        good &= parseSRegRange(asmr, linePtr, dataReg, arch,
+                       (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+    else if (mode1 != GCN_ARG_NONE)
+    {
+        const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
+        if (mode1 & GCN_SMEM_SDATA_IMM)
+            good &= parseImm<cxbyte, 7>(asmr, linePtr, simm7, simm7Expr);
+        else
+            good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        good &= parseSRegRange(asmr, linePtr, sbaseReg, arch,
+                   (gcnInsn.mode&GCN_SBASE4)?4:2);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!='@')
+            good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1, false);
+        else // '@' prefix
+            skipCharAndSpacesToEnd(linePtr, end);
+        
+        if (!soffsetReg)
+        {   // parse immediate
+            soffsetReg.start = 255; // indicate an immediate
+            good &= parseImm<uint32_t, 20>(asmr, linePtr, soffsetVal, soffsetExpr);
+        }
+    }
+    bool haveGlc = false;
+    // modifiers
+    while (linePtr != end)
+    {
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr == end)
+            break;
+        const char* modPlace = linePtr;
+        char name[10];
+        if (getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        {
+            toLowerString(name);
+            if (::strcmp(name, "glc")==0)
+                haveGlc = true;
+            else
+            {
+                asmr.printError(modPlace, "Unknown SMEM modifier");
+                good = false;
+            }
+        }
+        else
+            good = false;
+    }
+    /// if errors
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (soffsetExpr!=nullptr)
+        soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMEMOFFSET, asmr.currentSection,
+                       output.size()));
+    
+    uint32_t words[2];
+    SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.start<<6) |
+            (sbaseReg.start>>1) | ((soffsetReg.start==255) ? 0x20000 : 0) |
+            (haveGlc ? 0x10000 : 0));
+    SLEV(words[1], ((soffsetReg.start==255) ? soffsetVal : soffsetReg.start));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
+            reinterpret_cast<cxbyte*>(words+2));
+    /// prevent freeing expression
+    soffsetExpr.release();
+    if (gcnInsn.mode & GCN_MLOAD)
+        updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
 }
 
 bool GCNAsmUtils::parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
@@ -3265,8 +3354,12 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
                                    curArchMask, output, regs);
             break;
         case GCNENC_SMRD:
-            GCNAsmUtils::parseSMRDEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+            if (curArchMask & ARCH_RX3X0)
+                GCNAsmUtils::parseSMEMEncoding(assembler, *it, linePtr,
+                                       curArchMask, output, regs);
+            else
+                GCNAsmUtils::parseSMRDEncoding(assembler, *it, linePtr,
+                                       curArchMask, output, regs);
             break;
         case GCNENC_VOPC:
             GCNAsmUtils::parseVOPCEncoding(assembler, *it, mnemPlace, linePtr,
@@ -3321,6 +3414,15 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
 {
     switch(targetType)
     {
+        case GCNTGT_SMEMOFFSET:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value);
+            printWarningForRange(20, value, sourcePos);
+            return true;
         case GCNTGT_LITIMM:
             if (sectionId != ASMSECT_ABS)
             {
@@ -3384,7 +3486,9 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
         case GCNTGT_SOPCIMM8:
             if (sectionId != ASMSECT_ABS)
             {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
+                printError(sourcePos, (targetType != GCNTGT_SOPCIMM8) ?
+                        "Relative value is illegal in offset expressions" :
+                        "Relative value is illegal in immediate expressions");
                 return false;
             }
             if (targetType==GCNTGT_DSOFFSET8_0)
