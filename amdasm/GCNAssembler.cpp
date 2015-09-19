@@ -520,7 +520,7 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
             return false;
         }
         asmr.printWarningForRange(Bits, value, asmr.getSourcePos(exprPlace));
-        outValue = value;
+        outValue = value & ((1ULL<<Bits)-1ULL);
         return true;
     }
     else
@@ -1603,7 +1603,6 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
     uint32_t soffsetVal = 0;
-    cxbyte simm7 = 0;
     std::unique_ptr<AsmExpression> soffsetExpr;
     std::unique_ptr<AsmExpression> simm7Expr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
@@ -1613,10 +1612,14 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     else if (mode1 != GCN_ARG_NONE)
     {
         const cxuint dregsNum = 1<<((gcnInsn.mode & GCN_DSIZE_MASK)>>GCN_SHIFT2);
-        if (mode1 & GCN_SMEM_SDATA_IMM)
-            good &= parseImm<cxbyte, 7>(asmr, linePtr, simm7, simm7Expr);
-        else
+        if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
             good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum);
+        else
+        {
+            cxbyte simm7 = 0;
+            good &= parseImm<cxbyte, 7>(asmr, linePtr, simm7, simm7Expr);
+            dataReg.start = simm7;
+        }
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
