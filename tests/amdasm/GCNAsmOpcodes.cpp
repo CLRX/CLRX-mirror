@@ -2787,7 +2787,9 @@ static const GCNAsmOpcodeCase encGCN11OpcodeCases[] =
     { "flat_load_ubyte v47, v[187:188] glc slc",
         0xdc230000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188] glc", 0xdc210000U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188] glc   ", 0xdc210000U, 0x2f0000bbU, true, true, "" },
     { "flat_load_ubyte v47, v[187:188]", 0xdc200000U, 0x2f0000bbU, true, true, "" },
+    { "flat_load_ubyte v47, v[187:188]   ", 0xdc200000U, 0x2f0000bbU, true, true, "" },
     /* FLAT errors */
     { "flat_load_ubyte v47, v[187:188] glc slcx", 0, 0, false, false,
         "test.s:1:37: Error: Unknown FLAT modifier\n" },
