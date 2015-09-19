@@ -159,5 +159,28 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    s_set_gpr_idx_off", 0xbf9c0000U, 0, false, true, "" },
     { "    s_set_gpr_idx_mode 332", 0xbf9d014cU, 0, false, true, "" },
     /* SMEM encoding */
+    { "    s_load_dword  s50, s[58:59], 0x1345b", 0xc0020c9dU, 0x1345b, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], 0x1345b glc   ",
+        0xc0030c9dU, 0x1345b, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], 0x1345b glc  glc ",
+        0xc0030c9dU, 0x1345b, true, true, "" },
+    { "xd=17;xy=35; s_load_dword  s50, s[58:59], xd*xy",
+        0xc0020c9dU, 17*35, true, true, "" },
+    { "s_load_dword  s50, s[58:59], xd*xy;xd=17;xy=35",
+        0xc0020c9dU, 17*35, true, true, "" },
+    { "s6=0x4dca7; s_load_dword  s50, s[58:59], @s6",
+        0xc0020c9dU, 0x4dca7U, true, true, "" },
+    { "    s_load_dword  s50, s[58:59], s6 ", 0xc0000c9dU, 6, true, true, "" },
+    /* SMEM warnings */
+    { "xx=0x14dca7; s_load_dword  s50, s[58:59], xx", 0xc0020c9dU, 0x4dca7U, true, true,
+        "test.s:1:43: Warning: Value 0x14dca7 truncated to 0x4dca7\n" },
+    { "s_load_dword  s50, s[58:59], xx;xx=0x14dca7", 0xc0020c9dU, 0x4dca7U, true, true,
+        "test.s:1:30: Warning: Value 0x14dca7 truncated to 0x4dca7\n" },
+    /* SMEM errors */
+    { "    s_load_dword  s[50:53], s[58:59], 0x1345b", 0, 0, false, false,
+        "test.s:1:19: Error: Required 1 scalar register\n" },
+    { "    s_load_dword  s50, s[58:58], 0x1345b", 0, 0, false, false,
+        "test.s:1:24: Error: Required 2 scalar registers\n" },
+    /* SMEM instructons */
     { nullptr, 0, 0, false, false, 0 }
 };

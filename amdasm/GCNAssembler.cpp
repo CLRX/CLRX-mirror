@@ -1259,7 +1259,7 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                  (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     else
     {   // immediate
-        cxbyte imm8;
+        cxbyte imm8 = 0;
         good &= parseImm<cxbyte>(asmr, linePtr, imm8, src1Expr);
         src1Op.range.start = imm8;
     }
@@ -1273,7 +1273,8 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     SLEV(words[0], 0xbf000000U | (uint32_t(gcnInsn.code1)<<16) | src0Op.range.start |
             (src1Op.range.start<<8));
-    if (src0Op.range.start==255 || src1Op.range.start==255)
+    if (src0Op.range.start==255 ||
+        ((gcnInsn.mode & GCN_SRC1_IMM)==0 && src1Op.range.start==255))
     {
         if (src0Expr==nullptr && src1Expr==nullptr)
             SLEV(words[1], src0Op.range.start==255 ? src0Op.value : src1Op.value);
@@ -1671,7 +1672,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.start<<6) |
             (sbaseReg.start>>1) | ((soffsetReg.start==255) ? 0x20000 : 0) |
             (haveGlc ? 0x10000 : 0));
-    SLEV(words[1], ((soffsetReg.start==255) ? soffsetVal : soffsetReg.start));
+    SLEV(words[1], ((soffsetReg.start==255) ? soffsetVal&0xfffffU : soffsetReg.start));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words+2));
@@ -3420,7 +3421,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 printError(sourcePos, "Relative value is illegal in offset expressions");
                 return false;
             }
-            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value);
+            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
             printWarningForRange(20, value, sourcePos);
             return true;
         case GCNTGT_LITIMM:
