@@ -105,5 +105,13 @@ int main(int argc, const char** argv)
             std::cerr << ex.what() << std::endl;
             retVal = 1;
         }
+    for (cxuint i = 0; encGCN12OpcodeCases[i].input!=nullptr; i++)
+        try
+        { testEncGCNOpcodes(i, encGCN12OpcodeCases[i], GPUDeviceType::TONGA); }
+        catch(const std::exception& ex)
+        {
+            std::cerr << ex.what() << std::endl;
+            retVal = 1;
+        }
     return retVal;
 }

@@ -17,8 +17,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __CLRXTEST_GCNDISASMOPC_H__
-#define __CLRXTEST_GCNDISASMOPC_H__
+#ifndef __CLRXTEST_GCNASMOPC_H__
+#define __CLRXTEST_GCNASMOPC_H__
 
 #include <cstdint>
 
@@ -33,5 +33,6 @@ struct GCNAsmOpcodeCase
 
 extern const GCNAsmOpcodeCase encGCNOpcodeCases[];
 extern const GCNAsmOpcodeCase encGCN11OpcodeCases[];
+extern const GCNAsmOpcodeCase encGCN12OpcodeCases[];
 
 #endif

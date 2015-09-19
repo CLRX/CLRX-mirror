@@ -261,6 +261,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "s_set_gpr_idx_on",    GCNENC_SOPC,   GCN_SRC1_IMM,             17,   ARCH_RX3X0  },
     { "s_cmp_eq_u64",        GCNENC_SOPC,   GCN_REG_ALL_64,           18,   ARCH_RX3X0  },
     { "s_cmp_lg_u64",        GCNENC_SOPC,   GCN_REG_ALL_64,           19,   ARCH_RX3X0  },
+    { "s_cmp_ne_u64",        GCNENC_SOPC,   GCN_REG_ALL_64,           19,   ARCH_RX3X0  },
     { "s_nop",               GCNENC_SOPP,   GCN_STDMODE,              0,    ARCH_GCN_ALL  },
     { "s_endpgm",            GCNENC_SOPP,   GCN_IMM_NONE,             1,    ARCH_GCN_ALL  },
     { "s_branch",            GCNENC_SOPP,   GCN_IMM_REL,              2,    ARCH_GCN_ALL  },

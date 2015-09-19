@@ -1253,10 +1253,17 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
-    good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
-             (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
-             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
-    
+    if ((gcnInsn.mode & GCN_SRC1_IMM) == 0)
+        good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
+                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
+                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
+    else
+    {   // immediate
+        cxbyte imm8;
+        good &= parseImm<cxbyte>(asmr, linePtr, imm8, src1Expr);
+        src1Op.range.start = imm8;
+    }
+        
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1279,8 +1286,9 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
                       output.size()));
     else if (src1Expr!=nullptr)
-        src1Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
-                      output.size()));
+        src1Expr->setTarget(AsmExprTarget(
+            ((gcnInsn.mode&GCN_SRC1_IMM)) ? GCNTGT_SOPCIMM8 : GCNTGT_LITIMM,
+            asmr.currentSection, output.size()));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words), 
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -3373,6 +3381,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             return true;
         case GCNTGT_DSOFFSET8_0:
         case GCNTGT_DSOFFSET8_1:
+        case GCNTGT_SOPCIMM8:
             if (sectionId != ASMSECT_ABS)
             {
                 printError(sourcePos, "Relative value is illegal in offset expressions");
