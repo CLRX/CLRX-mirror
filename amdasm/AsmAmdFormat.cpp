@@ -935,7 +935,7 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     char name[40];
     skipSpacesToEnd(linePtr, end);
     const char* dataClassPlace = linePtr;
-    if (getNameArg(asmr, 40, name, linePtr, "ApiSlot"))
+    if (getNameArg(asmr, 40, name, linePtr, "Data Class"))
     {
         toLowerString(name);
         cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,

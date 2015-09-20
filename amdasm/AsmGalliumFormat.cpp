@@ -278,7 +278,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
             semanticDefined = true;
         }
         else if (::strcmp(name, "gridoffset")==0)
-        {   // shortcur for grid dimension
+        {   // shortcut for grid dimension
             argSemantic = GalliumArgSemantic::GRID_OFFSET;
             argType = GalliumArgType::SCALAR;
             semanticDefined = true;
