@@ -291,6 +291,36 @@ bool AsmParseUtils::skipCommaForMultipleArgs(Assembler& asmr, const char*& lineP
     return true;
 }
 
+bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
+              const char* objName, size_t tableSize,
+              const std::pair<const char*, cxuint>* table, cxuint& value,
+              const char* prefix)
+{
+    char name[72];
+    const char* namePlace = linePtr;
+    if (getNameArg(asmr, 72, name, linePtr, "Data Class"))
+    {
+        toLowerString(name);
+        size_t namePos = 0;
+        if (prefix!=nullptr)
+        {
+            size_t psize = ::strlen(prefix);
+            namePos = ::memcmp(name, prefix, psize)==0 ? psize : 0;
+        }
+        cxuint index = binaryMapFind(table, table + tableSize, name+namePos, CStringLess())
+                        - table;
+        if (index != tableSize) // end of this map
+            value = table[index].second;
+        else
+        {
+            asmr.printError(namePlace, (std::string("Unknown ")+objName).c_str());
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 ISAAssembler::ISAAssembler(Assembler& _assembler) : assembler(_assembler)
 { }
 

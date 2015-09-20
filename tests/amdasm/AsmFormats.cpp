@@ -882,8 +882,8 @@ test.s:76:38: Error: Expected ',' before argument
 test.s:77:39: Error: Expected expression
 test.s:79:18: Error: Expected argument name
 test.s:79:18: Error: Expected ',' before argument
-test.s:80:31: Error: Unknown argument type name
-test.s:81:22: Error: Unknown argument type name
+test.s:80:31: Error: Unknown argument type
+test.s:81:22: Error: Unknown argument type
 test.s:82:30: Error: Unknown pointer space
 test.s:83:29: Error: Some garbages at pointer space place
 test.s:84:37: Error: Some garbages at access qualifier place

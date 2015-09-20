@@ -124,6 +124,12 @@ struct CLRX_INTERNAL AsmParseUtils
                     requiredArg, ignoreLongerName, true);
     }
     
+    /* IMPORTANT NOTE: table must be sorted by name!!! 
+     * the longest name in table must shorter than 72 */
+    static bool getEnumeration(Assembler& asmr, const char*& linePtr, const char* objName,
+          size_t tableSize, const std::pair<const char*, cxuint>* table, cxuint& value,
+          const char* prefix = nullptr);
+    
     // skip comma
     static bool skipComma(Assembler& asmr, bool& haveComma, const char*& linePtr);
     // skip required comma, (returns false if not found comma)

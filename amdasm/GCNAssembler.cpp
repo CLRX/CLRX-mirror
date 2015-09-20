@@ -1124,7 +1124,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
-static const std::pair<const char*, uint16_t> hwregNamesMap[] =
+static const std::pair<const char*, cxuint> hwregNamesMap[] =
 {
     { "gpr_alloc", 5 },
     { "hw_id", 4 },
@@ -1199,24 +1199,9 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
         ++linePtr;
         skipSpacesToEnd(linePtr, end);
-        const char* funcArg1Place = linePtr;
-        size_t hwregId = 0;
-        if (getNameArg(asmr, 20, name, linePtr, "HWRegister name", true))
-        {
-            toLowerString(name);
-            const size_t hwregNameIndex = (::strncmp(name, "hwreg_", 6) == 0) ? 6 : 0;
-            size_t index = binaryMapFind(hwregNamesMap, hwregNamesMap + hwregNamesMapSize,
-                  name+hwregNameIndex, CStringLess()) - hwregNamesMap;
-            if (index != hwregNamesMapSize)
-                hwregId = hwregNamesMap[index].second;
-            else
-            {
-                asmr.printError(funcArg1Place, "Unknown HWRegister");
-                good = false;
-            }
-        }
-        else
-            good = false;
+        cxuint hwregId = 0;
+        good &= getEnumeration(asmr, linePtr, "HWRegister",
+                      hwregNamesMapSize, hwregNamesMap, hwregId, "hwreg_");
         
         if (!skipRequiredComma(asmr, linePtr))
             return;
@@ -1738,6 +1723,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                 VOPExtraModifiers* extraMods, bool withClamp, bool withVOPSDWA_DPP)
 {
     const char* end = asmr.line+asmr.lineSize;
+    //bool haveSDWAMod = false, haveDPPMod = false;
+    //bool haveDstSel = false;
     
     bool good = true;
     mods = 0;
@@ -1823,12 +1810,11 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                 {   /* VOP_SDWA or VOP_DPP */
                     if (::strcmp(mod, "dst_sel")==0)
                     {   // dstsel
-                        cxbyte dstSel;
-                        //if (parseModImm(asmr, linePtr, dstSel)
-                        
+                        //cxbyte dstSel;
                     }
                     else if (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0)
                     {
+                        //cxbyte dstUn;
                     }
                     else if (::strcmp(mod, "src0_sel")==0)
                     {
@@ -2691,7 +2677,7 @@ static const std::pair<const char*, uint16_t> mtbufDFMTNamesMap[] =
     { "8_8_8_8", 10 }
 };
 
-static const std::pair<const char*, uint16_t> mtbufNFMTNamesMap[] =
+static const std::pair<const char*, cxuint> mtbufNFMTNamesMap[] =
 {
     { "float", 7 },
     { "sint", 5 },
@@ -2739,7 +2725,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     }
     
     bool haveOffset = false, haveFormat = false;
-    cxbyte dfmt = 1, nfmt = 0;
+    cxuint dfmt = 1, nfmt = 0;
     cxuint offset = 0;
     std::unique_ptr<AsmExpression> offsetExpr;
     bool haveAddr64 = false, haveTfe = false, haveSlc = false, haveLds = false;
@@ -2837,25 +2823,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 {
                     skipCharAndSpacesToEnd(linePtr, end);
                     fmtPlace = linePtr;
-                    
-                    if (getMUBUFFmtNameArg(asmr, 30, fmtName, linePtr, "number format"))
-                    {
-                        toLowerString(fmtName);
-                        size_t nfmtNameIndex = (::memcmp(fmtName,
-                                 "buf_num_format_", 15)==0) ? 15 : 0;
-                        size_t nfmtIdx = binaryMapFind(mtbufNFMTNamesMap,
-                               mtbufNFMTNamesMap+8, fmtName+nfmtNameIndex,
-                               CStringLess()) - mtbufNFMTNamesMap;
-                        if (nfmtIdx!=8 && attrGood)
-                            nfmt = mtbufNFMTNamesMap[nfmtIdx].second;
-                        else
-                        {
-                            asmr.printError(fmtPlace, "Unknown number format");
-                            attrGood = good = false;
-                        }
-                    }
-                    else
-                        good = false;
+                    good &= getEnumeration(asmr, linePtr, "number format",
+                              8, mtbufNFMTNamesMap, nfmt, "buf_num_format_");
                 }
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr!=end && *linePtr==']')

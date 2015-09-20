@@ -878,7 +878,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     config.reqdWorkGroupSize[2] = value3;
 }
 
-static const std::pair<const char*, uint32_t> dataClassMap[] =
+static const std::pair<const char*, cxuint> dataClassMap[] =
 {
     { "imm_alu_bool32_const", 0x06 },
     { "imm_alu_float_const", 0x05 },
@@ -930,26 +930,11 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
         return;
     }
     
-    uint32_t dataClass = 0;
+    cxuint dataClass = 0;
     bool good = true;
-    char name[40];
     skipSpacesToEnd(linePtr, end);
-    const char* dataClassPlace = linePtr;
-    if (getNameArg(asmr, 40, name, linePtr, "Data Class"))
-    {
-        toLowerString(name);
-        cxuint index = binaryMapFind(dataClassMap, dataClassMap + dataClassMapSize,
-                     name, CStringLess()) - dataClassMap;
-        if (index != dataClassMapSize) // end of this map
-            dataClass = dataClassMap[index].second;
-        else
-        {
-            asmr.printError(dataClassPlace, "Unknown Data Class");
-            good = false;
-        }
-    }
-    else
-        good = false;
+    good &= getEnumeration(asmr, linePtr, "Data Class", dataClassMapSize,
+                    dataClassMap, dataClass);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
@@ -1007,80 +992,80 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     userData.regSize = regSize;
 }
 
-static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
+static const std::pair<const char*, cxuint> argTypeNameMap[] =
 {
-    { "char", KernelArgType::CHAR },
-    { "char16", KernelArgType::CHAR16 },
-    { "char2", KernelArgType::CHAR2 },
-    { "char3", KernelArgType::CHAR3 },
-    { "char4", KernelArgType::CHAR4 },
-    { "char8", KernelArgType::CHAR8 },
-    { "counter32", KernelArgType::COUNTER32 },
-    { "counter64", KernelArgType::COUNTER64 },
-    { "double", KernelArgType::DOUBLE },
-    { "double16", KernelArgType::DOUBLE16 },
-    { "double2", KernelArgType::DOUBLE2 },
-    { "double3", KernelArgType::DOUBLE3 },
-    { "double4", KernelArgType::DOUBLE4 },
-    { "double8", KernelArgType::DOUBLE8 },
-    { "float", KernelArgType::FLOAT },
-    { "float16", KernelArgType::FLOAT16 },
-    { "float2", KernelArgType::FLOAT2 },
-    { "float3", KernelArgType::FLOAT3 },
-    { "float4", KernelArgType::FLOAT4 },
-    { "float8", KernelArgType::FLOAT8 },
-    { "image", KernelArgType::IMAGE },
-    { "image1d", KernelArgType::IMAGE1D },
-    { "image1d_array", KernelArgType::IMAGE1D_ARRAY },
-    { "image1d_buffer", KernelArgType::IMAGE1D_BUFFER },
-    { "image2d", KernelArgType::IMAGE2D },
-    { "image2d_array", KernelArgType::IMAGE2D_ARRAY },
-    { "image3d", KernelArgType::IMAGE3D },
-    { "int", KernelArgType::INT },
-    { "int16", KernelArgType::INT16 },
-    { "int2", KernelArgType::INT2 },
-    { "int3", KernelArgType::INT3 },
-    { "int4", KernelArgType::INT4 },
-    { "int8", KernelArgType::INT8 },
-    { "long", KernelArgType::LONG },
-    { "long16", KernelArgType::LONG16 },
-    { "long2", KernelArgType::LONG2 },
-    { "long3", KernelArgType::LONG3 },
-    { "long4", KernelArgType::LONG4 },
-    { "long8", KernelArgType::LONG8 },
-    { "sampler", KernelArgType::SAMPLER },
-    { "short", KernelArgType::SHORT },
-    { "short16", KernelArgType::SHORT16 },
-    { "short2", KernelArgType::SHORT2 },
-    { "short3", KernelArgType::SHORT3 },
-    { "short4", KernelArgType::SHORT4 },
-    { "short8", KernelArgType::SHORT8 },
-    { "structure", KernelArgType::STRUCTURE },
-    { "uchar", KernelArgType::UCHAR },
-    { "uchar16", KernelArgType::UCHAR16 },
-    { "uchar2", KernelArgType::UCHAR2 },
-    { "uchar3", KernelArgType::UCHAR3 },
-    { "uchar4", KernelArgType::UCHAR4 },
-    { "uchar8", KernelArgType::UCHAR8 },
-    { "uint", KernelArgType::UINT },
-    { "uint16", KernelArgType::UINT16 },
-    { "uint2", KernelArgType::UINT2 },
-    { "uint3", KernelArgType::UINT3 },
-    { "uint4", KernelArgType::UINT4 },
-    { "uint8", KernelArgType::UINT8 },
-    { "ulong", KernelArgType::ULONG},
-    { "ulong16", KernelArgType::ULONG16 },
-    { "ulong2", KernelArgType::ULONG2 },
-    { "ulong3", KernelArgType::ULONG3 },
-    { "ulong4", KernelArgType::ULONG4 },
-    { "ulong8", KernelArgType::ULONG8 },
-    { "ushort", KernelArgType::USHORT },
-    { "ushort16", KernelArgType::USHORT16 },
-    { "ushort2", KernelArgType::USHORT2 },
-    { "ushort3", KernelArgType::USHORT3 },
-    { "ushort4", KernelArgType::USHORT4 },
-    { "ushort8", KernelArgType::USHORT8 },
-    { "void", KernelArgType::VOID }
+    { "char", cxuint(KernelArgType::CHAR) },
+    { "char16", cxuint(KernelArgType::CHAR16) },
+    { "char2", cxuint(KernelArgType::CHAR2) },
+    { "char3", cxuint(KernelArgType::CHAR3) },
+    { "char4", cxuint(KernelArgType::CHAR4) },
+    { "char8", cxuint(KernelArgType::CHAR8) },
+    { "counter32", cxuint(KernelArgType::COUNTER32) },
+    { "counter64", cxuint(KernelArgType::COUNTER64) },
+    { "double", cxuint(KernelArgType::DOUBLE) },
+    { "double16", cxuint(KernelArgType::DOUBLE16) },
+    { "double2", cxuint(KernelArgType::DOUBLE2) },
+    { "double3", cxuint(KernelArgType::DOUBLE3) },
+    { "double4", cxuint(KernelArgType::DOUBLE4) },
+    { "double8", cxuint(KernelArgType::DOUBLE8) },
+    { "float", cxuint(KernelArgType::FLOAT) },
+    { "float16", cxuint(KernelArgType::FLOAT16) },
+    { "float2", cxuint(KernelArgType::FLOAT2) },
+    { "float3", cxuint(KernelArgType::FLOAT3) },
+    { "float4", cxuint(KernelArgType::FLOAT4) },
+    { "float8", cxuint(KernelArgType::FLOAT8) },
+    { "image", cxuint(KernelArgType::IMAGE) },
+    { "image1d", cxuint(KernelArgType::IMAGE1D) },
+    { "image1d_array", cxuint(KernelArgType::IMAGE1D_ARRAY) },
+    { "image1d_buffer", cxuint(KernelArgType::IMAGE1D_BUFFER) },
+    { "image2d", cxuint(KernelArgType::IMAGE2D) },
+    { "image2d_array", cxuint(KernelArgType::IMAGE2D_ARRAY) },
+    { "image3d", cxuint(KernelArgType::IMAGE3D) },
+    { "int", cxuint(KernelArgType::INT) },
+    { "int16", cxuint(KernelArgType::INT16) },
+    { "int2", cxuint(KernelArgType::INT2) },
+    { "int3", cxuint(KernelArgType::INT3) },
+    { "int4", cxuint(KernelArgType::INT4) },
+    { "int8", cxuint(KernelArgType::INT8) },
+    { "long", cxuint(KernelArgType::LONG) },
+    { "long16", cxuint(KernelArgType::LONG16) },
+    { "long2", cxuint(KernelArgType::LONG2) },
+    { "long3", cxuint(KernelArgType::LONG3) },
+    { "long4", cxuint(KernelArgType::LONG4) },
+    { "long8", cxuint(KernelArgType::LONG8) },
+    { "sampler", cxuint(KernelArgType::SAMPLER) },
+    { "short", cxuint(KernelArgType::SHORT) },
+    { "short16", cxuint(KernelArgType::SHORT16) },
+    { "short2", cxuint(KernelArgType::SHORT2) },
+    { "short3", cxuint(KernelArgType::SHORT3) },
+    { "short4", cxuint(KernelArgType::SHORT4) },
+    { "short8", cxuint(KernelArgType::SHORT8) },
+    { "structure", cxuint(KernelArgType::STRUCTURE) },
+    { "uchar", cxuint(KernelArgType::UCHAR) },
+    { "uchar16", cxuint(KernelArgType::UCHAR16) },
+    { "uchar2", cxuint(KernelArgType::UCHAR2) },
+    { "uchar3", cxuint(KernelArgType::UCHAR3) },
+    { "uchar4", cxuint(KernelArgType::UCHAR4) },
+    { "uchar8", cxuint(KernelArgType::UCHAR8) },
+    { "uint", cxuint(KernelArgType::UINT) },
+    { "uint16", cxuint(KernelArgType::UINT16) },
+    { "uint2", cxuint(KernelArgType::UINT2) },
+    { "uint3", cxuint(KernelArgType::UINT3) },
+    { "uint4", cxuint(KernelArgType::UINT4) },
+    { "uint8", cxuint(KernelArgType::UINT8) },
+    { "ulong", cxuint(KernelArgType::ULONG)},
+    { "ulong16", cxuint(KernelArgType::ULONG16) },
+    { "ulong2", cxuint(KernelArgType::ULONG2) },
+    { "ulong3", cxuint(KernelArgType::ULONG3) },
+    { "ulong4", cxuint(KernelArgType::ULONG4) },
+    { "ulong8", cxuint(KernelArgType::ULONG8) },
+    { "ushort", cxuint(KernelArgType::USHORT) },
+    { "ushort16", cxuint(KernelArgType::USHORT16) },
+    { "ushort2", cxuint(KernelArgType::USHORT2) },
+    { "ushort3", cxuint(KernelArgType::USHORT3) },
+    { "ushort4", cxuint(KernelArgType::USHORT4) },
+    { "ushort8", cxuint(KernelArgType::USHORT8) },
+    { "void", cxuint(KernelArgType::VOID) }
 };
 
 static const char* defaultArgTypeNames[] = 
@@ -1147,25 +1132,16 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     char name[20];
     skipSpacesToEnd(linePtr, end);
     const char* argTypePlace = linePtr;
-    if (getNameArg(asmr, 20, name, linePtr, "argument type", true))
+    cxuint argTypeValue;
+    if (getEnumeration(asmr, linePtr, "argument type", argTypeNameMapSize, argTypeNameMap,
+                    argTypeValue))
     {
-        toLowerString(name);
-        cxuint index = binaryMapFind(argTypeNameMap, argTypeNameMap + argTypeNameMapSize,
-                     name, CStringLess()) - argTypeNameMap;
-        if (index == argTypeNameMapSize) // end of this map
+        argType = KernelArgType(argTypeValue);
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr == '*')
         {
-            asmr.printError(argTypePlace, "Unknown argument type name");
-            good = false;
-        }
-        else
-        {   // if found
-            argType = argTypeNameMap[index].second;
-            skipSpacesToEnd(linePtr, end);
-            if (linePtr!=end && *linePtr == '*')
-            {
-                pointer = true; // if is pointer
-                linePtr++;
-            }
+            pointer = true; // if is pointer
+            linePtr++;
         }
     }
     else // if failed
