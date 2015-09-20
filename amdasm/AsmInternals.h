@@ -223,7 +223,8 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     /* return true if no error */
     template<typename T>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
-            std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0);
+            std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0,
+            bool isSigned = true);
     
     static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, Flags instropMask = 0);
@@ -239,7 +240,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     template<typename T>
     static bool parseModImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, const char* modName,
-            cxuint bits = 0);
+            cxuint bits = 0, bool isSigned = true);
     
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName);

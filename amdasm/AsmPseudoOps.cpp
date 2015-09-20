@@ -1050,7 +1050,8 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
         if (getAbsoluteValueArg(asmr, value, linePtr))
-            asmr.printWarningForRange(sizeof(Word)<<3, value, asmr.getSourcePos(valuePlace));
+            asmr.printWarningForRange(sizeof(Word)<<3, value,
+                          asmr.getSourcePos(valuePlace));
         else
             good = false;
         

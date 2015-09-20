@@ -334,7 +334,8 @@ protected:
     void printError(const char* linePtr, const char* message);
     void printWarning(const AsmSourcePos& sourcePos, const char* message);
     void printError(const AsmSourcePos& sourcePos, const char* message);
-    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
+    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
+                bool isSigned = true);
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
 public:
@@ -913,7 +914,8 @@ private:
     void goToSection(const char* pseudoOpPlace, const char* sectionName);
     void goToSection(const char* pseudoOpPlace, cxuint sectionId);
     
-    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos);
+    void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
+                  bool isSigned = true);
     
     bool checkReservedName(const CString& name);
     
@@ -1012,8 +1014,8 @@ inline void ISAAssembler::printError(const char* linePtr, const char* message)
 { return assembler.printError(linePtr, message); }
 
 inline void ISAAssembler::printWarningForRange(cxuint bits, uint64_t value,
-                   const AsmSourcePos& pos)
-{ return assembler.printWarningForRange(bits, value, pos); }
+                   const AsmSourcePos& pos, bool isSigned)
+{ return assembler.printWarningForRange(bits, value, pos, isSigned); }
 
 inline void ISAAssembler::printWarning(const AsmSourcePos& sourcePos, const char* message)
 { return assembler.printWarning(sourcePos, message); }

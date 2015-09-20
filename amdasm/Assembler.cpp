@@ -1073,10 +1073,16 @@ void Assembler::printError(const AsmSourcePos& pos, const char* message)
     messageStream.put('\n');
 }
 
-void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos)
+void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
+        bool isSigned)
 {
-    if (bits < 64 && (int64_t(value) >= (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
+    if (bits < 64)
     {
+        if (isSigned &&
+            !(int64_t(value) >= (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
+            return;
+        if (!isSigned && (value < (1ULL<<bits)))
+            return;
         std::string warning = "Value ";
         char buf[32];
         itocstrCStyle(value, buf, 32, 16);
