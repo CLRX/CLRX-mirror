@@ -25,6 +25,7 @@
 #include <string>
 #include <utility>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/amdasm/Assembler.h>
 #include "GCNInternals.h"
 
 namespace CLRX
@@ -224,7 +225,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     template<typename T>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0,
-            bool isSigned = true);
+            cxbyte signess = WS_BOTH);
     
     static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, Flags instropMask = 0);
@@ -240,7 +241,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     template<typename T>
     static bool parseModImm(Assembler& asmr, const char*& linePtr, T& value,
             std::unique_ptr<AsmExpression>* outTargetExpr, const char* modName,
-            cxuint bits = 0, bool isSigned = true);
+            cxuint bits = 0, cxbyte signess = WS_BOTH);
     
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName);

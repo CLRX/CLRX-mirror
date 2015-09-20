@@ -85,6 +85,11 @@ enum: Flags
     ASMSECT_ABS_ADDRESSABLE = 4
 };
 
+enum: cxbyte {
+    WS_UNSIGNED = 0,  // only unsigned
+    WS_BOTH = 1,  // both signed and unsigned range checking
+};
+
 /// assembler format exception
 class AsmFormatException: public Exception
 {
@@ -335,7 +340,7 @@ protected:
     void printWarning(const AsmSourcePos& sourcePos, const char* message);
     void printError(const AsmSourcePos& sourcePos, const char* message);
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
-                bool isSigned = true);
+                cxbyte signess = WS_BOTH);
     /// constructor
     explicit ISAAssembler(Assembler& assembler);
 public:
@@ -915,7 +920,7 @@ private:
     void goToSection(const char* pseudoOpPlace, cxuint sectionId);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
-                  bool isSigned = true);
+                  cxbyte signess = WS_BOTH);
     
     bool checkReservedName(const CString& name);
     
@@ -1014,8 +1019,8 @@ inline void ISAAssembler::printError(const char* linePtr, const char* message)
 { return assembler.printError(linePtr, message); }
 
 inline void ISAAssembler::printWarningForRange(cxuint bits, uint64_t value,
-                   const AsmSourcePos& pos, bool isSigned)
-{ return assembler.printWarningForRange(bits, value, pos, isSigned); }
+                   const AsmSourcePos& pos, cxbyte signess)
+{ return assembler.printWarningForRange(bits, value, pos, signess); }
 
 inline void ISAAssembler::printWarning(const AsmSourcePos& sourcePos, const char* message)
 { return assembler.printWarning(sourcePos, message); }

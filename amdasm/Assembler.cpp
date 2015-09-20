@@ -1074,14 +1074,14 @@ void Assembler::printError(const AsmSourcePos& pos, const char* message)
 }
 
 void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
-        bool isSigned)
+        cxbyte signess)
 {
     if (bits < 64)
     {
-        if (isSigned &&
+        if (signess == WS_BOTH &&
             !(int64_t(value) >= (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
             return;
-        if (!isSigned && (value < (1ULL<<bits)))
+        if (signess == WS_UNSIGNED && (value < (1ULL<<bits)))
             return;
         std::string warning = "Value ";
         char buf[32];

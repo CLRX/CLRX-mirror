@@ -494,7 +494,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
 
 template<typename T>
 bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
-            std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits, bool isSigned)
+            std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits, cxbyte signess)
 {
     const char* end = asmr.line+asmr.lineSize;
     if (outTargetExpr!=nullptr)
@@ -522,7 +522,7 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
         }
         if (bits == 0)
             bits = sizeof(T)<<3;
-        asmr.printWarningForRange(bits, value, asmr.getSourcePos(exprPlace), isSigned);
+        asmr.printWarningForRange(bits, value, asmr.getSourcePos(exprPlace), signess);
         outValue = value & ((1ULL<<bits)-1ULL);
         return true;
     }
@@ -632,7 +632,7 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
 template<typename T>
 bool GCNAsmUtils::parseModImm(Assembler& asmr, const char*& linePtr, T& value,
         std::unique_ptr<AsmExpression>* outTargetExpr, const char* modName, cxuint bits,
-        bool isSigned)
+        cxbyte signess)
 {
     if (outTargetExpr!=nullptr)
         outTargetExpr->reset();
@@ -641,7 +641,7 @@ bool GCNAsmUtils::parseModImm(Assembler& asmr, const char*& linePtr, T& value,
     if (linePtr!=end && *linePtr==':')
     {
         skipCharAndSpacesToEnd(linePtr, end);
-        return parseImm(asmr, linePtr, value, outTargetExpr, bits, isSigned);
+        return parseImm(asmr, linePtr, value, outTargetExpr, bits, signess);
     }
     asmr.printError(linePtr, (std::string("Expected ':' before ")+modName).c_str());
     return false;
@@ -1606,7 +1606,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 0, false);
+            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 0, WS_UNSIGNED);
         }
     }
     /// if errors
@@ -1668,7 +1668,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 20, false);
+            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 20, WS_UNSIGNED);
         }
     }
     bool haveGlc = false;
@@ -2641,7 +2641,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         {
             if (::strcmp(name, "offset") == 0)
             {
-                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset", false))
+                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset", WS_UNSIGNED))
                 {
                     if (haveOffset)
                         asmr.printWarning(attrPlace, "Offset is already defined");
@@ -2667,7 +2667,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     skipCharAndSpacesToEnd(linePtr, end);
                     if (name[6]=='0')
                     {   /* offset0 */
-                        if (parseImm(asmr, linePtr, offset1, &offsetExpr, 0, false))
+                        if (parseImm(asmr, linePtr, offset1, &offsetExpr, 0, WS_UNSIGNED))
                         {
                             if (haveOffset)
                                 asmr.printWarning(attrPlace, "Offset0 is already defined");
@@ -2678,7 +2678,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     }
                     else
                     {   /* offset1 */
-                        if (parseImm(asmr, linePtr, offset2, &offset2Expr, 0, false))
+                        if (parseImm(asmr, linePtr, offset2, &offset2Expr, 0, WS_UNSIGNED))
                         {
                             if (haveOffset2)
                                 asmr.printWarning(attrPlace, "Offset1 is already defined");
@@ -2863,7 +2863,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 haveOffen = true;
             else if (::strcmp(name+1, "ffset")==0)
             {   // parse offset
-                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset", 12, false))
+                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset",
+                                12, WS_UNSIGNED))
                 {
                     if (haveOffset)
                         asmr.printWarning(attrPlace, "Offset is already defined");
@@ -3611,7 +3612,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 return false;
             }
             sectionData[offset] = value;
-            printWarningForRange(8, value, sourcePos, false);
+            printWarningForRange(8, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_DSOFFSET16:
             if (sectionId != ASMSECT_ABS)
@@ -3620,7 +3621,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 return false;
             }
             SULEV(*reinterpret_cast<uint16_t*>(sectionData+offset), value);
-            printWarningForRange(16, value, sourcePos, false);
+            printWarningForRange(16, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_DSOFFSET8_0:
         case GCNTGT_DSOFFSET8_1:
@@ -3636,7 +3637,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 sectionData[offset] = value;
             else
                 sectionData[offset+1] = value;
-            printWarningForRange(8, value, sourcePos, false);
+            printWarningForRange(8, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_MXBUFOFFSET:
             if (sectionId != ASMSECT_ABS)
@@ -3646,7 +3647,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             }
             sectionData[offset] = value&0xff;
             sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value>>8)&0xf);
-            printWarningForRange(12, value, sourcePos, false);
+            printWarningForRange(12, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMOFFSET:
             if (sectionId != ASMSECT_ABS)
@@ -3655,7 +3656,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
                 return false;
             }
             SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
-            printWarningForRange(20, value, sourcePos, false);
+            printWarningForRange(20, value, sourcePos, WS_UNSIGNED);
             return true;
         case GCNTGT_SMEMIMM:
             if (sectionId != ASMSECT_ABS)
@@ -3665,7 +3666,7 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             }
             sectionData[offset] = (sectionData[offset]&0x3f) | ((value<<6)&0xff);
             sectionData[offset+1] = (sectionData[offset+1]&0xe0) | ((value>>2)&0x1f);
-            printWarningForRange(7, value, sourcePos, false);
+            printWarningForRange(7, value, sourcePos, WS_UNSIGNED);
             return true;
         default:
             return false;
