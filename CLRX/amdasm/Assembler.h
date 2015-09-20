@@ -335,10 +335,15 @@ class ISAAssembler: public NonCopyableAndNonMovable
 protected:
     Assembler& assembler;       ///< assembler
     
+    /// print warning for position pointed by line pointer
     void printWarning(const char* linePtr, const char* message);
+    /// print error for position pointed by line pointer
     void printError(const char* linePtr, const char* message);
+    /// print warning for source position
     void printWarning(const AsmSourcePos& sourcePos, const char* message);
+    /// print error for source position
     void printError(const AsmSourcePos& sourcePos, const char* message);
+    /// print warning about integer out of range
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
                 cxbyte signess = WS_BOTH);
     /// constructor
@@ -356,7 +361,7 @@ public:
                  cxuint sectionId, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
-    /// get allocated register after assemblying
+    /// get allocated register numbers after assemblying
     virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
 };
 
@@ -364,9 +369,10 @@ public:
 class GCNAssembler: public ISAAssembler
 {
 public:
+    /// register pool numbers
     struct Regs {
-        cxuint sgprsNum;
-        cxuint vgprsNum;
+        cxuint sgprsNum;    ///< SGPRs number
+        cxuint vgprsNum;    ///< VGPRs number
     };
 private:
     union {
@@ -528,8 +534,10 @@ struct AsmExprTarget
             size_t offset;      ///< offset of destination
         };
     };
+    /// empty constructor
     AsmExprTarget() { }
     
+    /// constructor to create custom target
     AsmExprTarget(AsmExprTargetType _type, cxuint _sectionId, size_t _offset)
             : type(_type), sectionId(_sectionId), offset(_offset)
     { }
@@ -624,18 +632,18 @@ public:
      * \param assembler assembler
      * \param linePos position in line and output position in line
      * \param makeBase do not evaluate resolved symbols, put them to expression
-     * \param dontReolveSymbolsLater do not resolve symbols later
+     * \param dontResolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, size_t& linePos,
-                    bool makeBase = false, bool dontReolveSymbolsLater = false);
+                    bool makeBase = false, bool dontResolveSymbolsLater = false);
     
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
      * \param assembler assembler
      * \param linePtr string at position in line (returns output line pointer)
      * \param makeBase do not evaluate resolved symbols, put them to expression
-     * \param dontReolveSymbolsLater do not resolve symbols later
+     * \param dontResolveSymbolsLater do not resolve symbols later
      * \return expression pointer
      */
     static AsmExpression* parse(Assembler& assembler, const char*& linePtr,

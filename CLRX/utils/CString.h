@@ -41,8 +41,8 @@ public:
     typedef char* iterator;    ///< type of iterator
     typedef const char* const_iterator;    ///< type of constant iterator
     typedef char element_type; ///< element type
-    typedef std::string::size_type size_type;
-    static const size_type npos = -1;
+    typedef std::string::size_type size_type; ///< size type
+    static const size_type npos = -1;   ///< value to indicate no position
 private:
     char* ptr;
 public:
@@ -241,6 +241,7 @@ public:
     const char* begin() const
     { return ptr!=nullptr ? ptr : ""; }
     
+    /// get ith character (use only if string is not empty)
     const char& operator[](size_t i) const
     { return ptr[i]; }
     
@@ -272,9 +273,11 @@ public:
     bool empty() const
     { return ptr==nullptr; }
     
+    /// first character (use only if string is not empty)
     const char& front() const
     { return ptr[0]; }
     
+    /// first character (use only if string is not empty)
     char& front()
     { return ptr[0]; }
     
@@ -289,25 +292,29 @@ public:
     /// compare with string
     int compare(size_t pos, size_t n, const char* str) const
     { return ::strncmp(c_str()+pos, str, n); }
-    
+
+    /// find character in string
     size_type find(char ch, size_t pos = 0) const
     { 
         const char* p = ::strchr(ptr+pos, ch);
         return (p!=nullptr) ? p-ptr : npos;
     }
     
+    /// find string in string
     size_type find(const CString& str, size_t pos = 0) const
     { 
         const char* p = ::strstr(ptr+pos, str.c_str());
         return (p!=nullptr) ? p-ptr : npos;
     }
     
+    /// find string in string
     size_type find(const char* str, size_t pos = 0) const
     { 
         const char* p = ::strstr(ptr+pos, str);
         return (p!=nullptr) ? p-ptr : npos;
     }
     
+    /// make substring from string
     CString substr(size_t pos, size_t n)
     { return CString(ptr+pos, n); }
     
