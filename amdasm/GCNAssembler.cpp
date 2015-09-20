@@ -494,10 +494,11 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
 
 template<typename T>
 bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
-            std::unique_ptr<AsmExpression>& outTargetExpr, cxuint bits)
+            std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits)
 {
     const char* end = asmr.line+asmr.lineSize;
-    outTargetExpr.reset();
+    if (outTargetExpr!=nullptr)
+        outTargetExpr->reset();
     skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse( asmr, linePtr));
@@ -527,7 +528,8 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
     }
     else
     {   // return output expression with symbols to resolve
-        outTargetExpr = std::move(expr);
+        if (outTargetExpr!=nullptr)
+            *outTargetExpr = std::move(expr);
         return true;
     }
 }
@@ -597,9 +599,10 @@ static bool isOnlyFloat(const char* str, const char* end)
 }
 
 bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
-            std::unique_ptr<AsmExpression>& outTargetExpr, Flags instropMask)
+            std::unique_ptr<AsmExpression>* outTargetExpr, Flags instropMask)
 {
-    outTargetExpr.reset();
+    if (outTargetExpr!=nullptr)
+        outTargetExpr->reset();
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     if (isOnlyFloat(linePtr, end))
@@ -628,8 +631,10 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
 
 template<typename T>
 bool GCNAsmUtils::parseModImm(Assembler& asmr, const char*& linePtr, T& value,
-        std::unique_ptr<AsmExpression>& outTargetExpr, const char* modName, cxuint bits)
+        std::unique_ptr<AsmExpression>* outTargetExpr, const char* modName, cxuint bits)
 {
+    if (outTargetExpr!=nullptr)
+        outTargetExpr->reset();
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     if (linePtr!=end && *linePtr==':')
@@ -642,10 +647,11 @@ bool GCNAsmUtils::parseModImm(Assembler& asmr, const char*& linePtr, T& value,
 }
 
 bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
-             std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
+             std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
              cxuint regsNum, Flags instrOpMask)
 {
-    outTargetExpr.reset();
+    if (outTargetExpr!=nullptr)
+        outTargetExpr->reset();
     
     if (instrOpMask == INSTROP_SREGS)
         return parseSRegRange(asmr, linePtr, operand.range, arch, regsNum);
@@ -955,7 +961,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                                 "Only one literal can be used in instruction");
                     return false;
                 }
-                outTargetExpr = std::move(expr);
+                if (outTargetExpr!=nullptr)
+                    *outTargetExpr = std::move(expr);
                 operand.range = { 255, 0 };
                 return true;
             }
@@ -1026,12 +1033,12 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
-    good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
+    good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
-    good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
+    good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
              (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
@@ -1086,7 +1093,7 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src0Op{};
     std::unique_ptr<AsmExpression> src0Expr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_SRC_NONE)
-        good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
+        good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
     
     /// if errors
@@ -1247,7 +1254,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         imm16 = hwregId | (arg2Value<<6) | ((arg3Value-1)<<11);
     }
     else // otherwise we parse expression
-        good &= parseImm(asmr, linePtr, imm16, imm16Expr);
+        good &= parseImm(asmr, linePtr, imm16, &imm16Expr);
     
     uint32_t imm32 = 0;
     std::unique_ptr<AsmExpression> imm32Expr;
@@ -1256,7 +1263,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return;
         if (gcnInsn.mode & GCN_SOPK_CONST)
-            good &= parseImm(asmr, linePtr, imm32, imm32Expr);
+            good &= parseImm(asmr, linePtr, imm32, &imm32Expr);
         else
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                    (gcnInsn.mode&GCN_REG_DST_64)?2:1);
@@ -1294,17 +1301,17 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
-    good &= parseOperand(asmr, linePtr, src0Op, src0Expr, arch,
+    good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
              (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
     GCNOperand src1Op{};
     if ((gcnInsn.mode & GCN_SRC1_IMM) == 0)
-        good &= parseOperand(asmr, linePtr, src1Op, src1Expr, arch,
+        good &= parseOperand(asmr, linePtr, src1Op, &src1Expr, arch,
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                  (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     else // immediate
-        good &= parseImm(asmr, linePtr, src1Op.range.start, src1Expr, 8);
+        good &= parseImm(asmr, linePtr, src1Op.range.start, &src1Expr, 8);
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1558,7 +1565,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         case GCN_IMM_NONE:
             break;
         default:
-            good &= parseImm(asmr, linePtr, imm16, imm16Expr);
+            good &= parseImm(asmr, linePtr, imm16, &imm16Expr);
     }
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1613,7 +1620,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, soffsetExpr);
+            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr);
         }
     }
     /// if errors
@@ -1657,7 +1664,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
             good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum);
         else
-            good &= parseImm(asmr, linePtr, dataReg.start, simm7Expr, 7);
+            good &= parseImm(asmr, linePtr, dataReg.start, &simm7Expr, 7);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
@@ -1675,7 +1682,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm(asmr, linePtr, soffsetVal, soffsetExpr, 20);
+            good &= parseImm(asmr, linePtr, soffsetVal, &soffsetExpr, 20);
         }
     }
     bool haveGlc = false;
@@ -1906,7 +1913,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     INSTROP_VOP3NEG : INSTROP_VOP3MODS);
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
+    good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags | vopOpModFlags |
             INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS);
     
@@ -1916,7 +1923,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseLiteralImm(asmr, linePtr, immValue, immExpr, literalConstsFlags);
+        good &= parseLiteralImm(asmr, linePtr, immValue, &immExpr, literalConstsFlags);
     }
     
     if (!skipRequiredComma(asmr, linePtr))
@@ -1924,7 +1931,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool sgprRegInSrc1 = mode1 == GCN_DS1_SGPR || mode1 == GCN_SRC1_SGPR;
     skipSpacesToEnd(linePtr, end);
-    good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
+    good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch,
             (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
             (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
@@ -1933,7 +1940,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseLiteralImm(asmr, linePtr, immValue, immExpr, literalConstsFlags);
+        good &= parseLiteralImm(asmr, linePtr, immValue, &immExpr, literalConstsFlags);
     }
     else if (haveSrcCC)
     {
@@ -2059,7 +2066,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
+        good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
                     INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS);
     }
@@ -2129,13 +2136,13 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
     
-    good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
+    good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
                     INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
+    good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | INSTROP_VOP3MODS|
                 INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
@@ -2219,9 +2226,6 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src0Op{};
     GCNOperand src1Op{};
     GCNOperand src2Op{};
-    std::unique_ptr<AsmExpression> src0OpExpr;
-    std::unique_ptr<AsmExpression> src1OpExpr;
-    std::unique_ptr<AsmExpression> src2OpExpr;
     
     cxbyte modifiers = 0;
     const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
@@ -2244,7 +2248,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
                 (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
         
-        good &= parseOperand(asmr, linePtr, src0Op, src0OpExpr, arch,
+        good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
                     INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
@@ -2253,7 +2257,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             if (!skipRequiredComma(asmr, linePtr))
                 return;
-            good &= parseOperand(asmr, linePtr, src1Op, src1OpExpr, arch,
+            good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch,
                     (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
                     INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
@@ -2262,7 +2266,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             {
                 if (!skipRequiredComma(asmr, linePtr))
                     return;
-                good &= parseOperand(asmr, linePtr, src2Op, src2OpExpr, arch,
+                good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
                         (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
                         INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                         INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
@@ -2538,7 +2542,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         {
             if (::strcmp(name, "offset") == 0)
             {
-                if (parseModImm(asmr, linePtr, offset, offsetExpr, "offset"))
+                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset"))
                 {
                     if (haveOffset)
                         asmr.printWarning(attrPlace, "Offset is already defined");
@@ -2564,7 +2568,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     skipCharAndSpacesToEnd(linePtr, end);
                     if (name[6]=='0')
                     {   /* offset0 */
-                        if (parseImm(asmr, linePtr, offset1, offsetExpr))
+                        if (parseImm(asmr, linePtr, offset1, &offsetExpr))
                         {
                             if (haveOffset)
                                 asmr.printWarning(attrPlace, "Offset0 is already defined");
@@ -2575,7 +2579,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     }
                     else
                     {   /* offset1 */
-                        if (parseImm(asmr, linePtr, offset2, offset2Expr))
+                        if (parseImm(asmr, linePtr, offset2, &offset2Expr))
                         {
                             if (haveOffset2)
                                 asmr.printWarning(attrPlace, "Offset1 is already defined");
@@ -2760,7 +2764,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 haveOffen = true;
             else if (::strcmp(name+1, "ffset")==0)
             {   // parse offset
-                if (parseModImm(asmr, linePtr, offset, offsetExpr, "offset", 12))
+                if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset", 12))
                 {
                     if (haveOffset)
                         asmr.printWarning(attrPlace, "Offset is already defined");

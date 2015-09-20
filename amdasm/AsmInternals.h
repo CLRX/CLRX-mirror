@@ -217,22 +217,22 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     /* return true if no error */
     template<typename T>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
-            std::unique_ptr<AsmExpression>& outTargetExpr, cxuint bits = 0);
+            std::unique_ptr<AsmExpression>* outTargetExpr, cxuint bits = 0);
     
     static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
-            std::unique_ptr<AsmExpression>& outTargetExpr, Flags instropMask = 0);
+            std::unique_ptr<AsmExpression>* outTargetExpr, Flags instropMask = 0);
     
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
                        VOPExtraModifiers* extraMods = nullptr,
                        bool withClamp = true, bool withVOPSDWA_DPP = true);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
-               std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
+               std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
                cxuint regsNum, Flags instrOpMask);
     
     template<typename T>
     static bool parseModImm(Assembler& asmr, const char*& linePtr, T& value,
-            std::unique_ptr<AsmExpression>& outTargetExpr, const char* modName,
+            std::unique_ptr<AsmExpression>* outTargetExpr, const char* modName,
             cxuint bits = 0);
     
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
