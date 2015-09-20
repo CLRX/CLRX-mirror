@@ -1075,7 +1075,7 @@ void Assembler::printError(const AsmSourcePos& pos, const char* message)
 
 void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos)
 {
-    if (bits < 64 && (int64_t(value) > (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
+    if (bits < 64 && (int64_t(value) >= (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
     {
         std::string warning = "Value ";
         char buf[32];

@@ -1719,12 +1719,30 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
 }
 
+static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
+{
+    { "b0", 0 },
+    { "b1", 1 },
+    { "b2", 2 },
+    { "b3", 3 },
+    { "byte_0", 0 },
+    { "byte_1", 1 },
+    { "byte_2", 2 },
+    { "byte_3", 3 },
+    { "dword", 6 },
+    { "w0", 4 },
+    { "w1", 5 },
+    { "word_0", 4 },
+    { "word_1", 5 }
+};
+
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
                 VOPExtraModifiers* extraMods, bool withClamp, bool withVOPSDWA_DPP)
 {
     const char* end = asmr.line+asmr.lineSize;
     //bool haveSDWAMod = false, haveDPPMod = false;
-    //bool haveDstSel = false;
+    bool haveDstSel = false, haveSrc0Sel = false, haveSrc1Sel = false;
+    bool haveBankMask = false, haveRowMask = false;
     
     bool good = true;
     mods = 0;
@@ -1810,7 +1828,28 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                 {   /* VOP_SDWA or VOP_DPP */
                     if (::strcmp(mod, "dst_sel")==0)
                     {   // dstsel
-                        //cxbyte dstSel;
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            cxuint dstSel = 0;
+                            if (getEnumeration(asmr, linePtr, "dst_sel", 6,
+                                        vopSDWADSTSelNamesMap, dstSel))
+                            {
+                                extraMods->dstSelUnused =
+                                        (extraMods->dstSelUnused&~7) | dstSel;
+                                if (haveDstSel)
+                                    asmr.printWarning(modPlace,
+                                              "Dst_sel is already defined");
+                                haveDstSel = true;
+                            }
+                            else
+                                good = false;
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, "Expected ':' before dst_sel");
+                            good = false;
+                        }
                     }
                     else if (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0)
                     {
@@ -1818,19 +1857,92 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                     }
                     else if (::strcmp(mod, "src0_sel")==0)
                     {
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            cxuint src0Sel = 0;
+                            if (getEnumeration(asmr, linePtr, "src0_sel", 6,
+                                        vopSDWADSTSelNamesMap, src0Sel))
+                            {
+                                extraMods->dstSelUnused = (extraMods->src01Sel&~7) |
+                                            src0Sel;
+                                if (haveSrc0Sel)
+                                    asmr.printWarning(modPlace,
+                                                      "Src0_sel is already defined");
+                                haveSrc0Sel = true;
+                            }
+                            else
+                                good = false;
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, "Expected ':' before src0_sel");
+                            good = false;
+                        }
                     }
                     else if (::strcmp(mod, "src1_sel")==0)
                     {
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            cxuint src1Sel = 0;
+                            if (getEnumeration(asmr, linePtr, "src1_sel", 6,
+                                        vopSDWADSTSelNamesMap, src1Sel))
+                            {
+                                extraMods->dstSelUnused = (extraMods->src01Sel&~0x70) |
+                                            (src1Sel<<4);
+                                if (haveSrc1Sel)
+                                    asmr.printWarning(modPlace,
+                                                      "Src1_sel is already defined");
+                                haveSrc1Sel = true;
+                            }
+                            else
+                                good = false;
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, "Expected ':' before src0_sel");
+                            good = false;
+                        }
                     }
                     else if (::strcmp(mod, "quad_perm")==0 ||
                         (mod[0]=='q' && mod[1]=='p' && mod[2]==0))
                     {
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, "Expected ':' before quad_perm");
+                            good = false;
+                        }
                     }
-                    else if (::strcmp(mod, "bank_mask")==0)
+                    else if (::strcmp(mod, "bank_mask")==0 ||
+                        (mod[0]=='b' && mod[1]=='m' && mod[2]==0))
                     {
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, "Expected ':' before bank_mask");
+                            good = false;
+                        }
                     }
-                    else if (::strcmp(mod, "row_mask")==0)
+                    else if (::strcmp(mod, "row_mask")==0 ||
+                        (mod[0]=='r' && mod[1]=='m' && mod[2]==0))
                     {
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, "Expected ':' before row_mask");
+                            good = false;
+                        }
                     }
                     else if (::strcmp(mod, "bound_ctrl")==0 ||
                         (mod[0]=='b' && mod[1]=='c' && mod[2]==0))
