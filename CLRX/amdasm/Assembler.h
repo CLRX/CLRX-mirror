@@ -320,7 +320,8 @@ enum : AsmExprTargetType
     GCNTGT_DSOFFSET8_1,
     GCNTGT_MXBUFOFFSET,
     GCNTGT_SMEMOFFSET,
-    GCNTGT_SOPCIMM8
+    GCNTGT_SOPCIMM8,
+    GCNTGT_SMEMIMM
 };
 
 /// ISA assembler class

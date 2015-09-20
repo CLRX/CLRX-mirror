@@ -230,6 +230,11 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,
                cxuint regsNum, Flags instrOpMask);
     
+    template<typename T>
+    static bool parseModImm(Assembler& asmr, const char*& linePtr, T& value,
+            std::unique_ptr<AsmExpression>& outTargetExpr, const char* modName,
+            cxuint bits = 0);
+    
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName);
     

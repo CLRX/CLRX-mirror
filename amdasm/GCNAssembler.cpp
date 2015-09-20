@@ -623,7 +623,22 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
         }
         return true;
     }
-    return parseImm<uint32_t>(asmr, linePtr, value, outTargetExpr);
+    return parseImm(asmr, linePtr, value, outTargetExpr);
+}
+
+template<typename T>
+bool GCNAsmUtils::parseModImm(Assembler& asmr, const char*& linePtr, T& value,
+        std::unique_ptr<AsmExpression>& outTargetExpr, const char* modName, cxuint bits)
+{
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr!=end && *linePtr==':')
+    {
+        skipCharAndSpacesToEnd(linePtr, end);
+        return parseImm(asmr, linePtr, value, outTargetExpr, bits);
+    }
+    asmr.printError(linePtr, (std::string("Expected ':' before ")+modName).c_str());
+    return false;
 }
 
 bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
@@ -1232,7 +1247,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         imm16 = hwregId | (arg2Value<<6) | ((arg3Value-1)<<11);
     }
     else // otherwise we parse expression
-        good &= parseImm<uint16_t>(asmr, linePtr, imm16, imm16Expr);
+        good &= parseImm(asmr, linePtr, imm16, imm16Expr);
     
     uint32_t imm32 = 0;
     std::unique_ptr<AsmExpression> imm32Expr;
@@ -1241,7 +1256,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!skipRequiredComma(asmr, linePtr))
             return;
         if (gcnInsn.mode & GCN_SOPK_CONST)
-            good &= parseImm<uint32_t>(asmr, linePtr, imm32, imm32Expr);
+            good &= parseImm(asmr, linePtr, imm32, imm32Expr);
         else
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                    (gcnInsn.mode&GCN_REG_DST_64)?2:1);
@@ -1289,7 +1304,7 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                  (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, INSTROP_SSOURCE|INSTROP_SREGS|
                  (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     else // immediate
-        good &= parseImm<uint16_t>(asmr, linePtr, src1Op.range.start, src1Expr, 8);
+        good &= parseImm(asmr, linePtr, src1Op.range.start, src1Expr, 8);
     
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1543,7 +1558,7 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         case GCN_IMM_NONE:
             break;
         default:
-            good &= parseImm<uint16_t>(asmr, linePtr, imm16, imm16Expr);
+            good &= parseImm(asmr, linePtr, imm16, imm16Expr);
     }
     /// if errors
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
@@ -1598,7 +1613,7 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm<cxbyte>(asmr, linePtr, soffsetVal, soffsetExpr);
+            good &= parseImm(asmr, linePtr, soffsetVal, soffsetExpr);
         }
     }
     /// if errors
@@ -1642,7 +1657,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if ((mode1 & GCN_SMEM_SDATA_IMM)==0)
             good &= parseSRegRange(asmr, linePtr, dataReg, arch, dregsNum);
         else
-            good &= parseImm<uint16_t>(asmr, linePtr, dataReg.start, simm7Expr, 7);
+            good &= parseImm(asmr, linePtr, dataReg.start, simm7Expr, 7);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
@@ -1660,7 +1675,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!soffsetReg)
         {   // parse immediate
             soffsetReg.start = 255; // indicate an immediate
-            good &= parseImm<uint32_t>(asmr, linePtr, soffsetVal, soffsetExpr, 20);
+            good &= parseImm(asmr, linePtr, soffsetVal, soffsetExpr, 20);
         }
     }
     bool haveGlc = false;
@@ -1693,6 +1708,9 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (soffsetExpr!=nullptr)
         soffsetExpr->setTarget(AsmExprTarget(GCNTGT_SMEMOFFSET, asmr.currentSection,
                        output.size()));
+    if (simm7Expr!=nullptr)
+        simm7Expr->setTarget(AsmExprTarget(GCNTGT_SMEMIMM, asmr.currentSection,
+                       output.size()));
     
     uint32_t words[2];
     SLEV(words[0], 0xc0000000U | (uint32_t(gcnInsn.code1)<<18) | (dataReg.start<<6) |
@@ -1704,6 +1722,7 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words+2));
     /// prevent freeing expression
     soffsetExpr.release();
+    simm7Expr.release();
     if (gcnInsn.mode & GCN_MLOAD)
         updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
 }
@@ -1797,6 +1816,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                 {   /* VOP_SDWA or VOP_DPP */
                     if (::strcmp(mod, "dst_sel")==0)
                     {   // dstsel
+                        cxbyte dstSel;
+                        //if (parseModImm(asmr, linePtr, dstSel)
+                        
                     }
                     else if (::strcmp(mod, "dst_unused")==0 || ::strcmp(mod, "dst_un")==0)
                     {
@@ -1807,7 +1829,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                     else if (::strcmp(mod, "src1_sel")==0)
                     {
                     }
-                    else if (::strcmp(mod, "quad_perm")==0)
+                    else if (::strcmp(mod, "quad_perm")==0 ||
+                        (mod[0]=='q' && mod[1]=='p' && mod[2]==0))
                     {
                     }
                     else if (::strcmp(mod, "bank_mask")==0)
@@ -1816,6 +1839,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                     else if (::strcmp(mod, "row_mask")==0)
                     {
                     }
+                    else if (::strcmp(mod, "bound_ctrl")==0 ||
+                        (mod[0]=='b' && mod[1]=='c' && mod[2]==0))
+                        mods |= VOP3_BOUNDCTRL;
                     else
                     {   /// unknown modifier
                         asmr.printError(modPlace, "Unknown VOP modifier");
@@ -2512,24 +2538,14 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         {
             if (::strcmp(name, "offset") == 0)
             {
-                skipSpacesToEnd(linePtr, end);
-                if (linePtr!=end && *linePtr==':')
+                if (parseModImm(asmr, linePtr, offset, offsetExpr, "offset"))
                 {
-                    skipCharAndSpacesToEnd(linePtr, end);
-                    if (parseImm<uint16_t>(asmr, linePtr, offset, offsetExpr))
-                    {
-                        if (haveOffset)
-                            asmr.printWarning(attrPlace, "Offset is already defined");
-                        haveOffset = true;
-                    }
-                    else
-                        good = false;
+                    if (haveOffset)
+                        asmr.printWarning(attrPlace, "Offset is already defined");
+                    haveOffset = true;
                 }
                 else
-                {
-                    asmr.printError(linePtr, "Expected ':' before offset");
                     good = false;
-                }
             }
             else
             {
@@ -2548,7 +2564,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     skipCharAndSpacesToEnd(linePtr, end);
                     if (name[6]=='0')
                     {   /* offset0 */
-                        if (parseImm<cxbyte>(asmr, linePtr, offset1, offsetExpr))
+                        if (parseImm(asmr, linePtr, offset1, offsetExpr))
                         {
                             if (haveOffset)
                                 asmr.printWarning(attrPlace, "Offset0 is already defined");
@@ -2559,7 +2575,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     }
                     else
                     {   /* offset1 */
-                        if (parseImm<cxbyte>(asmr, linePtr, offset2, offset2Expr))
+                        if (parseImm(asmr, linePtr, offset2, offset2Expr))
                         {
                             if (haveOffset2)
                                 asmr.printWarning(attrPlace, "Offset1 is already defined");
@@ -2744,24 +2760,14 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 haveOffen = true;
             else if (::strcmp(name+1, "ffset")==0)
             {   // parse offset
-                skipSpacesToEnd(linePtr, end);
-                if (linePtr!=end && *linePtr==':')
-                {   /* parse offset immediate */
-                    skipCharAndSpacesToEnd(linePtr, end);
-                    if (parseImm<cxuint>(asmr, linePtr, offset, offsetExpr, 12))
-                    {
-                        if (haveOffset)
-                            asmr.printWarning(attrPlace, "Offset is already defined");
-                        haveOffset = true;
-                    }
-                    else
-                        good = false;
+                if (parseModImm(asmr, linePtr, offset, offsetExpr, "offset", 12))
+                {
+                    if (haveOffset)
+                        asmr.printWarning(attrPlace, "Offset is already defined");
+                    haveOffset = true;
                 }
                 else
-                {
-                    asmr.printError(linePtr, "Expected ':' before offset");
                     good = false;
-                }
             }
             else
             {
@@ -3472,15 +3478,6 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
 {
     switch(targetType)
     {
-        case GCNTGT_SMEMOFFSET:
-            if (sectionId != ASMSECT_ABS)
-            {
-                printError(sourcePos, "Relative value is illegal in offset expressions");
-                return false;
-            }
-            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
-            printWarningForRange(20, value, sourcePos);
-            return true;
         case GCNTGT_LITIMM:
             if (sectionId != ASMSECT_ABS)
             {
@@ -3564,6 +3561,25 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
             sectionData[offset] = value&0xff;
             sectionData[offset+1] = (sectionData[offset+1]&0xf0) | ((value>>8)&0xf);
             printWarningForRange(12, value, sourcePos);
+            return true;
+        case GCNTGT_SMEMOFFSET:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in offset expressions");
+                return false;
+            }
+            SULEV(*reinterpret_cast<uint32_t*>(sectionData+offset+4), value&0xfffffU);
+            printWarningForRange(20, value, sourcePos);
+            return true;
+        case GCNTGT_SMEMIMM:
+            if (sectionId != ASMSECT_ABS)
+            {
+                printError(sourcePos, "Relative value is illegal in immediate expressions");
+                return false;
+            }
+            sectionData[offset] = (sectionData[offset]&0x3f) | ((value<<6)&0xff);
+            sectionData[offset+1] = (sectionData[offset+1]&0xe0) | ((value>>2)&0x1f);
+            printWarningForRange(7, value, sourcePos);
             return true;
         default:
             return false;
