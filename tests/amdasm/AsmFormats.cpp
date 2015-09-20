@@ -871,7 +871,7 @@ test.s:57:22: Error: Expected expression
 test.s:58:23: Error: Expected expression
 test.s:59:21: Error: Expected expression
 test.s:64:17: Error: Expected expression
-test.s:70:23: Error: Some garbages at ApiSlot place
+test.s:70:23: Error: Some garbages at Data Class place
 test.s:70:27: Error: RegStart+RegSize out of range (0-16)
 test.s:72:37: Error: RegStart+RegSize out of range (0-16)
 test.s:73:37: Error: RegStart out of range (0-15)
