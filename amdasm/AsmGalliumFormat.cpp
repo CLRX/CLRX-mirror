@@ -450,7 +450,8 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     uint64_t entryAddr;
     bool good = true;
     if (getAbsoluteValueArg(asmr, entryAddr, linePtr, true))
-        asmr.printWarningForRange(32, entryAddr, asmr.getSourcePos(addrPlace), false);
+        asmr.printWarningForRange(32, entryAddr, asmr.getSourcePos(addrPlace),
+                              WS_UNSIGNED);
     else
         good = false;
     if (!skipRequiredComma(asmr, linePtr))
