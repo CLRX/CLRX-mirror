@@ -139,6 +139,7 @@ enum : Flags {
     INSTROP_VREGS = 4,
     INSTROP_LDS = 8,
     INSTROP_VOP3MODS = 0x10,
+    // used internally by parseGCNOperand to continuing parsing with modifiers
     INSTROP_PARSEWITHNEG = 0x20,
     INSTROP_VOP3NEG = 0x40,
     
@@ -162,7 +163,8 @@ enum: cxbyte {
     VOP3_MUL4 = 2,
     VOP3_DIV2 = 3,
     VOP3_CLAMP = 16,
-    VOP3_VOP3 = 32
+    VOP3_VOP3 = 32,
+    VOP3_BOUNDCTRL = 64
 };
 
 struct RegRange
@@ -190,6 +192,14 @@ struct GCNOperand {
     { return range; }
 };
 
+struct VOPExtraModifiers
+{
+    cxbyte dstSelUnused;
+    cxbyte src01Sel;
+    cxbyte bankRowMask;
+    uint16_t dppCtrl;
+};
+
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
     static bool printRegisterRangeExpected(Assembler& asmr, const char* linePtr,
@@ -205,15 +215,16 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
                    uint16_t arch, cxuint regsNum, bool required = true);
     /* return true if no error */
-    template<typename T, cxuint Bits = (sizeof(T)<<3)>
+    template<typename T>
     static bool parseImm(Assembler& asmr, const char*& linePtr, T& value,
-            std::unique_ptr<AsmExpression>& outTargetExpr);
+            std::unique_ptr<AsmExpression>& outTargetExpr, cxuint bits = 0);
     
     static bool parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_t& value,
             std::unique_ptr<AsmExpression>& outTargetExpr, Flags instropMask = 0);
     
-    static bool parseVOP3Modifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
-                           bool withClamp = true);
+    static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
+                       VOPExtraModifiers* extraMods = nullptr,
+                       bool withClamp = true, bool withVOPSDWA_DPP = true);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>& outTargetExpr, uint16_t arch,

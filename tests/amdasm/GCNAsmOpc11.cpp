@@ -595,7 +595,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32  v154, v21, v107 mul", 0, 0, false, false,
         "test.s:1:35: Error: Expected ':' before multiplier number\n" },
     { "    v_add_f32  v154, v21, v107 mxl", 0, 0, false, false,
-        "test.s:1:32: Error: Unknown VOP3 modifier\n" },
+        "test.s:1:32: Error: Unknown VOP modifier\n" },
     { "    v_add_f32  v154, abs(v21), 12343", 0, 0, false, false,
         "test.s:1:5: Error: Literal in VOP3 encoding is illegal\n" },
     { "    v_add_f32  v154, 13243, abs(v21)", 0, 0, false, false,
@@ -707,7 +707,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* VOP3B errors */
     { "    v_add_i32  v55, s[10:11], s27, abs(v90)", 0, 0, false, false,
         "test.s:1:39: Error: Expected operator\n"
-        "test.s:1:40: Error: Unknown VOP3 modifier\n"
+        "test.s:1:40: Error: Unknown VOP modifier\n"
         "test.s:1:43: Error: Some garbages at modifier place\n" },
     { "    v_add_i32  v55, s[10:11], abs(s27), v90", 0, 0, false, false,
         "test.s:1:34: Error: Expected operator\n"
