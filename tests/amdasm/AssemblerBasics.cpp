@@ -770,7 +770,8 @@ test.s:9:30: Error: Garbages at end of expression
             .string16 "alaz",,"ma3","4kota"
             .string32 "alad",,"ma2","5kota"
             .string64 "alad",,"ma1","6kota"
-            .string "\x9b23;" # changed hex character parsing)ffDXD",
+            .string "\x9b23;" # changed hex character parsing
+            .short 0x10000)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
         { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
             {
@@ -839,9 +840,9 @@ test.s:9:30: Error: Garbages at end of expression
                 0x00, 0x00, 0x00, 0x74, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x23, 0x3b, 0x00
+                0x00, 0x00, 0x00, 0x23, 0x3b, 0x00, 0x00, 0x00
             } } },
-        { { ".", 526U, 0, 0U, true, false, false, 0, 0 } },
+        { { ".", 528U, 0, 0U, true, false, false, 0, 0 } },
         true, R"ffDXD(test.s:1:27: Warning: Value 0xffda truncated to 0xda
 test.s:1:38: Warning: No expression, zero has been put
 test.s:1:39: Warning: No expression, zero has been put
@@ -863,6 +864,7 @@ test.s:8:58: Warning: No 128-bit literal, zero has been put
 test.s:10:28: Warning: No floating point literal, zero has been put
 test.s:11:29: Warning: No floating point literal, zero has been put
 test.s:12:30: Warning: No floating point literal, zero has been put
+test.s:20:20: Warning: Value 0x10000 truncated to 0x0
 )ffDXD", ""
     },
     /* 16 - fillings */
