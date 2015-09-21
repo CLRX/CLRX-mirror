@@ -1744,6 +1744,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     //bool haveSDWAMod = false, haveDPPMod = false;
     bool haveDstSel = false, haveSrc0Sel = false, haveSrc1Sel = false;
     bool haveBankMask = false, haveRowMask = false;
+    bool haveBoundCtrl = false, haveDppCtrl = false;
     
     bool good = true;
     mods = 0;
@@ -1832,6 +1833,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
+                            linePtr++;
                             cxuint dstSel = 0;
                             if (getEnumeration(asmr, linePtr, "dst_sel", 6,
                                         vopSDWADSTSelNamesMap, dstSel))
@@ -1861,6 +1863,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
+                            linePtr++;
                             cxuint src0Sel = 0;
                             if (getEnumeration(asmr, linePtr, "src0_sel", 6,
                                         vopSDWADSTSelNamesMap, src0Sel))
@@ -1886,6 +1889,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
+                            linePtr++;
                             cxuint src1Sel = 0;
                             if (getEnumeration(asmr, linePtr, "src1_sel", 6,
                                         vopSDWADSTSelNamesMap, src1Sel))
@@ -1912,6 +1916,61 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
+                            bool goodMod = true;
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            if (linePtr==end || *linePtr!=':')
+                            {
+                                asmr.printError(linePtr,
+                                        "Expected '[' before quad_perm list");
+                                goodMod = good = false;
+                                continue;
+                            }
+                            cxbyte quadPerm = 0;
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            for (cxuint k = 0; k < 4; k++)
+                            {
+                                cxbyte qpMask = (3<<(k<<1));
+                                try
+                                {
+                                    cxbyte qpv = cstrtobyte(linePtr, end);
+                                    if (qpv<4)
+                                        quadPerm |= qpv&qpMask;
+                                    else
+                                    {
+                                        asmr.printError(linePtr,
+                                            "quad_perm component out of range (0-3)");
+                                        goodMod = good = false;
+                                    }
+                                }
+                                catch(const ParseException& ex)
+                                {
+                                    asmr.printError(linePtr, ex.what());
+                                    goodMod = good = false;
+                                }
+                                skipSpacesToEnd(linePtr, end);
+                                if (k!=3)
+                                {
+                                    if (linePtr==end || *linePtr!=',')
+                                    {
+                                        asmr.printError(linePtr,
+                                            "Expected ',' before quad_perm component");
+                                        goodMod = good = false;
+                                    }
+                                }
+                                else if (linePtr==end || *linePtr!=']')
+                                {   // unterminated quad_perm
+                                    asmr.printError(linePtr, "Unterminated quad_perm");
+                                    goodMod = good = false;
+                                }
+                            }
+                            if (goodMod)
+                            {
+                                extraMods->dppCtrl = quadPerm;
+                                if (haveDppCtrl)
+                                    asmr.printWarning(modPlace,
+                                              "DppCtrl is already defined");
+                                haveDppCtrl = true;
+                            }
                         }
                         else
                         {
@@ -1925,6 +1984,17 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
+                            linePtr++;
+                            cxbyte bankMask = 0;
+                            if (parseImm(asmr, linePtr, bankMask, nullptr, 4, WS_UNSIGNED))
+                            {
+                                if (haveBankMask)
+                                    asmr.printWarning(modPlace,
+                                              "Bank_mask is already defined");
+                                haveBankMask = true;
+                            }
+                            else
+                                good = false;
                         }
                         else
                         {
@@ -1938,6 +2008,17 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
                         {
+                            linePtr++;
+                            cxbyte rowMask = 0;
+                            if (parseImm(asmr, linePtr, rowMask, nullptr, 4, WS_UNSIGNED))
+                            {
+                                if (haveRowMask)
+                                    asmr.printWarning(modPlace,
+                                              "Row_mask is already defined");
+                                haveRowMask = true;
+                            }
+                            else
+                                good = false;
                         }
                         else
                         {
@@ -1947,7 +2028,106 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                     }
                     else if (::strcmp(mod, "bound_ctrl")==0 ||
                         (mod[0]=='b' && mod[1]=='c' && mod[2]==0))
-                        mods |= VOP3_BOUNDCTRL;
+                    {
+                        bool modGood = true;
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            if (linePtr!=end && (*linePtr=='0' || *linePtr=='1'))
+                            {
+                                if (*linePtr=='1')
+                                    mods |= VOP3_BOUNDCTRL;
+                                else // disable
+                                    mods &= ~VOP3_BOUNDCTRL;
+                            }
+                            else
+                            {
+                                asmr.printError(linePtr, "Value must be '0' or '1'");
+                                modGood = good = false;
+                            }
+                        }
+                        else // just enable boundctrl
+                            mods |= VOP3_BOUNDCTRL;
+                        if (modGood)
+                        {   // bound_ctrl is defined
+                            if (haveBoundCtrl)
+                                asmr.printWarning(modPlace, "BoundCtrl is already defined");
+                            haveBoundCtrl = true;
+                        }
+                    }
+                    else if (mod[0]=='r' && mod[0]=='o' && mod[0]=='w' && mod[0]=='_' &&
+                            (::strcmp(mod+4, "shl")==0 || ::strcmp(mod+4, "shr")==0 ||
+                                ::strcmp(mod+4, "ror")==0))
+                    {   //
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            const char* shiftPlace = linePtr;
+                            cxbyte shift = 0;
+                            if (parseImm(asmr, linePtr, shift , nullptr, 4, WS_UNSIGNED))
+                            {
+                                if (shift == 0)
+                                {
+                                    asmr.printError(shiftPlace,
+                                            "Illegal zero shift for row_XXX shift");
+                                    good = false;
+                                    continue;
+                                }
+                                if (haveDppCtrl)
+                                    asmr.printWarning(modPlace,
+                                              "DppCtrl is already defined");
+                                haveDppCtrl = true;
+                                /* retrieve dppCtrl code from mod name:
+                                 * shl - 0, shr - 0x10, ror - 0x20 */
+                                extraMods->dppCtrl = 0x100U | ((mod[4]=='r') ? 0x20 :
+                                    (mod[4]=='s' && mod[6]=='r') ? 0x10 : 0) | shift;
+                            }
+                            else
+                                good = false;
+                        }
+                        else
+                        {
+                            asmr.printError(linePtr, (std::string(
+                                        "Expected ':' before ")+mod).c_str());
+                            good = false;
+                        }
+                    }
+                    else if (memcmp(mod, "wave_", 5)==0 &&
+                        (::strcmp(mod+5, "shl")==0 || ::strcmp(mod+5, "shr")==0 ||
+                            ::strcmp(mod+5, "rol")==0 || ::strcmp(mod+5, "ror")==0))
+                    {
+                        bool modGood = true;
+                        skipSpacesToEnd(linePtr, end);
+                        if (linePtr!=end && *linePtr==':')
+                        {
+                            skipCharAndSpacesToEnd(linePtr, end);
+                            if (linePtr==end || *linePtr!='1')
+                            {
+                                asmr.printError(linePtr, "Value must be '1'");
+                                modGood = good = false;
+                            }
+                        }
+                        if (mod[5]=='s')
+                            extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x30 : 0x34);
+                        else if (mod[5]=='r')
+                            extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x38 : 0x3c);
+                        if (modGood)
+                        {   // dpp_ctrl is defined
+                            if (haveDppCtrl)
+                                asmr.printWarning(modPlace, "DppCtrl is already defined");
+                            haveDppCtrl = true;
+                        }
+                    }
+                    else if (::strcmp(mod, "row_mirror")==0 ||
+                        ::strcmp(mod, "row_half_mirror")==0)
+                    {
+                    }
+                    else if (::strcmp(mod, "row_bcast15")==0 ||
+                        ::strcmp(mod, "row_bcast31")==0 || ::strcmp(mod, "row_bcast")==0)
+                    {
+                    }
                     else
                     {   /// unknown modifier
                         asmr.printError(modPlace, "Unknown VOP modifier");
