@@ -1754,7 +1754,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
             break;
         char mod[6];
         const char* modPlace = linePtr;
-        if (getNameArgS(asmr, 6, mod, linePtr, "modifier"))
+        if (getNameArgS(asmr, 6, mod, linePtr, "VOP modifier"))
         {
             toLowerString(mod);
             try
@@ -2628,8 +2628,8 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
             break;
-        const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        const char* modPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "DS modifier"))
         {
             good = false;
             continue;
@@ -2644,7 +2644,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                 if (parseModImm(asmr, linePtr, offset, &offsetExpr, "offset", WS_UNSIGNED))
                 {
                     if (haveOffset)
-                        asmr.printWarning(attrPlace, "Offset is already defined");
+                        asmr.printWarning(modPlace, "Offset is already defined");
                     haveOffset = true;
                 }
                 else
@@ -2652,7 +2652,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             }
             else
             {
-                asmr.printError(attrPlace, "Expected 'offset'");
+                asmr.printError(modPlace, "Expected 'offset'");
                 good = false;
             }
         }
@@ -2670,7 +2670,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                         if (parseImm(asmr, linePtr, offset1, &offsetExpr, 0, WS_UNSIGNED))
                         {
                             if (haveOffset)
-                                asmr.printWarning(attrPlace, "Offset0 is already defined");
+                                asmr.printWarning(modPlace, "Offset0 is already defined");
                             haveOffset = true;
                         }
                         else
@@ -2681,7 +2681,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                         if (parseImm(asmr, linePtr, offset2, &offset2Expr, 0, WS_UNSIGNED))
                         {
                             if (haveOffset2)
-                                asmr.printWarning(attrPlace, "Offset1 is already defined");
+                                asmr.printWarning(modPlace, "Offset1 is already defined");
                             haveOffset2 = true;
                         }
                         else
@@ -2696,7 +2696,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
             }
             else
             {
-                asmr.printError(attrPlace,
+                asmr.printError(modPlace,
                                 "Expected 'offset', 'offset0' or 'offset1'");
                 good = false;
             }
@@ -2843,14 +2843,17 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     std::unique_ptr<AsmExpression> offsetExpr;
     bool haveAddr64 = false, haveTfe = false, haveSlc = false, haveLds = false;
     bool haveGlc = false, haveOffen = false, haveIdxen = false;
+    const char* modName = (gcnInsn.encoding==GCNENC_MTBUF) ?
+            "MTBUF modifier" : "MUBUF modifier";
+    
     while(linePtr!=end)
     {
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
             break;
         char name[10];
-        const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        const char* modPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, modName))
         {
             good = false;
             continue;
@@ -2867,7 +2870,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                                 12, WS_UNSIGNED))
                 {
                     if (haveOffset)
-                        asmr.printWarning(attrPlace, "Offset is already defined");
+                        asmr.printWarning(modPlace, "Offset is already defined");
                     haveOffset = true;
                 }
                 else
@@ -2875,13 +2878,13 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             }
             else
             {
-                asmr.printError(attrPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
+                asmr.printError(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
                     "Unknown MUBUF modifier" : "Unknown MTBUF modifier");
             }
         }
         else if (gcnInsn.encoding==GCNENC_MTBUF && ::strcmp(name, "format")==0)
         {   // parse format
-            bool attrGood = true;
+            bool modGood = true;
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=':')
             {
@@ -2892,10 +2895,10 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             skipCharAndSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!='[')
             {
-                asmr.printError(attrPlace, "Expected '[' before format");
-                attrGood = good = false;
+                asmr.printError(modPlace, "Expected '[' before format");
+                modGood = good = false;
             }
-            if (attrGood)
+            if (modGood)
             {
                 skipCharAndSpacesToEnd(linePtr, end);
                 const char* fmtPlace = linePtr;
@@ -2925,12 +2928,12 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                         else
                         {
                             asmr.printError(fmtPlace, "Unknown data/number format");
-                            attrGood = good = false;
+                            modGood = good = false;
                         }
                     }
                 }
                 else
-                    attrGood = good = false;
+                    modGood = good = false;
                 
                 skipSpacesToEnd(linePtr, end);
                 if (!haveNFMT && linePtr!=end && *linePtr==',')
@@ -2948,10 +2951,10 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                     asmr.printError(linePtr, "Unterminated format modifier");
                     good = false;
                 }
-                if (attrGood)
+                if (modGood)
                 {
                     if (haveFormat)
-                        asmr.printWarning(attrPlace, "Format is already defined");
+                        asmr.printWarning(modPlace, "Format is already defined");
                     haveFormat = true;
                 }
             }
@@ -2970,7 +2973,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             haveIdxen = true;
         else
         {
-            asmr.printError(attrPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
+            asmr.printError(modPlace, (gcnInsn.encoding==GCNENC_MUBUF) ? 
                     "Unknown MUBUF modifier" : "Unknown MTBUF modifier");
             good = false;
         }
@@ -3085,8 +3088,8 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (linePtr==end)
             break;
         char name[10];
-        const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        const char* modPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "MIMG modifier"))
         {
             good = false;
             continue;
@@ -3109,7 +3112,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     if (getAbsoluteValueArg(asmr, value, linePtr, true))
                     {
                         if (haveDMask)
-                            asmr.printWarning(attrPlace, "Dmask is already defined");
+                            asmr.printWarning(modPlace, "Dmask is already defined");
                         haveDMask = true;
                         if (value>0xf)
                             asmr.printWarning(valuePlace, "Dmask out of range (0-15)");
@@ -3131,7 +3134,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             }
             else
             {
-                asmr.printError(attrPlace, "Unknown MIMG modifier");
+                asmr.printError(modPlace, "Unknown MIMG modifier");
                 good = false;
             }
         }
@@ -3145,7 +3148,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 haveR128 = true;
             else
             {
-                asmr.printError(attrPlace, "Unknown MIMG modifier");
+                asmr.printError(modPlace, "Unknown MIMG modifier");
                 good = false;
             }
         }
@@ -3157,7 +3160,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             haveUnorm = true;
         else
         {
-            asmr.printError(attrPlace, "Unknown MIMG modifier");
+            asmr.printError(modPlace, "Unknown MIMG modifier");
             good = false;
         }
     }
@@ -3310,8 +3313,8 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
             break;
-        const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        const char* modPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "EXP modifier"))
         {
             good = false;
             continue;
@@ -3325,7 +3328,7 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
             haveCompr = true;
         else
         {
-            asmr.printError(attrPlace, "Unknown EXP modifier");
+            asmr.printError(modPlace, "Unknown EXP modifier");
             good = false;
         }
     }
@@ -3410,8 +3413,8 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (linePtr==end)
             break;
         char name[10];
-        const char* attrPlace = linePtr;
-        if (!getNameArgS(asmr, 10, name, linePtr, "modifier"))
+        const char* modPlace = linePtr;
+        if (!getNameArgS(asmr, 10, name, linePtr, "FLAT modifier"))
         {
             good = false;
             continue;
@@ -3424,7 +3427,7 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             haveSlc = true;
         else
         {
-            asmr.printError(attrPlace, "Unknown FLAT modifier");
+            asmr.printError(modPlace, "Unknown FLAT modifier");
             good = false;
         }
     }

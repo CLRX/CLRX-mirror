@@ -583,10 +583,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:29: Error: Expected ',' before argument\n" },
     { "    v_add_f32  v154, v21, v107 mul,", 0, 0, false, false,
         "test.s:1:35: Error: Expected ':' before multiplier number\n"
-        "test.s:1:35: Error: Some garbages at modifier place\n" },
+        "test.s:1:35: Error: Some garbages at VOP modifier place\n" },
     { "    v_add_f32  v154, v21, v107 div,", 0, 0, false, false,
         "test.s:1:35: Error: Expected ':' before divider number\n"
-        "test.s:1:35: Error: Some garbages at modifier place\n" },
+        "test.s:1:35: Error: Some garbages at VOP modifier place\n" },
     /* VOP2 in VOP3 errors */
     { "    v_add_f32  v154, v21, v107 mul:3", 0, 0, false, false,
         "test.s:1:32: Error: Unknown VOP3 mul:X modifier\n" },
@@ -708,7 +708,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_i32  v55, s[10:11], s27, abs(v90)", 0, 0, false, false,
         "test.s:1:39: Error: Expected operator\n"
         "test.s:1:40: Error: Unknown VOP modifier\n"
-        "test.s:1:43: Error: Some garbages at modifier place\n" },
+        "test.s:1:43: Error: Some garbages at VOP modifier place\n" },
     { "    v_add_i32  v55, s[10:11], abs(s27), v90", 0, 0, false, false,
         "test.s:1:34: Error: Expected operator\n"
         "test.s:1:35: Error: Expected ',' before argument\n" },
@@ -1602,7 +1602,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   v_div_scale_f32  v55, s[38:39], v79, v166, v99", 0, 0, false, false,
         "test.s:1:4: Error: First source must be equal to second or third source\n" },
     { "   v_mad_legacy_f32 v55, v79, v166, v229 clamp ,", 0, 0, false, false,
-        "test.s:1:48: Error: Some garbages at modifier place\n" },
+        "test.s:1:48: Error: Some garbages at VOP modifier place\n" },
     /* VOP3 instructions */
     { "   v_mad_f32  v55, v79, v166, v229", 0xd2820037U, 0x07974d4fU, true, true, "" },
     { "   v_mad_i32_i24  v55, v79, v166, v229", 0xd2840037U, 0x07974d4fU, true, true, "" },
@@ -1746,13 +1746,13 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* DS errors */
     { "   ds_add_u32  v71, v169 xdff:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
-        "test.s:1:30: Error: Some garbages at modifier place\n" },
+        "test.s:1:30: Error: Some garbages at DS modifier place\n" },
     { "   ds_add_u32  v71, v169 offset0:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
-        "test.s:1:33: Error: Some garbages at modifier place\n" },
+        "test.s:1:33: Error: Some garbages at DS modifier place\n" },
     { "   ds_add_u32  v71, v169 offset1:5444", 0, 0, false, false,
         "test.s:1:26: Error: Expected 'offset'\n"
-        "test.s:1:33: Error: Some garbages at modifier place\n" },
+        "test.s:1:33: Error: Some garbages at DS modifier place\n" },
     { "   ds_wrxchg2st64_rtn_b64 v139, v[71:72], v169, v86"
       " offset0:103 offset1:205", 0, 0, false, false,
         "test.s:1:27: Error: Required 2 vector registers\n"
@@ -1762,29 +1762,29 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset2:103 "
         "offsetx:205 offset:3221 oxxs", 0, 0, false, false,
         "test.s:1:65: Error: Expected 'offset', 'offset0' or 'offset1'\n"
-        "test.s:1:72: Error: Some garbages at modifier place\n"
+        "test.s:1:72: Error: Some garbages at DS modifier place\n"
         "test.s:1:77: Error: Expected 'offset', 'offset0' or 'offset1'\n"
-        "test.s:1:84: Error: Some garbages at modifier place\n"
+        "test.s:1:84: Error: Some garbages at DS modifier place\n"
         "test.s:1:89: Error: Expected 'offset', 'offset0' or 'offset1'\n"
-        "test.s:1:95: Error: Some garbages at modifier place\n"
+        "test.s:1:95: Error: Some garbages at DS modifier place\n"
         "test.s:1:101: Error: Expected 'offset', 'offset0' or 'offset1'\n" },
     { "   ds_xor_b64  v71, v[169:170], v3 offset:52583", 0, 0, false, false,
-        "test.s:1:31: Error: Some garbages at modifier place\n"
+        "test.s:1:31: Error: Some garbages at DS modifier place\n"
         "test.s:1:33: Error: Expected 'offset'\n" },
     { "   ds_gws_init  v71 offset:52583", 0, 0, false, false,
         "test.s:1:4: Error: Instruction requires GDS modifier\n" },
     { "   ds_add_u32  v71, v169 offset:,", 0, 0, false, false,
         "test.s:1:33: Error: Expected expression\n"
-        "test.s:1:33: Error: Some garbages at modifier place\n" },
+        "test.s:1:33: Error: Some garbages at DS modifier place\n" },
     { "   ds_add_u32  v71, v169 offset,", 0, 0, false, false,
         "test.s:1:32: Error: Expected ':' before offset\n"
-        "test.s:1:32: Error: Some garbages at modifier place\n" },
+        "test.s:1:32: Error: Some garbages at DS modifier place\n" },
     { "   ds_write2_b32  v71, v169, v39 offset0, offset1,",
         0, 0, false, false,
         "test.s:1:41: Error: Expected ':' before offset\n"
-        "test.s:1:41: Error: Some garbages at modifier place\n"
+        "test.s:1:41: Error: Some garbages at DS modifier place\n"
         "test.s:1:50: Error: Expected ':' before offset\n"
-        "test.s:1:50: Error: Some garbages at modifier place\n" },
+        "test.s:1:50: Error: Some garbages at DS modifier place\n" },
     /* DS instructions */
     { "   ds_sub_u32  v71, v169 offset:52583", 0xd804cd67U, 0x0000a947U, true, true, "" },
     { "   ds_rsub_u32 v71, v169 offset:52583", 0xd808cd67U, 0x0000a947U, true, true, "" },
@@ -2043,7 +2043,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:5: Error: Idxen and offen must be zero in 64-bit address mode\n" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset,", 0, 0, false, false,
         "test.s:1:57: Error: Expected ':' before offset\n"
-        "test.s:1:57: Error: Some garbages at modifier place\n" },
+        "test.s:1:57: Error: Some garbages at MUBUF modifier place\n" },
     { "    buffer_load_format_x  v[61:63], v[18:20], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0, 0, false, false,
         "test.s:1:27: Error: Required 2 vector registers\n"
