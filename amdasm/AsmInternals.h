@@ -201,10 +201,15 @@ struct GCNOperand {
 
 struct VOPExtraModifiers
 {
-    cxbyte dstSelUnused;
-    cxbyte src01Sel;
-    cxbyte bankRowMask;
-    uint16_t dppCtrl;
+    cxuint dstSel:3;
+    cxuint dstUnused:2;
+    cxuint src0Sel:3;
+    cxuint src1Sel:3;
+    cxuint bankMask:4;
+    cxuint rowMask:4;
+    cxuint dppCtrl:9;
+    cxuint needSDWA:1;
+    cxuint needDPP:1;
 };
 
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils

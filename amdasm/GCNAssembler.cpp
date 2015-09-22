@@ -1747,6 +1747,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     bool haveBankMask = false, haveRowMask = false;
     bool haveBoundCtrl = false, haveDppCtrl = false;
     
+    if (extraMods!=nullptr)
+        *extraMods = { 6, 0, 6, 6, 0, 0, 0x100 };
+    
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;
     bool good = true;
@@ -1841,8 +1844,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             if (getEnumeration(asmr, linePtr, "dst_sel", 6,
                                         vopSDWADSTSelNamesMap, dstSel))
                             {
-                                extraMods->dstSelUnused =
-                                        (extraMods->dstSelUnused&~7) | dstSel;
+                                extraMods->dstSel = dstSel;
                                 if (haveDstSel)
                                     asmr.printWarning(modPlace,
                                               "Dst_sel is already defined");
@@ -1879,8 +1881,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                     asmr.printError(enumPlace, "Unknown dst_unused");
                                     good = false;
                                 }
-                                extraMods->dstSelUnused = (extraMods->dstSelUnused&0xf8) |
-                                        (unused<<3);
+                                extraMods->dstUnused = unused;
                                 if (haveDstUnused)
                                     asmr.printWarning(modPlace,
                                                       "Dst_unused is already defined");
@@ -1905,8 +1906,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             if (getEnumeration(asmr, linePtr, "src0_sel", 6,
                                         vopSDWADSTSelNamesMap, src0Sel))
                             {
-                                extraMods->dstSelUnused = (extraMods->src01Sel&~7) |
-                                            src0Sel;
+                                extraMods->src0Sel = src0Sel;
                                 if (haveSrc0Sel)
                                     asmr.printWarning(modPlace,
                                                       "Src0_sel is already defined");
@@ -1931,8 +1931,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             if (getEnumeration(asmr, linePtr, "src1_sel", 6,
                                         vopSDWADSTSelNamesMap, src1Sel))
                             {
-                                extraMods->dstSelUnused = (extraMods->src01Sel&~0x70) |
-                                            (src1Sel<<4);
+                                extraMods->src1Sel = src1Sel;
                                 if (haveSrc1Sel)
                                     asmr.printWarning(modPlace,
                                                       "Src1_sel is already defined");
@@ -2025,6 +2024,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             cxbyte bankMask = 0;
                             if (parseImm(asmr, linePtr, bankMask, nullptr, 4, WS_UNSIGNED))
                             {
+                                extraMods->bankMask = bankMask;
                                 if (haveBankMask)
                                     asmr.printWarning(modPlace,
                                               "Bank_mask is already defined");
@@ -2049,6 +2049,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             cxbyte rowMask = 0;
                             if (parseImm(asmr, linePtr, rowMask, nullptr, 4, WS_UNSIGNED))
                             {
+                                extraMods->bankMask = rowMask;
                                 if (haveRowMask)
                                     asmr.printWarning(modPlace,
                                               "Row_mask is already defined");
@@ -2233,6 +2234,12 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     bool vopSDWA = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
     bool vopDPP = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
     bool vop3 = (mods & 3)!=0;
+    if (extraMods!=nullptr)
+    {
+        extraMods->needSDWA = vopSDWA;
+        extraMods->needDPP = vopDPP;
+    }
+        
     if ((int(vop3)+vopSDWA+vopDPP)>1 || ((mods&VOP3_CLAMP)!=0 && vopDPP))
     {
         asmr.printError(modsPlace, "Mixing modifiers from different encodings is illegal");
@@ -2316,7 +2323,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // modifiers
     cxbyte modifiers = 0;
-    good &= parseVOPModifiers(asmr, linePtr, modifiers, nullptr,
+    VOPExtraModifiers extraMods;
+    good &= parseVOPModifiers(asmr, linePtr, modifiers, (isGCN12) ? &extraMods : nullptr,
                               !(haveDstCC || haveSrcCC));
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -2343,10 +2351,21 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     }
     
-    if (vop3 && (src0Op.range.start==255 || src1Op.range.start==255 ||
-            mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM))
+    const bool needImm = (src0Op.range.start==255 || src1Op.range.start==255 ||
+             mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
+    if (vop3 && needImm)
     {
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
+        return;
+    }
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP) && needImm)
+    {
+        asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+        return;
+    }
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP) && src0Op.range.start < 256)
+    {
+        asmr.printError(instrPlace, "SRC0 must be a vector register with SDWA or DPP word");
         return;
     }
     
