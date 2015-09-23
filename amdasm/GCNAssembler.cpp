@@ -1884,9 +1884,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                 cxbyte unused = 0;
                                 if (::strcmp(name+namePos, "sext")==0)
                                     unused = 1;
-                                else if (::strcmp(name+namePos, "preserve")!=0)
+                                else if (::strcmp(name+namePos, "preserve")==0)
                                     unused = 2;
-                                else if (::strcmp(name+namePos, "pad")==0)
+                                else if (::strcmp(name+namePos, "pad")!=0)
                                 {
                                     asmr.printError(enumPlace, "Unknown dst_unused");
                                     good = false;
@@ -1974,9 +1974,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                 continue;
                             }
                             cxbyte quadPerm = 0;
+                            linePtr++;
                             for (cxuint k = 0; k < 4; k++)
                             {
-                                skipCharAndSpacesToEnd(linePtr, end);
+                                skipSpacesToEnd(linePtr, end);
                                 try
                                 {
                                     cxbyte qpv = cstrtobyte(linePtr, end);
@@ -2003,16 +2004,19 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                             "Expected ',' before quad_perm component");
                                         goodMod = good = false;
                                     }
+                                    else
+                                        ++linePtr;
                                 }
                                 else if (linePtr==end || *linePtr!=']')
                                 {   // unterminated quad_perm
                                     asmr.printError(linePtr, "Unterminated quad_perm");
                                     goodMod = good = false;
                                 }
+                                else
+                                    ++linePtr;
                             }
                             if (goodMod)
                             {
-                                ++linePtr;
                                 extraMods->dppCtrl = quadPerm;
                                 if (haveDppCtrl)
                                     asmr.printWarning(modPlace,
@@ -2249,7 +2253,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     }
     bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
     bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
-    bool vop3 = (mods & 3)!=0;
+    bool vop3 = (mods & (3|VOP3_VOP3))!=0;
     if (extraMods!=nullptr)
     {
         extraMods->needSDWA = vopSDWA;
