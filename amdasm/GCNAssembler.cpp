@@ -2371,6 +2371,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
+    if (isGCN12 && vop3 && (haveDstCC || haveSrcCC) &&
+            ((src0Op.vopMods|src1Op.vopMods) & VOPOPFLAG_ABS) != 0)
+    {
+        asmr.printError(instrPlace, "Abs modifier is illegal for VOP3B encoding");
+        return;
+    }
     
     const bool needImm = (src0Op.range.start==255 || src1Op.range.start==255 ||
              mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
@@ -2395,8 +2401,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
         if (vop3)
         {   // if VOP3 and (VOP_DPP or VOP_SDWA)
-            asmr.printError(instrPlace,
-                    "Mixing modifiers from different encodings is illegal");
+            asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
             good = false;
         }
         if (sextFlags & extraMods.needDPP)
