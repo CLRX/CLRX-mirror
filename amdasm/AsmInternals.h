@@ -191,7 +191,7 @@ struct RegRange
 struct GCNOperand {
     RegRange range;
     uint32_t value;
-    cxbyte vop3Mods;
+    cxbyte vopMods;
     
     bool operator!() const
     { return !range; }

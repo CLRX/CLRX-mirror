@@ -662,7 +662,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     const char* end = asmr.line+asmr.lineSize;
     if (instrOpMask & INSTROP_VOP3MODS)
     {
-        operand.vop3Mods = 0;
+        operand.vopMods = 0;
         skipSpacesToEnd(linePtr, end);
         if (linePtr!=end && *linePtr=='@') // treat this operand as expression
             return parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
@@ -676,7 +676,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr=='(')
             {
-                operand.vop3Mods |= VOPOPFLAG_SEXT;
+                operand.vopMods |= VOPOPFLAG_SEXT;
                 ++linePtr;
             }
             else
@@ -689,7 +689,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         const char* negPlace = linePtr;
         if (linePtr!=end && *linePtr=='-')
         {
-            operand.vop3Mods |= VOPOPFLAG_NEG;
+            operand.vopMods |= VOPOPFLAG_NEG;
             skipCharAndSpacesToEnd(linePtr, end);
         }
         if (linePtr+3 <= end && toLower(linePtr[0])=='a' &&
@@ -699,7 +699,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr=='(')
             {
-                operand.vop3Mods |= VOPOPFLAG_ABS;
+                operand.vopMods |= VOPOPFLAG_ABS;
                 ++linePtr;
             }
             else
@@ -710,7 +710,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
         
         bool good;
-        if ((operand.vop3Mods&(VOPOPFLAG_NEG|VOPOPFLAG_ABS)) != VOPOPFLAG_NEG)
+        if ((operand.vopMods&(VOPOPFLAG_NEG|VOPOPFLAG_ABS)) != VOPOPFLAG_NEG)
             good = parseOperand(asmr, linePtr, operand, outTargetExpr, arch, regsNum,
                                      instrOpMask & ~INSTROP_VOP3MODS);
         else //
@@ -720,7 +720,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                              (instrOpMask & ~INSTROP_VOP3MODS) | INSTROP_PARSEWITHNEG);
         }
         
-        if (operand.vop3Mods & VOPOPFLAG_ABS)
+        if (operand.vopMods & VOPOPFLAG_ABS)
         {
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr==')')
@@ -731,7 +731,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 return false;
             }
         }
-        if (operand.vop3Mods & VOPOPFLAG_SEXT)
+        if (operand.vopMods & VOPOPFLAG_SEXT)
         {
             skipSpacesToEnd(linePtr, end);
             if (linePtr!=end && *linePtr==')')
@@ -747,14 +747,14 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     skipSpacesToEnd(linePtr, end);
     const char* negPlace = linePtr;
     if (instrOpMask & INSTROP_VOP3NEG)
-        operand.vop3Mods = 0; // clear modifier (VOP3NEG)
+        operand.vopMods = 0; // clear modifier (VOP3NEG)
         /// PARSEWITHNEG used to continuing operand parsing with modifiers
     if (instrOpMask & (INSTROP_PARSEWITHNEG|INSTROP_VOP3NEG))
     {
         if (linePtr!=end && *linePtr=='-')
         {
             skipCharAndSpacesToEnd(linePtr, end);
-            operand.vop3Mods |= VOPOPFLAG_NEG;
+            operand.vopMods |= VOPOPFLAG_NEG;
         }
     }
     
@@ -832,7 +832,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         const char* exprPlace = linePtr;
         
         uint64_t value;
-        operand.vop3Mods = 0; // zeroing operand modifiers
+        operand.vopMods = 0; // zeroing operand modifiers
         if (!forceExpression && isOnlyFloat(negPlace, end))
         {   // if only floating point value
             /* if floating point literal can be processed */
@@ -992,7 +992,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         // not in range
         asmr.printWarningForRange(32, value, asmr.getSourcePos(regNamePlace));
-        operand = { { 255, 0 }, uint32_t(value), operand.vop3Mods };
+        operand = { { 255, 0 }, uint32_t(value), operand.vopMods };
         return true;
     }
     
@@ -1726,6 +1726,10 @@ static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
     { "b1", 1 },
     { "b2", 2 },
     { "b3", 3 },
+    { "byte0", 0 },
+    { "byte1", 1 },
+    { "byte2", 2 },
+    { "byte3", 3 },
     { "byte_0", 0 },
     { "byte_1", 1 },
     { "byte_2", 2 },
@@ -1733,9 +1737,14 @@ static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
     { "dword", 6 },
     { "w0", 4 },
     { "w1", 5 },
+    { "word0", 4 },
+    { "word1", 5 },
     { "word_0", 4 },
     { "word_1", 5 }
 };
+
+static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
+            sizeof(std::pair<const char*, cxuint>);
 
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
                 VOPExtraModifiers* extraMods, bool withClamp, bool withVOPSDWA_DPP)
@@ -1748,7 +1757,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     bool haveBoundCtrl = false, haveDppCtrl = false;
     
     if (extraMods!=nullptr)
-        *extraMods = { 6, 0, 6, 6, 0, 0, 0x100 };
+        *extraMods = { 6, 0, 6, 6, 0, 0, 0xe4, false, false };
     
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;
@@ -1759,9 +1768,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end)
             break;
-        char mod[6];
+        char mod[20];
         const char* modPlace = linePtr;
-        if (getNameArgS(asmr, 6, mod, linePtr, "VOP modifier"))
+        if (getNameArgS(asmr, 20, mod, linePtr, "VOP modifier"))
         {
             toLowerString(mod);
             try
@@ -1841,7 +1850,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         {
                             linePtr++;
                             cxuint dstSel = 0;
-                            if (getEnumeration(asmr, linePtr, "dst_sel", 6,
+                            if (getEnumeration(asmr, linePtr, "dst_sel",
+                                        vopSDWADSTSelNamesNum,
                                         vopSDWADSTSelNamesMap, dstSel))
                             {
                                 extraMods->dstSel = dstSel;
@@ -1903,7 +1913,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         {
                             linePtr++;
                             cxuint src0Sel = 0;
-                            if (getEnumeration(asmr, linePtr, "src0_sel", 6,
+                            if (getEnumeration(asmr, linePtr, "src0_sel",
+                                        vopSDWADSTSelNamesNum,
                                         vopSDWADSTSelNamesMap, src0Sel))
                             {
                                 extraMods->src0Sel = src0Sel;
@@ -1928,7 +1939,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         {
                             linePtr++;
                             cxuint src1Sel = 0;
-                            if (getEnumeration(asmr, linePtr, "src1_sel", 6,
+                            if (getEnumeration(asmr, linePtr, "src1_sel",
+                                        vopSDWADSTSelNamesNum,
                                         vopSDWADSTSelNamesMap, src1Sel))
                             {
                                 extraMods->src1Sel = src1Sel;
@@ -1954,7 +1966,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         {
                             bool goodMod = true;
                             skipCharAndSpacesToEnd(linePtr, end);
-                            if (linePtr==end || *linePtr!=':')
+                            if (linePtr==end || *linePtr!='[')
                             {
                                 asmr.printError(linePtr,
                                         "Expected '[' before quad_perm list");
@@ -1962,15 +1974,14 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                 continue;
                             }
                             cxbyte quadPerm = 0;
-                            skipCharAndSpacesToEnd(linePtr, end);
                             for (cxuint k = 0; k < 4; k++)
                             {
-                                cxbyte qpMask = (3<<(k<<1));
+                                skipCharAndSpacesToEnd(linePtr, end);
                                 try
                                 {
                                     cxbyte qpv = cstrtobyte(linePtr, end);
                                     if (qpv<4)
-                                        quadPerm |= qpv&qpMask;
+                                        quadPerm |= qpv<<(k<<1);
                                     else
                                     {
                                         asmr.printError(linePtr,
@@ -2001,6 +2012,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             }
                             if (goodMod)
                             {
+                                ++linePtr;
                                 extraMods->dppCtrl = quadPerm;
                                 if (haveDppCtrl)
                                     asmr.printWarning(modPlace,
@@ -2049,7 +2061,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             cxbyte rowMask = 0;
                             if (parseImm(asmr, linePtr, rowMask, nullptr, 4, WS_UNSIGNED))
                             {
-                                extraMods->bankMask = rowMask;
+                                extraMods->rowMask = rowMask;
                                 if (haveRowMask)
                                     asmr.printWarning(modPlace,
                                               "Row_mask is already defined");
@@ -2078,6 +2090,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                     mods |= VOP3_BOUNDCTRL;
                                 else // disable
                                     mods &= ~VOP3_BOUNDCTRL;
+                                linePtr++;
                             }
                             else
                             {
@@ -2092,9 +2105,10 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             if (haveBoundCtrl)
                                 asmr.printWarning(modPlace, "BoundCtrl is already defined");
                             haveBoundCtrl = true;
+                            extraMods->needDPP = true;
                         }
                     }
-                    else if (mod[0]=='r' && mod[0]=='o' && mod[0]=='w' && mod[0]=='_' &&
+                    else if (mod[0]=='r' && mod[1]=='o' && mod[2]=='w' && mod[3]=='_' &&
                             (::strcmp(mod+4, "shl")==0 || ::strcmp(mod+4, "shr")==0 ||
                                 ::strcmp(mod+4, "ror")==0))
                     {   //
@@ -2141,16 +2155,18 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         if (linePtr!=end && *linePtr==':')
                         {
                             skipCharAndSpacesToEnd(linePtr, end);
-                            if (linePtr==end || *linePtr!='1')
+                            if (linePtr!=end && *linePtr=='1')
+                                ++linePtr;
+                            else
                             {
                                 asmr.printError(linePtr, "Value must be '1'");
                                 modGood = good = false;
                             }
                         }
                         if (mod[5]=='s')
-                            extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x30 : 0x34);
+                            extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x30 : 0x38);
                         else if (mod[5]=='r')
-                            extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x38 : 0x3c);
+                            extraMods->dppCtrl = 0x100 | ((mod[7]=='l') ? 0x34 : 0x3c);
                         if (modGood)
                         {   // dpp_ctrl is defined
                             if (haveDppCtrl)
@@ -2172,9 +2188,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                     {
                         bool modGood = true;
                         if (mod[9] =='1')
-                            extraMods->dppCtrl = 142;
+                            extraMods->dppCtrl = 0x142;
                         else if (mod[9] =='3')
-                            extraMods->dppCtrl = 143;
+                            extraMods->dppCtrl = 0x143;
                         else
                         { // get number
                             skipSpacesToEnd(linePtr, end);
@@ -2184,9 +2200,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                 const char* numPlace = linePtr;
                                 cxbyte value = cstrtobyte(linePtr, end);
                                 if (value == 31)
-                                    extraMods->dppCtrl = 143;
+                                    extraMods->dppCtrl = 0x143;
                                 else if (value == 15)
-                                    extraMods->dppCtrl = 142;
+                                    extraMods->dppCtrl = 0x142;
                                 else
                                 {
                                     asmr.printError(numPlace, "Thread to broadcast must be"
@@ -2231,8 +2247,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
         else
             good = false;
     }
-    bool vopSDWA = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
-    bool vopDPP = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
+    bool vopSDWA = (haveDstSel || haveDstUnused || haveSrc0Sel || haveSrc1Sel);
+    bool vopDPP = (haveDppCtrl || haveBoundCtrl || haveBankMask || haveRowMask);
     bool vop3 = (mods & 3)!=0;
     if (extraMods!=nullptr)
     {
@@ -2323,19 +2339,20 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     // modifiers
     cxbyte modifiers = 0;
-    VOPExtraModifiers extraMods;
+    VOPExtraModifiers extraMods{};
     good &= parseVOPModifiers(asmr, linePtr, modifiers, (isGCN12) ? &extraMods : nullptr,
-                              !(haveDstCC || haveSrcCC));
+                              !(haveDstCC || haveSrcCC) || isGCN12);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    const bool vop3 = /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
+    bool vop3 = /* src1=sgprs and not (DS1_SGPR|src1_SGPR) */
         ((src1Op.range.start<256) ^ sgprRegInSrc1) ||
-        src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0 ||
+        (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
+        (modifiers&(~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0))))!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
         (haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106);
     
-    cxuint maxSgprsNum = (isGCN12)?102:104;
+    const cxuint maxSgprsNum = (isGCN12)?102:104;
     
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
         (src0Op.range.start<maxSgprsNum || src0Op.range.start==124 ||
@@ -2358,16 +2375,39 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
     }
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP) && needImm)
-    {
-        asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
-        return;
+    bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOPFLAG_SEXT);
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
+    {   /* if VOP_SDWA or VOP_DPP is required */
+        if (needImm)
+        {
+            asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+            good = false;
+        }
+        if (src0Op.range.start < 256)
+        {
+            asmr.printError(instrPlace, "SRC0 must be a vector register with "
+                        "SDWA or DPP word");
+            good = false;
+        }
+        if (vop3)
+        {   // if VOP3 and (VOP_DPP or VOP_SDWA)
+            asmr.printError(instrPlace,
+                    "Mixing modifiers from different encodings is illegal");
+            good = false;
+        }
+        if (sextFlags & extraMods.needDPP)
+        {
+            asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
+            good = false;
+        }
+        if (!good)
+            return;
+        if (!extraMods.needSDWA && !extraMods.needDPP)
+            extraMods.needSDWA = true; // by default we choose SDWA word
     }
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP) && src0Op.range.start < 256)
-    {
-        asmr.printError(instrPlace, "SRC0 must be a vector register with SDWA or DPP word");
-        return;
-    }
+    else if (isGCN12 && !sextFlags)
+        // if all pass we check we promote VOP3 if only operand modifiers expect sext()
+        vop3 = true;
     
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
@@ -2383,14 +2423,44 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     if (!vop3)
     {   // VOP2 encoding
-        SLEV(words[0], (uint32_t(gcnInsn.code1)<<25) | uint32_t(src0Op.range.start) |
+        cxuint src0out = src0Op.range.start;
+        if (extraMods.needSDWA)
+            src0out = 0xf9;
+        else if (extraMods.needDPP)
+            src0out = 0xfa;
+        SLEV(words[0], (uint32_t(gcnInsn.code1)<<25) | src0out |
             (uint32_t(src1Op.range.start&0xff)<<9) | (uint32_t(dstReg.start&0xff)<<17));
-        if (src0Op.range.start==255)
-            SLEV(words[wordsNum++], src0Op.value);
-        else if (src1Op.range.start==255)
-            SLEV(words[wordsNum++], src1Op.value);
-        else if (mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM)
-            SLEV(words[wordsNum++], immValue);
+        if (extraMods.needSDWA)
+            SLEV(words[wordsNum++], (src0Op.range.start&0xff) |
+                    (uint32_t(extraMods.dstSel)<<8) |
+                    (uint32_t(extraMods.dstUnused)<<11) |
+                    ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
+                    (uint32_t(extraMods.src0Sel)<<16) |
+                    ((src0Op.vopMods&VOPOPFLAG_SEXT) ? (1U<<19) : 0) |
+                    ((src0Op.vopMods&VOPOPFLAG_NEG) ? (1U<<20) : 0) |
+                    ((src0Op.vopMods&VOPOPFLAG_ABS) ? (1U<<21) : 0) |
+                    (uint32_t(extraMods.src1Sel)<<24) |
+                    ((src1Op.vopMods&VOPOPFLAG_SEXT) ? (1U<<27) : 0) |
+                    ((src1Op.vopMods&VOPOPFLAG_NEG) ? (1U<<28) : 0) |
+                    ((src1Op.vopMods&VOPOPFLAG_ABS) ? (1U<<29) : 0));
+        else if (extraMods.needDPP)
+            SLEV(words[wordsNum++], (src0Op.range.start&0xff) | (extraMods.dppCtrl<<8) | 
+                    ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
+                    ((src0Op.vopMods&VOPOPFLAG_NEG) ? (1U<<20) : 0) |
+                    ((src0Op.vopMods&VOPOPFLAG_ABS) ? (1U<<21) : 0) |
+                    ((src1Op.vopMods&VOPOPFLAG_NEG) ? (1U<<22) : 0) |
+                    ((src1Op.vopMods&VOPOPFLAG_ABS) ? (1U<<23) : 0) |
+                    (uint32_t(extraMods.bankMask)<<24) |
+                    (uint32_t(extraMods.rowMask)<<28));
+        else
+        {   // otherwise we check for immediate/literal value
+            if (src0Op.range.start==255)
+                SLEV(words[wordsNum++], src0Op.value);
+            else if (src1Op.range.start==255)
+                SLEV(words[wordsNum++], src1Op.value);
+            else if (mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM)
+                SLEV(words[wordsNum++], immValue);
+        }
     }
     else
     {   // VOP3 encoding
@@ -2400,12 +2470,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         else
             SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
                 (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-                ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
-                ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0));
+                ((src0Op.vopMods & VOPOPFLAG_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOPFLAG_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
             (uint32_t(srcCCReg.start)<<18) | ((modifiers & 3) << 27) |
-            ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
-            ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
+            ((src0Op.vopMods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
+            ((src1Op.vopMods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
         wordsNum++;
     }
     
@@ -2459,7 +2529,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    if ((src0Op.vop3Mods!=0 || modifiers!=0) && src0Op.range.start==255)
+    if ((src0Op.vopMods!=0 || modifiers!=0) && src0Op.range.start==255)
     {
         asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
         return;
@@ -2471,7 +2541,7 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     cxuint wordsNum = 1;
     uint32_t words[2];
-    if (!(src0Op.vop3Mods!=0 || modifiers!=0))
+    if (!(src0Op.vopMods!=0 || modifiers!=0))
     {   // VOP1 encoding
         SLEV(words[0], 0x7e000000U | (uint32_t(gcnInsn.code1)<<9) |
             uint32_t(src0Op.range.start) | (uint32_t(dstReg.start&0xff)<<17));
@@ -2482,9 +2552,9 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {   // VOP3 encoding
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
             (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-            ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0));
+            ((src0Op.vopMods & VOPOPFLAG_ABS) ? 0x100 : 0));
         SLEV(words[1], src0Op.range.start | ((modifiers & 3) << 27) |
-            ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0));
+            ((src0Op.vopMods & VOPOPFLAG_NEG) ? (1U<<29) : 0));
         wordsNum++;
     }
     
@@ -2536,7 +2606,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     const bool vop3 = (dstReg.start!=106) || (src1Op.range.start<256) ||
-        src0Op.vop3Mods!=0 || src1Op.vop3Mods!=0 || modifiers!=0;
+        src0Op.vopMods!=0 || src1Op.vopMods!=0 || modifiers!=0;
     
     cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
@@ -2581,11 +2651,11 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     {   // VOP3 encoding
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
             (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-            ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
-            ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0));
+            ((src0Op.vopMods & VOPOPFLAG_ABS) ? 0x100 : 0) |
+            ((src1Op.vopMods & VOPOPFLAG_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
-            ((modifiers & 3) << 27) | ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
-            ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
+            ((modifiers & 3) << 27) | ((src0Op.vopMods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
+            ((src1Op.vopMods & VOPOPFLAG_NEG) ? (1U<<30) : 0));
         wordsNum++;
     }
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
@@ -2694,14 +2764,14 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     else // VOP3A
         SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
             (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-            ((src0Op.vop3Mods & VOPOPFLAG_ABS) ? 0x100 : 0) |
-            ((src1Op.vop3Mods & VOPOPFLAG_ABS) ? 0x200 : 0) |
-            ((src2Op.vop3Mods & VOPOPFLAG_ABS) ? 0x400 : 0));
+            ((src0Op.vopMods & VOPOPFLAG_ABS) ? 0x100 : 0) |
+            ((src1Op.vopMods & VOPOPFLAG_ABS) ? 0x200 : 0) |
+            ((src2Op.vopMods & VOPOPFLAG_ABS) ? 0x400 : 0));
     SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
         (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
-        ((src0Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
-        ((src1Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<30) : 0) |
-        ((src2Op.vop3Mods & VOPOPFLAG_NEG) ? (1U<<31) : 0));
+        ((src0Op.vopMods & VOPOPFLAG_NEG) ? (1U<<29) : 0) |
+        ((src1Op.vopMods & VOPOPFLAG_NEG) ? (1U<<30) : 0) |
+        ((src2Op.vopMods & VOPOPFLAG_NEG) ? (1U<<31) : 0));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
