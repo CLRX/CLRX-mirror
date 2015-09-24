@@ -1958,8 +1958,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             good = false;
                         }
                     }
-                    else if (::strcmp(mod, "quad_perm")==0 ||
-                        (mod[0]=='q' && mod[1]=='p' && mod[2]==0))
+                    else if (::strcmp(mod, "quad_perm")==0)
                     {
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
@@ -2030,8 +2029,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             good = false;
                         }
                     }
-                    else if (::strcmp(mod, "bank_mask")==0 ||
-                        (mod[0]=='b' && mod[1]=='m' && mod[2]==0))
+                    else if (::strcmp(mod, "bank_mask")==0)
                     {
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
@@ -2055,8 +2053,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             good = false;
                         }
                     }
-                    else if (::strcmp(mod, "row_mask")==0 ||
-                        (mod[0]=='r' && mod[1]=='m' && mod[2]==0))
+                    else if (::strcmp(mod, "row_mask")==0)
                     {
                         skipSpacesToEnd(linePtr, end);
                         if (linePtr!=end && *linePtr==':')
@@ -2080,8 +2077,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                             good = false;
                         }
                     }
-                    else if (::strcmp(mod, "bound_ctrl")==0 ||
-                        (mod[0]=='b' && mod[1]=='c' && mod[2]==0))
+                    else if (::strcmp(mod, "bound_ctrl")==0)
                     {
                         bool modGood = true;
                         skipSpacesToEnd(linePtr, end);
@@ -2179,7 +2175,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         }
                     }
                     else if (::strcmp(mod, "row_mirror")==0 ||
-                        ::strcmp(mod, "row_half_mirror")==0)
+                        ::strcmp(mod, "row_half_mirror")==0 ||
+                        ::strcmp(mod, "row_hmirror")==0)
                     {
                         extraMods->dppCtrl = (mod[4]=='h') ? 0x141 : 0x140;
                         if (haveDppCtrl)
