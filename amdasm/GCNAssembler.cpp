@@ -1757,7 +1757,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     bool haveBoundCtrl = false, haveDppCtrl = false;
     
     if (extraMods!=nullptr)
-        *extraMods = { 6, 0, 6, 6, 15, 15, 0xe4, false, false };
+        *extraMods = { 6, 0, 6, 6, 15, 15, 0x00, false, false };
     
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;
@@ -2002,6 +2002,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                         asmr.printError(linePtr,
                                             "Expected ',' before quad_perm component");
                                         goodMod = good = false;
+                                        break;
                                     }
                                     else
                                         ++linePtr;

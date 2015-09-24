@@ -313,10 +313,14 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     /* VOP2 - DPP */
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bank_mask:0 row_mask:0",
         0x0134d6faU, 0xbe, true, true, ""  },
+    { "   v_cndmask_b32  v154, v190, v107, vcc bank_mask:0 row_mask:0",
+        0x0134d6faU, 0xbe, true, true, ""  },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3] "
-        "bank_mask:14 row_mask:11", 0x0134d6faU, 0xbe00c6be, true, true, ""  },
+        "bank_mask:14 row_mask:11", 0x0134d6faU, 0xbe00c6be, true, true, "" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[3,2,1,2] "
+        "bank_mask:14 row_mask:11", 0x0134d6faU, 0xbe009bbe, true, true, "" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm :  [ 2  , 1 , 0  , 3  ] "
-        "bank_mask  : 14 row_mask  :  11   ", 0x0134d6faU, 0xbe00c6be, true, true, ""  },
+        "bank_mask  : 14 row_mask  :  11   ", 0x0134d6faU, 0xbe00c6be, true, true, "" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bound_ctrl",
         0x0134d6faU, 0xff0800be, true, true, "" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bound_ctrl : 1",
@@ -383,5 +387,63 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bound_ctrl:0 bound_ctrl",
         0x0134d6faU, 0xff0800be, true, true,
         "test.s:1:74: Warning: BoundCtrl is already defined\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_ror:2 wave_ror:1 ",
+        0x0134d6faU, 0xff013cbe, true, true,
+        "test.s:1:51: Warning: DppCtrl is already defined\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_half_mirror wave_ror:1 ",
+        0x0134d6faU, 0xff013cbe, true, true,
+        "test.s:1:57: Warning: DppCtrl is already defined\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_ror:35 ",
+        0x0134d6faU, 0xff0123be, true, true,
+        "test.s:1:49: Warning: Value 0x23 truncated to 0x3\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3] "
+        "bank_mask:0xdde row_mask:0xabc3b", 0x0134d6faU, 0xbe00c6be, true, true,
+        "test.s:1:71: Warning: Value 0xdde truncated to 0xe\n"
+        "test.s:1:86: Warning: Value 0xabc3b truncated to 0xb\n" },
+    /* VOP_DPP errors */
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,,0,3]", 0, 0, false, false,
+        "test.s:1:54: Error: Missing number\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3  ", 0, 0, false, false,
+        "test.s:1:61: Error: Unterminated quad_perm\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2 1 0 3]  ", 0, 0, false, false,
+        "test.s:1:54: Error: Expected ',' before quad_perm component\n"
+        "test.s:1:54: Error: Some garbages at VOP modifier place\n"
+        "test.s:1:56: Error: Some garbages at VOP modifier place\n"
+        "test.s:1:58: Error: Some garbages at VOP modifier place\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:0", 0, 0, false, false,
+        "test.s:1:49: Error: Illegal zero shift for row_XXX shift\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:32", 0, 0, false, false,
+        "test.s:1:49: Warning: Value 0x20 truncated to 0x0\n"
+        "test.s:1:49: Error: Illegal zero shift for row_XXX shift\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc wave_shr : 0 ", 0, 0, false, false,
+        "test.s:1:52: Error: Value must be '1'\n"
+        "test.s:1:52: Error: Some garbages at VOP modifier place\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc wave_shr :  ", 0, 0, false, false,
+        "test.s:1:53: Error: Value must be '1'\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc wave_shl bound_ctrl:3", 0, 0, false, false,
+        "test.s:1:61: Error: Value must be '0' or '1'\n"
+        "test.s:1:61: Error: Some garbages at VOP modifier place\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3] "
+        "bank_mask:, row_mask:", 0, 0, false, false,
+        "test.s:1:71: Error: Expected expression\n"
+        "test.s:1:71: Error: Some garbages at VOP modifier place\n"
+        "test.s:1:82: Error: Expected expression\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm bank_mask row_mask",
+        0, 0, false, false, "test.s:1:51: Error: Expected ':' before quad_perm\n"
+        "test.s:1:61: Error: Expected ':' before bank_mask\n"
+        "test.s:1:69: Error: Expected ':' before row_mask\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl ", 0, 0, false, false,
+        "test.s:1:49: Error: Expected ':' before row_shl\n" },
+    { "   v_cndmask_b32  v154, sext(v190), v107, vcc row_shl:3 ", 0, 0, false, false,
+        "test.s:1:4: Error: SEXT modifiers is unavailable for DPP word\n" },
+    /* VOP_SDWA and VOP_DPP mixing errors */
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 clamp ", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 dst_sel:b1", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 src0_sel:b1", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 src1_sel:b1", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
