@@ -309,9 +309,9 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
         }
         cxuint index = binaryMapFind(table, table + tableSize, name+namePos, CStringLess())
                         - table;
-        if (index != tableSize) // end of this map
+        if (index != tableSize)
             value = table[index].second;
-        else
+        else // end of this map
         {
             asmr.printError(namePlace, (std::string("Unknown ")+objName).c_str());
             return false;

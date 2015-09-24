@@ -1757,7 +1757,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     bool haveBoundCtrl = false, haveDppCtrl = false;
     
     if (extraMods!=nullptr)
-        *extraMods = { 6, 0, 6, 6, 0, 0, 0xe4, false, false };
+        *extraMods = { 6, 0, 6, 6, 15, 15, 0xe4, false, false };
     
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;
@@ -2391,26 +2391,24 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (needImm)
         {
             asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
-            good = false;
+            return;
         }
         if (src0Op.range.start < 256)
         {
             asmr.printError(instrPlace, "SRC0 must be a vector register with "
                         "SDWA or DPP word");
-            good = false;
+            return;
         }
         if (vop3)
         {   // if VOP3 and (VOP_DPP or VOP_SDWA)
             asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
-            good = false;
+            return;
         }
         if (sextFlags & extraMods.needDPP)
         {
             asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
-            good = false;
-        }
-        if (!good)
             return;
+        }
         if (!extraMods.needSDWA && !extraMods.needDPP)
             extraMods.needSDWA = true; // by default we choose SDWA word
     }
