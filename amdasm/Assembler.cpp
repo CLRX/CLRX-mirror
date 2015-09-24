@@ -298,7 +298,7 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
 {
     char name[72];
     const char* namePlace = linePtr;
-    if (getNameArg(asmr, 72, name, linePtr, "Data Class"))
+    if (getNameArg(asmr, 72, name, linePtr, objName))
     {
         toLowerString(name);
         size_t namePos = 0;
