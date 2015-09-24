@@ -314,7 +314,7 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bank_mask:0 row_mask:0",
         0x0134d6faU, 0xbe, true, true, ""  },
     { "   v_cndmask_b32  v154, v190, v107, vcc bank_mask:0 row_mask:0",
-        0x0134d6faU, 0xbe, true, true, ""  },
+        0x0134d6faU, 0xe4be, true, true, ""  },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3] "
         "bank_mask:14 row_mask:11", 0x0134d6faU, 0xbe00c6be, true, true, "" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[3,2,1,2] "
@@ -436,6 +436,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:49: Error: Expected ':' before row_shl\n" },
     { "   v_cndmask_b32  v154, sext(v190), v107, vcc row_shl:3 ", 0, 0, false, false,
         "test.s:1:4: Error: SEXT modifiers is unavailable for DPP word\n" },
+    { "   v_cndmask_b32  v154, 12333, v107, vcc bank_mask:0 row_mask:0", 0, 0,
+        false, false, "test.s:1:4: Error: Literal with SDWA or DPP word is illegal\n" },
     /* VOP_SDWA and VOP_DPP mixing errors */
     { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 clamp ", 0, 0, false, false,
         "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
@@ -445,5 +447,19 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
     { "   v_cndmask_b32  v154, v190, v107, vcc row_shl:3 src1_sel:b1", 0, 0, false, false,
         "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc bank_mask:5 src1_sel:b1", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc bank_mask:5 clamp", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc bank_mask:5 mul:2", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc src0_sel:b3 mul:2", 0, 0, false, false,
+        "test.s:1:41: Error: Mixing modifiers from different encodings is illegal\n" },
+    { "   v_cndmask_b32   v154, s87, v107, vcc dst_sel:byte0", 0, 0, false, false,
+        "test.s:1:4: Error: SRC0 must be a vector register with SDWA or DPP word\n" },
+    { "   v_cndmask_b32   v154, v87, s85, vcc dst_sel:byte0", 0, 0, false, false,
+        "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, s[8:9] bank_mask:0 row_mask:0", 0, 0,
+        false, false, "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
