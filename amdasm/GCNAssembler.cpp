@@ -2410,7 +2410,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!extraMods.needSDWA && !extraMods.needDPP)
             extraMods.needSDWA = true; // by default we choose SDWA word
     }
-    else if (isGCN12 && !sextFlags)
+    else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
         vop3 = true;
     

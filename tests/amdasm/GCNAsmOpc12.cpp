@@ -461,5 +461,6 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
     { "   v_cndmask_b32  v154, v190, v107, s[8:9] bank_mask:0 row_mask:0", 0, 0,
         false, false, "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
+    /* choosing VOP3 */
     { nullptr, 0, 0, false, false, 0 }
 };
