@@ -237,7 +237,7 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     
     static bool parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
                        VOPExtraModifiers* extraMods = nullptr,
-                       bool withClamp = true, bool withVOPSDWA_DPP = true);
+                       bool withClamp = true, cxuint withSDWAOperands = 2);
     
     static bool parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand& operand,
                std::unique_ptr<AsmExpression>* outTargetExpr, uint16_t arch,
