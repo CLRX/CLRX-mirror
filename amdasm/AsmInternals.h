@@ -160,9 +160,9 @@ enum : Flags {
 };
 
 enum: cxbyte {
-    VOPOPFLAG_ABS = 1,
-    VOPOPFLAG_NEG = 2,
-    VOPOPFLAG_SEXT = 4
+    VOPOP_ABS = 1,
+    VOPOP_NEG = 2,
+    VOPOP_SEXT = 4
 };
 
 enum: cxbyte {
