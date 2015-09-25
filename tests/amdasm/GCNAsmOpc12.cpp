@@ -462,5 +462,11 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "   v_cndmask_b32  v154, v190, v107, s[8:9] bank_mask:0 row_mask:0", 0, 0,
         false, false, "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
     /* choosing VOP3 */
+    { "v_add_f32  v55, v27, abs(v90)", 0xd1010237U, 0x0002b51bU, true, true, "" },
+    { "v_add_f32  v55, v27, abs(v90) clamp", 0xd1018237U, 0x0002b51bU, true, true, "" },
+    { "v_add_f32  v55, -abs(v27), v90", 0xd1010137U, 0x2002b51bU, true, true, "" },
+    { "v_add_f32  v55, -abs(v27), -abs(v90)", 0xd1010337U, 0x6002b51bU, true, true, "" },
+    { "v_cndmask_b32  v42, v50, v107, vcc clamp",
+        0xd100802aU, 0x01aad732U, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };

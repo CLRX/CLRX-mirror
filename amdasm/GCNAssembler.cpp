@@ -2410,7 +2410,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (!extraMods.needSDWA && !extraMods.needDPP)
             extraMods.needSDWA = true; // by default we choose SDWA word
     }
-    else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0)
+    else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
         vop3 = true;
     
@@ -2469,14 +2469,29 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
-        if (haveDstCC || haveSrcCC)
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                (dstReg.start&0xff) | (uint32_t(dstCCReg.start)<<8));
+        if (!isGCN12)
+        {
+            if (haveDstCC || haveSrcCC)
+                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
+                    (dstReg.start&0xff) | (uint32_t(dstCCReg.start)<<8));
+            else
+                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
+                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
+        }
         else
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
+        {   // new GCN1.2 code
+            if (haveDstCC || haveSrcCC)
+                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
+                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
+                    (uint32_t(dstCCReg.start)<<8));
+            else
+                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
+                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
+                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
+        }
         SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
             (uint32_t(srcCCReg.start)<<18) | ((modifiers & 3) << 27) |
             ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
