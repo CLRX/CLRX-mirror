@@ -2369,20 +2369,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
-    if (isGCN12 && vop3 && (haveDstCC || haveSrcCC) &&
-            ((src0Op.vopMods|src1Op.vopMods) & VOPOP_ABS) != 0)
-    {
-        asmr.printError(instrPlace, "Abs modifier is illegal for VOP3B encoding");
-        return;
-    }
-    
     const bool needImm = (src0Op.range.start==255 || src1Op.range.start==255 ||
              mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
-    if (vop3 && needImm)
-    {
-        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
-        return;
-    }
+    
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
     {   /* if VOP_SDWA or VOP_DPP is required */
@@ -2413,6 +2402,18 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
         vop3 = true;
+    
+    if (isGCN12 && vop3 && (haveDstCC || haveSrcCC) &&
+            ((src0Op.vopMods|src1Op.vopMods) & VOPOP_ABS) != 0)
+    {
+        asmr.printError(instrPlace, "Abs modifier is illegal for VOP3B encoding");
+        return;
+    }
+    if (vop3 && needImm)
+    {
+        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
+        return;
+    }
     
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
