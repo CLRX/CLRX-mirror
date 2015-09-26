@@ -2662,6 +2662,7 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     bool good = true;
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
     
     RegRange dstReg(0, 0);
     GCNOperand src0Op{};
@@ -2688,12 +2689,14 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     // modifiers
-    good &= parseVOPModifiers(asmr, linePtr, modifiers, nullptr, true);
+    VOPExtraModifiers extraMods{};
+    good &= parseVOPModifiers(asmr, linePtr, modifiers, (isGCN12)?&extraMods:nullptr, true);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    const bool vop3 = (dstReg.start!=106) || (src1Op.range.start<256) ||
-        src0Op.vopMods!=0 || src1Op.vopMods!=0 || modifiers!=0;
+    bool vop3 = (dstReg.start!=106) || (src1Op.range.start<256) ||
+        (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
+        (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0;
     
     cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
@@ -2709,6 +2712,39 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
     }
+    
+    const bool needImm = src0Op.range.start==255 || src1Op.range.start==255;
+    
+    bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
+    {   /* if VOP_SDWA or VOP_DPP is required */
+        if (needImm)
+        {
+            asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+            return;
+        }
+        if (src0Op.range.start < 256)
+        {
+            asmr.printError(instrPlace, "SRC0 must be a vector register with "
+                        "SDWA or DPP word");
+            return;
+        }
+        if (vop3)
+        {   // if VOP3 and (VOP_DPP or VOP_SDWA)
+            asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
+            return;
+        }
+        if (sextFlags & extraMods.needDPP)
+        {
+            asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
+            return;
+        }
+        if (!extraMods.needSDWA && !extraMods.needDPP)
+            extraMods.needSDWA = true; // by default we choose SDWA word
+    }
+    else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
+        // if all pass we check we promote VOP3 if only operand modifiers expect sext()
+        vop3 = true;
     
     if (vop3 && (src0Op.range.start==255 || src1Op.range.start==255))
     {
@@ -2727,19 +2763,52 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     uint32_t words[2];
     if (!vop3)
     {   // VOPC encoding
-        SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code1)<<17) | src0Op.range.start |
+        cxuint src0out = src0Op.range.start;
+        if (extraMods.needSDWA)
+            src0out = 0xf9;
+        else if (extraMods.needDPP)
+            src0out = 0xfa;
+        SLEV(words[0], 0x7c000000U | (uint32_t(gcnInsn.code1)<<17) | src0out |
                 (uint32_t(src1Op.range.start&0xff)<<9));
-        if (src0Op.range.start==255)
+        if (extraMods.needSDWA)
+            SLEV(words[wordsNum++], (src0Op.range.start&0xff) |
+                    (uint32_t(extraMods.dstSel)<<8) |
+                    (uint32_t(extraMods.dstUnused)<<11) |
+                    ((modifiers & VOP3_CLAMP) ? 0x2000 : 0) |
+                    (uint32_t(extraMods.src0Sel)<<16) |
+                    ((src0Op.vopMods&VOPOP_SEXT) ? (1U<<19) : 0) |
+                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
+                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
+                    (uint32_t(extraMods.src1Sel)<<24) |
+                    ((src1Op.vopMods&VOPOP_SEXT) ? (1U<<27) : 0) |
+                    ((src1Op.vopMods&VOPOP_NEG) ? (1U<<28) : 0) |
+                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<29) : 0));
+        else if (extraMods.needDPP)
+            SLEV(words[wordsNum++], (src0Op.range.start&0xff) | (extraMods.dppCtrl<<8) | 
+                    ((modifiers&VOP3_BOUNDCTRL) ? (1U<<19) : 0) |
+                    ((src0Op.vopMods&VOPOP_NEG) ? (1U<<20) : 0) |
+                    ((src0Op.vopMods&VOPOP_ABS) ? (1U<<21) : 0) |
+                    ((src1Op.vopMods&VOPOP_NEG) ? (1U<<22) : 0) |
+                    ((src1Op.vopMods&VOPOP_ABS) ? (1U<<23) : 0) |
+                    (uint32_t(extraMods.bankMask)<<24) |
+                    (uint32_t(extraMods.rowMask)<<28));
+        else if (src0Op.range.start==255)
             SLEV(words[wordsNum++], src0Op.value);
         else if (src1Op.range.start==255)
             SLEV(words[wordsNum++], src1Op.value);
     }
     else
     {   // VOP3 encoding
-        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-            (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-            ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-            ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
+        if (!isGCN12)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
+                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
+                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
+        else
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
+                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
+                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
             ((modifiers & 3) << 27) | ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
             ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));

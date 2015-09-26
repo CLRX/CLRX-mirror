@@ -724,5 +724,56 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "     v_exp_legacy_f32  v158, v39 vop3", 0xd18b009eU, 0x00000127U, true, true, "" },
     { "     v_log_legacy_f32  v158, v79", 0x7f3c994fU, 0, false, true, "" },
     { "     v_log_legacy_f32  v158, v39 vop3", 0xd18c009eU, 0x00000127U, true, true, "" },
+    /* VOPC SDWA */
+    { "    v_cmp_class_f32 vcc, v78, v201 dst_sel:w0 dst_un:preserve",
+        0x7c2192f9U, 0x0606144e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, v78, v201 dst_sel:w0 dst_un:preserve "
+        "src0_sel:b3 src1_sel:b1", 0x7c2192f9U, 0x0103144e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, v78, v201 dst_sel:w0 dst_un:preserve clamp "
+        "src0_sel:b3 src1_sel:b1", 0x7c2192f9U, 0x0103344e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, abs(v78), sext(v201) dst_sel:w0 dst_un:preserve",
+        0x7c2192f9U, 0x0e26144e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, sext(-v78), sext(-abs(v201)) dst_sel:w0 dst_un:preserve",
+        0x7c2192f9U, 0x3e1e144e, true, true, "" },
+    /* VOPC SDWA - errors */
+    { "    v_cmp_class_f32 s[6:7], v78, v201 dst_sel:w0", 0, 0, false, false,
+        "test.s:1:5: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
+    { "    v_cmp_class_f32 vcc, s4, v132 dst_sel:w0", 0, 0, false, false,
+        "test.s:1:5: Error: SRC0 must be a vector register with SDWA or DPP word\n" },
+    { "    v_cmp_class_f32 vcc, 113222, v201 dst_sel:w0", 0, 0, false, false,
+        "test.s:1:5: Error: Literal with SDWA or DPP word is illegal\n" },
+    /* VOPC DPP */
+    { "    v_cmp_class_f32 vcc, v78, v201 row_half_mirror",
+        0x7c2192faU, 0xff01414e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, v78, v201 row_half_mirror bank_mask:13 row_mask:3",
+        0x7c2192faU, 0x3d01414e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, v78, v201 row_half_mirror bound_ctrl",
+        0x7c2192faU, 0xff09414e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, abs(v78), abs(v201) row_half_mirror",
+        0x7c2192faU, 0xffa1414e, true, true, "" },
+    { "    v_cmp_class_f32 vcc, -v78, -abs(v201) row_half_mirror",
+        0x7c2192faU, 0xffd1414e, true, true, "" },
+    /* VOPC DPP - errors */
+    { "    v_cmp_class_f32 vcc, v78, sext(v201) row_half_mirror", 0, 0, false, false,
+        "test.s:1:5: Error: SEXT modifiers is unavailable for DPP word\n" },
+    /* VOPC - VOP3 choose */
+    { "    v_cmp_class_f32 vcc, v78, v201 vop3", 0xd010006a, 0x3934eU, true, true, "" },
+    { "    v_cmp_class_f32 vcc, v78, v201 clamp", 0xd010806a, 0x3934eU, true, true, "" },
+    { "    v_cmp_class_f32 vcc, v78, abs(v201)", 0xd010026a, 0x3934eU, true, true, "" },
+    /* VOPC - instructions */
+    { "    v_cmp_class_f32 vcc, v78, v201", 0x7c21934eU, 0, false, true, "" },
+    { "    v_cmp_class_f32 s[46:47], v78, v201", 0xd010002eU, 0x3934eU, true, true, "" },
+    { "    v_cmpx_class_f32 vcc, v78, v201", 0x7c23934eU, 0, false, true, "" },
+    { "    v_cmpx_class_f32 s[46:47], v78, v201", 0xd011002eU, 0x3934eU, true, true, "" },
+    { "    v_cmp_class_f64 vcc, v[78:79], v[201:202]", 0x7c25934eU, 0, false, true, "" },
+    { "    v_cmp_class_f64 s[46:47], v[78:79], v[201:202]",
+        0xd012002eU, 0x3934eU, true, true, "" },
+    { "    v_cmpx_class_f64 vcc, v[78:79], v[201:202]", 0x7c27934eU, 0, false, true, "" },
+    { "    v_cmpx_class_f64 s[46:47], v[78:79], v[201:202]",
+        0xd013002eU, 0x3934eU, true, true, "" },
+    { "    v_cmp_class_f16 vcc, v78, v201", 0x7c29934eU, 0, false, true, "" },
+    { "    v_cmp_class_f16 s[46:47], v78, v201", 0xd014002eU, 0x3934eU, true, true, "" },
+    { "    v_cmpx_class_f16 vcc, v78, v201", 0x7c2b934eU, 0, false, true, "" },
+    { "    v_cmpx_class_f16 s[46:47], v78, v201", 0xd015002eU, 0x3934eU, true, true, "" },
     { nullptr, 0, 0, false, false, 0 }
 };
