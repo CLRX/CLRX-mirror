@@ -2830,6 +2830,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool good = true;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
     
     RegRange dstReg(0, 0);
     RegRange sdstReg(0, 0);
@@ -2885,7 +2886,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     // modifiers
     good &= parseVOPModifiers(asmr, linePtr, modifiers, nullptr,
-                              gcnInsn.encoding!=GCNENC_VOP3B);
+                              isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -2915,14 +2916,30 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     uint32_t words[2];
     if (gcnInsn.encoding == GCNENC_VOP3B)
-        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
-            (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8));
+    {
+        if (!isGCN12)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
+                (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8));
+        else
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
+                (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8) |
+                ((modifiers&VOP3_CLAMP) ? 0x8000 : 0));
+    }
     else // VOP3A
-        SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
-            (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-            ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-            ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
-            ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
+    {
+        if (!isGCN12)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
+                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800: 0) |
+                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
+                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
+        else
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
+                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000: 0) |
+                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
+                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
+    }
     SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
         (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
         ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
