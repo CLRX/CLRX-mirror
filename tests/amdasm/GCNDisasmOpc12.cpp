@@ -608,7 +608,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0x7f3c0000U, 0, false, "        v_nop           vdst=0x9e\n" },
     { 0x7e00014fU, 0, false, "        v_nop           src0=0x14f\n" },
     { 0x7e000000U, 0, false, "        v_nop\n" },
-    { 0x7e0000f9U, 0x3d003d, true,"        v_nop           "
+    { 0x7e0000f9U, 0x3d003d, true, "        v_nop           "
         "src0=0xf9 dst_sel:byte0 src0_sel:word1 src1_sel:byte0 sext0 neg0 abs0\n" },
     { 0x7e0000f9U, 0x3d00003d, true,"        v_nop           "
         "src0=0xf9 dst_sel:byte0 src0_sel:byte0 src1_sel:word1 sext1 neg1 abs1\n" },
