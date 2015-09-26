@@ -2558,12 +2558,6 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     bool vop3 = ((!isGCN12 && src0Op.vopMods!=0) ||
             (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0);
     
-    if ((src0Op.vopMods!=0 || modifiers!=0) && src0Op.range.start==255)
-    {
-        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
-        return;
-    }
-    
     bool sextFlags = (src0Op.vopMods & VOPOP_SEXT);
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
     {   /* if VOP_SDWA or VOP_DPP is required */
@@ -2594,6 +2588,12 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     else if (isGCN12 && (src0Op.vopMods & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
         vop3 = true;
+    
+    if (vop3 && src0Op.range.start==255)
+    {
+        asmr.printError(instrPlace, "Literal in VOP3 encoding is illegal");
+        return;
+    }
     
     if (src0OpExpr!=nullptr)
         src0OpExpr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
