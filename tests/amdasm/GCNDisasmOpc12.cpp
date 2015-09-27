@@ -2051,7 +2051,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xd2900037U, 0x00034d4fU, true,
                 "        v_lshrrev_b64   v[55:56], v79, v[166:167]\n" },
     { 0xd2910037U, 0x00034d4fU, true,
-                "        v_ashrrev_b64   v[55:56], v79, v[166:167]\n" },
+                "        v_ashrrev_i64   v[55:56], v79, v[166:167]\n" },
     { 0xd2920037U, 0x07974d4fU, true, "        v_trig_preop_f64 "
                 "v[55:56], v[79:80], v166 vsrc2=0x1e5\n" },
     { 0xd2930037U, 0x4002b41bU, true, "        v_bfm_b32       v55, s27, -v90\n" },

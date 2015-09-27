@@ -1812,7 +1812,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_mac_legacy_f32",    GCNENC_VOP3A,  GCN_SRC2_NONE,            654,  ARCH_RX3X0  },
     { "v_lshlrev_b64",       GCNENC_VOP3A,  GCN_REG_DS1_64|GCN_SRC2_NONE,655,  ARCH_RX3X0  },
     { "v_lshrrev_b64",       GCNENC_VOP3A,  GCN_REG_DS1_64|GCN_SRC2_NONE,656,  ARCH_RX3X0  },
-    { "v_ashrrev_b64",       GCNENC_VOP3A,  GCN_REG_DS1_64|GCN_SRC2_NONE,657,  ARCH_RX3X0  },
+    { "v_ashrrev_i64",       GCNENC_VOP3A,  GCN_REG_DS1_64|GCN_SRC2_NONE,657,  ARCH_RX3X0  },
     { "v_trig_preop_f64",    GCNENC_VOP3A,  GCN_REG_DS0_64|GCN_SRC2_NONE, 658,  ARCH_RX3X0  },
     { "v_bfm_b32",           GCNENC_VOP3A,  GCN_SRC2_NONE,            659,     ARCH_RX3X0  },
     { "v_cvt_pknorm_i16_f32",GCNENC_VOP3A,  GCN_SRC2_NONE,            660,  ARCH_RX3X0  },

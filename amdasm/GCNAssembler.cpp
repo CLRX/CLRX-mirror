@@ -2965,7 +2965,12 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode1 != GCN_VOP_ARG_NONE)
     {
-        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        if ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)
+            good &= parseVRegRange(asmr, linePtr, dstReg,
+                                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        else // SGPRS as dest
+            good &= parseSRegRange(asmr, linePtr, dstReg, arch,
+                                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
         if (!skipRequiredComma(asmr, linePtr))
             return;
         
