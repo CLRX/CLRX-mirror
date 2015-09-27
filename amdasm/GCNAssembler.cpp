@@ -58,7 +58,7 @@ static void initializeGCNAssembler()
     std::unique_ptr<uint16_t[]> oldArchMasks(new uint16_t[tableSize]);
     /* join VOP3A instr with VOP2/VOPC/VOP1 instr together to faster encoding. */
     for (cxuint i = 0; i < tableSize; i++)
-    {   
+    {
         GCNAsmInstruction insn = gcnInstrSortedTable[i];
         if (insn.encoding == GCNENC_VOP3A || insn.encoding == GCNENC_VOP3B)
         {   // check duplicates
@@ -3704,7 +3704,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool haveTfe = false, haveSlc = false, haveGlc = false;
     bool haveDa = false, haveR128 = false, haveLwe = false, haveUnorm = false;
-    bool haveDMask = false;
+    bool haveDMask = false, haveD16 = false;
     cxbyte dmask = 0x1;
     /* modifiers and modifiers */
     while(linePtr!=end)
@@ -3725,6 +3725,8 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         {
             if (name[1]=='a' && name[2]==0)
                 haveDa = true;
+            else if ((arch & ARCH_RX3X0)!=0 && name[1]=='1' && name[2]=='6' && name[3]==0)
+                haveD16 = true;
             else if (::strcmp(name+1, "mask")==0)
             {
                 // parse offset
@@ -3826,7 +3828,8 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         (haveTfe ? 0x10000U : 0) | (haveLwe ? 0x20000U : 0) |
         (uint32_t(gcnInsn.code1)<<18) | (haveSlc ? (1U<<25) : 0));
     SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
-            (uint32_t(srsrcReg.start>>2)<<16) | (uint32_t(ssampReg.start>>2)<<21));
+            (uint32_t(srsrcReg.start>>2)<<16) | (uint32_t(ssampReg.start>>2)<<21) |
+            (haveD16 ? (1U<<31) : 0));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
     
@@ -3978,8 +3981,9 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
     }
     
     uint32_t words[2];
-    SLEV(words[0], 0xf8000000U | enMask | (uint32_t(target)<<4) |
-            (haveCompr ? 0x400 : 0) | (haveDone ? 0x800 : 0) | (haveVM ? 0x1000U : 0));
+    SLEV(words[0], ((arch&ARCH_RX3X0) ? 0xc4000000 : 0xf8000000U) | enMask |
+            (uint32_t(target)<<4) | (haveCompr ? 0x400 : 0) | (haveDone ? 0x800 : 0) |
+            (haveVM ? 0x1000U : 0));
     SLEV(words[1], uint32_t(vsrcsReg[0].start&0xff) |
             (uint32_t(vsrcsReg[1].start&0xff)<<8) |
             (uint32_t(vsrcsReg[2].start&0xff)<<16) |
