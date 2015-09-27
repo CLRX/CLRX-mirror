@@ -463,6 +463,9 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
     { "   v_cndmask_b32  v154, v190, v107, s[8:9] bank_mask:0 row_mask:0", 0, 0,
         false, false, "test.s:1:4: Error: Mixing VOP3 with SDWA or WORD is illegal\n" },
+    { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bank_mask:x+y",
+        0, 0, false, false,
+        "test.s:1:71: Error: Unresolved expression is illegal in this place\n"  },
     /* choosing VOP3 */
     { "v_add_f32  v55, v27, abs(v90)", 0xd1010237U, 0x0002b51bU, true, true, "" },
     { "v_add_f32  v55, v27, abs(v90) clamp", 0xd1018237U, 0x0002b51bU, true, true, "" },
@@ -1289,5 +1292,6 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "glc slc", 0xe80f67d4U, 0x23543d12U, true, true, "" },
     { "    tbuffer_store_format_d16_xyzw v[61:64], v18, s[80:83], s35 idxen offset:2004 "
         "glc slc", 0xe80fe7d4U, 0x23543d12U, true, true, "" },
+    /* MIMG encoding */
     { nullptr, 0, 0, false, false, 0 }
 };

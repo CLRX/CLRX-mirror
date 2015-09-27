@@ -518,7 +518,7 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
         outTargetExpr->reset();
     skipSpacesToEnd(linePtr, end);
     const char* exprPlace = linePtr;
-    std::unique_ptr<AsmExpression> expr(AsmExpression::parse( asmr, linePtr));
+    std::unique_ptr<AsmExpression> expr(AsmExpression::parse(asmr, linePtr));
     if (expr==nullptr) // error
         return false;
     if (expr->isEmpty())
@@ -547,6 +547,11 @@ bool GCNAsmUtils::parseImm(Assembler& asmr, const char*& linePtr, T& outValue,
     {   // return output expression with symbols to resolve
         if (outTargetExpr!=nullptr)
             *outTargetExpr = std::move(expr);
+        else
+        {
+            asmr.printError(exprPlace, "Unresolved expression is illegal in this place");
+            return false;
+        }
         return true;
     }
 }
