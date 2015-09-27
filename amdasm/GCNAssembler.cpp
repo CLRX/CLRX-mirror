@@ -974,6 +974,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 {   // error
                     if ((instrOpMask & INSTROP_NOLITERALERROR)!=0)
                         asmr.printError(regNamePlace, "Literal in VOP3 is illegal");
+                    else if ((instrOpMask & INSTROP_NOLITERALERRORMUBUF)!=0)
+                        asmr.printError(regNamePlace, "Literal in MUBUF is illegal");
                     else
                         asmr.printError(regNamePlace,
                                 "Only one literal can be used in instruction");
@@ -1001,6 +1003,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         {   // error
             if ((instrOpMask & INSTROP_NOLITERALERROR)!=0)
                 asmr.printError(regNamePlace, "Literal in VOP3 is illegal");
+            else if ((instrOpMask & INSTROP_NOLITERALERRORMUBUF)!=0)
+                asmr.printError(regNamePlace, "Literal in MUBUF is illegal");
             else
                 asmr.printError(regNamePlace,
                         "Only one literal can be used in instruction");
@@ -3444,7 +3448,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         if (!skipRequiredComma(asmr, linePtr))
             return;
         good &= parseOperand(asmr, linePtr, soffsetOp, nullptr, arch, 1,
-                 INSTROP_SREGS|INSTROP_SSOURCE);
+                 INSTROP_SREGS|INSTROP_SSOURCE|INSTROP_ONLYINLINECONSTS|
+                 INSTROP_NOLITERALERRORMUBUF);
     }
     
     bool haveOffset = false, haveFormat = false;

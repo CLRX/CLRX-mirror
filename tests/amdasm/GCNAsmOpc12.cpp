@@ -1132,5 +1132,9 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     /* MUBUF errors */
     { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603 addr",
         0, 0, false, false, "test.s:1:67: Error: Unknown MUBUF modifier\n" },
+    { "    buffer_load_format_x v61, v18, s[80:83], 3435 idxen offset:603",
+        0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
+    { "    buffer_load_format_x v61, v18, s[80:83], xx idxen offset:603",
+        0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
     { nullptr, 0, 0, false, false, 0 }
 };

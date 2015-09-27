@@ -2059,6 +2059,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0, 0, false, false, "test.s:1:29: Error: Required 4 vector registers\n" },
     { "    buffer_store_format_xyzw v[61:64], v18, s[80:83], s35 idxen offset:603 tfe",
         0, 0, false, false, "test.s:1:30: Error: Required 5 vector registers\n" },
+    { "    buffer_load_format_x v61, v18, s[80:83], 3435 idxen offset:603",
+        0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
+    { "    buffer_load_format_x v61, v18, s[80:83], xx idxen offset:603",
+        0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
     /* other MUBUF instructions */
     { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603",
         0xe000225bU, 0x23143d12U, true, true, "" },

@@ -152,6 +152,7 @@ enum : Flags {
     
     INSTROP_ONLYINLINECONSTS = 0x80, /// accepts only inline constants
     INSTROP_NOLITERALERROR = 0x100, /// accepts only inline constants
+    INSTROP_NOLITERALERRORMUBUF = 0x200, /// accepts only inline constants
     
     INSTROP_TYPE_MASK = 0x3000,
     INSTROP_INT = 0x000,    // integer literal
