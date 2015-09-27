@@ -250,6 +250,9 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
             std::unique_ptr<AsmExpression>* outTargetExpr, const char* modName,
             cxuint bits = 0, cxbyte signess = WS_BOTH);
     
+    static bool parseVINTRP0P10P20(Assembler& asmr, const char*& linePtr, RegRange& reg);
+    static bool parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte& attr);
+    
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName);
     

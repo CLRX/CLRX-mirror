@@ -60,14 +60,14 @@ static void initializeGCNAssembler()
     for (cxuint i = 0; i < tableSize; i++)
     {   
         GCNAsmInstruction insn = gcnInstrSortedTable[i];
-        if ((insn.encoding == GCNENC_VOP3A || insn.encoding == GCNENC_VOP3B))
+        if (insn.encoding == GCNENC_VOP3A || insn.encoding == GCNENC_VOP3B)
         {   // check duplicates
             cxuint k = j-1;
             while (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
                     (oldArchMasks[k] & insn.archMask)!=insn.archMask) k--;
             
             if (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
-                (oldArchMasks[k] & insn.archMask & insn.archMask)==insn.archMask)
+                (oldArchMasks[k] & insn.archMask)==insn.archMask)
             {   // we found duplicate, we apply
                 if (gcnInstrSortedTable[k].code2==UINT16_MAX)
                 {   // if second slot for opcode is not filled
@@ -88,6 +88,18 @@ static void initializeGCNAssembler()
                 gcnInstrSortedTable[j++] = insn;
             }
         }
+        else if (insn.encoding == GCNENC_VINTRP)
+        {   // check duplicates
+            cxuint k = j-1;
+            oldArchMasks[j] = insn.archMask;
+            gcnInstrSortedTable[j++] = insn;
+            while (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
+                    gcnInstrSortedTable[k].encoding!=GCNENC_VOP3A) k--;
+            if (::strcmp(gcnInstrSortedTable[k].mnemonic, insn.mnemonic)==0 &&
+                gcnInstrSortedTable[k].encoding==GCNENC_VOP3A)
+                // we found VINTRP duplicate, set up second code (VINTRP)
+                gcnInstrSortedTable[k].code2 = insn.code1;
+        }
         else // normal instruction
         {
             oldArchMasks[j] = insn.archMask;
@@ -95,7 +107,7 @@ static void initializeGCNAssembler()
         }
     }
     gcnInstrSortedTable.resize(j); // final size
-    /* for (const GCNAsmInstruction& instr: gcnInstrSortedTable)
+    /*for (const GCNAsmInstruction& instr: gcnInstrSortedTable)
         std::cout << "{ " << instr.mnemonic << ", " << cxuint(instr.encoding) <<
                 std::hex << ", 0x" << instr.mode << ", 0x" << instr.code1 << ", 0x" <<
                 instr.code2 << std::dec << ", " << instr.archMask << " }" << std::endl;*/
@@ -2823,184 +2835,38 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
-void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
-{
-    bool good = true;
-    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
-    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
-    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
-    
-    RegRange dstReg(0, 0);
-    RegRange sdstReg(0, 0);
-    GCNOperand src0Op{};
-    GCNOperand src1Op{};
-    GCNOperand src2Op{};
-    
-    cxbyte modifiers = 0;
-    const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
-            INSTROP_VOP3NEG : INSTROP_VOP3MODS;
-    
-    if (mode1 != GCN_VOP_ARG_NONE)
-    {
-        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
-        if (!skipRequiredComma(asmr, linePtr))
-            return;
-        
-        if (gcnInsn.encoding == GCNENC_VOP3B &&
-            (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
-             mode1 == GCN_S0EQS12)) /* VOP3b */
-        {
-            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2);
-            if (!skipRequiredComma(asmr, linePtr))
-                return;
-        }
-        const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
-                (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
-        
-        good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
-                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
-        
-        if (mode1 != GCN_SRC12_NONE)
-        {
-            if (!skipRequiredComma(asmr, linePtr))
-                return;
-            good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
-                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
-         
-            if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC)
-            {
-                if (!skipRequiredComma(asmr, linePtr))
-                    return;
-                good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
-                        (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
-                        INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
-                        INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
-            }
-        }
-    }
-    // modifiers
-    good &= parseVOPModifiers(asmr, linePtr, modifiers, nullptr,
-                              isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B);
-    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
-    cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
-    cxuint numSgprToRead = 0;
-    if (src0Op.range.start<maxSgprsNum)
-        numSgprToRead++;
-    if (src1Op && src1Op.range.start<maxSgprsNum && src0Op.range.start!=src1Op.range.start)
-        numSgprToRead++;
-    if (src2Op && src2Op.range.start<maxSgprsNum &&
-            src0Op.range.start!=src2Op.range.start &&
-            src1Op.range.start!=src2Op.range.start)
-        numSgprToRead++;
-    
-    if (numSgprToRead>=2)
-    {
-        asmr.printError(instrPlace, "More than one SGPR to read in instruction");
-        return;
-    }
-    if (mode1 == GCN_S0EQS12 && (src0Op.range.start!=src1Op.range.start &&
-        src0Op.range.start!=src2Op.range.start))
-    {
-        asmr.printError(instrPlace,
-                    "First source must be equal to second or third source");
-        return;
-    }
-    
-    uint32_t words[2];
-    if (gcnInsn.encoding == GCNENC_VOP3B)
-    {
-        if (!isGCN12)
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
-                (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8));
-        else
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
-                (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8) |
-                ((modifiers&VOP3_CLAMP) ? 0x8000 : 0));
-    }
-    else // VOP3A
-    {
-        if (!isGCN12)
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
-                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800: 0) |
-                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
-                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
-        else
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
-                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000: 0) |
-                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
-                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
-    }
-    SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
-        (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
-        ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
-        ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
-        ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
-    
-    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
-            reinterpret_cast<cxbyte*>(words + 2));
-    // update register pool
-    if (dstReg.start>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
-    else // sgprs
-        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
-    updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
-}
-
 static const char* vintrpParamsTbl[] =
 { "p10", "p20", "p0" };
 
-void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
-                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+bool GCNAsmUtils::parseVINTRP0P10P20(Assembler& asmr, const char*& linePtr, RegRange& reg)
 {
     const char* end = asmr.line+asmr.lineSize;
-    bool good = true;
-    RegRange dstReg(0, 0);
-    RegRange srcReg(0, 0);
-    
-    good &= parseVRegRange(asmr, linePtr, dstReg, 1);
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
-    if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
-    {   // vintrp parameter
-        skipSpacesToEnd(linePtr, end);
-        const char* p0Place = linePtr;
-        char pxName[5];
-        if (getNameArg(asmr, 5, pxName, linePtr, "VINTRP parameter"))
-        {
-            cxuint p0Code = 0;
-            toLowerString(pxName);
-            for (p0Code = 0; p0Code < 3; p0Code++)
-                if (::strcmp(vintrpParamsTbl[p0Code], pxName)==0)
-                    break;
-            if (p0Code < 3) // as srcReg
-                srcReg = { p0Code, p0Code+1 };
-            else
-            {
-                asmr.printError(p0Place, "Unknown VINTRP parameter");
-                good = false;
-            }
-        }
+    skipSpacesToEnd(linePtr, end);
+    const char* p0Place = linePtr;
+    char pxName[5];
+    if (getNameArg(asmr, 5, pxName, linePtr, "VINTRP parameter"))
+    {
+        cxuint p0Code = 0;
+        toLowerString(pxName);
+        for (p0Code = 0; p0Code < 3; p0Code++)
+            if (::strcmp(vintrpParamsTbl[p0Code], pxName)==0)
+                break;
+        if (p0Code < 3) // as srcReg
+            reg = { p0Code, p0Code+1 };
         else
-            good = false;
+        {
+            asmr.printError(p0Place, "Unknown VINTRP parameter");
+            return false;
+        }
+        return true;
     }
-    else // regular vector register
-        good &= parseVRegRange(asmr, linePtr, srcReg, 1);
-    
-    if (!skipRequiredComma(asmr, linePtr))
-        return;
-    
+    return false;
+}
+
+bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte& attr)
+{
+    bool good = true;
+    const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     bool goodAttr = true;
     const char* attrPlace = linePtr;
@@ -3015,6 +2881,7 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         std::transform(linePtr, linePtr+4, buf, toLower);
         if (::memcmp(buf, "attr", 4)!=0)
         {
+            while (linePtr!=end && *linePtr!=' ') linePtr++;
             asmr.printError(attrPlace, "Expected 'attr' keyword");
             goodAttr = good = false;
         }
@@ -3071,17 +2938,241 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
         linePtr++;
     }
     
+    attr = (attrVal<<2) | ((attrCmpName=='x') ? 0 : (attrCmpName=='y') ? 1 :
+            (attrCmpName=='z') ? 2 : 3);
+    return good;
+}
+
+void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
+                  const char* instrPlace, const char* linePtr, uint16_t arch,
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+{
+    bool good = true;
+    const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
+    const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
+    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
+    
+    RegRange dstReg(0, 0);
+    RegRange sdstReg(0, 0);
+    GCNOperand src0Op{};
+    GCNOperand src1Op{};
+    GCNOperand src2Op{};
+    
+    bool modHigh = false;
+    cxbyte modifiers = 0;
+    const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
+            INSTROP_VOP3NEG : INSTROP_VOP3MODS;
+    
+    if (mode1 != GCN_VOP_ARG_NONE)
+    {
+        good &= parseVRegRange(asmr, linePtr, dstReg, (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+        if (!skipRequiredComma(asmr, linePtr))
+            return;
+        
+        if (gcnInsn.encoding == GCNENC_VOP3B &&
+            (mode1 == GCN_DS2_VCC || mode1 == GCN_DST_VCC || mode1 == GCN_DST_VCC_VSRC2 ||
+             mode1 == GCN_S0EQS12)) /* VOP3b */
+        {
+            good &= parseSRegRange(asmr, linePtr, sdstReg, arch, 2);
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+        }
+        const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
+                (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
+        
+        if (mode2 != GCN_VOP3_VINTRP)
+            good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch,
+                    (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+        
+        if (mode2 == GCN_VOP3_VINTRP)
+        {
+            if (mode1 != GCN_P0_P10_P20)
+                good &= parseVRegRange(asmr, linePtr, src1Op.range, 1);
+            else /* P0_P10_P20 */
+                good &= parseVINTRP0P10P20(asmr, linePtr, src1Op.range);
+            
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            
+            cxbyte attr;
+            good &= parseVINTRPAttr(asmr, linePtr, attr);
+            attr = ((attr&3)<<6) | ((attr&0xfc)>>2);
+            src0Op.range = { attr, uint16_t(attr+1) };
+            
+            if ((gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2)
+            {
+                if (!skipRequiredComma(asmr, linePtr))
+                    return;
+                good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
+                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_VREGS|INSTROP_SREGS);
+            }
+            // high and vop3
+            const char* end = asmr.line+asmr.lineSize;
+            while (true)
+            {
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr==end)
+                    break;
+                char modName[10];
+                const char* modPlace = linePtr;
+                if (!getNameArgS(asmr, 10, modName, linePtr, "VINTRP modifier"))
+                    continue;
+                if (::strcmp(modName, "high")==0)
+                    modHigh = true;
+                else if (::strcmp(modName, "vop3")==0)
+                    modifiers |= VOP3_VOP3;
+                else
+                {
+                    asmr.printError(modPlace, "Unknown VINTRP modifier");
+                    good = false;
+                }
+            }
+            if (modHigh)
+            {
+                src0Op.range.start+=0x100;
+                src0Op.range.end+=0x100;
+            }
+        }
+        else if (mode1 != GCN_SRC12_NONE)
+        {
+            if (!skipRequiredComma(asmr, linePtr))
+                return;
+            good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch,
+                    (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
+                    INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
+                    INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+         
+            if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC)
+            {
+                if (!skipRequiredComma(asmr, linePtr))
+                    return;
+                good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
+                        (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
+                        INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
+                        INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+            }
+        }
+    }
+    // modifiers
+    if (mode2 != GCN_VOP3_VINTRP)
+        good &= parseVOPModifiers(asmr, linePtr, modifiers, nullptr,
+                              isGCN12 || gcnInsn.encoding!=GCNENC_VOP3B);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    const cxbyte attrChan = (attrCmpName=='x') ? 0 : (attrCmpName=='y') ? 1 :
-            (attrCmpName=='z') ? 2 : 3;
+    if (mode2 != GCN_VOP3_VINTRP)
+    {
+        cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
+        cxuint numSgprToRead = 0;
+        if (src0Op.range.start<maxSgprsNum)
+            numSgprToRead++;
+        if (src1Op && src1Op.range.start<maxSgprsNum &&
+                    src0Op.range.start!=src1Op.range.start)
+            numSgprToRead++;
+        if (src2Op && src2Op.range.start<maxSgprsNum &&
+                src0Op.range.start!=src2Op.range.start &&
+                src1Op.range.start!=src2Op.range.start)
+            numSgprToRead++;
+        
+        if (numSgprToRead>=2)
+        {
+            asmr.printError(instrPlace, "More than one SGPR to read in instruction");
+            return;
+        }
+        if (mode1 == GCN_S0EQS12 && (src0Op.range.start!=src1Op.range.start &&
+            src0Op.range.start!=src2Op.range.start))
+        {
+            asmr.printError(instrPlace,
+                        "First source must be equal to second or third source");
+            return;
+        }
+    }
     
+    uint32_t words[2];
+    cxuint wordsNum = 2;
+    if (gcnInsn.encoding == GCNENC_VOP3B)
+    {
+        if (!isGCN12)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
+                (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8));
+        else
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
+                (dstReg.start&0xff) | (uint32_t(sdstReg.start)<<8) |
+                ((modifiers&VOP3_CLAMP) ? 0x8000 : 0));
+    }
+    else // VOP3A
+    {
+        if (!isGCN12)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<17) |
+                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800: 0) |
+                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
+                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
+        else if (mode2 != GCN_VOP3_VINTRP || mode1 == GCN_NEW_OPCODE ||
+            (gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2 ||
+            (modifiers & VOP3_VOP3)!=0 || (src0Op.range.start&0x100)!=0/* high */)
+            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code1)<<16) |
+                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000: 0) |
+                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0) |
+                ((src2Op.vopMods & VOPOP_ABS) ? 0x400 : 0));
+        else // VINTRP
+        {
+            SLEV(words[0], 0xd4000000U | (src1Op.range.start&0xff) |
+                (uint32_t(src0Op.range.start>>6)<<8) |
+                (uint32_t(src0Op.range.start&63)<<10) |
+                (uint32_t(gcnInsn.code2)<<16) | (uint32_t(dstReg.start&0xff)<<18));
+            wordsNum--;
+        }
+    }
+    if (wordsNum==2)
+        SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
+                (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
+                ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
+                ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
+                ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
+    
+    output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
+            reinterpret_cast<cxbyte*>(words + wordsNum));
+    // update register pool
+    if (dstReg.start>=256)
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
+    else // sgprs
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
+}
+
+void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
+                  const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
+                  GCNAssembler::Regs& gcnRegs)
+{
+    bool good = true;
+    RegRange dstReg(0, 0);
+    RegRange srcReg(0, 0);
+    
+    good &= parseVRegRange(asmr, linePtr, dstReg, 1);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    if ((gcnInsn.mode & GCN_MASK1) == GCN_P0_P10_P20)
+        good &= parseVINTRP0P10P20(asmr, linePtr, srcReg);
+    else // regular vector register
+        good &= parseVRegRange(asmr, linePtr, srcReg, 1);
+    
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    
+    cxbyte attrVal;
+    good &= parseVINTRPAttr(asmr, linePtr, attrVal);
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
     /* */
     uint32_t word;
-    SLEV(word, 0xc8000000U | (srcReg.start&0xff) | (uint32_t(attrChan&3)<<8) |
-            (uint32_t(attrVal&0x3f)<<10) | (uint32_t(gcnInsn.code1)<<16) |
-            (uint32_t(dstReg.start&0xff)<<18));
+    SLEV(word, 0xc8000000U | (srcReg.start&0xff) | (uint32_t(attrVal&0xff)<<8) |
+            (uint32_t(gcnInsn.code1)<<16) | (uint32_t(dstReg.start&0xff)<<18));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(&word),
             reinterpret_cast<cxbyte*>(&word)+4);
     

@@ -1559,7 +1559,44 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             vsrc0Used = true;
         }
         
-        if (mode1 != GCN_SRC12_NONE && (vop3Mode != GCN_VOP3_VINTRP))
+        if (vop3Mode == GCN_VOP3_VINTRP)
+        {
+            if ((insnCode2 & (1U<<30)) != 0)
+                *bufPtr++ = '-';
+            if (absFlags & 2)
+                putChars(bufPtr, "abs(", 4);
+            if (mode1 == GCN_P0_P10_P20)
+                decodeVINTRPParam(vsrc1, bufPtr);
+            else
+                decodeGCNOperand(vsrc1, 1, bufPtr, arch, 0, displayFloatLits);
+            if (absFlags & 2)
+                *bufPtr++ = ')';
+            putChars(bufPtr, ", attr", 6);
+            const cxuint attr = vsrc0&63;
+            putByteToBuf(attr, bufPtr);
+            *bufPtr++ = '.';
+            *bufPtr++ = "xyzw"[((vsrc0>>6)&3)]; // attrchannel
+            
+            if ((gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2)
+            {
+                *bufPtr++ = ',';
+                *bufPtr++ = ' ';
+                if ((insnCode2 & (1U<<31)) != 0)
+                    *bufPtr++ = '-';
+                if (absFlags & 4)
+                    putChars(bufPtr, "abs(", 4);
+                decodeGCNOperand(vsrc2, 1, bufPtr, arch, 0, displayFloatLits);
+                if (absFlags & 4)
+                    *bufPtr++ = ')';
+                vsrc2Used = true;
+            }
+            
+            if (vsrc0 & 0x100)
+                putChars(bufPtr, " high", 5);
+            vsrc0Used = true;
+            vsrc1Used = true;
+        }
+        else if (mode1 != GCN_SRC12_NONE)
         {
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
@@ -1597,43 +1634,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             }
             vsrc1Used = true;
         }
-        else if (vop3Mode == GCN_VOP3_VINTRP)
-        {
-            if ((insnCode2 & (1U<<30)) != 0)
-                *bufPtr++ = '-';
-            if (absFlags & 2)
-                putChars(bufPtr, "abs(", 4);
-            if (mode1 == GCN_P0_P10_P20)
-                decodeVINTRPParam(vsrc1, bufPtr);
-            else
-                decodeGCNOperand(vsrc1, 1, bufPtr, arch, 0, displayFloatLits);
-            if (absFlags & 2)
-                *bufPtr++ = ')';
-            putChars(bufPtr, ", attr", 6);
-            const cxuint attr = vsrc0&63;
-            putByteToBuf(attr, bufPtr);
-            *bufPtr++ = '.';
-            *bufPtr++ = "xyzw"[((vsrc0>>6)&3)]; // attrchannel
-            
-            if ((gcnInsn.mode & GCN_VOP3_MASK3) == GCN_VINTRP_SRC2)
-            {
-                *bufPtr++ = ',';
-                *bufPtr++ = ' ';
-                if ((insnCode2 & (1U<<31)) != 0)
-                    *bufPtr++ = '-';
-                if (absFlags & 4)
-                    putChars(bufPtr, "abs(", 4);
-                decodeGCNOperand(vsrc2, 1, bufPtr, arch, 0, displayFloatLits);
-                if (absFlags & 4)
-                    *bufPtr++ = ')';
-                vsrc2Used = true;
-            }
-            
-            if (vsrc0 & 0x100)
-                putChars(bufPtr, " high", 5);
-            vsrc0Used = true;
-            vsrc1Used = true;
-        }
+        
         vdstUsed = true;
     }
     else
