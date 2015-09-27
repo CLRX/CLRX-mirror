@@ -2485,29 +2485,16 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
-        if (!isGCN12)
-        {
-            if (haveDstCC || haveSrcCC)
-                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                    (dstReg.start&0xff) | (uint32_t(dstCCReg.start)<<8));
-            else
-                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
-        }
+        uint32_t code = (isGCN12) ?
+                (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
+                (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
+        if (haveDstCC || haveSrcCC)
+            SLEV(words[0], 0xd0000000U | code |
+                (dstReg.start&0xff) | (uint32_t(dstCCReg.start)<<8));
         else
-        {   // new GCN1.2 code
-            if (haveDstCC || haveSrcCC)
-                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
-                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
-                    (uint32_t(dstCCReg.start)<<8));
-            else
-                SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
-                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
-                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
-        }
+            SLEV(words[0], 0xd0000000U | code | (dstReg.start&0xff) |
+                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
             (uint32_t(srcCCReg.start)<<18) | ((modifiers & 3) << 27) |
             ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
@@ -2644,14 +2631,11 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
-        if (!isGCN12)
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0));
-        else
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
-                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
-                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0));
+        uint32_t code = (isGCN12) ?
+                (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
+                (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
+        SLEV(words[0], 0xd0000000U | code | (dstReg.start&0xff) |
+            ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0));
         SLEV(words[1], src0Op.range.start | ((modifiers & 3) << 27) |
             ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0));
         wordsNum++;
@@ -2811,16 +2795,12 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     }
     else
     {   // VOP3 encoding
-        if (!isGCN12)
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<17) |
-                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0) |
-                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
-        else
-            SLEV(words[0], 0xd0000000U | (uint32_t(gcnInsn.code2)<<16) |
-                    (dstReg.start&0xff) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) |
-                    ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
-                    ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
+        uint32_t code = (isGCN12) ?
+                (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
+                (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
+        SLEV(words[0], 0xd0000000U | code | (dstReg.start&0xff) |
+                ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
+                ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
         SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
             ((modifiers & 3) << 27) | ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
             ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));
@@ -3439,8 +3419,9 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
-    RegRange soffsetReg(0, 0);
+    GCNOperand soffsetOp{};
     RegRange srsrcReg(0, 0);
+    const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
     
     skipSpacesToEnd(linePtr, end);
     const char* vdataPlace = linePtr;
@@ -3462,7 +3443,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
         if (!skipRequiredComma(asmr, linePtr))
             return;
-        good &= parseSRegRange(asmr, linePtr, soffsetReg, arch, 1);
+        good &= parseOperand(asmr, linePtr, soffsetOp, nullptr, arch, 1,
+                 INSTROP_SREGS|INSTROP_SSOURCE);
     }
     
     bool haveOffset = false, haveFormat = false;
@@ -3587,7 +3569,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 }
             }
         }
-        else if (::strcmp(name, "addr64")==0)
+        else if (!isGCN12 && ::strcmp(name, "addr64")==0)
             haveAddr64 = true;
         else if (::strcmp(name, "tfe")==0)
             haveTfe = true;
@@ -3652,7 +3634,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         SLEV(words[0], 0xe0000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
                 (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
-                (uint32_t(gcnInsn.code1)<<18));
+                ((haveSlc && isGCN12) ? 0x20000U : 0) | (uint32_t(gcnInsn.code1)<<18));
     else // MTBUF
         SLEV(words[0], 0xe8000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
@@ -3660,8 +3642,9 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
     
     SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
-            (uint32_t(srsrcReg.start>>2)<<16) | (haveSlc ? (1U<<22) : 0) |
-            (haveTfe ? (1U<<23) : 0) | (uint32_t(soffsetReg.start)<<24));
+            (uint32_t(srsrcReg.start>>2)<<16) |
+            ((haveSlc && (!isGCN12 || gcnInsn.encoding==GCNENC_MTBUF)) ? (1U<<22) : 0) |
+            (haveTfe ? (1U<<23) : 0) | (uint32_t(soffsetOp.range.start)<<24));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));

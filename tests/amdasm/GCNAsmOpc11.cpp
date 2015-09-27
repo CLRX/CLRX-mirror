@@ -1993,6 +1993,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* MUBUF */
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds tfe", 0xe001c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], 31 "
+        "offset:603 glc slc addr64 lds tfe", 0xe001c25bU, 0x9fd43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35   ",
         0xe0000000U, 0x23143d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "

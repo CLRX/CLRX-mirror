@@ -1125,5 +1125,12 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0xd97ecd67U, 0x9b000047U, true, true, "" },
     { "   ds_write_src2_b64 v71 offset:52583", 0xd99acd67U, 0x00000047U, true, true, "" },
     /* MUBUF */
+    { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603",
+        0xe000225bU, 0x23143d12U, true, true, "" },
+    { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen slc offset:603",
+        0xe002225bU, 0x23143d12U, true, true, "" },
+    /* MUBUF errors */
+    { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603 addr",
+        0, 0, false, false, "test.s:1:67: Error: Unknown MUBUF modifier\n" },
     { nullptr, 0, 0, false, false, 0 }
 };
