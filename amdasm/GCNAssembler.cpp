@@ -3638,13 +3638,17 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     if (gcnInsn.encoding==GCNENC_MUBUF)
         SLEV(words[0], 0xe0000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
-                (haveAddr64 ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
+                ((haveAddr64 && !isGCN12) ? 0x8000U : 0U) | (haveLds ? 0x10000U : 0U) |
                 ((haveSlc && isGCN12) ? 0x20000U : 0) | (uint32_t(gcnInsn.code1)<<18));
     else // MTBUF
+    {
+        uint32_t code = (isGCN12) ? (uint32_t(gcnInsn.code1)<<15) :
+                (uint32_t(gcnInsn.code1)<<16);
         SLEV(words[0], 0xe8000000U | offset | (haveOffen ? 0x1000U : 0U) |
                 (haveIdxen ? 0x2000U : 0U) | (haveGlc ? 0x4000U : 0U) |
-                (haveAddr64 ? 0x8000U : 0U) | (uint32_t(gcnInsn.code1)<<16) |
+                ((haveAddr64 && !isGCN12) ? 0x8000U : 0U) | code |
                 (uint32_t(dfmt)<<19) | (uint32_t(nfmt)<<23));
+    }
     
     SLEV(words[1], (vaddrReg.start&0xff) | (uint32_t(vdataReg.start&0xff)<<8) |
             (uint32_t(srsrcReg.start>>2)<<16) |
