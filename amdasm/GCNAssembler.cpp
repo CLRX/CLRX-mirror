@@ -3348,8 +3348,12 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
                     output.size()));
     
     uint32_t words[2];
-    SLEV(words[0], 0xd8000000U | uint32_t(offset) | (haveGds ? 0x20000U : 0U) |
-            (uint32_t(gcnInsn.code1)<<18));
+    if ((arch & ARCH_RX3X0)==0)
+        SLEV(words[0], 0xd8000000U | uint32_t(offset) | (haveGds ? 0x20000U : 0U) |
+                (uint32_t(gcnInsn.code1)<<18));
+    else
+        SLEV(words[0], 0xd8000000U | uint32_t(offset) | (haveGds ? 0x10000U : 0U) |
+                (uint32_t(gcnInsn.code1)<<17));
     SLEV(words[1], (addrReg.start&0xff) | (uint32_t(data0Reg.start&0xff)<<8) |
             (uint32_t(data1Reg.start&0xff)<<16) | (uint32_t(dstReg.start&0xff)<<24));
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
