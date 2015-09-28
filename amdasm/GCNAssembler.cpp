@@ -822,7 +822,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 return true;
             }
             else if ((instrOpMask&INSTROP_LDS)!=0 &&
-                (::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0))
+                (::strcmp(regName, "lds")==0 || ::strcmp(regName, "lds_direct")==0 ||
+                    ::strcmp(regName, "src_lds_direct")==0))
             {
                 operand.range = { 254, 255 };
                 return true;

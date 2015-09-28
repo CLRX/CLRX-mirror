@@ -515,6 +515,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cndmask_b32   v154  , v21 , v107  , vcc", 0x0134d715U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, lds, v107, vcc", 0x0134d6feU, 0, false, true, "" },
     { "    v_cndmask_b32   v154, lds_direct, v107, vcc", 0x0134d6feU, 0, false, true, "" },
+    { "    v_cndmask_b32   v154, src_lds_direct, v107, vcc",
+        0x0134d6feU, 0, false, true, "" },
     { "    v_cndmask_b32   v154, s21, v107, vcc", 0x0134d615U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, 2, v107, vcc", 0x0134d682U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, -9, v107, vcc", 0x0134d6c9U, 0, false, true, "" },
