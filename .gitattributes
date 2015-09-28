@@ -33,6 +33,8 @@ amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
 amdasm/Disassembler.cpp -text
+amdasm/GCNAsmHelpers.cpp -text
+amdasm/GCNAsmInternals.h -text
 amdasm/GCNAssembler.cpp -text
 amdasm/GCNDisasm.cpp -text
 amdasm/GCNInstructions.cpp -text

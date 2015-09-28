@@ -28,6 +28,7 @@ SET(LIBAMDASMSRC
         AsmSource.cpp
         Assembler.cpp
         Disassembler.cpp
+        GCNAsmHelpers.cpp
         GCNAssembler.cpp
         GCNDisasm.cpp
         GCNInstructions.cpp)
