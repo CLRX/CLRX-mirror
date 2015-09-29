@@ -2023,8 +2023,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         asmr.printError(instrPlace, "Idxen and offen must be zero in 64-bit address mode");
         return;
     }
-    if (haveOffen && offset!=0)
-        asmr.printWarning(instrPlace, "Offset will be ignored for enabled offen");
+    //if (haveOffen && offset!=0) // is obsolete warning???
+    // asmr.printWarning(instrPlace, "Offset will be ignored for enabled offen");
     
     if (offsetExpr!=nullptr)
         offsetExpr->setTarget(AsmExprTarget(GCNTGT_MXBUFOFFSET, asmr.currentSection,

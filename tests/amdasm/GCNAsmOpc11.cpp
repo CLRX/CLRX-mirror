@@ -2029,12 +2029,12 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:x glc; x=4603",
         0xe00041fbU, 0x23143d12U, true, true,
         "test.s:1:58: Warning: Value 0x11fb truncated to 0x1fb\n" },
-    { "    buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offset:577 offen idxen "
+    /*{ "    buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offset:577 offen idxen "
         "glc slc lds tfe", 0xe0017241U, 0x23d43d12U, true, true,
         "test.s:1:5: Warning: Offset will be ignored for enabled offen\n" },
     { "    buffer_load_format_x v[61:62], v18, s[80:83], s35 offset:577 offen "
         "glc slc lds tfe", 0xe0015241U, 0x23d43d12U, true, true,
-        "test.s:1:5: Warning: Offset will be ignored for enabled offen\n" },
+        "test.s:1:5: Warning: Offset will be ignored for enabled offen\n" },*/
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:1779 offset:603",
         0xe000025bU, 0x23143d12U, true, true,
         "test.s:1:63: Warning: Offset is already defined\n" },
