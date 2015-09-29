@@ -1137,13 +1137,13 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint32_t insnCode2,
         putChars(bufPtr, sdwaDstUnusedTbl[dstUnused],
                  ::strlen(sdwaDstUnusedTbl[dstUnused]));
     }
-    if (src0Sel != 6)
+    if (src0Sel!=6 && src0Used)
     {
         putChars(bufPtr, " src0_sel:", 10);
         putChars(bufPtr, sdwaSelChoicesTbl[src0Sel],
                  ::strlen(sdwaSelChoicesTbl[src0Sel]));
     }
-    if (src1Sel != 6)
+    if (src1Sel!=6 && src1Used)
     {
         putChars(bufPtr, " src1_sel:", 10);
         putChars(bufPtr, sdwaSelChoicesTbl[src1Sel],
