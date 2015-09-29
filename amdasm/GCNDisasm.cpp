@@ -836,7 +836,7 @@ static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     char* bufStart = output.reserve(80);
     char* bufPtr = bufStart;
     addSpaces(bufPtr, spacesToAdd);
-    if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
+    if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         decodeGCNOperand((insnCode>>16)&0x7f, (gcnInsn.mode&GCN_REG_DST_64)?2:1,
                          bufPtr, arch);
@@ -850,8 +850,7 @@ static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     decodeGCNOperand((insnCode>>8)&0xff, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr,
                      arch, literal);
     
-    if ((gcnInsn.mode & GCN_MASK1) == GCN_REG_S1_JMP &&
-        ((insnCode>>16)&0x7f) != 0)
+    if ((gcnInsn.mode & GCN_MASK1) == GCN_DST_NONE && ((insnCode>>16)&0x7f) != 0)
     {
         putChars(bufPtr, " sdst=", 6);
         bufPtr += itocstrCStyle(((insnCode>>16)&0x7f), bufPtr, 6, 16);

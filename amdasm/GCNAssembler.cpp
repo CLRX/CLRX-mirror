@@ -131,7 +131,7 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 {
     bool good = true;
     RegRange dstReg(0, 0);
-    if ((gcnInsn.mode & GCN_MASK1) != GCN_REG_S1_JMP)
+    if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                    (gcnInsn.mode&GCN_REG_DST_64)?2:1);
