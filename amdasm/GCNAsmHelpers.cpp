@@ -948,7 +948,8 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
     bool haveBoundCtrl = false, haveDppCtrl = false;
     
     if (extraMods!=nullptr)
-        *extraMods = { 6, 0, 6, 6, 15, 15, 0xe4 /* TODO: why not 0xe4? */, false, false };
+        *extraMods = { 6, 0, (withSDWAOperands>=2)?6U:0U, (withSDWAOperands>=3)?6U:0U,
+                    15, 15, 0xe4 /* TODO: why not 0xe4? */, false, false };
     
     skipSpacesToEnd(linePtr, end);
     const char* modsPlace = linePtr;

@@ -589,13 +589,13 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    v_ldexp_f16  v154, v21, v107", 0x6734d715U, 0, false, true, "" },
     { "    v_ldexp_f16  v55, s27, v90 vop3", 0xd1330037U, 0x0002b41bU, true, true, "" },
     /* VOP1 - SDWA */
-    { "    v_mov_b32  v158, sext(v79)", 0x7f3c02f9U, 0x060e064fU, true, true, "" },
-    { "    v_mov_b32  v158, sext(abs(v79))", 0x7f3c02f9U, 0x062e064fU, true, true, "" },
-    { "    v_mov_b32  v158, sext(-abs(v79))", 0x7f3c02f9U, 0x063e064fU, true, true, "" },
+    { "    v_mov_b32  v158, sext(v79)", 0x7f3c02f9U, 0x0e064fU, true, true, "" },
+    { "    v_mov_b32  v158, sext(abs(v79))", 0x7f3c02f9U, 0x2e064fU, true, true, "" },
+    { "    v_mov_b32  v158, sext(-abs(v79))", 0x7f3c02f9U, 0x3e064fU, true, true, "" },
     { "    v_mov_b32  v158, v79 dst_sel:w1 src0_sel:b2 dst_un:preserve",
-        0x7f3c02f9U, 0x0602154fU, true, true, "" },
+        0x7f3c02f9U, 0x02154fU, true, true, "" },
     { "    v_mov_b32  v158, v79 dst_sel:w1 src0_sel:b2 dst_un:preserve clamp",
-        0x7f3c02f9U, 0x0602354fU, true, true, "" },
+        0x7f3c02f9U, 0x02354fU, true, true, "" },
     /* VOP1 - SDWA errors */
     { "    v_mov_b32  v158, 12343 dst_sel:w1 src0_sel:b2", 0, 0, false, false,
         "test.s:1:5: Error: Literal with SDWA or DPP word is illegal\n" },
