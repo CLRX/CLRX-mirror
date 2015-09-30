@@ -2710,8 +2710,12 @@ const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum) const
 
 void GCNAssembler::fillAlignment(size_t size, cxbyte* output)
 {
-    uint32_t value = LEV(0xbf800000U); // fill s_nop's
+    uint32_t value = LEV(0xbf800000U); // fill with s_nop's
+    if ((size&3)!=0)
+    {   // first, we fill zeros
+        const size_t toAlign4 = 4-(size&3);
+        ::memset(output, 0, toAlign4);
+        output += toAlign4;
+    } 
     std::fill((uint32_t*)output, ((uint32_t*)output) + (size>>2), value);
-    if ((size&3)!=0) // rest of bytes
-        ::memset(output+(size&~size_t(3)), 0, size&3);
 }
