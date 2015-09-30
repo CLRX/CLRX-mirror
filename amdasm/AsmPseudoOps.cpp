@@ -241,10 +241,79 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     CString sectionName;
     if (!getNameArg(asmr, sectionName, linePtr, "section name"))
         return;
-    if (!checkGarbagesAtEnd(asmr, linePtr))
+    bool haveFlags;
+    uint32_t sectFlags = 0;
+    AsmSectionType sectType = AsmSectionType::EXTRA_SECTION;
+    if (!skipComma(asmr, haveFlags, linePtr))
+        return;
+    bool good = true;
+    if (haveFlags)
+    {
+        std::string flagsStr;
+        skipSpacesToEnd(linePtr, end);
+        const char* flagsStrPlace = linePtr;
+        if (asmr.parseString(flagsStr, linePtr))
+        {
+            for (const char c: flagsStr)
+                if (c=='a')
+                    sectFlags |= ASMELFSECT_ALLOCATABLE;
+                else if (c=='x')
+                    sectFlags |= ASMELFSECT_EXECUTABLE;
+                else if (c=='w')
+                    sectFlags |= ASMELFSECT_WRITEABLE;
+                else
+                {
+                    asmr.printError(flagsStrPlace,
+                            "Only 'a', 'w', 'x' is accepted in flags string");
+                    good = false;
+                }
+        }
+        else
+            good = false;
+        
+        bool haveComma;
+        if (!skipComma(asmr, haveComma, linePtr))
+            return;
+        if (haveComma)
+        {   // section type
+            char typeBuf[20];
+            skipSpacesToEnd(linePtr, end);
+            const char* typePlace = linePtr;
+            if (linePtr!=end && *linePtr=='@')
+            {
+                linePtr++;
+                if (getNameArg(asmr, 20, typeBuf, linePtr, "section type"))
+                {
+                    toLowerString(typeBuf);
+                    if (::strcmp(typeBuf, "progbits")==0)
+                        sectType = AsmSectionType::EXTRA_PROGBITS;
+                    else if (::strcmp(typeBuf, "note")==0)
+                        sectType = AsmSectionType::EXTRA_NOTE;
+                    else if (::strcmp(typeBuf, "nobits")==0)
+                        sectType = AsmSectionType::EXTRA_NOBITS;
+                    else
+                    {
+                        asmr.printError(typePlace, "Unknown section type");
+                        good = false;
+                    }
+                }
+                else
+                    good = false;
+            }
+            else
+            {
+                asmr.printError(typePlace, "Section type was not preceded by '@'");
+                good = false;
+            }
+        }
+    }
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    asmr.goToSection(pseudoOpPlace, sectionName.c_str());
+    if (!haveFlags)
+        asmr.goToSection(pseudoOpPlace, sectionName.c_str());
+    else
+        asmr.goToSection(pseudoOpPlace, sectionName.c_str(), sectType, sectFlags);
 }
 
 void AsmPseudoOps::goToMain(Assembler& asmr, const char* pseudoOpPlace,

@@ -1649,14 +1649,27 @@ bool AsmAmdHandler::prepareBinary()
                 kernel->calNotes.push_back(calNote);
                 break;
             }
+            case AsmSectionType::EXTRA_PROGBITS:
+            case AsmSectionType::EXTRA_NOTE:
+            case AsmSectionType::EXTRA_NOBITS:
             case AsmSectionType::EXTRA_SECTION:
+            {
+                uint32_t elfSectType =
+                       (asmSection.type==AsmSectionType::EXTRA_NOTE) ? SHT_NOTE :
+                       (asmSection.type==AsmSectionType::EXTRA_NOBITS) ? SHT_NOBITS :
+                             SHT_PROGBITS;
+                uint32_t elfSectFlags = 
+                    ((asmSection.flags&ASMELFSECT_ALLOCATABLE) ? SHF_ALLOC : 0) |
+                    ((asmSection.flags&ASMELFSECT_WRITEABLE) ? SHF_WRITE : 0) |
+                    ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
                 if (section.kernelId == ASMKERN_GLOBAL)
                     output.extraSections.push_back({section.name, sectionSize, sectionData,
-                            1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
+                            1, elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
                 else
                     kernel->extraSections.push_back({section.name, sectionSize, sectionData,
-                            1, SHT_PROGBITS, 0, ELFSECTID_NULL, 0, 0 });
+                            1, elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
                 break;
+            }
             default: // ignore other sections
                 break;
         }

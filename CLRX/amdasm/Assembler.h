@@ -73,6 +73,10 @@ enum class AsmSectionType: cxbyte
     AMD_CALNOTE,        ///< AMD CALNote
     
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
+    EXTRA_FIRST = 0xfc,
+    EXTRA_PROGBITS = 0xfc,
+    EXTRA_NOBITS = 0xfd,
+    EXTRA_NOTE = 0xfe,
     EXTRA_SECTION = 0xff
 };
 
@@ -82,7 +86,11 @@ enum: Flags
 {
     ASMSECT_WRITEABLE = 1,
     ASMSECT_ADDRESSABLE = 2,
-    ASMSECT_ABS_ADDRESSABLE = 4
+    ASMSECT_ABS_ADDRESSABLE = 4,
+    
+    ASMELFSECT_ALLOCATABLE = 0x10,
+    ASMELFSECT_WRITEABLE = 0x20,
+    ASMELFSECT_EXECUTABLE = 0x40
 };
 
 enum: cxbyte {
@@ -928,6 +936,8 @@ private:
     void goToMain(const char* pseudoOpPlace);
     void goToKernel(const char* pseudoOpPlace, const char* kernelName);
     void goToSection(const char* pseudoOpPlace, const char* sectionName);
+    void goToSection(const char* pseudoOpPlace, const char* sectionName,
+                     AsmSectionType type, Flags flags);
     void goToSection(const char* pseudoOpPlace, cxuint sectionId);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,

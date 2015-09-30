@@ -1404,7 +1404,10 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
         try
         { formatHandler->setCurrentKernel(kmit->second); }
         catch(const AsmFormatException& ex) // if error
-        { printError(pseudoOpPlace, ex.what()); }
+        {
+            printError(pseudoOpPlace, ex.what());
+            return;
+        }
         
         currentOutPos = sections[currentSection].content.size();
     }
@@ -1432,8 +1435,52 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
         try
         { formatHandler->setCurrentSection(sectionId); }
         catch(const AsmFormatException& ex) // if error
-        { printError(pseudoOpPlace, ex.what()); }
+        {
+            printError(pseudoOpPlace, ex.what());
+            return;
+        }
         
+        currentOutPos = sections[currentSection].content.size();
+    }
+}
+
+void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
+        AsmSectionType type, Flags flags)
+{
+    const cxuint sectionId = formatHandler->getSectionId(sectionName);
+    if (sectionId == ASMSECT_NONE)
+    {   // try to add new section
+        cxuint sectionId;
+        try
+        { sectionId = formatHandler->addSection(sectionName, currentKernel); }
+        catch(const AsmFormatException& ex)
+        {   // error!
+            printError(pseudoOpPlace, ex.what());
+            return;
+        }
+        auto info = formatHandler->getSectionInfo(sectionId);
+        if (info.type == AsmSectionType::EXTRA_SECTION)
+        {
+            info.type = type;
+            info.flags |= flags;
+        }
+        else
+            printWarning(pseudoOpPlace,
+                     "Section type and flags was ignored for builtin section");
+        sections.push_back({ info.name, currentKernel, info.type, info.flags });
+        currentOutPos = 0;
+    }
+    else // if section exists
+    {   // found, try to set
+        try
+        { formatHandler->setCurrentSection(sectionId); }
+        catch(const AsmFormatException& ex) // if error
+        {
+            printError(pseudoOpPlace, ex.what());
+            return;
+        }
+        
+        printWarning(pseudoOpPlace, "Section type and flags was ignored");
         currentOutPos = sections[currentSection].content.size();
     }
 }
