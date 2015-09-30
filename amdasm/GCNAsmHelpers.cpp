@@ -188,8 +188,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             loHiRegSuffix = 3;
             loHiReg = 106;
         }
-        else if (regName[0] == 'e' && regName[1] == 'x' && regName[2] == 'e' &&
-            regName[3] == 'c')
+        else if (::memcmp(regName, "exec", 4)==0)
         {   /* exec* */
             loHiRegSuffix = 4;
             loHiReg = 126;
@@ -208,7 +207,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             }
         }
         else if (regName[0] == 'm' && regName[1] == '0' && regName[2] == 0)
-        {
+        {   /* M0 */
             if (regsNum!=0 && regsNum!=1 && regsNum!=2)
             {
                 printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
@@ -438,8 +437,6 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
             asmr.printError(exprPlace, "Expression must be absolute!");
             return false;
         }
-        //if (bits == 0)
-          //  bits = sizeof(T)<<3;
         asmr.printWarningForRange(bits, value, asmr.getSourcePos(exprPlace), signess);
         outValue = value & ((1ULL<<bits)-1ULL);
         return true;
