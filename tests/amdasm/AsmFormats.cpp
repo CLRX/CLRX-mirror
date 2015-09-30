@@ -343,7 +343,7 @@ thirdKernel:
   GlobalData:
   f0fd3d44
   Code:
-  011603040000000000000000000000004d4c4b5a0b
+  01160304000080bf000080bf000080bf4d4c4b5a0b
   Section .info1:
   6e6f696e666f
   Section .infox:

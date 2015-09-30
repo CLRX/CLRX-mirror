@@ -363,6 +363,8 @@ public:
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// get allocated register numbers after assemblying
     virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
+    /// fill alignment when value is not given
+    virtual void fillAlignment(size_t size, cxbyte* output) = 0;
 };
 
 /// GCN arch assembler
@@ -393,6 +395,7 @@ public:
                  cxuint sectionId, uint64_t value);
     bool checkMnemonic(const CString& mnemonic) const;
     const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
+    void fillAlignment(size_t size, cxbyte* output);
 };
 
 /*

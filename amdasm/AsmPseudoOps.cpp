@@ -982,11 +982,11 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
         }
     }
     
-    bool haveComma = false;
-    if (!skipComma(asmr, haveComma, linePtr))
+    bool haveValue = false;
+    if (!skipComma(asmr, haveValue, linePtr))
         return;
     const char* valuePlace = linePtr;
-    if (haveComma)
+    if (haveValue)
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
@@ -995,6 +995,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
         else
             good = false;
         
+        bool haveComma = false;
         if (!skipComma(asmr, haveComma, linePtr))
             return;
         if (haveComma)
@@ -1014,7 +1015,14 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     
     if (asmr.currentSection==ASMSECT_ABS && value != 0)
         asmr.printWarning(valuePlace, "Fill value is ignored inside absolute section");
-    asmr.reserveData(bytesToFill, value&0xff);
+    
+    if (haveValue || asmr.sections[asmr.currentSection].type != AsmSectionType::CODE)
+        asmr.reserveData(bytesToFill, value&0xff);
+    else /* only if no value and is code section */
+    {
+        cxbyte* output = asmr.reserveData(bytesToFill, 0);
+        asmr.isaAssembler->fillAlignment(bytesToFill, output);
+    }
 }
 
 template<typename Word>
@@ -1041,11 +1049,11 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
         good = false;
     }
     
-    bool haveComma = false;
-    if (!skipComma(asmr, haveComma, linePtr))
+    bool haveValue = false;
+    if (!skipComma(asmr, haveValue, linePtr))
         return;
     const char* valuePlace = linePtr;
-    if (haveComma)
+    if (haveValue)
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
@@ -1055,6 +1063,7 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
         else
             good = false;
         
+        bool haveComma = false;
         if (!skipComma(asmr, haveComma, linePtr))
             return;
         if (haveComma)
@@ -1088,13 +1097,16 @@ void AsmPseudoOps::doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
         asmr.reserveData(bytesToFill);
         return;
     }
-    /* we assume that pointer to section is aligned to any built-in type
-     * thus, this fill doesn't require SULEV writes */
     cxbyte* content = asmr.reserveData(bytesToFill);
-    Word word;
-    SLEV(word, value);
-    std::fill(reinterpret_cast<Word*>(content),
-              reinterpret_cast<Word*>(content + bytesToFill), word);
+    if (haveValue)
+    {
+        Word word;
+        SLEV(word, value);
+        std::fill(reinterpret_cast<Word*>(content),
+                  reinterpret_cast<Word*>(content + bytesToFill), word);
+    }
+    else if (asmr.sections[asmr.currentSection].type == AsmSectionType::CODE)
+        asmr.isaAssembler->fillAlignment(bytesToFill, content);
 }
 
 void AsmPseudoOps::doOrganize(Assembler& asmr, const char* linePtr)

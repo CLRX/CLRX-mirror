@@ -2707,3 +2707,11 @@ const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum) const
     regTypesNum = 2;
     return regTable;
 }
+
+void GCNAssembler::fillAlignment(size_t size, cxbyte* output)
+{
+    uint32_t value = LEV(0xbf800000U); // fill s_nop's
+    std::fill((uint32_t*)output, ((uint32_t*)output) + (size>>2), value);
+    if ((size&3)!=0) // rest of bytes
+        ::memset(output+(size&~size_t(3)), 0, size&3);
+}
