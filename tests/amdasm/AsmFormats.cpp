@@ -187,8 +187,9 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
         }
         for (BinSection section: kernel.extraSections)
         {
-            os << "  Section " << section.name << ":\n";
-            printHexData(os, 3, section.size, section.data);
+            os << "    Section " << section.name << ", type=" << section.type <<
+                        ", flags=" << section.flags << ":\n";
+            printHexData(os, 2, section.size, section.data);
         }
         for (BinSymbol symbol: kernel.extraSymbols)
                 os << "    Symbol: name=" << symbol.name << ", value=" << symbol.value <<
@@ -199,7 +200,8 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
     printHexData(os,  1, output->globalDataSize, output->globalData);
     for (BinSection section: output->extraSections)
     {
-        os << "  Section " << section.name << ":\n";
+        os << "  Section " << section.name << ", type=" << section.type <<
+                        ", flags=" << section.flags << ":\n";
         printHexData(os, 1, section.size, section.data);
     }
     for (BinSymbol symbol: output->extraSymbols)
@@ -239,7 +241,8 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output)
     
     for (BinSection section: output->extraSections)
     {
-        os << "  Section " << section.name << ":\n";
+        os << "  Section " << section.name << ", type=" << section.type <<
+                        ", flags=" << section.flags << ":\n";
         printHexData(os, 1, section.size, section.data);
     }
     for (BinSymbol symbol: output->extraSymbols)
@@ -308,7 +311,11 @@ thirdKernel:
             .section .info1
             .ascii "noinfo"
             .section .infox
-            .ascii "refer to some link")ffDXD",
+            .ascii "refer to some link"
+            .section .softX ,"awx",@nobits
+            .section .softy ,"x",@note
+            .section .softz ,"a",@progbits
+            .section .softX ,"a",@nobits)ffDXD",
         /* dump */
         R"ffDXD(GalliumBinDump:
   Kernel: name=firstKernel, offset=0
@@ -344,15 +351,19 @@ thirdKernel:
   f0fd3d44
   Code:
   01160304000080bf000080bf000080bf4d4c4b5a0b
-  Section .info1:
+  Section .info1, type=1, flags=0:
   6e6f696e666f
-  Section .infox:
+  Section .infox, type=1, flags=0:
   726566657220746f20736f6d65206c696e6b
+  Section .softX, type=8, flags=7:
+  Section .softy, type=7, flags=4:
+  Section .softz, type=1, flags=2:
 )ffDXD",
         "test.s:20:26: Warning: Size of argument out of range\n"
         "test.s:20:39: Warning: Target size of argument out of range\n"
         "test.s:37:20: Warning: Value 0xfffffaaaaa truncated to 0xfffaaaaa\n"
-        "test.s:38:26: Warning: Value 0x111223030 truncated to 0x11223030\n", true
+        "test.s:38:26: Warning: Value 0x111223030 truncated to 0x11223030\n"
+        "test.s:52:13: Warning: Section type and flags was ignored\n", true
     },
     /* 1 - gallium (errors) */
     {
@@ -380,7 +391,10 @@ thirdKernel:
             .entry 5,6
             .args
             .proginfo
-            .entry 7,8)ffDXD",
+            .entry 7,8
+            .section .txt3, "a  ", @xxx
+            .section .txt3, "ax", x
+            .section .txt3, "a vcxs", @  )ffDXD",
         /* dump */
         "",
         /* errors */
@@ -401,6 +415,11 @@ test.s:15:21: Error: Expected expression
 test.s:16:23: Error: Expected expression
 test.s:22:13: Error: Maximum 3 entries can be in ProgInfo
 test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
+test.s:26:29: Error: Only 'a', 'w', 'x' is accepted in flags string
+test.s:26:36: Error: Unknown section type
+test.s:27:35: Error: Section type was not preceded by '@'
+test.s:28:29: Error: Only 'a', 'w', 'x' is accepted in flags string
+test.s:28:39: Error: Section type was not preceded by '@'
 )ffDXD", false
     },
     {
@@ -560,7 +579,12 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
             .arg v61,structure*,19,constant,,40,20
             .arg v62,structure*,22,constant,,40,20,unused
             .section .notknown
-            .ascii "notknownsection")ffDXD",
+            .ascii "notknownsection"
+            .section .notknown2, "wa", @note
+            .main
+            .section .sometest
+            .ascii "UUaa"
+            .section .flagged, "xw", @nobits)ffDXD",
         /* dump */
         R"ffDXD(AmdBinDump:
   Bitness=32-bit, devType=CapeVerde, drvVersion=0, drvInfo="", compileOptions=""
@@ -615,10 +639,10 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
     0b0000001400000017000000150000000f000000190000001b0000001d000000
     CALNote: type=none, nameSize=8
     37424d
-  Section .rodata:
-      7468697320697320726f64617461
-  Section .ubu:
-      7468697320697320756275
+    Section .rodata, type=1, flags=0:
+    7468697320697320726f64617461
+    Section .ubu, type=1, flags=0:
+    7468697320697320756275
   Kernel: defconfigured
     Data:
     nullptr
@@ -707,9 +731,13 @@ test.s:25:13: Error: Maximum 3 entries can be in ProgInfo
       UserData: 28, 0, 4, 1
       UserData: 28, 0, 5, 1
       UserData: 1, 0, 6, 2
-  Section .notknown:
-      6e6f746b6e6f776e73656374696f6e
+    Section .notknown, type=1, flags=0:
+    6e6f746b6e6f776e73656374696f6e
+    Section .notknown2, type=7, flags=3:
   GlobalData:
+  Section .sometest, type=1, flags=0:
+  55556161
+  Section .flagged, type=8, flags=5:
 )ffDXD", "", true
     },
     /* 3 - amd format - errors */

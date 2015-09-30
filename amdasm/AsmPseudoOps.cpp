@@ -254,6 +254,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
         const char* flagsStrPlace = linePtr;
         if (asmr.parseString(flagsStr, linePtr))
         {
+            bool flagsStrIsGood = true;
             for (const char c: flagsStr)
                 if (c=='a')
                     sectFlags |= ASMELFSECT_ALLOCATABLE;
@@ -261,11 +262,11 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
                     sectFlags |= ASMELFSECT_EXECUTABLE;
                 else if (c=='w')
                     sectFlags |= ASMELFSECT_WRITEABLE;
-                else
+                else if (flagsStrIsGood)
                 {
                     asmr.printError(flagsStrPlace,
                             "Only 'a', 'w', 'x' is accepted in flags string");
-                    good = false;
+                    flagsStrIsGood = good = false;
                 }
         }
         else
@@ -279,7 +280,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
             char typeBuf[20];
             skipSpacesToEnd(linePtr, end);
             const char* typePlace = linePtr;
-            if (linePtr!=end && *linePtr=='@')
+            if (linePtr+1<end && *linePtr=='@' && isAlpha(linePtr[1]))
             {
                 linePtr++;
                 if (getNameArg(asmr, 20, typeBuf, linePtr, "section type"))
