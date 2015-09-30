@@ -1361,9 +1361,10 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
     curPgmRSRC2 = (curPgmRSRC2 & 0xffffffc1U) | ((pgmUserSGPRsNum&0x1f)<<1);
     
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
     putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);
-    putProgInfoEntryLE(bos, 0x80001863U, 102);
+    putProgInfoEntryLE(bos, 0x80001863U, getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0));
     putProgInfoEntryLE(bos, 0x80001864U, 256);
     putProgInfoEntryLE(bos, 0x80001043U, config.floatMode);
     putProgInfoEntryLE(bos, 0x80001044U, config.ieeeMode);

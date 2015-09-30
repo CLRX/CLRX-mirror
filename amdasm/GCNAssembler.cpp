@@ -2716,6 +2716,6 @@ void GCNAssembler::fillAlignment(size_t size, cxbyte* output)
         const size_t toAlign4 = 4-(size&3);
         ::memset(output, 0, toAlign4);
         output += toAlign4;
-    } 
+    }
     std::fill((uint32_t*)output, ((uint32_t*)output) + (size>>2), value);
 }
