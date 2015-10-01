@@ -649,7 +649,7 @@ test.s:28:39: Error: Section type was not preceded by '@'
     Code:
     7468697320697320636f6465
     Config:
-      cws=0 0 0, SGPRS=default, VGPRS=default, pgmRSRC2=0x0, ieeeMode=0x0
+      cws=0 0 0, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
       floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
       uavPrivate=default, uavId=default, constBufferId=default, printfId=default
       privateId=default, earlyExit=0,condOut=0, 
