@@ -240,6 +240,8 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
     static void doIfBlank(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
     
+    static void doIf64Bit(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+                bool negation, bool elseIfClause);
     static void doIfArch(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
     static void doIfGpu(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
