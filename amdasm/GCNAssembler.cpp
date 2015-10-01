@@ -180,7 +180,8 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     // prevent freeing expressions
     src0Expr.release();
     src1Expr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    if (dstReg)
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -229,7 +230,9 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + wordsNum));
     // prevent freeing expressions
     src0Expr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    
+    if (dstReg)
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 static const std::pair<const char*, cxuint> hwregNamesMap[] =
@@ -384,7 +387,8 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     imm32Expr.release();
     imm16Expr.release();
-    updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    if (dstReg)
+        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1189,10 +1193,13 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     src0OpExpr.release();
     // update register pool
-    if (dstReg.start>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
-    else // sgprs
-        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    if (dstReg)
+    {
+        if (dstReg.start>=256)
+            updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
+        else // sgprs
+            updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    }
 }
 
 void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1557,11 +1564,15 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
     // update register pool
-    if (dstReg.start>=256)
-        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
-    else // sgprs
-        updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
-    updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
+    if (dstReg)
+    {
+        if (dstReg.start>=256)
+            updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
+        else // sgprs
+            updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    }
+    if (sdstReg)
+        updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
 }
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1777,7 +1788,8 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
     offsetExpr.release();
     offset2Expr.release();
     // update register pool
-    updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
+    if (dstReg)
+        updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
 }
 
 static const std::pair<const char*, uint16_t> mtbufDFMTNamesMap[] =
@@ -2054,7 +2066,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     
     offsetExpr.release();
     // update register pool (instr loads or save old value) */
-    if ((gcnInsn.mode&GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc))
+    if (vdataReg && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
+                ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
 }
 
@@ -2223,7 +2236,8 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             reinterpret_cast<cxbyte*>(words + 2));
     
     // update register pool (instr loads or save old value) */
-    if ((gcnInsn.mode&GCN_MLOAD) != 0 || ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc))
+    if (vdataReg && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
+                ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
 }
 
@@ -2476,7 +2490,8 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + 2));
     // update register pool
-    updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
+    if (vdstReg)
+        updateVGPRsNum(gcnRegs.vgprsNum, vdstReg.end-257);
 }
 
 };
@@ -2700,6 +2715,14 @@ bool GCNAssembler::checkMnemonic(const CString& mnemonic) const
                GCNAsmInstruction{mnemonic.c_str()},
                [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
                { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
+}
+
+void GCNAssembler::setAllocatedRegisters(const cxuint* inRegs)
+{
+    if (inRegs==nullptr)
+        regs.sgprsNum = regs.vgprsNum = 0;
+    else // if not null, just copy
+        std::copy(inRegs, inRegs+2, regTable);
 }
 
 const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum) const

@@ -221,6 +221,7 @@ private:
         cxuint extraSectionCount;
         cxuint savedSection;
         std::unordered_set<CString> argNamesSet;
+        cxuint allocRegs[2];
     };
     std::vector<Section> sections;
     // use pointer to prevents copying Kernel objects
@@ -231,6 +232,8 @@ private:
     cxuint extraSectionCount;
     
     void saveCurrentSection();
+    void restoreCurrentAllocRegs();
+    void saveCurrentAllocRegs();
 public:
     /// constructor
     explicit AsmAmdHandler(Assembler& assembler);
@@ -259,10 +262,8 @@ public:
 /// handles GalliumCompute format
 class AsmGalliumHandler: public AsmFormatHandler
 {
-public:
-    /// kernel map type
-    typedef std::unordered_map<CString, cxuint> SectionMap;
 private:
+    typedef std::unordered_map<CString, cxuint> SectionMap;
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
     struct Section
@@ -369,6 +370,8 @@ public:
                  cxuint sectionId, uint64_t value) = 0;
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
+    /// set allocated registers (if regs is null then reset them)
+    virtual void setAllocatedRegisters(const cxuint* regs = nullptr) = 0;
     /// get allocated register numbers after assemblying
     virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
     /// fill alignment when value is not given
@@ -401,6 +404,7 @@ public:
     bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
                  cxuint sectionId, uint64_t value);
+    void setAllocatedRegisters(const cxuint* regs);
     bool checkMnemonic(const CString& mnemonic) const;
     const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
     void fillAlignment(size_t size, cxbyte* output);

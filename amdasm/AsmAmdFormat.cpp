@@ -89,6 +89,28 @@ void AsmAmdHandler::saveCurrentSection()
         kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
 }
 
+
+void AsmAmdHandler::restoreCurrentAllocRegs()
+{
+    if (assembler.currentKernel!=ASMKERN_GLOBAL &&
+        assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
+        assembler.isaAssembler->setAllocatedRegisters(
+                kernelStates[assembler.currentKernel]->allocRegs);
+}
+
+void AsmAmdHandler::saveCurrentAllocRegs()
+{
+    if (assembler.currentKernel!=ASMKERN_GLOBAL &&
+        assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
+    {
+        size_t num;
+        cxuint* destRegs = kernelStates[assembler.currentKernel]->allocRegs;
+        const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(num);
+        destRegs[0] = regs[0];
+        destRegs[1] = regs[1];
+    }
+}
+
 cxuint AsmAmdHandler::addKernel(const char* kernelName)
 {
     cxuint thisKernel = output.kernels.size();
@@ -101,10 +123,12 @@ cxuint AsmAmdHandler::addKernel(const char* kernelName)
     kernelStates.push_back(new Kernel(std::move(kernelState)));
     sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
     
+    saveCurrentAllocRegs();
     saveCurrentSection();
     
     assembler.currentKernel = thisKernel;
     assembler.currentSection = thisSection;
+    assembler.isaAssembler->setAllocatedRegisters();
     return thisKernel;
 }
 
@@ -158,10 +182,13 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
     }
     sections.push_back(section);
     
+    saveCurrentAllocRegs();
     saveCurrentSection();
     
     assembler.currentKernel = kernelId;
     assembler.currentSection = thisSection;
+    
+    restoreCurrentAllocRegs();
     return thisSection;
 }
 
@@ -195,13 +222,15 @@ void AsmAmdHandler::setCurrentKernel(cxuint kernel)
 {
     if (kernel != ASMKERN_GLOBAL && kernel >= kernelStates.size())
         throw AsmFormatException("KernelId out of range");
-        
+    
+    saveCurrentAllocRegs();
     saveCurrentSection();
     assembler.currentKernel = kernel;
     if (kernel != ASMKERN_GLOBAL)
         assembler.currentSection = kernelStates[kernel]->savedSection;
     else
         assembler.currentSection = savedSection;
+    restoreCurrentAllocRegs();
 }
 
 void AsmAmdHandler::setCurrentSection(cxuint sectionId)
@@ -209,9 +238,11 @@ void AsmAmdHandler::setCurrentSection(cxuint sectionId)
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
     
+    saveCurrentAllocRegs();
     saveCurrentSection();
     assembler.currentKernel = sections[sectionId].kernelId;
     assembler.currentSection = sectionId;
+    restoreCurrentAllocRegs();
 }
 
 AsmFormatHandler::SectionInfo AsmAmdHandler::getSectionInfo(cxuint sectionId) const
@@ -1598,10 +1629,14 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
 
 bool AsmAmdHandler::prepareBinary()
 {
+    if (assembler.isaAssembler!=nullptr)
+        saveCurrentAllocRegs(); // save last kernel allocated registers to kernel state
+    
     output.is64Bit = assembler.is64Bit();
     output.deviceType = assembler.getDeviceType();
     /* initialize sections */
-    size_t sectionsNum = sections.size();
+    const size_t sectionsNum = sections.size();
+    const size_t kernelsNum = kernelStates.size();
     for (size_t i = 0; i < sectionsNum; i++)
     {
         const AsmSection& asmSection = assembler.sections[i];
@@ -1674,6 +1709,19 @@ bool AsmAmdHandler::prepareBinary()
                 break;
         }
     }
+    
+    // set up number of the allocated SGPRs and VGPRs for kernel
+    for (size_t i = 0; i < kernelsNum; i++)
+    {
+        if (!output.kernels[i].useConfig)
+            continue;
+        AmdKernelConfig& config = output.kernels[i].config;
+        if (config.usedSGPRsNum==AMDBIN_DEFAULT)
+            config.usedSGPRsNum = kernelStates[i]->allocRegs[0];
+        if (config.usedVGPRsNum==AMDBIN_DEFAULT)
+            config.usedVGPRsNum = kernelStates[i]->allocRegs[1];
+    }
+    
     /* put extra symbols */
     if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)

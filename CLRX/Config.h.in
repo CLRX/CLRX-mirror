@@ -139,7 +139,7 @@
 #  define CLRX_ALT_DIR_SEP_S "\\"
 
 #else
-#error "Other platforms than Linux is not unsupported"
+#error "Other platforms than Linux is not supported"
 #endif
 
 /* symbols visibility */

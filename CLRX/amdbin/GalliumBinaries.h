@@ -305,8 +305,6 @@ struct GalliumInput
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     std::vector<GalliumKernelInput> kernels;    ///< input kernel list
-    //size_t disassemblySize; ///< disassembly size (can be null)
-    //const char* disassembly;    ///< program disasembly
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
     size_t commentSize; ///< comment size (can be null)
