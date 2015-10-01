@@ -41,15 +41,18 @@ using namespace CLRX;
 
 static const char* offlinePseudoOpNamesTbl[] =
 {
-    "else", "elseif", "elseifb", "elseifc", "elseifdef",
-    "elseifeq", "elseifeqs", "elseifge", "elseifgt",
-    "elseifle", "elseiflt", "elseifnb", "elseifnc",
-    "elseifndef", "elseifne", "elseifnes", "elseifnotdef",
+    "else", "elseif", "elseifarch",
+    "elseifb", "elseifc", "elseifdef",
+    "elseifeq", "elseifeqs", "elseiffmt",
+    "elseifge", "elseifgpu", "elseifgt",
+    "elseifle", "elseiflt", "elseifnarch", "elseifnb", "elseifnc",
+    "elseifndef", "elseifne", "elseifnes",
+    "elseifnfmt", "elseifngpu", "elseifnotdef",
     "endif", "endm", "endr",
-    "if", "ifb", "ifc", "ifdef", "ifeq",
-    "ifeqs", "ifge", "ifgt", "ifle",
-    "iflt", "ifnb", "ifnc", "ifndef",
-    "ifne", "ifnes", "ifnotdef",
+    "if", "ifarch", "ifb", "ifc", "ifdef", "ifeq",
+    "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
+    "iflt", "ifnarch", "ifnb", "ifnc", "ifndef",
+    "ifne", "ifnes", "ifnfmt", "ifngpu", "ifnotdef",
     "irp", "irpc", "macro", "rept"
 };
 
@@ -61,15 +64,18 @@ static const char* macroRepeatPseudoOpNamesTbl[] =
 
 enum
 {
-    ASMCOP_ELSE = 0, ASMCOP_ELSEIF, ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
-    ASMCOP_ELSEIFEQ, ASMCOP_ELSEIFEQS, ASMCOP_ELSEIFGE, ASMCOP_ELSEIFGT,
-    ASMCOP_ELSEIFLE, ASMCOP_ELSEIFLT, ASMCOP_ELSEIFNB, ASMCOP_ELSEIFNC,
-    ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES, ASMCOP_ELSEIFNOTDEF,
+    ASMCOP_ELSE = 0, ASMCOP_ELSEIF, ASMCOP_ELSEIFARCH,
+    ASMCOP_ELSEIFB, ASMCOP_ELSEIFC, ASMCOP_ELSEIFDEF,
+    ASMCOP_ELSEIFEQ, ASMCOP_ELSEIFEQS, ASMCOP_ELSEIFFMT,
+    ASMCOP_ELSEIFGE, ASMCOP_ELSEIFGPU, ASMCOP_ELSEIFGT,
+    ASMCOP_ELSEIFLE, ASMCOP_ELSEIFLT, ASMCOP_ELSEIFNARCH, ASMCOP_ELSEIFNB, ASMCOP_ELSEIFNC,
+    ASMCOP_ELSEIFNDEF, ASMCOP_ELSEIFNE, ASMCOP_ELSEIFNES,
+    ASMCOP_ELSEIFNFMT, ASMCOP_ELSEIFNGPU, ASMCOP_ELSEIFNOTDEF,
     ASMCOP_ENDIF, ASMCOP_ENDM, ASMCOP_ENDR,
-    ASMCOP_IF, ASMCOP_IFB, ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
-    ASMCOP_IFEQS, ASMCOP_IFGE, ASMCOP_IFGT, ASMCOP_IFLE,
-    ASMCOP_IFLT, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
-    ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNOTDEF,
+    ASMCOP_IF, ASMCOP_IFARCH, ASMCOP_IFB, ASMCOP_IFC, ASMCOP_IFDEF, ASMCOP_IFEQ,
+    ASMCOP_IFEQS, ASMCOP_IFFMT, ASMCOP_IFGE, ASMCOP_IFGPU, ASMCOP_IFGT, ASMCOP_IFLE,
+    ASMCOP_IFLT, ASMCOP_IFNARCH, ASMCOP_IFNB, ASMCOP_IFNC, ASMCOP_IFNDEF,
+    ASMCOP_IFNE, ASMCOP_IFNES, ASMCOP_IFNFMT, ASMCOP_IFNGPU, ASMCOP_IFNOTDEF,
     ASMCOP_IRP, ASMCOP_IRPC, ASMCOP_MACRO, ASMCOP_REPT
 };
 
@@ -82,20 +88,22 @@ static const char* pseudoOpNamesTbl[] =
     "amd", "arch", "ascii", "asciz",
     "balign", "balignl", "balignw", "byte",
     "data", "double", "else",
-    "elseif", "elseifb", "elseifc", "elseifdef",
-    "elseifeq", "elseifeqs", "elseifge", "elseifgt",
-    "elseifle", "elseiflt", "elseifnb", "elseifnc",
-    "elseifndef", "elseifne", "elseifnes", "elseifnotdef",
+    "elseif", "elseifarch", "elseifb", "elseifc", "elseifdef",
+    "elseifeq", "elseifeqs", "elseiffmt",
+    "elseifge", "elseifgpu", "elseifgt",
+    "elseifle", "elseiflt", "elseifnarch", "elseifnb",
+    "elseifnc", "elseifndef", "elseifne", "elseifnes",
+    "elseifnfmt", "elseifngpu", "elseifnotdef",
     "end", "endif", "endm",
     "endr", "equ", "equiv", "eqv",
     "err", "error", "exitm", "extern",
     "fail", "file", "fill", "fillq",
     "float", "format", "gallium", "global",
     "globl", "gpu", "half", "hword", "if",
-    "ifb", "ifc", "ifdef", "ifeq",
-    "ifeqs", "ifge", "ifgt", "ifle",
-    "iflt", "ifnb", "ifnc", "ifndef",
-    "ifne", "ifnes", "ifnotdef", "incbin",
+    "ifarch", "ifb", "ifc", "ifdef", "ifeq",
+    "ifeqs", "iffmt", "ifge", "ifgpu", "ifgt", "ifle",
+    "iflt", "ifnarch", "ifnb", "ifnc", "ifndef",
+    "ifne", "ifnes", "ifnfmt", "ifngpu", "ifnotdef", "incbin",
     "include", "int", "irp", "irpc", "kernel", "lflags",
     "line", "ln", "local", "long",
     "macro", "main", "octa", "offset", "org",
@@ -114,20 +122,22 @@ enum
     ASMOP_AMD, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
     ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE,
     ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
-    ASMOP_ELSEIF, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
-    ASMOP_ELSEIFEQ, ASMOP_ELSEIFEQS, ASMOP_ELSEIFGE, ASMOP_ELSEIFGT,
-    ASMOP_ELSEIFLE, ASMOP_ELSEIFLT, ASMOP_ELSEIFNB, ASMOP_ELSEIFNC,
-    ASMOP_ELSEIFNDEF, ASMOP_ELSEIFNE, ASMOP_ELSEIFNES, ASMOP_ELSEIFNOTDEF,
+    ASMOP_ELSEIF ,ASMOP_ELSEIFARCH, ASMOP_ELSEIFB, ASMOP_ELSEIFC, ASMOP_ELSEIFDEF,
+    ASMOP_ELSEIFEQ, ASMOP_ELSEIFEQS, ASMOP_ELSEIFFMT,
+    ASMOP_ELSEIFGE, ASMOP_ELSEIFGPU, ASMOP_ELSEIFGT,
+    ASMOP_ELSEIFLE, ASMOP_ELSEIFLT, ASMOP_ELSEIFNARCH, ASMOP_ELSEIFNB,
+    ASMOP_ELSEIFNC, ASMOP_ELSEIFNDEF, ASMOP_ELSEIFNE, ASMOP_ELSEIFNES,
+    ASMOP_ELSEIFNFMT, ASMOP_ELSEIFNGPU, ASMOP_ELSEIFNOTDEF,
     ASMOP_END, ASMOP_ENDIF, ASMOP_ENDM,
     ASMOP_ENDR, ASMOP_EQU, ASMOP_EQUIV, ASMOP_EQV,
     ASMOP_ERR, ASMOP_ERROR, ASMOP_EXITM, ASMOP_EXTERN,
     ASMOP_FAIL, ASMOP_FILE, ASMOP_FILL, ASMOP_FILLQ,
     ASMOP_FLOAT, ASMOP_FORMAT, ASMOP_GALLIUM, ASMOP_GLOBAL,
     ASMOP_GLOBL, ASMOP_GPU, ASMOP_HALF, ASMOP_HWORD, ASMOP_IF,
-    ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
-    ASMOP_IFEQS, ASMOP_IFGE, ASMOP_IFGT, ASMOP_IFLE,
-    ASMOP_IFLT, ASMOP_IFNB, ASMOP_IFNC, ASMOP_IFNDEF,
-    ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNOTDEF, ASMOP_INCBIN,
+    ASMOP_IFARCH, ASMOP_IFB, ASMOP_IFC, ASMOP_IFDEF, ASMOP_IFEQ,
+    ASMOP_IFEQS, ASMOP_IFFMT, ASMOP_IFGE, ASMOP_IFGPU, ASMOP_IFGT, ASMOP_IFLE,
+    ASMOP_IFLT, ASMOP_IFNARCH, ASMOP_IFNB, ASMOP_IFNC, ASMOP_IFNDEF,
+    ASMOP_IFNE, ASMOP_IFNES, ASMOP_IFNFMT, ASMOP_IFNGPU, ASMOP_IFNOTDEF, ASMOP_INCBIN,
     ASMOP_INCLUDE, ASMOP_INT, ASMOP_IRP, ASMOP_IRPC, ASMOP_KERNEL, ASMOP_LFLAGS,
     ASMOP_LINE, ASMOP_LN, ASMOP_LOCAL, ASMOP_LONG,
     ASMOP_MACRO, ASMOP_MAIN, ASMOP_OCTA, ASMOP_OFFSET, ASMOP_ORG,
@@ -156,28 +166,44 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char* linePtr, bool _64Bit)
     
 }
 
-void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
+bool AsmPseudoOps::parseFormat(Assembler& asmr, const char* linePtr, BinaryFormat& format)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    char formatName[10];
     const char* formatPlace = linePtr;
+    char formatName[10];
     if (!getNameArg(asmr, 10, formatName, linePtr, "output format type"))
-        return;
+        return false;
     
     toLowerString(formatName);
     if (::strcmp(formatName, "catalyst")==0 || ::strcmp(formatName, "amd")==0)
-        asmr.format = BinaryFormat::AMD;
+        format = BinaryFormat::AMD;
     else if (::strcmp(formatName, "gallium")==0)
-        asmr.format = BinaryFormat::GALLIUM;
+        format = BinaryFormat::GALLIUM;
     else if (::strcmp(formatName, "raw")==0)
-        asmr.format = BinaryFormat::RAWCODE;
+        format = BinaryFormat::RAWCODE;
     else
+    {
         asmr.printError(formatPlace, "Unknown output format type");
+        return false;
+    }
+    return true;
+}
+
+void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    BinaryFormat format;
+    skipSpacesToEnd(linePtr, end);
+    const char* formatPlace = linePtr;
+    if (!parseFormat(asmr, linePtr, format))
+        return;
+    
     if (asmr.formatHandler!=nullptr)
         asmr.printError(formatPlace, "Output format type is already defined");
     
-    checkGarbagesAtEnd(asmr, linePtr);
+    if (checkGarbagesAtEnd(asmr, linePtr))
+        asmr.format = format;
 }
 
 void AsmPseudoOps::setGPUDevice(Assembler& asmr, const char* linePtr)
@@ -1408,6 +1434,96 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
     }
 }
 
+void AsmPseudoOps::doIfArch(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+            bool negation, bool elseIfClause)
+{
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    char deviceName[64];
+    const char* archNamePlace = linePtr;
+    if (!getNameArg(asmr, 64, deviceName, linePtr, "GPU architecture name"))
+        return;
+    GPUArchitecture arch;
+    try
+    {
+        arch = getGPUArchitectureFromName(deviceName);
+        if (!checkGarbagesAtEnd(asmr, linePtr))
+            return;
+    }
+    catch(const Exception& ex)
+    { 
+        asmr.printError(archNamePlace, ex.what());
+        return;
+    }
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    GPUArchitecture curArch = getGPUArchitectureFromDeviceType(asmr.getDeviceType());
+    bool satisfied = (!negation) ? arch==curArch : arch!=curArch;
+    if (asmr.pushClause(pseudoOpPlace, clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
+}
+
+void AsmPseudoOps::doIfGpu(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+            bool negation, bool elseIfClause)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    char deviceName[64];
+    const char* deviceNamePlace = linePtr;
+    if (!getNameArg(asmr, 64, deviceName, linePtr, "GPU device name"))
+        return;
+    GPUDeviceType deviceType;
+    try
+    {
+        deviceType = getGPUDeviceTypeFromName(deviceName);
+        if (!checkGarbagesAtEnd(asmr, linePtr))
+            return;
+    }
+    catch(const Exception& ex)
+    {
+        asmr.printError(deviceNamePlace, ex.what());
+        return;
+    }
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    bool satisfied = (!negation) ? deviceType==asmr.deviceType :
+                deviceType!=asmr.deviceType;
+    if (asmr.pushClause(pseudoOpPlace, clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
+}
+
+void AsmPseudoOps::doIfFmt(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+            bool negation, bool elseIfClause)
+{
+    asmr.initializeOutputFormat();
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    BinaryFormat format;
+    if (!parseFormat(asmr, linePtr, format))
+        return;
+    
+    const AsmClauseType clauseType = elseIfClause ? AsmClauseType::ELSEIF :
+            AsmClauseType::IF;
+    bool included;
+    bool satisfied = (!negation) ? format==asmr.format: format!=asmr.format;
+    if (asmr.pushClause(pseudoOpPlace, clauseType, satisfied, included))
+    {   // 
+        if (!included) // skip clauses (do not perform statements)
+            asmr.skipClauses();
+    }
+}
+
 void AsmPseudoOps::doElse(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
@@ -1855,6 +1971,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
                       IfIntComp::NOT_EQUAL, true);
             break;
+        case ASMOP_ELSEIFARCH:
+            AsmPseudoOps::doIfArch(*this, stmtPlace, linePtr, false, true);
+            break;
         case ASMOP_ELSEIFB:
             AsmPseudoOps::doIfBlank(*this, stmtPlace, linePtr, false, true);
             break;
@@ -1871,9 +1990,15 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_ELSEIFEQS:
             AsmPseudoOps::doIfStrEqual(*this, stmtPlace, linePtr, false, true);
             break;
+        case ASMOP_ELSEIFFMT:
+            AsmPseudoOps::doIfFmt(*this, stmtPlace, linePtr, false, true);
+            break;
         case ASMOP_ELSEIFGE:
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
                       IfIntComp::GREATER_EQUAL, true);
+            break;
+        case ASMOP_ELSEIFGPU:
+            AsmPseudoOps::doIfGpu(*this, stmtPlace, linePtr, false, true);
             break;
         case ASMOP_ELSEIFGT:
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
@@ -1886,6 +2011,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_ELSEIFLT:
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
                       IfIntComp::LESS, true);
+            break;
+        case ASMOP_ELSEIFNARCH:
+            AsmPseudoOps::doIfArch(*this, stmtPlace, linePtr, true, true);
             break;
         case ASMOP_ELSEIFNB:
             AsmPseudoOps::doIfBlank(*this, stmtPlace, linePtr, true, true);
@@ -1903,6 +2031,12 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_ELSEIFNES:
             AsmPseudoOps::doIfStrEqual(*this, stmtPlace, linePtr, true, true);
+            break;
+        case ASMOP_ELSEIFNFMT:
+            AsmPseudoOps::doIfFmt(*this, stmtPlace, linePtr, true, true);
+            break;
+        case ASMOP_ELSEIFNGPU:
+            AsmPseudoOps::doIfGpu(*this, stmtPlace, linePtr, true, true);
             break;
         case ASMOP_END:
             endOfAssembly = true;
@@ -1973,6 +2107,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
                       IfIntComp::NOT_EQUAL, false);
             break;
+        case ASMOP_IFARCH:
+            AsmPseudoOps::doIfArch(*this, stmtPlace, linePtr, false, false);
+            break;
         case ASMOP_IFB:
             AsmPseudoOps::doIfBlank(*this, stmtPlace, linePtr, false, false);
             break;
@@ -1989,9 +2126,15 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_IFEQS:
             AsmPseudoOps::doIfStrEqual(*this, stmtPlace, linePtr, false, false);
             break;
+        case ASMOP_IFFMT:
+            AsmPseudoOps::doIfFmt(*this, stmtPlace, linePtr, false, false);
+            break;
         case ASMOP_IFGE:
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
                       IfIntComp::GREATER_EQUAL, false);
+            break;
+        case ASMOP_IFGPU:
+            AsmPseudoOps::doIfGpu(*this, stmtPlace, linePtr, false, false);
             break;
         case ASMOP_IFGT:
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
@@ -2004,6 +2147,9 @@ void Assembler::parsePseudoOps(const CString& firstName,
         case ASMOP_IFLT:
             AsmPseudoOps::doIfInt(*this, stmtPlace, linePtr,
                       IfIntComp::LESS, false);
+            break;
+        case ASMOP_IFNARCH:
+            AsmPseudoOps::doIfArch(*this, stmtPlace, linePtr, true, false);
             break;
         case ASMOP_IFNB:
             AsmPseudoOps::doIfBlank(*this, stmtPlace, linePtr, true, false);
@@ -2021,6 +2167,12 @@ void Assembler::parsePseudoOps(const CString& firstName,
             break;
         case ASMOP_IFNES:
             AsmPseudoOps::doIfStrEqual(*this, stmtPlace, linePtr, true, false);
+            break;
+        case ASMOP_IFNFMT:
+            AsmPseudoOps::doIfFmt(*this, stmtPlace, linePtr, true, false);
+            break;
+        case ASMOP_IFNGPU:
+            AsmPseudoOps::doIfGpu(*this, stmtPlace, linePtr, true, false);
             break;
         case ASMOP_INCBIN:
             AsmPseudoOps::includeBinFile(*this, stmtPlace, linePtr);
@@ -2224,21 +2376,27 @@ bool Assembler::skipClauses(bool exitm)
                     good = false;
                 break;
             case ASMCOP_ELSE:
+            case ASMCOP_ELSEIFARCH:
             case ASMCOP_ELSEIF:
             case ASMCOP_ELSEIFB:
             case ASMCOP_ELSEIFC:
             case ASMCOP_ELSEIFDEF:
             case ASMCOP_ELSEIFEQ:
             case ASMCOP_ELSEIFEQS:
+            case ASMCOP_ELSEIFFMT:
             case ASMCOP_ELSEIFGE:
+            case ASMCOP_ELSEIFGPU:
             case ASMCOP_ELSEIFGT:
             case ASMCOP_ELSEIFLE:
             case ASMCOP_ELSEIFLT:
+            case ASMCOP_ELSEIFNARCH:
             case ASMCOP_ELSEIFNB:
             case ASMCOP_ELSEIFNC:
             case ASMCOP_ELSEIFNDEF:
             case ASMCOP_ELSEIFNE:
             case ASMCOP_ELSEIFNES:
+            case ASMCOP_ELSEIFNFMT:
+            case ASMCOP_ELSEIFNGPU:
             case ASMCOP_ELSEIFNOTDEF:
                 if (!insideMacroOrRepeat)
                 {
@@ -2253,20 +2411,26 @@ bool Assembler::skipClauses(bool exitm)
                 }
                 break;
             case ASMCOP_IF:
+            case ASMCOP_IFARCH:
             case ASMCOP_IFB:
             case ASMCOP_IFC:
             case ASMCOP_IFDEF:
             case ASMCOP_IFEQ:
             case ASMCOP_IFEQS:
+            case ASMCOP_IFFMT:
             case ASMCOP_IFGE:
+            case ASMCOP_IFGPU:
             case ASMCOP_IFGT:
             case ASMCOP_IFLE:
             case ASMCOP_IFLT:
+            case ASMCOP_IFNARCH:
             case ASMCOP_IFNB:
             case ASMCOP_IFNC:
             case ASMCOP_IFNDEF:
             case ASMCOP_IFNE:
             case ASMCOP_IFNES:
+            case ASMCOP_IFNFMT:
+            case ASMCOP_IFNGPU:
             case ASMCOP_IFNOTDEF:
                 if (!insideMacroOrRepeat)
                 {

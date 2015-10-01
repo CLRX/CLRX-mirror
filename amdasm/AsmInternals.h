@@ -147,6 +147,8 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
      */
     // set bitnesss
     static void setBitness(Assembler& asmr, const char* linePtr, bool _64Bit);
+    
+    static bool parseFormat(Assembler& asmr, const char* linePtr, BinaryFormat& format);
     // set output format
     static void setOutFormat(Assembler& asmr, const char* linePtr);
     // set GPU architecture type
@@ -236,6 +238,13 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
                 bool negation, bool elseIfClause);
     
     static void doIfBlank(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+                bool negation, bool elseIfClause);
+    
+    static void doIfArch(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+                bool negation, bool elseIfClause);
+    static void doIfGpu(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+                bool negation, bool elseIfClause);
+    static void doIfFmt(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                 bool negation, bool elseIfClause);
     /// .ifc
     static void doIfCmpStr(Assembler& asmr, const char* pseudoOpPlace,
