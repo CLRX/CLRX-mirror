@@ -123,7 +123,7 @@
 
 /* config setup */
 
-#ifdef HAVE_LINUX
+#ifndef HAVE_WINDOWS
 #  define SYSTEM_CONFIG_PATH "/etc"
 
 #  ifdef HAVE_32BIT
@@ -139,7 +139,7 @@
 #  define CLRX_ALT_DIR_SEP_S "\\"
 
 #else
-#error "Other platforms than Linux is not supported"
+#error "Windows platform is not supported"
 #endif
 
 /* symbols visibility */
