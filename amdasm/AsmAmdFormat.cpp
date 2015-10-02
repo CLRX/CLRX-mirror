@@ -34,7 +34,7 @@ static const char* amdPseudoOpNamesTbl[] =
 {
     "arg", "boolconsts", "calnote", "cbid",
     "cbmask", "compile_options", "condout", "config",
-    "constantbuffers", "cws", "driver_info", "driver_version",
+    "constantbuffers", "cws", "dims", "driver_info", "driver_version",
     "earlyexit", "entry", "floatconsts", "floatmode",
     "globalbuffers", "globaldata", "header", "hwlocal",
     "hwregion", "ieeemode", "inputs", "inputsamplers",
@@ -50,7 +50,7 @@ enum
 {
     AMDOP_ARG = 0, AMDOP_BOOLCONSTS, AMDOP_CALNOTE, AMDOP_CBID,
     AMDOP_CBMASK, AMDOP_COMPILE_OPTIONS, AMDOP_CONDOUT, AMDOP_CONFIG,
-    AMDOP_CONSTANTBUFFERS, AMDOP_CWS, AMDOP_DRIVER_INFO, AMDOP_DRIVER_VERSION,
+    AMDOP_CONSTANTBUFFERS, AMDOP_CWS, AMDOP_DIMS, AMDOP_DRIVER_INFO, AMDOP_DRIVER_VERSION,
     AMDOP_EARLYEXIT, AMDOP_ENTRY, AMDOP_FLOATCONSTS, AMDOP_FLOATMODE,
     AMDOP_GLOBALBUFFERS, AMDOP_GLOBALDATA, AMDOP_HEADER, AMDOP_HWLOCAL,
     AMDOP_HWREGION, AMDOP_IEEEMODE, AMDOP_INPUTS, AMDOP_INPUTSAMPLERS,
@@ -864,7 +864,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     if (asmr.currentKernel==ASMKERN_GLOBAL ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration value");
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
     
@@ -1024,6 +1024,44 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     userData.apiSlot = apiSlot;
     userData.regStart = regStart;
     userData.regSize = regSize;
+}
+
+void AsmAmdPseudoOps::setDimensions(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    const char* dimPlace = linePtr;
+    char buf[10];
+    cxuint dimMask = 0;
+    if (getNameArg(asmr, 10, buf, linePtr, "dimension set"))
+    {
+        toLowerString(buf);
+        for (cxuint i = 0; buf[i]!=0; i++)
+            if (buf[i]=='x')
+                dimMask |= 1;
+            else if (buf[i]=='y')
+                dimMask |= 2;
+            else if (buf[i]=='z')
+                dimMask |= 4;
+            else
+            {
+                asmr.printError(dimPlace, "Unknown dimension type");
+                return;
+            }
+    }
+    else // error
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
 }
 
 static const std::pair<const char*, cxuint> argTypeNameMap[] =
@@ -1490,6 +1528,9 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
             break;
         case AMDOP_CWS:
             AsmAmdPseudoOps::setCWS(*this, stmtPlace, linePtr);
+            break;
+        case AMDOP_DIMS:
+            AsmAmdPseudoOps::setDimensions(*this, stmtPlace, linePtr);
             break;
         case AMDOP_DRIVER_INFO:
             AsmAmdPseudoOps::setDriverInfo(*this, linePtr);

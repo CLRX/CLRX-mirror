@@ -160,7 +160,8 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
                     os << " " << sampler;
                 os << '\n';
             }
-            os << "      cws=" << config.reqdWorkGroupSize[0] << " " <<
+            os << "      dims=" << confValueToString(config.dimMask) << ", "
+                    "cws=" << config.reqdWorkGroupSize[0] << " " <<
                     config.reqdWorkGroupSize[1] << " " << config.reqdWorkGroupSize[2] << ", "
                     "SGPRS=" << confValueToString(config.usedSGPRsNum) << ", "
                     "VGPRS=" << confValueToString(config.usedVGPRsNum) << ", "
@@ -494,6 +495,7 @@ test.s:28:39: Error: Section type was not preceded by '@'
             .kernel configured
             .ascii "this is code2"
             .config
+            .dims zx
             .cws 554,44,11
             .sampler 55,44,332,121
             .sgprsnum 24
@@ -649,7 +651,7 @@ test.s:28:39: Error: Section type was not preceded by '@'
     Code:
     7468697320697320636f6465
     Config:
-      cws=0 0 0, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
+      dims=default, cws=0 0 0, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
       floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
       uavPrivate=default, uavId=default, constBufferId=default, printfId=default
       privateId=default, earlyExit=0,condOut=0, 
@@ -723,7 +725,7 @@ test.s:28:39: Error: Section type was not preceded by '@'
       Arg: "v61", "structure*", pointer, structure, constant, 0, 19, 40, 20, true
       Arg: "v62", "structure*", pointer, structure, constant, 0, 22, 40, 20, false
       Sampler: 55 44 332 121
-      cws=554 44 11, SGPRS=24, VGPRS=47, pgmRSRC2=0xaabbccdd, ieeeMode=0x3
+      dims=5, cws=554 44 11, SGPRS=24, VGPRS=47, pgmRSRC2=0xaabbccdd, ieeeMode=0x3
       floatMode=0xe0, hwLocalSize=51, hwRegion=394, scratchBuffer=9
       uavPrivate=8, uavId=12, constBufferId=11, printfId=10
       privateId=8, earlyExit=1,condOut=2, 
@@ -805,6 +807,7 @@ test.s:28:39: Error: Section type was not preceded by '@'
             .uavid
             .cbid
             .privateid
+            .dims xUz
             .cws
             .cws 1
             .cws 1,
@@ -898,51 +901,52 @@ test.s:56:22: Error: Expected expression
 test.s:57:22: Error: Expected expression
 test.s:58:23: Error: Expected expression
 test.s:59:21: Error: Expected expression
-test.s:64:17: Error: Expected expression
-test.s:70:23: Error: Some garbages at Data Class place
-test.s:70:27: Error: RegStart+RegSize out of range (0-16)
-test.s:72:37: Error: RegStart+RegSize out of range (0-16)
-test.s:73:37: Error: RegStart out of range (0-15)
+test.s:64:19: Error: Unknown dimension type
+test.s:65:17: Error: Expected expression
+test.s:71:23: Error: Some garbages at Data Class place
+test.s:71:27: Error: RegStart+RegSize out of range (0-16)
 test.s:73:37: Error: RegStart+RegSize out of range (0-16)
-test.s:74:34: Error: Expected ',' before argument
-test.s:75:36: Error: Expected ',' before argument
-test.s:76:38: Error: Expected ',' before argument
-test.s:77:39: Error: Expected expression
-test.s:79:18: Error: Expected argument name
-test.s:79:18: Error: Expected ',' before argument
-test.s:80:31: Error: Unknown argument type
-test.s:81:22: Error: Unknown argument type
-test.s:82:30: Error: Unknown pointer space
-test.s:83:29: Error: Some garbages at pointer space place
-test.s:84:37: Error: Some garbages at access qualifier place
-test.s:85:37: Error: Expression have unresolved symbol 'XXX'
-test.s:86:39: Error: This is not 'unused' specifier
-test.s:87:31: Error: Expected ',' before argument
-test.s:88:32: Error: Expected expression
-test.s:89:29: Error: Unknown access qualifier
+test.s:74:37: Error: RegStart out of range (0-15)
+test.s:74:37: Error: RegStart+RegSize out of range (0-16)
+test.s:75:34: Error: Expected ',' before argument
+test.s:76:36: Error: Expected ',' before argument
+test.s:77:38: Error: Expected ',' before argument
+test.s:78:39: Error: Expected expression
+test.s:80:18: Error: Expected argument name
+test.s:80:18: Error: Expected ',' before argument
+test.s:81:31: Error: Unknown argument type
+test.s:82:22: Error: Unknown argument type
+test.s:83:30: Error: Unknown pointer space
+test.s:84:29: Error: Some garbages at pointer space place
+test.s:85:37: Error: Some garbages at access qualifier place
+test.s:86:37: Error: Expression have unresolved symbol 'XXX'
+test.s:87:39: Error: This is not 'unused' specifier
+test.s:88:31: Error: Expected ',' before argument
+test.s:89:32: Error: Expected expression
 test.s:90:29: Error: Unknown access qualifier
-test.s:91:33: Error: Resource Id out of range (0-7)
-test.s:92:38: Error: Expected unused specifier
-test.s:92:38: Error: This is not 'unused' specifier
-test.s:94:18: Error: Kernel argument 'vx' is already defined
-test.s:95:33: Error: Expression have unresolved symbol 'global'
-test.s:95:39: Error: Expected ',' before argument
+test.s:91:29: Error: Unknown access qualifier
+test.s:92:33: Error: Resource Id out of range (0-7)
+test.s:93:38: Error: Expected unused specifier
+test.s:93:38: Error: This is not 'unused' specifier
+test.s:95:18: Error: Kernel argument 'vx' is already defined
 test.s:96:33: Error: Expression have unresolved symbol 'global'
-test.s:96:40: Error: Unknown pointer space
-test.s:97:38: Error: UAVId out of range (0-1023)
-test.s:98:40: Error: Resource Id out of range (0-127)
-test.s:99:41: Error: Resource Id out of range (0-7)
-test.s:100:41: Error: UAVId out of range (0-159)
-test.s:101:37: Error: Some garbages at unused specifier place
-test.s:101:37: Error: This is not 'unused' specifier
-test.s:102:43: Error: Some garbages at unused specifier place
-test.s:102:43: Error: This is not 'unused' specifier
-test.s:103:22: Error: Illegal pointer type
+test.s:96:39: Error: Expected ',' before argument
+test.s:97:33: Error: Expression have unresolved symbol 'global'
+test.s:97:40: Error: Unknown pointer space
+test.s:98:38: Error: UAVId out of range (0-1023)
+test.s:99:40: Error: Resource Id out of range (0-127)
+test.s:100:41: Error: Resource Id out of range (0-7)
+test.s:101:41: Error: UAVId out of range (0-159)
+test.s:102:37: Error: Some garbages at unused specifier place
+test.s:102:37: Error: This is not 'unused' specifier
+test.s:103:43: Error: Some garbages at unused specifier place
+test.s:103:43: Error: This is not 'unused' specifier
 test.s:104:22: Error: Illegal pointer type
 test.s:105:22: Error: Illegal pointer type
 test.s:106:22: Error: Illegal pointer type
-test.s:107:35: Error: Unknown access qualifier
-test.s:109:13: Error: Illegal place of configuration pseudo-op
+test.s:107:22: Error: Illegal pointer type
+test.s:108:35: Error: Unknown access qualifier
+test.s:110:13: Error: Illegal place of configuration pseudo-op
 )ffDXD", false
     }
 };

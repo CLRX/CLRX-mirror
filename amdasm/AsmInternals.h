@@ -369,6 +369,8 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
                       const char* linePtr);
     
     /* user configuration pseudo-ops */
+    static void setDimensions(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     static void doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     

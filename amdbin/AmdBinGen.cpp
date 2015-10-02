@@ -147,6 +147,7 @@ void AmdInput::addEmptyKernel(const char* kernelName)
     kernel.config.pgmRSRC2 = 0;
     kernel.config.ieeeMode = 0;
     kernel.config.floatMode = 0xc0;
+    kernel.config.dimMask = AMDBIN_DEFAULT;
     kernel.config.reqdWorkGroupSize[0] = 0;
     kernel.config.reqdWorkGroupSize[1] = 0;
     kernel.config.reqdWorkGroupSize[2] = 0;
@@ -1323,7 +1324,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     
     // CALNOTE_SCRATCH_BUFFERS
     putCALNoteLE(bos, CALNOTE_ATI_SCRATCH_BUFFERS, 4);
-    bos.writeObject<uint32_t>(LEV(config.scratchBufferSize>>2));
+    bos.writeObject<uint32_t>(LEV((config.scratchBufferSize+3)>>2));
     
     // CALNOTE_PERSISTENT_BUFFERS
     putCALNoteLE(bos, CALNOTE_ATI_PERSISTENT_BUFFERS, 0);
@@ -1359,7 +1360,14 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
                  config.userDatas[p].regStart+config.userDatas[p].regSize);
     pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
-    curPgmRSRC2 = (curPgmRSRC2 & 0xffffffc1U) | ((pgmUserSGPRsNum&0x1f)<<1);
+    uint32_t dimValues = 0;
+    if (config.dimMask != AMDBIN_DEFAULT)
+        dimValues = ((config.dimMask&7)<<7) |
+                (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+    else // get from current pgmRSRC2
+        dimValues = (curPgmRSRC2 & 0x1b80U);
+    curPgmRSRC2 = (curPgmRSRC2 & 0xffffe440U) | ((pgmUserSGPRsNum&0x1f)<<1) |
+            (config.scratchBufferSize != 0) | dimValues;
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
@@ -1371,7 +1379,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     putProgInfoEntryLE(bos, 0x80001864U, 256);
     putProgInfoEntryLE(bos, 0x80001043U, config.floatMode);
     putProgInfoEntryLE(bos, 0x80001044U, config.ieeeMode);
-    putProgInfoEntryLE(bos, 0x80001045U, config.scratchBufferSize>>2);
+    putProgInfoEntryLE(bos, 0x80001045U, (config.scratchBufferSize+3)>>2);
     putProgInfoEntryLE(bos, 0x00002e13U, curPgmRSRC2);
     
     if (config.reqdWorkGroupSize[0] != 0 && config.reqdWorkGroupSize[1] != 0 &&

@@ -113,6 +113,7 @@ struct AmdKernelConfig
 {
     std::vector<AmdKernelArgInput> args; ///< arguments
     std::vector<cxuint> samplers;   ///< defined samplers
+    uint32_t dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
     uint32_t reqdWorkGroupSize[3];  ///< reqd_work_group_size
     uint32_t usedVGPRsNum;  ///< number of used VGPRs
     uint32_t usedSGPRsNum;  ///< number of used SGPRs

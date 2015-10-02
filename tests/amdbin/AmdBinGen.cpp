@@ -115,6 +115,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     std::vector<cxuint> argUavIds;
     std::map<cxuint,cxuint> argCbIds;
     std::istringstream iss(std::string(metadata, metadataSize));
+    config.dimMask = AMDBIN_DEFAULT;
     config.printfId = AMDBIN_DEFAULT;
     config.constBufferId = AMDBIN_DEFAULT;
     config.uavPrivate = AMDBIN_DEFAULT;
