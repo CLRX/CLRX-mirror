@@ -988,7 +988,7 @@ static const char* galliumArgTypeNamesTbl[] =
 
 static const char* galliumArgSemTypeNamesTbl[] =
 {
-    "general", "griddim", "gridoffset"
+    "general", "griddim", "gridoffset", "imgsize", "imgformat"
 };
 
 void Disassembler::disassembleGallium()

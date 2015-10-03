@@ -408,7 +408,7 @@ test.s:9:24: Error: Expected ',' before argument
 test.s:10:29: Warning: Size of argument out of range
 test.s:10:31: Warning: Target size of argument out of range
 test.s:11:38: Error: Unknown numeric extension
-test.s:11:46: Error: Unknown argument semantic type
+test.s:11:46: Error: Unknown argument semantic
 test.s:12:46: Error: Garbages at end of line
 test.s:14:20: Error: Expected expression
 test.s:14:21: Error: Expected expression

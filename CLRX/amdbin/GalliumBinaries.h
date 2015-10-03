@@ -75,7 +75,9 @@ enum class GalliumArgSemantic: cxbyte
     GENERAL = 0,    ///< general
     GRID_DIMENSION,     ///< ???
     GRID_OFFSET,    ///< ???
-    MAX_VALUE = GRID_OFFSET ///< last value
+    IMAGE_SIZE,     ///< image size
+    IMAGE_FORMAT,   ///< image format
+    MAX_VALUE = IMAGE_FORMAT ///< last value
 };
 
 /// kernel program info entry for Gallium binaries

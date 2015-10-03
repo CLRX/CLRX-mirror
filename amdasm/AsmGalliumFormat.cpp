@@ -243,6 +243,15 @@ static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
     { "scalar", GalliumArgType::SCALAR }
 };
 
+static const std::pair<const char*, cxuint> galliumArgSemanticsMap[5] =
+{
+    { "general", cxuint(GalliumArgSemantic::GENERAL) },
+    { "griddim", cxuint(GalliumArgSemantic::GRID_DIMENSION) },
+    { "gridoffset", cxuint(GalliumArgSemantic::GRID_OFFSET) },
+    { "imgformat", cxuint(GalliumArgSemantic::IMAGE_FORMAT) },
+    { "imgsize", cxuint(GalliumArgSemantic::IMAGE_SIZE) },
+};
+
 void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -376,7 +385,13 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                         return;
                     if (haveComma)
                     {
-                        skipSpacesToEnd(linePtr, end);
+                        cxuint semantic;
+                        if (getEnumeration(asmr, linePtr, "argument semantic", 5,
+                                    galliumArgSemanticsMap, semantic))
+                            argSemantic = GalliumArgSemantic(semantic);
+                        else
+                            good = false;
+                        /*skipSpacesToEnd(linePtr, end);
                         const char* semanticPlace = linePtr;
                         if (getNameArg(asmr, 15, name, linePtr, "argument semantic", false))
                         {
@@ -393,7 +408,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                             }
                         }
                         else
-                            good = false;
+                            good = false;*/
                     }
                 }
             }

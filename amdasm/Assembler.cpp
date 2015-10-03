@@ -296,7 +296,9 @@ bool AsmParseUtils::getEnumeration(Assembler& asmr, const char*& linePtr,
               const std::pair<const char*, cxuint>* table, cxuint& value,
               const char* prefix)
 {
+    const char* end = asmr.line + asmr.lineSize;
     char name[72];
+    skipSpacesToEnd(linePtr, end);
     const char* namePlace = linePtr;
     if (getNameArg(asmr, 72, name, linePtr, objName))
     {
