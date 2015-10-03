@@ -391,24 +391,6 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
                             argSemantic = GalliumArgSemantic(semantic);
                         else
                             good = false;
-                        /*skipSpacesToEnd(linePtr, end);
-                        const char* semanticPlace = linePtr;
-                        if (getNameArg(asmr, 15, name, linePtr, "argument semantic", false))
-                        {
-                            toLowerString(name);
-                            if (::strcmp(name, "griddim")==0)
-                                argSemantic = GalliumArgSemantic::GRID_DIMENSION;
-                            else if (::strcmp(name, "gridoffset")==0)
-                                argSemantic = GalliumArgSemantic::GRID_OFFSET;
-                            else if (::strcmp(name, "general")!=0 && *name!=0)
-                            {
-                                asmr.printError(semanticPlace,
-                                        "Unknown argument semantic type");
-                                good = false;
-                            }
-                        }
-                        else
-                            good = false;*/
                     }
                 }
             }

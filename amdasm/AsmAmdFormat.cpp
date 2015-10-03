@@ -965,7 +965,6 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
     
     cxuint dataClass = 0;
     bool good = true;
-    skipSpacesToEnd(linePtr, end);
     good &= getEnumeration(asmr, linePtr, "Data Class", dataClassMapSize,
                     dataClassMap, dataClass);
     
