@@ -531,8 +531,10 @@ GPUDeviceType Disassembler::getDeviceType() const
 {
     if (binaryFormat == BinaryFormat::AMD)
         return amdInput->deviceType;
-    else // GALLIUM
+    else if (binaryFormat == BinaryFormat::GALLIUM)
         return galliumInput->deviceType;
+    else // rawcode
+        return rawInput->deviceType;
 }
 
 static void printDisasmData(size_t size, const cxbyte* data, std::ostream& output,
