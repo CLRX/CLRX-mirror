@@ -115,12 +115,12 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     std::vector<cxuint> argUavIds;
     std::map<cxuint,cxuint> argCbIds;
     std::istringstream iss(std::string(metadata, metadataSize));
-    config.dimMask = AMDBIN_DEFAULT;
-    config.printfId = AMDBIN_DEFAULT;
-    config.constBufferId = AMDBIN_DEFAULT;
-    config.uavPrivate = AMDBIN_DEFAULT;
-    config.uavId = AMDBIN_DEFAULT;
-    config.privateId = AMDBIN_DEFAULT;
+    config.dimMask = BINGEN_DEFAULT;
+    config.printfId = BINGEN_DEFAULT;
+    config.constBufferId = BINGEN_DEFAULT;
+    config.uavPrivate = BINGEN_DEFAULT;
+    config.uavId = BINGEN_DEFAULT;
+    config.privateId = BINGEN_DEFAULT;
     config.usePrintf = ((ULEV(reinterpret_cast<const uint32_t*>(
                 kernelHeader)[4]) & 2) != 0);
     config.useConstantData = false;
@@ -167,7 +167,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.argType = KernelArgType::VOID;
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
-            arg.resId = AMDBIN_DEFAULT;
+            arg.resId = BINGEN_DEFAULT;
             arg.ptrAccess = 0;
             arg.structSize = 0;
             arg.constSpaceSize = 0;
@@ -196,7 +196,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.ptrAccess = 0;
             arg.structSize = 0;
             arg.constSpaceSize = 0;
-            arg.resId = AMDBIN_DEFAULT;
+            arg.resId = BINGEN_DEFAULT;
             arg.used = true;
             pos++;
             size_t nextPos = line.find(':', pos);
@@ -256,7 +256,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.argName = line.substr(7, pos-7);
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
-            arg.resId = AMDBIN_DEFAULT;
+            arg.resId = BINGEN_DEFAULT;
             arg.ptrAccess = 0;
             arg.structSize = 0;
             arg.constSpaceSize = 0;
@@ -298,7 +298,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.argType = KernelArgType::COUNTER32;
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
-            arg.resId = AMDBIN_DEFAULT;
+            arg.resId = BINGEN_DEFAULT;
             arg.ptrAccess = 0;
             arg.structSize = 0;
             arg.constSpaceSize = 0;

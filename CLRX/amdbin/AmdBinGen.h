@@ -39,11 +39,6 @@
 namespace CLRX
 {
 
-enum: cxuint {
-    AMDBIN_DEFAULT = UINT_MAX,    ///< if set in field then field has been filled later
-    AMDBIN_NOTSUPPLIED  = UINT_MAX-1 ///< if set in field then field has been ignored
-};
-
 /// AMD OpenCL kernel argument description
 struct AmdKernelArgInput
 {
@@ -68,7 +63,7 @@ struct AmdKernelArgInput
     /// create global pointer
     static AmdKernelArgInput gptr(const CString& argName, const CString& typeName,
          KernelArgType ptrType, cxuint structSize = 0, cxbyte ptrAccess = KARG_PTR_NORMAL,
-         uint32_t resId = AMDBIN_DEFAULT, bool used = true)
+         uint32_t resId = BINGEN_DEFAULT, bool used = true)
     {
         return { argName, typeName, KernelArgType::POINTER, ptrType,
             KernelPtrSpace::GLOBAL, ptrAccess, structSize, 0, resId, used };
@@ -76,7 +71,7 @@ struct AmdKernelArgInput
     /// create constant pointer
     static AmdKernelArgInput cptr(const CString& argName, const CString& typeName,
          KernelArgType ptrType, cxuint structSize = 0, cxbyte ptrAccess = KARG_PTR_NORMAL,
-         size_t constSpaceSize = 0, uint32_t resId = AMDBIN_DEFAULT, bool used = true)
+         size_t constSpaceSize = 0, uint32_t resId = BINGEN_DEFAULT, bool used = true)
     {
         return { argName, typeName, KernelArgType::POINTER, ptrType,
             KernelPtrSpace::CONSTANT, ptrAccess, structSize, constSpaceSize, resId, used };
@@ -92,7 +87,7 @@ struct AmdKernelArgInput
     /// create image
     static AmdKernelArgInput img(const CString& argName, const CString& typeName,
         KernelArgType imgType, cxbyte ptrAccess = KARG_PTR_READ_ONLY,
-        uint32_t resId = AMDBIN_DEFAULT, bool used = true)
+        uint32_t resId = BINGEN_DEFAULT, bool used = true)
     {
         return { argName, typeName, imgType, KernelArgType::VOID, KernelPtrSpace::NONE,
             ptrAccess, 0, 0, resId, used };

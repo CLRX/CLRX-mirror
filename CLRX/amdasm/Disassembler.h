@@ -157,7 +157,7 @@ struct GalliumDisasmInput
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
-    std::vector<GalliumKernelInput> kernels;    ///< list of input kernels
+    std::vector<GalliumDisasmKernelInput> kernels;    ///< list of input kernels
     size_t codeSize;    ///< code size
     const cxbyte* code; ///< code
 };

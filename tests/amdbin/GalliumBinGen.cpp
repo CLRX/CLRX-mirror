@@ -73,7 +73,7 @@ static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galli
             outProgInfo[k].value = ULEV(progInfo[k].value);
         }
         GalliumKernelInput kinput = { kernel.kernelName,
-            {outProgInfo[0],outProgInfo[1],outProgInfo[2]}, kernel.offset,
+            {outProgInfo[0],outProgInfo[1],outProgInfo[2]}, false, {}, kernel.offset,
             std::vector<GalliumArgInfo>(kernel.argInfos.begin(), kernel.argInfos.end()) };
         input.kernels.push_back(kinput);
     }

@@ -287,9 +287,30 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
 
 class AsmGalliumHandler;
 
+enum GalliumConfigValueTarget
+{
+    GALLIUMCVAL_SGPRSNUM,
+    GALLIUMCVAL_VGPRSNUM,
+    GALLIUMCVAL_PGMRSRC2,
+    GALLIUMCVAL_IEEEMODE,
+    GALLIUMCVAL_FLOATMODE,
+    GALLIUMCVAL_LOCALSIZE,
+    GALLIUMCVAL_SCRATCHBUFFER
+};
+
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
+    
+    /* user configuration pseudo-ops */
+    static void doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setConfigValue(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr, GalliumConfigValueTarget target);
+    
+    static void setDimensions(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     
     static void doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

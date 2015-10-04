@@ -1004,7 +1004,7 @@ void Disassembler::disassembleGallium()
                         galliumInput->kernels.size());
         for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
         {
-            const GalliumKernelInput& kinput = galliumInput->kernels[i];
+            const GalliumDisasmKernelInput& kinput = galliumInput->kernels[i];
             kernelSortedOffsets[i] = { kinput.offset, i };
         }
         std::sort(kernelSortedOffsets.begin(), kernelSortedOffsets.end(), []
@@ -1030,7 +1030,7 @@ void Disassembler::disassembleGallium()
     
     for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
     {
-        const GalliumKernelInput& kinput = galliumInput->kernels[i];
+        const GalliumDisasmKernelInput& kinput = galliumInput->kernels[i];
         {
             output.write(".kernel ", 8);
             output.write(kinput.kernelName.c_str(), kinput.kernelName.size());

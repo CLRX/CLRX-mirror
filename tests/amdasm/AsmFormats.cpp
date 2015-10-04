@@ -93,9 +93,9 @@ static void printHexData(std::ostream& os, cxuint indentLevel, size_t size,
 
 static std::string confValueToString(uint32_t val)
 {
-    if (val == AMDBIN_DEFAULT)
+    if (val == BINGEN_DEFAULT)
         return "default";
-    if (val == AMDBIN_NOTSUPPLIED)
+    if (val == BINGEN_NOTSUPPLIED)
         return "notsup";
     std::ostringstream oss;
     oss << val;

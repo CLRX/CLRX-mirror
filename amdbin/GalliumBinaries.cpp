@@ -290,11 +290,20 @@ uint32_t GalliumBinary::getKernelIndex(const char* name) const
 
 void GalliumInput::addEmptyKernel(const char* kernelName)
 {
-    kernels.push_back({ kernelName, {
+    GalliumKernelInput kinput = { kernelName, {
         /* default values */
         { 0x0000b848U, 0x000c0000U },
         { 0x0000b84cU, 0x00001788U },
-        { 0x0000b860U, 0 } }, 0, {} });
+        { 0x0000b860U, 0 } }, false, { }, 0, {} };
+    kinput.config.dimMask = BINGEN_DEFAULT;
+    kinput.config.usedVGPRsNum = BINGEN_DEFAULT;
+    kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
+    kinput.config.pgmRSRC2 = 0;
+    kinput.config.ieeeMode = 0;
+    kinput.config.floatMode = 0;
+    kinput.config.localSize = 0;
+    kinput.config.scratchBufferSize = 0; ///< size of scratch buffer
+    kernels.push_back(std::move(kinput));
 }
 
 /*

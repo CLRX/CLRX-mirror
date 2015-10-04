@@ -263,6 +263,9 @@ public:
 class AsmGalliumHandler: public AsmFormatHandler
 {
 private:
+    enum class Inside : cxbyte {
+        MAINLAYOUT, CONFIG, ARGS, PROGINFO
+    };
     typedef std::unordered_map<CString, cxuint> SectionMap;
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
@@ -286,8 +289,10 @@ private:
     cxuint dataSection;
     cxuint commentSection;
     cxuint savedSection;
-    bool insideProgInfo;
-    bool insideArgs;
+    Inside inside;
+    //bool insideProgInfo;
+    //bool insideArgs;
+    //bool insideConfig;
     cxuint extraSectionCount;
 public:
     /// construcror

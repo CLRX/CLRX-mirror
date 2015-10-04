@@ -289,14 +289,39 @@ enum: cxuint {
     GALLIUMSECTID_MAX = GALLIUMSECTID_NOTEGNUSTACK
 };
 
+/// disasm kernel info structure (Gallium binaries)
+struct GalliumDisasmKernelInput
+{
+    CString kernelName;   ///< kernel's name
+    GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
+    uint32_t offset;    ///< offset of kernel code
+    std::vector<GalliumArgInfo> argInfos;   ///< arguments
+};
+
 /*
  * Gallium Binary generator
  */
+
+/// kernel config
+struct GalliumKernelConfig
+{
+    cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
+    cxuint usedVGPRsNum;  ///< number of used VGPRs
+    cxuint usedSGPRsNum;  ///< number of used SGPRs
+    uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
+    cxuint ieeeMode;  ///< IEEE mode
+    cxuint floatMode; ///< float mode
+    size_t localSize; ///< used local size (not local defined in kernel arguments)
+    uint32_t scratchBufferSize; ///< size of scratch buffer
+};
+
 /// kernel info structure (Gallium binaries)
 struct GalliumKernelInput
 {
     CString kernelName;   ///< kernel's name
     GalliumProgInfoEntry progInfo[3];   ///< program info for kernel
+    bool useConfig;         ///< true if configuration has been used to generate binary
+    GalliumKernelConfig config; ///< kernel's configuration
     uint32_t offset;    ///< offset of kernel code
     std::vector<GalliumArgInfo> argInfos;   ///< arguments
 };

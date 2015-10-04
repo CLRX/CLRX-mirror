@@ -30,12 +30,19 @@
 using namespace CLRX;
 
 static const char* galliumPseudoOpNamesTbl[] =
-{ "arg", "args", "entry", "globaldata", "proginfo" };
+{
+    "arg", "args", "config", "dims",
+    "entry", "floatmode", "globaldata", "ieeemode",
+    "localsize", "pgmrsrc2", "proginfo",
+    "scratchbuffer", "sgprsnum", "vgprsnum"
+};
 
 enum
 {
-    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_ENTRY,
-    GALLIUMOP_GLOBALDATA, GALLIUMOP_PROGINFO
+    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG, GALLIUMOP_DIMS,
+    GALLIUMOP_ENTRY, GALLIUMOP_FLOATMODE, GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
+    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PROGINFO,
+    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_VGPRSNUM
 };
 
 /*
@@ -50,7 +57,7 @@ AsmGalliumHandler::AsmGalliumHandler(Assembler& assembler): AsmFormatHandler(ass
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::CODE,
                 ELFSECTID_TEXT, ".text" });
-    insideArgs = insideProgInfo = false;
+    inside = Inside::MAINLAYOUT;
     savedSection = 0;
 }
 
@@ -68,7 +75,7 @@ cxuint AsmGalliumHandler::addKernel(const char* kernelName)
     
     assembler.currentKernel = thisKernel;
     assembler.currentSection = thisSection;
-    insideArgs = insideProgInfo = false;
+    inside = Inside::MAINLAYOUT;
     return thisKernel;
 }
 
@@ -120,7 +127,7 @@ cxuint AsmGalliumHandler::addSection(const char* sectionName, cxuint kernelId)
     
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = thisSection;
-    insideArgs = insideProgInfo = false;
+    inside = Inside::MAINLAYOUT;
     return thisSection;
 }
 
@@ -154,7 +161,7 @@ void AsmGalliumHandler::setCurrentKernel(cxuint kernel)
         assembler.currentSection = kernelStates[kernel].defaultSection;
     else // default main section
         assembler.currentSection = savedSection;
-    insideArgs = insideProgInfo = false;
+    inside = Inside::MAINLAYOUT;
 }
 
 void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
@@ -167,7 +174,7 @@ void AsmGalliumHandler::setCurrentSection(cxuint sectionId)
     
     assembler.currentSection = sectionId;
     assembler.currentKernel = sections[sectionId].kernelId;
-    insideArgs = insideProgInfo = false;
+    inside = Inside::MAINLAYOUT;
 }
 
 AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId) const
@@ -200,8 +207,32 @@ bool AsmGalliumPseudoOps::checkPseudoOpName(const CString& string)
     return pseudoOp < sizeof(galliumPseudoOpNamesTbl)/sizeof(char*);
 }
 
-void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (handler.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Configuration outside kernel definition");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel].hasProgInfo)
+    {
+        asmr.printError(pseudoOpPlace,
+                "Configuration can't be defined only if progInfo was defined");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    handler.inside = AsmGalliumHandler::Inside::CONFIG;
+    handler.output.kernels[asmr.currentKernel].useConfig = true;
+}
+
+void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler,
+                   const char* pseudoOpPlace, const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
@@ -211,7 +242,138 @@ void AsmGalliumPseudoOps::doGlobalData(AsmGalliumHandler& handler, const char* p
     
     asmr.goToSection(pseudoOpPlace, ".rodata");
 }
+
+void AsmGalliumPseudoOps::setDimensions(AsmGalliumHandler& handler,
+                    const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    const char* dimPlace = linePtr;
+    char buf[10];
+    cxuint dimMask = 0;
+    if (getNameArg(asmr, 10, buf, linePtr, "dimension set"))
+    {
+        toLowerString(buf);
+        for (cxuint i = 0; buf[i]!=0; i++)
+            if (buf[i]=='x')
+                dimMask |= 1;
+            else if (buf[i]=='y')
+                dimMask |= 2;
+            else if (buf[i]=='z')
+                dimMask |= 4;
+            else
+            {
+                asmr.printError(dimPlace, "Unknown dimension type");
+                return;
+            }
+    }
+    else // error
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+}
+
+void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
+         const char* pseudoOpPlace, const char* linePtr, GalliumConfigValueTarget target)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
     
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value = BINGEN_NOTSUPPLIED;
+    //const bool argIsOptional = ((1U<<target) & argIsOptionalMask)!=0;
+    bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
+    /* ranges checking */
+    if (good)
+    {
+        switch(target)
+        {
+            case GALLIUMCVAL_SGPRSNUM:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value > maxSGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                    asmr.printError(pseudoOpPlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case GALLIUMCVAL_VGPRSNUM:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+                if (value > maxVGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                    asmr.printError(pseudoOpPlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case AMDCVAL_HWLOCAL:
+                if (value > 32768)
+                {
+                    asmr.printError(pseudoOpPlace, "LocalSize out of range (0-32768)");
+                    good = false;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    GalliumKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    // set value
+    switch(target)
+    {
+        case GALLIUMCVAL_SGPRSNUM:
+            config.usedSGPRsNum = value;
+            break;
+        case GALLIUMCVAL_VGPRSNUM:
+            config.usedVGPRsNum = value;
+            break;
+        case GALLIUMCVAL_PGMRSRC2:
+            config.pgmRSRC2 = value;
+            break;
+        case GALLIUMCVAL_IEEEMODE:
+            config.ieeeMode = value;
+            break;
+        case GALLIUMCVAL_FLOATMODE:
+            config.floatMode = value;
+            break;
+        case GALLIUMCVAL_LOCALSIZE:
+            config.localSize = value;
+            break;
+        case GALLIUMCVAL_SCRATCHBUFFER:
+            config.scratchBufferSize = value;
+            break;
+    }
+}
+
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
                const char* pseudoOpPlace, const char* linePtr)
 {
@@ -222,12 +384,11 @@ void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "Arguments outside kernel definition");
         return;
     }
-    
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.insideArgs = true;
-    handler.insideProgInfo = false;
+    
+    handler.inside = AsmGalliumHandler::Inside::ARGS;
 }
 
 static const std::pair<const char*, GalliumArgType> galliumArgTypesMap[9] =
@@ -263,7 +424,7 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         asmr.printError(pseudoOpPlace, "Argument definition outside kernel configuration");
         return;
     }
-    if (!handler.insideArgs)
+    if (handler.inside != AsmGalliumHandler::Inside::ARGS)
     {
         asmr.printError(pseudoOpPlace, "Argument definition outside arguments list");
         return;
@@ -416,12 +577,17 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "ProgInfo outside kernel definition");
         return;
     }
+    if (handler.output.kernels[asmr.currentKernel].useConfig)
+    {
+        asmr.printError(pseudoOpPlace,
+                "ProgInfo can't be defined only if configuration was exists");
+        return;
+    }
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    handler.insideArgs = false;
-    handler.insideProgInfo = true;
+    handler.inside = AsmGalliumHandler::Inside::PROGINFO;
     handler.kernelStates[asmr.currentKernel].hasProgInfo = true;
 }
 
@@ -436,7 +602,7 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
         asmr.printError(pseudoOpPlace, "ProgInfo entry outside kernel configuration");
         return;
     }
-    if (!handler.insideProgInfo)
+    if (handler.inside != AsmGalliumHandler::Inside::PROGINFO)
     {
         asmr.printError(pseudoOpPlace, "ProgInfo entry definition outside ProgInfo");
         return;
@@ -496,14 +662,48 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_ARGS:
             AsmGalliumPseudoOps::doArgs(*this, stmtPlace, linePtr);
             break;
+        case GALLIUMOP_CONFIG:
+            AsmGalliumPseudoOps::doConfig(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_DIMS:
+            AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr);
+            break;
         case GALLIUMOP_ENTRY:
             AsmGalliumPseudoOps::doEntry(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_FLOATMODE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_FLOATMODE);
             break;
         case GALLIUMOP_GLOBALDATA:
             AsmGalliumPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
             break;
+        case GALLIUMOP_IEEEMODE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_IEEEMODE);
+            break;
+        case GALLIUMOP_LOCALSIZE:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_LOCALSIZE);
+            break;
+        case GALLIUMOP_PGMRSRC2:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_PGMRSRC2);
+            break;
         case GALLIUMOP_PROGINFO:
             AsmGalliumPseudoOps::doProgInfo(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_SCRATCHBUFFER:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_SCRATCHBUFFER);
+            break;
+        case GALLIUMOP_SGPRSNUM:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_SGPRSNUM);
+            break;
+        case GALLIUMOP_VGPRSNUM:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_VGPRSNUM);
             break;
         default:
             return false;

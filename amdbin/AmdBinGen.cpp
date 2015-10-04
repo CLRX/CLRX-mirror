@@ -147,16 +147,16 @@ void AmdInput::addEmptyKernel(const char* kernelName)
     kernel.config.pgmRSRC2 = 0;
     kernel.config.ieeeMode = 0;
     kernel.config.floatMode = 0xc0;
-    kernel.config.dimMask = AMDBIN_DEFAULT;
+    kernel.config.dimMask = BINGEN_DEFAULT;
     kernel.config.reqdWorkGroupSize[0] = 0;
     kernel.config.reqdWorkGroupSize[1] = 0;
     kernel.config.reqdWorkGroupSize[2] = 0;
-    kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = AMDBIN_DEFAULT;
-    kernel.config.hwRegion = AMDBIN_DEFAULT;
+    kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = BINGEN_DEFAULT;
+    kernel.config.hwRegion = BINGEN_DEFAULT;
     kernel.config.hwLocalSize = kernel.config.scratchBufferSize =
          kernel.config.condOut = kernel.config.earlyExit = 0;
     kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
-        kernel.config.uavPrivate = kernel.config.constBufferId = AMDBIN_DEFAULT;
+        kernel.config.uavPrivate = kernel.config.constBufferId = BINGEN_DEFAULT;
     kernel.config.usePrintf = kernel.config.useConstantData = false;
     kernel.config.userDataElemsNum = 0;
     kernels.push_back(std::move(kernel));
@@ -661,7 +661,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             throw Exception("HWLocalSize out of range");
         
         /* filling input */
-        if (config.hwRegion == AMDBIN_DEFAULT)
+        if (config.hwRegion == BINGEN_DEFAULT)
             tempConfig.hwRegion = 0;
         else
             tempConfig.hwRegion = config.hwRegion;
@@ -685,7 +685,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     throw Exception("Invalid access qualifier for image");
             }
         
-        if (config.uavPrivate == AMDBIN_DEFAULT)
+        if (config.uavPrivate == BINGEN_DEFAULT)
         {   /* compute uavPrivate */
             bool hasStructures = false;
             uint32_t amountOfArgs = 0;
@@ -720,7 +720,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         else
             tempConfig.uavPrivate = config.uavPrivate;
         
-        if (config.uavId == AMDBIN_DEFAULT)
+        if (config.uavId == BINGEN_DEFAULT)
         {
             if (driverVersion < 134805 || driverVersion > 144505)
                 tempConfig.uavId = (isOlderThan1348)?9:11;
@@ -733,36 +733,36 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                          arg.ptrSpace == KernelPtrSpace::GLOBAL))
                         hasPointer = true;
                 
-                tempConfig.uavId = (hasPointer || config.usePrintf)?11:AMDBIN_NOTSUPPLIED;
+                tempConfig.uavId = (hasPointer || config.usePrintf)?11:BINGEN_NOTSUPPLIED;
             }
         }
         else
             tempConfig.uavId = config.uavId;
         
-        if (config.constBufferId == AMDBIN_DEFAULT)
-            tempConfig.constBufferId = (isOlderThan1348)?AMDBIN_NOTSUPPLIED : 10;
+        if (config.constBufferId == BINGEN_DEFAULT)
+            tempConfig.constBufferId = (isOlderThan1348)?BINGEN_NOTSUPPLIED : 10;
         else
             tempConfig.constBufferId = config.constBufferId;
         
-        if (config.printfId == AMDBIN_DEFAULT)
+        if (config.printfId == BINGEN_DEFAULT)
             tempConfig.printfId = (!isOlderThan1348 &&
-                (driverVersion >= 152603 || config.usePrintf)) ? 9 : AMDBIN_NOTSUPPLIED;
+                (driverVersion >= 152603 || config.usePrintf)) ? 9 : BINGEN_NOTSUPPLIED;
         else
             tempConfig.printfId = config.printfId;
         
-        if (config.privateId == AMDBIN_DEFAULT)
+        if (config.privateId == BINGEN_DEFAULT)
             tempConfig.privateId = 8;
         else
             tempConfig.privateId = config.privateId;
         
-        if (tempConfig.uavId != AMDBIN_NOTSUPPLIED && tempConfig.uavId >= 1024)
+        if (tempConfig.uavId != BINGEN_NOTSUPPLIED && tempConfig.uavId >= 1024)
             throw Exception("UavId out of range");
-        if (tempConfig.constBufferId != AMDBIN_NOTSUPPLIED &&
+        if (tempConfig.constBufferId != BINGEN_NOTSUPPLIED &&
             tempConfig.constBufferId >= 1024)
             throw Exception("ConstBufferId out of range");
-        if (tempConfig.printfId != AMDBIN_NOTSUPPLIED && tempConfig.printfId >= 1024)
+        if (tempConfig.printfId != BINGEN_NOTSUPPLIED && tempConfig.printfId >= 1024)
             throw Exception("PrintfId out of range");
-        if (tempConfig.privateId != AMDBIN_NOTSUPPLIED && tempConfig.privateId >= 1024)
+        if (tempConfig.privateId != BINGEN_NOTSUPPLIED && tempConfig.privateId >= 1024)
             throw Exception("PrivateId out of range");
         
         /* fill argUavIds for global/constant pointers */
@@ -789,7 +789,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             if (arg.argType == KernelArgType::POINTER &&
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
                  (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)) &&
-               arg.resId != AMDBIN_DEFAULT)
+               arg.resId != BINGEN_DEFAULT)
             {
                 if ((arg.resId < 9 && arg.used) ||
                     (!arg.used && arg.resId != tempConfig.uavId) || arg.resId >= 1024)
@@ -800,7 +800,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 tempConfig.argResIds[k] = arg.resId;
             }
             else if (arg.argType == KernelArgType::POINTER &&
-                    arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId != AMDBIN_DEFAULT)
+                    arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId != BINGEN_DEFAULT)
             {   // old constant buffers
                 if (arg.resId < 2 || arg.resId >= 160)
                     throw Exception("CbId out of range!");
@@ -810,7 +810,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 tempConfig.argResIds[k] = arg.resId;
             }
             else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId != AMDBIN_DEFAULT)
+                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId != BINGEN_DEFAULT)
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
@@ -831,7 +831,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     tempConfig.argResIds[k] = arg.resId;
                 }
             }
-            else if (arg.argType == KernelArgType::COUNTER32 && arg.resId != AMDBIN_DEFAULT)
+            else if (arg.argType == KernelArgType::COUNTER32 && arg.resId != BINGEN_DEFAULT)
             {
                 if (arg.resId >= 8)
                     throw Exception("CounterId out of range!");
@@ -848,7 +848,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             if (arg.argType == KernelArgType::POINTER &&
                 (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
                  (arg.ptrSpace == KernelPtrSpace::CONSTANT && !isOlderThan1348)) &&
-                arg.resId == AMDBIN_DEFAULT)
+                arg.resId == BINGEN_DEFAULT)
             {
                 if (arg.used)
                 {
@@ -862,7 +862,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     tempConfig.argResIds[k] = tempConfig.uavId;
             }
             else if (arg.argType == KernelArgType::POINTER &&
-                    arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId == AMDBIN_DEFAULT)
+                    arg.ptrSpace == KernelPtrSpace::CONSTANT && arg.resId == BINGEN_DEFAULT)
             {   // old constant buffers
                 for (; cbIdsCount < 160 && cbIdMask[cbIdsCount]; cbIdsCount++);
                 if (cbIdsCount == 160)
@@ -870,7 +870,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 tempConfig.argResIds[k] = cbIdsCount++;
             }
             else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId == AMDBIN_DEFAULT)
+                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId == BINGEN_DEFAULT)
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
@@ -887,7 +887,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     tempConfig.argResIds[k] = wrImgsCount++;
                 }
             }
-            else if (arg.argType == KernelArgType::COUNTER32 && arg.resId == AMDBIN_DEFAULT)
+            else if (arg.argType == KernelArgType::COUNTER32 && arg.resId == BINGEN_DEFAULT)
             {
                 for (; cntIdsCount < 8 && cntIdMask[cntIdsCount]; cntIdsCount++);
                 if (cntIdsCount == 8)
@@ -1122,28 +1122,28 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     
     if (input->is64Bit)
         metadata += ";memory:64bitABI\n";
-    if (tempConfig.uavId != AMDBIN_NOTSUPPLIED)
+    if (tempConfig.uavId != BINGEN_NOTSUPPLIED)
     {
         metadata += ";uavid:";
         itocstrCStyle(tempConfig.uavId, numBuf, 21);
         metadata += numBuf;
         metadata += '\n';
     }
-    if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
+    if (tempConfig.printfId != BINGEN_NOTSUPPLIED)
     {
         metadata += ";printfid:";
         itocstrCStyle(tempConfig.printfId, numBuf, 21);
         metadata += numBuf;
         metadata += '\n';
     }
-    if (tempConfig.constBufferId != AMDBIN_NOTSUPPLIED)
+    if (tempConfig.constBufferId != BINGEN_NOTSUPPLIED)
     {
         metadata += ";cbid:";
         itocstrCStyle(tempConfig.constBufferId, numBuf, 21);
         metadata += numBuf;
         metadata += '\n';
     }
-    if (tempConfig.privateId != AMDBIN_NOTSUPPLIED)
+    if (tempConfig.privateId != BINGEN_NOTSUPPLIED)
     {
         metadata += ";privateid:";
         itocstrCStyle(tempConfig.privateId, numBuf, 21);
@@ -1361,7 +1361,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
                  config.userDatas[p].regStart+config.userDatas[p].regSize);
     pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
     uint32_t dimValues = 0;
-    if (config.dimMask != AMDBIN_DEFAULT)
+    if (config.dimMask != BINGEN_DEFAULT)
         dimValues = ((config.dimMask&7)<<7) |
                 (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
     else // get from current pgmRSRC2
@@ -1414,7 +1414,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         uavMask[0] |= 1U<<tempConfig.constBufferId;
     if (config.usePrintf) //if printf used
     {
-        if (tempConfig.printfId != AMDBIN_NOTSUPPLIED)
+        if (tempConfig.printfId != BINGEN_NOTSUPPLIED)
             uavMask[0] |= 1U<<tempConfig.printfId;
         else
             uavMask[0] |= 1U<<9;

@@ -46,6 +46,12 @@
 namespace CLRX
 {
 
+enum: cxuint {
+    BINGEN_DEFAULT = UINT_MAX,    ///< if set in field then field has been filled later
+    BINGEN_NOTSUPPLIED  = UINT_MAX-1 ///< if set in field then field has been ignored
+};
+
+
 enum : Flags {
     ELF_CREATE_SECTIONMAP = 1,  ///< create map of sections
     ELF_CREATE_SYMBOLMAP = 2,   ///< create map of symbols

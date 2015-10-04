@@ -698,7 +698,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
-    uint64_t value = AMDBIN_NOTSUPPLIED;
+    uint64_t value = BINGEN_NOTSUPPLIED;
     const bool argIsOptional = ((1U<<target) & argIsOptionalMask)!=0;
     bool good = getAbsoluteValueArg(asmr, value, linePtr, !argIsOptional);
     /* ranges checking */
@@ -742,28 +742,28 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 }
                 break;
             case AMDCVAL_UAVID:
-                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
                     asmr.printError(pseudoOpPlace, "UAVId out of range (0-1023)");
                     good = false;
                 }
                 break;
             case AMDCVAL_CBID:
-                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
                     asmr.printError(pseudoOpPlace, "ConstBufferId out of range (0-1023)");
                     good = false;
                 }
                 break;
             case AMDCVAL_PRINTFID:
-                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
                     asmr.printError(pseudoOpPlace, "PrintfId out of range (0-1023)");
                     good = false;
                 }
                 break;
             case AMDCVAL_PRIVATEID:
-                if (value != AMDBIN_NOTSUPPLIED && value >= 1024)
+                if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
                     asmr.printError(pseudoOpPlace, "PrivateId out of range (0-1023)");
                     good = false;
@@ -1243,7 +1243,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     cxbyte ptrAccess = 0;
     uint64_t structSizeVal = 0;
     uint64_t constSpaceSizeVal = 0;
-    uint64_t resIdVal = AMDBIN_DEFAULT;
+    uint64_t resIdVal = BINGEN_DEFAULT;
     bool usedArg = true;
     
     bool haveComma;
@@ -1349,7 +1349,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                         const cxuint maxUavId = (ptrSpace==KernelPtrSpace::CONSTANT) ?
                                 159 : 1023;
                         
-                        if (resIdVal != AMDBIN_DEFAULT && resIdVal > maxUavId)
+                        if (resIdVal != BINGEN_DEFAULT && resIdVal > maxUavId)
                         {
                             char buf[80];
                             snprintf(buf, 80, "UAVId out of range (0-%u)", maxUavId);
@@ -1400,7 +1400,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 if (getAbsoluteValueArg(asmr, resIdVal, linePtr, false))
                 {
                     cxuint maxResId = (ptrAccess == KARG_PTR_READ_ONLY) ? 127 : 7;
-                    if (resIdVal!=AMDBIN_DEFAULT && resIdVal > maxResId)
+                    if (resIdVal!=BINGEN_DEFAULT && resIdVal > maxResId)
                     {
                         char buf[80];
                         snprintf(buf, 80, "Resource Id out of range (0-%u)", maxResId);
@@ -1424,7 +1424,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             const char* place = linePtr;
             if (getAbsoluteValueArg(asmr, resIdVal, linePtr, true))
             {
-                if (resIdVal!=AMDBIN_DEFAULT && resIdVal > 7)
+                if (resIdVal!=BINGEN_DEFAULT && resIdVal > 7)
                 {
                     asmr.printError(place, "Resource Id out of range (0-7)");
                     good = false;
@@ -1756,9 +1756,9 @@ bool AsmAmdHandler::prepareBinary()
         if (!output.kernels[i].useConfig)
             continue;
         AmdKernelConfig& config = output.kernels[i].config;
-        if (config.usedSGPRsNum==AMDBIN_DEFAULT)
+        if (config.usedSGPRsNum==BINGEN_DEFAULT)
             config.usedSGPRsNum = kernelStates[i]->allocRegs[0];
-        if (config.usedVGPRsNum==AMDBIN_DEFAULT)
+        if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = kernelStates[i]->allocRegs[1];
     }
     
