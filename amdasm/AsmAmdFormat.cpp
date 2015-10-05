@@ -1761,8 +1761,19 @@ bool AsmAmdHandler::prepareBinary()
         if (!output.kernels[i].useConfig)
             continue;
         AmdKernelConfig& config = output.kernels[i].config;
+        cxuint userSGPRsNum = 0;
+        /* include userData sgprs */
+        for (cxuint i = 0; i < config.userDataElemsNum; i++)
+            userSGPRsNum = std::max(userSGPRsNum,
+                        config.userDatas[i].regStart+config.userDatas[i].regSize);
+        
+        cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
+                ((config.pgmRSRC2>>7)&7);
+        // extra sgprs for dimensions
+        userSGPRsNum += ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0) + 1;
+        
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
-            config.usedSGPRsNum = kernelStates[i]->allocRegs[0];
+            config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i]->allocRegs[0]);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = kernelStates[i]->allocRegs[1];
     }
