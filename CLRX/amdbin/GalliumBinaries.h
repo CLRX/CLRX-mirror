@@ -34,6 +34,7 @@
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/GPUId.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/InputOutput.h>
 
@@ -309,8 +310,9 @@ struct GalliumKernelConfig
     cxuint usedVGPRsNum;  ///< number of used VGPRs
     cxuint usedSGPRsNum;  ///< number of used SGPRs
     uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
-    cxuint ieeeMode;  ///< IEEE mode
-    cxuint floatMode; ///< float mode
+    cxbyte ieeeMode;  ///< IEEE mode
+    cxbyte floatMode; ///< float mode
+    cxbyte priority;
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
 };
@@ -329,6 +331,7 @@ struct GalliumKernelInput
 /// Gallium input
 struct GalliumInput
 {
+    GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
     std::vector<GalliumKernelInput> kernels;    ///< input kernel list
@@ -359,17 +362,18 @@ public:
     
     /// constructor
     /**
+     * \param deviceType device type
      * \param codeSize size of code
      * \param code code pointer
      * \param globalDataSize global data size
      * \param globalData global data pointer
      * \param kernels vector of kernels
      */
-    GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+    GalliumBinGenerator(GPUDeviceType deviceType, size_t codeSize, const cxbyte* code,
             size_t globalDataSize, const cxbyte* globalData,
             const std::vector<GalliumKernelInput>& kernels);
     /// constructor
-    GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+    GalliumBinGenerator(GPUDeviceType deviceType, size_t codeSize, const cxbyte* code,
             size_t globalDataSize, const cxbyte* globalData,
             std::vector<GalliumKernelInput>&& kernels);
     ~GalliumBinGenerator();

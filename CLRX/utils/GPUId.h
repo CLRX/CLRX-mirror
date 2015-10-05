@@ -51,7 +51,7 @@ enum class GPUDeviceType: cxbyte
     MULLINS, ///< ???
     FIJI,  ///< Radeon Fury
     CARRIZO, ///< APU
-    GPUDEVICE_MAX = CARRIZO,    /// last value
+    GPUDEVICE_MAX = CARRIZO,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800
@@ -88,7 +88,7 @@ extern GPUDeviceType getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture arch
 /// get GPU architecture name
 extern const char* getGPUArchitectureName(GPUArchitecture architecture);
 
-enum: Flags {
+enum: cxuint {
     REGCOUNT_INCLUDE_VCC = 1
 };
 
@@ -99,7 +99,7 @@ enum: cxuint {
 
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
 extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
-                         Flags flags = 0);
+                         cxuint flags = 0);
 
 };
 

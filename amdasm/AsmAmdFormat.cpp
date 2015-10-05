@@ -741,6 +741,11 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                     good = false;
                 }
                 break;
+            case AMDCVAL_FLOATMODE:
+                asmr.printWarningForRange(8, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0xff;
+                break;
             case AMDCVAL_UAVID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {

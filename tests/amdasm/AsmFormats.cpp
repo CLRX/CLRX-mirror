@@ -218,11 +218,28 @@ static void printGalliumOutput(std::ostream& os, const GalliumInput* output)
     {
         os << "  Kernel: name=" << kernel.kernelName << ", " <<
                 "offset=" << kernel.offset << "\n";
-        os << "    ProgInfo: ";
-        for (cxuint i = 0; i < 3; i++)
-            os << "0x" << std::hex << kernel.progInfo[i].address <<
-                    "=0x" << kernel.progInfo[i].value << ((i==2)?"\n":", ");
-        os << std::dec;
+        if (!kernel.useConfig)
+        {
+            os << "    ProgInfo: ";
+            for (cxuint i = 0; i < 3; i++)
+                os << "0x" << std::hex << kernel.progInfo[i].address <<
+                        "=0x" << kernel.progInfo[i].value << ((i==2)?"\n":", ");
+            os << std::dec;
+        }
+        else
+        {
+            const GalliumKernelConfig& config = kernel.config;
+            os << "    Config:\n";
+            os << "      dims=" << confValueToString(config.dimMask) << ", "
+                    "SGPRS=" << confValueToString(config.usedSGPRsNum) << ", "
+                    "VGPRS=" << confValueToString(config.usedVGPRsNum) << ", "
+                    "pgmRSRC2=" << std::hex << "0x" << config.pgmRSRC2 << ", "
+                    "ieeeMode=0x" << cxuint(config.ieeeMode) << "\n      "
+                    "floatMode=0x" << cxuint(config.floatMode) << std::dec << ", "
+                    "priority=" << cxuint(config.priority) << ", "
+                    "localSize=" << config.localSize << ", "
+                    "scratchBuffer=" << config.scratchBufferSize << std::endl;
+        }
         for (const GalliumArgInfo& arg: kernel.argInfos)
         {
             os << "    Arg: " << galliumArgTypeTbl[cxuint(arg.type)] << ", " <<
@@ -366,7 +383,49 @@ thirdKernel:
         "test.s:38:26: Warning: Value 0x111223030 truncated to 0x11223030\n"
         "test.s:52:13: Warning: Section type and flags was ignored\n", true
     },
-    /* 1 - gallium (errors) */
+    /* 1 - gallium (configured proginfo) */
+    { R"ffDXD(            .gallium
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 1
+            .floatmode 43
+            .ieeemode 1
+            .sgprsnum 36
+            .vgprsnum 139
+            .pgmrsrc2 523243
+            .scratchbuffer 230
+            .kernel aa23
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .dims yz
+            .priority 3
+            .ieeemode 1
+            .pgmrsrc2 0
+.text
+aa22:
+aa23:)ffDXD",
+       R"ffDXD(GalliumBinDump:
+  Kernel: name=aa22, offset=0
+    Config:
+      dims=default, SGPRS=36, VGPRS=139, pgmRSRC2=0x7fbeb, ieeeMode=0x1
+      floatMode=0x2b, priority=1, localSize=0, scratchBuffer=230
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Kernel: name=aa23, offset=0
+    Config:
+      dims=6, SGPRS=default, VGPRS=default, pgmRSRC2=0x0, ieeeMode=0x1
+      floatMode=0x0, priority=3, localSize=0, scratchBuffer=0
+    Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
+  Comment:
+  nullptr
+  GlobalData:
+  nullptr
+  Code:
+)ffDXD", "", true
+    },
+    /* 2 - gallium (errors) */
     {
         R"ffDXD(            .gallium
             .kernel firstKernel

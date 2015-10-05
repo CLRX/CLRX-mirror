@@ -33,7 +33,7 @@ static const char* galliumPseudoOpNamesTbl[] =
 {
     "arg", "args", "config", "dims",
     "entry", "floatmode", "globaldata", "ieeemode",
-    "localsize", "pgmrsrc2", "proginfo",
+    "localsize", "pgmrsrc2", "priority", "proginfo",
     "scratchbuffer", "sgprsnum", "vgprsnum"
 };
 
@@ -41,7 +41,7 @@ enum
 {
     GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG, GALLIUMOP_DIMS,
     GALLIUMOP_ENTRY, GALLIUMOP_FLOATMODE, GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
-    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PROGINFO,
+    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY, GALLIUMOP_PROGINFO,
     GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_VGPRSNUM
 };
 
@@ -331,6 +331,13 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 }
                 break;
             }
+            case GALLIUMCVAL_PRIORITY:
+                if (value > 3)
+                {
+                    asmr.printError(pseudoOpPlace, "LocalSize out of range (0-3)");
+                    good = false;
+                }
+                break;
             case AMDCVAL_HWLOCAL:
                 if (value > 32768)
                 {
@@ -370,6 +377,9 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
             break;
         case GALLIUMCVAL_SCRATCHBUFFER:
             config.scratchBufferSize = value;
+            break;
+        case GALLIUMCVAL_PRIORITY:
+            config.priority = value;
             break;
     }
 }
@@ -685,6 +695,10 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_LOCALSIZE:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_LOCALSIZE);
+            break;
+        case GALLIUMOP_PRIORITY:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_PRIORITY);
             break;
         case GALLIUMOP_PGMRSRC2:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

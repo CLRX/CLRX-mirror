@@ -44,6 +44,7 @@ static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galli
     { }
     GalliumInput input;
     
+    input.deviceType = GPUDeviceType::CAPE_VERDE;
     if (rodataIndex != SHN_UNDEF)
     {
         const Elf32_Shdr& rodataHdr = elfBin.getSectionHeader(rodataIndex);

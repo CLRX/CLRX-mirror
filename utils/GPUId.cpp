@@ -148,7 +148,7 @@ const char* CLRX::getGPUArchitectureName(GPUArchitecture architecture)
 }
 
 cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
-                         Flags flags)
+                         cxuint flags)
 {
     if (architecture > GPUArchitecture::GPUARCH_MAX)
         throw Exception("Unknown GPU architecture");

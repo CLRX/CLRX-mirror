@@ -317,21 +317,23 @@ GalliumBinGenerator::GalliumBinGenerator(const GalliumInput* galliumInput)
         : manageable(false), input(galliumInput)
 { }
 
-GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+GalliumBinGenerator::GalliumBinGenerator(GPUDeviceType deviceType,
+        size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
         const std::vector<GalliumKernelInput>& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ globalDataSize, globalData, kernels,
+    input = new GalliumInput{ deviceType, globalDataSize, globalData, kernels,
             codeSize, code, 0, nullptr };
 }
 
-GalliumBinGenerator::GalliumBinGenerator(size_t codeSize, const cxbyte* code,
+GalliumBinGenerator::GalliumBinGenerator(GPUDeviceType deviceType,
+        size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
         std::vector<GalliumKernelInput>&& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ globalDataSize, globalData, std::move(kernels),
+    input = new GalliumInput{ deviceType, globalDataSize, globalData, std::move(kernels),
         codeSize, code, 0, nullptr };
 }
 
@@ -382,6 +384,58 @@ static const uint16_t mainBuiltinSectionTable2[] =
     6  // GALLIUMSECTID_NOTEGNUSTACK
 };
 
+class CLRX_INTERNAL AmdGpuConfigContent: public ElfRegionContent
+{
+private:
+    const Array<uint32_t>& kernelsOrder;
+    const GalliumInput& input;
+public:
+    AmdGpuConfigContent(const Array<uint32_t>& inKernelsOrder,
+            const GalliumInput& inInput) : kernelsOrder(inKernelsOrder), input(inInput)
+    { }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        for (uint32_t korder: kernelsOrder)
+        {
+            const GalliumKernelInput& kernel = input.kernels[korder];
+            GalliumProgInfoEntry outEntries[3];
+            if (kernel.useConfig)
+            {
+                const GalliumKernelConfig& config = kernel.config;
+                outEntries[0].address = ULEV(0x0000b848U);
+                outEntries[1].address = ULEV(0x0000b84cU);
+                outEntries[2].address = ULEV(0x0000b860U);
+                
+                uint32_t dimValues = 0;
+                if (config.dimMask != BINGEN_DEFAULT)
+                    dimValues = ((config.dimMask&7)<<7) |
+                            (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+                else
+                    dimValues |= (config.pgmRSRC2 & 0x1b80U);
+                cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
+                cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
+                outEntries[0].value = ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
+                        ((uint32_t(config.floatMode)&0xff)<<12) |
+                        (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10);
+                outEntries[1].value = (config.pgmRSRC2 & 0xffffe440U) |
+                        ((config.scratchBufferSize)?1:0) | dimValues |
+                        (((config.localSize+63)>>6)<<15);
+                outEntries[2].value = (config.scratchBufferSize)<<12;
+                for (cxuint k = 0; k < 3; k++)
+                    outEntries[k].value = ULEV(outEntries[k].value);
+            }
+            else
+                for (cxuint k = 0; k < 3; k++)
+                {
+                    outEntries[k].address = ULEV(kernel.progInfo[k].address);
+                    outEntries[k].value = ULEV(kernel.progInfo[k].value);
+                }
+            fob.writeArray(3, outEntries);
+        }
+    }
+};
+
 void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
@@ -391,6 +445,25 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     uint64_t binarySize = uint64_t(8) + size_t(kernelsNum)*16U + 20U /* section */;
     for (const GalliumKernelInput& kernel: input->kernels)
         binarySize += uint64_t(kernel.argInfos.size())*24U + kernel.kernelName.size();
+    
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
+    const cxuint maxSGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    const cxuint maxVGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+    for (const GalliumKernelInput& kernel: input->kernels)
+        if (kernel.useConfig)
+        {
+            const GalliumKernelConfig& config = kernel.config;
+            if (config.usedVGPRsNum > maxVGPRSNum)
+                throw Exception("Used VGPRs number out of range");
+            if (config.usedSGPRsNum > maxSGPRSNum)
+                throw Exception("Used SGPRs number out of range");
+            if (config.localSize > 32768)
+                throw Exception("LocalSize out of range");
+            if (config.floatMode >= 256)
+                throw Exception("FloatMode out of range");
+            if (config.priority >= 4)
+                throw Exception("Priority out of range");
+        }
     
     // elf extra data
     uint32_t commentSize = 28;
@@ -411,32 +484,6 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
             SHT_PROGBITS, SHF_ALLOC|SHF_WRITE));
     elfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 4, ".bss",
             SHT_NOBITS, SHF_ALLOC|SHF_WRITE));
-    
-    class AmdGpuConfigContent: public ElfRegionContent
-    {
-    private:
-        const Array<uint32_t>& kernelsOrder;
-        const GalliumInput& input;
-    public:
-        AmdGpuConfigContent(const Array<uint32_t>& inKernelsOrder,
-                const GalliumInput& inInput) : kernelsOrder(inKernelsOrder), input(inInput)
-        { }
-        
-        void operator()(FastOutputBuffer& fob) const
-        {
-            for (uint32_t korder: kernelsOrder)
-            {
-                const GalliumKernelInput& kernel = input.kernels[korder];
-                GalliumProgInfoEntry outEntries[3];
-                for (cxuint k = 0; k < 3; k++)
-                {
-                    outEntries[k].address = ULEV(kernel.progInfo[k].address);
-                    outEntries[k].value = ULEV(kernel.progInfo[k].value);
-                }
-                fob.writeArray(3, outEntries);
-            }
-        }
-    };
     
     AmdGpuConfigContent amdGpuConfigContent(kernelsOrder, *input);
     elfBinGen.addRegion(ElfRegion32(uint64_t(24U)*kernelsNum, &amdGpuConfigContent, 1,

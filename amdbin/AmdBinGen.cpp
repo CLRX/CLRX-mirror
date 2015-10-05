@@ -659,6 +659,8 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
             throw Exception("Used SGPRs number out of range");
         if (config.hwLocalSize > 32768)
             throw Exception("HWLocalSize out of range");
+        if (config.floatMode >= 256)
+            throw Exception("FloatMode out of range");
         
         /* filling input */
         if (config.hwRegion == BINGEN_DEFAULT)
