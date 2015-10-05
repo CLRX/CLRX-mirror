@@ -1521,6 +1521,13 @@ void Assembler::initializeOutputFormat()
 
 bool Assembler::assemble()
 {
+    for (const DefSym& defSym: defSyms)
+        if (defSym.first!=".")
+            symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
+        else // ignore for '.'
+            messageStream << "<command-line>: Definition for symbol '.' "
+                    "was ignored" << std::endl;
+    
     good = true;
     while (!endOfAssembly)
     {

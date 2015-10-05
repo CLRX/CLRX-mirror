@@ -220,7 +220,7 @@ void AsmGalliumPseudoOps::doConfig(AsmGalliumHandler& handler, const char* pseud
     if (handler.kernelStates[asmr.currentKernel].hasProgInfo)
     {
         asmr.printError(pseudoOpPlace,
-                "Configuration can't be defined only if progInfo was defined");
+                "Configuration can't be defined if progInfo was defined");
         return;
     }
     skipSpacesToEnd(linePtr, end);
@@ -331,12 +331,15 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 }
                 break;
             }
+            case AMDCVAL_FLOATMODE:
+                asmr.printWarningForRange(8, value,
+                                  asmr.getSourcePos(pseudoOpPlace), WS_UNSIGNED);
+                value &= 0xff;
+                break;
             case GALLIUMCVAL_PRIORITY:
-                if (value > 3)
-                {
-                    asmr.printError(pseudoOpPlace, "LocalSize out of range (0-3)");
-                    good = false;
-                }
+                asmr.printWarningForRange(2, value,
+                                  asmr.getSourcePos(pseudoOpPlace), WS_UNSIGNED);
+                value &= 3;
                 break;
             case AMDCVAL_HWLOCAL:
                 if (value > 32768)
@@ -590,7 +593,7 @@ void AsmGalliumPseudoOps::doProgInfo(AsmGalliumHandler& handler,
     if (handler.output.kernels[asmr.currentKernel].useConfig)
     {
         asmr.printError(pseudoOpPlace,
-                "ProgInfo can't be defined only if configuration was exists");
+                "ProgInfo can't be defined if configuration was exists");
         return;
     }
     skipSpacesToEnd(linePtr, end);

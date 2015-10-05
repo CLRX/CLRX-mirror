@@ -483,6 +483,32 @@ test.s:28:39: Error: Section type was not preceded by '@'
 )ffDXD", false
     },
     {
+        R"ffDXD(            .gallium
+            .kernel aa22
+            .config
+            .proginfo
+            .kernel av77
+            .proginfo
+            .config
+            .kernel aa22
+            .args
+            .arg scalar, 8,,,SEXT,griddim
+            .config
+            .priority 7
+            .floatmode 343
+            .ieeemode 1
+            .sgprsnum 136
+            .vgprsnum 339
+)ffDXD", "",
+R"ffDXD(test.s:4:13: Error: ProgInfo can't be defined if configuration was exists
+test.s:7:13: Error: Configuration can't be defined if progInfo was defined
+test.s:12:13: Warning: Value 0x7 truncated to 0x3
+test.s:13:13: Warning: Value 0x157 truncated to 0x57
+test.s:15:13: Error: Used SGPRs number out of range (0-102)
+test.s:16:13: Error: Used VGPRs number out of range (0-256)
+)ffDXD", false
+    },
+    {
         R"ffDXD(            .amd
             
             .kernel non_config

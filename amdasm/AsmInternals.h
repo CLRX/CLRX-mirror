@@ -218,11 +218,9 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
                bool _64bit = false);
     static void doSkip(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr);
     
-    /* TODO: add no-op fillin for text sections */
     static void doAlign(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                     bool powerOf2 = false);
     
-    /* TODO: add no-op fillin for text sections */
     template<typename Word>
     static void doAlignWord(Assembler& asmr, const char* pseudoOpPlace,
                             const char* linePtr);
