@@ -50,7 +50,8 @@ enum: Flags
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_FORCE_ADD_SYMBOLS = 2,
-    ASM_ALL = FLAGS_ALL  ///< all flags
+    ASM_TESTRUN = (1U<<31), ///< only for running tests
+    ASM_ALL = FLAGS_ALL&~ASM_TESTRUN  ///< all flags
 };
 
 enum: cxuint

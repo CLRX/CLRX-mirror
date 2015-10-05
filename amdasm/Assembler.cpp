@@ -1525,7 +1525,7 @@ bool Assembler::assemble()
         if (defSym.first!=".")
             symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
         else // ignore for '.'
-            messageStream << "<command-line>: Definition for symbol '.' "
+            messageStream << "<command-line>: Warning: Definition for symbol '.' "
                     "was ignored" << std::endl;
     
     good = true;
@@ -1696,8 +1696,18 @@ bool Assembler::assemble()
         }
         clauses.pop();
     }
+    
+    if ((flags&ASM_TESTRUN) == 0)
+        for (const AsmSymbolEntry& symEntry: symbolMap)
+            if (!symEntry.second.occurrencesInExprs.empty())
+            {
+                for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
+                    printError(occur.expression->getSourcePos(),(std::string(
+                                "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
+                good = false;
+            }
+    
     if (good && formatHandler!=nullptr)
         formatHandler->prepareBinary();
-    
     return good;
 }
