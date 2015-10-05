@@ -809,7 +809,6 @@ bool AsmGalliumHandler::prepareBinary()
         const AsmSymbol& symbol = it->second;
         if (!symbol.hasValue)
         {   // error, unresolved
-            
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                     "Symbol for kernel '") + kinput.kernelName.c_str() +
                     "' is not resolved").c_str());
@@ -818,7 +817,6 @@ bool AsmGalliumHandler::prepareBinary()
         }
         if (symbol.sectionId != codeSection)
         {   /// error, wrong section
-            
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                     "Symbol for kernel '")+kinput.kernelName.c_str()+
                     "' is defined for section other than '.text'").c_str());
