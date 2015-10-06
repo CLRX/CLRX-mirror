@@ -280,7 +280,6 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
                     default:
                         break;
                 }
-                
             }
             else if (op == AsmExprOp::CHOICE)
             {

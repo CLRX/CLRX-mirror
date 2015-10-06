@@ -247,6 +247,17 @@ static inline void updateSGPRsNum(cxuint& sgprsNum, cxuint sgpr, uint16_t arch)
         sgprsNum = std::min(std::max(sgprsNum, sgpr+1), arch&ARCH_RX3X0 ? 100U: 102U);
 }
 
+static inline void updateRegFlags(Flags& regFlags, cxuint reg, uint16_t arch)
+{
+    reg &= ~1;
+    if (reg==106)
+        regFlags |= GCN_VCC;
+    else if (((arch&ARCH_RX3X0)!=0 && reg==102) || ((arch&ARCH_RX3X0)==0 && reg==104))
+        regFlags |= GCN_FLAT;
+    else if ((arch&ARCH_RX3X0)!=0 && reg==104)
+        regFlags |= GCN_XNACK;
+}
+
 };
 
 #endif

@@ -223,6 +223,7 @@ private:
         cxuint savedSection;
         std::unordered_set<CString> argNamesSet;
         cxuint allocRegs[2];
+        Flags allocRegFlags;
     };
     std::vector<Section> sections;
     // use pointer to prevents copying Kernel objects
@@ -267,7 +268,15 @@ private:
     enum class Inside : cxbyte {
         MAINLAYOUT, CONFIG, ARGS, PROGINFO
     };
+    struct RegState
+    {
+        cxuint regs[2];
+        Flags regFlags;
+        CString next;
+    };
+    
     typedef std::unordered_map<CString, cxuint> SectionMap;
+    typedef std::unordered_map<CString, cxuint> RegStateMap;
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
     struct Section
@@ -285,15 +294,13 @@ private:
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;
+    RegStateMap funcRegStates;
     SectionMap extraSectionMap;
     cxuint codeSection;
     cxuint dataSection;
     cxuint commentSection;
     cxuint savedSection;
     Inside inside;
-    //bool insideProgInfo;
-    //bool insideArgs;
-    //bool insideConfig;
     cxuint extraSectionCount;
 public:
     /// construcror
@@ -344,6 +351,13 @@ enum : AsmExprTargetType
     GCNTGT_SMEMIMM
 };
 
+enum : Flags
+{
+    GCN_VCC = 1,
+    GCN_FLAT = 2,
+    GCN_XNACK = 4
+};
+
 /// ISA assembler class
 class ISAAssembler: public NonCopyableAndNonMovable
 {
@@ -377,9 +391,11 @@ public:
     /// check if name is mnemonic
     virtual bool checkMnemonic(const CString& mnemonic) const = 0;
     /// set allocated registers (if regs is null then reset them)
-    virtual void setAllocatedRegisters(const cxuint* regs = nullptr) = 0;
+    virtual void setAllocatedRegisters(const cxuint* regs = nullptr,
+                Flags regFlags = 0) = 0;
     /// get allocated register numbers after assemblying
-    virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum) const = 0;
+    virtual const cxuint* getAllocatedRegisters(size_t& regTypesNum,
+                Flags& regFlags) const = 0;
     /// fill alignment when value is not given
     virtual void fillAlignment(size_t size, cxbyte* output) = 0;
 };
@@ -392,6 +408,7 @@ public:
     struct Regs {
         cxuint sgprsNum;    ///< SGPRs number
         cxuint vgprsNum;    ///< VGPRs number
+        Flags regFlags;
     };
 private:
     union {
@@ -410,9 +427,9 @@ public:
     bool resolveCode(const AsmSourcePos& sourcePos, cxuint targetSectionId,
                  cxbyte* sectionData, size_t offset, AsmExprTargetType targetType,
                  cxuint sectionId, uint64_t value);
-    void setAllocatedRegisters(const cxuint* regs);
     bool checkMnemonic(const CString& mnemonic) const;
-    const cxuint* getAllocatedRegisters(size_t& regTypesNum) const;
+    void setAllocatedRegisters(const cxuint* regs, Flags regFlags);
+    const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
     void fillAlignment(size_t size, cxbyte* output);
 };
 
@@ -704,7 +721,7 @@ public:
     /// get source position
     const AsmSourcePos& getSourcePos() const
     { return sourcePos; }
-
+    
     /// make symbol snapshot (required to implement .eqv pseudo-op)    
     static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
                AsmSymbolEntry*& outSymEntry, const AsmSourcePos* parentExprSourcePos);

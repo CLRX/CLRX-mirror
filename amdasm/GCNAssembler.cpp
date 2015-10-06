@@ -181,7 +181,14 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     src0Expr.release();
     src1Expr.release();
     if (dstReg)
+    {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    }
+    if (src0Op.range)
+        updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
+    if (src1Op.range)
+        updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
 }
 
 void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -232,7 +239,12 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     src0Expr.release();
     
     if (dstReg)
+    {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    }
+    if (src0Op.range)
+        updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
 }
 
 static const std::pair<const char*, cxuint> hwregNamesMap[] =
@@ -388,7 +400,10 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     imm32Expr.release();
     imm16Expr.release();
     if (dstReg)
+    {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    }
 }
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -442,6 +457,9 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     // prevent freeing expressions
     src0Expr.release();
     src1Expr.release();
+    
+    updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
+    updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
 }
 
 static const std::pair<const char*, uint16_t> sendMessageNamesMap[] =
@@ -737,6 +755,10 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     soffsetExpr.release();
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    updateRegFlags(gcnRegs.regFlags, sbaseReg.start, arch);
+    if (soffsetReg)
+        updateRegFlags(gcnRegs.regFlags, soffsetReg.start, arch);
 }
 
 void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -828,7 +850,13 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     soffsetExpr.release();
     simm7Expr.release();
     if (gcnInsn.mode & GCN_MLOAD)
+    {
         updateSGPRsNum(gcnRegs.sgprsNum, dataReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dataReg.start, arch);
+    }
+    updateRegFlags(gcnRegs.regFlags, sbaseReg.start, arch);
+    if (soffsetReg)
+        updateRegFlags(gcnRegs.regFlags, soffsetReg.start, arch);
 }
 
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1059,8 +1087,21 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (dstReg.start>=256)
         updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
     else // sgprs
+    {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
-    updateSGPRsNum(gcnRegs.sgprsNum, dstCCReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    }
+    if (src0Op.range)
+        updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
+    if (src1Op.range)
+        updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
+    if (dstCCReg)
+    {
+        updateSGPRsNum(gcnRegs.sgprsNum, dstCCReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, dstCCReg.start, arch);
+    }
+    if (srcCCReg)
+        updateRegFlags(gcnRegs.regFlags, srcCCReg.start, arch);
 }
 
 void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1198,8 +1239,13 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (dstReg.start>=256)
             updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
         else // sgprs
+        {
             updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+            updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+        }
     }
+    if (src0Op.range)
+        updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
 }
 
 void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1363,6 +1409,9 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     src1OpExpr.release();
     // update register pool
     updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+    updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+    updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
+    updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
 }
 
 void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -1569,10 +1618,25 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (dstReg.start>=256)
             updateVGPRsNum(gcnRegs.vgprsNum, dstReg.end-257);
         else // sgprs
+        {
             updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
+            updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
+        }
     }
     if (sdstReg)
+    {
         updateSGPRsNum(gcnRegs.sgprsNum, sdstReg.end-1, arch);
+        updateRegFlags(gcnRegs.regFlags, sdstReg.start, arch);
+    }
+    if (mode2 != GCN_VOP3_VINTRP)
+    {
+        if (src0Op.range && src0Op.range.start < 256)
+            updateRegFlags(gcnRegs.regFlags, src0Op.range.start, arch);
+        if (src1Op.range && src1Op.range.start < 256)
+            updateRegFlags(gcnRegs.regFlags, src1Op.range.start, arch);
+    }
+    if (src2Op.range && src2Op.range.start < 256)
+        updateRegFlags(gcnRegs.regFlags, src2Op.range.start, arch);
 }
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2069,6 +2133,8 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     if (vdataReg && ((gcnInsn.mode&GCN_MLOAD) != 0 ||
                 ((gcnInsn.mode&GCN_MATOMIC)!=0 && haveGlc)))
         updateVGPRsNum(gcnRegs.vgprsNum, vdataReg.end-257);
+    if (soffsetOp.range)
+        updateRegFlags(gcnRegs.regFlags, soffsetOp.range.start, arch);
 }
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
@@ -2464,7 +2530,6 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     /* check register ranges */
-    
     if (vdstReg)
     {
         const cxuint dstRegsNum = (haveTfe) ? dregsNum+1:dregsNum; // include tfe 
@@ -2717,17 +2782,20 @@ bool GCNAssembler::checkMnemonic(const CString& mnemonic) const
                { return ::strcmp(instr1.mnemonic, instr2.mnemonic)<0; });
 }
 
-void GCNAssembler::setAllocatedRegisters(const cxuint* inRegs)
+void GCNAssembler::setAllocatedRegisters(const cxuint* inRegs, Flags inRegFlags)
 {
     if (inRegs==nullptr)
         regs.sgprsNum = regs.vgprsNum = 0;
     else // if not null, just copy
         std::copy(inRegs, inRegs+2, regTable);
+    regs.regFlags = inRegFlags;
 }
 
-const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum) const
+const cxuint* GCNAssembler::getAllocatedRegisters(size_t& regTypesNum,
+              Flags& outRegFlags) const
 {
     regTypesNum = 2;
+    outRegFlags = regs.regFlags;
     return regTable;
 }
 

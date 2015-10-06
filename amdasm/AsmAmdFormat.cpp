@@ -95,7 +95,8 @@ void AsmAmdHandler::restoreCurrentAllocRegs()
     if (assembler.currentKernel!=ASMKERN_GLOBAL &&
         assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
         assembler.isaAssembler->setAllocatedRegisters(
-                kernelStates[assembler.currentKernel]->allocRegs);
+                kernelStates[assembler.currentKernel]->allocRegs,
+                kernelStates[assembler.currentKernel]->allocRegFlags);
 }
 
 void AsmAmdHandler::saveCurrentAllocRegs()
@@ -105,7 +106,8 @@ void AsmAmdHandler::saveCurrentAllocRegs()
     {
         size_t num;
         cxuint* destRegs = kernelStates[assembler.currentKernel]->allocRegs;
-        const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(num);
+        const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(num,
+                       kernelStates[assembler.currentKernel]->allocRegFlags);
         destRegs[0] = regs[0];
         destRegs[1] = regs[1];
     }
