@@ -295,8 +295,8 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
     }
     
     skipSpacesToEnd(linePtr, end);
+    const char* valuePlace = linePtr;
     uint64_t value = BINGEN_NOTSUPPLIED;
-    //const bool argIsOptional = ((1U<<target) & argIsOptionalMask)!=0;
     bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
     /* ranges checking */
     if (good)
@@ -312,7 +312,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                    asmr.printError(pseudoOpPlace, buf);
+                    asmr.printError(valuePlace, buf);
                     good = false;
                 }
                 break;
@@ -326,25 +326,25 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                    asmr.printError(pseudoOpPlace, buf);
+                    asmr.printError(valuePlace, buf);
                     good = false;
                 }
                 break;
             }
             case AMDCVAL_FLOATMODE:
                 asmr.printWarningForRange(8, value,
-                                  asmr.getSourcePos(pseudoOpPlace), WS_UNSIGNED);
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0xff;
                 break;
             case GALLIUMCVAL_PRIORITY:
                 asmr.printWarningForRange(2, value,
-                                  asmr.getSourcePos(pseudoOpPlace), WS_UNSIGNED);
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 3;
                 break;
             case AMDCVAL_HWLOCAL:
                 if (value > 32768)
                 {
-                    asmr.printError(pseudoOpPlace, "LocalSize out of range (0-32768)");
+                    asmr.printError(valuePlace, "LocalSize out of range (0-32768)");
                     good = false;
                 }
                 break;

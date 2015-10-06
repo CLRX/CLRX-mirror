@@ -502,10 +502,10 @@ test.s:28:39: Error: Section type was not preceded by '@'
 )ffDXD", "",
 R"ffDXD(test.s:4:13: Error: ProgInfo can't be defined if configuration was exists
 test.s:7:13: Error: Configuration can't be defined if progInfo was defined
-test.s:12:13: Warning: Value 0x7 truncated to 0x3
-test.s:13:13: Warning: Value 0x157 truncated to 0x57
-test.s:15:13: Error: Used SGPRs number out of range (0-102)
-test.s:16:13: Error: Used VGPRs number out of range (0-256)
+test.s:12:23: Warning: Value 0x7 truncated to 0x3
+test.s:13:24: Warning: Value 0x157 truncated to 0x57
+test.s:15:23: Error: Used SGPRs number out of range (0-102)
+test.s:16:23: Error: Used VGPRs number out of range (0-256)
 )ffDXD", false
     },
     {
@@ -972,15 +972,15 @@ test.s:39:13: Error: Metadata can't be defined if configuration was defined
 test.s:40:13: Error: Header can't be defined if configuration was defined
 test.s:41:13: Error: CALNote can't be defined if configuration was defined
 test.s:42:13: Error: CALNote can't be defined if configuration was defined
-test.s:43:13: Error: Used SGPRs number out of range (0-102)
-test.s:44:13: Error: Used SGPRs number out of range (0-102)
-test.s:45:13: Error: Used VGPRs number out of range (0-256)
-test.s:47:13: Error: Used VGPRs number out of range (0-256)
-test.s:49:13: Error: UAVId out of range (0-1023)
-test.s:50:13: Error: ConstBufferId out of range (0-1023)
-test.s:51:13: Error: PrintfId out of range (0-1023)
-test.s:52:13: Error: PrivateId out of range (0-1023)
-test.s:54:13: Error: HWLocalSize out of range (0-32768)
+test.s:43:23: Error: Used SGPRs number out of range (0-102)
+test.s:44:23: Error: Used SGPRs number out of range (0-102)
+test.s:45:23: Error: Used VGPRs number out of range (0-256)
+test.s:47:23: Error: Used VGPRs number out of range (0-256)
+test.s:49:20: Error: UAVId out of range (0-1023)
+test.s:50:19: Error: ConstBufferId out of range (0-1023)
+test.s:51:23: Error: PrintfId out of range (0-1023)
+test.s:52:24: Error: PrivateId out of range (0-1023)
+test.s:54:22: Error: HWLocalSize out of range (0-32768)
 test.s:55:21: Error: Expected expression
 test.s:56:22: Error: Expected expression
 test.s:57:22: Error: Expected expression

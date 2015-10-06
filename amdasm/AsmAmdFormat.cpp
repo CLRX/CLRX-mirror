@@ -715,7 +715,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
-                    asmr.printError(pseudoOpPlace, buf);
+                    asmr.printError(valuePlace, buf);
                     good = false;
                 }
                 break;
@@ -729,7 +729,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 {
                     char buf[64];
                     snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
-                    asmr.printError(pseudoOpPlace, buf);
+                    asmr.printError(valuePlace, buf);
                     good = false;
                 }
                 break;
@@ -737,7 +737,7 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
             case AMDCVAL_HWLOCAL:
                 if (value > 32768)
                 {
-                    asmr.printError(pseudoOpPlace, "HWLocalSize out of range (0-32768)");
+                    asmr.printError(valuePlace, "HWLocalSize out of range (0-32768)");
                     good = false;
                 }
                 break;
@@ -749,28 +749,28 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
             case AMDCVAL_UAVID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
-                    asmr.printError(pseudoOpPlace, "UAVId out of range (0-1023)");
+                    asmr.printError(valuePlace, "UAVId out of range (0-1023)");
                     good = false;
                 }
                 break;
             case AMDCVAL_CBID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
-                    asmr.printError(pseudoOpPlace, "ConstBufferId out of range (0-1023)");
+                    asmr.printError(valuePlace, "ConstBufferId out of range (0-1023)");
                     good = false;
                 }
                 break;
             case AMDCVAL_PRINTFID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
-                    asmr.printError(pseudoOpPlace, "PrintfId out of range (0-1023)");
+                    asmr.printError(valuePlace, "PrintfId out of range (0-1023)");
                     good = false;
                 }
                 break;
             case AMDCVAL_PRIVATEID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
-                    asmr.printError(pseudoOpPlace, "PrivateId out of range (0-1023)");
+                    asmr.printError(valuePlace, "PrivateId out of range (0-1023)");
                     good = false;
                 }
                 break;
