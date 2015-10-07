@@ -38,6 +38,9 @@ AsmFormatHandler::AsmFormatHandler(Assembler& _assembler) : assembler(_assembler
 AsmFormatHandler::~AsmFormatHandler()
 { }
 
+void AsmFormatHandler::handleLabel(const CString& label)
+{ }
+
 /* raw code handler */
 
 AsmRawCodeHandler::AsmRawCodeHandler(Assembler& assembler): AsmFormatHandler(assembler)

@@ -1624,6 +1624,8 @@ bool Assembler::assemble()
                 setSymbol(*res.first, currentOutPos, currentSection);
                 res.first->second.onceDefined = true;
                 res.first->second.sectionId = currentSection;
+                
+                formatHandler->handleLabel(res.first->first);
             }
             // new label or statement
             stmtPlace = linePtr;

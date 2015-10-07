@@ -161,6 +161,8 @@ public:
     /// parse pseudo-op (return true if recognized pseudo-op)
     virtual bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr) = 0;
+    /// handle labels
+    virtual void handleLabel(const CString& label);
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
@@ -268,15 +270,8 @@ private:
     enum class Inside : cxbyte {
         MAINLAYOUT, CONFIG, ARGS, PROGINFO
     };
-    struct RegState
-    {
-        cxuint regs[2];
-        Flags regFlags;
-        CString next;
-    };
     
     typedef std::unordered_map<CString, cxuint> SectionMap;
-    typedef std::unordered_map<CString, cxuint> RegStateMap;
     friend struct AsmGalliumPseudoOps;
     GalliumInput output;
     struct Section
@@ -291,10 +286,14 @@ private:
         cxuint defaultSection;
         bool hasProgInfo;
         cxbyte progInfoEntries;
+        cxuint allocRegs[2];
+        Flags allocRegFlags;
     };
     std::vector<Kernel> kernelStates;
     std::vector<Section> sections;
-    RegStateMap funcRegStates;
+    std::vector<cxuint> kcodeSelection; // kcode
+    std::stack<std::vector<cxuint> > kcodeSelStack;
+    cxuint currentKcodeKernel;
     SectionMap extraSectionMap;
     cxuint codeSection;
     cxuint dataSection;
@@ -318,6 +317,7 @@ public:
     SectionInfo getSectionInfo(cxuint sectionId) const;
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
+    void handleLabel(const CString& label);
     
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;

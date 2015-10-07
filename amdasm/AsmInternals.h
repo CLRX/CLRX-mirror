@@ -325,6 +325,13 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     /// add progInfo entry
     static void doEntry(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
+    static void doKCode(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doKCodeEnd(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void updateKCodeSel(AsmGalliumHandler& handler,
+          const std::vector<cxuint>& oldset, const std::vector<cxuint>& newset);
 };
 
 enum AmdConfigValueTarget

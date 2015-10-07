@@ -415,7 +415,7 @@ aa23:)ffDXD",
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Kernel: name=aa23, offset=0
     Config:
-      dims=6, SGPRS=default, VGPRS=default, pgmRSRC2=0x0, ieeeMode=0x1
+      dims=6, SGPRS=7, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x1
       floatMode=0x0, priority=3, localSize=0, scratchBuffer=0
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Comment:
