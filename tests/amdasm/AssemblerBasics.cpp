@@ -3382,12 +3382,12 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
                 [](const AsmSymbolEntry* s1, const AsmSymbolEntry* s2)
                 { return s1->first < s2->first; });
     
-    for (size_t i = 0; i < testCase.symbols.size(); i++)
+    for (cxuint i = 0; i < testCase.symbols.size(); i++)
     {
         std::ostringstream caseOss;
-        caseOss << "Symbol#" << i << ".";
-        caseOss.flush();
-        std::string caseName(caseOss.str());
+        char buf[32];
+        snprintf(buf, 32, "Symbol#%u.", i);
+        std::string caseName(buf);
         
         const AsmSymbolEntry& resSymbol = *(symEntries[i]);
         const SymEntry& expSymbol = testCase.symbols[i];

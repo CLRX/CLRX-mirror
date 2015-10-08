@@ -58,6 +58,7 @@ tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/TestUtils.h -text
 tests/amdasm/AsmExprParse.cpp -text
 tests/amdasm/AsmFormats.cpp -text
+tests/amdasm/AsmRegPool.cpp -text
 tests/amdasm/AssemblerBasics.cpp -text
 tests/amdasm/CMakeLists.txt -text svneol=unset#text/plain
 tests/amdasm/DisasmDataTest.cpp -text

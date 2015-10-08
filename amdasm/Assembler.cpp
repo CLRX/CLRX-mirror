@@ -1665,6 +1665,12 @@ bool Assembler::assemble()
                     continue;
                 initializeOutputFormat();
                 // try parse instruction
+                if (!isWriteableSection())
+                {
+                    printError(stmtPlace,
+                       "Writing data into non-writeable section is illegal");
+                    continue;
+                }
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content);
                 currentOutPos = sections[currentSection].content.size();
