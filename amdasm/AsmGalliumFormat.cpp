@@ -727,14 +727,11 @@ void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
     // new elements - compute max sgprs and flags from them
     cxuint newAllocRegs[2] = { 0, 0 };
     cxuint newAllocRegFlags = 0;
-    const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
-                       newAllocRegFlags);
-    std::copy(curAllocRegs, curAllocRegs+2, newAllocRegs);
     for (auto it = out2.begin(); it != out2.end(); ++it)
     {
         const AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
-        newAllocRegs[0] = std::max(curAllocRegs[0], kernel.allocRegs[0]);
-        newAllocRegs[1] = std::max(curAllocRegs[1], kernel.allocRegs[1]);
+        newAllocRegs[0] = std::max(newAllocRegs[0], kernel.allocRegs[0]);
+        newAllocRegs[1] = std::max(newAllocRegs[1], kernel.allocRegs[1]);
         newAllocRegFlags |= kernel.allocRegFlags;
     }
     asmr.isaAssembler->setAllocatedRegisters(newAllocRegs, newAllocRegFlags);
