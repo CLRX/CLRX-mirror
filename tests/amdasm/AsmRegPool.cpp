@@ -42,7 +42,22 @@ struct AsmRegPoolTestCase
 
 static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
 {   /* gcn asm test cases */
-    { ".amd;.kernel xx;.config;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } }
+    { ".amd;.kernel xx;.config;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_and_b64 s[6:7],s[0:1],s[2:3]", { { "xx", 8, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_cmpk_lt_i32 s14,43", { { "xx", 15, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_brev_b32 s17,s2", { { "xx", 18, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_brev_b64 s[18:19],s[2:3]", { { "xx", 20, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_cmp_lg_i32 s11,s0", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_load_dword s11,s[0:1],s5", { { "xx", 12, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_load_dwordx4 s[20:23],s[0:1],s5",
+        { { "xx", 24, 0 } } },
+    { ".amd;.kernel xx;.config;.text;s_load_dwordx16 s[20:35],s[0:1],s5",
+        { { "xx", 36, 0 } } },
+    { ".amd;.kernel xx;.config;.text;v_mul_f32 v36,v1,v2", { { "xx", 1, 37 } } },
+    { ".amd;.kernel xx;.config;.text;v_fract_f32 v22,v1", { { "xx", 1, 23 } } },
+    { ".amd;.kernel xx;.config;.text;v_cmp_gt_f32 vcc,v71,v7", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;v_cmp_gt_f32 s[18:19],v71,v7", { { "xx", 20, 0 } } },
+    { ".amd;.kernel xx;.config;.text;v_min3_f32 v22,v1,v5,v7", { { "xx", 1, 23 } } },
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)
