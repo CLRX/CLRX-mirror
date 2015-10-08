@@ -413,7 +413,7 @@ public:
                             (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
                 else
                     dimValues |= (config.pgmRSRC2 & 0x1b80U);
-                cxuint sgprsNum = std::max(config.usedSGPRsNum, 4U);/* includes userData */
+                cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
                 cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
                 outEntries[0].value = ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
                         ((uint32_t(config.floatMode)&0xff)<<12) |

@@ -301,6 +301,9 @@ private:
     cxuint savedSection;
     Inside inside;
     cxuint extraSectionCount;
+    
+    void restoreKcodeCurrentAllocRegs();
+    void saveKcodeCurrentAllocRegs();
 public:
     /// construcror
     explicit AsmGalliumHandler(Assembler& assembler);

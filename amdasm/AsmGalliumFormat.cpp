@@ -206,6 +206,25 @@ void AsmGalliumHandler::handleLabel(const CString& label)
         return;
     if (!kcodeSelection.empty())
         return; // do not change if inside kcode
+    // save other state
+    saveKcodeCurrentAllocRegs();
+    // restore this state
+    currentKcodeKernel = kit->second;
+    restoreKcodeCurrentAllocRegs();
+}
+
+void AsmGalliumHandler::restoreKcodeCurrentAllocRegs()
+{
+    if (currentKcodeKernel != ASMKERN_GLOBAL)
+    {
+        Kernel& newKernel = kernelStates[currentKcodeKernel];
+        assembler.isaAssembler->setAllocatedRegisters(newKernel.allocRegs,
+                            newKernel.allocRegFlags);
+    }
+}
+
+void AsmGalliumHandler::saveKcodeCurrentAllocRegs()
+{
     if (currentKcodeKernel != ASMKERN_GLOBAL)
     {   // save other state
         size_t regTypesNum;
@@ -214,11 +233,6 @@ void AsmGalliumHandler::handleLabel(const CString& label)
                             regTypesNum, oldKernel.allocRegFlags);
         std::copy(regs, regs+2, oldKernel.allocRegs);
     }
-    // restore this state
-    Kernel& newKernel = kernelStates[kit->second];
-    assembler.isaAssembler->setAllocatedRegisters(newKernel.allocRegs,
-                        newKernel.allocRegFlags);
-    currentKcodeKernel = kit->second;
 }
 
 namespace CLRX
@@ -702,25 +716,26 @@ void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
         Flags curAllocRegFlags;
         const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
                                curAllocRegFlags);
-        cxuint newAllocRegs[2];
-        const AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
+        cxuint newAllocRegs[2] = { 0, 0 };
+        AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
         newAllocRegs[0] = std::max(curAllocRegs[0], kernel.allocRegs[0]);
         newAllocRegs[1] = std::max(curAllocRegs[1], kernel.allocRegs[1]);
-        asmr.isaAssembler->setAllocatedRegisters(newAllocRegs,
-                    kernel.allocRegFlags | curAllocRegFlags);
+        kernel.allocRegFlags |= curAllocRegFlags;
+        std::copy(newAllocRegs, newAllocRegs+2, kernel.allocRegs);
     }
+    
     // new elements - compute max sgprs and flags from them
-    cxuint newAllocRegs[2];
+    cxuint newAllocRegs[2] = { 0, 0 };
     cxuint newAllocRegFlags = 0;
+    const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
+                       newAllocRegFlags);
+    std::copy(curAllocRegs, curAllocRegs+2, newAllocRegs);
     for (auto it = out2.begin(); it != out2.end(); ++it)
     {
-        Flags curAllocRegFlags;
         const AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
-        const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
-                               curAllocRegFlags);
         newAllocRegs[0] = std::max(curAllocRegs[0], kernel.allocRegs[0]);
         newAllocRegs[1] = std::max(curAllocRegs[1], kernel.allocRegs[1]);
-        newAllocRegFlags |= curAllocRegFlags;
+        newAllocRegFlags |= kernel.allocRegFlags;
     }
     asmr.isaAssembler->setAllocatedRegisters(newAllocRegs, newAllocRegFlags);
 }
@@ -761,9 +776,7 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
             newSel.insert(kit->second);
         else // remove kernel
             newSel.erase(kit->second);
-        if (!skipRequiredComma(asmr, linePtr))
-            return;
-    } while (linePtr==end);
+    } while (skipCommaForMultipleArgs(asmr, linePtr));
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -773,21 +786,14 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
         asmr.printError(pseudoOpPlace, "KCode outside code");
         return;
     }
-    if (handler.currentKcodeKernel!=ASMKERN_GLOBAL && handler.kcodeSelStack.empty())
-    {   // save last kernel reg state
-        size_t regTypesNum;
-        AsmGalliumHandler::Kernel& oldKernel = handler.kernelStates[
-                        handler.currentKcodeKernel];
-        const cxuint* regs = asmr.isaAssembler->getAllocatedRegisters(
-                            regTypesNum, oldKernel.allocRegFlags);
-        std::copy(regs, regs+2, oldKernel.allocRegs);
-    }
+    if (handler.kcodeSelStack.empty())
+        handler.saveKcodeCurrentAllocRegs();
     // push to stack
     handler.kcodeSelStack.push(handler.kcodeSelection);
     // set current sel
     handler.kcodeSelection.assign(newSel.begin(), newSel.end());
-    std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
     
+    std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
     updateKCodeSel(handler, handler.kcodeSelStack.top(), handler.kcodeSelection);
 }
 
@@ -808,6 +814,8 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
     updateKCodeSel(handler, handler.kcodeSelection, handler.kcodeSelStack.top());
     handler.kcodeSelection = handler.kcodeSelStack.top();
     handler.kcodeSelStack.pop();
+    if (handler.kcodeSelStack.empty())
+        handler.restoreKcodeCurrentAllocRegs();
 }
 
 }
@@ -890,8 +898,19 @@ bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
     size_t sectionsNum = sections.size();
     size_t kernelsNum = kernelStates.size();
-    if (assembler.isaAssembler!=nullptr && currentKcodeKernel!=ASMKERN_GLOBAL)
-        ;//saveCurrentAllocRegs(); // save last kernel allocated registers to kernel state
+    if (assembler.isaAssembler!=nullptr)
+    {   // make last kernel registers pool updates
+        if (kcodeSelStack.empty())
+            saveKcodeCurrentAllocRegs();
+        else
+            while (!kcodeSelStack.empty())
+            {   // pop from kcode stack and apply changes
+                AsmGalliumPseudoOps::updateKCodeSel(*this, kcodeSelection,
+                            kcodeSelStack.top());
+                kcodeSelection = kcodeSelStack.top();
+                kcodeSelStack.pop();
+            }
+    }
     
     for (size_t i = 0; i < sectionsNum; i++)
     {
