@@ -703,20 +703,17 @@ void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
           const std::vector<cxuint>& oldset, const std::vector<cxuint>& newset)
 {
     Assembler& asmr = handler.assembler;
-    std::vector<cxuint> out1;
     std::vector<cxuint> out2;
-    std::set_difference(oldset.begin(), oldset.end(), newset.begin(), newset.end(),
-            std::back_inserter(out1));
     std::set_difference(newset.begin(), newset.end(), oldset.begin(), oldset.end(),
             std::back_inserter(out2));
     // old elements - join current regstate with all them
     size_t regTypesNum;
-    for (auto it = out1.begin(); it != out1.end(); ++it)
+    for (auto it = oldset.begin(); it != oldset.end(); ++it)
     {
         Flags curAllocRegFlags;
         const cxuint* curAllocRegs = asmr.isaAssembler->getAllocatedRegisters(regTypesNum,
                                curAllocRegFlags);
-        cxuint newAllocRegs[2] = { 0, 0 };
+        cxuint newAllocRegs[2];
         AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
         newAllocRegs[0] = std::max(curAllocRegs[0], kernel.allocRegs[0]);
         newAllocRegs[1] = std::max(curAllocRegs[1], kernel.allocRegs[1]);
@@ -724,7 +721,7 @@ void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
         std::copy(newAllocRegs, newAllocRegs+2, kernel.allocRegs);
     }
     
-    // new elements - compute max sgprs and flags from them
+    // new elements - compute max vgprs/gprs and flags from them
     cxuint newAllocRegs[2] = { 0, 0 };
     cxuint newAllocRegFlags = 0;
     for (auto it = out2.begin(); it != out2.end(); ++it)
