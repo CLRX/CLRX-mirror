@@ -700,12 +700,9 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
 }
 
 void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
-          const std::vector<cxuint>& oldset, const std::vector<cxuint>& newset)
+          const std::vector<cxuint>& oldset)
 {
     Assembler& asmr = handler.assembler;
-    std::vector<cxuint> out2;
-    std::set_difference(newset.begin(), newset.end(), oldset.begin(), oldset.end(),
-            std::back_inserter(out2));
     // old elements - join current regstate with all them
     size_t regTypesNum;
     for (auto it = oldset.begin(); it != oldset.end(); ++it)
@@ -720,18 +717,7 @@ void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
         kernel.allocRegFlags |= curAllocRegFlags;
         std::copy(newAllocRegs, newAllocRegs+2, kernel.allocRegs);
     }
-    
-    // new elements - compute max vgprs/gprs and flags from them
-    cxuint newAllocRegs[2] = { 0, 0 };
-    cxuint newAllocRegFlags = 0;
-    for (auto it = out2.begin(); it != out2.end(); ++it)
-    {
-        const AsmGalliumHandler::Kernel& kernel = handler.kernelStates[*it];
-        newAllocRegs[0] = std::max(newAllocRegs[0], kernel.allocRegs[0]);
-        newAllocRegs[1] = std::max(newAllocRegs[1], kernel.allocRegs[1]);
-        newAllocRegFlags |= kernel.allocRegFlags;
-    }
-    asmr.isaAssembler->setAllocatedRegisters(newAllocRegs, newAllocRegFlags);
+    asmr.isaAssembler->setAllocatedRegisters();
 }
 
 void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudoOpPlace,
@@ -788,7 +774,7 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
     handler.kcodeSelection.assign(newSel.begin(), newSel.end());
     
     std::sort(handler.kcodeSelection.begin(), handler.kcodeSelection.end());
-    updateKCodeSel(handler, handler.kcodeSelStack.top(), handler.kcodeSelection);
+    updateKCodeSel(handler, handler.kcodeSelStack.top());
 }
 
 void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pseudoOpPlace,
@@ -805,7 +791,7 @@ void AsmGalliumPseudoOps::doKCodeEnd(AsmGalliumHandler& handler, const char* pse
         asmr.printError(pseudoOpPlace, "'.kcodeend' without '.kcode'");
         return;
     }
-    updateKCodeSel(handler, handler.kcodeSelection, handler.kcodeSelStack.top());
+    updateKCodeSel(handler, handler.kcodeSelection);
     handler.kcodeSelection = handler.kcodeSelStack.top();
     handler.kcodeSelStack.pop();
     if (handler.kcodeSelStack.empty())
@@ -899,8 +885,7 @@ bool AsmGalliumHandler::prepareBinary()
         else
             while (!kcodeSelStack.empty())
             {   // pop from kcode stack and apply changes
-                AsmGalliumPseudoOps::updateKCodeSel(*this, kcodeSelection,
-                            kcodeSelStack.top());
+                AsmGalliumPseudoOps::updateKCodeSel(*this, kcodeSelection);
                 kcodeSelection = kcodeSelStack.top();
                 kcodeSelStack.pop();
             }

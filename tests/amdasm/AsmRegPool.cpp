@@ -120,6 +120,83 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
         "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  vcc, s[8:9], s5;"
         "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, vcc_lo, s54;"
+        "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, vcc, v21, s54, vcc;"
+        "s_not_b32 s15, s1", { { "xx", 18, 32 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, s[6:7], v21, s54, vcc;",
+        { { "xx", 10, 32 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_readlane_b32  s21, vcc_lo, s54;",
+        { { "xx", 24, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, v54, vcc_hi;"
+        "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_cvt_i32_f32  v154, vcc_lo;"
+        "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_readfirstlane_b32  s56, vcc_lo;"
+        "s_not_b32 s15, s1", { { "xx", 59, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_cmp_ge_f32  vcc, v32, s54;"
+        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_cmp_ge_f32  s[22:23], v32, vcc_lo",
+        { { "xx", 26, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_mad_f32 v23, v4, v5, vcc_hi;"
+        "s_not_b32 s15, s1", { { "xx", 18, 24 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_mad_f32 v23, v4, vcc_lo, v5;"
+        "s_not_b32 s15, s1", { { "xx", 18, 24 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:v_mad_f32 v23, vcc_hi, v4, v5;"
+        "s_not_b32 s15, s1", { { "xx", 18, 24 } } },
+    /* gallium kcode test */
+    {
+        R"ffDXD(            .gallium; .gpu pitcairn
+            .kernel kx0
+            .config
+            .kernel kx1
+            .config
+            .kernel kx2
+            .config
+            .kernel kx3
+            .config
+            .kernel kx4
+            .config
+            .kernel kx5
+            .config
+            .text
+.p2align 2
+kx0:
+            s_mov_b32 s10, s0
+.p2align 2
+kx1:
+            s_mov_b32 s14, s0
+.p2align 2
+kx2:
+            s_mov_b32 s19, s0
+.p2align 2
+kx3:
+            s_mov_b32 s16, s0
+.p2align 2
+kx4:
+            s_mov_b32 s8, s0
+.p2align 2
+kx5:
+            s_mov_b32 s11, s0
+.kcode kx1 , kx3
+            v_sub_f32 v4,v1,v2
+    .kcode kx4
+            v_sub_f32 v6,v1,v2
+        .kcode kx5
+            v_sub_f32 v7,v1,v2
+        .kcodeend
+    .kcodeend
+            v_sub_f32 v7,v1,v2
+    .kcode kx0
+            v_sub_f32 v4,v1,v2
+    .kcodeend
+    .kcode -kx3
+            v_sub_f32 v14,v1,v2
+    .kcodeend
+.kcodeend)ffDXD",
+        { { "kx0", 11, 5 }, { "kx1", 15, 15 }, { "kx2", 20, 0 },
+            { "kx3", 17, 8 }, { "kx4", 9, 8 }, { "kx5", 12, 8 } }
+    }
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)
