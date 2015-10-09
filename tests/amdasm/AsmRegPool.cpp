@@ -178,7 +178,7 @@ kx4:
 .p2align 2
 kx5:
             s_mov_b32 s11, s0
-.kcode kx1 , kx3
+.kcode + kx1 , + kx3
             v_sub_f32 v4,v1,v2
     .kcode kx4
             v_sub_f32 v6,v1,v2
@@ -187,7 +187,7 @@ kx5:
         .kcodeend
     .kcodeend
             v_sub_f32 v7,v1,v2
-    .kcode kx0
+    .kcode + kx0
             v_sub_f32 v4,v1,v2
     .kcodeend
     .kcode -kx3
@@ -196,6 +196,45 @@ kx5:
 .kcodeend)ffDXD",
         { { "kx0", 11, 5 }, { "kx1", 15, 15 }, { "kx2", 20, 0 },
             { "kx3", 17, 8 }, { "kx4", 9, 8 }, { "kx5", 12, 8 } }
+    },
+    {
+        R"ffDXD(            .gallium; .gpu pitcairn
+            .kernel kx0
+            .config
+            .kernel kx1
+            .config
+            .kernel kx2
+            .config
+            .kernel kx3
+            .config
+            .kernel kx4
+            .config
+            .kernel kx5
+            .config
+            .text
+.p2align 2
+kx0:
+            s_mov_b32 s10, s0
+.p2align 2
+kx1:
+            s_mov_b32 s14, s0
+.p2align 2
+kx2:
+            s_mov_b32 s19, s0
+.p2align 2
+kx3:
+            s_mov_b32 s16, s0
+.p2align 2
+kx4:
+            s_mov_b32 s8, s0
+.p2align 2
+kx5:
+            s_mov_b32 s11, s0
+.kcode +
+            v_sub_f32 v4,v1,v2
+.kcodeend)ffDXD",
+        { { "kx0", 11, 5 }, { "kx1", 15, 5 }, { "kx2", 20, 5 },
+            { "kx3", 17, 5 }, { "kx4", 9, 5 }, { "kx5", 12, 5 } }
     }
 };
 

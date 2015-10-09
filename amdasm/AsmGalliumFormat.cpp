@@ -742,7 +742,16 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
             linePtr++;
         }
         else if (linePtr!=end && *linePtr=='+')
+        {
             linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr==end)
+            {   // add all kernels
+                for (cxuint k = 0; k < handler.kernelStates.size(); k++)
+                    newSel.insert(k);
+                break;
+            }
+        }
         
         if (!getNameArg(asmr, kname, linePtr, "kernel"))
         { good = false; continue; }
