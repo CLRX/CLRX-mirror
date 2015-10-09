@@ -161,23 +161,17 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
             .config
             .text
 .p2align 2
-kx0:
-            s_mov_b32 s10, s0
+kx0: s_mov_b32 s10, s0
 .p2align 2
-kx1:
-            s_mov_b32 s14, s0
+kx1: s_mov_b32 s14, s0
 .p2align 2
-kx2:
-            s_mov_b32 s19, s0
+kx2: s_mov_b32 s19, s0
 .p2align 2
-kx3:
-            s_mov_b32 s16, s0
+kx3: s_mov_b32 s16, s0
 .p2align 2
-kx4:
-            s_mov_b32 s8, s0
+kx4: s_mov_b32 s8, s0
 .p2align 2
-kx5:
-            s_mov_b32 s11, s0
+kx5: s_mov_b32 s11, s0
 .kcode + kx1 , + kx3
             v_sub_f32 v4,v1,v2
     .kcode kx4
@@ -235,6 +229,67 @@ kx5:
 .kcodeend)ffDXD",
         { { "kx0", 11, 5 }, { "kx1", 15, 5 }, { "kx2", 20, 5 },
             { "kx3", 17, 5 }, { "kx4", 9, 5 }, { "kx5", 12, 5 } }
+    },
+    {
+        R"ffDXD(            .gallium; .gpu pitcairn
+            .kernel kx0
+            .config
+            .kernel kx1
+            .config
+            .kernel kx2
+            .config
+            .kernel kx3
+            .config
+            .kernel kx4
+            .config
+            .kernel kx5
+            .config
+            .kernel kx6
+            .config
+            .kernel kx7
+            .config
+            .text
+.p2align 2
+kx0: s_mov_b32 s10, s0
+.p2align 2
+kx1: s_mov_b32 s14, s0
+.p2align 2
+kx2: s_mov_b32 s19, s0
+.p2align 2
+kx3: s_mov_b32 s16, s0
+.p2align 2
+kx4: s_mov_b32 s8, s0
+.p2align 2
+kx5: s_mov_b32 s11, s0
+.p2align 2
+kx6: s_mov_b32 s21, s0
+.p2align 2
+kx7: s_mov_b32 s23, s0
+
+.kcode kx1,kx3
+            v_and_b32 v41,v2,v1
+    .kcode kx5
+            v_and_b32 v22,v2,v1
+        .kcode kx0
+            v_and_b32 v24,v2,v1
+        .kcodeend
+    .kcodeend
+    .kcode kx4
+            v_and_b32 v18,v2,v1
+        .kcode kx2
+            v_and_b32 v15,v2,v1
+        .kcodeend
+    .kcodeend
+    .kcode kx7
+            v_and_b32 v33,v2,v1
+        .kcode kx6
+            v_and_b32 v15,v2,v1
+        .kcodeend
+            v_and_b32 v34,v2,v1
+    .kcodeend
+.kcodeend)ffDXD",
+        { { "kx0", 11, 25 }, { "kx1", 15, 42 }, { "kx2", 20, 16 }, { "kx3", 17, 42 },
+          { "kx4", 9, 19 }, { "kx5", 12, 25 }, { "kx6", 22, 18 }, { "kx7", 24, 35 } }
     }
 };
 

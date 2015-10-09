@@ -996,7 +996,6 @@ bool AsmGalliumHandler::prepareBinary()
         auto it = symbolMap.find(kinput.kernelName);
         if (it == symbolMap.end() || !it->second.isDefined())
         {   // error, undefined
-            
             assembler.printError(assembler.kernels[ki].sourcePos, (std::string(
                         "Symbol for kernel '")+kinput.kernelName.c_str()+
                         "' is undefined").c_str());
