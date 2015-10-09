@@ -963,7 +963,10 @@ bool AsmGalliumHandler::prepareBinary()
         userSGPRsNum += 4 + ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0) + 1;
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
-            config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i].allocRegs[0]);
+            config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i].allocRegs[0]) +
+                ((kernelStates[i].allocRegFlags&1)?2:0) +
+                ((kernelStates[i].allocRegFlags&2)?2:0) +
+                ((kernelStates[i].allocRegFlags&4)?2:0);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = kernelStates[i].allocRegs[1];
     }

@@ -71,6 +71,55 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
         "v71, v[169:170] offset:84", { { "xx", 1, 141 } } },
     { ".amd;.kernel xx;.config;.text;buffer_load_format_xyzw v[61:64], v18, s[80:83], "
         "s35 idxen offset:603", { { "xx", 1, 65 } } },
+    { ".amd;.kernel xx;.config;.text;buffer_store_format_xyzw v[61:64], v18, s[80:83], "
+        "s35 idxen offset:603", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;buffer_atomic_sub_x2 v[61:62], v18, s[80:83], "
+        "s35 idxen offset:603", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;buffer_atomic_sub_x2 v[61:62], v18, s[80:83], "
+        "s35 idxen offset:603 glc", { { "xx", 1, 63 } } },
+    { ".amd;.kernel xx;.config;.text;image_load_mip  v[157:159], v[121:124], s[84:87] "
+        "dmask:11 unorm glc r128 da", { { "xx", 1, 160 } } },
+    { ".amd;.kernel xx;.config;.text;image_store  v[157:159], v[121:124], s[84:87] "
+        "dmask:11 unorm glc r128 da", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;image_atomic_smax  v[157:159], v[121:124], "
+        "s[84:87] dmask:11 unorm r128 da", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;image_atomic_smax  v[157:159], v[121:124], "
+        "s[84:87] dmask:11 unorm r128 da glc", { { "xx", 1, 160 } } },
+    { ".amd;.kernel xx;.config;.text;exp  param5, v116, v93, v27, v124 done",
+        { { "xx", 1, 0 } } },
+    /* gcn1.1 asm test cases */
+    { ".amd;.arch gcn1.1;.kernel xx;.config;.text;flat_load_dwordx2  v[47:48], v[187:188]",
+        { { "xx", 1, 49 } } },
+    { ".amd;.arch gcn1.1;.kernel xx;.config;.text;flat_store_dwordx2 v[47:48], v[187:188]",
+        { { "xx", 1, 0 } } },
+    { ".amd;.arch gcn1.1;.kernel xx;.config;.text;flat_atomic_inc v47, v[187:188], v65",
+        { { "xx", 1, 48 } } }, // ???? only if glc
+    /* gcn1.2 asm test cases - vop3 vintrp */
+    { ".amd;.arch gcn1.2;.kernel xx;.config;.text;v_interp_p1_f32 v42, v16, attr39.z vop3",
+        { { "xx", 1, 43 } } },
+    /* regflags test */
+    { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 "
+        "s[10:11], s[4:5], s[62:63]", { { "xx", 12, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], s[4:5], vcc",
+        { { "xx", 14, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], vcc, s[6:7]",
+        { { "xx", 14, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 s[10:11], s[0:1], s[6:7];"
+        "s_xor_b64 vcc, s[0:1], s[6:7]", { { "xx", 14, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_wqm_b32 s86, vcc_lo",
+        { { "xx", 89, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_wqm_b32 s86, s3; s_not_b32 vcc_lo, s5",
+        { { "xx", 89, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_cmp_lg_u32 vcc_lo,s3;s_not_b32 s15, s1",
+        { { "xx", 18, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_cmp_lg_u32 s6,vcc_hi;s_not_b32 s15, s1",
+        { { "xx", 18, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_cmpk_ge_i32 vcc_lo,0xd3b9;"
+        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  s[2:3], s[8:9], vcc_lo;"
+        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
+    { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  vcc, s[8:9], s5;"
+        "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)
@@ -107,7 +156,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                         kinput.config.usedVGPRsNum);
         }
     }
-    if (assembler.getBinaryFormat()==BinaryFormat::GALLIUM)
+    else if (assembler.getBinaryFormat()==BinaryFormat::GALLIUM)
     {   // GalliumCompute
         const GalliumInput* input = static_cast<const AsmGalliumHandler*>(
                     assembler.getFormatHandler())->getOutput();
@@ -129,6 +178,8 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
                         kinput.config.usedVGPRsNum);
         }
     }
+    else
+        throw Exception("Unsupported binary format");
 }
 
 int main(int argc, const char** argv)
