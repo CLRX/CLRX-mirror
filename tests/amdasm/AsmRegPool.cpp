@@ -58,6 +58,19 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
     { ".amd;.kernel xx;.config;.text;v_cmp_gt_f32 vcc,v71,v7", { { "xx", 1, 0 } } },
     { ".amd;.kernel xx;.config;.text;v_cmp_gt_f32 s[18:19],v71,v7", { { "xx", 20, 0 } } },
     { ".amd;.kernel xx;.config;.text;v_min3_f32 v22,v1,v5,v7", { { "xx", 1, 23 } } },
+    { ".amd;.kernel xx;.config;.text;v_min3_f32 v22,v1,v5,v7", { { "xx", 1, 23 } } },
+    { ".amd;.kernel xx;.config;.text;v_readlane_b32 s43,v4,s5", { { "xx", 44, 0 } } },
+    { ".amd;.kernel xx;.config;.text;v_interp_p1_f32 v93, v211, attr26.x",
+        { { "xx", 1, 94 } } },
+    { ".amd;.kernel xx;.config;.text;ds_write_b32 v71, v169 offset:40",
+        { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;ds_write_b32 v71, v169 offset:40",
+        { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.text;ds_read_b32 v155, v71", { { "xx", 1, 156 } } },
+    { ".amd;.kernel xx;.config;.text;ds_max_rtn_i64  v[139:140], "
+        "v71, v[169:170] offset:84", { { "xx", 1, 141 } } },
+    { ".amd;.kernel xx;.config;.text;buffer_load_format_xyzw v[61:64], v18, s[80:83], "
+        "s35 idxen offset:603", { { "xx", 1, 65 } } },
 };
 
 static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& testCase)

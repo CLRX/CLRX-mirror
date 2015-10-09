@@ -1007,6 +1007,9 @@ public:
     /// destructor
     ~Assembler();
     
+    /// main routine to assemble code
+    bool assemble();
+    
     /// get GPU device type
     GPUDeviceType getDeviceType() const
     { return deviceType; }
@@ -1058,9 +1061,6 @@ public:
     /// get format handler
     const AsmFormatHandler* getFormatHandler() const
     { return formatHandler; }
-    
-    /// main routine to assemble code
-    bool assemble();
 };
 
 inline void ISAAssembler::printWarning(const char* linePtr, const char* message)
