@@ -1803,6 +1803,15 @@ bool AsmAmdHandler::prepareBinary()
                 output.kernels[sections[symEntry.second.sectionId].kernelId].extraSymbols
                             .push_back(std::move(binSym));
         }
+    // driver version setup
+    if (output.driverVersion==0 && output.driverInfo.empty() &&
+        (assembler.flags&ASM_TESTRUN)==0)
+    {
+        if (assembler.driverVersion==0) // just detect driver version
+            output.driverVersion = detectDriverVersion();
+        else // from assembler setup
+            output.driverVersion = assembler.driverVersion;
+    }
     return true;
 }
 

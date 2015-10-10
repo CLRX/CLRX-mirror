@@ -818,9 +818,10 @@ private:
     friend struct AsmGalliumPseudoOps; // INTERNAL LOGIC
     friend struct AsmAmdPseudoOps; // INTERNAL LOGIC
     friend struct GCNAsmUtils; // INTERNAL LOGIC
+
     BinaryFormat format;
-    
     GPUDeviceType deviceType;
+    uint32_t driverVersion;
     bool _64bit;    ///
     bool good;
     ISAAssembler* isaAssembler;
@@ -1010,6 +1011,13 @@ public:
     /// main routine to assemble code
     bool assemble();
     
+    /// get AMD driver version
+    uint32_t getDriverVersion() const
+    { return driverVersion; }
+    /// set AMD driver version
+    void setDriverVersion(uint32_t driverVersion)
+    { this->driverVersion = driverVersion; }
+    
     /// get GPU device type
     GPUDeviceType getDeviceType() const
     { return deviceType; }
@@ -1056,7 +1064,7 @@ public:
     bool isAbsoluteSymbol(const AsmSymbol& symbol) const;
     
     /// add initiali defsyms
-    void addInitialDefSym(const CString& symName, uint64_t name);
+    void addInitialDefSym(const CString& symName, uint64_t value);
     
     /// get format handler
     const AsmFormatHandler* getFormatHandler() const

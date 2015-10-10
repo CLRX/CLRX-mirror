@@ -375,6 +375,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
         std::ostream& _printStream)
         : format(_format),
           deviceType(_deviceType),
+          driverVersion(0),
           _64bit(false),
           isaAssembler(nullptr),
           symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),

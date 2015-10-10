@@ -53,6 +53,7 @@ clwrapper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/DispatchStruct.h -text
 clwrapper/InternalDecls.h -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
+programs/clrxasm.cpp -text
 programs/clrxdisasm.cpp -text
 tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/TestUtils.h -text

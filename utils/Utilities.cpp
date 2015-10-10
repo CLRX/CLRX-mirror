@@ -451,3 +451,19 @@ std::string CLRX::joinPaths(const std::string& path1, const std::string& path2)
     }
     return outPath;
 }
+
+uint64_t CLRX::getFileTimestamp(const char* filename)
+{
+    struct stat stBuf;
+    errno = 0;
+    if (stat(filename, &stBuf) != 0)
+    {
+        if (errno == ENOENT)
+            throw Exception("File or directory doesn't exists");
+        else if (errno == EACCES)
+            throw Exception("Access to file or directory is not permitted");
+        else
+            throw Exception("Can't determine whether path refers to directory");
+    }
+    return stBuf.st_mtim.tv_sec*1000000000ULL + stBuf.st_mtim.tv_nsec;
+}

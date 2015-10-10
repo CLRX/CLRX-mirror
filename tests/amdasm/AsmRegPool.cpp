@@ -299,7 +299,7 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     snprintf(testName, 30, "Test #%u", testId);
     
     std::istringstream input(testCase.input);
-    Assembler assembler("test.s", input, ASM_ALL, BinaryFormat::AMD,
+    Assembler assembler("test.s", input, ASM_ALL|ASM_TESTRUN, BinaryFormat::AMD,
             GPUDeviceType::CAPE_VERDE);
     assertTrue(testName, "good", assembler.assemble());
     Array<KernelRegPool> resRegPools;

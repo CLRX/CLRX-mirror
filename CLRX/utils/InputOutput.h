@@ -292,6 +292,52 @@ public:
  * adaptor
  */
 
+class FastInputBuffer: public NonCopyableAndNonMovable
+{
+private:
+    std::istream& is;
+    cxuint pos, endPos;
+    cxuint bufSize;
+    std::unique_ptr<char[]> buffer;
+public:
+    FastInputBuffer(cxuint _bufSize, std::istream& input) : is(input), pos(0), endPos(0),
+            bufSize(_bufSize), buffer(new char[_bufSize])
+    { }
+    
+    /// get input stream
+    const std::istream& getIStream() const
+    { return is; }
+    /// get input stream
+    std::istream& getIStream()
+    { return is; }
+    
+    int get()
+    {
+        if (pos == endPos)
+        {
+            pos = 0;
+            is.read(buffer.get(), bufSize);
+            endPos = is.gcount();
+            if (endPos == 0 || is.bad())
+                return std::streambuf::traits_type::eof();
+        }
+        return (cxuchar)buffer.get()[pos++];
+    }
+    
+    size_t read(char* buf, cxuint n)
+    {
+        size_t toRead = std::min(n, endPos-pos);
+        ::memcpy(buf, buffer.get()+pos, toRead);
+        if (toRead < n)
+        {
+            is.read(buf+toRead, n-toRead);
+            toRead += is.gcount();
+            pos = endPos = 0;
+        }
+        return toRead;
+    }
+};
+
 /// fast and direct output buffer
 class FastOutputBuffer: public NonCopyableAndNonMovable
 {

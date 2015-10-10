@@ -698,6 +698,8 @@ extern void filesystemPath(std::string& path);
 /// join two paths
 extern std::string joinPaths(const std::string& path1, const std::string& path2);
 
+extern uint64_t getFileTimestamp(const char* filename);
+
 /*
  * Reference support
  */

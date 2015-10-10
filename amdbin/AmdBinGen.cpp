@@ -22,11 +22,13 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
+#include <fstream>
 #include <algorithm>
 #include <bitset>
 #include <string>
 #include <vector>
 #include <memory>
+#include <thread>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
@@ -1774,4 +1776,70 @@ void AmdGPUBinGenerator::generate(std::ostream& os) const
 void AmdGPUBinGenerator::generate(std::vector<char>& vector) const
 {
     generateInternal(nullptr, &vector, nullptr);
+}
+
+static const char* admOclMagicString = "AMD-APP";
+static std::mutex detectionMutex;
+static uint64_t detectionFileTimestamp = 0;
+static std::string detectionAmdOclPath;
+static uint32_t detectedDriverVersion = 0;
+
+uint32_t CLRX::detectDriverVersion()
+{
+    std::lock_guard<std::mutex> lock(detectionMutex);
+    std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
+                           DEFAULT_AMDOCLPATH);
+    bool notThisSameFile = false;
+    if (amdOclPath != detectionAmdOclPath)
+    {
+        notThisSameFile = true;
+        detectionAmdOclPath = amdOclPath;
+    }
+    
+    uint64_t timestamp = 0;
+    try
+    { timestamp = getFileTimestamp(amdOclPath.c_str()); }
+    catch(const Exception& ex)
+    { }
+    if (!notThisSameFile && timestamp == detectionFileTimestamp)
+        return detectedDriverVersion;
+    
+    detectionFileTimestamp = timestamp;
+    detectedDriverVersion = 0;
+    try
+    {
+        std::ifstream fs(amdOclPath.c_str(), std::ios::binary);
+        if (!fs) return 0;
+        FastInputBuffer fib(256, fs);
+        size_t index = 0;
+        while (admOclMagicString[index]!=0)
+        {
+            int c = fib.get();
+            if (c == std::streambuf::traits_type::eof())
+                break;
+            if (admOclMagicString[index]==c)
+                index++;
+            else // reset
+                index=0;
+        }
+        if (admOclMagicString[index]==0)
+        { //
+            char buf[20];
+            ::memset(buf, 0, 20);
+            if (fib.get()!=' ')
+                return 0; // skip space
+            if (fib.get()!='(')
+                return 0; // skip '('
+            // get driver version
+            fib.read(buf, 20);
+            
+            const char* next;
+            detectedDriverVersion = cstrtoui(buf, buf+20, next)*100;
+            if (next!=buf+20 && *next=='.') // minor version
+                detectedDriverVersion += cstrtoui(next+1, buf+20, next)%100;
+        }
+    }
+    catch(const std::exception& ex)
+    { }
+    return detectedDriverVersion;
 }

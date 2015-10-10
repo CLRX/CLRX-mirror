@@ -52,9 +52,9 @@ static const CLIOption programOptions[] =
         "dump all (including hexcode and float literals)", nullptr },
     { "raw", 'r', CLIArgType::NONE, false, false, "treat input as raw GCN code", nullptr },
     { "gpuType", 'g', CLIArgType::TRIMMED_STRING, false, false,
-        "set GPU type for Gallium/raw binaries", nullptr },
+        "set GPU type for Gallium/raw binaries", "DEVICE" },
     { "arch", 'A', CLIArgType::TRIMMED_STRING, false, false,
-        "set GPU architecture for Gallium/raw binaries", nullptr },
+        "set GPU architecture for Gallium/raw binaries", "ARCH" },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
 };

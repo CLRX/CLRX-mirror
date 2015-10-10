@@ -1041,7 +1041,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     std::ostringstream errorStream;
     std::ostringstream printStream;
     
-    Assembler assembler("test.s", input, ASM_ALL, BinaryFormat::AMD,
+    Assembler assembler("test.s", input, ASM_ALL|ASM_TESTRUN, BinaryFormat::AMD,
             GPUDeviceType::CAPE_VERDE, errorStream, printStream);
     bool good = assembler.assemble();
     
