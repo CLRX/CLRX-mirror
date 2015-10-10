@@ -283,7 +283,7 @@ kx7: s_mov_b32 s23, s0
     .kcode kx7
             v_and_b32 v33,v2,v1
         .kcode kx6
-            v_and_b32 v15,v2,v1
+            v_and_b32 v17,v2,v1
         .kcodeend
             v_and_b32 v34,v2,v1
     .kcodeend
