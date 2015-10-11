@@ -1062,10 +1062,10 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         uint32_t code = (isGCN12) ?
                 (uint32_t(gcnInsn.code2)<<16) | ((modifiers&VOP3_CLAMP) ? 0x8000 : 0) :
                 (uint32_t(gcnInsn.code2)<<17) | ((modifiers&VOP3_CLAMP) ? 0x800 : 0);
-        if (haveDstCC || haveSrcCC)
+        if (haveDstCC) // if VOP3B
             SLEV(words[0], 0xd0000000U | code |
                 (dstReg.start&0xff) | (uint32_t(dstCCReg.start)<<8));
-        else
+        else // if VOP3A
             SLEV(words[0], 0xd0000000U | code | (dstReg.start&0xff) |
                 ((src0Op.vopMods & VOPOP_ABS) ? 0x100 : 0) |
                 ((src1Op.vopMods & VOPOP_ABS) ? 0x200 : 0));
