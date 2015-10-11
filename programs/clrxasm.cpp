@@ -49,7 +49,7 @@ static const CLIOption programOptions[] =
         "set driver version (for AmdCatalyst)", nullptr },
     { "forceAddSymbols", 'S', CLIArgType::NONE, false, false,
         "force add symbols to binaries", nullptr },
-    { "warnings", 'W', CLIArgType::NONE, false, false, "enable warnings", nullptr },
+    { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
 };
@@ -101,7 +101,7 @@ try
         driverVersion = cli.getShortOptArg<cxuint>('t');
     if (cli.hasShortOption('S'))
         flags |= ASM_FORCE_ADD_SYMBOLS;
-    if (cli.hasShortOption('W'))
+    if (!cli.hasShortOption('w'))
         flags |= ASM_WARNINGS;
     
     cxuint argsNum = cli.getArgsNum();
