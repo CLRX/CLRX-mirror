@@ -103,17 +103,15 @@ try
         flags |= ASM_FORCE_ADD_SYMBOLS;
     if (cli.hasShortOption('W'))
         flags |= ASM_WARNINGS;
-    if (cli.getArgsNum()>1)
-        std::cerr << "Warning: Assembler accepts only single file" << std::endl;
     
-    const char* filename = cli.getArgs()[0];
+    cxuint argsNum = cli.getArgsNum();
+    Array<CString> filenames(argsNum);
+    for (cxuint i = 0; i < argsNum; i++)
+        filenames[i] = cli.getArgs()[i];
+    
     std::unique_ptr<Assembler> assembler;
-    std::ifstream ifs;
-    if (filename!=nullptr)
-    {
-        ifs.open(filename, std::ios::binary);
-        assembler.reset(new Assembler(filename, ifs, flags, binFormat, deviceType));
-    }
+    if (!filenames.empty())
+        assembler.reset(new Assembler(filenames, flags, binFormat, deviceType));
     else // if from stdin
         assembler.reset(new Assembler(nullptr, std::cin, flags, binFormat, deviceType));
     assembler->set64Bit(is64Bit);

@@ -388,13 +388,46 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           currentSection(symbolMap.begin()->second.sectionId),
           currentOutPos(symbolMap.begin()->second.value)
 {
+    filenameIndex = 0;
     macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
     formatHandler = nullptr;
     input.exceptions(std::ios::badbit);
-    currentInputFilter = new AsmStreamInputFilter(input, filename);
-    asmInputFilters.push(currentInputFilter);
+    std::unique_ptr<AsmInputFilter> thatInputFilter(
+                    new AsmStreamInputFilter(input, filename));
+    asmInputFilters.push(thatInputFilter.get());
+    currentInputFilter = thatInputFilter.release();
+}
+
+Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
+        BinaryFormat _format, GPUDeviceType _deviceType, std::ostream& msgStream,
+        std::ostream& _printStream)
+        : format(_format),
+          deviceType(_deviceType),
+          driverVersion(0),
+          _64bit(false),
+          isaAssembler(nullptr),
+          symbolMap({std::make_pair(".", AsmSymbol(0, uint64_t(0)))}),
+          flags(_flags), 
+          lineSize(0), line(nullptr),
+          endOfAssembly(false),
+          messageStream(msgStream),
+          printStream(_printStream),
+          // value reference and section reference from first symbol: '.'
+          currentSection(symbolMap.begin()->second.sectionId),
+          currentOutPos(symbolMap.begin()->second.value)
+{
+    filenameIndex = 0;
+    filenames = _filenames;
+    macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
+    lineAlreadyRead = false;
+    good = true;
+    formatHandler = nullptr;
+    std::unique_ptr<AsmInputFilter> thatInputFilter(
+                new AsmStreamInputFilter(filenames[filenameIndex++]));
+    asmInputFilters.push(thatInputFilter.get());
+    currentInputFilter = thatInputFilter.release();
 }
 
 Assembler::~Assembler()
@@ -1363,6 +1396,19 @@ bool Assembler::readLine()
                 repetitionLevel--;
             delete asmInputFilters.top();
             asmInputFilters.pop();
+        }
+        else if (filenameIndex<filenames.size())
+        {
+            do { // delete previous filter
+                delete asmInputFilters.top();
+                asmInputFilters.pop();
+                /// create new input filter
+                std::unique_ptr<AsmStreamInputFilter> thatFilter(
+                    new AsmStreamInputFilter(filenames[filenameIndex++]));
+                asmInputFilters.push(thatFilter.get());
+                currentInputFilter = thatFilter.release();
+                line = currentInputFilter->readLine(*this, lineSize);
+            } while (line==nullptr && filenameIndex<filenames.size());
         }
         else
             return false;

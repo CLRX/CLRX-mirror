@@ -819,6 +819,7 @@ private:
     friend struct AsmAmdPseudoOps; // INTERNAL LOGIC
     friend struct GCNAsmUtils; // INTERNAL LOGIC
 
+    Array<CString> filenames;
     BinaryFormat format;
     GPUDeviceType deviceType;
     uint32_t driverVersion;
@@ -845,6 +846,7 @@ private:
     const char* line;
     bool endOfAssembly;
     
+    cxuint filenameIndex;
     std::stack<AsmInputFilter*> asmInputFilters;
     AsmInputFilter* currentInputFilter;
     
@@ -1002,6 +1004,11 @@ public:
      * \param printStream stream for printing message by .print pseudo-ops
      */
     explicit Assembler(const CString& filename, std::istream& input, Flags flags = 0,
+              BinaryFormat format = BinaryFormat::AMD,
+              GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
+              std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
+    
+    explicit Assembler(const Array<CString>& filenames, Flags flags = 0,
               BinaryFormat format = BinaryFormat::AMD,
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
               std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
