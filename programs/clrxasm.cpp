@@ -159,15 +159,23 @@ try
     /// run assembling
     bool good = assembler->assemble();
     /// write output to file
-    const AsmFormatHandler* formatHandler = assembler->getFormatHandler();
-    if (good && formatHandler!=nullptr)
+    if (good)
     {
-        const char* outputName = "a.out";
-        if (cli.hasShortOption('o'))
-            outputName = cli.getShortOptArg<const char*>('o');
-        
-        std::ofstream ofs(outputName, std::ios::binary);
-        formatHandler->writeBinary(ofs);
+        const AsmFormatHandler* formatHandler = assembler->getFormatHandler();
+        if (formatHandler!=nullptr)
+        {
+            const char* outputName = "a.out";
+            if (cli.hasShortOption('o'))
+                outputName = cli.getShortOptArg<const char*>('o');
+            
+            std::ofstream ofs(outputName, std::ios::binary);
+            formatHandler->writeBinary(ofs);
+        }
+        else
+        {
+            std::cerr << "No output binary" << std::endl;
+            ret = 1;
+        }
     }
     return ret;
 }
