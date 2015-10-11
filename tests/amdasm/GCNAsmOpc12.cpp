@@ -310,8 +310,6 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         "test.s:1:51: Error: Expected ':' before dst_unused\n" },
     { "   v_cndmask_b32   v154, 65, v107, vcc dst_sel:word1", 0, 0, false, false,
         "test.s:1:4: Error: Literal with SDWA or DPP word is illegal\n" },
-    { "   v_cndmask_b32   v154, v67, abs(v107), vcc clamp", 0, 0, false, false,
-        "test.s:1:4: Error: Abs modifier is illegal for VOP3B encoding\n" },
     /* VOP2 - DPP */
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[0,0,0,0] bank_mask:0 row_mask:0",
         0x0134d6faU, 0xbe, true, true, ""  },

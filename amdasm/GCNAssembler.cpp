@@ -936,7 +936,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     cxbyte modifiers = 0;
     VOPExtraModifiers extraMods{};
     good &= parseVOPModifiers(asmr, linePtr, modifiers, (isGCN12) ? &extraMods : nullptr,
-                              !(haveDstCC || haveSrcCC) || isGCN12);
+                              !haveDstCC || isGCN12);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -996,8 +996,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
         vop3 = true;
     
-    if (isGCN12 && vop3 && (haveDstCC || haveSrcCC) &&
-            ((src0Op.vopMods|src1Op.vopMods) & VOPOP_ABS) != 0)
+    if (isGCN12 && vop3 && haveDstCC && ((src0Op.vopMods|src1Op.vopMods) & VOPOP_ABS) != 0)
     {
         asmr.printError(instrPlace, "Abs modifier is illegal for VOP3B encoding");
         return;
