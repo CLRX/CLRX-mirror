@@ -892,7 +892,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     const Flags literalConstsFlags = (mode2==GCN_FLOATLIT) ? INSTROP_FLOAT :
             (mode2==GCN_F16LIT) ? INSTROP_F16 : INSTROP_INT;
     
-    const Flags vopOpModFlags = (((haveDstCC || haveSrcCC) && !isGCN12) ?
+    const Flags vopOpModFlags = ((haveDstCC && !isGCN12) ?
                     INSTROP_VOP3NEG : INSTROP_VOP3MODS);
     if (!skipRequiredComma(asmr, linePtr))
         return;

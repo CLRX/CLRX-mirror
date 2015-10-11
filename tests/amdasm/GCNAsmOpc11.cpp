@@ -554,6 +554,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32  v154, v21, v107 clamp", 0xd206089aU, 0x0002d715U, true, true, "" },
     { "    v_cndmask_b32   v154, v21, v107, s[6:7]",
         0xd200009aU, 0x001ad715U, true, true, "" },
+    { "    v_cndmask_b32   v154, abs(v21), abs(v107), s[6:7] clamp",
+        0xd2000b9aU, 0x001ad715U, true, true, "" },
     /* negated expressions */
     { "vx=7;    v_add_f32  v154, -vx, v107", 0x0734d6c7U, 0, false, true, "" },
     { "v_add_f32  v154, -vx, v107; vx=7", 0x0734d6ffU, uint32_t(-7), true, true, "" },
