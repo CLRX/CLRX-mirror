@@ -140,7 +140,7 @@ static const size_t AsmParserLineMaxSize = 100;
 
 AsmStreamInputFilter::AsmStreamInputFilter(const CString& filename)
 try : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
-        stream(nullptr), mode(LineMode::NORMAL)
+        stream(nullptr), mode(LineMode::NORMAL), stmtPos(0)
 {
     source = RefPtr<const AsmSource>(new AsmFile(filename));
     stream = new std::ifstream(filename.c_str(), std::ios::binary);

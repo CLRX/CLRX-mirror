@@ -1409,6 +1409,8 @@ bool Assembler::readLine()
                 currentInputFilter = thatFilter.release();
                 line = currentInputFilter->readLine(*this, lineSize);
             } while (line==nullptr && filenameIndex<filenames.size());
+            
+            return (line!=nullptr);
         }
         else
             return false;
