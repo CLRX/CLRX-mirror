@@ -145,7 +145,7 @@ try : AsmInputFilter(AsmInputFilterType::STREAM), managed(true),
     source = RefPtr<const AsmSource>(new AsmFile(filename));
     stream = new std::ifstream(filename.c_str(), std::ios::binary);
     if (!*stream)
-        throw Exception("Can't open include file");
+        throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
     stream->exceptions(std::ios::badbit);
     buffer.reserve(AsmParserLineMaxSize);
 }
@@ -178,7 +178,7 @@ try : AsmInputFilter(AsmInputFilterType::STREAM),
     
     stream = new std::ifstream(filename.c_str(), std::ios::binary);
     if (!*stream)
-        throw Exception("Can't open include file");
+        throw Exception(std::string("Can't open source file '")+filename.c_str()+"'");
     stream->exceptions(std::ios::badbit);
     buffer.reserve(AsmParserLineMaxSize);
 }
