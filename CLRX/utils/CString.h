@@ -315,7 +315,7 @@ public:
     }
     
     /// make substring from string
-    CString substr(size_t pos, size_t n)
+    CString substr(size_t pos, size_t n) const
     { return CString(ptr+pos, n); }
     
     /// swap this string with another
