@@ -459,8 +459,6 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
                 throw Exception("Used SGPRs number out of range");
             if (config.localSize > 32768)
                 throw Exception("LocalSize out of range");
-            if (config.floatMode >= 256)
-                throw Exception("FloatMode out of range");
             if (config.priority >= 4)
                 throw Exception("Priority out of range");
         }
