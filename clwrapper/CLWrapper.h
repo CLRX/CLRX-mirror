@@ -258,8 +258,32 @@ typedef std::map<cl_device_id, cl_device_id> CLRXProgramDevicesMap;
 
 typedef CLRX::Array<std::pair<CLRX::CString, std::vector<bool> > > CLRXKernelArgFlagMap;
 
+struct CLRX_INTERNAL CLProgLogEntry: public CLRX::FastRefCountable
+{
+    std::vector<char> log;
+    CLProgLogEntry() { }
+    CLProgLogEntry(const std::vector<char>& _log) : log(_log) { }
+    CLProgLogEntry(std::vector<char>&& _log) noexcept
+            : log(std::move(_log)) { }
+};
+
+struct CLRX_INTERNAL ProgDeviceEntry
+{
+    CLRX::RefPtr<CLProgLogEntry> log;
+    cl_build_status status;
+};
+
+enum class CLRXAsmState
+{
+    NONE = 0,
+    IN_PROGRESS,
+    FAILED,
+    SUCCESS
+};
+
 struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
 {
+    
     std::atomic<size_t> refCount;
     std::mutex mutex; // for thread-safe updating assoc devices
     cl_program amdOclProgram;
@@ -271,6 +295,10 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
     size_t kernelsAttached;
     bool kernelArgFlagsInitialized;
     CLRXKernelArgFlagMap kernelArgFlagsMap;
+    cl_program amdOclAsmProgram;
+    std::unique_ptr<ProgDeviceEntry[]> asmDeviceEntries;
+    CLRX::CString asmOptions;
+    CLRXAsmState asmState;
     
     CLRXProgram() : refCount(1)
     {
@@ -281,6 +309,8 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
         assocDevices = nullptr;
         concurrentBuilds = 0;
         transDevicesMap = nullptr;
+        amdOclAsmProgram = nullptr;
+        asmState = CLRXAsmState::NONE;
     }
 };
 
@@ -470,6 +500,12 @@ static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
         delete program;
     }
 }
+
+/* main compiler options */
+CLRX_INTERNAL bool detectCLRXCompilerCall(const char* compilerOptions);
+
+CLRX_INTERNAL cl_int clrxCompilerCall(CLRXProgram* program, const char* compilerOptions,
+            cl_uint devicesNum, CLRXDevice* const* devices);
 
 /* internal macros */
 #define CLRX_INITIALIZE \

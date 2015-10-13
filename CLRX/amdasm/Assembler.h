@@ -1008,6 +1008,15 @@ public:
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,
               std::ostream& msgStream = std::cerr, std::ostream& printStream = std::cout);
     
+    /// constructor with filename and input stream
+    /**
+     * \param filenames filenames
+     * \param flags assembler flags
+     * \param format output format type
+     * \param deviceType GPU device type
+     * \param msgStream stream for warnings and errors
+     * \param printStream stream for printing message by .print pseudo-ops
+     */
     explicit Assembler(const Array<CString>& filenames, Flags flags = 0,
               BinaryFormat format = BinaryFormat::AMD,
               GPUDeviceType deviceType = GPUDeviceType::CAPE_VERDE,

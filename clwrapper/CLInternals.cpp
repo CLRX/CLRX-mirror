@@ -33,7 +33,10 @@
 #include <cstddef>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
+#include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/utils/InputOutput.h>
+#include <CLRX/utils/GPUId.h>
 #include "CLWrapper.h"
 
 using namespace CLRX;
@@ -880,10 +883,13 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
                     p->transDevicesMap->size() : p->context->devicesNum;
         
         std::unique_ptr<cl_device_id[]> amdAssocDevices(new cl_device_id[totalDevicesNum]);
+        cl_program amdProg = (p->amdOclAsmProgram!=nullptr) ? p->amdOclAsmProgram :
+                p->amdOclProgram;
+        
         // single OpenCL call should be atomic:
         // reason: can be called between clBuildProgram which changes associated devices
         const cl_int status = p->amdOclProgram->dispatch->clGetProgramInfo(
-            p->amdOclProgram, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*totalDevicesNum,
+            amdProg, CL_PROGRAM_DEVICES, sizeof(cl_device_id)*totalDevicesNum,
                       amdAssocDevices.get(), &amdAssocDevicesNum);
         
         if (status != CL_SUCCESS)
@@ -917,7 +923,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
         
         if (p->transDevicesMap != nullptr)
             for (cl_uint i = 0; i < amdAssocDevicesNum; i++)
-            {
+            {   // translate AMD device to CLRX device
                 CLRXProgramDevicesMap::const_iterator found =
                         p->transDevicesMap->find(amdAssocDevices[i]);
                 if (found == p->transDevicesMap->end())
@@ -1332,4 +1338,390 @@ void clrxReleaseConcurrentBuild(CLRXProgram* program)
         delete program->transDevicesMap;
         program->transDevicesMap = nullptr;
     }
+}
+
+/* Bridge between Assembler and OpenCL wrapper */
+
+bool detectCLRXCompilerCall(const char* compilerOptions)
+{
+    bool isAsm = false;
+    const char* co = compilerOptions;
+    while (*co!=0)
+    {
+        while (*co!=0 && (*co==' ' || *co=='\t')) co++;
+        if (::strncmp(co, "-x", 2)==0 && (*co==0 || *co==' ' || *co=='\t'))
+        {
+            co+=2;
+            while (*co!=0 && (*co==' ' || *co=='\t')) co++;
+            if (::strncmp(co, "asm", 3)==0 && (*co==0 || *co==' ' || *co=='\t'))
+            {
+                isAsm = true;
+                co+=3;
+                continue;
+            }
+            else
+                isAsm = false;
+        }
+        while (*co!=0 && *co!=' ' && *co!='\t') co++;
+    }
+    return isAsm;
+}
+
+static bool verifySymbolName(const CString& symbolName)
+{
+    if (symbolName.empty())
+        return false;
+    auto c = symbolName.begin();
+    if (isAlpha(*c) || *c=='.' || *c=='_')
+        while (isAlnum(*c) || *c=='.' || *c=='_') c++;
+    return *c==0;
+}
+
+static std::pair<CString, uint64_t> getDefSym(const CString& word)
+{
+    std::pair<CString, uint64_t> defSym = { "", 0 };
+    size_t pos = word.find('=');
+    if (pos != CString::npos)
+    {
+        const char* outEnd;
+        defSym.second = cstrtovCStyle<uint64_t>(word.c_str()+pos+1, nullptr, outEnd);
+        if (*outEnd!=0)
+            throw Exception("Garbages at value");
+        defSym.first = word.substr(0, pos);
+    }
+    else
+        defSym.first = word;
+    verifySymbolName(defSym.first);
+    return defSym;
+}
+
+struct CLRX_INTERNAL CLProgBinEntry: public FastRefCountable
+{
+    Array<cxbyte> binary;
+    CLProgBinEntry() { }
+    CLProgBinEntry(const Array<cxbyte>& _binary) : binary(_binary) { }
+    CLProgBinEntry(Array<cxbyte>&& _binary) noexcept
+            : binary(std::move(_binary)) { }
+};
+
+static cl_int genDeviceOrder(cl_uint devicesNum, const cl_device_id* devices,
+               cl_uint assocDevicesNum, const cl_device_id* assocDevices,
+               cxuint* devAssocOrders)
+{
+    if (assocDevicesNum < 16)
+    {   // small amount of devices
+        for (cxuint i = 0; i < devicesNum; i++)
+        {
+            auto it = std::find(assocDevices, assocDevices+assocDevicesNum, devices[i]);
+            if (it != assocDevices+assocDevicesNum)
+                devAssocOrders[i] = it-assocDevices;
+            else // error
+                return CL_INVALID_DEVICE;
+        }
+    }
+    else
+    {   // more devices
+        std::unique_ptr<std::pair<cl_device_id, cxuint>[]> sortedAssocDevs(
+                new std::pair<cl_device_id, cxuint>[assocDevicesNum]);
+        for (cxuint i = 0; i < assocDevicesNum; i++)
+            sortedAssocDevs[i] = std::make_pair(assocDevices[i], i);
+        mapSort(sortedAssocDevs.get(), sortedAssocDevs.get()+assocDevicesNum);
+        for (cxuint i = 0; i < devicesNum; i++)
+        {
+            auto it = binaryMapFind(sortedAssocDevs.get(),
+                            sortedAssocDevs.get()+assocDevicesNum, devices[i]);
+            if (it != sortedAssocDevs.get()+assocDevicesNum)
+                devAssocOrders[i] = it->second;
+            else // error
+                return CL_INVALID_DEVICE;
+        }
+    }
+    return CL_SUCCESS;
+}
+
+cl_int clrxCompilerCall(CLRXProgram* program, const char* compilerOptions,
+            cl_uint devicesNum, CLRXDevice* const* devices)
+try
+{
+    std::unique_ptr<ProgDeviceEntry[]> progDeviceEntries(new ProgDeviceEntry[devicesNum]);
+    cl_uint ctxDevicesNum = program->context->devicesNum;
+    CLRXDevice** ctxDevices = program->context->devices.get();
+    /* get source code */
+    size_t sourceCodeSize;
+    std::unique_ptr<char[]> sourceCode;
+    const cl_program amdp = program->amdOclProgram;
+    program->asmState = CLRXAsmState::IN_PROGRESS;
+    
+    cl_int error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE,
+                    0, nullptr, &sourceCodeSize);
+    if (error!=CL_SUCCESS)
+    {
+        std::cerr << "Fatal error from clGetProgramInfo in clrxCompilerCall" << std::endl;
+        abort();
+    }
+    if (sourceCodeSize==0)
+    {
+        program->asmState = CLRXAsmState::FAILED;
+        return CL_INVALID_OPERATION;
+    }
+    
+    sourceCode.reset(new char[sourceCodeSize]);
+    error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE, sourceCodeSize,
+                             sourceCode.get(), nullptr);
+    if (error!=CL_SUCCESS)
+    {
+        std::cerr << "Fatal error from clGetProgramInfo in clrxCompilerCall" << std::endl;
+        abort();
+    }
+    /* set up device order in assoc devices table */
+    std::unique_ptr<cxuint[]> devAssocOrders(new cxuint[devicesNum]);
+    error = genDeviceOrder(devicesNum, (const cl_device_id*)devices, ctxDevicesNum,
+               (const cl_device_id*)ctxDevices, devAssocOrders.get());
+    if (error!=CL_SUCCESS)
+    {
+        program->asmState = CLRXAsmState::FAILED;
+        return error;
+    }
+    
+    for (cxuint i = 0; i < devicesNum; i++)
+        progDeviceEntries[i].status = CL_BUILD_IN_PROGRESS;
+    
+    Flags asmFlags = ASM_WARNINGS;
+    // parsing compile options
+    const char* co = compilerOptions;
+    std::vector<CString> includePaths;
+    std::vector<std::pair<CString, uint64_t> > defSyms;
+    bool nextIsIncludePath = false;
+    bool nextIsDefSym = false;
+    
+    try
+    {
+    while(*co!=0)
+    {
+        while (*co!=0 && (*co==' ' || *co=='\t')) co++;
+        if (*co==0)
+            break;
+        const char* wordStart = co;
+        while (*co!=0 && *co!=' ' && *co!='\t') co++;
+        const CString word(wordStart, co);
+        
+        if (nextIsIncludePath) // otherwise
+        {
+            nextIsIncludePath = false;
+            includePaths.push_back(word);
+        }
+        if (nextIsDefSym) // otherwise
+        {
+            nextIsDefSym = false;
+            defSyms.push_back(getDefSym(word));
+        }
+        else if (word[0] == '-')
+        {   // if option
+            if (word == "-w")
+                asmFlags &= ~ASM_WARNINGS;
+            else if (word == "-forceAddSymbols")
+                asmFlags |= ASM_FORCE_ADD_SYMBOLS;
+            else if (word.compare(0, 2, "-I")==0)
+                includePaths.push_back(word.substr(2, word.size()-2));
+            else if (word.compare(0, 13, "-includepath=")==0)
+                includePaths.push_back(word.substr(13, word.size()-13));
+            else if (word == "-I" || word == "-includepath")
+                nextIsIncludePath = true;
+            else if (word.compare(0, 2, "-D")==0)
+                defSyms.push_back(getDefSym(word.substr(2, word.size()-2)));
+            else if (word.compare(0, 8, "-defsym=")==0)
+                defSyms.push_back(getDefSym(word.substr(8, word.size()-8)));
+            else if (word == "-D" || word == "-defsym")
+                nextIsDefSym = true;
+        }
+        else
+        {
+            program->asmState = CLRXAsmState::FAILED;
+            return CL_INVALID_BUILD_OPTIONS;
+        }
+    }
+    } // error
+    catch(const Exception& ex)
+    {
+        program->asmState = CLRXAsmState::FAILED;
+        return CL_INVALID_BUILD_OPTIONS;
+    }
+    
+    const bool is64Bit = parseEnvVariable<bool>("GPU_FORCE_64BIT_PTR");
+    
+    /* compiling programs */
+    Array<std::pair<cl_device_id, cxuint> > outDeviceIndexMap(devicesNum);
+    Array<RefPtr<CLProgBinEntry> > compiledProgBins(devicesNum);
+    
+    for (cxuint i = 0; i < devicesNum; i++)
+        outDeviceIndexMap[i] = { ctxDevices[devAssocOrders[i]]->amdOclDevice, i };
+    mapSort(outDeviceIndexMap.begin(), outDeviceIndexMap.end());
+    std::unique_ptr<cl_device_id[]> sortedDevs(new cl_device_id[devicesNum]);
+    for (cxuint i = 0; i < devicesNum; i++)
+        sortedDevs[i] = ctxDevices[outDeviceIndexMap[i].second];
+    
+    cl_device_id prevDeviceId = nullptr;
+    GPUDeviceType prevDeviceType;    
+    for (cxuint i = 0; i < devicesNum; i++)
+    {
+        const auto& entry = outDeviceIndexMap[i];
+        ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
+        if (prevDeviceId == entry.first)
+        {   // copy from previous
+            compiledProgBins[i] = compiledProgBins[i-1];
+            progDevEntry = progDeviceEntries[i-1];
+            continue; // skip this same
+        }
+        prevDeviceId = entry.first;
+        
+        // get device type
+        size_t devNameSize;
+        std::unique_ptr<char[]> devName;
+        error = amdp->dispatch->clGetDeviceInfo(entry.first, CL_DEVICE_NAME,
+                        0, nullptr, &devNameSize);
+        if (error!=CL_SUCCESS)
+        {
+            std::cerr << "Fatal error at clCompilerCall (clGetDeviceInfo)" << std::endl;
+            abort();
+        }
+        devName.reset(new char[devNameSize]);
+        error = amdp->dispatch->clGetDeviceInfo(entry.first, CL_DEVICE_NAME,
+                                  devNameSize, devName.get(), nullptr);
+        if (error!=CL_SUCCESS)
+        {
+            std::cerr << "Fatal error at clCompilerCall (clGetDeviceInfo)" << std::endl;
+            abort();
+        }
+        GPUDeviceType devType;
+        try
+        { devType = getGPUDeviceTypeFromName(devName.get()); }
+        catch(const Exception& ex)
+        { continue; }
+        
+        if (devType == prevDeviceType)
+        {   // copy from previous
+            compiledProgBins[i] = compiledProgBins[i-1];
+            progDevEntry = progDeviceEntries[i-1];
+            continue; // skip if this same architecture
+        }
+        prevDeviceType = devType;
+        // compile
+        ArrayIStream astream(sourceCodeSize-1, sourceCode.get());
+        std::vector<char> msgVector;
+        VectorOStream msgStream(msgVector);
+        Assembler assembler("", astream, asmFlags, BinaryFormat::AMD, devType, msgStream);
+        assembler.set64Bit(is64Bit);
+        
+        for (const CString& incPath: includePaths)
+            assembler.addIncludeDir(incPath);
+        for (const auto& defSym: defSyms)
+            assembler.addInitialDefSym(defSym.first, defSym.second);
+        /// assemble
+        bool good = false;
+        try
+        { good = assembler.assemble(); }
+        catch(...)
+        {   // if failed
+            progDevEntry.log = RefPtr<CLProgLogEntry>(
+                            new CLProgLogEntry(std::move(msgVector)));
+            progDevEntry.status = CL_BUILD_ERROR;
+            throw;
+        }
+        progDevEntry.log = RefPtr<CLProgLogEntry>(
+                            new CLProgLogEntry(std::move(msgVector)));
+        
+        if (good)
+        {
+            const AsmFormatHandler* formatHandler = assembler.getFormatHandler();
+            if (formatHandler!=nullptr)
+            {
+                progDevEntry.status = CL_BUILD_SUCCESS;
+                Array<cxbyte> output;
+                formatHandler->writeBinary(output);
+                compiledProgBins[i] = RefPtr<CLProgBinEntry>(
+                            new CLProgBinEntry(std::move(output)));
+            }
+            else
+                compiledProgBins[i].reset();
+        }
+        else // error
+            progDevEntry.status = CL_BUILD_ERROR;
+    }
+    /* set program binaries in order of original devices list */
+    std::unique_ptr<size_t> programBinSizes(new size_t[devicesNum]);
+    std::unique_ptr<std::unique_ptr<cxbyte[]>[] > programBinaries(
+                new std::unique_ptr<cxbyte[]>[devicesNum]);
+    
+    for (cxuint i = 0; i < devicesNum; i++)
+    {   // update from new compiled program binaries
+        const auto& entry = outDeviceIndexMap[i];
+        programBinaries[entry.second].reset(compiledProgBins[i]->binary.data());
+        compiledProgBins[i].reset();
+    }
+    
+    cl_program newAmdAsmP = nullptr;
+    cl_int errorLast;
+    {
+        std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
+        for (cxuint i = 0; i < devicesNum; i++)
+            amdDevices[i] = devices[i]->amdOclDevice;
+        
+        std::unique_ptr<cl_int[]> binaryStatuses(new cl_int[devicesNum]);
+        /// just create new amdAsmProgram
+        newAmdAsmP = amdp->dispatch->clCreateProgramWithBinary(
+                    program->context->amdOclContext, devicesNum, amdDevices.get(),
+                    programBinSizes.get(), (const cxbyte**)programBinaries.get(),
+                    binaryStatuses.get(), &error);
+        if (newAmdAsmP==nullptr)
+        {   // return error
+            program->asmState = CLRXAsmState::FAILED;
+            return error;
+        }
+        /// and build (errorLast holds last error to be returned)
+        errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, devicesNum,
+                          amdDevices.get(), "", nullptr, nullptr);
+    }
+    
+    if (program->amdOclAsmProgram!=nullptr)
+    { // release old asm program
+        cl_int error = amdp->dispatch->clReleaseProgram(program->amdOclAsmProgram);
+        if (error!=CL_SUCCESS)
+        {
+            program->asmState = CLRXAsmState::FAILED;
+            return error;
+        }
+        program->amdOclAsmProgram = nullptr;
+    }
+    
+    program->amdOclAsmProgram = newAmdAsmP;
+    clrxUpdateProgramAssocDevices(program);
+    
+    std::unique_ptr<cxuint[]> asmDevOrders(new cxuint[program->assocDevicesNum]);
+    if (genDeviceOrder(program->assocDevicesNum,
+           (const cl_device_id*)program->assocDevices.get(), devicesNum,
+           (const cl_device_id*)sortedDevs.get(), asmDevOrders.get()) != CL_SUCCESS)
+    {
+        std::cerr << "Fatal error at genDeviceOrder at clrxCompilerCall" << std::endl;
+        abort();
+    }
+    
+    program->asmDeviceEntries.reset(new ProgDeviceEntry[program->assocDevicesNum]);
+    /* move logs and build statuses to CLRX program structure */
+    for (cxuint i = 0; i < program->assocDevicesNum; i++)
+        program->asmDeviceEntries[i] = std::move(progDeviceEntries[asmDevOrders[i]]);
+    program->asmOptions = compilerOptions;
+    program->asmState = (errorLast!=CL_SUCCESS) ?
+                CLRXAsmState::FAILED : CLRXAsmState::SUCCESS;
+    return errorLast;
+}
+catch(const std::bad_alloc& ex)
+{
+    program->asmState = CLRXAsmState::FAILED;
+    return CL_OUT_OF_HOST_MEMORY;
+}
+catch(const std::exception& ex)
+{
+    std::cerr << "Fatal error at CLRX compiler call:" <<
+                ex.what() << std::endl;
+    abort();
 }
