@@ -295,9 +295,10 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
     size_t kernelsAttached;
     bool kernelArgFlagsInitialized;
     CLRXKernelArgFlagMap kernelArgFlagsMap;
+    std::mutex asmMutex;
     cl_program amdOclAsmProgram;
     std::unique_ptr<ProgDeviceEntry[]> asmDeviceEntries;
-    CLRX::CString asmOptions;
+    std::string asmOptions;
     CLRXAsmState asmState;
     
     CLRXProgram() : refCount(1)
@@ -497,6 +498,10 @@ static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
     if (program->refCount.fetch_sub(1) == 1)
     {   // amdOclProgram has been already released, we release only our program
         clrxReleaseOnlyCLRXContext(program->context);
+        if (program->amdOclAsmProgram!=nullptr)
+            if (program->amdOclProgram->dispatch->clReleaseProgram(
+                        program->amdOclAsmProgram) != CL_SUCCESS)
+                abort(); // fatal error!!!
         delete program;
     }
 }

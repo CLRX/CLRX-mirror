@@ -1251,13 +1251,34 @@ clrxclBuildProgram(cl_program           program,
         (num_devices == 0 && device_list != nullptr))
         return CL_INVALID_VALUE;
     
+    CLRXProgram* p = static_cast<CLRXProgram*>(program);
+    if (options!=nullptr && detectCLRXCompilerCall(options))
+    {   // call own compiler
+        {
+            std::lock_guard<std::mutex> lock(p->mutex);
+            if (p->kernelsAttached != 0) // if kernels attached
+                return CL_INVALID_OPERATION;
+            p->concurrentBuilds++;
+            p->kernelArgFlagsInitialized = false;
+        }
+        
+        cl_int error = clrxCompilerCall(p, options, num_devices,
+                            (CLRXDevice* const*)device_list);
+        pfn_notify(program, user_data);
+        
+        {
+            std::lock_guard<std::mutex> lock(p->mutex);
+            p->concurrentBuilds--;
+        }
+        return error;
+    }
+    
     bool doDeleteWrappedData = true;
     void* destUserData = user_data;
     CLRXBuildProgramUserData* wrappedData = nullptr;
     void (CL_CALLBACK *  notifyToCall)(cl_program, void *) =  nullptr;
     try
     { // catching system_error
-    CLRXProgram* p = static_cast<CLRXProgram*>(program);
     
     if (pfn_notify != nullptr)
     {
@@ -1442,10 +1463,17 @@ clrxclGetProgramInfo(cl_program         program,
                 *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
         }
             break;
-        default:
+        case CL_PROGRAM_SOURCE: // always from original impl
+        case CL_PROGRAM_REFERENCE_COUNT:
             return p->amdOclProgram->
                 dispatch->clGetProgramInfo(p->amdOclProgram, param_name,
                     param_value_size, param_value, param_value_size_ret);
+        default:
+            /* check whether second program (with asm binaries) is available */
+            return p->amdOclProgram->
+                dispatch->clGetProgramInfo((p->amdOclAsmProgram!=nullptr) ?
+                        p->amdOclAsmProgram : p->amdOclProgram, param_name,
+                        param_value_size, param_value, param_value_size_ret);
     }
     return CL_SUCCESS;
     }
@@ -1468,12 +1496,77 @@ clrxclGetProgramBuildInfo(cl_program            program,
         return CL_INVALID_PROGRAM;
     if (device == nullptr)
         return CL_INVALID_DEVICE;
-    const CLRXProgram* p = static_cast<const CLRXProgram*>(program);
+    CLRXProgram* p = static_cast<CLRXProgram*>(program);
     const CLRXDevice* d = static_cast<const CLRXDevice*>(device);
     
-    return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclProgram,
-            d->amdOclDevice, param_name, param_value_size, param_value,
-            param_value_size_ret);
+    if (p->amdOclAsmProgram==nullptr)
+        return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclProgram,
+                d->amdOclDevice, param_name, param_value_size, param_value,
+                param_value_size_ret);
+    
+    try
+    {
+    std::lock_guard<std::mutex> lock(p->mutex);
+    cl_uint devId = std::find(p->assocDevices.get(),
+             p->assocDevices.get()+p->assocDevicesNum, device) - p->assocDevices.get();
+    if (devId == p->assocDevicesNum)
+        return CL_INVALID_DEVICE;
+    switch(param_name)
+    {
+        case CL_PROGRAM_BUILD_STATUS:
+        {
+            if (param_value != nullptr)
+            {
+                if (param_value_size < sizeof(cl_build_status))
+                    return CL_INVALID_VALUE;
+                *reinterpret_cast<cl_build_status*>(param_value) =
+                        p->asmDeviceEntries[devId].status;
+            }
+            if (param_value_size_ret != nullptr)
+                *param_value_size_ret = sizeof(cl_build_status);
+        }
+            break;
+        case CL_PROGRAM_BUILD_OPTIONS:
+        {
+            if (param_value != nullptr)
+            {
+                if (param_value_size < p->asmOptions.size()+1)
+                    return CL_INVALID_VALUE;
+                strcpy((char*)param_value, p->asmOptions.c_str());
+            }
+            if (param_value_size_ret != nullptr)
+                *param_value_size_ret = p->asmOptions.size()+1;
+        }
+            break;
+        case CL_PROGRAM_BUILD_LOG:
+        {
+            size_t logSize = p->asmDeviceEntries[devId].log ?
+                        p->asmDeviceEntries[devId].log->log.size()+1 : 1;
+            if (param_value != nullptr)
+            {
+                if (param_value_size < logSize)
+                    return CL_INVALID_VALUE;
+                if (p->asmDeviceEntries[devId].log)
+                    strcpy((char*)param_value, p->asmDeviceEntries[devId].log->log.data());
+                else
+                    ((cxbyte*)param_value)[0] = 0;
+            }
+            if (param_value_size_ret != nullptr)
+                *param_value_size_ret = logSize;
+        }
+            break;
+        default:
+            return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclAsmProgram,
+                    d->amdOclDevice, param_name, param_value_size, param_value,
+                    param_value_size_ret);
+    }
+    }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
+        abort();
+    }
+    return CL_SUCCESS;
 }
 
 CL_API_ENTRY cl_kernel CL_API_CALL
@@ -1502,8 +1595,11 @@ clrxclCreateKernel(cl_program      program,
             return nullptr;
         }
         
-        amdKernel = p->amdOclProgram->dispatch->clCreateKernel(
-                    p->amdOclProgram, kernel_name, errcode_ret);
+        const cl_program kernProgram = (p->amdOclAsmProgram!=nullptr) ?
+                p->amdOclAsmProgram : p->amdOclProgram;
+        
+        amdKernel = p->amdOclProgram->dispatch->clCreateKernel(kernProgram,
+                   kernel_name, errcode_ret);
         if (amdKernel == nullptr)
             return nullptr;
         
@@ -1585,9 +1681,11 @@ clrxclCreateKernelsInProgram(cl_program     program,
             // creating kernel is not legal when building in progress
             return CL_INVALID_PROGRAM_EXECUTABLE;
         
+        const cl_program kernProgram = (p->amdOclAsmProgram!=nullptr) ?
+                p->amdOclAsmProgram : p->amdOclProgram;
         // call after checking concurrent buildings
         cl_int status = p->amdOclProgram->dispatch->clCreateKernelsInProgram(
-            p->amdOclProgram, num_kernels, kernels, &numKernelsOut);
+                   kernProgram, num_kernels, kernels, &numKernelsOut);
         
         if (status != CL_SUCCESS)
             return status;

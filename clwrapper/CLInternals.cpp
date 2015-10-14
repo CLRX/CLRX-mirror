@@ -1349,7 +1349,7 @@ bool detectCLRXCompilerCall(const char* compilerOptions)
     while (*co!=0)
     {
         while (*co!=0 && (*co==' ' || *co=='\t')) co++;
-        if (::strncmp(co, "-x", 2)==0 && (*co==0 || *co==' ' || *co=='\t'))
+        if (::strncmp(co, "-x", 2)==0)
         {
             co+=2;
             while (*co!=0 && (*co==' ' || *co=='\t')) co++;
@@ -1372,8 +1372,8 @@ static bool verifySymbolName(const CString& symbolName)
     if (symbolName.empty())
         return false;
     auto c = symbolName.begin();
-    if (isAlpha(*c) || *c=='.' || *c=='_')
-        while (isAlnum(*c) || *c=='.' || *c=='_') c++;
+    if (isAlpha(*c) || *c=='.' || *c=='_' || *c=='$')
+        while (isAlnum(*c) || *c=='.' || *c=='_' || *c=='$') c++;
     return *c==0;
 }
 
@@ -1443,7 +1443,13 @@ cl_int clrxCompilerCall(CLRXProgram* program, const char* compilerOptions,
             cl_uint devicesNum, CLRXDevice* const* devices)
 try
 {
-    std::unique_ptr<ProgDeviceEntry[]> progDeviceEntries(new ProgDeviceEntry[devicesNum]);
+    std::lock_guard<std::mutex> lock(program->asmMutex);
+    program->concurrentBuilds++;
+    if (devices==nullptr)
+    {
+        devicesNum = program->assocDevicesNum;
+        devices = program->assocDevices.get();
+    }
     cl_uint ctxDevicesNum = program->context->devicesNum;
     CLRXDevice** ctxDevices = program->context->devices.get();
     /* get source code */
@@ -1451,6 +1457,7 @@ try
     std::unique_ptr<char[]> sourceCode;
     const cl_program amdp = program->amdOclProgram;
     program->asmState = CLRXAsmState::IN_PROGRESS;
+    std::unique_ptr<ProgDeviceEntry[]> progDeviceEntries(new ProgDeviceEntry[devicesNum]);
     
     cl_int error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE,
                     0, nullptr, &sourceCodeSize);
@@ -1475,13 +1482,19 @@ try
     }
     /* set up device order in assoc devices table */
     std::unique_ptr<cxuint[]> devAssocOrders(new cxuint[devicesNum]);
-    error = genDeviceOrder(devicesNum, (const cl_device_id*)devices, ctxDevicesNum,
-               (const cl_device_id*)ctxDevices, devAssocOrders.get());
-    if (error!=CL_SUCCESS)
+    if (devices != program->assocDevices.get())
     {
-        program->asmState = CLRXAsmState::FAILED;
-        return error;
+        error = genDeviceOrder(devicesNum, (const cl_device_id*)devices, ctxDevicesNum,
+                   (const cl_device_id*)ctxDevices, devAssocOrders.get());
+        if (error!=CL_SUCCESS)
+        {
+            program->asmState = CLRXAsmState::FAILED;
+            return error;
+        }
     }
+    else // if this devices == null
+        for (cxuint i = 0; i < devicesNum; i++)
+            devAssocOrders[i] = i;
     
     for (cxuint i = 0; i < devicesNum; i++)
         progDeviceEntries[i].status = CL_BUILD_IN_PROGRESS;
@@ -1561,12 +1574,12 @@ try
         sortedDevs[i] = ctxDevices[outDeviceIndexMap[i].second];
     
     cl_device_id prevDeviceId = nullptr;
-    GPUDeviceType prevDeviceType;    
+    GPUDeviceType prevDeviceType = GPUDeviceType::CAPE_VERDE;    
     for (cxuint i = 0; i < devicesNum; i++)
     {
         const auto& entry = outDeviceIndexMap[i];
         ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
-        if (prevDeviceId == entry.first)
+        if (i!=0 && prevDeviceId == entry.first)
         {   // copy from previous
             compiledProgBins[i] = compiledProgBins[i-1];
             progDevEntry = progDeviceEntries[i-1];
@@ -1598,7 +1611,7 @@ try
         catch(const Exception& ex)
         { continue; }
         
-        if (devType == prevDeviceType)
+        if (i!=0 && devType == prevDeviceType)
         {   // copy from previous
             compiledProgBins[i] = compiledProgBins[i-1];
             progDevEntry = progDeviceEntries[i-1];
@@ -1682,6 +1695,7 @@ try
                           amdDevices.get(), "", nullptr, nullptr);
     }
     
+    std::lock_guard<std::mutex> clock(program->mutex);
     if (program->amdOclAsmProgram!=nullptr)
     { // release old asm program
         cl_int error = amdp->dispatch->clReleaseProgram(program->amdOclAsmProgram);

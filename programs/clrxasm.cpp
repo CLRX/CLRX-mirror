@@ -59,8 +59,8 @@ static bool verifySymbolName(const CString& symbolName)
     if (symbolName.empty())
         return false;
     auto c = symbolName.begin();
-    if (isAlpha(*c) || *c=='.' || *c=='_')
-        while (isAlnum(*c) || *c=='.' || *c=='_') c++;
+    if (isAlpha(*c) || *c=='.' || *c=='_' || *c=='$')
+        while (isAlnum(*c) || *c=='.' || *c=='_' || *c=='$') c++;
     return *c==0;
 }
 
