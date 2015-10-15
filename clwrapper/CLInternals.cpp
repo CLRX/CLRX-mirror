@@ -1391,7 +1391,8 @@ static std::pair<CString, uint64_t> getDefSym(const CString& word)
     }
     else
         defSym.first = word;
-    verifySymbolName(defSym.first);
+    if (!verifySymbolName(defSym.first))
+        throw Exception("Invalid symbol name");
     return defSym;
 }
 
@@ -1457,6 +1458,7 @@ try
     std::unique_ptr<char[]> sourceCode;
     const cl_program amdp = program->amdOclProgram;
     program->asmState = CLRXAsmState::IN_PROGRESS;
+    program->asmProgEntries.reset();
     
     cl_int error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE,
                     0, nullptr, &sourceCodeSize);
@@ -1533,18 +1535,18 @@ try
                 asmFlags &= ~ASM_WARNINGS;
             else if (word == "-forceAddSymbols")
                 asmFlags |= ASM_FORCE_ADD_SYMBOLS;
+            else if (word == "-I" || word == "-includepath")
+                nextIsIncludePath = true;
             else if (word.compare(0, 2, "-I")==0)
                 includePaths.push_back(word.substr(2, word.size()-2));
             else if (word.compare(0, 13, "-includepath=")==0)
                 includePaths.push_back(word.substr(13, word.size()-13));
-            else if (word == "-I" || word == "-includepath")
-                nextIsIncludePath = true;
+            else if (word == "-D" || word == "-defsym")
+                nextIsDefSym = true;
             else if (word.compare(0, 2, "-D")==0)
                 defSyms.push_back(getDefSym(word.substr(2, word.size()-2)));
             else if (word.compare(0, 8, "-defsym=")==0)
                 defSyms.push_back(getDefSym(word.substr(8, word.size()-8)));
-            else if (word == "-D" || word == "-defsym")
-                nextIsDefSym = true;
             else if (word == "-x" )
                 nextIsLang = true;
             else if (word != "-xasm")
@@ -1570,6 +1572,11 @@ try
         program->asmState = CLRXAsmState::FAILED;
         return CL_INVALID_BUILD_OPTIONS;
     }
+    
+    for (const auto& v: includePaths)
+        std::cout << "IncPath:" << v << std::endl;
+    for (const auto& v: defSyms)
+        std::cout << "DefSym:" << v.first << "=" << v.second << std::endl;
     
     const bool is64Bit = parseEnvVariable<bool>("GPU_FORCE_64BIT_PTR");
     
