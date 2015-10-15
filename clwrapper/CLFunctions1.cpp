@@ -1521,7 +1521,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
                 if (param_value_size < sizeof(cl_build_status))
                     return CL_INVALID_VALUE;
                 *reinterpret_cast<cl_build_status*>(param_value) =
-                        p->asmDeviceEntries[devId].status;
+                        p->asmProgEntries[devId].status;
             }
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_build_status);
@@ -1541,15 +1541,18 @@ clrxclGetProgramBuildInfo(cl_program            program,
             break;
         case CL_PROGRAM_BUILD_LOG:
         {
-            size_t logSize = p->asmDeviceEntries[devId].log ?
-                        p->asmDeviceEntries[devId].log->log.size()+1 : 1;
+            size_t logSize = p->asmProgEntries[devId].log ?
+                        p->asmProgEntries[devId].log->log.size()+1 : 1;
             if (param_value != nullptr)
             {
                 if (param_value_size < logSize)
                     return CL_INVALID_VALUE;
-                if (p->asmDeviceEntries[devId].log &&
-                    p->asmDeviceEntries[devId].log->log.size())
-                    strcpy((char*)param_value, p->asmDeviceEntries[devId].log->log.data());
+                if (p->asmProgEntries[devId].log && logSize!=1)
+                {
+                    memcpy((char*)param_value,
+                           p->asmProgEntries[devId].log->log.data(), logSize-1);
+                    ((cxbyte*)param_value)[logSize-1] = 0;
+                }
                 else
                     ((cxbyte*)param_value)[0] = 0;
             }

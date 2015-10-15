@@ -271,6 +271,7 @@ struct CLRX_INTERNAL ProgDeviceEntry
 {
     CLRX::RefPtr<CLProgLogEntry> log;
     cl_build_status status;
+    ProgDeviceEntry() : status(CL_BUILD_NONE) { }
 };
 
 enum class CLRXAsmState
@@ -297,7 +298,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
     CLRXKernelArgFlagMap kernelArgFlagsMap;
     std::mutex asmMutex;
     cl_program amdOclAsmProgram;
-    std::unique_ptr<ProgDeviceEntry[]> asmDeviceEntries;
+    std::unique_ptr<ProgDeviceEntry[]> asmProgEntries;
     std::string asmOptions;
     CLRXAsmState asmState;
     

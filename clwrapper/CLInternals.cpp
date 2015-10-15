@@ -1457,7 +1457,6 @@ try
     std::unique_ptr<char[]> sourceCode;
     const cl_program amdp = program->amdOclProgram;
     program->asmState = CLRXAsmState::IN_PROGRESS;
-    std::unique_ptr<ProgDeviceEntry[]> progDeviceEntries(new ProgDeviceEntry[devicesNum]);
     
     cl_int error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE,
                     0, nullptr, &sourceCodeSize);
@@ -1495,9 +1494,6 @@ try
     else // if this devices == null
         for (cxuint i = 0; i < devicesNum; i++)
             devAssocOrders[i] = i;
-    
-    for (cxuint i = 0; i < devicesNum; i++)
-        progDeviceEntries[i].status = CL_BUILD_IN_PROGRESS;
     
     Flags asmFlags = ASM_WARNINGS;
     // parsing compile options
@@ -1578,34 +1574,38 @@ try
     const bool is64Bit = parseEnvVariable<bool>("GPU_FORCE_64BIT_PTR");
     
     /* compiling programs */
-    Array<std::pair<cl_device_id, cxuint> > outDeviceIndexMap(devicesNum);
-    Array<RefPtr<CLProgBinEntry> > compiledProgBins(devicesNum);
+    typedef std::pair<cl_device_id, cl_device_id> OutDevEntry;
+    Array<OutDevEntry> outDeviceIndexMap(devicesNum);
     
     for (cxuint i = 0; i < devicesNum; i++)
-        outDeviceIndexMap[i] = { ctxDevices[devAssocOrders[i]]->amdOclDevice, i };
+        outDeviceIndexMap[i] = { devices[i], devices[i]->amdOclDevice };
     mapSort(outDeviceIndexMap.begin(), outDeviceIndexMap.end());
+    devicesNum = std::unique(outDeviceIndexMap.begin(), outDeviceIndexMap.end(),
+                [](const OutDevEntry& a, const OutDevEntry& b)
+                { return a.first==b.first; }) - outDeviceIndexMap.begin();
+    outDeviceIndexMap.resize(devicesNum);
+    
+    std::unique_ptr<ProgDeviceEntry[]> progDeviceEntries(new ProgDeviceEntry[devicesNum]);
+    Array<RefPtr<CLProgBinEntry> > compiledProgBins(devicesNum);
     std::unique_ptr<cl_device_id[]> sortedDevs(new cl_device_id[devicesNum]);
     for (cxuint i = 0; i < devicesNum; i++)
-        sortedDevs[i] = ctxDevices[outDeviceIndexMap[i].second];
+        sortedDevs[i] = outDeviceIndexMap[i].first;
     
-    cl_device_id prevDeviceId = nullptr;
+    for (cxuint i = 0; i < devicesNum; i++)
+        progDeviceEntries[i].status = CL_BUILD_IN_PROGRESS;
+    
+    bool asmFailure = false;
+    bool asmNotAvailable = false;
     GPUDeviceType prevDeviceType = GPUDeviceType::CAPE_VERDE;    
     for (cxuint i = 0; i < devicesNum; i++)
     {
         const auto& entry = outDeviceIndexMap[i];
         ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
-        if (i!=0 && prevDeviceId == entry.first)
-        {   // copy from previous
-            compiledProgBins[i] = compiledProgBins[i-1];
-            progDevEntry = progDeviceEntries[i-1];
-            continue; // skip this same
-        }
-        prevDeviceId = entry.first;
         
         // get device type
         size_t devNameSize;
         std::unique_ptr<char[]> devName;
-        error = amdp->dispatch->clGetDeviceInfo(entry.first, CL_DEVICE_NAME,
+        error = amdp->dispatch->clGetDeviceInfo(entry.second, CL_DEVICE_NAME,
                         0, nullptr, &devNameSize);
         if (error!=CL_SUCCESS)
         {
@@ -1613,7 +1613,7 @@ try
             abort();
         }
         devName.reset(new char[devNameSize]);
-        error = amdp->dispatch->clGetDeviceInfo(entry.first, CL_DEVICE_NAME,
+        error = amdp->dispatch->clGetDeviceInfo(entry.second, CL_DEVICE_NAME,
                                   devNameSize, devName.get(), nullptr);
         if (error!=CL_SUCCESS)
         {
@@ -1624,7 +1624,11 @@ try
         try
         { devType = getGPUDeviceTypeFromName(devName.get()); }
         catch(const Exception& ex)
-        { continue; }
+        {   // is error
+            progDevEntry.status = CL_BUILD_ERROR;
+            asmNotAvailable = true;
+            continue;
+        }
         
         if (i!=0 && devType == prevDeviceType)
         {   // copy from previous
@@ -1653,6 +1657,7 @@ try
             progDevEntry.log = RefPtr<CLProgLogEntry>(
                             new CLProgLogEntry(std::move(msgVector)));
             progDevEntry.status = CL_BUILD_ERROR;
+            asmFailure = true;
             throw;
         }
         progDevEntry.log = RefPtr<CLProgLogEntry>(
@@ -1660,43 +1665,64 @@ try
         
         if (good)
         {
-            const AsmFormatHandler* formatHandler = assembler.getFormatHandler();
-            if (formatHandler!=nullptr)
+            try
             {
-                progDevEntry.status = CL_BUILD_SUCCESS;
-                Array<cxbyte> output;
-                formatHandler->writeBinary(output);
-                compiledProgBins[i] = RefPtr<CLProgBinEntry>(
-                            new CLProgBinEntry(std::move(output)));
+                const AsmFormatHandler* formatHandler = assembler.getFormatHandler();
+                if (formatHandler!=nullptr)
+                {
+                    progDevEntry.status = CL_BUILD_SUCCESS;
+                    Array<cxbyte> output;
+                    formatHandler->writeBinary(output);
+                    compiledProgBins[i] = RefPtr<CLProgBinEntry>(
+                                new CLProgBinEntry(std::move(output)));
+                }
+                else
+                {
+                    compiledProgBins[i].reset();
+                    progDevEntry.status = CL_BUILD_ERROR;
+                    asmFailure = true;
+                }
             }
-            else
-                compiledProgBins[i].reset();
+            catch(const Exception& ex)
+            {   // if exception during writing binary
+                msgVector.insert(msgVector.end(), ex.what(),
+                                 ex.what()+::strlen(ex.what())+1);
+                progDevEntry.log = RefPtr<CLProgLogEntry>(
+                            new CLProgLogEntry(std::move(msgVector)));
+                progDevEntry.status = CL_BUILD_ERROR;
+                asmFailure = true;
+            }
         }
         else // error
+        {
             progDevEntry.status = CL_BUILD_ERROR;
+            asmFailure = true;
+        }
     }
     /* set program binaries in order of original devices list */
     std::unique_ptr<size_t[]> programBinSizes(new size_t[devicesNum]);
     std::unique_ptr<cxbyte*[] > programBinaries(new cxbyte*[devicesNum]);
+    std::unique_ptr<cxuint[]> outDeviceOrders(new cxuint[devicesNum]);
     
+    cxuint compiledNum = 0;
+    std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
     for (cxuint i = 0; i < devicesNum; i++)
-    {   // update from new compiled program binaries
-        const auto& entry = outDeviceIndexMap[i];
-        programBinSizes[entry.second] = compiledProgBins[i]->binary.size();
-        programBinaries[entry.second] = compiledProgBins[i]->binary.data();
-    }
+        if (compiledProgBins[i])
+        {   // update from new compiled program binaries
+            outDeviceOrders[i] = compiledNum;
+            amdDevices[compiledNum] = devices[i]->amdOclDevice;
+            programBinSizes[compiledNum] = compiledProgBins[i]->binary.size();
+            programBinaries[compiledNum++] = compiledProgBins[i]->binary.data();
+        }
     
     cl_program newAmdAsmP = nullptr;
-    cl_int errorLast;
+    cl_int errorLast = CL_SUCCESS;
+    if (compiledNum != 0)
     {
-        std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
-        for (cxuint i = 0; i < devicesNum; i++)
-            amdDevices[i] = devices[i]->amdOclDevice;
-        
-        std::unique_ptr<cl_int[]> binaryStatuses(new cl_int[devicesNum]);
+        std::unique_ptr<cl_int[]> binaryStatuses(new cl_int[compiledNum]);
         /// just create new amdAsmProgram
         newAmdAsmP = amdp->dispatch->clCreateProgramWithBinary(
-                    program->context->amdOclContext, devicesNum, amdDevices.get(),
+                    program->context->amdOclContext, compiledNum, amdDevices.get(),
                     programBinSizes.get(), (const cxbyte**)programBinaries.get(),
                     binaryStatuses.get(), &error);
         if (newAmdAsmP==nullptr)
@@ -1705,8 +1731,15 @@ try
             return error;
         }
         /// and build (errorLast holds last error to be returned)
-        errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, devicesNum,
+        errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, compiledNum,
                           amdDevices.get(), "", nullptr, nullptr);
+    }
+    if (errorLast == CL_SUCCESS)
+    {
+        if (asmFailure)
+            errorLast = CL_BUILD_PROGRAM_FAILURE;
+        else if (asmNotAvailable)
+            errorLast = CL_COMPILER_NOT_AVAILABLE;
     }
     
     std::lock_guard<std::mutex> clock(program->mutex);
@@ -1733,10 +1766,10 @@ try
         abort();
     }
     
-    program->asmDeviceEntries.reset(new ProgDeviceEntry[program->assocDevicesNum]);
+    program->asmProgEntries.reset(new ProgDeviceEntry[program->assocDevicesNum]);
     /* move logs and build statuses to CLRX program structure */
-    for (cxuint i = 0; i < program->assocDevicesNum; i++)
-        program->asmDeviceEntries[i] = std::move(progDeviceEntries[asmDevOrders[i]]);
+    for (cxuint i = 0; i < devicesNum; i++)
+        program->asmProgEntries[asmDevOrders[i]] = std::move(progDeviceEntries[i]);
     program->asmOptions = compilerOptions;
     program->asmState = (errorLast!=CL_SUCCESS) ?
                 CLRXAsmState::FAILED : CLRXAsmState::SUCCESS;
