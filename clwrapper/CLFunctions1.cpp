@@ -1264,7 +1264,8 @@ clrxclBuildProgram(cl_program           program,
         
         cl_int error = clrxCompilerCall(p, options, num_devices,
                             (CLRXDevice* const*)device_list);
-        pfn_notify(program, user_data);
+        if (pfn_notify!=nullptr)
+            pfn_notify(program, user_data);
         
         {
             std::lock_guard<std::mutex> lock(p->mutex);
@@ -1546,7 +1547,8 @@ clrxclGetProgramBuildInfo(cl_program            program,
             {
                 if (param_value_size < logSize)
                     return CL_INVALID_VALUE;
-                if (p->asmDeviceEntries[devId].log)
+                if (p->asmDeviceEntries[devId].log &&
+                    p->asmDeviceEntries[devId].log->log.size())
                     strcpy((char*)param_value, p->asmDeviceEntries[devId].log->log.data());
                 else
                     ((cxbyte*)param_value)[0] = 0;

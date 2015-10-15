@@ -1353,7 +1353,7 @@ bool detectCLRXCompilerCall(const char* compilerOptions)
         {
             co+=2;
             while (*co!=0 && (*co==' ' || *co=='\t')) co++;
-            if (::strncmp(co, "asm", 3)==0 && (*co==0 || *co==' ' || *co=='\t'))
+            if (::strncmp(co, "asm", 3)==0 && (co[3]==0 || co[3]==' ' || co[3]=='\t'))
             {
                 isAsm = true;
                 co+=3;
@@ -1506,6 +1506,7 @@ try
     std::vector<std::pair<CString, uint64_t> > defSyms;
     bool nextIsIncludePath = false;
     bool nextIsDefSym = false;
+    bool nextIsLang = false;
     
     try
     {
@@ -1523,11 +1524,13 @@ try
             nextIsIncludePath = false;
             includePaths.push_back(word);
         }
-        if (nextIsDefSym) // otherwise
+        else if (nextIsDefSym) // otherwise
         {
             nextIsDefSym = false;
             defSyms.push_back(getDefSym(word));
         }
+        else if (nextIsLang) // otherwise
+            nextIsLang = false;
         else if (word[0] == '-')
         {   // if option
             if (word == "-w")
@@ -1546,12 +1549,24 @@ try
                 defSyms.push_back(getDefSym(word.substr(8, word.size()-8)));
             else if (word == "-D" || word == "-defsym")
                 nextIsDefSym = true;
+            else if (word == "-x" )
+                nextIsLang = true;
+            else if (word != "-xasm")
+            {   // if not language selection to asm
+                program->asmState = CLRXAsmState::FAILED;
+                return CL_INVALID_BUILD_OPTIONS;
+            }
         }
         else
         {
             program->asmState = CLRXAsmState::FAILED;
             return CL_INVALID_BUILD_OPTIONS;
         }
+    }
+    if (nextIsDefSym || nextIsIncludePath || nextIsLang)
+    {
+        program->asmState = CLRXAsmState::FAILED;
+            return CL_INVALID_BUILD_OPTIONS;
     }
     } // error
     catch(const Exception& ex)
@@ -1661,15 +1676,14 @@ try
             progDevEntry.status = CL_BUILD_ERROR;
     }
     /* set program binaries in order of original devices list */
-    std::unique_ptr<size_t> programBinSizes(new size_t[devicesNum]);
-    std::unique_ptr<std::unique_ptr<cxbyte[]>[] > programBinaries(
-                new std::unique_ptr<cxbyte[]>[devicesNum]);
+    std::unique_ptr<size_t[]> programBinSizes(new size_t[devicesNum]);
+    std::unique_ptr<cxbyte*[] > programBinaries(new cxbyte*[devicesNum]);
     
     for (cxuint i = 0; i < devicesNum; i++)
     {   // update from new compiled program binaries
         const auto& entry = outDeviceIndexMap[i];
-        programBinaries[entry.second].reset(compiledProgBins[i]->binary.data());
-        compiledProgBins[i].reset();
+        programBinSizes[entry.second] = compiledProgBins[i]->binary.size();
+        programBinaries[entry.second] = compiledProgBins[i]->binary.data();
     }
     
     cl_program newAmdAsmP = nullptr;
