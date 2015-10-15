@@ -1500,7 +1500,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
     const CLRXDevice* d = static_cast<const CLRXDevice*>(device);
     
-    if (p->amdOclAsmProgram==nullptr)
+    if (p->asmState==CLRXAsmState::NONE)
         return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclProgram,
                 d->amdOclDevice, param_name, param_value_size, param_value,
                 param_value_size_ret);

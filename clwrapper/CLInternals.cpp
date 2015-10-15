@@ -1714,6 +1714,11 @@ try
             programBinSizes[compiledNum] = compiledProgBins[i]->binary.size();
             programBinaries[compiledNum++] = compiledProgBins[i]->binary.data();
         }
+    std::unique_ptr<CLRXDevice*[]> failedDevices(new CLRXDevice*[devicesNum-compiledNum]);
+    cxuint j = 0;
+    for (cxuint i = 0; i < devicesNum; i++)
+        if (!compiledProgBins[i])
+            failedDevices[j++] = devices[i];
     
     cl_program newAmdAsmP = nullptr;
     cl_int errorLast = CL_SUCCESS;
@@ -1756,6 +1761,16 @@ try
     
     program->amdOclAsmProgram = newAmdAsmP;
     clrxUpdateProgramAssocDevices(program);
+    if (compiledNum!=devicesNum)
+    {   // add extra devices (failed) to list
+        std::unique_ptr<CLRXDevice*[]> newAssocDevices(new CLRXDevice*[devicesNum]);
+        std::copy(program->assocDevices.get(), program->assocDevices.get()+compiledNum,
+                  newAssocDevices.get());
+        std::copy(failedDevices.get(), failedDevices.get()+devicesNum-compiledNum,
+                newAssocDevices.get()+compiledNum);
+        program->assocDevices = std::move(newAssocDevices);
+        program->assocDevicesNum = devicesNum;
+    }
     
     std::unique_ptr<cxuint[]> asmDevOrders(new cxuint[program->assocDevicesNum]);
     if (genDeviceOrder(program->assocDevicesNum,
