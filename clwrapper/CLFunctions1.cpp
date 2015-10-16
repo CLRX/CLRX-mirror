@@ -1296,13 +1296,7 @@ clrxclBuildProgram(cl_program           program,
     
     {
         std::lock_guard<std::mutex> lock(p->mutex);
-        /* clear Asm stuff */
-        p->asmState = CLRXAsmState::NONE;
-        if (p->amdOclAsmProgram != nullptr)
-            p->amdOclProgram->dispatch->clRetainProgram(p->amdOclAsmProgram);
-        p->amdOclAsmProgram = nullptr;
-        p->asmProgEntries.reset();
-        p->asmOptions.clear();
+        clrxClearProgramAsmState(p);
         
         if (p->kernelsAttached != 0) // if kernels attached
             return CL_INVALID_OPERATION;

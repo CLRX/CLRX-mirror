@@ -507,6 +507,23 @@ static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
     }
 }
 
+static inline void clrxClearProgramAsmState(CLRXProgram* p)
+{
+    p->asmState = CLRXAsmState::NONE;
+    if (p->amdOclAsmProgram != nullptr)
+    {
+        if (p->amdOclProgram->dispatch->clReleaseProgram(
+            p->amdOclAsmProgram) != CL_SUCCESS)
+        {
+            std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
+            abort();
+        }
+    }
+    p->amdOclAsmProgram = nullptr;
+    p->asmProgEntries.reset();
+    p->asmOptions.clear();
+}
+
 /* main compiler options */
 CLRX_INTERNAL bool detectCLRXCompilerCall(const char* compilerOptions);
 

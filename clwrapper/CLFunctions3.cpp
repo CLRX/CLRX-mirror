@@ -634,6 +634,8 @@ clrxclCompileProgram(cl_program           program,
     
     {
         std::lock_guard<std::mutex> lock(p->mutex);
+        clrxClearProgramAsmState(p);
+        
         if (p->kernelsAttached != 0) // if kernels attached
             return CL_INVALID_OPERATION;
         p->kernelArgFlagsInitialized = false;
