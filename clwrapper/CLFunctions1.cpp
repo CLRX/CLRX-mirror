@@ -1309,7 +1309,7 @@ clrxclBuildProgram(cl_program           program,
         status = p->amdOclProgram->dispatch->clBuildProgram(p->amdOclProgram, 0, nullptr,
                     options, notifyToCall, destUserData);
     else
-    {   
+    {
         try
         {
             std::vector<cl_device_id> amdDevices(num_devices);
@@ -1465,6 +1465,20 @@ clrxclGetProgramInfo(cl_program         program,
                 *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
         }
             break;
+        case CL_PROGRAM_KERNEL_NAMES:
+        {
+            cl_program prog;
+            {
+                std::lock_guard<std::mutex> lock(p->mutex);
+                prog = (p->asmState!=CLRXAsmState::NONE) ? p->amdOclAsmProgram :
+                            p->amdOclProgram;
+                if (p->asmState!=CLRXAsmState::NONE && prog==nullptr)
+                    return CL_INVALID_PROGRAM_EXECUTABLE;
+            }
+            return p->amdOclProgram->
+                dispatch->clGetProgramInfo(prog, param_name,
+                        param_value_size, param_value, param_value_size_ret);
+        }
         case CL_PROGRAM_SOURCE: // always from original impl
         case CL_PROGRAM_REFERENCE_COUNT:
             return p->amdOclProgram->
@@ -1553,7 +1567,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
             break;
         case CL_PROGRAM_BUILD_LOG:
         {
-            size_t logSize = p->asmProgEntries && p->asmProgEntries[devId].log ?
+            size_t logSize = (p->asmProgEntries && p->asmProgEntries[devId].log) ?
                         p->asmProgEntries[devId].log->log.size()+1 : 1;
             if (param_value != nullptr)
             {
