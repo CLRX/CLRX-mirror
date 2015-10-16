@@ -1195,10 +1195,12 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     if (program->assocDevicesNum == 0)
         return CL_SUCCESS;
     
+    cl_program amdProg = (program->asmState != CLRXAsmState::NONE) ?
+            program->amdOclAsmProgram : program->amdOclProgram;
 #ifdef CL_VERSION_1_2
     cl_program_binary_type ptype;
     cl_int status = program->amdOclProgram->dispatch->clGetProgramBuildInfo(
-        program->amdOclProgram, program->assocDevices[0]->amdOclDevice,
+        amdProg, program->assocDevices[0]->amdOclDevice,
         CL_PROGRAM_BINARY_TYPE, sizeof(cl_program_binary_type), &ptype, nullptr);
     if (status != CL_SUCCESS)
     {
@@ -1217,9 +1219,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     {
         std::vector<size_t> binarySizes(program->assocDevicesNum);
         
-        status = program->amdOclProgram->dispatch->clGetProgramInfo(
-                program->amdOclProgram, CL_PROGRAM_BINARY_SIZES,
-                sizeof(size_t)*program->assocDevicesNum, binarySizes.data(), nullptr);
+        status = program->amdOclProgram->dispatch->clGetProgramInfo(amdProg,
+                CL_PROGRAM_BINARY_SIZES, sizeof(size_t)*program->assocDevicesNum,
+                binarySizes.data(), nullptr);
         if (status != CL_SUCCESS)
         {
             std::cerr << "Can't get program binary sizes!" << std::endl;
@@ -1232,9 +1234,8 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             if (binarySizes[i] != 0) // if available
                 binaries[i].reset(new unsigned char[binarySizes[i]]);
         
-        status = program->amdOclProgram->dispatch->clGetProgramInfo(
-                program->amdOclProgram, CL_PROGRAM_BINARIES,
-                sizeof(char*)*program->assocDevicesNum,
+        status = program->amdOclProgram->dispatch->clGetProgramInfo(amdProg,
+                CL_PROGRAM_BINARIES, sizeof(char*)*program->assocDevicesNum,
                 (unsigned char**)binaries.get(), nullptr);
         if (status != CL_SUCCESS)
         {

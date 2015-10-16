@@ -1296,6 +1296,14 @@ clrxclBuildProgram(cl_program           program,
     
     {
         std::lock_guard<std::mutex> lock(p->mutex);
+        /* clear Asm stuff */
+        p->asmState = CLRXAsmState::NONE;
+        if (p->amdOclAsmProgram != nullptr)
+            p->amdOclProgram->dispatch->clRetainProgram(p->amdOclAsmProgram);
+        p->amdOclAsmProgram = nullptr;
+        p->asmProgEntries.reset();
+        p->asmOptions.clear();
+        
         if (p->kernelsAttached != 0) // if kernels attached
             return CL_INVALID_OPERATION;
         p->concurrentBuilds++;
@@ -1304,9 +1312,8 @@ clrxclBuildProgram(cl_program           program,
     
     cl_int status;
     if (num_devices == 0)
-        status = p->amdOclProgram->dispatch->clBuildProgram(
-            p->amdOclProgram, 0, nullptr, options, notifyToCall,
-            destUserData);
+        status = p->amdOclProgram->dispatch->clBuildProgram(p->amdOclProgram, 0, nullptr,
+                    options, notifyToCall, destUserData);
     else
     {   
         try
@@ -1471,9 +1478,14 @@ clrxclGetProgramInfo(cl_program         program,
                     param_value_size, param_value, param_value_size_ret);
         default:
             /* check whether second program (with asm binaries) is available */
+            cl_program prog;
+            {
+                std::lock_guard<std::mutex> lock(p->mutex);
+                prog = (p->asmState!=CLRXAsmState::NONE) ? p->amdOclAsmProgram :
+                            p->amdOclProgram;
+            }
             return p->amdOclProgram->
-                dispatch->clGetProgramInfo((p->amdOclAsmProgram!=nullptr) ?
-                        p->amdOclAsmProgram : p->amdOclProgram, param_name,
+                dispatch->clGetProgramInfo(prog, param_name,
                         param_value_size, param_value, param_value_size_ret);
     }
     return CL_SUCCESS;
@@ -1500,14 +1512,17 @@ clrxclGetProgramBuildInfo(cl_program            program,
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
     const CLRXDevice* d = static_cast<const CLRXDevice*>(device);
     
+    try
+    {
+    std::unique_lock<std::mutex> lock(p->mutex);
     if (p->asmState==CLRXAsmState::NONE)
+    {
+        lock.unlock();
         return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclProgram,
                 d->amdOclDevice, param_name, param_value_size, param_value,
                 param_value_size_ret);
+    }
     
-    try
-    {
-    std::lock_guard<std::mutex> lock(p->mutex);
     cl_uint devId = std::find(p->assocDevices.get(),
              p->assocDevices.get()+p->assocDevicesNum, device) - p->assocDevices.get();
     if (devId == p->assocDevicesNum)
