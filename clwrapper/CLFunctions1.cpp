@@ -1544,7 +1544,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
             break;
         case CL_PROGRAM_BUILD_LOG:
         {
-            size_t logSize = p->asmProgEntries[devId].log ?
+            size_t logSize = p->asmProgEntries && p->asmProgEntries[devId].log ?
                         p->asmProgEntries[devId].log->log.size()+1 : 1;
             if (param_value != nullptr)
             {

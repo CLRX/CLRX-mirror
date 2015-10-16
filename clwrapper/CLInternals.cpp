@@ -1445,7 +1445,6 @@ cl_int clrxCompilerCall(CLRXProgram* program, const char* compilerOptions,
 try
 {
     std::lock_guard<std::mutex> lock(program->asmMutex);
-    program->concurrentBuilds++;
     if (devices==nullptr)
     {
         devicesNum = program->assocDevicesNum;
