@@ -494,35 +494,9 @@ static inline void clrxRetainOnlyCLRXProgramNTimes(CLRXProgram* program, cl_uint
     program->refCount.fetch_add(ntimes);
 }
 
-static inline void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
-{
-    if (program->refCount.fetch_sub(1) == 1)
-    {   // amdOclProgram has been already released, we release only our program
-        clrxReleaseOnlyCLRXContext(program->context);
-        if (program->amdOclAsmProgram!=nullptr)
-            if (program->amdOclProgram->dispatch->clReleaseProgram(
-                        program->amdOclAsmProgram) != CL_SUCCESS)
-                abort(); // fatal error!!!
-        delete program;
-    }
-}
+CLRX_INTERNAL void clrxReleaseOnlyCLRXProgram(CLRXProgram* program);
 
-static inline void clrxClearProgramAsmState(CLRXProgram* p)
-{
-    p->asmState = CLRXAsmState::NONE;
-    if (p->amdOclAsmProgram != nullptr)
-    {
-        if (p->amdOclProgram->dispatch->clReleaseProgram(
-            p->amdOclAsmProgram) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
-            abort();
-        }
-    }
-    p->amdOclAsmProgram = nullptr;
-    p->asmProgEntries.reset();
-    p->asmOptions.clear();
-}
+CLRX_INTERNAL void clrxClearProgramAsmState(CLRXProgram* p);
 
 /* main compiler options */
 CLRX_INTERNAL bool detectCLRXCompilerCall(const char* compilerOptions);

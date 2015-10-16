@@ -1341,6 +1341,39 @@ void clrxReleaseConcurrentBuild(CLRXProgram* program)
     }
 }
 
+void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
+{
+    if (program->refCount.fetch_sub(1) == 1)
+    {   // amdOclProgram has been already released, we release only our program
+        clrxReleaseOnlyCLRXContext(program->context);
+        if (program->amdOclAsmProgram!=nullptr)
+            if (program->amdOclProgram->dispatch->clReleaseProgram(
+                        program->amdOclAsmProgram) != CL_SUCCESS)
+            {
+                std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
+                abort(); // fatal error!!!
+            }
+        delete program;
+    }
+}
+
+void clrxClearProgramAsmState(CLRXProgram* p)
+{
+    p->asmState = CLRXAsmState::NONE;
+    if (p->amdOclAsmProgram != nullptr)
+    {
+        if (p->amdOclProgram->dispatch->clReleaseProgram(
+            p->amdOclAsmProgram) != CL_SUCCESS)
+        {
+            std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
+            abort();
+        }
+    }
+    p->amdOclAsmProgram = nullptr;
+    p->asmProgEntries.reset();
+    p->asmOptions.clear();
+}
+
 /* Bridge between Assembler and OpenCL wrapper */
 
 bool detectCLRXCompilerCall(const char* compilerOptions)
@@ -1757,11 +1790,10 @@ try
     std::lock_guard<std::mutex> clock(program->mutex);
     if (program->amdOclAsmProgram!=nullptr)
     { // release old asm program
-        cl_int error = amdp->dispatch->clReleaseProgram(program->amdOclAsmProgram);
-        if (error!=CL_SUCCESS)
+        if (amdp->dispatch->clReleaseProgram(program->amdOclAsmProgram) != CL_SUCCESS)
         {
-            program->asmState = CLRXAsmState::FAILED;
-            return error;
+            std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
+            abort();
         }
         program->amdOclAsmProgram = nullptr;
     }
