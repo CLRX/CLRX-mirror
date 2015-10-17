@@ -300,7 +300,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
     cl_program amdOclAsmProgram;
     std::unique_ptr<ProgDeviceEntry[]> asmProgEntries;
     std::string asmOptions;
-    CLRXAsmState asmState;
+    std::atomic<CLRXAsmState> asmState;
     
     CLRXProgram() : refCount(1)
     {
@@ -312,7 +312,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
         concurrentBuilds = 0;
         transDevicesMap = nullptr;
         amdOclAsmProgram = nullptr;
-        asmState = CLRXAsmState::NONE;
+        asmState.store(CLRXAsmState::NONE);
     }
 };
 

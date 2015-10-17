@@ -1470,15 +1470,71 @@ clrxclGetProgramInfo(cl_program         program,
             cl_program prog;
             {
                 std::lock_guard<std::mutex> lock(p->mutex);
-                prog = (p->asmState!=CLRXAsmState::NONE) ? p->amdOclAsmProgram :
+                CLRXAsmState asmState = p->asmState.load();
+                prog = (asmState != CLRXAsmState::NONE) ? p->amdOclAsmProgram :
                             p->amdOclProgram;
-                if (p->asmState!=CLRXAsmState::NONE && prog==nullptr)
+                if (asmState != CLRXAsmState::NONE && prog==nullptr)
                     return CL_INVALID_PROGRAM_EXECUTABLE;
             }
             return p->amdOclProgram->
                 dispatch->clGetProgramInfo(prog, param_name,
                         param_value_size, param_value, param_value_size_ret);
         }
+        case CL_PROGRAM_BINARY_SIZES:
+        {
+            std::lock_guard<std::mutex> lock(p->mutex);
+            if (p->asmState.load()!=CLRXAsmState::NONE)
+            {
+                size_t expectedSize = sizeof(size_t)*p->assocDevicesNum;
+                if (param_value!=nullptr)
+                {
+                    if (param_value_size < expectedSize)
+                        return CL_INVALID_VALUE;
+                    size_t outSize;
+                    cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
+                                p->amdOclAsmProgram, param_name,
+                                param_value_size, param_value, &outSize);
+                    if (error != CL_SUCCESS)
+                        return error;
+                    /// zeroing entries for failed devices
+                    if (outSize < expectedSize && param_value!=nullptr)
+                        ::memset((char*)param_value+outSize, 0, expectedSize-outSize);
+                }
+                /// set up output size
+                if (param_value_size_ret != nullptr)
+                    *param_value_size_ret = expectedSize;
+            }
+            else
+                return p->amdOclProgram->dispatch->clGetProgramInfo(p->amdOclProgram,
+                        param_name, param_value_size, param_value, param_value_size_ret);
+        }
+            break;
+        case CL_PROGRAM_BINARIES:
+        {
+            std::lock_guard<std::mutex> lock(p->mutex);
+            if (p->asmState.load()!=CLRXAsmState::NONE)
+            {
+                size_t expectedSize = sizeof(unsigned char*)*p->assocDevicesNum;
+                if (param_value!=nullptr)
+                {
+                    size_t outSize;
+                    if (param_value_size < expectedSize)
+                        return CL_INVALID_VALUE;
+                    cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
+                                p->amdOclAsmProgram, param_name,
+                                param_value_size, param_value, &outSize);
+                    if (error != CL_SUCCESS)
+                        return error;
+                }
+                /// set up output size
+                if (param_value_size_ret != nullptr)
+                    *param_value_size_ret = expectedSize;
+            }
+            else
+                return p->amdOclProgram->dispatch->clGetProgramInfo(p->amdOclProgram,
+                        param_name, param_value_size, param_value, param_value_size_ret);
+        }
+            break;
         case CL_PROGRAM_SOURCE: // always from original impl
         case CL_PROGRAM_REFERENCE_COUNT:
             return p->amdOclProgram->
@@ -1489,7 +1545,7 @@ clrxclGetProgramInfo(cl_program         program,
             cl_program prog;
             {
                 std::lock_guard<std::mutex> lock(p->mutex);
-                prog = (p->asmState!=CLRXAsmState::NONE) ? p->amdOclAsmProgram :
+                prog = (p->asmState.load()!=CLRXAsmState::NONE) ? p->amdOclAsmProgram :
                             p->amdOclProgram;
             }
             return p->amdOclProgram->
@@ -1523,7 +1579,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
     try
     {
     std::unique_lock<std::mutex> lock(p->mutex);
-    if (p->asmState==CLRXAsmState::NONE)
+    if (p->asmState.load() == CLRXAsmState::NONE)
     {
         lock.unlock();
         return p->amdOclProgram->dispatch->clGetProgramBuildInfo(p->amdOclProgram,
@@ -1547,7 +1603,9 @@ clrxclGetProgramBuildInfo(cl_program            program,
                     *reinterpret_cast<cl_build_status*>(param_value) =
                             p->asmProgEntries[devId].status;
                 else // if not
-                    *reinterpret_cast<cl_build_status*>(param_value) = CL_BUILD_NONE;
+                    *reinterpret_cast<cl_build_status*>(param_value) =
+                            (p->asmState.load() == CLRXAsmState::IN_PROGRESS) ?
+                            CL_BUILD_IN_PROGRESS : CL_BUILD_NONE;
             }
             if (param_value_size_ret != nullptr)
                 *param_value_size_ret = sizeof(cl_build_status);

@@ -27,10 +27,10 @@
 #include <mutex>
 #include <cstring>
 #include <string>
-#include <atomic>
 #include <climits>
 #include <cstdint>
 #include <cstddef>
+//#include <unistd.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
@@ -1195,7 +1195,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     if (program->assocDevicesNum == 0)
         return CL_SUCCESS;
     
-    cl_program amdProg = (program->asmState != CLRXAsmState::NONE) ?
+    cl_program amdProg = (program->asmState.load() != CLRXAsmState::NONE) ?
             program->amdOclAsmProgram : program->amdOclProgram;
 #ifdef CL_VERSION_1_2
     cl_program_binary_type ptype;
@@ -1359,7 +1359,7 @@ void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
 
 void clrxClearProgramAsmState(CLRXProgram* p)
 {
-    p->asmState = CLRXAsmState::NONE;
+    p->asmState.store(CLRXAsmState::NONE);
     if (p->amdOclAsmProgram != nullptr)
     {
         if (p->amdOclProgram->dispatch->clReleaseProgram(
@@ -1488,8 +1488,11 @@ try
     size_t sourceCodeSize;
     std::unique_ptr<char[]> sourceCode;
     const cl_program amdp = program->amdOclProgram;
-    program->asmState = CLRXAsmState::IN_PROGRESS;
-    program->asmProgEntries.reset();
+    {
+        std::lock_guard<std::mutex> clock(program->mutex);
+        program->asmState.store(CLRXAsmState::IN_PROGRESS);
+        program->asmProgEntries.reset();
+    }
     
     cl_int error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE,
                     0, nullptr, &sourceCodeSize);
@@ -1500,7 +1503,7 @@ try
     }
     if (sourceCodeSize==0)
     {
-        program->asmState = CLRXAsmState::FAILED;
+        program->asmState.store(CLRXAsmState::FAILED);
         return CL_INVALID_OPERATION;
     }
     
@@ -1567,25 +1570,25 @@ try
                 nextIsLang = true;
             else if (word != "-xasm")
             {   // if not language selection to asm
-                program->asmState = CLRXAsmState::FAILED;
+                program->asmState.store(CLRXAsmState::FAILED);
                 return CL_INVALID_BUILD_OPTIONS;
             }
         }
         else
         {
-            program->asmState = CLRXAsmState::FAILED;
+            program->asmState.store(CLRXAsmState::FAILED);
             return CL_INVALID_BUILD_OPTIONS;
         }
     }
     if (nextIsDefSym || nextIsIncludePath || nextIsLang)
     {
-        program->asmState = CLRXAsmState::FAILED;
-            return CL_INVALID_BUILD_OPTIONS;
+        program->asmState.store(CLRXAsmState::FAILED);
+        return CL_INVALID_BUILD_OPTIONS;
     }
     } // error
     catch(const Exception& ex)
     {
-        program->asmState = CLRXAsmState::FAILED;
+        program->asmState.store(CLRXAsmState::FAILED);
         return CL_INVALID_BUILD_OPTIONS;
     }
     
@@ -1622,6 +1625,8 @@ try
     {
         const auto& entry = outDeviceIndexMap[i];
         ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
+        
+        //sleep(1);
         
         // get device type
         size_t devNameSize;
@@ -1754,7 +1759,7 @@ try
                     binaryStatuses.get(), &error);
         if (newAmdAsmP==nullptr)
         {   // return error
-            program->asmState = CLRXAsmState::FAILED;
+            program->asmState.store(CLRXAsmState::FAILED);
             return error;
         }
         /// and build (errorLast holds last error to be returned)
@@ -1807,13 +1812,13 @@ try
     for (cxuint i = 0; i < devicesNum; i++)
         program->asmProgEntries[asmDevOrders[i]] = std::move(progDeviceEntries[i]);
     program->asmOptions = compilerOptions;
-    program->asmState = (errorLast!=CL_SUCCESS) ?
-                CLRXAsmState::FAILED : CLRXAsmState::SUCCESS;
+    program->asmState.store((errorLast!=CL_SUCCESS) ?
+                CLRXAsmState::FAILED : CLRXAsmState::SUCCESS);
     return errorLast;
 }
 catch(const std::bad_alloc& ex)
 {
-    program->asmState = CLRXAsmState::FAILED;
+    program->asmState.store(CLRXAsmState::FAILED);
     return CL_OUT_OF_HOST_MEMORY;
 }
 catch(const std::exception& ex)
