@@ -30,7 +30,6 @@
 #include <climits>
 #include <cstdint>
 #include <cstddef>
-//#include <unistd.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
@@ -1625,9 +1624,6 @@ try
     {
         const auto& entry = outDeviceIndexMap[i];
         ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
-        
-        //sleep(1);
-        
         // get device type
         size_t devNameSize;
         std::unique_ptr<char[]> devName;
@@ -1729,14 +1725,12 @@ try
     /* set program binaries in order of original devices list */
     std::unique_ptr<size_t[]> programBinSizes(new size_t[devicesNum]);
     std::unique_ptr<cxbyte*[] > programBinaries(new cxbyte*[devicesNum]);
-    std::unique_ptr<cxuint[]> outDeviceOrders(new cxuint[devicesNum]);
     
     cxuint compiledNum = 0;
     std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
     for (cxuint i = 0; i < devicesNum; i++)
         if (compiledProgBins[i])
         {   // update from new compiled program binaries if binary exists
-            outDeviceOrders[i] = compiledNum;
             amdDevices[compiledNum] = devices[i]->amdOclDevice;
             programBinSizes[compiledNum] = compiledProgBins[i]->binary.size();
             programBinaries[compiledNum++] = compiledProgBins[i]->binary.data();
@@ -1787,6 +1781,11 @@ try
     
     program->amdOclAsmProgram = newAmdAsmP;
     clrxUpdateProgramAssocDevices(program); /// update associated devices
+    if (compiledNum!=program->assocDevicesNum)
+    {
+        std::cerr << "Fatal error: assocDevicesNum!=compiledNum" << std::endl;
+        abort();
+    }
     if (compiledNum!=devicesNum)
     {   // and add extra devices (failed) to list
         std::unique_ptr<CLRXDevice*[]> newAssocDevices(new CLRXDevice*[devicesNum]);
@@ -1798,7 +1797,7 @@ try
         program->assocDevicesNum = devicesNum;
     }
     /// create order of devices in associated devices list
-    std::unique_ptr<cxuint[]> asmDevOrders(new cxuint[program->assocDevicesNum]);
+    std::unique_ptr<cxuint[]> asmDevOrders(new cxuint[devicesNum]);
     if (genDeviceOrder(program->assocDevicesNum,
            (const cl_device_id*)program->assocDevices.get(), devicesNum,
            (const cl_device_id*)sortedDevs.get(), asmDevOrders.get()) != CL_SUCCESS)
