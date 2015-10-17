@@ -1547,13 +1547,36 @@ try
     const bool is64Bit = parseEnvVariable<bool>("GPU_FORCE_64BIT_PTR");
     
     /* compiling programs */
-    typedef std::pair<cl_device_id, cl_device_id> OutDevEntry;
+    struct OutDevEntry {
+        cl_device_id first, second;
+        CString devName;
+    };
     Array<OutDevEntry> outDeviceIndexMap(devicesNum);
     
     for (cxuint i = 0; i < devicesNum; i++)
-        outDeviceIndexMap[i] = { devices[i], devices[i]->amdOclDevice };
-    /// sort devices
-    mapSort(outDeviceIndexMap.begin(), outDeviceIndexMap.end());
+    {
+        size_t devNameSize;
+        std::unique_ptr<char[]> devName;
+        error = amdp->dispatch->clGetDeviceInfo(devices[i]->amdOclDevice, CL_DEVICE_NAME,
+                        0, nullptr, &devNameSize);
+        if (error!=CL_SUCCESS)
+            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
+        devName.reset(new char[devNameSize]);
+        error = amdp->dispatch->clGetDeviceInfo(devices[i]->amdOclDevice, CL_DEVICE_NAME,
+                                  devNameSize, devName.get(), nullptr);
+        if (error!=CL_SUCCESS)
+            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
+        outDeviceIndexMap[i] = { devices[i], devices[i]->amdOclDevice, devName.get() };
+    }
+    /// sort devices by name and cl_device_id
+    std::sort(outDeviceIndexMap.begin(), outDeviceIndexMap.end(),
+            [](const OutDevEntry& a, const OutDevEntry& b)
+            { 
+                int ret = a.devName.compare(b.devName);
+                if (ret<0) return true;
+                if (ret>0) return false;
+                return (a.first<b.first);
+            });
     /// remove obsolete duplicates of devices
     devicesNum = std::unique(outDeviceIndexMap.begin(), outDeviceIndexMap.end(),
                 [](const OutDevEntry& a, const OutDevEntry& b)
@@ -1577,21 +1600,9 @@ try
     {
         const auto& entry = outDeviceIndexMap[i];
         ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
-        // get device type
-        size_t devNameSize;
-        std::unique_ptr<char[]> devName;
-        error = amdp->dispatch->clGetDeviceInfo(entry.second, CL_DEVICE_NAME,
-                        0, nullptr, &devNameSize);
-        if (error!=CL_SUCCESS)
-            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
-        devName.reset(new char[devNameSize]);
-        error = amdp->dispatch->clGetDeviceInfo(entry.second, CL_DEVICE_NAME,
-                                  devNameSize, devName.get(), nullptr);
-        if (error!=CL_SUCCESS)
-            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
         GPUDeviceType devType;
         try
-        { devType = getGPUDeviceTypeFromName(devName.get()); }
+        { devType = getGPUDeviceTypeFromName(entry.devName.c_str()); }
         catch(const Exception& ex)
         {   // if assembler not available for this device
             progDevEntry.status = CL_BUILD_ERROR;
