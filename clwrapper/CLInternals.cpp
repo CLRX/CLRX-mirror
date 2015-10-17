@@ -1816,7 +1816,21 @@ try
     program->asmProgEntries.reset(new ProgDeviceEntry[program->assocDevicesNum]);
     /* move logs and build statuses to CLRX program structure */
     for (cxuint i = 0; i < devicesNum; i++)
-        program->asmProgEntries[asmDevOrders[i]] = std::move(progDeviceEntries[i]);
+    {
+        ProgDeviceEntry& progDevEntry = program->asmProgEntries[asmDevOrders[i]];
+        progDevEntry = std::move(progDeviceEntries[i]);
+        if (progDevEntry.status == CL_BUILD_SUCCESS)
+        {   // get real device status from original implementation
+            if (amdp->dispatch->clGetProgramBuildInfo(newAmdAsmP,
+                    sortedDevs[i]->amdOclDevice, CL_PROGRAM_BUILD_STATUS,
+                    sizeof(cl_build_status), &progDevEntry.status, nullptr) != CL_SUCCESS)
+            {
+                std::cerr << "Fatal error at clGetProgramBuildInfo at "
+                            "clrxCompilerCall" << std::endl;
+                abort();
+            }
+        }
+    }
     program->asmOptions = compilerOptions;
     program->asmState.store((errorLast!=CL_SUCCESS) ?
                 CLRXAsmState::FAILED : CLRXAsmState::SUCCESS);
