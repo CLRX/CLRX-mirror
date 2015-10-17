@@ -1595,21 +1595,23 @@ try
     
     bool asmFailure = false;
     bool asmNotAvailable = false;
-    GPUDeviceType prevDeviceType = GPUDeviceType::CAPE_VERDE;    
+    cxuint prevDeviceType = -1;
     for (cxuint i = 0; i < devicesNum; i++)
     {
         const auto& entry = outDeviceIndexMap[i];
         ProgDeviceEntry& progDevEntry = progDeviceEntries[i];
-        GPUDeviceType devType;
+        cxuint devType = -1;
         try
-        { devType = getGPUDeviceTypeFromName(entry.devName.c_str()); }
+        { devType = cxuint(getGPUDeviceTypeFromName(entry.devName.c_str())); }
         catch(const Exception& ex)
         {   // if assembler not available for this device
             progDevEntry.status = CL_BUILD_ERROR;
             asmNotAvailable = true;
+            prevDeviceType = devType;
             continue;
         }
         
+        // make duplicate only if not first entry and if previous is not failed
         if (i!=0 && devType == prevDeviceType)
         {   // copy from previous device (if this same device type)
             compiledProgBins[i] = compiledProgBins[i-1];
@@ -1621,7 +1623,8 @@ try
         ArrayIStream astream(sourceCodeSize-1, sourceCode.get());
         std::vector<char> msgVector;
         VectorOStream msgStream(msgVector);
-        Assembler assembler("", astream, asmFlags, BinaryFormat::AMD, devType, msgStream);
+        Assembler assembler("", astream, asmFlags, BinaryFormat::AMD,
+                    GPUDeviceType(devType), msgStream);
         assembler.set64Bit(is64Bit);
         
         for (const CString& incPath: includePaths)
