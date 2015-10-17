@@ -1798,9 +1798,9 @@ try
     }
     /// create order of devices in associated devices list
     std::unique_ptr<cxuint[]> asmDevOrders(new cxuint[devicesNum]);
-    if (genDeviceOrder(program->assocDevicesNum,
-           (const cl_device_id*)program->assocDevices.get(), devicesNum,
-           (const cl_device_id*)sortedDevs.get(), asmDevOrders.get()) != CL_SUCCESS)
+    if (genDeviceOrder(devicesNum, (const cl_device_id*)sortedDevs.get(),
+            program->assocDevicesNum, (const cl_device_id*)program->assocDevices.get(),
+            asmDevOrders.get()) != CL_SUCCESS)
     {
         std::cerr << "Fatal error at genDeviceOrder at clrxCompilerCall" << std::endl;
         abort();
