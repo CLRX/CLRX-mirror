@@ -739,8 +739,8 @@ clrxclCompileProgram(cl_program           program,
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
+        clrxAbort("Fatal exception happened: ", ex.what());
+        return 1;
     }
 }
 
@@ -908,11 +908,7 @@ clrxclLinkProgram(cl_context           context,
         if (amdProgram != nullptr)
         {
             if (c->amdOclContext->dispatch->clReleaseProgram(amdProgram) != CL_SUCCESS)
-            {
-                std::cerr <<
-                    "Fatal Error at handling error at program linkage!" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal Error at handling error at program linkage!");
         }
         delete outProgram;
         delete wrappedData;
@@ -922,10 +918,7 @@ clrxclLinkProgram(cl_context           context,
         return nullptr;
     }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal exception happened: ", ex.what()); }
     
     return outProgram;
 }

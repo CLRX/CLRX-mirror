@@ -96,11 +96,7 @@ clrxclGetPlatformIDs(cl_uint          num_entries,
         if (amdOclGetPlatformIDs != nullptr)
             return amdOclGetPlatformIDs(num_entries, platforms, num_platforms);
         else
-        {
-            std::cerr << "Very strange error: clGetPlatformIDs is not yet initialized!" <<
-                    std::endl;
-            abort();
-        }
+            clrxAbort("Very strange error: clGetPlatformIDs is not yet initialized!");
     }
     
     if (num_platforms != nullptr)
@@ -202,15 +198,9 @@ clrxclGetDeviceIDs(cl_platform_id   platform,
     try
     { std::call_once(p->onceFlag, clrxPlatformInitializeDevices, p); }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal error at device initialization: " << ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal error at device initialization: ", ex.what()); }
     catch(...)
-    {
-        std::cerr << "Fatal and unknown error at device initialization" << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal and unknown error at device initialization"); }
     if (p->deviceInitStatus != CL_SUCCESS)
         return p->deviceInitStatus;
     
@@ -443,10 +433,7 @@ clrxclCreateContext(const cl_context_properties * properties,
     if (error != CL_SUCCESS)
     {   // release context
         if (d->amdOclDevice->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal Error at handling error at context creation!" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal Error at handling error at context creation!");
         if (errcode_ret != nullptr)
             *errcode_ret = error;
         return nullptr;
@@ -544,15 +531,9 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
         try
         { std::call_once(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
         catch(const std::exception& ex)
-        {
-            std::cerr << "Fatal error at device initialization: " << ex.what() << std::endl;
-            abort();
-        }
+        { clrxAbort("Fatal error at device initialization: ", ex.what()); }
         catch(...)
-        {
-            std::cerr << "Fatal and unknown error at device initialization" << std::endl;
-            abort();
-        }
+        { clrxAbort("Fatal and unknown error at device initialization"); }
         error = platform->deviceInitStatus;
         
         if (error == CL_SUCCESS)
@@ -569,10 +550,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
     if (error != CL_SUCCESS)
     {   // release context
         if (platform->amdOclPlatform->dispatch->clReleaseContext(amdContext) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal Error at handling error at context creation!" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal Error at handling error at context creation!");
         if (errcode_ret != nullptr)
             *errcode_ret = error;
         return nullptr;
@@ -976,11 +954,8 @@ clrxclGetMemObjectInfo(cl_mem           memobj,
                     else if (m->buffer != nullptr && m->buffer->amdOclMemObject != nullptr)
                         *outMem = m->buffer;
                     else
-                    {
-                        std::cerr << "Stupid AMD drivers "
-                                "(because returns invalid assocMemObject)!" << std::endl;
-                        abort();
-                    }
+                        clrxAbort("Stupid AMD drivers "
+                                "(because returns invalid assocMemObject)!");
                 }
             }
             break;
@@ -1224,10 +1199,7 @@ clrxclReleaseProgram(cl_program program) CL_API_SUFFIX__VERSION_1_0
                 doDelete = true;
         }
         catch(const std::exception& ex)
-        {
-            std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-            abort();
-        }
+        { clrxAbort("Fatal exception happened: ", ex.what()); }
     if (doDelete)
     {
         clrxReleaseOnlyCLRXContext(p->context);
@@ -1384,8 +1356,8 @@ clrxclBuildProgram(cl_program           program,
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
+        clrxAbort("Fatal exception happened: ", ex.what());
+        return -1;
     }
 }
 
@@ -1556,8 +1528,8 @@ clrxclGetProgramInfo(cl_program         program,
     }
     catch(const std::exception& ex)
     {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
+        clrxAbort("Fatal exception happened: ", ex.what());
+        return -1;
     }
 }
 
@@ -1651,10 +1623,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
     }
     }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal exception happened: ", ex.what()); }
     return CL_SUCCESS;
 }
 
@@ -1696,11 +1665,7 @@ clrxclCreateKernel(cl_program      program,
         if (status != CL_SUCCESS)
         {
             if (p->amdOclProgram->dispatch->clReleaseKernel(amdKernel) != CL_SUCCESS)
-            {
-                std::cerr <<
-                    "Fatal Error at handling error at kernel creation!" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal Error at handling error at kernel creation!");
             if (errcode_ret != nullptr)
                 *errcode_ret = status;
             return nullptr;
@@ -1710,30 +1675,20 @@ clrxclCreateKernel(cl_program      program,
             CLRX::binaryMapFind(p->kernelArgFlagsMap.begin(), p->kernelArgFlagsMap.end(),
                               kernel_name);
         if (argFlagMapIt == p->kernelArgFlagsMap.end())
-        {
-            std::cerr << "Can't find kernel arg flag!" << std::endl;
-            abort();
-        }
+            clrxAbort("Can't find kernel arg flag!");
         outKernel = new CLRXKernel(argFlagMapIt->second);
         p->kernelsAttached++;
     }
     catch(const std::bad_alloc& ex)
     {
         if (p->amdOclProgram->dispatch->clReleaseKernel(amdKernel) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal Error at handling error at kernel creation!" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal Error at handling error at kernel creation!");
         if (errcode_ret != nullptr)
             *errcode_ret = CL_OUT_OF_HOST_MEMORY;
         return nullptr;
     }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal Error at handling error at kernel creation: " <<
-                    ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal Error at handling error at kernel creation: ", ex.what()); }
     
     outKernel->dispatch = p->dispatch;
     outKernel->amdOclKernel = amdKernel;
@@ -1789,11 +1744,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 for (cl_uint i = 0; i < kernelsToCreate; i++)
                     if (p->amdOclProgram->dispatch->
                         clReleaseKernel(kernels[i]) != CL_SUCCESS)
-                    {
-                        std::cerr << "Fatal Error at handling "
-                            "error at kernel creation!" << std::endl;
-                        abort();
-                    }
+                        clrxAbort("Fatal Error at handling error at kernel creation!");
             }
             return status;
         }
@@ -1806,10 +1757,7 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 cl_int status = kernels[kp]->dispatch->clGetKernelInfo(
                         kernels[kp], CL_KERNEL_FUNCTION_NAME, 0, nullptr, &kernelNameSize);
                 if (status != CL_SUCCESS)
-                {
-                    std::cerr << "Can't get kernel function name" << std::endl;
-                    abort();
-                }
+                    clrxAbort("Can't get kernel function name");
                 if (kernelName == nullptr ||
                     (kernelName != nullptr && kernelNameSize > maxKernelNameSize))
                 {
@@ -1820,19 +1768,13 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 status = kernels[kp]->dispatch->clGetKernelInfo(kernels[kp],
                         CL_KERNEL_FUNCTION_NAME, kernelNameSize, kernelName.get(), nullptr);
                 if (status != CL_SUCCESS)
-                {
-                    std::cerr << "Can't get kernel function name" << std::endl;
-                    abort();
-                }
+                    clrxAbort("Can't get kernel function name");
                 
                 CLRXKernelArgFlagMap::const_iterator argFlagMapIt =
                     CLRX::binaryMapFind(p->kernelArgFlagsMap.begin(),
                         p->kernelArgFlagsMap.end(), kernelName.get());
                 if (argFlagMapIt == p->kernelArgFlagsMap.end())
-                {
-                    std::cerr << "Can't find kernel arg flag!" << std::endl;
-                    abort();
-                }
+                    clrxAbort("Can't find kernel arg flag!");
                 
                 CLRXKernel* outKernel = new CLRXKernel(argFlagMapIt->second);
                 outKernel->dispatch = p->dispatch;
@@ -1856,20 +1798,12 @@ clrxclCreateKernelsInProgram(cl_program     program,
             // freeing original kernels
             for (cl_uint i = 0; i < kernelsToCreate; i++)
                 if (p->amdOclProgram->dispatch->clReleaseKernel(kernels[i]) != CL_SUCCESS)
-                {
-                    std::cerr <<
-                        "Fatal Error at handling error at kernel creation!" << std::endl;
-                    abort();
-                }
+                    clrxAbort("Fatal Error at handling error at kernel creation!");
         }
         return CL_OUT_OF_HOST_MEMORY;
     }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal Error at handling error at kernel creation: " <<
-                    ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal Error at handling error at kernel creation: ", ex.what()); }
     
     if (num_kernels_ret != nullptr)
         *num_kernels_ret = numKernelsOut;
@@ -1913,10 +1847,7 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
             }
     }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal Error at releasing kernel: " << ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal Error at releasing kernel: ", ex.what()); }
     if (doDelete)
     {   // release program and delete kernel
         clrxReleaseOnlyCLRXProgram(k->program);

@@ -1296,15 +1296,9 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
         try
         { std::call_once(platform->onceFlag, clrxPlatformInitializeDevices, platform); }
         catch(const std::exception& ex)
-        {
-            std::cerr << "Fatal error at device initialization: " << ex.what() << std::endl;
-            abort();
-        }
+        { clrxAbort("Fatal error at device initialization: ", ex.what()); }
         catch(...)
-        {
-            std::cerr << "Fatal and unknown error at device initialization" << std::endl;
-            abort();
-        }
+        { clrxAbort("Fatal and unknown error at device initialization"); }
         if (platform->deviceInitStatus != CL_SUCCESS)
             return platform->deviceInitStatus;
         

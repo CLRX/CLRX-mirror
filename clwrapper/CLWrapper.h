@@ -504,6 +504,9 @@ CLRX_INTERNAL bool detectCLRXCompilerCall(const char* compilerOptions);
 CLRX_INTERNAL cl_int clrxCompilerCall(CLRXProgram* program, const char* compilerOptions,
             cl_uint devicesNum, CLRXDevice* const* devices);
 
+CLRX_INTERNAL void clrxAbort(const char* abortStr);
+CLRX_INTERNAL void clrxAbort(const char* abortStr, const char* exStr);
+
 /* internal macros */
 #define CLRX_INITIALIZE \
     { \

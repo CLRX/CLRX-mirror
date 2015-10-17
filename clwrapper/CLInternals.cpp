@@ -247,6 +247,18 @@ const CLRXIcdDispatch clrxDispatchRecord =
 #endif
 } };
 
+void clrxAbort(const char* abortStr)
+{
+    std::cerr << abortStr << std::endl;
+    abort();
+}
+
+CLRX_INTERNAL void clrxAbort(const char* abortStr, const char* exStr)
+{
+    std::cerr << abortStr << exStr << std::endl;
+    abort();
+}
+
 void clrxReleaseOnlyCLRXDevice(CLRXDevice* device)
 {
     if (device->parent != nullptr)
@@ -508,10 +520,7 @@ struct ManCLContext
     {
         if (clContext != nullptr)
             if (clContext->dispatch->clReleaseContext(clContext) != CL_SUCCESS)
-            {
-                std::cerr << "Can't release amdOfflineContext!" << std::endl;
-                abort();
-            }
+                clrxAbort("Can't release amdOfflineContext!");
     }
     cl_context operator()()
     { return clContext; }
@@ -778,10 +787,7 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
                 }
                 
             if (j == allDevicesNum)
-            {
-                std::cerr << "Fatal error at translating AMD devices" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal error at translating AMD devices");
         }
     }
     else if(amdDevicesNum != 0) // sorting
@@ -801,10 +807,7 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
             if (found != newEnd)
                 amdDevices[i] = (cl_device_id)(*found);
             else
-            {
-                std::cerr << "Fatal error at translating AMD devices" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal error at translating AMD devices");
         }
     }
 }
@@ -926,10 +929,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
                 CLRXProgramDevicesMap::const_iterator found =
                         p->transDevicesMap->find(amdAssocDevices[i]);
                 if (found == p->transDevicesMap->end())
-                {
-                    std::cerr << "Fatal error at translating AMD devices" << std::endl;
-                    abort();
-                }
+                    clrxAbort("Fatal error at translating AMD devices");
                 amdAssocDevices[i] = found->second;
             }
         else
@@ -958,10 +958,7 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
         {   // do it if not done in clBuildProgram
             const cl_int newStatus = clrxUpdateProgramAssocDevices(p);
             if (newStatus != CL_SUCCESS)
-            {
-                std::cerr << "Fatal error: cant update programAssocDevices" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal error: cant update programAssocDevices");
             clrxReleaseConcurrentBuild(p);
         }
         wrappedDataPtr->callDone = true;
@@ -972,10 +969,7 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
         }
     }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal exception happened: ", ex.what()); }
     
     // must be called only once (freeing wrapped data)
     wrappedData.realNotify(wrappedData.clrxProgram, wrappedData.realUserData);
@@ -1014,15 +1008,9 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
         realUserData = wrappedDataPtr->realUserData;
     }
     catch(std::bad_alloc& ex)
-    {
-        std::cerr << "Out of memory on link callback" << std::endl;
-        abort();
-    }
+    { clrxAbort("Out of memory on link callback"); }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal exception happened: " << ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal exception happened: ", ex.what()); }
     
     void (*realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
     if (!initializedByCallback) // if not initialized by this callback to delete
@@ -1054,10 +1042,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
     {
         delete outProgram;
         if (c->amdOclContext->dispatch->clReleaseProgram(amdProgram) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal Error at handling error at program creation!" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal Error at handling error at program creation!");
         if (errcode_ret != nullptr)
             *errcode_ret = error;
         return nullptr;
@@ -1085,11 +1070,7 @@ cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
         catch (const std::bad_alloc& ex)
         {
             if (q->amdOclCommandQueue->dispatch->clReleaseEvent(amdEvent) != CL_SUCCESS)
-            {
-                std::cerr <<
-                    "Fatal Error at handling error at apply event!" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal Error at handling error at apply event!");
             return CL_OUT_OF_HOST_MEMORY;
         }
         clrxRetainOnlyCLRXContext(q->context);
@@ -1140,10 +1121,7 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
         for (cl_uint i = 0; i < devicesNum; i++)
         {
             if (AMDReleaseDevice(out_devices[i]) != CL_SUCCESS)
-            {
-                std::cerr << fatalErrorMessage << std::endl;
-                abort();
-            }
+                clrxAbort(fatalErrorMessage);
         }
         return CL_OUT_OF_HOST_MEMORY;
     }
@@ -1202,10 +1180,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
         amdProg, program->assocDevices[0]->amdOclDevice,
         CL_PROGRAM_BINARY_TYPE, sizeof(cl_program_binary_type), &ptype, nullptr);
     if (status != CL_SUCCESS)
-    {
-        std::cerr << "Can't get program binary type" << std::endl;
-        abort();
-    }
+        clrxAbort("Can't get program binary type");
     
     if (ptype != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
         return CL_SUCCESS; // do nothing if not executable
@@ -1222,10 +1197,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 CL_PROGRAM_BINARY_SIZES, sizeof(size_t)*program->assocDevicesNum,
                 binarySizes.data(), nullptr);
         if (status != CL_SUCCESS)
-        {
-            std::cerr << "Can't get program binary sizes!" << std::endl;
-            abort();
-        }
+            clrxAbort("Can't get program binary sizes!");
         
         binaries.reset(new std::unique_ptr<unsigned char[]>[program->assocDevicesNum]);
         
@@ -1237,10 +1209,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 CL_PROGRAM_BINARIES, sizeof(char*)*program->assocDevicesNum,
                 (unsigned char**)binaries.get(), nullptr);
         if (status != CL_SUCCESS)
-        {
-            std::cerr << "Can't get program binaries!" << std::endl;
-            abort();
-        }
+            clrxAbort("Can't get program binaries!");
         /* get kernel arg info from all binaries */
         for (cl_uint i = 0; i < program->assocDevicesNum; i++)
         {
@@ -1298,11 +1267,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     catch(const std::bad_alloc& ex)
     { return CL_OUT_OF_HOST_MEMORY; }
     catch(const std::exception& ex)
-    {
-        std::cerr << "Fatal error at kernelArgFlagsMap creation: " <<
-                ex.what() << std::endl;
-        abort();
-    }
+    { clrxAbort("Fatal error at kernelArgFlagsMap creation: ", ex.what()); }
     
     program->kernelArgFlagsInitialized = true;
     return CL_SUCCESS;
@@ -1348,10 +1313,7 @@ void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
         if (program->amdOclAsmProgram!=nullptr)
             if (program->amdOclProgram->dispatch->clReleaseProgram(
                         program->amdOclAsmProgram) != CL_SUCCESS)
-            {
-                std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
-                abort(); // fatal error!!!
-            }
+                clrxAbort("Fatal error on clReleaseProgram(amdProg)");
         delete program;
     }
 }
@@ -1363,10 +1325,7 @@ void clrxClearProgramAsmState(CLRXProgram* p)
     {
         if (p->amdOclProgram->dispatch->clReleaseProgram(
             p->amdOclAsmProgram) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal error on clReleaseProgram(amdProg)");
     }
     p->amdOclAsmProgram = nullptr;
     p->asmProgEntries.reset();
@@ -1496,10 +1455,7 @@ try
     cl_int error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE,
                     0, nullptr, &sourceCodeSize);
     if (error!=CL_SUCCESS)
-    {
-        std::cerr << "Fatal error from clGetProgramInfo in clrxCompilerCall" << std::endl;
-        abort();
-    }
+        clrxAbort("Fatal error from clGetProgramInfo in clrxCompilerCall");
     if (sourceCodeSize==0)
     {
         program->asmState.store(CLRXAsmState::FAILED);
@@ -1510,10 +1466,7 @@ try
     error = amdp->dispatch->clGetProgramInfo(amdp, CL_PROGRAM_SOURCE, sourceCodeSize,
                              sourceCode.get(), nullptr);
     if (error!=CL_SUCCESS)
-    {
-        std::cerr << "Fatal error from clGetProgramInfo in clrxCompilerCall" << std::endl;
-        abort();
-    }
+        clrxAbort("Fatal error from clGetProgramInfo in clrxCompilerCall");
     
     Flags asmFlags = ASM_WARNINGS;
     // parsing compile options
@@ -1630,18 +1583,12 @@ try
         error = amdp->dispatch->clGetDeviceInfo(entry.second, CL_DEVICE_NAME,
                         0, nullptr, &devNameSize);
         if (error!=CL_SUCCESS)
-        {
-            std::cerr << "Fatal error at clCompilerCall (clGetDeviceInfo)" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
         devName.reset(new char[devNameSize]);
         error = amdp->dispatch->clGetDeviceInfo(entry.second, CL_DEVICE_NAME,
                                   devNameSize, devName.get(), nullptr);
         if (error!=CL_SUCCESS)
-        {
-            std::cerr << "Fatal error at clCompilerCall (clGetDeviceInfo)" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
         GPUDeviceType devType;
         try
         { devType = getGPUDeviceTypeFromName(devName.get()); }
@@ -1777,10 +1724,7 @@ try
     if (program->amdOclAsmProgram!=nullptr)
     { // release old asm program
         if (amdp->dispatch->clReleaseProgram(program->amdOclAsmProgram) != CL_SUCCESS)
-        {
-            std::cerr << "Fatal error on clReleaseProgram(amdProg)" << std::endl;
-            abort();
-        }
+            clrxAbort("Fatal error on clReleaseProgram(amdProg)");
         program->amdOclAsmProgram = nullptr;
     }
     
@@ -1788,11 +1732,7 @@ try
     if (compiledNum!=0)
         clrxUpdateProgramAssocDevices(program); /// update associated devices
     if (compiledNum!=program->assocDevicesNum)
-    {
-        std::cerr << "Fatal error: " << program->assocDevicesNum << "!=" <<
-                    compiledNum << std::endl;
-        abort();
-    }
+        clrxAbort("Fatal error: compiledNum!=program->assocDevicesNum");
     if (compiledNum!=devicesNum)
     {   // and add extra devices (failed) to list
         std::unique_ptr<CLRXDevice*[]> newAssocDevices(new CLRXDevice*[devicesNum]);
@@ -1808,10 +1748,7 @@ try
     if (genDeviceOrder(devicesNum, (const cl_device_id*)sortedDevs.get(),
             program->assocDevicesNum, (const cl_device_id*)program->assocDevices.get(),
             asmDevOrders.get()) != CL_SUCCESS)
-    {
-        std::cerr << "Fatal error at genDeviceOrder at clrxCompilerCall" << std::endl;
-        abort();
-    }
+        clrxAbort("Fatal error at genDeviceOrder at clrxCompilerCall");
     /// set up progDevice entry (contains log and build_status)
     program->asmProgEntries.reset(new ProgDeviceEntry[program->assocDevicesNum]);
     /* move logs and build statuses to CLRX program structure */
@@ -1824,11 +1761,7 @@ try
             if (amdp->dispatch->clGetProgramBuildInfo(newAmdAsmP,
                     sortedDevs[i]->amdOclDevice, CL_PROGRAM_BUILD_STATUS,
                     sizeof(cl_build_status), &progDevEntry.status, nullptr) != CL_SUCCESS)
-            {
-                std::cerr << "Fatal error at clGetProgramBuildInfo at "
-                            "clrxCompilerCall" << std::endl;
-                abort();
-            }
+                clrxAbort("Fatal error at clGetProgramBuildInfo at clrxCompilerCall");
         }
     }
     program->asmOptions = compilerOptions;
@@ -1843,7 +1776,6 @@ catch(const std::bad_alloc& ex)
 }
 catch(const std::exception& ex)
 {
-    std::cerr << "Fatal error at CLRX compiler call:" <<
-                ex.what() << std::endl;
-    abort();
+    clrxAbort("Fatal error at CLRX compiler call:", ex.what());
+    return -1;
 }
