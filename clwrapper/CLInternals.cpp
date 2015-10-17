@@ -1610,9 +1610,9 @@ try
     std::unique_ptr<ProgDeviceEntry[]> progDeviceEntries(new ProgDeviceEntry[devicesNum]);
     Array<RefPtr<CLProgBinEntry> > compiledProgBins(devicesNum);
     /// sorted devices
-    std::unique_ptr<cl_device_id[]> sortedDevs(new cl_device_id[devicesNum]);
+    std::unique_ptr<CLRXDevice*[]> sortedDevs(new CLRXDevice*[devicesNum]);
     for (cxuint i = 0; i < devicesNum; i++)
-        sortedDevs[i] = outDeviceIndexMap[i].first;
+        sortedDevs[i] = (CLRXDevice*)(outDeviceIndexMap[i].first);
     // initialize build state to in_progress
     for (cxuint i = 0; i < devicesNum; i++)
         progDeviceEntries[i].status = CL_BUILD_IN_PROGRESS;
@@ -1731,7 +1731,7 @@ try
     for (cxuint i = 0; i < devicesNum; i++)
         if (compiledProgBins[i])
         {   // update from new compiled program binaries if binary exists
-            amdDevices[compiledNum] = devices[i]->amdOclDevice;
+            amdDevices[compiledNum] = sortedDevs[i]->amdOclDevice;
             programBinSizes[compiledNum] = compiledProgBins[i]->binary.size();
             programBinaries[compiledNum++] = compiledProgBins[i]->binary.data();
         }
@@ -1739,8 +1739,8 @@ try
     cxuint j = 0;
     for (cxuint i = 0; i < devicesNum; i++)
         if (!compiledProgBins[i])   /// creating failed devices table
-            failedDevices[j++] = devices[i];
-    
+            failedDevices[j++] = sortedDevs[i];
+        
     cl_program newAmdAsmP = nullptr;
     cl_int errorLast = CL_SUCCESS;
     if (compiledNum != 0)
@@ -1759,6 +1759,11 @@ try
         /// and build (errorLast holds last error to be returned)
         errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, compiledNum,
                           amdDevices.get(), "", nullptr, nullptr);
+    }
+    else
+    {
+        program->assocDevicesNum = 0;
+        program->assocDevices.reset();
     }
     if (errorLast == CL_SUCCESS)
     {   // resolve errorLast if build program succeeded
@@ -1780,10 +1785,12 @@ try
     }
     
     program->amdOclAsmProgram = newAmdAsmP;
-    clrxUpdateProgramAssocDevices(program); /// update associated devices
+    if (compiledNum!=0)
+        clrxUpdateProgramAssocDevices(program); /// update associated devices
     if (compiledNum!=program->assocDevicesNum)
     {
-        std::cerr << "Fatal error: assocDevicesNum!=compiledNum" << std::endl;
+        std::cerr << "Fatal error: " << program->assocDevicesNum << "!=" <<
+                    compiledNum << std::endl;
         abort();
     }
     if (compiledNum!=devicesNum)
