@@ -1611,7 +1611,7 @@ try
             continue;
         }
         
-        // make duplicate only if not first entry and if previous is not failed
+        // make duplicate only if not first entry
         if (i!=0 && devType == prevDeviceType)
         {   // copy from previous device (if this same device type)
             compiledProgBins[i] = compiledProgBins[i-1];
@@ -1619,10 +1619,10 @@ try
             continue; // skip if this same architecture
         }
         prevDeviceType = devType;
-        // compile
+        // assemble it
         ArrayIStream astream(sourceCodeSize-1, sourceCode.get());
-        std::vector<char> msgVector;
-        VectorOStream msgStream(msgVector);
+        std::string msgString;
+        StringOStream msgStream(msgString);
         Assembler assembler("", astream, asmFlags, BinaryFormat::AMD,
                     GPUDeviceType(devType), msgStream);
         assembler.set64Bit(is64Bit);
@@ -1631,21 +1631,21 @@ try
             assembler.addIncludeDir(incPath);
         for (const auto& defSym: defSyms)
             assembler.addInitialDefSym(defSym.first, defSym.second);
-        /// assemble
+        /// call main assembler routine
         bool good = false;
         try
         { good = assembler.assemble(); }
         catch(...)
         {   // if failed
             progDevEntry.log = RefPtr<CLProgLogEntry>(
-                            new CLProgLogEntry(std::move(msgVector)));
+                            new CLProgLogEntry(std::move(msgString)));
             progDevEntry.status = CL_BUILD_ERROR;
             asmFailure = true;
-            throw;
+            continue;
         }
         /// set up logs
         progDevEntry.log = RefPtr<CLProgLogEntry>(
-                            new CLProgLogEntry(std::move(msgVector)));
+                            new CLProgLogEntry(std::move(msgString)));
         
         if (good)
         {
@@ -1669,10 +1669,9 @@ try
             }
             catch(const Exception& ex)
             {   // if exception during writing binary
-                msgVector.insert(msgVector.end(), ex.what(),
-                                 ex.what()+::strlen(ex.what())+1);
+                msgString.append(ex.what());
                 progDevEntry.log = RefPtr<CLProgLogEntry>(
-                            new CLProgLogEntry(std::move(msgVector)));
+                            new CLProgLogEntry(std::move(msgString)));
                 progDevEntry.status = CL_BUILD_ERROR;
                 asmFailure = true;
             }
@@ -1691,7 +1690,7 @@ try
     std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
     for (cxuint i = 0; i < devicesNum; i++)
         if (compiledProgBins[i])
-        {   // update from new compiled program binaries if binary exists
+        {   // set program binaries for creating and building assembler program
             amdDevices[compiledNum] = sortedDevs[i]->amdOclDevice;
             programBinSizes[compiledNum] = compiledProgBins[i]->binary.size();
             programBinaries[compiledNum++] = compiledProgBins[i]->binary.data();

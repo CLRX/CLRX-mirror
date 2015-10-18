@@ -1604,11 +1604,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
                 if (param_value_size < logSize)
                     return CL_INVALID_VALUE;
                 if (p->asmProgEntries && p->asmProgEntries[devId].log && logSize!=1)
-                {
-                    memcpy((char*)param_value,
-                           p->asmProgEntries[devId].log->log.data(), logSize-1);
-                    ((cxbyte*)param_value)[logSize-1] = 0;
-                }
+                    strcpy((char*)param_value, p->asmProgEntries[devId].log->log.c_str());
                 else
                     ((cxbyte*)param_value)[0] = 0;
             }

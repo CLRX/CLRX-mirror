@@ -260,10 +260,10 @@ typedef CLRX::Array<std::pair<CLRX::CString, std::vector<bool> > > CLRXKernelArg
 
 struct CLRX_INTERNAL CLProgLogEntry: public CLRX::FastRefCountable
 {
-    std::vector<char> log;
+    std::string log;
     CLProgLogEntry() { }
-    CLProgLogEntry(const std::vector<char>& _log) : log(_log) { }
-    CLProgLogEntry(std::vector<char>&& _log) noexcept
+    CLProgLogEntry(const std::string& _log) : log(_log) { }
+    CLProgLogEntry(std::string&& _log) noexcept
             : log(std::move(_log)) { }
 };
 
