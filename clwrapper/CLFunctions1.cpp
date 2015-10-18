@@ -1467,7 +1467,7 @@ clrxclGetProgramInfo(cl_program         program,
                 {
                     if (param_value_size < expectedSize)
                         return CL_INVALID_VALUE;
-                    size_t outSize;
+                    size_t outSize = 0;
                     if (p->amdOclAsmProgram!=nullptr)
                     {
                         cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
@@ -1497,14 +1497,13 @@ clrxclGetProgramInfo(cl_program         program,
                 size_t expectedSize = sizeof(unsigned char*)*p->assocDevicesNum;
                 if (param_value!=nullptr)
                 {
-                    size_t outSize;
                     if (param_value_size < expectedSize)
                         return CL_INVALID_VALUE;
                     if (p->amdOclAsmProgram!=nullptr)
                     {
                         cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
                                 p->amdOclAsmProgram, param_name,
-                                param_value_size, param_value, &outSize);
+                                param_value_size, param_value, nullptr);
                         if (error != CL_SUCCESS)
                             return error;
                     }
@@ -1840,7 +1839,7 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
         return CL_INVALID_KERNEL;
     CLRXKernel* k = static_cast<CLRXKernel*>(kernel);
     
-    cl_int status;
+    cl_int status = 0;
     bool doDelete = false;
     try
     {   // must be in clauses, because
