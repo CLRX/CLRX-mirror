@@ -1463,11 +1463,14 @@ clrxclGetProgramInfo(cl_program         program,
                     if (param_value_size < expectedSize)
                         return CL_INVALID_VALUE;
                     size_t outSize;
-                    cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
-                                p->amdOclAsmProgram, param_name,
-                                param_value_size, param_value, &outSize);
-                    if (error != CL_SUCCESS)
-                        return error;
+                    if (p->amdOclAsmProgram!=nullptr)
+                    {
+                        cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
+                                    p->amdOclAsmProgram, param_name,
+                                    param_value_size, param_value, &outSize);
+                        if (error != CL_SUCCESS)
+                            return error;
+                    }
                     /// zeroing entries for failed devices
                     if (outSize < expectedSize && param_value!=nullptr)
                         ::memset((char*)param_value+outSize, 0, expectedSize-outSize);
@@ -1492,11 +1495,14 @@ clrxclGetProgramInfo(cl_program         program,
                     size_t outSize;
                     if (param_value_size < expectedSize)
                         return CL_INVALID_VALUE;
-                    cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
+                    if (p->amdOclAsmProgram!=nullptr)
+                    {
+                        cl_int error = p->amdOclProgram->dispatch->clGetProgramInfo(
                                 p->amdOclAsmProgram, param_name,
                                 param_value_size, param_value, &outSize);
-                    if (error != CL_SUCCESS)
-                        return error;
+                        if (error != CL_SUCCESS)
+                            return error;
+                    }
                 }
                 /// set up output size
                 if (param_value_size_ret != nullptr)

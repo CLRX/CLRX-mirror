@@ -1746,6 +1746,7 @@ try
         clrxUpdateProgramAssocDevices(program); /// update associated devices
     if (compiledNum!=program->assocDevicesNum)
         clrxAbort("Fatal error: compiledNum!=program->assocDevicesNum");
+    
     if (compiledNum!=devicesNum)
     {   // and add extra devices (failed) to list
         std::unique_ptr<CLRXDevice*[]> newAssocDevices(new CLRXDevice*[devicesNum]);
