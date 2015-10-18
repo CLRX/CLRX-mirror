@@ -1610,7 +1610,6 @@ try
             prevDeviceType = devType;
             continue;
         }
-        
         // make duplicate only if not first entry
         if (i!=0 && devType == prevDeviceType)
         {   // copy from previous device (if this same device type)
@@ -1646,7 +1645,6 @@ try
         /// set up logs
         progDevEntry.log = RefPtr<CLProgLogEntry>(
                             new CLProgLogEntry(std::move(msgString)));
-        
         if (good)
         {
             try
@@ -1684,7 +1682,7 @@ try
     }
     /* set program binaries in order of original devices list */
     std::unique_ptr<size_t[]> programBinSizes(new size_t[devicesNum]);
-    std::unique_ptr<cxbyte*[] > programBinaries(new cxbyte*[devicesNum]);
+    std::unique_ptr<cxbyte*[]> programBinaries(new cxbyte*[devicesNum]);
     
     cxuint compiledNum = 0;
     std::unique_ptr<cl_device_id[]> amdDevices(new cl_device_id[devicesNum]);
@@ -1720,11 +1718,7 @@ try
         errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, compiledNum,
                           amdDevices.get(), "", nullptr, nullptr);
     }
-    else
-    {
-        program->assocDevicesNum = 0;
-        program->assocDevices.reset();
-    }
+    
     if (errorLast == CL_SUCCESS)
     {   // resolve errorLast if build program succeeded
         if (asmFailure)
@@ -1742,8 +1736,13 @@ try
     }
     
     program->amdOclAsmProgram = newAmdAsmP;
-    if (compiledNum!=0)
+    if (compiledNum!=0) // new amdAsm is set if least one device will have built program
         clrxUpdateProgramAssocDevices(program); /// update associated devices
+    else
+    {   // no new binaries no good (successful) associated devices
+        program->assocDevicesNum = 0;
+        program->assocDevices.reset();
+    }
     if (compiledNum!=program->assocDevicesNum)
         clrxAbort("Fatal error: compiledNum!=program->assocDevicesNum");
     

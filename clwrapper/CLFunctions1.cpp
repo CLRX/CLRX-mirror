@@ -1225,15 +1225,15 @@ clrxclBuildProgram(cl_program           program,
     
     CLRXProgram* p = static_cast<CLRXProgram*>(program);
     if (options!=nullptr && detectCLRXCompilerCall(options))
-    {   // call own compiler
-        {
+    try
+    {   {
             std::lock_guard<std::mutex> lock(p->mutex);
             if (p->kernelsAttached != 0) // if kernels attached
                 return CL_INVALID_OPERATION;
             p->concurrentBuilds++;
             p->kernelArgFlagsInitialized = false;
         }
-        
+        // call own compiler
         cl_int error = clrxCompilerCall(p, options, num_devices,
                             (CLRXDevice* const*)device_list);
         if (pfn_notify!=nullptr)
@@ -1244,6 +1244,11 @@ clrxclBuildProgram(cl_program           program,
             p->concurrentBuilds--;
         }
         return error;
+    }
+    catch(const std::exception& ex)
+    {
+        clrxAbort("Fatal exception happened: ", ex.what());
+        return -1;
     }
     
     bool doDeleteWrappedData = true;
