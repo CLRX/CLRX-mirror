@@ -1442,8 +1442,12 @@ clrxclGetProgramInfo(cl_program         program,
                 *param_value_size_ret = sizeof(cl_device_id)*p->assocDevicesNum;
         }
             break;
+#ifdef CL_VERSION_1_2
+        case CL_PROGRAM_NUM_KERNELS:
         case CL_PROGRAM_KERNEL_NAMES:
         {
+            if (p->context->openCLVersionNum < getOpenCLVersionNum(1, 2))
+                return CL_INVALID_VALUE;
             cl_program prog;
             {
                 std::lock_guard<std::mutex> lock(p->mutex);
@@ -1457,6 +1461,7 @@ clrxclGetProgramInfo(cl_program         program,
                 dispatch->clGetProgramInfo(prog, param_name,
                         param_value_size, param_value, param_value_size_ret);
         }
+#endif
         case CL_PROGRAM_BINARY_SIZES:
         {
             std::lock_guard<std::mutex> lock(p->mutex);
