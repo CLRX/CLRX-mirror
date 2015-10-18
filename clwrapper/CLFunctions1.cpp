@@ -1684,6 +1684,14 @@ clrxclCreateKernel(cl_program      program,
             clrxAbort("Can't find kernel arg flag!");
         outKernel = new CLRXKernel(argFlagMapIt->second);
         p->kernelsAttached++;
+        
+        // retain original program if is assembly program
+        if (p->amdOclAsmProgram!=nullptr)
+        {
+            if (p->amdOclProgram->dispatch->clRetainProgram(p->amdOclProgram)!=CL_SUCCESS)
+                clrxAbort("Fatal Error at retaining original program");
+            outKernel->fromAsm = true;
+        }
     }
     catch(const std::bad_alloc& ex)
     {
@@ -1789,6 +1797,18 @@ clrxclCreateKernelsInProgram(cl_program     program,
                 kernels[kp] = outKernel;
             }
             p->kernelsAttached += kernelsToCreate;
+            
+            // retain original program if is assembly program
+            if (p->amdOclAsmProgram!=nullptr)
+            {
+                for (cxuint k = 0; k < kernelsToCreate; k++)
+                {
+                    if (p->amdOclProgram->dispatch->clRetainProgram(
+                                    p->amdOclProgram)!=CL_SUCCESS)
+                        clrxAbort("Fatal Error at retaining original program");
+                    reinterpret_cast<CLRXKernel*>(kernels[k])->fromAsm = true;
+                }
+            }
         }
     }
     catch(const std::bad_alloc& ex)
@@ -1850,6 +1870,10 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
             {
                 k->program->kernelsAttached--; // decrease kernel attached
                 doDelete = true;
+                if (k->fromAsm)
+                    if (k->program->amdOclAsmProgram->dispatch->clReleaseProgram(
+                                k->program->amdOclProgram)!=CL_SUCCESS)
+                        clrxAbort("Fatal error at releasing original program");
             }
     }
     catch(const std::exception& ex)

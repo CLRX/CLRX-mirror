@@ -1311,7 +1311,7 @@ void clrxReleaseOnlyCLRXProgram(CLRXProgram* program)
     {   // amdOclProgram has been already released, we release only our program
         clrxReleaseOnlyCLRXContext(program->context);
         if (program->amdOclAsmProgram!=nullptr)
-            if (program->amdOclProgram->dispatch->clReleaseProgram(
+            if (program->amdOclAsmProgram->dispatch->clReleaseProgram(
                         program->amdOclAsmProgram) != CL_SUCCESS)
                 clrxAbort("Fatal error on clReleaseProgram(amdProg)");
         delete program;

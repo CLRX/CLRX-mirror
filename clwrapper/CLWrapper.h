@@ -342,10 +342,14 @@ struct CLRX_INTERNAL CLRXKernel: _cl_kernel, CLRX::NonCopyableAndNonMovable
     cl_kernel amdOclKernel;
     CLRXProgram* program;
     const std::vector<bool>& argTypes;
+    bool fromAsm;
 
     CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
             argTypes(_argTypes)
-    { program = nullptr; }
+    { 
+        program = nullptr;
+        fromAsm = false;
+    }
 };
 
 struct CLRX_INTERNAL CLRXEvent: _cl_event, CLRX::NonCopyableAndNonMovable
