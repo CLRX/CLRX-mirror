@@ -42,12 +42,16 @@ using namespace CLRX;
 
 std::once_flag clrxOnceFlag;
 bool useCLRXWrapper = true;
+/* use pure pointer - AMDOCL library must be available to end of program,
+ * even after main routine and within atexit callback */
 static DynLibrary* amdOclLibrary = nullptr;
 cl_uint amdOclNumPlatforms = 0;
 CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs = nullptr;
 CLRXpfn_clUnloadCompiler amdOclUnloadCompiler = nullptr;
 cl_int clrxWrapperInitStatus = CL_SUCCESS;
 
+/* use pure pointer - all datas must be available to end of program,
+ * even after main routine and within atexit callback */
 CLRXPlatform* clrxPlatforms = nullptr;
 
 #ifdef CL_VERSION_1_2
