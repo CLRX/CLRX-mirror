@@ -1876,7 +1876,7 @@ clrxclReleaseKernel(cl_kernel   kernel) CL_API_SUFFIX__VERSION_1_0
                 k->program->kernelsAttached--; // decrease kernel attached
                 doDelete = true;
                 if (k->fromAsm)
-                    if (k->program->amdOclAsmProgram->dispatch->clReleaseProgram(
+                    if (k->program->amdOclProgram->dispatch->clReleaseProgram(
                                 k->program->amdOclProgram)!=CL_SUCCESS)
                         clrxAbort("Fatal error at releasing original program");
             }
