@@ -1574,9 +1574,9 @@ clrxclGetProgramBuildInfo(cl_program            program,
                 param_value_size_ret);
     }
     
-    cl_uint devId = std::find(p->assocDevices.get(),
-             p->assocDevices.get()+p->assocDevicesNum, device) - p->assocDevices.get();
-    if (devId == p->assocDevicesNum)
+    auto progDevIt = CLRX::binaryMapFind(p->asmProgEntries.get(),
+             p->asmProgEntries.get()+p->assocDevicesNum, device);
+    if (progDevIt == p->asmProgEntries.get()+p->assocDevicesNum)
         return CL_INVALID_DEVICE;
     switch(param_name)
     {
@@ -1588,7 +1588,7 @@ clrxclGetProgramBuildInfo(cl_program            program,
                     return CL_INVALID_VALUE;
                 if (p->asmProgEntries)
                     *reinterpret_cast<cl_build_status*>(param_value) =
-                            p->asmProgEntries[devId].status;
+                            progDevIt->second.status;
                 else // if not
                     *reinterpret_cast<cl_build_status*>(param_value) =
                             (p->asmState.load() == CLRXAsmState::IN_PROGRESS) ?
@@ -1612,14 +1612,14 @@ clrxclGetProgramBuildInfo(cl_program            program,
             break;
         case CL_PROGRAM_BUILD_LOG:
         {
-            size_t logSize = (p->asmProgEntries && p->asmProgEntries[devId].log) ?
-                        p->asmProgEntries[devId].log->log.size()+1 : 1;
+            size_t logSize = (p->asmProgEntries && progDevIt->second.log) ?
+                        progDevIt->second.log->log.size()+1 : 1;
             if (param_value != nullptr)
             {
                 if (param_value_size < logSize)
                     return CL_INVALID_VALUE;
-                if (p->asmProgEntries && p->asmProgEntries[devId].log && logSize!=1)
-                    strcpy((char*)param_value, p->asmProgEntries[devId].log->log.c_str());
+                if (p->asmProgEntries && progDevIt->second.log && logSize!=1)
+                    strcpy((char*)param_value, progDevIt->second.log->log.c_str());
                 else
                     ((cxbyte*)param_value)[0] = 0;
             }

@@ -282,9 +282,10 @@ enum class CLRXAsmState
     SUCCESS
 };
 
+typedef std::pair<cl_device_id, ProgDeviceEntry> ProgDeviceMapEntry;
+
 struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
 {
-    
     std::atomic<size_t> refCount;
     std::mutex mutex; // for thread-safe updating assoc devices
     cl_program amdOclProgram;
@@ -298,7 +299,7 @@ struct CLRX_INTERNAL CLRXProgram: _cl_program, CLRX::NonCopyableAndNonMovable
     CLRXKernelArgFlagMap kernelArgFlagsMap;
     std::mutex asmMutex;
     cl_program amdOclAsmProgram;
-    std::unique_ptr<ProgDeviceEntry[]> asmProgEntries;
+    std::unique_ptr<ProgDeviceMapEntry[]> asmProgEntries;
     std::string asmOptions;
     std::atomic<CLRXAsmState> asmState;
     
@@ -343,7 +344,7 @@ struct CLRX_INTERNAL CLRXKernel: _cl_kernel, CLRX::NonCopyableAndNonMovable
     CLRXProgram* program;
     const std::vector<bool>& argTypes;
     bool fromAsm;
-
+    
     CLRXKernel(const std::vector<bool>& _argTypes) : refCount(1),
             argTypes(_argTypes)
     { 

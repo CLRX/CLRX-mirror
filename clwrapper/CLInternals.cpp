@@ -1763,11 +1763,13 @@ try
             asmDevOrders.get()) != CL_SUCCESS)
         clrxAbort("Fatal error at genDeviceOrder at clrxCompilerCall");
     /// set up progDevice entry (contains log and build_status)
-    program->asmProgEntries.reset(new ProgDeviceEntry[program->assocDevicesNum]);
+    program->asmProgEntries.reset(new ProgDeviceMapEntry[program->assocDevicesNum]);
     /* move logs and build statuses to CLRX program structure */
     for (cxuint i = 0; i < devicesNum; i++)
     {
-        ProgDeviceEntry& progDevEntry = program->asmProgEntries[asmDevOrders[i]];
+        program->asmProgEntries[asmDevOrders[i]].first =
+                        program->assocDevices[asmDevOrders[i]];
+        ProgDeviceEntry& progDevEntry = program->asmProgEntries[asmDevOrders[i]].second;
         progDevEntry = std::move(progDeviceEntries[i]);
         if (progDevEntry.status == CL_BUILD_SUCCESS)
         {   // get real device status from original implementation
@@ -1777,6 +1779,9 @@ try
                 clrxAbort("Fatal error at clGetProgramBuildInfo at clrxCompilerCall");
         }
     }
+    mapSort(program->asmProgEntries.get(), program->asmProgEntries.get() +
+                program->assocDevicesNum);
+    
     program->asmOptions = compilerOptions;
     program->asmState.store((errorLast!=CL_SUCCESS) ?
                 CLRXAsmState::FAILED : CLRXAsmState::SUCCESS);
