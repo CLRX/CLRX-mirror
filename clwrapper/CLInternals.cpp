@@ -1506,11 +1506,11 @@ try
                 asmFlags &= ~ASM_WARNINGS;
             else if (word == "-forceAddSymbols")
                 asmFlags |= ASM_FORCE_ADD_SYMBOLS;
-            else if (word == "-I" || word == "-includepath")
+            else if (word == "-I" || word == "-includePath")
                 nextIsIncludePath = true;
             else if (word.compare(0, 2, "-I")==0)
                 includePaths.push_back(word.substr(2, word.size()-2));
-            else if (word.compare(0, 13, "-includepath=")==0)
+            else if (word.compare(0, 13, "-includePath=")==0)
                 includePaths.push_back(word.substr(13, word.size()-13));
             else if (word == "-D" || word == "-defsym")
                 nextIsDefSym = true;
