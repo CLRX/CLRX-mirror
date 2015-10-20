@@ -402,7 +402,7 @@ CLRX_INTERNAL extern CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs;
 CLRX_INTERNAL extern CLRXpfn_clUnloadCompiler amdOclUnloadCompiler;
 CLRX_INTERNAL extern cl_int clrxWrapperInitStatus;
 
-CLRX_INTERNAL extern std::unique_ptr<CLRXPlatform[]> clrxPlatforms;
+CLRX_INTERNAL extern CLRXPlatform* clrxPlatforms;
 
 #ifdef CL_VERSION_1_2
 CLRX_INTERNAL extern clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD;

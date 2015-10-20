@@ -42,13 +42,13 @@ using namespace CLRX;
 
 std::once_flag clrxOnceFlag;
 bool useCLRXWrapper = true;
-static std::unique_ptr<DynLibrary> amdOclLibrary = nullptr;
+static DynLibrary* amdOclLibrary = nullptr;
 cl_uint amdOclNumPlatforms = 0;
 CLRXpfn_clGetPlatformIDs amdOclGetPlatformIDs = nullptr;
 CLRXpfn_clUnloadCompiler amdOclUnloadCompiler = nullptr;
 cl_int clrxWrapperInitStatus = CL_SUCCESS;
 
-std::unique_ptr<CLRXPlatform[]> clrxPlatforms = nullptr;
+CLRXPlatform* clrxPlatforms = nullptr;
 
 #ifdef CL_VERSION_1_2
 clEnqueueWaitSignalAMD_fn amdOclEnqueueWaitSignalAMD = nullptr;
@@ -366,7 +366,7 @@ void clrxWrapperInitialize()
             const cxuint clrxExtEntriesNum =
                     sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
             
-            clrxPlatforms.reset(new CLRXPlatform[platformCount]);
+            clrxPlatforms = new CLRXPlatform[platformCount];
             for (cl_uint i = 0; i < platformCount; i++)
             {
                 if (amdOclPlatforms[i] == nullptr)
@@ -491,7 +491,7 @@ void clrxWrapperInitialize()
             }
         }
         
-        amdOclLibrary = std::move(tmpAmdOclLibrary);
+        amdOclLibrary = tmpAmdOclLibrary.release();
         amdOclNumPlatforms = platformCount;
     }
     catch(const std::bad_alloc& ex)

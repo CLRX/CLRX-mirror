@@ -106,7 +106,7 @@ clrxclGetPlatformIDs(cl_uint          num_entries,
     {
         cl_uint toCopy = std::min(num_entries, amdOclNumPlatforms);
         for (cl_uint i = 0; i < toCopy; i++)
-            platforms[i] = clrxPlatforms.get() + i;
+            platforms[i] = clrxPlatforms + i;
     }
     
     return CL_SUCCESS;
@@ -335,7 +335,7 @@ clrxclCreateContext(const cl_context_properties * properties,
         return nullptr;
     }
     
-    CLRXPlatform* platform = clrxPlatforms.get(); // choose first AMD platform
+    CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
     bool doTranslateProps = false;
     size_t propNums = 0;
     
@@ -381,7 +381,7 @@ clrxclCreateContext(const cl_context_properties * properties,
         if (doTranslateProps) // replace by original
             amdPropsPtr = amdProps.data();
         if (platform == nullptr) // fallback
-            platform = clrxPlatforms.get();
+            platform = clrxPlatforms;
     
         /* get amdocl devices */
         std::vector<cl_device_id> amdDevices(num_devices);
@@ -457,7 +457,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
 {
     CLRX_INITIALIZE_OBJ
     
-    CLRXPlatform* platform = clrxPlatforms.get(); // choose first AMD platform
+    CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
     
     bool doTranslateProps = false;
     size_t propNums = 0;
@@ -503,7 +503,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
             amdPropsPtr = amdProps.data();
     
         if (platform == nullptr) // fallback
-            platform = clrxPlatforms.get();
+            platform = clrxPlatforms;
     
         amdContext = platform->amdOclPlatform->dispatch->clCreateContextFromType(
                     amdPropsPtr, device_type, pfn_notify, user_data, errcode_ret);

@@ -1239,7 +1239,7 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
 {
     CLRX_INITIALIZE
     
-    CLRXPlatform* platform = clrxPlatforms.get(); // choose first AMD platform
+    CLRXPlatform* platform = clrxPlatforms; // choose first AMD platform
     bool doTranslateProps = false;
     size_t propNums = 0;
     
@@ -1284,7 +1284,7 @@ clrxclGetGLContextInfoKHR(const cl_context_properties * properties,
         if (doTranslateProps) // replace by original
             amdPropsPtr = amdProps.data();
         if (platform == nullptr) // fallback
-            platform = clrxPlatforms.get();
+            platform = clrxPlatforms;
         
         size_t myParamValueSize = 0;
         status = platform->amdOclPlatform->dispatch->clGetGLContextInfoKHR(amdPropsPtr,
