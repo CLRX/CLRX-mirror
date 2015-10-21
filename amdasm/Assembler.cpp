@@ -1573,7 +1573,7 @@ bool Assembler::assemble()
     for (const DefSym& defSym: defSyms)
         if (defSym.first!=".")
             symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
-        else // ignore for '.'
+        else if ((flags & ASM_WARNINGS) != 0)// ignore for '.'
             messageStream << "<command-line>: Warning: Definition for symbol '.' "
                     "was ignored" << std::endl;
     
