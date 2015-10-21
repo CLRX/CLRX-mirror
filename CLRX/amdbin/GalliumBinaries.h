@@ -310,9 +310,11 @@ struct GalliumKernelConfig
     cxuint usedVGPRsNum;  ///< number of used VGPRs
     cxuint usedSGPRsNum;  ///< number of used SGPRs
     uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
+    cxbyte userDataNum;   ///< number of user data
     cxbyte ieeeMode;  ///< IEEE mode
     cxbyte floatMode; ///< float mode
-    cxbyte priority;
+    cxbyte priority;    ///< priority
+    bool tgSize;        ///< enable TG_SIZE_EN bit
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
 };

@@ -302,6 +302,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.ieeeMode = 0;
     kinput.config.floatMode = 0;
     kinput.config.localSize = 0;
+    kinput.config.userDataNum = 4;
     kinput.config.scratchBufferSize = 0; ///< size of scratch buffer
     kernels.push_back(std::move(kinput));
 }
@@ -419,6 +420,7 @@ public:
                         ((uint32_t(config.floatMode)&0xff)<<12) |
                         (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10);
                 outEntries[1].value = (config.pgmRSRC2 & 0xffffe440U) |
+                        (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
                         (((config.localSize+63)>>6)<<15);
                 outEntries[2].value = (config.scratchBufferSize)<<12;
@@ -461,6 +463,8 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
                 throw Exception("LocalSize out of range");
             if (config.priority >= 4)
                 throw Exception("Priority out of range");
+            if (config.userDataNum > 16)
+                throw Exception("UserDataNum out of range");
         }
     
     // elf extra data

@@ -294,7 +294,8 @@ enum GalliumConfigValueTarget
     GALLIUMCVAL_FLOATMODE,
     GALLIUMCVAL_LOCALSIZE,
     GALLIUMCVAL_SCRATCHBUFFER,
-    GALLIUMCVAL_PRIORITY
+    GALLIUMCVAL_PRIORITY,
+    GALLIUMCVAL_USERDATANUM
 };
 
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
@@ -307,6 +308,9 @@ struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
     
     static void setConfigValue(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, GalliumConfigValueTarget target);
+    
+    static void setTgSize(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     
     static void setDimensions(AsmGalliumHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);

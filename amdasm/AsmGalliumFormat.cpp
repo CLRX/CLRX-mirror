@@ -35,7 +35,8 @@ static const char* galliumPseudoOpNamesTbl[] =
     "entry", "floatmode", "globaldata", "ieeemode",
     "kcode", "kcodeend",
     "localsize", "pgmrsrc2", "priority", "proginfo",
-    "scratchbuffer", "sgprsnum", "vgprsnum"
+    "scratchbuffer", "sgprsnum", "tgsize",
+    "userdatanum", "vgprsnum"
 };
 
 enum
@@ -44,7 +45,8 @@ enum
     GALLIUMOP_ENTRY, GALLIUMOP_FLOATMODE, GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
     GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
     GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY, GALLIUMOP_PROGINFO,
-    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_VGPRSNUM
+    GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_TGSIZE,
+    GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
 };
 
 /*
@@ -372,7 +374,7 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 }
                 break;
             }
-            case AMDCVAL_FLOATMODE:
+            case GALLIUMCVAL_FLOATMODE:
                 asmr.printWarningForRange(8, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0xff;
@@ -382,10 +384,17 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 3;
                 break;
-            case AMDCVAL_HWLOCAL:
+            case GALLIUMCVAL_LOCALSIZE:
                 if (value > 32768)
                 {
                     asmr.printError(valuePlace, "LocalSize out of range (0-32768)");
+                    good = false;
+                }
+                break;
+            case GALLIUMCVAL_USERDATANUM:
+                if (value > 16)
+                {
+                    asmr.printError(valuePlace, "UserDataNum out of range (0-16)");
                     good = false;
                 }
                 break;
@@ -425,7 +434,26 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         case GALLIUMCVAL_PRIORITY:
             config.priority = value;
             break;
+        case GALLIUMCVAL_USERDATANUM:
+            config.userDataNum = value;
+            break;
     }
+}
+
+void AsmGalliumPseudoOps::setTgSize(AsmGalliumHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.kernels[asmr.currentKernel].config.tgSize = true;
 }
 
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
@@ -872,6 +900,13 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_SGPRSNUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_SGPRSNUM);
+            break;
+        case GALLIUMOP_TGSIZE:
+            AsmGalliumPseudoOps::setTgSize(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_USERDATANUM:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_USERDATANUM);
             break;
         case GALLIUMOP_VGPRSNUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
