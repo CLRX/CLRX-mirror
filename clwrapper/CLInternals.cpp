@@ -370,14 +370,15 @@ void clrxWrapperInitialize()
             const cxuint clrxExtEntriesNum =
                     sizeof(clrxExtensionsTable)/sizeof(CLRXExtensionEntry);
             
-            clrxPlatforms = new CLRXPlatform[platformCount];
+            std::unique_ptr<CLRXPlatform[]> tmpClrxPlatforms(
+                                new CLRXPlatform[platformCount]);
             for (cl_uint i = 0; i < platformCount; i++)
             {
                 if (amdOclPlatforms[i] == nullptr)
                     continue;
                 
                 const cl_platform_id amdOclPlatform = amdOclPlatforms[i];
-                CLRXPlatform& clrxPlatform = clrxPlatforms[i];
+                CLRXPlatform& clrxPlatform = tmpClrxPlatforms[i];
                 
                 /* clrxPlatform init */
                 clrxPlatform.amdOclPlatform = amdOclPlatform;
@@ -493,6 +494,7 @@ void clrxWrapperInitialize()
                     if (amdOclPlatform->dispatch->entries[k] == nullptr)
                         clrxPlatform.dispatch->entries[k] = nullptr;
             }
+            clrxPlatforms = tmpClrxPlatforms.release();
         }
         
         amdOclLibrary = tmpAmdOclLibrary.release();
@@ -500,18 +502,8 @@ void clrxWrapperInitialize()
     }
     catch(const std::bad_alloc& ex)
     {
-        clrxPlatforms = nullptr;
-        amdOclLibrary = nullptr;
-        amdOclNumPlatforms = 0;
         clrxWrapperInitStatus = CL_OUT_OF_HOST_MEMORY;
         return;
-    }
-    catch(...)
-    {
-        clrxPlatforms = nullptr;
-        amdOclLibrary = nullptr;
-        amdOclNumPlatforms = 0;
-        throw; // fatal exception
     }
 }
 
