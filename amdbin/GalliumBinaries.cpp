@@ -300,7 +300,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
     kinput.config.pgmRSRC2 = 0;
     kinput.config.ieeeMode = 0;
-    kinput.config.floatMode = 0;
+    kinput.config.floatMode = 0xc0;
     kinput.config.localSize = 0;
     kinput.config.userDataNum = 4;
     kinput.config.tgSize = false;
