@@ -148,6 +148,7 @@ void AmdInput::addEmptyKernel(const char* kernelName)
     kernel.useConfig = false;
     kernel.config.pgmRSRC2 = 0;
     kernel.config.ieeeMode = 0;
+    kernel.config.tgSize = false;
     kernel.config.floatMode = 0xc0;
     kernel.config.dimMask = BINGEN_DEFAULT;
     kernel.config.reqdWorkGroupSize[0] = 0;
@@ -1370,8 +1371,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
                 (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
     else // get from current pgmRSRC2
         dimValues = (curPgmRSRC2 & 0x1b80U);
-    curPgmRSRC2 = (curPgmRSRC2 & 0xffffe440U) | ((pgmUserSGPRsNum&0x1f)<<1) |
-            (config.scratchBufferSize != 0) | dimValues;
+    curPgmRSRC2 = (curPgmRSRC2 & 0xffffe040U) | ((pgmUserSGPRsNum&0x1f)<<1) |
+            (config.scratchBufferSize != 0) | dimValues | (config.tgSize ? 0x400 : 0);
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);

@@ -123,7 +123,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     config.privateId = BINGEN_DEFAULT;
     config.usePrintf = ((ULEV(reinterpret_cast<const uint32_t*>(
                 kernelHeader)[4]) & 2) != 0);
-    config.useConstantData = false;
+    config.tgSize = config.useConstantData = false;
     config.reqdWorkGroupSize[0] = config.reqdWorkGroupSize[1] =
             config.reqdWorkGroupSize[2] = 0;
     

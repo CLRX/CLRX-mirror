@@ -125,6 +125,7 @@ struct AmdKernelConfig
     uint32_t privateId; ///< private id (???)
     uint32_t earlyExit; ///< CALNOTE_EARLYEXIT value
     uint32_t condOut;   ///< CALNOTE_CONDOUT value
+    bool tgSize;    ///< enable tgSize
     bool usePrintf;     ///< if kernel uses printf function
     bool useConstantData; ///< if const data required
     cxuint userDataElemsNum;    ///< number of user data

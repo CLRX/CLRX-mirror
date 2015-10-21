@@ -303,6 +303,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.floatMode = 0;
     kinput.config.localSize = 0;
     kinput.config.userDataNum = 4;
+    kinput.config.tgSize = false;
     kinput.config.scratchBufferSize = 0; ///< size of scratch buffer
     kernels.push_back(std::move(kinput));
 }
@@ -419,7 +420,7 @@ public:
                 outEntries[0].value = ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
                         ((uint32_t(config.floatMode)&0xff)<<12) |
                         (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10);
-                outEntries[1].value = (config.pgmRSRC2 & 0xffffe440U) |
+                outEntries[1].value = (config.pgmRSRC2 & 0xffffe040U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
                         (((config.localSize+63)>>6)<<15);

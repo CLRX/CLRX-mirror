@@ -41,7 +41,7 @@ static const char* amdPseudoOpNamesTbl[] =
     "intconsts", "metadata", "outputs", "persistentbuffers",
     "pgmrsrc2", "printfid", "privateid", "proginfo",
     "sampler", "scratchbuffer", "scratchbuffers", "segment",
-    "sgprsnum", "subconstantbuffers", "uav", "uavid",
+    "sgprsnum", "subconstantbuffers", "tgsize", "uav", "uavid",
     "uavmailboxsize", "uavopmask", "uavprivate", "useconstdata",
     "useprintf", "userdata", "vgprsnum"
 };
@@ -57,7 +57,7 @@ enum
     AMDOP_INTCONSTS, AMDOP_METADATA, AMDOP_OUTPUTS, AMDOP_PERSISTENTBUFFERS,
     AMDOP_PGMRSRC2, AMDOP_PRINTFID, AMDOP_PRIVATEID, AMDOP_PROGINFO,
     AMDOP_SAMPLER, AMDOP_SCRATCHBUFFER, AMDOP_SCRATCHBUFFERS, AMDOP_SEGMENT,
-    AMDOP_SGPRSNUM, AMDOP_SUBCONSTANTBUFFERS, AMDOP_UAV, AMDOP_UAVID,
+    AMDOP_SGPRSNUM, AMDOP_SUBCONSTANTBUFFERS, AMDOP_TGSIZE, AMDOP_UAV, AMDOP_UAVID,
     AMDOP_UAVMAILBOXSIZE, AMDOP_UAVOPMASK, AMDOP_UAVPRIVATE, AMDOP_USECONSTDATA,
     AMDOP_USEPRINTF, AMDOP_USERDATA, AMDOP_VGPRSNUM
 };
@@ -861,6 +861,8 @@ void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pse
         config.useConstantData = true;
     else if (target == AMDCVAL_USEPRINTF)
         config.usePrintf = true;
+    else if (target == AMDCVAL_TGSIZE)
+        config.tgSize = true;
 }
 
 void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -1635,6 +1637,10 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
         case AMDOP_SUBCONSTANTBUFFERS:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
                             CALNOTE_ATI_SUB_CONSTANT_BUFFERS);
+            break;
+        case AMDOP_TGSIZE:
+            AsmAmdPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                            AMDCVAL_TGSIZE);
             break;
         case AMDOP_UAV:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
