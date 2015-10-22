@@ -15,7 +15,7 @@ This package provides source code and requires:
 * C++11 compliant compiler (Clang++ or GCC 4.7 or later)
 * GNU make tool
 * CMake system (2.6 or later)
-* Threads support (for Linux recommended NPTL)
+* Threads support (for Linux, recommended NPTL)
 * 'elf.h' include file (should be installed in standard)
 * Linux system
 
@@ -38,7 +38,7 @@ To build system you should create a build directory in source code package:
 
 and run:
 
-  cmake ..
+  cmake .. [cmake options]
 
 Optional CMake configuration options for build:
 
@@ -75,7 +75,26 @@ Installation is easy. Just run command:
   
 4. clwrapper
 
-Currently, the clwrapper have not been tested on real AMD Catalyst environment.
+CLWrapper integrates the CLRX assembler with the AMD Catalyst driver by using
+wrapper mechanism and embeds an assembler to AMD OpenCL implementation.
+Building an assembler programs will be possible by passing an '-xasm' option which
+should be appended to build options, like following example:
+
+clBuildProgram(program, num_devices, devices, "-xasm", NULL, NULL);
+
+Installation is easy. However, it requires some changes on an OpenCL configuration:
+
+Remove amdocl64.icd and/or amdocl32.icd (if 32-bit system)
+from directory '/etc/OpenCL/vendors'
+(before, we recommend to make backup that directory).
+Create an 'clrx.icd' file on /etc/OpenCL/vendors/ with content: 'libCLRXWrapper.so'.
+That's all. Now you can call an assembler through clBuildProgram on your applications.
+
+Important Attention: CLWrapper make some changes on the program environment and changes
+behaviour of the OpenCL routines. This is still an experimental stuff and
+we recommend to not using its on the deployed/production systems.
+
+DO NOT FORGET to revert these changes before uninstallation.
 
 5. Uninstallation
 
@@ -84,4 +103,4 @@ You can remove these files by using command:
 
   rm -f `cat install_manifest.txt`
 
-Don't forget to keep 'build' directory after installation.
+DO NOT FORGET to keep 'build' directory after installation.
