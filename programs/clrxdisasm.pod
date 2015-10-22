@@ -23,7 +23,7 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 =head1 OPTIONS
 
-Following options clrxasm can recognize:
+Following options clrxdisasm can recognize:
 
 =over 8
 
