@@ -52,9 +52,11 @@ clwrapper/CLWrapper.h -text
 clwrapper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/DispatchStruct.h -text
 clwrapper/InternalDecls.h -text
+cmake/Pod2Man.cmake -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxasm.cpp -text
 programs/clrxdisasm.cpp -text
+programs/clrxdisasm.pod -text
 tests/CMakeLists.txt -text svneol=unset#text/plain
 tests/TestUtils.h -text
 tests/amdasm/AsmExprParse.cpp -text

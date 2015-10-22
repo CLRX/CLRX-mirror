@@ -87,7 +87,7 @@ Installation is easy. However, it requires some changes on an OpenCL configurati
 Remove amdocl64.icd and/or amdocl32.icd (if 32-bit system)
 from directory '/etc/OpenCL/vendors'
 (before, we recommend to make backup that directory).
-Create an 'clrx.icd' file on /etc/OpenCL/vendors/ with content: 'libCLRXWrapper.so'.
+Create the 'clrx.icd' file on /etc/OpenCL/vendors/ with content: 'libCLRXWrapper.so'.
 That's all. Now you can call an assembler through clBuildProgram on your applications.
 
 Important Attention: CLWrapper make some changes on the program environment and changes

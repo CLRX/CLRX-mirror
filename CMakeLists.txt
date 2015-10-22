@@ -42,6 +42,8 @@ INCLUDE(CPack)
 ######
 ## end packaging
 
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
 INCLUDE(CheckFunctionExists)
 INCLUDE(CheckLibraryExists)
 INCLUDE(CheckIncludeFileCXX)
@@ -136,6 +138,13 @@ IF(BUILD_DOCUMENTATION)
   # then leave out the 'ALL' keyword from the above command.
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/ DESTINATION share/doc/CLRX)
 ENDIF(BUILD_DOCUMENTATION)
+
+OPTION(BUILD_MANUAL "Use Pod2Man to create the Unix manuals" OFF)
+
+IF(BUILD_MANUAL)
+    INCLUDE(Pod2Man)
+    ADD_MANPAGE_TARGET()
+ENDIF(BUILD_MANUAL)
 ####
 # Documentation
 ####

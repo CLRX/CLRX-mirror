@@ -1,0 +1,100 @@
+=encoding utf8
+
+=head1 NAME
+
+clrxdisasm - disassemble Radeon code binaries
+
+=head1 SYNOPSIS
+
+clrxdisasm [-mdcfhar?] [-g GPUDEVICE] [-a ARCH] [--metadata] [--data] [--calNotes]
+[--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH]
+[--help] [--usage] [file...]
+
+=head1 DESCRIPTION
+
+This is CLRadeonExtender utility to disassemble the Radeon GPU code.
+This disassembler can disassemble code for GCN 1.0/1.1/1.2
+architectures, but not for the VLIW architecture.
+
+Disassembler can handle the AMD Catalyst(tm) OpenCL(tm) kernel binaries and the
+GalliumCompute kernel binaries. It displays instructions of the code and optionally
+structure of the binaries (kernels and their configuration). Output of that program
+can be used as input to the CLRX assembler if option '--all' will be used.
+
+=head1 OPTIONS
+
+Following options clrxasm can recognize:
+
+=over 8
+
+=item B<-m>, B<--metadata>
+
+Print metadata from AMD Catalyst binaries to output. For a AMD Catalyst binaries,
+disassembler prints internal metadata. For a GalliumCompute binaries disassembler
+prints argument of the kernel and proginfo entries.
+
+=item B<-d>, B<--data>
+
+Print data section from binaries. For AMD Catalyst binaries disassembler prints
+global constant data, and '.data' section for particular kernel executables.
+For GalliumCompute binaries disassembler prints a global constant data.
+
+=item B<-c>, B<--calNotes>
+
+Print list of the ATI CAL notes and their content from AMD Catalyst binaries to output.
+
+=item B<-f>, B<--float>
+
+Print floating point literals in instructions if instructions accept float point values
+and their has a constant literal. Floating point values will be inside comment.
+
+=item B<-h>, B<--hexcode>
+
+Print hexadecimal code before disassembled instruction in comment. Hexadecimal code
+will be printed in 4-byte words.
+
+=item B<-a>, B<--all>
+
+Enable all options -mdcfh.
+
+=item B<-r>, B<--raw>
+
+Treat input as raw code. By default, disassembler assumes that input code is for
+the GCN1.0 architecture.
+
+=item B<-g GPUDEVICE>, B<--gpuType=GPUDEVICE>
+
+Choose device type. This option replaces previously choosen architecture by
+architecture of choosen device. Device type name is case-insensitive.
+Currently is supported: 
+CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji and Carrizo.
+
+=item B<-A ARCH>, B<--arch=ARCH>
+
+Choose device architecture. This options replaces previously choosen device by
+first device that have choosen arhitecture. Architecture name is case-insensitive.
+List of supported architectures:
+GCN1.0, GCN1.1 and GCN1.2.
+
+=item B<-?>, B<--help>
+
+Print help and list of the options.
+
+=item B<--usage>
+
+Print usage for this program
+
+=back
+
+=head1 RETURN VALUE
+
+Returns zero if disassembler succeeded, otherwise returns 1.
+
+=head1 AUTHOR
+
+Mateusz Szpakowski
+
+=head1 SEE ALSO
+
+clrxasm(1)
