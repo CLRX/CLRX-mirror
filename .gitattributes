@@ -1,6 +1,7 @@
 * text=auto !eol
 CLRX/CMakeLists.txt -text svneol=unset#text/plain
 CLRX/Config.h.in -text
+CLRX/amdasm/AsmFormats.h -text
 CLRX/amdasm/AsmSource.h -text
 CLRX/amdasm/Assembler.h -text
 CLRX/amdasm/Commons.h -text
