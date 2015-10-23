@@ -53,7 +53,7 @@ struct LineCol
  * assembler source position
  */
 
-/// source tpye
+/// source type
 enum class AsmSourceType : cxbyte
 {
     FILE,       ///< include file
