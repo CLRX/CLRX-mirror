@@ -59,7 +59,7 @@ Optional CMake configuration options for build:
 * CMAKE_BUILD_TYPE - type of build (Release, Debug, GCCSan, GCCSSP).
 * CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
 * BUILD_32BIT - build also 32-bit binaries
-*  BUILD_TESTS - build all tests
+* BUILD_TESTS - build all tests
 * BUILD_DOCUMENTATION - build the Doxygen documentation
 * BUILD_MANUAL - build Unix manual pages
 * NO_STATIC - no static libraries
