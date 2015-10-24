@@ -1,0 +1,20 @@
+table {
+    border: 1px solid #ddd;
+    border-collapse: collapse;
+}
+
+table th {
+    border: 1px solid #ddd;
+    font-weight: normal;
+    background-color: #eee;   
+}
+
+dl dt {
+    font-weight: bold;
+}
+
+code {
+    background: #f4f4f4;
+    border: 1px solid #eee;
+    padding: 0.25em;
+}

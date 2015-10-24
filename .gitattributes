@@ -54,6 +54,12 @@ clwrapper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/DispatchStruct.h -text
 clwrapper/InternalDecls.h -text
 cmake/Pod2Man.cmake -text
+doc/CMakeLists.txt -text svneol=unset#text/plain
+doc/ClrxDisasm.md -text
+doc/ClrxToc.md -text
+doc/PrepareOffline.py -text
+doc/genclrxdoc.sh -text
+doc/styles.css -text
 programs/CMakeLists.txt -text svneol=unset#text/plain
 programs/clrxasm.cpp -text
 programs/clrxasm.pod -text

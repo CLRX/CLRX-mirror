@@ -122,8 +122,18 @@ OPTION(NO_STATIC "Disable static during compiling" OFF)
 ####
 # Documentation
 ####
-OPTION(BUILD_DOCUMENTATION "Use Doxygen to create the HTML based API documentation" OFF)
+OPTION(BUILD_DOCUMENTATION "Build whole documentation" OFF)
+OPTION(BUILD_DOXYGEN "Use Doxygen to create the HTML based API documentation" OFF)
+OPTION(BUILD_MANUAL "Use Pod2Man to create the Unix manuals" OFF)
+OPTION(BUILD_WIKI "Use markdown_py to create offline wiki pages" OFF)
+
 IF(BUILD_DOCUMENTATION)
+  SET(BUILD_DOXYGEN ON)
+  SET(BUILD_MANUAL ON)
+  SET(BUILD_CLRXDOC ON)
+ENDIF(BUILD_DOCUMENTATION)
+
+IF(BUILD_DOXYGEN)
   FIND_PACKAGE(Doxygen)
   IF(NOT DOXYGEN_FOUND)
     MESSAGE(FATAL_ERROR 
@@ -136,10 +146,18 @@ IF(BUILD_DOCUMENTATION)
         SOURCES ${PROJECT_BINARY_DIR}/Doxyfile)
   # IF you do NOT want the documentation to be generated EVERY time you build the project
   # then leave out the 'ALL' keyword from the above command.
-  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/ DESTINATION share/doc/CLRX)
-ENDIF(BUILD_DOCUMENTATION)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/ DESTINATION share/doc/CLRX/doxygen)
+ENDIF(BUILD_DOXYGEN)
 
-OPTION(BUILD_MANUAL "Use Pod2Man to create the Unix manuals" OFF)
+IF(BUILD_CLRXDOC)
+  FIND_PROGRAM(MARKDOWN_PY markdown_py)
+  IF(NOT MARKDOWN_PY)
+    MESSAGE(FATAL_ERROR "markdown_py is needed to build CLRX documentation")
+  ENDIF(NOT MARKDOWN_PY)
+  ADD_CUSTOM_TARGET(CLRXDocs ALL COMMAND sh ${PROJECT_SOURCE_DIR}/doc/genclrxdoc.sh
+          ${PROJECT_SOURCE_DIR}/doc ${PROJECT_BINARY_DIR}/clrxdoc)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/clrxdoc/ DESTINATION share/doc/CLRX/clrx)
+ENDIF(BUILD_CLRXDOC)
 
 IF(BUILD_MANUAL)
     INCLUDE(Pod2Man)
