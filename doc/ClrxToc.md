@@ -13,6 +13,7 @@ the GalliumCompute program binaries.
 * Assembler
     * [Invoking assembler](ClrxAsmInvoke)
     * [Assembler syntax](ClrxAsmSyntax)
+    * [Assembler pseudo-operations](ClrxAsmPseudoOps)
 ---
 
 

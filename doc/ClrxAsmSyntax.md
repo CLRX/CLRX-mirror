@@ -28,7 +28,7 @@ begins from `/*` and terminates at `*/`.
 
 CRLX assembler operates on the symbols. The symbol is value that can be a absolute value or
 it can refer to some place in binary code. Special symbol that is always defined refers to
-current place of a binary code.
+current place of a binary code. This is `.` and is called in this manual as output counter.
 Symbol names can contains alphanumeric characters, `.` and `_`. First character
 must not be a digit. This same rules concerns a labels.
 
@@ -148,5 +148,5 @@ right to left side.
 Symbol refering to some place can be added, subtracted, compared or negated if
 final result of the expression can be represented as place of the code or absolute value
 (without refering to any place). An assembler performs this same operations
-on the sections during evaluating an expression. Multiplication and any
-difficult operations is not legal.
+on the sections during evaluating an expression. Division, modulo,
+binary operations (except negation), logical operations is not legal.
