@@ -50,6 +50,21 @@ adding `b` or `f` suffix.
 v_add_i32 v32,3f-3b,v2  # 3b is previous `3` label, 3f is next `3` label
 ```
 
+### Sections
+
+Section is some part of the binary that contains some data. Type of the data depends on
+type of the section. Main program code is in the `.text` section which holds
+program's instructions. Section `.rodata` holds read-only data (mainly constant data)
+that can be used by program. Section can be divided by type of the access.
+The most sections are writeable (any data can be put into them) and
+addressable (we can define symbols inside these sections or move forward).
+
+Absolute section is only addressable section. It can be used for defining structures.
+In absolute section output counter can be moved backward (this is special exception
+for absolute section).
+
+Any symbol that refer to some code place refer to sections.
+
 ### Literals
 
 CLRX assembler treats any constant literals as 64-bit value. Assembler honors
@@ -129,3 +144,9 @@ Binary|   ?:     |   6   | Choice (this same as C++)
 
 The `?:` operator have this same meanigful as in C/C++ and performed from
 right to left side.
+
+Symbol refering to some place can be added, subtracted, compared or negated if
+final result of the expression can be represented as place of the code or absolute value
+(without refering to any place). An assembler performs this same operations
+on the sections during evaluating an expression. Multiplication and any
+difficult operations is not legal.
