@@ -3,6 +3,10 @@ table {
     border-collapse: collapse;
 }
 
+table td {
+    border: 1px solid #ddd;
+}
+
 table th {
     border: 1px solid #ddd;
     font-weight: normal;

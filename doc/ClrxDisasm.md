@@ -21,6 +21,8 @@ clrxdisasm [-mdcfhar?] [-g GPUDEVICE] [-a ARCH] [--metadata] [--data] [--calNote
 
 ### Program Options
 
+Following options `clrxdisasm` can recognize:
+
 * **<-m>**, **--metadata>**
 
     Print metadata from AMD Catalyst binaries to output. For a AMD Catalyst binaries,
@@ -84,7 +86,8 @@ GCN1.0, GCN1.1 and GCN1.2.
 ### Output
 
 `clrxdisasm` prints a disassembled code to standard output and errors to
-standard error output. `clrxdisasm` returns 0 if succeeded, otherwise it returns 1.
+standard error output. `clrxdisasm` returns 0 if succeeded, otherwise it returns 1
+and prints an error messages to stderr
     
 ### Sample usage
 

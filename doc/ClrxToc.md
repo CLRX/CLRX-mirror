@@ -9,8 +9,10 @@ the GalliumCompute program binaries.
 
 ## Table of Contents
 
-[Disassembler](ClrxDisasm)
-
+* [Disassembler](ClrxDisasm)
+* Assembler
+    * [Invoking assembler](ClrxAsmInvoke)
+    * [Assembler syntax](ClrxAsmSyntax)
 ---
 
 
