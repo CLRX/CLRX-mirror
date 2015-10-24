@@ -72,7 +72,7 @@ CLIException::CLIException(const std::string& message, const CLIOption& option,
 
 CLIParser::CLIParser(const char* _programName, const CLIOption* _options,
         cxuint _argc, const char** _argv) : options(_options), programName(_programName),
-        argc(_argc), argv(_argv)
+        packageName(nullptr), argc(_argc), argv(_argv)
 {
     shortNameMap.reset(new cxuint[256]);
     std::fill(shortNameMap.get(), shortNameMap.get()+256, UINT_MAX); // fill as unused
@@ -897,6 +897,11 @@ bool CLIParser::handleHelpOrUsage(std::ostream& os) const
         printUsage(os);
         return true;
     }
+    if (hasOption(findOption("version")))
+    {
+        printVersion();
+        return true;
+    }
     return false;
 }
 
@@ -1015,6 +1020,24 @@ void CLIParser::printUsage(std::ostream& os) const
         os << ']';
     }
     os << " ..." << std::endl;
+    }
+    catch(...)
+    {
+        os.exceptions(oldExceptions);
+        throw;
+    }
+    os.exceptions(oldExceptions);
+}
+
+void CLIParser::printVersion(std::ostream& os) const
+{
+    const std::ios::iostate oldExceptions = os.exceptions();
+    os.exceptions(std::ios::failbit | std::ios::badbit);
+    try
+    {
+        const char* pkgName = (packageName!=nullptr) ? packageName : "CLRadeonExtender";
+        os << programName << " (" << pkgName << ") " << CLRX_MAJOR_VERSION << '.' <<
+                CLRX_MINOR_VERSION << '.' << CLRX_MICRO_VERSION << "\n";
     }
     catch(...)
     {

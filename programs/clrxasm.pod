@@ -10,7 +10,7 @@ clrxasm [-6Sw?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--forceAddSymbols] [--noWarnings]
-[--help] [--usage] [file...]
+[--help] [--usage] [--version] [file...]
 
 =head1 DESCRIPTION
 
@@ -52,16 +52,14 @@ Enable generating of the 64-bit binaries (only for AMD catalyst format).
 
 =item B<-g GPUDEVICE>, B<--gpuType=GPUDEVICE>
 
-Choose device type. This option replaces previously choosen architecture by
-architecture of choosen device. Device type name is case-insensitive.
+Choose device type. Device type name is case-insensitive.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
 Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji and Carrizo.
 
 =item B<-A ARCH>, B<--arch=ARCH>
 
-Choose device architecture. This options replaces previously choosen device by
-first device that have choosen arhitecture. Architecture name is case-insensitive.
+Choose device architecture. Architecture name is case-insensitive.
 List of supported architectures:
 GCN1.0, GCN1.1 and GCN1.2.
 
@@ -87,6 +85,10 @@ Print help and list of the options.
 =item B<--usage>
 
 Print usage for this program
+
+=item B<--version>
+
+Print version
 
 =back
 

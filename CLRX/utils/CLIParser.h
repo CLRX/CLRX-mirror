@@ -39,7 +39,8 @@ namespace CLRX
 /// helper for auto help (this macro should be place in CLI option table
 #define CLRX_CLI_AUTOHELP \
     { "help", '?', CLIArgType::NONE, false, false, "print help", nullptr }, \
-    { "usage", 0, CLIArgType::NONE, false, false, "print usage", nullptr },
+    { "usage", 0, CLIArgType::NONE, false, false, "print usage", nullptr }, \
+    { "version", 0, CLIArgType::NONE, false, false, "print version", nullptr },
 
 /*
  * CommandLine Interface
@@ -213,6 +214,7 @@ private:
     
     const CLIOption* options;
     const char* programName;
+    const char* packageName;
     cxuint argc;
     const char** argv;
     std::vector<const char*> leftOverArgs;
@@ -235,6 +237,9 @@ public:
     CLIParser(const char* programName, const CLIOption* options,
             cxuint argc, const char** argv);
     ~CLIParser();
+    
+    void setPackageName(const char* pkgName)
+    { packageName = pkgName; }
     
     /// parse options from arguments
     void parse();
@@ -344,6 +349,8 @@ public:
     void printHelp(std::ostream& os = std::cout) const;
     /// print usage
     void printUsage(std::ostream& os = std::cout) const;
+    /// print version
+    void printVersion(std::ostream& os = std::cout) const;
 };
 
 /// Option type trait for boolean type
