@@ -17,7 +17,7 @@ for md in $1/*.md; do
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>CLRadeonExtender Wiki - ${TITLE}</title>
+    <title>CLRadeonExtender Manual - ${TITLE}</title>
     <link rel="stylesheet" type="text/css" href="styles.css"/>
 </head>
 <body>
