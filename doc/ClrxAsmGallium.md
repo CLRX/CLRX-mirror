@@ -110,6 +110,33 @@ Add entry of proginfo. Must be inside proginfo configuration. Sample proginfo:
 .entry 0x0000b860, 0x00000000
 ```
 
+### .kcode
+
+Syntax: .kcode KERNEL1,....  
+Syntax: .kcode +
+
+Open code that will be belonging to specified kernels. By default any code between
+two consecutive kernel labels belongs to the kernel with first label name.
+This pseudo-operation can change membership of the code to specified kernels.
+You can nest this `.kcode` any times. Just next .kcode adds or remove membership code
+to kernels. The most important reason why this feature has been added is register usage
+calculation.
+
+Sample usage:
+
+```
+.kcode + # this code belongs to all kernels
+.kcodeend
+.kcode kernel1, kernel2 #  this code belongs to kernel1, kernel2
+    .kcode -kernel1 #  this code belongs only to kernel2 (kernel1 removed)
+    .kcodeend
+.kcodeend
+```
+
+### .kcodeend
+
+Close `.kcode` clause. Refer to `.kcode`.
+
 ### .proginfo
 
 Open progInfo definition. Must be inside kernel.
