@@ -21,4 +21,6 @@ code {
     background: #f4f4f4;
     border: 1px solid #eee;
     padding: 0.25em;
+    white-space: pre;
+    display: inline-block;
 }

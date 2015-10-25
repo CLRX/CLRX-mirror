@@ -7,10 +7,14 @@ This chapter lists and explain standard pseudo-operations.
 
 Aborts compilation.
 
+### .amd
+
+This pseudo-operation should to be at begin of source.
+Choose AMD Catalyst OpenCL program binary format.
+
 ### .align, .balign
 
-Syntax: .align ALIGNMENT[, VALUE[, LIMIT]]
-
+Syntax: .align ALIGNMENT[, VALUE[, LIMIT]]  
 Syntax: .balign ALIGNMENT[, VALUE[, LIMIT]]
 
 Align current position to value of the first expression.
@@ -22,6 +26,13 @@ Third expression limits skip to own value. If any alignment needs to skip number
 of the bytes greater than that value, then alignment will not be done.
 If aligment will be done in `.text` section and second expresion will not be given, then
 assembler fills no-operation instructions in that hole.
+
+### .arch
+
+Syntax: .arch ARCHITECTURE
+
+This pseudo-operation should to be at begin of source. Set GPU architecture.
+One of following architecture can be set: GCN1.0, GCN1.1, GCN1.2.
 
 ### .ascii
 
@@ -41,8 +52,7 @@ string will be concatenated.
 
 ### .balignw, .balignl
 
-Syntax: .balignw ALIGNMENT[, VALUE[, LIMIT]]
-
+Syntax: .balignw ALIGNMENT[, VALUE[, LIMIT]]  
 Syntax: .balignl ALIGNMENT[, VALUE[, LIMIT]]
 
 Refer to `.align`. `.balignw` treats fill value as 2-byte word. `.balignl` treats
@@ -70,14 +80,63 @@ Put double-precision floating point values into current section.
 If no value between comma then an assembler stores 0 and warn about no value.
 This pseudo-operation accepts only double precision floating point literals.
 
+### .else
+
+Part of the if-endif clause. Refer to `.if` pseudo-operation.
+Code between `.else` and `.endif` will be performed if all previous conditions was not
+satisified. Otherwise code will be skipped.
+
+### .elseifXXX
+
+Syntax: .elseif ABS-EXPR  
+Syntax: .elseif32  
+Syntax: .elseif64  
+Syntax: .elseifarch ARCHITECTURE  
+Syntax: .elseifb [PART-OF-LINE]  
+Syntax: .elseifc STR1, STR2  
+Syntax: .elseifdef SYMBOL  
+Syntax: .elseifeq ABS-EXPR  
+Syntax: .elseifeqs STRING  
+Syntax: .elseiffmt BINFMT  
+Syntax: .elseifge ABS-EXPR  
+Syntax: .elseifgpu GPUDEVICE  
+Syntax: .elseifgt ABS-EXPR  
+Syntax: .elseifle ABS-EXPR  
+Syntax: .elseiflt ABS-EXPR  
+Syntax: .elseifnarch ARCHITECTURE  
+Syntax: .elseifnb [PART-OF-LINE]  
+Syntax: .elseifnc STR1, STR2  
+Syntax: .elseifndef SYMBOL  
+Syntax: .elseifne ABS-EXPR  
+Syntax: .elseifnes STRING  
+Syntax: .elseifnfmt BINFMT  
+Syntax: .elseifngpu GPUDEVICE  
+Syntax: .elseifnotdef SYMBOL
+
+Part of the if-endif clause. Refer to `.if` pseudo-operation.
+Code between `.else` and `.endif` will be performed if all previous conditions was not
+satisified and condition to this pseudo-operation was satisfied. Otherwise code will be
+skipped.
+
 ### .end
 
 Ends source code compilation at this point.
 
+### .endif
+
+Finish if-endif clause.
+
+### .endm
+
+Finish macro definition
+
+### .endr
+
+Finish code of repetition.
+
 ### .equ, .set
 
-Syntax: .equ SYMBOL, EXPR
-
+Syntax: .equ SYMBOL, EXPR  
 Syntax: .set SYMBOL, EXPR
 
 Define symbol with specified value of the expression given in second operand. Symbol
@@ -90,6 +149,24 @@ Syntax: .equiv SYMBOL, EXPR
 Define symbol with specified value of the expression given in second operand.
 Symbol defined by using `.equiv` can not be redefined. If symbol was already defined
 this pseudo-operations causes an error.
+
+### .eqv
+
+Syntax: .eqv SYMBOL, EXPR
+
+Define symbol with specified expression given in second operand.
+The expression of symbol will be evaluated any time when symbol will be used.
+This feature allow to change value of symbol indirectly by changing value of the symbols
+used in expression. Example:
+
+```
+a = 3
+b = 5
+.eqv currentValue, a+b  # now currentValue is equal to 8
+.int currentValue
+b = 7
+.int currentValue  # we changed b to 7, so we put 10
+```
 
 ### .err
 
@@ -120,8 +197,7 @@ This pseudo-operations is ignored by CLRX assembler.
 
 ### .fill, .fillq
 
-Syntax: .fill REPEAT[, SIZE[, VALUE]]
-
+Syntax: .fill REPEAT[, SIZE[, VALUE]]  
 Syntax: .fillq REPEAT[, SIZE[, VALUE]]
 
 Store value many times. First expression defines how many times value will be stored.
@@ -135,8 +211,7 @@ Size of value can be 0. First expression too.
 
 ### .float, .single
 
-Syntax: .float DOUBLE-VAL,...
-
+Syntax: .float DOUBLE-VAL,...  
 Syntax: .single DOUBLE-VAL,...
 
 Put single-precision floating point values into current section.

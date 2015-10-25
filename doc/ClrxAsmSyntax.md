@@ -24,6 +24,10 @@ Statement can be separated in single line by semicolon `;`. Like that:
 Single comment begins from `#`. Multiline comment is same as in C/C++ language:
 begins from `/*` and terminates at `*/`.
 
+Names of pseudo-operations, macro names, processors instructions and other names
+(for example: argument type, gpu device type) are case-insensitive. Symbol names are
+case-sensitive.
+
 ### Symbols
 
 CRLX assembler operates on the symbols. The symbol is value that can be a absolute value or
