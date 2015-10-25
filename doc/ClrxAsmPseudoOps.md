@@ -50,7 +50,7 @@ One of following architecture can be set: GCN1.0, GCN1.1, GCN1.2.
 
 ### .ascii
 
-Syntax: .ascii STRING,....
+Syntax: .ascii "STRING",....
 
 Emit ASCII string. This pseudo-operations does not add the
 null-terminated character. If more than one string will be given then all given
@@ -58,7 +58,7 @@ string will be concatenated.
 
 ### .asciz
 
-Syntax: .asciz STRING,....
+Syntax: .asciz "STRING",....
 
 Emit ASCII string. This pseudo-operations adds the
 null-terminated character. If more than one string will be given then all given
@@ -104,11 +104,11 @@ Syntax: .elseif ABS-EXPR
 Syntax: .elseif32  
 Syntax: .elseif64  
 Syntax: .elseifarch ARCHITECTURE  
-Syntax: .elseifb [PART-OF-LINE]  
-Syntax: .elseifc STR1, STR2  
+Syntax: .elseifb STRING  
+Syntax: .elseifc STRING1, STRING2  
 Syntax: .elseifdef SYMBOL  
 Syntax: .elseifeq ABS-EXPR  
-Syntax: .elseifeqs STRING  
+Syntax: .elseifeqs "STRING1","STRING2"  
 Syntax: .elseiffmt BINFMT  
 Syntax: .elseifge ABS-EXPR  
 Syntax: .elseifgpu GPUDEVICE  
@@ -116,11 +116,11 @@ Syntax: .elseifgt ABS-EXPR
 Syntax: .elseifle ABS-EXPR  
 Syntax: .elseiflt ABS-EXPR  
 Syntax: .elseifnarch ARCHITECTURE  
-Syntax: .elseifnb [PART-OF-LINE]  
-Syntax: .elseifnc STR1, STR2  
+Syntax: .elseifnb STRING  
+Syntax: .elseifnc STRING1, STRING2  
 Syntax: .elseifndef SYMBOL  
 Syntax: .elseifne ABS-EXPR  
-Syntax: .elseifnes STRING  
+Syntax: .elseifnes "STRING1","STRING2"  
 Syntax: .elseifnfmt BINFMT  
 Syntax: .elseifngpu GPUDEVICE  
 Syntax: .elseifnotdef SYMBOL
@@ -188,7 +188,7 @@ This pseudo-operation causes error at point where is encountered.
 
 ### .error
 
-Syntax: .error STRING
+Syntax: .error "STRING"
 
 This pseudo-operation causes error and print error given in string.
 
@@ -294,11 +294,11 @@ Syntax: .if ABS-EXPR
 Syntax: .if32  
 Syntax: .if64  
 Syntax: .ifarch ARCHITECTURE  
-Syntax: .ifb [PART-OF-LINE]  
-Syntax: .ifc STR1, STR2  
+Syntax: .ifb STRING  
+Syntax: .ifc STRING1, STRING2  
 Syntax: .ifdef SYMBOL  
 Syntax: .ifeq ABS-EXPR  
-Syntax: .ifeqs STRING  
+Syntax: .ifeqs "STRING1","STRING2"  
 Syntax: .iffmt BINFMT  
 Syntax: .ifge ABS-EXPR  
 Syntax: .ifgpu GPUDEVICE  
@@ -306,11 +306,11 @@ Syntax: .ifgt ABS-EXPR
 Syntax: .ifle ABS-EXPR  
 Syntax: .iflt ABS-EXPR  
 Syntax: .ifnarch ARCHITECTURE  
-Syntax: .ifnb [PART-OF-LINE]  
-Syntax: .ifnc STR1, STR2  
+Syntax: .ifnb STRING  
+Syntax: .ifnc STRING1, STRING2  
 Syntax: .ifndef SYMBOL  
 Syntax: .ifne ABS-EXPR  
-Syntax: .ifnes STRING  
+Syntax: .ifnes "STRING1","STRING2"  
 Syntax: .ifnfmt BINFMT  
 Syntax: .ifngpu GPUDEVICE  
 Syntax: .ifnotdef SYMBOL
@@ -359,7 +359,7 @@ will be appended.
 
 ### .include
 
-Syntax: .include FILENAME
+Syntax: .include "FILENAME"
 
 Include new source code file and begins assemblying from this file.
 An assembler automatically returns to previous file if encounters end of the that file.
@@ -397,7 +397,7 @@ Rules regarding to substituting variables are same as in macro substitution. Ref
 
 ### .irpc
 
-Syntax: .irp NAME, STRING
+Syntax: .irpc NAME, STRING
 
 Begin repetition with the named variable.Nth occurrence of name will be replaced by
 nth character of the string (second operand).
@@ -573,7 +573,7 @@ same alignment.
 
 ### .print
 
-Syntax: .print STRING
+Syntax: .print "STRING"
 
 Print string into standard output (or defined print output).
 
@@ -622,9 +622,9 @@ Go to `.rodata` section. If this section doesn't exist assembler create it.
 
 ### .sbttl, .tittle, .version
 
-Syntax: .sbttl STRING  
-Syntax: .title STRING  
-Syntax: .version STRING
+Syntax: .sbttl "STRING"  
+Syntax: .title "STRING"  
+Syntax: .version "STRING"
 
 These pseudo-operations are ignored by CLRX assembler.
 
@@ -665,10 +665,10 @@ then assembler stores 0's.
 
 ### .string, .string16, .string32, .string64
 
-Syntax: .string STRING,....  
-Syntax: .string16 STRING,....  
-Syntax: .string32 STRING,....  
-Syntax: .string64 STRING,....
+Syntax: .string "STRING",....  
+Syntax: .string16 "STRING",....  
+Syntax: .string32 "STRING",....  
+Syntax: .string64 "STRING",....
 
 Emit ASCII string. This pseudo-operations adds the
 null-terminated character. If more than one string will be given then all given
@@ -690,7 +690,7 @@ Undefine symbol. If symbol already doesn't exist then assembler warns about that
 
 ### .warning
 
-Syntax: .warning STRING
+Syntax: .warning "STRING"
 
 Print warning message specified in first argument.
 
