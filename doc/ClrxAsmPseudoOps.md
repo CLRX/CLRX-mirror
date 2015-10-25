@@ -66,15 +66,13 @@ fill value as 4-byte word.
 
 Syntax: .byte ABS-EXPR,....
 
-Put byte values into current section. If any expression is empty then an assembler stores
+Emit byte values. If any expression is empty then an assembler stores
 0 and warns about empty expression. If expression will give a value that can not be stored
 in byte then an assembler warn about that.
 
 ### .data
 
-Syntax: .data
-
-Go to `.data` section or if that section doesn't exists create it.
+Go to `.data` section. If this section doesn't exist assembler create it.
 
 ### .double
 
@@ -159,6 +157,8 @@ this pseudo-operations causes an error.
 Syntax: .eqv SYMBOL, EXPR
 
 Define symbol with specified expression given in second operand.
+Symbol defined by using `.eqv` can not be redefined.
+If symbol was already defined this pseudo-operations causes an error.
 The expression of symbol will be evaluated any time when symbol will be used.
 This feature allow to change value of symbol indirectly by changing value of the symbols
 used in expression. Example:
@@ -223,8 +223,8 @@ Size of value can be 0. First expression too.
 Syntax: .float FLOAT-VAL,...  
 Syntax: .single FLOAT-VAL,...
 
-Put single-precision floating point values into current section.
-If no value between comma then an assembler stores 0 and warn about no value.
+Emit single-precision floating point values. If no value between comma then an
+assembler stores 0 and warn about no value.
 This pseudo-operation accepts only single precision floating point literals.
 
 ### .format
@@ -237,6 +237,11 @@ Choose binary format. Binary can be one of following list:
 * `amd`, `catalyst` - AMD Catalyst OpenCL binary format
 * `gallium` - the GalliumCompute binary format
 * `raw` - rawcode (raw program instructions)
+
+### .gallium
+
+This pseudo-operation should to be at begin of source.
+Choose GalliumCompute OpenCL program binary format.
 
 ### .global, .globl
 
@@ -260,15 +265,16 @@ Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji and Carrizo.
 
 Syntax: .half HALF-VAL,...
 
-Put half-precision floating point values into current section.
+Emit half-precision floating point values.
 If no value between comma then an assembler stores 0 and warn about no value.
 This pseudo-operation accepts only half precision floating point literals.
 
-### .hword
+### .hword, .short
 
 Syntax: .hword ABS-EXPR,....
+Syntax: .short ABS-EXPR,....
 
-Put 2-byte word values into current section. If any expression is empty then an assembler
+Emit 2-byte word values. If any expression is empty then an assembler
 stores 0 and warns about empty expression. If expression will give a value that can not be
 stored in 2-byte word then an assembler warn about that.
 
@@ -352,19 +358,254 @@ include paths. If file not found again then assembler prints error.
 
 ### .irp
 
-Syntax: .irp NAME, STRING ...
+Syntax: .irp NAME, STRING,...  
+Syntax: .irp NAME STRING ...
+
+Begin repetition with the named variable. Nth occurrence of name will be replaced by
+nth string. The name of variable must be preceded by `\` character.
+
+Sample usage:
+
+```
+.irp reg v0,v1,v4,v5
+    v_mul_f32 v10,\reg
+.endr
+```
+
+produces:
+
+```
+    v_mul_f32 v10,v0
+    v_mul_f32 v10,v1
+    v_mul_f32 v10,v4
+    v_mul_f32 v10,v5
+```
+
+Alternate syntax does not require a comma separator between strings and variable name.
+Rules regarding to substituting variables are same as in macro substitution. Refer to
+`.macro` pseudo-operation.
+
+### .irpc
+
+Syntax: .irp NAME, STRING
+
+Begin repetition with the named variable.Nth occurrence of name will be replaced by
+nth character of the string (second operand).
+The name of variable must be preceded by `\` character.
+
+```
+.irp reg 0145
+    v_mul_f32 v10,v\reg
+.endr
+```
+
+produces:
+
+```
+    v_mul_f32 v10,v0
+    v_mul_f32 v10,v1
+    v_mul_f32 v10,v4
+    v_mul_f32 v10,v5
+```
+
+Rules regarding to substituting variables are same as in macro substitution. Refer to
+`.macro` pseudo-operation.
 
 ### .int, .long
 
 Syntax: .int ABS-EXPR,....  
 Syntax: .long ABS-EXPR,....
 
-Put 4-byte word values into current section. If any expression is empty then an assembler
+Emit 4-byte word values. If any expression is empty then an assembler
 stores 0 and warns about empty expression. If expression will give a value that can not be
 stored in 4-byte word then an assembler warn about that.
+
+### .kernel
+
+Syntax: .kernel KERNELNAME
+
+Create new kernel with default section or move to an existing kernel and
+its default section. Types of section which can to be belonging to kernel depends on
+the binary format.
+
+### .lflags
+
+This pseudo-operation is ignored by CLRX assembler.
 
 ### .ln, .line
 
 These pseudo-operations are ignored by CLRX assembler.
 
 ### .local
+
+Syntax: .local SYMBOL,...
+
+Indicates that symbols will be a local. Local symbol are not visible in other
+binary objects and they can be used only locally.
+
+### .macro
+
+Syntax: .macro MACRONAME, ARG,...  
+Syntax: .macro MACRONAME ARG ...
+
+Begin macro definition. The macro is recorded code that can be used later in source code.
+Macro can accepts one or more arguments that will be substituted in its body.
+Occurrence of the argument must be preceded by `\` character.
+
+Special case of substitution is `\@` that replaced by number of the macro substitution.
+Sometimes substitution must be joined with other name. In this case '\()` can be used to
+split argument occurrence and other name. Example:
+
+```
+.macro macro1, x
+.set \x\()Symbol, 10 # set symbol Xsymbol to value 10
+.endm
+macro1 Linux # define LinuxSymbol=10
+```
+
+That substitution is useful to create labels and symbols that can not be redefined.
+Value of the argument is string. Optionally, argument can have the default value
+which will be used if no argument value is not given in a macro call.
+
+List of the argument definition:
+
+* `arg1` - simple argument
+* `arg1=value` - argument with default value
+* `arg1:req` - required argument
+* `arg:vararg` - variadic argument, get rest of the arguments and treats them as
+single (must be last)
+* `arg1:vararg:req` - required argument and variadic argument
+
+A macro calling is easy:
+
+```
+somemacro
+somemacro1 1,2,4
+somemacro1 1 2 3
+/* use variadic argument */
+.macro putHeaderAndData x,data:vararg
+    .byte \x&0x3f, \data
+.endm
+putHeaderAndData 0xfe,1,4,6,7,110
+```
+
+Some simple examples:
+
+```
+.macro putTwoBytes value1,value2
+    .byte \value1+\value2, \value2-\value1
+.endm
+putTwoBytes 4,7 # generates .byte 11,3
+.macro putTwoBytes2 value1=100,value2
+    .byte \value1+\value2, \value2-\value1
+.endm
+putTwoBytes2 ,7 # generates .byte 107,93
+```
+
+The argument substitution works inside double-quoted strings:
+
+```
+.macro putVersionInfo major,minor,micro
+.ascii "CLRadeonExtender \major\().\minor\().\micro"
+.endm
+putVersionInfo 1,2,3 # generates string "CLRadeonExtender 1.2.3"
+```
+
+It is possible to create the nested definitions like that:
+
+```
+.macro generators m,value1,value2
+    .macro gen\m x1,x2  # define genM with two arguments
+        /* use first and second operand of parent macro, and use two
+         * operands from this macro */
+        .int (\x1+\x2)*(\value1+\value2) 
+    .endm    
+.endm
+/* define genF1 */
+generators F1,2,3
+/* use genF1, generates (10+12)*(2+3) -> 22*5 -> 110 */
+genF1 10,12
+```
+
+### .main
+
+Go to main binary over binary of the kernel.
+
+### .octa
+
+Syntax: .octa OCTA-LITERAL,...
+
+Emit 128-bit word values. If no value between comma then an assembler stores 0 and warn
+about no value. This pseudo-operation accepts only 128-bit word literals.
+
+### .offset
+
+Syntax: .offset ABS-EXPR
+
+Set the output counter to some place in absolute section. Useful to defining
+fields of the structures.
+
+### .org
+
+Syntax: .org EXPRESSION
+
+Set the output counter to place defined by expression. Expression can point to some
+place in the code or some place to absolute section (absolute value). If a expression
+points to some place of a code, moving backwards is illegal.
+
+### .p2align
+
+Syntax: .p2align POWOF2ALIGN[, VALUE[, LIMIT]]
+
+Refer to `.align`. First argument is power of two of the alignment instead of
+same alignment.
+
+### .print
+
+Syntax: .print STRING
+
+Print string into standard output (or defined print output).
+
+### .purgem
+
+Syntax: .purgem MACRONAME
+
+Undefine macro MACRONAME.
+
+### .quad
+
+Syntax: .quad ABS-EXPR,....
+
+Emit 8-byte word values. If any expression is empty then an assembler
+stores 0 and warns about empty expression.
+
+### .rawcode
+
+This pseudo-operation should to be at begin of source.
+Choose raw code (same processor's instructions).
+
+### .rodata
+
+Go to `.rodata` section. If this section doesn't exist assembler create it.
+
+### .sbttl, .tittle, .version
+
+Syntax: .sbttl STRING  
+Syntax: .title STRING  
+Syntax: .version STRING
+
+These pseudo-operations are ignored by CLRX assembler.
+
+### .text
+
+Go to `.text` section. If this section doesn't exist assembler create it.
+
+### .word
+
+Syntax: .word ABS-EXPR,....
+
+Emit processor's word values. If any expression is empty then
+an assembler stores 0 and warns about empty expression. If expression will give a value
+that can not be stored in processor's word then an assembler warn about that.
+
+Processor's word have always 4 bytes.
