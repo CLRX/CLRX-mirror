@@ -9,9 +9,9 @@ Aborts compilation.
 
 ### .align, .balign
 
-Syntax: .align ABS-EXPR[, ABS-EXPR[, ABS-EXPR]]
+Syntax: .align ALIGNMENT[, VALUE[, LIMIT]]
 
-Syntax: .balign ABS-EXPR[, ABS-EXPR[, ABS-EXPR]]
+Syntax: .balign ALIGNMENT[, VALUE[, LIMIT]]
 
 Align current position to value of the first expression.
 Value of that expression must be a power of two.
@@ -41,9 +41,9 @@ string will be concatenated.
 
 ### .balignw, .balignl
 
-Syntax: .balignw ABS-EXPR[, ABS-EXPR[, ABS-EXPR]]
+Syntax: .balignw ALIGNMENT[, VALUE[, LIMIT]]
 
-Syntax: .balignl ABS-EXPR[, ABS-EXPR[, ABS-EXPR]]
+Syntax: .balignl ALIGNMENT[, VALUE[, LIMIT]]
 
 Refer to `.align`. `.balignw` treats fill value as 2-byte word. `.balignl` treats
 fill value as 4-byte word.
@@ -120,9 +120,9 @@ This pseudo-operations is ignored by CLRX assembler.
 
 ### .fill, .fillq
 
-Syntax: .fill ABS-EXPR[, ABS-EXPR[, ABS-EXPR]]
+Syntax: .fill REPEAT[, SIZE[, VALUE]]
 
-Syntax: .fillq ABS-EXPR[, ABS-EXPR[, ABS-EXPR]]
+Syntax: .fillq REPEAT[, SIZE[, VALUE]]
 
 Store value many times. First expression defines how many times value will be stored.
 Second expression defines how long is value. Third expression defines value to be stored.
