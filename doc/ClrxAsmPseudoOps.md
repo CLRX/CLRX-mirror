@@ -1,7 +1,11 @@
-## CLRadeonExtender Assembler syntax
+## CLRadeonExtender Assembler Pseudo-Operations
 
 The CLRX assembler accepts the almost pseudo-operations from GNU as.
-This chapter lists and explain standard pseudo-operations.
+This chapter lists and explains standard pseudo-operations.
+
+A CLRX assembler stores values greater than byte in the little-endian ordering.
+
+## List of the pseudo-operations
 
 ### .abort
 
@@ -63,8 +67,8 @@ fill value as 4-byte word.
 Syntax: .byte ABS-EXPR,....
 
 Put byte values into current section. If any expression is empty then an assembler stores
-0 and warn about empty expression. If expression will give a value that can not be stored
-in bytes then an assembler warn about that.
+0 and warns about empty expression. If expression will give a value that can not be stored
+in byte then an assembler warn about that.
 
 ### .data
 
@@ -178,6 +182,11 @@ Syntax: .error STRING
 
 This pseudo-operation causes error and print error given in string.
 
+### .exitm
+
+This pseudo-operation can be used only inside macro definitions. It does early exiting
+from macro. Useful while using conditions inside a macros.
+
 ### .extern
 
 Syntax: .extern SYMBOL,...
@@ -193,7 +202,7 @@ Otherwise assembler print error and fails.
 
 ### .file
 
-This pseudo-operations is ignored by CLRX assembler.
+This pseudo-operation is ignored by CLRX assembler.
 
 ### .fill, .fillq
 
@@ -211,9 +220,151 @@ Size of value can be 0. First expression too.
 
 ### .float, .single
 
-Syntax: .float DOUBLE-VAL,...  
-Syntax: .single DOUBLE-VAL,...
+Syntax: .float FLOAT-VAL,...  
+Syntax: .single FLOAT-VAL,...
 
 Put single-precision floating point values into current section.
 If no value between comma then an assembler stores 0 and warn about no value.
 This pseudo-operation accepts only single precision floating point literals.
+
+### .format
+
+Syntax: .format BINFORMAT
+
+This pseudo-operation should to be at begin of source.
+Choose binary format. Binary can be one of following list:
+
+* `amd`, `catalyst` - AMD Catalyst OpenCL binary format
+* `gallium` - the GalliumCompute binary format
+* `raw` - rawcode (raw program instructions)
+
+### .global, .globl
+
+Syntax: .global SYMBOL,...  
+Syntax: .globl SYMBOL,...
+
+Indicates that symbols will be a global. Global symbol can be used
+across many object files. The CLRX assembler can expose global symbols at output binary if
+adding sybols will be enabled.
+
+### .gpu GPUDEVICE
+
+Syntax: .gpu GPUDEVICE
+
+This pseudo-operation should to be at begin of source. Set GPU device.
+One of following device type can be set:
+CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji and Carrizo.
+
+### .half
+
+Syntax: .half HALF-VAL,...
+
+Put half-precision floating point values into current section.
+If no value between comma then an assembler stores 0 and warn about no value.
+This pseudo-operation accepts only half precision floating point literals.
+
+### .hword
+
+Syntax: .hword ABS-EXPR,....
+
+Put 2-byte word values into current section. If any expression is empty then an assembler
+stores 0 and warns about empty expression. If expression will give a value that can not be
+stored in 2-byte word then an assembler warn about that.
+
+### .ifXXX
+
+Syntax: .if ABS-EXPR  
+Syntax: .if32  
+Syntax: .if64  
+Syntax: .ifarch ARCHITECTURE  
+Syntax: .ifb [PART-OF-LINE]  
+Syntax: .ifc STR1, STR2  
+Syntax: .ifdef SYMBOL  
+Syntax: .ifeq ABS-EXPR  
+Syntax: .ifeqs STRING  
+Syntax: .iffmt BINFMT  
+Syntax: .ifge ABS-EXPR  
+Syntax: .ifgpu GPUDEVICE  
+Syntax: .ifgt ABS-EXPR  
+Syntax: .ifle ABS-EXPR  
+Syntax: .iflt ABS-EXPR  
+Syntax: .ifnarch ARCHITECTURE  
+Syntax: .ifnb [PART-OF-LINE]  
+Syntax: .ifnc STR1, STR2  
+Syntax: .ifndef SYMBOL  
+Syntax: .ifne ABS-EXPR  
+Syntax: .ifnes STRING  
+Syntax: .ifnfmt BINFMT  
+Syntax: .ifngpu GPUDEVICE  
+Syntax: .ifnotdef SYMBOL
+
+Open if-endif clause. After that pseudo-op can encounter `.elseifXX` or `.else`
+pseudo-operations. If condition of that pseudo-operations is satisfied then
+code will be performed.
+
+List of the `.if` kinds:
+
+* `.if` - perform code if value is not zero.
+* `.if32` - perform code if 32-bit binary.
+* `.if64` - perform code if 64-bit binary.
+* `.ifarch` - perform code if specified architecture was set.
+* `.ifb` - perform code if all character after name of this pseudo-op is blank.
+* `.ifc` - compare two unquoted strings. If are equal then perform code.
+* `.ifdef` - perform code if symbol was defined
+* `.ifeq` - perform code if value is zero.
+* `.ifeqs` - perform code if two quoted string are equal.
+* `.iffmt` - perform code if specified binary format was set.
+* `.ifge` - perform code if value is greater or equal to zero.
+* `.ifgpu` - perform code if specified GPU device type was set.
+* `.ifgt` - perform code if value is greater than zero.
+* `.ifle` - perform code if value is less or equal to zero.
+* `.iflt` - perform code if value is less than zero.
+* `.ifnarch` - perform code if specified architecture was not set.
+* `.ifnb` - perform code if any character after name of this pseudo-op is not blank.
+* `.ifnc` - compare two unquoted strings. If are not equal then perform code.
+* `.ifndef` - perform code if symbol was not defined.
+* `.ifne` - perform code if value is not zero.
+* `.ifnes` - perform code if two quoted string are not equal.
+* `.ifnfmt` - perform code if specified binary format was not set.
+* `.ifngpu` - perform code if specified GPU device type was not set.
+* `.ifnotdef` - perform code if symbol was not defined.
+
+### .incbin
+
+Syntax: .incbin FILENAME[, OFFSET[, COUNT]]
+
+Append the binary file into currenct section. If file not found in the current directory
+then assembler searches file in the include paths. If file not found again then assembler
+prints error. Second optional argument defines offset (how many bytes should to be skipped).
+By default assembler begin appending from first byte.
+Third argument defines maximum number bytes to append. By default all data from binary
+will be appended.
+
+### .include
+
+Syntax: .include FILENAME
+
+Include new source code file and begins assemblying from this file.
+An assembler automatically returns to previous file if encounters end of the that file.
+If file not found in the current directory then assembler searches file in the
+include paths. If file not found again then assembler prints error.
+
+### .irp
+
+Syntax: .irp NAME, STRING ...
+
+### .int, .long
+
+Syntax: .int ABS-EXPR,....  
+Syntax: .long ABS-EXPR,....
+
+Put 4-byte word values into current section. If any expression is empty then an assembler
+stores 0 and warns about empty expression. If expression will give a value that can not be
+stored in 4-byte word then an assembler warn about that.
+
+### .ln, .line
+
+These pseudo-operations are ignored by CLRX assembler.
+
+### .local

@@ -10,13 +10,11 @@ repetitions.
 
 the `clrxasm` can be invoked in following way:
 
-```
 clrxasm [-6Sw?] [-D SYM[=VALUE]] [-I PATH] [-o OUTFILE] [-b BINFORMAT]
 [-g GPUDEVICE] [-A ARCH] [-t VERSION] [--defsym=SYM[=VALUE]] [--includePath=PATH]
 [--output OUTFILE] [--binaryFormat=BINFORMAT] [--64bit] [--gpuType=GPUDEVICE]
 [--arch=ARCH] [--driverVersion=VERSION] [--forceAddSymbols] [--noWarnings]
 [--help] [--usage] [--version] [file...]
-```
 
 ### Input
 

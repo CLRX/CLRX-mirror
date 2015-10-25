@@ -13,11 +13,9 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 the `clrxdisasm` can be invoked in following way:
 
-```
 clrxdisasm [-mdcfhar?] [-g GPUDEVICE] [-a ARCH] [--metadata] [--data] [--calNotes]
 [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH]
 [--help] [--usage] [--version] [file...]
-```
 
 ### Program Options
 

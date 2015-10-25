@@ -15,5 +15,3 @@ the GalliumCompute program binaries.
     * [Assembler syntax](ClrxAsmSyntax)
     * [Assembler pseudo-operations](ClrxAsmPseudoOps)
 ---
-
-
