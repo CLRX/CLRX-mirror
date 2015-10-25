@@ -14,4 +14,6 @@ the GalliumCompute program binaries.
     * [Invoking assembler](ClrxAsmInvoke)
     * [Assembler syntax](ClrxAsmSyntax)
     * [Assembler pseudo-operations](ClrxAsmPseudoOps)
+    * [AMD Catalyst OpenCL handling](ClrxAsmAmd)
+    * [GalliumCompute handling](ClrxAsmGallium)
 ---

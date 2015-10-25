@@ -673,9 +673,9 @@ Syntax: .string64 "STRING",....
 Emit ASCII string. This pseudo-operations adds the
 null-terminated character. If more than one string will be given then all given
 string will be concatenated.
-`.string16` emits string of 2-byte characters.
-`.string32` emits string of 4-byte characters.
-`.string64` emits string of 8-byte characters.
+`.string16` emits string with 2-byte characters.
+`.string32` emits string with 4-byte characters.
+`.string64` emits string with 8-byte characters.
 Characters longer than 1 byte will be zero expanded.
 
 ### .text

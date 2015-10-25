@@ -1,0 +1,185 @@
+## CLRadeonExtender Assembler Gallium handling
+
+The GalliumCompute is an open-source the OpenCL implementation for the Mesa3D
+drivers. It divided into three components: CLover, libclc, LLVM AMDGPU. Since LLVM v3.6
+and Mesa3D v10.5, GalliumCompute binary format with native code. CLRadeonExtender
+supports only these binaries.
+
+## Binary format
+
+The binary format contains: kernel informations and the main binary in the ELF format.
+Main `.text` section contains all code for all kernels. Optionally,
+section `.rodata` contains constant global data for all kernels.
+Main binary have the kernel configuration (ProgInfo) in the `.AMDGPU.config` section.
+
+The assembler source code divided to two parts:
+
+* kernel configuration
+* kernel constant data (in `.rodata` section)
+* kernel code (in `.text` section`)
+
+Kernel function should to be aligned to 256 byte boundary.
+
+## List of the specific pseudo-operations
+
+### .arg
+
+Syntax: .arg ARGTYPE, SIZE[, TARGETSIZE[, ALIGNMENT[, NUMEXT[, SEMANTIC]]]]
+
+Adds kernel argument definition. Must be inside argument configuration.
+First argument is type:
+
+* scalar - scalar value
+* contant - constant pointer (32-bit ???)
+* global - global pointer (64-bit)
+* local - local pointer
+* image2d_rdonly - ??
+* image2d_wronly - ??
+* image3d_rdonly - ??
+* image3d_wronly - ??
+* sampler - ??
+* griddim - shortcut for griddim argument definition
+* gridoffset - shortcut for gridoffset argument definition
+
+Second argument is size of argument. Third argument is targetSize which
+should be a multiplier of 4. Fourth argument is target alignment.
+Fifth argument determines how extend numeric value to larger target size:
+`sext` - signed, `zext` - zero extend. If argument is smaller than 4 byte,
+then `sext` can be to define signed integer, `zext` to unsigned integer.
+Sixth argument is semantic:
+
+* general - general argument
+* griddim - griddim argument
+* gridoffset - gridoffset argument
+* imgsize - image size
+* imgformat - image format
+
+Example argument definition:
+
+```
+.arg scalar, 4, 4, 4, zext, general
+.arg global, 8, 8, 8, zext, general
+.arg scalar, 4, 4, 4, zext, griddim # shortcut: .arg griddim
+.arg scalar, 4, 4, 4, zext, gridoffset # shortcut .arg gridoffset
+```
+
+Last two arguments (griddim, gridoffset) shall to be defined in any kernel definition.
+
+### .args
+
+Open kernel argument configuration. Must be inside kernel.
+
+### .config
+
+Open kernel configuration. Must be inside kernel. Kernel configuration can not be
+defined if proginfo configuration was defined (by using `.proginfo`).
+Following pseudo-ops can be inside kernel config:
+
+* .dims DIMS - choose dimensions used by kernel function. Can be: x,y,z.
+* .floatmode VALUE - choose float mode for kernel (byte value).
+Default value is 0xc0
+* .ieeemode VALUE - choose IEEE mode for kernel
+* .localsize SIZE - initial local data size for kernel in bytes
+* .pgmrsrc2 VALUE - value of the PGMRSRC2 (only bits that is not set by other pseudo-ops)
+* .priority VALUE - set priority for kernel (0-3). Default value is 0.
+* .scratchbuffer SIZE - size of scratchbuffer (???). Default value is 0.
+* .sgprsnum NUMBER - number of SGPR registers used by kernel (excluding VCC,FLAT_SCRATCH).
+By default, automatically computed by assembler.
+* .vgprsnum NUMBER - number of VGPR registers used by kernel.
+By default, automatically computed by assembler.
+* .userdatanum NUMBER - number of USERDATA used by kernel (0-16). Default value is 4.
+* .tgsize - enables using of TG_SIZE_EN (we recommend to add this always)
+
+Example configuration:
+
+```
+.config
+    .dims xyz
+    .tgsize
+```
+
+### .entry
+
+Syntax: .entry ADDRESS, VALUE
+
+Add entry of proginfo. Must be inside proginfo configuration. Sample proginfo:
+
+```
+.entry 0x0000b848, 0x000c0080
+.entry 0x0000b84c, 0x00001788
+.entry 0x0000b860, 0x00000000
+```
+
+### .proginfo
+
+Open progInfo definition. Must be inside kernel.
+ProgInfo shall to be containing 3 entries. ProgInfo can not be defined if kernel config
+was defined (by using `.config`).
+
+## Sample code
+
+This is sample example of the kernel setup:
+
+```
+.kernel DCT
+    .args
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg local, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .proginfo
+        .entry 0x0000b848, 0x000c0183
+        .entry 0x0000b84c, 0x00001788
+        .entry 0x0000b860, 0x00000000
+```
+
+with kernel configuration:
+
+```
+    .args
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg local, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims xyz
+        .tgsize
+```
+
+All code:
+
+```
+.gallium
+.gpu CapeVerde
+.kernel DCT
+    .args
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg global, 8, 8, 8, zext, general
+        .arg local, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .proginfo
+        .entry 0x0000b848, 0x000c0183
+        .entry 0x0000b84c, 0x00001788
+        .entry 0x0000b860, 0x00000000
+.text
+DCT:
+/*c0030106         */ s_load_dword    s6, s[0:1], 0x6
+/*c0038107         */ s_load_dword    s7, s[0:1], 0x7
+/* we skip rest of instruction to demonstrate how to write GalliumCompute program */
+/*bf810000         */ s_endpgm
+```

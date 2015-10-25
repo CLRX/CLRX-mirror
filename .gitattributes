@@ -55,6 +55,7 @@ clwrapper/DispatchStruct.h -text
 clwrapper/InternalDecls.h -text
 cmake/Pod2Man.cmake -text
 doc/CMakeLists.txt -text svneol=unset#text/plain
+doc/ClrxAsmGallium.md -text
 doc/ClrxAsmInvoke.md -text
 doc/ClrxAsmPseudoOps.md -text
 doc/ClrxAsmSyntax.md -text
