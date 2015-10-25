@@ -7,6 +7,16 @@ A CLRX assembler stores values greater than byte in the little-endian ordering.
 
 ## List of the pseudo-operations
 
+### .32bit
+
+This pseudo-operation should to be at begin of source.
+Choose 32-bit binaries (it have meaningful for the AMD Catalyst binary format)
+
+### .64bit
+
+This pseudo-operation should to be at begin of source.
+Choose 64-bit binaries (it have meaningful for the AMD Catalyst binary format)
+
 ### .abort
 
 Aborts compilation.
@@ -42,7 +52,7 @@ One of following architecture can be set: GCN1.0, GCN1.1, GCN1.2.
 
 Syntax: .ascii STRING,....
 
-Put ASCII string into current section. This pseudo-operations does not add the
+Emit ASCII string. This pseudo-operations does not add the
 null-terminated character. If more than one string will be given then all given
 string will be concatenated.
 
@@ -50,7 +60,7 @@ string will be concatenated.
 
 Syntax: .asciz STRING,....
 
-Put ASCII string into current section. This pseudo-operations adds the
+Emit ASCII string. This pseudo-operations adds the
 null-terminated character. If more than one string will be given then all given
 string will be concatenated.
 
@@ -209,7 +219,7 @@ This pseudo-operation is ignored by CLRX assembler.
 Syntax: .fill REPEAT[, SIZE[, VALUE]]  
 Syntax: .fillq REPEAT[, SIZE[, VALUE]]
 
-Store value many times. First expression defines how many times value will be stored.
+Emit value many times. First expression defines how many times value will be stored.
 Second expression defines how long is value. Third expression defines value to be stored.
 If second expression is not given, then assembler assumes that is byte value.
 If third expression is not given then assembler stores 0's. Assembler takes only
@@ -538,9 +548,10 @@ Syntax: .octa OCTA-LITERAL,...
 Emit 128-bit word values. If no value between comma then an assembler stores 0 and warn
 about no value. This pseudo-operation accepts only 128-bit word literals.
 
-### .offset
+### .offset, .struct
 
-Syntax: .offset ABS-EXPR
+Syntax: .offset ABS-EXPR  
+Syntax: .struct ABS-EXPR
 
 Set the output counter to some place in absolute section. Useful to defining
 fields of the structures.
@@ -584,6 +595,27 @@ stores 0 and warns about empty expression.
 This pseudo-operation should to be at begin of source.
 Choose raw code (same processor's instructions).
 
+### .rept
+
+Syntax: .rept ABS-EXPR
+
+Open repetition. The code between this pseudo-operation and `.endr` will be repeated
+number given in first argument. Zero value is legal in first argument. Example:
+
+```
+.rept 3
+v_nop
+.endr
+```
+
+generates:
+
+```
+v_nop
+v_nop
+v_nop
+```
+
 ### .rodata
 
 Go to `.rodata` section. If this section doesn't exist assembler create it.
@@ -596,9 +628,78 @@ Syntax: .version STRING
 
 These pseudo-operations are ignored by CLRX assembler.
 
+### .section
+
+Syntax: .section SECTIONNAME[, "FLAGS"[, @TYPE]]
+
+Go to specified section SECTIONNAME. If section doesn't exist assembler create it.
+Second optional argument set flags of the section. Can be from list:
+
+* `a` - allocatable section
+* `w` - writeable section in file
+* `x` - executable section
+
+Third optional argument set type of the section. Default section's type depends on
+the binary format. Type can be one of following type:
+
+* `progbits` - program data
+* `note` - informations about program or other things
+* `nobits` - doesn't contain data (only occupies space)
+
+### .size
+
+Syntax: .size SYMBOL, ABS-EXPR
+
+Set size of symbol SYMBOL. Currently, this feature of symbol is not used by
+the CLRX assembler.
+
+### .skip, .space
+
+Syntax: .skip SIZE-EXPR[, VALUE-EXPR]
+Syntax: .space SIZE-EXPR[, VALUE-EXPR]
+
+Likewise as `.fill`, this pseudo-operation emits value (but byte) many times.
+First expression determines how many values should to be emitted, second expression
+determines what byte value should to be stored. If second expression is not given
+then assembler stores 0's.
+
+### .string, .string16, .string32, .string64
+
+Syntax: .string STRING,....  
+Syntax: .string16 STRING,....  
+Syntax: .string32 STRING,....  
+Syntax: .string64 STRING,....
+
+Emit ASCII string. This pseudo-operations adds the
+null-terminated character. If more than one string will be given then all given
+string will be concatenated.
+`.string16` emits string of 2-byte characters.
+`.string32` emits string of 4-byte characters.
+`.string64` emits string of 8-byte characters.
+Characters longer than 1 byte will be zero expanded.
+
 ### .text
 
 Go to `.text` section. If this section doesn't exist assembler create it.
+
+### .undef
+
+Syntax: .undef SYMBOL
+
+Undefine symbol. If symbol already doesn't exist then assembler warns about that.
+
+### .warning
+
+Syntax: .warning STRING
+
+Print warning message specified in first argument.
+
+### .weak
+
+Syntax: .weak SYMBOL,...
+
+Indicates that symbols will be a weak. Currently, unused feature of the symbol by
+the CLRX assembler.
 
 ### .word
 
