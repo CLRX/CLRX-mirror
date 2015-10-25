@@ -11,6 +11,8 @@ The binary format contains: kernel informations and the main binary in the ELF f
 Main `.text` section contains all code for all kernels. Optionally,
 section `.rodata` contains constant global data for all kernels.
 Main binary have the kernel configuration (ProgInfo) in the `.AMDGPU.config` section.
+ProgInfo holds three addresses and values that describes runtime environment for kernel:
+floating point setup, register usage, local data usage and rest.
 
 The assembler source code divided to two parts:
 
@@ -98,6 +100,13 @@ Example configuration:
     .tgsize
 ```
 
+### .dims
+
+Syntax: .dims DIMENSIONS
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines what dimensions
+(from list: x, y, z) will be used to determine space of the kernel execution.
+
 ### .entry
 
 Syntax: .entry ADDRESS, VALUE
@@ -109,6 +118,18 @@ Add entry of proginfo. Must be inside proginfo configuration. Sample proginfo:
 .entry 0x0000b84c, 0x00001788
 .entry 0x0000b860, 0x00000000
 ```
+
+### .floatmode
+
+Syntax: .floatmode BYTE-VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
+
+### .ieeemode
+
+Syntax: .ieeemode BYTE-VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines ieee-mode.
 
 ### .kcode
 
@@ -137,11 +158,64 @@ Sample usage:
 
 Close `.kcode` clause. Refer to `.kcode`.
 
+### .localsize
+
+Syntax: .localsize SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines initial
+local memory size used by kernel.
+
+### .pgmrsrc2
+
+Syntax: .pgmrsrc2 VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Defines value of the PGMRSRC2 excepts bits which can be set by other
+config pseudo-operations.
+
+### .priority
+
+Syntax: .priority PRIORITY
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines priority (0-3).
+
 ### .proginfo
 
 Open progInfo definition. Must be inside kernel.
 ProgInfo shall to be containing 3 entries. ProgInfo can not be defined if kernel config
 was defined (by using `.config`).
+
+### .scratchbuffer
+
+Syntax: .scratchbuffer SIZE
+
+This pseudo-op must be inside kernel configuration (`.config`). Defines scratchbuffer size.
+
+### .sgprsnum
+
+Syntax: .sgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of scalar
+registers which can be used during kernel execution.
+
+### .tgsize
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Enable usage of the TG_SIZE_EN. Should be set.
+
+### .userdatanum
+
+Syntax: .userdatanum NUMBER
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of
+registers for USERDATA.
+
+### .vgprsnum
+
+Syntax: .vgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration (`.config`). Set number of vector
+registers which can be used during kernel execution.
 
 ## Sample code
 
