@@ -14,11 +14,13 @@ Main binary have the kernel configuration (ProgInfo) in the `.AMDGPU.config` sec
 ProgInfo holds three addresses and values that describes runtime environment for kernel:
 floating point setup, register usage, local data usage and rest.
 
-The assembler source code divided to two parts:
+The assembler source code divided to three parts:
 
 * kernel configuration
 * kernel constant data (in `.rodata` section)
 * kernel code (in `.text` section`)
+
+Order of these parts doesn't matter.
 
 Kernel function should to be aligned to 256 byte boundary.
 
@@ -125,6 +127,10 @@ Syntax: .floatmode BYTE-VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
 
+### .globaldata
+
+Go to constant global data section (`.rodata`).
+
 ### .ieeemode
 
 Syntax: .ieeemode BYTE-VALUE
@@ -141,7 +147,7 @@ two consecutive kernel labels belongs to the kernel with first label name.
 This pseudo-operation can change membership of the code to specified kernels.
 You can nest this `.kcode` any times. Just next .kcode adds or remove membership code
 to kernels. The most important reason why this feature has been added is register usage
-calculation.
+calculation. Any kernel given in this pseudo-operation must be already defined.
 
 Sample usage:
 

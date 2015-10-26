@@ -28,8 +28,8 @@ Choose AMD Catalyst OpenCL program binary format.
 
 ### .align, .balign
 
-Syntax: .align ALIGNMENT[, VALUE[, LIMIT]]  
-Syntax: .balign ALIGNMENT[, VALUE[, LIMIT]]
+Syntax: .align ALIGNMENT[, [VALUE] [, LIMIT]]  
+Syntax: .balign ALIGNMENT[, [VALUE] [, LIMIT]]
 
 Align current position to value of the first expression.
 Value of that expression must be a power of two.
@@ -66,8 +66,8 @@ string will be concatenated.
 
 ### .balignw, .balignl
 
-Syntax: .balignw ALIGNMENT[, VALUE[, LIMIT]]  
-Syntax: .balignl ALIGNMENT[, VALUE[, LIMIT]]
+Syntax: .balignw ALIGNMENT[, [VALUE] [, LIMIT]]  
+Syntax: .balignl ALIGNMENT[, [VALUE] [, LIMIT]]
 
 Refer to `.align`. `.balignw` treats fill value as 2-byte word. `.balignl` treats
 fill value as 4-byte word.
@@ -216,8 +216,8 @@ This pseudo-operation is ignored by CLRX assembler.
 
 ### .fill, .fillq
 
-Syntax: .fill REPEAT[, SIZE[, VALUE]]  
-Syntax: .fillq REPEAT[, SIZE[, VALUE]]
+Syntax: .fill REPEAT[, [SIZE] [, VALUE]]  
+Syntax: .fillq REPEAT[, [SIZE] [, VALUE]]
 
 Emit value many times. First expression defines how many times value will be stored.
 Second expression defines how long is value. Third expression defines value to be stored.
@@ -348,7 +348,7 @@ List of the `.if` kinds:
 
 ### .incbin
 
-Syntax: .incbin FILENAME[, OFFSET[, COUNT]]
+Syntax: .incbin FILENAME[, [OFFSET] [, COUNT]]
 
 Append the binary file into currenct section. If file not found in the current directory
 then assembler searches file in the include paths. If file not found again then assembler
@@ -566,7 +566,7 @@ points to some place of a code, moving backwards is illegal.
 
 ### .p2align
 
-Syntax: .p2align POWOF2ALIGN[, VALUE[, LIMIT]]
+Syntax: .p2align POWOF2ALIGN[, [VALUE] [, LIMIT]]
 
 Refer to `.align`. First argument is power of two of the alignment instead of
 same alignment.
