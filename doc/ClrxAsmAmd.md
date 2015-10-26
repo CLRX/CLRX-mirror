@@ -179,7 +179,7 @@ For ATI_PROGINFO, accepts 2 32-bit values.
 ### .floatconsts
 
 This pseudo-operation must be inside kernel.
-Open ATI_FLOATCONSTS CAL note. Next occurrence in this same kernel, add new CAL note.
+Open ATI_FLOAT32CONSTS CAL note. Next occurrence in this same kernel, add new CAL note.
 
 ### .floatmode
 
@@ -196,3 +196,221 @@ Open ATI_GLOBAL_BUFFERS CAL note. Next occurrence in this same kernel, add new C
 ### .globaldata
 
 Go to constant global data section.
+
+### .header
+
+Go to main header of the binary.
+
+### .hwlocal
+
+Syntax: .hwlocal SIZE
+
+This pseudo-operation must be inside kernel configuration. Set HWLOCAL value, the initial
+local data size.
+
+### .hwregion
+
+Syntax: .hwregion VALUE
+
+This pseudo-operation must be inside kernel configuration. Set HWREGION value.
+
+### .ieeemode
+
+Syntax: .ieeemode BYTE-VALUE
+
+This pseudo-op must be inside kernel configuration. Defines ieee-mode.
+
+
+### .inputs
+
+This pseudo-operation must be inside kernel.
+Open ATI_INPUTS CAL note. Next occurrence in this same kernel, add new CAL note.
+
+### .inputsamplers
+
+This pseudo-operation must be inside kernel.
+Open ATI_INPUT_SAMPLERS CAL note. Next occurrence in this same kernel, add new CAL note.
+
+### .intconsts
+
+This pseudo-operation must be inside kernel.
+Open ATI_INT32CONSTS CAL note. Next occurrence in this same kernel, add new CAL note.
+
+### .metadata
+
+This pseudo-operation must be inside kernel.
+Go to metadata content.
+
+### .outputs
+
+This pseudo-operation must be inside kernel.
+Open ATI_OUTPUTS CAL note. Next occurrence in this same kernel, add new CAL note.
+
+### .persistentbuffers
+
+This pseudo-operation must be inside kernel.
+Open ATI_PERSISTENT_BUFFERS CAL note. Next occurrence in this same kernel,
+add new CAL note.
+
+### .pgmrsrc2
+
+Syntax: .pgmrsrc2 VALUE
+
+This pseudo-operation must be inside kernel configuration. Set PGMRSRC2 value (expect bits
+which can be by using other pseudo-operations).
+
+### .printfid
+
+Syntax: .printfid RESID
+
+This pseudo-operation must be inside kernel configuration. Set printfid.
+
+### .privateid
+
+Syntax: .privateid RESID
+
+This pseudo-operation must be inside kernel configuration. Set privateid.
+
+### .proginfo
+
+This pseudo-operation must be inside kernel.
+Open ATI_PROGINFO CAL note. Next occurrence in this same kernel, add new CAL note.
+
+### .sampler
+
+Syntax: .sampler INPUT, SAMPLER  
+Syntax: .sampler RESID,....
+
+If this pseudo-operation is in ATI_SAMPLER CAL note, then it adds sampler entry.
+If this  pseudo-operation is in kernel configuration, then it adds samplers with specified
+resource ids.
+
+### .scratchbuffer
+
+Syntax: .scratchbuffer SIZE
+
+This pseudo-operation must be inside kernel configuration.
+Set scratchbuffer size.
+
+### .scratchbuffers
+
+This pseudo-operation must be inside kernel.
+Open ATI_SCRATCH_BUFFERS CAL note. Next occurrence in this same kernel, add new CAL note.
+
+### .segment
+
+Syntax: .segment OFFSET, SIZE
+
+This pseudo-operation must be in ATI_BOOL32CONSTS, ATI_INT32CONSTS or
+ATI_FLOAT32CONSTS CAL note. Add entry into CAL note.
+
+### .sgprsnum
+
+Syntax: .sgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration. Set number of scalar
+registers which can be used during kernel execution.
+
+### .subconstantbuffers
+
+This pseudo-operation must be inside kernel.
+Open ATI_SUB_CONSTANT_BUFFERS CAL note. Next occurrence in this same kernel,
+add new CAL note.
+
+### .tgsize
+
+This pseudo-op must be inside kernel configuration.
+Enable usage of the TG_SIZE_EN.
+
+### .uav
+
+This pseudo-operation must be inside kernel.
+Open ATI_UAV CAL note. Next occurrence in this same kernel,
+add new CAL note.
+
+### .uavid
+
+Syntax: .uavid UAVID
+
+This pseudo-op must be inside kernel configuration. Set UAVId value.
+
+### .uavmailboxsize
+
+Syntax: .uavmailboxsize [VALUE]
+
+This pseudo-operation must be inside kernel.
+Open ATI_UAV_MAILBOX_SIZE CAL note. Next occurrence in this same kernel,
+add new CAL note. If first argument is given, then 32-bit value will be added to content.
+
+### .uavopmask
+
+Syntax: .uavopmask [VALUE]
+
+This pseudo-operation must be inside kernel.
+Open ATI_UAV_OP_MASK CAL note. Next occurrence in this same kernel,
+add new CAL note. If first argument is given, then 32-bit value will be added to content.
+
+### .uavprivate
+
+Syntax: .uavprivate VALUE
+
+This pseudo-op must be inside kernel configuration. Set uav private value.
+
+### .useconstdata
+
+Eanble using of the const data.
+
+### .useprintf
+
+Eanble using of the printf mechanism.
+
+### .userdata
+
+Syntax: .userdata DATACLASS, REGSTART, REGSIZE
+
+This pseudo-op must be inside kernel configuration. Add USERDATA entry. First argument is
+data class. It can be one of the following:
+
+* IMM_RESOURCE
+* IMM_SAMPLER
+* IMM_CONST_BUFFER
+* IMM_VERTEX_BUFFER
+* IMM_UAV
+* IMM_ALU_FLOAT_CONST
+* IMM_ALU_BOOL32_CONST
+* IMM_GDS_COUNTER_RANGE
+* IMM_GDS_MEMORY_RANGE
+* IMM_GWS_BASE
+* IMM_WORK_ITEM_RANGE
+* IMM_WORK_GROUP_RANGE
+* IMM_DISPATCH_ID
+* IMM_SCRATCH_BUFFER
+* IMM_HEAP_BUFFER
+* IMM_KERNEL_ARG
+* SUB_PTR_FETCH_SHADER
+* PTR_RESOURCE_TABLE
+* PTR_INTERNAL_RESOURCE_TABLE
+* PTR_SAMPLER_TABLE
+* PTR_CONST_BUFFER_TABLE
+* PTR_VERTEX_BUFFER_TABLE
+* PTR_SO_BUFFER_TABLE
+* PTR_UAV_TABLE
+* PTR_INTERNAL_GLOBAL_TABLE
+* PTR_EXTENDED_USER_DATA
+* PTR_INDIRECT_RESOURCE
+* PTR_INDIRECT_INTERNAL_RESOURCE
+* PTR_INDIRECT_UAV
+* IMM_CONTEXT_BASE
+* IMM_LDS_ESGS_SIZE
+* IMM_GLOBAL_OFFSET
+* IMM_GENERIC_USER_DAT
+
+Second argument determines the first scalar register which will hold userdata.
+Third argument determines how many scalar register needed to hold userdata.
+
+### .vgprsnum
+
+Syntax: .vgprsnum REGNUM
+
+This pseudo-op must be inside kernel configuration. Set number of vector
+registers which can be used during kernel execution.
