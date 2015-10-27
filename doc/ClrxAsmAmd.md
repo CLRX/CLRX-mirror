@@ -181,6 +181,7 @@ Set driver info for this binary.
 Syntax: .driver_version VERSION
 
 Set driver version for this binary. Version in form: MajorVersion*100+MinorVersion.
+This pseudo-op replaces driver info.
 
 ### .earlyexit
 

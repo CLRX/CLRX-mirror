@@ -25,14 +25,14 @@ will read source from standard input.
 
 Following options `clrxasm` can recognize:
 
-* **<-D SYMBOL=[VALUE]**, **--defsym=SYMBOL[=VALUE]**
+* **-D SYMBOL=[VALUE]**, **--defsym=SYMBOL[=VALUE]**
 
     Define symbol. Value is optional and if it is not given then assembler set 0 by default.
 This option can be occurred many times to defining many symbols.
 
 * **-I PATH**, **--includePath=PATH**
 
-    Add to search path list an include path. Assembler begins search from current directory
+    Add  an include path to search path list. Assembler begins search from current directory
 and follows to next include paths.
 This option can be occurred many times to adding many include paths.
 

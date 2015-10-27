@@ -36,7 +36,7 @@ This option can be occurred many times to defining many symbols.
 
 =item B<-I PATH>, B<--includePath=PATH>
 
-Add to search path list an include path. Assembler begins search from current directory
+Add an include path to search path list. Assembler begins search from current directory
 and follows to next include paths.
 This option can be occurred many times to adding many include paths.
 

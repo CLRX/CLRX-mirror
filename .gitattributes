@@ -62,6 +62,7 @@ doc/ClrxAsmPseudoOps.md -text
 doc/ClrxAsmSyntax.md -text
 doc/ClrxDisasm.md -text
 doc/ClrxToc.md -text
+doc/ClrxWrapper.md -text
 doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text
 doc/styles.css -text

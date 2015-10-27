@@ -16,4 +16,5 @@ the GalliumCompute program binaries.
     * [Assembler pseudo-operations](ClrxAsmPseudoOps)
     * [AMD Catalyst OpenCL handling](ClrxAsmAmd)
     * [GalliumCompute handling](ClrxAsmGallium)
+* [CLRXWrapper](ClrxWrapper)
 ---
