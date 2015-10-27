@@ -125,7 +125,7 @@ OPTION(NO_STATIC "Disable static during compiling" OFF)
 OPTION(BUILD_DOCUMENTATION "Build whole documentation" OFF)
 OPTION(BUILD_DOXYGEN "Use Doxygen to create the HTML based API documentation" OFF)
 OPTION(BUILD_MANUAL "Use Pod2Man to create the Unix manuals" OFF)
-OPTION(BUILD_WIKI "Use markdown_py to create offline wiki pages" OFF)
+OPTION(BUILD_CLRXDOC "Use markdown_py to create offline wiki pages" OFF)
 
 IF(BUILD_DOCUMENTATION)
   SET(BUILD_DOXYGEN ON)
