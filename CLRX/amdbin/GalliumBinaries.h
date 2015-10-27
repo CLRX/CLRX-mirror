@@ -311,7 +311,7 @@ struct GalliumKernelConfig
     cxuint usedSGPRsNum;  ///< number of used SGPRs
     uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
     cxbyte userDataNum;   ///< number of user data
-    cxbyte ieeeMode;  ///< IEEE mode
+    bool ieeeMode;  ///< IEEE mode
     cxbyte floatMode; ///< float mode
     cxbyte priority;    ///< priority
     bool tgSize;        ///< enable TG_SIZE_EN bit

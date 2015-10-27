@@ -242,9 +242,9 @@ This pseudo-operation must be inside kernel configuration. Set HWREGION value.
 
 ### .ieeemode
 
-Syntax: .ieeemode BYTE-VALUE
+Syntax: .ieeemode
 
-This pseudo-op must be inside kernel configuration. Defines ieee-mode.
+This pseudo-op must be inside kernel configuration. Set ieee-mode.
 
 
 ### .inputs

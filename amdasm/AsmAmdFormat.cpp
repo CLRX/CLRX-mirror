@@ -798,9 +798,6 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
         case AMDCVAL_PGMRSRC2:
             config.pgmRSRC2 = value;
             break;
-        case AMDCVAL_IEEEMODE:
-            config.ieeeMode = value;
-            break;
         case AMDCVAL_FLOATMODE:
             config.floatMode = value;
             break;
@@ -861,6 +858,8 @@ void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pse
         config.useConstantData = true;
     else if (target == AMDCVAL_USEPRINTF)
         config.usePrintf = true;
+    else if (target == AMDCVAL_IEEEMODE)
+        config.ieeeMode = true;
     else if (target == AMDCVAL_TGSIZE)
         config.tgSize = true;
 }
@@ -1577,7 +1576,8 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
             AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_HWREGION);
             break;
         case AMDOP_IEEEMODE:
-            AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_IEEEMODE);
+            AsmAmdPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                AMDCVAL_IEEEMODE);
             break;
         case AMDOP_INPUTS:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,

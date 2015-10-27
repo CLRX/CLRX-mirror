@@ -390,7 +390,7 @@ thirdKernel:
             .config
             .priority 1
             .floatmode 43
-            .ieeemode 1
+            .ieeemode
             .sgprsnum 36
             .vgprsnum 139
             .pgmrsrc2 523243
@@ -401,7 +401,7 @@ thirdKernel:
             .config
             .dims yz
             .priority 3
-            .ieeemode 1
+            .ieeemode
             .pgmrsrc2 0
 .text
 aa22:
@@ -495,7 +495,7 @@ test.s:28:39: Error: Section type was not preceded by '@'
             .config
             .priority 7
             .floatmode 343
-            .ieeemode 1
+            .ieeemode
             .sgprsnum 136
             .vgprsnum 339
 )ffDXD", "",
@@ -585,7 +585,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
             .sgprsnum 24
             .vgprsnum 47
             .pgmrsrc2 0xaabbccdd
-            .ieeemode 0x03
+            .ieeemode
             .floatmode 0xe0
             .hwlocal 0x33
             .hwregion 394
@@ -809,7 +809,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
       Arg: "v61", "structure*", pointer, structure, constant, 0, 19, 40, 20, true
       Arg: "v62", "structure*", pointer, structure, constant, 0, 22, 40, 20, false
       Sampler: 55 44 332 121
-      dims=5, cws=554 44 11, SGPRS=24, VGPRS=47, pgmRSRC2=0xaabbccdd, ieeeMode=0x3
+      dims=5, cws=554 44 11, SGPRS=24, VGPRS=47, pgmRSRC2=0xaabbccdd, ieeeMode=0x1
       floatMode=0xe0, hwLocalSize=51, hwRegion=394, scratchBuffer=9
       uavPrivate=8, uavId=12, constBufferId=11, printfId=10
       privateId=8, earlyExit=1,condOut=2, 

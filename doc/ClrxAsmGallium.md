@@ -82,7 +82,7 @@ Following pseudo-ops can be inside kernel config:
 * .dims DIMS - choose dimensions used by kernel function. Can be: x,y,z.
 * .floatmode VALUE - choose float mode for kernel (byte value).
 Default value is 0xc0
-* .ieeemode VALUE - choose IEEE mode for kernel
+* .ieeemode - choose IEEE mode for kernel
 * .localsize SIZE - initial local data size for kernel in bytes
 * .pgmrsrc2 VALUE - value of the PGMRSRC2 (only bits that is not set by other pseudo-ops)
 * .priority VALUE - set priority for kernel (0-3). Default value is 0.
@@ -133,9 +133,9 @@ Go to constant global data section (`.rodata`).
 
 ### .ieeemode
 
-Syntax: .ieeemode BYTE-VALUE
+Syntax: .ieeemode
 
-This pseudo-op must be inside kernel configuration (`.config`). Defines ieee-mode.
+This pseudo-op must be inside kernel configuration (`.config`). Set ieee-mode.
 
 ### .kcode
 

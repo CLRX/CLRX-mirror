@@ -437,11 +437,13 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         case GALLIUMCVAL_USERDATANUM:
             config.userDataNum = value;
             break;
+        default:
+            break;
     }
 }
 
-void AsmGalliumPseudoOps::setTgSize(AsmGalliumHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
+void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
+         const char* pseudoOpPlace, const char* linePtr, GalliumConfigValueTarget target)
 {
     Assembler& asmr = handler.assembler;
     
@@ -453,7 +455,11 @@ void AsmGalliumPseudoOps::setTgSize(AsmGalliumHandler& handler, const char* pseu
     }
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-    handler.output.kernels[asmr.currentKernel].config.tgSize = true;
+    GalliumKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    if (target == GALLIUMCVAL_IEEEMODE)
+        config.ieeeMode = true;
+    else
+        config.tgSize = true;
 }
 
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
@@ -869,7 +875,7 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             AsmGalliumPseudoOps::doGlobalData(*this, stmtPlace, linePtr);
             break;
         case GALLIUMOP_IEEEMODE:
-            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_IEEEMODE);
             break;
         case GALLIUMOP_KCODE:
@@ -902,7 +908,8 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
                                     GALLIUMCVAL_SGPRSNUM);
             break;
         case GALLIUMOP_TGSIZE:
-            AsmGalliumPseudoOps::setTgSize(*this, stmtPlace, linePtr);
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_TGSIZE);
             break;
         case GALLIUMOP_USERDATANUM:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
