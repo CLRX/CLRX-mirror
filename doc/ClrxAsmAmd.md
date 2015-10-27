@@ -123,7 +123,32 @@ If this pseudo-operation in kernel configuration then set CONDOUT value.
 
 ### .config
 
-Open kernel configuration.
+Open kernel configuration. Must be inside kernel. Kernel configuration can not be
+defined if any CALNote, metadata or header was defined.
+Following pseudo-ops can be inside kernel config:
+
+* .arg
+* .cbid
+* .condout
+* .cws
+* .dims
+* .earlyexit
+* .hwlocal
+* .hwreg
+* .ieeemode
+* .pgmrsrc2
+* .printfid
+* .privateid
+* .sampler
+* .scratchbuffer
+* .sgprsnum
+* .tgsize
+* .uavid
+* .uavprivate
+* .useconstdata
+* .useprintf
+* .userdata
+* .vgprsnum
 
 ### .constantbuffers
 
@@ -366,7 +391,7 @@ Eanble using of the printf mechanism.
 
 ### .userdata
 
-Syntax: .userdata DATACLASS, REGSTART, REGSIZE
+Syntax: .userdata DATACLASS, APISLOT, REGSTART, REGSIZE
 
 This pseudo-op must be inside kernel configuration. Add USERDATA entry. First argument is
 data class. It can be one of the following:
@@ -405,8 +430,9 @@ data class. It can be one of the following:
 * IMM_GLOBAL_OFFSET
 * IMM_GENERIC_USER_DAT
 
-Second argument determines the first scalar register which will hold userdata.
-Third argument determines how many scalar register needed to hold userdata.
+Second argument is apiSlot.
+Third argument determines the first scalar register which will hold userdata.
+Fourth argument determines how many scalar register needed to hold userdata.
 
 ### .vgprsnum
 
@@ -414,3 +440,168 @@ Syntax: .vgprsnum REGNUM
 
 This pseudo-op must be inside kernel configuration. Set number of vector
 registers which can be used during kernel execution.
+
+## Sample code
+
+This is sample example of the kernel setup:
+
+```
+/* Disassembling 'DCT_15_5.1' */
+.amd
+.gpu Pitcairn
+.32bit
+.compile_options ""
+.driver_info "@(#) OpenCL 1.2 AMD-APP (1702.3).  Driver version: 1702.3 (VM)"
+.kernel DCT
+    .header
+        .fill 16, 1, 0x00
+        .byte 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+        .fill 8, 1, 0x00
+    .metadata
+        .ascii ";ARGSTART:__OpenCL_DCT_kernel\n"
+        .ascii ";version:3:1:111\n"
+        .ascii ";device:pitcairn\n"
+        .ascii ";uniqueid:1024\n"
+        .ascii ";memory:uavprivate:0\n"
+        .ascii ";memory:hwlocal:0\n"
+        .ascii ";memory:hwregion:0\n"
+        .ascii ";pointer:output:float:1:1:0:uav:12:4:RW:0:0\n"
+        .ascii ";pointer:input:float:1:1:16:uav:13:4:RO:0:0\n"
+        .ascii ";pointer:dct8x8:float:1:1:32:uav:14:4:RO:0:0\n"
+        .ascii ";pointer:inter:float:1:1:48:hl:1:4:RW:0:0\n"
+        .ascii ";value:width:u32:1:1:64\n"
+        .ascii ";value:blockWidth:u32:1:1:80\n"
+        .ascii ";value:inverse:u32:1:1:96\n"
+        .ascii ";function:1:1030\n"
+        .ascii ";uavid:11\n"
+        .ascii ";printfid:9\n"
+        .ascii ";cbid:10\n"
+        .ascii ";privateid:8\n"
+        .ascii ";reflection:0:float*\n"
+        .ascii ";reflection:1:float*\n"
+        .ascii ";reflection:2:float*\n"
+        .ascii ";reflection:3:float*\n"
+        .ascii ";reflection:4:uint\n"
+        .ascii ";reflection:5:uint\n"
+        .ascii ";reflection:6:uint\n"
+        .ascii ";ARGEND:__OpenCL_DCT_kernel\n"
+    .data
+        .fill 4736, 1, 0x00
+    .inputs
+    .outputs
+    .uav
+        .entry 12, 4, 0, 5
+        .entry 13, 4, 0, 5
+        .entry 14, 4, 0, 5
+        .entry 11, 4, 0, 5
+    .condout 0
+    .floatconsts
+    .intconsts
+    .boolconsts
+    .earlyexit 0
+    .globalbuffers
+    .constantbuffers
+        .cbmask 0, 32764
+        .cbmask 1, 0
+    .inputsamplers
+    .scratchbuffers
+        .int 0x00000000
+    .persistentbuffers
+    .proginfo
+        .entry 0x80001000, 0x00000003
+        .entry 0x80001001, 0x00000017
+        .entry 0x80001002, 0x00000000
+        .entry 0x80001003, 0x00000002
+        .entry 0x80001004, 0x00000002
+        .entry 0x80001005, 0x00000002
+        .entry 0x80001006, 0x00000000
+        .entry 0x80001007, 0x00000004
+        .entry 0x80001008, 0x00000004
+        .entry 0x80001009, 0x00000002
+        .entry 0x8000100a, 0x00000001
+        .entry 0x8000100b, 0x00000008
+        .entry 0x8000100c, 0x00000004
+        .entry 0x80001041, 0x0000000b
+        .entry 0x80001042, 0x00000018
+        .entry 0x80001863, 0x00000066
+        .entry 0x80001864, 0x00000100
+        .entry 0x80001043, 0x000000c0
+        .entry 0x80001044, 0x00000000
+        .entry 0x80001045, 0x00000000
+        .entry 0x00002e13, 0x00400998
+        .entry 0x8000001c, 0x00000100
+        .entry 0x8000001d, 0x00000000
+        .entry 0x8000001e, 0x00000000
+        .entry 0x80001841, 0x00000000
+        .entry 0x8000001f, 0x00007000
+        .entry 0x80001843, 0x00007000
+        .entry 0x80001844, 0x00000000
+        .entry 0x80001845, 0x00000000
+        .entry 0x80001846, 0x00000000
+        .entry 0x80001847, 0x00000000
+        .entry 0x80001848, 0x00000000
+        .entry 0x80001849, 0x00000000
+        .entry 0x8000184a, 0x00000000
+        .entry 0x8000184b, 0x00000000
+        .entry 0x8000184c, 0x00000000
+        .entry 0x8000184d, 0x00000000
+        .entry 0x8000184e, 0x00000000
+        .entry 0x8000184f, 0x00000000
+        .entry 0x80001850, 0x00000000
+        .entry 0x80001851, 0x00000000
+        .entry 0x80001852, 0x00000000
+        .entry 0x80001853, 0x00000000
+        .entry 0x80001854, 0x00000000
+        .entry 0x80001855, 0x00000000
+        .entry 0x80001856, 0x00000000
+        .entry 0x80001857, 0x00000000
+        .entry 0x80001858, 0x00000000
+        .entry 0x80001859, 0x00000000
+        .entry 0x8000185a, 0x00000000
+        .entry 0x8000185b, 0x00000000
+        .entry 0x8000185c, 0x00000000
+        .entry 0x8000185d, 0x00000000
+        .entry 0x8000185e, 0x00000000
+        .entry 0x8000185f, 0x00000000
+        .entry 0x80001860, 0x00000000
+        .entry 0x80001861, 0x00000000
+        .entry 0x80001862, 0x00000000
+        .entry 0x8000000a, 0x00000001
+        .entry 0x80000078, 0x00000040
+        .entry 0x80000081, 0x00008000
+        .entry 0x80000082, 0x00008000
+    .subconstantbuffers
+    .uavmailboxsize 0
+    .uavopmask
+        .byte 0x00, 0x70, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        .fill 120, 1, 0x00
+    .text
+/*befc03ff 00008000*/ s_mov_b32       m0, 0x8000
+...
+/*bf810000         */ s_endpgm
+```
+
+with kernel configuration:
+
+```
+.amd
+.gpu Pitcairn
+.32bit
+.kernel DCT
+    .config
+    .dims xy
+    .arg output,float*,global
+    .arg input,float*,global,const
+    .arg dct8x8,float*,global,const
+    .arg inter,float*,local
+    .arg width,uint
+    .arg blockWidth,uint
+    .arg inverse,uint
+    .userdata PTR_UAV_TABLE,0,2,2
+    .userdata IMM_CONST_BUFFER,0,4,4
+    .userdata IMM_CONST_BUFFER,1,8,4
+    .text
+/*befc03ff 00008000*/ s_mov_b32       m0, 0x8000
+...
+/*bf810000         */ s_endpgm
+```
