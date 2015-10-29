@@ -568,8 +568,8 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
         asmr.printWarning(sizeStrPlace, "Size of argument out of range");
     
     uint64_t targetSize = (size+3ULL)&~3ULL;
-    uint64_t targetAlign = (size!=0) ? 1ULL<<(63-CLZ64(size)) : 1;
-    if (size > targetAlign)
+    uint64_t targetAlign = (size!=0) ? 1ULL<<(63-CLZ64(targetSize)) : 1;
+    if (targetSize > targetAlign)
         targetAlign <<= 1;
     bool sext = false;
     
