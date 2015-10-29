@@ -63,6 +63,8 @@ Example argument definition:
 ```
 .arg scalar, 4, 4, 4, zext, general
 .arg global, 8, 8, 8, zext, general
+.arg scalar, 2, 4, 4, sext, general # short
+.arg scalar, 16, 16, 16, zext, general # uint4 or double2
 .arg scalar, 4, 4, 4, zext, griddim # shortcut: .arg griddim
 .arg scalar, 4, 4, 4, zext, gridoffset # shortcut .arg gridoffset
 ```
