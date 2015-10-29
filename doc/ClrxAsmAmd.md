@@ -214,6 +214,12 @@ Syntax: .floatmode VALUE
 This pseudo-operation must be inside kernel configuration.
 Set floatmode. Value shall to be byte value.
 
+### .get_driver_version
+
+Syntax: .get_driver_version SYMBOL
+
+Store current driver version to SYMBOL.
+
 ### .globalbuffers
 
 This pseudo-operation must be inside kernel.

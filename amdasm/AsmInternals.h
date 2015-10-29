@@ -372,6 +372,8 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     static void setDriverInfo(AsmAmdHandler& handler, const char* linePtr);
     static void setDriverVersion(AsmAmdHandler& handler, const char* linePtr);
     
+    static void getDriverVersion(AsmAmdHandler& handler, const char* linePtr);
+    
     static void addCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, uint32_t calNoteId);
     static void addCustomCALNote(AsmAmdHandler& handler, const char* pseudoOpPlace,

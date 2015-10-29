@@ -35,7 +35,7 @@ static const char* amdPseudoOpNamesTbl[] =
     "arg", "boolconsts", "calnote", "cbid",
     "cbmask", "compile_options", "condout", "config",
     "constantbuffers", "cws", "dims", "driver_info", "driver_version",
-    "earlyexit", "entry", "floatconsts", "floatmode",
+    "earlyexit", "entry", "floatconsts", "floatmode", "get_driver_version",
     "globalbuffers", "globaldata", "header", "hwlocal",
     "hwregion", "ieeemode", "inputs", "inputsamplers",
     "intconsts", "metadata", "outputs", "persistentbuffers",
@@ -51,7 +51,7 @@ enum
     AMDOP_ARG = 0, AMDOP_BOOLCONSTS, AMDOP_CALNOTE, AMDOP_CBID,
     AMDOP_CBMASK, AMDOP_COMPILE_OPTIONS, AMDOP_CONDOUT, AMDOP_CONFIG,
     AMDOP_CONSTANTBUFFERS, AMDOP_CWS, AMDOP_DIMS, AMDOP_DRIVER_INFO, AMDOP_DRIVER_VERSION,
-    AMDOP_EARLYEXIT, AMDOP_ENTRY, AMDOP_FLOATCONSTS, AMDOP_FLOATMODE,
+    AMDOP_EARLYEXIT, AMDOP_ENTRY, AMDOP_FLOATCONSTS, AMDOP_FLOATMODE, AMDOP_GETDRVVER,
     AMDOP_GLOBALBUFFERS, AMDOP_GLOBALDATA, AMDOP_HEADER, AMDOP_HWLOCAL,
     AMDOP_HWREGION, AMDOP_IEEEMODE, AMDOP_INPUTS, AMDOP_INPUTSAMPLERS,
     AMDOP_INTCONSTS, AMDOP_METADATA, AMDOP_OUTPUTS, AMDOP_PERSISTENTBUFFERS,
@@ -312,6 +312,45 @@ void AsmAmdPseudoOps::setDriverVersion(AsmAmdHandler& handler, const char* lineP
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     handler.output.driverVersion = value;
+}
+
+void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    const char* symNamePlace = linePtr;
+    const CString symName = extractSymName(linePtr, end, false);
+    if (symName.empty())
+    {
+        asmr.printError(symNamePlace, "Illegal symbol name");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint driverVersion = 0;
+    if (handler.output.driverVersion==0 && handler.output.driverInfo.empty())
+    {
+        if (asmr.driverVersion==0) // just detect driver version
+            driverVersion = detectDriverVersion();
+        else // from assembler setup
+            driverVersion = asmr.driverVersion;
+    }
+    else
+        driverVersion = handler.output.driverVersion;
+    
+    std::pair<AsmSymbolMap::iterator, bool> res = asmr.symbolMap.insert(
+                std::make_pair(symName, AsmSymbol(ASMSECT_ABS, driverVersion)));
+    if (!res.second)
+    {   // found
+        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                        "' is already defined").c_str());
+        else
+            asmr.setSymbol(*res.first, driverVersion, ASMSECT_ABS);
+    }
 }
 
 void AsmAmdPseudoOps::doGlobalData(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -1558,6 +1597,9 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
             break;
         case AMDOP_FLOATMODE:
             AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_FLOATMODE);
+            break;
+        case AMDOP_GETDRVVER:
+            AsmAmdPseudoOps::getDriverVersion(*this, linePtr);
             break;
         case AMDOP_GLOBALBUFFERS:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,
