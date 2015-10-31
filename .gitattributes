@@ -54,6 +54,7 @@ clwrapper/CMakeLists.txt -text svneol=unset#text/plain
 clwrapper/DispatchStruct.h -text
 clwrapper/InternalDecls.h -text
 cmake/Pod2Man.cmake -text
+doc/AmdAbi.md -text
 doc/CMakeLists.txt -text svneol=unset#text/plain
 doc/ClrxAsmAmd.md -text
 doc/ClrxAsmGallium.md -text
@@ -63,6 +64,7 @@ doc/ClrxAsmSyntax.md -text
 doc/ClrxDisasm.md -text
 doc/ClrxToc.md -text
 doc/ClrxWrapper.md -text
+doc/GalliumAbi.md -text
 doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text
 doc/styles.css -text

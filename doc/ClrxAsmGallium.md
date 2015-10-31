@@ -33,7 +33,7 @@ Syntax: .arg ARGTYPE, SIZE[, TARGETSIZE[, ALIGNMENT[, NUMEXT[, SEMANTIC]]]]
 Adds kernel argument definition. Must be inside argument configuration.
 First argument is type:
 
-* scalar - scalar value
+* scalar - scalar value (including vector values likes uint4)
 * contant - constant pointer (32-bit ???)
 * global - global pointer (64-bit)
 * local - local pointer

@@ -17,4 +17,6 @@ the GalliumCompute program binaries.
     * [AMD Catalyst OpenCL handling](ClrxAsmAmd)
     * [GalliumCompute handling](ClrxAsmGallium)
 * [CLRXWrapper](ClrxWrapper)
+* [GalliumCompute ABI](GalliumAbi)
+* [AMD Catalyst ABI](AmdAbi)
 ---
