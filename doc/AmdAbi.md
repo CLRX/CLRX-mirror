@@ -8,11 +8,22 @@ User data is stored in first scalar registers. Data class indicates what data ar
 Following data classes:
 
 * IMM_UAV - data to uav. Holds 4 registers. ApiSlot determines uavid.
+* IMM_SAMPLER - data for sampler (4 registers).
 * IMM_CONST_BUFFER - const buffer (4 registers). See below.
 ApiSlot determines const buffer id.
+* PTR_RESOURCE_TABLE - pointer to resource table (2 registers).
+Each entry holds 8 dwords. Count from zero.
+Table can be accessed by using SMRD (s_load_dwordxx) instructions.
+Resource table holds read-only image descriptors (8 dwords).
+* PTR_SAMPLER_TABLE - pointer to sampler table (2 pointers).
+Resource table holds sampler descriptors (4 dwords).
 * PTR_UAV_TABLE - pointer to uav table (2 registers).
 Each entry holds 8 dwords. Count from zero.
 Table can be accessed by using SMRD (s_load_dwordxx) instructions.
+Uav table holds UAV for global buffer, constant buffer (since 1384 driver)
+and write only images (8 dwords descriptors).
+* PTR_CONST_BUFFER_TABLE - pointer to const buffer table (2 registers).
+Each entry have 4 dwords.
 
 ### Argument passing and kernel setup
 
