@@ -1759,8 +1759,11 @@ bool AsmAmdHandler::prepareBinary()
             case AsmSectionType::DATA:
                 if (section.kernelId == ASMKERN_GLOBAL)
                 {   // this is global data
-                    output.globalDataSize = sectionSize;
-                    output.globalData = sectionData;
+                    if (sectionSize!=0)
+                    {
+                        output.globalDataSize = sectionSize;
+                        output.globalData = sectionData;
+                    }
                 }
                 else
                 {   // this is kernel data

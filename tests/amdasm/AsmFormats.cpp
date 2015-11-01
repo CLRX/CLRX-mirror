@@ -821,6 +821,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
     6e6f746b6e6f776e73656374696f6e
     Section .notknown2, type=7, flags=3:
   GlobalData:
+  nullptr
   Section .sometest, type=1, flags=0:
   55556161
   Section .flagged, type=8, flags=5:
