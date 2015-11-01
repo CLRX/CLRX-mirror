@@ -50,3 +50,13 @@ Scalar register after userdata holds (n - userdatanum):
 * s[n:n+2] - group id for each dimension
 
 First three vector registers holds local ids for each dimensions.
+
+### Image arguments
+
+Image arguments tooks 8 dwords.
+
+* 0 dword - width
+* 1 dword - height
+* 2 dword - depth
+* 3 dword - OpenCL image format data type
+* 7 dword - OpenCL image component order
