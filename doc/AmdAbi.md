@@ -24,6 +24,8 @@ Uav table holds UAV for global buffer, constant buffer (since 1384 driver)
 and write only images (8 dwords descriptors).
 * PTR_CONST_BUFFER_TABLE - pointer to const buffer table (2 registers).
 Each entry have 4 dwords.
+* PTR_INTERNAL_GLOBAL_TABLE - pointer to internal global table (2 registers).
+Each entry have 4 dwords.
 
 ### About resource passing
 
@@ -81,3 +83,8 @@ Sampler argument holds sampler value:
 * 1-3 bits - addressing mode:
     0 - none, 1 - repeat, 2 - clamp_to_edge, 3 - clamp, 4 - mirrored_repeat
 * 4-5 bits - filtering: 0 - none, 1 - nearest, 2 - linear
+
+### Scratch buffer access
+
+Second entry in the internal global table holds scratch buffer descriptor.
+s[n+3] register holds wavefront offset to scratch buffer.
