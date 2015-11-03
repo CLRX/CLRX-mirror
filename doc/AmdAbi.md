@@ -9,8 +9,10 @@ In this chapter, size is given in dwords. Dword is 4-byte value.
 User data is stored in first scalar registers. Data class indicates what data are stored.
 Following data classes:
 
-* IMM_UAV - data to uav. Holds 4 registers. ApiSlot determines uavid.
-* IMM_SAMPLER - data for sampler (4 registers).
+* IMM_RESOURCE - data for read_only image descriptors. ApiSlot determines uavid.
+* IMM_UAV - data for UAV (global/constant buffer descriptor or
+write only image descriptor). Holds 4 or 8 registers. ApiSlot determines uavid.
+* IMM_SAMPLER - data for sampler (4 registers). ApiSlot determines sampler entry index
 * IMM_CONST_BUFFER - const buffer (4 registers). See below.
 ApiSlot determines const buffer id.
 * PTR_RESOURCE_TABLE - pointer to resource table (2 registers).
@@ -28,6 +30,7 @@ and write only images (8 dwords descriptors).
 Each entry have 4 dwords.
 * PTR_INTERNAL_GLOBAL_TABLE - pointer to internal global table (2 registers).
 Each entry have 4 dwords.
+* IMM_SCRATCH_BUFFER - doesn't work (???)
 
 ### About resource passing
 
@@ -51,6 +54,8 @@ First const buffer (id=0) holds:
 * 24-26 dwords - global offset for each dimensions
 * 27 dword - get_global_offset(0)\*(workDim>=1?get_global_offset(1):1)\*
             (workDim==2?get_global_offset(2):1)
+* 32 dword (32-bit binary) - global constant buffer offset
+* 32-33 dword (64-bit binary) - global constant buffer offset
 * 36-38 dwords (32-bit binary) - global offset for each dimensions
 * 37-39 dwords (64-bit binary) - global offset for each dimensions
 
@@ -69,7 +74,7 @@ First three vector registers holds local ids for each dimensions.
 
 ### Image arguments
 
-Image arguments tooks 8 dwords.
+Image arguments needs 8 dwords.
 
 * 0 dword - width
 * 1 dword - height
@@ -90,3 +95,4 @@ Sampler argument holds sampler value:
 
 Second entry in the internal global table holds scratch buffer descriptor.
 s[n+3] register holds wavefront offset to scratch buffer.
+where n is userdatanum.
