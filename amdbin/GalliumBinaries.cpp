@@ -409,6 +409,7 @@ public:
                 outEntries[1].address = ULEV(0x0000b84cU);
                 outEntries[2].address = ULEV(0x0000b860U);
                 
+                uint32_t scratchBlocks = ((config.scratchBufferSize<<6) + 1023)>>10;
                 uint32_t dimValues = 0;
                 if (config.dimMask != BINGEN_DEFAULT)
                     dimValues = ((config.dimMask&7)<<7) |
@@ -420,11 +421,12 @@ public:
                 outEntries[0].value = ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
                         ((uint32_t(config.floatMode)&0xff)<<12) |
                         (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10);
+                
                 outEntries[1].value = (config.pgmRSRC2 & 0xffffe040U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
                         (((config.localSize+63)>>6)<<15);
-                outEntries[2].value = (config.scratchBufferSize)<<12;
+                outEntries[2].value = (scratchBlocks)<<12;
                 for (cxuint k = 0; k < 3; k++)
                     outEntries[k].value = ULEV(outEntries[k].value);
             }

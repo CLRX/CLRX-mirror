@@ -2,6 +2,8 @@
 
 This chapter describes how kernel gets its argument, how access to constant data.
 
+In this chapter, size is given in dwords. Dword is 4-byte value.
+
 ### User data classes
 
 User data is stored in first scalar registers. Data class indicates what data are stored.

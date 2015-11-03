@@ -2,6 +2,8 @@
 
 This chapter describes how kernel gets its argument, how access to constant data.
 
+In this chapter, size is given in dwords. Dword is 4-byte value.
+
 ## Argument passing
 
 Argument is stored in memory which address is stored in s[0:1].
