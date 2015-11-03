@@ -1421,7 +1421,8 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
 AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* binaryCode,
         Flags creationFlags)
 {
-    if (ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
+    if (binaryCodeSize < sizeof(Elf32_Ehdr) ||
+        ULEV(*reinterpret_cast<const uint32_t*>(binaryCode)) != elfMagicValue)
         throw Exception("This is not ELF binary");
     if (binaryCode[EI_DATA] != ELFDATA2LSB)
         throw Exception("Other than little-endian binaries are not supported!");
