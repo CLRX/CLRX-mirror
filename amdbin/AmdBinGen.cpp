@@ -1785,7 +1785,7 @@ static uint64_t detectionFileTimestamp = 0;
 static std::string detectionAmdOclPath;
 static uint32_t detectedDriverVersion = 0;
 
-uint32_t CLRX::detectDriverVersion()
+uint32_t CLRX::detectAmdDriverVersion()
 {
     std::lock_guard<std::mutex> lock(detectionMutex);
     std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",

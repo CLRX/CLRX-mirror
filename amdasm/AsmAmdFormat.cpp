@@ -334,7 +334,7 @@ void AsmAmdPseudoOps::getDriverVersion(AsmAmdHandler& handler, const char* lineP
     if (handler.output.driverVersion==0 && handler.output.driverInfo.empty())
     {
         if (asmr.driverVersion==0) // just detect driver version
-            driverVersion = detectDriverVersion();
+            driverVersion = detectAmdDriverVersion();
         else // from assembler setup
             driverVersion = asmr.driverVersion;
     }
@@ -1859,7 +1859,7 @@ bool AsmAmdHandler::prepareBinary()
         (assembler.flags&ASM_TESTRUN)==0)
     {
         if (assembler.driverVersion==0) // just detect driver version
-            output.driverVersion = detectDriverVersion();
+            output.driverVersion = detectAmdDriverVersion();
         else // from assembler setup
             output.driverVersion = assembler.driverVersion;
     }
