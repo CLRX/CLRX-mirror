@@ -27,7 +27,8 @@ Table can be accessed by using SMRD (s_load_dwordxx) instructions.
 Uav table holds UAV for global buffer, constant buffer (since 1384 driver)
 and write only images (8 dwords descriptors).
 * PTR_CONST_BUFFER_TABLE - pointer to const buffer table (2 registers).
-Each entry have 4 dwords.
+Each entry have 4 dwords. For older drivers than 1348.05, global constant buffer
+(third entry) and argument constant buffers descriptors stored in this table.
 * PTR_INTERNAL_GLOBAL_TABLE - pointer to internal global table (2 registers).
 Each entry have 4 dwords.
 * IMM_SCRATCH_BUFFER - doesn't work (???)
