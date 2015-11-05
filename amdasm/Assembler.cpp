@@ -818,6 +818,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
 bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint sectionId)
 {
     symEntry.second.value = value;
+    symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
     symEntry.second.hasValue = true;
     bool good = true;
@@ -857,7 +858,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                     case ASMXTGT_SYMBOL:
                     {    // resolve symbol
                         AsmSymbolEntry& curSymEntry = *target.symbol;
-                        if (!curSymEntry.second.resolving)
+                        if (!curSymEntry.second.resolving &&
+                            curSymEntry.second.expression==expr)
                         {
                             curSymEntry.second.value = value;
                             curSymEntry.second.sectionId = sectionId;
@@ -951,6 +953,30 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
 bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
              const char* linePtr, bool reassign, bool baseExpr)
 {
+    if (linePtr!=line+lineSize && *linePtr=='%')
+    {
+        initializeOutputFormat();
+        ++linePtr;
+        cxuint regStart, regEnd;
+        if (!isaAssembler->parseRegisterRange(linePtr, regStart, regEnd))
+            return false;
+        
+        std::pair<AsmSymbolMap::iterator, bool> res =
+                symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
+        if (!res.second && ((res.first->second.onceDefined || !reassign) &&
+            res.first->second.isDefined()))
+        {   // found and can be only once defined
+            printError(symbolPlace, (std::string("Symbol '") + symbolName.c_str() +
+                        "' is already defined").c_str());
+            return false;
+        }
+        AsmSymbolEntry& symEntry = *res.first;
+        symEntry.second.expression = nullptr;
+        symEntry.second.onceDefined = !reassign;
+        symEntry.second.regRange = symEntry.second.hasValue = true;
+        symEntry.second.value = (regStart | (uint64_t(regEnd)<<32));
+    }
+        
     const char* exprPlace = linePtr;
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");

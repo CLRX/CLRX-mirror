@@ -2809,3 +2809,15 @@ void GCNAssembler::fillAlignment(size_t size, cxbyte* output)
     }
     std::fill((uint32_t*)output, ((uint32_t*)output) + (size>>2), value);
 }
+
+bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
+          cxuint& regEnd)
+{
+    GCNOperand operand;
+    if (!GCNAsmUtils::parseOperand(assembler, linePtr, operand, nullptr, curArchMask, 0,
+                INSTROP_SREGS|INSTROP_VREGS))
+        return false;
+    regStart = operand.range.start;
+    regEnd = operand.range.end;
+    return true;
+}

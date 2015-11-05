@@ -127,6 +127,9 @@ public:
                 Flags& regFlags) const = 0;
     /// fill alignment when value is not given
     virtual void fillAlignment(size_t size, cxbyte* output) = 0;
+    /// parse register range
+    virtual bool parseRegisterRange(const char*& linePtr,
+                        cxuint& regStart, cxuint& regEnd) = 0;
 };
 
 /// GCN arch assembler
@@ -160,6 +163,7 @@ public:
     void setAllocatedRegisters(const cxuint* regs, Flags regFlags);
     const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
     void fillAlignment(size_t size, cxbyte* output);
+    bool parseRegisterRange(const char*& linePtr, cxuint& regStart, cxuint& regEnd);
 };
 
 /*
@@ -242,6 +246,7 @@ struct AsmSymbol
     cxuint resolving:1;         ///< helper
     cxuint base:1;              ///< with base expression
     cxuint snapshot:1;          ///< if symbol is snapshot
+    cxuint regRange:1;          ///< if symbol is register range
     uint64_t value;         ///< value of symbol
     uint64_t size;          ///< size of symbol
     AsmExpression* expression;      ///< expression of symbol (if not resolved)
