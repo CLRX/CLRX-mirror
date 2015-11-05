@@ -821,6 +821,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
     symEntry.second.hasValue = true;
+    symEntry.second.regRange = false;
+    symEntry.second.base = false;
     bool good = true;
     
     // resolve value of pending symbols
@@ -973,6 +975,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         AsmSymbolEntry& symEntry = *res.first;
         symEntry.second.expression = nullptr;
         symEntry.second.onceDefined = !reassign;
+        symEntry.second.base = false;
         symEntry.second.regRange = symEntry.second.hasValue = true;
         symEntry.second.value = (regStart | (uint64_t(regEnd)<<32));
         return true;
