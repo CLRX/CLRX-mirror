@@ -848,6 +848,11 @@ void AsmPseudoOps::setSymbolBind(Assembler& asmr, const char* linePtr, cxbyte bi
             asmr.printError(symNamePlace, "Expected symbol name");
             good = false;
         }
+        else if (symEntry->second.regRange)
+        {
+            asmr.printError(symNamePlace, "Symbol must not be register symbol");
+            good = false;
+        }
         else if (symEntry->second.base)
         {
             asmr.printError(symNamePlace,
@@ -892,6 +897,11 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
         {
             asmr.printError(symNamePlace,
                     "Symbol must not be set by .eqv pseudo-op or must be constant");
+            good = false;
+        }
+        else if (symEntry->second.regRange)
+        {
+            asmr.printError(symNamePlace, "Symbol must not be register symbol");
             good = false;
         }
         else if (symEntry->first == ".")

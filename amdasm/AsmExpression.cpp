@@ -1271,6 +1271,15 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     const char* symEndStr = linePtr;
                     Assembler::ParseState parseState = assembler.parseSymbol(symEndStr,
                                      symEntry, true, dontResolveSymbolsLater);
+                    if (symEntry!=nullptr && symEntry->second.regRange)
+                    {
+                        std::string errorMsg("Expression have register symbol '");
+                        errorMsg.append(linePtr, symEndStr);
+                        errorMsg += '\'';
+                        assembler.printError(linePtr, errorMsg.c_str());
+                        good = false;
+                        continue;
+                    }
                     
                     if (parseState == Assembler::ParseState::FAILED) good = false;
                     AsmExprArg arg;
