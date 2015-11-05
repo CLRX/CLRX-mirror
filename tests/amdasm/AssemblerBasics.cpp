@@ -3314,6 +3314,19 @@ aa1: bb2:   # kernel labels
     {   ".amd\n.64bit\n.if32\n.print \"is32bit\"\n.endif\n",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, true,
         { }, { }, { { ".", 0, 0, 0, true, false, false, 0, 0 } }, true, "", "",
+    },
+    /* unresolved expression and resolved expression */
+    {   R"ffDXD(sym3 = sym7*sym4
+        sym3 = 17
+        sym7 = 1
+        sym4 = 3)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { }, { },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "sym3", 17, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym4", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
+            { "sym7", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 }
+        }, true, "", ""
     }
 };
 
