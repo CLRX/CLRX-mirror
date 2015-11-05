@@ -98,9 +98,10 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     else if (*linePtr == '[')
     {   // many registers
         ++linePtr;
-        cxuint value1, value2;
+        uint64_t value1, value2;
         skipSpacesToEnd(linePtr, end);
-        value1 = cstrtobyte(linePtr, end);
+        if (!getAbsoluteValueArg(asmr, value1, linePtr, true))
+            return false;
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
         {   // error
@@ -110,7 +111,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         if (linePtr!=end && *linePtr==':')
         {
             skipCharAndSpacesToEnd(linePtr, end);
-            value2 = cstrtobyte(linePtr, end);
+            if (!getAbsoluteValueArg(asmr, value2, linePtr, true))
+                return false;
         }
         else
             value2 = value1;
@@ -126,6 +128,11 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         if (value2 < value1)
         {   // error (illegal register range)
             asmr.printError(vgprRangePlace, "Illegal vector register range");
+            return false;
+        }
+        if (value1 >= 256 || value2 >= 256)
+        {
+            asmr.printError(vgprRangePlace, "Some vector register number out of range");
             return false;
         }
         
@@ -321,9 +328,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     else if (*linePtr == '[')
     {   // many registers
         ++linePtr;
-        cxuint value1, value2;
+        uint64_t value1, value2;
         skipSpacesToEnd(linePtr, end);
-        value1 = cstrtobyte(linePtr, end);
+        if (!getAbsoluteValueArg(asmr, value1, linePtr, true))
+            return false;
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
         {   // error
@@ -335,7 +343,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         if (linePtr!=end && *linePtr==':')
         {
             skipCharAndSpacesToEnd(linePtr, end);
-            value2 = cstrtobyte(linePtr, end);
+            if (!getAbsoluteValueArg(asmr, value2, linePtr, true))
+                return false;
         }
         else
             value2 = value1;

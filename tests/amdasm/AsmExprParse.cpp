@@ -372,8 +372,8 @@ static AsmExprParseCase asmExprParseCases[] =
     { "1(+8*9", "", false, 0, "<stdin>:1:2: Error: Expected operator\n", "" },
     { "1+8(*9", "", false, 0, "<stdin>:1:4: Error: Expected operator\n", "" },
     { "1+8*9;", "1 8 9 * +", true, 73, "", ";" }, // no error
-    { "1+8*9:", "", false, 0, "<stdin>:1:6: Error: Missing '?' before ':'\n"
-        "<stdin>:1:7: Error: Unterminated expression\n", "" },
+    { "1+8*9:", "1 8 9 * +", true, 73, "", ":" }, // no error
+    { "1+8*9    :  ", "1 8 9 * +", true, 73, "", ":  " }, // no error
     { "1+8*9'", "1 8 9 * +", true, 73, "", "'" }, // no error
     { "1+8*9#", "1 8 9 * +", true, 73, "", "" }, // no error
     { "1+8*9/* */", "1 8 9 * +", true, 73, "", "" }, // no error
@@ -392,7 +392,6 @@ static AsmExprParseCase asmExprParseCases[] =
         "<stdin>:1:10: Error: Expected operator or value or symbol\n"
         "<stdin>:1:11: Error: Missing ')'\n"
         "<stdin>:1:11: Error: Unterminated expression\n", "" },
-    { "a*(a?b+c):x", "", false, 0, "<stdin>:1:10: Error: Missing '?' before ':'\n", "" },
     { "a*a?(b+c:x)", "", false, 0, "<stdin>:1:9: Error: Missing '?' before ':'\n"
         "<stdin>:1:4: Error: Missing ':' for '?'\n", "" },
     { "a*(a?b+c)+x", "", false, 0, "<stdin>:1:5: Error: Missing ':' for '?'\n", "" },
@@ -401,9 +400,8 @@ static AsmExprParseCase asmExprParseCases[] =
         "<stdin>:1:2: Error: Missing ':' for '?'\n", "" },
     /* random */
     { "a+?5:cd:4%2Qf:hab<;<@", "", false, 0, 
-        "<stdin>:1:3: Error: Expected primary expression before operator\n"
-        "<stdin>:1:5: Error: Missing '?' before ':'\n"
-        "<stdin>:1:8: Error: Missing '?' before ':'\n", "Qf:hab<;<@" },
+        "<stdin>:1:3: Error: Expected primary expression before operator\n",
+        ":cd:4%2Qf:hab<;<@" },
     { "( ala + .,. )", "", false, 0, "<stdin>:1:11: Error: Garbages at end of expression\n"
         "<stdin>:1:12: Error: Garbages at end of expression\n", "" },
     /* with ',' */

@@ -37,6 +37,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  ttmp[2], s4, s61", 0x80723d04U, 0, false, true, "" },
     { "    s_add_u32  s[21:21], s4, s61", 0x80153d04U, 0, false, true, "" },
     { "    s_add_u32  s[21], s[4], s[61]", 0x80153d04U, 0, false, true, "" },
+    { "zx=21; ss=2; b=60;s_add_u32  s[zx], s[ss*2], s[b+1]",
+            0x80153d04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0", 0x80158004U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 1", 0x80158104U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0x2a", 0x8015aa04U, 0, false, true, "" },
@@ -69,6 +71,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  s21, s4, 3e-7", 0x8015ff04U, 0x34a10fb0U, true, true, "" },
     /* 64-bit registers and literals */
     { "    s_xor_b64 s[22:23], s[4:5], s[62:63]\n", 0x89963e04U, 0, false, true, "" },
+    { "s1=22; s2=4;s3=62;s_xor_b64 s[s1:s1+1], s[s2:s2+1], s[s3:s3+1]\n",
+        0x89963e04U, 0, false, true, "" },
     { "    s_xor_b64 vcc, s[4:5], s[62:63]\n", 0x89ea3e04U, 0, false, true, "" },
     { "    s_xor_b64 tba, s[4:5], s[62:63]\n", 0x89ec3e04U, 0, false, true, "" },
     { "    s_xor_b64 tma, s[4:5], s[62:63]\n", 0x89ee3e04U, 0, false, true, "" },
@@ -112,11 +116,11 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  ttmp[10:8], s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Illegal TTMPRegister range\n" },
     { "    s_add_u32  s[z], s4, s61", 0, 0, false, false,
-        "test.s:1:18: Error: Missing number\n"
-        "test.s:1:18: Error: Expected ',' before argument\n" },
+        "test.s:1:18: Error: Expression have unresolved symbol 'z'\n"
+        "test.s:1:19: Error: Expected ',' before argument\n" },
     { "    s_add_u32  ttmp[z], s4, s61", 0, 0, false, false,
-        "test.s:1:21: Error: Missing number\n"
-        "test.s:1:21: Error: Expected ',' before argument\n" },
+        "test.s:1:21: Error: Expression have unresolved symbol 'z'\n"
+        "test.s:1:22: Error: Expected ',' before argument\n" },
     { "    s_add_u32  sxzz, s4, s61", 0, 0, false, false,
         "test.s:1:16: Error: Expected 1 scalar register\n"
         "test.s:1:17: Error: Expected ',' before argument\n" },
@@ -574,7 +578,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cndmask_b32   v154, v21, v[107:108], vcc", 0, 0, false, false,
         "test.s:1:32: Error: Required 1 vector register\n" },
     { "    v_cndmask_b32   v[154:, v21, v107, vcc", 0, 0, false, false,
-        "test.s:1:27: Error: Missing number\n" },
+        "test.s:1:27: Error: Expected expression\n" },
     { "    v_cndmask_b32   v[14, v21, v107, vcc", 0, 0, false, false,
         "test.s:1:21: Error: Unterminated vector register range\n" },
     { "    v_cndmask_b32   v[14:15, v21, v107, vcc", 0, 0, false, false,
@@ -583,8 +587,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:24: Error: Number is too big\n"
         "test.s:1:24: Error: Expected ',' before argument\n" },
     { "    v_cndmask_b32   v[255:256], v21, v107, vcc", 0, 0, false, false,
-        "test.s:1:29: Error: Number is too big\n"
-        "test.s:1:29: Error: Expected ',' before argument\n" },
+        "test.s:1:21: Error: Some vector register number out of range\n" },
     { "    v_add_f32  v154, v21, v107 mul,", 0, 0, false, false,
         "test.s:1:35: Error: Expected ':' before multiplier number\n"
         "test.s:1:35: Error: Some garbages at VOP modifier place\n" },
@@ -897,7 +900,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_mov_b32  v15, 133 vop3", 0, 0, false, false,
         "test.s:1:5: Error: Literal in VOP3 encoding is illegal\n" },
     { "    v_rcp_f64  v[158:], v[79:80]", 0, 0, false, false,
-        "test.s:1:22: Error: Missing number\n"
+        "test.s:1:22: Error: Expected expression\n"
         "test.s:1:22: Error: Expected ',' before argument\n" },
     { "    v_rcp_f64  v[158:159, v[79:80]", 0, 0, false, false,
         "test.s:1:16: Error: Unterminated vector register range\n" },

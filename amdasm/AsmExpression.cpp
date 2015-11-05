@@ -1388,7 +1388,14 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         outMsgPositions.push_back(messagePositions[entry.lineColPos]);
                     stack.pop();
                 }
-                if (stack.empty() || stack.top().op != AsmExprOp::CHOICE_START ||
+                if (stack.empty())
+                {
+                    linePtr--; // go back to ':'
+                    expectedToken = XT_OP;
+                    doExit = true;
+                    break;
+                }
+                else if (stack.top().op != AsmExprOp::CHOICE_START ||
                         stack.top().priority != priority)
                 {   // not found
                     assembler.printError(beforeToken, "Missing '?' before ':'");
