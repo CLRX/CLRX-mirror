@@ -975,8 +975,9 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         symEntry.second.onceDefined = !reassign;
         symEntry.second.regRange = symEntry.second.hasValue = true;
         symEntry.second.value = (regStart | (uint64_t(regEnd)<<32));
+        return true;
     }
-        
+    
     const char* exprPlace = linePtr;
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");

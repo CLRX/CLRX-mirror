@@ -258,19 +258,19 @@ struct AsmSymbol
     explicit AsmSymbol(bool _onceDefined = false) :
             refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
-            value(0), size(0), expression(nullptr)
+            regRange(false), value(0), size(0), expression(nullptr)
     { }
     /// constructor with expression
     explicit AsmSymbol(AsmExpression* expr, bool _onceDefined = false, bool _base = false) :
             refCount(1), sectionId(ASMSECT_ABS), info(0), other(0), hasValue(false),
             onceDefined(_onceDefined), resolving(false), base(_base),
-            snapshot(false), value(0), size(0), expression(expr)
+            snapshot(false), regRange(false), value(0), size(0), expression(expr)
     { }
     /// constructor with value and section id
     explicit AsmSymbol(cxuint _sectionId, uint64_t _value, bool _onceDefined = false) :
             refCount(1), sectionId(_sectionId), info(0), other(0), hasValue(true),
             onceDefined(_onceDefined), resolving(false), base(false), snapshot(false),
-            value(_value), size(0), expression(nullptr)
+            regRange(false), value(_value), size(0), expression(nullptr)
     { }
     /// destructor
     ~AsmSymbol();

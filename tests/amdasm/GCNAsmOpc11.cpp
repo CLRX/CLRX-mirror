@@ -122,11 +122,9 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:21: Error: Expression have unresolved symbol 'z'\n"
         "test.s:1:22: Error: Expected ',' before argument\n" },
     { "    s_add_u32  sxzz, s4, s61", 0, 0, false, false,
-        "test.s:1:16: Error: Expected 1 scalar register\n"
-        "test.s:1:17: Error: Expected ',' before argument\n" },
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
     { "    s_add_u32  ttmpxzz, s4, s61", 0, 0, false, false,
-        "test.s:1:16: Error: Expected 1 scalar register\n"
-        "test.s:1:20: Error: Expected ',' before argument\n" },
+        "test.s:1:16: Error: Expected 1 scalar register\n" },
     { "    s_add_u32  s30, s[4, s[61", 0, 0, false, false,
         "test.s:1:21: Error: Unterminated scalar register range\n"
         "test.s:1:26: Error: Unterminated scalar register range\n" },

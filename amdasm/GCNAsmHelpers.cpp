@@ -73,14 +73,37 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* vgprRangePlace = linePtr;
-    if (linePtr == end || toLower(*linePtr) != 'v' || ++linePtr == end)
+    if (linePtr == end || toLower(*linePtr) != 'v' || linePtr+1 == end ||
+        (!isDigit(linePtr[1]) && linePtr[1]!='['))
     {
+        if (linePtr!=end)
+        {   // check whether is name of symbol with register
+            AsmSymbolEntry* symEntry = nullptr;
+            if (asmr.parseSymbol(linePtr, symEntry, false, true)==
+                Assembler::ParseState::PARSED && symEntry!=nullptr &&
+                symEntry->second.regRange)
+            { // set up regrange
+                cxuint rstart = symEntry->second.value&UINT_MAX;
+                cxuint rend = symEntry->second.value>>32;
+                if (rstart >= 256 && rend >= 256)
+                {
+                    if (regsNum!=0 && regsNum != rend-rstart)
+                    {
+                        printXRegistersRequired(asmr, vgprRangePlace, "vector", regsNum);
+                        return false;
+                    }
+                    regPair = { rstart, rend };
+                    return true;
+                }
+            }
+        }
         if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
         regPair = { 0, 0 }; // no range
         linePtr = oldLinePtr; // revert current line pointer
         return true;
     }
+    linePtr++;
     
     try /* for handling parse exception */
     {
@@ -176,11 +199,12 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     bool ttmpReg = false;
     try
     {
-    if (linePtr+4 <= end && toLower(linePtr[0]) == 't' &&
+    if (linePtr+4 < end && toLower(linePtr[0]) == 't' &&
         toLower(linePtr[1]) == 't' && toLower(linePtr[2]) == 'm' &&
-        toLower(linePtr[3]) == 'p')
+        toLower(linePtr[3]) == 'p' && (isDigit(linePtr[4]) || linePtr[4]=='['))
         ttmpReg = true; // we have ttmp registers
-    else if (toLower(*linePtr) != 's') // if not sgprs
+    else if (toLower(*linePtr) != 's' || linePtr+1==end ||
+        (!isDigit(linePtr[1]) && linePtr[1]!='[')) // if not sgprs
     {
         const char* oldLinePtr = linePtr;
         char regName[20];
@@ -276,6 +300,26 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         }
         else
         {   // otherwise
+            // check whether is name of symbol with register
+            AsmSymbolEntry* symEntry = nullptr;
+            linePtr = oldLinePtr;
+            if (asmr.parseSymbol(linePtr, symEntry, false, true)==
+                Assembler::ParseState::PARSED && symEntry!=nullptr &&
+                symEntry->second.regRange)
+            { // set up regrange
+                cxuint rstart = symEntry->second.value&UINT_MAX;
+                cxuint rend = symEntry->second.value>>32;
+                if (rstart < 256 && rend <= 256)
+                {
+                    if (regsNum!=0 && regsNum != rend-rstart)
+                    {
+                        printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
+                        return false;
+                    }
+                    regPair = { rstart, rend };
+                    return true;
+                }
+            }
             if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
                             regsNum, required))
                 return false;
