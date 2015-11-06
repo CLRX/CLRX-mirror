@@ -1040,7 +1040,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     {
         expr->setTarget(AsmExprTarget::symbolTarget(&symEntry));
         symEntry.second.expression = expr.release();
-        symEntry.second.hasValue = false;
+        symEntry.second.regRange = symEntry.second.hasValue = false;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = baseExpr;
         if (baseExpr && !symEntry.second.occurrencesInExprs.empty())
