@@ -79,6 +79,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         if (linePtr!=end)
         {   // check whether is name of symbol with register
             AsmSymbolEntry* symEntry = nullptr;
+            if (*linePtr=='@')
+                skipCharAndSpacesToEnd(linePtr, end);
             if (asmr.parseSymbol(linePtr, symEntry, false, true)==
                 Assembler::ParseState::PARSED && symEntry!=nullptr &&
                 symEntry->second.regRange)
@@ -208,8 +210,13 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     {
         const char* oldLinePtr = linePtr;
         char regName[20];
-        if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, true))
-            return false;
+        if (linePtr==end || *linePtr != '@')
+        {   // if not '@'
+            if (!getNameArg(asmr, 20, regName, linePtr, "register name", required, true))
+                return false;
+        }
+        else // otherwise reset regName
+            regName[0] = 0;
         toLowerString(regName);
         
         size_t loHiRegSuffix = 0;
@@ -303,6 +310,9 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             // check whether is name of symbol with register
             AsmSymbolEntry* symEntry = nullptr;
             linePtr = oldLinePtr;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end && *linePtr=='@')
+                skipCharAndSpacesToEnd(linePtr, end);
             if (asmr.parseSymbol(linePtr, symEntry, false, true)==
                 Assembler::ParseState::PARSED && symEntry!=nullptr &&
                 symEntry->second.regRange)
