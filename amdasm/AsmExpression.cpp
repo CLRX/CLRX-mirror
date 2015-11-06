@@ -916,6 +916,12 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
                     
                     if (nextSymEntry->second.hasValue)
                     {   // put value to argument
+                        if (nextSymEntry->second.regRange)
+                        {
+                            assembler.printError(expr->getSourcePos(),
+                                                 "Expression have register symbol");
+                            good = false;
+                        }
                         ops[opIndex] = AsmExprOp::ARG_VALUE;
                         args[argIndex].relValue.value = nextSymEntry->second.value;
                         if (!assembler.isAbsoluteSymbol(nextSymEntry->second))
@@ -1273,10 +1279,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                                      symEntry, true, dontResolveSymbolsLater);
                     if (symEntry!=nullptr && symEntry->second.regRange)
                     {
-                        std::string errorMsg("Expression have register symbol '");
-                        errorMsg.append(linePtr, symEndStr);
-                        errorMsg += '\'';
-                        assembler.printError(linePtr, errorMsg.c_str());
+                        assembler.printError(linePtr, "Expression have register symbol");
                         good = false;
                         continue;
                     }

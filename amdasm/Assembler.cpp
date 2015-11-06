@@ -976,6 +976,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         symEntry.second.expression = nullptr;
         symEntry.second.onceDefined = !reassign;
         symEntry.second.base = false;
+        symEntry.second.sectionId = ASMSECT_ABS;
         symEntry.second.regRange = symEntry.second.hasValue = true;
         symEntry.second.value = (regStart | (uint64_t(regEnd)<<32));
         return true;
