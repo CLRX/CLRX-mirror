@@ -957,6 +957,11 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
 {
     if (linePtr!=line+lineSize && *linePtr=='%')
     {
+        if (symbolName == ".")
+        {
+            printError(symbolPlace, "Symbol '.' requires a resolved expression");
+            return false;
+        }
         initializeOutputFormat();
         ++linePtr;
         cxuint regStart, regEnd;
