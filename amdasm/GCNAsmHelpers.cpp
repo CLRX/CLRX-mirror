@@ -66,8 +66,52 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
     asmr.printError(linePtr, buf);
 }
 
+bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
+                    RegRange& regPair, cxuint regsNum, Flags flags, bool required)
+{
+    const char* oldLinePtr = linePtr;
+    const char* end = asmr.line+asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    const char* vgprRangePlace = linePtr;
+    
+    AsmSymbolEntry* symEntry = nullptr;
+    if (linePtr!=end && *linePtr=='@')
+        skipCharAndSpacesToEnd(linePtr, end);
+    
+    const char *regTypeName = (flags&INSTROP_VREGS) ? "vector" : "scalar";
+    
+    if (asmr.parseSymbol(linePtr, symEntry, false, true)==
+        Assembler::ParseState::PARSED && symEntry!=nullptr &&
+        symEntry->second.regRange)
+    { // set up regrange
+        cxuint rstart = symEntry->second.value&UINT_MAX;
+        cxuint rend = symEntry->second.value>>32;
+        const cxuint vsflags = flags & (INSTROP_VREGS|INSTROP_SREGS);
+        if ((vsflags == INSTROP_VREGS && rstart >= 256 && rend >= 256) ||
+            (vsflags == INSTROP_SREGS && rstart < 256 && rend < 256 &&
+            /* if ssource and regs is vccz/execz/scc or
+             *    no ssource and not vccz/execz/scc */
+            (((flags&INSTROP_SSOURCE)==0) ^ (rstart==251 || rstart==252 || rstart==253))) ||
+            vsflags == (INSTROP_VREGS|INSTROP_SREGS))
+        {
+            if (regsNum!=0 && regsNum != rend-rstart)
+            {
+                printXRegistersRequired(asmr, vgprRangePlace, regTypeName, regsNum);
+                return false;
+            }
+            regPair = { rstart, rend };
+            return true;
+        }
+    }
+    if (printRegisterRangeExpected(asmr, vgprRangePlace, regTypeName, regsNum, required))
+        return false;
+    regPair = { 0, 0 }; // no range
+    linePtr = oldLinePtr; // revert current line pointer
+    return true;
+}
+
 bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    cxuint regsNum, bool required)
+                    cxuint regsNum, bool required, bool symRegRange)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -76,29 +120,10 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     if (linePtr == end || toLower(*linePtr) != 'v' || linePtr+1 == end ||
         (!isDigit(linePtr[1]) && linePtr[1]!='['))
     {
-        if (linePtr!=end)
-        {   // check whether is name of symbol with register
-            AsmSymbolEntry* symEntry = nullptr;
-            if (*linePtr=='@')
-                skipCharAndSpacesToEnd(linePtr, end);
-            if (asmr.parseSymbol(linePtr, symEntry, false, true)==
-                Assembler::ParseState::PARSED && symEntry!=nullptr &&
-                symEntry->second.regRange)
-            { // set up regrange
-                cxuint rstart = symEntry->second.value&UINT_MAX;
-                cxuint rend = symEntry->second.value>>32;
-                if (rstart >= 256 && rend >= 256)
-                {
-                    if (regsNum!=0 && regsNum != rend-rstart)
-                    {
-                        printXRegistersRequired(asmr, vgprRangePlace, "vector", regsNum);
-                        return false;
-                    }
-                    regPair = { rstart, rend };
-                    return true;
-                }
-            }
-        }
+        linePtr = oldLinePtr;
+        if (symRegRange)
+            return parseSymRegRange(asmr, linePtr, regPair, regsNum,
+                            INSTROP_VREGS, required);
         if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
         regPair = { 0, 0 }; // no range
@@ -183,7 +208,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
 }
 
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    uint16_t arch, cxuint regsNum, bool required)
+                    uint16_t arch, cxuint regsNum, bool required, bool symRegRange)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -307,29 +332,10 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         }
         else
         {   // otherwise
-            // check whether is name of symbol with register
-            AsmSymbolEntry* symEntry = nullptr;
             linePtr = oldLinePtr;
-            skipSpacesToEnd(linePtr, end);
-            if (linePtr!=end && *linePtr=='@')
-                skipCharAndSpacesToEnd(linePtr, end);
-            if (asmr.parseSymbol(linePtr, symEntry, false, true)==
-                Assembler::ParseState::PARSED && symEntry!=nullptr &&
-                symEntry->second.regRange)
-            { // set up regrange
-                cxuint rstart = symEntry->second.value&UINT_MAX;
-                cxuint rend = symEntry->second.value>>32;
-                if (rstart < 256 && rend <= 256)
-                {
-                    if (regsNum!=0 && regsNum != rend-rstart)
-                    {
-                        printXRegistersRequired(asmr, sgprRangePlace, "scalar", regsNum);
-                        return false;
-                    }
-                    regPair = { rstart, rend };
-                    return true;
-                }
-            }
+            if (symRegRange)
+                return parseSymRegRange(asmr, linePtr, regPair, regsNum,
+                                INSTROP_SREGS, required);
             if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
                             regsNum, required))
                 return false;
@@ -726,14 +732,22 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
-        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, false))
+        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, false, false))
             return false;
         if (operand)
             return true;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
-        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, false))
+        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, false, false))
+            return false;
+        if (operand)
+            return true;
+    }
+    if (instrOpMask & (INSTROP_SREGS|INSTROP_VREGS))
+    {
+        if (!parseSymRegRange(asmr, linePtr, operand.range, regsNum,
+                    INSTROP_SREGS|INSTROP_VREGS|(instrOpMask&INSTROP_SSOURCE), false))
             return false;
         if (operand)
             return true;
