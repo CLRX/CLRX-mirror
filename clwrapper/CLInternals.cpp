@@ -1541,7 +1541,9 @@ try
     }
     
     const bool is64Bit = parseEnvVariable<bool>("GPU_FORCE_64BIT_PTR");
+#ifdef HAVE_64BIT
     const uint32_t driverVersion = detectAmdDriverVersion();
+#endif
     
     /* compiling programs */
     struct OutDevEntry {
