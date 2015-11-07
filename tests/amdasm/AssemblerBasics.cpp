@@ -3358,14 +3358,24 @@ aa1: bb2:   # kernel labels
             { "x", 43, ASMSECT_ABS, 0, true, false, 0, 0 }
         }, true, "", ""
     },
-    /*{   R"ffDXD(sym1 = 123
+    {   R"ffDXD(. = %s3 # error
+        .equiv sym6, %v[120:125]
+        .equiv sym6, %v[120:125] # error
+        .eqv sym7, %v[120:126]
+        .eqv sym7, %v[120:127] # error
         )ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
         { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA } },
         {
             { ".", 0, 0, 0, true, false, false, 0, 0 },
-        }, true, "", ""
-    }*/
+            { "sym6", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, true, false, 0, 0, true },
+            { "sym7", (256+120) | ((256+127ULL)<<32), ASMSECT_ABS, 0,
+                true, true, false, 0, 0, true },
+        }, false, "test.s:1:1: Error: Symbol '.' requires a resolved expression\n"
+        "test.s:3:16: Error: Symbol 'sym6' is already defined\n"
+        "test.s:5:14: Error: Symbol 'sym7' is already defined\n", ""
+    }
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
