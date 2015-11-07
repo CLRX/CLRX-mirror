@@ -67,7 +67,7 @@ void GCNAsmUtils::printXRegistersRequired(Assembler& asmr, const char* linePtr,
 }
 
 bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
-                    RegRange& regPair, cxuint regsNum, Flags flags, bool required)
+            RegRange& regPair, uint16_t arch, cxuint regsNum, Flags flags, bool required)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -94,11 +94,61 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             (((flags&INSTROP_SSOURCE)==0) ^ (rstart==251 || rstart==252 || rstart==253))) ||
             vsflags == (INSTROP_VREGS|INSTROP_SREGS))
         {
+            skipSpacesToEnd(linePtr, end);
+            if (*linePtr == '[')
+            {
+                uint64_t value1, value2;
+                skipCharAndSpacesToEnd(linePtr, end);
+                if (!getAbsoluteValueArg(asmr, value1, linePtr, true))
+                    return false;
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr == end || (*linePtr!=':' && *linePtr!=']'))
+                {   // error
+                    asmr.printError(vgprRangePlace, "Unterminated register range");
+                    return false;
+                }
+                if (linePtr!=end && *linePtr==':')
+                {
+                    skipCharAndSpacesToEnd(linePtr, end);
+                    if (!getAbsoluteValueArg(asmr, value2, linePtr, true))
+                        return false;
+                }
+                else
+                    value2 = value1;
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr == end || *linePtr != ']')
+                {   // error
+                    asmr.printError(vgprRangePlace, "Unterminated register range");
+                    return false;
+                }
+                ++linePtr;
+                if (value2 < value1)
+                {   // error (illegal register range)
+                    asmr.printError(vgprRangePlace, "Illegal register range");
+                    return false;
+                }
+                if (value2 >= rend-rstart || value1 >= rend-rstart)
+                {
+                    asmr.printError(vgprRangePlace, "Register range out of range");
+                    return false;
+                }
+                rend = rstart + value2+1;
+                rstart += value1;
+            }
+            
             if (regsNum!=0 && regsNum != rend-rstart)
             {
                 printXRegistersRequired(asmr, vgprRangePlace, regTypeName, regsNum);
                 return false;
             }
+            const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
+            /// check aligned for scalar registers
+            if ((flags & INSTROP_UNALIGNED) == 0 && rstart>=0 && rstart<maxSGPRsNum)
+                if ((rend-rstart==2 && (rstart&1)!=0) || (rend-rstart>2 && (rstart&3)!=0))
+                {
+                    asmr.printError(vgprRangePlace, "Unaligned scalar register range");
+                    return false;
+                }
             regPair = { rstart, rend };
             return true;
         }
@@ -111,7 +161,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
 }
 
 bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    cxuint regsNum, bool required, bool symRegRange)
+                    cxuint regsNum, bool required, Flags flags)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -121,8 +171,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         (!isDigit(linePtr[1]) && linePtr[1]!='['))
     {
         linePtr = oldLinePtr;
-        if (symRegRange)
-            return parseSymRegRange(asmr, linePtr, regPair, regsNum,
+        if ((flags&INSTROP_SYMREGRANGE) != 0)
+            return parseSymRegRange(asmr, linePtr, regPair, 0, regsNum,
                             INSTROP_VREGS, required);
         if (printRegisterRangeExpected(asmr, vgprRangePlace, "vector", regsNum, required))
             return false;
@@ -147,9 +197,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
     else if (*linePtr == '[')
     {   // many registers
-        ++linePtr;
         uint64_t value1, value2;
-        skipSpacesToEnd(linePtr, end);
+        skipCharAndSpacesToEnd(linePtr, end);
         if (!getAbsoluteValueArg(asmr, value1, linePtr, true))
             return false;
         skipSpacesToEnd(linePtr, end);
@@ -208,7 +257,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
 }
 
 bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                    uint16_t arch, cxuint regsNum, bool required, bool symRegRange)
+                    uint16_t arch, cxuint regsNum, bool required, Flags flags)
 {
     const char* oldLinePtr = linePtr;
     const char* end = asmr.line+asmr.lineSize;
@@ -333,8 +382,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         else
         {   // otherwise
             linePtr = oldLinePtr;
-            if (symRegRange)
-                return parseSymRegRange(asmr, linePtr, regPair, regsNum,
+            if ((flags&INSTROP_SYMREGRANGE) != 0)
+                return parseSymRegRange(asmr, linePtr, regPair, arch, regsNum,
                                 INSTROP_SREGS, required);
             if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar",
                             regsNum, required))
@@ -387,9 +436,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
     }
     else if (*linePtr == '[')
     {   // many registers
-        ++linePtr;
         uint64_t value1, value2;
-        skipSpacesToEnd(linePtr, end);
+        skipCharAndSpacesToEnd(linePtr, end);
         if (!getAbsoluteValueArg(asmr, value1, linePtr, true))
             return false;
         skipSpacesToEnd(linePtr, end);
@@ -454,7 +502,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return false;
         }
         /// check alignment
-        if (!ttmpReg)
+        if (!ttmpReg && (flags & INSTROP_UNALIGNED)==0)
             if ((value2-value1==1 && (value1&1)!=0) || (value2-value1>1 && (value1&3)!=0))
             {
                 asmr.printError(sgprRangePlace, "Unaligned scalar register range");
@@ -729,25 +777,26 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         }
     }
     
+    const cxuint alignFlags = (instrOpMask&INSTROP_UNALIGNED);
     // otherwise
     if (instrOpMask & INSTROP_SREGS)
     {
-        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, false, false))
+        if (!parseSRegRange(asmr, linePtr, operand.range, arch, regsNum, false, alignFlags))
             return false;
         if (operand)
             return true;
     }
     if (instrOpMask & INSTROP_VREGS)
     {
-        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, false, false))
+        if (!parseVRegRange(asmr, linePtr, operand.range, regsNum, false, alignFlags))
             return false;
         if (operand)
             return true;
     }
     if (instrOpMask & (INSTROP_SREGS|INSTROP_VREGS))
     {
-        if (!parseSymRegRange(asmr, linePtr, operand.range, regsNum,
-                    INSTROP_SREGS|INSTROP_VREGS|(instrOpMask&INSTROP_SSOURCE), false))
+        if (!parseSymRegRange(asmr, linePtr, operand.range, arch, regsNum, INSTROP_SREGS|
+                    INSTROP_VREGS|(instrOpMask&INSTROP_SSOURCE)|alignFlags, false))
             return false;
         if (operand)
             return true;

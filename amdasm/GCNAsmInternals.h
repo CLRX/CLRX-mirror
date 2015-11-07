@@ -50,6 +50,10 @@ enum : Flags {
     INSTROP_INT = 0x000,    // integer literal
     INSTROP_FLOAT = 0x1000, // floating point literal
     INSTROP_F16 = 0x2000,   // half floating point literal
+    INSTROP_UNALIGNED = 0x8000, // not aligned, use by parseRegisterRange
+    
+    // for parseSRregRange/parseVRegRange
+    INSTROP_SYMREGRANGE = 1
 };
 
 enum: cxbyte {
@@ -113,14 +117,15 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static void printXRegistersRequired(Assembler& asmr, const char* linePtr,
                const char* regPoolName, cxuint requiredRegsNum);
     
-    static bool parseSymRegRange(Assembler& asmr, const char*& linePtr,
-                    RegRange& regPair, cxuint regsNum, Flags flags, bool required = true);
+    static bool parseSymRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
+                 uint16_t arch, cxuint regsNum, Flags flags, bool required = true);
     /* return true if no error */
     static bool parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-                   cxuint regsNum, bool required = true, bool symRegRange = true);
+                   cxuint regsNum, bool required = true, Flags flags = INSTROP_SYMREGRANGE);
     /* return true if no error */
     static bool parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange& regPair,
-           uint16_t arch, cxuint regsNum, bool required = true, bool symRegRange = true);
+                   uint16_t arch, cxuint regsNum, bool required = true,
+                   Flags flags = INSTROP_SYMREGRANGE);
     
     /* return true if no error */
     static bool parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& value,

@@ -2815,7 +2815,7 @@ bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
 {
     GCNOperand operand;
     if (!GCNAsmUtils::parseOperand(assembler, linePtr, operand, nullptr, curArchMask, 0,
-                INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE))
+                INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_UNALIGNED))
         return false;
     regStart = operand.range.start;
     regEnd = operand.range.end;
