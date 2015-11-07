@@ -3363,6 +3363,10 @@ aa1: bb2:   # kernel labels
         .equiv sym6, %v[120:125] # error
         .eqv sym7, %v[120:126]
         .eqv sym7, %v[120:127] # error
+        .size sym6 , 4
+        .global sym6, sym7
+        .local sym6, sym7
+        .weak sym6, sym7
         )ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
         { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA } },
@@ -3372,9 +3376,17 @@ aa1: bb2:   # kernel labels
                 true, true, false, 0, 0, true },
             { "sym7", (256+120) | ((256+127ULL)<<32), ASMSECT_ABS, 0,
                 true, true, false, 0, 0, true },
-        }, false, "test.s:1:1: Error: Symbol '.' requires a resolved expression\n"
-        "test.s:3:16: Error: Symbol 'sym6' is already defined\n"
-        "test.s:5:14: Error: Symbol 'sym7' is already defined\n", ""
+        }, false, R"ffDXD(test.s:1:1: Error: Symbol '.' requires a resolved expression
+test.s:3:16: Error: Symbol 'sym6' is already defined
+test.s:5:14: Error: Symbol 'sym7' is already defined
+test.s:6:15: Error: Symbol must not be register symbol
+test.s:7:17: Error: Symbol must not be register symbol
+test.s:7:23: Error: Symbol must not be register symbol
+test.s:8:16: Error: Symbol must not be register symbol
+test.s:8:22: Error: Symbol must not be register symbol
+test.s:9:15: Error: Symbol must not be register symbol
+test.s:9:21: Error: Symbol must not be register symbol
+)ffDXD", ""
     }
 };
 
