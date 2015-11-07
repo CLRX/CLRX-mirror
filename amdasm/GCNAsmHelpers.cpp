@@ -89,9 +89,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
         const cxuint vsflags = flags & (INSTROP_VREGS|INSTROP_SREGS);
         if ((vsflags == INSTROP_VREGS && rstart >= 256 && rend >= 256) ||
             (vsflags == INSTROP_SREGS && rstart < 256 && rend < 256 &&
-            /* if ssource and regs is vccz/execz/scc or
-             *    no ssource and not vccz/execz/scc */
-            (((flags&INSTROP_SSOURCE)==0) ^ (rstart==251 || rstart==252 || rstart==253))) ||
+            (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))) ||
             vsflags == (INSTROP_VREGS|INSTROP_SREGS))
         {
             skipSpacesToEnd(linePtr, end);
@@ -795,8 +793,9 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
     }
     if (instrOpMask & (INSTROP_SREGS|INSTROP_VREGS))
     {
-        if (!parseSymRegRange(asmr, linePtr, operand.range, arch, regsNum, INSTROP_SREGS|
-                    INSTROP_VREGS|(instrOpMask&INSTROP_SSOURCE)|alignFlags, false))
+        if (!parseSymRegRange(asmr, linePtr, operand.range, arch, regsNum,
+                (instrOpMask&((INSTROP_SREGS|INSTROP_VREGS|INSTROP_SSOURCE))) |
+                    alignFlags, false))
             return false;
         if (operand)
             return true;

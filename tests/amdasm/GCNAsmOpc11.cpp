@@ -39,6 +39,13 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  s[21], s[4], s[61]", 0x80153d04U, 0, false, true, "" },
     { "zx=21; ss=2; b=60;s_add_u32  s[zx], s[ss*2], s[b+1]",
             0x80153d04U, 0, false, true, "" },
+    /* register's symbols */
+    { "zx=%s[20:23]; ss=%s4; b=%s[57:67];s_add_u32  zx[1], ss, b[4]",
+            0x80153d04U, 0, false, true, "" },
+    { "xv=2; zx=%s[xv+18:xv+19]; ss=%s[xv+2]; b=%s[xv+55:xv+65];"
+        "s_add_u32  zx[1], ss, b[4]", 0x80153d04U, 0, false, true, "" },
+    { "zx=%s[20:23]; ss=%execz; b=%s[57:67];s_add_u32  zx[1], ss, b[4]",
+            0x80153dfcU, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0", 0x80158004U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 1", 0x80158104U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0x2a", 0x8015aa04U, 0, false, true, "" },
@@ -142,6 +149,15 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:23: Error: Expected instruction operand\n" },
     { "  s_add_u32  s35, 400000, 1111116", 0, 0, false, false,
         "test.s:1:27: Error: Only one literal can be used in instruction\n" },
+    { "    s_xor_b64  s[30:31], vcc_hi, s[14:15]", 0, 0, false, false,
+        "test.s:1:26: Error: Required 2 scalar registers\n" },
+    { "k=%s5; s_xor_b64  s[30:31], k, s[14:15]", 0, 0, false, false,
+        "test.s:1:29: Error: Required 2 scalar registers\n" },
+    { "k=%execz; s_xor_b64  s[30:31], k, s[14:15]", 0, 0, false, false,
+        "test.s:1:32: Error: Required 2 scalar registers\n" },
+    { "k=%v[10:11]; s_xor_b64  s[30:31], k, s[14:15]", 0, 0, false, false,
+        "test.s:1:35: Error: Expression have register symbol\n"
+        "test.s:1:35: Error: Expected ',' before argument\n" },
     /* SOP2 encodings */
     { "    s_sub_u32  s21, s4, s61", 0x80953d04U, 0, false, true, "" },
     { "    s_add_i32  s21, s4, s61", 0x81153d04U, 0, false, true, "" },
@@ -534,6 +550,11 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_readlane_b32  s26, v21, s94", 0x0234bd15U, 0, false, true, "" },
     { "    v_writelane_b32  v26, v21, s94", 0x0434bd15U, 0, false, true, "" },
     { "    v_add_f32  v154, v21, v107", 0x0734d715U, 0, false, true, "" },
+    /* register names */
+    { "tx=%v21; ty=%v107; v_add_f32  v154, tx, ty", 0x0734d715U, 0, false, true, "" },
+    { "tx=%v[16:23]; ty=%v107; v_add_f32  v154, tx[5], ty",
+        0x0734d715U, 0, false, true, "" },
+    { "tx=%s21; v_add_f32  v154, tx, v107", 0x0734d615U, 0, false, true, "" },
     { "    v_add_f32  v154, s21, v107", 0x0734d615U, 0, false, true, "" },
     { "    v_add_f32  v154, v21, v107 vop3", 0xd206009aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, s98", 0xd206009aU, 0x0000c515U, true, true, "" },
@@ -615,6 +636,11 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:5: Error: Literal with SGPR or M0 is illegal\n" },
     { "    v_add_f32  v154, s2, s4", 0, 0, false, false,
         "test.s:1:5: Error: More than one SGPR to read in instruction\n" },
+    /* out holds scalar register (not vector) */
+    { "out=%s64;v_add_f32  out, s21, v107", 0, 0, false, false,
+        "test.s:1:21: Error: Expected 1 vector register\n" },
+    { "out=%v[64:65];v_add_f32  out, s21, v107", 0, 0, false, false,
+        "test.s:1:26: Error: Required 1 vector register\n" },
     /* OMOD already defined */
     { "    v_add_f32  v154, v21, v107 mul:4 div:2", 0xd206009aU, 0x1802d715U, true, true, 
         "test.s:1:38: Warning: OMOD is already defined\n" },
