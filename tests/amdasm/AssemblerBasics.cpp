@@ -48,6 +48,7 @@ struct SymEntry
     bool base;
     cxbyte info;
     cxbyte other;
+    bool regRange;
 };
 
 struct AsmTestCase
@@ -677,14 +678,14 @@ test.s:19:1: Error: Symbol 'x2' is already defined
             { "x0", 6U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
             { "x1", 5U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
         },
-        true, R"ffDXD(Expression evaluation from test.s:3:22:
+        true, R"ffDXD(Expression evaluation from test.s:3:23:
                       from test.s:4:18:
 test.s:1:24: Warning: Shift count out of range (between 0 and 63)
-Expression evaluation from test.s:6:21:
-                      from test.s:9:22:
+Expression evaluation from test.s:6:22:
+                      from test.s:9:23:
                       from test.s:10:18:
 test.s:7:24: Warning: Shift count out of range (between 0 and 63)
-Expression evaluation from test.s:9:22:
+Expression evaluation from test.s:9:23:
                       from test.s:10:18:
 test.s:6:24: Warning: Shift count out of range (between 0 and 63)
 )ffDXD", ""
@@ -743,7 +744,7 @@ aaa: aaa:
 test.s:2:17: Error: Expected symbol
 test.s:2:17: Error: Expected ',' before argument
 test.s:3:21: Error: Expected ',' before argument
-test.s:4:22: Error: Expected assignment expression
+test.s:4:23: Error: Expected assignment expression
 test.s:5:1: Error: Illegal number at statement begin
 test.s:6:6: Error: Symbol 'aaa' is already defined
 test.s:7:13: Error: Unknown instruction
@@ -3327,7 +3328,44 @@ aa1: bb2:   # kernel labels
             { "sym4", 3, ASMSECT_ABS, 0, true, false, false, 0, 0 },
             { "sym7", 1, ASMSECT_ABS, 0, true, false, false, 0, 0 }
         }, true, "", ""
-    }
+    },
+    /* register ranges assignment */
+    {   R"ffDXD(sym1 = 123
+        sym1 = %v[12:15]
+        sym2 = x*21
+        sym2 = %v[120:125]
+        sym3 = %sym2[1:3]
+        sym4 = %v[120:125]
+        sym4 = 12
+        .set sym5, %v[120:125]
+        .equiv sym6, %v[120:125]
+        x=43)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA } },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+            { "sym1", (256+12) | ((256+16ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "sym2", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "sym3", (256+121) | ((256+124ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "sym4", 12, ASMSECT_ABS, 0, true, false, 0, 0 },
+            { "sym5", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, false, false, 0, 0, true },
+            { "sym6", (256+120) | ((256+126ULL)<<32), ASMSECT_ABS, 0,
+                true, true, false, 0, 0, true },
+            { "x", 43, ASMSECT_ABS, 0, true, false, 0, 0 }
+        }, true, "", ""
+    },
+    /*{   R"ffDXD(sym1 = 123
+        )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA } },
+        {
+            { ".", 0, 0, 0, true, false, false, 0, 0 },
+        }, true, "", ""
+    }*/
 };
 
 static void testAssembler(cxuint testId, const AsmTestCase& testCase)
@@ -3419,6 +3457,8 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
                     int(resSymbol.second.info));
         assertValue(testName,caseName+"other", int(expSymbol.other),
                     int(resSymbol.second.other));
+        assertValue(testName,caseName+"regRange", int(expSymbol.regRange),
+                    int(resSymbol.second.regRange));
     }
     errorStream.flush();
     printStream.flush();

@@ -955,6 +955,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
 bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
              const char* linePtr, bool reassign, bool baseExpr)
 {
+    skipSpacesToEnd(linePtr, line+lineSize);
     if (linePtr!=line+lineSize && *linePtr=='%')
     {
         if (symbolName == ".")
@@ -991,7 +992,6 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
     // make base expr if baseExpr=true and symbolName is not output counter
     bool makeBaseExpr = (baseExpr && symbolName != ".");
     std::unique_ptr<AsmExpression> expr(AsmExpression::parse(*this, linePtr, makeBaseExpr));
-    skipSpacesToEnd(linePtr, line+lineSize);
     if (!expr) // no expression, errors
         return false;
     
