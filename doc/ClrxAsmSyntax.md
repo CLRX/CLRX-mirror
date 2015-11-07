@@ -54,6 +54,20 @@ adding `b` or `f` suffix.
 v_add_i32 v32,3f-3b,v2  # 3b is previous `3` label, 3f is next `3` label
 ```
 
+CLRX assembler accepts assignment register or register's range to symbols.
+Register or register's range shall to be preceded by '%' at assignment.
+Register symbol can be used for instruction operand or other register assignment.
+Register subranges or just single register can be extracted from parent register ranges
+by using indexing as well as regular register pools. Example:
+
+```
+regpool = %v[16:31]
+reg1 = %s[0:1]
+s_and_b64 reg1, s[2:3], s[4:5]  # output as s[0:1]
+s_cmp_lt_i32 reg1[0], s2        # compare s0 with s2
+v_xor_b32 regpool[4], regpool[7], regpool[9]    # v_xor_b32 v20, v23, v25
+```
+
 ### Sections
 
 Section is some part of the binary that contains some data. Type of the data depends on
