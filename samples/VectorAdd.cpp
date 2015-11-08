@@ -25,9 +25,9 @@
 using namespace CLRX;
 
 static const char* vectorAddSource = R"ffDXD(# VectorAdd example
-    .ifarch gcn1.2
-        .error "Unsupported GCN1.2 architecture"
-    .endif
+.ifarch gcn1.2
+    .error "Unsupported GCN1.2 architecture"
+.endif
 .iffmt amd    # if AMD Catalyst
 .kernel vectorAdd
     .config
@@ -104,7 +104,7 @@ end:
         .arg scalar,4       # uint n
         .arg global,8       # const global float* abuf
         .arg global,8       # const global float* bbuf
-        .arg global,8       # const float* cbuf
+        .arg global,8       # global float* cbuf
         .arg griddim,4
         .arg gridoffset,4
     .config
