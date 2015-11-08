@@ -1540,11 +1540,6 @@ try
         return CL_INVALID_BUILD_OPTIONS;
     }
     
-    const bool is64Bit = parseEnvVariable<bool>("GPU_FORCE_64BIT_PTR");
-#ifdef HAVE_64BIT
-    const uint32_t driverVersion = detectAmdDriverVersion();
-#endif
-    
     /* compiling programs */
     struct OutDevEntry {
         cl_device_id first, second;
@@ -1623,14 +1618,13 @@ try
         StringOStream msgStream(msgString);
         Assembler assembler("", astream, asmFlags, BinaryFormat::AMD,
                     GPUDeviceType(devType), msgStream);
-#ifdef HAVE_64BIT
-        /* if GPU_FORCE_64BIT_PTR is set or driverVersion>=1800.5 and arch>=GCN1.1 */
-        assembler.set64Bit(is64Bit || (driverVersion>=180005 &&
-                getGPUArchitectureFromDeviceType(GPUDeviceType(devType)) >=
-                    GPUArchitecture::GCN1_1));
-#else
-        assembler.set64Bit(is64Bit);
-#endif
+        
+        cl_uint addressBits;
+        error = amdp->dispatch->clGetDeviceInfo(entry.second,
+                    CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &addressBits, nullptr);
+        if (error != CL_SUCCESS)
+            clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
+        assembler.set64Bit(addressBits==64);
         
         for (const CString& incPath: includePaths)
             assembler.addIncludeDir(incPath);
