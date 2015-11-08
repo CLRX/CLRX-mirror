@@ -161,7 +161,9 @@ Binary|   ?:     |   6   | Choice (this same as C++)
 'vert-line' is `|`, and 'dbl-vert-line' is `||`.
 
 The `?:` operator have this same meanigful as in C/C++ and performed from
-right to left side.
+right to left side. 
+
+**Important note**: Comparison operators return all ones (-1) value instead 1.
 
 Symbol refering to some place can be added, subtracted, compared or negated if
 final result of the expression can be represented as place of the code or absolute value
