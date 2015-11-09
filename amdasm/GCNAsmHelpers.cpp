@@ -141,7 +141,7 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
             }
             const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
             /// check aligned for scalar registers
-            if ((flags & INSTROP_UNALIGNED) == 0 && rstart>=0 && rstart<maxSGPRsNum)
+            if ((flags & INSTROP_UNALIGNED) == 0 && rstart<maxSGPRsNum)
                 if ((rend-rstart==2 && (rstart&1)!=0) || (rend-rstart>2 && (rstart&3)!=0))
                 {
                     asmr.printError(vgprRangePlace, "Unaligned scalar register range");

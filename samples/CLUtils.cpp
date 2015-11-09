@@ -203,7 +203,6 @@ try
 }
 catch(...)
 {
-    
     if (program!=nullptr)
         clReleaseProgram(program);
     if (queue!=nullptr)
