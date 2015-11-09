@@ -38,8 +38,8 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
     .config
         .dims xy        # uses two dimensions
         .uavid 11       # force first UAV=12
-        .arg img1,image,read_only       # read_only image2d_t img1
-        .arg img2,image,read_only       # read_only image2d_t img2
+        .arg img1, image, read_only     # read_only image2d_t img1
+        .arg img2, image, read_only     # read_only image2d_t img2
         .arg outimg,image,write_only    # write_only image2d_t outimg
         .userdata ptr_resource_table, 0, 2, 2   # s[2:3] - res. table for read only images
         .userdata imm_const_buffer, 0, 4, 4     # s[4:7] - kernel setup const buffer
@@ -262,6 +262,7 @@ void ImageMix::run()
         clReleaseEvent(event);
         throw CLError(error, "clWaitForEvents");
     }
+    clReleaseEvent(event);
     
     /* write image to output */
     std::unique_ptr<cl_uchar4[]> outPixels(new cl_uchar4[width*height]);

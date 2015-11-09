@@ -235,6 +235,7 @@ void VectorAdd::run()
         clReleaseEvent(event);
         throw CLError(error, "clWaitForEvents");
     }
+    clReleaseEvent(event);
     
     /// read output buffer
     error = clEnqueueReadBuffer(queue, cBuffer, CL_TRUE, 0, sizeof(float)*elemsNum,
