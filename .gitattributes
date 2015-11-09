@@ -78,6 +78,7 @@ samples/CLUtils.cpp -text
 samples/CLUtils.h -text
 samples/CMakeLists.txt -text svneol=unset#text/plain
 samples/ImageMix.cpp -text
+samples/ReverseBits.cpp -text
 samples/VectorAdd.cpp -text
 samples/image1.png -text svneol=unset#image/png
 samples/image2.png -text svneol=unset#image/png
