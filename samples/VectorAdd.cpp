@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <memory>
+#include <cmath>
 #include <CLRX/utils/Utilities.h>
 #include "CLUtils.h"
 
@@ -234,6 +235,16 @@ void VectorAdd::run()
     if (error != CL_SUCCESS)
         throw CLError(error, "clEnqueueReadBuffer");
     
+    for (size_t i = 0; i < elemsNum; i++)
+    {
+        const float expected = aData[i]+bData[i];
+        if (::fabs(expected-cData[i]) >= 1.0e-7)
+        {
+            std::cerr << i << i << ": " << aData[i] << " + " << bData[i] <<
+                ": " << expected << "!=" << cData[i] << "\n";
+            throw Exception("CData mismatch!");
+        }
+    }
     // print result
     for (size_t i = 0; i < elemsNum; i++)
         std::cout << i << ": " << aData[i] << " + " << bData[i] <<
