@@ -25,16 +25,16 @@ for human (`.config`) and for quick recompilation (ATI CALNotes and the metadata
 
 ### .arg
 
-Syntax for scalar: .arg ARGNAME \[\[, "ARGTYPENAME"], ARGTYPE[, unused]]  
-Syntax for structure: .arg \[\[, "ARGTYPENAME"], ARGTYPE[, STRUCTSIZE[, unused]]]  
-Syntax for image: .arg ARGNAME\[\[, "ARGTYPENAME"], ARGTYPE[, [ACCESS] [, RESID[, unused]]]]  
-Syntax for counter32: .arg ARGNAME\[\[, "ARGTYPENAME"], ARGTYPE[, RESID[, unused]]]  
-Syntax for global pointer: .arg ARGNAME\[\[, "ARGTYPENAME"], 
-ARGTYPE\[\[, STRUCTSIZE], PTRSPACE[, [ACCESS] [, RESID[, unused]]]]]  
-Syntax for local pointer: .arg ARGNAME[[, "ARGTYPENAME"], 
-ARGTYPE\[\[, STRUCTSIZE], PTRSPACE[, [ACCESS] [, unused]]]]  
-Syntax for constant pointer: .arg ARGNAME[[, "ARGTYPENAME"], 
-ARGTYPE\[\[, STRUCTSIZE], PTRSPACE\[, [ACCESS] [, [CONSTSIZE] [, RESID[, unused]]]]]]
+Syntax for scalar: .arg ARGNAME \[, "ARGTYPENAME"], ARGTYPE[, unused]  
+Syntax for structure: .arg ARGNAME, \[, "ARGTYPENAME"], ARGTYPE[, STRUCTSIZE[, unused]]  
+Syntax for image: .arg ARGNAME\[, "ARGTYPENAME"], ARGTYPE[, [ACCESS] [, RESID[, unused]]]  
+Syntax for counter32: .arg ARGNAME\[, "ARGTYPENAME"], ARGTYPE[, RESID[, unused]]  
+Syntax for global pointer: .arg ARGNAME\[, "ARGTYPENAME"], 
+ARGTYPE\[\[, STRUCTSIZE], PTRSPACE[, [ACCESS] [, RESID[, unused]]]]  
+Syntax for local pointer: .arg ARGNAME\[, "ARGTYPENAME"], 
+ARGTYPE\[\[, STRUCTSIZE], PTRSPACE[, [ACCESS] [, unused]]]  
+Syntax for constant pointer: .arg ARGNAME\[, "ARGTYPENAME"], 
+ARGTYPE\[\[, STRUCTSIZE], PTRSPACE\[, [ACCESS] [, [CONSTSIZE] [, RESID[, unused]]]]
 
 Adds kernel argument definition. Must be inside kernel configuration. First argument is
 argument name from OpenCL kernel definition. Next optional argument is argument type name
