@@ -237,7 +237,6 @@ void ImageMix::run()
     clSetKernelArg(kernels[0], 1, sizeof(cl_mem), &image2);
     clSetKernelArg(kernels[0], 2, sizeof(cl_mem), &outImage);
     
-    cl_event event = nullptr;
     size_t workGroupSize, workGroupSizeMul;
     getKernelInfo(kernels[0], workGroupSize, workGroupSizeMul);
     
@@ -252,17 +251,7 @@ void ImageMix::run()
     
     std::cout << "WorkSize: " << workSize[0] << "x" << workSize[1] <<
             ", LocalSize: " << localSize[0] << "x" << localSize[1] << std::endl;
-    error = clEnqueueNDRangeKernel(queue, kernels[0], 2, nullptr, workSize, localSize,
-                       0, nullptr, &event);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clEnqueueNDRangeKernel");
-    error = clWaitForEvents(1, &event); // waiting for finish kernel
-    if (error != CL_SUCCESS)
-    {
-        clReleaseEvent(event);
-        throw CLError(error, "clWaitForEvents");
-    }
-    clReleaseEvent(event);
+    callNDRangeKernel(kernels[0], 2, nullptr, workSize, localSize);
     
     /* write image to output */
     std::unique_ptr<cl_uchar4[]> outPixels(new cl_uchar4[width*height]);

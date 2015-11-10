@@ -239,3 +239,20 @@ void CLFacade::getKernelInfo(cl_kernel kernel, size_t& workGroupSize,
     if (error != CL_SUCCESS || workGroupSizeMultiple == 1)
         workGroupSizeMultiple = 64; // fix for GalliumCompute
 }
+
+void CLFacade::callNDRangeKernel(cl_kernel kernel, cl_uint workDim, const size_t* offset,
+               const size_t* workSize, const size_t* localSize)
+{
+    cl_event event;
+    cl_int error = clEnqueueNDRangeKernel(queue, kernel, workDim, offset, workSize,
+                                   localSize, 0, nullptr, &event);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clEnqueueNDRangeKernel");
+    error = clWaitForEvents(1, &event); // waiting for finish kernel
+    if (error != CL_SUCCESS)
+    {
+        clReleaseEvent(event);
+        throw CLError(error, "clWaitForEvents");
+    }
+    clReleaseEvent(event);
+}

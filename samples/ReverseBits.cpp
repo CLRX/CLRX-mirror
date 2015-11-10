@@ -153,24 +153,12 @@ void ReverseBits::run()
     clSetKernelArg(kernels[0], 2, sizeof(cl_mem), &output);
     
     /// execute kernel
-    cl_event event = nullptr;
     size_t workGroupSize, workGroupSizeMul;
     getKernelInfo(kernels[0], workGroupSize, workGroupSizeMul);
     
     size_t workSize = (size+workGroupSize-1)/workGroupSize*workGroupSize;
     std::cout << "WorkSize: " << workSize << ", LocalSize: " << workGroupSize << std::endl;
-    
-    error = clEnqueueNDRangeKernel(queue, kernels[0], 1, nullptr, &workSize,
-                                   &workGroupSize, 0, nullptr, &event);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clEnqueueNDRangeKernel");
-    error = clWaitForEvents(1, &event); // waiting for finish kernel
-    if (error != CL_SUCCESS)
-    {
-        clReleaseEvent(event);
-        throw CLError(error, "clWaitForEvents");
-    }
-    clReleaseEvent(event);
+    callNDRangeKernel(kernels[0], 1, nullptr, &workSize, &workGroupSize);
     
     std::unique_ptr<cxbyte[]> outData(new cxbyte[size]);
     /// read output buffer

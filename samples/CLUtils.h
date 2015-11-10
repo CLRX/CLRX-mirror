@@ -71,6 +71,8 @@ protected:
     void getKernelInfo(cl_kernel kernel, size_t& workGroupSize,
                size_t& workGroupSizeMultiple);
     
+    void callNDRangeKernel(cl_kernel kernel, cl_uint workDim, const size_t* offset,
+               const size_t* workSize, const size_t* localSize);
 public:
     explicit CLFacade(cl_uint deviceIndex, const char* sourceCode,
                       const char* kernelNames = nullptr);
