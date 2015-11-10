@@ -66,6 +66,8 @@ reg1 = %s[0:1]
 s_and_b64 reg1, s[2:3], s[4:5]  # output as s[0:1]
 s_cmp_lt_i32 reg1[0], s2        # compare s0 with s2
 v_xor_b32 regpool[4], regpool[7], regpool[9]    # v_xor_b32 v20, v23, v25
+zx = 10 # zx symbol
+v_xor_b32 regpool[zx+1], regpool[zx+5], regpool[zx+7]    # v_xor_b32 v27, v31, v33
 ```
 
 ### Sections
@@ -170,3 +172,21 @@ final result of the expression can be represented as place of the code or absolu
 (without refering to any place). An assembler performs this same operations
 on the sections during evaluating an expression. Division, modulo,
 binary operations (except negation), logical operations is not legal.
+
+### Instruction operands
+
+Instruction operand can be one of list:
+
+* GCN register or register range
+* absolute expression
+* float literal
+* in VOP3 encoding operand modifier: abs, neg
+
+An expression can be preceded by '@' to ensure that a following text will be treated as
+an expression:
+
+```
+v_add_f32 v0, @v0, v4       # second operand is expression: 'v0' instead of v0 register
+```
+
+Alternatively, any expression can be inscribed in parentheses to ensure that result.
