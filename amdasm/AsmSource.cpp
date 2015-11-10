@@ -265,7 +265,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     } while (pos < buffer.size() && !isSpace(buffer[pos]) &&
                                 buffer[pos] != ';');
                 }
-                if (pos < buffer.size())
+                if (pos < buffer.size() && mode!=LineMode::LINE_COMMENT)
                 {
                     if (buffer[pos] == '\n')
                     {
