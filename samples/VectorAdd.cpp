@@ -76,13 +76,15 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
         v_lshrrev_b32 v1, 30, v0
         v_lshlrev_b32 v0, 2, v0                 # v[0:1] - global_id(0)*4
         v_add_i32 v2,vcc,s16,v0                 # v[2:3] - abuf offset + global_id(0)*2
-        v_addc_u32 v3,vcc,s17,v1,vcc
+        v_mov_b32 v3, s17
+        v_addc_u32 v3,vcc,v3,v1,vcc
         v_add_i32 v4,vcc,s18,v0                 # v[4:5] - bbuf offset + global_id(0)*2
-        v_addc_u32 v5,vcc,s19,v1,vcc
+        v_mov_b32 v5, s19
+        v_addc_u32 v5,vcc,v5,v1,vcc
         s_waitcnt lgkmcnt(0)                    # wait for results
         buffer_load_dword v2, v[2:3], s[8:11], 0 addr64     # value from aBuf
         buffer_load_dword v3, v[4:5], s[12:15], 0 addr64    # value from bBuf
-    .endif 
+    .endif
         s_load_dwordx4 s[8:11], s[2:3], 14*8     # s[4:7] - cBuffer descriptor
         s_waitcnt vmcnt(0)
     .if32
@@ -92,7 +94,8 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
     .else # 64bit
         v_add_f32 v2, v2, v3        # add two values
         v_add_i32 v0,vcc,s6,v0                  # v[0:1] - cbuf offset + global_id(0)*2
-        v_addc_u32 v1,vcc,s7,v1,vcc
+        v_mov_b32 v3, s7
+        v_addc_u32 v1,vcc,v3,v1,vcc
         s_waitcnt lgkmcnt(0)         # wait for cBuf descriptor and offset
         buffer_store_dword v2, v[0:1], s[8:11], 0 addr64    # value from aBuf
     .endif

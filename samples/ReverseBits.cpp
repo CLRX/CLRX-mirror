@@ -75,8 +75,9 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
         .userdata imm_const_buffer, 1, 8, 4         # kernel args const buffer
         .useconstdata                       # use global const buffer (const data)
     .text
+    .if32 # 32-bit addressing
         s_buffer_load_dword s0, s[4:7], 4           # local_size(0)
-        s_buffer_load_dword s1, s[4:7], 0x18       # global_offset(0)
+        s_buffer_load_dword s1, s[4:7], 0x18        # global_offset(0)
         s_buffer_load_dword s7, s[4:7], 0x20        # constant buffer offset
         s_buffer_load_dword s4, s[8:11], 0          # n
         s_buffer_load_dword s5, s[8:11], 4          # input buffer offset
@@ -98,6 +99,41 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
         buffer_load_ubyte  v1, v1, s[12:15], s7 offen
         s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
         buffer_store_byte  v1, v0, s[8:11], s6 offen  # write byte to output
+    .else # 64-bit addressing mode
+        s_buffer_load_dword s0, s[4:7], 4           # local_size(0)
+        s_buffer_load_dword s1, s[4:7], 0x18        # global_offset(0)
+        s_buffer_load_dwordx2 s[6:7], s[4:7], 0x20  # constant buffer offset
+        s_buffer_load_dword s4, s[8:11], 0          # n
+        s_waitcnt  lgkmcnt(0)
+        s_mul_i32  s0, s0, s12              # local_size(0)*group_id(0)
+        s_add_u32  s0, s1, s0               # + global_offset(0)
+        v_add_i32  v0, vcc, s0, v0          # global_id(0)
+        v_cmp_gt_u32  vcc, s4, v0           # n<global_id(0)
+        s_and_saveexec_b64  s[0:1], vcc     # deactive thread with id(0)>=n
+        s_cbranch_execz  end                # skip if no active thread
+        s_load_dwordx4 s[8:11], s[2:3], 0x60        # load input buffer descriptor
+        s_load_dwordx4 s[12:15], s[2:3], 0x50       # load constant buffer descriptor
+        s_buffer_load_dwordx2 s[0:1], s[8:11], 4  # input buffer offset
+        s_buffer_load_dwordx2 s[4:5], s[8:11], 8  # output buffer offset
+        s_waitcnt  lgkmcnt(0)
+        v_add_i32  v2, vcc, s0, v0         # v[2:3] - input_offset+global_id(0)
+        v_mov_b32 v3, s1
+        v_addc_u32  v3, vcc, v3, 0, vcc
+        s_waitcnt  lgkmcnt(0)
+        buffer_load_ubyte  v1, v[2:3], s[8:11], 0 addr64 # load ubyte from input
+        s_waitcnt  vmcnt(0)
+        s_load_dwordx4 s[8:11], s[2:3], 0x68        # load output buffer
+        v_add_i32  v4, vcc, s6, v1         # v[4:5] - constbuf_offset+char
+        v_mov_b32 v5, s7
+        v_addc_u32  v5, vcc, v5, 0, vcc
+        # convert byte (convert table in global const buffer)
+        buffer_load_ubyte  v1, v[4:5], s[12:15], 0 addr64
+        v_add_i32  v2, vcc, s4, v0         # v[2:3] - output_offset+global_id(0)
+        v_mov_b32 v3, s5
+        v_addc_u32  v3, vcc, v3, 0, vcc
+        s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
+        buffer_store_byte  v1, v[2:3], s[8:11], 0 addr64 # write byte to output
+    .endif
 end:
         s_endpgm
 .else   # GalliumCompute code
@@ -167,6 +203,17 @@ void ReverseBits::run()
     if (error != CL_SUCCESS)
         throw CLError(error, "clEnqueueReadBuffer");
     
+    /*for (size_t i = 0; i < size; i++)
+    {   // verifying
+        const cxbyte in = inData[i];
+        const cxbyte expected = ((in>>7)&1) | ((in>>5)&2) | ((in>>3)&4) | ((in>>1)&8) |
+                ((in<<1)&16) | ((in<<3)&32) | ((in<<5)&64) | ((in<<7)&128);
+        if (expected != outData[i])
+        {
+            std::cerr << i << ": " << cl_uint(expected) << cl_uint(outData[i]) << std::endl;
+            throw Exception("Data mismatch!");
+        }
+    }*/
     // print result
     for (size_t i = 0; i < size; i+=16)
     {
