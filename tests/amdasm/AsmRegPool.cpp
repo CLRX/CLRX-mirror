@@ -120,13 +120,13 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
         "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  vcc, s[8:9], s5;"
         "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
-    { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, vcc_lo, s54;"
+    { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, vcc_lo, v54;"
         "s_not_b32 s15, s1", { { "xx", 18, 155 } } },
-    { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, vcc, v21, s54, vcc;"
+    { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, vcc, v21, v54, vcc;"
         "s_not_b32 s15, s1", { { "xx", 18, 32 } } },
-    { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, s[6:7], v21, s54, vcc;",
+    { ".gallium;.kernel xx;.config;.text;xx:v_addc_u32  v31, s[6:7], v21, v54, vcc;",
         { { "xx", 10, 32 } } },
-    { ".gallium;.kernel xx;.config;.text;xx:v_readlane_b32  s21, vcc_lo, s54;",
+    { ".gallium;.kernel xx;.config;.text;xx:v_readlane_b32  s21, vcc_lo, m0;",
         { { "xx", 24, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:v_sub_f32  v154, v54, vcc_hi;"
         "s_not_b32 s15, s1", { { "xx", 18, 155 } } },

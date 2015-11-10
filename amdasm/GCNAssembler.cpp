@@ -947,17 +947,23 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         /* srcCC!=VCC or dstCC!=VCC */
         (haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106);
     
-    const cxuint maxSgprsNum = (isGCN12)?102:104;
-    
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
-        (src0Op.range.start<maxSgprsNum || src0Op.range.start==124 ||
-         src1Op.range.start<maxSgprsNum || src1Op.range.start==124))
+        (src0Op.range.start<108 || src0Op.range.start==124 ||
+         src1Op.range.start<108 || src1Op.range.start==124))
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
-    if (src0Op.range.start<maxSgprsNum && src1Op.range.start<maxSgprsNum &&
-        src0Op.range.start!=src1Op.range.start)
+    
+    cxuint sgprsReaded = 0;
+    if (src0Op.range.start<108)
+        sgprsReaded++;
+    if (src1Op.range.start<108 && src0Op.range.start!=src1Op.range.start)
+        sgprsReaded++;
+    if (haveSrcCC && src1Op.range.start!=106 && src0Op.range.start!=106)
+        sgprsReaded++;
+    
+    if (sgprsReaded >= 2)
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
@@ -1289,15 +1295,14 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
         (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0;
     
-    cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
-        (src0Op.range.start<maxSgprsNum || src0Op.range.start==124 ||
-         src1Op.range.start<maxSgprsNum || src1Op.range.start==124))
+        (src0Op.range.start<108 || src0Op.range.start==124 ||
+         src1Op.range.start<108|| src1Op.range.start==124))
     {
         asmr.printError(instrPlace, "Literal with SGPR or M0 is illegal");
         return;
     }
-    if (src0Op.range.start<maxSgprsNum && src1Op.range.start<maxSgprsNum &&
+    if (src0Op.range.start<108 && src1Op.range.start<108 &&
         src0Op.range.start!=src1Op.range.start)
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
@@ -1539,14 +1544,13 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (mode2 != GCN_VOP3_VINTRP)
     {
-        cxuint maxSgprsNum = (arch&ARCH_RX3X0)?102:104;
         cxuint numSgprToRead = 0;
-        if (src0Op.range.start<maxSgprsNum)
+        if (src0Op.range.start<108)
             numSgprToRead++;
-        if (src1Op && src1Op.range.start<maxSgprsNum &&
+        if (src1Op && src1Op.range.start<108 &&
                     src0Op.range.start!=src1Op.range.start)
             numSgprToRead++;
-        if (src2Op && src2Op.range.start<maxSgprsNum &&
+        if (src2Op && src2Op.range.start<108 &&
                 src0Op.range.start!=src2Op.range.start &&
                 src1Op.range.start!=src2Op.range.start)
             numSgprToRead++;

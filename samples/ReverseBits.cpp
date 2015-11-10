@@ -116,21 +116,21 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
         s_buffer_load_dwordx2 s[0:1], s[8:11], 4  # input buffer offset
         s_buffer_load_dwordx2 s[4:5], s[8:11], 8  # output buffer offset
         s_waitcnt  lgkmcnt(0)
-        v_add_i32  v2, vcc, s0, v0         # v[2:3] - input_offset+global_id(0)
-        v_mov_b32 v3, s1
-        v_addc_u32  v3, vcc, v3, 0, vcc
+        v_add_i32  v2, vcc, s0, v0          # v[2:3] - input_offset+global_id(0)
+        v_mov_b32 v3, s1                    # move to vector reg
+        v_addc_u32  v3, vcc, v3, 0, vcc     # v_addc_u32 with only vector regs
         s_waitcnt  lgkmcnt(0)
         buffer_load_ubyte  v1, v[2:3], s[8:11], 0 addr64 # load ubyte from input
         s_waitcnt  vmcnt(0)
         s_load_dwordx4 s[8:11], s[2:3], 0x68        # load output buffer
-        v_add_i32  v4, vcc, s6, v1         # v[4:5] - constbuf_offset+char
-        v_mov_b32 v5, s7
-        v_addc_u32  v5, vcc, v5, 0, vcc
+        v_add_i32  v4, vcc, s6, v1          # v[4:5] - constbuf_offset+char
+        v_mov_b32 v5, s7                    # move to vector reg
+        v_addc_u32  v5, vcc, v5, 0, vcc     # v_addc_u32 with only vector regs
         # convert byte (convert table in global const buffer)
         buffer_load_ubyte  v1, v[4:5], s[12:15], 0 addr64
-        v_add_i32  v2, vcc, s4, v0         # v[2:3] - output_offset+global_id(0)
-        v_mov_b32 v3, s5
-        v_addc_u32  v3, vcc, v3, 0, vcc
+        v_add_i32  v2, vcc, s4, v0          # v[2:3] - output_offset+global_id(0)
+        v_mov_b32 v3, s5                    # move to vector reg
+        v_addc_u32  v3, vcc, v3, 0, vcc     # v_addc_u32 with only vector regs
         s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
         buffer_store_byte  v1, v[2:3], s[8:11], 0 addr64 # write byte to output
     .endif

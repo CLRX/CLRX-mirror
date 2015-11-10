@@ -535,7 +535,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cndmask_b32   v154, lds_direct, v107, vcc", 0x0134d6feU, 0, false, true, "" },
     { "    v_cndmask_b32   v154, src_lds_direct, v107, vcc",
         0x0134d6feU, 0, false, true, "" },
-    { "    v_cndmask_b32   v154, s21, v107, vcc", 0x0134d615U, 0, false, true, "" },
+    { "    v_add_f32   v154, s21, v107", 0x0734d615U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, 2, v107, vcc", 0x0134d682U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, -9, v107, vcc", 0x0134d6c9U, 0, false, true, "" },
     { "    v_cndmask_b32   v154, 20e-1, v107, vcc", 0x0134d6f4U, 0, false, true, "" },
@@ -727,14 +727,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_subrev_i32  v55, s[10:11], s27, -v90",
         0xd24e0a37U, 0x4002b41bU, true, true, "" },
     { "    v_addc_u32  v154, vcc, v21, v107, vcc", 0x5134d715U, 0, false, true, "" },
-    { "    v_addc_u32  v55, s[10:11], s27, -v90, s[26:27]",
-        0xd2500a37U, 0x406ab41bU, true, true, "" },
     { "    v_subb_u32  v154, vcc, v21, v107, vcc", 0x5334d715U, 0, false, true, "" },
-    { "    v_subb_u32  v55, s[10:11], s27, -v90, s[26:27]",
-        0xd2520a37U, 0x406ab41bU, true, true, "" },
     { "    v_subbrev_u32  v154, vcc, v21, v107, vcc", 0x5534d715U, 0, false, true, "" },
-    { "    v_subbrev_u32  v55, s[10:11], s27, -v90, s[26:27]",
-        0xd2540a37U, 0x406ab41bU, true, true, "" },
     /* VOP3B errors */
     { "    v_add_i32  v55, s[10:11], s27, abs(v90)", 0, 0, false, false,
         "test.s:1:39: Error: Expected operator\n"
