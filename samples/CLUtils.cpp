@@ -138,8 +138,6 @@ try
         const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
         
         ArrayIStream astream(::strlen(sourceCode), sourceCode);
-        std::string msgString;
-        StringOStream msgStream(msgString);
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
         assembler.set64Bit(addressBits==64);
