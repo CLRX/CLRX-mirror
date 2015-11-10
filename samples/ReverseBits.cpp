@@ -137,6 +137,54 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
 end:
         s_endpgm
 .else   # GalliumCompute code
+.kernel reverseBits
+    .args
+        .arg scalar, 4
+        .arg global, 8
+        .arg global, 8
+        .arg griddim,4
+        .arg gridoffset,4
+    .config
+        .dims xyz   # required, gallium set always three dimensions
+        .tgsize     # required, TG_SIZE_EN is always enabled
+        # arg offset in dwords:
+        # 9 - n, 11 - abuf, 13 - bbuf, 15 - griddim, 16 - gridoffset
+.text
+reverseBits:
+        s_load_dword s2, s[0:1], 6              # s2 - local_size(0)
+        s_load_dword s3, s[0:1], 9              # s3 - n
+        s_load_dword s1, s[0:1], 16             # s1 - global_offset(0)
+        s_load_dwordx2 s[8:9], s[0:1], 11       # s[8:9] - input pointer
+        s_load_dwordx2 s[6:7], s[0:1], 13       # s[6:7] - output pointer
+        s_waitcnt lgkmcnt(0)            # wait for results
+        s_mul_i32 s0, s2, s4            # s0 - local_size(0)*group_id(0)
+        s_add_u32 s0, s0, s1            # s0 - local_size(0)*group_id(0)+global_offset(0)
+        v_add_i32 v0, vcc, s0, v0       # v0 - s0+local_id(0) -> global_id(0)
+        v_cmp_gt_u32 vcc, s3, v0                # global_id(0) < n
+        s_and_saveexec_b64 s[0:1], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+        s_mov_b32 s4, s6
+        s_mov_b32 s5, s7
+        v_mov_b32 v1, 0                 # zeroing high bits global_id(0)
+        s_getpc_b64  s[0:1]             # const data in this
+        s_add_u32  s0, s0, constData-.  # 
+        s_addc_u32 s1, s1, 0        # should be always zero
+        s_mov_b32 s2, -1            # no limit
+        s_mov_b32 s3, 0xf000        # default num_format
+        s_mov_b32 s10, s2           # input buffer - s[8:11]
+        s_mov_b32 s11, s3
+        s_mov_b32 s6, s2           # output buffer - s[4:7]
+        s_mov_b32 s7, s3
+        buffer_load_ubyte v2, v[0:1], s[8:11], 0 addr64     # load byte from input
+        v_mov_b32 v3, 0     # zeroing high offset bits
+        s_waitcnt vmcnt(0)
+        buffer_load_ubyte v2, v[2:3], s[0:3], 0 addr64     # convert
+        s_waitcnt vmcnt(0)
+        buffer_store_byte v2, v[0:1], s[4:7], 0 addr64    # store byte to output
+end:
+        s_endpgm
+        .p2align 8   # alignment for const data
+constData:
 .endif
 )ffDXD";
 
@@ -203,17 +251,18 @@ void ReverseBits::run()
     if (error != CL_SUCCESS)
         throw CLError(error, "clEnqueueReadBuffer");
     
-    /*for (size_t i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {   // verifying
         const cxbyte in = inData[i];
         const cxbyte expected = ((in>>7)&1) | ((in>>5)&2) | ((in>>3)&4) | ((in>>1)&8) |
                 ((in<<1)&16) | ((in<<3)&32) | ((in<<5)&64) | ((in<<7)&128);
         if (expected != outData[i])
         {
-            std::cerr << i << ": " << cl_uint(expected) << cl_uint(outData[i]) << std::endl;
+            std::cerr << i << ": " << cl_uint(expected) << "," <<
+                        cl_uint(outData[i]) << std::endl;
             throw Exception("Data mismatch!");
         }
-    }*/
+    }
     // print result
     for (size_t i = 0; i < size; i+=16)
     {

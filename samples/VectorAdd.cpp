@@ -111,7 +111,7 @@ end:
         .arg griddim,4
         .arg gridoffset,4
     .config
-        .dims x     # required, this kernel uses only one dimension
+        .dims xyz   # required, gallium set always three dimensions
         .tgsize     # required, TG_SIZE_EN is always enabled
         # arg offset in dwords:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - cbuf, 17 - griddim, 18 - gridoffset
@@ -120,8 +120,8 @@ vectorAdd:
         s_load_dword s2, s[0:1], 6              # s2 - local_size(0)
         s_load_dword s3, s[0:1], 9              # s3 - n
         s_load_dword s1, s[0:1], 18             # s1 - global_offset(0)
-        s_load_dwordx2 s[8:9], s[0:1], 11       # s[8:9] - aBuffer,bBuffer pointer
-        s_load_dwordx2 s[12:13], s[0:1], 13     # s[12:13] - aBuffer,bBuffer pointer
+        s_load_dwordx2 s[8:9], s[0:1], 11       # s[8:9] - aBuffer pointer
+        s_load_dwordx2 s[12:13], s[0:1], 13     # s[12:13] - bBuffer pointer
         s_load_dwordx2 s[6:7], s[0:1], 15       # s[6:7] - cBuffer pointer
         s_waitcnt lgkmcnt(0)            # wait for results
         s_mul_i32 s0, s2, s4            # s0 - local_size(0)*group_id(0)
