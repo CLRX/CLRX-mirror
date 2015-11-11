@@ -960,7 +960,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         sgprsReaded++;
     if (src1Op.range.start<108 && src0Op.range.start!=src1Op.range.start)
         sgprsReaded++;
-    if (haveSrcCC && src1Op.range.start!=106 && src0Op.range.start!=106)
+    if (haveSrcCC && src1Op.range.start!=srcCCReg.start &&
+                src0Op.range.start!=srcCCReg.start)
         sgprsReaded++;
     
     if (sgprsReaded >= 2)
