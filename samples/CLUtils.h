@@ -23,7 +23,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-// #include <exception>
+#include <exception>
 #include <CL/cl.h>
 
 /// error class based on std::exception

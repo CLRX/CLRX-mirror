@@ -19,5 +19,8 @@ the GalliumCompute program binaries.
 * [CLRXWrapper](ClrxWrapper)
 * [GalliumCompute ABI](GalliumAbi)
 * [AMD Catalyst ABI](AmdAbi)
+* [AMD GCN Instruction Set](GcnIsa)
+    * [GCN Operands](GcnOperands)
+    * [SOP2 instructions](GcnInstrsSop2)
 
 ---
