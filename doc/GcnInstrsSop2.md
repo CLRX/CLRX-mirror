@@ -12,9 +12,22 @@ Bits  | Name     | Description
 23-29 | OPCODE   | Operation code
 30-31 | ENCODING | Encoding type. Must be 0b10
 
-Syntax for all instructions: INSTRUCTION SDST, SRC0, SRC1
+Syntax for all instructions: INSTRUCTION SDST, SSRC0, SSRC1
 
 Example: s_and_b32 s0, s1, s2
+
+List of the instruction by opcode:
+
+Opcode | Mnemonic
+-------|---------------
+0      | S_ADD_U32
+1      | S_SUB_U32
+2      | S_ADD_I32
+3      | S_SUB_I32
+4      | S_ADDC_U32
+5      | S_SUBB_U32
+6      | S_MIN_I32
+7      | S_MIN_U32
 
 ### Instruction set
 
@@ -71,7 +84,7 @@ SCC = (INT32)SSSRC0<(INT32)SSSRC1
 
 #### S_MIN_U32
 
-Opcode: 6 (0x6)  
+Opcode: 7 (0x7)  
 Syntax: S_MIN_U32 SDST, SSRC0, SSRC1  
 Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store its into SDST,
 and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
