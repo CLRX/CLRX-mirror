@@ -22,91 +22,99 @@ Alphabetically sorted instruction list:
 
 #### S_ADDC_U32
 
-Opcode: 4 (0x4)
-Descrition: Add SRC0 to SRC1 with SCC value and store result into SDST and store
+Opcode: 4 (0x4)  
+Syntax: S_ADDC_U32 SDST, SSRC0, SSRC1  
+Descrition: Add SSRC0 to SSRC1 with SCC value and store result into SDST and store
 carry-out flag into SCC.  
 Operation:  
 ```
-temp = (UINT64)SRC0 + (UINT64)SRC1 + SCC
+temp = (UINT64)SSRC0 + (UINT64)SSRC1 + SCC
 SDST = temp
 SCC = temp>>32
 ```
 
 #### S_ADD_I32
 
-Opcode: 2 (0x2)
-Description: Add SRC0 to SRC1 and store result into SDST and store overflow flag into SCC.  
+Opcode: 2 (0x2)  
+Syntax: S_ADD_I32 SDST, SSRC0, SSRC1  
+Description: Add SSRC0 to SSRC1 and store result into SDST and store overflow flag into SCC.  
 Operation:  
 
 ```
-SDST = SRC0 + SRC1
-temp = (UINT64)SRC0 + (UINT64)SRC1
+SDST = SSRC0 + SSRC1
+temp = (UINT64)SSRC0 + (UINT64)SSRC1
 SCC = temp>((1LL<<31)-1) || temp>(-1LL<<31)
 ```
 
 #### S_ADD_U32
 
 Opcode: 0 (0x0)  
-Description: Add SRC0 to SRC1 and store result into SDST and store carry-out into SCC.  
+Syntax: S_ADD_U32 SDST, SSRC0, SSRC1  
+Description: Add SSRC0 to SSRC1 and store result into SDST and store carry-out into SCC.  
 Operation:  
 ```
-SDST = SRC0 + SRC1
-SCC = ((UINT64)SRC0 + (UINT64)SRC1)>>32
+SDST = SSRC0 + SSRC1
+SCC = ((UINT64)SSRC0 + (UINT64)SSRC1)>>32
 ```
 
 #### S_MIN_I32
 
 Opcode: 6 (0x6)
-Description: Choose smallest signed value value from SRC0 and SRC1 and store its into SDST,
-and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC  
+Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
+Description: Choose smallest signed value value from SSRC0 and SSRC1 and store its into SDST,
+and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (INT32)SSRC0<(INT32)SSRC1 ? SSRC0 : SSRC1
-SCC = (INT32)SSRC0<(INT32)SSRC1
+SDST = (INT32)SSSRC0<(INT32)SSSRC1 ? SSSRC0 : SSSRC1
+SCC = (INT32)SSSRC0<(INT32)SSSRC1
 ```
 
 #### S_MIN_U32
 
-Opcode: 6 (0x6)
-Description: Choose smallest unsigned value value from SRC0 and SRC1 and store its into SDST,
-and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC  
+Opcode: 6 (0x6)  
+Syntax: S_MIN_U32 SDST, SSRC0, SSRC1  
+Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store its into SDST,
+and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (UINT32)SSRC0<(UINT32)SSRC1 ? SSRC0 : SSRC1
-SCC = (UINT32)SSRC0<(UINT32)SSRC1
+SDST = (UINT32)SSSRC0<(UINT32)SSSRC1 ? SSSRC0 : SSSRC1
+SCC = (UINT32)SSSRC0<(UINT32)SSSRC1
 ```
 
 #### S_SUBB_U32
 
-Opcode: 5 (0x5)
-Descrition: Subtract SRC0 to SRC1 with SCC value and store result into SDST and store
+Opcode: 5 (0x5)  
+Syntax: S_SUBB_U32 SDST, SSRC0, SSRC1  
+Descrition: Subtract SSRC0 to SSRC1 with SCC value and store result into SDST and store
 carry-out flag into SCC.  
 Operation:  
 ```
-temp = (UINT64)SRC0 - (UINT64)SRC1 - SCC
+temp = (UINT64)SSRC0 - (UINT64)SSRC1 - SCC
 SDST = temp
 SCC = temp>>32
 ```
 
 #### S_SUB_I32
 
-Opcode: 3 (0x3)
-Description: Subtract SRC0 to SRC1 and store result into SDST and
+Opcode: 3 (0x3)  
+Syntax: S_SUB_I32 SDST, SSRC0, SSRC1  
+Description: Subtract SSRC0 to SSRC1 and store result into SDST and
 store overflow flag into SCC. SCC register value can be BROKEN for some
 architectures (GCN1.0)  
 Operation:  
 ```
-SDST = SRC0 - SRC1
-temp = (UINT64)SRC0 - (UINT64)SRC1
+SDST = SSRC0 - SSRC1
+temp = (UINT64)SSRC0 - (UINT64)SSRC1
 SCC = temp>((1LL<<31)-1) || temp>(-1LL<<31)
 ```
 
 #### S_SUB_U32
 
 Opcode: 1 (0x1)  
-Description: Subtract SRC0 to SRC1 and store result into SDST and store borrow into SCC.  
+Syntax: S_SUB_U32 SDST, SSRC0, SSRC1  
+Description: Subtract SSRC0 to SSRC1 and store result into SDST and store borrow into SCC.  
 Operation:  
 ```
-SDST = SRC0 - SRC1
-SCC = ((INT64)SRC0 - (INT64)SRC1)>>32
+SDST = SSRC0 - SSRC1
+SCC = ((INT64)SSRC0 - (INT64)SSRC1)>>32
 ```
