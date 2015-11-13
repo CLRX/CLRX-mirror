@@ -25,7 +25,7 @@ will read source from standard input.
 
 Following options `clrxasm` can recognize:
 
-* **-D SYMBOL=[VALUE]**, **--defsym=SYMBOL[=VALUE]**
+* **-D SYMBOL[=VALUE]**, **--defsym=SYMBOL[=VALUE]**
 
     Define symbol. Value is optional and if it is not given then assembler set 0 by default.
 This option can be occurred many times to defining many symbols.

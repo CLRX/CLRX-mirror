@@ -66,7 +66,7 @@ Operation:
 ```
 SDST = SSRC0 + SSRC1
 temp = (UINT64)SSRC0 + (UINT64)SSRC1
-SCC = temp>((1LL<<31)-1) || temp>(-1LL<<31)
+SCC = temp > ((1LL<<31)-1) || temp > (-1LL<<31)
 ```
 
 #### S_ADD_U32
@@ -89,7 +89,7 @@ Description: Do bitwise AND operation on SSRC0 and SSRC1 and store it to SDST, a
 Operation:
 ```
 SDST = SSRC0 & SSRC1
-SCC = (SSRC0 & SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_AND_B64
@@ -97,11 +97,11 @@ SCC = (SSRC0 & SSRC1)!=0
 Opcode: 15 (0xf)  
 Syntax: S_AND_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise AND operation on SSRC0 and SSRC1 and store it to SDST, and store
-1 to SCC if result is not zero, otherwise store 0 to SCC.  
+1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
 Operation:
 ```
 SDST = SSRC0 & SSRC1
-SCC = (SSRC0 & SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_ANDN2_B32
@@ -113,7 +113,7 @@ and store 1 to SCC if result is not zero, otherwise store 0 to SCC.
 Operation:
 ```
 SDST = SSRC0 & ~SSRC1
-SCC = (SSRC0 & ~SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_ANDN2_B64
@@ -121,11 +121,12 @@ SCC = (SSRC0 & ~SSRC1)!=0
 Opcode: 21 (0x15)  
 Syntax: S_ANDN2_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise AND operation on SSRC0 and bitwise negated SSRC1 and store
-it to SDST, and store 1 to SCC if result is not zero, otherwise store 0 to SCC.  
+it to SDST, and store 1 to SCC if result is not zero, otherwise store 0 to SCC.
+SDST, SSRC0, SSRC1 are 64-bit.  
 Operation:
 ```
 SDST = SSRC0 & ~SSRC1
-SCC = (SSRC0 & ~SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_CSELECT_B32
@@ -150,6 +151,31 @@ Operation:
 SDST = SCC ? SSRC0 : SSRC1
 ```
 
+#### S_LSHL_B32
+
+Opcode: 30 (0x1e)
+Syntax: S_LSHL_B32 SDST, SSRC0, SSRC1  
+Description: Shift to left SSRC0 by (SSRC1&31) bits and store result into SDST.
+If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+SDST = (SSRC0) << (SSRC1 & 31)
+SCC = SDST!=0
+```
+
+#### S_LSHL_B64
+
+Opcode: 31 (0x1f)
+Syntax: S_LSHL_B64 SDST(2), SSRC0(2), SSRC1  
+Description: Shift to left SSRC0 by (SSRC1&31) bits and store result into SDST.
+If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
+SSRC1 is 32 bit.  
+Operation:  
+```
+SDST = (SSRC0) << (SSRC1 & 63)
+SCC = SDST!=0
+```
+
 #### S_MIN_I32
 
 Opcode: 6 (0x6)
@@ -158,8 +184,8 @@ Description: Choose smallest signed value value from SSRC0 and SSRC1 and store i
 and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (INT32)SSSRC0<(INT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (INT32)SSSRC0<(INT32)SSSRC1
+SDST = (INT32)SSSRC0 < (INT32)SSSRC1 ? SSSRC0 : SSSRC1
+SCC = (INT32)SSSRC0 < (INT32)SSSRC1
 ```
 
 #### S_MIN_U32
@@ -170,8 +196,8 @@ Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store
 and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (UINT32)SSSRC0<(UINT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (UINT32)SSSRC0<(UINT32)SSSRC1
+SDST = (UINT32)SSSRC0 < (UINT32)SSSRC1 ? SSSRC0 : SSSRC1
+SCC = (UINT32)SSSRC0 < (UINT32)SSSRC1
 ```
 
 #### S_MAX_I32
@@ -182,8 +208,8 @@ Description: Choose largest signed value value from SSRC0 and SSRC1 and store it
 and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (INT32)SSSRC0>(INT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (INT32)SSSRC0>(INT32)SSSRC1
+SDST = (INT32)SSSRC0 > (INT32)SSSRC1 ? SSSRC0 : SSSRC1
+SCC = (INT32)SSSRC0 > (INT32)SSSRC1
 ```
 
 #### S_MAX_U32
@@ -194,8 +220,56 @@ Description: Choose largest unsigned value value from SSRC0 and SSRC1 and store 
 and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (UINT32)SSSRC0>(UINT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (UINT32)SSSRC0>(UINT32)SSSRC1
+SDST = (UINT32)SSSRC0 > (UINT32)SSSRC1 ? SSSRC0 : SSSRC1
+SCC = (UINT32)SSSRC0 > (UINT32)SSSRC1
+```
+
+#### S_NAND_B32
+
+Opcode: 24 (0x18)  
+Syntax: S_NAND_B32 SDST, SSRC0, SSRC1  
+Description: Do bitwise NAND operation on SSRC0 and SSRC1 and store it to SDST, and store
+1 to SCC if result is not zero, otherwise store 0 to SCC.  
+Operation:
+```
+SDST = ~(SSRC0 & SSRC1)
+SCC = SDST!=0
+```
+
+#### S_NAND_B64
+
+Opcode: 25 (0x19)  
+Syntax: S_NAND_B64 SDST(2), SSRC0(2), SSRC1(2)  
+Description: Do bitwise NAND operation on SSRC0 and SSRC1 and store it to SDST, and store
+1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
+Operation:
+```
+SDST = ~(SSRC0 & SSRC1)
+SCC = SDST!=0
+```
+
+#### S_NOR_B32
+
+Opcode: 26 (0x1a)  
+Syntax: S_NOR_B32 SDST, SSRC0, SSRC1  
+Description: Do bitwise NOR operation on SSRC0 and SSRC1 and store it to SDST, and store
+1 to SCC if result is not zero, otherwise store 0 to SCC.  
+Operation:
+```
+SDST = ~(SSRC0 | SSRC1)
+SCC = SDST!=0
+```
+
+#### S_NOR_B64
+
+Opcode: 27 (0x1b)  
+Syntax: S_NOR_B64 SDST(2), SSRC0(2), SSRC1(2)  
+Description: Do bitwise NOR operation on SSRC0 and SSRC1 and store it to SDST, and store
+1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
+Operation:
+```
+SDST = ~(SSRC0 | SSRC1)
+SCC = SDST!=0
 ```
 
 #### S_OR_B32
@@ -207,7 +281,7 @@ Description: Do bitwise OR operation on SSRC0 and SSRC1 and store it to SDST, an
 Operation:
 ```
 SDST = SSRC0 | SSRC1
-SCC = (SSRC0 | SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_OR_B64
@@ -215,11 +289,11 @@ SCC = (SSRC0 | SSRC1)!=0
 Opcode: 17 (0x11)  
 Syntax: S_OR_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise OR operation on SSRC0 and SSRC1 and store it to SDST, and store
-1 to SCC if result is not zero, otherwise store 0 to SCC.  
+1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
 Operation:
 ```
 SDST = SSRC0 | SSRC1
-SCC = (SSRC0 | SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_ORN2_B32
@@ -231,7 +305,7 @@ and store 1 to SCC if result is not zero, otherwise store 0 to SCC.
 Operation:
 ```
 SDST = SSRC0 | ~SSRC1
-SCC = (SSRC0 | ~SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_ORN2_B64
@@ -239,11 +313,12 @@ SCC = (SSRC0 | ~SSRC1)!=0
 Opcode: 23 (0x17)  
 Syntax: S_ORN2_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise OR operation on SSRC0 and negated SSRC1 and store it to SDST,
-and store 1 to SCC if result is not zero, otherwise store 0 to SCC.  
+and store 1 to SCC if result is not zero, otherwise store 0 to SCC.
+SDST, SSRC0, SSRC1 are 64-bit.  
 Operation:
 ```
 SDST = SSRC0 | ~SSRC1
-SCC = (SSRC0 | ~SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_SUBB_U32
@@ -284,6 +359,30 @@ SDST = SSRC0 - SSRC1
 SCC = ((INT64)SSRC0 - (INT64)SSRC1)>>32
 ```
 
+#### S_XNOR_B32
+
+Opcode: 28 (0x1c)  
+Syntax: S_XNOR_B32 SDST, SSRC0, SSRC1  
+Description: Do bitwise XNOR operation on SSRC0 and SSRC1 and store it to SDST, and store
+1 to SCC if result is not zero, otherwise store 0 to SCC.  
+Operation:
+```
+SDST = ~(SSRC0 ^ SSRC1)
+SCC = SDST!=0
+```
+
+#### S_XNOR_B64
+
+Opcode: 29 (0x1d)  
+Syntax: S_XNOR_B64 SDST(2), SSRC0(2), SSRC1(2)  
+Description: Do bitwise XNOR operation on SSRC0 and SSRC1 and store it to SDST, and store
+1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
+Operation:
+```
+SDST = ~(SSRC0 ^ SSRC1)
+SCC = SDST!=0
+```
+
 #### S_XOR_B32
 
 Opcode: 18 (0x12)  
@@ -293,7 +392,7 @@ Description: Do bitwise XOR operation on SSRC0 and SSRC1 and store it to SDST, a
 Operation:  
 ```
 SDST = SSRC0 ^ SSRC1
-SCC = (SSRC0 ^ SSRC1)!=0
+SCC = SDST!=0
 ```
 
 #### S_XOR_B64
@@ -301,9 +400,9 @@ SCC = (SSRC0 ^ SSRC1)!=0
 Opcode: 19 (0x13)  
 Syntax: S_XOR_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise XOR operation on SSRC0 and SSRC1 and store it to SDST, and store
-1 to SCC if result is not zero, otherwise store 0 to SCC.  
+1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
 Operation:  
 ```
 SDST = SSRC0 ^ SSRC1
-SCC = (SSRC0 ^ SSRC1)!=0
+SCC = SDST!=0
 ```
