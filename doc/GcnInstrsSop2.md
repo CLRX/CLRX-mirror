@@ -77,7 +77,7 @@ Operation:
 ```
 SDST = SSRC0 + SSRC1
 INT64 temp = (INT64)SSRC0 + (INT64)SSRC1
-SCC = temp > ((1LL<<31)-1) || temp > (-1LL<<31)
+SCC = temp > ((1LL<<31)-1) || temp < (-1LL<<31)
 ```
 
 #### S_ADD_U32
@@ -510,7 +510,7 @@ Operation:
 ```
 SDST = SSRC0 - SSRC1
 INT64 temp = (INT64)SSRC0 - (INT64)SSRC1
-SCC = temp>((1LL<<31)-1) || temp>(-1LL<<31)
+SCC = temp > ((1LL<<31)-1) || temp < (-1LL<<31)
 ```
 
 #### S_SUB_U32
