@@ -93,7 +93,7 @@ SCC = temp >> 32
 
 #### S_AND_B32
 
-Opcode: 14 (0xe)  
+Opcode: 14 (0xe) for GCN 1.0/1.1; 12 (0xc) for GCN 1.2  
 Syntax: S_AND_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise AND operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -105,7 +105,7 @@ SCC = SDST!=0
 
 #### S_AND_B64
 
-Opcode: 15 (0xf)  
+Opcode: 15 (0xf) for GCN 1.0/1.1; 13 (0xd) for GCN 1.2  
 Syntax: S_AND_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise AND operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
@@ -117,7 +117,7 @@ SCC = SDST!=0
 
 #### S_ANDN2_B32
 
-Opcode: 20 (0x14)  
+Opcode: 20 (0x14) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
 Syntax: S_ANDN2_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise AND operation on SSRC0 and negated SSRC1 and store it to SDST,
 and store 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -129,7 +129,7 @@ SCC = SDST!=0
 
 #### S_ANDN2_B64
 
-Opcode: 21 (0x15)  
+Opcode: 21 (0x15) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
 Syntax: S_ANDN2_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise AND operation on SSRC0 and bitwise negated SSRC1 and store
 it to SDST, and store 1 to SCC if result is not zero, otherwise store 0 to SCC.
@@ -142,7 +142,7 @@ SCC = SDST!=0
 
 #### S_ASHR_I32
 
-Opcode: 34 (0x22)
+Opcode: 34 (0x22) for GCN 1.0/1.1; 32 (0x20) for GCN 1.2  
 Syntax: S_ASHR_I32 SDST, SSRC0, SSRC1  
 Description: Arithmetic shift to right SSRC0 by (SSRC1&31) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
@@ -154,7 +154,7 @@ SCC = SDST!=0
 
 #### S_ASHR_I64
 
-Opcode: 35 (0x23)  
+Opcode: 35 (0x23) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
 Syntax: S_ASHR_I64 SDST(2), SSRC0(2), SSRC1  
 Description: Arithmetic Shift to right SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
@@ -166,7 +166,8 @@ SCC = SDST!=0
 ```
 
 #### S_BFE_I32
-Opcode: 40 (0x28)  
+
+Opcode: 40 (0x28) for GCN 1.0/1.1; 38 (0x26) for GCN 1.2  
 Syntax: S_BFE_I32 SDST, SSRC0, SSRC1  
 Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f)
 and extend sign from last bit of extracted value.
@@ -185,7 +186,8 @@ SCC = SDST!=0
 ```
 
 #### S_BFE_U32
-Opcode: 39 (0x27)  
+
+Opcode: 39 (0x27) for GCN 1.0/1.1; 37 (0x25) for GCN 1.2  
 Syntax: S_BFE_U32 SDST, SSRC0, SSRC1  
 Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f).
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
@@ -203,7 +205,8 @@ SCC = SDST!=0
 ```
 
 #### S_BFE_I64
-Opcode: 42 (0x2a)  
+
+Opcode: 42 (0x2a) for GCN 1.0/1.1; 40 (0x28) for GCN 1.2  
 Syntax: S_BFE_I64 SDST, SSRC0, SSRC1  
 Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f)
 and extend sign from last bit of extracted value.
@@ -222,7 +225,8 @@ SCC = SDST!=0
 ```
 
 #### S_BFE_U64
-Opcode: 41 (0x29)  
+
+Opcode: 41 (0x29) for GCN 1.0/1.1; 39 (0x27) for GCN 1.2  
 Syntax: S_BFE_U64 SDST(2), SSRC0(2), SSRC1  
 Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f).
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.
@@ -241,7 +245,8 @@ SCC = SDST!=0
 ```
 
 #### S_BFM_B32
-Opcode: 36 (0x24)
+
+Opcode: 36 (0x24) for GCN 1.0/1.1; 34 (0x22) for GCN 1.2  
 Syntax: S_BFM_B32 SDST, SSRC0, SSRC1  
 Description: Make 32-bit bitmask from (SSRC1 & 31) bit that have length (SSRC0 & 31) and
 store it to SDST. SCC not touched.  
@@ -251,7 +256,8 @@ SDST = ((1U << (SSRC0&31))-1) << (SSRC1&31)
 ```
 
 #### S_BFM_B64
-Opcode: 37 (0x25)
+
+Opcode: 37 (0x25) for GCN 1.0/1.1; 35 (0x23) for GCN 1.2  
 Syntax: S_BFM_B64 SDST(2), SSRC0, SSRC1  
 Description: Make 64-bit bitmask from (SSRC1 & 63) bit that have length (SSRC0 & 63) and
 store it to SDST. SCC not touched.  
@@ -284,7 +290,7 @@ SDST = SCC ? SSRC0 : SSRC1
 
 #### S_LSHL_B32
 
-Opcode: 30 (0x1e)
+Opcode: 30 (0x1e) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
 Syntax: S_LSHL_B32 SDST, SSRC0, SSRC1  
 Description: Shift to left SSRC0 by (SSRC1&31) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
@@ -296,7 +302,7 @@ SCC = SDST!=0
 
 #### S_LSHL_B64
 
-Opcode: 31 (0x1f)
+Opcode: 31 (0x1f) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
 Syntax: S_LSHL_B64 SDST(2), SSRC0(2), SSRC1  
 Description: Shift to left SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
@@ -309,7 +315,7 @@ SCC = SDST!=0
 
 #### S_LSHR_B32
 
-Opcode: 32 (0x20)
+Opcode: 32 (0x20) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
 Syntax: S_LSHR_B32 SDST, SSRC0, SSRC1  
 Description: Shift to right SSRC0 by (SSRC1&31) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
@@ -321,7 +327,7 @@ SCC = SDST!=0
 
 #### S_LSHR_B64
 
-Opcode: 33 (0x21)
+Opcode: 33 (0x21) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
 Syntax: S_LSHR_B64 SDST(2), SSRC0(2), SSRC1  
 Description: Shift to right SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
@@ -334,7 +340,7 @@ SCC = SDST!=0
 
 #### S_MAX_I32
 
-Opcode: 8 (0x9)
+Opcode: 8 (0x8)  
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
 Description: Choose largest signed value value from SSRC0 and SSRC1 and store its into SDST,
 and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
@@ -358,7 +364,7 @@ SCC = SSRC0 > SSRC1
 
 #### S_MIN_I32
 
-Opcode: 6 (0x6)
+Opcode: 6 (0x6)  
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
 Description: Choose smallest signed value value from SSRC0 and SSRC1 and store its into SDST,
 and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
@@ -381,7 +387,8 @@ SCC = SSRC0 < SSRC1
 ```
 
 #### S_MUL_I32
-Opcode: 38 (0x26)
+
+Opcode: 38 (0x26) for GCN 1.0/1.1; 36 (0x24) for GCN 1.2  
 Syntax: S_MUL_I32 SDST, SSRC0, SSRC1
 Description: Multiply SSRC0 and SSRC1 and store result into SDST. Do not change SCC.  
 Operation:  
@@ -391,7 +398,7 @@ SDST = SSRC0 * SSRC1
 
 #### S_NAND_B32
 
-Opcode: 24 (0x18)  
+Opcode: 24 (0x18) for GCN 1.0/1.1; 22 (0x16) for GCN 1.2  
 Syntax: S_NAND_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise NAND operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -403,7 +410,7 @@ SCC = SDST!=0
 
 #### S_NAND_B64
 
-Opcode: 25 (0x19)  
+Opcode: 25 (0x19) for GCN 1.0/1.1; 23 (0x17) for GCN 1.2  
 Syntax: S_NAND_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise NAND operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
@@ -415,7 +422,7 @@ SCC = SDST!=0
 
 #### S_NOR_B32
 
-Opcode: 26 (0x1a)  
+Opcode: 26 (0x1a) for GCN 1.0/1.1; 24 (0x18) for GCN 1.2  
 Syntax: S_NOR_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise NOR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -427,7 +434,7 @@ SCC = SDST!=0
 
 #### S_NOR_B64
 
-Opcode: 27 (0x1b)  
+Opcode: 27 (0x1b) for GCN 1.0/1.1; 25 (0x19) for GCN 1.2  
 Syntax: S_NOR_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise NOR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
@@ -439,7 +446,7 @@ SCC = SDST!=0
 
 #### S_OR_B32
 
-Opcode: 16 (0x10)  
+Opcode: 16 (0x10) for GCN 1.0/1.1; 14 (0xe) for GCN 1.2  
 Syntax: S_OR_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise OR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -451,7 +458,7 @@ SCC = SDST!=0
 
 #### S_OR_B64
 
-Opcode: 17 (0x11)  
+Opcode: 17 (0x11) for GCN 1.0/1.1; 15 (0xf) for GCN 1.2  
 Syntax: S_OR_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise OR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
@@ -463,7 +470,7 @@ SCC = SDST!=0
 
 #### S_ORN2_B32
 
-Opcode: 22 (0x16)  
+Opcode: 22 (0x16) for GCN 1.0/1.1; 20 (0x14) for GCN 1.2  
 Syntax: S_ORN2_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise OR operation on SSRC0 and negated SSRC1 and store it to SDST,
 and store 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -475,7 +482,7 @@ SCC = SDST!=0
 
 #### S_ORN2_B64
 
-Opcode: 23 (0x17)  
+Opcode: 23 (0x17) for GCN 1.0/1.1; 21 (0x15) for GCN 1.2  
 Syntax: S_ORN2_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise OR operation on SSRC0 and negated SSRC1 and store it to SDST,
 and store 1 to SCC if result is not zero, otherwise store 0 to SCC.
@@ -527,7 +534,7 @@ SCC = (temp>>32)!=0
 
 #### S_XNOR_B32
 
-Opcode: 28 (0x1c)  
+Opcode: 28 (0x1c) for GCN 1.0/1.1; 26 (0x1a) for GCN 1.2  
 Syntax: S_XNOR_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise XNOR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -539,7 +546,7 @@ SCC = SDST!=0
 
 #### S_XNOR_B64
 
-Opcode: 29 (0x1d)  
+Opcode: 29 (0x1d) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
 Syntax: S_XNOR_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise XNOR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
@@ -551,7 +558,7 @@ SCC = SDST!=0
 
 #### S_XOR_B32
 
-Opcode: 18 (0x12)  
+Opcode: 18 (0x12) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
 Syntax: S_XOR_B32 SDST, SSRC0, SSRC1  
 Description: Do bitwise XOR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC.  
@@ -563,7 +570,7 @@ SCC = SDST!=0
 
 #### S_XOR_B64
 
-Opcode: 19 (0x13)  
+Opcode: 19 (0x13) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
 Syntax: S_XOR_B64 SDST(2), SSRC0(2), SSRC1(2)  
 Description: Do bitwise XOR operation on SSRC0 and SSRC1 and store it to SDST, and store
 1 to SCC if result is not zero, otherwise store 0 to SCC. SDST, SSRC0, SSRC1 are 64-bit.  
