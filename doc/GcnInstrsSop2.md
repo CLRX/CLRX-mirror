@@ -43,6 +43,18 @@ Opcode | Mnemonic
 
 Alphabetically sorted instruction list:
 
+#### S_ABSDIFF_I32
+Opcode: 44 (0x2c)  
+Syntax: S_ABSDIFF_I32 SDST, SSRC0, SSRC1  
+Description: Compute absolute difference from SSRC0 and SSRC1 and store result to SDST.
+If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+INT32 temp = SSRC0-SSRC1
+SDST = temp>=0 ? temp : -temp
+SCC = SDST!=0
+```
+
 #### S_ADDC_U32
 
 Opcode: 4 (0x4)  
@@ -51,7 +63,7 @@ Descrition: Add SSRC0 to SSRC1 with SCC value and store result into SDST and sto
 carry-out flag into SCC.  
 Operation:  
 ```
-temp = (UINT64)SSRC0 + (UINT64)SSRC1 + SCC
+UINT64 temp = (UINT64)SSRC0 + (UINT64)SSRC1 + SCC
 SDST = temp
 SCC = temp>>32
 ```
@@ -64,7 +76,7 @@ Description: Add SSRC0 to SSRC1 and store result into SDST and store overflow fl
 Operation:  
 ```
 SDST = SSRC0 + SSRC1
-temp = (UINT64)SSRC0 + (UINT64)SSRC1
+INT64 temp = (INT64)SSRC0 + (INT64)SSRC1
 SCC = temp > ((1LL<<31)-1) || temp > (-1LL<<31)
 ```
 
@@ -153,6 +165,25 @@ SDST = (INT64)SSRC0 >> (SSRC1 & 63)
 SCC = SDST!=0
 ```
 
+#### S_BFE_I32
+Opcode: 40 (0x28)  
+Syntax: S_BFE_I32 SDST, SSRC0, SSRC1  
+Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f)
+and extend sign from last bit of extracted value.
+If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+UINT8 shift = length&31
+UINT8 length = (SSRC1>>16) & 0x7f
+if (length==0)
+    SDST = 0
+if (shift+length < 32)
+    SDST = (INT32)(SSRC0 << (32 - shift - length)) >> (32 - length)
+else
+    SDST = (INT32)SSRC0 >> shift
+SCC = SDST!=0
+```
+
 #### S_BFE_U32
 Opcode: 39 (0x27)  
 Syntax: S_BFE_U32 SDST, SSRC0, SSRC1  
@@ -160,8 +191,8 @@ Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>1
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-shift = length & 31
-length = (SSRC1>>16) & 0x7f
+UINT8 shift = length & 31
+UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
 if (shift+length < 32)
@@ -171,22 +202,41 @@ else
 SCC = SDST!=0
 ```
 
-#### S_BFE_I32
-Opcode: 40 (0x28)  
-Syntax: S_BFE_I32 SDST, SSRC0, SSRC1  
-Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f)
+#### S_BFE_I64
+Opcode: 42 (0x2a)  
+Syntax: S_BFE_I64 SDST, SSRC0, SSRC1  
+Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f)
 and extend sign from last bit of extracted value.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-shift = length&31
-length = (SSRC1>>16) & 0x7f
+UINT8 shift = length&63
+UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
-if (shift+length < 32)
-    SDST = (INT32)(SSRC0 << (32 - shift - length)) >> (32 - length)
+if (shift+length < 64)
+    SDST = (INT64)(SSRC0 << (64 - shift - length)) >> (64 - length)
 else
-    SDST = (INT32)SSRC0 >> shift
+    SDST = (INT64)SSRC0 >> shift
+SCC = SDST!=0
+```
+
+#### S_BFE_U64
+Opcode: 41 (0x29)  
+Syntax: S_BFE_U64 SDST(2), SSRC0(2), SSRC1  
+Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f).
+If result is non-zero store 1 to SCC, otherwise store 0 to SCC.
+SDST, SSRC0 are 64-bit, SSRC1 is 32-bit.  
+Operation:  
+```
+UINT8 shift = length & 63
+UINT8 length = (SSRC1>>16) & 0x7f
+if (length==0)
+    SDST = 0
+if (shift+length < 64)
+    SDST = SSRC0 << (64 - shift - length) >> (64 - length)
+else
+    SDST = SSRC0 >> shift
 SCC = SDST!=0
 ```
 
@@ -444,7 +494,7 @@ Descrition: Subtract SSRC0 to SSRC1 with SCC value and store result into SDST an
 carry-out flag into SCC.  
 Operation:  
 ```
-temp = (UINT64)SSRC0 - (UINT64)SSRC1 - SCC
+UINT64 temp = (UINT64)SSRC0 - (UINT64)SSRC1 - SCC
 SDST = temp
 SCC = temp>>32
 ```
@@ -459,7 +509,7 @@ architectures (GCN1.0)
 Operation:  
 ```
 SDST = SSRC0 - SSRC1
-temp = (UINT64)SSRC0 - (UINT64)SSRC1
+INT64 temp = (INT64)SSRC0 - (INT64)SSRC1
 SCC = temp>((1LL<<31)-1) || temp>(-1LL<<31)
 ```
 
