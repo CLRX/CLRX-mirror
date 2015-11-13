@@ -18,52 +18,53 @@ Example: s_and_b32 s0, s1, s2
 
 List of the instructions by opcode:
 
- GCN 1.0   |  GCN 1.1  | GCN 1.2    | Mnemonic
------------|-----------|------------|---------------
- 0 (0x0)   | 0 (0x0)   | 0 (0x0)    | S_ADD_U32
- 1 (0x1)   | 1 (0x1)   | 1 (0x1)    | S_SUB_U32
- 2 (0x2)   | 2 (0x2)   | 2 (0x2)    | S_ADD_I32
- 3 (0x3)   | 3 (0x3)   | 3 (0x3)    | S_SUB_I32
- 4 (0x4)   | 4 (0x4)   | 4 (0x4)    | S_ADDC_U32
- 5 (0x5)   | 5 (0x5)   | 5 (0x5)    | S_SUBB_U32
- 6 (0x6)   | 6 (0x6)   | 6 (0x6)    | S_MIN_I32
- 7 (0x7)   | 7 (0x7)   | 7 (0x7)    | S_MIN_U32
- 8 (0x8)   | 8 (0x8)   | 8 (0x8)    | S_MAX_I32
- 9 (0x9)   | 9 (0x9)   | 9 (0x9)    | S_MAX_U32
- 10 (0xa)  | 10 (0xa)  | 10 (0xa)   | S_CSELECT_B32
- 11 (0xb)  | 11 (0xb)  | 11 (0xb)   | S_CSELECT_B64
- 14 (0xe)  | 14 (0xe)  | 12 (0xc)   | S_AND_B32
- 15 (0xf)  | 15 (0xf)  | 13 (0xd)   | S_AND_B64
- 16 (0x10) | 16 (0x10) | 14 (0xe)   | S_OR_B32
- 17 (0x11) | 17 (0x11) | 15 (0xf)   | S_OR_B64
- 18 (0x12) | 18 (0x12) | 16 (0x10)  | S_XOR_B32
- 19 (0x13) | 19 (0x13) | 17 (0x11)  | S_XOR_B64
- 20 (0x14) | 20 (0x14) | 18 (0x12)  | S_ANDN2_B32
- 21 (0x15) | 21 (0x15) | 19 (0x13)  | S_ANDN2_B64
- 22 (0x16) | 22 (0x16) | 20 (0x14)  | S_ORN2_B32
- 23 (0x17) | 23 (0x17) | 21 (0x15)  | S_ORN2_B64
- 24 (0x18) | 24 (0x18) | 22 (0x16)  | S_NAND_B32
- 25 (0x19) | 25 (0x19) | 23 (0x17)  | S_NAND_B64
- 26 (0x1a) | 26 (0x1a) | 24 (0x18)  | S_NOR_B32
- 27 (0x1b) | 27 (0x1b) | 25 (0x19)  | S_NOR_B64
- 28 (0x1c) | 28 (0x1c) | 26 (0x1a)  | S_XNOR_B32
- 29 (0x1d) | 29 (0x1d) | 27 (0x1b)  | S_XNOR_B64
- 30 (0x1e) | 30 (0x1e) | 28 (0x1c)  | S_LSHL_B32
- 31 (0x1f) | 31 (0x1f) | 29 (0x1d)  | S_LSHL_B64
- 32 (0x20) | 32 (0x20) | 30 (0x1e)  | S_LSHR_B32
- 33 (0x21) | 33 (0x21) | 31 (0x1f)  | S_LSHR_B64
- 34 (0x22) | 34 (0x22) | 32 (0x20)  | S_ASHR_I32
- 35 (0x23) | 35 (0x23) | 33 (0x21)  | S_ASHR_I64
- 36 (0x24) | 36 (0x24) | 34 (0x22)  | S_BFM_B32
- 37 (0x25) | 37 (0x25) | 35 (0x23)  | S_BFM_B64
- 38 (0x26) | 38 (0x26) | 36 (0x24)  | S_MUL_I32
- 39 (0x27) | 39 (0x27) | 37 (0x25)  | S_BFE_U32
- 40 (0x28) | 40 (0x28) | 38 (0x26)  | S_BFE_I32
- 41 (0x29) | 41 (0x29) | 39 (0x27)  | S_BFE_U64
- 42 (0x2a) | 42 (0x2a) | 40 (0x28)  | S_BFE_I64
- 43 (0x2b) | 43 (0x2b) | 41 (0x29)  | S_CBRANCH_G_FORK
- 44 (0x2c) | 44 (0x2c) | 42 (0x2a)  | S_ABSDIFF_I32
- --        | --        | 43 (0x2b)  | S_RFE_RESTORE_B64
+ Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)
+------------|----------------------|------------------------
+ 0 (0x0)    | S_ADD_U32            | S_ADD_U32
+ 1 (0x1)    | S_SUB_U32            | S_SUB_U32
+ 2 (0x2)    | S_ADD_I32            | S_ADD_I32
+ 3 (0x3)    | S_SUB_I32            | S_SUB_I32
+ 4 (0x4)    | S_ADDC_U32           | S_ADDC_U32
+ 5 (0x5)    | S_SUBB_U32           | S_SUBB_U32
+ 6 (0x6)    | S_MIN_I32            | S_MIN_I32
+ 7 (0x7)    | S_MIN_U32            | S_MIN_U32
+ 8 (0x8)    | S_MAX_I32            | S_MAX_I32
+ 9 (0x9)    | S_MAX_U32            | S_MAX_U32
+ 10 (0xa)   | S_CSELECT_B32        | S_CSELECT_B32
+ 11 (0xb)   | S_CSELECT_B64        | S_CSELECT_B64
+ 12 (0xc)   | --                   | S_AND_B32
+ 13 (0xd)   | --                   | S_AND_B64
+ 14 (0xe)   | S_AND_B32            | S_OR_B32
+ 15 (0xf)   | S_AND_B64            | S_OR_B64
+ 16 (0x10)  | S_OR_B32             | S_XOR_B32
+ 17 (0x11)  | S_OR_B64             | S_XOR_B64
+ 18 (0x12)  | S_XOR_B32            | S_ANDN2_B32
+ 19 (0x13)  | S_XOR_B64            | S_ANDN2_B64
+ 20 (0x14)  | S_ANDN2_B32          | S_ORN2_B32
+ 21 (0x15)  | S_ANDN2_B64          | S_ORN2_B64
+ 22 (0x16)  | S_ORN2_B32           | S_NAND_B32
+ 23 (0x17)  | S_ORN2_B64           | S_NAND_B64
+ 24 (0x18)  | S_NAND_B32           | S_NOR_B32
+ 25 (0x19)  | S_NAND_B64           | S_NOR_B64
+ 26 (0x1a)  | S_NOR_B32            | S_XNOR_B32
+ 27 (0x1b)  | S_NOR_B64            | S_XNOR_B64
+ 28 (0x1c)  | S_XNOR_B32           | S_LSHL_B32
+ 29 (0x1d)  | S_XNOR_B64           | S_LSHL_B64
+ 30 (0x1e)  | S_LSHL_B32           | S_LSHR_B32
+ 31 (0x1f)  | S_LSHL_B64           | S_LSHR_B64
+ 32 (0x20)  | S_LSHR_B32           | S_ASHR_I32
+ 33 (0x21)  | S_LSHR_B64           | S_ASHR_I64
+ 34 (0x22)  | S_ASHR_I32           | S_BFM_B32
+ 35 (0x23)  | S_ASHR_I64           | S_BFM_B64
+ 36 (0x24)  | S_BFM_B32            | S_MUL_I32
+ 37 (0x25)  | S_BFM_B64            | S_BFE_U32
+ 38 (0x26)  | S_MUL_I32            | S_BFE_I32
+ 39 (0x27)  | S_BFE_U32            | S_BFE_U64
+ 40 (0x28)  | S_BFE_I32            | S_BFE_I64
+ 41 (0x29)  | S_BFE_U64            | S_CBRANCH_G_FORK
+ 42 (0x2a)  | S_BFE_I64            | S_ABSDIFF_I32
+ 43 (0x2b)  | S_CBRANCH_G_FORK     | S_RFE_RESTORE_B64
+ 44 (0x2c)  | S_ABSDIFF_I32        | --
 
 ### Instruction set
 
