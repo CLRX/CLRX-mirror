@@ -47,11 +47,10 @@ Alphabetically sorted instruction list:
 Opcode: 44 (0x2c)  
 Syntax: S_ABSDIFF_I32 SDST, SSRC0, SSRC1  
 Description: Compute absolute difference from SSRC0 and SSRC1 and store result to SDST.
-If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
+If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-INT32 temp = SSRC0-SSRC1
-SDST = temp>=0 ? temp : -temp
+SDST = ABS(SSRC0 - SSRC1)
 SCC = SDST!=0
 ```
 
@@ -65,7 +64,7 @@ Operation:
 ```
 UINT64 temp = (UINT64)SSRC0 + (UINT64)SSRC1 + SCC
 SDST = temp
-SCC = temp>>32
+SCC = temp >> 32
 ```
 
 #### S_ADD_I32
@@ -76,7 +75,7 @@ Description: Add SSRC0 to SSRC1 and store result into SDST and store overflow fl
 Operation:  
 ```
 SDST = SSRC0 + SSRC1
-INT64 temp = (INT64)SSRC0 + (INT64)SSRC1
+INT64 temp = SEXT64(SSRC0) + SEXT64(SSRC1)
 SCC = temp > ((1LL<<31)-1) || temp < (-1LL<<31)
 ```
 
@@ -87,8 +86,9 @@ Syntax: S_ADD_U32 SDST, SSRC0, SSRC1
 Description: Add SSRC0 to SSRC1 and store result into SDST and store carry-out into SCC.  
 Operation:  
 ```
-SDST = SSRC0 + SSRC1
-SCC = ((UINT64)SSRC0 + (UINT64)SSRC1)>>32
+UINT64 temp = (UINT64)SSRC0 + (UINT64)SSRC1
+SDST = temp
+SCC = temp >> 32
 ```
 
 #### S_AND_B32
@@ -156,7 +156,7 @@ SCC = SDST!=0
 
 Opcode: 35 (0x23)  
 Syntax: S_ASHR_I64 SDST(2), SSRC0(2), SSRC1  
-Description: Arithmetic Shift to right SSRC0 by (SSRC1&31) bits and store result into SDST.
+Description: Arithmetic Shift to right SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
 SSRC1 is 32 bit.  
 Operation:  
@@ -298,7 +298,7 @@ SCC = SDST!=0
 
 Opcode: 31 (0x1f)
 Syntax: S_LSHL_B64 SDST(2), SSRC0(2), SSRC1  
-Description: Shift to left SSRC0 by (SSRC1&31) bits and store result into SDST.
+Description: Shift to left SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
 SSRC1 is 32 bit.  
 Operation:  
@@ -323,7 +323,7 @@ SCC = SDST!=0
 
 Opcode: 33 (0x21)
 Syntax: S_LSHR_B64 SDST(2), SSRC0(2), SSRC1  
-Description: Shift to right SSRC0 by (SSRC1&31) bits and store result into SDST.
+Description: Shift to right SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
 SSRC1 is 32 bit.  
 Operation:  
@@ -337,11 +337,11 @@ SCC = SDST!=0
 Opcode: 8 (0x9)
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
 Description: Choose largest signed value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
+and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (INT32)SSSRC0 > (INT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (INT32)SSSRC0 > (INT32)SSSRC1
+SDST = (INT32)SSRC0 > (INT32)SSRC1 ? SSRC0 : SSRC1
+SCC = (INT32)SSRC0 > (INT32)SSRC1
 ```
 
 #### S_MAX_U32
@@ -349,11 +349,11 @@ SCC = (INT32)SSSRC0 > (INT32)SSSRC1
 Opcode: 9 (0x9)  
 Syntax: S_MAX_U32 SDST, SSRC0, SSRC1  
 Description: Choose largest unsigned value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
+and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (UINT32)SSSRC0 > (UINT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (UINT32)SSSRC0 > (UINT32)SSSRC1
+SDST = SSRC0 > SSRC1 ? SSRC0 : SSRC1
+SCC = SSRC0 > SSRC1
 ```
 
 #### S_MIN_I32
@@ -361,11 +361,11 @@ SCC = (UINT32)SSSRC0 > (UINT32)SSSRC1
 Opcode: 6 (0x6)
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
 Description: Choose smallest signed value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
+and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (INT32)SSSRC0 < (INT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (INT32)SSSRC0 < (INT32)SSSRC1
+SDST = (INT32)SSRC0 < (INT32)SSRC1 ? SSRC0 : SSRC1
+SCC = (INT32)SSRC0 < (INT32)SSRC1
 ```
 
 #### S_MIN_U32
@@ -373,11 +373,11 @@ SCC = (INT32)SSSRC0 < (INT32)SSSRC1
 Opcode: 7 (0x7)  
 Syntax: S_MIN_U32 SDST, SSRC0, SSRC1  
 Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSSRC0 value has been choosen, otherwise store 0 to SCC  
+and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC  
 Operation:  
 ```
-SDST = (UINT32)SSSRC0 < (UINT32)SSSRC1 ? SSSRC0 : SSSRC1
-SCC = (UINT32)SSSRC0 < (UINT32)SSSRC1
+SDST = SSRC0 < SSRC1 ? SSRC0 : SSRC1
+SCC = SSRC0 < SSRC1
 ```
 
 #### S_MUL_I32
@@ -496,7 +496,7 @@ Operation:
 ```
 UINT64 temp = (UINT64)SSRC0 - (UINT64)SSRC1 - SCC
 SDST = temp
-SCC = temp>>32
+SCC = (temp>>32) & 1
 ```
 
 #### S_SUB_I32
@@ -509,7 +509,7 @@ architectures (GCN1.0)
 Operation:  
 ```
 SDST = SSRC0 - SSRC1
-INT64 temp = (INT64)SSRC0 - (INT64)SSRC1
+INT64 temp = SEXT64(SSRC0) - SEXT64(SSRC1)
 SCC = temp > ((1LL<<31)-1) || temp < (-1LL<<31)
 ```
 
@@ -520,8 +520,9 @@ Syntax: S_SUB_U32 SDST, SSRC0, SSRC1
 Description: Subtract SSRC0 to SSRC1 and store result into SDST and store borrow into SCC.  
 Operation:  
 ```
-SDST = SSRC0 - SSRC1
-SCC = ((INT64)SSRC0 - (INT64)SSRC1)>>32
+UINT64 temp = (UINT64)SSRC0 - (UINT64)SSRC1
+SDST = temp
+SCC = (temp>>32)!=0
 ```
 
 #### S_XNOR_B32
