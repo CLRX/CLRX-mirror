@@ -201,7 +201,7 @@ and extend sign from last bit of extracted value.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-UINT8 shift = length&31
+UINT8 shift = SSRC1&31
 UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
@@ -220,7 +220,7 @@ Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>1
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-UINT8 shift = length & 31
+UINT8 shift = SSRC1 & 31
 UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
@@ -240,7 +240,7 @@ and extend sign from last bit of extracted value.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-UINT8 shift = length&63
+UINT8 shift = SSRC1&63
 UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
@@ -260,7 +260,7 @@ If result is non-zero store 1 to SCC, otherwise store 0 to SCC.
 SDST, SSRC0 are 64-bit, SSRC1 is 32-bit.  
 Operation:  
 ```
-UINT8 shift = length & 63
+UINT8 shift = SSRC1 & 63
 UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
@@ -369,8 +369,8 @@ SCC = SDST!=0
 
 Opcode: 8 (0x8)  
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
-Description: Choose largest signed value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+Description: Choose largest signed value value from SSRC0 and SSRC1 and store
+its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = (INT32)SSRC0 > (INT32)SSRC1 ? SSRC0 : SSRC1
@@ -381,8 +381,8 @@ SCC = (INT32)SSRC0 > (INT32)SSRC1
 
 Opcode: 9 (0x9)  
 Syntax: S_MAX_U32 SDST, SSRC0, SSRC1  
-Description: Choose largest unsigned value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+Description: Choose largest unsigned value value from SSRC0 and SSRC1 and store
+its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = SSRC0 > SSRC1 ? SSRC0 : SSRC1
@@ -393,8 +393,8 @@ SCC = SSRC0 > SSRC1
 
 Opcode: 6 (0x6)  
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
-Description: Choose smallest signed value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+Description: Choose smallest signed value value from SSRC0 and SSRC1 and store
+its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = (INT32)SSRC0 < (INT32)SSRC1 ? SSRC0 : SSRC1
@@ -405,8 +405,8 @@ SCC = (INT32)SSRC0 < (INT32)SSRC1
 
 Opcode: 7 (0x7)  
 Syntax: S_MIN_U32 SDST, SSRC0, SSRC1  
-Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store its into SDST,
-and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store
+its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = SSRC0 < SSRC1 ? SSRC0 : SSRC1
