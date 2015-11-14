@@ -34,5 +34,6 @@ By default, any register value is treated as unsigned integer.
 
 * [GCN Operands](GcnOperands)
 * [SOP2 instructions](GcnInstrsSop2)
+* [SOPK instructions](GcnInstrsSopk)
 
 ---

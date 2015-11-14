@@ -22,5 +22,6 @@ the GalliumCompute program binaries.
 * [AMD GCN Instruction Set](GcnIsa)
     * [GCN Operands](GcnOperands)
     * [SOP2 instructions](GcnInstrsSop2)
+    * [SOPK instructions](GcnInstrsSopk)
 
 ---

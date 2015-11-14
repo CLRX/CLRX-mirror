@@ -67,6 +67,7 @@ doc/ClrxToc.md -text
 doc/ClrxWrapper.md -text
 doc/GalliumAbi.md -text
 doc/GcnInstrsSop2.md -text
+doc/GcnInstrsSopk.md -text
 doc/GcnIsa.md -text
 doc/GcnOperands.md -text
 doc/PrepareOffline.py -text
