@@ -12,7 +12,7 @@ Bits  | Name     | Description
 23-29 | OPCODE   | Operation code
 30-31 | ENCODING | Encoding type. Must be 0b10
 
-Syntax for all instructions: INSTRUCTION SDST, SSRC0, SSRC1
+Syntax for almost instructions: INSTRUCTION SDST, SSRC0, SSRC1
 
 Example: s_and_b32 s0, s1, s2
 
@@ -71,6 +71,7 @@ List of the instructions by opcode:
 Alphabetically sorted instruction list:
 
 #### S_ABSDIFF_I32
+
 Opcode: 44 (0x2c) for GCN 1.0/11; 42 (0x2a) for GCN 1.2   
 Syntax: S_ABSDIFF_I32 SDST, SSRC0, SSRC1  
 Description: Compute absolute difference from SSRC0 and SSRC1 and store result to SDST.
@@ -201,7 +202,7 @@ and extend sign from last bit of extracted value.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-UINT8 shift = SSRC1&31
+UINT8 shift = SSRC1 & 31
 UINT8 length = (SSRC1>>16) & 0x7f
 if (length==0)
     SDST = 0
@@ -209,6 +210,26 @@ if (shift+length < 32)
     SDST = (INT32)(SSRC0 << (32 - shift - length)) >> (32 - length)
 else
     SDST = (INT32)SSRC0 >> shift
+SCC = SDST!=0
+```
+
+#### S_BFE_I64
+
+Opcode: 42 (0x2a) for GCN 1.0/1.1; 40 (0x28) for GCN 1.2  
+Syntax: S_BFE_I64 SDST, SSRC0, SSRC1  
+Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f)
+and extend sign from last bit of extracted value.
+If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+UINT8 shift = SSRC1 & 63
+UINT8 length = (SSRC1>>16) & 0x7f
+if (length==0)
+    SDST = 0
+if (shift+length < 64)
+    SDST = (INT64)(SSRC0 << (64 - shift - length)) >> (64 - length)
+else
+    SDST = (INT64)SSRC0 >> shift
 SCC = SDST!=0
 ```
 
@@ -228,26 +249,6 @@ if (shift+length < 32)
     SDST = SSRC0 << (32 - shift - length) >> (32 - length)
 else
     SDST = SSRC0 >> shift
-SCC = SDST!=0
-```
-
-#### S_BFE_I64
-
-Opcode: 42 (0x2a) for GCN 1.0/1.1; 40 (0x28) for GCN 1.2  
-Syntax: S_BFE_I64 SDST, SSRC0, SSRC1  
-Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f)
-and extend sign from last bit of extracted value.
-If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
-Operation:  
-```
-UINT8 shift = SSRC1&63
-UINT8 length = (SSRC1>>16) & 0x7f
-if (length==0)
-    SDST = 0
-if (shift+length < 64)
-    SDST = (INT64)(SSRC0 << (64 - shift - length)) >> (64 - length)
-else
-    SDST = (INT64)SSRC0 >> shift
 SCC = SDST!=0
 ```
 
@@ -291,6 +292,40 @@ store it to SDST. SCC not touched.
 Operation:  
 ```
 SDST = ((1ULL << (SSRC0&63))-1) << (SSRC1&63)
+```
+
+#### S_CBRANCH_G_FORK
+
+Opcode: 43 (0x2b) for GCN 1.0/1.1; 41 (0x29) for GCN 1.2  
+Syntax: S_CBRANCH_G_FORK SSRC0(2), SSRC1(2)  
+Description: Fork control flow to passed and failed condition, jump to address SSRC1 for
+passed conditions. Make two masks: for passed conditions (EXEC & SSRC0),
+for failed conditions: (EXEC & ~SSRC0).
+Choose way that have smallest active threads and push data for second way to control stack 
+(EXEC mask, jump address). Control stack pointer is stored in CSP
+(3 last bits in MODE register). One entry of the stack have 4 dwords.
+This instruction doesn't work if SSRC0 is immediate value.  
+Operation:  
+```
+UINT64 passes = (EXEC & SSRC0)
+UINT64 failures = (EXEC & ~SSRC0)
+if (passes == EXEC)
+    PC = SSRC1
+else if (failures == EXEC)
+    PC += 4
+else if (BITCOUNT(failures) < BITCOUNT(passes)) {
+    EXEC = failures
+    SGPR[CSP*4:CSP*4+1] = passes
+    SGPR[CSP*4+2:CSP*4+3] = SSRC1
+    CSP++
+    PC += 4 /* jump to failure */
+} else {
+    EXEC = passes
+    SGPR[CSP*4:CSP*4+1] = failures
+    SGPR[CSP*4+2:CSP*4+3] = PC+4
+    CSP++
+    PC = SSRC1  /* jump to passes */
+}
 ```
 
 #### S_CSELECT_B32

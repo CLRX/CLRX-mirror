@@ -26,6 +26,9 @@ Special functions:
 
 * SEXT64(v) - sign extend to 64-bit from any signed value
 * ABS(v) - absolute value
+* BITCOUNT(v) - count 1's bits in value
+
+By default, any register value is treated as unsigned integer.
 
 ---
 
