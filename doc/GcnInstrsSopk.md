@@ -11,7 +11,9 @@ Bits  | Name     | Description
 
 Syntax for almost instructions: INSTRUCTION SDST, SIMM16
 
-SIMM16 - signed 16-bit immediate. IMM16 - unsigned 16-bit immediate.
+SIMM16 - signed 16-bit immediate. IMM16 - unsigned 16-bit immediate.  
+RELADDR - relative offset to this instruction (can be label or relative expresion).
+RELADDR = NEXTPC + SIMM16, NEXTPC - PC for next instruction.
 
 List of the instructions by opcode:
 
@@ -55,6 +57,40 @@ Operation:
 SDST = SDST + SIMM16
 INT64 temp = SEXT64(SDST) + SEXT64(SIMM16)
 SCC = temp > ((1LL<<31)-1) || temp < (-1LL<<31)
+```
+
+#### S_CBRANCH_I_FORK
+
+Opcode: 17 (0x11) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
+Syntax: S_CBRANCH_I_FORK SSRC0(2), RELADDR  
+Description: Fork control flow to passed and failed condition, jump to address RELADDR for
+passed conditions. Make two masks: for passed conditions (EXEC & SSRC0),
+for failed conditions: (EXEC & ~SSRC0).
+Choose way that have smallest active threads and push data for second way to control stack 
+(EXEC mask, jump address). Control stack pointer is stored in CSP
+(3 last bits in MODE register). One entry of the stack have 4 dwords.
+This instruction doesn't work if SSRC0 is immediate value.  
+Operation:  
+```
+UINT64 passes = (EXEC & SSRC0)
+UINT64 failures = (EXEC & ~SSRC0)
+if (passes == EXEC)
+    PC = SSRC1
+else if (failures == EXEC)
+    PC += 4
+else if (BITCOUNT(failures) < BITCOUNT(passes)) {
+    EXEC = failures
+    SGPR[CSP*4:CSP*4+1] = passes
+    SGPR[CSP*4+2:CSP*4+3] = RELADDR
+    CSP++
+    PC += 4 /* jump to failure */
+} else {
+    EXEC = passes
+    SGPR[CSP*4:CSP*4+1] = failures
+    SGPR[CSP*4+2:CSP*4+3] = PC+4
+    CSP++
+    PC = RELADDR /* jump to passes */
+}
 ```
 
 #### S_CMOVK_I32
@@ -210,7 +246,7 @@ Operation:
 SCC = SIMM16
 ```
 
-#### S_MUL_I32
+#### S_MULK_I32
 
 Opcode: 16 (0x10) for GCN 1.0/1.1; 15 (0xf) for GCN 1.2  
 Syntax: S_MULK_I32 SDST, SIMM16  
