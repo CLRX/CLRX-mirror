@@ -236,6 +236,17 @@ Operation:
 SCC = SDST < IMM16
 ```
 
+#### S_GETREG_B32
+
+Opcode: 18 (0x12) for GCN1.0/1.1; 17 (0x11) for GCN 1.2  
+Syntax: S_GETREG_B32 SDST, HWREG(HWREGNAME, BITOFFSET, BITSIZE)  
+Description: Store hardware register part to SDST. BITOFFSET (0-31) is first bit in
+hardware register, BITSIZE (1-32) is number of bits to extract.  
+Operation:  
+```
+SDST = (HWREG >> BITOFFSET) & ((1U << BITSIZE) - 1U)
+```
+
 #### S_MOVK_I32
 
 Opcode: 0 (0x0)  
@@ -254,4 +265,31 @@ Description: Multiply signed SDST with SIMM16 and store result into SDST.
 SCC has not been changed.  
 ```
 SDST = SDST * SIMM16
+```
+
+#### S_SETREG_B32
+
+Opcode: 19 (0x13) for GCN1.0/1.1; 18 (0x12) for GCN 1.2  
+Syntax: S_SETREG_B32 HWREG(HWREGNAME, BITOFFSET, BITSIZE), SDST  
+Description: Store value from SDST to part of the hardware register.
+BITOFFSET (0-31) is first bit in hardware register,
+BITSIZE (1-32) is number of bits to store.  
+Operation:  
+```
+UINT32 mask = ((1U<<BITSIZE) - 1U) << BITOFFSET
+HWREG = (HWREG & ~mask) | ((SDST<<BITOFFSET) & mask)
+```
+
+#### S_SETREG_IMM32_B32
+
+Opcode: 21 (0x15) for GCN1.0/1.1; 20 (0x14) for GCN 1.2  
+Syntax: S_SETREG_B32 HWREG(HWREGNAME, BITOFFSET, BITSIZE), IMM32  
+Description: Store value from IMM32 to part of the hardware register.
+BITOFFSET (0-31) is first bit in hardware register,
+BITSIZE (1-32) is number of bits to store. IMM32 is immediate 32-bit value after
+instruction dword.  
+Operation:  
+```
+UINT32 mask = ((1U<<BITSIZE) - 1U) << BITOFFSET
+HWREG = (HWREG & ~mask) | ((IMM32<<BITOFFSET) & mask)
 ```

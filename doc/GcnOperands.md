@@ -75,3 +75,22 @@ parentheses is given number of the registers. Example:
 
 Syntax: S_SUB_I32 SDST, SSRC0, SSRC1  
 Syntax: S_AND_B64 SDST(2), SSRC0(2), SSRC1(2)  
+
+### Hardware registers
+
+These register could be read or written by S_GETREG_\* and S_SETREG_\* instruction.
+
+List of hardware registers:
+
+* GPR_ALLOC, HWREG_GPR_ALLOC - 
+* HW_ID, HWREG_HW_ID - 
+* IB_DBG0, HWREG_DBG0 - 
+* IB_STS, HWREG_IB_STS -
+* INST_DW0, HWREG_INST_DW0 -
+* INST_DW1, HWREG_INST_DW1 -
+* LDS_ALLOC, HWREG_LDS_ALLOC -
+* MODE, HWREG_MODE -
+* PC_HI, HWREG_PC_HI -
+* PC_LO, HWREG_PC_LO -
+* STATUS, HWREG_STATUS -
+* TRAPSTS, HWREG_TRAPSTS -
