@@ -247,6 +247,13 @@ Operation:
 SDST = (HWREG >> BITOFFSET) & ((1U << BITSIZE) - 1U)
 ```
 
+#### S_GETREG_REGRD_B32
+
+Opcode: 20 (0x14) for GCN1.0/1.1; 19 (0x13) for GCN 1.2  
+Syntax: S_GETREG_REGRD_B32 SDST, HWREG(HWREGNAME, BITOFFSET, BITSIZE)  
+Description: ???  
+Operation: ???  
+
 #### S_MOVK_I32
 
 Opcode: 0 (0x0)  

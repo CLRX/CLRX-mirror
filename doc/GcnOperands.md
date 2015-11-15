@@ -64,7 +64,7 @@ brackets: `s[0]`, `s[z]`, `v[66]`. In many instructions operands are
 expressed by ranges: `v[3:4]`, `s[8:11]`, `s[16:23]`, where second value is
 last register's number.
 
-Names of the registers are case-sensitive.
+Names of the registers are case-insensitive.
 
 Constant values are automatically resolved if expression have already value.
 The 1/(2*PI), 1.0, -2.0 and other floating point constant values will be
