@@ -333,7 +333,7 @@ else if (BITCOUNT(failures) < BITCOUNT(passes)) {
 Opcode: 10 (0xa)  
 Syntax: S_CSELECT_B32 SDST, SSRC0, SSRC1  
 Description: If SCC is 1 then store SSRC0 into SDST, otherwise store SSRC1 into SDST.
-SCC has not been changed.  
+SCC is not changed.  
 Operation:  
 ```
 SDST = SCC ? SSRC0 : SSRC1
@@ -344,7 +344,7 @@ SDST = SCC ? SSRC0 : SSRC1
 Opcode: 11 (0xb)  
 Syntax: S_CSELECT_B32 SDST(2), SSRC0(2), SSRC1(2)  
 Description: If SCC is 1 then store 64-bit SSRC0 into SDST, otherwise store
-64-bit SSRC1 into SDST. SCC has not been changed.  
+64-bit SSRC1 into SDST. SCC is not changed.  
 Operation:  
 ```
 SDST = SCC ? SSRC0 : SSRC1
@@ -405,7 +405,7 @@ SCC = SDST!=0
 Opcode: 8 (0x8)  
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
 Description: Choose largest signed value value from SSRC0 and SSRC1 and store
-its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = (INT32)SSRC0 > (INT32)SSRC1 ? SSRC0 : SSRC1
@@ -417,7 +417,7 @@ SCC = (INT32)SSRC0 > (INT32)SSRC1
 Opcode: 9 (0x9)  
 Syntax: S_MAX_U32 SDST, SSRC0, SSRC1  
 Description: Choose largest unsigned value value from SSRC0 and SSRC1 and store
-its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = SSRC0 > SSRC1 ? SSRC0 : SSRC1
@@ -429,7 +429,7 @@ SCC = SSRC0 > SSRC1
 Opcode: 6 (0x6)  
 Syntax: S_MIN_I32 SDST, SSRC0, SSRC1  
 Description: Choose smallest signed value value from SSRC0 and SSRC1 and store
-its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = (INT32)SSRC0 < (INT32)SSRC1 ? SSRC0 : SSRC1
@@ -441,7 +441,7 @@ SCC = (INT32)SSRC0 < (INT32)SSRC1
 Opcode: 7 (0x7)  
 Syntax: S_MIN_U32 SDST, SSRC0, SSRC1  
 Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store
-its into SDST, and store 1 to SCC if SSRC0 value has been choosen, otherwise store 0 to SCC.  
+its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
 SDST = SSRC0 < SSRC1 ? SSRC0 : SSRC1

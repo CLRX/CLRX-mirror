@@ -27,6 +27,8 @@ Special functions:
 * SEXT64(v) - sign extend to 64-bit from any signed value
 * ABS(v) - absolute value
 * BITCOUNT(v) - count 1's bits in value
+* REVBIT(v) - reverse bits (n bit goes to BITS-n-1 bit,
+where BITS is number bits in operand).
 
 By default, any register value is treated as unsigned integer.
 
@@ -35,5 +37,6 @@ By default, any register value is treated as unsigned integer.
 * [GCN Operands](GcnOperands)
 * [SOP2 instructions](GcnInstrsSop2)
 * [SOPK instructions](GcnInstrsSopk)
+* [SOP1 instructions](GcnInstrsSop1)
 
 ---

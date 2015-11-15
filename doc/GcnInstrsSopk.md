@@ -1,6 +1,6 @@
 ## GCN ISA SOPK instructions
 
-The basic encoding of the SOP2 instructions needs 4 bytes (dword). List of fields:
+The basic encoding of the SOPK instructions needs 4 bytes (dword). List of fields:
 
 Bits  | Name     | Description
 ------|----------|------------------------------
