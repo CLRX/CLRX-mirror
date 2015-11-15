@@ -76,12 +76,41 @@ List of the instructions by opcode:
 
 Alphabetically sorted instruction list:
 
+#### S_AND_SAVEEXEC_B64
+
+Opcode: 36 (0x24) for GCN 1.0/1.1; 32 (0x20) for GCN 1.2  
+Syntax: S_AND_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise AND on SSRC0 and EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = SSRC0 & EXEC
+SCC = EXEC!=0
+```
+
+#### S_ANDN2_SAVEEXEC_B64
+
+Opcode: 39 (0x27) for GCN 1.0/1.1; 35 (0x23) for GCN 1.2  
+Syntax: S_AND_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise AND on SSRC0 and negated EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = SSRC0 & EXEC
+SCC = EXEC!=0
+```
+
 #### S_BCNT0_I32_B32
 
 Opcode: 13 (0xd) for GCN 1.0/1.1; 10 (0xa) for GCN 1.2  
 Syntax: S_BCNT0_I32_B32 SDST, SSRC0  
 Description: Count zero bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
 ```
 SDST = 0
 for (UINT8 i = 0; i < 32; i++)
@@ -95,6 +124,7 @@ Opcode: 14 (0xd) for GCN 1.0/1.1; 11 (0xb) for GCN 1.2
 Syntax: S_BCNT0_I32_B64 SDST, SSRC0(2)  
 Description: Count zero bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC. SSRC0 is 64-bit.  
+Operation:  
 ```
 SDST = 0
 for (UINT8 i = 0; i < 64; i++)
@@ -108,6 +138,7 @@ Opcode: 15 (0xf) for GCN 1.0/1.1; 12 (0xc) for GCN 1.2
 Syntax: S_BCNT1_I32_B65 SDST, SSRC0  
 Description: Count one bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
 ```
 SDST = 0
 for (UINT8 i = 0; i < 32; i++)
@@ -121,6 +152,7 @@ Opcode: 16 (0x10) for GCN 1.0/1.1; 13 (0xd) for GCN 1.2
 Syntax: S_BCNT1_I32_B64 SDST, SSRC0(2)  
 Description: Count one bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC. SSRC0 is 64-bit.  
+Operation:  
 ```
 SDST = 0
 for (UINT8 i = 0; i < 64; i++)
@@ -128,11 +160,56 @@ for (UINT8 i = 0; i < 64; i++)
 SCC = SDST!=0
 ```
 
+#### S_BITSET0_B32
+
+Opcode: 27 (0x1b) for GCN 1.0/1.1, 24 (0x18) for GCN 1.2  
+Syntax: S_BITSET0_B32 SDST, SSRC0  
+Description: Get value from SDST, clear its bit with number specified from SSRC0, and
+store result to SDST.  
+Operation:  
+```
+SDST &= ~(1U << (SSRC0&31))
+```
+
+#### S_BITSET0_B64
+
+Opcode: 28 (0x1c) for GCN 1.0/1.1, 25 (0x19) for GCN 1.2  
+Syntax: S_BITSET0_B64 SDST(2), SSRC0  
+Description: Get value from SDST, clear its bit with number specified from SSRC0, and
+store result to SDST. SDST is 64-bit.  
+Operation:  
+```
+SDST &= ~(1ULL << (SSRC0&63))
+```
+
+#### S_BITSET1_B32
+
+Opcode: 29 (0x1d) for GCN 1.0/1.1, 26 (0x1a) for GCN 1.2  
+Syntax: S_BITSET1_B32 SDST, SSRC0  
+Description: Get value from SDST, set its bit with number specified from SSRC0, and
+store result to SDST.  
+Operation:  
+```
+SDST |= 1U << (SSRC0&31)
+```
+
+#### S_BITSET1_B64
+
+Opcode: 30 (0x1e) for GCN 1.0/1.1, 27 (0x1c) for GCN 1.2  
+Syntax: S_BITSET1_B64 SDST(2), SSRC0  
+Description: Get value from SDST, set its bit with number specified from SSRC0, and
+store result to SDST. SDST is 64-bit.  
+Operation:  
+```
+SDST |= 1ULL << (SSRC0&63)
+```
+
 #### S_BREV_B32
 
 Opcode: 11 (0xb) for GCN 1.0/1.1; 8 (0x8) for GCN 1.2  
 Syntax: S_BREV_B32 SDST, SSRC0  
 Description: Reverse bits in SSRC0 and store result to SDST. SCC is not changed.  
+Operation:  
 ```
 SDST = REVBIT(SSRC0)
 ```
@@ -143,6 +220,7 @@ Opcode: 12 (0xc) for GCN 1.0/1.1; 9 (0x9) for GCN 1.2
 Syntax: S_BREV_B64 SDST(2), SSRC0(2)  
 Description: Reverse bits in SSRC0 and store result to SDST. SCC is not changed.
 SDST and SSRC0 are 64-bit.  
+Operation:  
 ```
 SDST = REVBIT(SSRC0)
 ```
@@ -173,8 +251,9 @@ SDST = SCC ? SSRC0 : SDST
 
 Opcode: 17 (0x11) for GCN 1.0/1.1; 14 (0xe) for GCN 1.2  
 Syntax: S_FF0_I32_B32 SDST, SSRC0  
-Description: Find first zero bit in SSRC0. If found store number of bit to SDST,
+Description: Find first zero bit in SSRC0. If found, store number of bit to SDST,
 otherwise set SDST to -1.  
+Operation:  
 ```
 SDST = -1
 for (UINT8 i = 0; i < 32; i++)
@@ -186,8 +265,9 @@ for (UINT8 i = 0; i < 32; i++)
 
 Opcode: 18 (0x12) for GCN 1.0/1.1; 15 (0xf) for GCN 1.2  
 Syntax: S_FF0_I32_B64 SDST, SSRC0(2)  
-Description: Find first zero bit in SSRC0. If found store number of bit to SDST,
+Description: Find first zero bit in SSRC0. If found, store number of bit to SDST,
 otherwise set SDST to -1. SSRC0 is 64-bit.  
+Operation:  
 ```
 SDST = -1
 for (UINT8 i = 0; i < 64; i++)
@@ -199,8 +279,9 @@ for (UINT8 i = 0; i < 64; i++)
 
 Opcode: 19 (0x13) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
 Syntax: S_FF1_I32_B32 SDST, SSRC0  
-Description: Find first one bit in SSRC0. If found store number of bit to SDST,
+Description: Find first one bit in SSRC0. If found, store number of bit to SDST,
 otherwise set SDST to -1.  
+Operation:  
 ```
 SDST = -1
 for (UINT8 i = 0; i < 32; i++)
@@ -212,8 +293,9 @@ for (UINT8 i = 0; i < 32; i++)
 
 Opcode: 20 (0x14) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
 Syntax: S_FF0_I32_B64 SDST, SSRC0(2)  
-Description: Find first one bit in SSRC0. If found store number of bit to SDST,
+Description: Find first one bit in SSRC0. If found, store number of bit to SDST,
 otherwise set SDST to -1. SSRC0 is 64-bit.  
+Operation:  
 ```
 SDST = -1
 for (UINT8 i = 0; i < 64; i++)
@@ -225,8 +307,9 @@ for (UINT8 i = 0; i < 64; i++)
 
 Opcode: 21 (0x15) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
 Syntax: S_FLBIT_I32_B32 SDST, SSRC0  
-Description: Find last one bit in SSRC0. If found store number of skipped bits to SDST,
+Description: Find last one bit in SSRC0. If found, store number of skipped bits to SDST,
 otherwise set SDST to -1.  
+Operation:  
 ```
 SDST = -1
 for (INT8 i = 31; i >= 0; i++)
@@ -238,13 +321,54 @@ for (INT8 i = 31; i >= 0; i++)
 
 Opcode: 22 (0x16) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
 Syntax: S_FLBIT_I32_B64 SDST, SSRC0(2)  
-Description: Find last one bit in SSRC0. If found store number of skipped bits to SDST,
-otherwise set SDST to -1.  SSRC0 is 64-bit  
+Description: Find last one bit in SSRC0. If found, store number of skipped bits to SDST,
+otherwise set SDST to -1.  SSRC0 is 64-bit.  
+Operation:  
 ```
 SDST = -1
 for (INT8 i = 63; i >= 0; i++)
     if ((1ULL<<i) & SSRC0) != 0)
     { SDST = 63-i; break; }
+```
+
+#### S_FLBIT_I32
+
+Opcode: 23 (0x17) for GCN 1.0/1.1; 20 (0x14) for GCN 1.2  
+Syntax: S_FLBIT_I32 SDST, SSRC0  
+Description: Find last opposite bit to sign in SSRC0. If found, store number of skipped bits
+to SDST, otherwise set SDST to -1.  
+Operation:  
+```
+SDST = -1
+UINT32 bitval = (INT32)SSRC0>=0 ? 1 : 0
+for (INT8 i = 31; i >= 0; i++)
+    if ((1U<<i) & SSRC0) == (bitval<<i))
+    { SDST = 31-i; break; }
+```
+
+#### S_FLBIT_I32_I64
+
+Opcode: 24 (0x18) for GCN 1.0/1.1; 21 (0x15) for GCN 1.2  
+Syntax: S_FLBIT_I32_I64 SDST, SSRC0(2)  
+Description: Find last opposite bit to sign in SSRC0. If found, store number of skipped bits
+to SDST, otherwise set SDST to -1. SSRC0 is 64-bit.  
+Operation:  
+```
+SDST = -1
+UINT64 bitval = (INT64)SSRC0>=0 ? 1 : 0
+for (INT8 i = 63; i >= 0; i++)
+    if ((1U<<i) & SSRC0) == (bitval<<i))
+    { SDST = 63-i; break; }
+```
+
+#### S_GETPC_B64
+
+Opcode: 31 (0x1f) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
+Syntax: S_GETPC_B64 SDST(2)  
+Description: Store program counter (PC) for next instruction to SDST. SDST is 64-bit.  
+Operation:  
+```
+SDST = PC + 4
 ```
 
 #### S_MOV_B32
@@ -277,6 +401,28 @@ Operation:
 SDST = SSRC0
 ```
 
+#### S_MOVRELS_B32
+
+Opcode: 46 (0x2e) for GCN 1.0/1.1; 42 (0x2a) for GCN 1.2  
+Syntax: S_MOVRELS_B32 SDST, SSRC0  
+Description: Store value from SGPR[M0+SSRC0_NUMBER] to SDST.
+SSRC0_NUMBER is number of SDST register.  
+Operation:  
+```
+SDST = SGPR[SSRC0_NUMBER + M0]
+```
+
+#### S_MOVRELS_B64
+
+Opcode: 47 (0x2f) for GCN 1.0/1.1; 43 (0x2b) for GCN 1.2  
+Syntax: S_MOVRELS_B64 SDST, SSRC0  
+Description: Store 64-bit value from SGPR[M0+SSRC0_NUMBER:M0+SSRC0_NUMBER+1] to SDST.
+SSRC0_NUMBER is number of SDST register.  
+Operation:  
+```
+SDST = SGPR[SSRC0_NUMBER + M0]
+```
+
 #### S_NOT_B32
 
 Opcode: 7 (0x7) for GCN 1.0/1.1; 4 (0x4) for GCN 1.2  
@@ -287,6 +433,33 @@ Operation:
 ```
 SDST = ~SSRC0
 SCC = SDST!=0
+```
+#### S_NAND_SAVEEXEC_B64
+
+Opcode: 41 (0x29) for GCN 1.0/1.1; 37 (0x25) for GCN 1.2  
+Syntax: S_NAND_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise NAND on SSRC0 and EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = ~(SSRC0 & EXEC)
+SCC = EXEC!=0
+```
+
+#### S_NOR_SAVEEXEC_B64
+
+Opcode: 42 (0x2a) for GCN 1.0/1.1; 38 (0x26) for GCN 1.2  
+Syntax: S_NOR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise NOR on SSRC0 and EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = ~(SSRC0 | EXEC)
+SCC = EXEC!=0
 ```
 
 #### S_NOT_B64
@@ -302,6 +475,119 @@ SDST = ~SSRC0
 SCC = SDST!=0
 ```
 
+#### S_OR_SAVEEXEC_B64
+
+Opcode: 37 (0x25) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
+Syntax: S_OR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise OR on SSRC0 and EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = SSRC0 | EXEC
+SCC = EXEC!=0
+```
+
+#### S_ORN2_SAVEEXEC_B64
+
+Opcode: 40 (0x28) for GCN 1.0/1.1; 36 (0x24) for GCN 1.2  
+Syntax: S_ORN2_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise OR on SSRC0 and negated EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = SSRC0 & ~EXEC
+SCC = EXEC!=0
+```
+
+#### S_QUADMASK_B32
+
+Opcode: 44 (0x2c) for GCN 1.0/1.1; 40 (0x28) for GCN 1.2  
+Syntax: S_QUADMASK_B32 SDST, SSRC0  
+Description: For every 4-bit groups in SSRC0, if any bit of that group is set, then
+set bit for that group in order, otherwise clear that bits; and store that result into SDST.
+If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+UINT32 temp = 0
+for (UINT8 i = 0; i < 8; i++)
+    temp |= ((SSRC0>>(i<<2)) & 15)!=0 ? (1U<<i) : 0
+SDST = temp
+SCC = SDST!=0
+```
+
+#### S_QUADMASK_B64
+
+Opcode: 45 (0x2d) for GCN 1.0/1.1; 41 (0x29) for GCN 1.2  
+Syntax: S_QUADMASK_B64 SDST(2), SSRC0(2)  
+Description: For every 4-bit groups in SSRC0, if any bit of that group is set, then
+set bit for that group in order, otherwise clear that bits; and store that result into SDST.
+If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+UINT64 temp = 0
+for (UINT8 i = 0; i < 16; i++)
+    temp |= ((SSRC0>>(i<<2)) & 15)!=0 ? (1U<<i) : 0
+SDST = temp
+SCC = SDST!=0
+```
+
+#### S_RFE_B64
+
+Opcode: 34 (0x22) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
+Syntac: S_RFE_B64 SSRC0(2)  
+Description: Return from exception (store TTMP[0:1] to PC ???).  
+Operation: ???  
+```
+PC = TTMP[0:1]
+```
+
+#### S_SETPC_B64
+
+Opcode: 32 (0x20) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
+Syntax: S_SETPC_B64 SSRC0(2)  
+Description: Jump to address given SSRC0 (store SSRC0 to PC). SSRC0 is 64-bit.  
+Operation:  
+```
+PC = SSRC0
+```
+
+#### S_SEXT_I32_I8
+
+Opcode: 25 (0x19) for GCN 1.0/1.1; 22 (0x16) for GCN 1.2  
+Syntax: S_SEXT_I32_I8 SDST, SSRC0  
+Description: Store signed extended 8-bit value from SSRC0 to SDST.  
+Operation:  
+```
+SDST = SEXT((INT8)SSRC0)
+```
+
+#### S_SEXT_I32_I16
+
+Opcode: 26 (0x1a) for GCN 1.0/1.1; 23 (0x17) for GCN 1.2  
+Syntax: S_SEXT_I32_I16 SDST, SSRC0  
+Description: Store signed extended 16-bit value from SSRC0 to SDST.  
+Operation:  
+```
+SDST = SEXT((INT16)SSRC0)
+```
+
+#### S_SWAPPC_B64
+
+Opcode: 33 (0x21) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
+Syntax: S_SWAPPC_B64 SDST(2), SSRC0(2)  
+Description: Store program counter to SDST and jump to address given SSRC0
+(store SSRC0 to PC). SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = PC + 4
+PC = SSRC0
+```
+
 #### S_WQM_B32
 
 Opcode: 9 (0x9) for GCN 1.0/1.1; 6 (0x6) for GCN 1.2  
@@ -311,7 +597,7 @@ set all four bits for that group, otherwise zeroes all bits; and store that resu
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-UINT32 temp
+UINT32 temp = 0
 for (UINT8 i = 0; i < 32; i+=4)
     temp |= ((SSRC0>>i) & 15)!=0 ? (15<<i) : 0
 SDST = temp
@@ -328,9 +614,37 @@ If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
 Operation:  
 ```
-UINT64 temp
+UINT64 temp = 0
 for (UINT8 i = 0; i < 64; i+=4)
     temp |= ((SSRC0>>i) & 15)!=0 ? (15ULL<<i) : 0
 SDST = temp
 SCC = SDST!=0
+```
+
+#### S_XNOR_SAVEEXEC_B64
+
+Opcode: 43 (0x2b) for GCN 1.0/1.1; 39 (0x27) for GCN 1.2  
+Syntax: S_XNOR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise XNOR on SSRC0 and EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = ~(SSRC0 ^ EXEC)
+SCC = EXEC!=0
+```
+
+#### S_XOR_SAVEEXEC_B64
+
+Opcode: 38 (0x26) for GCN 1.0/1.1; 34 (0x22) for GCN 1.2  
+Syntax: S_XOR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Description: Store EXEC register to SDST. Make bitwise XOR on SSRC0 and EXEC
+and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+SDST and SSRC0 are 64-bit.  
+Operation:  
+```
+SDST = EXEC
+EXEC = SSRC0 ^ EXEC
+SCC = EXEC!=0
 ```

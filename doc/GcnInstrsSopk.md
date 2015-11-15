@@ -270,6 +270,7 @@ Opcode: 16 (0x10) for GCN 1.0/1.1; 15 (0xf) for GCN 1.2
 Syntax: S_MULK_I32 SDST, SIMM16  
 Description: Multiply signed SDST with SIMM16 and store result into SDST.
 SCC has not been changed.  
+Operation:  
 ```
 SDST = SDST * SIMM16
 ```
