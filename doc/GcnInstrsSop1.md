@@ -225,6 +225,25 @@ Operation:
 SDST = REVBIT(SSRC0)
 ```
 
+#### S_CBRANCH_JOIN
+
+Opcode: 50 (0x32) for GCN 1.0/1.1; 46 (0x2e) for GCN 1.2  
+Syntax: S_CBRANCH_JOIN SSRC0  
+Description: Join conditional branch that begin from S_CBRANCH_*_FORK. If control stack
+pointer have same value as SSRC0 then do nothing and jump to next instruction, otherwise
+pop from control stack value program counter and EXEC value.  
+Operation:  
+```
+if (CSP==SSRC0)
+    PC += 4
+else
+{
+    CSP--
+    EXEC = SGPR[CSP*4:CSP*4+1]
+    PC = SGPRS[CSP*4+2:CSP*4+3]
+}
+```
+
 #### S_CMOV_B32
 
 Opcode: 5 (0x5) for GCN 1.0/1.1; 2 (0x2) for GCN 1.2  
@@ -401,12 +420,34 @@ Operation:
 SDST = SSRC0
 ```
 
+#### S_MOVRELD_B32
+
+Opcode: 48 (0x30) for GCN 1.0/1.1; 44 (0x2c) for GCN 1.2  
+Syntax: S_MOVRELD_B32 SDST, SSRC0  
+Description: Store value from SSRC0 to SGPR[SDST_NUMBER+M0 : SDST_NUMBER+M0+1].
+SDST_NUMBER is number of SDST register.  
+Operation:  
+```
+SGPR[SDST_NUMBER + M0] = SSRC0
+```
+
+#### S_MOVRELD_B64
+
+Opcode: 49 (0x31) for GCN 1.0/1.1; 45 (0x2d) for GCN 1.2  
+Syntax: S_MOVRELD_B64 SDST, SSRC0  
+Description: Store value from SSRC0 to SGPR[SDST_NUMBER+M0].
+SDST_NUMBER is number of SDST register. SDST and SSRC0 are 64-bit  
+Operation:  
+```
+SGPR[SDST_NUMBER + M0 : SDST_NUMBER + M0 + 1] = SSRC0
+```
+
 #### S_MOVRELS_B32
 
 Opcode: 46 (0x2e) for GCN 1.0/1.1; 42 (0x2a) for GCN 1.2  
 Syntax: S_MOVRELS_B32 SDST, SSRC0  
 Description: Store value from SGPR[M0+SSRC0_NUMBER] to SDST.
-SSRC0_NUMBER is number of SDST register.  
+SSRC0_NUMBER is number of SSRC0 register.  
 Operation:  
 ```
 SDST = SGPR[SSRC0_NUMBER + M0]
@@ -415,12 +456,12 @@ SDST = SGPR[SSRC0_NUMBER + M0]
 #### S_MOVRELS_B64
 
 Opcode: 47 (0x2f) for GCN 1.0/1.1; 43 (0x2b) for GCN 1.2  
-Syntax: S_MOVRELS_B64 SDST, SSRC0  
-Description: Store 64-bit value from SGPR[M0+SSRC0_NUMBER:M0+SSRC0_NUMBER+1] to SDST.
-SSRC0_NUMBER is number of SDST register.  
+Syntax: S_MOVRELS_B64 SDST(2), SSRC0(2)  
+Description: Store 64-bit value from SGPR[M0+SSRC0_NUMBER : M0+SSRC0_NUMBER+1] to SDST.
+SSRC0_NUMBER is number of SSRC0 register. SDST and SSRC0 are 64-bit.  
 Operation:  
 ```
-SDST = SGPR[SSRC0_NUMBER + M0]
+SDST = SGPR[SSRC0_NUMBER + M0 : SSRC0_NUMBER + M0 + 1]
 ```
 
 #### S_NOT_B32
