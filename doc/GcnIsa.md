@@ -25,7 +25,7 @@ to similar C/C++ types:
 Special functions:
 
 * SEXT64(v) - sign extend to 64-bit from any signed value
-* ABS(v) - absolute value
+* ABS(v) - absolute value, if value is maximum negative then returns this value.
 * BITCOUNT(v) - count 1's bits in value
 * REVBIT(v) - reverse bits (n bit goes to BITS-n-1 bit,
 where BITS is number bits in operand).

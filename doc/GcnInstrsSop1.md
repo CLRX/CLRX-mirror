@@ -76,6 +76,18 @@ List of the instructions by opcode:
 
 Alphabetically sorted instruction list:
 
+#### S_ABS_I32
+
+Opcode: 52 (0x34) for GCN 1.0/1.1; 48 (0x30) for GCN 1.2  
+Syntax: S_NOT_B32 SDST, SSRC0  
+Description: Store absolute signed value of the SSRC0 into SDST.
+If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+SDST = ABS(SSRC0)
+SCC = SDST!=0
+```
+
 #### S_AND_SAVEEXEC_B64
 
 Opcode: 36 (0x24) for GCN 1.0/1.1; 32 (0x20) for GCN 1.2  
@@ -231,7 +243,7 @@ Opcode: 50 (0x32) for GCN 1.0/1.1; 46 (0x2e) for GCN 1.2
 Syntax: S_CBRANCH_JOIN SSRC0  
 Description: Join conditional branch that begin from S_CBRANCH_*_FORK. If control stack
 pointer have same value as SSRC0 then do nothing and jump to next instruction, otherwise
-pop from control stack value program counter and EXEC value.  
+pop from control stack program counter and EXEC value.  
 Operation:  
 ```
 if (CSP==SSRC0)
@@ -410,16 +422,6 @@ Operation:
 SDST = SSRC0
 ```
 
-#### S_MOV_B32
-
-Opcode: 3 (0x3) for GCN 1.0/1.1; 0 (0x0) for GCN 1.2  
-Syntax: S_MOV_B32 SDST, SSRC0  
-Description: Move value of SSRC0 into SDST.  
-Operation:  
-```
-SDST = SSRC0
-```
-
 #### S_MOVRELD_B32
 
 Opcode: 48 (0x30) for GCN 1.0/1.1; 44 (0x2c) for GCN 1.2  
@@ -464,17 +466,6 @@ Operation:
 SDST = SGPR[SSRC0_NUMBER + M0 : SSRC0_NUMBER + M0 + 1]
 ```
 
-#### S_NOT_B32
-
-Opcode: 7 (0x7) for GCN 1.0/1.1; 4 (0x4) for GCN 1.2  
-Syntax: S_NOT_B32 SDST, SSRC0  
-Description: Store bitwise negation of the SSRC0 into SDST.
-If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
-Operation:  
-```
-SDST = ~SSRC0
-SCC = SDST!=0
-```
 #### S_NAND_SAVEEXEC_B64
 
 Opcode: 41 (0x29) for GCN 1.0/1.1; 37 (0x25) for GCN 1.2  
@@ -501,6 +492,18 @@ Operation:
 SDST = EXEC
 EXEC = ~(SSRC0 | EXEC)
 SCC = EXEC!=0
+```
+
+#### S_NOT_B32
+
+Opcode: 7 (0x7) for GCN 1.0/1.1; 4 (0x4) for GCN 1.2  
+Syntax: S_NOT_B32 SDST, SSRC0  
+Description: Store bitwise negation of the SSRC0 into SDST.
+If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
+Operation:  
+```
+SDST = ~SSRC0
+SCC = SDST!=0
 ```
 
 #### S_NOT_B64
