@@ -8,7 +8,7 @@ Bits  | Name     | Description
 16-22 | OPCODE   | Operation code
 23-31 | ENCODING | Encoding type. Must be 0b101111111
 
-Syntax for almost instructions: INSTRUCTION SDST, SIMM16
+Syntax for almost instructions: INSTRUCTION SIMM16
 
 SIMM16 - signed 16-bit immediate. IMM16 - unsigned 16-bit immediate.  
 RELADDR - relative offset to this instruction (can be label or relative expresion).
