@@ -4,7 +4,7 @@ The basic encoding of the SOPK instructions needs 4 bytes (dword). List of field
 
 Bits  | Name     | Description
 ------|----------|------------------------------
-0-15  | SIMM16   | Signed 16-bit immediate value
+0-15  | SIMM16   | Signed or unsigned 16-bit immediate value
 16-22 | SDST     | Destination scalar operand. Refer to operand encoding
 23-27 | OPCODE   | Operation code
 28-31 | ENCODING | Encoding type. Must be 0b1011

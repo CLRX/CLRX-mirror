@@ -1,0 +1,167 @@
+## GCN ISA SOPP instructions
+
+The basic encoding of the SOPP instructions needs 4 bytes (dword). List of fields:
+
+Bits  | Name     | Description
+------|----------|------------------------------
+0-15  | SIMM16   | Signed or unsigned 16-bit immediate value
+16-22 | OPCODE   | Operation code
+23-31 | ENCODING | Encoding type. Must be 0b101111110
+
+Syntax for almost instructions: INSTRUCTION SDST, SIMM16
+
+SIMM16 - signed 16-bit immediate. IMM16 - unsigned 16-bit immediate.  
+RELADDR - relative offset to this instruction (can be label or relative expresion).
+RELADDR = NEXTPC + SIMM16, NEXTPC - PC for next instruction.
+
+List of the instructions by opcode:
+
+ Opcode     |GCN 1.0|GCN 1.1|GCN 1.2| Mnemonic
+------------|-------|-------|-------|-----------------
+ 0 (0x0)    |   ✓   |   ✓   |   ✓   | S_NOP
+ 1 (0x1)    |   ✓   |   ✓   |   ✓   | S_ENDPGM
+ 2 (0x2)    |   ✓   |   ✓   |   ✓   | S_BRANCH
+ 3 (0x3)    |       |       |   ✓   | S_WAKEUP
+ 4 (0x4)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_SCC0
+ 5 (0x5)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_SCC1
+ 6 (0x6)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_VCCZ
+ 7 (0x7)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_VCCNZ
+ 8 (0x8)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_EXECZ
+ 9 (0x9)    |   ✓   |   ✓   |   ✓   | S_CBRANCH_EXECNZ
+ 10 (0xa)   |   ✓   |   ✓   |   ✓   | S_BARRIER
+ 11 (0xb)   |       |   ✓   |   ✓   | S_SETKILL
+ 12 (0xc)   |   ✓   |   ✓   |   ✓   | S_WAITCNT
+ 13 (0xd)   |   ✓   |   ✓   |   ✓   | S_SETHALT
+ 14 (0xe)   |   ✓   |   ✓   |   ✓   | S_SLEEP
+ 15 (0xf)   |   ✓   |   ✓   |   ✓   | S_SETPRIO
+ 16 (0x10)  |   ✓   |   ✓   |   ✓   | S_SENDMSG
+ 17 (0x11)  |   ✓   |   ✓   |   ✓   | S_SENDMSGHALT
+ 18 (0x12)  |   ✓   |   ✓   |   ✓   | S_TRAP
+ 19 (0x13)  |   ✓   |   ✓   |   ✓   | S_ICACHE_INV
+ 20 (0x14)  |   ✓   |   ✓   |   ✓   | S_INCPERFLEVEL
+ 21 (0x15)  |   ✓   |   ✓   |   ✓   | S_DECPERFLEVEL
+ 22 (0x16)  |   ✓   |   ✓   |   ✓   | S_TTRACEDATA
+ 23 (0x17)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGSYS
+ 24 (0x18)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGUSER
+ 25 (0x19)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGSYS_OR_USER
+ 26 (0x1a)  |       |   ✓   |   ✓   | S_CBRANCH_CDBGSYS_AND_USER
+ 27 (0x1b)  |       |       |   ✓   | S_ENDPGM_SAVED
+ 28 (0x1c)  |       |       |   ✓   | S_SET_GPR_IDX_OFF
+ 29 (0x1d)  |       |       |   ✓   | S_SET_GPR_IDX_MODE
+
+### Instruction set
+
+Alphabetically sorted instruction list:
+
+#### S_BARRIER
+
+Opcode: 10 (0xa)  
+Syntax: S_BARRIER  
+Description: Synchronize waves within workgroup.
+
+#### S_BRANCH
+
+Opcode: 2 (0x2)  
+Syntax: S_BRANCH RELADDR  
+Description: Jump to address RELADDR (store RELADDR to PC).  
+Operation:  
+```
+PC = RELADDR
+```
+
+#### S_CBRANCH_EXECNZ
+
+Opcode: 9 (0x9)  
+Syntax: S_CBRANCH_EXECNZ RELADDR  
+Description: If EXEC is not zero then jump to RELADDR, otherwise jump to next instruction.  
+Operation:  
+```
+PC = EXEC!=0 ? RELADDR : PC+4
+```
+
+#### S_CBRANCH_EXECZ
+
+Opcode: 8 (0x8)  
+Syntax: S_CBRANCH_EXECZ RELADDR  
+Description: If EXEC is zero then jump to RELADDR, otherwise jump to next instruction.  
+Operation:  
+```
+PC = EXEC==0 ? RELADDR : PC+4
+```
+
+#### S_CBRANCH_SCC0
+
+Opcode: 4 (0x4)  
+Syntax: S_CBRANCH_SCC0 RELADDR  
+Description: If SCC is zero then jump to RELADDR, otherwise jump to next instruction.  
+Operation:  
+```
+PC = SCC0==0 ? RELADDR : PC+4
+```
+
+#### S_CBRANCH_SCC1
+
+Opcode: 5 (0x5)  
+Syntax: S_CBRANCH_SCC1 RELADDR  
+Description: If SCC is one then jump to RELADDR, otherwise jump to next instruction.  
+Operation:  
+```
+PC = SCC0==1 ? RELADDR : PC+4
+```
+
+#### S_CBRANCH_VCCNZ
+
+Opcode: 7 (0x7)  
+Syntax: S_CBRANCH_VCCNZ RELADDR  
+Description: If VCC is not zero then jump to RELADDR, otherwise jump to next instruction.  
+Operation:  
+```
+PC = VCC!=0 ? RELADDR : PC+4
+```
+
+#### S_CBRANCH_VCCZ
+
+Opcode: 6 (0x6)  
+Syntax: S_CBRANCH_VCCZ RELADDR  
+Description: If VCC is zero then jump to RELADDR, otherwise jump to next instruction.  
+Operation:  
+```
+PC = VCC==0 ? RELADDR : PC+4
+```
+
+#### S_ENDPGM
+
+Opcode: 1 (0x1)  
+Syntax: S_ENDPGM  
+Description: End program.
+
+#### S_SETHALT
+
+Opcode: 13 (0xd)  
+Syntax: S_SETHALT SIMM16  
+Description: Set HALT bit to value SIMM16&1. 1 - halt, 0 - resume.
+Halt is ignored while PRIV is 1.  
+Operation:  
+```
+HALT = SIMM16&1
+```
+
+#### S_NOP
+
+Opcode: 0 (0x0)  
+Syntax: S_NOP SIMM16  
+Description: Do nothing by (SIMM16&7) + 1 cycles.  
+Operation: nothing
+
+#### S_WAITCNT
+
+Opcode: 12 (0xc)  
+Syntax: S_WAITCNT VMCNT(X)|EXPCNT(X)|LGKMCNT(X) [&....]  
+Description: Waits for vector memory operations (VMCNT);
+LDS, GDS, memory operations (LGKMCNT); export memory-write-data operations (EXPCNT).
+(SIMM16&15) specifies how many VMCNT operations can be unfinished,
+value 0xf - no wait for VMCNT operations.
+(SIMM16>>4)&7 specifies how many EXPCNT operations can be unfinished,
+0x7 - no wait for EXPCNT operations.
+(SIMM16>>8)&31 specifies how many LGKMCNT operations can be unfinished,
+0x1f - no wait for LGKM operations.
