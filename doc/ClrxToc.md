@@ -24,5 +24,6 @@ the GalliumCompute program binaries.
     * [SOP2 instructions](GcnInstrsSop2)
     * [SOPK instructions](GcnInstrsSopk)
     * [SOP1 instructions](GcnInstrsSop1)
+    * [SOPC instructions](GcnInstrsSopc)
 
 ---

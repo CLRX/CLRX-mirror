@@ -438,7 +438,7 @@ SGPR[SDST_NUMBER + M0] = SSRC0
 Opcode: 49 (0x31) for GCN 1.0/1.1; 45 (0x2d) for GCN 1.2  
 Syntax: S_MOVRELD_B64 SDST, SSRC0  
 Description: Store value from SSRC0 to SGPR[SDST_NUMBER+M0].
-SDST_NUMBER is number of SDST register. SDST and SSRC0 are 64-bit  
+SDST_NUMBER is number of SDST register. SDST and SSRC0 are 64-bit.  
 Operation:  
 ```
 SGPR[SDST_NUMBER + M0 : SDST_NUMBER + M0 + 1] = SSRC0
