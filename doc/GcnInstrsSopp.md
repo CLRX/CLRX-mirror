@@ -6,7 +6,7 @@ Bits  | Name     | Description
 ------|----------|------------------------------
 0-15  | SIMM16   | Signed or unsigned 16-bit immediate value
 16-22 | OPCODE   | Operation code
-23-31 | ENCODING | Encoding type. Must be 0b101111110
+23-31 | ENCODING | Encoding type. Must be 0b101111111
 
 Syntax for almost instructions: INSTRUCTION SDST, SIMM16
 
