@@ -129,11 +129,35 @@ Operation:
 PC = VCC==0 ? RELADDR : PC+4
 ```
 
+#### S_DECPERFLEVEL
+
+Opcode: 21 (0x15)  
+Syntax: S_DECPERFLEVEL SIMM16  
+Description: Decrement performance counter specified in SIMM16&15 by 1.  
+```
+PERFCNT[SIMM16 & 15]--
+```
+
 #### S_ENDPGM
 
 Opcode: 1 (0x1)  
 Syntax: S_ENDPGM  
 Description: End program.
+
+#### S_ICACHE_INV
+
+Opcode: 19 (0x13)  
+Syntax: S_ICACHE_INV  
+Description: Invalidate entire L1 instruction cache.
+
+#### S_INCPERFLEVEL
+
+Opcode: 20 (0x14)  
+Syntax: S_INCPERFLEVEL SIMM16  
+Description: Increment performance counter specified in SIMM16&15 by 1.  
+```
+PERFCNT[SIMM16 & 15]++
+```
 
 #### S_NOP
 
@@ -179,6 +203,16 @@ Operation:
 HALT = SIMM16&1
 ```
 
+#### S_SETKILL
+
+Opcode: 11 (0xb) only GCN 1.1/1.2  
+Syntax: S_SETKILL SIMM16  
+Description: Store SIMM16&1 to KILL.  
+Operation:  
+```
+KILL = SIMM16&1
+```
+
 #### S_SETPRIO
 
 Opcode: 15 (0xf)  
@@ -194,6 +228,18 @@ PRIORITY = SIMM16&3
 Opcode: 14 (0xe)  
 Syntax: S_SLEEP SIMM16  
 Description: Sleep approximately by (SIMM16&0x7)*64 cycles.
+
+#### S_TRAP
+
+Opcode: 18 (0x12)  
+Syntax: S_TRAP SIMM16  
+Description: Enter the trap handler.
+
+#### S_TTRACEDATA
+
+Opcode: 22 (0x16)  
+Syntax: S_TTRACEDATA  
+Description: Send M0 as user data to thread-trace.
 
 #### S_WAITCNT
 
