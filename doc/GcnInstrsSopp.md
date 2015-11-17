@@ -135,6 +135,39 @@ Opcode: 1 (0x1)
 Syntax: S_ENDPGM  
 Description: End program.
 
+#### S_NOP
+
+Opcode: 0 (0x0)  
+Syntax: S_NOP SIMM16  
+Description: Do nothing by (SIMM16&7) + 1 cycles.  
+Operation: nothing
+
+#### S_SENDMSG
+
+Opcode: 16 (0x10)  
+Syntax: S_SENDMSG SENDMSG(MSG, GS_OP, STREAMID)  
+Description: Send message. List of messages:
+
+* INTERRUPT, MSG_INTERRUPT - interrupt. M0&0xff - carries user data,
+IDs also sent (wave_id, cu_id, ...)
+* GS, MSG_GS
+* GS_DONE, MSG_GS_DONE
+* SYSMSG, MSG_SYSMSG, SYSTEM, MSG_SYSTEM
+
+List of the GSOP:
+
+* NOP, GS_NOP - M0&0xff defines wave id. only GS_DONE
+* CUT, GS_CUT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent, M0&0xff - gs waveID
+* EMIT, GS_EMIT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent, M0&0xff - gs waveID
+* EMIT_CUT, GS_EMIT_CUT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent,
+M0&0xff - gs waveID
+
+#### S_SENDMSGHALT
+
+Opcode: 17 (0x11)  
+Syntax: S_SENDMSGHALT SENDMSG(MSG, GS_OP, STREAMID)  
+Description: Send message and halt.
+
 #### S_SETHALT
 
 Opcode: 13 (0xd)  
@@ -146,12 +179,21 @@ Operation:
 HALT = SIMM16&1
 ```
 
-#### S_NOP
+#### S_SETPRIO
 
-Opcode: 0 (0x0)  
-Syntax: S_NOP SIMM16  
-Description: Do nothing by (SIMM16&7) + 1 cycles.  
-Operation: nothing
+Opcode: 15 (0xf)  
+Syntax: S_SETPRIO SIMM16  
+Description: Set priority to  SIMM16&3.  
+Operation:  
+```
+PRIORITY = SIMM16&3
+```
+
+#### S_SLEEP
+
+Opcode: 14 (0xe)  
+Syntax: S_SLEEP SIMM16  
+Description: Sleep approximately by (SIMM16&0x7)*64 cycles.
 
 #### S_WAITCNT
 
