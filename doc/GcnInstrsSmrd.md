@@ -23,7 +23,7 @@ In this case, SBASE must be a multipla of 2.
 
 List of the instructions by opcode:
 
- Opcode     | Mnemonic (GCN1.0)        | Mnemonic (GCN1.0)
+ Opcode     | Mnemonic (GCN1.0)        | Mnemonic (GCN1.1)
 ------------|--------------------------|--------------------------
  0 (0x0)    | S_LOAD_DWORD             | S_LOAD_DWORD
  1 (0x1)    | S_LOAD_DWORDX2           | S_LOAD_DWORDX2
