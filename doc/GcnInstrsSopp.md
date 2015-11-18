@@ -178,7 +178,7 @@ IDs also sent (wave_id, cu_id, ...)
 * GS_DONE, MSG_GS_DONE
 * SYSMSG, MSG_SYSMSG, SYSTEM, MSG_SYSTEM
 
-List of the GSOP:
+List of the GSOP's:
 
 * NOP, GS_NOP - M0&0xff defines wave id. only GS_DONE
 * CUT, GS_CUT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent, M0&0xff - gs waveID
