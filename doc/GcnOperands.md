@@ -10,7 +10,7 @@ Following list describes all operand codes values:
 Code     | Name              | Description
 ---------|-------------------|------------------------
 0-103    | S0 - S103         | SGPR's (GCN1.0/1.1)
-0-101    | S0 - S102         | SGPR's (GCN1.2)
+0-101    | S0 - S101         | SGPR's (GCN1.2)
 104-105  | FLAT_SCRATCH      | FLAT_SCRATCH register (GCN1.1)
 104      | FLAT_SCRATCH_LO   | Low half of FLAT_SCRATCH register (GCN1.1)
 105      | FLAT_SCRATCH_HI   | High half of FLAT_SCRATCH register (GCN1.1)
