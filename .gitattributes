@@ -72,6 +72,7 @@ doc/GcnInstrsSop2.md -text
 doc/GcnInstrsSopc.md -text
 doc/GcnInstrsSopk.md -text
 doc/GcnInstrsSopp.md -text
+doc/GcnInstrsVop2.md -text
 doc/GcnIsa.md -text
 doc/GcnOperands.md -text
 doc/PrepareOffline.py -text
