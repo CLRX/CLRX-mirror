@@ -84,6 +84,12 @@ Opcode: 31 (0x1f)
 Syntax: S_DCACHE_INV  
 Description: Invalidate entire L1 K cache.
 
+#### S_DCACHE_INV_VOL
+
+Opcode: 29 (0x1d)  
+Syntax: S_DCACHE_INV_VOL  
+Description: Invalidate all volatile lines in L1 K cache.
+
 #### S_LOAD_DWORD
 
 Opcode: 0 (0x0)  
