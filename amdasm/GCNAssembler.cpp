@@ -964,7 +964,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 src0Op.range.start!=srcCCReg.start)
         sgprsReaded++;
     
-    if (sgprsReaded >= 2)
+    if (gcnInsn.code1!=2 /* if no v_writelane_b32 */ && sgprsReaded >= 2)
     {   /* include VCCs (???) */
         asmr.printError(instrPlace, "More than one SGPR to read in instruction");
         return;
@@ -1556,7 +1556,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 src1Op.range.start!=src2Op.range.start)
             numSgprToRead++;
         
-        if (numSgprToRead>=2)
+        if ((!isGCN12 || gcnInsn.code1!=650 /* if not v_write_lane_b32 */) &&
+            numSgprToRead>=2)
         {
             asmr.printError(instrPlace, "More than one SGPR to read in instruction");
             return;

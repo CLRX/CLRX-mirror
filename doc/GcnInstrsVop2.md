@@ -103,10 +103,34 @@ Opcode VOP3a: 259 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2
 Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC  
 Syntax VOP3a: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
 Description: If bit for current thread of VCC or SDST is set then store SRC1 to VDST,
-otherwise store SRC0 to VDST.  
+otherwise store SRC0 to VDST. CLAMP and OMOD modifier doesn't affect on result.  
 Operation:
 ```
 VDST = SSRC2&(1ULL<<THREADID) ? SRC1 : SRC0
+```
+
+#### V_READLANE_B32
+
+Opcode VOP2: 1 (0x1) for GCN 1.0/1.1  
+Opcode VOP3a: 257 (0x101) for GCN 1.0/1.1  
+Syntax: V_READLANE_B32 SDST, VSRC0, SSRC1  
+Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) choosen from SSRC1&63.
+SSRC1 can be SGPR or M0.  
+Operation:  
+```
+SDST = VSRC0[SSRC1 & 63]
+```
+
+#### V_WRITELANE_B32
+
+Opcode VOP2: 2 (0x2) for GCN 1.0/1.1  
+Opcode VOP3a: 258 (0x102) for GCN 1.0/1.1  
+Syntax: V_WRITELANE_B32 VDST, VSRC0, SSRC1  
+Description: Copy SGPR to one lane of VDST. Lane choosen (thread id) from SSRC1&63.
+SSRC1 can be SGPR or M0.  
+Operation:  
+```
+VDST[SSRC1 & 63] = SSRC0
 ```
 
 #### V_SUB_F32
@@ -114,7 +138,7 @@ VDST = SSRC2&(1ULL<<THREADID) ? SRC1 : SRC0
 Opcode VOP2: 4 (0x4) for GCN 1.0/1.1; 2 (0x2) for GCN 1.2  
 Opcode VOP3a: 260 (0x104) for GCN 1.0/1.1; 258 (0x102) for GCN 1.2  
 Syntax: V_SUB_F32 VDST, SRC0, SRC1  
-Description: Subtract two FP value from SRC0 and SRC1 and store result to VDST.  
+Description: Subtract FP value from SRC0 and FP value from SRC1 and store result to VDST.  
 Operation:  
 ```
 VDST = (FLOAT)SRC0 - (FLOAT)SRC1
