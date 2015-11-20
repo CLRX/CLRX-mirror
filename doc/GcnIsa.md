@@ -22,6 +22,10 @@ to similar C/C++ types:
 * UINT64, INT64 - unsigned and signed 64-bit word
 * HALF, FLOAT, DOUBLE - half, single and double precision floating point
 
+Special variables:
+
+* THREADID - identifier for current thread in wave
+
 Special functions:
 
 * SEXT64(v) - sign extend to 64-bit from any signed value

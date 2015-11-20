@@ -64,8 +64,9 @@ List of the instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)
 ------------|----------------------|------------------------
- 1 (0x1)    | --                   | V_ADD_F32
- 2 (0x2)    | --                   | V_SUB_F32
+ 0 (0x0)    | V_CNDMASK_B32        | V_CNDMASK_B32
+ 1 (0x1)    | V_READLANE_B32       | V_ADD_F32
+ 2 (0x2)    | V_WRITELANE_B32      | V_SUB_F32
  3 (0x3)    | V_ADD_F32            | V_SUBREV_F32
  4 (0x4)    | V_SUB_F32            | V_MUL_LEGACY_F32
  5 (0x5)    | V_SUBREV_F32         | V_MUL_F32
@@ -83,3 +84,38 @@ List of the instructions by opcode:
 ### Instruction set
 
 Alphabetically sorted instruction list:
+
+#### V_ADD_F32
+
+Opcode VOP2: 3 (0x3) for GCN 1.0/1.1; 1 (0x1) for GCN 1.2  
+Opcode VOP3a: 259 (0x103) for GCN 1.0/1.1; 257 (0x101) for GCN 1.2  
+Syntax: V_ADD_F32 VDST, SRC0, SRC1  
+Description: Add two FP value from SRC0 and SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)SRC0 + (FLOAT)SRC1
+```
+
+#### V_CNDMASK_B32
+
+Opcode VOP2: 0 (0x0) for GCN 1.0/1.1; 1 (0x0) for GCN 1.2  
+Opcode VOP3a: 259 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2  
+Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC  
+Syntax VOP3a: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
+Description: If bit for current thread of VCC or SDST is set then store SRC1 to VDST,
+otherwise store SRC0 to VDST.  
+Operation:
+```
+VDST = SSRC2&(1ULL<<THREADID) ? SRC1 : SRC0
+```
+
+#### V_SUB_F32
+
+Opcode VOP2: 4 (0x4) for GCN 1.0/1.1; 2 (0x2) for GCN 1.2  
+Opcode VOP3a: 260 (0x104) for GCN 1.0/1.1; 258 (0x102) for GCN 1.2  
+Syntax: V_SUB_F32 VDST, SRC0, SRC1  
+Description: Subtract two FP value from SRC0 and SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)SRC0 - (FLOAT)SRC1
+```
