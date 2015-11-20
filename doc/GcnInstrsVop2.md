@@ -59,6 +59,14 @@ Modifiers:
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
 
+Limitations for operands:
+
+* only one SGPR can be read by instruction. Multiple occurrences of this same
+SGPR is allowed
+* only one literal constant can be used, and only when a SGPR or M0 is not used in
+source operands
+* only SRC0 can holds LDS_DIRECT
+
 VOP2 opcodes (0-63) are reflected in VOP3 in range: 256-319.
 List of the instructions by opcode:
 
@@ -104,9 +112,102 @@ Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC
 Syntax VOP3a: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
 Description: If bit for current thread of VCC or SDST is set then store SRC1 to VDST,
 otherwise store SRC0 to VDST. CLAMP and OMOD modifier doesn't affect on result.  
-Operation:
+Operation:  
 ```
 VDST = SSRC2&(1ULL<<THREADID) ? SRC1 : SRC0
+```
+
+#### V_MAC_LEGACY_F32
+
+Opcode VOP2: 6 (0x6) for GCN 1.0/1.1
+Opcode VOP3a: 262 (0x106) for GCN 1.0/1.1
+Syntax: V_MUL_LEGACY_F32 VDST, SRC0, SRC1  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.
+If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).  
+Operation:  
+```
+if ((FLOAT)SRC0!=0.0 && (FLOAT)SRC1!=0.0)
+    VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)VDST
+```
+
+#### V_MUL_LEGACY_F32
+
+Opcode VOP2: 7 (0x7) for GCN 1.0/1.1; 5 (0x4) for GCN 1.2  
+Opcode VOP3a: 263 (0x107) for GCN 1.0/1.1; 260 (0x104) for GCN 1.2  
+Syntax: V_MUL_LEGACY_F32 VDST, SRC0, SRC1  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and store result to VDST.
+If one of value is 0.0 then always store 0.0 to VDST (do not apply IEEE rules for 0.0*x).  
+Operation:  
+```
+if ((FLOAT)SRC0!=0.0 && (FLOAT)SRC1!=0.0)
+    VDST = (FLOAT)SRC0 * (FLOAT)SRC1
+else
+    VDST = 0.0
+```
+
+#### V_MUL_F32
+
+Opcode VOP2: 8 (0x8) for GCN 1.0/1.1; 5 (0x5) for GCN 1.2  
+Opcode VOP3a: 264 (0x108) for GCN 1.0/1.1; 261 (0x105) for GCN 1.2  
+Syntax: V_MUL_F32 VDST, SRC0, SRC1  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)SRC0 * (FLOAT)SRC1
+```
+
+#### V_MUL_HI_I32_24
+
+Opcode VOP2: 10 (0xa) for GCN 1.0/1.1; 7 (0x7) for GCN 1.2  
+Opcode VOP3a: 266 (0x10a) for GCN 1.0/1.1; 263 (0x107) for GCN 1.2  
+Syntax: V_MUL_HI_I32_24 VDST, SRC0, SRC1  
+Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1
+and store higher 16-bit of the result to VDST with sign extension.
+Any modifier doesn't affect on result.  
+Operation:  
+```
+INT32 V0 = (INT32)((SRC0&0x7fffff) | (SSRC0&0x800000 ? 0xff800000 : 0))
+INT32 V1 = (INT32)((SRC1&0x7fffff) | (SSRC1&0x800000 ? 0xff800000 : 0))
+VDST = ((INT64)V0 * V1)>>32
+```
+
+#### V_MUL_HI_U32_U24
+
+Opcode VOP2: 12 (0xc) for GCN 1.0/1.1; 9 (0x9) for GCN 1.2  
+Opcode VOP3a: 268 (0x10c) for GCN 1.0/1.1; 265 (0x109) for GCN 1.2  
+Syntax: V_MUL_HI_U32_U24 VDST, SRC0, SRC1  
+Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
+from SRC1 and store higher 16-bit of the result to VDST.
+Any modifier doesn't affect to result.  
+Operation:  
+```
+VDST = ((UINT64)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)) >> 32
+```
+
+#### V_MUL_I32_I24
+
+Opcode VOP2: 9 (0x9) for GCN 1.0/1.1; 6 (0x6) for GCN 1.2  
+Opcode VOP3a: 265 (0x109) for GCN 1.0/1.1; 262 (0x106) for GCN 1.2  
+Syntax: V_MUL_I32_I24 VDST, SRC0, SRC1  
+Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1
+and store result to VDST. Any modifier doesn't affect to result.  
+Operation:  
+```
+INT32 V0 = (INT32)((SRC0&0x7fffff) | (SSRC0&0x800000 ? 0xff800000 : 0))
+INT32 V1 = (INT32)((SRC1&0x7fffff) | (SSRC1&0x800000 ? 0xff800000 : 0))
+VDST = V0 * V1
+```
+
+#### V_MUL_U32_U24
+
+Opcode VOP2: 11 (0xb) for GCN 1.0/1.1; 8 (0x8) for GCN 1.2  
+Opcode VOP3a: 267 (0x10b) for GCN 1.0/1.1; 264 (0x108) for GCN 1.2  
+Syntax: V_MUL_U32_U24 VDST, SRC0, SRC1  
+Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
+from SRC1 and store result to VDST. Any modifier doesn't affect to result.  
+Operation:  
+```
+VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)
 ```
 
 #### V_READLANE_B32
@@ -142,4 +243,15 @@ Description: Subtract FP value from SRC0 and FP value from SRC1 and store result
 Operation:  
 ```
 VDST = (FLOAT)SRC0 - (FLOAT)SRC1
+```
+
+#### V_SUBREV_F32
+
+Opcode VOP2: 5 (0x5) for GCN 1.0/1.1; 2 (0x3) for GCN 1.2  
+Opcode VOP3a: 261 (0x105) for GCN 1.0/1.1; 259 (0x103) for GCN 1.2  
+Syntax: V_SUBREV_F32 VDST, SRC0, SRC1  
+Description: Subtract FP value from SRC1 and FP value from SRC0 and store result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)SRC1 - (FLOAT)SRC0
 ```
