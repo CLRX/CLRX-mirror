@@ -172,7 +172,7 @@ SCC = SDST!=0
 
 Opcode: 34 (0x22) for GCN 1.0/1.1; 32 (0x20) for GCN 1.2  
 Syntax: S_ASHR_I32 SDST, SSRC0, SSRC1  
-Description: Arithmetic shift to right SSRC0 by (SSRC1&31) bits and store result into SDST.
+Description: Arithmetic shift right SSRC0 by (SSRC1&31) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
@@ -184,7 +184,7 @@ SCC = SDST!=0
 
 Opcode: 35 (0x23) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
 Syntax: S_ASHR_I64 SDST(2), SSRC0(2), SSRC1  
-Description: Arithmetic Shift to right SSRC0 by (SSRC1&63) bits and store result into SDST.
+Description: Arithmetic Shift right SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
 SSRC1 is 32 bit.  
 Operation:  
@@ -354,7 +354,7 @@ SDST = SCC ? SSRC0 : SSRC1
 
 Opcode: 30 (0x1e) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
 Syntax: S_LSHL_B32 SDST, SSRC0, SSRC1  
-Description: Shift to left SSRC0 by (SSRC1&31) bits and store result into SDST.
+Description: Shift left SSRC0 by (SSRC1&31) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
@@ -366,7 +366,7 @@ SCC = SDST!=0
 
 Opcode: 31 (0x1f) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
 Syntax: S_LSHL_B64 SDST(2), SSRC0(2), SSRC1  
-Description: Shift to left SSRC0 by (SSRC1&63) bits and store result into SDST.
+Description: Shift left SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
 SSRC1 is 32 bit.  
 Operation:  
@@ -379,7 +379,7 @@ SCC = SDST!=0
 
 Opcode: 32 (0x20) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
 Syntax: S_LSHR_B32 SDST, SSRC0, SSRC1  
-Description: Shift to right SSRC0 by (SSRC1&31) bits and store result into SDST.
+Description: Shift right SSRC0 by (SSRC1&31) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
@@ -391,7 +391,7 @@ SCC = SDST!=0
 
 Opcode: 33 (0x21) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
 Syntax: S_LSHR_B64 SDST(2), SSRC0(2), SSRC1  
-Description: Shift to right SSRC0 by (SSRC1&63) bits and store result into SDST.
+Description: Shift right SSRC0 by (SSRC1&63) bits and store result into SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC. SDST, SSRC0 are 64-bit,
 SSRC1 is 32 bit.  
 Operation:  
