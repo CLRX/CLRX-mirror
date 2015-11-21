@@ -120,6 +120,18 @@ Operation:
 VDST = (FLOAT)SRC0 + (FLOAT)SRC1
 ```
 
+#### V_AND_B32
+
+Opcode: VOP2: 27 (0x1b) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
+Opcode: VOP3a: 283 (0x11b) for GCN 1.0/1.1; 275 (0x113) for GCN 1.2  
+Syntax: V_AND_B32 VDST, SRC0, SRC1  
+Description: Do bitwise AND on SRC0 and SRC1 and store result to VDST.
+CLAMP and OMOD modifier doesn't affect on result.  
+Operation:  
+```
+VDST = SRC0 & SRC1
+```
+
 #### V_ASHR_I32
 
 Opcode VOP2: 23 (0x17) for GCN 1.0/1.1  
@@ -199,11 +211,22 @@ Operation:
 VDST = SRC1 >> (SRC0&31)
 ```
 
+#### V_MAC_F32
+
+Opcode VOP2: 31 (0x1f) for GCN 1.0/1.1; 22 (0x16) for GCN 1.2  
+Opcode VOP3a: 287 (0x11f) for GCN 1.0/1.1; 278 (0x116) for GCN 1.2  
+Syntax: V_MAC_F32 VDST, SRC0, SRC1  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)VDST
+```
+
 #### V_MAC_LEGACY_F32
 
 Opcode VOP2: 6 (0x6) for GCN 1.0/1.1  
 Opcode VOP3a: 262 (0x106) for GCN 1.0/1.1  
-Syntax: V_MUL_LEGACY_F32 VDST, SRC0, SRC1  
+Syntax: V_MAC_LEGACY_F32 VDST, SRC0, SRC1  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.
 If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).  
 Operation:  
@@ -392,6 +415,18 @@ Operation:
 VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)
 ```
 
+#### V_OR_B32
+
+Opcode: VOP2: 28 (0x1c) for GCN 1.0/1.1; 20 (0x14) for GCN 1.2  
+Opcode: VOP3a: 284 (0x11c) for GCN 1.0/1.1; 276 (0x114) for GCN 1.2  
+Syntax: V_OR_B32 VDST, SRC0, SRC1  
+Description: Do bitwise OR operation on SRC0 and SRC1 and store result to VDST.
+CLAMP and OMOD modifier doesn't affect on result.  
+Operation:  
+```
+VDST = SRC0 | SRC1
+```
+
 #### V_READLANE_B32
 
 Opcode VOP2: 1 (0x1) for GCN 1.0/1.1  
@@ -436,4 +471,16 @@ Description: Subtract FP value from SRC1 and FP value from SRC0 and store result
 Operation:  
 ```
 VDST = (FLOAT)SRC1 - (FLOAT)SRC0
+```
+
+#### V_XOR_B32
+
+Opcode: VOP2: 29 (0x1d) for GCN 1.0/1.1; 21 (0x15) for GCN 1.2  
+Opcode: VOP3a: 285 (0x11d) for GCN 1.0/1.1; 277 (0x115) for GCN 1.2  
+Syntax: V_OR_B32 VDST, SRC0, SRC1  
+Description: Do bitwise XOR operation on SRC0 and SRC1 and store result to VDST.
+CLAMP and OMOD modifier doesn't affect on result.  
+Operation:  
+```
+VDST = SRC0 ^ SRC1
 ```
