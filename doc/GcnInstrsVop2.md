@@ -257,14 +257,10 @@ Operation:
 ```
 UINT8 byte = ((SRC1&3) * 8)
 UINT32 mask = 0xff << byte
-UINT8 VAL8 = 0
 FLOAT f = RNDINT(ASFLOAT(SRC0))
-if (f > 255.0)
-    VAL8 = 255
-else if (f < 0.0 || f == NaN)
-    VAL8 = 0
-else
-    VAL8 = f
+UINT8 VAL8 = 0
+if (f == NaN)
+    VAL8 = (UINT8)MAX(MIN(f, 255.0), 0.0)
 VDST = (VDST&~mask) | (((UINT32)VAL8) << byte)
 ```
 
@@ -281,13 +277,9 @@ Operation:
 INT16 roundNorm(FLOAT S)
 {
     FLOAT f = RNDNEINT(S*32767)
-    if (f > 32767.0)
-         return 0x7fff
-    else if (f < -32767.0)
-        return -0x7fff
-    else if (f == NaN)
+    if (f == NaN)
         return 0
-    return (INT16)f
+    return (INT16)MAX(MIN(f, 32767.0), -32767.0)
 }
 VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
 ```
@@ -305,12 +297,9 @@ Operation:
 UINT16 roundNorm(FLOAT S)
 {
     FLOAT f = RNDNEINT(S*65535.0)
-    INT16 VAL16 = 0
-    if (f > 65535.0)
-        return 0x7fff
-    else if (f < 0.0 || f == NaN)
+    if (f == NaN)
         return 0
-    return (UINT16)f
+    return (INT16)MAX(MIN(f, 65535.0), 0.0)
 }
 VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
 ```
@@ -367,7 +356,7 @@ Description: Do ldexp operation on SRC0 and SRC1 (multiply SRC0 by 2**(SRC1)).
 SRC1 is signed integer, SRC0 is floating point value.  
 Operation:  
 ```
-VDST = ASFLOAT(SRC0) * POW(2.0,SRC1)
+VDST = ASFLOAT(SRC0) * POW(2.0, (INT32)SRC1)
 ```
 
 #### V_LSHL_B32
