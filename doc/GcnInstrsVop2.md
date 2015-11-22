@@ -1,6 +1,6 @@
 ## GCN ISA VOP2/VOP3 instructions
 
-VOP2 instructions can be encoded in the VOP2 encoding and the VOP3a/VOP3b encoding.
+VOP2 instructions can be encoded in the VOP2 encoding and the VOP3A/VOP3B encoding.
 List of fields for VOP2 encoding:
 
 Bits  | Name     | Description
@@ -30,7 +30,7 @@ Bits  | Name     | Description
 59-60 | OMOD     | OMOD modifier. Multiplication modifier
 61-63 | NEG      | Negation modifier for source operands
 
-List of fields for VOP3A encoding (GCN 1.2):
+List of fields for VOP3A/VOP3B encoding (GCN 1.2):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -132,7 +132,7 @@ Alphabetically sorted instruction list:
 #### V_ADD_F32
 
 Opcode VOP2: 3 (0x3) for GCN 1.0/1.1; 1 (0x1) for GCN 1.2  
-Opcode VOP3a: 259 (0x103) for GCN 1.0/1.1; 257 (0x101) for GCN 1.2  
+Opcode VOP3A: 259 (0x103) for GCN 1.0/1.1; 257 (0x101) for GCN 1.2  
 Syntax: V_ADD_F32 VDST, SRC0, SRC1  
 Description: Add two FP value from SRC0 and SRC1 and store result to VDST.  
 Operation:  
@@ -143,11 +143,11 @@ VDST = ASFLOAT(SRC0) + ASFLOAT(SRC1)
 #### V_ADD_I32, V_ADD_U32
 
 Opcode VOP2: 37 (0x25) for GCN 1.0/1.1; 25 (0x19) for GCN 1.2  
-Opcode VOP3b: 293 (0x125) for GCN 1.0/1.1; 281 (0x119) for GCN 1.2  
+Opcode VOP3B: 293 (0x125) for GCN 1.0/1.1; 281 (0x119) for GCN 1.2  
 Syntax VOP2 GCN 1.0/1.1: V_ADD_I32 VDST, VCC, SRC0, SRC1  
-Syntax VOP3b GCN 1.0/1.1: V_ADD_I32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP3B GCN 1.0/1.1: V_ADD_I32 VDST, SDST(2), SRC0, SRC1  
 Syntax VOP2 GCN 1.2: V_ADD_U32 VDST, VCC, SRC0, SRC1  
-Syntax VOP3b GCN 1.2: V_ADD_U32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP3B GCN 1.2: V_ADD_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Add SRC0 to SRC1 and store result to VDST and store carry flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.  
 Operation:  
@@ -161,9 +161,9 @@ SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 #### V_ADDC_U32
 
 Opcode VOP2: 40 (0x28) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
-Opcode VOP3b: 296 (0x128) for GCN 1.0/1.1; 284 (0x11c) for GCN 1.2  
+Opcode VOP3B: 296 (0x128) for GCN 1.0/1.1; 284 (0x11c) for GCN 1.2  
 Syntax VOP2 GCN 1.0/1.1: V_ADDC_U32 VDST, VCC, SRC0, SRC1, VCC  
-Syntax VOP3b GCN 1.2: V_ADDC_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Syntax VOP3B GCN 1.2: V_ADDC_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
 Description: Add SRC0 to SRC1 with carry stored in SSRC2 bit with number that equal lane id,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. SDST and SSRC2 are 64-bit.  
@@ -179,7 +179,7 @@ SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 #### V_AND_B32
 
 Opcode: VOP2: 27 (0x1b) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
-Opcode: VOP3a: 283 (0x11b) for GCN 1.0/1.1; 275 (0x113) for GCN 1.2  
+Opcode: VOP3A: 283 (0x11b) for GCN 1.0/1.1; 275 (0x113) for GCN 1.2  
 Syntax: V_AND_B32 VDST, SRC0, SRC1  
 Description: Do bitwise AND on SRC0 and SRC1, store result to VDST.
 CLAMP and OMOD modifier doesn't affect on result.  
@@ -191,7 +191,7 @@ VDST = SRC0 & SRC1
 #### V_ASHR_I32
 
 Opcode VOP2: 23 (0x17) for GCN 1.0/1.1  
-Opcode VOP3a: 279 (0x117) for GCN 1.0/1.1  
+Opcode VOP3A: 279 (0x117) for GCN 1.0/1.1  
 Syntax: V_ASHR_I32 VDST, SRC0, SRC1  
 Description: Arithmetic shift right SRC0 by (SRC1&31) bits and store result into VDST.  
 Operation:  
@@ -202,7 +202,7 @@ VDST = (INT32)SRC0 >> (SRC1&31)
 #### V_ASHRREV_I32
 
 Opcode VOP2: 24 (0x18) for GCN 1.0/1.1; 16 (0x11) for GCN 1.2  
-Opcode VOP3a: 280 (0x118) for GCN 1.0/1.1; 272 (0x111) for GCN 1.2  
+Opcode VOP3A: 280 (0x118) for GCN 1.0/1.1; 272 (0x111) for GCN 1.2  
 Syntax: V_ASHRREV_I32 VDST, SRC0, SRC1  
 Description: Arithmetic shift right SRC1 by (SRC0&31) bits and store result into VDST.  
 Operation:  
@@ -213,7 +213,7 @@ VDST = (INT32)SRC1 >> (SRC0&31)
 #### V_BCNT_U32_B32
 
 Opcode VOP2: 34 (0x22) for GCN 1.0/1.1  
-Opcode VOP3a: 290 (0x122) for GCN 1.0/1.1  
+Opcode VOP3A: 290 (0x122) for GCN 1.0/1.1  
 Syntax: V_BCNT_U32_B32 VDST, SRC0, SRC1  
 Description: Count bits in SRC0, adds SSRC1, and store result to VDST.  
 Operation:  
@@ -224,7 +224,7 @@ VDST = SRC1 + BITCOUNT(SRC0)
 #### V_BFM_B32
 
 Opcode VOP2: 30 (0x1e) for GCN 1.0/1.1  
-Opcode VOP3a: 286 (0x11e) for GCN 1.0/1.1  
+Opcode VOP3A: 286 (0x11e) for GCN 1.0/1.1  
 Syntax: V_BFM_B32 VDST, SRC0, SRC1  
 Description: Make 32-bit bitmask from (SRC1 & 31) bit that have length (SRC0 & 31) and
 store it to VDST.  
@@ -236,9 +236,9 @@ VDST = ((1U << (SRC0&31))-1) << (SRC1&31)
 #### V_CNDMASK_B32
 
 Opcode VOP2: 0 (0x0) for GCN 1.0/1.1; 1 (0x0) for GCN 1.2  
-Opcode VOP3a: 256 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2  
+Opcode VOP3A: 256 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2  
 Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC  
-Syntax VOP3a: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
+Syntax VOP3A: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
 Description: If bit for current lane of VCC or SDST is set then store SRC1 to VDST,
 otherwise store SRC0 to VDST. CLAMP and OMOD modifier doesn't affect on result.  
 Operation:  
@@ -249,7 +249,7 @@ VDST = SSRC2&(1ULL<<LANEID) ? SRC1 : SRC0
 #### V_CVT_PKACCUM_U8_F32
 
 Opcode VOP2: 44 (0x2c) for GCN 1.0/1.1  
-Opcode VOP3a: 300 (0x12c) for GCN 1.0/1.1  
+Opcode VOP3A: 300 (0x12c) for GCN 1.0/1.1  
 Syntax: V_CVT_PKACCUM_U8_F32 VDST, SRC0, SRC1  
 Description: Convert floating point value from SRC0 to unsigned byte value with
 rounding mode from MODE register, and store this byte to (SRC1&3)'th byte of VDST.  
@@ -271,7 +271,7 @@ VDST = (VDST&~mask) | (((UINT32)VAL8) << byte)
 #### V_CVT_PKNORM_I16_F32
 
 Opcode VOP2: 45 (0x2d) for GCN 1.0/1.1  
-Opcode VOP3a: 301 (0x12d) for GCN 1.0/1.1  
+Opcode VOP3A: 301 (0x12d) for GCN 1.0/1.1  
 Syntax: V_CVT_PKNORM_I16_F32 VDST, SRC0, SRC1  
 Description: Convert normalized FP value from SRC0 and SRC1 to signed 16-bit integers with
 rounding to nearest to even (??), and store first value to low 16-bit and
@@ -295,7 +295,7 @@ VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
 #### V_CVT_PKNORM_U16_F32
 
 Opcode VOP2: 46 (0x2e) for GCN 1.0/1.1  
-Opcode VOP3a: 302 (0x12e) for GCN 1.0/1.1  
+Opcode VOP3A: 302 (0x12e) for GCN 1.0/1.1  
 Syntax: V_CVT_PKNORM_U16_F32 VDST, SRC0, SRC1  
 Description: Convert normalized FP value from SRC0 and SRC1 to unsigned 16-bit integers with
 rounding to nearest to even (??), and store first value to low 16-bit and
@@ -318,7 +318,7 @@ VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
 #### V_CVT_PKRTZ_F16_F32
 
 Opcode VOP2: 47 (0x2f) for GCN 1.0/1.1  
-Opcode VOP3a: 303 (0x12f) for GCN 1.0/1.1  
+Opcode VOP3A: 303 (0x12f) for GCN 1.0/1.1  
 Syntax: V_CVT_PKRTZ_F16_F32 VDST, SRC0, SRC1  
 Description: Convert normalized FP value from SRC0 and SRC1 to half floating points with
 rounding to zero, and store first value to low 16-bit and
@@ -333,7 +333,7 @@ VDST = D0 | (((UINT32)D1) << 16)
 #### V_CVT_PK_U16_U32
 
 Opcode VOP2: 48 (0x30) for GCN 1.0/1.1  
-Opcode VOP3a: 304 (0x130) for GCN 1.0/1.1  
+Opcode VOP3A: 304 (0x130) for GCN 1.0/1.1  
 Syntax: V_CVT_PK_U16_U32 VDST, SRC0, SRC1  
 Description: Convert unsigned value from SRC0 and SRC1 to unsigned 16-bit values with
 clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
@@ -347,7 +347,7 @@ VDST = D0 | (((UINT32)D1) << 16)
 #### V_CVT_PK_I16_I32
 
 Opcode VOP2: 49 (0x31) for GCN 1.0/1.1  
-Opcode VOP3a: 305 (0x131) for GCN 1.0/1.1  
+Opcode VOP3A: 305 (0x131) for GCN 1.0/1.1  
 Syntax: V_CVT_PK_I16_I32 VDST, SRC0, SRC1  
 Description: Convert signed value from SRC0 and SRC1 to signed 16-bit values with
 clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
@@ -361,7 +361,7 @@ VDST = D0 | (((UINT32)D1) << 16)
 #### V_LDEXP_F32
 
 Opcode VOP2: 43 (0x2b) for GCN 1.0/1.1  
-Opcode VOP3a: 299 (0x12b) for GCN 1.0/1.1  
+Opcode VOP3A: 299 (0x12b) for GCN 1.0/1.1  
 Syntax: V_LDEXP_F32 VDST, SRC0, SRC1  
 Description: Do ldexp operation on SRC0 and SRC1 (multiply SRC0 by 2**(SRC1)).
 SRC1 is signed integer, SRC0 is floating point value.  
@@ -373,7 +373,7 @@ VDST = ASFLOAT(SRC0) * POW(2.0,SRC1)
 #### V_LSHL_B32
 
 Opcode VOP2: 25 (0x19) for GCN 1.0/1.1  
-Opcode VOP3a: 281 (0x119) for GCN 1.0/1.1  
+Opcode VOP3A: 281 (0x119) for GCN 1.0/1.1  
 Syntax: V_LSHL_B32 VDST, SRC0, SRC1  
 Description: Shift left SRC0 by (SRC1&31) bits and store result into VDST.  
 Operation:  
@@ -384,7 +384,7 @@ VDST = SRC0 << (SRC1&31)
 #### V_LSHLREV_B32
 
 Opcode VOP2: 26 (0x1a) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
-Opcode VOP3a: 282 (0x11a) for GCN 1.0/1.1; 274 (0x112) for GCN 1.2  
+Opcode VOP3A: 282 (0x11a) for GCN 1.0/1.1; 274 (0x112) for GCN 1.2  
 Syntax: V_LSHLREV_B32 VDST, SRC0, SRC1  
 Description: Shift left SRC1 by (SRC0&31) bits and store result into VDST.  
 Operation:  
@@ -395,7 +395,7 @@ VDST = SRC1 << (SRC0&31)
 #### V_LSHR_B32
 
 Opcode VOP2: 21 (0x15) for GCN 1.0/1.1  
-Opcode VOP3a: 277 (0x115) for GCN 1.0/1.1  
+Opcode VOP3A: 277 (0x115) for GCN 1.0/1.1  
 Syntax: V_LSHR_B32 VDST, SRC0, SRC1  
 Description: Shift right SRC0 by (SRC1&31) bits and store result into VDST.  
 Operation:  
@@ -406,7 +406,7 @@ VDST = SRC0 >> (SRC1&31)
 #### V_LSHRREV_B32
 
 Opcode VOP2: 22 (0x16) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
-Opcode VOP3a: 278 (0x116) for GCN 1.0/1.1; 272 (0x110) for GCN 1.2  
+Opcode VOP3A: 278 (0x116) for GCN 1.0/1.1; 272 (0x110) for GCN 1.2  
 Syntax: V_LSHRREV_B32 VDST, SRC0, SRC1  
 Description: Shift right SRC1 by (SRC0&31) bits and store result into VDST.  
 Operation:  
@@ -417,7 +417,7 @@ VDST = SRC1 >> (SRC0&31)
 #### V_MAC_F32
 
 Opcode VOP2: 31 (0x1f) for GCN 1.0/1.1; 22 (0x16) for GCN 1.2  
-Opcode VOP3a: 287 (0x11f) for GCN 1.0/1.1; 278 (0x116) for GCN 1.2  
+Opcode VOP3A: 287 (0x11f) for GCN 1.0/1.1; 278 (0x116) for GCN 1.2  
 Syntax: V_MAC_F32 VDST, SRC0, SRC1  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.  
 Operation:  
@@ -428,7 +428,7 @@ VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
 #### V_MAC_LEGACY_F32
 
 Opcode VOP2: 6 (0x6) for GCN 1.0/1.1  
-Opcode VOP3a: 262 (0x106) for GCN 1.0/1.1  
+Opcode VOP3A: 262 (0x106) for GCN 1.0/1.1  
 Syntax: V_MAC_LEGACY_F32 VDST, SRC0, SRC1  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.
 If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).  
@@ -441,7 +441,7 @@ if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
 #### V_MADMK_F32
 
 Opcode: VOP2: 32 (0x20) for GCN 1.0/1.1; 23 (0x17) for GCN 1.2  
-Opcode: VOP3a: 288 (0x120) for GCN 1.0/1.1; 279 (0x117) for GCN 1.2  
+Opcode: VOP3A: 288 (0x120) for GCN 1.0/1.1; 279 (0x117) for GCN 1.2  
 Syntax: V_MADMK_F32 VDST, SRC0, FLOATLIT, SRC1  
 Description: Multiply FP value from SRC0 with the constant literal FLOATLIT and add
 FP value from SRC1; and store result to VDST. Constant literal follows
@@ -454,7 +454,7 @@ VDST = ASFLOAT(SRC0) * ASFLOAT(FLOATLIT) + ASFLOAT(SRC1)
 #### V_MADAK_F32
 
 Opcode: VOP2: 33 (0x21) for GCN 1.0/1.1; 24 (0x18) for GCN 1.2  
-Opcode: VOP3a: 289 (0x121) for GCN 1.0/1.1; 280 (0x118) for GCN 1.2  
+Opcode: VOP3A: 289 (0x121) for GCN 1.0/1.1; 280 (0x118) for GCN 1.2  
 Syntax: V_MADAK_F32 VDST, SRC0, SRC1, FLOATLIT  
 Description: Multiply FP value from SRC0 with FP value from SRC1 and add
 the constant literal FLOATLIT; and store result to VDST. Constant literal follows
@@ -467,7 +467,7 @@ VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(FLOATLIT)
 #### V_MAX_F32
 
 Opcode VOP2: 16 (0x10) for GCN 1.0/1.1; 11 (0xb) for GCN 1.2  
-Opcode VOP3a: 272 (0x110) for GCN 1.0/1.1; 267 (0x10b) for GCN 1.2  
+Opcode VOP3A: 272 (0x110) for GCN 1.0/1.1; 267 (0x10b) for GCN 1.2  
 Syntax: V_MAX_F32 VDST, SRC0, SRC1  
 Description: Choose largest floating point value from SRC0 and SRC1,
 and store result to VDST.  
@@ -479,7 +479,7 @@ VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 #### V_MAX_I32
 
 Opcode VOP2: 18 (0x12) for GCN 1.0/1.1; 13 (0xd) for GCN 1.2  
-Opcode VOP3a: 274 (0x112) for GCN 1.0/1.1; 269 (0x10d) for GCN 1.2  
+Opcode VOP3A: 274 (0x112) for GCN 1.0/1.1; 269 (0x10d) for GCN 1.2  
 Syntax: V_MAX_I32 VDST, SRC0, SRC1  
 Description: Choose largest signed value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
@@ -490,7 +490,7 @@ VDST = MAX((INT32)SRC0, (INT32)SRC1)
 #### V_MAX_LEGACY_F32
 
 Opcode VOP2: 14 (0xe) for GCN 1.0/1.1  
-Opcode VOP3a: 270 (0x10e) for GCN 1.0/1.1  
+Opcode VOP3A: 270 (0x10e) for GCN 1.0/1.1  
 Syntax: V_MAX_LEGACY_F32 VDST, SRC0, SRC1  
 Description: Choose largest floating point value from SRC0 and SRC1,
 and store result to VDST. If SSRC1 is NaN value then store NaN value to VDST
@@ -506,7 +506,7 @@ else
 #### V_MAX_U32
 
 Opcode VOP2: 20 (0x14) for GCN 1.0/1.1; 15 (0xf) for GCN 1.2  
-Opcode VOP3a: 276 (0x114) for GCN 1.0/1.1; 271 (0x10f) for GCN 1.2  
+Opcode VOP3A: 276 (0x114) for GCN 1.0/1.1; 271 (0x10f) for GCN 1.2  
 Syntax: V_MAX_U32 VDST, SRC0, SRC1  
 Description: Choose largest unsigned value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
@@ -517,7 +517,7 @@ VDST = MAX(SRC0, SRC1)
 #### V_MBCNT_HI_U32_B32
 
 Opcode VOP2: 36 (0x24) for GCN 1.0/1.1  
-Opcode VOP3a: 292 (0x124) for GCN 1.0/1.1  
+Opcode VOP3A: 292 (0x124) for GCN 1.0/1.1  
 Syntax: V_MBCNT_HI_U32_B32 VDST, SRC0, SRC1  
 Description: Make mask for all lanes ending at current lane,
 get from that mask higher 32-bits, use it to mask SSRC0,
@@ -531,7 +531,7 @@ VDST = SRC1 + BITCOUNT(MASK)
 #### V_MBCNT_LO_U32_B32
 
 Opcode VOP2: 35 (0x23) for GCN 1.0/1.1  
-Opcode VOP3a: 291 (0x123) for GCN 1.0/1.1  
+Opcode VOP3A: 291 (0x123) for GCN 1.0/1.1  
 Syntax: V_MBCNT_LO_U32_B32 VDST, SRC0, SRC1  
 Description: Make mask for all lanes ending at current lane,
 get from that mask lower 32-bits, use it to mask SSRC0,
@@ -545,7 +545,7 @@ VDST = SRC1 + BITCOUNT(MASK)
 #### V_MIN_F32
 
 Opcode VOP2: 15 (0xf) for GCN 1.0/1.1; 10 (0xa) for GCN 1.2  
-Opcode VOP3a: 271 (0x10f) for GCN 1.0/1.1; 266 (0x10a) for GCN 1.2  
+Opcode VOP3A: 271 (0x10f) for GCN 1.0/1.1; 266 (0x10a) for GCN 1.2  
 Syntax: V_MIN_F32 VDST, SRC0, SRC1  
 Description: Choose smallest floating point value from SRC0 and SRC1,
 and store result to VDST.  
@@ -557,7 +557,7 @@ VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
 #### V_MIN_I32
 
 Opcode VOP2: 17 (0x11) for GCN 1.0/1.1; 12 (0xc) for GCN 1.2  
-Opcode VOP3a: 273 (0x111) for GCN 1.0/1.1; 268 (0x10c) for GCN 1.2  
+Opcode VOP3A: 273 (0x111) for GCN 1.0/1.1; 268 (0x10c) for GCN 1.2  
 Syntax: V_MIN_I32 VDST, SRC0, SRC1  
 Description: Choose smallest signed value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
@@ -568,7 +568,7 @@ VDST = MIN((INT32)SRC0, (INT32)SRC1)
 #### V_MIN_LEGACY_F32
 
 Opcode VOP2: 13 (0xd) for GCN 1.0/1.1  
-Opcode VOP3a: 269 (0x10d) for GCN 1.0/1.1  
+Opcode VOP3A: 269 (0x10d) for GCN 1.0/1.1  
 Syntax: V_MIN_LEGACY_F32 VDST, SRC0, SRC1  
 Description: Choose smallest floating point value from SRC0 and SRC1,
 and store result to VDST. If SSRC1 is NaN value then store NaN value to VDST
@@ -584,7 +584,7 @@ else
 #### V_MIN_U32
 
 Opcode VOP2: 19 (0x13) for GCN 1.0/1.1; 14 (0xe) for GCN 1.2  
-Opcode VOP3a: 275 (0x113) for GCN 1.0/1.1; 270 (0x10e) for GCN 1.2  
+Opcode VOP3A: 275 (0x113) for GCN 1.0/1.1; 270 (0x10e) for GCN 1.2  
 Syntax: V_MIN_U32 VDST, SRC0, SRC1  
 Description: Choose smallest unsigned value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
@@ -595,7 +595,7 @@ VDST = MIN(SRC0, SRC1)
 #### V_MUL_LEGACY_F32
 
 Opcode VOP2: 7 (0x7) for GCN 1.0/1.1; 5 (0x4) for GCN 1.2  
-Opcode VOP3a: 263 (0x107) for GCN 1.0/1.1; 260 (0x104) for GCN 1.2  
+Opcode VOP3A: 263 (0x107) for GCN 1.0/1.1; 260 (0x104) for GCN 1.2  
 Syntax: V_MUL_LEGACY_F32 VDST, SRC0, SRC1  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and store result to VDST.
 If one of value is 0.0 then always store 0.0 to VDST (do not apply IEEE rules for 0.0*x).  
@@ -610,7 +610,7 @@ else
 #### V_MUL_F32
 
 Opcode VOP2: 8 (0x8) for GCN 1.0/1.1; 5 (0x5) for GCN 1.2  
-Opcode VOP3a: 264 (0x108) for GCN 1.0/1.1; 261 (0x105) for GCN 1.2  
+Opcode VOP3A: 264 (0x108) for GCN 1.0/1.1; 261 (0x105) for GCN 1.2  
 Syntax: V_MUL_F32 VDST, SRC0, SRC1  
 Description: Multiply FP value from SRC0 by FP value from SRC1 and store result to VDST.  
 Operation:  
@@ -621,7 +621,7 @@ VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
 #### V_MUL_HI_I32_I24
 
 Opcode VOP2: 10 (0xa) for GCN 1.0/1.1; 7 (0x7) for GCN 1.2  
-Opcode VOP3a: 266 (0x10a) for GCN 1.0/1.1; 263 (0x107) for GCN 1.2  
+Opcode VOP3A: 266 (0x10a) for GCN 1.0/1.1; 263 (0x107) for GCN 1.2  
 Syntax: V_MUL_HI_I32_I24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1
 and store higher 16-bit of the result to VDST with sign extension.
@@ -636,7 +636,7 @@ VDST = ((INT64)V0 * V1)>>32
 #### V_MUL_HI_U32_U24
 
 Opcode VOP2: 12 (0xc) for GCN 1.0/1.1; 9 (0x9) for GCN 1.2  
-Opcode VOP3a: 268 (0x10c) for GCN 1.0/1.1; 265 (0x109) for GCN 1.2  
+Opcode VOP3A: 268 (0x10c) for GCN 1.0/1.1; 265 (0x109) for GCN 1.2  
 Syntax: V_MUL_HI_U32_U24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
 from SRC1 and store higher 16-bit of the result to VDST.
@@ -649,7 +649,7 @@ VDST = ((UINT64)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)) >> 32
 #### V_MUL_I32_I24
 
 Opcode VOP2: 9 (0x9) for GCN 1.0/1.1; 6 (0x6) for GCN 1.2  
-Opcode VOP3a: 265 (0x109) for GCN 1.0/1.1; 262 (0x106) for GCN 1.2  
+Opcode VOP3A: 265 (0x109) for GCN 1.0/1.1; 262 (0x106) for GCN 1.2  
 Syntax: V_MUL_I32_I24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1
 and store result to VDST. Any modifier doesn't affect to result.  
@@ -663,7 +663,7 @@ VDST = V0 * V1
 #### V_MUL_U32_U24
 
 Opcode VOP2: 11 (0xb) for GCN 1.0/1.1; 8 (0x8) for GCN 1.2  
-Opcode VOP3a: 267 (0x10b) for GCN 1.0/1.1; 264 (0x108) for GCN 1.2  
+Opcode VOP3A: 267 (0x10b) for GCN 1.0/1.1; 264 (0x108) for GCN 1.2  
 Syntax: V_MUL_U32_U24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
 from SRC1 and store result to VDST. Any modifier doesn't affect to result.  
@@ -675,7 +675,7 @@ VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)
 #### V_OR_B32
 
 Opcode: VOP2: 28 (0x1c) for GCN 1.0/1.1; 20 (0x14) for GCN 1.2  
-Opcode: VOP3a: 284 (0x11c) for GCN 1.0/1.1; 276 (0x114) for GCN 1.2  
+Opcode: VOP3A: 284 (0x11c) for GCN 1.0/1.1; 276 (0x114) for GCN 1.2  
 Syntax: V_OR_B32 VDST, SRC0, SRC1  
 Description: Do bitwise OR operation on SRC0 and SRC1, store result to VDST.
 CLAMP and OMOD modifier doesn't affect on result.  
@@ -687,7 +687,7 @@ VDST = SRC0 | SRC1
 #### V_READLANE_B32
 
 Opcode VOP2: 1 (0x1) for GCN 1.0/1.1  
-Opcode VOP3a: 257 (0x101) for GCN 1.0/1.1  
+Opcode VOP3A: 257 (0x101) for GCN 1.0/1.1  
 Syntax: V_READLANE_B32 SDST, VSRC0, SSRC1  
 Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) choosen from SSRC1&63.
 SSRC1 can be SGPR or M0. Ignores EXEC mask.  
@@ -699,7 +699,7 @@ SDST = VSRC0[SSRC1 & 63]
 #### V_SUB_F32
 
 Opcode VOP2: 4 (0x4) for GCN 1.0/1.1; 2 (0x2) for GCN 1.2  
-Opcode VOP3a: 260 (0x104) for GCN 1.0/1.1; 258 (0x102) for GCN 1.2  
+Opcode VOP3A: 260 (0x104) for GCN 1.0/1.1; 258 (0x102) for GCN 1.2  
 Syntax: V_SUB_F32 VDST, SRC0, SRC1  
 Description: Subtract FP value of SRC1 from FP value of SRC0 and store result to VDST.  
 Operation:  
@@ -710,11 +710,11 @@ VDST = ASFLOAT(SRC0) - ASFLOAT(SRC1)
 #### V_SUB_I32, V_SUB_U32
 
 Opcode VOP2: 38 (0x26) for GCN 1.0/1.1; 26 (0x1a) for GCN 1.2  
-Opcode VOP3b: 294 (0x126) for GCN 1.0/1.1; 282 (0x11a) for GCN 1.2  
+Opcode VOP3B: 294 (0x126) for GCN 1.0/1.1; 282 (0x11a) for GCN 1.2  
 Syntax VOP2 GCN 1.0/1.1: V_SUB_I32 VDST, VCC, SRC0, SRC1  
-Syntax VOP3b GCN 1.0/1.1: V_SUB_I32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP3B GCN 1.0/1.1: V_SUB_I32 VDST, SDST(2), SRC0, SRC1  
 Syntax VOP2 GCN 1.2: V_SUB_U32 VDST, VCC, SRC0, SRC1  
-Syntax VOP3b GCN 1.2: V_SUB_U32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP3B GCN 1.2: V_SUB_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Subtract SRC1 from SRC0 and store result to VDST and store borrow flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.  
 Operation:  
@@ -728,9 +728,9 @@ SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 #### V_SUBB_U32
 
 Opcode VOP2: 41 (0x29) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
-Opcode VOP3b: 297 (0x129) for GCN 1.0/1.1; 285 (0x11d) for GCN 1.2  
+Opcode VOP3B: 297 (0x129) for GCN 1.0/1.1; 285 (0x11d) for GCN 1.2  
 Syntax VOP2 GCN 1.0/1.1: V_SUBB_U32 VDST, VCC, SRC0, SRC1, VCC  
-Syntax VOP3b GCN 1.2: V_SUBB_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Syntax VOP3B GCN 1.2: V_SUBB_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
 Description: Subtract SRC1 with borrow from SRC0,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
@@ -747,9 +747,9 @@ SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 #### V_SUBBREV_U32
 
 Opcode VOP2: 42 (0x2a) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
-Opcode VOP3b: 298 (0x12a) for GCN 1.0/1.1; 286 (0x11e) for GCN 1.2  
+Opcode VOP3B: 298 (0x12a) for GCN 1.0/1.1; 286 (0x11e) for GCN 1.2  
 Syntax VOP2 GCN 1.0/1.1: V_SUBBREV_U32 VDST, VCC, SRC0, SRC1, VCC  
-Syntax VOP3b GCN 1.2: V_SUBBREV_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
+Syntax VOP3B GCN 1.2: V_SUBBREV_U32 VDST, SDST(2), SRC0, SRC1, SSRC2(2)  
 Description: Subtract SRC0 with borrow from SRC1,
 and store result to VDST and store carry flag to SDST (or VCC) bit with number
 that equal to lane id. Borrow is stored in SSRC2 bit with number of lane id.
@@ -766,7 +766,7 @@ SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 #### V_SUBREV_F32
 
 Opcode VOP2: 5 (0x5) for GCN 1.0/1.1; 2 (0x3) for GCN 1.2  
-Opcode VOP3a: 261 (0x105) for GCN 1.0/1.1; 259 (0x103) for GCN 1.2  
+Opcode VOP3A: 261 (0x105) for GCN 1.0/1.1; 259 (0x103) for GCN 1.2  
 Syntax: V_SUBREV_F32 VDST, SRC0, SRC1  
 Description: Subtract FP value of SRC0 from FP value of SRC1 and store result to VDST.  
 Operation:  
@@ -777,11 +777,11 @@ VDST = ASFLOAT(SRC1) - ASFLOAT(SRC0)
 #### V_SUBREV_I32, V_SUBREV_U32
 
 Opcode VOP2: 39 (0x27) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
-Opcode VOP3b: 295 (0x127) for GCN 1.0/1.1; 283 (0x11b) for GCN 1.2  
+Opcode VOP3B: 295 (0x127) for GCN 1.0/1.1; 283 (0x11b) for GCN 1.2  
 Syntax VOP2 GCN 1.0/1.1: V_SUBREV_I32 VDST, VCC, SRC0, SRC1  
-Syntax VOP3b GCN 1.0/1.1: V_SUBREV_I32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP3B GCN 1.0/1.1: V_SUBREV_I32 VDST, SDST(2), SRC0, SRC1  
 Syntax VOP2 GCN 1.2: V_SUBREV_U32 VDST, VCC, SRC0, SRC1  
-Syntax VOP3b GCN 1.2: V_SUBREV_U32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP3B GCN 1.2: V_SUBREV_U32 VDST, SDST(2), SRC0, SRC1  
 Description: Subtract SRC0 from SRC1 and store result to VDST and store borrow flag to
 SDST (or VCC) bit with number that equal to lane id. SDST is 64-bit.  
 Operation:  
@@ -795,7 +795,7 @@ SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 #### V_XOR_B32
 
 Opcode: VOP2: 29 (0x1d) for GCN 1.0/1.1; 21 (0x15) for GCN 1.2  
-Opcode: VOP3a: 285 (0x11d) for GCN 1.0/1.1; 277 (0x115) for GCN 1.2  
+Opcode: VOP3A: 285 (0x11d) for GCN 1.0/1.1; 277 (0x115) for GCN 1.2  
 Syntax: V_XOR_B32 VDST, SRC0, SRC1  
 Description: Do bitwise XOR operation on SRC0 and SRC1, store result to VDST.
 CLAMP and OMOD modifier doesn't affect on result.  
@@ -807,7 +807,7 @@ VDST = SRC0 ^ SRC1
 #### V_WRITELANE_B32
 
 Opcode VOP2: 2 (0x2) for GCN 1.0/1.1  
-Opcode VOP3a: 258 (0x102) for GCN 1.0/1.1  
+Opcode VOP3A: 258 (0x102) for GCN 1.0/1.1  
 Syntax: V_WRITELANE_B32 VDST, VSRC0, SSRC1  
 Description: Copy SGPR to one lane of VDST. Lane choosen (thread id) from SSRC1&63.
 SSRC1 can be SGPR or M0. Ignores EXEC mask.  
