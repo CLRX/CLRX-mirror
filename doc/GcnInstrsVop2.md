@@ -70,60 +70,60 @@ source operands
 VOP2 opcodes (0-63) are reflected in VOP3 in range: 256-319.
 List of the instructions by opcode:
 
- Opcode     | Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)
-------------|----------------------|------------------------
- 0 (0x0)    | V_CNDMASK_B32        | V_CNDMASK_B32
- 1 (0x1)    | V_READLANE_B32       | V_ADD_F32
- 2 (0x2)    | V_WRITELANE_B32      | V_SUB_F32
- 3 (0x3)    | V_ADD_F32            | V_SUBREV_F32
- 4 (0x4)    | V_SUB_F32            | V_MUL_LEGACY_F32
- 5 (0x5)    | V_SUBREV_F32         | V_MUL_F32
- 6 (0x6)    | V_MAC_LEGACY_F32     | V_MUL_I32_I24
- 7 (0x7)    | V_MUL_LEGACY_F32     | V_MUL_HI_I32_I24
- 8 (0x8)    | V_MUL_F32            | V_MUL_U32_U24
- 9 (0x9)    | V_MUL_I32_I24        | V_MUL_HI_U32_U24
- 10 (0xa)   | V_MUL_HI_I32_I24     | V_MIN_F32
- 11 (0xb)   | V_MUL_U32_U24        | V_MAX_F32
- 12 (0xc)   | V_MUL_HI_U32_U24     | V_MIN_I32
- 13 (0xd)   | V_MIN_LEGACY_F32     | V_MAX_I32
- 14 (0xe)   | V_MAX_LEGACY_F32     | V_MIN_U32
- 15 (0xf)   | V_MIN_F32            | V_MAX_U32
- 16 (0x10)  | V_MAX_F32            | V_LSHRREV_B32
- 17 (0x11)  | V_MIN_I32            | V_ASHRREV_I32
- 18 (0x12)  | V_MAX_I32            | V_LSHLREV_B32
- 19 (0x13)  | V_MIN_U32            | V_AND_B32
- 20 (0x14)  | V_MAX_U32            | V_OR_B32
- 21 (0x15)  | V_LSHR_B32           | V_XOR_B32
- 22 (0x16)  | V_LSHRREV_B32        | V_MAC_F32
- 23 (0x17)  | V_ASHR_I32           | V_MADMK_F32
- 24 (0x18)  | V_ASHRREV_I32        | V_MADAK_F32
- 25 (0x19)  | V_LSHL_B32           | V_ADD_U32
- 26 (0x1a)  | V_LSHLREV_B32        | V_SUB_U32
- 27 (0x1b)  | V_AND_B32            | V_SUBREV_U32
- 28 (0x1c)  | V_OR_B32             | V_ADDC_U32
- 29 (0x1d)  | V_XOR_B32            | V_SUBB_U32
- 30 (0x1e)  | V_BFM_B32            | V_SUBBREV_U32
- 31 (0x1f)  | V_MAC_F32            | V_ADD_F16
- 32 (0x20)  | V_MADMK_F32          | V_SUB_F16
- 33 (0x21)  | V_MADAK_F32          | V_SUBREV_F16
- 34 (0x22)  | V_BCNT_U32_B32       | V_MUL_F16
- 35 (0x23)  | V_MBCNT_LO_U32_B32   | V_MAC_F16
- 36 (0x24)  | V_MBCNT_HI_U32_B32   | V_MADMK_F16
- 37 (0x25)  | V_ADD_I32            | V_MADAK_F16
- 38 (0x26)  | V_SUB_I32            | V_ADD_U16
- 39 (0x27)  | V_SUBREV_I32         | V_SUB_U16
- 40 (0x28)  | V_ADDC_U32           | V_SUBREV_U16
- 41 (0x29)  | V_SUBB_U32           | V_MUL_LO_U16
- 42 (0x2a)  | V_SUBBREV_U32        | V_LSHLREV_B16
- 43 (0x2b)  | V_LDEXP_F32          | V_LSHRREV_B16
- 44 (0x2c)  | V_CVT_PKACCUM_U8_F32 | V_ASHRREV_I16
- 45 (0x2d)  | V_CVT_PKNORM_I16_F32 | V_MAX_F16
- 46 (0x2e)  | V_CVT_PKNORM_U16_F32 | V_MIN_F16
- 47 (0x2f)  | V_CVT_PKRTZ_F16_F32  | V_MAX_U16
- 48 (0x30)  | V_CVT_PK_U16_U32     | V_MAX_I16
- 49 (0x31)  | V_CVT_PK_I16_I32     | V_MIN_U16
- 50 (0x32)  | --                   | V_MIN_I16
- 51 (0x33)  | --                   | V_LDEXP_F16
+ Opcode     | Opcode(VOP3)| Mnemonic (GCN1.0/1.1) | Mnemonic (GCN 1.2)
+------------|-------------|----------------------|------------------------
+ 0 (0x0)    | 256 (0x100) | V_CNDMASK_B32        | V_CNDMASK_B32
+ 1 (0x1)    | 257 (0x101) | V_READLANE_B32       | V_ADD_F32
+ 2 (0x2)    | 258 (0x102) | V_WRITELANE_B32      | V_SUB_F32
+ 3 (0x3)    | 259 (0x103) | V_ADD_F32            | V_SUBREV_F32
+ 4 (0x4)    | 260 (0x104) | V_SUB_F32            | V_MUL_LEGACY_F32
+ 5 (0x5)    | 261 (0x105) | V_SUBREV_F32         | V_MUL_F32
+ 6 (0x6)    | 262 (0x106) | V_MAC_LEGACY_F32     | V_MUL_I32_I24
+ 7 (0x7)    | 263 (0x107) | V_MUL_LEGACY_F32     | V_MUL_HI_I32_I24
+ 8 (0x8)    | 264 (0x108) | V_MUL_F32            | V_MUL_U32_U24
+ 9 (0x9)    | 265 (0x109) | V_MUL_I32_I24        | V_MUL_HI_U32_U24
+ 10 (0xa)   | 266 (0x10a) | V_MUL_HI_I32_I24     | V_MIN_F32
+ 11 (0xb)   | 267 (0x10b) | V_MUL_U32_U24        | V_MAX_F32
+ 12 (0xc)   | 268 (0x10c) | V_MUL_HI_U32_U24     | V_MIN_I32
+ 13 (0xd)   | 269 (0x10d) | V_MIN_LEGACY_F32     | V_MAX_I32
+ 14 (0xe)   | 270 (0x10e) | V_MAX_LEGACY_F32     | V_MIN_U32
+ 15 (0xf)   | 271 (0x10f) | V_MIN_F32            | V_MAX_U32
+ 16 (0x10)  | 272 (0x110) | V_MAX_F32            | V_LSHRREV_B32
+ 17 (0x11)  | 273 (0x111) | V_MIN_I32            | V_ASHRREV_I32
+ 18 (0x12)  | 274 (0x112) | V_MAX_I32            | V_LSHLREV_B32
+ 19 (0x13)  | 275 (0x113) | V_MIN_U32            | V_AND_B32
+ 20 (0x14)  | 276 (0x114) | V_MAX_U32            | V_OR_B32
+ 21 (0x15)  | 277 (0x115) | V_LSHR_B32           | V_XOR_B32
+ 22 (0x16)  | 278 (0x116) | V_LSHRREV_B32        | V_MAC_F32
+ 23 (0x17)  | 279 (0x117) | V_ASHR_I32           | V_MADMK_F32
+ 24 (0x18)  | 280 (0x118) | V_ASHRREV_I32        | V_MADAK_F32
+ 25 (0x19)  | 281 (0x119) | V_LSHL_B32           | V_ADD_U32
+ 26 (0x1a)  | 282 (0x11a) | V_LSHLREV_B32        | V_SUB_U32
+ 27 (0x1b)  | 283 (0x11b) | V_AND_B32            | V_SUBREV_U32
+ 28 (0x1c)  | 284 (0x11c) | V_OR_B32             | V_ADDC_U32
+ 29 (0x1d)  | 285 (0x11d) | V_XOR_B32            | V_SUBB_U32
+ 30 (0x1e)  | 286 (0x11e) | V_BFM_B32            | V_SUBBREV_U32
+ 31 (0x1f)  | 287 (0x11f) | V_MAC_F32            | V_ADD_F16
+ 32 (0x20)  | 288 (0x120) | V_MADMK_F32          | V_SUB_F16
+ 33 (0x21)  | 289 (0x121) | V_MADAK_F32          | V_SUBREV_F16
+ 34 (0x22)  | 290 (0x122) | V_BCNT_U32_B32       | V_MUL_F16
+ 35 (0x23)  | 291 (0x123) | V_MBCNT_LO_U32_B32   | V_MAC_F16
+ 36 (0x24)  | 292 (0x124) | V_MBCNT_HI_U32_B32   | V_MADMK_F16
+ 37 (0x25)  | 293 (0x125) | V_ADD_I32            | V_MADAK_F16
+ 38 (0x26)  | 294 (0x126) | V_SUB_I32            | V_ADD_U16
+ 39 (0x27)  | 295 (0x127) | V_SUBREV_I32         | V_SUB_U16
+ 40 (0x28)  | 296 (0x128) | V_ADDC_U32           | V_SUBREV_U16
+ 41 (0x29)  | 297 (0x129) | V_SUBB_U32           | V_MUL_LO_U16
+ 42 (0x2a)  | 298 (0x12a) | V_SUBBREV_U32        | V_LSHLREV_B16
+ 43 (0x2b)  | 299 (0x12b) | V_LDEXP_F32          | V_LSHRREV_B16
+ 44 (0x2c)  | 300 (0x12c) | V_CVT_PKACCUM_U8_F32 | V_ASHRREV_I16
+ 45 (0x2d)  | 301 (0x12d) | V_CVT_PKNORM_I16_F32 | V_MAX_F16
+ 46 (0x2e)  | 302 (0x12e) | V_CVT_PKNORM_U16_F32 | V_MIN_F16
+ 47 (0x2f)  | 303 (0x12f) | V_CVT_PKRTZ_F16_F32  | V_MAX_U16
+ 48 (0x30)  | 304 (0x130) | V_CVT_PK_U16_U32     | V_MAX_I16
+ 49 (0x31)  | 305 (0x131) | V_CVT_PK_I16_I32     | V_MIN_U16
+ 50 (0x32)  | 306 (0x132) | --                   | V_MIN_I16
+ 51 (0x33)  | 307 (0x133) | --                   | V_LDEXP_F16
 
 ### Instruction set
 
@@ -478,8 +478,8 @@ VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 
 #### V_MAX_I32
 
-Opcode VOP2: 18 (0x12) for GCN 1.0/1.1; 11 (0xd) for GCN 1.2  
-Opcode VOP3a: 274 (0x112) for GCN 1.0/1.1; 267 (0x10d) for GCN 1.2  
+Opcode VOP2: 18 (0x12) for GCN 1.0/1.1; 13 (0xd) for GCN 1.2  
+Opcode VOP3a: 274 (0x112) for GCN 1.0/1.1; 269 (0x10d) for GCN 1.2  
 Syntax: V_MAX_I32 VDST, SRC0, SRC1  
 Description: Choose largest signed value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
@@ -505,8 +505,8 @@ else
 
 #### V_MAX_U32
 
-Opcode VOP2: 20 (0x14) for GCN 1.0/1.1; 13 (0xf) for GCN 1.2  
-Opcode VOP3a: 276 (0x114) for GCN 1.0/1.1; 269 (0x10f) for GCN 1.2  
+Opcode VOP2: 20 (0x14) for GCN 1.0/1.1; 15 (0xf) for GCN 1.2  
+Opcode VOP3a: 276 (0x114) for GCN 1.0/1.1; 271 (0x10f) for GCN 1.2  
 Syntax: V_MAX_U32 VDST, SRC0, SRC1  
 Description: Choose largest unsigned value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
