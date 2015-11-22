@@ -559,7 +559,7 @@ SCC = SDST!=0
 
 Opcode: 5 (0x5)  
 Syntax: S_SUBB_U32 SDST, SSRC0, SSRC1  
-Descrition: Subtract SSRC0 to SSRC1 with SCC value and store result into SDST and store
+Descrition: Subtract SSRC1 with SCC from SSRC0 value and store result into SDST and store
 carry-out flag into SCC.  
 Operation:  
 ```
