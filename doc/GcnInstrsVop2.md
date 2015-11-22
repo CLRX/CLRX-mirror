@@ -181,7 +181,7 @@ SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 Opcode: VOP2: 27 (0x1b) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
 Opcode: VOP3a: 283 (0x11b) for GCN 1.0/1.1; 275 (0x113) for GCN 1.2  
 Syntax: V_AND_B32 VDST, SRC0, SRC1  
-Description: Do bitwise AND on SRC0 and SRC1 and store result to VDST.
+Description: Do bitwise AND on SRC0 and SRC1, store result to VDST.
 CLAMP and OMOD modifier doesn't affect on result.  
 Operation:  
 ```
@@ -618,11 +618,11 @@ Operation:
 VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
 ```
 
-#### V_MUL_HI_I32_24
+#### V_MUL_HI_I32_I24
 
 Opcode VOP2: 10 (0xa) for GCN 1.0/1.1; 7 (0x7) for GCN 1.2  
 Opcode VOP3a: 266 (0x10a) for GCN 1.0/1.1; 263 (0x107) for GCN 1.2  
-Syntax: V_MUL_HI_I32_24 VDST, SRC0, SRC1  
+Syntax: V_MUL_HI_I32_I24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1
 and store higher 16-bit of the result to VDST with sign extension.
 Any modifier doesn't affect on result.  
@@ -677,7 +677,7 @@ VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)
 Opcode: VOP2: 28 (0x1c) for GCN 1.0/1.1; 20 (0x14) for GCN 1.2  
 Opcode: VOP3a: 284 (0x11c) for GCN 1.0/1.1; 276 (0x114) for GCN 1.2  
 Syntax: V_OR_B32 VDST, SRC0, SRC1  
-Description: Do bitwise OR operation on SRC0 and SRC1 and store result to VDST.
+Description: Do bitwise OR operation on SRC0 and SRC1, store result to VDST.
 CLAMP and OMOD modifier doesn't affect on result.  
 Operation:  
 ```
@@ -744,17 +744,6 @@ VDST = temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
-#### V_SUBREV_F32
-
-Opcode VOP2: 5 (0x5) for GCN 1.0/1.1; 2 (0x3) for GCN 1.2  
-Opcode VOP3a: 261 (0x105) for GCN 1.0/1.1; 259 (0x103) for GCN 1.2  
-Syntax: V_SUBREV_F32 VDST, SRC0, SRC1  
-Description: Subtract FP value of SRC0 from FP value of SRC1 and store result to VDST.  
-Operation:  
-```
-VDST = ASFLOAT(SRC1) - ASFLOAT(SRC0)
-```
-
 #### V_SUBBREV_U32
 
 Opcode VOP2: 42 (0x2a) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
@@ -772,6 +761,17 @@ UINT8 CC = ((SSRC2&mask) ? 1 : 0)
 UINT64 temp = (UINT64)SRC1 - (UINT64)SRC0 - CC
 VDST = temp
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
+```
+
+#### V_SUBREV_F32
+
+Opcode VOP2: 5 (0x5) for GCN 1.0/1.1; 2 (0x3) for GCN 1.2  
+Opcode VOP3a: 261 (0x105) for GCN 1.0/1.1; 259 (0x103) for GCN 1.2  
+Syntax: V_SUBREV_F32 VDST, SRC0, SRC1  
+Description: Subtract FP value of SRC0 from FP value of SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = ASFLOAT(SRC1) - ASFLOAT(SRC0)
 ```
 
 #### V_SUBREV_I32, V_SUBREV_U32
@@ -796,8 +796,8 @@ SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 
 Opcode: VOP2: 29 (0x1d) for GCN 1.0/1.1; 21 (0x15) for GCN 1.2  
 Opcode: VOP3a: 285 (0x11d) for GCN 1.0/1.1; 277 (0x115) for GCN 1.2  
-Syntax: V_OR_B32 VDST, SRC0, SRC1  
-Description: Do bitwise XOR operation on SRC0 and SRC1 and store result to VDST.
+Syntax: V_XOR_B32 VDST, SRC0, SRC1  
+Description: Do bitwise XOR operation on SRC0 and SRC1, store result to VDST.
 CLAMP and OMOD modifier doesn't affect on result.  
 Operation:  
 ```
