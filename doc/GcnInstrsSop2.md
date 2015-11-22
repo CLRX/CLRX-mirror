@@ -572,7 +572,7 @@ SCC = (temp>>32) & 1
 
 Opcode: 3 (0x3)  
 Syntax: S_SUB_I32 SDST, SSRC0, SSRC1  
-Description: Subtract SSRC0 to SSRC1 and store result into SDST and
+Description: Subtract SSRC1 from SSRC0 and store result into SDST and
 store overflow flag into SCC. SCC register value can be BROKEN for some
 architectures (GCN1.0)  
 Operation:  
@@ -586,7 +586,7 @@ SCC = temp > ((1LL<<31)-1) || temp < (-1LL<<31)
 
 Opcode: 1 (0x1)  
 Syntax: S_SUB_U32 SDST, SSRC0, SSRC1  
-Description: Subtract SSRC0 to SSRC1 and store result into SDST and store borrow into SCC.  
+Description: Subtract SSRC1 from SSRC0 and store result into SDST and store borrow into SCC.  
 Operation:  
 ```
 UINT64 temp = (UINT64)SSRC0 - (UINT64)SSRC1

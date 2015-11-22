@@ -155,7 +155,7 @@ Operation:
 UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1
 VDST = temp
 UINT64 mask = (1ULL<<LANEID)
-SDST = (SDST&~mask) | ((temp >> 32) ? MASK : 0)
+SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```
 
 #### V_AND_B32
@@ -565,10 +565,28 @@ SDST = VSRC0[SSRC1 & 63]
 Opcode VOP2: 4 (0x4) for GCN 1.0/1.1; 2 (0x2) for GCN 1.2  
 Opcode VOP3a: 260 (0x104) for GCN 1.0/1.1; 258 (0x102) for GCN 1.2  
 Syntax: V_SUB_F32 VDST, SRC0, SRC1  
-Description: Subtract FP value from SRC0 and FP value from SRC1 and store result to VDST.  
+Description: Subtract FP value of SRC1 from FP value of SRC0 and store result to VDST.  
 Operation:  
 ```
 VDST = (FLOAT)SRC0 - (FLOAT)SRC1
+```
+
+#### V_SUB_I32, V_SUB_U32
+
+Opcode VOP2: 38 (0x26) for GCN 1.0/1.1; 26 (0x1a) for GCN 1.2  
+Opcode VOP3b: 294 (0x126) for GCN 1.0/1.1; 282 (0x11a) for GCN 1.2  
+Syntax VOP2 GCN 1.0/1.1: V_SUB_I32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3b GCN 1.0/1.1: V_SUB_I32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP2 GCN 1.2: V_SUB_U32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3b GCN 1.2: V_SUB_U32 VDST, SDST(2), SRC0, SRC1  
+Description: Subtract SRC1 from SRC0 and store result to VDST and store borrow flag to
+SDST bit with number that equal to lane id. SDST is 64-bit.  
+Operation:  
+```
+UINT64 temp = (UINT64)SRC0 - (UINT64)SRC1
+VDST = temp
+UINT64 mask = (1ULL<<LANEID)
+SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 ```
 
 #### V_SUBREV_F32
@@ -576,10 +594,28 @@ VDST = (FLOAT)SRC0 - (FLOAT)SRC1
 Opcode VOP2: 5 (0x5) for GCN 1.0/1.1; 2 (0x3) for GCN 1.2  
 Opcode VOP3a: 261 (0x105) for GCN 1.0/1.1; 259 (0x103) for GCN 1.2  
 Syntax: V_SUBREV_F32 VDST, SRC0, SRC1  
-Description: Subtract FP value from SRC1 and FP value from SRC0 and store result to VDST.  
+Description: Subtract FP value of SRC0 from FP value of SRC1 and store result to VDST.  
 Operation:  
 ```
 VDST = (FLOAT)SRC1 - (FLOAT)SRC0
+```
+
+#### V_SUBREV_I32, V_SUBREV_U32
+
+Opcode VOP2: 39 (0x27) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
+Opcode VOP3b: 295 (0x127) for GCN 1.0/1.1; 283 (0x11b) for GCN 1.2  
+Syntax VOP2 GCN 1.0/1.1: V_SUBREV_I32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3b GCN 1.0/1.1: V_SUBREV_I32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP2 GCN 1.2: V_SUBREV_U32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3b GCN 1.2: V_SUBREV_U32 VDST, SDST(2), SRC0, SRC1  
+Description: Subtract SRC0 from SRC1 and store result to VDST and store borrow flag to
+SDST bit with number that equal to lane id. SDST is 64-bit.  
+Operation:  
+```
+UINT64 temp = (UINT64)SRC1 - (UINT64)SRC0
+VDST = temp
+UINT64 mask = (1ULL<<LANEID)
+SDST = (SDST&~mask) | ((temp>>32) ? mask : 0)
 ```
 
 #### V_XOR_B32
