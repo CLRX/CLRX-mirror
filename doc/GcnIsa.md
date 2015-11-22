@@ -33,6 +33,15 @@ Special functions:
 * BITCOUNT(v) - count 1's bits in value
 * REVBIT(v) - reverse bits (n bit goes to BITS-n-1 bit,
 where BITS is number bits in operand).
+* MIN(v1, v2) - return smallest value from two values
+* MAX(v1, v2) - return largest value from two values
+* ASHALF(v) - treat raw 16-bit integer value as IEEE half floating point value
+* ASFLOAT(v) - treat raw 32-bit integer value as IEEE floating point value
+* ASDOUBLE(v) - treat raw 32-bit integer value as IEEE double floating point value
+* ASINT16(v), ASINT32(v), ASINT64(v) - treat raw floating point value as signed integer
+* ASUINT16(v), ASUINT32(v), ASUINT64(v) - treat raw floating point value as unsigned integer
+* RNDINT(v) - round floating point value to integer with rounding mode from MODE register,
+    returns FP value
 
 By default, any register value is treated as unsigned integer.
 

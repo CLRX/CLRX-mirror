@@ -124,9 +124,7 @@ Description: Count zero bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = 0
-for (UINT8 i = 0; i < 32; i++)
-    SDST += ((1U<<i) & SSRC0) == 0
+SDST = BITCOUNT(~SSRC0)
 SCC = SDST!=0
 ```
 
@@ -138,9 +136,7 @@ Description: Count zero bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC. SSRC0 is 64-bit.  
 Operation:  
 ```
-SDST = 0
-for (UINT8 i = 0; i < 64; i++)
-    SDST += ((1ULL<<i) & SSRC0) == 0
+SDST = BITCOUNT(~SSRC0)
 SCC = SDST!=0
 ```
 
@@ -152,9 +148,7 @@ Description: Count one bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = 0
-for (UINT8 i = 0; i < 32; i++)
-    SDST += ((1U<<i) & SSRC0) != 0
+SDST = SDST(SSRC0)
 SCC = SDST!=0
 ```
 
@@ -166,9 +160,7 @@ Description: Count one bits in SSRC0 and store result to SDST.
 If result is non-zero, store 1 to SCC, otherwise store 0 to SCC. SSRC0 is 64-bit.  
 Operation:  
 ```
-SDST = 0
-for (UINT8 i = 0; i < 64; i++)
-    SDST += ((1ULL<<i) & SSRC0) != 0
+SDST = BITCOUNT(SSRC0)
 SCC = SDST!=0
 ```
 

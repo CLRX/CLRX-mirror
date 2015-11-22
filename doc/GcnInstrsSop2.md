@@ -408,7 +408,7 @@ Description: Choose largest signed value value from SSRC0 and SSRC1 and store
 its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = (INT32)SSRC0 > (INT32)SSRC1 ? SSRC0 : SSRC1
+SDST = MAX((INT32)SSRC0, (INT32)SSRC1)
 SCC = (INT32)SSRC0 > (INT32)SSRC1
 ```
 
@@ -420,7 +420,7 @@ Description: Choose largest unsigned value value from SSRC0 and SSRC1 and store
 its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = SSRC0 > SSRC1 ? SSRC0 : SSRC1
+SDST = MAX(SSRC0, SSRC1)
 SCC = SSRC0 > SSRC1
 ```
 
@@ -432,7 +432,7 @@ Description: Choose smallest signed value value from SSRC0 and SSRC1 and store
 its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = (INT32)SSRC0 < (INT32)SSRC1 ? SSRC0 : SSRC1
+SDST = MIN((INT32)SSRC0, (INT32)SSRC1)
 SCC = (INT32)SSRC0 < (INT32)SSRC1
 ```
 
@@ -444,7 +444,7 @@ Description: Choose smallest unsigned value value from SSRC0 and SSRC1 and store
 its into SDST, and store 1 to SCC if SSRC0 value was choosen, otherwise store 0 to SCC.  
 Operation:  
 ```
-SDST = SSRC0 < SSRC1 ? SSRC0 : SSRC1
+SDST = MIN(SSRC0, SSRC1)
 SCC = SSRC0 < SSRC1
 ```
 

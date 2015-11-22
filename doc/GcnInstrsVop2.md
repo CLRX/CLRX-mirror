@@ -137,7 +137,7 @@ Syntax: V_ADD_F32 VDST, SRC0, SRC1
 Description: Add two FP value from SRC0 and SRC1 and store result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC0 + (FLOAT)SRC1
+VDST = ASFLOAT(SRC0) + ASFLOAT(SRC1)
 ```
 
 #### V_ADD_I32, V_ADD_U32
@@ -218,9 +218,7 @@ Syntax: V_BCNT_U32_B32 VDST, SRC0, SRC1
 Description: Count bits in SRC0, adds SSRC1, and store result to VDST.  
 Operation:  
 ```
-VDST = SRC1
-for (UINT8 i = 0; i < 32; i++)
-    VDST += ((1U<<i) & SRC0) != 0
+VDST = SRC1 + BITCOUNT(SRC0)
 ```
 
 #### V_BFM_B32
@@ -238,7 +236,7 @@ VDST = ((1U << (SRC0&31))-1) << (SRC1&31)
 #### V_CNDMASK_B32
 
 Opcode VOP2: 0 (0x0) for GCN 1.0/1.1; 1 (0x0) for GCN 1.2  
-Opcode VOP3a: 259 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2  
+Opcode VOP3a: 256 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2  
 Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC  
 Syntax VOP3a: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
 Description: If bit for current lane of VCC or SDST is set then store SRC1 to VDST,
@@ -246,6 +244,130 @@ otherwise store SRC0 to VDST. CLAMP and OMOD modifier doesn't affect on result.
 Operation:  
 ```
 VDST = SSRC2&(1ULL<<LANEID) ? SRC1 : SRC0
+```
+
+#### V_CVT_PKACCUM_U8_F32
+
+Opcode VOP2: 44 (0x2c) for GCN 1.0/1.1  
+Opcode VOP3a: 300 (0x12c) for GCN 1.0/1.1  
+Syntax: V_CVT_PKACCUM_U8_F32 VDST, SRC0, SRC1  
+Description: Convert floating point value from SRC0 to unsigned byte value with
+rounding mode from MODE register, and store this byte to (SRC1&3)'th byte of VDST.  
+Operation:  
+```
+UINT8 byte = ((SRC1&3) * 8)
+UINT32 mask = 0xff << byte
+UINT8 VAL8 = 0
+FLOAT f = RNDINT(ASFLOAT(SRC0))
+if (f > 255.0)
+    VAL8 = 255
+else if (f < 0.0 || f == NaN)
+    VAL8 = 0
+else
+    VAL8 = f
+VDST = (VDST&~mask) | (((UINT32)VAL8) << byte)
+```
+
+#### V_CVT_PKNORM_I16_F32
+
+Opcode VOP2: 45 (0x2d) for GCN 1.0/1.1  
+Opcode VOP3a: 301 (0x12d) for GCN 1.0/1.1  
+Syntax: V_CVT_PKNORM_I16_F32 VDST, SRC0, SRC1  
+Description: Convert normalized FP value from SRC0 and SRC1 to signed 16-bit integers with
+rounding to nearest to even (??), and store first value to low 16-bit and
+second to high 16-bit of the VDST.  
+Operation:  
+```
+INT16 roundNorm(FLOAT S)
+{
+    FLOAT f = RNDNEINT(S*32767)
+    if (f > 32767.0)
+         return 0x7fff
+    else if (f < -32767.0)
+        return -0x7fff
+    else if (f == NaN)
+        return 0
+    return (INT16)f
+}
+VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
+```
+
+#### V_CVT_PKNORM_U16_F32
+
+Opcode VOP2: 46 (0x2e) for GCN 1.0/1.1  
+Opcode VOP3a: 302 (0x12e) for GCN 1.0/1.1  
+Syntax: V_CVT_PKNORM_U16_F32 VDST, SRC0, SRC1  
+Description: Convert normalized FP value from SRC0 and SRC1 to unsigned 16-bit integers with
+rounding to nearest to even (??), and store first value to low 16-bit and
+second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 roundNorm(FLOAT S)
+{
+    FLOAT f = RNDNEINT(S*65535.0)
+    INT16 VAL16 = 0
+    if (f > 65535.0)
+        return 0x7fff
+    else if (f < 0.0 || f == NaN)
+        return 0
+    return (UINT16)f
+}
+VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
+```
+
+#### V_CVT_PKRTZ_F16_F32
+
+Opcode VOP2: 43 (0x2f) for GCN 1.0/1.1  
+Opcode VOP3a: 303 (0x12f) for GCN 1.0/1.1  
+Syntax: V_CVT_PKRTZ_F16_F32 VDST, SRC0, SRC1  
+Description: Convert normalized FP value from SRC0 and SRC1 to half floating points with
+rounding to zero, and store first value to low 16-bit and
+second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 D0 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC0)))
+UINT16 D1 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC1)))
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
+#### V_CVT_PK_U16_U32
+
+Opcode VOP2: 44 (0x30) for GCN 1.0/1.1  
+Opcode VOP3a: 304 (0x130) for GCN 1.0/1.1  
+Syntax: V_CVT_PK_U16_U32 VDST, SRC0, SRC1  
+Description: Convert unsigned value from SRC0 and SRC1 to unsigned 16-bit values with
+clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 D0 = MIN(SRC0, 0xffff)
+UINT16 D1 = MIN(SRC1, 0xffff)
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
+#### V_CVT_PK_I16_I32
+
+Opcode VOP2: 45 (0x31) for GCN 1.0/1.1  
+Opcode VOP3a: 305 (0x131) for GCN 1.0/1.1  
+Syntax: V_CVT_PK_I16_I32 VDST, SRC0, SRC1  
+Description: Convert signed value from SRC0 and SRC1 to signed 16-bit values with
+clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
+Operation:  
+```
+INT16 D0 = MAX(MIN((INT32)SRC0, 0x7fff), -0x8000) 
+INT16 D1 = MAX(MIN((INT32)SRC1, 0x7fff), -0x8000)
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
+#### V_LDEXP_F32
+
+Opcode VOP2: 43 (0x2b) for GCN 1.0/1.1  
+Opcode VOP3a: 299 (0x12b) for GCN 1.0/1.1  
+Syntax: V_LDEXP_F32 VDST, SRC0, SRC1  
+Description: Do ldexp operation on SRC0 and SRC1 (multiply SRC0 by 2**(SRC1)).
+SRC1 is signed integer, SRC0 is floating point value.  
+Operation:  
+```
+VDST = ASFLOAT(SRC0) * POW(2.0,SRC1)
 ```
 
 #### V_LSHL_B32
@@ -300,7 +422,7 @@ Syntax: V_MAC_F32 VDST, SRC0, SRC1
 Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)VDST
+VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
 ```
 
 #### V_MAC_LEGACY_F32
@@ -312,8 +434,8 @@ Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to
 If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).  
 Operation:  
 ```
-if ((FLOAT)SRC0!=0.0 && (FLOAT)SRC1!=0.0)
-    VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)VDST
+if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
+    VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
 ```
 
 #### V_MADMK_F32
@@ -326,7 +448,7 @@ FP value from SRC1; and store result to VDST. Constant literal follows
 after instruction word.  
 Operation:
 ```
-VDST = (FLOAT)SRC0 * (FLOAT)FLOATLIT + (FLOAT)SRC1
+VDST = ASFLOAT(SRC0) * ASFLOAT(FLOATLIT) + ASFLOAT(SRC1)
 ```
 
 #### V_MADAK_F32
@@ -339,7 +461,7 @@ the constant literal FLOATLIT; and store result to VDST. Constant literal follow
 after instruction word.  
 Operation:
 ```
-VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)FLOATLIT
+VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(FLOATLIT)
 ```
 
 #### V_MAX_F32
@@ -351,7 +473,7 @@ Description: Choose largest floating point value from SRC0 and SRC1,
 and store result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC0>(FLOAT)SRC1 ? (FLOAT)SRC0 : (FLOAT)SRC1
+VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 ```
 
 #### V_MAX_I32
@@ -362,7 +484,7 @@ Syntax: V_MAX_I32 VDST, SRC0, SRC1
 Description: Choose largest signed value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
 ```
-VDST = (INT32)SRC0>(INT32)SRC1 ? SRC0 : SRC1
+VDST = MAX((INT32)SRC0, (INT32)SRC1)
 ```
 
 #### V_MAX_LEGACY_F32
@@ -375,8 +497,8 @@ and store result to VDST. If SSRC1 is NaN value then store NaN value to VDST
 (legacy rules for handling NaNs).  
 Operation:  
 ```
-if ((FLOAT)SRC1!=NaN)
-    VDST = (FLOAT)SRC0>(FLOAT)SRC1 ? (FLOAT)SRC0 : (FLOAT)SRC1
+if (ASFLOAT(SRC1)!=NaN)
+    VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 else
     VDST = NaN
 ```
@@ -389,7 +511,7 @@ Syntax: V_MAX_U32 VDST, SRC0, SRC1
 Description: Choose largest unsigned value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
 ```
-VDST = SRC0>SRC1 ? SRC0 : SRC1
+VDST = MAX(SRC0, SRC1)
 ```
 
 #### V_MBCNT_HI_U32_B32
@@ -403,9 +525,7 @@ count bits in that value, and store result to VDST.
 Operation:  
 ```
 UINT32 MASK = ((1ULL << (LANEID-32)) - 1ULL) & SRC0
-VDST = SRC1
-for (UINT8 i = 0; i < 32; i++)
-    VDST += ((1U<<i) & MASK) != 0
+VDST = SRC1 + BITCOUNT(MASK)
 ```
 
 #### V_MBCNT_LO_U32_B32
@@ -419,9 +539,7 @@ count bits in that value, and store result to VDST.
 Operation:  
 ```
 UINT32 MASK = ((1ULL << LANEID) - 1ULL) & SRC0
-VDST = SRC1
-for (UINT8 i = 0; i < 32; i++)
-    VDST += ((1U<<i) & MASK) != 0
+VDST = SRC1 + BITCOUNT(MASK)
 ```
 
 #### V_MIN_F32
@@ -433,7 +551,7 @@ Description: Choose smallest floating point value from SRC0 and SRC1,
 and store result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC0<(FLOAT)SRC1 ? (FLOAT)SRC0 : (FLOAT)SRC1
+VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
 ```
 
 #### V_MIN_I32
@@ -444,7 +562,7 @@ Syntax: V_MIN_I32 VDST, SRC0, SRC1
 Description: Choose smallest signed value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
 ```
-VDST = (INT32)SRC0<(INT32)SRC1 ? SRC0 : SRC1
+VDST = MIN((INT32)SRC0, (INT32)SRC1)
 ```
 
 #### V_MIN_LEGACY_F32
@@ -457,8 +575,8 @@ and store result to VDST. If SSRC1 is NaN value then store NaN value to VDST
 (legacy rules for handling NaNs).  
 Operation:  
 ```
-if ((FLOAT)SRC1!=NaN)
-    VDST = (FLOAT)SRC0<(FLOAT)SRC1 ? (FLOAT)SRC0 : (FLOAT)SRC1
+if (ASFLOAT(SRC1)!=NaN)
+    VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
 else
     VDST = NaN
 ```
@@ -471,7 +589,7 @@ Syntax: V_MIN_U32 VDST, SRC0, SRC1
 Description: Choose smallest unsigned value from SRC0 and SRC1, and store result to VDST.  
 Operation:  
 ```
-VDST = SRC0<SRC1 ? SRC0 : SRC1
+VDST = MIN(SRC0, SRC1)
 ```
 
 #### V_MUL_LEGACY_F32
@@ -483,8 +601,8 @@ Description: Multiply FP value from SRC0 by FP value from SRC1 and store result 
 If one of value is 0.0 then always store 0.0 to VDST (do not apply IEEE rules for 0.0*x).  
 Operation:  
 ```
-if ((FLOAT)SRC0!=0.0 && (FLOAT)SRC1!=0.0)
-    VDST = (FLOAT)SRC0 * (FLOAT)SRC1
+if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
+    VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
 else
     VDST = 0.0
 ```
@@ -497,7 +615,7 @@ Syntax: V_MUL_F32 VDST, SRC0, SRC1
 Description: Multiply FP value from SRC0 by FP value from SRC1 and store result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC0 * (FLOAT)SRC1
+VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
 ```
 
 #### V_MUL_HI_I32_24
@@ -586,7 +704,7 @@ Syntax: V_SUB_F32 VDST, SRC0, SRC1
 Description: Subtract FP value of SRC1 from FP value of SRC0 and store result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC0 - (FLOAT)SRC1
+VDST = ASFLOAT(SRC0) - ASFLOAT(SRC1)
 ```
 
 #### V_SUB_I32, V_SUB_U32
@@ -634,7 +752,7 @@ Syntax: V_SUBREV_F32 VDST, SRC0, SRC1
 Description: Subtract FP value of SRC0 from FP value of SRC1 and store result to VDST.  
 Operation:  
 ```
-VDST = (FLOAT)SRC1 - (FLOAT)SRC0
+VDST = ASFLOAT(SRC1) - ASFLOAT(SRC0)
 ```
 
 #### V_SUBBREV_U32
