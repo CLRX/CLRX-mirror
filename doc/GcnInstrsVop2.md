@@ -104,6 +104,26 @@ List of the instructions by opcode:
  29 (0x1d)  | V_XOR_B32            | V_SUBB_U32
  30 (0x1e)  | V_BFM_B32            | V_SUBBREV_U32
  31 (0x1f)  | V_MAC_F32            | V_ADD_F16
+ 32 (0x20)  | V_MADMK_F32          | V_SUB_F16
+ 33 (0x21)  | V_MADAK_F32          | V_SUBREV_F16
+ 34 (0x22)  | V_BCNT_U32_B32       | V_MUL_F16
+ 35 (0x23)  | V_MBCNT_LO_U32_B32   | V_MAC_F16
+ 36 (0x24)  | V_MBCNT_HI_U32_B32   | V_MADMK_F16
+ 37 (0x25)  | V_ADD_I32            | V_MADAK_F16
+ 38 (0x26)  | V_SUB_I32            | V_ADD_U16
+ 39 (0x27)  | V_SUBREV_I32         | V_SUB_U16
+ 40 (0x28)  | V_ADDC_U32           | V_SUBREV_U16
+ 41 (0x29)  | V_SUBB_U32           | V_MUL_LO_U16
+ 42 (0x2a)  | V_SUBBREV_U32        | V_LSHLREV_B16
+ 43 (0x2b)  | V_LDEXP_F32          | V_LSHRREV_B16
+ 44 (0x2c)  | V_CVT_PKACCUM_U8_F32 | V_ASHRREV_I16
+ 45 (0x2d)  | V_CVT_PKNORM_I16_F32 | V_MAX_F16
+ 46 (0x2e)  | V_CVT_PKNORM_U16_F32 | V_MIN_F16
+ 47 (0x2f)  | V_CVT_PKRTZ_F16_F32  | V_MAX_U16
+ 48 (0x30)  | V_CVT_PK_U16_U32     | V_MAX_I16
+ 49 (0x31)  | V_CVT_PK_I16_I32     | V_MIN_U16
+ 50 (0x32)  | --                   | V_MIN_I16
+ 51 (0x33)  | --                   | V_LDEXP_F16
 
 ### Instruction set
 
@@ -118,6 +138,24 @@ Description: Add two FP value from SRC0 and SRC1 and store result to VDST.
 Operation:  
 ```
 VDST = (FLOAT)SRC0 + (FLOAT)SRC1
+```
+
+#### V_ADD_I32, V_ADD_U32
+
+Opcode VOP2: 37 (0x25) for GCN 1.0/1.1; 25 (0x19) for GCN 1.2  
+Opcode VOP3b: 293 (0x125) for GCN 1.0/1.1; 281 (0x119) for GCN 1.2  
+Syntax VOP2 GCN 1.0/1.1: V_ADD_I32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3b GCN 1.0/1.1: V_ADD_I32 VDST, SDST(2), SRC0, SRC1  
+Syntax VOP2 GCN 1.2: V_ADD_U32 VDST, VCC, SRC0, SRC1  
+Syntax VOP3b GCN 1.2: V_ADD_U32 VDST, SDST(2), SRC0, SRC1  
+Description: Add SRC0 to SRC1 and store result to VDST and store carry flag to
+SDST bit with number that equal to lane id. SDST is 64-bit.  
+Operation:  
+```
+UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1
+VDST = temp
+UINT64 mask = (1ULL<<LANEID)
+SDST = (SDST&~mask) | ((temp >> 32) ? MASK : 0)
 ```
 
 #### V_AND_B32
@@ -154,17 +192,42 @@ Operation:
 VDST = (INT32)SRC1 >> (SRC0&31)
 ```
 
+#### V_BCNT_U32_B32
+
+Opcode VOP2: 34 (0x22) for GCN 1.0/1.1  
+Opcode VOP3a: 290 (0x122) for GCN 1.0/1.1  
+Syntax: V_BCNT_U32_B32 VDST, SRC0, SRC1  
+Description: Count bits in SRC0, adds SSRC1, and store result to VDST.  
+Operation:  
+```
+VDST = SRC1
+for (UINT8 i = 0; i < 32; i++)
+    VDST += ((1U<<i) & SRC0) != 0
+```
+
+#### V_BFM_B32
+
+Opcode VOP2: 30 (0x1e) for GCN 1.0/1.1  
+Opcode VOP3a: 286 (0x11e) for GCN 1.0/1.1  
+Syntax: V_BFM_B32 VDST, SRC0, SRC1  
+Description: Make 32-bit bitmask from (SRC1 & 31) bit that have length (SRC0 & 31) and
+store it to VDST.  
+Operation:  
+```
+VDST = ((1U << (SRC0&31))-1) << (SRC1&31)
+```
+
 #### V_CNDMASK_B32
 
 Opcode VOP2: 0 (0x0) for GCN 1.0/1.1; 1 (0x0) for GCN 1.2  
 Opcode VOP3a: 259 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2  
 Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC  
 Syntax VOP3a: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
-Description: If bit for current thread of VCC or SDST is set then store SRC1 to VDST,
+Description: If bit for current lane of VCC or SDST is set then store SRC1 to VDST,
 otherwise store SRC0 to VDST. CLAMP and OMOD modifier doesn't affect on result.  
 Operation:  
 ```
-VDST = SSRC2&(1ULL<<THREADID) ? SRC1 : SRC0
+VDST = SSRC2&(1ULL<<LANEID) ? SRC1 : SRC0
 ```
 
 #### V_LSHL_B32
@@ -235,6 +298,32 @@ if ((FLOAT)SRC0!=0.0 && (FLOAT)SRC1!=0.0)
     VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)VDST
 ```
 
+#### V_MADMK_F32
+
+Opcode: VOP2: 32 (0x20) for GCN 1.0/1.1; 23 (0x17) for GCN 1.2  
+Opcode: VOP3a: 288 (0x120) for GCN 1.0/1.1; 279 (0x117) for GCN 1.2  
+Syntax: V_MADMK_F32 VDST, SRC0, FLOATLIT, SRC1  
+Description: Multiply FP value from SRC0 with the constant literal FLOATLIT and add
+FP value from SRC1; and store result to VDST. Constant literal follows
+after instruction word.  
+Operation:
+```
+VDST = (FLOAT)SRC0 * (FLOAT)FLOATLIT + (FLOAT)SRC1
+```
+
+#### V_MADAK_F32
+
+Opcode: VOP2: 33 (0x21) for GCN 1.0/1.1; 24 (0x18) for GCN 1.2  
+Opcode: VOP3a: 289 (0x121) for GCN 1.0/1.1; 280 (0x118) for GCN 1.2  
+Syntax: V_MADAK_F32 VDST, SRC0, SRC1, FLOATLIT  
+Description: Multiply FP value from SRC0 with FP value from SRC1 and add
+the constant literal FLOATLIT; and store result to VDST. Constant literal follows
+after instruction word.  
+Operation:
+```
+VDST = (FLOAT)SRC0 * (FLOAT)SRC1 + (FLOAT)FLOATLIT
+```
+
 #### V_MAX_F32
 
 Opcode VOP2: 16 (0x10) for GCN 1.0/1.1; 11 (0xb) for GCN 1.2  
@@ -283,6 +372,38 @@ Description: Choose largest unsigned value from SRC0 and SRC1, and store result 
 Operation:  
 ```
 VDST = SRC0>SRC1 ? SRC0 : SRC1
+```
+
+#### V_MBCNT_HI_U32_B32
+
+Opcode VOP2: 36 (0x24) for GCN 1.0/1.1  
+Opcode VOP3a: 292 (0x124) for GCN 1.0/1.1  
+Syntax: V_MBCNT_HI_U32_B32 VDST, SRC0, SRC1  
+Description: Make mask for all lanes ending at current lane,
+get from that mask higher 32-bits, use it to mask SSRC0,
+count bits in that value, and store result to VDST.  
+Operation:  
+```
+UINT32 MASK = ((1ULL << (LANEID-32)) - 1ULL) & SRC0
+VDST = SRC1
+for (UINT8 i = 0; i < 32; i++)
+    VDST += ((1U<<i) & MASK) != 0
+```
+
+#### V_MBCNT_LO_U32_B32
+
+Opcode VOP2: 35 (0x23) for GCN 1.0/1.1  
+Opcode VOP3a: 291 (0x123) for GCN 1.0/1.1  
+Syntax: V_MBCNT_LO_U32_B32 VDST, SRC0, SRC1  
+Description: Make mask for all lanes ending at current lane,
+get from that mask lower 32-bits, use it to mask SSRC0,
+count bits in that value, and store result to VDST.  
+Operation:  
+```
+UINT32 MASK = ((1ULL << LANEID) - 1ULL) & SRC0
+VDST = SRC1
+for (UINT8 i = 0; i < 32; i++)
+    VDST += ((1U<<i) & MASK) != 0
 ```
 
 #### V_MIN_F32
@@ -439,18 +560,6 @@ Operation:
 SDST = VSRC0[SSRC1 & 63]
 ```
 
-#### V_WRITELANE_B32
-
-Opcode VOP2: 2 (0x2) for GCN 1.0/1.1  
-Opcode VOP3a: 258 (0x102) for GCN 1.0/1.1  
-Syntax: V_WRITELANE_B32 VDST, VSRC0, SSRC1  
-Description: Copy SGPR to one lane of VDST. Lane choosen (thread id) from SSRC1&63.
-SSRC1 can be SGPR or M0. Ignores EXEC mask.  
-Operation:  
-```
-VDST[SSRC1 & 63] = SSRC0
-```
-
 #### V_SUB_F32
 
 Opcode VOP2: 4 (0x4) for GCN 1.0/1.1; 2 (0x2) for GCN 1.2  
@@ -483,4 +592,16 @@ CLAMP and OMOD modifier doesn't affect on result.
 Operation:  
 ```
 VDST = SRC0 ^ SRC1
+```
+
+#### V_WRITELANE_B32
+
+Opcode VOP2: 2 (0x2) for GCN 1.0/1.1  
+Opcode VOP3a: 258 (0x102) for GCN 1.0/1.1  
+Syntax: V_WRITELANE_B32 VDST, VSRC0, SSRC1  
+Description: Copy SGPR to one lane of VDST. Lane choosen (thread id) from SSRC1&63.
+SSRC1 can be SGPR or M0. Ignores EXEC mask.  
+Operation:  
+```
+VDST[SSRC1 & 63] = SSRC0
 ```

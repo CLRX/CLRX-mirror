@@ -24,7 +24,7 @@ to similar C/C++ types:
 
 Special variables:
 
-* THREADID - identifier for current thread in wave
+* LANEID - identifier for current thread in wave
 
 Special functions:
 
