@@ -317,7 +317,7 @@ VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
 
 #### V_CVT_PKRTZ_F16_F32
 
-Opcode VOP2: 43 (0x2f) for GCN 1.0/1.1  
+Opcode VOP2: 47 (0x2f) for GCN 1.0/1.1  
 Opcode VOP3a: 303 (0x12f) for GCN 1.0/1.1  
 Syntax: V_CVT_PKRTZ_F16_F32 VDST, SRC0, SRC1  
 Description: Convert normalized FP value from SRC0 and SRC1 to half floating points with
@@ -332,7 +332,7 @@ VDST = D0 | (((UINT32)D1) << 16)
 
 #### V_CVT_PK_U16_U32
 
-Opcode VOP2: 44 (0x30) for GCN 1.0/1.1  
+Opcode VOP2: 48 (0x30) for GCN 1.0/1.1  
 Opcode VOP3a: 304 (0x130) for GCN 1.0/1.1  
 Syntax: V_CVT_PK_U16_U32 VDST, SRC0, SRC1  
 Description: Convert unsigned value from SRC0 and SRC1 to unsigned 16-bit values with
@@ -346,7 +346,7 @@ VDST = D0 | (((UINT32)D1) << 16)
 
 #### V_CVT_PK_I16_I32
 
-Opcode VOP2: 45 (0x31) for GCN 1.0/1.1  
+Opcode VOP2: 49 (0x31) for GCN 1.0/1.1  
 Opcode VOP3a: 305 (0x131) for GCN 1.0/1.1  
 Syntax: V_CVT_PK_I16_I32 VDST, SRC0, SRC1  
 Description: Convert signed value from SRC0 and SRC1 to signed 16-bit values with
