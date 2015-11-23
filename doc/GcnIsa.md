@@ -55,5 +55,6 @@ By default, any register value is treated as unsigned integer.
 * [SOPP instructions](GcnInstrsSopp)
 * [SMRD instructions](GcnInstrsSmrd)
 * [VOP2 instructions](GcnInstrsVop2)
+* [VOP1 instructions](GcnInstrsVop1)
 
 ---

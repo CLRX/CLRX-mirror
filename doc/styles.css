@@ -1,5 +1,5 @@
 table {
-    border: 1px solid #ddd;
+    border: 1px solid #ccc;
     border-collapse: collapse;
 }
 
@@ -8,9 +8,9 @@ table td {
 }
 
 table th {
-    border: 1px solid #ddd;
+    border: 1px solid #ccc;
     font-weight: normal;
-    background-color: #eee;   
+    background-color: #ddd;   
 }
 
 dl dt {
@@ -19,7 +19,7 @@ dl dt {
 
 code {
     background: #f0f0f0;
-    border: 1px solid #eee;
+    border: 1px solid #e0e0e0;
     padding: 0.25em;
     white-space: pre;
     display: inline-block;

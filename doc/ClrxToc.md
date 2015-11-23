@@ -28,5 +28,6 @@ the GalliumCompute program binaries.
     * [SOPP instructions](GcnInstrsSopp)
     * [SMRD instructions](GcnInstrsSmrd)
     * [VOP2 instructions](GcnInstrsVop2)
+    * [VOP1 instructions](GcnInstrsVop1)
 
 ---
