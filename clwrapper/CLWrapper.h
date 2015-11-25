@@ -122,6 +122,10 @@ extern CL_API_ENTRY cl_int CL_API_CALL clEnqueueMakeBuffersResidentAMD(
 
 #include "InternalDecls.h"
 
+
+#ifndef CL_CONTEXT_OFFLINE_DEVICES_AMD
+#define CL_CONTEXT_OFFLINE_DEVICES_AMD              0x403F
+#endif
 }
 
 #include <CLRX/Config.h>
