@@ -96,10 +96,10 @@ List of the instructions by opcode (GCN 1.0/1.1):
  20 (0x14)  | 404 (0x194) |   ✓   |   ✓   | V_CVT_F32_UBYTE3
  21 (0x15)  | 405 (0x195) |   ✓   |   ✓   | V_CVT_U32_F64
  22 (0x16)  | 406 (0x196) |   ✓   |   ✓   | V_CVT_F64_U32
- 23 (0x17)  | 407 (0x197) |   ✓   |   ✓   | V_TRUNC_F64
- 24 (0x18)  | 408 (0x198) |   ✓   |   ✓   | V_CEIL_F64
- 25 (0x19)  | 409 (0x199) |   ✓   |   ✓   | V_RNDNE_F64
- 26 (0x1a)  | 410 (0x19a) |   ✓   |   ✓   | V_FLOOR_F64
+ 23 (0x17)  | 407 (0x197) |       |   ✓   | V_TRUNC_F64
+ 24 (0x18)  | 408 (0x198) |       |   ✓   | V_CEIL_F64
+ 25 (0x19)  | 409 (0x199) |       |   ✓   | V_RNDNE_F64
+ 26 (0x1a)  | 410 (0x19a) |       |   ✓   | V_FLOOR_F64
  32 (0x20)  | 416 (0x1a0) |   ✓   |   ✓   | V_FRACT_F32
  33 (0x21)  | 417 (0x1a1) |   ✓   |   ✓   | V_TRUNC_F32
  34 (0x22)  | 418 (0x1a2) |   ✓   |   ✓   | V_CEIL_F32
@@ -139,3 +139,92 @@ List of the instructions by opcode (GCN 1.0/1.1):
  68 (0x44)  | 452 (0x1c4) |   ✓   |   ✓   | V_MOVRELSD_B32
  69 (0x45)  | 453 (0x1c5) |       |   ✓   | V_LOG_LEGACY_F32
  70 (0x46)  | 454 (0x1c6) |       |   ✓   | V_EXP_LEGACY_F32
+
+List of the instructions by opcode (GCN 1.2):
+
+ Opcode     | Opcode(VOP3)| Mnemonic
+------------|-------------|-----------------------------
+ 0 (0x0)    | 320 (0x140) | V_NOP
+ 1 (0x1)    | 321 (0x141) | V_MOV_B32
+ 2 (0x2)    | 322 (0x142) | V_READFIRSTLANE_B32
+ 3 (0x3)    | 323 (0x143) | V_CVT_I32_F64
+ 4 (0x4)    | 324 (0x144) | V_CVT_F64_I32
+ 5 (0x5)    | 325 (0x145) | V_CVT_F32_I32
+ 6 (0x6)    | 326 (0x146) | V_CVT_F32_U32
+ 7 (0x7)    | 327 (0x147) | V_CVT_U32_F32
+ 8 (0x8)    | 328 (0x148) | V_CVT_I32_F32
+ 9 (0x9)    | 329 (0x149) | V_MOV_FED_B32
+ 10 (0xa)   | 330 (0x14a) | V_CVT_F16_F32
+ 11 (0xb)   | 331 (0x14b) | V_CVT_F32_F16
+ 12 (0xc)   | 332 (0x14c) | V_CVT_RPI_I32_F32
+ 13 (0xd)   | 333 (0x14d) | V_CVT_FLR_I32_F32
+ 14 (0xe)   | 334 (0x14e) | V_CVT_OFF_F32_I4
+ 15 (0xf)   | 335 (0x14f) | V_CVT_F32_F64
+ 16 (0x10)  | 336 (0x150) | V_CVT_F64_F32
+ 17 (0x11)  | 337 (0x151) | V_CVT_F32_UBYTE0
+ 18 (0x12)  | 338 (0x152) | V_CVT_F32_UBYTE1
+ 19 (0x13)  | 339 (0x153) | V_CVT_F32_UBYTE2
+ 20 (0x14)  | 340 (0x154) | V_CVT_F32_UBYTE3
+ 21 (0x15)  | 341 (0x155) | V_CVT_U32_F64
+ 22 (0x16)  | 342 (0x156) | V_CVT_F64_U32
+ 23 (0x17)  | 343 (0x157) | V_TRUNC_F64
+ 24 (0x18)  | 344 (0x158) | V_CEIL_F64
+ 25 (0x19)  | 345 (0x159) | V_RNDNE_F64
+ 26 (0x1a)  | 346 (0x15a) | V_FLOOR_F64
+ 27 (0x1b)  | 347 (0x15b) | V_FRACT_F32
+ 28 (0x1c)  | 348 (0x15c) | V_TRUNC_F32
+ 29 (0x1d)  | 349 (0x15d) | V_CEIL_F32
+ 30 (0x1e)  | 350 (0x15e) | V_RNDNE_F32
+ 31 (0x1f)  | 351 (0x15f) | V_FLOOR_F32
+ 32 (0x20)  | 352 (0x160) | V_EXP_F32
+ 33 (0x21)  | 353 (0x161) | V_LOG_F32
+ 34 (0x22)  | 354 (0x162) | V_RCP_F32
+ 35 (0x23)  | 355 (0x163) | V_RCP_IFLAG_F32
+ 36 (0x24)  | 356 (0x164) | V_RSQ_F32
+ 37 (0x25)  | 357 (0x165) | V_RCP_F64
+ 38 (0x26)  | 358 (0x166) | V_RSQ_F64
+ 39 (0x27)  | 359 (0x167) | V_SQRT_F32
+ 40 (0x28)  | 360 (0x168) | V_SQRT_F64
+ 41 (0x29)  | 361 (0x169) | V_SIN_F32
+ 42 (0x2a)  | 362 (0x16a) | V_COS_F32
+ 43 (0x2b)  | 363 (0x16b) | V_NOT_B32
+ 44 (0x2c)  | 364 (0x16c) | V_BFREV_B32
+ 45 (0x2d)  | 365 (0x16d) | V_FFBH_U32
+ 46 (0x2e)  | 366 (0x16e) | V_FFBL_B32
+ 47 (0x2f)  | 367 (0x16f) | V_FFBH_I32
+ 48 (0x30)  | 368 (0x170) | V_FREXP_EXP_I32
+ 49 (0x31)  | 369 (0x171) | V_FREXP_MANT_F6
+ 50 (0x32)  | 370 (0x172) | V_FRACT_F64
+ 51 (0x33)  | 371 (0x173) | V_FREXP_EXP_I32
+ 52 (0x34)  | 372 (0x174) | V_FREXP_MANT_F3
+ 53 (0x35)  | 373 (0x175) | V_CLREXCP
+ 54 (0x36)  | 374 (0x176) | V_MOVRELD_B32
+ 55 (0x37)  | 375 (0x177) | V_MOVRELS_B32
+ 56 (0x38)  | 376 (0x178) | V_MOVRELSD_B32
+ 57 (0x39)  | 377 (0x179) | V_CVT_F16_U16
+ 58 (0x3a)  | 378 (0x17a) | V_CVT_F16_I16
+ 59 (0x3b)  | 379 (0x17b) | V_CVT_U16_F16
+ 60 (0x3c)  | 380 (0x17c) | V_CVT_I16_F16
+ 61 (0x3d)  | 381 (0x17d) | V_RCP_F16
+ 62 (0x3e)  | 382 (0x17e) | V_SQRT_F16
+ 63 (0x3f)  | 383 (0x17f) | V_RSQ_F16
+ 64 (0x40)  | 384 (0x180) | V_LOG_F16
+ 65 (0x41)  | 385 (0x181) | V_EXP_F16
+ 66 (0x42)  | 386 (0x182) | V_FREXP_MANT_F16
+ 67 (0x43)  | 387 (0x183) | V_FREXP_EXP_I16_F16
+ 68 (0x44)  | 388 (0x184) | V_FLOOR_F16
+ 69 (0x45)  | 389 (0x185) | V_CEIL_F16
+ 70 (0x46)  | 390 (0x186) | V_TRUNC_F16
+ 71 (0x47)  | 391 (0x187) | V_RNDNE_F16
+ 72 (0x48)  | 392 (0x188) | V_FRACT_F16
+ 73 (0x49)  | 393 (0x189) | V_SIN_F16
+ 74 (0x4a)  | 394 (0x18a) | V_COS_F16
+ 75 (0x4b)  | 395 (0x18b) | V_EXP_LEGACY_F32
+ 76 (0x4c)  | 396 (0x18c) | V_LOG_LEGACY_F32
+
+### Instruction set
+
+Alphabetically sorted instruction list:
+
+#### V_NOP
+
