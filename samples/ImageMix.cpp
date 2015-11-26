@@ -108,7 +108,7 @@ public:
 
 ImageMix::ImageMix(cl_uint deviceIndex, const char* imgFileName1, const char* imgFileName2,
              const char* _outFileName)
-             : CLFacade(deviceIndex, imageMixSource, { "imageMix" }), width(0), height(0),
+             : CLFacade(deviceIndex, imageMixSource, "imageMix"), width(0), height(0),
                outFileName(_outFileName)
 {
     loadImageInt(imgFileName1);
