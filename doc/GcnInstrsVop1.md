@@ -226,5 +226,117 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_CVT_F32_I32
+
+Opcode VOP2: 5 (0x5)  
+Opcode VOP3A: 389 (0x185) for GCN 1.0/1.1; 325 (0x145) for GCN 1.2  
+Syntax: V_CVT_F32_I32 VDST, SRC0  
+Description: Convert signed 32-bit integer to single FP value, and store it to VDST.  
+Operation:  
+```
+VDST = (FLOAT)(INT32)SRC0
+```
+
+#### V_CVT_F32_U32
+
+Opcode VOP2: 6 (0x6)  
+Opcode VOP3A: 390 (0x186) for GCN 1.0/1.1; 326 (0x146) for GCN 1.2  
+Syntax: V_CVT_F32_U32 VDST, SRC0  
+Description: Convert unsigned 32-bit integer to single FP value, and store it to VDST.  
+Operation:  
+```
+VDST = (FLOAT)SRC0
+
+#### V_CVT_F64_I32
+
+Opcode VOP2: 4 (0x4)  
+Opcode VOP3A: 388 (0x184) for GCN 1.0/1.1; 324 (0x144) for GCN 1.2  
+Syntax: V_CVT_F64_I32 VDST(2), SRC0  
+Description: Convert signed 32-bit integer to double FP value, and store it to VDST.  
+Operation:  
+```
+VDST = (DOUBLE)(INT32)SRC0
+```
+
+#### V_CVT_I32_F32
+
+Opcode VOP2: 8 (0x8)  
+Opcode VOP3A: 392 (0x188) for GCN 1.0/1.1; 328 (0x148) for GCN 1.2  
+Syntax: V_CVT_I32_F32 VDST, SRC0  
+Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
+store result to VDST. Conversion uses rounding to zero. If value is higher/lower than
+maximal/minimal integer then store MAX_INT32/MIN_INT32 to VDST.
+If input value is NaN then store 0 to VDST.  
+Operation:  
+```
+VDST = 0
+if (SRC0!=NAN)
+    VDST = (INT32)MAX(MIN(RNDTZINT(ASFLOAT(SRC0)), 2147483647.0), -2147483648.0)
+```
+
+#### V_CVT_I32_F64
+
+Opcode VOP2: 3 (0x3)  
+Opcode VOP3A: 387 (0x183) for GCN 1.0/1.1; 323 (0x143) for GCN 1.2  
+Syntax: V_CVT_I32_F64 VDST, SRC0(2)  
+Description: Convert 64-bit floating point value from SRC0 to signed 32-bit integer, and
+store result to VDST. Conversion uses rounding to zero. If value is higher/lower than
+maximal/minimal integer then store MAX_INT32/MIN_INT32 to VDST.
+If input value is NaN then store 0 to VDST.  
+Operation:  
+```
+VDST = 0
+if (SRC0!=NAN)
+    VDST = (INT32)MAX(MIN(RNDTZINT(ASDOUBLE(SRC0)), 2147483647.0), -2147483648.0)
+```
+
+#### V_CVT_U32_F32
+
+Opcode VOP2: 7 (0x7)  
+Opcode VOP3A: 391 (0x187) for GCN 1.0/1.1; 327 (0x147) for GCN 1.2  
+Syntax: V_CVT_U32_F32 VDST, SRC0  
+Description: Convert 32-bit floating point value from SRC0 to unsigned 32-bit integer, and
+store result to VDST. Conversion uses rounding to zero. If value is higher than
+maximal integer then store MAX_UINT32 to VDST.
+If input value is NaN then store 0 to VDST.  
+Operation:  
+```
+VDST = 0
+if (SRC0!=NAN)
+    VDST = (UINT32)MIN(RNDTZINT(ASFLOAT(SRC0)), 4294967295.0)
+```
+
+#### V_MOV_B32
+
+Opcode VOP2: 1 (0x1)  
+Opcode VOP3A: 385 (0x181) for GCN 1.0/1.1; 321 (0x141) for GCN 1.2  
+Syntax: V_MOV_B32 VDST, SRC0  
+Description: Move SRC0 into VDST.  
+Operation:  
+```
+VDST = SRC0
+```
+
 #### V_NOP
 
+Opcode VOP2: 0 (0x0)  
+Opcode VOP3A: 384 (0x180) for GCN 1.0/1.1; 320 (0x140) for GCN 1.2  
+Syntax: V_NOP  
+Description: Do nothing.
+
+#### V_READFIRSTLANE_B32
+
+Opcode VOP2: 2 (0x2)  
+Opcode VOP3A: 386 (0x182) for GCN 1.0/1.1; 322 (0x142) for GCN 1.2  
+Syntax: V_READFIRSTLANE_B32 SDST, VSRC0  
+Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) is first active lane id or
+first lane id all lanes are inactive. SSRC1 can be SGPR or M0. Ignores EXEC mask.  
+Operation:  
+Operation:  
+```
+UINT8 firstlane = 0
+for (UINT8 i = 0; i < 64; i++)
+    if ((1ULL<<i) & EXEC) != 0)
+    { firstlane = i; break; }
+SDST = VSRC0[firstlane]
+```
