@@ -282,6 +282,23 @@ Operation:
 VDST = (DOUBLE)(INT32)SRC0
 ```
 
+#### V_CVT_FLR_I32_F32
+
+Opcode VOP2: 13 (0xd)  
+Opcode VOP3A: 397 (0x18d) for GCN 1.0/1.1; 333 (0x14d) for GCN 1.2  
+Syntax: V_CVT_FLR_I32_F32 VDST, SRC0  
+Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
+store result to VDST. Conversion uses rounding to negative infinity (floor).
+If value is higher/lower than maximal/minimal integer then store MAX_INT32/MIN_INT32 to VDST.
+If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.  
+Operation:  
+```
+if (ABS(SRC0)!=NAN)
+    VDST = (INT32)MAX(MIN(FLOOR(ASFLOAT(SRC0)), 2147483647.0), -2147483648.0)
+else
+    VDST = (INT32)SRC0>=0 ? 2147483647 : -2147483648
+```
+
 #### V_CVT_I32_F32
 
 Opcode VOP2: 8 (0x8)  
@@ -312,6 +329,23 @@ Operation:
 VDST = 0
 if (SRC0!=NAN)
     VDST = (INT32)MAX(MIN(RNDTZINT(ASDOUBLE(SRC0)), 2147483647.0), -2147483648.0)
+```
+
+#### V_CVT_RPI_I32_F32
+
+Opcode VOP2: 12 (0xc)  
+Opcode VOP3A: 396 (0x18c) for GCN 1.0/1.1; 332 (0x14c) for GCN 1.2  
+Syntax: V_CVT_RPI_I32_F32 VDST, SRC0  
+Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
+store result to VDST. Conversion adds 0.5 to value and rounds negative infinity (floor).
+If value is higher/lower than maximal/minimal integer then store MAX_INT32/MIN_INT32 to VDST.
+If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.  
+Description:  
+```
+if (ABS(SRC0)!=NAN)
+    VDST = (INT32)MAX(MIN(FLOOR(ASFLOAT(SRC0) + 0.5), 2147483647.0), -2147483648.0)
+else
+    VDST = (INT32)SRC0>=0 ? 2147483647 : -2147483648
 ```
 
 #### V_CVT_U32_F32
@@ -361,8 +395,8 @@ Description: Do nothing.
 Opcode VOP2: 2 (0x2)  
 Opcode VOP3A: 386 (0x182) for GCN 1.0/1.1; 322 (0x142) for GCN 1.2  
 Syntax: V_READFIRSTLANE_B32 SDST, VSRC0  
-Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) is first active lane id or
-first lane id all lanes are inactive. SSRC1 can be SGPR or M0. Ignores EXEC mask.  
+Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) is first active lane id
+or first lane id all lanes are inactive. SSRC1 can be SGPR or M0. Ignores EXEC mask.  
 Operation:  
 Operation:  
 ```
