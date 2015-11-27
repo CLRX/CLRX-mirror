@@ -399,7 +399,6 @@ Syntax: V_READFIRSTLANE_B32 SDST, VSRC0
 Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) is first active lane id
 or first lane id all lanes are inactive. SSRC1 can be SGPR or M0. Ignores EXEC mask.  
 Operation:  
-Operation:  
 ```
 UINT8 firstlane = 0
 for (UINT8 i = 0; i < 64; i++)
