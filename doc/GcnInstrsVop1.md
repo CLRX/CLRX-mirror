@@ -226,6 +226,30 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_CVT_F16_F32
+
+Opcode VOP2: 10 (0xa)  
+Opcode VOP3A: 394 (0x18a) for GCN 1.0/1.1; 330 (0x14a) for GCN 1.2  
+Syntax: V_CVT_F16_F32 VDST, SRC0  
+Description: Convert single FP value to half floating point value with rounding from
+MODE register (single FP rounding mode), and store result to VDST.
+If absolute value is too high, then store -/+infinity to VDST.  
+Operation:  
+```
+VDST = RNDHALF(ASFLOAT(SRC0))
+```
+
+#### V_CVT_F32_F16
+
+Opcode VOP2: 11 (0xb)  
+Opcode VOP3A: 395 (0x18b) for GCN 1.0/1.1; 331 (0x14b) for GCN 1.2  
+Syntax: V_CVT_F32_F16 VDST, SRC0  
+Description: Convert half FP value to single FP value, and store result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)(ASHALF(SRC0))
+```
+
 #### V_CVT_F32_I32
 
 Opcode VOP2: 5 (0x5)  
@@ -305,6 +329,14 @@ VDST = 0
 if (SRC0!=NAN)
     VDST = (UINT32)MIN(RNDTZINT(ASFLOAT(SRC0)), 4294967295.0)
 ```
+
+#### V_MOV_FED_B32
+
+Opcode VOP2: 9 (0x9)  
+Opcode VOP3A: 393 (0x189) for GCN 1.0/1.1; 329 (0x149) for GCN 1.2  
+Syntax: V_MOV_FED_B32 VDST, SRC0  
+Description: Introduce edc double error upon write to dest vgpr without causing an exception
+(???).
 
 #### V_MOV_B32
 
