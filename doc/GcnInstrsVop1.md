@@ -270,6 +270,7 @@ Description: Convert unsigned 32-bit integer to single FP value, and store it to
 Operation:  
 ```
 VDST = (FLOAT)SRC0
+```
 
 #### V_CVT_F64_I32
 
