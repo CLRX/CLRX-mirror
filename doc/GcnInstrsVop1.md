@@ -228,7 +228,7 @@ Alphabetically sorted instruction list:
 
 #### V_CVT_F16_F32
 
-Opcode VOP2: 10 (0xa)  
+Opcode VOP1: 10 (0xa)  
 Opcode VOP3A: 394 (0x18a) for GCN 1.0/1.1; 330 (0x14a) for GCN 1.2  
 Syntax: V_CVT_F16_F32 VDST, SRC0  
 Description: Convert single FP value to half floating point value with rounding from
@@ -241,7 +241,7 @@ VDST = CVTHALF(ASFLOAT(SRC0))
 
 #### V_CVT_F32_F16
 
-Opcode VOP2: 11 (0xb)  
+Opcode VOP1: 11 (0xb)  
 Opcode VOP3A: 395 (0x18b) for GCN 1.0/1.1; 331 (0x14b) for GCN 1.2  
 Syntax: V_CVT_F32_F16 VDST, SRC0  
 Description: Convert half FP value to single FP value, and store result to VDST.  
@@ -252,7 +252,7 @@ VDST = (FLOAT)(ASHALF(SRC0))
 
 #### V_CVT_F32_F64
 
-Opcode VOP2: 15 (0xf)  
+Opcode VOP1: 15 (0xf)  
 Opcode VOP3A: 399 (0x18f) for GCN 1.0/1.1; 335 (0x14f) for GCN 1.2  
 Syntax: V_CVT_F32_F64 VDST, SRC0(2)  
 Description: Convert double FP value to single floating point value with rounding from
@@ -265,7 +265,7 @@ VDST = CVTHALF(ASDOUBLE(SRC0))
 
 #### V_CVT_F32_I32
 
-Opcode VOP2: 5 (0x5)  
+Opcode VOP1: 5 (0x5)  
 Opcode VOP3A: 389 (0x185) for GCN 1.0/1.1; 325 (0x145) for GCN 1.2  
 Syntax: V_CVT_F32_I32 VDST, SRC0  
 Description: Convert signed 32-bit integer to single FP value, and store it to VDST.  
@@ -276,7 +276,7 @@ VDST = (FLOAT)(INT32)SRC0
 
 #### V_CVT_F32_U32
 
-Opcode VOP2: 6 (0x6)  
+Opcode VOP1: 6 (0x6)  
 Opcode VOP3A: 390 (0x186) for GCN 1.0/1.1; 326 (0x146) for GCN 1.2  
 Syntax: V_CVT_F32_U32 VDST, SRC0  
 Description: Convert unsigned 32-bit integer to single FP value, and store it to VDST.  
@@ -287,7 +287,7 @@ VDST = (FLOAT)SRC0
 
 #### V_CVT_F32_UBYTE0
 
-Opcode VOP2: 17 (0x11)  
+Opcode VOP1: 17 (0x11)  
 Opcode VOP3A: 401 (0x191) for GCN 1.0/1.1; 337 (0x151) for GCN 1.2  
 Syntax: V_CVT_F32_UBYTE0 VDST, SRC0  
 Description: Convert the first unsigned 8-bit byte from SRC0 to single FP value,
@@ -299,7 +299,7 @@ VDST = (FLOAT)(SRC0 & 0xff)
 
 #### V_CVT_F32_UBYTE1
 
-Opcode VOP2: 18 (0x12)  
+Opcode VOP1: 18 (0x12)  
 Opcode VOP3A: 402 (0x192) for GCN 1.0/1.1; 338 (0x152) for GCN 1.2  
 Syntax: V_CVT_F32_UBYTE1 VDST, SRC0  
 Description: Convert the second unsigned 8-bit byte from SRC0 to single FP value,
@@ -311,7 +311,7 @@ VDST = (FLOAT)((SRC0>>8) & 0xff)
 
 #### V_CVT_F32_UBYTE2
 
-Opcode VOP2: 19 (0x13)  
+Opcode VOP1: 19 (0x13)  
 Opcode VOP3A: 403 (0x193) for GCN 1.0/1.1; 339 (0x153) for GCN 1.2  
 Syntax: V_CVT_F32_UBYTE2 VDST, SRC0  
 Description: Convert the third unsigned 8-bit byte from SRC0 to single FP value,
@@ -323,7 +323,7 @@ VDST = (FLOAT)((SRC0>>16) & 0xff)
 
 #### V_CVT_F32_UBYTE3
 
-Opcode VOP2: 20 (0x14)  
+Opcode VOP1: 20 (0x14)  
 Opcode VOP3A: 404 (0x194) for GCN 1.0/1.1; 340 (0x154) for GCN 1.2  
 Syntax: V_CVT_F32_UBYTE3 VDST, SRC0  
 Description: Convert the fourth unsigned 8-bit byte from SRC0 to single FP value,
@@ -335,7 +335,7 @@ VDST = (FLOAT)(SRC0>>24)
 
 #### V_CVT_F64_F32
 
-Opcode VOP2: 16 (0x10)  
+Opcode VOP1: 16 (0x10)  
 Opcode VOP3A: 400 (0x190) for GCN 1.0/1.1; 336 (0x150) for GCN 1.2  
 Syntax: V_CVT_F64_F32 VDST(2), SRC0  
 Description: Convert single FP value to double FP value, and store result to VDST.  
@@ -346,7 +346,7 @@ VDST = (DOUBLE)(ASFLOAT(SRC0))
 
 #### V_CVT_F64_I32
 
-Opcode VOP2: 4 (0x4)  
+Opcode VOP1: 4 (0x4)  
 Opcode VOP3A: 388 (0x184) for GCN 1.0/1.1; 324 (0x144) for GCN 1.2  
 Syntax: V_CVT_F64_I32 VDST(2), SRC0  
 Description: Convert signed 32-bit integer to double FP value, and store it to VDST.  
@@ -357,7 +357,7 @@ VDST = (DOUBLE)(INT32)SRC0
 
 #### V_CVT_FLR_I32_F32
 
-Opcode VOP2: 13 (0xd)  
+Opcode VOP1: 13 (0xd)  
 Opcode VOP3A: 397 (0x18d) for GCN 1.0/1.1; 333 (0x14d) for GCN 1.2  
 Syntax: V_CVT_FLR_I32_F32 VDST, SRC0  
 Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
@@ -374,7 +374,7 @@ else
 
 #### V_CVT_I32_F32
 
-Opcode VOP2: 8 (0x8)  
+Opcode VOP1: 8 (0x8)  
 Opcode VOP3A: 392 (0x188) for GCN 1.0/1.1; 328 (0x148) for GCN 1.2  
 Syntax: V_CVT_I32_F32 VDST, SRC0  
 Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
@@ -390,7 +390,7 @@ if (SRC0!=NAN)
 
 #### V_CVT_I32_F64
 
-Opcode VOP2: 3 (0x3)  
+Opcode VOP1: 3 (0x3)  
 Opcode VOP3A: 387 (0x183) for GCN 1.0/1.1; 323 (0x143) for GCN 1.2  
 Syntax: V_CVT_I32_F64 VDST, SRC0(2)  
 Description: Convert 64-bit floating point value from SRC0 to signed 32-bit integer, and
@@ -406,7 +406,7 @@ if (SRC0!=NAN)
 
 #### V_CVT_OFF_F32_I4
 
-Opcode VOP2: 14 (0xe)  
+Opcode VOP1: 14 (0xe)  
 Opcode VOP3A: 398 (0x18e) for GCN 1.0/1.1; 334 (0x14e) for GCN 1.2  
 Syntax: V_CVT_OFF_F32_I4 VDST, SRC0  
 Description: Convert 4-bit signed value from SRC0 to floating point value, normalize that
@@ -418,7 +418,7 @@ VDST = (FLOAT)((SRC0 & 0xf) ^ 8) / 16.0 - 0.5
 
 #### V_CVT_RPI_I32_F32
 
-Opcode VOP2: 12 (0xc)  
+Opcode VOP1: 12 (0xc)  
 Opcode VOP3A: 396 (0x18c) for GCN 1.0/1.1; 332 (0x14c) for GCN 1.2  
 Syntax: V_CVT_RPI_I32_F32 VDST, SRC0  
 Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
@@ -435,7 +435,7 @@ else
 
 #### V_CVT_U32_F32
 
-Opcode VOP2: 7 (0x7)  
+Opcode VOP1: 7 (0x7)  
 Opcode VOP3A: 391 (0x187) for GCN 1.0/1.1; 327 (0x147) for GCN 1.2  
 Syntax: V_CVT_U32_F32 VDST, SRC0  
 Description: Convert 32-bit floating point value from SRC0 to unsigned 32-bit integer, and
@@ -451,7 +451,7 @@ if (SRC0!=NAN)
 
 #### V_MOV_FED_B32
 
-Opcode VOP2: 9 (0x9)  
+Opcode VOP1: 9 (0x9)  
 Opcode VOP3A: 393 (0x189) for GCN 1.0/1.1; 329 (0x149) for GCN 1.2  
 Syntax: V_MOV_FED_B32 VDST, SRC0  
 Description: Introduce edc double error upon write to dest vgpr without causing an exception
@@ -459,7 +459,7 @@ Description: Introduce edc double error upon write to dest vgpr without causing 
 
 #### V_MOV_B32
 
-Opcode VOP2: 1 (0x1)  
+Opcode VOP1: 1 (0x1)  
 Opcode VOP3A: 385 (0x181) for GCN 1.0/1.1; 321 (0x141) for GCN 1.2  
 Syntax: V_MOV_B32 VDST, SRC0  
 Description: Move SRC0 into VDST.  
@@ -470,14 +470,14 @@ VDST = SRC0
 
 #### V_NOP
 
-Opcode VOP2: 0 (0x0)  
+Opcode VOP1: 0 (0x0)  
 Opcode VOP3A: 384 (0x180) for GCN 1.0/1.1; 320 (0x140) for GCN 1.2  
 Syntax: V_NOP  
 Description: Do nothing.
 
 #### V_READFIRSTLANE_B32
 
-Opcode VOP2: 2 (0x2)  
+Opcode VOP1: 2 (0x2)  
 Opcode VOP3A: 386 (0x182) for GCN 1.0/1.1; 322 (0x142) for GCN 1.2  
 Syntax: V_READFIRSTLANE_B32 SDST, VSRC0  
 Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) is first active lane id
