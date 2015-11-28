@@ -613,7 +613,7 @@ Opcode VOP1: 40 (0x28) for GCN 1.0/1.1
 Opcode VOP3A: 424 (0x1a8) for GCN 1.0/1.1  
 Syntax: V_RCP_CLAMP_F32 VDST, SRC0  
 Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
-Guaranted error below 1ulp. Result is clamped maximum float value including its sign.  
+Guaranted error below 1ulp. Result is clamped to MAX_FLOAT including sign of a result.  
 Description:  
 ```
 VDST = APPROX_RCP(ASFLOAT(SRC0))
@@ -631,6 +631,33 @@ Guaranted error below 1ulp.
 Description:  
 ```
 VDST = APPROX_RCP(ASFLOAT(SRC0))
+```
+
+#### V_RCP_F64
+
+Opcode VOP1: 47 (0x2f) for GCN 1.0/1.1; 37 (0x25) for GCN 2.0  
+Opcode VOP3A: 431 (0x1af) for GCN 1.0/1.1; 357 (0x165) for GCN 2.0  
+Syntax: V_RCP_F64 VDST(2), SRC0(2)  
+Description: Approximate reciprocal from double FP value SRC0 and store it to VDST.
+Relative error of approximation is ~1e-8.  
+Description:  
+```
+VDST = APPROX_RCP(ASDOUBLE(SRC0))
+```
+
+#### V_RCP_CLAMP_F64
+
+Opcode VOP1: 48 (0x30) for GCN 1.0/1.1  
+Opcode VOP3A: 432 (0x1b0) for GCN 1.0/1.1  
+Syntax: V_RCP_CLAMP_F64 VDST(2), SRC0(2)  
+Description: Approximate reciprocal from double FP value SRC0 and store it to VDST.
+Relative error of approximation is ~1e-8.
+Result is clamped to MAX_DOUBLE value including sign of a result.  
+Description:  
+```
+VDST = APPROX_RCP(ASDOUBLE(SRC0))
+if (ABS(ASDOUBLE(VDST))==INF)
+    VDST = SIGN(ASDOUBLE(VDST)) * MAX_DOUBLE
 ```
 
 #### V_RCP_IFLAG_F32
@@ -711,6 +738,19 @@ if (ASFLOAT(VDST)==INF)
     VDST = MAX_FLOAT
 ```
 
+#### V_RSQ_F32
+
+Opcode VOP1: 46 (0x2e) for GCN 1.0/1.1; 36 (0x24) for GCN 2.0  
+Opcode VOP3A: 430 (0x1ae) for GCN 1.0/1.1; 356 (0x164) for GCN 2.0  
+Syntax: V_RCP_F32 VDST, SRC0  
+Description: Approximate reciprocal square root from floating point value SRC0 and
+store it to VDST. If SRC0 is negative value, store -NAN to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Description:  
+```
+VDST = APPROX_RSQRT(ASFLOAT(SRC0))
+```
+
 #### V_RSQ_LEGACY_F32
 
 Opcode VOP1: 45 (0x2d) for GCN 1.0/1.1  
@@ -725,19 +765,6 @@ Description:
 VDST = APPROX_RSQRT(ASFLOAT(SRC0))
 if (ASFLOAT(VDST)==INF)
     VDST = 0.0
-```
-
-#### V_RSQ_F32
-
-Opcode VOP1: 46 (0x2e) for GCN 1.0/1.1; 36 (0x24) for GCN 2.0  
-Opcode VOP3A: 430 (0x1ae) for GCN 1.0/1.1; 356 (0x164) for GCN 2.0  
-Syntax: V_RCP_F32 VDST, SRC0  
-Description: Approximate reciprocal square root from floating point value SRC0 and
-store it to VDST. If SRC0 is negative value, store -NAN to VDST.
-This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
-Description:  
-```
-VDST = APPROX_RSQRT(ASFLOAT(SRC0))
 ```
 
 #### V_TRUNC_F32
