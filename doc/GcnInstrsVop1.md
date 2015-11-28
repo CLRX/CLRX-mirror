@@ -494,10 +494,25 @@ if (ABS(ASDOUBLE(SRC0))!=NAN)
     VDST = (UINT32)MIN(RNDTZINT(ASDOUBLE(SRC0)), 4294967295.0)
 ```
 
+#### V_EXP_F32
+
+Opcode VOP1: 37 (0x25) for GCN 1.0/1.1; 32 (0x20) for GCN 1.2  
+Opcode VOP3A: 421 (0x1a5) for GCN 1.0/1.1; 352 (0x160) for GCN 1.2  
+Syntax: V_EXP_F32 VDST, SRC0  
+Description: Approximate power of two from FP value SRC0 and store it to VDST. Instruction
+for values smaller than -126.0 always returns 0 regardless floatmode in MODE register.  
+Operation:  
+```
+if (ASFLOAT(SRC0)>=-126.0)
+    VDST = APPROX_POW2(ASFLOAT(SRC0))
+else
+    VDST = 0.0
+```
+
 #### V_FLOOR_F32
 
-Opcode VOP1: 37 (0x25) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
-Opcode VOP3A: 421 (0x1a5) for GCN 1.0/1.1; 351 (0x15f) for GCN 1.2  
+Opcode VOP1: 36 (0x24) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
+Opcode VOP3A: 420 (0x1a4) for GCN 1.0/1.1; 351 (0x15f) for GCN 1.2  
 Syntax: V_FLOOR_F32 VDST, SRC0  
 Description: Truncate floating point valu from SRC0 with rounding to positive infinity
 (flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
@@ -521,6 +536,49 @@ if (ABS(SF)!=NAN && SF!=-INF && SF!=INF)
     VDST = SF - FLOOR(ASFLOAT(SF))
 else
     VDST = NAN * SIGN(SF)
+```
+
+#### V_LOG_CLAMP_F32
+
+Opcode VOP1: 38 (0x26) for GCN 1.0/1.1  
+Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1  
+Syntax: V_LOG_CLAMP_F32 VDST, SRC0  
+Description: Approximate logarithm of base 2 from floating point value SRC0 with
+clamping infinities to -MAX_FLOAT. Result is stored in VDST.
+If SRC0 is negative then store -NaN to VDST. This instruction doesn't handle denormalized
+values regardless FLOAT MODE register setup.  
+Operation:  
+```
+FLOAT F = ASFLOAT(SRC0)
+if (F==1.0)
+    VDST = 0.0f
+if (F<0.0)
+    VDST = -NaN
+else
+{
+    VDST = APPROX_LOG2(F)
+    if (ASFLOAT(VDST)==-INF)
+        VDST = -MAX_FLOAT
+}
+```
+
+#### V_LOG_F32
+
+Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 2.0  
+Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1; 353 (0x161) for GCN 2.0  
+Syntax: V_LOG_F32 VDST, SRC0  
+Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
+to VDST. If SRC0 is negative then store -NaN to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Operation:  
+```
+FLOAT F = ASFLOAT(SRC0)
+if (F==1.0)
+    VDST = 0.0f
+if (F<0.0)
+    VDST = -NaN
+else
+    VDST = APPROX_LOG2(F)
 ```
 
 #### V_MOV_FED_B32
@@ -549,6 +607,66 @@ Opcode VOP3A: 384 (0x180) for GCN 1.0/1.1; 320 (0x140) for GCN 1.2
 Syntax: V_NOP  
 Description: Do nothing.
 
+#### V_RCP_CLAMP_F32
+
+Opcode VOP1: 40 (0x28) for GCN 1.0/1.1  
+Opcode VOP3A: 424 (0x1a8) for GCN 1.0/1.1  
+Syntax: V_RCP_CLAMP_F32 VDST, SRC0  
+Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
+Guaranted error below 1ulp. Result is clamped maximum float value including its sign.  
+Description:  
+```
+VDST = APPROX_RCP(ASFLOAT(SRC0))
+if (ABS(ASFLOAT(VDST))==INF)
+    VDST = SIGN(ASFLOAT(VDST)) * MAX_FLOAT
+```
+
+#### V_RCP_F32
+
+Opcode VOP1: 42 (0x2a) for GCN 1.0/1.1; 34 (0x22) for GCN 2.0  
+Opcode VOP3A: 426 (0x1aa) for GCN 1.0/1.1; 354 (0x162) for GCN 2.0  
+Syntax: V_RCP_F32 VDST, SRC0  
+Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
+Guaranted error below 1ulp.  
+Description:  
+```
+VDST = APPROX_RCP(ASFLOAT(SRC0))
+```
+
+#### V_RCP_IFLAG_F32
+
+Opcode VOP1: 43 (0x2b) for GCN 1.0/1.1; 35 (0x23) for GCN 2.0  
+Opcode VOP3A: 427 (0x1ab) for GCN 1.0/1.1; 355 (0x163) for GCN 2.0  
+Syntax: V_RCP_IFLAG_F32 VDST, SRC0  
+Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
+Guaranted error below 1ulp. This instruction signals integer division by zero, instead
+any floating point exception when error is occurred.  
+Description:  
+```
+VDST = APPROX_RCP_IFLAG(ASFLOAT(SRC0))
+```
+
+#### V_RCP_LEGACY_F32
+
+Opcode VOP1: 41 (0x29) for GCN 1.0/1.1  
+Opcode VOP3A: 425 (0x1a9) for GCN 1.0/1.1  
+Syntax: V_RCP_LEGACY_F32 VDST, SRC0  
+Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
+Guaranted error below 1ulp. If SRC0 or VDST is zero or infinity then store 0 with proper sign
+to VDST.  
+Operation:  
+```
+FLOAT SF = ASFLOAT(SRC0)
+if (ABS(SF)==0.0)
+    VDST = SIGN(SF)*0.0
+else
+{
+    VDST = APPROX_RCP(SF)
+    if (ABS(ASFLOAT(VDST)) == INF)
+        VDST = SIGN(SF)*0.0
+}
+```
+
 #### V_READFIRSTLANE_B32
 
 Opcode VOP1: 2 (0x2)  
@@ -575,6 +693,51 @@ VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.
 Operation:
 ```
 VDST = RNDNE(ASFLOAT(SRC0))
+```
+
+#### V_RSQ_CLAMP_F32
+
+Opcode VOP1: 44 (0x2c) for GCN 1.0/1.1  
+Opcode VOP3A: 428 (0x1ac) for GCN 1.0/1.1  
+Syntax: V_RCP_CLAMP_F32 VDST, SRC0  
+Description: Approximate reciprocal square root from floating point value SRC0 with
+clamping to MAX_FLOAT, and store result to VDST.
+If SRC0 is negative value, store -NAN to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Description:  
+```
+VDST = APPROX_RSQRT(ASFLOAT(SRC0))
+if (ASFLOAT(VDST)==INF)
+    VDST = MAX_FLOAT
+```
+
+#### V_RSQ_LEGACY_F32
+
+Opcode VOP1: 45 (0x2d) for GCN 1.0/1.1  
+Opcode VOP3A: 429 (0x1ad) for GCN 1.0/1.1  
+Syntax: V_RCP_LEGACY_F32 VDST, SRC0  
+Description: Approximate reciprocal square root from floating point value SRC0,
+and store result to VDST. If SRC0 is negative value, store -NAN to VDST.
+If result is zero then store 0.0 to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Description:  
+```
+VDST = APPROX_RSQRT(ASFLOAT(SRC0))
+if (ASFLOAT(VDST)==INF)
+    VDST = 0.0
+```
+
+#### V_RSQ_F32
+
+Opcode VOP1: 46 (0x2e) for GCN 1.0/1.1; 36 (0x24) for GCN 2.0  
+Opcode VOP3A: 430 (0x1ae) for GCN 1.0/1.1; 356 (0x164) for GCN 2.0  
+Syntax: V_RCP_F32 VDST, SRC0  
+Description: Approximate reciprocal square root from floating point value SRC0 and
+store it to VDST. If SRC0 is negative value, store -NAN to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Description:  
+```
+VDST = APPROX_RSQRT(ASFLOAT(SRC0))
 ```
 
 #### V_TRUNC_F32
