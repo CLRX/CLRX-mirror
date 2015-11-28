@@ -226,6 +226,22 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_CEIL_F32
+
+Opcode VOP1: 34 (0x22) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
+Opcode VOP3A: 418 (0x1a2) for GCN 1.0/1.1; 349 (0x15d) for GCN 1.2  
+Syntax: V_CEIL_F32 VDST, SRC0  
+Description: Truncate floating point valu from SRC0 with rounding to positive infinity
+(ceilling), and store result to VDST. Implemented by flooring.
+If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:
+```
+FLOAT F = FLOOR(ASFLOAT(SRC0))
+if (ASFLOAT(SRC0) > 0.0 && ASFLOAT(SRC0) != F)
+    F += 1.0
+VDST = F
+```
+
 #### V_CVT_F16_F32
 
 Opcode VOP1: 10 (0xa)  
@@ -355,6 +371,17 @@ Operation:
 VDST = (DOUBLE)(INT32)SRC0
 ```
 
+#### V_CVT_F64_U32
+
+Opcode VOP1: 22 (0x16)  
+Opcode VOP3A: 406 (0x196) for GCN 1.0/1.1; 342 (0x156) for GCN 1.2  
+Syntax: V_CVT_F64_U32 VDST(2), SRC0  
+Description: Convert unsigned 32-bit integer to double FP value, and store it to VDST.  
+Operation:  
+```
+VDST = (DOUBLE)SRC0
+```
+
 #### V_CVT_FLR_I32_F32
 
 Opcode VOP1: 13 (0xd)  
@@ -366,10 +393,11 @@ If value is higher/lower than maximal/minimal integer then store MAX_INT32/MIN_I
 If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.  
 Operation:  
 ```
-if (ABS(SRC0)!=NAN)
-    VDST = (INT32)MAX(MIN(FLOOR(ASFLOAT(SRC0)), 2147483647.0), -2147483648.0)
+FLOAT SF = ASFLOAT(SF)
+if (ABS(SF)!=NAN)
+    VDST = (INT32)MAX(MIN(FLOOR(SF), 2147483647.0), -2147483648.0)
 else
-    VDST = (INT32)SRC0>=0 ? 2147483647 : -2147483648
+    VDST = (INT32)SF>=0 ? 2147483647 : -2147483648
 ```
 
 #### V_CVT_I32_F32
@@ -384,7 +412,7 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (SRC0!=NAN)
+if (ABS(ASFLOAT(SRC0))!=NAN)
     VDST = (INT32)MAX(MIN(RNDTZINT(ASFLOAT(SRC0)), 2147483647.0), -2147483648.0)
 ```
 
@@ -400,7 +428,7 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (SRC0!=NAN)
+if (ABS(ASDOUBLE(SRC0))!=NAN)
     VDST = (INT32)MAX(MIN(RNDTZINT(ASDOUBLE(SRC0)), 2147483647.0), -2147483648.0)
 ```
 
@@ -427,10 +455,11 @@ If value is higher/lower than maximal/minimal integer then store MAX_INT32/MIN_I
 If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.  
 Description:  
 ```
-if (ABS(SRC0)!=NAN)
-    VDST = (INT32)MAX(MIN(FLOOR(ASFLOAT(SRC0) + 0.5), 2147483647.0), -2147483648.0)
+FLOAT SF = ASFLOAT(SRC0)
+if (ABS(SF)!=NAN)
+    VDST = (INT32)MAX(MIN(FLOOR(SF + 0.5), 2147483647.0), -2147483648.0)
 else
-    VDST = (INT32)SRC0>=0 ? 2147483647 : -2147483648
+    VDST = (INT32)SF>=0 ? 2147483647 : -2147483648
 ```
 
 #### V_CVT_U32_F32
@@ -445,8 +474,53 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (SRC0!=NAN)
+if (ABS(ASFLOAT(SRC0))!=NAN)
     VDST = (UINT32)MIN(RNDTZINT(ASFLOAT(SRC0)), 4294967295.0)
+```
+
+#### V_CVT_U32_F64
+
+Opcode VOP1: 21 (0x15)  
+Opcode VOP3A: 405 (0x195) for GCN 1.0/1.1; 341 (0x155) for GCN 1.2  
+Syntax: V_CVT_U32_F64 VDST, SRC0(2)  
+Description: Convert 64-bit floating point value from SRC0 to unsigned 32-bit integer, and
+store result to VDST. Conversion uses rounding to zero. If value is higher than
+maximal integer then store MAX_UINT32 to VDST.
+If input value is NaN then store 0 to VDST.  
+Operation:  
+```
+VDST = 0
+if (ABS(ASDOUBLE(SRC0))!=NAN)
+    VDST = (UINT32)MIN(RNDTZINT(ASDOUBLE(SRC0)), 4294967295.0)
+```
+
+#### V_FLOOR_F32
+
+Opcode VOP1: 37 (0x25) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
+Opcode VOP3A: 421 (0x1a5) for GCN 1.0/1.1; 351 (0x15f) for GCN 1.2  
+Syntax: V_FLOOR_F32 VDST, SRC0  
+Description: Truncate floating point valu from SRC0 with rounding to positive infinity
+(flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:
+```
+VDST = FLOOR(ASFLOAT(SRC0))
+```
+
+#### V_FRACT_F32
+
+Opcode VOP1: 32 (0x20) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
+Opcode VOP3A: 416 (0x1a0) for GCN 1.0/1.1; 347 (0x15b) for GCN 1.2  
+Syntax: V_FRACT VDST, SRC0  
+Description: Get fractional from floating point value SRC0 and store it to VDST.
+Fractional will be computed by subtracting floor(SRC0) from SRC0.
+If SRC0 is infinity or NaN then NaN with proper sign is stored to VDST.  
+Operation:  
+```
+FLOAT SF = ASFLOAT(SRC0)
+if (ABS(SF)!=NAN && SF!=-INF && SF!=INF)
+    VDST = SF - FLOOR(ASFLOAT(SF))
+else
+    VDST = NAN * SIGN(SF)
 ```
 
 #### V_MOV_FED_B32
@@ -489,4 +563,28 @@ for (UINT8 i = 0; i < 64; i++)
     if ((1ULL<<i) & EXEC) != 0)
     { firstlane = i; break; }
 SDST = VSRC0[firstlane]
+```
+
+#### V_RNDNE_F32
+
+Opcode VOP1: 35 (0x23) for GCN 1.0/1.1; 30 (0x1e) for GCN 1.2  
+Opcode VOP3A: 420 (0x1a4) for GCN 1.0/1.1; 350 (0x15e) for GCN 1.2  
+Syntax: V_RNDNE_F32 VDST, SRC0  
+Description: Round floating point value SRC0 to nearest even integer, and store result to
+VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:
+```
+VDST = RNDNE(ASFLOAT(SRC0))
+```
+
+#### V_TRUNC_F32
+
+Opcode VOP1: 33 (0x21) for GCN 1.0/1.1; 28 (0x1c) for GCN 1.2  
+Opcode VOP3A: 417 (0x1a1) for GCN 1.0/1.1; 348 (0x15c) for GCN 1.2  
+Syntax: V_TRUNC_F32 VDST, SRC0  
+Description: Get integer value from floating point value SRC0, and store (as float)
+it to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = RNDTZ(ASFLOAT(SRC0))
 ```
