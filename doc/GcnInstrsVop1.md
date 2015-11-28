@@ -236,7 +236,7 @@ MODE register (single FP rounding mode), and store result to VDST.
 If absolute value is too high, then store -/+infinity to VDST.  
 Operation:  
 ```
-VDST = RNDHALF(ASFLOAT(SRC0))
+VDST = CVTHALF(ASFLOAT(SRC0))
 ```
 
 #### V_CVT_F32_F16
@@ -248,6 +248,19 @@ Description: Convert half FP value to single FP value, and store result to VDST.
 Operation:  
 ```
 VDST = (FLOAT)(ASHALF(SRC0))
+```
+
+#### V_CVT_F32_F64
+
+Opcode VOP2: 15 (0xf)  
+Opcode VOP3A: 399 (0x18f) for GCN 1.0/1.1; 335 (0x14f) for GCN 1.2  
+Syntax: V_CVT_F32_F64 VDST, SRC0(2)  
+Description: Convert double FP value to single floating point value with rounding from
+MODE register (single FP rounding mode), and store result to VDST.
+If absolute value is too high, then store -/+infinity to VDST.  
+Operation:  
+```
+VDST = CVTHALF(ASDOUBLE(SRC0))
 ```
 
 #### V_CVT_F32_I32
@@ -270,6 +283,65 @@ Description: Convert unsigned 32-bit integer to single FP value, and store it to
 Operation:  
 ```
 VDST = (FLOAT)SRC0
+```
+
+#### V_CVT_F32_UBYTE0
+
+Opcode VOP2: 17 (0x11)  
+Opcode VOP3A: 401 (0x191) for GCN 1.0/1.1; 337 (0x151) for GCN 1.2  
+Syntax: V_CVT_F32_UBYTE0 VDST, SRC0  
+Description: Convert the first unsigned 8-bit byte from SRC0 to single FP value,
+and store it to VDST.  
+Operation:  
+```
+VDST = (FLOAT)(SRC0 & 0xff)
+```
+
+#### V_CVT_F32_UBYTE1
+
+Opcode VOP2: 18 (0x12)  
+Opcode VOP3A: 402 (0x192) for GCN 1.0/1.1; 338 (0x152) for GCN 1.2  
+Syntax: V_CVT_F32_UBYTE1 VDST, SRC0  
+Description: Convert the second unsigned 8-bit byte from SRC0 to single FP value,
+and store it to VDST.  
+Operation:  
+```
+VDST = (FLOAT)((SRC0>>8) & 0xff)
+```
+
+#### V_CVT_F32_UBYTE2
+
+Opcode VOP2: 19 (0x13)  
+Opcode VOP3A: 403 (0x193) for GCN 1.0/1.1; 339 (0x153) for GCN 1.2  
+Syntax: V_CVT_F32_UBYTE2 VDST, SRC0  
+Description: Convert the third unsigned 8-bit byte from SRC0 to single FP value,
+and store it to VDST.  
+Operation:  
+```
+VDST = (FLOAT)((SRC0>>16) & 0xff)
+```
+
+#### V_CVT_F32_UBYTE3
+
+Opcode VOP2: 20 (0x14)  
+Opcode VOP3A: 404 (0x194) for GCN 1.0/1.1; 340 (0x154) for GCN 1.2  
+Syntax: V_CVT_F32_UBYTE3 VDST, SRC0  
+Description: Convert the fourth unsigned 8-bit byte from SRC0 to single FP value,
+and store it to VDST.  
+Operation:  
+```
+VDST = (FLOAT)(SRC0>>24)
+```
+
+#### V_CVT_F64_F32
+
+Opcode VOP2: 16 (0x10)  
+Opcode VOP3A: 400 (0x190) for GCN 1.0/1.1; 336 (0x150) for GCN 1.2  
+Syntax: V_CVT_F64_F32 VDST(2), SRC0  
+Description: Convert single FP value to double FP value, and store result to VDST.  
+Operation:  
+```
+VDST = (DOUBLE)(ASFLOAT(SRC0))
 ```
 
 #### V_CVT_F64_I32
@@ -330,6 +402,18 @@ Operation:
 VDST = 0
 if (SRC0!=NAN)
     VDST = (INT32)MAX(MIN(RNDTZINT(ASDOUBLE(SRC0)), 2147483647.0), -2147483648.0)
+```
+
+#### V_CVT_OFF_F32_I4
+
+Opcode VOP2: 14 (0xe)  
+Opcode VOP3A: 398 (0x18e) for GCN 1.0/1.1; 334 (0x14e) for GCN 1.2  
+Syntax: V_CVT_OFF_F32_I4 VDST, SRC0  
+Description: Convert 4-bit signed value from SRC0 to floating point value, normalize that
+value to range -0.5:0.4375 and store result to VDST.  
+Operation:  
+```
+VDST = (FLOAT)((SRC0 & 0xf) ^ 8) / 16.0 - 0.5
 ```
 
 #### V_CVT_RPI_I32_F32
