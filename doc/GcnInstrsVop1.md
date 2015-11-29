@@ -226,6 +226,17 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_BFREV_B32
+
+Opcode VOP1: 56 (0x38) for GCN 1.0/1.1; 44 (0x2c) for GCN 1.2  
+Opcode VOP3A: 440 (0x1b8) for GCN 1.0/1.1; 364 (0x16c) for GCN 1.2  
+Syntax: V_BFREV_B32 VDST, SRC0  
+Reverse bits in SRC0 and store result to VDST.  
+Operation:  
+```
+VDST = REVBIT(SRC0)
+```
+
 #### V_CEIL_F32
 
 Opcode VOP1: 34 (0x22) for GCN 1.0/1.1; 29 (0x1d) for GCN 1.2  
@@ -529,6 +540,52 @@ else
     VDST = 0.0
 ```
 
+#### V_FFBH_U32
+
+Opcode VOP1: 57 (0x39) for GCN 1.0/1.1; 45 (0x2d) for GCN 1.2  
+Opcode VOP3A: 441 (0x1b9) for GCN 1.0/1.1; 365 (0x16d) for GCN 1.2  
+Syntax: V_FFBH_U32 VDST, SRC0  
+Description: Find last one bit in SRC0. If found, store number of skipped bits to VDST,
+otherwise set VDST to -1.  
+Operation:  
+```
+VDST = -1
+for (INT8 i = 31; i >= 0; i--)
+    if ((1U<<i) & SRC0) != 0)
+    { VDST = 31-i; break; }
+```
+
+#### V_FFBL_B32
+
+Opcode VOP1: 58 (0x3a) for GCN 1.0/1.1; 46 (0x2e) for GCN 1.2  
+Opcode VOP3A: 442 (0x1ba) for GCN 1.0/1.1; 366 (0x16e) for GCN 1.2  
+Syntax: V_FFBL_B32 VDST, SRC0  
+Description: Find first one bit in SRC0. If found, store number of bit to VDST,
+otherwise set VDST to -1.  
+Operation:  
+```
+VDST = -1
+for (UINT8 i = 0; i < 32; i++)
+    if ((1U<<i) & SRC0) != 0)
+    { VDST = i; break; }
+```
+
+#### V_FFBH_I32
+
+Opcode VOP1: 59 (0x3b) for GCN 1.0/1.1; 47 (0x2f) for GCN 1.2  
+Opcode VOP3A: 443 (0x1bb) for GCN 1.0/1.1; 367 (0x16f) for GCN 1.2  
+Syntax: V_FFBH_I32 VDST, SRC0  
+Description: Find last opposite bit to sign in SRC0. If found, store number of skipped bits
+to VDST, otherwise set VDST to -1.  
+Operation:  
+```
+VDST = -1
+UINT32 bitval = (INT32)SRC0>=0 ? 1 : 0
+for (INT8 i = 31; i >= 0; i--)
+    if ((1U<<i) & SRC0) == (bitval<<i))
+    { VDST = 31-i; break; }
+```
+
 #### V_FLOOR_F32
 
 Opcode VOP1: 36 (0x24) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
@@ -626,6 +683,17 @@ Opcode VOP1: 0 (0x0)
 Opcode VOP3A: 384 (0x180) for GCN 1.0/1.1; 320 (0x140) for GCN 1.2  
 Syntax: V_NOP  
 Description: Do nothing.
+
+#### V_NOT_B32
+
+Opcode VOP1: 55 (0x37) for GCN 1.0/1.1; 43 (0x2b) for GCN 1.2  
+Opcode VOP3A: 439 (0x1b7) for GCN 1.0/1.1; 363 (0x16b) for GCN 1.2  
+Syntax: V_NOT_B32 VDST, SRC0  
+Description: Do bitwise negation on 32-bit SRC0, and store result to VDST.
+Operation:  
+```
+VDST = ~SRC0
+```
 
 #### V_RCP_CLAMP_F32
 
