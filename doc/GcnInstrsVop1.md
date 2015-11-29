@@ -192,11 +192,11 @@ List of the instructions by opcode (GCN 1.2):
  45 (0x2d)  | 365 (0x16d) | V_FFBH_U32
  46 (0x2e)  | 366 (0x16e) | V_FFBL_B32
  47 (0x2f)  | 367 (0x16f) | V_FFBH_I32
- 48 (0x30)  | 368 (0x170) | V_FREXP_EXP_I32
- 49 (0x31)  | 369 (0x171) | V_FREXP_MANT_F6
+ 48 (0x30)  | 368 (0x170) | V_FREXP_EXP_I32_F64
+ 49 (0x31)  | 369 (0x171) | V_FREXP_MANT_F64
  50 (0x32)  | 370 (0x172) | V_FRACT_F64
- 51 (0x33)  | 371 (0x173) | V_FREXP_EXP_I32
- 52 (0x34)  | 372 (0x174) | V_FREXP_MANT_F3
+ 51 (0x33)  | 371 (0x173) | V_FREXP_EXP_I32_F32
+ 52 (0x34)  | 372 (0x174) | V_FREXP_MANT_F32
  53 (0x35)  | 373 (0x175) | V_CLREXCP
  54 (0x36)  | 374 (0x176) | V_MOVRELD_B32
  55 (0x37)  | 375 (0x177) | V_MOVRELS_B32
@@ -252,6 +252,13 @@ if (ASFLOAT(SRC0) > 0.0 && ASFLOAT(SRC0) != F)
     F += 1.0
 VDST = F
 ```
+
+#### V_CLREXCP
+
+Opcode VOP1: 65 (0x41) for GCN 1.0/1.1; 53 (0x35) for GCN 1.2  
+Opcode VOP3A: 449 (0x1c1) for GCN 1.0/1.1; 373 (0x175) for GCN 1.2  
+Syntax: V_CLREXCP  
+Description: Clear wave's exception state in SIMD.  
 
 #### V_COS_F32
 
@@ -602,7 +609,7 @@ VDST = FLOOR(ASFLOAT(SRC0))
 
 Opcode VOP1: 32 (0x20) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
 Opcode VOP3A: 416 (0x1a0) for GCN 1.0/1.1; 347 (0x15b) for GCN 1.2  
-Syntax: V_FRACT VDST, SRC0  
+Syntax: V_FRACT_F32 VDST, SRC0  
 Description: Get fractional from floating point value SRC0 and store it to VDST.
 Fractional will be computed by subtracting floor(SRC0) from SRC0.
 If SRC0 is infinity or NaN then NaN with proper sign is stored to VDST.  
@@ -613,6 +620,93 @@ if (ABS(SF)!=NAN && SF!=-INF && SF!=INF)
     VDST = SF - FLOOR(ASFLOAT(SF))
 else
     VDST = NAN * SIGN(SF)
+```
+
+#### V_FRACT_F64
+
+Opcode VOP1: 62 (0x3e) for GCN 1.0/1.1; 51 (0x33) for GCN 1.2  
+Opcode VOP3A: 446 (0x1be) for GCN 1.0/1.1; 371 (0x173) for GCN 1.2  
+Syntax: V_FRACT_F64 VDST(2), SRC0(2)  
+Description: Get fractional from double floating point value SRC0 and store it to VDST.
+Fractional will be computed by subtracting floor(SRC0) from SRC0.
+If SRC0 is infinity or NaN then NaN with proper sign is stored to VDST.  
+Operation:  
+```
+FLOAT SD = ASDOUBLE(SRC0)
+if (ABS(SD)!=NAN && SD!=-INF && SD!=INF)
+    VDST = SD - FLOOR(ASDOUBLE(SD))
+else
+    VDST = NAN * SIGN(SD)
+```
+
+#### V_FREXP_EXP_I32_F32
+
+Opcode VOP1: 63 (0x3f) for GCN 1.0/1.1; 51 (0x33) for GCN 1.2  
+Opcode VOP3A: 447 (0x1bf) for GCN 1.0/1.1; 371 (0x173) for GCN 1.2  
+Syntax: V_FREXP_EXP_I32_F32 VDST, SRC0  
+Description: Get exponent minus 1 from single FP value SRC0, and store that exponent to VDST.
+This instruction realizes frexp function.
+If SRC0 is infinity or NAN then store -1 to VDST.  
+Operation:  
+```
+FLOAT SF = ASFLOAT(SRC0)
+if (ABS(SF) != INF || ABS(SF) != NAN)
+    VDST = FREXP_EXP(SF)
+else
+    VDST = -1
+```
+
+#### V_FREXP_EXP_I32_F64
+
+Opcode VOP1: 60 (0x3c) for GCN 1.0/1.1; 48 (0x30) for GCN 1.2  
+Opcode VOP3A: 444 (0x1bc) for GCN 1.0/1.1; 368 (0x170) for GCN 1.2  
+Syntax: V_FREXP_EXP_I32_F64 VDST, SRC0(2)  
+Description: Get exponent minus 1 from double FP value SRC0, and store that exponent to VDST.
+This instruction realizes frexp function.
+If SRC0 is infinity or NAN then store -1 to VDST.  
+Operation:  
+```
+DOUBLE SD = ASDOUBLE(SRC0)
+if (ABS(SD) != INF || ABS(SD) != NAN)
+    VDST = FREXP_EXP(SD)
+else
+    VDST = -1
+```
+
+#### V_FREXP_MANT_F32
+
+Opcode VOP1: 64 (0x40) for GCN 1.0/1.1; 52 (0x34) for GCN 1.2  
+Opcode VOP3A: 448 (0x1c0) for GCN 1.0/1.1; 372 (0x174) for GCN 1.2  
+Syntax: V_FREXP_MANT_F32 VDST, SRC0  
+Description: Get mantisa from double FP value SRC0, and store it to VDST. Mantisa includes
+sign of input. If SRC0 is infinity then store -NAN to VDST.  
+Operation:  
+```
+FLOAT SF = ASFLOAT(SRC0)
+if (ABS(SF) == INF)
+    VDST = -NAN
+else if (ABS(SF) != NAN)
+    VDST = FREXP_MANT(SF) * SIGN(SF)
+else
+    VDST = NAN * SIGN(SF)
+```
+
+#### V_FREXP_MANT_F64
+
+Opcode VOP1: 61 (0x3d) for GCN 1.0/1.1; 49 (0x31) for GCN 1.2  
+Opcode VOP3A: 445 (0x1bd) for GCN 1.0/1.1; 369 (0x171) for GCN 1.2  
+Syntax: V_FREXP_MANT_F64 VDST(2), SRC0(2)  
+Description: Get mantisa from double FP value SRC0, and store it to VDST. Mantisa includes
+sign of input. If SRC0 is infinity then store -NAN to VDST.  
+Operation:  
+```
+DOUBLE SD = ASDOUBLE(SRC0)
+if (ABS(SD) == INF)
+    VDST = -NAN
+else if (ABS(SD) != NAN)
+    VDST = FREXP_MANT(SD) * SIGN(SD)
+else
+    VDST = NAN * SIGN(SD)
 ```
 
 #### V_LOG_CLAMP_F32
@@ -641,8 +735,8 @@ else
 
 #### V_LOG_F32
 
-Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 2.0  
-Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1; 353 (0x161) for GCN 2.0  
+Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
+Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1; 353 (0x161) for GCN 1.2  
 Syntax: V_LOG_F32 VDST, SRC0  
 Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
 to VDST. If SRC0 is negative then store -NaN to VDST.
@@ -675,6 +769,39 @@ Description: Move SRC0 into VDST.
 Operation:  
 ```
 VDST = SRC0
+```
+
+#### V_MOVRELD_B32
+
+Opcode VOP1: 66 (0x42) for GCN 1.0/1.1; 54 (0x35) for GCN 1.2  
+Opcode VOP3A: 450 (0x1c2) for GCN 1.0/1.1; 374 (0x175) for GCN 1.2  
+Syntax: V_MOVRELD VDST, VSRC0  
+Description: Move SRC0 to VGPR[VDST_NUMBER+M0].  
+Operation:  
+```
+VGPR[VDST_NUMBER+M0] = SRC0
+```
+
+#### V_MOVRELS_B32
+
+Opcode VOP1: 67 (0x43) for GCN 1.0/1.1; 55 (0x36) for GCN 1.2  
+Opcode VOP3A: 451 (0x1c3) for GCN 1.0/1.1; 375 (0x176) for GCN 1.2  
+Syntax: V_MOVRELS VDST, VSRC0  
+Description: Move SRC0[SRC0_NUMBER+M0] to VDST.  
+Operation:  
+```
+VDST = VGPR[SRC0_NUMBER+M0]
+```
+
+#### V_MOVRELSD_B32
+
+Opcode VOP1: 67 (0x43) for GCN 1.0/1.1; 55 (0x36) for GCN 1.2  
+Opcode VOP3A: 451 (0x1c3) for GCN 1.0/1.1; 375 (0x176) for GCN 1.2  
+Syntax: V_MOVRELSD VDST, VSRC0  
+Description: Move SRC0[SRC0_NUMBER+M0] to VGPR[VDST_NUMBER+M0].  
+Operation:  
+```
+VGPR[VDST_NUMBER+M0] = VGPR[SRC0_NUMBER+M0]
 ```
 
 #### V_NOP
@@ -726,8 +853,8 @@ if (ABS(ASDOUBLE(VDST))==INF)
 
 #### V_RCP_F32
 
-Opcode VOP1: 42 (0x2a) for GCN 1.0/1.1; 34 (0x22) for GCN 2.0  
-Opcode VOP3A: 426 (0x1aa) for GCN 1.0/1.1; 354 (0x162) for GCN 2.0  
+Opcode VOP1: 42 (0x2a) for GCN 1.0/1.1; 34 (0x22) for GCN 1.2  
+Opcode VOP3A: 426 (0x1aa) for GCN 1.0/1.1; 354 (0x162) for GCN 1.2  
 Syntax: V_RCP_F32 VDST, SRC0  
 Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
 Guaranted error below 1ulp.  
@@ -738,8 +865,8 @@ VDST = APPROX_RCP(ASFLOAT(SRC0))
 
 #### V_RCP_F64
 
-Opcode VOP1: 47 (0x2f) for GCN 1.0/1.1; 37 (0x25) for GCN 2.0  
-Opcode VOP3A: 431 (0x1af) for GCN 1.0/1.1; 357 (0x165) for GCN 2.0  
+Opcode VOP1: 47 (0x2f) for GCN 1.0/1.1; 37 (0x25) for GCN 1.2  
+Opcode VOP3A: 431 (0x1af) for GCN 1.0/1.1; 357 (0x165) for GCN 1.2  
 Syntax: V_RCP_F64 VDST(2), SRC0(2)  
 Description: Approximate reciprocal from double FP value SRC0 and store it to VDST.
 Relative error of approximation is ~1e-8.  
@@ -750,8 +877,8 @@ VDST = APPROX_RCP(ASDOUBLE(SRC0))
 
 #### V_RCP_IFLAG_F32
 
-Opcode VOP1: 43 (0x2b) for GCN 1.0/1.1; 35 (0x23) for GCN 2.0  
-Opcode VOP3A: 427 (0x1ab) for GCN 1.0/1.1; 355 (0x163) for GCN 2.0  
+Opcode VOP1: 43 (0x2b) for GCN 1.0/1.1; 35 (0x23) for GCN 1.2  
+Opcode VOP3A: 427 (0x1ab) for GCN 1.0/1.1; 355 (0x163) for GCN 1.2  
 Syntax: V_RCP_IFLAG_F32 VDST, SRC0  
 Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
 Guaranted error below 1ulp. This instruction signals integer division by zero, instead
@@ -843,8 +970,8 @@ if (ASDOUBLE(VDST)==INF)
 
 #### V_RSQ_F32
 
-Opcode VOP1: 46 (0x2e) for GCN 1.0/1.1; 36 (0x24) for GCN 2.0  
-Opcode VOP3A: 430 (0x1ae) for GCN 1.0/1.1; 356 (0x164) for GCN 2.0  
+Opcode VOP1: 46 (0x2e) for GCN 1.0/1.1; 36 (0x24) for GCN 1.2  
+Opcode VOP3A: 430 (0x1ae) for GCN 1.0/1.1; 356 (0x164) for GCN 1.2  
 Syntax: V_RSQ_F32 VDST, SRC0  
 Description: Approximate reciprocal square root from floating point value SRC0 and
 store it to VDST. If SRC0 is negative value, store -NAN to VDST.
@@ -856,8 +983,8 @@ VDST = APPROX_RSQRT(ASFLOAT(SRC0))
 
 #### V_RSQ_F64
 
-Opcode VOP1: 49 (0x31) for GCN 1.0/1.1; 38 (0x26) for GCN 2.0  
-Opcode VOP3A: 433 (0x1b1) for GCN 1.0/1.1; 358 (0x166) for GCN 2.0  
+Opcode VOP1: 49 (0x31) for GCN 1.0/1.1; 38 (0x26) for GCN 1.2  
+Opcode VOP3A: 433 (0x1b1) for GCN 1.0/1.1; 358 (0x166) for GCN 1.2  
 Syntax: V_RSQ_F64 VDST(2), SRC0(2)  
 Description: Approximate reciprocal square root from double floating point value SRC0 and
 store it to VDST. If SRC0 is negative value, store -NAN to VDST.  
