@@ -245,7 +245,7 @@ Syntax: V_CEIL_F32 VDST, SRC0
 Description: Truncate floating point valu from SRC0 with rounding to positive infinity
 (ceilling), and store result to VDST. Implemented by flooring.
 If SRC0 is infinity or NaN then copy SRC0 to VDST.  
-Operation:
+Operation:  
 ```
 FLOAT F = FLOOR(ASFLOAT(SRC0))
 if (ASFLOAT(SRC0) > 0.0 && ASFLOAT(SRC0) != F)
@@ -598,9 +598,9 @@ for (UINT8 i = 0; i < 32; i++)
 Opcode VOP1: 36 (0x24) for GCN 1.0/1.1; 31 (0x1f) for GCN 1.2  
 Opcode VOP3A: 420 (0x1a4) for GCN 1.0/1.1; 351 (0x15f) for GCN 1.2  
 Syntax: V_FLOOR_F32 VDST, SRC0  
-Description: Truncate floating point valu from SRC0 with rounding to positive infinity
+Description: Truncate floating point value SRC0 with rounding to positive infinity
 (flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
-Operation:
+Operation:  
 ```
 VDST = FLOOR(ASFLOAT(SRC0))
 ```
@@ -644,7 +644,7 @@ else
 Opcode VOP1: 63 (0x3f) for GCN 1.0/1.1; 51 (0x33) for GCN 1.2  
 Opcode VOP3A: 447 (0x1bf) for GCN 1.0/1.1; 371 (0x173) for GCN 1.2  
 Syntax: V_FREXP_EXP_I32_F32 VDST, SRC0  
-Description: Get exponent minus 1 from single FP value SRC0, and store that exponent to VDST.
+Description: Get exponent plus 1 from single FP value SRC0, and store that exponent to VDST.
 This instruction realizes frexp function.
 If SRC0 is infinity or NAN then store -1 to VDST.  
 Operation:  
@@ -661,7 +661,7 @@ else
 Opcode VOP1: 60 (0x3c) for GCN 1.0/1.1; 48 (0x30) for GCN 1.2  
 Opcode VOP3A: 444 (0x1bc) for GCN 1.0/1.1; 368 (0x170) for GCN 1.2  
 Syntax: V_FREXP_EXP_I32_F64 VDST, SRC0(2)  
-Description: Get exponent minus 1 from double FP value SRC0, and store that exponent to VDST.
+Description: Get exponent plus 1 from double FP value SRC0, and store that exponent to VDST.
 This instruction realizes frexp function.
 If SRC0 is infinity or NAN then store -1 to VDST.  
 Operation:  
@@ -816,7 +816,7 @@ Description: Do nothing.
 Opcode VOP1: 55 (0x37) for GCN 1.0/1.1; 43 (0x2b) for GCN 1.2  
 Opcode VOP3A: 439 (0x1b7) for GCN 1.0/1.1; 363 (0x16b) for GCN 1.2  
 Syntax: V_NOT_B32 VDST, SRC0  
-Description: Do bitwise negation on 32-bit SRC0, and store result to VDST.
+Description: Do bitwise negation on 32-bit SRC0, and store result to VDST.  
 Operation:  
 ```
 VDST = ~SRC0
