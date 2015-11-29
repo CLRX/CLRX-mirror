@@ -335,7 +335,7 @@ otherwise set SDST to -1.
 Operation:  
 ```
 SDST = -1
-for (INT8 i = 31; i >= 0; i++)
+for (INT8 i = 31; i >= 0; i--)
     if ((1U<<i) & SSRC0) != 0)
     { SDST = 31-i; break; }
 ```
@@ -349,7 +349,7 @@ otherwise set SDST to -1.  SSRC0 is 64-bit.
 Operation:  
 ```
 SDST = -1
-for (INT8 i = 63; i >= 0; i++)
+for (INT8 i = 63; i >= 0; i--)
     if ((1ULL<<i) & SSRC0) != 0)
     { SDST = 63-i; break; }
 ```
@@ -364,7 +364,7 @@ Operation:
 ```
 SDST = -1
 UINT32 bitval = (INT32)SSRC0>=0 ? 1 : 0
-for (INT8 i = 31; i >= 0; i++)
+for (INT8 i = 31; i >= 0; i--)
     if ((1U<<i) & SSRC0) == (bitval<<i))
     { SDST = 31-i; break; }
 ```
@@ -379,7 +379,7 @@ Operation:
 ```
 SDST = -1
 UINT64 bitval = (INT64)SSRC0>=0 ? 1 : 0
-for (INT8 i = 63; i >= 0; i++)
+for (INT8 i = 63; i >= 0; i--)
     if ((1U<<i) & SSRC0) == (bitval<<i))
     { SDST = 63-i; break; }
 ```
