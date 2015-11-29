@@ -562,21 +562,6 @@ for (INT8 i = 31; i >= 0; i--)
     { VDST = 31-i; break; }
 ```
 
-#### V_FFBL_B32
-
-Opcode VOP1: 58 (0x3a) for GCN 1.0/1.1; 46 (0x2e) for GCN 1.2  
-Opcode VOP3A: 442 (0x1ba) for GCN 1.0/1.1; 366 (0x16e) for GCN 1.2  
-Syntax: V_FFBL_B32 VDST, SRC0  
-Description: Find first one bit in SRC0. If found, store number of bit to VDST,
-otherwise set VDST to -1.  
-Operation:  
-```
-VDST = -1
-for (UINT8 i = 0; i < 32; i++)
-    if ((1U<<i) & SRC0) != 0)
-    { VDST = i; break; }
-```
-
 #### V_FFBH_I32
 
 Opcode VOP1: 59 (0x3b) for GCN 1.0/1.1; 47 (0x2f) for GCN 1.2  
@@ -591,6 +576,21 @@ UINT32 bitval = (INT32)SRC0>=0 ? 1 : 0
 for (INT8 i = 31; i >= 0; i--)
     if ((1U<<i) & SRC0) == (bitval<<i))
     { VDST = 31-i; break; }
+```
+
+#### V_FFBL_B32
+
+Opcode VOP1: 58 (0x3a) for GCN 1.0/1.1; 46 (0x2e) for GCN 1.2  
+Opcode VOP3A: 442 (0x1ba) for GCN 1.0/1.1; 366 (0x16e) for GCN 1.2  
+Syntax: V_FFBL_B32 VDST, SRC0  
+Description: Find first one bit in SRC0. If found, store number of bit to VDST,
+otherwise set VDST to -1.  
+Operation:  
+```
+VDST = -1
+for (UINT8 i = 0; i < 32; i++)
+    if ((1U<<i) & SRC0) != 0)
+    { VDST = i; break; }
 ```
 
 #### V_FLOOR_F32
@@ -624,8 +624,8 @@ else
 
 #### V_FRACT_F64
 
-Opcode VOP1: 62 (0x3e) for GCN 1.0/1.1; 51 (0x33) for GCN 1.2  
-Opcode VOP3A: 446 (0x1be) for GCN 1.0/1.1; 371 (0x173) for GCN 1.2  
+Opcode VOP1: 62 (0x3e) for GCN 1.0/1.1; 52 (0x32) for GCN 1.2  
+Opcode VOP3A: 446 (0x1be) for GCN 1.0/1.1; 372 (0x172) for GCN 1.2  
 Syntax: V_FRACT_F64 VDST(2), SRC0(2)  
 Description: Get fractional from double floating point value SRC0 and store it to VDST.
 Fractional will be computed by subtracting floor(SRC0) from SRC0.
@@ -736,7 +736,7 @@ else
 #### V_LOG_F32
 
 Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
-Opcode VOP3A: 422 (0x1a6) for GCN 1.0/1.1; 353 (0x161) for GCN 1.2  
+Opcode VOP3A: 423 (0x1a7) for GCN 1.0/1.1; 353 (0x161) for GCN 1.2  
 Syntax: V_LOG_F32 VDST, SRC0  
 Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
 to VDST. If SRC0 is negative then store -NaN to VDST.
@@ -752,14 +752,6 @@ else
     VDST = APPROX_LOG2(F)
 ```
 
-#### V_MOV_FED_B32
-
-Opcode VOP1: 9 (0x9)  
-Opcode VOP3A: 393 (0x189) for GCN 1.0/1.1; 329 (0x149) for GCN 1.2  
-Syntax: V_MOV_FED_B32 VDST, SRC0  
-Description: Introduce edc double error upon write to dest vgpr without causing an exception
-(???).
-
 #### V_MOV_B32
 
 Opcode VOP1: 1 (0x1)  
@@ -771,10 +763,18 @@ Operation:
 VDST = SRC0
 ```
 
+#### V_MOV_FED_B32
+
+Opcode VOP1: 9 (0x9)  
+Opcode VOP3A: 393 (0x189) for GCN 1.0/1.1; 329 (0x149) for GCN 1.2  
+Syntax: V_MOV_FED_B32 VDST, SRC0  
+Description: Introduce edc double error upon write to dest vgpr without causing an exception
+(???).
+
 #### V_MOVRELD_B32
 
-Opcode VOP1: 66 (0x42) for GCN 1.0/1.1; 54 (0x35) for GCN 1.2  
-Opcode VOP3A: 450 (0x1c2) for GCN 1.0/1.1; 374 (0x175) for GCN 1.2  
+Opcode VOP1: 66 (0x42) for GCN 1.0/1.1; 54 (0x34) for GCN 1.2  
+Opcode VOP3A: 450 (0x1c2) for GCN 1.0/1.1; 374 (0x174) for GCN 1.2  
 Syntax: V_MOVRELD VDST, VSRC0  
 Description: Move SRC0 to VGPR[VDST_NUMBER+M0].  
 Operation:  
@@ -784,8 +784,8 @@ VGPR[VDST_NUMBER+M0] = SRC0
 
 #### V_MOVRELS_B32
 
-Opcode VOP1: 67 (0x43) for GCN 1.0/1.1; 55 (0x36) for GCN 1.2  
-Opcode VOP3A: 451 (0x1c3) for GCN 1.0/1.1; 375 (0x176) for GCN 1.2  
+Opcode VOP1: 67 (0x43) for GCN 1.0/1.1; 55 (0x35) for GCN 1.2  
+Opcode VOP3A: 451 (0x1c3) for GCN 1.0/1.1; 375 (0x175) for GCN 1.2  
 Syntax: V_MOVRELS VDST, VSRC0  
 Description: Move SRC0[SRC0_NUMBER+M0] to VDST.  
 Operation:  
@@ -795,8 +795,8 @@ VDST = VGPR[SRC0_NUMBER+M0]
 
 #### V_MOVRELSD_B32
 
-Opcode VOP1: 67 (0x43) for GCN 1.0/1.1; 55 (0x36) for GCN 1.2  
-Opcode VOP3A: 451 (0x1c3) for GCN 1.0/1.1; 375 (0x176) for GCN 1.2  
+Opcode VOP1: 68 (0x44) for GCN 1.0/1.1; 56 (0x36) for GCN 1.2  
+Opcode VOP3A: 452 (0x1c4) for GCN 1.0/1.1; 376 (0x176) for GCN 1.2  
 Syntax: V_MOVRELSD VDST, VSRC0  
 Description: Move SRC0[SRC0_NUMBER+M0] to VGPR[VDST_NUMBER+M0].  
 Operation:  
