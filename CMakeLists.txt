@@ -133,31 +133,9 @@ IF(BUILD_DOCUMENTATION)
   SET(BUILD_CLRXDOC ON)
 ENDIF(BUILD_DOCUMENTATION)
 
-IF(BUILD_DOXYGEN)
-  FIND_PACKAGE(Doxygen)
-  IF(NOT DOXYGEN_FOUND)
-    MESSAGE(FATAL_ERROR 
-      "Doxygen is needed to build the documentation. Please install it correctly")
-  ENDIF(NOT DOXYGEN_FOUND)
-  #-- Configure the Template Doxyfile for our specific project
-  CONFIGURE_FILE(Doxyfile.in ${PROJECT_BINARY_DIR}/Doxyfile  @ONLY IMMEDIATE)
-  #-- Add a custom target to run Doxygen when ever the project is built
-  ADD_CUSTOM_TARGET(Docs COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile
-        SOURCES ${PROJECT_BINARY_DIR}/Doxyfile)
-  # IF you do NOT want the documentation to be generated EVERY time you build the project
-  # then leave out the 'ALL' keyword from the above command.
-  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/ DESTINATION share/doc/CLRX/doxygen)
-ENDIF(BUILD_DOXYGEN)
-
-IF(BUILD_CLRXDOC)
-  FIND_PROGRAM(MARKDOWN_PY markdown_py)
-  IF(NOT MARKDOWN_PY)
-    MESSAGE(FATAL_ERROR "markdown_py is needed to build CLRX documentation")
-  ENDIF(NOT MARKDOWN_PY)
-  ADD_CUSTOM_TARGET(CLRXDocs ALL COMMAND sh ${PROJECT_SOURCE_DIR}/doc/genclrxdoc.sh
-          ${PROJECT_SOURCE_DIR}/doc ${PROJECT_BINARY_DIR}/clrxdoc)
-  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/clrxdoc/ DESTINATION share/doc/CLRX/clrx)
-ENDIF(BUILD_CLRXDOC)
+####
+# rules to build doxygen and clrx doc is in proper CMakeLists.txt files in subdirectories
+####
 
 IF(BUILD_MANUAL)
     INCLUDE(Pod2Man)
@@ -284,3 +262,5 @@ ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/programs)
 IF (BUILD_SAMPLES)
     ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/samples)
 ENDIF(BUILD_SAMPLES)
+
+ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/doc)
