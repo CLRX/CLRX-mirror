@@ -57,7 +57,9 @@ Modifiers:
 * ABS(SRC) - apply absolute value to source operand
 
 NOTE: OMOD modifier doesn't work if output denormals are allowed
-(5 bit of MODE register for single precision or 7 bit for double precision).
+(5 bit of MODE register for single precision or 7 bit for double precision).  
+NOTE: OMOD and CLAMP modifier affects only for instruction that output is
+floating point value.
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
@@ -184,8 +186,7 @@ SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 Opcode: VOP2: 27 (0x1b) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
 Opcode: VOP3A: 283 (0x11b) for GCN 1.0/1.1; 275 (0x113) for GCN 1.2  
 Syntax: V_AND_B32 VDST, SRC0, SRC1  
-Description: Do bitwise AND on SRC0 and SRC1, store result to VDST.
-CLAMP and OMOD modifier doesn't affect on result.  
+Description: Do bitwise AND on SRC0 and SRC1, store result to VDST.  
 Operation:  
 ```
 VDST = SRC0 & SRC1
@@ -243,7 +244,7 @@ Opcode VOP3A: 256 (0x100) for GCN 1.0/1.1; 256 (0x100) for GCN 1.2
 Syntax VOP2: V_CNDMASK_B32 VDST, SRC0, SRC1, VCC  
 Syntax VOP3A: V_CNDMASK_B32 VDST, SRC0, SRC1, SSRC2(2)  
 Description: If bit for current lane of VCC or SDST is set then store SRC1 to VDST,
-otherwise store SRC0 to VDST. CLAMP and OMOD modifier doesn't affect on result.  
+otherwise store SRC0 to VDST.  
 Operation:  
 ```
 VDST = SSRC2&(1ULL<<LANEID) ? SRC1 : SRC0
@@ -632,7 +633,7 @@ Opcode VOP3A: 268 (0x10c) for GCN 1.0/1.1; 265 (0x109) for GCN 1.2
 Syntax: V_MUL_HI_U32_U24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
 from SRC1 and store higher 16-bit of the result to VDST.
-Any modifier doesn't affect to result.  
+Any modifier doesn't affect on result.  
 Operation:  
 ```
 VDST = ((UINT64)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)) >> 32
@@ -644,7 +645,7 @@ Opcode VOP2: 9 (0x9) for GCN 1.0/1.1; 6 (0x6) for GCN 1.2
 Opcode VOP3A: 265 (0x109) for GCN 1.0/1.1; 262 (0x106) for GCN 1.2  
 Syntax: V_MUL_I32_I24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1
-and store result to VDST. Any modifier doesn't affect to result.  
+and store result to VDST. Any modifier doesn't affect on result.  
 Operation:  
 ```
 INT32 V0 = (INT32)((SRC0&0x7fffff) | (SSRC0&0x800000 ? 0xff800000 : 0))
@@ -658,7 +659,7 @@ Opcode VOP2: 11 (0xb) for GCN 1.0/1.1; 8 (0x8) for GCN 1.2
 Opcode VOP3A: 267 (0x10b) for GCN 1.0/1.1; 264 (0x108) for GCN 1.2  
 Syntax: V_MUL_U32_U24 VDST, SRC0, SRC1  
 Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
-from SRC1 and store result to VDST. Any modifier doesn't affect to result.  
+from SRC1 and store result to VDST. Any modifier doesn't affect on result.  
 Operation:  
 ```
 VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff)
