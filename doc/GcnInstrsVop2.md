@@ -59,7 +59,8 @@ Modifiers:
 NOTE: OMOD modifier doesn't work if output denormals are allowed
 (5 bit of MODE register for single precision or 7 bit for double precision).  
 NOTE: OMOD and CLAMP modifier affects only for instruction that output is
-floating point value.
+floating point value.  
+NOTE: ABS and negation is applied to source operand for any instruction.
 
 Negation and absolute value can be combined: `-ABS(V0)`. Modifiers CLAMP and
 OMOD (MUL:2, MUL:4 and DIV:2) can be given in random order.
@@ -250,6 +251,34 @@ Operation:
 VDST = SSRC2&(1ULL<<LANEID) ? SRC1 : SRC0
 ```
 
+#### V_CVT_PK_I16_I32
+
+Opcode VOP2: 49 (0x31) for GCN 1.0/1.1  
+Opcode VOP3A: 305 (0x131) for GCN 1.0/1.1  
+Syntax: V_CVT_PK_I16_I32 VDST, SRC0, SRC1  
+Description: Convert signed value from SRC0 and SRC1 to signed 16-bit values with
+clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
+Operation:  
+```
+INT16 D0 = MAX(MIN((INT32)SRC0, 0x7fff), -0x8000) 
+INT16 D1 = MAX(MIN((INT32)SRC1, 0x7fff), -0x8000)
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
+#### V_CVT_PK_U16_U32
+
+Opcode VOP2: 48 (0x30) for GCN 1.0/1.1  
+Opcode VOP3A: 304 (0x130) for GCN 1.0/1.1  
+Syntax: V_CVT_PK_U16_U32 VDST, SRC0, SRC1  
+Description: Convert unsigned value from SRC0 and SRC1 to unsigned 16-bit values with
+clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 D0 = MIN(SRC0, 0xffff)
+UINT16 D1 = MIN(SRC1, 0xffff)
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
 #### V_CVT_PKACCUM_U8_F32
 
 Opcode VOP2: 44 (0x2c) for GCN 1.0/1.1  
@@ -320,34 +349,6 @@ Operation:
 ```
 UINT16 D0 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC0)))
 UINT16 D1 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC1)))
-VDST = D0 | (((UINT32)D1) << 16)
-```
-
-#### V_CVT_PK_U16_U32
-
-Opcode VOP2: 48 (0x30) for GCN 1.0/1.1  
-Opcode VOP3A: 304 (0x130) for GCN 1.0/1.1  
-Syntax: V_CVT_PK_U16_U32 VDST, SRC0, SRC1  
-Description: Convert unsigned value from SRC0 and SRC1 to unsigned 16-bit values with
-clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
-Operation:  
-```
-UINT16 D0 = MIN(SRC0, 0xffff)
-UINT16 D1 = MIN(SRC1, 0xffff)
-VDST = D0 | (((UINT32)D1) << 16)
-```
-
-#### V_CVT_PK_I16_I32
-
-Opcode VOP2: 49 (0x31) for GCN 1.0/1.1  
-Opcode VOP3A: 305 (0x131) for GCN 1.0/1.1  
-Syntax: V_CVT_PK_I16_I32 VDST, SRC0, SRC1  
-Description: Convert signed value from SRC0 and SRC1 to signed 16-bit values with
-clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
-Operation:  
-```
-INT16 D0 = MAX(MIN((INT32)SRC0, 0x7fff), -0x8000) 
-INT16 D1 = MAX(MIN((INT32)SRC1, 0x7fff), -0x8000)
 VDST = D0 | (((UINT32)D1) << 16)
 ```
 
