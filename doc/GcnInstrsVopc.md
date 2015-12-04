@@ -66,20 +66,31 @@ source operands
 
 VOPC opcodes (0-255) and VOP3 opcodes are same.
 
-### Tables of opcodes and their descriptions (GCN 1.0/1.1)
+### Tables of opcodes and their descriptions
 
-Table of floating point comparison instructions by opcode:
+Table of floating point comparison instructions by opcode (GCN 1.0/1.1):
 
 Opcode range        | Instruction        | Description
 --------------------|--------------------|---------------------------
 0-15 (0x00-0x0f)    | V_CMP_{OP16}_F32   | Signal on sNAN input only. Single FP values.
-16-31 (0x10-0x1f)   | V_CMPX_{OP16}_F32  | Signal on sNAN input only. Write result to EXEC. Single FP values.
+16-31 (0x10-0x1f)   | V_CMPX_{OP16}_F32  | Signal on sNAN input only. Also write result to EXEC. Single FP values.
 32-47 (0x20-0x2f)   | V_CMP_{OP16}_F64   | Signal on sNAN input only. Double FP values.
-48-63 (0x30-0x3f)   | V_CMPX_{OP16}_F64  | Signal on sNAN input only. Write result to EXEC. Double FP values.
-64-79 (0x40-0x4f)   | V_CMP_{OP16}_F32   | Signal on any sNAN. Single FP values.
-80-95 (0x50-0x5f)   | V_CMPX_{OP16}_F32  | Signal on any sNAN. Write result to EXEC. Single FP values.
-96-111 (0x60-0x6f)  | V_CMP_{OP16}_F64   | Signal on any sNAN. Double FP values.
-112-127 (0x70-0x7f) | V_CMPX_{OP16}_F64  | Signal on any sNAN. Write result to EXEC. Double FP values.
+48-63 (0x30-0x3f)   | V_CMPX_{OP16}_F64  | Signal on sNAN input only. Also write result to EXEC. Double FP values.
+64-79 (0x40-0x4f)   | V_CMPS_{OP16}_F32  | Signal on any sNAN. Single FP values.
+80-95 (0x50-0x5f)   | V_CMPSX_{OP16}_F32 | Signal on any sNAN. Also write result to EXEC. Single FP values.
+96-111 (0x60-0x6f)  | V_CMPS_{OP16}_F64  | Signal on any sNAN. Double FP values.
+112-127 (0x70-0x7f) | V_CMPSX_{OP16}_F64 | Signal on any sNAN. Also write result to EXEC. Double FP values.
+
+Table of floating point comparison instructions by opcode (GCN 1.2):
+
+Opcode range        | Instruction        | Description
+--------------------|--------------------|---------------------------
+32-47 (0x20-0x2f)   | V_CMP_{OP16}_F32   | Signal on sNAN input only. Half FP values.
+48-63 (0x30-0x3f)   | V_CMPX_{OP16}_F32  | Signal on sNAN input only. Also write result to EXEC. Half FP values.
+64-79 (0x40-0x4f)   | V_CMP_{OP16}_F32   | Signal on sNAN input only. Single FP values.
+80-95 (0x50-0x5f)   | V_CMPX_{OP16}_F32  | Signal on sNAN input only. Also write result to EXEC. Single FP values.
+96-111 (0x60-0x6f)  | V_CMP_{OP16}_F64   | Signal on sNAN input only. Double FP values.
+112-127 (0x70-0x7f) | V_CMPX_{OP16}_F64  | Signal on sNAN input only. Also write result to EXEC. Double FP values.
 
 Table of OP16 (compare operations) for floating point values comparisons:
 
@@ -100,7 +111,7 @@ Opcode offset | OP16 name | Description
 12 (0xc)      | NLE       | SDST(LANEID) = !((TYPE)SRC0 <= (TYPE)SRC1)
 13 (0xd)      | NEG       | SDST(LANEID) = !((TYPE)SRC0 == (TYPE)SRC1)
 14 (0xe)      | NLT       | SDST(LANEID) = !((TYPE)SRC0 < (TYPE)SRC1)
-15 (0xf)      | T         | SDST(LANEID) = 1
+15 (0xf)      | TRU, T    | SDST(LANEID) = 1
 
 NOTE: Comparison operators (<,<=,!=,==) compares only non NaN values. If any operand is NaN
 then returns false. By contrast, negations of comparisons (NLT, NGT) returns true
@@ -116,18 +127,35 @@ V_CMPSX_EQ_F32 VCC, V0, V1 # V0==V1, store result to EXEC, signal for any sNaN
 V_CMPX_LT_F64 VCC, V[2:3], V[4:5]  # V[2:3]<V[4:5]
 ```
 
-Table of integer comparison instructions by opcode:
+Table of integer comparison instructions by opcode (GCN 1.0/1.1):
 
 Opcode range        | Instruction        | Description
 --------------------|--------------------|---------------------------
 128-135 (0x80-0x87) | V_CMP_{OP8}_I32    | Signed 32-bit values.
-144-151 (0x90-0x97) | V_CMPX_{OP8}_I32   | Write result to EXEC. Signed 32-bit values.
+144-151 (0x90-0x97) | V_CMPX_{OP8}_I32   | Also write result to EXEC. Signed 32-bit values.
 160-167 (0xa0-0xa7) | V_CMP_{OP8}_I64    | Signed 64-bit values.
-176-183 (0xb0-0xb7) | V_CMPX_{OP8}_I64   | Write result to EXEC. Signed 64-bit values.
+176-183 (0xb0-0xb7) | V_CMPX_{OP8}_I64   | Also write result to EXEC. Signed 64-bit values.
 192-199 (0xc0-0xc7) | V_CMP_{OP8}_U32    | Unsigned 32-bit values.
-208-215 (0xd0-0xd7) | V_CMPX_{OP8}_U32   | Write result to EXEC. Unsigned 32-bit values.
+208-215 (0xd0-0xd7) | V_CMPX_{OP8}_U32   | Also write result to EXEC. Unsigned 32-bit values.
 224-231 (0xe0-0xe7) | V_CMP_{OP8}_U64    | Unsigned 64-bit values.
-240-247 (0xf0-0xf7) | V_CMPX_{OP8}_U64   | Write result to EXEC. Unsigned 64-bit values.
+240-247 (0xf0-0xf7) | V_CMPX_{OP8}_U64   | Also write result to EXEC. Unsigned 64-bit values.
+
+Table of integer comparison instructions by opcode (GCN 1.2):
+
+Opcode range        | Instruction        | Description
+--------------------|--------------------|---------------------------
+160-167 (0xa0-0xa7) | V_CMP_{OP8}_I16    | Signed 16-bit values.
+168-175 (0xa8-0xaf) | V_CMP_{OP8}_U16    | Unsigned 16-bit values.
+176-183 (0xb0-0xb7) | V_CMPX_{OP8}_I16   | Also write result to EXEC. Signed 16-bit values.
+184-191 (0xb8-0xbf) | V_CMPX_{OP8}_U16   | Also write result to EXEC. Unsigned 16-bit values.
+192-199 (0xc0-0xc7) | V_CMP_{OP8}_I32    | Signed 32-bit values.
+200-207 (0xc8-0xcf) | V_CMP_{OP8}_U32    | Unsigned 32-bit values.
+208-215 (0xd0-0xd7) | V_CMPX_{OP8}_I32   | Also write result to EXEC. Signed 32-bit values.
+216-223 (0xd8-0xdf) | V_CMPX_{OP8}_U32   | Also write result to EXEC. Unsigned 32-bit values.
+224-231 (0xe0-0xe7) | V_CMP_{OP8}_I64    | Signed 64-bit values.
+232-239 (0xe8-0xef) | V_CMP_{OP8}_U64    | Unsigned 64-bit values.
+240-247 (0xf0-0xf7) | V_CMPX_{OP8}_I64   | Also write result to EXEC. Signed 64-bit values.
+248-255 (0xf8-0xff) | V_CMPX_{OP8}_U64   | Also write result to EXEC. Unsigned 64-bit values.
 
 Table of OP16 (compare operations) for integer values comparisons:
 
@@ -140,7 +168,7 @@ Opcode offset | OP8 name | Description
 4 (0x4)       | GT       | SDST(LANEID) = (TYPE)SRC0 > (TYPE)SRC1
 5 (0x5)       | LG, NE   | SDST(LANEID) = (TYPE)SRC0 != (TYPE)SRC1
 6 (0x6)       | GE       | SDST(LANEID) = (TYPE)SRC0 >= (TYPE)SRC1
-7 (0x7)       | T        | SDST(LANEID) = 1
+7 (0x7)       | TRU, T   | SDST(LANEID) = 1
 
 LANEID in description is lane id. TYPE is type of compared values (UINT32 for _U32,
 INT32 for _I32,...).
@@ -153,12 +181,56 @@ V_CMPX_EQ_U32 VCC, V0, V1 # V0==V1, store result to EXEC, signal for any sNaN
 
 Table of class instructions:
 
-### Tables of opcodes and their descriptions (GCN 1.2)
+#### V_CMP_CLASS_F16
+
+Opcode: 20 (0x14) for GCN 1.2  
+Syntax VOPC: V_CMP_CLASS_F16 VCC, SRC0, SRC1  
+Syntax VOP3: V_CMP_CLASS_F16 SDST, SRC0, SRC1  
+Operation: Check whether SSRC0 half floating point value belongs to one of specified class.
+Classes are specified as set bits in SRC1. If that condition is satisfied then store
+1 to bit of SDST with number of current lane id, otherwise clear that bit.
+No flushing denormalized values for SRC0. List of classes:
+
+Bit | Description
+----|----------------------------
+0   | Signaling NaN
+1   | quiet Nan
+2   | -INF
+3   | negative normalized value
+4   | negative dernormalized value
+5   | negative zero
+6   | positive zero
+7   | positive denormalized value
+8   | positive normalized value
+9   | +INF
+
+#### V_CMPX_CLASS_F16
+
+Opcode: 21 (0x15) for GCN 1.2  
+Syntax VOPC: V_CMPX_CLASS_F16 VCC, SRC0, SRC1  
+Syntax VOP3: V_CMPX_CLASS_F16 SDST, SRC0, SRC1  
+Operation: Check whether SSRC0 half floating point value belongs to one of specified class.
+Classes are specified as set bits in SRC1. If that condition is satisfied then store
+1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
+No flushing denormalized values for SRC0. List of classes:
+
+Bit | Description
+----|----------------------------
+0   | Signaling NaN
+1   | quiet Nan
+2   | -INF
+3   | negative normalized value
+4   | negative dernormalized value
+5   | negative zero
+6   | positive zero
+7   | positive denormalized value
+8   | positive normalized value
+9   | +INF
 
 
 #### V_CMP_CLASS_F32
 
-Opcode: 0x88  
+Opcode: 136 (0x88) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
 Syntax VOPC: V_CMP_CLASS_F32 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMP_CLASS_F32 SDST, SRC0, SRC1  
 Operation: Check whether SSRC0 single floating point value belongs to one of specified class.
@@ -181,7 +253,7 @@ Bit | Description
 
 #### V_CMPX_CLASS_F32
 
-Opcode: 0x98  
+Opcode: 152 (0x98) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
 Syntax VOPC: V_CMPX_CLASS_F32 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMPX_CLASS_F32 SDST, SRC0, SRC1  
 Operation: Check whether SSRC0 single floating point value belongs to one of specified class.
@@ -204,7 +276,7 @@ Bit | Description
 
 #### V_CMP_CLASS_F64
 
-Opcode: 0xa8  
+Opcode: 168 (0xa8) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
 Syntax VOPC: V_CMP_CLASS_F64 VCC, SRC0, SRC1(2)  
 Syntax VOP3: V_CMP_CLASS_F64 SDST, SRC0(2), SRC1(2)  
 Operation: Check whether SSRC0 double floating point value belongs to one of specified class.
@@ -227,7 +299,7 @@ Bit | Description
 
 #### V_CMPX_CLASS_F64
 
-Opcode: 0xb8  
+Opcode: 184 (0xb8) for GCN 1.01/1.1; 19 (0x13) for GCN 1.2  
 Syntax VOPC: V_CMPX_CLASS_F64 VCC, SRC0(2), SRC1(2)  
 Syntax VOP3: V_CMPX_CLASS_F64 SDST, SRC0(2), SRC1(2)  
 Operation: Check whether SSRC0 double floating point value belongs to one of specified class.
