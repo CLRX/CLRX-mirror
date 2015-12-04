@@ -864,6 +864,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_rsq_f32  v158, v79", 0x7f3c5d4fU, 0, false, true, "" },
     { "    v_rsq_f32  v55, v27 vop3", 0xd35c0037U, 0x0000011bU, true, true, "" },
     { "    v_rcp_f64  v[158:159], v[79:80]", 0x7f3c5f4fU, 0, false, true, "" },
+    { "    v_rcp_f64  v[158:159], s[79:80]", 0x7f3c5e4fU, 0, false, true, "" },
     { "    v_rcp_f64  v[55:56], v[27:28] vop3", 0xd35e0037U, 0x0000011bU, true, true, "" },
     { "    v_rcp_clamp_f64  v[158:159], v[79:80]", 0x7f3c614fU, 0, false, true, "" },
     { "    v_rcp_clamp_f64  v[55:56], v[27:28] vop3",
@@ -913,8 +914,6 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_movrelsd_b32  v158, v79", 0x7f3c894fU, 0, false, true, "" },
     { "    v_movrelsd_b32  v55, v27 vop3", 0xd3880037U, 0x0000011bU, true, true, "" },
     /* VOP1 errors */
-    { "    v_rcp_f64  v[158:159], s[79:80]", 0, 0, false, false,
-        "test.s:1:28: Error: Unaligned scalar register range\n" },
     { "    v_mov_b32  v15, 133 vop3", 0, 0, false, false,
         "test.s:1:5: Error: Literal in VOP3 encoding is illegal\n" },
     { "    v_rcp_f64  v[158:], v[79:80]", 0, 0, false, false,
@@ -1615,8 +1614,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:29: Error: Required 2 vector registers\n"
         "test.s:1:37: Error: Required 2 vector registers\n" },
     { "   v_fma_f64  v[55:56], s[79:80], v[166:167], s[29:30]", 0, 0, false, false,
-        "test.s:1:25: Error: Unaligned scalar register range\n"
-        "test.s:1:47: Error: Unaligned scalar register range\n" },
+        "test.s:1:4: Error: More than one SGPR to read in instruction\n" },
     { "   v_div_scale_f32  v55, s[37:38], v79, v166, v79", 0, 0, false, false,
         "test.s:1:26: Error: Unaligned scalar register range\n" },
     { "   v_div_scale_f32  v55, s[36:37], v79, v166, v79 clamp", 0, 0, false, false,
@@ -1642,6 +1640,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   v_fma_f32  v55, v79, v166, v229", 0xd2960037U, 0x07974d4fU, true, true, "" },
     { "   v_fma_f64  v[55:56], v[79:80], v[166:167], v[229:230]",
         0xd2980037U, 0x07974d4fU, true, true, "" },
+    { "   v_fma_f64 v[5:6], v[1:2], v[3:4], s[1:2]",
+        0xd2980005U, 0x00060701U, true, true, "" },
     { "   v_lerp_u8  v55, v79, v166, v229", 0xd29a0037U, 0x07974d4fU, true, true, "" },
     { "   v_alignbit_b32  v55, v79, v166, v229", 0xd29c0037U, 0x07974d4fU, true, true, "" },
     { "   v_alignbyte_b32  v55, v79, v166, v229",

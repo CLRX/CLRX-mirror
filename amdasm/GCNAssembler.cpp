@@ -898,7 +898,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
             (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags | vopOpModFlags |
-            INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS);
+            INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS);
     
     uint32_t immValue = 0;
     std::unique_ptr<AsmExpression> immExpr;
@@ -917,7 +917,7 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch,
             (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | vopOpModFlags |
             (!sgprRegInSrc1 ? INSTROP_VREGS : 0)|INSTROP_SSOURCE|INSTROP_SREGS|
-            (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
+            INSTROP_UNALIGNED | (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     
     if (mode1 == GCN_ARG2_IMM)
     {
@@ -1139,7 +1139,8 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS);
+                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+                    INSTROP_VOP3MODS);
     }
     // modifiers
     VOPExtraModifiers extraMods{};
@@ -1278,13 +1279,14 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     good &= parseOperand(asmr, linePtr, src0Op, &src0OpExpr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|INSTROP_VOP3MODS);
+                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|
+                    INSTROP_VOP3MODS);
     
     if (!skipRequiredComma(asmr, linePtr))
         return;
     good &= parseOperand(asmr, linePtr, src1Op, &src1OpExpr, arch,
                 (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags | INSTROP_VOP3MODS|
-                INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
                 (src0Op.range.start==255 ? INSTROP_ONLYINLINECONSTS : 0));
     // modifiers
     VOPExtraModifiers extraMods{};
@@ -1464,7 +1466,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         if (mode2 != GCN_VOP3_VINTRP)
             good &= parseOperand(asmr, linePtr, src0Op, nullptr, arch,
                     (gcnInsn.mode&GCN_REG_SRC0_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
+                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|INSTROP_LDS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
         
         if (mode2 == GCN_VOP3_VINTRP)
@@ -1487,7 +1489,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 if (!skipRequiredComma(asmr, linePtr))
                     return;
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
-                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_VREGS|INSTROP_SREGS);
+                    (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, INSTROP_UNALIGNED|INSTROP_VREGS|
+                    INSTROP_SREGS);
             }
             // high and vop3
             const char* end = asmr.line+asmr.lineSize;
@@ -1522,7 +1525,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 return;
             good &= parseOperand(asmr, linePtr, src1Op, nullptr, arch,
                     (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, literalConstsFlags|INSTROP_VREGS|
-                    INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
+                    INSTROP_UNALIGNED|INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
                     INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
          
             if (mode1 != GCN_SRC2_NONE && mode1 != GCN_DST_VCC)
@@ -1531,8 +1534,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                     return;
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
                         (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
-                        INSTROP_VREGS| INSTROP_SSOURCE|INSTROP_SREGS|vop3Mods|
-                        INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
+                        INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                        vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
             }
         }
     }
