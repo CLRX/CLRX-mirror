@@ -61,6 +61,8 @@ SGPR is allowed
 source operands
 * only SRC0 can holds LDS_DIRECT
 
+Unaligned pairs of SGPRs are allowed in source and destination operands.
+
 VOPC opcodes (0-255) and VOP3 opcodes are same.
 
 ### Tables of opcodes and their descriptions

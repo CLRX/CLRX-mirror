@@ -73,6 +73,8 @@ SGPR is allowed
 source operands
 * only SRC0 can holds LDS_DIRECT
 
+Unaligned pairs of SGPRs are allowed in source and destination operands.
+
 VOP2 opcodes (0-63) are reflected in VOP3 in range: 256-319.
 List of the instructions by opcode:
 
