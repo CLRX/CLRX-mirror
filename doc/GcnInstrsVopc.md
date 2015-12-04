@@ -106,7 +106,7 @@ Opcode offset | OP16 name | Description
 10 (0xa)      | NLG       | SDST(LANEID) = !((TYPE)SRC0 != (TYPE)SRC1)
 11 (0xb)      | NGT       | SDST(LANEID) = !((TYPE)SRC0 > (TYPE)SRC1)
 12 (0xc)      | NLE       | SDST(LANEID) = !((TYPE)SRC0 <= (TYPE)SRC1)
-13 (0xd)      | NEG       | SDST(LANEID) = !((TYPE)SRC0 == (TYPE)SRC1)
+13 (0xd)      | NEQ       | SDST(LANEID) = !((TYPE)SRC0 == (TYPE)SRC1)
 14 (0xe)      | NLT       | SDST(LANEID) = !((TYPE)SRC0 < (TYPE)SRC1)
 15 (0xf)      | TRU, T    | SDST(LANEID) = 1
 
@@ -176,7 +176,9 @@ V_CMP_LT_U32 VCC, V0, V1  # V0<V1
 V_CMPX_EQ_U32 VCC, V0, V1 # V0==V1, store result to EXEC, signal for any sNaN
 ```
 
-Table of class instructions:
+### Class instructions
+
+List of class instructions:
 
 #### V_CMP_CLASS_F16
 
@@ -186,6 +188,7 @@ Syntax VOP3: V_CMP_CLASS_F16 SDST, SRC0, SRC1
 Operation: Check whether SRC0 half floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST with number of current lane id, otherwise clear that bit.
+This instruction doesn't raise exception under any circumstances.
 No flushing denormalized values for SRC0. List of classes:
 
 Bit | Description
@@ -209,6 +212,7 @@ Syntax VOP3: V_CMPX_CLASS_F16 SDST, SRC0, SRC1
 Operation: Check whether SRC0 half floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
+This instruction doesn't raise exception under any circumstances.
 No flushing denormalized values for SRC0. List of classes:
 
 Bit | Description
@@ -233,6 +237,7 @@ Syntax VOP3: V_CMP_CLASS_F32 SDST, SRC0, SRC1
 Operation: Check whether SRC0 single floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST with number of current lane id, otherwise clear that bit.
+This instruction doesn't raise exception under any circumstances.
 No flushing denormalized values for SRC0. List of classes:
 
 Bit | Description
@@ -256,6 +261,7 @@ Syntax VOP3: V_CMPX_CLASS_F32 SDST, SRC0, SRC1
 Operation: Check whether SRC0 single floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
+This instruction doesn't raise exception under any circumstances.
 No flushing denormalized values for SRC0. List of classes:
 
 Bit | Description
@@ -279,6 +285,7 @@ Syntax VOP3: V_CMP_CLASS_F64 SDST, SRC0(2), SRC1(2)
 Operation: Check whether SRC0 double floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST with number of current lane id, otherwise clear that bit.
+This instruction doesn't raise exception under any circumstances.
 No flushing denormalized values for SRC0. List of classes:
 
 Bit | Description
@@ -302,6 +309,7 @@ Syntax VOP3: V_CMPX_CLASS_F64 SDST, SRC0(2), SRC1(2)
 Operation: Check whether SRC0 double floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
+This instruction doesn't raise exception under any circumstances.
 No flushing denormalized values for SRC0. List of classes:
 
 Bit | Description
