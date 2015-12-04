@@ -51,8 +51,8 @@ Modifiers:
 
 * CLAMP - clamps destination floating point value in range 0.0-1.0
 * MUL:2, MUL:4, DIV:2 - OMOD modifiers. Multiply destination floating point value by
-2.0, 4.0 or 0.5 respectively.
-* -SRC - negate floating point value from source operand
+2.0, 4.0 or 0.5 respectively. Clamping applied after OMOD modifier.
+* -SRC - negate floating point value from source operand. Applied after ABS modifier.
 * ABS(SRC) - apply absolute value to source operand
 
 NOTE: OMOD modifier doesn't work if output denormals are allowed
