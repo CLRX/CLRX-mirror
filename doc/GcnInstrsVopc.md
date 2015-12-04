@@ -1,6 +1,6 @@
 ## GCN ISA VOPC/VOP3 instructions
 
-VOPC instructions can be encoded in the VOPC encoding and the VOP3A/VOP3B encoding.
+VOPC instructions can be encoded in the VOPC encoding and the VOP3A encoding.
 List of fields for VOPC encoding:
 
 Bits  | Name     | Description
@@ -18,9 +18,7 @@ Bits  | Name     | Description
 ------|----------|------------------------------
 0-7   | SDST     | Scalar destination operand
 8-10  | ABS      | Absolute modifiers for source operands (VOP3A)
-8-14  | SDST     | Scalar destination operand (VOP3B)
 11    | CLAMP    | CLAMP modifier (VOP3A)
-15    | CLAMP    | CLAMP modifier (VOP3B)
 17-25 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b110100
 32-40 | SRC0     | First (scalar or vector) source operand
@@ -35,7 +33,6 @@ Bits  | Name     | Description
 ------|----------|------------------------------
 0-7   | SDST     | Scalar destination operand
 8-10  | ABS      | Absolute modifiers for source operands (VOP3A)
-8-14  | SDST     | Scalar destination operand (VOP3B)
 15    | CLAMP    | CLAMP modifier
 16-25 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b110100
@@ -186,7 +183,7 @@ Table of class instructions:
 Opcode: 20 (0x14) for GCN 1.2  
 Syntax VOPC: V_CMP_CLASS_F16 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMP_CLASS_F16 SDST, SRC0, SRC1  
-Operation: Check whether SSRC0 half floating point value belongs to one of specified class.
+Operation: Check whether SRC0 half floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST with number of current lane id, otherwise clear that bit.
 No flushing denormalized values for SRC0. List of classes:
@@ -209,7 +206,7 @@ Bit | Description
 Opcode: 21 (0x15) for GCN 1.2  
 Syntax VOPC: V_CMPX_CLASS_F16 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMPX_CLASS_F16 SDST, SRC0, SRC1  
-Operation: Check whether SSRC0 half floating point value belongs to one of specified class.
+Operation: Check whether SRC0 half floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
 No flushing denormalized values for SRC0. List of classes:
@@ -233,7 +230,7 @@ Bit | Description
 Opcode: 136 (0x88) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
 Syntax VOPC: V_CMP_CLASS_F32 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMP_CLASS_F32 SDST, SRC0, SRC1  
-Operation: Check whether SSRC0 single floating point value belongs to one of specified class.
+Operation: Check whether SRC0 single floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST with number of current lane id, otherwise clear that bit.
 No flushing denormalized values for SRC0. List of classes:
@@ -256,7 +253,7 @@ Bit | Description
 Opcode: 152 (0x98) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
 Syntax VOPC: V_CMPX_CLASS_F32 VCC, SRC0, SRC1  
 Syntax VOP3: V_CMPX_CLASS_F32 SDST, SRC0, SRC1  
-Operation: Check whether SSRC0 single floating point value belongs to one of specified class.
+Operation: Check whether SRC0 single floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
 No flushing denormalized values for SRC0. List of classes:
@@ -279,7 +276,7 @@ Bit | Description
 Opcode: 168 (0xa8) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
 Syntax VOPC: V_CMP_CLASS_F64 VCC, SRC0, SRC1(2)  
 Syntax VOP3: V_CMP_CLASS_F64 SDST, SRC0(2), SRC1(2)  
-Operation: Check whether SSRC0 double floating point value belongs to one of specified class.
+Operation: Check whether SRC0 double floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST with number of current lane id, otherwise clear that bit.
 No flushing denormalized values for SRC0. List of classes:
@@ -302,7 +299,7 @@ Bit | Description
 Opcode: 184 (0xb8) for GCN 1.01/1.1; 19 (0x13) for GCN 1.2  
 Syntax VOPC: V_CMPX_CLASS_F64 VCC, SRC0(2), SRC1(2)  
 Syntax VOP3: V_CMPX_CLASS_F64 SDST, SRC0(2), SRC1(2)  
-Operation: Check whether SSRC0 double floating point value belongs to one of specified class.
+Operation: Check whether SRC0 double floating point value belongs to one of specified class.
 Classes are specified as set bits in SRC1. If that condition is satisfied then store
 1 to bit of SDST and EXEC with number of current lane id, otherwise clear that bit.
 No flushing denormalized values for SRC0. List of classes:
