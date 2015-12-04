@@ -723,6 +723,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_sub_i32  v154, vcc, v21, v107", 0x4d34d715U, 0, false, true, "" },
     { "    v_sub_i32  v55, s[10:11], s27, -v90",
         0xd24c0a37U, 0x4002b41bU, true, true, "" },
+    { "    v_sub_i32  v55, s[11:12], s27, -v90",
+        0xd24c0b37U, 0x4002b41bU, true, true, "" },
     { "    v_subrev_i32  v154, vcc, v21, v107", 0x4f34d715U, 0, false, true, "" },
     { "    v_subrev_i32  v55, s[10:11], s27, -v90",
         0xd24e0a37U, 0x4002b41bU, true, true, "" },
@@ -737,8 +739,6 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_i32  v55, s[10:11], abs(s27), v90", 0, 0, false, false,
         "test.s:1:34: Error: Expected operator\n"
         "test.s:1:35: Error: Expected ',' before argument\n" },
-    { "    v_add_i32  v55, s[11:12], s27, -v90", 0, 0, false, false,
-        "test.s:1:21: Error: Unaligned scalar register range\n" },
     { "    v_add_i32  v55, s[10:11], s27, v90 clamp", 0, 0, false, false,
         "test.s:1:40: Error: Modifier CLAMP in VOP3B is illegal\n" },
     /* rest of the VOP2 */
@@ -946,11 +946,10 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_cmp_f_f32  vcc, v79, s101", 0xd000006aU, 0x0cb4fU, true, true, "" },
     { "    v_cmp_f_f32  vcc, v79, 24", 0xd000006aU, 0x1314fU, true, true, "" },
     { "    v_cmp_f_f32  s[28:29], v79, v201", 0xd000001cU, 0x3934fU, true, true, "" },
+    { "    v_cmp_f_f32  s[29:30], v79, v201", 0xd000001dU, 0x3934fU, true, true, "" },
     { "    v_cmp_f_f32  vcc, 10.5332, v201", 0x7c0192ffU, 0x412887fd, true, true, "" },
     { "    v_cmp_f_f32  vcc, s8, s8", 0xd000006aU, 0x1008U, true, true, "" },
     /* VOPC errors */
-    { "    v_cmp_f_f32  s[29:30], v79, v201", 0, 0, false, false,
-        "test.s:1:18: Error: Unaligned scalar register range\n" },
     { "    v_cmp_f_f32  vcc_lo, v79, v201", 0, 0, false, false,
         "test.s:1:18: Error: Required 2 scalar registers\n" },
     { "    v_cmp_f_f32  vcc, 42321, s37", 0, 0, false, false,
