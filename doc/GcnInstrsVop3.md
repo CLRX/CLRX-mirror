@@ -216,8 +216,74 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_CUBEID_F32
+
+Opcode: 324 (0x144) for GCN 1.0/1.1; 452 (0x1c4) for GCN 1.2  
+Syntax: V_CUBEID_F32 VDST, SRC0, SRC1, SRC2  
+Description: Cubemap face identification. Determine face by comparing three single FP values:
+SRC0 (X), SRC1 (Y), SRC2(Z). Choose highest absolute value and check whether is negative or
+positive. Store floating point value of face ID: (DIM*2.0)+(V[DIM]>=0?1:0),
+where DIM is number of choosen dimension (X - 0, Y - 1, Z - 2);
+V - vector = [SRC0, SRC1, SRC2].  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+FLOAT OUT
+if (ABS(SF2) >= ABS(SF1) && ABS(SF2) >= ABS(SF0))
+    OUT = (SF2 >= 0.0) ? 4 : 5
+else if (ABS(SF1) >= ABS(SF0)
+    OUT = (SF1 >= 0.0) ? 2 : 3
+else
+    OUT = (SF0 >= 0.0) ? 0 : 1
+VDST = OUT
+```
+
+#### V_MAD_F32
+
+Opcode: 321 (0x141) for GCN 1.0/1.1; 449 (0x1c1) for GCN 1.2  
+Syntax: V_MAD_F32 VDST, SRC0, SRC1, SRC2  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and add SRC2, and store
+result to VDST.  
+Operation:  
+```
+VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(SRC2)
+```
+
+#### V_MAD_I32_I24
+
+Opcode: 322 (0x142) for GCN 1.0/1.1; 450 (0x1c2) for GCN 1.2  
+Syntax: V_MAD_I32_I24 VDST, SRC0, SRC1, SRC2  
+Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1,
+add SRC2 to this product, and and store result to VDST.  
+Operation:  
+```
+INT32 V0 = (INT32)((SRC0&0x7fffff) | (SSRC0&0x800000 ? 0xff800000 : 0))
+INT32 V1 = (INT32)((SRC1&0x7fffff) | (SSRC1&0x800000 ? 0xff800000 : 0))
+VDST = V0 * V1 + SRC2
+```
+
 #### V_MAD_LEGACY_F32
 
 Opcode: 320 (0x140) for GCN 1.0/1.1; 448 (0x1c0) for GCN 1.2  
 Syntax: V_MAD_LEGACY_F32 VDST, SRC0, SRC1, SRC2  
-Description:
+Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to SRC2, and
+store result to VDST. If one of value is 0.0 then always store SRC2 to VDST
+(do not apply IEEE rules for 0.0*x).  
+Operation:  
+```
+if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
+    VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(SRC2)
+```
+
+#### V_MAD_U32_U24
+
+Opcode: 323 (0x143) for GCN 1.0/1.1; 451 (0x1c3) for GCN 1.2  
+Syntax: V_MAD_U32_U24 VDST, SRC0, SRC1, SRC2  
+Description: Multiply 24-bit unsigned integer value from SRC0 by 24-bit unsigned value
+from SRC1, add SRC2 to this product and store result to VDST.  
+Operation:  
+```
+VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff) + SRC2
+```
