@@ -30,5 +30,6 @@ the GalliumCompute program binaries.
     * [VOP2 instructions](GcnInstrsVop2)
     * [VOP1 instructions](GcnInstrsVop1)
     * [VOPC instructions](GcnInstrsVopc)
+    * [VOP3 instructions](GcnInstrsVop3)
 
 ---

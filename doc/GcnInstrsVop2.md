@@ -105,24 +105,24 @@ List of the instructions by opcode:
  22 (0x16)  | 278 (0x116) | V_LSHRREV_B32        | V_MAC_F32
  23 (0x17)  | 279 (0x117) | V_ASHR_I32           | V_MADMK_F32
  24 (0x18)  | 280 (0x118) | V_ASHRREV_I32        | V_MADAK_F32
- 25 (0x19)  | 281 (0x119) | V_LSHL_B32           | V_ADD_U32
- 26 (0x1a)  | 282 (0x11a) | V_LSHLREV_B32        | V_SUB_U32
- 27 (0x1b)  | 283 (0x11b) | V_AND_B32            | V_SUBREV_U32
- 28 (0x1c)  | 284 (0x11c) | V_OR_B32             | V_ADDC_U32
- 29 (0x1d)  | 285 (0x11d) | V_XOR_B32            | V_SUBB_U32
- 30 (0x1e)  | 286 (0x11e) | V_BFM_B32            | V_SUBBREV_U32
+ 25 (0x19)  | 281 (0x119) | V_LSHL_B32           | V_ADD_U32 (VOP3B)
+ 26 (0x1a)  | 282 (0x11a) | V_LSHLREV_B32        | V_SUB_U32 (VOP3B)
+ 27 (0x1b)  | 283 (0x11b) | V_AND_B32            | V_SUBREV_U32 (VOP3B)
+ 28 (0x1c)  | 284 (0x11c) | V_OR_B32             | V_ADDC_U32 (VOP3B)
+ 29 (0x1d)  | 285 (0x11d) | V_XOR_B32            | V_SUBB_U32 (VOP3B)
+ 30 (0x1e)  | 286 (0x11e) | V_BFM_B32            | V_SUBBREV_U32 (VOP3B)
  31 (0x1f)  | 287 (0x11f) | V_MAC_F32            | V_ADD_F16
  32 (0x20)  | 288 (0x120) | V_MADMK_F32          | V_SUB_F16
  33 (0x21)  | 289 (0x121) | V_MADAK_F32          | V_SUBREV_F16
  34 (0x22)  | 290 (0x122) | V_BCNT_U32_B32       | V_MUL_F16
  35 (0x23)  | 291 (0x123) | V_MBCNT_LO_U32_B32   | V_MAC_F16
  36 (0x24)  | 292 (0x124) | V_MBCNT_HI_U32_B32   | V_MADMK_F16
- 37 (0x25)  | 293 (0x125) | V_ADD_I32            | V_MADAK_F16
- 38 (0x26)  | 294 (0x126) | V_SUB_I32            | V_ADD_U16
- 39 (0x27)  | 295 (0x127) | V_SUBREV_I32         | V_SUB_U16
- 40 (0x28)  | 296 (0x128) | V_ADDC_U32           | V_SUBREV_U16
- 41 (0x29)  | 297 (0x129) | V_SUBB_U32           | V_MUL_LO_U16
- 42 (0x2a)  | 298 (0x12a) | V_SUBBREV_U32        | V_LSHLREV_B16
+ 37 (0x25)  | 293 (0x125) | V_ADD_I32 (VOP3B)    | V_MADAK_F16
+ 38 (0x26)  | 294 (0x126) | V_SUB_I32 (VOP3B)    | V_ADD_U16
+ 39 (0x27)  | 295 (0x127) | V_SUBREV_I32 (VOP3B) | V_SUB_U16
+ 40 (0x28)  | 296 (0x128) | V_ADDC_U32 (VOP3B)   | V_SUBREV_U16
+ 41 (0x29)  | 297 (0x129) | V_SUBB_U32 (VOP3B)   | V_MUL_LO_U16
+ 42 (0x2a)  | 298 (0x12a) | V_SUBBREV_U32 (VOP3B)| V_LSHLREV_B16
  43 (0x2b)  | 299 (0x12b) | V_LDEXP_F32          | V_LSHRREV_B16
  44 (0x2c)  | 300 (0x12c) | V_CVT_PKACCUM_U8_F32 | V_ASHRREV_I16
  45 (0x2d)  | 301 (0x12d) | V_CVT_PKNORM_I16_F32 | V_MAX_F16
