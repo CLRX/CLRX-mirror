@@ -284,7 +284,7 @@ if (SF >= -1.0 && SF <= 1.0)
     VDST = APPROX_COS(SF)
 else if (ABS(SF)==INF)
     VDST = -NAN
-else if (ABS(SF)==NAN)
+else if (ISNAN(SF))
     VDST = SRC0
 ```
 
@@ -440,7 +440,7 @@ If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.
 Operation:  
 ```
 FLOAT SF = ASFLOAT(SF)
-if (ABS(SF)!=NAN)
+if (!ISNAN(SF))
     VDST = (INT32)MAX(MIN(FLOOR(SF), 2147483647.0), -2147483648.0)
 else
     VDST = (INT32)SF>=0 ? 2147483647 : -2147483648
@@ -458,7 +458,7 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (ABS(ASFLOAT(SRC0))!=NAN)
+if (!ISNAN(ASFLOAT(SRC0)))
     VDST = (INT32)MAX(MIN(RNDTZINT(ASFLOAT(SRC0)), 2147483647.0), -2147483648.0)
 ```
 
@@ -474,7 +474,7 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (ABS(ASDOUBLE(SRC0))!=NAN)
+if (!ISNAN(ASDOUBLE(SRC0)))
     VDST = (INT32)MAX(MIN(RNDTZINT(ASDOUBLE(SRC0)), 2147483647.0), -2147483648.0)
 ```
 
@@ -502,7 +502,7 @@ If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.
 Operation:  
 ```
 FLOAT SF = ASFLOAT(SRC0)
-if (ABS(SF)!=NAN)
+if (!ISNAN(SF))
     VDST = (INT32)MAX(MIN(FLOOR(SF + 0.5), 2147483647.0), -2147483648.0)
 else
     VDST = (INT32)SF>=0 ? 2147483647 : -2147483648
@@ -520,7 +520,7 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (ABS(ASFLOAT(SRC0))!=NAN)
+if (!ISNAN(ASFLOAT(SRC0)))
     VDST = (UINT32)MIN(RNDTZINT(ASFLOAT(SRC0)), 4294967295.0)
 ```
 
@@ -536,7 +536,7 @@ If input value is NaN then store 0 to VDST.
 Operation:  
 ```
 VDST = 0
-if (ABS(ASDOUBLE(SRC0))!=NAN)
+if (!ISNAN(ASDOUBLE(SRC0)))
     VDST = (UINT32)MIN(RNDTZINT(ASDOUBLE(SRC0)), 4294967295.0)
 ```
 
@@ -624,7 +624,7 @@ If SRC0 is infinity or NaN then NaN with proper sign is stored to VDST.
 Operation:  
 ```
 FLOAT SF = ASFLOAT(SRC0)
-if (ABS(SF)!=NAN && SF!=-INF && SF!=INF)
+if (!ISNAN(SF) && SF!=-INF && SF!=INF)
     VDST = SF - FLOOR(ASFLOAT(SF))
 else
     VDST = NAN * SIGN(SF)
@@ -641,7 +641,7 @@ If SRC0 is infinity or NaN then NaN with proper sign is stored to VDST.
 Operation:  
 ```
 FLOAT SD = ASDOUBLE(SRC0)
-if (ABS(SD)!=NAN && SD!=-INF && SD!=INF)
+if (!ISNAN(SD) && SD!=-INF && SD!=INF)
     VDST = SD - FLOOR(ASDOUBLE(SD))
 else
     VDST = NAN * SIGN(SD)
@@ -658,7 +658,7 @@ If SRC0 is infinity or NAN then store -1 to VDST.
 Operation:  
 ```
 FLOAT SF = ASFLOAT(SRC0)
-if (ABS(SF) != INF || ABS(SF) != NAN)
+if (ABS(SF) != INF && !ISNAN(SF))
     VDST = FREXP_EXP(SF)
 else
     VDST = -1
@@ -675,7 +675,7 @@ If SRC0 is infinity or NAN then store -1 to VDST.
 Operation:  
 ```
 DOUBLE SD = ASDOUBLE(SRC0)
-if (ABS(SD) != INF || ABS(SD) != NAN)
+if (ABS(SD) != INF && !ISNAN(SD))
     VDST = FREXP_EXP(SD)
 else
     VDST = -1
@@ -693,7 +693,7 @@ Operation:
 FLOAT SF = ASFLOAT(SRC0)
 if (ABS(SF) == INF)
     VDST = -NAN
-else if (ABS(SF) != NAN)
+else if (!ISNAN(SF))
     VDST = FREXP_MANT(SF) * SIGN(SF)
 else
     VDST = NAN * SIGN(SF)
@@ -711,7 +711,7 @@ Operation:
 DOUBLE SD = ASDOUBLE(SRC0)
 if (ABS(SD) == INF)
     VDST = -NAN
-else if (ABS(SD) != NAN)
+else if (!ISNAN(SD))
     VDST = FREXP_MANT(SD) * SIGN(SD)
 else
     VDST = NAN * SIGN(SD)
@@ -1033,7 +1033,7 @@ if (SF >= -1.0 && SF <= 1.0)
     VDST = APPROX_SIN(SF)
 else if (ABS(SF)==INF)
     VDST = -NAN
-else if (ABS(SF)==NAN)
+else if (ISNAN(SF))
     VDST = SRC0
 ```
 

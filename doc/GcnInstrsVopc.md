@@ -96,28 +96,28 @@ Table of OP16 (compare operations) for floating point values comparisons:
 Opcode offset | OP16 name | Description
 --------------|-----------|--------------------------
 0 (0x0)       | F         | SDST(LANEID) = 0
-1 (0x1)       | LT        | SDST(LANEID) = (TYPE)SRC0 < (TYPE)SRC1
-2 (0x2)       | EQ        | SDST(LANEID) = (TYPE)SRC0 == (TYPE)SRC1
-3 (0x3)       | LE        | SDST(LANEID) = (TYPE)SRC0 <= (TYPE)SRC1
-4 (0x4)       | GT        | SDST(LANEID) = (TYPE)SRC0 > (TYPE)SRC1
-5 (0x5)       | LG        | SDST(LANEID) = (TYPE)SRC0 != (TYPE)SRC1
-6 (0x6)       | GE        | SDST(LANEID) = (TYPE)SRC0 >= (TYPE)SRC1
-7 (0x7)       | O         | SDST(LANEID) = ((TYPE)SRC0!=NAN && (TYPE)SRC1!=NAN)
-8 (0x8)       | U         | SDST(LANEID) = ((TYPE)SRC0!=NAN || (TYPE)SRC1!=NAN)
-9 (0x9)       | NGE       | SDST(LANEID) = !((TYPE)SRC0 >= (TYPE)SRC1)
-10 (0xa)      | NLG       | SDST(LANEID) = !((TYPE)SRC0 != (TYPE)SRC1)
-11 (0xb)      | NGT       | SDST(LANEID) = !((TYPE)SRC0 > (TYPE)SRC1)
-12 (0xc)      | NLE       | SDST(LANEID) = !((TYPE)SRC0 <= (TYPE)SRC1)
-13 (0xd)      | NEQ       | SDST(LANEID) = !((TYPE)SRC0 == (TYPE)SRC1)
-14 (0xe)      | NLT       | SDST(LANEID) = !((TYPE)SRC0 < (TYPE)SRC1)
+1 (0x1)       | LT        | SDST(LANEID) = ASTYPE(SRC0) < ASTYPE(SRC1_
+2 (0x2)       | EQ        | SDST(LANEID) = ASTYPE(SRC0) == ASTYPE(SRC1)
+3 (0x3)       | LE        | SDST(LANEID) = ASTYPE(SRC0) <= ASTYPE(SRC1)
+4 (0x4)       | GT        | SDST(LANEID) = ASTYPE(SRC0) > ASTYPE(SRC1)
+5 (0x5)       | LG        | SDST(LANEID) = ASTYPE(SRC0) != ASTYPE(SRC1)
+6 (0x6)       | GE        | SDST(LANEID) = ASTYPE(SRC0) >= ASTYPE(SRC1)
+7 (0x7)       | O         | SDST(LANEID) = (!ISNAN(ASTYPE(SRC0)) && !ISNAN(ASTYPE(SRC1))
+8 (0x8)       | U         | SDST(LANEID) = (!ISNAN(ASTYPE(SRC0)) || !ISNAN(ASTYPE(SRC1)))
+9 (0x9)       | NGE       | SDST(LANEID) = !(ASTYPE(SRC0) >= ASTYPE(SRC1))
+10 (0xa)      | NLG       | SDST(LANEID) = !(ASTYPE(SRC0) != ASTYPE(SRC1))
+11 (0xb)      | NGT       | SDST(LANEID) = !(ASTYPE(SRC0) > ASTYPE(SRC1))
+12 (0xc)      | NLE       | SDST(LANEID) = !(ASTYPE(SRC0) <= ASTYPE(SRC1))
+13 (0xd)      | NEQ       | SDST(LANEID) = !(ASTYPE(SRC0) == ASTYPE(SRC1))
+14 (0xe)      | NLT       | SDST(LANEID) = !(ASTYPE(SRC0) < ASTYPE(SRC1))
 15 (0xf)      | TRU, T    | SDST(LANEID) = 1
 
 NOTE: Comparison operators (<,<=,!=,==) compares only non NaN values. If any operand is NaN
 then returns false. By contrast, negations of comparisons (NLT, NGT) returns true
 if any operand is NaN value. This feature distinguish for example NGE from LT.  
 
-LANEID in description is lane id. TYPE is type of compared values (FLOAT for _FP32,
-DOUBLE for _FP64).
+LANEID in description is lane id. ASTYPE function that treat compared values
+as value of type (ASFLOAT for _FP32, ASDOUBLE for _FP64).
 
 Sample instructions:  
 ```

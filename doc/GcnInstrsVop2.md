@@ -294,7 +294,7 @@ UINT8 byte = ((SRC1&3) * 8)
 UINT32 mask = 0xff << byte
 FLOAT f = RNDINT(ASFLOAT(SRC0))
 UINT8 VAL8 = 0
-if (f == NaN)
+if (ISNAN(f))
     VAL8 = (UINT8)MAX(MIN(f, 255.0), 0.0)
 VDST = (VDST&~mask) | (((UINT32)VAL8) << byte)
 ```
@@ -312,7 +312,7 @@ Operation:
 INT16 roundNorm(FLOAT S)
 {
     FLOAT f = RNDNEINT(S*32767)
-    if (f == NaN)
+    if (ISNAN(f))
         return 0
     return (INT16)MAX(MIN(f, 32767.0), -32767.0)
 }
@@ -332,7 +332,7 @@ Operation:
 UINT16 roundNorm(FLOAT S)
 {
     FLOAT f = RNDNEINT(S*65535.0)
-    if (f == NaN)
+    if (ISNAN(f))
         return 0
     return (INT16)MAX(MIN(f, 65535.0), 0.0)
 }
@@ -493,7 +493,7 @@ and store result to VDST. If SSRC1 is NaN value then store NaN value to VDST
 (legacy rules for handling NaNs).  
 Operation:  
 ```
-if (ASFLOAT(SRC1)!=NaN)
+if (!ISNAN(ASFLOAT(SRC1)))
     VDST = MAX(ASFLOAT(SRC0), ASFLOAT(SRC1))
 else
     VDST = NaN
@@ -571,7 +571,7 @@ and store result to VDST. If SSRC1 is NaN value then store NaN value to VDST
 (legacy rules for handling NaNs).  
 Operation:  
 ```
-if (ASFLOAT(SRC1)!=NaN)
+if (!ISNAN(ASFLOAT(SRC1)))
     VDST = MIN(ASFLOAT(SRC0), ASFLOAT(SRC1))
 else
     VDST = NaN

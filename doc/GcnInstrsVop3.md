@@ -460,6 +460,29 @@ VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff) + SRC2
 
 #### V_MIN3_F32
 
-Opcode: 337 (0x151) for GCN 1.0/1.1; 465 (0x1d0) for GCN 1.2  
-Syntax: V_MIN3_B32 VDST, SRC0, SRC1, SRC2  
+Opcode: 337 (0x151) for GCN 1.0/1.1; 465 (0x1d1) for GCN 1.2  
+Syntax: V_MIN3_F32 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from FP values SRC0, SRC1, SRC2, and store it to VDST.  
+Operation:  
+```
+VDST = MIN3(ASFLOAT(SRC0), ASFLOAT(SRC1), ASFLOAT(SRC2))
+```
 
+#### V_MULLIT_F32
+
+Opcode: 336 (0x150) for GCN 1.0/1.1; 464 (0x1d0) for GCN 1.2  
+Syntax: V_MULLIT_F32 VDST, SRC0, SRC1, SRC2  
+Description: Multiply FP value SRC0 and FP value SRC1, and store it to VDST if FP value in
+SRC2 is greater than zero, otherwise, store -MAX_FLOAT to VDST.
+If one of value is 0.0 and previous condition is satisfied then always store
+0.0 to VDST (do not apply IEEE rules for 0.0*x).  
+Operation:  
+```
+VDST = -MAX_FLOAT
+if (ASFLOAT(SRC2) > 0.0 && !ISNAN(ASFLOAT(SRC2)))
+{
+    VDST = 0.0
+    if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
+        VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
+}
+```
