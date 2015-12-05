@@ -1849,9 +1849,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd29c0037U, 0x07974d4fU, true, "        v_alignbit_b32  v55, v79, v166, v229\n" },
     { 0xd29e0037U, 0x07974d4fU, true, "        v_alignbyte_b32 v55, v79, v166, v229\n" },
     { 0xd2a00037U, 0x07974d4fU, true, "        v_mullit_f32    "
-                "v55, v79, v166 vsrc2=0x1e5\n" },
+                "v55, v79, v166, v229\n" },
     { 0xd2a00037U, 0x00034d4fU, true, "        v_mullit_f32    "
-                "v55, v79, v166\n" },
+                "v55, v79, v166, s0\n" },
     { 0xd2a20037U, 0x07974d4fU, true, "        v_min3_f32      v55, v79, v166, v229\n" },
     { 0xd2a40037U, 0x07974d4fU, true, "        v_min3_i32      v55, v79, v166, v229\n" },
     { 0xd2a60037U, 0x07974d4fU, true, "        v_min3_u32      v55, v79, v166, v229\n" },

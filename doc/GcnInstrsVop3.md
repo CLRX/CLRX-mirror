@@ -216,6 +216,76 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_ALIGNBIT_B32
+
+Opcode: 334 (0x14e) for GCN 1.0/1.1; 462 (0x1ce) for GCN 1.2  
+Syntax: V_ALIGNBIT_B32 VDST, SRC0, SRC1, SRC2  
+Description: Align bit. Shift right bits in 64-bit stored in SRC1 (low part) and
+SRC0 (high part) by SRC2&31 bits, and store low 32-bit of the result in VDST.  
+Operation:  
+```
+VDST = (((UINT64)SRC0)<<32) | SRC1) >> (SRC2&31)
+```
+
+#### V_ALIGNBYTE_B32
+
+Opcode: 335 (0x14f) for GCN 1.0/1.1; 463 (0x1cf) for GCN 1.2  
+Syntax: V_ALIGNBYTE_B32 VDST, SRC0, SRC1, SRC2  
+Description: Align bit. Shift right bits in 64-bit stored in SRC1 (low part) and
+SRC0 (high part) by (SRC2&3)*8 bits, and store low 32-bit of the result in VDST.  
+Operation:  
+```
+VDST = (((UINT64)SRC0)<<32) | SRC1) >> ((SRC2&3)*8)
+```
+
+#### V_BFE_I32
+
+Opcode: 329 (0x149) for GCN 1.0/1.1; 457 (0x1c9) for GCN 1.2  
+Syntax: V_BFE_I32 VDST, SRC0, SRC1, SRC2  
+Description: Extracts bits in SRC0 from range (SRC1&31) with length (SRC2&31)
+and extend sign from last bit of extracted value, and store result to VDST.  
+Operation:  
+```
+UINT8 shift = SRC1 & 31
+UINT8 length = SRC2 & 31
+if (length==0)
+    VDST = 0
+if (shift+length < 32)
+    VDST = (INT32)(SRC0 << (32 - shift - length)) >> (32 - length)
+else
+    VDST = (INT32)SRC0 >> shift
+```
+
+#### V_BFE_U32
+
+Opcode: 328 (0x148) for GCN 1.0/1.1; 456 (0x1c8) for GCN 1.2  
+Syntax: V_BFE_U32 VDST, SRC0, SRC1, SRC2  
+Description: Extracts bits in SRC0 from range SRC1&31 with length SRC2&31, and
+store result to VDST.  
+Operation:  
+```
+UINT8 shift = SRC1 & 31
+UINT8 length = SRC2 & 31
+if (length==0)
+    VDST = 0
+if (shift+length < 32)
+    VDST = SRC0 << (32 - shift - length) >> (32 - length)
+else
+    VDST = SRC0 >> shift
+```
+
+#### V_BFI_B32
+
+Opcode: 330 (0x14a) for GCN 1.0/1.1; 458 (0x1ca) for GCN 1.2  
+Syntax: V_BFI_B32 VDST, SRC0, SRC1, SRC2  
+Description: Replace bits in SRC2 by bits from SRC1 marked by bits in SRC0, and store result
+to VDST.  
+Operation:  
+```
+VDST = (SRC0 & SRC1) | (~SRC0 & SRC2)
+```
+
+
 #### V_CUBEID_F32
 
 Opcode: 324 (0x144) for GCN 1.0/1.1; 452 (0x1c4) for GCN 1.2  
@@ -238,6 +308,106 @@ else if (ABS(SF1) >= ABS(SF0)
 else
     OUT = (SF0 >= 0.0) ? 0 : 1
 VDST = OUT
+```
+
+#### V_CUBEMA_F32
+
+Opcode: 327 (0x147) for GCN 1.0/1.1; 455 (0x1c7) for GCN 1.2  
+Syntax: V_CUBEMA_F32 VDST, SRC0, SRC1, SRC2  
+Description: Cubemap Major Axis. Choose highest absolute value from all three FP values
+(SRC0, SRC1, SRC2) and multiply choosen FP value by two. Result is stored in VDST.  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+if (ABS(SF2) >= ABS(SF1) && ABS(SF2) >= ABS(SF0))
+    OUT = 2*SF2
+else if (ABS(SF1) >= ABS(SF0)
+    OUT = 2*SF1
+else
+    OUT = 2*SF0
+VDST = OUT
+```
+
+#### V_CUBESC_F32
+
+Opcode: 325 (0x145) for GCN 1.0/1.1; 453 (0x1c5) for GCN 1.2  
+Syntax: V_CUBESC_F32 VDST, SRC0, SRC1, SRC2  
+Description: Cubemap S coordination. Algorithm below.  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+if (ABS(SF2) >= ABS(SF1) && ABS(SF2) >= ABS(SF0))
+    OUT = SIGN((SF2) * SF0
+else if (ABS(SF1) >= ABS(SF0)
+    OUT = SF0
+else
+    OUT = -SIGN((SF0) * SF2
+VDST = OUT
+```
+
+#### V_CUBETC_F32
+
+Opcode: 326 (0x146) for GCN 1.0/1.1; 454 (0x1c6) for GCN 1.2  
+Syntax: V_CUBETC_F32 VDST, SRC0, SRC1, SRC2  
+Description: Cubemap T coordination. Algorithm below.  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+if (ABS(SF2) >= ABS(SF1) && ABS(SF2) >= ABS(SF0))
+    OUT = -SF1
+else if (ABS(SF1) >= ABS(SF0)
+    OUT = SIGN(SF1) * SF2
+else
+    OUT = -SF1
+VDST = OUT
+```
+
+#### V_FMA_F32
+
+Opcode: 331 (0x14b) for GCN 1.0/1.1; 459 (0x1cb) for GCN 1.2  
+Syntax: V_FMA_F32 VDST, SRC0, SRC1, SRC2  
+Description: Fused multiply addition on single floating point values from
+SRC0, SRC1 and SRC2. Result stored in VDST.  
+Operation:  
+```
+// SRC0*SRC1+SRC2
+VDST = FMA(ASFLOAT(SRC0), ASFLOAT(SRC1), ASFLOAT(SRC2))
+```
+
+#### V_FMA_F64
+
+Opcode: 332 (0x14c) for GCN 1.0/1.1; 460 (0x1cc) for GCN 1.2  
+Syntax: V_FMA_F64 VDST(2), SRC0(2), SRC1(2), SRC2(2)  
+Description: Fused multiply addition on double floating point values from
+SRC0, SRC1 and SRC2. Result stored in VDST.  
+Operation:  
+```
+// SRC0*SRC1+SRC2
+VDST = FMA(ASDOUBLE(SRC0), ASDOUBLE(SRC1), ASDOUBLE(SRC2))
+```
+
+#### V_LERP_U8
+
+Opcode: 333 (0x14d) for GCN 1.0/1.1; 461 (0x1cd) for GCN 1.2  
+Syntax: V_LERP_U8 VDST, SRC0, SRC1, SRC2  
+Description: For each byte of dword, calculate average from SRC0 byte and SRC1 byte with
+rounding mode defined in first of the byte SRC2. If rounding bit is set then result for
+that byte is rounded, otherwise truncated. All bytes will be stored in VDST.  
+Operation:  
+```
+for (UINT8 i = 0; i < 4; i++)
+{
+    UINT8 S0 = (SRC0 >> (i*8)) & 0xff
+    UINT8 S1 = (SRC1 >> (i*8)) & 0xff
+    UINT8 S2 = (SRC2 >> (i*8)) & 1
+    VDST = (VDST & ~(255U<<(i*8))) | (((S0+S1+S2) >> 1) << (i*8)) 
+}
 ```
 
 #### V_MAD_F32
@@ -287,3 +457,9 @@ Operation:
 ```
 VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff) + SRC2
 ```
+
+#### V_MIN3_F32
+
+Opcode: 337 (0x151) for GCN 1.0/1.1; 465 (0x1d0) for GCN 1.2  
+Syntax: V_MIN3_B32 VDST, SRC0, SRC1, SRC2  
+

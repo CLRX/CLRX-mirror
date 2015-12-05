@@ -198,7 +198,7 @@ SCC = SDST!=0
 Opcode: 40 (0x28) for GCN 1.0/1.1; 38 (0x26) for GCN 1.2  
 Syntax: S_BFE_I32 SDST, SSRC0, SSRC1  
 Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f)
-and extend sign from last bit of extracted value.
+and extend sign from last bit of extracted value, and store result to SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
@@ -218,7 +218,7 @@ SCC = SDST!=0
 Opcode: 42 (0x2a) for GCN 1.0/1.1; 40 (0x28) for GCN 1.2  
 Syntax: S_BFE_I64 SDST, SSRC0, SSRC1  
 Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f)
-and extend sign from last bit of extracted value.
+and extend sign from last bit of extracted value, and store result to SDST.
 If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
@@ -237,8 +237,8 @@ SCC = SDST!=0
 
 Opcode: 39 (0x27) for GCN 1.0/1.1; 37 (0x25) for GCN 1.2  
 Syntax: S_BFE_U32 SDST, SSRC0, SSRC1  
-Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f).
-If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
+Description: Extracts bits in SSRC0 from range (SSRC1&31) with length ((SSRC1>>16)&0x7f),
+and store result to SDST. If result is non-zero store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
 UINT8 shift = SSRC1 & 31
@@ -256,8 +256,8 @@ SCC = SDST!=0
 
 Opcode: 41 (0x29) for GCN 1.0/1.1; 39 (0x27) for GCN 1.2  
 Syntax: S_BFE_U64 SDST(2), SSRC0(2), SSRC1  
-Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f).
-If result is non-zero store 1 to SCC, otherwise store 0 to SCC.
+Description: Extracts bits in SSRC0 from range (SSRC1&63) with length ((SSRC1>>16)&0x7f),
+and store result to SDST. If result is non-zero store 1 to SCC, otherwise store 0 to SCC.
 SDST, SSRC0 are 64-bit, SSRC1 is 32-bit.  
 Operation:  
 ```

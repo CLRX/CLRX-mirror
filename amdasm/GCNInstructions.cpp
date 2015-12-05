@@ -1702,7 +1702,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "v_lerp_u8",           GCNENC_VOP3A,  GCN_STDMODE,              333,  ARCH_GCN_1_0_1  },
     { "v_alignbit_b32",      GCNENC_VOP3A,  GCN_STDMODE,              334,  ARCH_GCN_1_0_1  },
     { "v_alignbyte_b32",     GCNENC_VOP3A,  GCN_STDMODE,              335,  ARCH_GCN_1_0_1  },
-    { "v_mullit_f32",        GCNENC_VOP3A,  GCN_SRC2_NONE, /* ??? */  336,  ARCH_GCN_1_0_1  },
+    { "v_mullit_f32",        GCNENC_VOP3A,  GCN_STDMODE,              336,  ARCH_GCN_1_0_1  },
     { "v_min3_f32",          GCNENC_VOP3A,  GCN_STDMODE,              337,  ARCH_GCN_1_0_1  },
     { "v_min3_i32",          GCNENC_VOP3A,  GCN_STDMODE,              338,  ARCH_GCN_1_0_1  },
     { "v_min3_u32",          GCNENC_VOP3A,  GCN_STDMODE,              339,  ARCH_GCN_1_0_1  },
