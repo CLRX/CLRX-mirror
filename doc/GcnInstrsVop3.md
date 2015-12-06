@@ -458,56 +458,6 @@ Operation:
 VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff) + SRC2
 ```
 
-#### V_MIN3_F32
-
-Opcode: 337 (0x151) for GCN 1.0/1.1; 464 (0x1d0) for GCN 1.2  
-Syntax: V_MIN3_F32 VDST, SRC0, SRC1, SRC2  
-Description: Choose smallest value from FP values SRC0, SRC1, SRC2, and store it to VDST.  
-Operation:  
-```
-FLOAT SF0 = ASFLOAT(SRC0)
-FLOAT SF1 = ASFLOAT(SRC1)
-FLOAT SF2 = ASFLOAT(SRC2)
-if (ISNAN(SF0))
-    VDST = MIN(SF1, SF2)
-else if (ISNAN(SF1))
-    VDST = MIN(SF0, SF2)
-else if (ISNAN(SF2))
-    VDST = MIN(SF0, SF1)
-else if (SF2 < SF0 && SF2 < SF1)
-    VDST = SF2
-else
-    VDST = MIN(SF1, SF0)
-```
-
-#### V_MIN3_I32
-
-Opcode: 338 (0x152) for GCN 1.0/1.1; 465 (0x1d1) for GCN 1.2  
-Syntax: V_MIN3_I32 VDST, SRC0, SRC1, SRC2  
-Description: Choose smallest value from signed integer values SRC0, SRC1, SRC2,
-and store it to VDST.  
-Operation:  
-```
-if ((INT32)SRC2 < (INT32)SRC0 && (INT32)SRC2 < (INT32)SRC1)
-    VDST = SRC2
-else
-    VDST = MIN((INT32)SRC1, (INT32)SRC0)
-```
-
-#### V_MIN3_U32
-
-Opcode: 339 (0x153) for GCN 1.0/1.1; 466 (0x1d2) for GCN 1.2  
-Syntax: V_MIN3_U32 VDST, SRC0, SRC1, SRC2  
-Description: Choose smallest value from unsigned integer values SRC0, SRC1, SRC2,
-and store it to VDST.  
-Operation:  
-```
-if (SRC2 < SRC0 && SRC2 < SRC1)
-    VDST = SRC2
-else
-    VDST = MIN(SRC1, SRC0)
-```
-
 #### V_MAX3_F32
 
 Opcode: 340 (0x154) for GCN 1.0/1.1; 467 (0x1d3) for GCN 1.2  
@@ -615,6 +565,56 @@ else if ((SRC1 > SRC2 && SRC1 < SRC0) || (SRC1 < SRC2 && SRC1 > SRC0))
     VDST = SRC1
 else
     VDST = SRC0
+```
+
+#### V_MIN3_F32
+
+Opcode: 337 (0x151) for GCN 1.0/1.1; 464 (0x1d0) for GCN 1.2  
+Syntax: V_MIN3_F32 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from FP values SRC0, SRC1, SRC2, and store it to VDST.  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+if (ISNAN(SF0))
+    VDST = MIN(SF1, SF2)
+else if (ISNAN(SF1))
+    VDST = MIN(SF0, SF2)
+else if (ISNAN(SF2))
+    VDST = MIN(SF0, SF1)
+else if (SF2 < SF0 && SF2 < SF1)
+    VDST = SF2
+else
+    VDST = MIN(SF1, SF0)
+```
+
+#### V_MIN3_I32
+
+Opcode: 338 (0x152) for GCN 1.0/1.1; 465 (0x1d1) for GCN 1.2  
+Syntax: V_MIN3_I32 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from signed integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+if ((INT32)SRC2 < (INT32)SRC0 && (INT32)SRC2 < (INT32)SRC1)
+    VDST = SRC2
+else
+    VDST = MIN((INT32)SRC1, (INT32)SRC0)
+```
+
+#### V_MIN3_U32
+
+Opcode: 339 (0x153) for GCN 1.0/1.1; 466 (0x1d2) for GCN 1.2  
+Syntax: V_MIN3_U32 VDST, SRC0, SRC1, SRC2  
+Description: Choose smallest value from unsigned integer values SRC0, SRC1, SRC2,
+and store it to VDST.  
+Operation:  
+```
+if (SRC2 < SRC0 && SRC2 < SRC1)
+    VDST = SRC2
+else
+    VDST = MIN(SRC1, SRC0)
 ```
 
 #### V_MULLIT_F32
