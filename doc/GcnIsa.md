@@ -42,6 +42,7 @@ where BITS is number bits in operand).
 * ASUINT16(v), ASUINT32(v), ASUINT64(v) - treat raw floating point value as unsigned integer
 * RNDINT(v) - round floating point value to integer with rounding mode from MODE register,
     returns FP value
+* ISNAN(v) - return true if value v is NAN value
 
 By default, any register value is treated as unsigned integer.
 
