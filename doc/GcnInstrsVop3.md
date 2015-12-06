@@ -285,7 +285,6 @@ Operation:
 VDST = (SRC0 & SRC1) | (~SRC0 & SRC2)
 ```
 
-
 #### V_CUBEID_F32
 
 Opcode: 324 (0x144) for GCN 1.0/1.1; 452 (0x1c4) for GCN 1.2  
@@ -634,4 +633,54 @@ if (ASFLOAT(SRC2) > 0.0 && !ISNAN(ASFLOAT(SRC2)))
     if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
         VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
 }
+```
+
+#### V_SAD_HI_U8
+
+Opcode: 347 (0x15b) for GCN 1.0/1.1; 474 (0x1da) for GCN 1.2  
+Syntax: V_SAD_HI_U8 VDST, SRC0, SRC1, SRC2  
+Description: Calculate sum of absolute difference for all four bytes in SRC0 and SRC1,
+shift result to high 16-bits, add SRC2 to result, and store result to VDST.  
+Operation:  
+```
+VDST = SRC2
+for (UINT8 i = 0; i < 4; i++)
+    VDST += (ABS(((SRC0 >> (i*8)) & 0xff) - ((SRC1 >> (i*8)) & 0xff)))<<16
+```
+
+#### V_SAD_U16
+
+Opcode: 348 (0x15c) for GCN 1.0/1.1; 475 (0x1db) for GCN 1.2  
+Syntax: V_SAD_U16 VDST, SRC0, SRC1, SRC2  
+Description: Calculate sum of absolute difference for two 16-bit words in SRC0 and SRC1, add
+SRC2 to result, and store result to VDST.  
+Operation:  
+```
+VDST = SRC2
+VDST += ABS((SRC0 & 0xffff) - (SRC1 & 0xffff))
+VDST += ABS((SRC0 >> 16) - (SRC1 >> 16))
+```
+
+#### V_SAD_U32
+
+Opcode: 349 (0x15d) for GCN 1.0/1.1; 476 (0x1dc) for GCN 1.2  
+Syntax: V_SAD_U32 VDST, SRC0, SRC1, SRC2  
+Description: Calculate sum of absolute difference for SRC0 and SRC1, add
+SRC2 to result, and store result to VDST.  
+Operation:  
+```
+VDST = SRC2 + ABS(SRC0 - SRC1)
+```
+
+#### V_SAD_U8
+
+Opcode: 346 (0x15a) for GCN 1.0/1.1; 473 (0x1d9) for GCN 1.2  
+Syntax: V_SAD_U8 VDST, SRC0, SRC1, SRC2  
+Description: Calculate sum of absolute difference for all four bytes in SRC0 and SRC1, add
+SRC2 to result, and store result to VDST.  
+Operation:  
+```
+VDST = SRC2
+for (UINT8 i = 0; i < 4; i++)
+    VDST += ABS(((SRC0 >> (i*8)) & 0xff) - ((SRC1 >> (i*8)) & 0xff))
 ```
