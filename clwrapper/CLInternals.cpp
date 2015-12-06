@@ -1703,7 +1703,8 @@ try
     cl_int errorLast = CL_SUCCESS;
     if (compiledNum != 0)
     {   // if compilation is not zero
-        std::unique_ptr<cl_int[]> binaryStatuses(new cl_int[compiledNum]);
+        // (use int32_t instead cl_int) - GCC 5 internal error!!!
+        std::unique_ptr<int32_t[]> binaryStatuses(new int32_t[compiledNum]);
         /// just create new amdAsmProgram
         newAmdAsmP = amdp->dispatch->clCreateProgramWithBinary(
                     program->context->amdOclContext, compiledNum, amdDevices.get(),
