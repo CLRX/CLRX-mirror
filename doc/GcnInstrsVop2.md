@@ -290,13 +290,13 @@ Description: Convert floating point value from SRC0 to unsigned byte value with
 rounding mode from MODE register, and store this byte to (SRC1&3)'th byte of VDST.  
 Operation:  
 ```
-UINT8 byte = ((SRC1&3) * 8)
-UINT32 mask = 0xff << byte
+UINT8 shift = ((SRC1&3) * 8)
+UINT32 mask = 0xff << shift
 FLOAT f = RNDINT(ASFLOAT(SRC0))
 UINT8 VAL8 = 0
 if (ISNAN(f))
     VAL8 = (UINT8)MAX(MIN(f, 255.0), 0.0)
-VDST = (VDST&~mask) | (((UINT32)VAL8) << byte)
+VDST = (VDST&~mask) | (((UINT32)VAL8) << shift)
 ```
 
 #### V_CVT_PKNORM_I16_F32

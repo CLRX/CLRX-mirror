@@ -1621,8 +1621,6 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   v_div_scale_f32  v55, s[36:37], abs(v79), v166, v79", 0, 0, false, false,
         "test.s:1:39: Error: Expected operator\n"
         "test.s:1:40: Error: Expected ',' before argument\n" },
-    { "   v_div_scale_f32  v55, s[38:39], v79, v166, v99", 0, 0, false, false,
-        "test.s:1:4: Error: First source must be equal to second or third source\n" },
     { "   v_mad_legacy_f32 v55, v79, v166, v229 clamp ,", 0, 0, false, false,
         "test.s:1:48: Error: Some garbages at VOP modifier place\n" },
     /* VOP3 instructions */

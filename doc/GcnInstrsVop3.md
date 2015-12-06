@@ -367,6 +367,24 @@ else
 VDST = OUT
 ```
 
+#### V_CVT_PK_U8_F32
+
+Opcode: 350 (0x15e) for GCN 1.0/1.1; 477 (0x1dd) for GCN 1.2  
+Syntax: V_CVT_PK_U8_F32 VDST, SRC0, SRC1, SRC2  
+Description: Convert floating point value from SRC0 to unsigned byte value with
+rounding mode from MODE register, and store this byte to (SRC1&3)'th byte with
+other bytes of SRC2 of VDST.  
+Operation:  
+```
+UINT8 shift = ((SRC1&3) * 8)
+UINT32 mask = 0xff << shift
+FLOAT f = RNDINT(ASFLOAT(SRC0))
+UINT8 VAL8 = 0
+if (ISNAN(f))
+    VAL8 = (UINT8)MAX(MIN(f, 255.0), 0.0)
+VDST = (SRC2&~mask) | (((UINT32)VAL8) << shift)
+```
+
 #### V_FMA_F32
 
 Opcode: 331 (0x14b) for GCN 1.0/1.1; 459 (0x1cb) for GCN 1.2  
@@ -652,8 +670,8 @@ for (UINT8 i = 0; i < 4; i++)
 
 Opcode: 348 (0x15c) for GCN 1.0/1.1; 475 (0x1db) for GCN 1.2  
 Syntax: V_SAD_U16 VDST, SRC0, SRC1, SRC2  
-Description: Calculate sum of absolute differences for two 16-bit words in SRC0 and SRC1, add
-SRC2 to result, and store result to VDST.  
+Description: Calculate sum of absolute differences for two 16-bit words in SRC0 and SRC1,
+add SRC2 to result, and store result to VDST.  
 Operation:  
 ```
 VDST = SRC2

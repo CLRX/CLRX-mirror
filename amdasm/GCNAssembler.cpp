@@ -1570,13 +1570,6 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             asmr.printError(instrPlace, "More than one SGPR to read in instruction");
             return;
         }
-        if (mode1 == GCN_S0EQS12 && (src0Op.range.start!=src1Op.range.start &&
-            src0Op.range.start!=src2Op.range.start))
-        {
-            asmr.printError(instrPlace,
-                        "First source must be equal to second or third source");
-            return;
-        }
     }
     
     uint32_t words[2];
