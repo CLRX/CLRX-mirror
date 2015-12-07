@@ -142,7 +142,7 @@ Alphabetically sorted instruction list:
 Opcode VOP2: 3 (0x3) for GCN 1.0/1.1; 1 (0x1) for GCN 1.2  
 Opcode VOP3A: 259 (0x103) for GCN 1.0/1.1; 257 (0x101) for GCN 1.2  
 Syntax: V_ADD_F32 VDST, SRC0, SRC1  
-Description: Add two FP value from SRC0 and SRC1 and store result to VDST.  
+Description: Add two FP values from SRC0 and SRC1 and store result to VDST.  
 Operation:  
 ```
 VDST = ASFLOAT(SRC0) + ASFLOAT(SRC1)

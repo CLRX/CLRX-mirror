@@ -216,6 +216,16 @@ List of the instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### V_ADD_F64
+
+Opcode: 356 (0x164) for GCN 1.0/1.1; 640 (0x280) for GCN 1.2  
+Syntax: V_ADD_F64 VDST(2), SRC0(2), SRC1(2)  
+Description: Add two double FP value from SRC0 and SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = ASDOUBLE(SRC0) + ASDOUBLE(SRC1)
+```
+
 #### V_ALIGNBIT_B32
 
 Opcode: 334 (0x14e) for GCN 1.0/1.1; 462 (0x1ce) for GCN 1.2  
@@ -236,6 +246,16 @@ SRC0 (high part) by (SRC2&3)*8 bits, and store low 32-bit of the result in VDST.
 Operation:  
 ```
 VDST = (((UINT64)SRC0)<<32) | SRC1) >> ((SRC2&3)*8)
+```
+
+#### V_ASHR_I64
+
+Opcode: 355 (0x163) for GCN 1.0/1.1  
+Syntax: V_ASHR_I32 VDST(2), SRC0(2), SRC1  
+Description: Arithmetic shift right SRC0 by (SRC1&63) bits and store result into VDST.  
+Operation:  
+```
+VDST = (INT64)SRC0 >> (SRC1&63)
 ```
 
 #### V_BFE_I32
@@ -385,6 +405,64 @@ if (ISNAN(f))
 VDST = (SRC2&~mask) | (((UINT32)VAL8) << shift)
 ```
 
+#### V_DIV_FIXUP_F32
+
+Opcode: 351 (0x15f) for GCN 1.0/1.1; 478 (0x1de) for GCN 1.2  
+Syntax: V_DIV_FIXUP_F32 VDST, SRC0, SRC1, SRC2  
+Description: Handle all exceptions requires for single floating point division.
+SRC0 is quotient, SRC1 is denominator, SRC2 is nominator. Correct result stored to VDST.  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+if (ISNAN(SF1) && !ISNAN(SF2))
+    VDST = QUIETNAN(SF1)
+else if (ISNAN(SF2))
+    VDST = QUIETNAN(SF2)
+else if (SF1 == 0.0 && SF2 == 0.0)
+    VDST = NAN
+else if (ABS(SF1)==INF && ABS(SF2)==INF)
+    VDST = -NAN
+else if (SF1 == 0.0)
+    VDST = INF*SIGN(SF1)*SIGN(SF2)
+else if (ABS(SF1) == INF)
+    VDST = SIGN(SF1)*SIGN(SF2) >=0 ? 0.0 : -0.0
+else if (ISNAN(SF0))
+    VDST = SIGN(SF1)*SIGN(SF2)*INF
+else
+    VDST = SF0
+```
+
+#### V_DIV_FIXUP_F64
+
+Opcode: 352 (0x160) for GCN 1.0/1.1; 479 (0x1df) for GCN 1.2  
+Syntax: V_DIV_FIXUP_F64 VDST(2), SRC0(2), SRC1(2), SRC2(2)  
+Description: Handle all exceptions requires for double floating point division.
+SRC0 is quotient, SRC1 is denominator, SRC2 is nominator. Correct result stored to VDST.  
+Operation:  
+```
+DOUBLE SF0 = ASDOUBLE(SRC0)
+DOUBLE SF1 = ASDOUBLE(SRC1)
+DOUBLE SF2 = ASDOUBLE(SRC2)
+if (ISNAN(SF1) && !ISNAN(SF2))
+    VDST = QUIETNAN(SF1)
+else if (ISNAN(SF2))
+    VDST = QUIETNAN(SF2)
+else if (SF1 == 0.0 && SF2 == 0.0)
+    VDST = NAN
+else if (ABS(SF1)==INF && ABS(SF2)==INF)
+    VDST = -NAN
+else if (SF1 == 0.0)
+    VDST = INF*SIGN(SF1)*SIGN(SF2)
+else if (ABS(SF1) == INF)
+    VDST = SIGN(SF1)*SIGN(SF2) >=0 ? 0.0 : -0.0
+else if (ISNAN(SF0))
+    VDST = SIGN(SF1)*SIGN(SF2)*INF
+else
+    VDST = SF0
+```
+
 #### V_FMA_F32
 
 Opcode: 331 (0x14b) for GCN 1.0/1.1; 459 (0x1cb) for GCN 1.2  
@@ -409,6 +487,17 @@ Operation:
 VDST = FMA(ASDOUBLE(SRC0), ASDOUBLE(SRC1), ASDOUBLE(SRC2))
 ```
 
+#### V_LDEXP_F64
+
+Opcode: 360 (0x168) for GCN 1.0/1.1; 644 (0x284) for GCN 1.2  
+Syntax: V_LDEXP_F64 VDST(2), SRC0(2), SRC1  
+Description: Do ldexp operation on SRC0 and SRC1 (multiply SRC0 by 2**(SRC1)).
+SRC1 is signed integer, SRC0 is double floating point value.  
+Operation:  
+```
+VDST = ASDOUBLE(SRC0) * POW(2.0, (INT32)SRC1)
+```
+
 #### V_LERP_U8
 
 Opcode: 333 (0x14d) for GCN 1.0/1.1; 461 (0x1cd) for GCN 1.2  
@@ -425,6 +514,26 @@ for (UINT8 i = 0; i < 4; i++)
     UINT8 S2 = (SRC2 >> (i*8)) & 1
     VDST = (VDST & ~(255U<<(i*8))) | (((S0+S1+S2) >> 1) << (i*8)) 
 }
+```
+
+#### V_LSHL_B64
+
+Opcode: 353 (0x161) for GCN 1.0/1.1  
+Syntax: V_LSHL_B32 VDST(2), SRC0(2), SRC1  
+Description: Shift left SRC0 by (SRC1&63) bits and store result into VDST.  
+Operation:  
+```
+VDST = SRC0 << (SRC1&63)
+```
+
+#### V_LSHR_B64
+
+Opcode: 354 (0x162) for GCN 1.0/1.1  
+Syntax: V_LSHR_B32 VDST(2), SRC0(2), SRC1  
+Description: Shift right SRC0 by (SRC1&63) bits and store result into VDST.  
+Operation:  
+```
+VDST = SRC0 >> (SRC1&63)
 ```
 
 #### V_MAD_F32
@@ -473,6 +582,16 @@ from SRC1, add SRC2 to this product and store result to VDST.
 Operation:  
 ```
 VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff) + SRC2
+```
+
+#### V_MAX_F64
+
+Opcode: 359 (0x167) for GCN 1.0/1.1; 643 (0x283) for GCN 1.2  
+Syntax: V_MAX_F64 VDST(2), SRC0(2), SRC1(2)  
+Description: Choose largest double FP value from SRC0 and SRC1, and store result to VDST.  
+Operation:  
+```
+VDST = MAX((ASDOUBLE(SRC0), ASDOUBLE(SRC1))
 ```
 
 #### V_MAX3_F32
@@ -584,6 +703,16 @@ else
     VDST = SRC0
 ```
 
+#### V_MIN_F64
+
+Opcode: 358 (0x166) for GCN 1.0/1.1; 642 (0x282) for GCN 1.2  
+Syntax: V_MIN_F64 VDST(2), SRC0(2), SRC1(2)  
+Description: Choose smallest double FP value from SRC0 and SRC1, and store result to VDST.  
+Operation:  
+```
+VDST = MIN((ASDOUBLE(SRC0), ASDOUBLE(SRC1))
+```
+
 #### V_MIN3_F32
 
 Opcode: 337 (0x151) for GCN 1.0/1.1; 464 (0x1d0) for GCN 1.2  
@@ -632,6 +761,16 @@ if (SRC2 < SRC0 && SRC2 < SRC1)
     VDST = SRC2
 else
     VDST = MIN(SRC1, SRC0)
+```
+
+#### V_MUL_F64
+
+Opcode: 357 (0x165) for GCN 1.0/1.1; 641 (0x281) for GCN 1.2  
+Syntax: V_MUL_F64 VDST(2), SRC0(2), SRC1(2)  
+Description: Multiply two double FP values from SRC0 and SRC1 and store result to VDST.  
+Operation:  
+```
+VDST = ASDOUBLE(SRC0) * ASDOUBLE(SRC1)
 ```
 
 #### V_MULLIT_F32
