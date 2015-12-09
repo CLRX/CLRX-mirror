@@ -773,6 +773,50 @@ Operation:
 VDST = ASDOUBLE(SRC0) * ASDOUBLE(SRC1)
 ```
 
+#### V_MUL_HI_I32
+
+Opcode: 364 (0x16c) for GCN 1.0/1.1; 647 (0x287) for GCN 1.2  
+Syntax: V_MUL_HI_I32 VDST, SRC0, SRC1  
+Description: Multiply 32-bit signed value SRC0 and SRC1, and store higher part of
+the result to VDST.  
+Operation:  
+```
+VDST = ((INT64)SRC0 * (INT32)SRC1) >> 32
+```
+
+#### V_MUL_HI_U32
+
+Opcode: 362 (0x16a) for GCN 1.0/1.1; 646 (0x286) for GCN 1.2  
+Syntax: V_MUL_HI_U32 VDST, SRC0, SRC1  
+Description: Multiply 32-bit unsigned value SRC0 and SRC1, and store higher part of
+the result to VDST.  
+Operation:  
+```
+VDST = ((UINT64)SRC0 * SRC1) >> 32
+```
+
+#### V_MUL_LO_I32
+
+Opcode: 363 (0x16b) for GCN 1.0/1.1
+Syntax: V_MUL_LO_I32 VDST, SRC0, SRC1  
+Description: Multiply 32-bit signed value SRC0 and SRC1, and store lower part of
+the result to VDST.  
+Operation:  
+```
+VDST = (INT32)SRC0 * (INT32)SRC1
+```
+
+#### V_MUL_LO_U32
+
+Opcode: 361 (0x169) for GCN 1.0/1.1; 645 (0x285) for GCN 1.2  
+Syntax: V_MUL_LO_U32 VDST, SRC0, SRC1  
+Description: Multiply 32-bit unsigned value SRC0 and SRC1, and store lower part of
+the result to VDST.  
+Operation:  
+```
+VDST = SRC0 * SRC1
+```
+
 #### V_MULLIT_F32
 
 Opcode: 336 (0x150) for GCN 1.0/1.1  
