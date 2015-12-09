@@ -66,8 +66,8 @@ ParseException::ParseException(LineNo lineNo, ColNo charNo, const std::string& m
     this->message += message;
 }
 
-#ifndef HAVE_LINUX
-#error "Other platforms than Linux not supported"
+#ifdef HAVE_WINDOWS
+#error "Windows platform not supported"
 #endif
 
 std::mutex CLRX::DynLibrary::mutex;
