@@ -28,7 +28,11 @@
 #endif
 #include <cstdint>
 #include <vector>
+#ifdef HAVE_LINUX
 #include <alloca.h>
+#else
+#include <cstdlib>
+#endif
 #include <climits>
 #include <cstddef>
 #include <CLRX/utils/Utilities.h>
