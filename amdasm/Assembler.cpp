@@ -968,7 +968,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         cxuint regStart, regEnd;
         if (!isaAssembler->parseRegisterRange(linePtr, regStart, regEnd))
             return false;
-        
+        skipSpacesToEnd(linePtr, line+lineSize);
         if (linePtr != line+lineSize)
         {
             printError(linePtr, "Garbages at end of expression");
