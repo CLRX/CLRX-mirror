@@ -465,7 +465,62 @@ else
 
 #### V_DIV_SCALE_F32
 
+Opcode (VOP3B): 365 (0x16d) for GCN 1.0/1.1; 480 (0x1e0) for GCN 1.2  
+Syntax: V_DIV_SCALE_F32 VDST, SDST(2), SRC0, SRC1, SRC2  
+Description: Special case divide preop and flags. SRC0 is quotient, SRC1 is denominator,
+SRC2 is nominator. All input values are floating point values. SRC0 must be equal SRC1
+or SRC2 (register can be different, only values must be equal). If input different than
+SRC0 is greater or equal than T2=POW(2.0, 96+EXP0), (EXP0 is exponent part (base 2)
+of SRC0), then instruction multiply SRC0 by POW(2.0, 64), and store that value to VDST,
+and set flag in bit for current lane in SDST. Otherwise store SRC0 to VDST and clear flag.  
+Operation:  
+```
+FLOAT SF0 = ASFLOAT(SRC0)
+FLOAT SF1 = ASFLOAT(SRC1)
+FLOAT SF2 = ASFLOAT(SRC2)
+FLOAT S12 = (SRC0!=SRC1) ? SF1 : SF2
+if (S12 >= POW(2.0, 96+FREXP(SF0)-1)
+{
+    VDST = SF0 * POW2(2.0, 64)
+    UINT64 MASK = (1ULL<<LANEID)
+    SDST = (SDST & ~MASK) | MASK
+}
+else
+{
+    VDST = SRC0
+    SDST = (SDST & ~MASK)
+}
+```
+
 #### V_DIV_SCALE_F64
+
+Opcode (VOP3B): 366 (0x16e) for GCN 1.0/1.1; 481 (0x1e1) for GCN 1.2  
+Syntax: V_DIV_SCALE_F64 VDST(2), SDST(2), SRC0(2), SRC1(2), SRC2(2)  
+Description: Special case divide preop and flags. SRC0 is quotient, SRC1 is denominator,
+SRC2 is nominator. All input values are double floating point values.
+SRC0 must be equal SRC1 or SRC2 (register can be different, only values must be equal).
+If input different than SRC0 is greater or equal than T2=POW(2.0, 768+EXP0),
+(EXP0 is exponent part (base 2) of SRC0), then instruction multiply SRC0 by POW(2.0, 128),
+and store that value to VDST, and set flag in bit for current lane in SDST.
+Otherwise store SRC0 to VDST and clear flag.  
+Operation:  
+```
+DOUBLE SD0 = ASDOUBLE(SRC0)
+DOUBLE SD1 = ASDOUBLE(SRC1)
+DOUBLE SD2 = ASDOUBLE(SRC2)
+DOUBLE S12 = (SRC0!=SRC1) ? SD1 : SD2
+UINT64 MASK = (1ULL<<LANEID)
+if (S12 >= POW(2.0, 768+FREXP(SD0)-1)
+{
+    VDST = SD0 * POW2(2.0, 128)
+    SDST = (SDST & ~MASK) | MASK
+}
+else
+{
+    VDST = SRC0
+    SDST = (SDST & ~MASK)
+}
+```
 
 #### V_FMA_F32
 
