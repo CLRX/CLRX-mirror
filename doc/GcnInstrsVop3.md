@@ -463,6 +463,10 @@ else
     VDST = SF0
 ```
 
+#### V_DIV_SCALE_F32
+
+#### V_DIV_SCALE_F64
+
 #### V_FMA_F32
 
 Opcode: 331 (0x14b) for GCN 1.0/1.1; 459 (0x1cb) for GCN 1.2  
