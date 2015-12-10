@@ -969,6 +969,12 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
         if (!isaAssembler->parseRegisterRange(linePtr, regStart, regEnd))
             return false;
         
+        if (linePtr != line+lineSize)
+        {
+            printError(linePtr, "Garbages at end of expression");
+            return false;
+        }
+        
         std::pair<AsmSymbolMap::iterator, bool> res =
                 symbolMap.insert(std::make_pair(symbolName, AsmSymbol()));
         if (!res.second && ((res.first->second.onceDefined || !reassign) &&
@@ -978,6 +984,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                         "' is already defined").c_str());
             return false;
         }
+        
         AsmSymbolEntry& symEntry = *res.first;
         symEntry.second.expression = nullptr;
         symEntry.second.onceDefined = !reassign;
