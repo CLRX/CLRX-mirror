@@ -526,7 +526,7 @@ if (ISNAN(SF0) || ABS(SF0) == INF)
     VDST = SRC0
     SDST = (SDST & ~MASK) | MASK
 }
-else if (ABS(S12) >= ABS(POW(2.0, 96+FREXP(SF0)-1) || ISNAN(S12))
+else if (ABS(S12) >= ABS(POW(2.0, 96+FREXP_EXP(SF0)-1) || ISNAN(S12))
 {
     VDST = SF0 * POW2(2.0, 64)
     UINT64 MASK = (1ULL<<LANEID)
@@ -564,7 +564,7 @@ if (ISNAN(SD0) || ABS(SD0) == INF)
     VDST = SRC0
     SDST = (SDST & ~MASK) | MASK
 }
-else if (ABS(S12) >= ABS(POW(2.0, 768+FREXP(SD0)-1) || ISNAN(S12))
+else if (ABS(S12) >= ABS(POW(2.0, 768+FREXP_EXP(SD0)-1) || ISNAN(S12))
 {
     VDST = SD0 * POW2(2.0, 128)
     SDST = (SDST & ~MASK) | MASK
@@ -1059,4 +1059,28 @@ Operation:
 VDST = SRC2
 for (UINT8 i = 0; i < 4; i++)
     VDST += ABS(((SRC0 >> (i*8)) & 0xff) - ((SRC1 >> (i*8)) & 0xff))
+```
+
+#### V_TRIG_REOP_F64
+
+Opcode: 372 (0x174) for GCN 1.0/1.1; 658 (0x292) for GCN 1.2  
+Syntax: V_TRIG_REOP_F64 VDST(2), SRC0(2), SRC1  
+Description:  D.d = Look Up 2/PI (S0.d) with segment select S1.u[4:0].
+Save choosen 53 bits of 2/PI in double floating point value in VDST. Second argument
+is initial segment. First argument is shift of the value (in power form).
+Bit are numbered from MSB to LSB, begins from 1. Choosen bits begins from:
+53*SEGMENT + (FREXP_EXP(SRC0)-1)-(53*SEGMENT if SRC0>=POW(2.0, 53*SEGMENT),
+otherwise 53*SEGMENT.  
+Operation:  
+```
+ASDOUBLE SD0 = ASDOUBLE(SRC0)
+BIT = (SRC1&31) * 53
+if (SD0 >= POW(2.0, 53)
+{
+    if (ABS(SD0) != INF) && !ISNAN(SD0))
+        BIT += (FREXP_EXP(SRC0)-1) - BIT
+    else
+        BIT += 1024 - BIT
+}
+VDST = (DOUBLE)(TWOPERPI[BIT:BIT+52]) * POW(2.0, -BIT-53)
 ```
