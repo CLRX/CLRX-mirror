@@ -463,6 +463,45 @@ else
     VDST = SF0
 ```
 
+#### V_DIV_FMAS_F32
+
+Opcode: 367 (0x16f) for GCN 1.0/1.1; 482 (0x1e2) for GCN 1.2  
+Syntax: V_DIV_FMAS_F32 VDST, SRC0, SRC1, SRC2  
+Description: Special case divide FMA with scale and flags.
+SRC0 is quotient, SRC1 is denominator, SRC2 is nominator.
+All input values are floating point values. Instruction does fussed multiply and addition,
+multiply result by POW(2.0, -64) if absolute value of the SRC2 less than 2.0,
+otherwise multiply by POW(2.0, 64); and store result to VDST.  
+Operation:  
+```
+// SRC0*SRC1+SRC2
+VDST = FMA(ASFLOAT(SRC0), ASFLOAT(SRC1), ASFLOAT(SRC2))
+if (ABS(ASFLOAT(SRC2)) >= 2.0)
+    VDST = ASFLOAT(VDST)*POW(2.0,64)
+else
+    VDST = ASFLOAT(VDST)*POW(-2.0,64)
+```
+
+#### V_DIV_FMAS_F64
+
+Opcode: 367 (0x16f) for GCN 1.0/1.1; 482 (0x1e2) for GCN 1.2  
+Syntax: V_DIV_FMAS_F64 VDST(2), SRC0(2), SRC1(2), SRC2(2)  
+Description: Special case divide FMA with scale and flags.
+SRC0 is quotient, SRC1 is denominator, SRC2 is nominator.
+All input values are double floating point values.
+Instruction does fussed multiply and addition,
+multiply result by POW(2.0, -128) if absolute value of the SRC2 less than 2.0,
+otherwise multiply by POW(2.0, 128); and store result to VDST.  
+Operation:  
+```
+// SRC0*SRC1+SRC2
+VDST = FMA(ASDOUBLE(SRC0), ASDOUBLE(SRC1), ASDOUBLE(SRC2))
+if (ABS(ASDOUBLE(SRC2)) >= 2.0)
+    VDST = ASDOUBLE(VDST)*POW(2.0,128)
+else
+    VDST = ASDOUBLE(VDST)*POW(-2.0,128)
+```
+
 #### V_DIV_SCALE_F32
 
 Opcode (VOP3B): 365 (0x16d) for GCN 1.0/1.1; 480 (0x1e0) for GCN 1.2  
