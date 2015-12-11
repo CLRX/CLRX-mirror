@@ -258,6 +258,26 @@ Operation:
 VDST = (INT64)SRC0 >> (SRC1&63)
 ```
 
+#### V_ASHRREV_I64
+
+Opcode: 657 (0x291) for GCN 1.2  
+Syntax: V_ASHRREV_I32 VDST(2), SRC0, SRC1(2)  
+Description: Arithmetic shift right SRC1 by (SRC0&63) bits and store result into VDST.  
+Operation:  
+```
+VDST = (INT64)SRC0 >> (SRC0&63)
+```
+
+#### V_BCNT_U32_B32
+
+Opcode: 651 (0x28b) for GCN 1.2  
+Syntax: V_BCNT_U32_B32 VDST, SRC0, SRC1  
+Description: Count bits in SRC0, adds SSRC1, and store result to VDST.  
+Operation:  
+```
+VDST = SRC1 + BITCOUNT(SRC0)
+```
+
 #### V_BFE_I32
 
 Opcode: 329 (0x149) for GCN 1.0/1.1; 457 (0x1c9) for GCN 1.2  
@@ -303,6 +323,17 @@ to VDST.
 Operation:  
 ```
 VDST = (SRC0 & SRC1) | (~SRC0 & SRC2)
+```
+
+#### V_BFM_B32
+
+Opcode: 659 (0x293) for GCN 1.2  
+Syntax: V_BFM_B32 VDST, SRC0, SRC1  
+Description: Make 32-bit bitmask from (SRC1 & 31) bit that have length (SRC0 & 31) and
+store it to VDST.  
+Operation:  
+```
+VDST = ((1U << (SRC0&31))-1) << (SRC1&31)
 ```
 
 #### V_CUBEID_F32
@@ -387,6 +418,32 @@ else
 VDST = OUT
 ```
 
+#### V_CVT_PK_I16_I32
+
+Opcode: 664 (0x298) for GCN 1.2  
+Syntax: V_CVT_PK_I16_I32 VDST, SRC0, SRC1  
+Description: Convert signed value from SRC0 and SRC1 to signed 16-bit values with
+clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
+Operation:  
+```
+INT16 D0 = MAX(MIN((INT32)SRC0, 0x7fff), -0x8000) 
+INT16 D1 = MAX(MIN((INT32)SRC1, 0x7fff), -0x8000)
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
+#### V_CVT_PK_U16_U32
+
+Opcode: 663 (0x297) for GCN 1.2  
+Syntax: V_CVT_PK_U16_U32 VDST, SRC0, SRC1  
+Description: Convert unsigned value from SRC0 and SRC1 to unsigned 16-bit values with
+clamping, and store first value to low 16-bit and second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 D0 = MIN(SRC0, 0xffff)
+UINT16 D1 = MIN(SRC1, 0xffff)
+VDST = D0 | (((UINT32)D1) << 16)
+```
+
 #### V_CVT_PK_U8_F32
 
 Opcode: 350 (0x15e) for GCN 1.0/1.1; 477 (0x1dd) for GCN 1.2  
@@ -403,6 +460,75 @@ UINT8 VAL8 = 0
 if (ISNAN(f))
     VAL8 = (UINT8)MAX(MIN(f, 255.0), 0.0)
 VDST = (SRC2&~mask) | (((UINT32)VAL8) << shift)
+```
+
+#### V_CVT_PKACCUM_U8_F32
+
+Opcode: 496 (0x1f0) for GCN 1.2  
+Syntax: V_CVT_PKACCUM_U8_F32 VDST, SRC0, SRC1  
+Description: Convert floating point value from SRC0 to unsigned byte value with
+rounding mode from MODE register, and store this byte to (SRC1&3)'th byte of VDST.  
+Operation:  
+```
+UINT8 shift = ((SRC1&3) * 8)
+UINT32 mask = 0xff << shift
+FLOAT f = RNDINT(ASFLOAT(SRC0))
+UINT8 VAL8 = 0
+if (ISNAN(f))
+    VAL8 = (UINT8)MAX(MIN(f, 255.0), 0.0)
+VDST = (VDST&~mask) | (((UINT32)VAL8) << shift)
+```
+
+#### V_CVT_PKNORM_I16_F32
+
+Opcode: 660 (0x294) for GCN 1.2  
+Syntax: V_CVT_PKNORM_I16_F32 VDST, SRC0, SRC1  
+Description: Convert normalized FP value from SRC0 and SRC1 to signed 16-bit integers with
+rounding to nearest to even (??), and store first value to low 16-bit and
+second to high 16-bit of the VDST.  
+Operation:  
+```
+INT16 roundNorm(FLOAT S)
+{
+    FLOAT f = RNDNEINT(S*32767)
+    if (ISNAN(f))
+        return 0
+    return (INT16)MAX(MIN(f, 32767.0), -32767.0)
+}
+VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
+```
+
+#### V_CVT_PKNORM_U16_F32
+
+Opcode: 661 (0x295) for GCN 1.2  
+Syntax: V_CVT_PKNORM_U16_F32 VDST, SRC0, SRC1  
+Description: Convert normalized FP value from SRC0 and SRC1 to unsigned 16-bit integers with
+rounding to nearest to even (??), and store first value to low 16-bit and
+second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 roundNorm(FLOAT S)
+{
+    FLOAT f = RNDNEINT(S*65535.0)
+    if (ISNAN(f))
+        return 0
+    return (INT16)MAX(MIN(f, 65535.0), 0.0)
+}
+VDST = roundNorm(ASFLOAT(SRC0)) | ((UINT32)roundNorm(ASFLOAT(SRC1)) << 16)
+```
+
+#### V_CVT_PKRTZ_F16_F32
+
+Opcode: 662 (0x296) for GCN 1.2  
+Syntax: V_CVT_PKRTZ_F16_F32 VDST, SRC0, SRC1  
+Description: Convert normalized FP value from SRC0 and SRC1 to half floating points with
+rounding to zero, and store first value to low 16-bit and
+second to high 16-bit of the VDST.  
+Operation:  
+```
+UINT16 D0 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC0)))
+UINT16 D1 = ASINT16(CVT_HALF_RTZ(ASFLOAT(SRC1)))
+VDST = D0 | (((UINT32)D1) << 16)
 ```
 
 #### V_DIV_FIXUP_F32
@@ -600,6 +726,17 @@ Operation:
 VDST = FMA(ASDOUBLE(SRC0), ASDOUBLE(SRC1), ASDOUBLE(SRC2))
 ```
 
+#### V_LDEXP_F32
+
+Opcode: 648 (0x288) for GCN 1.2  
+Syntax: V_LDEXP_F32 VDST, SRC0, SRC1  
+Description: Do ldexp operation on SRC0 and SRC1 (multiply SRC0 by 2**(SRC1)).
+SRC1 is signed integer, SRC0 is floating point value.  
+Operation:  
+```
+VDST = ASFLOAT(SRC0) * POW(2.0, (INT32)SRC1)
+```
+
 #### V_LDEXP_F64
 
 Opcode: 360 (0x168) for GCN 1.0/1.1; 644 (0x284) for GCN 1.2  
@@ -632,21 +769,53 @@ for (UINT8 i = 0; i < 4; i++)
 #### V_LSHL_B64
 
 Opcode: 353 (0x161) for GCN 1.0/1.1  
-Syntax: V_LSHL_B32 VDST(2), SRC0(2), SRC1  
+Syntax: V_LSHL_B64 VDST(2), SRC0(2), SRC1  
 Description: Shift left SRC0 by (SRC1&63) bits and store result into VDST.  
 Operation:  
 ```
 VDST = SRC0 << (SRC1&63)
 ```
 
+#### V_LSHLREV_B64
+
+Opcode: 656 (0x290) for GCN 1.2  
+Syntax: V_LSHLREV_B64 VDST(2), SRC0, SRC1(2)  
+Description: Shift left SRC1 by (SRC0&63) bits and store result into VDST.  
+Operation:  
+```
+VDST = SRC1 << (SRC0&63)
+```
+
 #### V_LSHR_B64
 
 Opcode: 354 (0x162) for GCN 1.0/1.1  
-Syntax: V_LSHR_B32 VDST(2), SRC0(2), SRC1  
+Syntax: V_LSHR_B64 VDST(2), SRC0(2), SRC1  
 Description: Shift right SRC0 by (SRC1&63) bits and store result into VDST.  
 Operation:  
 ```
 VDST = SRC0 >> (SRC1&63)
+```
+
+#### V_LSHRREV_B64
+
+Opcode: 656 (0x290) for GCN 1.2  
+Syntax: V_LSHRREV_B64 VDST(2), SRC0, SRC1(2)  
+Description: Shift right SRC1 by (SRC0&63) bits and store result into VDST.  
+Operation:  
+```
+VDST = SRC1 >> (SRC0&63)
+```
+
+#### V_MAC_LEGACY_F32
+
+Opcode: 654 (0x28e) for GCN 1.2  
+Syntax: V_MAC_LEGACY_F32 VDST, SRC0, SRC1  
+Description: Multiply FP value from SRC0 by FP value from SRC1 and add result to VDST.
+If one of value is 0.0 then always do not change VDST (do not apply IEEE rules for 0.0*x).  
+Operation:  
+```
+if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
+    VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(VDST)
 ```
 
 #### V_MAD_F32
@@ -755,6 +924,32 @@ if (SRC2 > SRC0 && SRC2 > SRC1)
     VDST = SRC2
 else
     VDST = MAX(SRC1, SRC0)
+```
+
+#### V_MBCNT_HI_U32_B32
+
+Opcode: 653 (0x28d) for GCN 1.2  
+Syntax: V_MBCNT_HI_U32_B32 VDST, SRC0, SRC1  
+Description: Make mask for all lanes ending at current lane,
+get from that mask higher 32-bits, use it to mask SSRC0,
+count bits in that value, and store result to VDST.  
+Operation:  
+```
+UINT32 MASK = ((1ULL << (LANEID-32)) - 1ULL) & SRC0
+VDST = SRC1 + BITCOUNT(MASK)
+```
+
+#### V_MBCNT_LO_U32_B32
+
+Opcode: 652 (0x28c) for GCN 1.2  
+Syntax: V_MBCNT_LO_U32_B32 VDST, SRC0, SRC1  
+Description: Make mask for all lanes ending at current lane,
+get from that mask lower 32-bits, use it to mask SSRC0,
+count bits in that value, and store result to VDST.  
+Operation:  
+```
+UINT32 MASK = ((1ULL << LANEID) - 1ULL) & SRC0
+VDST = SRC1 + BITCOUNT(MASK)
 ```
 
 #### V_MED3_F32
@@ -1011,6 +1206,17 @@ VDST |= (SADU8((UINT32)(SRC0>>16), SRC1, (SRC2>>32) & 0xffff)<<32
 VDST |= (SADU8((UINT32)(SRC0>>24), SRC1, (SRC2>>48) & 0xffff)<<48
 ```
 
+#### V_READLANE_B32
+
+Opcode: 649 (0x289) for GCN 1.2  
+Syntax: V_READLANE_B32 SDST, VSRC0, SSRC1  
+Description: Copy one VSRC0 lane value to one SDST. Lane (thread id) choosen from SSRC1&63.
+SSRC1 can be SGPR or M0. Ignores EXEC mask.  
+Operation:  
+```
+SDST = VSRC0[SSRC1 & 63]
+```
+
 #### V_SAD_HI_U8
 
 Opcode: 347 (0x15b) for GCN 1.0/1.1; 474 (0x1da) for GCN 1.2  
@@ -1068,7 +1274,7 @@ Syntax: V_TRIG_REOP_F64 VDST(2), SRC0(2), SRC1
 Description:  D.d = Look Up 2/PI (S0.d) with segment select S1.u[4:0].
 Save choosen 53 bits of 2/PI in double floating point value in VDST. Second argument
 is initial segment. First argument is shift of the value (in power form).
-Bit are numbered from MSB to LSB, begins from 1. Choosen bits begins from:
+Bit are numbered from MSB to LSB, begins from value 1.0. Choosen bits begins from:
 53*SEGMENT + (FREXP_EXP(SRC0)-1)-(53*SEGMENT if SRC0>=POW(2.0, 53*SEGMENT),
 otherwise 53*SEGMENT.  
 Operation:  
@@ -1083,4 +1289,15 @@ if (SD0 >= POW(2.0, 53)
         BIT += 1024 - BIT
 }
 VDST = (DOUBLE)(TWOPERPI[BIT:BIT+52]) * POW(2.0, -BIT-53)
+```
+
+#### V_WRITELANE_B32
+
+Opcode: 650 (0x28a) for GCN 1.2  
+Syntax: V_WRITELANE_B32 VDST, VSRC0, SSRC1  
+Description: Copy SGPR to one lane of VDST. Lane choosen (thread id) from SSRC1&63.
+SSRC1 can be SGPR or M0. Ignores EXEC mask.  
+Operation:  
+```
+VDST[SSRC1 & 63] = SSRC0
 ```
