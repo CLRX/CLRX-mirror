@@ -1078,7 +1078,7 @@ BIT = (SRC1&31) * 53
 if (SD0 >= POW(2.0, 53)
 {
     if (ABS(SD0) != INF) && !ISNAN(SD0))
-        BIT += (FREXP_EXP(SRC0)-1) - BIT
+        BIT += (FREXP_EXP(SD0)-1) - BIT
     else
         BIT += 1024 - BIT
 }
