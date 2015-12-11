@@ -484,7 +484,7 @@ else
 
 #### V_DIV_FMAS_F64
 
-Opcode: 367 (0x16f) for GCN 1.0/1.1; 482 (0x1e2) for GCN 1.2  
+Opcode: 368 (0x170) for GCN 1.0/1.1; 483 (0x1e3) for GCN 1.2  
 Syntax: V_DIV_FMAS_F64 VDST(2), SRC0(2), SRC1(2), SRC2(2)  
 Description: Special case divide FMA with scale and flags.
 SRC0 is quotient, SRC1 is denominator, SRC2 is nominator.
