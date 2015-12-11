@@ -1275,8 +1275,8 @@ Description:  D.d = Look Up 2/PI (S0.d) with segment select S1.u[4:0].
 Save choosen 53 bits of 2/PI in double floating point value in VDST. Second argument
 is initial segment. First argument is shift of the value (in power form).
 Bit are numbered from MSB to LSB, begins from value 1.0. Choosen bits begins from:
-53*SEGMENT + (FREXP_EXP(SRC0)-1)-(53*SEGMENT if SRC0>=POW(2.0, 53*SEGMENT),
-otherwise 53*SEGMENT.  
+53*SEGMENT + (FREXP_EXP(SRC0)-1)-(53*SEGMENT if SRC0>=POW(2.0, 53\*SEGMENT),
+otherwise 53\*SEGMENT.  
 Operation:  
 ```
 ASDOUBLE SD0 = ASDOUBLE(SRC0)
