@@ -876,6 +876,45 @@ else
     VDST = MIN(SRC1, SRC0)
 ```
 
+#### V_MQSAD_U8, V_MQSAD_PK_U16_U8
+
+Opcode: 371 (0x173) for GCN 1.0/1.1; 486 (0x1e6) for GCN 1.2  
+Syntax (GCN 1.0): V_QSAD_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
+Syntax (GCN 1.1/1.2): V_QSAD_PK_U16_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
+Description: Compute four masked sum of absolute differences with accumulation.
+Any that operation get first argument from four bytes begins from N and ends to N+3
+(where N is number of operation), second argument is SRC1, and third argument is
+N'th 16-bit dword from SRC2.  
+Operation:  
+```
+void MSADU8(UINT32 S0, UINT32 S1, UINT32 S2)
+{
+    UINT32 OUT = S2;
+    for (UINT8 i = 0; i < 4; i++)
+        if ((S1 >> (i*8)) & 0xff) != 0)
+            OUT += ABS(((S0 >> (i*8)) & 0xff) - ((S1 >> (i*8)) & 0xff))
+    return OUT;
+}
+VDST = (MSADU8((UINT32)SRC0, SRC1, SRC2 & 0xffff)
+VDST |= (MSADU8((UINT32)(SRC0>>8), SRC1, (SRC2>>16) & 0xffff)<<16
+VDST |= (MSADU8((UINT32)(SRC0>>16), SRC1, (SRC2>>32) & 0xffff)<<32
+VDST |= (MSADU8((UINT32)(SRC0>>24), SRC1, (SRC2>>48) & 0xffff)<<48
+```
+
+#### V_MSAD_U8
+
+Opcode: 369 (0x171) for GCN 1.0/1.1; 484 (0x1e4) for GCN 1.2  
+Syntax: V_MSAD_U8 VDST, SRC0, SRC1, SRC2  
+Description: Calculate sum of absolute differences in SRC0 and SRC1 for bytes that have
+non-zero value in SRC1; add SRC2 to result, and store result to VDST.  
+Operation:  
+```
+VDST = SRC2
+for (UINT8 i = 0; i < 4; i++)
+    if ((SRC1 >> (i*8)) & 0xff) != 0)
+        VDST += ABS(((SRC0 >> (i*8)) & 0xff) - ((SRC1 >> (i*8)) & 0xff))
+```
+
 #### V_MUL_F64
 
 Opcode: 357 (0x165) for GCN 1.0/1.1; 641 (0x281) for GCN 1.2  
@@ -947,6 +986,29 @@ if (ASFLOAT(SRC2) > 0.0 && !ISNAN(ASFLOAT(SRC2)))
     if (ASFLOAT(SRC0)!=0.0 && ASFLOAT(SRC1)!=0.0)
         VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1)
 }
+```
+
+#### V_QSAD_U8, V_QSAD_PK_U16_U8
+
+Opcode: 370 (0x172) for GCN 1.0/1.1; 485 (0x1e5) for GCN 1.2  
+Syntax (GCN 1.0): V_QSAD_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
+Syntax (GCN 1.1/1.2): V_QSAD_PK_U16_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
+Description: Compute four sum of absolute differences with accumulation. Any that operation
+get first argument from four bytes begins from N and ends to N+3 (where N is number of
+operation), second argument is SRC1, and third argument is N'th 16-bit dword from SRC2.  
+Operation:  
+```
+void SADU8(UINT32 S0, UINT32 S1, UINT32 S2)
+{
+    UINT32 OUT = S2;
+    for (UINT8 i = 0; i < 4; i++)
+        OUT += ABS(((S0 >> (i*8)) & 0xff) - ((S1 >> (i*8)) & 0xff))
+    return OUT;
+}
+VDST = (SADU8((UINT32)SRC0, SRC1, SRC2 & 0xffff)
+VDST |= (SADU8((UINT32)(SRC0>>8), SRC1, (SRC2>>16) & 0xffff)<<16
+VDST |= (SADU8((UINT32)(SRC0>>16), SRC1, (SRC2>>32) & 0xffff)<<32
+VDST |= (SADU8((UINT32)(SRC0>>24), SRC1, (SRC2>>48) & 0xffff)<<48
 ```
 
 #### V_SAD_HI_U8
