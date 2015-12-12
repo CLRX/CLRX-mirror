@@ -68,7 +68,7 @@ Unaligned pairs of SGPRs are allowed in source operands.
 
 List of the instructions by opcode (GCN 1.0/1.1):
 
- Opcode      | Mnemonic (GCN 1.0) | Mnemonic (GCN 1.0)
+ Opcode      | Mnemonic (GCN 1.0) | Mnemonic (GCN 1.1)
 -------------|--------------------|-----------------------------
  320 (0x140) | V_MAD_LEGACY_F32   | V_MAD_LEGACY_F32
  321 (0x141) | V_MAD_F32          | V_MAD_F32
@@ -272,7 +272,7 @@ VDST = (INT64)SRC0 >> (SRC0&63)
 
 Opcode: 651 (0x28b) for GCN 1.2  
 Syntax: V_BCNT_U32_B32 VDST, SRC0, SRC1  
-Description: Count bits in SRC0, adds SSRC1, and store result to VDST.  
+Description: Count bits in SRC0, adds SRC1, and store result to VDST.  
 Operation:  
 ```
 VDST = SRC1 + BITCOUNT(SRC0)
@@ -640,13 +640,15 @@ the input different than SRC0 is greater or equal than T2=POW(2.0, 96+EXP0)
 then instruction multiply SRC0 by POW(2.0, 64),
 and store that value to VDST, and set flag in bit for current lane in SDST.
 If SRC0 is NaN or infinity then store SRC0 to VDST and set flag.
-Otherwise store SRC0 to VDST and clear flag.  
+Otherwise store SRC0 to VDST and clear flag.
+Bits for inactive threads in SDST are always zeroed.  
 Operation:  
 ```
 FLOAT SF0 = ASFLOAT(SRC0)
 FLOAT SF1 = ASFLOAT(SRC1)
 FLOAT SF2 = ASFLOAT(SRC2)
 FLOAT S12 = (SRC0!=SRC1) ? SF1 : SF2
+SDST = 0
 if (ISNAN(SF0) || ABS(SF0) == INF)
 {
     VDST = SRC0
@@ -677,7 +679,8 @@ T2=POW(2.0, 768+EXP0) (EXP0 is exponent part (base 2) of SRC0) or this value is 
 then instruction multiply SRC0 by POW(2.0, 128),
 and store that value to VDST, and set flag in bit for current lane in SDST.
 If SRC0 is NaN or infinity then store SRC0 to VDST and set flag.
-Otherwise store SRC0 to VDST and clear flag.  
+Otherwise store SRC0 to VDST and clear flag.
+Bits for inactive threads in SDST are always zeroed.  
 Operation:  
 ```
 DOUBLE SD0 = ASDOUBLE(SRC0)
@@ -685,6 +688,7 @@ DOUBLE SD1 = ASDOUBLE(SRC1)
 DOUBLE SD2 = ASDOUBLE(SRC2)
 DOUBLE S12 = (SRC0!=SRC1) ? SD1 : SD2
 UINT64 MASK = (1ULL<<LANEID)
+SDST = 0
 if (ISNAN(SD0) || ABS(SD0) == INF)
 {
     VDST = SRC0
