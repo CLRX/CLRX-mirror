@@ -778,7 +778,7 @@ VDST = SRC0 << (SRC1&63)
 
 #### V_LSHLREV_B64
 
-Opcode: 656 (0x290) for GCN 1.2  
+Opcode: 655 (0x28f) for GCN 1.2  
 Syntax: V_LSHLREV_B64 VDST(2), SRC0, SRC1(2)  
 Description: Shift left SRC1 by (SRC0&63) bits and store result into VDST.  
 Operation:  
