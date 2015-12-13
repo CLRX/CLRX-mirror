@@ -20,6 +20,7 @@ CLRX/utils/MemAccess.h -text
 CLRX/utils/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
 /COPYING -text
+/CTestConfig.cmake -text
 /Doxyfile.in -text
 /INSTALL -text
 /Int128Detect.c -text
