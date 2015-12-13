@@ -60,8 +60,10 @@ Optional CMake configuration options for build:
 * CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
 * BUILD_32BIT - build also 32-bit binaries
 * BUILD_TESTS - build all tests
-* BUILD_DOCUMENTATION - build the Doxygen documentation
+* BUILD_DOCUMENTATION - build project documentation (doxygen, unix manuals, user doc)
+* BUILD_DOXYGEN - build doxygen documentation
 * BUILD_MANUAL - build Unix manual pages
+* BUILD_CLRXDOC - build CLRX user documentation
 * NO_STATIC - no static libraries
 * OPENCL_DIST_DIR - an OpenCL directory distribution installation (optional)
 
@@ -82,7 +84,7 @@ ctest
 ```
 
 Creating documentation will be done by this command
-(if you will enable a building documentation):
+(if you will enable a building documentation, required for version 0.1):
 
 ```
 make Docs
