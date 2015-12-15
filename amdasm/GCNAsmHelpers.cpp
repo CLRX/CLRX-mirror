@@ -866,6 +866,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (!forceExpression && isOnlyFloat(negPlace, end))
         {   // if only floating point value
             /* if floating point literal can be processed */
+            /* TODO: Parse single FP for all instructions, detect suffix for half FP */
             linePtr = negPlace;
             try
             {
