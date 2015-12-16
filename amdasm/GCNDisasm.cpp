@@ -589,6 +589,8 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& bufPtr, uint16_t a
     {
         const char* inOp = gcnOperandFloatTable[op-240];
         putChars(bufPtr, inOp, ::strlen(inOp));
+        if (floatLit==FLTLIT_F16)
+            *bufPtr++ = 's';    /* assembler by default accepts half floating points */
         return;
     }
     

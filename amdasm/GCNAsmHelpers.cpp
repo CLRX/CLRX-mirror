@@ -571,7 +571,7 @@ bool GCNAsmUtils::parseImmInt(Assembler& asmr, const char*& linePtr, uint32_t& o
 
 /* check whether string is exclusively floating point value
  * (only floating point, and neither integer and nor symbol) */
-static bool isOnlyFloat(const char* str, const char* end)
+static bool isOnlyFloat(const char* str, const char* end, bool defaultFP32, bool& isFP32)
 {
     if (str == end)
         return false;
@@ -593,7 +593,13 @@ static bool isOnlyFloat(const char* str, const char* end)
                 const char* expPlace = str;
                 while (str!=end && isDigit(*str)) str++;
                 if (str-expPlace!=0)
+                {
+                    if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
+                        isFP32 = defaultFP32; // end of string and no replacing suffix
+                    else
+                        isFP32 = !defaultFP32;
                     return true; // if 'XXXp[+|-]XXX'
+                }
             }
             return false; // no '.'
         }
@@ -602,7 +608,13 @@ static bool isOnlyFloat(const char* str, const char* end)
         const char* afterComma = str;
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
+        {
+            if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
+                isFP32 = defaultFP32; // end of string and no replacing suffix
+            else
+                isFP32 = !defaultFP32;
             return true;
+        }
     }
     else
     {   // decimal
@@ -619,7 +631,13 @@ static bool isOnlyFloat(const char* str, const char* end)
                 const char* expPlace = str;
                 while (str!=end && isDigit(*str)) str++;
                 if (str-expPlace!=0)
+                {
+                    if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
+                        isFP32 = defaultFP32; // end of string and no replacing suffix
+                    else
+                        isFP32 = !defaultFP32;
                     return true; // if 'XXXe[+|-]XXX'
+                }
             }
             return false; // no '.'
         }
@@ -628,7 +646,13 @@ static bool isOnlyFloat(const char* str, const char* end)
         const char* afterComma = str;
         
         if (point-beforeComma!=0 || afterComma-(point+1)!=0)
+        {
+            if (str==end || toLower(*str)!=((defaultFP32)?'h':'s'))
+                isFP32 = defaultFP32; // end of string and no replacing suffix
+            else
+                isFP32 = !defaultFP32;
             return true;
+        }
     }
     return false;
 }
@@ -640,17 +664,24 @@ bool GCNAsmUtils::parseLiteralImm(Assembler& asmr, const char*& linePtr, uint32_
         outTargetExpr->reset();
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    if (isOnlyFloat(linePtr, end))
+    bool isFP32;
+    if (isOnlyFloat(linePtr, end, (instropMask&INSTROP_TYPE_MASK)!=INSTROP_F16, isFP32))
     {
         try
         {
-        if ((instropMask&INSTROP_TYPE_MASK) == INSTROP_F16)
+        if (!isFP32)
+        {
             value = cstrtohCStyle(linePtr, end, linePtr);
+            if (linePtr!=end && toLower(*linePtr)=='h')
+                linePtr++;
+        }
         else
         {
             union FloatUnion { uint32_t i; float f; };
             FloatUnion v;
             v.f = cstrtovCStyle<float>(linePtr, end, linePtr);
+            if (linePtr!=end && toLower(*linePtr)=='s')
+                linePtr++;
             value = v.i;
         }
         }
@@ -863,51 +894,25 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         
         uint64_t value;
         operand.vopMods = 0; // zeroing operand modifiers
-        if (!forceExpression && isOnlyFloat(negPlace, end))
+        bool isFP32;
+        if (!forceExpression && isOnlyFloat(negPlace, end, 
+                    (instrOpMask & INSTROP_TYPE_MASK)!=INSTROP_F16, isFP32))
         {   // if only floating point value
             /* if floating point literal can be processed */
-            /* TODO: Parse single FP for all instructions, detect suffix for half FP */
             linePtr = negPlace;
             try
             {
-                if ((instrOpMask & INSTROP_TYPE_MASK) == INSTROP_F16)
+                if (!isFP32)
                 {
                     value = cstrtohCStyle(linePtr, end, linePtr);
-                    switch (value)
+                    // skip suffix if needed
+                    if (linePtr!=end && toLower(*linePtr)=='h')
+                        linePtr++;
+                    
+                    if (value == 0)
                     {
-                        case 0x0:
-                            operand.range = { 128, 0 };
-                            return true;
-                        case 0x3800: // 0.5
-                            operand.range  = { 240, 0 };
-                            return true;
-                        case 0xb800: // -0.5
-                            operand.range = { 241, 0 };
-                            return true;
-                        case 0x3c00: // 1.0
-                            operand.range = { 242, 0 };
-                            return true;
-                        case 0xbc00: // -1.0
-                            operand.range = { 243, 0 };
-                            return true;
-                        case 0x4000: // 2.0
-                            operand.range = { 244, 0 };
-                            return true;
-                        case 0xc000: // -2.0
-                            operand.range = { 245, 0 };
-                            return true;
-                        case 0x4400: // 4.0
-                            operand.range = { 246, 0 };
-                            return true;
-                        case 0xc400: // -4.0
-                            operand.range = { 247, 0 };
-                            return true;
-                        case 0x3118: // 1/(2*PI)
-                            if (arch&ARCH_RX3X0)
-                            {
-                                operand.range = { 248, 0 };
-                                return true;
-                            }
+                        operand.range = { 128, 0 };
+                        return true;
                     }
                 }
                 else /* otherwise, FLOAT */
@@ -915,6 +920,9 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     union FloatUnion { uint32_t i; float f; };
                     FloatUnion v;
                     v.f = cstrtovCStyle<float>(linePtr, end, linePtr);
+                    // skip suffix if needed
+                    if (linePtr!=end && toLower(*linePtr)=='s')
+                        linePtr++;
                     value = v.i;
                     
                     switch (value)

@@ -120,6 +120,10 @@ Escape   |  Description    | Value
  `\aaa`  | Octal code      | Various
  `\HHH..`|Hexadecimal code | Various
 
+The floating point literals in instruction operands can have the suffix ('h' or 's').
+Suffix 's' indicates that given value is single floating point value.
+Suffix 'h' indicates that given value is half floating point value.
+
 ### Expressions
 
 The CLRX assembler get this same the operator ordering as in GNU as.
