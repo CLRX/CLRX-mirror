@@ -190,8 +190,8 @@ Alphabetically sorted instruction list:
 
 Opcode: 0 (0x0)  
 Syntax: DS_ADD_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Adds unsigned integer value from LDS/GDS under address (ADDR+OFFSET) & ~3 and
-VDATA0, and store result back to LDS/GDS under this address. Operation is atomic.  
+Description: Adds unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & ~3 and
+VDATA0, and store result back to LDS/GDS at this address. Operation is atomic.  
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
@@ -202,8 +202,8 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 9 (0x9)  
 Syntax: DS_AND_B32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Operation: Do bitwise AND operatin on 32-bit value from LDS/GDS under address
-(ADDR+OFFSET) & ~3, and value from VDATA0; and store result to LDS/GDS under this same
+Description: Do bitwise AND operatin on 32-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~3, and value from VDATA0; and store result to LDS/GDS at this same
 address. Operation is atomic.  
 Operation:  
 ```
@@ -215,8 +215,7 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 4 (0x4)  
 Syntax: DS_DEC_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description:
-Operation: Load unsigned value from LDS/GDS under  address (ADDR+OFFSET) & ~3, and
+Description: Load unsigned value from LDS/GDS at  address (ADDR+OFFSET) & ~3, and
 compare with unsigned value from VDATA0. If VDATA0 greater or equal and loaded
 unsigned value is zero, then increment value from LDS/GDS, otherwise store
 VDATA0 to LDS/GDS. Operation is atomic.  
@@ -230,7 +229,7 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 3 (0x3)  
 Syntax: DS_INC_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Load unsigned value from LDS/GDS under address (ADDR+OFFSET) & ~3, and
+Description: Load unsigned value from LDS/GDS at address (ADDR+OFFSET) & ~3, and
 compare with unsigned value from VDATA0. If VDATA0 greater, then increment value
 from LDS/GDS, otherwise store 0 to LDS/GDS. Operation is atomic.  
 Operation:  
@@ -243,8 +242,8 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 6 (0x6)  
 Syntax: DS_MAX_I32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Choose greatest signed integer value from LDS/GDS under address
-(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS under this same address.
+Description: Choose greatest signed integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
@@ -256,8 +255,8 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 8 (0x8)  
 Syntax: DS_MAX_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Choose greatest unsigned integer value from LDS/GDS under address
-(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS under this same address.
+Description: Choose greatest unsigned integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
@@ -269,8 +268,8 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 5 (0x5)  
 Syntax: DS_MIN_I32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Choose smallest signed integer value from LDS/GDS under address
-(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS under this same address.
+Description: Choose smallest signed integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
@@ -282,20 +281,35 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 7 (0x7)  
 Syntax: DS_MIN_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Choose smallest unsigned integer value from LDS/GDS under address
-(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS under this same address.
+Description: Choose smallest unsigned integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~3 and VDATA0, and store result to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = MIN(*V, VDATA0) // atomic operation
 ```
+
+#### DS_MSKOR_B32
+
+Opcode: 11 (0xb)  
+Syntax: DS_MSKOR_U32 ADDR, VDATA0, VDATA1 [OFFSET:OFFSET]  
+Description: Load first argument from LDS/GDS at address (ADDR+OFFSET) & ~3.
+Second and third arguments are from VDATA0 and VDATA1. The instruction keeps all bits
+that is zeroed in second argument, and set all bits from third argument.
+Result is stored in LDS/GDS at this same address. Operation is atomic.  
+Operation:  
+```
+UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = (*V & ~VDATA0) | VDATA1 // atomic operation
+```
+
 #### DS_OR_B32
 
 Opcode: 10 (0xa)  
 Syntax: DS_OR_B32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Operation: Do bitwise OR operatin on 32-bit value from LDS/GDS under address
-(ADDR+OFFSET) & ~3, and value from VDATA0; and store result to LDS/GDS under this same
+Description: Do bitwise OR operatin on 32-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~3, and value from VDATA0; and store result to LDS/GDS at this same
 address. Operation is atomic.  
 Operation:  
 ```
@@ -307,8 +321,8 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 2 (0x2)  
 Syntax: DS_RSUB_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Subtract unsigned integer value from LDS/GDS under address (ADDR+OFFSET) & ~3
-from value in VDATA0, and store result back to LDS/GDS under this same address.
+Description: Subtract unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & ~3
+from value in VDATA0, and store result back to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
@@ -320,11 +334,49 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 
 Opcode: 1 (0x1)  
 Syntax: DS_SUB_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Subtract VDATA0 from unsigned integer value from LDS/GDS under address
-(ADDR+OFFSET) & ~3, and store result back to LDS/GDS under this same address.
+Description: Subtract VDATA0 from unsigned integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~3, and store result back to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = *V - VDATA0  // atomic operation
+```
+
+#### DS_WRITE_B32
+
+Opcode: 13 (0xd)  
+Syntax: DS_WRITE_B32 ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Store value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~3.  
+Operation:  
+```
+UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = VDATA0
+```
+
+#### DS_WRITE2_B32
+
+Opcode: 14 (0xe)  
+Syntax: DS_WRITE2_B32 ADDR, VDATA0, VDATA1 [OFFSET0:OFFSET1] [OFFSET1:OFFSET1]  
+Description: Store one dword from VDATA0 into LDS/GDS at address (ADDR+OFFSET0*4) & ~3,
+and second into LDS/GDS at address (ADDR+OFFSET0*4) & ~3.  
+Operation:  
+```
+UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*4)&~3) 
+UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
+*V0 = VDATA0
+*V1 = VDATA1
+```
+
+#### DS_XOR_B32
+
+Opcode: 11 (0xb)  
+Syntax: DS_XOR_B32 ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Do bitwise XOR operatin on 32-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~3, and value from VDATA0; and store result to LDS/GDS at this same
+address. Operation is atomic.  
+Operation:  
+```
+UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = *V ^ VDATA0  // atomic operation
 ```
