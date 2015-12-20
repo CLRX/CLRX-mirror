@@ -66,6 +66,7 @@ doc/ClrxDisasm.md -text
 doc/ClrxToc.md -text
 doc/ClrxWrapper.md -text
 doc/GalliumAbi.md -text
+doc/GcnInstrsDs.md -text
 doc/GcnInstrsSmrd.md -text
 doc/GcnInstrsSop1.md -text
 doc/GcnInstrsSop2.md -text

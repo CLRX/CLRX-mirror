@@ -60,5 +60,6 @@ By default, any register value is treated as unsigned integer.
 * [VOPC instructions](GcnInstrsVopc)
 * [VOP3 instructions](GcnInstrsVop3)
 * [VINTRP instructions](GcnInstrsVintrp)
+* [DS instructions](GcnInstrsDs)
 
 ---
