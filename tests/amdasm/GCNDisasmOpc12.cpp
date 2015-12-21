@@ -2315,9 +2315,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xd8eccd67U, 0x8b000047U, true, "        ds_read_b64     "
                 "v[139:140], v71 offset:52583\n" },
     { 0xd8eecd67U, 0x8b000047U, true, "        ds_read2_b64    "
-                "v[139:140], v71 offset0:103 offset1:205\n" },
+                "v[139:142], v71 offset0:103 offset1:205\n" },
     { 0xd8f0cd67U, 0x8b000047U, true, "        ds_read2st64_b64 "
-                "v[139:140], v71 offset0:103 offset1:205\n" },
+                "v[139:142], v71 offset0:103 offset1:205\n" },
     { 0xd8f2cd67U, 0x8b27a947U, true, "        DS_ill_121      "
                 "v71 offset:52583 vdata0=0xa9 vdata1=0x27 vdst=0x8b\n" },
     { 0xd8f4cd67U, 0x8b27a947U, true, "        DS_ill_122      "
