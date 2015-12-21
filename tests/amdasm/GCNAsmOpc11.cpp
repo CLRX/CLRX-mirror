@@ -1754,21 +1754,21 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xd8000305U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169 gds", 0xd8020000U, 0x0000a947U, true, true, "" },
     { "   ds_consume  v155 offset:52583", 0xd8f4cd67U, 0x9b000000U, true, true, "" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87]"
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87]"
       " offset0:103 offset1:205", 0xd9bccd67U, 0x8b56a947U, true, true, "" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87]"
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87]"
       " offset1:205 offset0:103", 0xd9bccd67U, 0x8b56a947U, true, true, "" },
-    { "aa=32; bb=74;ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87]"
+    { "aa=32; bb=74;ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87]"
       " offset0:1+aa offset1:bb+1", 0xd9bc4b21U, 0x8b56a947U, true, true, "" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset0:1+aa "
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87] offset0:1+aa "
         "offset1:bb+1;aa=32; bb=74", 0xd9bc4b21U, 0x8b56a947U, true, true, "" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset0:1+aa "
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87] offset0:1+aa "
         "gds offset1:bb+1;aa=32; bb=74", 0xd9be4b21U, 0x8b56a947U, true, true, "" },
     /* DS warnings */
     { "   ds_add_u32  v71, v169 offset:52 offset:42",
         0xd800002aU, 0x0000a947U, true, true,
         "test.s:1:36: Warning: Offset is already defined\n" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] "
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87] "
         "offset0:103 offset1:205 offset1:51 offset0:6",
         0xd9bc3306U, 0x8b56a947U, true, true,
         "test.s:1:89: Warning: Offset1 is already defined\n"
@@ -1785,11 +1785,11 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:33: Error: Some garbages at DS modifier place\n" },
     { "   ds_wrxchg2st64_rtn_b64 v139, v[71:72], v169, v86"
       " offset0:103 offset1:205", 0, 0, false, false,
-        "test.s:1:27: Error: Required 2 vector registers\n"
+        "test.s:1:27: Error: Required 4 vector registers\n"
         "test.s:1:33: Error: Required 1 vector register\n"
         "test.s:1:43: Error: Required 2 vector registers\n"
         "test.s:1:49: Error: Required 2 vector registers\n" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset2:103 "
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87] offset2:103 "
         "offsetx:205 offset:3221 oxxs", 0, 0, false, false,
         "test.s:1:65: Error: Expected 'offset', 'offset0' or 'offset1'\n"
         "test.s:1:72: Error: Some garbages at DS modifier place\n"
@@ -1972,9 +1972,9 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xd9b0cd67U, 0x8b56a947U, true, true, "" },
     { "   ds_wrxchg_rtn_b64  v[139:140], v71, v[169:170] offset:52583",
         0xd9b4cd67U, 0x8b00a947U, true, true, "" },
-    { "   ds_wrxchg2_rtn_b64 v[139:140], v71, v[169:170], v[86:87] "
+    { "   ds_wrxchg2_rtn_b64 v[139:142], v71, v[169:170], v[86:87] "
         "offset0:103 offset1:205", 0xd9b8cd67U, 0x8b56a947U, true, true, "" },
-    { "   ds_wrxchg2st64_rtn_b64 v[139:140], v71, v[169:170], v[86:87] "
+    { "   ds_wrxchg2st64_rtn_b64 v[139:142], v71, v[169:170], v[86:87] "
         "offset0:103 offset1:205", 0xd9bccd67U, 0x8b56a947U, true, true, "" },
     { "   ds_cmpst_rtn_b64 v[139:140], v71, v[169:170], v[86:87] offset:52583",
         0xd9c0cd67U, 0x8b56a947U, true, true, "" },

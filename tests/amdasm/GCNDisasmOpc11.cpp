@@ -2144,9 +2144,9 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0xd9b4cd67U, 0x8b00a947U, true, "        ds_wrxchg_rtn_b64 "
                 "v[139:140], v71, v[169:170] offset:52583\n" },
     { 0xd9b8cd67U, 0x8b56a947U, true, "        ds_wrxchg2_rtn_b64 "
-                "v[139:140], v71, v[169:170], v[86:87] offset0:103 offset1:205\n" },
+                "v[139:142], v71, v[169:170], v[86:87] offset0:103 offset1:205\n" },
     { 0xd9bccd67U, 0x8b56a947U, true, "        ds_wrxchg2st64_rtn_b64 "
-                "v[139:140], v71, v[169:170], v[86:87] offset0:103 offset1:205\n" },
+                "v[139:142], v71, v[169:170], v[86:87] offset0:103 offset1:205\n" },
     { 0xd9c0cd67U, 0x8b56a947U, true, "        ds_cmpst_rtn_b64 "
                 "v[139:140], v71, v[169:170], v[86:87] offset:52583\n" },
     { 0xd9c4cd67U, 0x8b56a947U, true, "        ds_cmpst_rtn_f64 "

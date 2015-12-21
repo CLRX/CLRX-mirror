@@ -127,7 +127,7 @@ List of the instructions by opcode:
  106 (0x6a) |   ✓   |   ✓   | DS_OR_RTN_B64          | DS_OR_RTN_B64
  107 (0x6b) |   ✓   |   ✓   | DS_XOR_RTN_B64         | DS_XOR_RTN_B64
  108 (0x6c) |   ✓   |   ✓   | DS_MSKOR_RTN_B64       | DS_MSKOR_RTN_B64
- 109 (0x6d) |   ✓   |   ✓   | DS_WRXCHG_RTN_B6       | DS_WRXCHG_RTN_B6
+ 109 (0x6d) |   ✓   |   ✓   | DS_WRXCHG_RTN_B6       | DS_WRXCHG_RTN_B64
  110 (0x6e) |   ✓   |   ✓   | DS_WRXCHG2_RTN_B64     | DS_WRXCHG2_RTN_B64
  111 (0x6f) |   ✓   |   ✓   | DS_WRXCHG2ST64_RTN_B64 | DS_WRXCHG2ST64_RTN_B64
  112 (0x70) |   ✓   |   ✓   | DS_CMPST_RTN_B64       | DS_CMPST_RTN_B64
@@ -728,6 +728,20 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
+#### DS_MSKOR_B64
+
+Opcode: 76 (0x4c)  
+Syntax: DS_MSKOR_U64 ADDR, VDATA0(2), VDATA1(2) [OFFSET:OFFSET]  
+Description: Load first argument from LDS/GDS at address (ADDR+OFFSET) & ~7.
+Second and third arguments are from VDATA0 and VDATA1. All three arguments are 64-bit.
+The instruction keeps all bits that is zeroed in second argument, and set all bits from
+third argument. Result is stored in LDS/GDS at this same address. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = (*V & ~VDATA0) | VDATA1 // atomic operation
+```
+
 #### DS_MSKOR_RTN_B32
 
 Opcode: 44 (0x2c)  
@@ -740,6 +754,21 @@ Previous value from LDS/GDS are stored in VDST. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST = *V; *V = (*V & ~VDATA0) | VDATA1 // atomic operation
+```
+
+#### DS_MSKOR_RTN_B64
+
+Opcode: 108 (0x6c)  
+Syntax: DS_MSKOR_RTN_U64 VDST(2), ADDR, VDATA0(2), VDATA1(2) [OFFSET:OFFSET]  
+Description: Load first argument from LDS/GDS at address (ADDR+OFFSET) & ~7.
+Second and third arguments are from VDATA0 and VDATA1. All three arguments are 64-bit.
+The instruction keeps all bits that is zeroed in second argument, and set all bits from
+third argument. Result is stored in LDS/GDS at this same address.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 VDST = *V; *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
@@ -1023,6 +1052,17 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = VDATA0
 ```
 
+#### DS_WRITE_B64
+
+Opcode: 77 (0x4d)  
+Syntax: DS_WRITE_B64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Store 64-bit value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~7.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = VDATA0
+```
+
 #### DS_WRITE_B8
 
 Opcode: 30 (0x1e)  
@@ -1048,6 +1088,20 @@ UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
 *V1 = VDATA1
 ```
 
+#### DS_WRITE2_B64
+
+Opcode: 78 (0x4e)  
+Syntax: DS_WRITE2_B64 ADDR, VDATA0(2), VDATA1(2) [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Store one 64-bit value from VDATA0 into LDS/GDS at address
+(ADDR+OFFSET0\*8) & ~7, and second into LDS/GDS at address (ADDR+OFFSET1\*8) & ~7.  
+Operation:  
+```
+UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*8)&~7) 
+UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*8)&~7)
+*V0 = VDATA0
+*V1 = VDATA1
+```
+
 #### DS_WRITE2ST64_B32
 
 Opcode: 15 (0xf)  
@@ -1062,7 +1116,21 @@ UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
 *V1 = VDATA1
 ```
 
-#### DS_WRXCHG_B32
+#### DS_WRITE2ST64_B64
+
+Opcode: 79 (0x4f)  
+Syntax: DS_WRITE2ST64_B64 ADDR, VDATA0(2), VDATA1(2) [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Store one 64-bit dword from VDATA0 into LDS/GDS at address
+(ADDR+OFFSET0\*512) & ~7, and second into LDS/GDS at address (ADDR+OFFSET1\*512) & ~7.  
+Operation:  
+```
+UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*512)&~7) 
+UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*512)&~7)
+*V0 = VDATA0
+*V1 = VDATA1
+```
+
+#### DS_WRXCHG_RTN_B32
 
 Opcode: 45 (0x2d)  
 Syntax: DS_WRXCHG_B32 VDST, ADDR, VDATA0 [OFFSET:OFFSET]  
@@ -1071,6 +1139,18 @@ Previous value from LDS/GDS are stored in VDST.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST = *V; *V = VDATA0 // atomic operation
+```
+
+#### DS_WRXCHG_RTN_B64
+
+Opcode: 109 (0x6d)  
+Syntax: DS_WRXCHG_B64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Store 64-bit value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~7.
+Previous value from LDS/GDS are stored in VDST.  
+Operation:  
+```
+UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~7)
 VDST = *V; *V = VDATA0 // atomic operation
 ```
 
@@ -1091,6 +1171,23 @@ VDST = (*V0) | (UINT64(*V1)<<32)
 *V1 = VDATA1
 ```
 
+#### DS_WRXCHG2_RTN_B64
+
+Opcode: 110 (0x6e)  
+Syntax: DS_WRXCHG2_RTN_B64 VDST(4), ADDR, VDATA0(2), VDATA1(2)
+[OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Store one 64-bit value from VDATA0 into LDS/GDS at address
+(ADDR+OFFSET0\*8) & ~7, and second into LDS/GDS at address (ADDR+OFFSET1\*8) & ~7.
+Previous values from LDS/GDS are stored in VDST.  
+Operation:  
+```
+UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*8)&~7) 
+UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*8)&~7)
+VDST = (*V0) | (UINT128(*V1)<<64)
+*V0 = VDATA0
+*V1 = VDATA1
+```
+
 #### DS_WRXCHG2ST64_RTN_B32
 
 Opcode: 47 (0x2f)  
@@ -1104,6 +1201,23 @@ Operation:
 UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*256)&~3) 
 UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
 VDST = (*V0) | (UINT64(*V1)<<32)
+*V0 = VDATA0
+*V1 = VDATA1
+```
+
+#### DS_WRXCHG2ST64_RTN_B64
+
+Opcode: 111 (0x6f)  
+Syntax: DS_WRXCHG2ST64_RTN_B64 VDST(4), ADDR, VDATA0(2), VDATA1(2)
+[OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Store one 64-bit value from VDATA0 into LDS/GDS at address
+(ADDR+OFFSET0\*512) & ~7, and second into LDS/GDS at address (ADDR+OFFSET1\*512) & ~7.
+Previous values from LDS/GDS are stored in VDST.  
+Operation:  
+```
+UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*512)&~7) 
+UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*512)&~7)
+VDST = (*V0) | (UINT128(*V1)<<64)
 *V0 = VDATA0
 *V1 = VDATA1
 ```

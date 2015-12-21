@@ -140,6 +140,7 @@ enum : uint16_t
     GCN_DSMASK2 = 0x3c0,     // mask for DS encoding 2
     GCN_SRCS_MASK = 0xc0,   /// only srcs mask
     GCN_ONLYGDS = 0x2000,   /// instruction must have GDS
+    GCN_DST128 = 0x4000,   // dest is 128-bit
     // others
     GCN_SBASE4 = 0x10,  /// SBASE requires 4 registers
     GCN_FLOATLIT = 0x100,   /// float literal

@@ -1698,7 +1698,7 @@ void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnI
         cxuint regsNum = (gcnInsn.mode&GCN_REG_DST_64)?2:1;
         if ((gcnInsn.mode&GCN_DS_96) != 0)
             regsNum = 3;
-        if ((gcnInsn.mode&GCN_DS_128) != 0)
+        if ((gcnInsn.mode&GCN_DS_128) != 0 || (gcnInsn.mode&GCN_DST128) != 0)
             regsNum = 4;
         good &= parseVRegRange(asmr, linePtr, dstReg, regsNum);
         vdstUsed = beforeData = true;
