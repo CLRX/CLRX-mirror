@@ -304,6 +304,19 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
 ```
 
+#### DS_CMPST_B64
+
+Opcode: 80 (0x50)  
+Syntax: DS_CMPST_B64 ADDR, VDATA0(2), VDATA1(2) [OFFSET:OFFSET]  
+Description: Compare 64-bit values from VDATA0 and from LDS/GDS at address
+(ADDR+OFFSET) & ~7. If values are equal, store VDATA1 to LDS/GDS at this same address,
+otherwise do nothing. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
+```
+
 #### DS_CMPST_F32
 
 Opcode: 17 (0x11)  
@@ -327,6 +340,19 @@ Previous value from LDS/GDS are stored in VDST. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = VDST; *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
+```
+
+#### DS_CMPST_RTN_B64
+
+Opcode: 112 (0x70)  
+Syntax: DS_CMPST_RTN_B64 VDST(2), ADDR, VDATA0(2), VDATA1(2) [OFFSET:OFFSET]  
+Description: Compare 64-bit values from VDATA0 and from LDS/GDS at address
+(ADDR+OFFSET) & ~7. If values are equal, store VDATA1 to LDS/GDS at this same address,
+otherwise do nothing. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 *V = VDST; *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
 ```
 
@@ -828,7 +854,7 @@ VDST = *V; *V = *V | VDATA0  // atomic operation
 
 Opcode: 54 (0x36)  
 Syntax: DS_READ_B32 VDST, ADDR [OFFSET:OFFSET]  
-Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3, store in VDST.  
+Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3, store into VDST.  
 Operation:  
 ```
 VDST = *(UINT32*)(DS + (ADDR+OFFSET)&~3)
@@ -839,7 +865,7 @@ VDST = *(UINT32*)(DS + (ADDR+OFFSET)&~3)
 Opcode: 59 (0x3b)  
 Syntax: DS_READ_I16 VDST, ADDR [OFFSET:OFFSET]  
 Description: Read signed 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
-store in VDST. The value's sign will be extended to higher bits.  
+store into VDST. The value's sign will be extended to higher bits.  
 Operation:  
 ```
 VDST = (INT32)*(INT16*)(DS + (ADDR+OFFSET)&~1)
@@ -849,7 +875,7 @@ VDST = (INT32)*(INT16*)(DS + (ADDR+OFFSET)&~1)
 
 Opcode: 57 (0x39)  
 Syntax: DS_READ_I8 VDST, ADDR [OFFSET:OFFSET]  
-Description: Read signed byte from LDS/GDS at address (ADDR+OFFSET), store in VDST.
+Description: Read signed byte from LDS/GDS at address (ADDR+OFFSET), store into VDST.
 The value's sign will be extended to higher bits.  
 Operation:  
 ```
@@ -861,7 +887,7 @@ VDST = (INT32)*(INT8*)(DS + (ADDR+OFFSET))
 Opcode: 60 (0x3c)  
 Syntax: DS_READ_U16 VDST, ADDR [OFFSET:OFFSET]  
 Description: Read unsigned 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
-store in VDST.  
+store into VDST.  
 Operation:  
 ```
 VDST = *(UINT16*)(DS + (ADDR+OFFSET)&~1)
@@ -871,7 +897,7 @@ VDST = *(UINT16*)(DS + (ADDR+OFFSET)&~1)
 
 Opcode: 58 (0x3a)  
 Syntax: DS_READ_U8 VDST, ADDR [OFFSET:OFFSET]  
-Description: Read unsigned byte from LDS/GDS at address (ADDR+OFFSET), store in VDST.  
+Description: Read unsigned byte from LDS/GDS at address (ADDR+OFFSET), store into VDST.  
 Operation:  
 ```
 VDST = *(UINT8*)(DS + (ADDR+OFFSET))
@@ -882,12 +908,25 @@ VDST = *(UINT8*)(DS + (ADDR+OFFSET))
 Opcode: 55 (0x37)  
 Syntax: DS_READ2_B32 VDST(2), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
 Description: Read dword from LDS/GDS at address (ADDR+OFFSET0\*4) & ~3, and second dword
-at address (ADDR+OFFSET1\*4) & ~3, and store these dwords in VDST.  
+at address (ADDR+OFFSET1\*4) & ~3, and store these dwords into VDST.  
 Operation:  
 ```
 UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*4)&~3) 
 UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
-VDST = *V0 | UINT64(*V1)<<32
+VDST = *V0 | (UINT64(*V1)<<32)
+```
+
+#### DS_READ2_B64
+
+Opcode: 119 (0x77)  
+Syntax: DS_READ2_B64 VDST(4), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Read 64-bit value from LDS/GDS at address (ADDR+OFFSET0\*8) & ~7,
+and second value at address (ADDR+OFFSET1\*4) & ~3, and store these values into VDST.  
+Operation:  
+```
+UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*8)&~7) 
+UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*8)&~7)
+VDST = *V0 | (UINT128(*V1)<<64)
 ```
 
 #### DS_READ2ST64_B32
@@ -895,12 +934,25 @@ VDST = *V0 | UINT64(*V1)<<32
 Opcode: 56 (0x38)  
 Syntax: DS_READ2ST64_B32 VDST(2), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
 Description: Read dword from LDS/GDS at address (ADDR+OFFSET0\*256) & ~3, and second dword
-at address (ADDR+OFFSET1\*256) & ~3, and store these dwords in VDST.  
+at address (ADDR+OFFSET1\*256) & ~3, and store these values into VDST.  
 Operation:  
 ```
 UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*256)&~3) 
 UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
-VDST = *V0 | UINT64(*V1)<<32
+VDST = *V0 | (UINT64(*V1)<<32)
+```
+
+#### DS_READ2ST64_B64
+
+Opcode: 120 (0x78)  
+Syntax: DS_READ2ST64_B64 VDST(4), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Read 64-bit value from LDS/GDS at address (ADDR+OFFSET0\*512) & ~7, and
+second value at address (ADDR+OFFSET1\*512) & ~7, and store these values into VDST.  
+Operation:  
+```
+UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*512)&~7)
+UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*512)&~7)
+VDST = *V0 | (UINT128(*V1)<<64)
 ```
 
 #### DS_RSUB_RTN_U32
