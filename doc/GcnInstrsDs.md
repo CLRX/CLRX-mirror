@@ -19,11 +19,14 @@ Bits  | Name     | Description
 
 Syntax: INSTRUCTION ADDR, VDATA0 [offset:OFFSET] [GDS]  
 Syntax: INSTRUCTION ADDR, VDATA0, VDATA1 [offset0:OFFSET0] [offset1:OFFSET1] [GDS]  
-Write syntax: INSTRUCTION VDST, ADDR [offset:OFFSET] [GDS]
+VDST syntax: INSTRUCTION VDST, ADDR [offset:OFFSET] [GDS]
 
 NOTE: Any operation LDS requires correctly set M0 register, prior to execution.
 The M0 register holds maximum size of a LDS memory, that can be accessed by wavefront.
 To set no limits, just set a M0 register to 0xffffffff.
+
+Any DS instruction return data in order (including D_SWIZZLE) and increments LGKM_CNT.
+Any operation increments LGKM by one, and decremented by one if it will be finished.
 
 List of the instructions by opcode:
 
@@ -190,7 +193,7 @@ Alphabetically sorted instruction list:
 
 Opcode: 32 (0x20)  
 Syntax: DS_ADD_RTN_U32 VDST, ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Adds unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & ~3 and
+Description: Add unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & ~3 and
 VDATA0, and store result back to LDS/GDS at this address. Previous value from
 LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
@@ -199,15 +202,40 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = *V + VDATA0  // atomic operation
 ```
 
+#### DS_ADD_RTN_U64
+
+Opcode: 96 (0x60)  
+Syntax: DS_ADD_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Add unsigned 64-bit integer value from LDS/GDS at address (ADDR+OFFSET) & ~7
+and VDATA0, and store result back to LDS/GDS at this address. Previous value from
+LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = *V + VDATA0  // atomic operation
+```
+
 #### DS_ADD_U32
 
 Opcode: 0 (0x0)  
 Syntax: DS_ADD_U32 ADDR, VDATA0 [OFFSET:OFFSET]  
-Description: Adds unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & ~3 and
+Description: Add unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & ~3 and
 VDATA0, and store result back to LDS/GDS at this address. Operation is atomic.  
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = *V + VDATA0  // atomic operation
+```
+
+#### DS_ADD_U64
+
+Opcode: 64 (0x40)  
+Syntax: DS_ADD_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Add unsigned integer 64-bit value from LDS/GDS at address (ADDR+OFFSET) & ~7
+and VDATA0, and store result back to LDS/GDS at this address. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 *V = *V + VDATA0  // atomic operation
 ```
 
@@ -224,6 +252,19 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = *V & VDATA0  // atomic operation
 ```
 
+#### DS_AND_B64
+
+Opcode: 73 (0x49)  
+Syntax: DS_AND_B64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Do bitwise AND operatin on 64-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and value from VDATA0; and store result to LDS/GDS at this same
+address. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = *V & VDATA0  // atomic operation
+```
+
 #### DS_AND_RTN_B32
 
 Opcode: 41 (0x29)  
@@ -234,6 +275,19 @@ address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST = *V; *V = *V & VDATA0  // atomic operation
+```
+
+#### DS_AND_RTN_B64
+
+Opcode: 105 (0x69)  
+Syntax: DS_AND_RTN_B64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Do bitwise AND operatin on 64-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and value from VDATA0; and store result to LDS/GDS at this same
+address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 VDST = *V; *V = *V & VDATA0  // atomic operation
 ```
 
@@ -303,6 +357,20 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
 
+#### DS_DEC_RTN_U64
+
+Opcode: 100 (0x64)  
+Syntax: DS_DEC_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Load unsigned 64-bit value from LDS/GDS at  address (ADDR+OFFSET) & ~7, and
+compare with unsigned value from VDATA0. If VDATA0 greater or equal and loaded
+unsigned value is zero, then increment value from LDS/GDS, otherwise store
+VDATA0 to LDS/GDS. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
+```
+
 #### DS_DEC_U32
 
 Opcode: 4 (0x4)  
@@ -316,6 +384,21 @@ Operation:
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
+
+#### DS_DEC_U64
+
+Opcode: 68 (0x44)  
+Syntax: DS_DEC_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Load unsigned 64-bit value from LDS/GDS at  address (ADDR+OFFSET) & ~7, and
+compare with unsigned value from VDATA0. If VDATA0 greater or equal and loaded
+unsigned value is zero, then increment value from LDS/GDS, otherwise store
+VDATA0 to LDS/GDS. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
+```
+
 
 #### DS_INC_RTN_U32
 
@@ -331,6 +414,20 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
 ```
 
+#### DS_INC_RTN_U64
+
+Opcode: 99 (0x63)  
+Syntax: DS_INC_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Load unsigned 64-bit value from LDS/GDS at address (ADDR+OFFSET) & ~7, and
+compare with unsigned value from VDATA0. If VDATA0 greater, then increment value
+from LDS/GDS, otherwise store 0 to LDS/GDS.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
+```
+
 #### DS_INC_U32
 
 Opcode: 3 (0x3)  
@@ -341,6 +438,19 @@ from LDS/GDS, otherwise store 0 to LDS/GDS. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
+```
+
+#### DS_INC_U64
+
+Opcode: 67 (0x43)  
+Syntax: DS_INC_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Load unsigned 64-bit value from LDS/GDS at address (ADDR+OFFSET) & ~7, and
+compare with unsigned value from VDATA0. If VDATA0 greater, then increment value
+from LDS/GDS, otherwise store 0 to LDS/GDS. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
 ```
 
@@ -370,6 +480,19 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 *V = MAX(*V, (INT32)VDATA0) // atomic operation
 ```
 
+#### DS_MAX_I64
+
+Opcode: 70 (0x46)  
+Syntax: DS_MAX_I64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose greatest signed 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Operation is atomic.  
+Operation:  
+```
+INT64* V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+*V = MAX(*V, (INT64)VDATA0) // atomic operation
+```
+
 #### DS_MAX_RTN_F32
 
 Opcode: 51 (0x33)  
@@ -396,6 +519,19 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = MAX(*V, (INT32)VDATA0) // atomic operation
 ```
 
+#### DS_MAX_RTN_I64
+
+Opcode: 102 (0x66)  
+Syntax: DS_MAX_RTN_I64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose greatest signed 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+INT64* V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = MAX(*V, (INT64)VDATA0) // atomic operation
+```
+
 #### DS_MAX_RTN_U32
 
 Opcode: 40 (0x28)  
@@ -409,6 +545,19 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = MAX(*V, VDATA0) // atomic operation
 ```
 
+#### DS_MAX_RTN_U64
+
+Opcode: 104 (0x68)  
+Syntax: DS_MAX_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose greatest unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = MAX(*V, VDATA0) // atomic operation
+```
+
 #### DS_MAX_U32
 
 Opcode: 8 (0x8)  
@@ -419,6 +568,19 @@ Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = MAX(*V, VDATA0) // atomic operation
+```
+
+#### DS_MAX_U64
+
+Opcode: 72 (0x48)  
+Syntax: DS_MAX_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose greatest unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 *V = MAX(*V, VDATA0) // atomic operation
 ```
 
@@ -448,6 +610,19 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 *V = MIN(*V, (INT32)VDATA0) // atomic operation
 ```
 
+#### DS_MIN_I64
+
+Opcode: 69 (0x65)  
+Syntax: DS_MIN_I64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose smallest signed 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Operation is atomic.  
+Operation:  
+```
+INT64* V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+*V = MIN(*V, (INT64)VDATA0) // atomic operation
+```
+
 #### DS_MIN_RTN_F32
 
 Opcode: 50 (0x32)  
@@ -474,6 +649,19 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = MIN(*V, (INT32)VDATA0) // atomic operation
 ```
 
+#### DS_MIN_RTN_I64
+
+Opcode: 101 (0x65)  
+Syntax: DS_MIN_RTN_I64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose smallest signed 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+INT64 V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = MIN(*V, (INT64)VDATA0) // atomic operation
+```
+
 #### DS_MIN_RTN_U32
 
 Opcode: 39 (0x27)  
@@ -487,6 +675,19 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = MIN(*V, VDATA0) // atomic operation
 ```
 
+#### DS_MIN_RTN_U64
+
+Opcode: 103 (0x67)  
+Syntax: DS_MIN_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose smallest unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = MIN(*V, VDATA0) // atomic operation
+```
+
 #### DS_MIN_U32
 
 Opcode: 7 (0x7)  
@@ -497,6 +698,19 @@ Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+*V = MIN(*V, VDATA0) // atomic operation
+```
+
+#### DS_MIN_U64
+
+Opcode: 71 (0x47)  
+Syntax: DS_MIN_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Choose smallest unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
+Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 *V = MIN(*V, VDATA0) // atomic operation
 ```
 
@@ -542,6 +756,19 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = *V | VDATA0  // atomic operation
 ```
 
+#### DS_OR_B64
+
+Opcode: 74 (0x4a)  
+Syntax: DS_OR_B64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Do bitwise OR operatin on 64-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and value from VDATA0; and store result to LDS/GDS at this same
+address. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = *V | VDATA0  // atomic operation
+```
+
 #### DS_OR_RTN_B32
 
 Opcode: 42 (0x2a)  
@@ -555,6 +782,98 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = *V | VDATA0  // atomic operation
 ```
 
+#### DS_OR_RTN_B32
+
+Opcode: 106 (0x6a)  
+Syntax: DS_OR_RTN_B64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Do bitwise OR operatin on 32-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and value from VDATA0; and store result to LDS/GDS at this same
+address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+VDST = *V; *V = *V | VDATA0  // atomic operation
+```
+
+#### DS_READ_B32
+
+Opcode: 54 (0x36)  
+Syntax: DS_READ_B32 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3, store in VDST.  
+Operation:  
+```
+VDST = *(UINT32*)(DS + (ADDR+OFFSET)&~3)
+```
+
+#### DS_READ_I16
+
+Opcode: 59 (0x3b)  
+Syntax: DS_READ_I16 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read signed 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
+store in VDST. The value's sign will be extended to higher bits.  
+Operation:  
+```
+VDST = (INT32)*(INT16*)(DS + (ADDR+OFFSET)&~1)
+```
+
+#### DS_READ_I8
+
+Opcode: 57 (0x39)  
+Syntax: DS_READ_I8 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read signed byte from LDS/GDS at address (ADDR+OFFSET), store in VDST.
+The value's sign will be extended to higher bits.  
+Operation:  
+```
+VDST = (INT32)*(INT8*)(DS + (ADDR+OFFSET))
+```
+
+#### DS_READ_U16
+
+Opcode: 60 (0x3c)  
+Syntax: DS_READ_U16 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read unsigned 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
+store in VDST.  
+Operation:  
+```
+VDST = *(UINT16*)(DS + (ADDR+OFFSET)&~1)
+```
+
+#### DS_READ_U8
+
+Opcode: 58 (0x3a)  
+Syntax: DS_READ_U8 VDST, ADDR [OFFSET:OFFSET]  
+Description: Read unsigned byte from LDS/GDS at address (ADDR+OFFSET), store in VDST.  
+Operation:  
+```
+VDST = *(UINT8*)(DS + (ADDR+OFFSET))
+```
+
+#### DS_READ2_B32
+
+Opcode: 55 (0x37)  
+Syntax: DS_READ2_B32 VDST(2), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Read dword from LDS/GDS at address (ADDR+OFFSET0\*4) & ~3, and second dword
+at address (ADDR+OFFSET1\*4) & ~3, and store these dwords in VDST.  
+Operation:  
+```
+UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*4)&~3) 
+UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
+VDST = *V0 | UINT64(*V1)<<32
+```
+
+#### DS_READ2ST64_B32
+
+Opcode: 56 (0x38)  
+Syntax: DS_READ2ST64_B32 VDST(2), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
+Description: Read dword from LDS/GDS at address (ADDR+OFFSET0\*256) & ~3, and second dword
+at address (ADDR+OFFSET1\*256) & ~3, and store these dwords in VDST.  
+Operation:  
+```
+UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*256)&~3) 
+UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
+VDST = *V0 | UINT64(*V1)<<32
+```
+
 #### DS_RSUB_RTN_U32
 
 Opcode: 34 (0x22)  
@@ -565,6 +884,19 @@ Previous value from LDS/GDS are stored in VDST. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST= *V; *V = VDATA0 - *V  // atomic operation
+```
+
+#### DS_RSUB_RTN_U64
+
+Opcode: 98 (0x62)  
+Syntax: DS_RSUB_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Subtract unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 from value in VDATA0, and store result back to LDS/GDS at this
+same address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 VDST= *V; *V = VDATA0 - *V  // atomic operation
 ```
 
@@ -581,6 +913,19 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = VDATA0 - *V  // atomic operation
 ```
 
+#### DS_RSUB_U64
+
+Opcode: 66 (0x42)  
+Syntax: DS_RSUB_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Subtract unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7 from value in VDATA0, and store result back to LDS/GDS at this
+same address. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = VDATA0 - *V  // atomic operation
+```
+
 #### DS_SUB_RTN_U32
 
 Opcode: 33 (0x21)  
@@ -591,6 +936,19 @@ Previous value from LDS/GDS are stored in VDST. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST = *V; *V = *V - VDATA0  // atomic operation
+```
+
+#### DS_SUB_RTN_U64
+
+Opcode: 97 (0x61)  
+Syntax: DS_SUB_RTN_U64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Subtract VDATA0 from unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and store result back to LDS/GDS at this same address.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 VDST = *V; *V = *V - VDATA0  // atomic operation
 ```
 
@@ -607,6 +965,53 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = *V - VDATA0  // atomic operation
 ```
 
+#### DS_SUB_U64
+
+Opcode: 65 (0x41)  
+Syntax: DS_SUB_U64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Subtract VDATA0 from unsigned 64-bit integer value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and store result back to LDS/GDS at this same address.
+Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = *V - VDATA0  // atomic operation
+```
+
+#### DS_SWIZZLE_B32
+
+Opcode: 53 (0x35) for GCN 1.0/1.1; 61 (0x3d) for GCN 1.2  
+Syntax: DS_SWIZZLE_B32 VDST, ADDR [OFFSET:OFFSET]  
+Description: Move between lanes ADDR value storing in VDST. Refer to operation's listing to
+learn about how this instruction calcutes input lane. If input lane is not valid then
+store zero to VDST[LANEID]. This instruction doesn't finish immediately and it increments
+LGKMCNT counter (you must use `S_WAITCNT LGKMCNT(X)` to wait for its results).  
+Operation:  
+```
+BYTE INLANEID = 0
+if (OFFSET&0x8000)
+    INLANEID = (LANEID&0x3c) + (OFFSET>>(2*(LANEID&3))&3
+else
+{
+    BYTE ANDMASK = (OFFSET&31)
+    BYTE ORMASK = (OFFSET>>5)&31
+    BYTE XORMASK = OFFSET>>10
+    INLANEID = (LANEID&32) + ((((LANEID&31) & ANDMASK) | ORMASK) ^ XORMASK)
+}
+VDST[LANEID] = (EXEC & (1ULL<<INLANEID)) ? ADDR[INLANEID] : 0
+```
+
+#### DS_WRITE_B16
+
+Opcode: 31 (0x1f)  
+Syntax: DS_WRITE_B16 ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Store low 16 bits from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & 1.  
+Operation:  
+```
+UINT16* V = (UINT16*)(DS + (ADDR+OFFSET)&~1)
+*V = VDATA0&0xffff
+```
+
 #### DS_WRITE_B32
 
 Opcode: 13 (0xd)  
@@ -616,6 +1021,17 @@ Operation:
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = VDATA0
+```
+
+#### DS_WRITE_B8
+
+Opcode: 30 (0x1e)  
+Syntax: DS_WRITE_B8 ADDR, VDATA0 [OFFSET:OFFSET]  
+Description: Store low 8 bits from VDATA0 into LDS/GDS at address (ADDR+OFFSET).  
+Operation:  
+```
+UINT8* V = (UINT8*)(DS + (ADDR+OFFSET))
+*V = VDATA0&0xff
 ```
 
 #### DS_WRITE2_B32
@@ -705,7 +1121,20 @@ UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
 *V = *V ^ VDATA0  // atomic operation
 ```
 
-#### DS_XOR_B32
+#### DS_XOR_B64
+
+Opcode: 75 (0x4b)  
+Syntax: DS_XOR_B64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Do bitwise XOR operatin on 64-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and value from VDATA0; and store result to LDS/GDS at this same
+address. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+*V = *V ^ VDATA0  // atomic operation
+```
+
+#### DS_XOR_RTN_B32
 
 Opcode: 43 (0x2b)  
 Syntax: DS_XOR_RTN_B32 VDST, ADDR, VDATA0 [OFFSET:OFFSET]  
@@ -715,5 +1144,18 @@ address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST = *V; *V = *V ^ VDATA0  // atomic operation
+```
+
+#### DS_XOR_RTN_B64
+
+Opcode: 107 (0x6b)  
+Syntax: DS_XOR_RTN_B64 VDST(2), ADDR, VDATA0(2) [OFFSET:OFFSET]  
+Description: Do bitwise XOR operatin on 64-bit value from LDS/GDS at address
+(ADDR+OFFSET) & ~7, and value from VDATA0; and store result to LDS/GDS at this same
+address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
 VDST = *V; *V = *V ^ VDATA0  // atomic operation
 ```
