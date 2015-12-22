@@ -10,7 +10,8 @@ Bits  | Name     | Description
 8-15  | OFFSET1  | 8-bit offset 1 for VDATA1
 0-15  | OFFSET   | 16-bit offset for single DATA
 17    | GDS      | Access to GDS instead LDS
-18-25 | OPCODE   | Operation code
+18-25 | OPCODE   | Operation code (GCN 1.0/1.1)
+17-24 | OPCODE   | Operation code (GCN 1.2)
 26-31 | ENCODING | Encoding type. Must be 0b110110
 32-39 | ADDR     | Vector register that holds byte address
 40-47 | VDATA0   | Source data 0 vector register
