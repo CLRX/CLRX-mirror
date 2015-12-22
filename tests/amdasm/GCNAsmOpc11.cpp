@@ -2017,7 +2017,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_and_src2_b64 v71 offset:52583", 0xdb24cd67U, 0x00000047U, true, true, "" },
     { "   ds_or_src2_b64 v71 offset:52583", 0xdb28cd67U, 0x00000047U, true, true, "" },
     { "   ds_xor_src2_b64 v71 offset:52583", 0xdb2ccd67U, 0x00000047U, true, true, "" },
-    { "   ds_write_src2_b64 v71 offset:52583", 0xdb30cd67U, 0x00000047U, true, true, "" },
+    { "   ds_write_src2_b64 v71 offset:52583", 0xdb34cd67U, 0x00000047U, true, true, "" },
     { "   ds_min_src2_f64 v71 offset:52583", 0xdb48cd67U, 0x00000047U, true, true, "" },
     { "   ds_max_src2_f64 v71 offset:52583", 0xdb4ccd67U, 0x00000047U, true, true, "" },
     /* MUBUF */
