@@ -448,7 +448,7 @@ FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
 VDST = *V; *V = (*V==ASFLOAT(VDATA0)) ? ASFLOAT(VDATA1) : *V  // atomic operation
 ```
 
-#### DS_CMPST_RTN_F32
+#### DS_CMPST_RTN_F64
 
 Opcode: 113 (0x71)  
 Syntax: DS_CMPST_RTN_F64 VDST(2), ADDR, VDATA0(2), VDATA1(2) [OFFSET:OFFSET]  
@@ -946,7 +946,7 @@ INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
 
 #### DS_MIN_I64
 
-Opcode: 69 (0x65)  
+Opcode: 69 (0x45)  
 Syntax: DS_MIN_I64 ADDR, VDATA0(2) [OFFSET:OFFSET]  
 Description: Choose smallest signed 64-bit integer value from LDS/GDS at address
 (ADDR+OFFSET) & ~7 and VDATA0, and store result to LDS/GDS at this same address.
