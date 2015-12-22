@@ -793,6 +793,23 @@ FLOAT* V = (FLOAT*)(DS + A)
 *V = MAX(*V, *(FLOAT*)(DS + B)) // atomic operation
 ```
 
+#### DS_MAX_SRC2_F64
+
+Opcode: 211 (0xd3)  
+Syntax: DS_MAX_SRC2_F64 ADDR [OFFSET:OFFSET]  
+Description: Choose greatest double floating point value from LDS/GDS at address
+A and at address B, and store result to LDS/GDS at address A.
+Refer to listing to learn about addressing. Operation is atomic.  
+Operation:  
+```
+UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT16 B = (A + ((OFFSET&0x8000) ? \
+            ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
+            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+DOUBLE* V = (DOUBLE*)(DS + A)
+*V = MAX(*V, *(DOUBLE*)(DS + B)) // atomic operation
+```
+
 #### DS_MAX_SRC2_I32
 
 Opcode: 134 (0x86)  
@@ -1032,6 +1049,23 @@ UINT16 B = A + ((OFFSET&0x8000) ? \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 FLOAT* V = (FLOAT*)(DS + A)
 *V = MIN(*V, *(FLOAT*)(DS + B)) // atomic operation
+```
+
+#### DS_MIN_SRC2_F64
+
+Opcode: 210 (0xd2)  
+Syntax: DS_MIN_SRC2_F64 ADDR [OFFSET:OFFSET]  
+Description: Choose smallest double floating point value from LDS/GDS at address
+A and at address B, and store result to LDS/GDS at address A.
+Refer to listing to learn about addressing. Operation is atomic.  
+Operation:  
+```
+UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT16 B = (A + ((OFFSET&0x8000) ? \
+            ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
+            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+DOUBLE* V = (DOUBLE*)(DS + A)
+*V = MIN(*V, *(DOUBLE*)(DS + B)) // atomic operation
 ```
 
 #### DS_MIN_SRC2_I32
