@@ -1366,8 +1366,8 @@ Description: Read dword from LDS/GDS at address (ADDR+OFFSET0\*4) & ~3, and seco
 at address (ADDR+OFFSET1\*4) & ~3, and store these dwords into VDST.  
 Operation:  
 ```
-UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*4)&~3) 
-UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
+UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*4)&~3)) 
+UINT32* V1 = (UINT32*)(DS + ((ADDR + OFFSET1*4)&~3))
 VDST = *V0 | (UINT64(*V1)<<32)
 ```
 
@@ -1392,8 +1392,8 @@ Description: Read dword from LDS/GDS at address (ADDR+OFFSET0\*256) & ~3, and se
 at address (ADDR+OFFSET1\*256) & ~3, and store these values into VDST.  
 Operation:  
 ```
-UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*256)&~3) 
-UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
+UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*256)&~3)) 
+UINT32* V1 = (UINT32*)(DS + ((ADDR + OFFSET1*256)&~3))
 VDST = *V0 | (UINT64(*V1)<<32)
 ```
 
@@ -1405,8 +1405,8 @@ Description: Read 64-bit value from LDS/GDS at address (ADDR+OFFSET0\*512) & ~7,
 second value at address (ADDR+OFFSET1\*512) & ~7, and store these values into VDST.  
 Operation:  
 ```
-UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*512)&~7)
-UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*512)&~7)
+UINT64* V0 = (UINT64*)(DS + ((ADDR + OFFSET0*512)&~7))
+UINT64* V1 = (UINT64*)(DS + ((ADDR + OFFSET1*512)&~7))
 VDST = *V0 | (UINT128(*V1)<<64)
 ```
 
@@ -1685,8 +1685,8 @@ Description: Store one dword from VDATA0 into LDS/GDS at address (ADDR+OFFSET0\*
 and second into LDS/GDS at address (ADDR+OFFSET1\*4) & ~3.  
 Operation:  
 ```
-UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*4)&~3) 
-UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
+UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*4)&~3)) 
+UINT32* V1 = (UINT32*)(DS + ((ADDR + OFFSET1*4)&~3))
 *V0 = VDATA0
 *V1 = VDATA1
 ```
@@ -1713,8 +1713,8 @@ Description: Store one dword from VDATA0 into LDS/GDS at address (ADDR+OFFSET0\*
 and second into LDS/GDS at address (ADDR+OFFSET1\*256) & ~3.  
 Operation:  
 ```
-UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*256)&~3) 
-UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
+UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*256)&~3)) 
+UINT32* V1 = (UINT32*)(DS + ((ADDR + OFFSET1*256)&~3))
 *V0 = VDATA0
 *V1 = VDATA1
 ```
@@ -1727,8 +1727,8 @@ Description: Store one 64-bit dword from VDATA0 into LDS/GDS at address
 (ADDR+OFFSET0\*512) & ~7, and second into LDS/GDS at address (ADDR+OFFSET1\*512) & ~7.  
 Operation:  
 ```
-UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*512)&~7) 
-UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*512)&~7)
+UINT64* V0 = (UINT64*)(DS + ((ADDR + OFFSET0*512)&~7)) 
+UINT64* V1 = (UINT64*)(DS + ((ADDR + OFFSET1*512)&~7))
 *V0 = VDATA0
 *V1 = VDATA1
 ```
@@ -1767,8 +1767,8 @@ and second into LDS/GDS at address (ADDR+OFFSET1\*4) & ~3.
 Previous values from LDS/GDS are stored in VDST.  
 Operation:  
 ```
-UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*4)&~3) 
-UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*4)&~3)
+UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*4)&~3))
+UINT32* V1 = (UINT32*)(DS + ((ADDR + OFFSET1*4)&~3))
 VDST = (*V0) | (UINT64(*V1)<<32)
 *V0 = VDATA0
 *V1 = VDATA1
@@ -1784,8 +1784,8 @@ Description: Store one 64-bit value from VDATA0 into LDS/GDS at address
 Previous values from LDS/GDS are stored in VDST.  
 Operation:  
 ```
-UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*8)&~7) 
-UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*8)&~7)
+UINT64* V0 = (UINT64*)(DS + ((ADDR + OFFSET0*8)&~7))
+UINT64* V1 = (UINT64*)(DS + ((ADDR + OFFSET1*8)&~7))
 VDST = (*V0) | (UINT128(*V1)<<64)
 *V0 = VDATA0
 *V1 = VDATA1
@@ -1801,8 +1801,8 @@ and second into LDS/GDS at address (ADDR+OFFSET1\*256) & ~3.
 Previous values from LDS/GDS are stored in VDST.  
 Operation:  
 ```
-UINT32* V0 = (UINT32*)(DS + (ADDR + OFFSET0*256)&~3) 
-UINT32* V1 = (UINT32*)(DS + (ADDR + OFFSET1*256)&~3)
+UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*256)&~3)) 
+UINT32* V1 = (UINT32*)(DS + (((ADDR + OFFSET1*256)&~3)))
 VDST = (*V0) | (UINT64(*V1)<<32)
 *V0 = VDATA0
 *V1 = VDATA1
@@ -1818,8 +1818,8 @@ Description: Store one 64-bit value from VDATA0 into LDS/GDS at address
 Previous values from LDS/GDS are stored in VDST.  
 Operation:  
 ```
-UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*512)&~7) 
-UINT64* V1 = (UINT64*)(DS + (ADDR + OFFSET1*512)&~7)
+UINT64* V0 = (UINT64*)(DS + ((ADDR + OFFSET0*512)&~7)) 
+UINT64* V1 = (UINT64*)(DS + (((ADDR + OFFSET1*512)&~7)))
 VDST = (*V0) | (UINT128(*V1)<<64)
 *V0 = VDATA0
 *V1 = VDATA1
