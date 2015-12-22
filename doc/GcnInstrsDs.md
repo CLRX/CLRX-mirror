@@ -198,7 +198,7 @@ VDATA0, and store result back to LDS/GDS at this address. Previous value from
 LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = *V + VDATA0  // atomic operation
 ```
 
@@ -211,7 +211,7 @@ and VDATA0, and store result back to LDS/GDS at this address. Previous value fro
 LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = *V + VDATA0  // atomic operation
 ```
 
@@ -257,7 +257,7 @@ Description: Add unsigned integer value from LDS/GDS at address (ADDR+OFFSET) & 
 VDATA0, and store result back to LDS/GDS at this address. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = *V + VDATA0  // atomic operation
 ```
 
@@ -269,7 +269,7 @@ Description: Add unsigned integer 64-bit value from LDS/GDS at address (ADDR+OFF
 and VDATA0, and store result back to LDS/GDS at this address. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = *V + VDATA0  // atomic operation
 ```
 
@@ -282,7 +282,7 @@ Description: Do bitwise AND operation on 32-bit value from LDS/GDS at address
 address. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = *V & VDATA0  // atomic operation
 ```
 
@@ -295,7 +295,7 @@ Description: Do bitwise AND operation on 64-bit value from LDS/GDS at address
 address. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = *V & VDATA0  // atomic operation
 ```
 
@@ -308,7 +308,7 @@ Description: Do bitwise AND operation on 32-bit value from LDS/GDS at address
 address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = *V & VDATA0  // atomic operation
 ```
 
@@ -321,7 +321,7 @@ Description: Do bitwise AND operation on 64-bit value from LDS/GDS at address
 address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = *V & VDATA0  // atomic operation
 ```
 
@@ -366,7 +366,7 @@ If values are equal, store VDATA1 to LDS/GDS at this same address, otherwise do 
 Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
 ```
 
@@ -379,7 +379,7 @@ Description: Compare 64-bit values from VDATA0 and from LDS/GDS at address
 otherwise do nothing. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
 ```
 
@@ -392,7 +392,7 @@ Description: Compare single floating point values from VDATA0 and from LDS/GDS a
 otherwise do nothing. Operation is atomic.  
 Operation:  
 ```
-FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
 *V = (*V==ASFLOATR(VDATA0)) ? ASFLOAT(VDATA1) : *V  // atomic operation
 ```
 
@@ -405,7 +405,7 @@ Description: Compare double floating point values from VDATA0 and from LDS/GDS a
 otherwise do nothing. Operation is atomic.  
 Operation:  
 ```
-DOUBLE* V = (DOUBLE*)(DS + (ADDR+OFFSET)&~7)
+DOUBLE* V = (DOUBLE*)(DS + ((ADDR+OFFSET)&~7))
 *V = (*V==ASDOUBLE(VDATA0)) ? ASDOUBLE(VDATA1) : *V  // atomic operation
 ```
 
@@ -418,7 +418,7 @@ If values are equal, store VDATA1 to LDS/GDS at this same address, otherwise do 
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = VDST; *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
 ```
 
@@ -431,7 +431,7 @@ Description: Compare 64-bit values from VDATA0 and from LDS/GDS at address
 otherwise do nothing. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = VDST; *V = (*V==VDATA0) ? VDATA1 : *V  // atomic operation
 ```
 
@@ -444,7 +444,7 @@ Description: Compare single floating point values from VDATA0 and from LDS/GDS a
 otherwise do nothing. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = (*V==ASFLOAT(VDATA0)) ? ASFLOAT(VDATA1) : *V  // atomic operation
 ```
 
@@ -457,7 +457,7 @@ Description: Compare double floating point values from VDATA0 and from LDS/GDS a
 otherwise do nothing. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-DOUBLE* V = (DOUBLE*)(DS + (ADDR+OFFSET)&~7)
+DOUBLE* V = (DOUBLE*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = (*V==ASDOUBLE(VDATA0)) ? ASDOUBLE(VDATA1) : *V  // atomic operation
 ```
 
@@ -471,7 +471,7 @@ unsigned value is zero, then increment value from LDS/GDS, otherwise store
 VDATA0 to LDS/GDS. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
 
@@ -485,7 +485,7 @@ unsigned value is not zero, then decrement value from LDS/GDS, otherwise store
 VDATA0 to LDS/GDS. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
 
@@ -538,7 +538,7 @@ unsigned value is not zero, then decrement value from LDS/GDS, otherwise store
 VDATA0 to LDS/GDS. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
 
@@ -552,7 +552,7 @@ unsigned value is not zero, then decrement value from LDS/GDS, otherwise store
 VDATA0 to LDS/GDS. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
 
@@ -567,7 +567,7 @@ from LDS/GDS, otherwise store 0 to LDS/GDS.
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
 ```
 
@@ -581,7 +581,7 @@ from LDS/GDS, otherwise store 0 to LDS/GDS.
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
 ```
 
@@ -630,7 +630,7 @@ compare with unsigned value from VDATA0. If VDATA0 is greater, then increment va
 from LDS/GDS, otherwise store 0 to LDS/GDS. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
 ```
 
@@ -643,7 +643,7 @@ compare with unsigned value from VDATA0. If VDATA0 is greater, then increment va
 from LDS/GDS, otherwise store 0 to LDS/GDS. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = (VDATA0 > *V) ? *V+1 : 0  // atomic operation
 ```
 
@@ -656,7 +656,7 @@ Description: Choose greatest single floating point value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
 *V = MAX(*V, ASFLOAT(VDATA0)) // atomic operation
 ```
 
@@ -669,7 +669,7 @@ Description: Choose greatest double floating point value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-DOUBLE* V = (DOUBLE*)(DS + (ADDR+OFFSET)&~7)
+DOUBLE* V = (DOUBLE*)(DS + ((ADDR+OFFSET)&~7))
 *V = MAX(*V, ASDOUBLE(VDATA0)) // atomic operation
 ```
 
@@ -682,7 +682,7 @@ Description: Choose greatest signed integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
+INT32* V = (INT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = MAX(*V, (INT32)VDATA0) // atomic operation
 ```
 
@@ -695,7 +695,7 @@ Description: Choose greatest signed 64-bit integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-INT64* V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+INT64* V = (INT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = MAX(*V, (INT64)VDATA0) // atomic operation
 ```
 
@@ -708,7 +708,7 @@ Description: Choose smallest single floating point value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = MAX(*V, ASFLOAT(VDATA0)) // atomic operation
 ```
 
@@ -721,7 +721,7 @@ Description: Choose smallest double floating point value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-DOUBLE* V = (DOUBLE*)(DS + (ADDR+OFFSET)&~7)
+DOUBLE* V = (DOUBLE*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = MAX(*V, ASDOUBLE(VDATA0)) // atomic operation
 ```
 
@@ -734,7 +734,7 @@ Description: Choose greatest signed integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
+INT32* V = (INT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = MAX(*V, (INT32)VDATA0) // atomic operation
 ```
 
@@ -747,7 +747,7 @@ Description: Choose greatest signed 64-bit integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-INT64* V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+INT64* V = (INT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = MAX(*V, (INT64)VDATA0) // atomic operation
 ```
 
@@ -760,7 +760,7 @@ Description: Choose greatest unsigned integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = MAX(*V, VDATA0) // atomic operation
 ```
 
@@ -773,7 +773,7 @@ Description: Choose greatest unsigned 64-bit integer value from LDS/GDS at addre
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = MAX(*V, VDATA0) // atomic operation
 ```
 
@@ -888,7 +888,7 @@ Description: Choose greatest unsigned integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = MAX(*V, VDATA0) // atomic operation
 ```
 
@@ -901,7 +901,7 @@ Description: Choose greatest unsigned 64-bit integer value from LDS/GDS at addre
 Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = MAX(*V, VDATA0) // atomic operation
 ```
 
@@ -914,7 +914,7 @@ Description: Choose smallest single floating point value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
 *V = MIN(*V, ASFLOAT(VDATA0)) // atomic operation
 ```
 
@@ -927,7 +927,7 @@ Description: Choose smallest double floating point value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-DOUBLE* V = (DOUBLE*)(DS + (ADDR+OFFSET)&~7)
+DOUBLE* V = (DOUBLE*)(DS + ((ADDR+OFFSET)&~7))
 *V = MIN(*V, ASDOUBLE(VDATA0)) // atomic operation
 ```
 
@@ -940,7 +940,7 @@ Description: Choose smallest signed integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
+INT32* V = (INT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = MIN(*V, (INT32)VDATA0) // atomic operation
 ```
 
@@ -953,7 +953,7 @@ Description: Choose smallest signed 64-bit integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-INT64* V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+INT64* V = (INT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = MIN(*V, (INT64)VDATA0) // atomic operation
 ```
 
@@ -966,7 +966,7 @@ Description: Choose smallest single floating point value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-FLOAT* V = (FLOAT*)(DS + (ADDR+OFFSET)&~3)
+FLOAT* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = MIN(*V, ASFLOAT(VDATA0)) // atomic operation
 ```
 
@@ -979,7 +979,7 @@ Description: Choose smallest double floating point value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-DOUBLE* V = (FLOAT*)(DS + (ADDR+OFFSET)&~7)
+DOUBLE* V = (FLOAT*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = MIN(*V, ASDOUBLE(VDATA0)) // atomic operation
 ```
 
@@ -992,7 +992,7 @@ Description: Choose smallest signed integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-INT32* V = (INT32*)(DS + (ADDR+OFFSET)&~3)
+INT32* V = (INT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = MIN(*V, (INT32)VDATA0) // atomic operation
 ```
 
@@ -1005,7 +1005,7 @@ Description: Choose smallest signed 64-bit integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-INT64 V = (INT64*)(DS + (ADDR+OFFSET)&~7)
+INT64 V = (INT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = MIN(*V, (INT64)VDATA0) // atomic operation
 ```
 
@@ -1018,7 +1018,7 @@ Description: Choose smallest unsigned integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = MIN(*V, VDATA0) // atomic operation
 ```
 
@@ -1031,7 +1031,7 @@ Description: Choose smallest unsigned 64-bit integer value from LDS/GDS at addre
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = MIN(*V, VDATA0) // atomic operation
 ```
 
@@ -1146,7 +1146,7 @@ Description: Choose smallest unsigned integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = MIN(*V, VDATA0) // atomic operation
 ```
 
@@ -1159,7 +1159,7 @@ Description: Choose smallest unsigned 64-bit integer value from LDS/GDS at addre
 Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = MIN(*V, VDATA0) // atomic operation
 ```
 
@@ -1173,7 +1173,7 @@ that is zeroed in second argument, and set all bits from third argument.
 Result is stored in LDS/GDS at this same address. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
@@ -1187,7 +1187,7 @@ The instruction keeps all bits that is zeroed in second argument, and set all bi
 third argument. Result is stored in LDS/GDS at this same address. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
@@ -1202,7 +1202,7 @@ Result is stored in LDS/GDS at this same address.
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
@@ -1217,7 +1217,7 @@ third argument. Result is stored in LDS/GDS at this same address.
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
@@ -1230,7 +1230,7 @@ Description: Do bitwise OR operation on 32-bit value from LDS/GDS at address
 address. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = *V | VDATA0  // atomic operation
 ```
 
@@ -1243,7 +1243,7 @@ Description: Do bitwise OR operation on 64-bit value from LDS/GDS at address
 address. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = *V | VDATA0  // atomic operation
 ```
 
@@ -1256,7 +1256,7 @@ Description: Do bitwise OR operation on 32-bit value from LDS/GDS at address
 address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = *V | VDATA0  // atomic operation
 ```
 
@@ -1269,7 +1269,7 @@ Description: Do bitwise OR operation on 32-bit value from LDS/GDS at address
 address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = *V | VDATA0  // atomic operation
 ```
 
@@ -1312,7 +1312,7 @@ Syntax: DS_READ_B32 VDST, ADDR [OFFSET:OFFSET]
 Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3, store into VDST.  
 Operation:  
 ```
-VDST = *(UINT32*)(DS + (ADDR+OFFSET)&~3)
+VDST = *(UINT32*)(DS + ((ADDR+OFFSET)&~3))
 ```
 
 #### DS_READ_I16
@@ -1419,7 +1419,7 @@ from value in VDATA0, and store result back to LDS/GDS at this same address.
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST= *V; *V = VDATA0 - *V  // atomic operation
 ```
 
@@ -1432,7 +1432,7 @@ Description: Subtract unsigned 64-bit integer value from LDS/GDS at address
 same address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST= *V; *V = VDATA0 - *V  // atomic operation
 ```
 
@@ -1479,7 +1479,7 @@ from value in VDATA0, and store result back to LDS/GDS at this same address.
 Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = VDATA0 - *V  // atomic operation
 ```
 
@@ -1492,7 +1492,7 @@ Description: Subtract unsigned 64-bit integer value from LDS/GDS at address
 same address. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = VDATA0 - *V  // atomic operation
 ```
 
@@ -1505,7 +1505,7 @@ Description: Subtract VDATA0 from unsigned integer value from LDS/GDS at address
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = *V - VDATA0  // atomic operation
 ```
 
@@ -1518,7 +1518,7 @@ Description: Subtract VDATA0 from unsigned 64-bit integer value from LDS/GDS at 
 Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = *V - VDATA0  // atomic operation
 ```
 
@@ -1565,7 +1565,7 @@ Description: Subtract VDATA0 from unsigned integer value from LDS/GDS at address
 Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = *V - VDATA0  // atomic operation
 ```
 
@@ -1578,7 +1578,7 @@ Description: Subtract VDATA0 from unsigned 64-bit integer value from LDS/GDS at 
 Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = *V - VDATA0  // atomic operation
 ```
 
@@ -1623,7 +1623,7 @@ Syntax: DS_WRITE_B32 ADDR, VDATA0 [OFFSET:OFFSET]
 Description: Store value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~3.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = VDATA0
 ```
 
@@ -1634,7 +1634,7 @@ Syntax: DS_WRITE_B64 ADDR, VDATA0(2) [OFFSET:OFFSET]
 Description: Store 64-bit value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~7.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = VDATA0
 ```
 
@@ -1741,7 +1741,7 @@ Description: Store value from VDATA0 into LDS/GDS at address (ADDR+OFFSET) & ~3.
 Previous value from LDS/GDS are stored in VDST.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = VDATA0 // atomic operation
 ```
 
@@ -1753,7 +1753,7 @@ Description: Store 64-bit value from VDATA0 into LDS/GDS at address (ADDR+OFFSET
 Previous value from LDS/GDS are stored in VDST.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~7)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = VDATA0 // atomic operation
 ```
 
@@ -1834,7 +1834,7 @@ Description: Do bitwise XOR operation on 32-bit value from LDS/GDS at address
 address. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 *V = *V ^ VDATA0  // atomic operation
 ```
 
@@ -1847,7 +1847,7 @@ Description: Do bitwise XOR operation on 64-bit value from LDS/GDS at address
 address. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = *V ^ VDATA0  // atomic operation
 ```
 
@@ -1860,7 +1860,7 @@ Description: Do bitwise XOR operation on 32-bit value from LDS/GDS at address
 address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT32* V = (UINT32*)(DS + (ADDR+OFFSET)&~3)
+UINT32* V = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
 VDST = *V; *V = *V ^ VDATA0  // atomic operation
 ```
 
@@ -1873,7 +1873,7 @@ Description: Do bitwise XOR operation on 64-bit value from LDS/GDS at address
 address. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
-UINT64* V = (UINT64*)(DS + (ADDR+OFFSET)&~7)
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = *V ^ VDATA0  // atomic operation
 ```
 
