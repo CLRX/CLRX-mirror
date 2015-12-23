@@ -115,3 +115,5 @@ Table of formats:
 3      | unused (same as 2)
 4      | Signed byte
 5      | Signed 16-bit word
+
+A LDS direct access doesn't require `S_WAITCNT LGKMCNT(0)` (??? check).

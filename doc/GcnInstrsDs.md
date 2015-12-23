@@ -30,7 +30,7 @@ NOTE: Any operation on GDS requires correctly set M0 register, prior to executio
 The M0 register holds maximum size of a GDS memory in bits 0-15,
 that can be accessed by kernel, and a GDS base offset (in bytes) in bits 16-31.
 
-Any DS instruction return data in order (including D_SWIZZLE) and increments LGKM_CNT.
+Any DS instruction return data in order (including DS_SWIZZLE_B32) and increments LGKM_CNT.
 Any operation increments LGKM by one, and decremented by one if it will be finished.
 
 List of the instructions by opcode:
@@ -359,6 +359,34 @@ UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V & *(UINT64*)(DS + B) // atomic operation
+```
+
+#### DS_APPEND
+
+Opcode: 62 (0x3e) for GCN 1.0/1.1; 190 (0xbe) GCN 1.2  
+Syntax: DS_APPEND VDST [OFFSET:OFFSET]  
+Description: Append entry to buffer. This instruction increments 32-bit value in
+LDS/GDS at address OFFSET&~3 by number of the active threads, and
+store previous value from LDS/GDS at this same address into VDST.
+Operation:  
+```
+UINT32* V = (UINT32*)(DS + (OFFSET&~3))
+VDST = *V   // scalar operation
+*V += BITCOUNT(EXEC)  // scalar operation
+```
+
+#### DS_CONSUME
+
+Opcode: 61 (0x3d) for GCN 1.0/1.1; 189 (0xbd) GCN 1.2  
+Syntax: DS_CONSUME VDST [OFFSET:OFFSET]  
+Description: Append entry to buffer. This instruction increments 32-bit value in
+LDS/GDS at address OFFSET&~3 by number of the active threads, and
+store previous value from LDS/GDS at this same address into VDST.
+Operation:  
+```
+UINT32* V = (UINT32*)(DS + (OFFSET&~3))
+VDST = *V   // scalar operation
+*V -= BITCOUNT(EXEC)  // scalar operation
 ```
 
 #### DS_CMPST_B32
