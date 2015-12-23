@@ -224,8 +224,8 @@ store result back to LDS/GDS at address A. Refer to listing to learn about addre
 Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -241,8 +241,8 @@ store result back to LDS/GDS at address A. Refer to listing to learn about addre
 Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -333,8 +333,8 @@ Description: Do bitwise AND operation on 32-bit value from LDS/GDS at address
 A, and at address B; and store result to LDS/GDS at address A. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -349,8 +349,8 @@ Description: Do bitwise AND operation on 64-bit value from LDS/GDS at address
 A, and at address B; and store result to LDS/GDS at address A. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -467,7 +467,7 @@ Opcode: 36 (0x24)
 Syntax: DS_DEC_RTN_U32 VDST, ADDR, VDATA0 [OFFSET:OFFSET]  
 Description: Load unsigned value from LDS/GDS at  address (ADDR+OFFSET) & ~3, and
 compare with unsigned value from VDATA0. If VDATA0 is greater or equal and loaded
-unsigned value is zero, then increment value from LDS/GDS, otherwise store
+unsigned value is not zero, then increment value from LDS/GDS, otherwise store
 VDATA0 to LDS/GDS. Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
 Operation:  
 ```
@@ -499,8 +499,8 @@ is not zero, then decrement value from LDS/GDS, otherwise store value at address
 LDS/GDS at address A. Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -519,8 +519,8 @@ at address B to LDS/GDS at address A. Refer to listing to learn about addressing
 Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -555,7 +555,6 @@ Operation:
 UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 *V = (VDATA0 >= *V && *V!=0) ? *V-1 : VDATA0  // atomic operation
 ```
-
 
 #### DS_INC_RTN_U32
 
@@ -595,8 +594,8 @@ then increment value from LDS/GDS, otherwise store 0 to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -613,8 +612,8 @@ then increment value from LDS/GDS, otherwise store 0 to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -786,8 +785,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 FLOAT* V = (FLOAT*)(DS + A)
@@ -803,8 +802,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 DOUBLE* V = (DOUBLE*)(DS + A)
@@ -820,8 +819,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 INT32* V = (INT32*)(DS + A)
@@ -837,8 +836,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 INT64* V = (INT64*)(DS + A)
@@ -854,8 +853,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -871,8 +870,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -1044,8 +1043,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 FLOAT* V = (FLOAT*)(DS + A)
@@ -1061,8 +1060,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 DOUBLE* V = (DOUBLE*)(DS + A)
@@ -1078,8 +1077,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 INT32* V = (INT32*)(DS + A)
@@ -1095,8 +1094,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = A + (((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = A + (((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 INT64* V = (INT64*)(DS + A)
@@ -1112,8 +1111,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -1129,8 +1128,8 @@ A and at address B, and store result to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -1281,8 +1280,8 @@ Description: Do bitwise OR operation on 32-bit value from LDS/GDS at address
 A, and at address B; and store result to LDS/GDS at address A. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -1297,8 +1296,8 @@ Description: Do bitwise OR operation on 64-bit value from LDS/GDS at address
 A, and at address B; and store result to LDS/GDS at address A. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -1323,7 +1322,7 @@ Description: Read signed 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~1,
 store into VDST. The value's sign will be extended to higher bits.  
 Operation:  
 ```
-VDST = (INT32)*(INT16*)(DS + (ADDR+OFFSET)&~1)
+VDST = (INT32)*(INT16*)(DS + ((ADDR+OFFSET)&~1))
 ```
 
 #### DS_READ_I8
@@ -1345,7 +1344,7 @@ Description: Read unsigned 16-bit word from LDS/GDS at address (ADDR+OFFSET) & ~
 store into VDST.  
 Operation:  
 ```
-VDST = *(UINT16*)(DS + (ADDR+OFFSET)&~1)
+VDST = *(UINT16*)(DS + ((ADDR+OFFSET)&~1))
 ```
 
 #### DS_READ_U8
@@ -1445,8 +1444,8 @@ value at address B, and store result back to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -1462,8 +1461,8 @@ value at address B, and store result back to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -1531,8 +1530,8 @@ value at address A, and store result back to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
@@ -1548,8 +1547,8 @@ value at address A, and store result back to LDS/GDS at address A.
 Refer to listing to learn about addressing. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
@@ -1594,7 +1593,7 @@ Operation:
 ```
 BYTE INLANEID = 0
 if (OFFSET&0x8000)
-    INLANEID = (LANEID&0x3c) + (OFFSET>>(2*(LANEID&3))&3
+    INLANEID = (LANEID&0x3c) + ((OFFSET >> (2*(LANEID&3)) & 3)
 else
 {
     BYTE ANDMASK = (OFFSET&31)
@@ -1656,8 +1655,8 @@ Syntax: DS_WRITE_SRC2_B32 ADDR [OFFSET:OFFSET]
 Description: Store value from LDS/GDS at address B into LDS/GDS at address A.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 *(UINT32*)(DS + A) = *(UINT32*)(DS + B)
@@ -1670,8 +1669,8 @@ Syntax: DS_WRITE_SRC2_B64 ADDR [OFFSET:OFFSET]
 Description: Store 64-bit value from LDS/GDS at address B into LDS/GDS at address A.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 *(UINT64*)(DS + A) = *(UINT64*)(DS + B)
@@ -1802,7 +1801,7 @@ Previous values from LDS/GDS are stored in VDST.
 Operation:  
 ```
 UINT32* V0 = (UINT32*)(DS + ((ADDR + OFFSET0*256)&~3)) 
-UINT32* V1 = (UINT32*)(DS + (((ADDR + OFFSET1*256)&~3)))
+UINT32* V1 = (UINT32*)(DS + ((ADDR + OFFSET1*256)&~3))
 VDST = (*V0) | (UINT64(*V1)<<32)
 *V0 = VDATA0
 *V1 = VDATA1
@@ -1819,7 +1818,7 @@ Previous values from LDS/GDS are stored in VDST.
 Operation:  
 ```
 UINT64* V0 = (UINT64*)(DS + ((ADDR + OFFSET0*512)&~7)) 
-UINT64* V1 = (UINT64*)(DS + (((ADDR + OFFSET1*512)&~7)))
+UINT64* V1 = (UINT64*)(DS + ((ADDR + OFFSET1*512)&~7))
 VDST = (*V0) | (UINT128(*V1)<<64)
 *V0 = VDATA0
 *V1 = VDATA1
@@ -1885,12 +1884,12 @@ Description: Do bitwise XOR operation on 32-bit value from LDS/GDS at address
 A, and at address B; and store result to LDS/GDS at address A. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
-UINT16 B = A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
+UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
-*V = *V | *(UINT32*)(DS + B) // atomic operation
+*V = *V ^ *(UINT32*)(DS + B) // atomic operation
 ```
 
 #### DS_XOR_SRC2_B64
@@ -1901,10 +1900,10 @@ Description: Do bitwise XOR operation on 64-bit value from LDS/GDS at address
 A, and at address B; and store result to LDS/GDS at address A. Operation is atomic.  
 Operation:  
 ```
-UINT16 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
-UINT16 B = (A + ((OFFSET&0x8000) ? \
+UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
+UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
             ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
-*V = *V | *(UINT64*)(DS + B) // atomic operation
+*V = *V ^ *(UINT64*)(DS + B) // atomic operation
 ```
