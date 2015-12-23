@@ -22,9 +22,13 @@ Syntax: INSTRUCTION ADDR, VDATA0 [offset:OFFSET] [GDS]
 Syntax: INSTRUCTION ADDR, VDATA0, VDATA1 [offset0:OFFSET0] [offset1:OFFSET1] [GDS]  
 VDST syntax: INSTRUCTION VDST, ADDR [offset:OFFSET] [GDS]
 
-NOTE: Any operation LDS requires correctly set M0 register, prior to execution.
+NOTE: Any operation on LDS requires correctly set M0 register, prior to execution.
 The M0 register holds maximum size of a LDS memory, that can be accessed by wavefront.
 To set no limits, just set a M0 register to 0xffffffff.
+
+NOTE: Any operation on GDS requires correctly set M0 register, prior to execution.
+The M0 register holds maximum size of a GDS memory in bits 0-15,
+that can be accessed by kernel, and a GDS base offset (in bytes) in bits 16-31.
 
 Any DS instruction return data in order (including D_SWIZZLE) and increments LGKM_CNT.
 Any operation increments LGKM by one, and decremented by one if it will be finished.

@@ -53,6 +53,9 @@ Code     | Name              | Description
 251      | VCCZ              | VCCZ register
 252      | EXECZ             | EXECZ register
 253      | SCC               | SCC register
+254      | LDS_DIRECT        | LDS direct access
+254      | LDS               | LDS direct access
+254      | SRC_LDS_DIRECT    | LDS direct access
 255      | 255               | Literal constant (follows instruction dword)
 256-511  | V0-V255           | VGPR's (only VOP3 encoding operands)
 
@@ -94,3 +97,21 @@ List of hardware registers:
 * PC_LO, HWREG_PC_LO -
 * STATUS, HWREG_STATUS -
 * TRAPSTS, HWREG_TRAPSTS -
+
+### LDS direct access
+
+The LDS direct access allow to access LDS memory from VOP instruction directly by supplying
+LDS, LDS_DIRECT or SRC_LDS_DIRECT keyword on the first source operand. Then data from
+LDS will be used on place that operand.
+
+The M0 must hold the offset in bytes (in 0-15 bits) and format of the data (in bits 16-18).
+Table of formats:
+
+ Value | Format
+-------|----------------
+0      | Unsigned byte
+1      | Unsigned 16-bit word
+2      | Unsigned 32-bit word
+3      | unused (same as 2)
+4      | Signed byte
+5      | Signed 16-bit word
