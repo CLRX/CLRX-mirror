@@ -98,7 +98,7 @@ List of the instructions by opcode:
  60 (0x3c)  |   ✓   |   ✓   | DS_READ_U16            | DS_READ_U16
  61 (0x3d)  |   ✓   |   ✓   | DS_CONSUME             | DS_SWIZZLE_B32
  62 (0x3e)  |   ✓   |   ✓   | DS_APPEND              | DS_PERMUTE_B32
- 63 (0x3f)  |   ✓   |   ✓   | DS_ORDERED_COUNT       | DS_BPERMUTE_B32
+ 63 (0x3f)  |   ✓   |   ✓   | DS_ORDERED_COUNT (???) | DS_BPERMUTE_B32
  64 (0x40)  |   ✓   |   ✓   | DS_ADD_U64             | DS_ADD_U64
  65 (0x41)  |   ✓   |   ✓   | DS_SUB_U64             | DS_SUB_U64
  66 (0x42)  |   ✓   |   ✓   | DS_RSUB_U64            | DS_RSUB_U64
@@ -544,8 +544,8 @@ UINT32* VB = (UINT32*)(DS + B)
 
 Opcode: 196 (0xc4)  
 Syntax: DS_DEC_SRC2_U64 ADDR [OFFSET:OFFSET]  
-Description: Load unsigned 64-bit value from LDS/GDS at address A, and compare with unsigned
-64-bit value at address B. If value at address B is greater or equal and loaded
+Description: Load unsigned 64-bit value from LDS/GDS at address A, and compare with
+unsigned 64-bit value at address B. If value at address B is greater or equal and loaded
 unsigned value is not zero, then decrement value from LDS/GDS, otherwise store value
 at address B to LDS/GDS at address A. Refer to listing to learn about addressing.
 Operation is atomic.  
