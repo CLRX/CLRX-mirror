@@ -28,6 +28,9 @@ is `S_WAITCNT LGKMCNT(0)`.
 * LGKM_CNT incremented by one for every fetch of single Dword
 * LGKM_CNT incremented by two for every fetch of two or more Dwords
 
+NOTE: Between setting third dword from buffer resource and S_BUFFER_* instruction
+is required least one instruction (vector or scalar) due to delay.
+
 List of the instructions by opcode:
 
  Opcode     | Mnemonic (GCN1.0)        | Mnemonic (GCN1.1)
