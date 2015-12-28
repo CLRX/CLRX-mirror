@@ -147,7 +147,7 @@ Binary|    >>>   |   2   | Signed right shift
 Binary|    &     |   3   | Binary AND
 Binary| vert-line|   3   | Binary OR
 Binary|    ^     |   3   | Binary XOR
-Binary|    !     |   3   | Binary ORNOT (performs A|~B)
+Binary|    !     |   3   | Binary ORNOT (performs A OR ~B)
 Binary|    +     |   3   | Addition
 Binary|    -     |   3   | Subtraction
 Binary|    ==    |   4   | Equal to
