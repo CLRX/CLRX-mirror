@@ -20,6 +20,7 @@ CLRX/utils/MemAccess.h -text
 CLRX/utils/Utilities.h -text
 /CMakeLists.txt -text svneol=unset#text/plain
 /COPYING -text
+/COPYING.DOC -text
 /Doxyfile.in -text
 /INSTALL -text
 /Int128Detect.c -text
@@ -65,6 +66,7 @@ doc/ClrxAsmSyntax.md -text
 doc/ClrxDisasm.md -text
 doc/ClrxToc.md -text
 doc/ClrxWrapper.md -text
+doc/DocLicense.md -text
 doc/GalliumAbi.md -text
 doc/GcnInstrsDs.md -text
 doc/GcnInstrsSmrd.md -text
