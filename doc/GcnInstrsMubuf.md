@@ -1,6 +1,6 @@
 ## GCN ISA MUBUF instructions
 
-These instructions allow to access to main video memory. MUBUF instructions
+These instructions allow to access to main memory. MUBUF instructions
 operates on the buffer resources. The buffer resources are 4 dwords which holds the
 base address, buffer size, their structure and format of their data.
 
@@ -12,7 +12,7 @@ Bits  | Name     | Description
 12    | OFFEN    | If set, send additional offset from VADDR
 13    | IDXEN    | If set, send index from VADDR
 14    | GLC      | Operation globally coherent
-15    | ADDR64   | If set, address is 64-bit
+15    | ADDR64   | If set, address is 64-bit (VADDR is 64-bit)
 16    | LDS      | Data is read from or written to LDS, otherwise from VGPR
 18-24 | OPCODE   | Operation code
 26-31 | ENCODING | Encoding type. Must be 0b111000
@@ -45,6 +45,8 @@ Instruction syntax: INSTRUCTION VDATA, VADDR, SRSRC, SOFFSET [MODIFIERS]
 
 Modifiers can be supplied in any order. Modifiers list:
 OFFEN, IDXEN, SLC, GLC, TFE, ADDR64, LDS, OFFSET:OFFSET.
+The TFE flag requires additional the VDATA register. IDXEN and OFFEN both enabled
+requires 64-bit VADDR.
 
 The buffer resource format:
 
@@ -197,71 +199,11 @@ List of the MUBUF instructions by opcode (GCN 1.0/1.1):
  107 (0x6b) | BUFFER_ATOMIC_INC_X2
  108 (0x6c) | BUFFER_ATOMIC_DEC_X2
 
-### Buffer addressing
+### Details
 
-The address depends on couple factors which are from instruction and the buffer resource.
-The buffer is organized in simple structure that contains records. Buffer address starts
-from the base offset given in buffer resource. The index indicates number of the record,
-and the offset indicates position in record. Expression that describes address:
-
-```
-BUFOFFSET = (UINT32)(AINDEX*STRIDE) + AOFFSET
-```
-
-Optionally, buffer can be addressed in the swizzle mode that is very effective manner to
-addressing the scratch buffers that holds spilled registers. Expression that describes
-swizzle mode addressing:
-
-```
-AINDEX_MSB = AINDEX / INDEXSTRIDE
-AINDEX_LSB = AINDEX % INDEXSTRIDE
-AOFFSET_MSB = AOFFSET / ELEMSIZE
-AOFFSET_LSB = AOFFSET % ELEMSIZE
-BUFOFFSET = AOFFSET_LSB + ELEMSIZE*AINDEX_LSB + INDEXSTRIDE * (AINDEX_MSB*STRIDE + \
-        AOFFSET_MSB * ELEMSIZE)
-```
-
-The 64-bit addressing can be enabled by set ADDR64 flag in instruction. In this case,
-two VADDR registers contains an address. Expression to calculate address in this case:
-
-```
-ADDRESS = BASE + VGPR_ADDRESS + OFFSET + SGPR_OFFSET // 64-bit addressing
-```
-
-No range checking for 64-bit mode addressing.
-
-The base address are calculated as sum of BASE and SGPR offset. The instruction format
-supply OFFEN and IDXEN that includes index from VPGR registers. These flags are permitted
-only if 64-bit addressing is not enabled. Table describes combination of these flags:
-
- IDXEN |OFFEN | Indexreg | Offset reg 
--------|------|----------|------------------------
-   0   |  0   | N/A      | N/A
-   1   |  0   | VGPR[V]  | N/A
-   0   |  1   | N/A      | VGPR[V]
-   1   |  1   | VGPR[V]  | VGPR[V+1]
-
-Expressions that describes offsets and indices:
-
-```
-UINT32 AOFFSET = OFFSET + (OFFEN ? VGPR_OFFSET : 0)
-UINT32 AINDEX = (IDXEN ? VGPR_INDEX : 0) + (TID_ENABLE ? LANEID : 0)
-```
-
-The hardware checks range for buffer resources with STRIDE=0 in following way:
-if BUFOFFSET >= NUMRECORDS-SGPR_OFFSET then an address is out of range.
-For STRIDE!=0 if AINDEX >= NUMRECORDS or OFFSET >= STRIDE when IDXEN or
-TID_ENABLE is set, then an address is out of range. Reads are zero and writes are ignored
-for an addresses out of range.
-
-For 32-bit operations, an address are aligned to 4 bytes.
-
-The coalescing works for STRIDE==0 on offset (hardware looks at offset), otherwise works
-if stride<=1 or swizzle mode enabled and all offsets are equal and ELEMSIZE have same value
-as size of element that can be operated by instruction. Then hardware coalesce across any
-set of contiguous indices for raw buffers. For swizzled buffers, it
-cannot coalesce across INDEXSTRIDE boundaries.
-
+Informations about addressing and format conversion here:
+[Main memory handling](GcnMemHandling)
+ 
 ### Instruction set
 
 Alphabetically sorted instruction list:

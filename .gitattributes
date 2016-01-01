@@ -82,6 +82,7 @@ doc/GcnInstrsVop2.md -text
 doc/GcnInstrsVop3.md -text
 doc/GcnInstrsVopc.md -text
 doc/GcnIsa.md -text
+doc/GcnMemHandling.md -text
 doc/GcnOperands.md -text
 doc/PrepareOffline.py -text
 doc/genclrxdoc.sh -text

@@ -44,6 +44,7 @@ Copyright (c)  2015-2016  Mateusz Szpakowski.
     * [VOP3 instructions](GcnInstrsVop3)
     * [VINTRP instructions](GcnInstrsVintrp)
     * [DS instructions](GcnInstrsDs)
+    * [Main memory handling](GcnMemHandling)
     * [MUBUF instructions](GcnInstrsMubuf)
 
 ---
