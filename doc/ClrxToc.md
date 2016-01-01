@@ -7,7 +7,7 @@ the GalliumCompute program binaries.
 
 ---
 
-Copyright (c)  2015  Mateusz Szpakowski.  
+Copyright (c)  2015-2016  Mateusz Szpakowski.  
     Permission is granted to copy, distribute and/or modify this document
     under the terms of the GNU Free Documentation License, Version 1.2
     or any later version published by the Free Software Foundation;
