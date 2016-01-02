@@ -1,5 +1,28 @@
 ## GCN Memory instructions features and functionality
 
+### Buffer resource format
+
+Bits   | Name       | Description
+-------|------------|------------------------------
+0-47   | BASE       | Base address
+48-61  | STRIDE     | Stride in bytes. Size of records
+62     | Cache swizzle |  Buffer access. Optionally, swizzle texture cache TC L1 cache banks
+63     | Swizzle enable | If set, enable swizzle addressing mode
+64-95  | NUMRECORDS | Number of records (size of the buffer)
+96-98  | DST_SEL_X  | Select destination component for X
+99-101 | DST_SEL_Y  | Select destination component for Y
+102-104 | DST_SEL_Z  | Select destination component for Z
+105-107 | DST_SEL_W  | Select destination component for W
+108-110 | NUMFORMAT  | Number format
+111-114 | DATAFORMAT | Data format
+115-116 | ELEMSIZE   | Element size (used only by swizzle mode)
+117-118 | INDEXSTRIDE | Index stride (used only by swizzle mode)
+119    | TID_ENABLE | Add thread id to index
+121    | Hash enable | Enable address hashing 
+122    | HEAP       | Buffer is heap
+126-127 | TYPE      | Resource type. 0 - for buffer
+
+
 ### MUBUF/MTBUF format conversion
 
 The instruction or the buffer resource can supply data format in which stored
@@ -29,6 +52,8 @@ Code | Name          | Description
 
 The buffer data format name can be preceded by 'BUF_DATA_FORMAT_' as 'BUF_DATA_FORMAT_8_8'.
 A data format name is case-insensitive.
+
+The data format 10_11_11 and 11_11_10 seemingly doesn't work correctly on the GCN 1.0 (???)
 
 Below is table with available number formats. The 'BufR' column indicates whether
 a number format is applicable to read operation, the 'BufW' column indicates whether

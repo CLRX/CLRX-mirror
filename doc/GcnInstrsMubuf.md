@@ -48,28 +48,6 @@ OFFEN, IDXEN, SLC, GLC, TFE, ADDR64, LDS, OFFSET:OFFSET.
 The TFE flag requires additional the VDATA register. IDXEN and OFFEN both enabled
 requires 64-bit VADDR.
 
-The buffer resource format:
-
-Bits   | Name       | Description
--------|------------|------------------------------
-0-47   | BASE       | Base address
-48-61  | STRIDE     | Stride in bytes. Size of records
-62     | Cache swizzle |  Buffer access. Optionally, swizzle texture cache TC L1 cache banks
-63     | Swizzle enable | If set, enable swizzle addressing mode
-64-95  | NUMRECORDS | Number of records (size of the buffer)
-96-98  | DST_SEL_X  | Select destination component for X
-99-101 | DST_SEL_Y  | Select destination component for Y
-102-104 | DST_SEL_Z  | Select destination component for Z
-105-107 | DST_SEL_W  | Select destination component for W
-108-110 | NUMFORMAT  | Number format
-111-114 | DATAFORMAT | Data format
-115-116 | ELEMSIZE   | Element size (used only by swizzle mode)
-117-118 | INDEXSTRIDE | Index stride (used only by swizzle mode)
-119    | TID_ENABLE | Add thread id to index
-121    | Hash enable | Enable address hashing 
-122    | HEAP       | Buffer is heap
-126-127 | TYPE      | Resource type. 0 - for buffer
-
 ### Instructions by opcode
 
 List of the MUBUF instructions by opcode (GCN 1.0/1.1):
@@ -208,3 +186,90 @@ Informations about addressing and format conversion here:
 
 Alphabetically sorted instruction list:
 
+#### BUFFER_LOAD_FORMAT_X
+
+Opcode: 0 (0x0)  
+Syntax: BUFFER_LOAD_FORMAT_X VDATA, VADDR, SRSRC, SOFFSET  
+Description: Load the first component of the element from SRSRC including format from
+buffer resource.  
+Operation:  
+```
+VDATA = LOAD_FORMAT_X(SRSRC, VADDR, SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_FORMAT_XY
+
+Opcode: 1 (0x1)  
+Syntax: BUFFER_LOAD_FORMAT_XY VDATA(2), VADDR, SRSRC, SOFFSET  
+Description: Load the first two components of the element from SRSRC resource
+including format from SRSRC.  
+Operation:  
+```
+VDATA[0] = LOAD_FORMAT_XY(SRSRC, VADDR, SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_FORMAT_XYZ
+
+Opcode: 2 (0x2)  
+Syntax: BUFFER_LOAD_FORMAT_XYZ VDATA(3), VADDR, SRSRC, SOFFSET  
+Description: Load the first three components of the element from SRSRC resource
+including format from SRSRC.  
+Operation:  
+```
+VDATA[0] = LOAD_FORMAT_XYZ(SRSRC, VADDR, SOFFSET, OFFSET)
+```
+
+#### BUFFER_LOAD_FORMAT_XYZW
+
+Opcode: 3 (0x3)  
+Syntax: BUFFER_LOAD_FORMAT_XYZW VDATA(4), VADDR, SRSRC, SOFFSET  
+Description: Load the all four components of the element from SRSRC resource 
+including format from SRSRC.  
+Operation:  
+```
+VDATA[0] = LOAD_FORMAT_XYZW(SRSRC, VADDR, SOFFSET, OFFSET)
+```
+
+#### BUFFER_STORE_FORMAT_X
+
+Opcode: 4 (0x4)  
+Syntax: BUFFER_STORE_FORMAT_X VDATA, VADDR, SRSRC, SOFFSET  
+Description: Store the first component of the element into SRSRC resource
+including format from SRSRC.  
+Operation:  
+```
+STORE_FORMAT_X(SRSRC, VADDR, SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_XY
+
+Opcode: 5 (0x5)  
+Syntax: BUFFER_STORE_FORMAT_XY VDATA(2), VADDR, SRSRC, SOFFSET  
+Description: Store the first two components of the element into SRSRC resource
+including format from SRSRC.  
+Operation:  
+```
+STORE_FORMAT_XY(SRSRC, VADDR, SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_XYZ
+
+Opcode: 6 (0x6)  
+Syntax: BUFFER_STORE_FORMAT_XYZ VDATA(3), VADDR, SRSRC, SOFFSET  
+Description: Store the first three components of the element into SRSRC resource
+including format from SRSRC.  
+Operation:  
+```
+STORE_FORMAT_XYZ(SRSRC, VADDR, SOFFSET, OFFSET, VDATA)
+```
+
+#### BUFFER_STORE_FORMAT_XYZW
+
+Opcode: 7 (0x7)  
+Syntax: BUFFER_STORE_FORMAT_XYZW VDATA(4), VADDR, SRSRC, SOFFSET  
+Description: Store the all components of the element into SRSRC resource
+including format from SRSRC.  
+Operation:  
+```
+STORE_FORMAT_XYZW(SRSRC, VADDR, SOFFSET, OFFSET, VDATA)
+```
