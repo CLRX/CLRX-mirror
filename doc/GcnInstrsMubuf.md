@@ -51,6 +51,10 @@ OFFEN, IDXEN, SLC, GLC, TFE, ADDR64, LDS, OFFSET:OFFSET.
 The TFE flag requires additional the VDATA register. IDXEN and OFFEN both enabled
 requires 64-bit VADDR.
 
+The MUBUF instructions is executed in order. Any MUBUF instruction increments VMCNT and
+it decrements VMCNT after memory operation. Any memory-write operation incrments EXPCNT,
+and it decrements EXPCNT after writing data to VDATA.
+
 ### Instructions by opcode
 
 List of the MUBUF instructions by opcode (GCN 1.0/1.1):
