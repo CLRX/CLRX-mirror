@@ -3,6 +3,9 @@
 These instructions allow to access to main memory. MUBUF instructions
 operates on the buffer resources. The buffer resources are 4 dwords which holds the
 base address, buffer size, their structure and format of their data.
+These instructions are untyped, and they get number/data format from an resource
+or that format are determined by operation (data format is not encoded in
+instruction's format). 
 
 List of fields for the MUBUF encoding (GCN 1.0/1.1):
 
@@ -179,7 +182,7 @@ List of the MUBUF instructions by opcode (GCN 1.0/1.1):
 
 ### Details
 
-Informations about addressing and format conversion here:
+Informations about addressing and format conversion are here:
 [Main memory handling](GcnMemHandling)
  
 ### Instruction set

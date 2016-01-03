@@ -46,5 +46,6 @@ Copyright (c)  2015-2016  Mateusz Szpakowski.
     * [DS instructions](GcnInstrsDs)
     * [Main memory handling](GcnMemHandling)
     * [MUBUF instructions](GcnInstrsMubuf)
+    * [MTBUF instructions](GcnInstrsMtbuf)
 
 ---

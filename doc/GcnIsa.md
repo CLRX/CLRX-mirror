@@ -63,5 +63,6 @@ By default, any register value is treated as unsigned integer.
 * [DS instructions](GcnInstrsDs)
 * [Main memory handling](GcnMemHandling)
 * [MUBUF instructions](GcnInstrsMubuf)
+* [MTBUF instructions](GcnInstrsMtbuf)
 
 ---
