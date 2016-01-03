@@ -191,8 +191,8 @@ Alphabetically sorted instruction list:
 Opcode: 50 (0x32) for GCN 1.0/1.1; 66 (0x42) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_ADD VDATA, VADDR, SRSRC, SOFFSET  
 Description: Add VDATA to value of SRSRC resource, and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -204,7 +204,7 @@ UINT32 P = *VM; *VM = *VM + VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 82 (0x52) for GCN 1.0/1.1; 98 (0x62) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_ADD_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Add 64-bit VDATA to 64-bit value of SRSRC resource, and store result
-to this resource. If GLC flag is set then return previous value to VDATA,
+to this resource. If GLC flag is set then return previous value from resource to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
@@ -217,8 +217,8 @@ UINT64 P = *VM; *VM = *VM + VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 57 (0x39) for GCN 1.0/1.1; 72 (0x48) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_AND VDATA, VADDR, SRSRC, SOFFSET  
 Description: Do bitwise AND on VDATA and value of SRSRC resource,
-and store result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+and store result to this resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -230,8 +230,8 @@ UINT32 P = *VM; *VM = *VM & VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 89 (0x59) for GCN 1.0/1.1; 104 (0x68) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_AND_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Do 64-bit bitwise AND on VDATA and value of SRSRC resource,
-and store result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+and store result to this resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -244,8 +244,8 @@ Opcode: 49 (0x31) for GCN 1.0/1.1; 65 (0x41) for GCN 1.2
 Syntax: BUFFER_ATOMIC_CMPSWAP VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Store lower VDATA dword into SRSRC resource if previous value
 from resource is equal VDATA>>32, otherwise keep old value from resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -259,8 +259,8 @@ Opcode: 81 (0x51) for GCN 1.0/1.1; 97 (0x61) for GCN 1.2
 Syntax: BUFFER_ATOMIC_CMPSWAP_X2 VDATA(4), VADDR, SRSRC, SOFFSET  
 Description: Store lower VDATA 64-bit word into SRSRC resource if previous value
 from resource is equal VDATA>>64, otherwise keep old value from resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -274,8 +274,8 @@ Opcode: 61 (0x3d) for GCN 1.0/1.1; 76 (0x4c) for GCN 1.2
 Syntax: BUFFER_ATOMIC_DEC VDATA, VADDR, SRSRC, SOFFSET  
 Description: Compare value from SRSRC resource and if less or equal than VDATA
 and this value is not zero, then decrement value from resource,
-otherwise store VDATA to resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+otherwise store VDATA to resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -289,8 +289,8 @@ Opcode: 93 (0x5d) for GCN 1.0/1.1; 108 (0x6c) for GCN 1.2
 Syntax: BUFFER_ATOMIC_DEC_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Compare 64-bit value from SRSRC resource and if less or equal than VDATA
 and this value is not zero, then decrement value from resource,
-otherwise store VDATA to resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+otherwise store VDATA to resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -305,8 +305,8 @@ Syntax: BUFFER_ATOMIC_FCMPSWAP VDATA(2), VADDR, SRSRC, SOFFSET
 Description: Store lower VDATA dword into SRSRC resource if previous single floating point
 value from resource is equal singe floating point value VDATA>>32,
 otherwise keep old value from resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 FLOAT* VM = (FLOAT*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -321,8 +321,8 @@ Syntax: BUFFER_ATOMIC_FCMPSWAP_X2 VDATA(4), VADDR, SRSRC, SOFFSET
 Description: Store lower VDATA 64-bit word into SRSRC resource if previous double
 floating point value from resource is equal singe floating point value VDATA>>32,
 otherwise keep old value from resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 DOUBLE* VM = (DOUBLE*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -336,8 +336,8 @@ Opcode: 64 (0x40) for GCN 1.0/1.1
 Syntax: BUFFER_ATOMIC_FMAX VDATA, VADDR, SRSRC, SOFFSET  
 Description: Choose greatest single floating point value from VDATA and from
 SRSRC resource, and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 FLOAT* VM = (FLOAT*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -350,8 +350,8 @@ Opcode: 96 (0x60) for GCN 1.0/1.1
 Syntax: BUFFER_ATOMIC_FMAX_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Choose greatest double floating point value from VDATA and from
 SRSRC resource, and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 DOUBLE* VM = (DOUBLE*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -364,8 +364,8 @@ Opcode: 63 (0x3f) for GCN 1.0/1.1
 Syntax: BUFFER_ATOMIC_FMIN VDATA, VADDR, SRSRC, SOFFSET  
 Description: Choose smallest single floating point value from VDATA and from
 SRSRC resource, and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 FLOAT* VM = (FLOAT*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -378,8 +378,8 @@ Opcode: 95 (0x5f) for GCN 1.0/1.1
 Syntax: BUFFER_ATOMIC_FMIN_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Choose smallest double floating point value from VDATA and from
 SRSRC resource, and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 DOUBLE* VM = (DOUBLE*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -392,7 +392,7 @@ Opcode: 60 (0x3c) for GCN 1.0/1.1; 75 (0x4b) for GCN 1.2
 Syntax: BUFFER_ATOMIC_INC VDATA, VADDR, SRSRC, SOFFSET  
 Description: Compare value from SRSRC resource and if less than VDATA,
 then increment value from resource, otherwise store zero to resource.
-If GLC flag is set then return previous value to VDATA,
+If GLC flag is set then return previous value from resource to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
@@ -406,7 +406,7 @@ Opcode: 92 (0x5c) for GCN 1.0/1.1; 107 (0x9b) for GCN 1.2
 Syntax: BUFFER_ATOMIC_INC_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Compare 64-bit value from SRSRC resource and if less than VDATA,
 then increment value from resource, otherwise store zero to resource.
-If GLC flag is set then return previous value to VDATA,
+If GLC flag is set then return previous value from resource to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
@@ -419,8 +419,8 @@ UINT64 P = *VM; *VM = (*VM < VDATA) ? *VM+1 : 0; VDATA = (GLC) ? P : VDATA // at
 Opcode: 58 (0x3a) for GCN 1.0/1.1; 73 (0x49) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_OR VDATA, VADDR, SRSRC, SOFFSET  
 Description: Do bitwise OR on VDATA and value of SRSRC resource,
-and store result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+and store result to this resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -432,8 +432,8 @@ UINT32 P = *VM; *VM = *VM | VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 90 (0x5a) for GCN 1.0/1.1; 105 (0x69) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_OR_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Do 64-bit bitwise OR on VDATA and value of SRSRC resource,
-and store result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+and store result to this resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -445,7 +445,7 @@ UINT64 P = *VM; *VM = *VM | VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 52 (0x34) for GCN 1.0  
 Syntax: BUFFER_ATOMIC_RSUB VDATA, VADDR, SRSRC, SOFFSET  
 Description: Subtract value of SRSRC resource from VDATA, and store result to
-this resource. If GLC flag is set then return previous value to VDATA,
+this resource. If GLC flag is set then return previous value from resource to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
@@ -458,7 +458,7 @@ UINT32 P = *VM; *VM = VDATA - *VM; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 84 (0x54) for GCN 1.0  
 Syntax: BUFFER_ATOMIC_RSUB_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Subtract 64-bit value of SRSRC resource from 64-bit VDATA, and store result
-to this resource. If GLC flag is set then return previous value to VDATA,
+to this resource. If GLC flag is set then return previous value from resource to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
@@ -472,8 +472,8 @@ Opcode: 55 (0x37) for GCN 1.0/1.1; 70 (0x46) for GCN 1.2
 Syntax: BUFFER_ATOMIC_SMAX VDATA, VADDR, SRSRC, SOFFSET  
 Description: Choose greatest signed 32-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 INT32* VM = (INT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -486,8 +486,8 @@ Opcode: 87 (0x57) for GCN 1.0/1.1; 102 (0x66) for GCN 1.2
 Syntax: BUFFER_ATOMIC_SMAX_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Choose greatest signed 64-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 INT64* VM = (INT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -500,8 +500,8 @@ Opcode: 53 (0x35) for GCN 1.0/1.1; 68 (0x44) for GCN 1.2
 Syntax: BUFFER_ATOMIC_SMIN VDATA, VADDR, SRSRC, SOFFSET  
 Description: Choose smallest signed 32-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 INT32* VM = (INT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -514,8 +514,8 @@ Opcode: 85 (0x55) for GCN 1.0/1.1; 100 (0x64) for GCN 1.2
 Syntax: BUFFER_ATOMIC_SMIN_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Choose smallest signed 64-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 INT64* VM = (INT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -527,7 +527,7 @@ UINT64 P = *VM; *VM = MIN(*VM, (INT64)VDATA); VDATA = (GLC) ? P : VDATA // atomi
 Opcode: 51 (0x33) for GCN 1.0/1.1; 67 (0x43) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_SUB VDATA, VADDR, SRSRC, SOFFSET  
 Description: Subtract VDATA from value from SRSRC resource, and store result to
-this resource. If GLC flag is set then return previous value to VDATA,
+this resource. If GLC flag is set then return previous value from resource to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
@@ -540,8 +540,8 @@ UINT32 P = *VM; *VM = *VM - VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 83 (0x53) for GCN 1.0/1.1; 99 (0x63) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_SUB_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Subtract 64-bit VDATA from 64-bit value from SRSRC resource, and store
-result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+result to this resource. If GLC flag is set then return previous value from resource to
+VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -553,7 +553,8 @@ UINT64 P = *VM; *VM = *VM - VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 48 (0x30) for GCN 1.0/1.1; 64 (0x40) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_SWAP VDATA, VADDR, SRSRC, SOFFSET  
 Description: Store VDATA dword into SRSRC resource. If GLC flag is set then
-return previous value to VDATA, otherwise keep VDATA value. Operation is atomic.  
+return previous value from resource to VDATA, otherwise keep VDATA value.
+Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -565,7 +566,8 @@ UINT32 P = *VM; *VM = VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 80 (0x50) for GCN 1.0/1.1; 96 (0x60) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_SWAP_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Store VDATA 64-bit word into SRSRC resource. If GLC flag is set then
-return previous value to VDATA, otherwise keep VDATA value. Operation is atomic.  
+return previous value from resource to VDATA, otherwise keep VDATA value.
+Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -578,8 +580,8 @@ Opcode: 56 (0x38) for GCN 1.0/1.1; 71 (0x47) for GCN 1.2
 Syntax: BUFFER_ATOMIC_UMAX VDATA, VADDR, SRSRC, SOFFSET  
 Description: Choose greatest unsigned 32-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise
+keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -592,8 +594,8 @@ Opcode: 88 (0x58) for GCN 1.0/1.1; 103 (0x67) for GCN 1.2
 Syntax: BUFFER_ATOMIC_UMAX_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Choose greatest unsigned 64-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -606,8 +608,8 @@ Opcode: 54 (0x36) for GCN 1.0/1.1; 69 (0x45) for GCN 1.2
 Syntax: BUFFER_ATOMIC_UMIN VDATA, VADDR, SRSRC, SOFFSET  
 Description: Choose smallest unsigned 32-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -620,8 +622,8 @@ Opcode: 86 (0x56) for GCN 1.0/1.1; 101 (0x65) for GCN 1.2
 Syntax: BUFFER_ATOMIC_UMIN_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Choose smallest unsigned 64-bit value from VDATA and from SRSRC resource,
 and store result to this resource.
-If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
-Operation is atomic.  
+If GLC flag is set then return previous value from resource to VDATA, otherwise keep
+VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -633,8 +635,8 @@ UINT64 P = *VM; *VM = MIN(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 59 (0x3b) for GCN 1.0/1.1; 74 (0x4a) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_XOR VDATA, VADDR, SRSRC, SOFFSET  
 Description: Do bitwise XOR on VDATA and value of SRSRC resource,
-and store result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+and store result to this resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
@@ -646,8 +648,8 @@ UINT32 P = *VM; *VM = *VM ^ VDATA; VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 91 (0x5b) for GCN 1.0/1.1; 106 (0x6a) for GCN 1.2  
 Syntax: BUFFER_ATOMIC_XOR_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
 Description: Do 64-bit bitwise XOR on VDATA and value of SRSRC resource,
-and store result to this resource. If GLC flag is set then return previous value to VDATA,
-otherwise keep VDATA value. Operation is atomic.  
+and store result to this resource. If GLC flag is set then return previous value
+from resource to VDATA, otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)

@@ -169,7 +169,8 @@ For STRIDE!=0 if AINDEX >= NUMRECORDS or OFFSET >= STRIDE when IDXEN or
 TID_ENABLE is set, then an address is out of range. Reads are zero and writes are ignored
 for an addresses out of range.
 
-For 32-bit operations, an address are aligned to 4 bytes.
+For 32-bit and wider operations, an address are aligned to 4 bytes.
+For 16-bit operations, an address are aligned to 2 bytes.
 
 The coalescing works for STRIDE==0 on offset (hardware looks at offset), otherwise it works
 if stride<=1 or swizzle mode enabled and all offsets are equal and ELEMSIZE have same value
