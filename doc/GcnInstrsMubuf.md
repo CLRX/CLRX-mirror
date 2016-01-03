@@ -196,7 +196,7 @@ Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = *VM + VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = *VM + VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_ADD_X2
@@ -209,7 +209,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = *VM + VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = *VM + VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_AND
@@ -222,7 +222,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = *VM & VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = *VM & VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_AND_X2
@@ -235,7 +235,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = *VM & VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = *VM & VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_CMPSWAP
@@ -249,8 +249,8 @@ Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = *VM==(VDATA>>32) ? VDATA&0xffffffff : *VM // part of atomic
-VDATA = (GLC) ? P : VDATA // last part of atomic
+UINT32 P = *VM; *VM = *VM==(VDATA>>32) ? VDATA&0xffffffff : *VM // part of atomic
+VDATA[0] = (GLC) ? P : VDATA[0] // last part of atomic
 ```
 
 #### BUFFER_ATOMIC_CMPSWAP_X2
@@ -264,8 +264,8 @@ Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = *VM==(VDATA[2:3]) ? VDATA[0:1] : *VM // part of atomic
-VDATA = (GLC) ? P : VDATA // last part of atomic
+UINT64 P = *VM; *VM = *VM==(VDATA[2:3]) ? VDATA[0:1] : *VM // part of atomic
+VDATA[0:1] = (GLC) ? P : VDATA[0:1] // last part of atomic
 ```
 
 #### BUFFER_ATOMIC_DEC
@@ -274,13 +274,27 @@ Opcode: 61 (0x3d) for GCN 1.0/1.1; 76 (0x4c) for GCN 1.2
 Syntax: BUFFER_ATOMIC_DEC VDATA, VADDR, SRSRC, SOFFSET  
 Description: Compare value from SRSRC resource and if less or equal than VDATA
 and this value is not zero, then decrement value from resource,
-otherwise store VDATA to resource.
-If GLC flag is set then return previous value to VDATA,
+otherwise store VDATA to resource. If GLC flag is set then return previous value to VDATA,
 otherwise keep VDATA value. Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = (*VM <= VDATA && *VM!=0) ? *VM-1 : VDATA // atomic
+UINT32 P = *VM; *VM = (*VM <= VDATA && *VM!=0) ? *VM-1 : VDATA // atomic
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### BUFFER_ATOMIC_DEC_X2
+
+Opcode: 93 (0x5d) for GCN 1.0/1.1; 108 (0x6c) for GCN 1.2  
+Syntax: BUFFER_ATOMIC_DEC_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
+Description: Compare 64-bit value from SRSRC resource and if less or equal than VDATA
+and this value is not zero, then decrement value from resource,
+otherwise store VDATA to resource. If GLC flag is set then return previous value to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
+UINT64 P = *VM; *VM = (*VM <= VDATA && *VM!=0) ? *VM-1 : VDATA // atomic
 VDATA = (GLC) ? P : VDATA // atomic
 ```
 
@@ -296,8 +310,24 @@ Operation is atomic.
 Operation:  
 ```
 FLOAT* VM = (FLOAT*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-FLOAT* P = *VM; *VM = *VM==ASFLOAT(VDATA>>32) ? VDATA&0xffffffff : *VM // part of atomic
-VDATA = (GLC) ? P : VDATA // last part of atomic
+FLOAT P = *VM; *VM = *VM==ASFLOAT(VDATA>>32) ? VDATA&0xffffffff : *VM // part of atomic
+VDATA[0] = (GLC) ? P : VDATA[0] // last part of atomic
+```
+
+#### BUFFER_ATOMIC_FCMPSWAP_X2
+
+Opcode: 94 (0x5e) for GCN 1.0/1.1  
+Syntax: BUFFER_ATOMIC_FCMPSWAP_X2 VDATA(4), VADDR, SRSRC, SOFFSET  
+Description: Store lower VDATA 64-bit word into SRSRC resource if previous double
+floating point value from resource is equal singe floating point value VDATA>>32,
+otherwise keep old value from resource.
+If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
+Operation is atomic.  
+Operation:  
+```
+DOUBLE* VM = (DOUBLE*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
+DOUBLE P = *VM; *VM = *VM==ASDOUBLE(VDATA[2:3]) ? VDATA[0:1] : *VM // part of atomic
+VDATA[0:1] = (GLC) ? P : VDATA[0:1] // last part of atomic
 ```
 
 #### BUFFER_ATOMIC_FMAX
@@ -311,7 +341,21 @@ Operation is atomic.
 Operation:  
 ```
 FLOAT* VM = (FLOAT*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = MAX(*VM, ASFLOAT(VDATA)); VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = MAX(*VM, ASFLOAT(VDATA)); VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### BUFFER_ATOMIC_FMAX_X2
+
+Opcode: 96 (0x60) for GCN 1.0/1.1  
+Syntax: BUFFER_ATOMIC_FMAX_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
+Description: Choose greatest double floating point value from VDATA and from
+SRSRC resource, and store result to this resource.
+If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
+Operation is atomic.  
+Operation:  
+```
+DOUBLE* VM = (DOUBLE*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
+UINT64 P = *VM; *VM = MAX(*VM, ASDOUBLE(VDATA)); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_FMIN
@@ -325,7 +369,21 @@ Operation is atomic.
 Operation:  
 ```
 FLOAT* VM = (FLOAT*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = MIN(*VM, ASFLOAT(VDATA)); VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = MIN(*VM, ASFLOAT(VDATA)); VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### BUFFER_ATOMIC_FMIN_X2
+
+Opcode: 95 (0x5f) for GCN 1.0/1.1  
+Syntax: BUFFER_ATOMIC_FMIN_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
+Description: Choose smallest double floating point value from VDATA and from
+SRSRC resource, and store result to this resource.
+If GLC flag is set then return previous value to VDATA, otherwise keep VDATA value.
+Operation is atomic.  
+Operation:  
+```
+DOUBLE* VM = (DOUBLE*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
+UINT64 P = *VM; *VM = MIN(*VM, ASDOUBLE(VDATA)); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_INC
@@ -339,7 +397,21 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = (*VM < VDATA) ? *VM+1 : 0; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = (*VM < VDATA) ? *VM+1 : 0; VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### BUFFER_ATOMIC_INC_X2
+
+Opcode: 92 (0x5c) for GCN 1.0/1.1; 107 (0x9b) for GCN 1.2  
+Syntax: BUFFER_ATOMIC_INC_X2 VDATA(2), VADDR, SRSRC, SOFFSET  
+Description: Compare 64-bit value from SRSRC resource and if less than VDATA,
+then increment value from resource, otherwise store zero to resource.
+If GLC flag is set then return previous value to VDATA,
+otherwise keep VDATA value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
+UINT64 P = *VM; *VM = (*VM < VDATA) ? *VM+1 : 0; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_OR
@@ -352,7 +424,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = *VM | VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = *VM | VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_OR_X2
@@ -365,7 +437,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = *VM | VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = *VM | VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_RSUB
@@ -378,7 +450,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = VDATA - *VM; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = VDATA - *VM; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_RSUB_X2
@@ -391,7 +463,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = VDATA - *VM; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = VDATA - *VM; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SMAX
@@ -405,7 +477,7 @@ Operation is atomic.
 Operation:  
 ```
 INT32* VM = (INT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = MAX(*VM, (INT32)VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = MAX(*VM, (INT32)VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SMAX_X2
@@ -419,7 +491,7 @@ Operation is atomic.
 Operation:  
 ```
 INT64* VM = (INT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = MAX(*VM, (INT64)VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = MAX(*VM, (INT64)VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SMIN
@@ -433,7 +505,7 @@ Operation is atomic.
 Operation:  
 ```
 INT32* VM = (INT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = MIN(*VM, (INT32)VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = MIN(*VM, (INT32)VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SMIN_X2
@@ -447,7 +519,7 @@ Operation is atomic.
 Operation:  
 ```
 INT64* VM = (INT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = MIN(*VM, (INT64)VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = MIN(*VM, (INT64)VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SUB
@@ -460,7 +532,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = *VM - VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = *VM - VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SUB_X2
@@ -473,7 +545,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = *VM - VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = *VM - VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SWAP
@@ -485,7 +557,7 @@ return previous value to VDATA, otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_SWAP_X2
@@ -497,7 +569,7 @@ return previous value to VDATA, otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_UMAX
@@ -511,7 +583,7 @@ Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = MAX(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = MAX(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_UMAX_X2
@@ -525,7 +597,7 @@ Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = MAX(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = MAX(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_UMIN
@@ -539,7 +611,7 @@ Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = MIN(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = MIN(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_UMIN_X2
@@ -553,7 +625,7 @@ Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = MIN(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = MIN(*VM, VDATA); VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_XOR
@@ -566,7 +638,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT32* VM = (UINT32*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT32* P = *VM; *VM = *VM ^ VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = *VM ^ VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_ATOMIC_XOR_X2
@@ -579,7 +651,7 @@ otherwise keep VDATA value. Operation is atomic.
 Operation:  
 ```
 UINT64* VM = (UINT64*)VMEM(SRSRC, VADDR, SOFFSET, OFFSET)
-UINT64* P = *VM; *VM = *VM ^ VDATA; VDATA = (GLC) ? P : VDATA // atomic
+UINT64 P = *VM; *VM = *VM ^ VDATA; VDATA = (GLC) ? P : VDATA // atomic
 ```
 
 #### BUFFER_LOAD_DWORD
