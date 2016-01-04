@@ -367,7 +367,7 @@ Opcode: 62 (0x3e) for GCN 1.0/1.1; 190 (0xbe) GCN 1.2
 Syntax: DS_APPEND VDST [OFFSET:OFFSET]  
 Description: Append entries to buffer. This instruction increments 32-bit value in
 LDS/GDS at address OFFSET&~3 by number of the active threads, and
-store previous value from LDS/GDS at this same address into VDST.
+store previous value from LDS/GDS at this same address into VDST.  
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (OFFSET&~3))
@@ -381,7 +381,7 @@ Opcode: 61 (0x3d) for GCN 1.0/1.1; 189 (0xbd) GCN 1.2
 Syntax: DS_CONSUME VDST [OFFSET:OFFSET]  
 Description: Consume entries to buffer. This instruction increments 32-bit value in
 LDS/GDS at address OFFSET&~3 by number of the active threads, and
-store previous value from LDS/GDS at this same address into VDST.
+store previous value from LDS/GDS at this same address into VDST.  
 Operation:  
 ```
 UINT32* V = (UINT32*)(DS + (OFFSET&~3))

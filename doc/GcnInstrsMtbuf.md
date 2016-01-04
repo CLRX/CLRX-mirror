@@ -53,7 +53,7 @@ requires 64-bit VADDR.
 
 The MTBUF instructions is executed in order. Any MTBUF instruction increments VMCNT and
 it decrements VMCNT after memory operation. Any memory-write operation incrments EXPCNT,
-and it decrements EXPCNT after writing data to VDATA.
+and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode
 
