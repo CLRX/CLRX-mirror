@@ -41,8 +41,8 @@ Code | Name          | Description
  5   | 16_16         | Two 16-bit component
  6   | 10_11_11      | Two 11-bit and one 10-bit components from lowest bit
  7   | 11_11_10      | One 10-bit and two 11-bit components from lowest bit
- 8   | 2_10_10_10    | One 2-bit and three 10-bit components from lowest bit
- 9   | 10_10_10_2    | Three 10-bit and one 2-bit components from lowest bit
+ 8   | 10_10_10_2    | One 2-bit and three 10-bit components from lowest bit
+ 9   | 2_10_10_10    | Three 10-bit and one 2-bit components from lowest bit
  10  | 8_8_8_8       | Four 8-bit components
  11  | 32_32         | Two 32-bit components
  12  | 16_16_16_16   | Four 16-bit components
