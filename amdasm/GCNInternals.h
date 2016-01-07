@@ -162,6 +162,8 @@ enum : uint16_t
     GCN_MUBUF_MX3 = 0x200,  /// vdata requires 3 registers
     GCN_MUBUF_MX4 = 0x300,  /// vdata requires 4 registers
     GCN_MIMG_SAMPLE = 0x100,    /// last operand is SSAMP (4 sregisters)
+    GCN_MIMG_VDATA4 = 0x200,    /// gather requires 4 vdata registers
+    GCN_MIMG_GATHER = 0x300,    /// gather requires 4 vdata registers
     GCN_MLOAD = 0x1000, // instruction load data to vgprs
     GCN_MATOMIC = 0x2000, // instructin perform atomics and returns data if glc==1
     GCN_FLAT_DDST = 0x00,   // destination as first operand

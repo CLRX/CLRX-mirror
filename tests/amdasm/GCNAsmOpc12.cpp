@@ -1297,7 +1297,7 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0xf00cfb00U, 0x00159d79U, true, true, "" },
     { "    image_atomic_smin  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",
         0xf050fb00U, 0x00159d79U, true, true, "" },
-    { "    image_gather4_lz  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+    { "    image_gather4_lz  v[157:160], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf11cfb00U, 0x02559d79U, true, true, "" },
     /* MIMG new opcodes */
     { "    image_atomic_swap  v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da",

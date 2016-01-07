@@ -2008,8 +2008,11 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     addSpaces(bufPtr, spacesToAdd);
     
     const cxuint dmask = (insnCode>>8)&15;
-    cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
-            ((dmask & 8)?1:0);
+    cxuint dregsNum = 4;
+    if ((gcnInsn.mode & GCN_MIMG_VDATA4) == 0)
+        dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
+                ((dmask & 8)?1:0);
+    
     dregsNum = (dregsNum == 0) ? 1 : dregsNum;
     if (insnCode & 0x10000)
         dregsNum++; // tfe
@@ -2023,8 +2026,7 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     decodeGCNOperand(((insnCode2>>14)&0x7c), (insnCode & 0x8000)?4:8, bufPtr, arch);
     
     const cxuint ssamp = (insnCode2>>21)&0x1f;
-    
-    if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
+    if ((gcnInsn.mode & GCN_MIMG_SAMPLE) != 0)
     {
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
@@ -2063,7 +2065,7 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if ((arch & ARCH_RX3X0)!=0 && (insnCode2 & (1U<<31)) != 0)
         putChars(bufPtr, " d16", 4);
     
-    if ((gcnInsn.mode & GCN_MASK2) != GCN_MIMG_SAMPLE && ssamp != 0)
+    if ((gcnInsn.mode & GCN_MIMG_SAMPLE) == 0 && ssamp != 0)
     {
         putChars(bufPtr, " ssamp=", 7);
         bufPtr += itocstrCStyle(ssamp, bufPtr, 6, 16);

@@ -2169,7 +2169,7 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const char* srsrcPlace = linePtr;
     good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 0);
     
-    if ((gcnInsn.mode & GCN_MASK2) == GCN_MIMG_SAMPLE)
+    if ((gcnInsn.mode & GCN_MIMG_SAMPLE) != 0)
     {
         if (!skipRequiredComma(asmr, linePtr))
             return;
@@ -2266,18 +2266,17 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         }
     }
     
-    if (dmask!=0)
-    {
-        cxuint dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
+    cxuint dregsNum = 4;
+    if ((gcnInsn.mode & GCN_MIMG_VDATA4) == 0)
+        dregsNum = ((dmask & 1)?1:0) + ((dmask & 2)?1:0) + ((dmask & 4)?1:0) +
                 ((dmask & 8)?1:0) + (haveTfe);
-        if (!isXRegRange(vdataReg, dregsNum))
-        {
-            char errorMsg[40];
-            snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
-                     (dregsNum>1) ? "s" : "");
-            asmr.printError(vdataPlace, errorMsg);
-            good = false;
-        }
+    if (dregsNum!=0 && !isXRegRange(vdataReg, dregsNum))
+    {
+        char errorMsg[40];
+        snprintf(errorMsg, 40, "Required %u vector register%s", dregsNum,
+                 (dregsNum>1) ? "s" : "");
+        asmr.printError(vdataPlace, errorMsg);
+        good = false;
     }
     if (!isXRegRange(srsrcReg, (haveR128)?4:8))
     {
