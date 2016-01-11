@@ -191,4 +191,119 @@ LDS_ADDR = LDS_BASE + (M0&0xffff) + LANEID*4
 * LDS_BASE - base address of LDS for wave.
 * M0 - M0 register value
 
+### Image resource format
+
+The image resource can be a 128-bit (for 2D images, 1D images, 2DMSAA images) or
+256 (for 3D images, 2D array of images, 2D cubes and other types).
+
+Bits   | Name       | Description
+-------|------------|------------------------------
+0-39   | BASE       | Base address divided by 256
+40-51  | MINLOD     | Min LOD in format 4.8
+52-57  | DATAFORMAT | Data format
+58-61  | NUMBERFORMAT | Number format
+64-77  | WIDTH      | Image width minus one
+78-91  | HEIGHT     | Image height minus one
+92-94  | PERFMOD    | Scales sampler's perf_z, perf_mip, aniso_bias, lod_bias_sec.
+95     | INTERLACED | Interlaced image (if set)
+96-98  | DST_SEL_X  | Select destination component for X
+99-101 | DST_SEL_Y  | Select destination component for Y
+102-104 | DST_SEL_Z  | Select destination component for Z
+105-107 | DST_SEL_W  | Select destination component for W
+108-111 | BASELEVEL | Base level of MIPMAP
+112-115 | LASTLAVEL | Last level of MIPMAP
+116-120 | TILINGINDEX | Tiling index. Choose Tiling register
+121     | POW2PAD    | Align images to power of 2
+124-127 | TYPE      | Image type
+128-140 | DEPTH     | Image depth minus one
+141-154 | PITCH     | Pitch minus one. Pitch is number of texel in single row.
+160-172 | BASEARRAY | First index of slice in array
+173-185 | LASTARRAY | Last index of slice in array
+192-203 | MINLODWARN | feedback trigger for LOD
+
+The 1D images requires only width parameter.
+The 2D images requires only width and height parameters. Pitch is optional.
+The array of 1D images requires width, depth (for number of slices),
+base and last array (BASEARRAY and LASTARRAY) indices for slices.
+The array of 2D images requires width, height, depth (for number of slices),
+base and last array (BASEARRAY and LASTARRAY) indices for slices.
+The 3D array images requires width, height and depth.
+The 2D cubes requires width, height and base and last array indices of slices.
+The mipmaps are defined by setting base and last level (BASE_LEVEL and LAST_LEVEL).
+
+The image types list:
+
+ Value | Name      | Description
+-------|-----------|--------------------
+ 0     | BUFFER    | Buffer (???)
+ 8     | IMAGE_1D  | 1D image
+ 9     | IMAGE_2D  | 2D image
+ 10    | IMAGE_3D  | 3D image
+ 11    | IMAGE_CUBE | Six 2D images for cube's sides
+ 12    | IMAGE_1D_ARRAY | Array of 1D images
+ 13    | IMAGE_2D_ARRAY | Array of 2D images
+ 14    | IMAGE_2D_MSAA | MSAA 2D image
+ 15    | IMAGE_2D_MSAA_ARRAY | Array of MSAA 2D image
+
+Data formats list:
+
+Code | Name          | Description
+-----|---------------|-------------------------
+ 0   | --            | Invalid
+ 1   | 8             | Single 8-bit component
+ 2   | 16            | Single 16-bit component
+ 3   | 8_8           | Two 8-bit components
+ 4   | 32            | Single 32-bit component
+ 5   | 16_16         | Two 16-bit component
+ 6   | 10_11_11      | Two 11-bit and one 10-bit components from lowest bit
+ 7   | 11_11_10      | One 10-bit and two 11-bit components from lowest bit
+ 8   | 10_10_10_2    | One 2-bit and three 10-bit components from lowest bit
+ 9   | 2_10_10_10    | Three 10-bit and one 2-bit components from lowest bit
+ 10  | 8_8_8_8       | Four 8-bit components
+ 11  | 32_32         | Two 32-bit components
+ 12  | 16_16_16_16   | Four 16-bit components
+ 13  | 32_32_32      | Three 32-bit components
+ 14  | 32_32_32_32   | Four 32-bit components
+ 15  | --            | Reserved
+ 16  | 5_6_5         | 5-bit, 6-bit, 5-bit components
+ 17  | 1_5_5_5       | Three 5-bit and one 1-bit components from lowest bit
+ 18  | 5_5_5_1       | One 1-bit and three 5-bit components from lowest bit
+ 19  | 4_4_4_4       | Four 4-bit components
+ 20  | 8_24          | 24-bit and 8-bit components from lowest bit
+ 21  | 24_8          | 8-bit and 24-bit components from lowest bit
+ 22  | X24_8_32      | ????
+ 32  | GB_GR         | Four 8-bit components in order (0,1,2,0)
+ 33  | BG_RG         | Four 8-bit components in order (1,0,3,1)
+ 34  | 5_9_9_9       | Three 9-bit and one 5-bit components from lowest bit
+ 47  | 
+
+Number formats list:
+
+Code | Name      | ImageR | ImageW | Reg type | Description
+-----|-----------|------|------|----------|--------------------------------
+ 0   | UNORM     |   ✓  |   ✓  | FLOAT    | Unsigned normalized value (0:1)
+ 1   | SNORM     |   ✓  |   ✓  | FLOAT    | Signed normalized value (-1:1) (data: MIN+1:MAX)
+ 2   | USCALED   |   ✓  |      | FLOAT    | Unsigned scaled value
+ 3   | SSCALED   |   ✓  |      | FLOAT    | Signed scaled value
+ 4   | UINT      |   ✓  |   ✓  | UINT32   | Unsigned integer value
+ 5   | SINT      |   ✓  |   ✓  | INT32    | Signed integer value
+ 6   | SNORM_OGL |   ✓  |      | FLOAT    | Signed normalized value (-1:1) (data: MIN:MAX)
+ 7   | FLOAT     |   ✓  |   ✓  | FLOAT    | Single floating point value
+ 8   | reserved  |      |      | --       | --
+ 9   | SRGB      |   ✓  |      | FLOAT    | Like UNORM (???)
+ 10  | UBNORM    |   ✓  |      | FLOAT    | Signed normalized value (-1:1) (data: 1:UMAX)
+ 11  | UBNORM_OGL |   ✓  |      | FLOAT    | Signed normalized value (-1:1) (data: 0:UMAX)
+ 12  | UBINT     |   ✓  |      | FLOAT    | Like UBNORM (???)
+ 13  | UBSCALED   |   ✓  |      | FLOAT    | Signed scaled value (data: 0:UMAX)
+
+### Sampler resource format
+
+
+
 ### Image addressing
+
+The main addressing rules for the images are defined by the tiling registers.
+The TILINGINDEX choose what register control addressing of image. Index 8 (by default)
+choose the linear access. In the most cases images are splitted into the tiles which
+organizes image's data in efficient manner for GPU memory subsystem. Unfortunatelly,
+the fields of a tiling registers and their meanigful are not known (for me).
