@@ -324,8 +324,84 @@ Code | Name      | ImgR | ImgW | Reg type | Description
 
 ### Sampler resource format
 
+Bits   | Name       | Description
+-------|------------|------------------------------
+0-2    | CLAMP_X    | Clamp mode for X dimension
+3-5    | CLAMP_Y    | Clamp mode for Y dimension
+6-8    | CLAMP_Z    | Clamp mode for Z dimension
+12-14  | DEPTH_CMP_FUNC | Depth compare function (???)
+15     | FORCE_UNNORM | Force unnormalized coordinates
+19     | MC_COORD_TRUNC | Truncate coordinates to half of pixel
+20     | FORCE_DEGAMMA | Revert GAMMA on pixels
+27     | TRUNC_COORD |Truncate coordinates (???)
+28     | DISABLE_CUBE_WRAP | Disable cube wrap (???)
+29-30  | FILTER_MODE | Filter mode ???
+32-43  | MIN_LOD    | Minimum LOD in format 4.8
+44-55  | MAX_LOD    | Maximum LOD in format 4.8
+56-59  | PERF_MIP   | Perf mip (???)
+60-63  | PERF_Z     | Perf z (???)
+64-77  | LOD_BIAS   | Lod bias (???) in format 5.8 with sign
+78-83  | LOD_BIAS_SEC | Lod bias secondary in 1.4 with sign
+84-85  | XY_MAG_FILTER | XY magnification filter
+86-87  | XY_MIN_FILTER | XY minification filter
+88-89  | Z_FILTER   | Depth filter
+90-91  | MIP_FILTER | Mip-level filter
+92     | MIP_POINT_PRECLAMP | ???
+93     | DISABLE_LSB_CEIL | ???
+94     | FILTER_PREC_FIX | ???
+96-107 | BORDER_COLOR_PTR | Pointer to border color
+126-127 | BORDER_COLOR_TYPE | Type of border color
 
+The CLAMP mode list:
 
+Code | Name           | Description
+-----|----------------|---------------------------------
+ 0   | TEX_WRAP       | 
+ 1   | TEX_MIRROR     |
+ 2   | TEX_CLAMP_LAST_TEXEL |
+ 3   | TEX_MIRROR_ONCE_LAST_TEXEL |
+ 4   | TEX_CLAMP_HALF_BORDER |
+ 5   | TEX_MIRROR_ONCE_HALF_BORDER |
+ 6   | TEX_CLAMP_BORDER |
+ 7   | TEX_MIRROR_ONCE_BORDER |
+
+Depth compare functions list:
+
+Code | Name          | Description
+-----|---------------|-----------------------------------
+ 0   | TEX_DEPTH_COMPARE_NEVER | Always 0
+ 1   | TEX_DEPTH_COMPARE_LESS | 1 if incoming Z < fetched data
+ 2   | TEX_DEPTH_COMPARE_EQUAL | 1 if incoming Z == fetched data
+ 3   | TEX_DEPTH_COMPARE_LESSEQUAL | 1 if incoming Z <= fetched data
+ 4   | TEX_DEPTH_COMPARE_GREATER | 1 if incoming Z > fetched data
+ 5   | TEX_DEPTH_COMPARE_NOTEQUAL | 1 if incoming Z != fetched data
+ 6   | TEX_DEPTH_COMPARE_GREATEREQUAL | 1 if incoming Z >= fetched data
+ 7   | TEX_DEPTH_COMPARE_ALWAYS | Always 1
+
+The magnification and minification filters list:
+
+Code | Name          | Description
+-----|---------------|-----------------------------------
+ 0   | TEX_XY_FILTER_POINT | Point filter
+ 1   | TEX_XY_FILTER_BILINEAR | Linear filter
+
+The depth and mip filters list:
+
+Code | Name          | Description
+-----|---------------|----------------------
+ 0   | TEX_Z_FILTER_NONE | None filter
+ 1   | TEX_Z_FILTER_POINT | Point filter
+ 2   | TEX_Z_FILTER_LINEAR | Linear filter
+
+The border color types list:
+
+Code | Name          | Description
+-----|---------------|----------------------
+ 0   | TEX_BORDER_COLOR_TRANS_BLACK | Black color fully transparent (0,0,0,0)
+ 1   | TEX_BORDER_COLOR_OPAQUE_BLACK | Black color fully opaque (0,0,0,1)
+ 2   | TEX_BORDER_COLOR_OPAQUE_WHITE | White color fully opaque (1,1,1,1)
+ 3   | TEX_BORDER_COLOR_REGISTER | Get border color from register (BORDER_COLOR_PTR)
+ 
 ### Image addressing
 
 The main addressing rules for the images are defined by the tiling registers.
