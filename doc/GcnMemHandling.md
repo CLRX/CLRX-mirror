@@ -231,7 +231,7 @@ The 3D array images requires width, height and depth.
 The 2D cubes requires width, height and base and last array indices of slices.
 The mipmaps are defined by setting base and last level (BASE_LEVEL and LAST_LEVEL).
 
-The image types list:
+The image types list.
 
  Value | Name      | Description
 -------|-----------|--------------------
@@ -245,41 +245,67 @@ The image types list:
  14    | IMAGE_2D_MSAA | MSAA 2D image
  15    | IMAGE_2D_MSAA_ARRAY | Array of MSAA 2D image
 
-Data formats list:
+Data formats list. The 'ImgR' column indicates whether
+a number format is applicable to read operation, the 'ImgW' column indicates whether
+a number format is applicable to write operation. The 'Reg type' indicates type of
+vector register (input for writing, output for reading).
 
-Code | Name          | Description
------|---------------|-------------------------
- 0   | --            | Invalid
- 1   | 8             | Single 8-bit component
- 2   | 16            | Single 16-bit component
- 3   | 8_8           | Two 8-bit components
- 4   | 32            | Single 32-bit component
- 5   | 16_16         | Two 16-bit component
- 6   | 10_11_11      | Two 11-bit and one 10-bit components from lowest bit
- 7   | 11_11_10      | One 10-bit and two 11-bit components from lowest bit
- 8   | 10_10_10_2    | One 2-bit and three 10-bit components from lowest bit
- 9   | 2_10_10_10    | Three 10-bit and one 2-bit components from lowest bit
- 10  | 8_8_8_8       | Four 8-bit components
- 11  | 32_32         | Two 32-bit components
- 12  | 16_16_16_16   | Four 16-bit components
- 13  | 32_32_32      | Three 32-bit components
- 14  | 32_32_32_32   | Four 32-bit components
- 15  | --            | Reserved
- 16  | 5_6_5         | 5-bit, 6-bit, 5-bit components
- 17  | 1_5_5_5       | Three 5-bit and one 1-bit components from lowest bit
- 18  | 5_5_5_1       | One 1-bit and three 5-bit components from lowest bit
- 19  | 4_4_4_4       | Four 4-bit components
- 20  | 8_24          | 24-bit and 8-bit components from lowest bit
- 21  | 24_8          | 8-bit and 24-bit components from lowest bit
- 22  | X24_8_32      | ????
- 32  | GB_GR         | Four 8-bit components in order (0,1,2,0)
- 33  | BG_RG         | Four 8-bit components in order (1,0,3,1)
- 34  | 5_9_9_9       | Three 9-bit and one 5-bit components from lowest bit
- 47  | 
+Code | Name          | ImgR | ImgW | Description
+-----|---------------|------|------|-------------------------
+ 0   | --            |      |      | Invalid
+ 1   | 8             |   ✓  |   ✓  | Single 8-bit component
+ 2   | 16            |   ✓  |   ✓  | Single 16-bit component
+ 3   | 8_8           |   ✓  |   ✓  | Two 8-bit components
+ 4   | 32            |   ✓  |   ✓  | Single 32-bit component
+ 5   | 16_16         |   ✓  |   ✓  | Two 16-bit component
+ 6   | 10_11_11      |   ✓  |   ✓  | Two 11-bit and one 10-bit components from lowest bit
+ 7   | 11_11_10      |   ✓  |   ✓  | One 10-bit and two 11-bit components from lowest bit
+ 8   | 10_10_10_2    |   ✓  |   ✓  | One 2-bit and three 10-bit components from lowest bit
+ 9   | 2_10_10_10    |   ✓  |   ✓  | Three 10-bit and one 2-bit components from lowest bit
+ 10  | 8_8_8_8       |   ✓  |   ✓  | Four 8-bit components
+ 11  | 32_32         |   ✓  |   ✓  | Two 32-bit components
+ 12  | 16_16_16_16   |   ✓  |   ✓  | Four 16-bit components
+ 13  | 32_32_32      |   ✓  |   ✓  | Three 32-bit components
+ 14  | 32_32_32_32   |   ✓  |   ✓  | Four 32-bit components
+ 15  | --            |   ✓  |   ✓  | Reserved
+ 16  | 5_6_5         |   ✓  |   ✓  | 5-bit, 6-bit, 5-bit components
+ 17  | 1_5_5_5       |   ✓  |   ✓  | Three 5-bit and one 1-bit components from lowest bit
+ 18  | 5_5_5_1       |   ✓  |   ✓  | One 1-bit and three 5-bit components from lowest bit
+ 19  | 4_4_4_4       |   ✓  |   ✓  | Four 4-bit components
+ 20  | 8_24          |   ✓  |      | 24-bit and 8-bit components from lowest bit
+ 21  | 24_8          |   ✓  |      | 8-bit and 24-bit components from lowest bit
+ 22  | X24_8_32      |   ✓  |      | ????
+ 32  | GB_GR         |   ✓  |      | Four 8-bit components in order (0,1,2,0)
+ 33  | BG_RG         |   ✓  |      | Four 8-bit components in order (1,0,3,1)
+ 34  | 5_9_9_9       |   ✓  |      | Three 9-bit and one 5-bit components from lowest bit
+ 35  | BC1           |   ✓  |      | ????
+ 36  | BC2           |   ✓  |      | ????
+ 37  | BC3           |   ✓  |      | ????
+ 38  | BC4           |   ✓  |      | ????
+ 39  | BC5           |   ✓  |      | ????
+ 40  | BC6           |   ✓  |      | ????
+ 41  | BC7           |   ✓  |      | ????
+ 47  | FMASK_8_1     |   ✓  |   ✓  | 8-bit FMASK, 1 fragment per sample
+ 48  | FMASK_8_2     |   ✓  |   ✓  | 8-bit FMASK, 2 fragments per sample
+ 49  | FMASK_8_4     |   ✓  |   ✓  | 8-bit FMASK, 4 fragments per sample
+ 50  | FMASK_16_1    |   ✓  |   ✓  | 16-bit FMASK, 1 fragment per sample
+ 51  | FMASK_16_2    |   ✓  |   ✓  | 16-bit FMASK, 2 fragments per sample
+ 52  | FMASK_32_2    |   ✓  |   ✓  | 32-bit FMASK, 2 fragments per sample
+ 53  | FMASK_32_4    |   ✓  |   ✓  | 32-bit FMASK, 4 fragments per sample
+ 54  | FMASK_32_8    |   ✓  |   ✓  | 32-bit FMASK, 8 fragments per sample
+ 55  | FMASK_64_4    |   ✓  |   ✓  | 64-bit FMASK, 4 fragments per sample
+ 56  | FMASK_64_8    |   ✓  |   ✓  | 64-bit FMASK, 8 fragments per sample
+ 57  | 4_4           |   ✓  |      | Two 4-bit components
+ 58  | 6_5_5         |   ✓  |      | Two 5-bit and one 6-bit components from lowest bit
+ 59  | 1             |   ✓  |      | 1-bit component (size: 1-bit)
+ 60  | 1_REVERSED    |   ✓  |      | Reversed 1-bit component (size: 1-bit)
+ 61  | 32_AS_8       |   ✓  |      | ???
+ 62  | 32_AS_8_8     |   ✓  |      | ???
+ 63  | 32_AS_32_32_32_32 |   ✓  |      | ???
 
 Number formats list:
 
-Code | Name      | ImageR | ImageW | Reg type | Description
+Code | Name      | ImgR | ImgW | Reg type | Description
 -----|-----------|------|------|----------|--------------------------------
  0   | UNORM     |   ✓  |   ✓  | FLOAT    | Unsigned normalized value (0:1)
  1   | SNORM     |   ✓  |   ✓  | FLOAT    | Signed normalized value (-1:1) (data: MIN+1:MAX)
