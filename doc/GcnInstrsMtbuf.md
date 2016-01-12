@@ -19,7 +19,7 @@ Bits  | Name     | Description
 23-25 | NFMT     | Number format
 26-31 | ENCODING | Encoding type. Must be 0b111010
 32-39 | VADDR    | Vector address registers
-40-47 | VDATA    | Vector data register
+40-47 | VDATA    | Vector data registers
 48-52 | SRSRC    | Scalar registers with buffer resource (SGPR# is 4*value)
 54    | SLC      | System level coherent
 55    | TFE      | Texture Fail Enable ???
@@ -38,7 +38,7 @@ Bits  | Name     | Description
 23-25 | NFMT     | Number format
 26-31 | ENCODING | Encoding type. Must be 0b111010
 32-39 | VADDR    | Vector address registers
-40-47 | VDATA    | Vector data register
+40-47 | VDATA    | Vector data registers
 48-52 | SRSRC    | Scalar registers with buffer resource (SGPR# is 4*value)
 54    | SLC      | System level coherent
 55    | TFE      | Texture Fail Enable ???
@@ -52,12 +52,12 @@ The TFE flag requires additional the VDATA register. IDXEN and OFFEN both enable
 requires 64-bit VADDR.
 
 The MTBUF instructions is executed in order. Any MTBUF instruction increments VMCNT and
-it decrements VMCNT after memory operation. Any memory-write operation incrments EXPCNT,
+it decrements VMCNT after memory operation. Any memory-write operation increments EXPCNT,
 and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode
 
-List of the MUBUF instructions by opcode (GCN 1.0/1.1):
+List of the MTBUF instructions by opcode (GCN 1.0/1.1):
 
  Opcode     |GCN 1.0|GCN 1.1|GCN 1.2| Mnemonic
 ------------|-------|-------|-------|---------------------------

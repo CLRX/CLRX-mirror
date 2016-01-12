@@ -52,7 +52,7 @@ The TFE flag requires additional the VDATA register. IDXEN and OFFEN both enable
 requires 64-bit VADDR.
 
 The MUBUF instructions is executed in order. Any MUBUF instruction increments VMCNT and
-it decrements VMCNT after memory operation. Any memory-write operation incrments EXPCNT,
+it decrements VMCNT after memory operation. Any memory-write operation increments EXPCNT,
 and it decrements EXPCNT after reading data from VDATA.
 
 ### Instructions by opcode

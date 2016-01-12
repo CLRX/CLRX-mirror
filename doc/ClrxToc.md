@@ -47,5 +47,6 @@ Copyright (c)  2015-2016  Mateusz Szpakowski.
     * [Main memory handling](GcnMemHandling)
     * [MUBUF instructions](GcnInstrsMubuf)
     * [MTBUF instructions](GcnInstrsMtbuf)
+    * [MIMG instructions](GcnInstrsMimg)
 
 ---

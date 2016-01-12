@@ -401,7 +401,7 @@ Code | Name          | Description
  1   | TEX_BORDER_COLOR_OPAQUE_BLACK | Black color fully opaque (0,0,0,1)
  2   | TEX_BORDER_COLOR_OPAQUE_WHITE | White color fully opaque (1,1,1,1)
  3   | TEX_BORDER_COLOR_REGISTER | Get border color from register (BORDER_COLOR_PTR)
- 
+
 ### Image addressing
 
 The main addressing rules for the images are defined by the tiling registers.
