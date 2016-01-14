@@ -273,8 +273,8 @@ VDATA = (GLC) ? P : VDATA // atomic
 
 Opcode: 16 (0x10) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
 Syntax: IMAGE_ATOMIC_CMPSWAP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
-Description: First half of VDATA into image SRSRC to pixel at address VADDR if
-second halof of VDATA is equal old value from image's pixel, otherwise keep
+Description: Store first half of VDATA into image SRSRC to pixel at address VADDR if
+second half of VDATA is equal old value from image's pixel, otherwise keep
 old value from that pixel. Data type determined by image data format and half number of
 enabled bits in DMASK. Four dword data types are not supported.
 If GLC is set then return old values from image, otherwise keep VDATA value.
@@ -309,6 +309,34 @@ else    // add 64-bit dwords
         ((UINT64*)VM)[i] = (((UINT64*)VM)[i] <= VDATA[i] && ((UINT64*)VM)[i]!=0) ? \
                  ((UINT64*)VM)[i]-1 : VDATA[i]
 VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_FCMPSWAP
+
+Opcode: 29 (0x1d) for GCN 1.0/1.1  
+Syntax: IMAGE_ATOMIC_FCMPSWAP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Store first single/double floating point value of VDATA into image
+SRSRC to pixel at address VADDR if second single/double FP of VDATA is equal old value
+from image's pixel, otherwise keep old value from that pixel.
+Data type determined by image data format and half number of
+enabled bits in DMASK. Four dword data types are not supported.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+if (sizeof(PIXELTYPE)==8)
+{
+    DOUBLE P = *VM; 
+    *VM = *VM==ASDOUBLE(VDATA[1]) ? VDATA[0] : *VM // part of atomic
+    VDATA[0] = (GLC) ? P : VDATA[0] // last part of atomic
+}
+else
+{
+    FLOAT P = *VM; 
+    *VM = *VM==ASFLOAT(VDATA[1]) ? VDATA[0] : *VM // part of atomic
+    VDATA[0] = (GLC) ? P : VDATA[0] // last part of atomic
+}
 ```
 
 #### IMAGE_ATOMIC_INC
