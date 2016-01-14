@@ -227,10 +227,100 @@ List of the MIMG instructions by opcode (GCN 1.2):
  110 (0x6e) | IMAGE_SAMPLE_C_CD_O
  111 (0x6f) | IMAGE_SAMPLE_C_CD_CL_O
 
-
 ### Instruction set
 
 Alphabetically sorted instruction list:
+
+#### IMAGE_ATOMIC_ADD
+
+Opcode: 17 (0x11) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
+Syntax: IMAGE_ATOMIC_ADD VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Add VDATA dwords or 64-bit words (if VDATA size is greater than 32-bit)
+to values of image SRSRC at address VADDR. If GLC is set then return old values
+from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
+are supported. Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((UINT*)VM)[0] = VDATA[0]+((UINT*)VM)[0]
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((UINT64*)VM)[i] = VDATA[i]+((UINT64*)VM)[i]
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_CMPSWAP
+
+Opcode: 16 (0x10) for GCN 1.0/1.1; 17 (0x11) for GCN 1.2  
+Syntax: IMAGE_ATOMIC_CMPSWAP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: First half of VDATA into image SRSRC to pixel at address VADDR if
+second halof of VDATA is equal old value from image's pixel, otherwise keep
+old value from that pixel. Data type determined by image data format and half number of
+enabled bits in DMASK. Four dword data types are not supported.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE VDL = VDATA[0:(VDATA_SIZE>>1)-1]
+PIXELTYPE VDH = VDATA[VDATA_SIZE>>1:VDATA_SIZE-1]
+PIXELTYPE P = *VM; *VM = *VM==(VDH) ? VDL : *VM // part of atomic
+VDATA[0:(VDATA_SIZE>>1)-1] = (GLC) ? P : VDL // last part of atomic
+```
+
+#### IMAGE_ATOMIC_RSUB
+
+Opcode: 19 (0x13) for GCN 1.0/1.1  
+Syntax: IMAGE_ATOMIC_RSUB VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Subtract values of image SRSRC at address VADDR from VDATA dwords or 64-bit
+words (if VDATA size is greater than 32-bit). If GLC is set then return old values
+from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
+are supported. Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((UINT*)VM)[0] = ((UINT*)VM)[0]-VDATA[0]
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((UINT64*)VM)[i] = ((UINT64*)VM)[i]-VDATA[i]
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_SUB
+
+Opcode: 18 (0x12) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
+Syntax: IMAGE_ATOMIC_SUB VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Subtract VDATA dwords or 64-bit words (if VDATA size is greater than 32-bit)
+from values of image SRSRC at address VADDR. If GLC is set then return old values
+from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
+are supported. Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((UINT*)VM)[0] = VDATA[0]-((UINT*)VM)[0]
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((UINT64*)VM)[i] = VDATA[i]-((UINT64*)VM)[i]
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_SWAP
+
+Opcode: 15 (0xf) for GCN 1.0/1.1; 16 (0x10) for GCN 1.2  
+Syntax: IMAGE_ATOMIC_SWAP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Store VDATA into image SRSRC to pixel at address VADDR. If GLC is set then
+return old values from image, otherwise keep VDATA value. Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM; *VM = VDATA; VDATA = (GLC) ? P : VDATA // atomic
+```
 
 #### IMAGE_LOAD
 
@@ -240,7 +330,7 @@ Description: Load data from image SRSRC from pixel at address VADDR, and store t
 to VDATA. Loaded data are converted to format given in image resource.  
 Operation:  
 ```
-UINT* V = VMIMG(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG(SRSRC, VADDR)
 VDATA = GET_SAMPLES(CONVERT_FROM_IMAGE(SRSRC, V), DMASK)
 ```
 
@@ -253,7 +343,7 @@ and store their data to VDATA. Loaded data are converted to format given in
 image resource.  
 Operation:  
 ```
-UINT* V = VMIMG_MIP(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG_MIP(SRSRC, VADDR)
 VDATA = GET_SAMPLES(CONVERT_FROM_IMAGE(SRSRC, V), DMASK)
 ```
 
@@ -266,7 +356,7 @@ and store their data to VDATA. Loaded data are raw without any conversion. DMASK
 what dwords will be stored to VDATA.  
 Operation:  
 ```
-UINT* V = VMIMG_MIP(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG_MIP(SRSRC, VADDR)
 VDATA = GET_SAMPLES(V, DMASK)
 ```
 
@@ -279,7 +369,7 @@ and store their data to VDATA. Loaded data are raw without any conversion,
 but sign extended. DMASK controls what dwords will be stored to VDATA.  
 Operation:  
 ```
-UINT* V = VMIMG_MIP(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG_MIP(SRSRC, VADDR)
 VDATA = GET_SAMPLES(V, DMASK)
 BYTE COMPBITS = COMPBITS(SRSRC)
 for (BYTE i = 0; i < BIT_CNT(DMASK); i++)
@@ -295,7 +385,7 @@ to VDATA. Loaded data are raw without any conversion. DMASK controls what dwords
 will be stored to VDATA.  
 Operation:  
 ```
-UINT* V = VMIMG(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG(SRSRC, VADDR)
 VDATA = GET_SAMPLES(V, DMASK)
 ```
 
@@ -308,7 +398,7 @@ to VDATA. Loaded data are raw without any conversion, but sign extended.
 DMASK controls what dwords will be stored to VDATA.  
 Operation:  
 ```
-UINT* V = VMIMG(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG(SRSRC, VADDR)
 VDATA = GET_SAMPLES(V, DMASK)
 BYTE COMPBITS = COMPBITS(SRSRC)
 for (BYTE i = 0; i < BIT_CNT(DMASK); i++)
@@ -323,7 +413,7 @@ Description: Store data VDATA into image SRSRC to pixel at address VADDR. Data i
 is in format given image resource.  
 Operation:  
 ```
-UINT* V = VMIMG(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG(SRSRC, VADDR)
 STORE_IMAGE(V, CONVERT_TO_IMAGE(SRSRC, VDATA), DMASK)
 ```
 
@@ -335,7 +425,7 @@ Description: Store data VDATA into image SRSRC to pixel at address VADDR includi
 MIP index. Data in VDATA is in format given image resource.  
 Operation:  
 ```
-UINT* V = VMIMG_MIP (SRSRC, VADDR)
+PIXELTYPE* V = VMIMG_MIP (SRSRC, VADDR)
 STORE_IMAGE(V, CONVERT_TO_IMAGE(SRSRC, VDATA), DMASK)
 ```
 
@@ -347,7 +437,7 @@ Description: Store data VDATA into image SRSRC to pixel at address VADDR. Data i
 is in raw format.  
 Operation:  
 ```
-UINT* V = VMIMG(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG(SRSRC, VADDR)
 STORE_IMAGE(V, VDATA, DMASK)
 ```
 
@@ -359,6 +449,6 @@ Description: Store data VDATA into image SRSRC to pixel at address VADDR includi
 MIP index. Data in VDATA is in raw format.  
 Operation:  
 ```
-UINT* V = VMIMG_MIP(SRSRC, VADDR)
+PIXELTYPE* V = VMIMG_MIP(SRSRC, VADDR)
 STORE_IMAGE(V, VDATA, DMASK)
 ```
