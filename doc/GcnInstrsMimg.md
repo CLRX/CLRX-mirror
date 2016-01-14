@@ -236,7 +236,8 @@ Alphabetically sorted instruction list:
 Opcode: 17 (0x11) for GCN 1.0/1.1; 18 (0x12) for GCN 1.2  
 Syntax: IMAGE_ATOMIC_ADD VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Add VDATA dwords or 64-bit words (if VDATA size is greater than 32-bit)
-to values of image SRSRC at address VADDR. If GLC is set then return old values
+to values of image SRSRC at address VADDR, and store result into image.
+If GLC is set then return old values
 from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
 are supported. Operation is atomic.  
 Operation:  
@@ -248,6 +249,23 @@ if (sizeof(PIXELTYPE)==4)
 else    // add 64-bit dwords
     for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
         ((UINT64*)VM)[i] = VDATA[i]+((UINT64*)VM)[i]
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_AND
+
+Opcode: 24 (0x18)  
+Syntax: IMAGE_ATOMIC_AND VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Do bitwise AND on VDATA dwords and values of image SRSRC at address VADDR,
+and store result into image. If GLC is set then return old values from image,
+otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats are supported.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+for (BYTE i = 0; i < (sizeof(VDATA)>>2); i++)
+    ((UINT*)VM)[i] = VDATA[i] & ((UINT*)VM)[i]
 VDATA = (GLC) ? P : VDATA // atomic
 ```
 
@@ -270,14 +288,75 @@ PIXELTYPE P = *VM; *VM = *VM==(VDH) ? VDL : *VM // part of atomic
 VDATA[0:(VDATA_SIZE>>1)-1] = (GLC) ? P : VDL // last part of atomic
 ```
 
+#### IMAGE_ATOMIC_DEC
+
+Opcode: 28 (0x1c)  
+Syntax: IMAGE_ATOMIC_DEC VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Compare dwords or 64-bit words (if VDATA size is greater than 32-bit)
+of image SRSRC and if less or equal than VDATA words and this value is not zero,
+then decrement value from image, otherwise store VDATA into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats are supported. Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((UINT*)VM)[0] = (*(UINT*)VM <= VDATA[0] && *(UINT*)VM!=0) ? \
+        *(UINT*)VM-1 : VDATA
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((UINT64*)VM)[i] = (((UINT64*)VM)[i] <= VDATA[i] && ((UINT64*)VM)[i]!=0) ? \
+                 ((UINT64*)VM)[i]-1 : VDATA[i]
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_INC
+
+Opcode: 27 (0x1b)  
+Syntax: IMAGE_ATOMIC_INC VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Compare dwords or 64-bit words (if VDATA size is greater than 32-bit) of
+image SRSRC and if less than VDATA words, then increment value from image,
+otherwise store zero into image. If GLC is set then return old values from image,
+otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats are supported.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((UINT*)VM)[0] = (*(UINT*)VM < VDATA[0]) ? *(UINT*)VM-1 : 0
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((UINT64*)VM)[i] = (((UINT64*)VM)[i] < VDATA[i]) ? ((UINT64*)VM)[i]+1 : 0
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_OR
+
+Opcode: 25 (0x19)  
+Syntax: IMAGE_ATOMIC_OR VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Do bitwise OR on VDATA dwords and values of image SRSRC at address VADDR,
+and store result into image. If GLC is set then return old values from image,
+otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats are supported.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+for (BYTE i = 0; i < (sizeof(VDATA)>>2); i++)
+    ((UINT*)VM)[i] = VDATA[i] | ((UINT*)VM)[i]
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
 #### IMAGE_ATOMIC_RSUB
 
 Opcode: 19 (0x13) for GCN 1.0/1.1  
 Syntax: IMAGE_ATOMIC_RSUB VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Subtract values of image SRSRC at address VADDR from VDATA dwords or 64-bit
-words (if VDATA size is greater than 32-bit). If GLC is set then return old values
-from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
-are supported. Operation is atomic.  
+words (if VDATA size is greater than 32-bit), and store result into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats are supported. Operation is atomic.  
 Operation:  
 ```
 PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
@@ -296,9 +375,9 @@ Opcode: 21 (0x15)
 Syntax: IMAGE_ATOMIC_SMAX VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Choose greatest signed dwords or 64-bit words
 (if VDATA size is greater than 32-bit) between VDATA values and
-values of image SRSRC at address VADDR. If GLC is set then return old values
-from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
-are supported. Operation is atomic.  
+values of image SRSRC at address VADDR, and store result into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats are supported. Operation is atomic.  
 Operation:  
 ```
 PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
@@ -317,9 +396,9 @@ Opcode: 20 (0x14)
 Syntax: IMAGE_ATOMIC_SMIN VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Choose smallest signed dwords or 64-bit words
 (if VDATA size is greater than 32-bit) between VDATA values and
-values of image SRSRC at address VADDR. If GLC is set then return old values
-from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
-are supported. Operation is atomic.  
+values of image SRSRC at address VADDR, and store result into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats are supported. Operation is atomic.  
 Operation:  
 ```
 PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
@@ -337,8 +416,9 @@ VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 18 (0x12) for GCN 1.0/1.1; 19 (0x13) for GCN 1.2  
 Syntax: IMAGE_ATOMIC_SUB VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Subtract VDATA dwords or 64-bit words (if VDATA size is greater than 32-bit)
-from values of image SRSRC at address VADDR. If GLC is set then return old values
-from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
+from values of image SRSRC at address VADDR, and store result into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats
 are supported. Operation is atomic.  
 Operation:  
 ```
@@ -370,9 +450,9 @@ Opcode: 23 (0x17)
 Syntax: IMAGE_ATOMIC_UMAX VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Choose greatest unsigned dwords or 64-bit words
 (if VDATA size is greater than 32-bit) between VDATA values and
-values of image SRSRC at address VADDR. If GLC is set then return old values
-from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
-are supported. Operation is atomic.  
+values of image SRSRC at address VADDR, and store result into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats are supported. Operation is atomic.  
 Operation:  
 ```
 PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
@@ -391,9 +471,9 @@ Opcode: 22 (0x16)
 Syntax: IMAGE_ATOMIC_UMIN VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Choose smallest unsigned dwords or 64-bit words
 (if VDATA size is greater than 32-bit) between VDATA values and
-values of image SRSRC at address VADDR. If GLC is set then return old values
-from image, otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats
-are supported. Operation is atomic.  
+values of image SRSRC at address VADDR, and store result into image.
+If GLC is set then return old values from image, otherwise keep VDATA value.
+Only 32-bit, 64-bit and 128-bit data formats are supported. Operation is atomic.  
 Operation:  
 ```
 PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
@@ -403,6 +483,23 @@ if (sizeof(PIXELTYPE)==4)
 else    // add 64-bit dwords
     for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
         ((UINT64*)VM)[i] = MIN(VDATA[i],((UINT64*)VM)[i])
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_XOR
+
+Opcode: 26 (0x1a)  
+Syntax: IMAGE_ATOMIC_XOR VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Do bitwise XOR on VDATA dwords and values of image SRSRC at address VADDR,
+and store result into image. If GLC is set then return old values from image,
+otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats are supported.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+for (BYTE i = 0; i < (sizeof(VDATA)>>2); i++)
+    ((UINT*)VM)[i] = VDATA[i] ^ ((UINT*)VM)[i]
 VDATA = (GLC) ? P : VDATA // atomic
 ```
 
