@@ -1,4 +1,4 @@
-## GCN ISA MTBUF instructions
+## GCN ISA MIMG instructions
 
 These instructions allow to access to images. MIMG instructions
 operates on the image resources and on the sampler resources.
@@ -232,3 +232,133 @@ List of the MIMG instructions by opcode (GCN 1.2):
 
 Alphabetically sorted instruction list:
 
+#### IMAGE_LOAD
+
+Opcode: 0 (0x0)  
+Syntax: IMAGE_LOAD VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Load data from image SRSRC from pixel at address VADDR, and store their data
+to VDATA. Loaded data are converted to format given in image resource.  
+Operation:  
+```
+UINT* V = VMIMG(SRSRC, VADDR)
+VDATA = GET_SAMPLES(CONVERT_FROM_IMAGE(SRSRC, V), DMASK)
+```
+
+#### IMAGE_LOAD_MIP
+
+Opcode: 1 (0x1)  
+Syntax: IMAGE_LOAD_MIP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Load data from image SRSRC from pixel at address VADDR including MIP index,
+and store their data to VDATA. Loaded data are converted to format given in
+image resource.  
+Operation:  
+```
+UINT* V = VMIMG_MIP(SRSRC, VADDR)
+VDATA = GET_SAMPLES(CONVERT_FROM_IMAGE(SRSRC, V), DMASK)
+```
+
+#### IMAGE_LOAD_MIP_PCK
+
+Opcode: 4 (0x4)  
+Syntax: IMAGE_LOAD_MIP_PCK VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Load data from image SRSRC from pixel at address VADDR including MIP index,
+and store their data to VDATA. Loaded data are raw without any conversion. DMASK controls
+what dwords will be stored to VDATA.  
+Operation:  
+```
+UINT* V = VMIMG_MIP(SRSRC, VADDR)
+VDATA = GET_SAMPLES(V, DMASK)
+```
+
+#### IMAGE_LOAD_MIP_PCK_SGN
+
+Opcode: 5 (0x5)  
+Syntax: IMAGE_LOAD_MIP_PCK_SGN VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Load data from image SRSRC from pixel at address VADDR including MIP index,
+and store their data to VDATA. Loaded data are raw without any conversion,
+but sign extended. DMASK controls what dwords will be stored to VDATA.  
+Operation:  
+```
+UINT* V = VMIMG_MIP(SRSRC, VADDR)
+VDATA = GET_SAMPLES(V, DMASK)
+BYTE COMPBITS = COMPBITS(SRSRC)
+for (BYTE i = 0; i < BIT_CNT(DMASK); i++)
+    VDATA[i] = SEXT(VDATA[i], COMPBITS)
+```
+
+#### IMAGE_LOAD_PCK
+
+Opcode: 2 (0x2)  
+Syntax: IMAGE_LOAD_PCK VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Load data from image SRSRC from pixel at address VADDR, and store their data
+to VDATA. Loaded data are raw without any conversion. DMASK controls what dwords
+will be stored to VDATA.  
+Operation:  
+```
+UINT* V = VMIMG(SRSRC, VADDR)
+VDATA = GET_SAMPLES(V, DMASK)
+```
+
+#### IMAGE_LOAD_PCK_SGN
+
+Opcode: 3 (0x3)  
+Syntax: IMAGE_LOAD_PCK_SGN VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Load data from image SRSRC from pixel at address VADDR, and store their data
+to VDATA. Loaded data are raw without any conversion, but sign extended.
+DMASK controls what dwords will be stored to VDATA.  
+Operation:  
+```
+UINT* V = VMIMG(SRSRC, VADDR)
+VDATA = GET_SAMPLES(V, DMASK)
+BYTE COMPBITS = COMPBITS(SRSRC)
+for (BYTE i = 0; i < BIT_CNT(DMASK); i++)
+    VDATA[i] = SEXT(VDATA[i], COMPBITS)
+```
+
+#### IMAGE_STORE
+
+Opcode: 8 (0x8)  
+Syntax: IMAGE_STORE VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Store data VDATA into image SRSRC to pixel at address VADDR. Data in VDATA
+is in format given image resource.  
+Operation:  
+```
+UINT* V = VMIMG(SRSRC, VADDR)
+STORE_IMAGE(V, CONVERT_TO_IMAGE(SRSRC, VDATA), DMASK)
+```
+
+#### IMAGE_STORE_MIP
+
+Opcode: 9 (0x9)  
+Syntax: IMAGE_STORE_MIP VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Store data VDATA into image SRSRC to pixel at address VADDR including
+MIP index. Data in VDATA is in format given image resource.  
+Operation:  
+```
+UINT* V = VMIMG_MIP (SRSRC, VADDR)
+STORE_IMAGE(V, CONVERT_TO_IMAGE(SRSRC, VDATA), DMASK)
+```
+
+#### IMAGE_STORE_PCK
+
+Opcode: 10 (0xa)  
+Syntax: IMAGE_STORE_PCK VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Store data VDATA into image SRSRC to pixel at address VADDR. Data in VDATA
+is in raw format.  
+Operation:  
+```
+UINT* V = VMIMG(SRSRC, VADDR)
+STORE_IMAGE(V, VDATA, DMASK)
+```
+
+#### IMAGE_STORE_MIP_PCK
+
+Opcode: 11 (0xb)  
+Syntax: IMAGE_STORE_MIP_PCK VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Store data VDATA into image SRSRC to pixel at address VADDR including
+MIP index. Data in VDATA is in raw format.  
+Operation:  
+```
+UINT* V = VMIMG_MIP(SRSRC, VADDR)
+STORE_IMAGE(V, VDATA, DMASK)
+```
