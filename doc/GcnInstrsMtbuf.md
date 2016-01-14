@@ -44,7 +44,7 @@ Bits  | Name     | Description
 55    | TFE      | Texture Fail Enable ???
 56-63 | SOFFSET  | Scalar base offset operand
 
-Instruction syntax: INSTRUCTION VDATA, VADDR, SRSRC(4), SOFFSET [MODIFIERS]
+Instruction syntax: INSTRUCTION VDATA, VADDR(1:2), SRSRC(4), SOFFSET [MODIFIERS]
 
 Modifiers can be supplied in any order. Modifiers list:
 OFFEN, IDXEN, SLC, GLC, TFE, ADDR64, LDS, OFFSET:OFFSET, FORMAT:[DFMT,NFMT].
@@ -90,87 +90,87 @@ Alphabetically sorted instruction list:
 #### TBUFFER_LOAD_FORMAT_X
 
 Opcode: 0 (0x0)  
-Syntax: TBUFFER_LOAD_FORMAT_X VDATA, VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_X VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load the first component of the element from SRSRC including format from
 instruction fields.  
 Operation:  
 ```
-VDATA = LOAD_FORMAT_X(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT)
+VDATA = LOAD_FORMAT_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 ```
 
 #### TBUFFER_LOAD_FORMAT_XY
 
 Opcode: 1 (0x1)  
-Syntax: TBUFFER_LOAD_FORMAT_XY VDATA(2), VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_XY VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load the two first components of the element from SRSRC including format from
 instruction fields.  
 Operation:  
 ```
-VDATA = LOAD_FORMAT_XY(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT)
+VDATA = LOAD_FORMAT_XY(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 ```
 
 #### TBUFFER_LOAD_FORMAT_XYZ
 
 Opcode: 2 (0x2)  
-Syntax: TBUFFER_LOAD_FORMAT_XYZ VDATA(3), VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_XYZ VDATA(3), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load the three first components of the element from SRSRC including format
 from instruction fields.  
 Operation:  
 ```
-VDATA = LOAD_FORMAT_XYZ(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT)
+VDATA = LOAD_FORMAT_XYZ(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 ```
 
 #### TBUFFER_LOAD_FORMAT_XYZW
 
 Opcode: 3 (0x3)  
-Syntax: TBUFFER_LOAD_FORMAT_XYZW VDATA(4), VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_LOAD_FORMAT_XYZW VDATA(4), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Load four components of the element from SRSRC including format
 from instruction fields.  
 Operation:  
 ```
-VDATA = LOAD_FORMAT_XYZW(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT)
+VDATA = LOAD_FORMAT_XYZW(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT)
 ```
 
 #### TBUFFER_STORE_FORMAT_X
 
 Opcode: 4 (0x4)  
-Syntax: TBUFFER_STORE_FORMAT_X VDATA, VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_X VDATA, VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the first component of the element into SRSRC resource
 including format from instruction fields.  
 Operation:  
 ```
-STORE_FORMAT_X(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT, VDATA)
+STORE_FORMAT_X(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 ```
 
 #### TBUFFER_STORE_FORMAT_XY
 
 Opcode: 5 (0x5)  
-Syntax: TBUFFER_STORE_FORMAT_XY VDATA(2), VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_XY VDATA(2), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the first two components of the element into SRSRC resource
 including format from instruction fields.  
 Operation:  
 ```
-STORE_FORMAT_XY(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT, VDATA)
+STORE_FORMAT_XY(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 ```
 
 #### TBUFFER_STORE_FORMAT_XYZ
 
 Opcode: 6 (0x6)  
-Syntax: TBUFFER_STORE_FORMAT_XYZ VDATA(3), VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_XYZ VDATA(3), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the first three components of the element into SRSRC resource
 including format from instruction fields.  
 Operation:  
 ```
-STORE_FORMAT_XYZ(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT, VDATA)
+STORE_FORMAT_XYZ(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 ```
 
 #### TBUFFER_STORE_FORMAT_XYZW
 
 Opcode: 7 (0x7)  
-Syntax: TBUFFER_STORE_FORMAT_XYZW VDATA(4), VADDR, SRSRC(4), SOFFSET  
+Syntax: TBUFFER_STORE_FORMAT_XYZW VDATA(4), VADDR(1:2), SRSRC(4), SOFFSET  
 Description: Store the all components of the element into SRSRC resource
 including format from instruction fields.  
 Operation:  
 ```
-STORE_FORMAT_XYZW(SRSRC, VADDR, SOFFSET, OFFSET, DFMT, NFMT, VDATA)
+STORE_FORMAT_XYZW(SRSRC, VADDR(1:2), SOFFSET, OFFSET, DFMT, NFMT, VDATA)
 ```
