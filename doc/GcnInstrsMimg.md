@@ -339,6 +339,48 @@ else
 }
 ```
 
+#### IMAGE_ATOMIC_FMAX
+
+Opcode: 30 (0x1e)  
+Syntax: IMAGE_ATOMIC_FMAX VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Choose greatest single or double (if VDATA size is greater than 32-bit)
+floating point values between VDATA values and values of image SRSRC at address VADDR,
+and store result into image. If GLC is set then return old values from image,
+otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats are supported.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((FLOAT*)VM)[0] = MAX(ASFLOAT(VDATA[0]),((FLOAT*)VM)[0])
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((DOUBLE*)VM)[i] = MAX(ASDOUBLE(VDATA[i]),((DOUBLE*)VM)[i])
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
+#### IMAGE_ATOMIC_FMIN
+
+Opcode: 30 (0x1e)  
+Syntax: IMAGE_ATOMIC_FMIN VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
+Description: Choose smallest single or double (if VDATA size is greater than 32-bit)
+floating point values between VDATA values and values of image SRSRC at address VADDR,
+and store result into image. If GLC is set then return old values from image,
+otherwise keep VDATA value. Only 32-bit, 64-bit and 128-bit data formats are supported.
+Operation is atomic.  
+Operation:  
+```
+PIXELTYPE* VM = VMIMG(SRSRC, VADDR)
+PIXELTYPE P = *VM;
+if (sizeof(PIXELTYPE)==4)
+    ((FLOAT*)VM)[0] = MIN(ASFLOAT(VDATA[0]),((FLOAT*)VM)[0])
+else    // add 64-bit dwords
+    for (BYTE i = 0; i < (sizeof(VDATA)>>3); i++)
+        ((DOUBLE*)VM)[i] = MIN(ASDOUBLE(VDATA[i]),((DOUBLE*)VM)[i])
+VDATA = (GLC) ? P : VDATA // atomic
+```
+
 #### IMAGE_ATOMIC_INC
 
 Opcode: 27 (0x1b)  
