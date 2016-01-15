@@ -75,7 +75,7 @@ List of the MIMG instructions by opcode (GCN 1.0/1.1):
  37 (0x25)  |   ✓   |   ✓   | IMAGE_SAMPLE_B
  38 (0x26)  |   ✓   |   ✓   | IMAGE_SAMPLE_B_CL
  39 (0x27)  |   ✓   |   ✓   | IMAGE_SAMPLE_LZ
- 40 (0x28)  |   ✓   |   ✓   | IMAGE_SAMPLE_C 
+ 40 (0x28)  |   ✓   |   ✓   | IMAGE_SAMPLE_C
  41 (0x29)  |   ✓   |   ✓   | IMAGE_SAMPLE_C_CL
  42 (0x2a)  |   ✓   |   ✓   | IMAGE_SAMPLE_C_D
  43 (0x2b)  |   ✓   |   ✓   | IMAGE_SAMPLE_C_D_CL
@@ -169,7 +169,7 @@ List of the MIMG instructions by opcode (GCN 1.2):
  37 (0x25)  | IMAGE_SAMPLE_B
  38 (0x26)  | IMAGE_SAMPLE_B_CL
  39 (0x27)  | IMAGE_SAMPLE_LZ
- 40 (0x28)  | IMAGE_SAMPLE_C 
+ 40 (0x28)  | IMAGE_SAMPLE_C
  41 (0x29)  | IMAGE_SAMPLE_C_CL
  42 (0x2a)  | IMAGE_SAMPLE_C_D
  43 (0x2b)  | IMAGE_SAMPLE_C_D_CL
@@ -341,7 +341,7 @@ else
 
 #### IMAGE_ATOMIC_FMAX
 
-Opcode: 30 (0x1e)  
+Opcode: 31 (0x1f) for GCN 1.0/1.1  
 Syntax: IMAGE_ATOMIC_FMAX VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Choose greatest single or double (if VDATA size is greater than 32-bit)
 floating point values between VDATA values and values of image SRSRC at address VADDR,
@@ -362,7 +362,7 @@ VDATA = (GLC) ? P : VDATA // atomic
 
 #### IMAGE_ATOMIC_FMIN
 
-Opcode: 30 (0x1e)  
+Opcode: 30 (0x1e) for GCN 1.0/1.1  
 Syntax: IMAGE_ATOMIC_FMIN VDATA(1:4), VADDR(1:4), SRSRC(4,8)  
 Description: Choose smallest single or double (if VDATA size is greater than 32-bit)
 floating point values between VDATA values and values of image SRSRC at address VADDR,
