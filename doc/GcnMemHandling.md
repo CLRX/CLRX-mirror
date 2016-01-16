@@ -409,3 +409,45 @@ The TILINGINDEX choose what register control addressing of image. Index 8 (by de
 choose the linear access. In the most cases images are splitted into the tiles which
 organizes image's data in efficient manner for GPU memory subsystem. Unfortunatelly,
 the fields of a tiling registers and their meanigful are not known (for me).
+
+The address of image's pixel is stored in VADDR registers. Number of used registers and
+data type depends on the instruction type and image type. Following table describes
+what component's of address are stored in VADDR registers for what image types.
+
+ Image type | Component 0 | Component 1 | Component 2
+------------|-------------|-------------|-------------
+ 1D         | X           | --          | --
+ 1D array   | X           | slice (UINT) | --
+ 2D         | X           | Y           | --
+ 2D interlaced | X           | Y           | field
+ 2D array | X           | Y           | slice (UINT)
+ 3D       | X           | Y           | Z
+ 2D Cube  | X           | Y           | face id (FLOAT)
+
+The X, Y and Z coordinate's type depends on instruction type. The IMAGE_SAMPLE_\* and
+IMAGE_GATHER4_\* accepts floating point values at place of these components. Other
+instructions accepts unsigned integer values for X, Y and Z components.
+
+The layout of the address is in form:
+
+{ offset } { bias } { z-compare } { derivative } { body }
+
+The body is image address components (X, Y, Z). Other components are used for:
+
+* offset - for IMAGE_*_O* instructions. One dword contains three 6-bit signed offsets for
+each coordinate (X ,Y, Z) in 0-5 bits (X), 8-13 bits (Y) and 16-21 bits (Z).
+* bias - for IMAGE_*_B* instructions. One single floating point value.
+* z-compare - for IMAGE_*_C* instructions. One dword.
+* derivatives - for IMAGE_*_D* instructions. User supplied derivatives that will be used
+to calculate LOD. The layout of the derivatives:
+
+Image dimensions | Comp. 0 | Comp. 1 | Comp. 2 | Comp. 3 | Comp. 4 | Comp. 5
+-----------------|---------|---------|---------|---------|---------|---------
+ 1               | DX/DH   | DX/DV   | --      | --      | --      | --
+ 2               | DX/DH   | DY/DH   | DX/DV   | DY/DV   | --      | --
+ 3               | DX/DH   | DY/DH   | DZ/DH   | DX/DV   | DY/DV   | DZ/DV
+
+About accuracy: Threshold of coordinates for image's sampling are 1/256 of distance
+between pixels.
+
+The sampling of the mipmaps requires normalized coordinates.
