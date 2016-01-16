@@ -2161,7 +2161,18 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     skipSpacesToEnd(linePtr, end);
-    good &= parseVRegRange(asmr, linePtr, vaddrReg, 4);
+    const char* vaddrPlace = linePtr;
+    good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
+    cxuint geRegRequired = (gcnInsn.mode&GCN_MIMG_VA_MASK)+1;
+    cxuint vaddrRegsNum = vaddrReg.end-vaddrReg.start;
+    if (vaddrRegsNum < geRegRequired || vaddrRegsNum > geRegRequired+3)
+    {
+        char buf[60];
+        snprintf(buf, 60, "Required (%u-%u) vector registers", geRegRequired,
+                 geRegRequired+3);
+        asmr.printError(vaddrPlace, buf);
+        good = false;
+    }
     
     if (!skipRequiredComma(asmr, linePtr))
         return;

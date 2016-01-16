@@ -2542,7 +2542,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "glc r128 da", 0xf0a4fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_d  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0a8fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_d_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+    { "    image_sample_c_d_cl  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0acfb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_l  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0b0fb00U, 0x02559d79U, true, true, "" },
@@ -2558,7 +2558,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "glc r128 da", 0xf0c4fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_d_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0c8fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_d_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+    { "    image_sample_d_cl_o  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0ccfb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_l_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0d0fb00U, 0x02559d79U, true, true, "" },
@@ -2572,15 +2572,15 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "glc r128 da", 0xf0e0fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0e4fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_d_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
+    { "    image_sample_c_d_o  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0e8fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_d_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_sample_c_d_cl_o  v[157:159], v[121:126], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf0ecfb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_l_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0f0fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_b_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0f4fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_b_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_sample_c_b_cl_o  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf0f8fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_lz_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf0fcfb00U, 0x02559d79U, true, true, "" },
@@ -2628,7 +2628,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "glc r128 da", 0xf170fb00U, 0x02559d79U, true, true, "" },
     { "    image_gather4_c_b_o  v[157:160], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf174fb00U, 0x02559d79U, true, true, "" },
-    { "    image_gather4_c_b_cl_o  v[157:160], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_gather4_c_b_cl_o  v[157:160], v[121:125], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf178fb00U, 0x02559d79U, true, true, "" },
     { "    image_gather4_c_lz_o  v[157:160], v[121:124], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf17cfb00U, 0x02559d79U, true, true, "" },
@@ -2640,15 +2640,15 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "glc r128 da", 0xf1a4fb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_c_cd  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 unorm "
         "glc r128 da", 0xf1a8fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_cd_cl  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_sample_c_cd_cl  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf1acfb00U, 0x02559d79U, true, true, "" },
     { "    image_sample_cd_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf1b0fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_cd_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_sample_cd_cl_o  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf1b4fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_cd_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_sample_c_cd_o  v[157:159], v[121:125], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf1b8fb00U, 0x02559d79U, true, true, "" },
-    { "    image_sample_c_cd_cl_o  v[157:159], v[121:124], s[84:87], s[72:75] dmask:11 "
+    { "    image_sample_c_cd_cl_o  v[157:159], v[121:126], s[84:87], s[72:75] dmask:11 "
         "unorm glc r128 da", 0xf1bcfb00U, 0x02559d79U, true, true, "" },
     /* EXP encoding */
     { "exp  param5, v116, v93, v27, v124 done vm",

@@ -164,6 +164,13 @@ enum : uint16_t
     GCN_MIMG_SAMPLE = 0x100,    /// last operand is SSAMP (4 sregisters)
     GCN_MIMG_VDATA4 = 0x200,    /// gather requires 4 vdata registers
     GCN_MIMG_GATHER = 0x300,    /// gather requires 4 vdata registers
+    GCN_MIMG_VAGE1 = 0x0,    /// vaddr requires 1 or more registers
+    GCN_MIMG_VAGE2 = 0x1,  /// vdata requires 2 or more registers
+    GCN_MIMG_VAGE3 = 0x2,  /// vdata requires 3 or more registers
+    GCN_MIMG_VAGE4 = 0x3,  /// vdata requires 4 or more registers
+    GCN_MIMG_VAGE5 = 0x4,  /// vdata requires 5 or more registers
+    GCN_MIMG_VAGE6 = 0x5,  /// vdata requires 6 or more registers
+    GCN_MIMG_VA_MASK = 0xf,
     GCN_MLOAD = 0x1000, // instruction load data to vgprs
     GCN_MATOMIC = 0x2000, // instructin perform atomics and returns data if glc==1
     GCN_FLAT_DDST = 0x00,   // destination as first operand

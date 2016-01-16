@@ -430,7 +430,7 @@ instructions accepts unsigned integer values for X, Y and Z components.
 
 The layout of the address is in form:
 
-{ offset } { bias } { z-compare } { derivative } { body }
+{ offset } { bias } { z-compare } { derivative } { body } { clamp } { lod }
 
 The body is image address components (X, Y, Z). Other components are used for:
 
@@ -446,6 +446,9 @@ Image dimensions | Comp. 0 | Comp. 1 | Comp. 2 | Comp. 3 | Comp. 4 | Comp. 5
  1               | DX/DH   | DX/DV   | --      | --      | --      | --
  2               | DX/DH   | DY/DH   | DX/DV   | DY/DV   | --      | --
  3               | DX/DH   | DY/DH   | DZ/DH   | DX/DV   | DY/DV   | DZ/DV
+
+* clamp - for IMAGE_*_CL - clamp
+* lod - for IMAGE_*_L - LOD
 
 About accuracy: Threshold of coordinates for image's sampling are 1/256 of distance
 between pixels.
