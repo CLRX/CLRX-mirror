@@ -227,6 +227,21 @@ List of the MIMG instructions by opcode (GCN 1.2):
  110 (0x6e) | IMAGE_SAMPLE_C_CD_O
  111 (0x6f) | IMAGE_SAMPLE_C_CD_CL_O
 
+### Suffix instruction meaning
+
+Following describes suffixes for IMAGE_SAMPLE_* and IMAGE_GATHER4_* instructions:
+
+Suffix | Meaning | Extra addresses | Description
+-------|---------|-----------|---------------------
+_L     | LOD     | -         | LOD is used instead of TA computed LOD.
+_B     | LOD BIAS | 1: lod bias | Add this BIAS to the LOD TA computes.
+_CL    | LOD CLAMP | - | Clamp the LOD to be no larger than this value.
+_D     | Derivative | 2,4 or 6: dwords | Send dx/dv, dx/dy, etc. slopes to TA for it to used in LOD computation.
+_CD    | Coarse Derivative | 2,4 or 6: dwords | Look at _D
+_LZ | Level 0 | - | Force use of MIP level 0.
+_C  | PCF     | 1: z-comp | Percentage closer filtering.
+_O  | Offset  | 1: offsets | Send X, Y, Z integer offsets (packed into 1 Dword) to offset XYZ address.
+ 
 ### Instruction set
 
 Alphabetically sorted instruction list:

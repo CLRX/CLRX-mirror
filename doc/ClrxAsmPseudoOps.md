@@ -15,7 +15,7 @@ Choose 32-bit binaries (it have meaningful for the AMD Catalyst binary format)
 ### .64bit
 
 This pseudo-operation should to be at begin of source.
-Choose 64-bit binaries (it have meaningful for the AMD Catalyst binary format)
+Choose 64-bit binaries (it have meaning for the AMD Catalyst binary format)
 
 ### .abort
 

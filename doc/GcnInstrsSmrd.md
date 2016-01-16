@@ -11,7 +11,7 @@ Bits  | Name     | Description
 22-26 | OPCODE   | Operation code
 27-31 | ENCODING | Encoding type. Must be 0b11000
 
-Value of the IMM determines meaningful of the OFFSET field:
+Value of the IMM determines meaning of the OFFSET field:
 
 * IMM=1 - OFFSET holds a dword offset to SBASE.
 * IMM=0 - OFFSET holds number of SGPR that holds byte offset to SBASE.
