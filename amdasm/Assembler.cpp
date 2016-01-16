@@ -1753,8 +1753,12 @@ bool Assembler::assemble()
         {   // try to parse processor instruction or macro substitution
             if (makeMacroSubstitution(stmtPlace) == ParseState::MISSING)
             {  
-                if (firstName.empty()) // if name is empty (empty line)
+                if (firstName.empty()) // if name is empty
+                {
+                    if (linePtr!=end) // error
+                        printError(stmtPlace, "Garbages at statement place");
                     continue;
+                }
                 initializeOutputFormat();
                 // try parse instruction
                 if (!isWriteableSection())
