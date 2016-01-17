@@ -243,8 +243,8 @@ _C  | PCF     | 1: z-comp | Percentage closer filtering.
 _O  | Offset  | 1: offsets | Send X, Y, Z integer offsets (packed into 1 Dword) to offset XYZ address.
 
 * _L - choose LOD from VADDR from last register, after other components.
-* _C - compare fetched data from image (first component of pixel) with Z-COMP component
-from VADDR.
+* _C - compare (by using z-compare function from sampler) fetched data from image
+(first component of pixel) with Z-COMP component from VADDR.
 * _O - apply offset to image's address (add X, Y and Z offset to X, Y and Z coordinates).
 
 ### Instruction set
