@@ -2165,11 +2165,12 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
     cxuint geRegRequired = (gcnInsn.mode&GCN_MIMG_VA_MASK)+1;
     cxuint vaddrRegsNum = vaddrReg.end-vaddrReg.start;
-    if (vaddrRegsNum < geRegRequired || vaddrRegsNum > geRegRequired+3)
+    cxuint vaddrMaxExtraRegs = (gcnInsn.mode&GCN_MIMG_VADERIV) ? 7 : 3;
+    if (vaddrRegsNum < geRegRequired || vaddrRegsNum > geRegRequired+vaddrMaxExtraRegs)
     {
         char buf[60];
         snprintf(buf, 60, "Required (%u-%u) vector registers", geRegRequired,
-                 geRegRequired+3);
+                 geRegRequired+vaddrMaxExtraRegs);
         asmr.printError(vaddrPlace, buf);
         good = false;
     }

@@ -229,7 +229,7 @@ List of the MIMG instructions by opcode (GCN 1.2):
 
 ### Suffix instruction meaning
 
-Following describes suffixes for IMAGE_SAMPLE_* and IMAGE_GATHER4_* instructions:
+Following describes suffixes for IMAGE_SAMPLE_\* and IMAGE_GATHER4_\* instructions:
 
 Suffix | Meaning | Extra addresses | Description
 -------|---------|-----------|---------------------
@@ -705,12 +705,26 @@ for (BYTE i = 0; i < BIT_CNT(DMASK); i++)
     VDATA[i] = SEXT(VDATA[i], COMPBITS)
 ```
 
-#### IMAGE_SAMPLER
+#### IMAGE_SAMPLE
 
 Opcode: 32 (0x20)  
-Syntax: IMAGE_SAMPLER VDATA(1:4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
+Syntax: IMAGE_SAMPLE VDATA(1:4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler.
+
+#### IMAGE_SAMPLE_CL
+
+Opcode: 33 (0x21)  
+Syntax: IMAGE_SAMPLE_CL VDATA(1:4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The last address register holds the clamp value.
+
+#### IMAGE_SAMPLE_D
+
+Opcode: 34 (0x22)  
+Syntax: IMAGE_SAMPLE_D VDATA(1:4), VADDR(2:9), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The first 2-6 address registers holds user derivatives.
 
 #### IMAGE_STORE
 
