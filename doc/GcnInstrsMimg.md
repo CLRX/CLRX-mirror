@@ -588,6 +588,31 @@ for (BYTE i = 0; i < (sizeof(VDATA)>>2); i++)
 VDATA = (GLC) ? P : VDATA // atomic
 ```
 
+#### IMAGE_GATHER4
+
+Opcode: 64 (0x40)  
+Syntax: IMAGE_GATHER4 VDATA(4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, that closest to choosen
+coordinates in VADDR. Choosen component is first one bit in DMASK. Following VDATA
+registers stores:
+
+* VDATA[0] - bottom left pixel's component (X,Y+1)
+* VDATA[1] - bottom right pixel's component (X+1,Y+1)
+* VDATA[0] - top right pixel's component (X+1,Y)
+* VDATA[1] - top left  pixel's component (X,Y)
+
+Operation:  
+```
+PIXELTYPE* VMLT = VMIMG_SAMPLE(SRSRC, { VADDR[0], VADDR[1], VADDR[2] }, SSAMP)
+PIXELTYPE* VMRT = VMIMG_SAMPLE(SRSRC, { VADDR[0]+1.0, VADDR[1], VADDR[2] }, SSAMP)
+PIXELTYPE* VMLB = VMIMG_SAMPLE(SRSRC, { VADDR[0], VADDR[1]+1.0, VADDR[2] }, SSAMP)
+PIXELTYPE* VMRB = VMIMG_SAMPLE(SRSRC, { VADDR[0]+1.0, VADDR[1]+1.0, VADDR[2] }, SSAMP)
+VDATA[0] = *(COMPTYPE*)VMLB
+VDATA[1] = *(COMPTYPE*)VMRB
+VDATA[2] = *(COMPTYPE*)VMRT
+VDATA[3] = *(COMPTYPE*)VMLT
+```
+
 #### IMAGE_LOAD
 
 Opcode: 0 (0x0)  
