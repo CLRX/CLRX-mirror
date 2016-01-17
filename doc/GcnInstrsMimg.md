@@ -241,7 +241,12 @@ _CD    | Coarse Derivative | 2,4 or 6: dwords | Look at _D
 _LZ | Level 0 | - | Force use of MIP level 0.
 _C  | PCF     | 1: z-comp | Percentage closer filtering.
 _O  | Offset  | 1: offsets | Send X, Y, Z integer offsets (packed into 1 Dword) to offset XYZ address.
- 
+
+* _L - choose LOD from VADDR from last register, after other components.
+* _C - compare fetched data from image (first component of pixel) with Z-COMP component
+from VADDR.
+* _O - apply offset to image's address (add X, Y and Z offset to X, Y and Z coordinates).
+
 ### Instruction set
 
 Alphabetically sorted instruction list:
@@ -592,8 +597,8 @@ VDATA = (GLC) ? P : VDATA // atomic
 
 Opcode: 64 (0x40)  
 Syntax: IMAGE_GATHER4 VDATA(4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
-Description: Get component's value from 4 neighboring pixels, that closest to choosen
-coordinates in VADDR. Choosen component is first one bit in DMASK. The left top pixel are
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Choosen component is first one bit in DMASK. The left top pixel are
 choosen from FLOOR(X-0.5) for X coordinate, FLOOR(Y-0.5) for Y coordinate.
 Following VDATA registers stores:
 
@@ -699,6 +704,13 @@ BYTE COMPBITS = COMPBITS(SRSRC)
 for (BYTE i = 0; i < BIT_CNT(DMASK); i++)
     VDATA[i] = SEXT(VDATA[i], COMPBITS)
 ```
+
+#### IMAGE_SAMPLER
+
+Opcode: 32 (0x20)  
+Syntax: IMAGE_SAMPLER VDATA(1:4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler.
 
 #### IMAGE_STORE
 
