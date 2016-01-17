@@ -593,8 +593,9 @@ VDATA = (GLC) ? P : VDATA // atomic
 Opcode: 64 (0x40)  
 Syntax: IMAGE_GATHER4 VDATA(4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
 Description: Get component's value from 4 neighboring pixels, that closest to choosen
-coordinates in VADDR. Choosen component is first one bit in DMASK. Following VDATA
-registers stores:
+coordinates in VADDR. Choosen component is first one bit in DMASK. The left top pixel are
+choosen from FLOOR(X-0.5) for X coordinate, FLOOR(Y-0.5) for Y coordinate.
+Following VDATA registers stores:
 
 * VDATA[0] - bottom left pixel's component (X,Y+1)
 * VDATA[1] - bottom right pixel's component (X+1,Y+1)
@@ -603,14 +604,17 @@ registers stores:
 
 Operation:  
 ```
-PIXELTYPE* VMLT = VMIMG_SAMPLE(SRSRC, { VADDR[0], VADDR[1], VADDR[2] }, SSAMP)
-PIXELTYPE* VMRT = VMIMG_SAMPLE(SRSRC, { VADDR[0]+1.0, VADDR[1], VADDR[2] }, SSAMP)
-PIXELTYPE* VMLB = VMIMG_SAMPLE(SRSRC, { VADDR[0], VADDR[1]+1.0, VADDR[2] }, SSAMP)
-PIXELTYPE* VMRB = VMIMG_SAMPLE(SRSRC, { VADDR[0]+1.0, VADDR[1]+1.0, VADDR[2] }, SSAMP)
-VDATA[0] = *(COMPTYPE*)VMLB
-VDATA[1] = *(COMPTYPE*)VMRB
-VDATA[2] = *(COMPTYPE*)VMRT
-VDATA[3] = *(COMPTYPE*)VMLT
+INT X = FLOOR(ASFLOAT(VADDR[0])-0.5)
+INT Y = FLOOR(ASFLOAT(VADDR[1])-0.5)
+COMPTYPE* VMLT = VMIMG_SAMPLE(SRSRC, { X, Y, VADDR[2] }, SSAMP)
+COMPTYPE* VMRT = VMIMG_SAMPLE(SRSRC, { X+1 Y, VADDR[2] }, SSAMP)
+COMPTYPE* VMLB = VMIMG_SAMPLE(SRSRC, { X, Y+1, VADDR[2] }, SSAMP)
+COMPTYPE* VMRB = VMIMG_SAMPLE(SRSRC, { X+1, Y+1, VADDR[2] }, SSAMP)
+BYTE COMP = (DMASK&1) ? 0 : (DMASK&2) ? 1 : (DMASK&4) ? 2 : 3;
+VDATA[0] = CONVERT_FROM_IMAGE(SRSRC, VMLB)[COMP]
+VDATA[1] = CONVERT_FROM_IMAGE(SRSRC, VMRB)[COMP]
+VDATA[2] = CONVERT_FROM_IMAGE(SRSRC, VMRT)[COMP]
+VDATA[3] = CONVERT_FROM_IMAGE(SRSRC, VMLT)[COMP]
 ```
 
 #### IMAGE_LOAD
