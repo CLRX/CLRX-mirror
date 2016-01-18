@@ -437,7 +437,8 @@ The body is image address components (X, Y, Z). Other components are used for:
 * offset - for IMAGE_*_O* instructions. One dword contains three 6-bit signed offsets for
 each coordinate (X ,Y, Z) in 0-5 bits (X), 8-13 bits (Y) and 16-21 bits (Z).
 * bias - for IMAGE_*_B* instructions. One single floating point value.
-* z-compare - for IMAGE_*_C* instructions. One dword.
+* z-compare - for IMAGE_*_C* instructions. One single floating point value.
+Working only with floating point images.
 * derivatives - for IMAGE_*_D* instructions. User supplied derivatives that will be used
 to calculate LOD. The layout of the derivatives:
 

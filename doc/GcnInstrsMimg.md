@@ -244,7 +244,8 @@ _O  | Offset  | 1: offsets | Send X, Y, Z integer offsets (packed into 1 Dword) 
 
 * _L - choose LOD from VADDR from last register, after other components.
 * _C - compare (by using z-compare function from sampler) fetched data from image
-(first component of pixel) with Z-COMP component from VADDR.
+(first component of pixel) with Z-COMP component from VADDR. Working only with
+floating point images.
 * _O - apply offset to image's address (add X, Y and Z offset to X, Y and Z coordinates).
 
 ### Instruction set
@@ -712,6 +713,65 @@ Syntax: IMAGE_SAMPLE VDATA(1:4), VADDR(1:4), SRSRC(4,8), SSAMP(4)
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler.
 
+#### IMAGE_SAMPLE_B
+
+Opcode: 37 (0x25)  
+Syntax: IMAGE_SAMPLE_B VDATA(1:4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The first address register holds the LOD bias value.
+
+#### IMAGE_SAMPLE_B_CL
+
+Opcode: 38 (0x26)  
+Syntax: IMAGE_SAMPLE_B_CL VDATA(1:4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The first address register holds the LOD bias value.
+The last address register holds the clamp value.
+
+#### IMAGE_SAMPLE_C
+
+Opcode: 40 (0x28)  
+Syntax: IMAGE_SAMPLE_C VDATA(1:4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the Z-compare value.
+
+#### IMAGE_SAMPLE_C_CL
+
+Opcode: 41 (0x29)  
+Syntax: IMAGE_SAMPLE_C_CL VDATA(1:4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the Z-compare value. The last address register
+holds the clamp value.
+
+#### IMAGE_SAMPLE_C_D
+
+Opcode: 42 (0x2a)  
+Syntax: IMAGE_SAMPLE_C_D VDATA(1:4), VADDR(4:11), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the Z-compare value. Next 2-6 address registers
+holds user derivatives.
+
+#### IMAGE_SAMPLE_C_D_CL
+
+Opcode: 43 (0x2b)  
+Syntax: IMAGE_SAMPLE_C_D_CL VDATA(1:4), VADDR(5:12), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the Z-compare value. Next 2-6 address registers
+holds user derivatives. The last address register holds the clamp value.
+
+#### IMAGE_SAMPLE_C_L
+
+Opcode: 44 (0x2c)  
+Syntax: IMAGE_SAMPLE_C_L VDATA(1:4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the Z-compare value. The last address register holds
+the LOD value.
+
 #### IMAGE_SAMPLE_CL
 
 Opcode: 33 (0x21)  
@@ -722,9 +782,31 @@ SSAMP sampler. The last address register holds the clamp value.
 #### IMAGE_SAMPLE_D
 
 Opcode: 34 (0x22)  
-Syntax: IMAGE_SAMPLE_D VDATA(1:4), VADDR(2:9), SRSRC(4,8), SSAMP(4)  
+Syntax: IMAGE_SAMPLE_D VDATA(1:4), VADDR(3:10), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler. The first 2-6 address registers holds user derivatives.
+
+#### IMAGE_SAMPLE_D_CL
+
+Opcode: 35 (0x23)  
+Syntax: IMAGE_SAMPLE_D_CL VDATA(1:4), VADDR(4:11), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The first 2-6 address registers holds user derivatives.
+The last address register holds the clamp value.
+
+#### IMAGE_SAMPLE_L
+
+Opcode: 36 (0x24)  
+Syntax: IMAGE_SAMPLE_L VDATA(1:4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. The last address register holds the LOD value.
+
+#### IMAGE_SAMPLE_LZ
+
+Opcode: 39 (0x27)  
+Syntax: IMAGE_SAMPLE_LZ VDATA(1:4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
+Description: Get sampled pixel value from SRSRC image at address VADDR by using
+SSAMP sampler. Force use of mipmap level 0 (???).
 
 #### IMAGE_STORE
 
