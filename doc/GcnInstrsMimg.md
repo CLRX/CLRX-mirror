@@ -605,8 +605,8 @@ Following VDATA registers stores:
 
 * VDATA[0] - bottom left pixel's component (X,Y+1)
 * VDATA[1] - bottom right pixel's component (X+1,Y+1)
-* VDATA[0] - top right pixel's component (X+1,Y)
-* VDATA[1] - top left  pixel's component (X,Y)
+* VDATA[2] - top right pixel's component (X+1,Y)
+* VDATA[3] - top left  pixel's component (X,Y)
 
 Operation:  
 ```
