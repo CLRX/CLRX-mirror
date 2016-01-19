@@ -250,6 +250,11 @@ floating point images.
 
 ### Instruction set
 
+NOTE: While discovering and testing, many instructions behaved in unexpected manner on
+GCN 1.0 device (mainly non-standard IMAGE_SAMPLE_* and IMAGE_GATHER4_* instructions).
+Hence, no operation's listing to these instructions and only brief descriptions. However,
+IMAGE_LOAD_*, IMAGE_STORE_* and IMAGE_ATOMIC_* has been explained quite good.
+
 Alphabetically sorted instruction list:
 
 #### IMAGE_ATOMIC_ADD
@@ -623,6 +628,212 @@ VDATA[2] = CONVERT_FROM_IMAGE(SRSRC, VMRT)[COMP]
 VDATA[3] = CONVERT_FROM_IMAGE(SRSRC, VMLT)[COMP]
 ```
 
+#### IMAGE_GATHER4_B
+
+Opcode: 69 (0x45)  
+Syntax: IMAGE_GATHER4_B VDATA(4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The first address register holds the LOD bias value.
+
+#### IMAGE_GATHER4_B_O
+
+Opcode: 85 (0x55)  
+Syntax: IMAGE_GATHER4_B_O VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The first address register holds the offset for X,Y,Z.
+Next address register holds the LOD bias value.
+
+#### IMAGE_GATHER4_B_CL
+
+Opcode: 70 (0x46)  
+Syntax: IMAGE_GATHER4_B_CL VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The first address
+register holds the LOD bias value. The last address register holds the clamp value.
+
+#### IMAGE_GATHER4_B_CL_O
+
+Opcode: 86 (0x56)  
+Syntax: IMAGE_GATHER4_B_CL_O VDATA(4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The first address register holds the offset for X,Y,Z. Next address
+register holds the LOD bias value. The last address register holds the clamp value.
+
+#### IMAGE_GATHER4_C
+
+Opcode: 72 (0x48)  
+Syntax: IMAGE_GATHER4_C VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the Z-compare value.
+
+#### IMAGE_GATHER4_C_O
+
+Opcode: 88 (0x58)  
+Syntax: IMAGE_GATHER4_C_O VDATA(4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The instruction performs Z-compare operation choosen in SSAMP sampler.
+The first address register holds the offset for X,Y,Z. Next address register holds
+the Z-compare value.
+
+#### IMAGE_GATHER4_C_B
+
+Opcode: 77 (0x4d)  
+Syntax: IMAGE_GATHER4_C_B VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction performs
+Z-compare operation choosen in SSAMP sampler. The first address register holds
+the LOD bias value. Next address register holds the Z-compare value. 
+
+#### IMAGE_GATHER4_C_B_O
+
+Opcode: 93 (0x5d)  
+Syntax: IMAGE_GATHER4_C_B_O VDATA(4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction performs
+Z-compare operation choosen in SSAMP sampler. The first address register holds
+the offset for X,Y,Z. Next address register holds the LOD bias value.
+Next address register holds the Z-compare value. 
+
+#### IMAGE_GATHER4_C_B_CL
+
+Opcode: 78 (0x4e)  
+Syntax: IMAGE_GATHER4_C_B_CL VDATA(4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction performs
+Z-compare operation choosen in SSAMP sampler. The first address register holds
+the LOD bias value. Next address register holds the Z-compare value. The last address
+register holds the clamp value.
+
+#### IMAGE_GATHER4_C_B_CL_O
+
+Opcode: 94 (0x5e)  
+Syntax: IMAGE_GATHER4_C_B_CL_O VDATA(4), VADDR(5:8), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction performs
+Z-compare operation choosen in SSAMP sampler. The first address register holds
+the offset for X,Y,Z. Next address register holds the LOD bias value.
+Next address register holds the Z-compare value. The last address register holds
+the clamp value.
+
+#### IMAGE_GATHER4_C_CL
+
+Opcode: 73 (0x49)  
+Syntax: IMAGE_GATHER4_C_CL VDATA(4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
+performs Z-compare operation choosen in SSAMP sampler. The first address register
+holds the Z-compare value. The last address register holds the clamp value.
+
+#### IMAGE_GATHER4_C_CL_O
+
+Opcode: 89 (0x59)  
+Syntax: IMAGE_GATHER4_C_CL_O VDATA(4), VADDR(5:8), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
+performs Z-compare operation choosen in SSAMP sampler. The first address register holds
+the offset for X,Y,Z. Next address register holds the Z-compare value.
+The last address register holds the clamp value.
+
+#### IMAGE_GATHER4_C_L
+
+Opcode: 76 (0x4c)  
+Syntax: IMAGE_GATHER4_C_L VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
+performs Z-compare operation choosen in SSAMP sampler. The first address register
+holds the Z-compare value. The last address register holds the LOD value.
+
+#### IMAGE_GATHER4_C_L_O
+
+Opcode: 92 (0x5c)  
+Syntax: IMAGE_GATHER4_C_L_O VDATA(4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
+performs Z-compare operation choosen in SSAMP sampler. The first address register holds
+the offset for X,Y,Z. Next address register holds the Z-compare value.
+The last address register holds the LOD value.
+
+#### IMAGE_GATHER4_C_LZ
+
+Opcode: 79 (0x4f)  
+Syntax: IMAGE_GATHER4_C_LZ VDATA(4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
+performs Z-compare operation choosen in SSAMP sampler. The first address register
+holds the Z-compare value. Force use of mipmap level 0 (???).
+
+#### IMAGE_GATHER4_C_LZ_O
+
+Opcode: 95 (0x5f)  
+Syntax: IMAGE_GATHER4_C_LZ VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
+performs Z-compare operation choosen in SSAMP sampler. The first address register holds
+the offset for X,Y,Z. Next address register holds the Z-compare value.
+Force use of mipmap level 0 (???).
+
+#### IMAGE_GATHER4_CL
+
+Opcode: 65 (0x41)  
+Syntax: IMAGE_GATHER4_CL VDATA(4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The last address register holds the clamp value.
+
+#### IMAGE_GATHER4_CL_O
+
+Opcode: 81 (0x51)  
+Syntax: IMAGE_GATHER4_CL_O VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The first address register
+holds the offset for X,Y,Z. The last address register holds the clamp value.
+
+#### IMAGE_GATHER4_L
+
+Opcode: 68 (0x44)  
+Syntax: IMAGE_GATHER4_L VDATA(4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+The last address register holds the LOD value.
+
+#### IMAGE_GATHER4_L_O
+
+Opcode: 84 (0x54)  
+Syntax: IMAGE_GATHER4_L_O VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The first address register
+holds the offset for X,Y,Z. The last address register holds the LOD value.
+
+#### IMAGE_GATHER4_LZ
+
+Opcode: 71 (0x47)  
+Syntax: IMAGE_GATHER4_LZ VDATA(4), VADDR(1:4), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.
+Force use of mipmap level 0 (???).
+
+#### IMAGE_GATHER4_LZ_O
+
+Opcode: 87 (0x57)  
+Syntax: IMAGE_GATHER4_LZ_O VDATA(4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The first address register
+holds the offset for X,Y,Z. Force use of mipmap level 0 (???).
+
+#### IMAGE_GATHER4_O
+
+Opcode: 80 (0x50)  
+Syntax: IMAGE_GATHER4_O VDATA(4), VADDR(2:5), SRSRC(4,8), SSAMP(4)  
+Description: Get component's value from 4 neighboring pixels, starting from coordinates
+from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm.  The first address register
+holds the offset for X,Y,Z. 
+
 #### IMAGE_LOAD
 
 Opcode: 0 (0x0)  
@@ -760,8 +971,8 @@ Opcode: 45 (0x2d)
 Syntax: IMAGE_SAMPLE_C_B VDATA(1:4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
-The first address register holds the Z-compare value.
-Next address register holds the LOD bias value.
+The first register holds the LOD bias value. Next address register holds the
+Z-compare value.
 
 #### IMAGE_SAMPLE_C_B_CL
 
@@ -769,8 +980,8 @@ Opcode: 46 (0x2e)
 Syntax: IMAGE_SAMPLE_C_B_CL VDATA(1:4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
-The first address register holds the Z-compare value. Next address register holds the
-LOD bias value. The last address register holds the clamp value.
+The first register holds the LOD bias value. Next address register holds the
+Z-compare value. The last address register holds the clamp value.
 
 #### IMAGE_SAMPLE_C_B_CL_O
 
@@ -778,9 +989,9 @@ Opcode: 62 (0x62)
 Syntax: IMAGE_SAMPLE_C_B_CL_O VDATA(1:4), VADDR(5:8), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
-The first address register holds the offset for X,Y,Z.
-Next address register holds the Z-compare value. Next address register holds the
-LOD bias value. The last address register holds the clamp value.
+The first address register holds the offset for X,Y,Z. Next address register holds
+the LOD bias value. Next address register holds the Z-compare value.
+The last address register holds the clamp value.
 
 #### IMAGE_SAMPLE_C_B_O
 
@@ -788,8 +999,8 @@ Opcode: 61 (0x3d)
 Syntax: IMAGE_SAMPLE_C_B_O VDATA(1:4), VADDR(4:7), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
-The first address register holds the offset for X,Y,Z. Next address register
-holds the Z-compare value. Next address register holds the LOD bias value.
+The first address register holds the offset for X,Y,Z. Next address register holds
+the LOD bias value. Next address register holds the Z-compare value. 
 
 #### IMAGE_SAMPLE_C_CL
 
@@ -833,7 +1044,7 @@ Opcode: 59 (0x3b)
 Syntax: IMAGE_SAMPLE_C_D_CL_O VDATA(1:4), VADDR(6:13), SRSRC(4,8), SSAMP(4)  
 Description: Get sampled pixel value from SRSRC image at address VADDR by using
 SSAMP sampler. The instruction performs Z-compare operation choosen in SSAMP sampler.
-The first address register holds the offset for X,Y,Z.  Next address register holds
+The first address register holds the offset for X,Y,Z. Next address register holds
 the Z-compare value. Next 2-6 address registers holds user derivatives.
 The last address register holds the clamp value.
 
