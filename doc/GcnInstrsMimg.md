@@ -251,9 +251,9 @@ floating point images.
 ### Instruction set
 
 NOTE: While discovering and testing, many instructions behaved in unexpected manner on
-GCN 1.0 device (mainly non-standard IMAGE_SAMPLE_* and IMAGE_GATHER4_* instructions).
+GCN 1.0 device (mainly non-standard IMAGE_SAMPLE_\* and IMAGE_GATHER4_\* instructions).
 Hence, no operation's listing to these instructions and only brief descriptions. However,
-IMAGE_LOAD_*, IMAGE_STORE_* and IMAGE_ATOMIC_* has been explained quite good.
+IMAGE_LOAD_\*, IMAGE_STORE_\* and IMAGE_ATOMIC_\* has been explained quite good.
 
 Alphabetically sorted instruction list:
 
