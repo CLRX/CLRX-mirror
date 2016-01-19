@@ -199,7 +199,7 @@ The image resource can be a 128-bit (for 2D images, 1D images, 2DMSAA images) or
 Bits   | Name       | Description
 -------|------------|------------------------------
 0-39   | BASE       | Base address divided by 256
-40-51  | MINLOD     | Min LOD in format 4.8
+40-51  | MIN_LOD     | Min LOD in format 4.8
 52-57  | DATAFORMAT | Data format
 58-61  | NUMBERFORMAT | Number format
 64-77  | WIDTH      | Image width minus one
@@ -450,6 +450,10 @@ Image dimensions | Comp. 0 | Comp. 1 | Comp. 2 | Comp. 3 | Comp. 4 | Comp. 5
 
 * clamp - for IMAGE_*_CL - clamp
 * lod - for IMAGE_*_L - LOD
+
+The LOD (Level of details) parameter choose MIPMAP: just a LOD reflects mipmap index.
+By default, LOD are calculated as maximum value of image's MIN_LOD and sampler's MIN_LOD.
+The linear MIP filtering get value from two nearest mipmaps to choosen LOD.
 
 About accuracy: Threshold of coordinates for image's sampling are 1/256 of distance
 between pixels.
