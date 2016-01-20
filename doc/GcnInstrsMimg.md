@@ -771,7 +771,7 @@ holds the Z-compare value. Force use of mipmap level 0 (???).
 #### IMAGE_GATHER4_C_LZ_O
 
 Opcode: 95 (0x5f)  
-Syntax: IMAGE_GATHER4_C_LZ VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
+Syntax: IMAGE_GATHER4_C_LZ_O VDATA(4), VADDR(3:6), SRSRC(4,8), SSAMP(4)  
 Description: Get component's value from 4 neighboring pixels, starting from coordinates
 from VADDR. Refer to IMAGE_GATHER4 to learn about algorithm. The instruction
 performs Z-compare operation choosen in SSAMP sampler. The first address register holds
