@@ -212,7 +212,8 @@ Open ATI_FLOAT32CONSTS CAL note. Next occurrence in this same kernel, add new CA
 Syntax: .floatmode VALUE
 
 This pseudo-operation must be inside kernel configuration.
-Set floatmode. Value shall to be byte value.
+Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register).
+Value shall to be byte value.
 
 ### .get_driver_version
 

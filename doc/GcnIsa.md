@@ -49,6 +49,7 @@ By default, any register value is treated as unsigned integer.
 ---
 
 * [GCN Operands](GcnOperands)
+* [GCN Machine State](GcnState)
 * [SOP2 instructions](GcnInstrsSop2)
 * [SOPK instructions](GcnInstrsSopk)
 * [SOP1 instructions](GcnInstrsSop1)

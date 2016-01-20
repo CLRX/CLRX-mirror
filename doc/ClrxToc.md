@@ -32,6 +32,7 @@ Copyright (c)  2015-2016  Mateusz Szpakowski.
 * [AMD Catalyst ABI](AmdAbi)
 * [AMD GCN Instruction Set](GcnIsa)
     * [GCN Operands](GcnOperands)
+    * [GCN Machine State](GcnState)
     * [SOP2 instructions](GcnInstrsSop2)
     * [SOPK instructions](GcnInstrsSopk)
     * [SOP1 instructions](GcnInstrsSop1)

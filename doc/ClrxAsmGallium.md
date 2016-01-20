@@ -128,6 +128,7 @@ Add entry of proginfo. Must be inside proginfo configuration. Sample proginfo:
 Syntax: .floatmode BYTE-VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
+Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register).
 
 ### .globaldata
 
