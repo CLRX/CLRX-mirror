@@ -9,6 +9,7 @@ CLRX/amdasm/Commons.h -text
 CLRX/amdasm/Disassembler.h -text
 CLRX/amdbin/AmdBinGen.h -text
 CLRX/amdbin/AmdBinaries.h -text
+CLRX/amdbin/Elf.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
 CLRX/utils/CLIParser.h -text

@@ -18,7 +18,6 @@
  */
 
 #include <CLRX/Config.h>
-#include <elf.h>
 #include <string>
 #include <cstring>
 #include <cassert>

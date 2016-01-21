@@ -24,12 +24,12 @@
 #define __CLRX_AMDBINARIES_H__
 
 #include <CLRX/Config.h>
-#include <elf.h>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
 #include <memory>
+#include <CLRX/amdbin/Elf.h>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Containers.h>

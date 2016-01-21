@@ -24,13 +24,13 @@
 #define __CLRX_ELFBINARIES_H__
 
 #include <CLRX/Config.h>
-#include <elf.h>
 #include <cstddef>
 #include <cstdint>
 #include <climits>
 #include <string>
 #include <utility>
 #include <ostream>
+#include <CLRX/amdbin/Elf.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/Containers.h>

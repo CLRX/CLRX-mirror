@@ -24,13 +24,13 @@
 #define __CLRX_GALLIUMBINARIES_H__
 
 #include <CLRX/Config.h>
-#include <elf.h>
 #include <cstdint>
 #include <string>
 #include <vector>
 #include <ostream>
 #include <utility>
 #include <memory>
+#include <CLRX/amdbin/Elf.h>
 #include <CLRX/amdbin/ElfBinaries.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/utils/Utilities.h>

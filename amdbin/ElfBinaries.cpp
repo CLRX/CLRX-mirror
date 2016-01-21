@@ -20,12 +20,12 @@
 #include <CLRX/Config.h>
 #include <cstdlib>
 #include <cstring>
-#include <elf.h>
 #include <cstdint>
 #include <climits>
 #include <utility>
 #include <string>
 #include <cassert>
+#include <CLRX/amdbin/Elf.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdBinaries.h>

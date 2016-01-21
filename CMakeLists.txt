@@ -218,7 +218,6 @@ ENDIF(HAVE_INT128)
 # other dependencies and checks
 ###
 
-CHECK_INCLUDE_FILE_CXX(elf.h HAVE_ELF_H)
 FIND_PACKAGE(PNG)
 
 IF(PNG_FOUND)
