@@ -663,8 +663,10 @@ int main(int argc, const char** argv)
     for (cxuint i = 0; i < sizeof(origBinaryFiles)/sizeof(const char*); i++)
     {
         std::string regenName = origBinaryFiles[i];
+        filesystemPath(regenName); // convert to system path (native separators)
         regenName += ".regen";
         std::string reconfName = origBinaryFiles[i];
+        filesystemPath(reconfName); // convert to system path (native separators)
         reconfName += ".reconf";
         try
         { testOrigBinary(i, regenName.c_str(), false); }

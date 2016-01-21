@@ -89,8 +89,10 @@ static void testOrigBinary(cxuint testCase, const char* origBinaryFilename)
     Array<cxbyte> inputData;
     std::unique_ptr<GalliumBinary> galliumBin;
     Array<cxbyte> output;
+    std::string origBinFilenameStr(origBinaryFilename);
+    filesystemPath(origBinFilenameStr); // convert to system path (native separators)
     
-    inputData = loadDataFromFile(origBinaryFilename);
+    inputData = loadDataFromFile(origBinFilenameStr.c_str());
     galliumBin.reset(new GalliumBinary(inputData.size(), inputData.data(),
             GALLIUM_INNER_CREATE_SECTIONMAP |
             GALLIUM_INNER_CREATE_SYMBOLMAP | GALLIUM_INNER_CREATE_PROGINFOMAP));

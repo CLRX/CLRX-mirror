@@ -18,8 +18,11 @@
  */
 
 #include <CLRX/Config.h>
-#ifdef HAVE_LINUX
+#if defined(HAVE_LINUX) || defined(HAVE_BSD)
 #include <dlfcn.h>
+#endif
+#ifdef HAVE_WINDOWS
+#include <windows.h>
 #endif
 #include <fstream>
 #include <fcntl.h>
@@ -66,10 +69,6 @@ ParseException::ParseException(LineNo lineNo, ColNo charNo, const std::string& m
     this->message += message;
 }
 
-#ifdef HAVE_WINDOWS
-#error "Windows platform not supported"
-#endif
-
 std::mutex CLRX::DynLibrary::mutex;
 
 DynLibrary::DynLibrary() : handle(nullptr)
@@ -88,7 +87,7 @@ DynLibrary::~DynLibrary()
 void DynLibrary::load(const char* filename, Flags flags)
 {
     std::lock_guard<std::mutex> lock(mutex);
-#ifdef HAVE_LINUX
+#if defined(HAVE_LINUX) || defined(HAVE_BSD)
     dlerror(); // clear old errors
     int outFlags = (flags & DYNLIB_GLOBAL) ? RTLD_GLOBAL : RTLD_LOCAL;
     if ((flags & DYNLIB_MODE1_MASK) == DYNLIB_LAZY)
@@ -99,6 +98,11 @@ void DynLibrary::load(const char* filename, Flags flags)
     if (handle == nullptr)
         throw Exception(dlerror());
 #endif
+#ifdef HAVE_WINDOWS
+    handle = (void*)LoadLibrary(filename);
+    if (handle == nullptr)
+        throw Exception("DynLibrary::load failed");
+#endif
 }
 
 void DynLibrary::unload()
@@ -106,10 +110,14 @@ void DynLibrary::unload()
     std::lock_guard<std::mutex> lock(mutex);
     if (handle != nullptr)
     {
-#ifdef HAVE_LINUX
+#if defined(HAVE_LINUX) || defined(HAVE_BSD)
         dlerror(); // clear old errors
         if (dlclose(handle)) // if closing failed
             throw Exception(dlerror());
+#endif
+#ifdef HAVE_WINDOWS
+        if (!FreeLibrary((HMODULE)handle))
+            throw Exception("DynLibrary::unload failed");
 #endif
     }
     handle = nullptr;
@@ -122,12 +130,17 @@ void* DynLibrary::getSymbol(const char* symbolName)
     
     std::lock_guard<std::mutex> lock(mutex);
     void* symbol = nullptr;
-#ifdef HAVE_LINUX
+#if defined(HAVE_LINUX) || defined(HAVE_BSD)
     dlerror(); // clear old errors
     symbol = dlsym(handle, symbolName);
     const char* error = dlerror();
     if (symbol == nullptr && error != nullptr)
         throw Exception(error);
+#endif
+#ifdef HAVE_WINDOWS
+    symbol = (void*)GetProcAddress((HMODULE)handle, symbolName);
+    if (symbol==nullptr)
+        throw Exception("DynLibrary::getSymbol failed");
 #endif
     return symbol;
 }

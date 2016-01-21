@@ -29,6 +29,16 @@
 
 using namespace CLRX;
 
+static const char* stripCString(char* str)
+{
+    while (*str==' ') str++;
+    char* last = str+::strlen(str);
+    while (last!=str && (*last==0||*last==' '))
+        last--;
+    if (*last!=0) last[1] = 0;
+    return str;
+}
+
 CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames)
 try
 {
@@ -64,8 +74,9 @@ try
         if (error != CL_SUCCESS)
             throw CLError(error, "clGetPlatformInfo");
         
-        if (::strcmp(platformName.get(), "AMD Accelerated Parallel Processing")==0 ||
-            ::strcmp(platformName.get(), "Clover")==0)
+        const char* splatformName = stripCString(platformName.get());
+        if (::strcmp(splatformName, "AMD Accelerated Parallel Processing")==0 ||
+            ::strcmp(splatformName, "Clover")==0)
         {
             choosenPlatform = platforms[i];
             binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
@@ -132,9 +143,9 @@ try
         if (error != CL_SUCCESS)
             throw CLError(error, "clGetDeviceInfoName");
         /// determine device type
+        const char* sdeviceName = stripCString(deviceName.get());
         const char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
-                ::strncmp(deviceName.get(), "AMD ", 4)==0) ?
-                deviceName.get()+4 : deviceName.get();
+                ::strncmp(sdeviceName, "AMD ", 4)==0) ? sdeviceName+4 : sdeviceName;
         const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
         
         ArrayIStream astream(::strlen(sourceCode), sourceCode);

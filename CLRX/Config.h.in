@@ -121,6 +121,11 @@
 #  define HAVE_WINDOWS 1
 #endif
 
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || \
+        defined(__bsdi__) || defined(__DragonFly__)
+#  define HAVE_BSD 1
+#endif
+
 /* config setup */
 
 #ifndef HAVE_WINDOWS
@@ -139,7 +144,23 @@
 #  define CLRX_ALT_DIR_SEP_S "\\"
 
 #else
-#error "Windows platform is not supported"
+#  define SYSTEM_CONFIG_PATH "c:\\etc"
+
+#  ifdef HAVE_32BIT
+#  define DEFAULT_AMDOCLPATH "c:\\Windows\\System32\\amdocl32.dll"
+#  else
+#  define DEFAULT_AMDOCLPATH "c:\\Windows\\System32\\amdocl64.dll"
+#  endif
+
+#  define CLRX_NATIVE_DIR_SEP '\\'
+#  define CLRX_NATIVE_DIR_SEP_S "\\"
+
+#  define CLRX_ALT_DIR_SEP '/'
+#  define CLRX_ALT_DIR_SEP_S "/"
+
+#define strcasecmp(A,B) _stricmp(A,B)
+#define strncasecmp(A,B,N) _strnicmp(A,B,N)
+#define snprintf(B,N,F,...) _snprintf(B,N,F,__VA_ARGS__)
 #endif
 
 /* symbols visibility */

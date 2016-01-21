@@ -1428,6 +1428,16 @@ static cl_int genDeviceOrder(cl_uint devicesNum, const cl_device_id* devices,
     return CL_SUCCESS;
 }
 
+static const char* stripCString(char* str)
+{
+    while (*str==' ') str++;
+    char* last = str+::strlen(str);
+    while (last!=str && (*last==0||*last==' '))
+        last--;
+    if (*last!=0) last[1] = 0;
+    return str;
+}
+
 cl_int clrxCompilerCall(CLRXProgram* program, const char* compilerOptions,
             cl_uint devicesNum, CLRXDevice* const* devices)
 try
@@ -1560,7 +1570,8 @@ try
                                   devNameSize, devName.get(), nullptr);
         if (error!=CL_SUCCESS)
             clrxAbort("Fatal error at clCompilerCall (clGetDeviceInfo)");
-        outDeviceIndexMap[i] = { devices[i], devices[i]->amdOclDevice, devName.get() };
+        const char* sdevName = stripCString(devName.get());
+        outDeviceIndexMap[i] = { devices[i], devices[i]->amdOclDevice, sdevName };
     }
     /// sort devices by name and cl_device_id
     std::sort(outDeviceIndexMap.begin(), outDeviceIndexMap.end(),
