@@ -2401,16 +2401,22 @@ bool Assembler::skipClauses(bool exitm)
         switch(pseudoOp)
         {
             case ASMCOP_ENDIF:
-                if (!insideMacroOrRepeat)
+                if (!AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                    good = false;   // if endif have garbages
+                else if (!insideMacroOrRepeat)
                     if (!popClause(stmtPlace, AsmClauseType::IF))
                         good = false;
                 break;
             case ASMCOP_ENDM:
-                if (!popClause(stmtPlace, AsmClauseType::MACRO))
+                if (!AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                    good = false;   // if .endm have garbages
+                else if (!popClause(stmtPlace, AsmClauseType::MACRO))
                     good = false;
                 break;
             case ASMCOP_ENDR:
-                if (!popClause(stmtPlace, AsmClauseType::REPEAT))
+                if (!AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                    good = false;   // if .endr have garbages
+                else if (!popClause(stmtPlace, AsmClauseType::REPEAT))
                     good = false;
                 break;
             case ASMCOP_ELSE:
@@ -2438,7 +2444,10 @@ bool Assembler::skipClauses(bool exitm)
             case ASMCOP_ELSEIFNFMT:
             case ASMCOP_ELSEIFNGPU:
             case ASMCOP_ELSEIFNOTDEF:
-                if (!insideMacroOrRepeat)
+                if (pseudoOp == ASMCOP_ELSE &&
+                            !AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
+                    good = false; // if .else have garbages
+                else if (!insideMacroOrRepeat)
                 {
                     if (clauseLevel == clauses.size() && isTopIfClause)
                     {
