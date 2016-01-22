@@ -2020,7 +2020,8 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     decodeGCNVRegOperand((insnCode2>>8)&0xff, dregsNum, bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
-    decodeGCNVRegOperand(insnCode2&0xff, 4, bufPtr);
+    decodeGCNVRegOperand(insnCode2&0xff,
+                 std::max(4, (gcnInsn.mode&GCN_MIMG_VA_MASK)+1), bufPtr);
     *bufPtr++ = ',';
     *bufPtr++ = ' ';
     decodeGCNOperand(((insnCode2>>14)&0x7c), (insnCode & 0x8000)?4:8, bufPtr, arch);

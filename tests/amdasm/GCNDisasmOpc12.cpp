@@ -2818,7 +2818,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xf0a8fb00U, 0x02d59d79U, true, "        image_sample_c_d "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0acfb00U, 0x02d59d79U, true, "        image_sample_c_d_cl "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0b0fb00U, 0x02d59d79U, true, "        image_sample_c_l "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0b4fb00U, 0x02d59d79U, true, "        image_sample_c_b "
@@ -2834,7 +2834,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xf0c8fb00U, 0x02d59d79U, true, "        image_sample_d_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0ccfb00U, 0x02d59d79U, true, "        image_sample_d_cl_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0d0fb00U, 0x02d59d79U, true, "        image_sample_l_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0d4fb00U, 0x02d59d79U, true, "        image_sample_b_o "
@@ -2848,15 +2848,15 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xf0e4fb00U, 0x02d59d79U, true, "        image_sample_c_cl_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0e8fb00U, 0x02d59d79U, true, "        image_sample_c_d_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0ecfb00U, 0x02d59d79U, true, "        image_sample_c_d_cl_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:126], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0f0fb00U, 0x02d59d79U, true, "        image_sample_c_l_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0f4fb00U, 0x02d59d79U, true, "        image_sample_c_b_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0f8fb00U, 0x02d59d79U, true, "        image_sample_c_b_cl_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf0fcfb00U, 0x02d59d79U, true, "        image_sample_c_lz_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf100fb00U, 0x02d59d79U, true, "        image_gather4   "
@@ -2920,7 +2920,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xf174fb00U, 0x02d59d79U, true, "        image_gather4_c_b_o "
         "v[157:160], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf178fb00U, 0x02d59d79U, true, "        image_gather4_c_b_cl_o "
-        "v[157:160], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:160], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf17cfb00U, 0x02d59d79U, true, "        image_gather4_c_lz_o "
         "v[157:160], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf180fb00U, 0x02d59d79U, true, "        image_get_lod   "
@@ -2946,15 +2946,15 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN12Cases[] =
     { 0xf1a8fb00U, 0x02d59d79U, true, "        image_sample_c_cd "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1acfb00U, 0x02d59d79U, true, "        image_sample_c_cd_cl "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1b0fb00U, 0x02d59d79U, true, "        image_sample_cd_o "
         "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1b4fb00U, 0x02d59d79U, true, "        image_sample_cd_cl_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1b8fb00U, 0x02d59d79U, true, "        image_sample_c_cd_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:125], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1bcfb00U, 0x02d59d79U, true, "        image_sample_c_cd_cl_o "
-        "v[157:159], v[121:124], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
+        "v[157:159], v[121:126], s[84:87], s[88:91] dmask:11 unorm glc r128 da\n" },
     { 0xf1c0fb00U, 0x00159d79U, true, "        MIMG_ill_112    "
         "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da\n" },
     /* EXP encoding */
