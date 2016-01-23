@@ -468,15 +468,6 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return true;
         }
     }
-    /*linePtr += (ttmpReg)?4:1; // skip
-    if (linePtr == end)
-    {
-        if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
-            return false;
-        regPair = { 0, 0 };
-        linePtr = oldLinePtr; // revert current line pointer
-        return true;
-    }*/
     
     {   // many registers
         uint64_t value1, value2;
