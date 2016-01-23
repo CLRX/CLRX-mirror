@@ -29,7 +29,7 @@
 
 using namespace CLRX;
 
-static const char* stripCString(char* str)
+static char* stripCString(char* str)
 {
     while (*str==' ') str++;
     char* last = str+::strlen(str);
@@ -143,9 +143,12 @@ try
         if (error != CL_SUCCESS)
             throw CLError(error, "clGetDeviceInfoName");
         /// determine device type
-        const char* sdeviceName = stripCString(deviceName.get());
-        const char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
+        char* sdeviceName = stripCString(deviceName.get());
+        char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
                 ::strncmp(sdeviceName, "AMD ", 4)==0) ? sdeviceName+4 : sdeviceName;
+        char* devNameEnd = devNamePtr;
+        while (isAlnum(*devNameEnd)) devNameEnd++;
+        *devNameEnd = 0; // finish at first word
         const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
         
         ArrayIStream astream(::strlen(sourceCode), sourceCode);
