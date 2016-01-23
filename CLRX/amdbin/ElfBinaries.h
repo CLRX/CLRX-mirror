@@ -713,7 +713,7 @@ public:
     
     /// generate binary
     void generate(std::ostream& os)
-    { 
+    {
         FastOutputBuffer fob(256, os);
         generate(fob);
     }

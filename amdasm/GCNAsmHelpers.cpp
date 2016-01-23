@@ -165,8 +165,41 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     const char* end = asmr.line+asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     const char* vgprRangePlace = linePtr;
-    if (linePtr == end || toLower(*linePtr) != 'v' || linePtr+1 == end ||
-        (!isDigit(linePtr[1]) && linePtr[1]!='['))
+    
+    bool isRange = false;
+    try /* for handling parse exception */
+    {
+        if (linePtr!=end && toLower(*linePtr) == 'v' && linePtr+1 != end)
+        {
+            if (isDigit(linePtr[1]))
+            {
+                const char* oldPlace = linePtr;
+                linePtr++;
+                // if single register
+                cxuint value = cstrtobyte(linePtr, end);
+                if (linePtr==end || (!isAlpha(*linePtr) && *linePtr!='_' && *linePtr!='$'))
+                {
+                    if (regsNum!=0 && regsNum != 1)
+                    {
+                        printXRegistersRequired(asmr, vgprRangePlace, "vector", regsNum);
+                        return false;
+                    }
+                    regPair = { 256+value, 256+value+1 };
+                    return true;
+                }
+                else // if not register name
+                    linePtr = oldPlace;
+            }
+            else if (linePtr[1]=='[')
+                isRange = true;
+        }
+    } catch(const ParseException& ex)
+    {
+        asmr.printError(linePtr, ex.what());
+        return false;
+    }
+    
+    if (!isRange)
     {
         linePtr = oldLinePtr;
         if ((flags&INSTROP_SYMREGRANGE) != 0)
@@ -181,19 +214,6 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
     linePtr++;
     
     try /* for handling parse exception */
-    {
-    if (isDigit(*linePtr))
-    {   // if single register
-        cxuint value = cstrtobyte(linePtr, end);
-        if (regsNum!=0 && regsNum != 1)
-        {
-            printXRegistersRequired(asmr, vgprRangePlace, "vector", regsNum);
-            return false;
-        }
-        regPair = { 256+value, 256+value+1 };
-        return true;
-    }
-    else if (*linePtr == '[')
     {   // many registers
         uint64_t value1, value2;
         skipCharAndSpacesToEnd(linePtr, end);
@@ -240,7 +260,6 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         }
         regPair = { 256+value1, 256+value2+1 };
         return true;
-    }
     } catch(const ParseException& ex)
     {
         asmr.printError(linePtr, ex.what());
@@ -270,15 +289,73 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         return true;
     }
     
+    bool isRange = false;
     bool ttmpReg = false;
+    bool singleSorTtmp = false;
     try
     {
+    const char* oldPlace = linePtr;
     if (linePtr+4 < end && toLower(linePtr[0]) == 't' &&
         toLower(linePtr[1]) == 't' && toLower(linePtr[2]) == 'm' &&
-        toLower(linePtr[3]) == 'p' && (isDigit(linePtr[4]) || linePtr[4]=='['))
-        ttmpReg = true; // we have ttmp registers
-    else if (toLower(*linePtr) != 's' || linePtr+1==end ||
-        (!isDigit(linePtr[1]) && linePtr[1]!='[')) // if not sgprs
+        toLower(linePtr[3]) == 'p')
+    {
+        singleSorTtmp = ttmpReg = true; // we have ttmp registers
+        linePtr += 4;
+    }
+    else if (linePtr!=end && toLower(linePtr[0]) == 's' && linePtr+1 != end)
+    {
+        singleSorTtmp = true;
+        linePtr++;
+    }
+    
+    /* parse single SGPR */
+    const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
+    if (singleSorTtmp)
+    {
+        if (isDigit(*linePtr))
+        {   // if single register
+            cxuint value = cstrtobyte(linePtr, end);
+            if (linePtr==end || (!isAlpha(*linePtr) && *linePtr!='_' && *linePtr!='$'))
+            {
+                if (!ttmpReg)
+                {
+                    if (value >= maxSGPRsNum)
+                    {
+                        asmr.printError(sgprRangePlace,
+                                        "Scalar register number out of range");
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (value >= 12)
+                    {
+                        asmr.printError(sgprRangePlace,
+                                        "TTMPRegister number out of range (0-11)");
+                        return false;
+                    }
+                }
+                if (regsNum!=0 && regsNum!=1)
+                {
+                    printXRegistersRequired(asmr, linePtr, "scalar", regsNum);
+                    return false;
+                }
+                if (!ttmpReg)
+                    regPair = { value, value+1 };
+                else
+                    regPair = { 112+value, 112+value+1 };
+                return true;
+            }
+            else
+                linePtr = oldPlace;
+        }
+        else if (*linePtr=='[')
+            isRange = true;
+        else
+            linePtr = oldPlace;
+    }
+        
+    if (!isRange) // if not sgprs
     {
         const char* oldLinePtr = linePtr;
         char regName[20];
@@ -391,7 +468,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
             return true;
         }
     }
-    linePtr += (ttmpReg)?4:1; // skip
+    /*linePtr += (ttmpReg)?4:1; // skip
     if (linePtr == end)
     {
         if (printRegisterRangeExpected(asmr, sgprRangePlace, "scalar", regsNum, required))
@@ -399,40 +476,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         regPair = { 0, 0 };
         linePtr = oldLinePtr; // revert current line pointer
         return true;
-    }
+    }*/
     
-    const cxuint maxSGPRsNum = (arch&ARCH_RX3X0) ? 102 : 104;
-    if (isDigit(*linePtr))
-    {   // if single register
-        cxuint value = cstrtobyte(linePtr, end);
-        if (!ttmpReg)
-        {
-            if (value >= maxSGPRsNum)
-            {
-                asmr.printError(sgprRangePlace, "Scalar register number out of range");
-                return false;
-            }
-        }
-        else
-        {
-            if (value >= 12)
-            {
-                asmr.printError(sgprRangePlace, "TTMPRegister number out of range (0-11)");
-                return false;
-            }
-        }
-        if (regsNum!=0 && regsNum!=1)
-        {
-            printXRegistersRequired(asmr, linePtr, "scalar", regsNum);
-            return false;
-        }
-        if (!ttmpReg)
-            regPair = { value, value+1 };
-        else
-            regPair = { 112+value, 112+value+1 };
-        return true;
-    }
-    else if (*linePtr == '[')
     {   // many registers
         uint64_t value1, value2;
         skipCharAndSpacesToEnd(linePtr, end);

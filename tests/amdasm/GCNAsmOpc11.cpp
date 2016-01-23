@@ -56,6 +56,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "t=0x2b;    s_add_u32  s21, s4, t", 0x8015ab04U, 0, false, true, "" },
     { "s0=0x2b;    s_add_u32  s21, s4, @s0", 0x8015ab04U, 0, false, true, "" },
     { "s0=0x2c;    s_add_u32  s21, s4, @s0-1", 0x8015ab04U, 0, false, true, "" },
+    { "s123x=0x2b;    s_add_u32  s21, s4, s123x", 0x8015ab04U, 0, false, true, "" },
+    { "ttmp123x=0x2b;    s_add_u32  s21, s4, ttmp123x", 0x8015ab04U, 0, false, true, "" },
     { "s_add_u32  s21, s4, @s0-1; s0=600", 0x8015ff04U, 599, true, true, "" },
     { "s_add_u32  s21, s4, @s0-1; s0=40", 0x8015ff04U, 39, true, true, "" },
     { "s_add_u32  s21, s4, 3254500000000", 0x8015ff04U, 0xbf510100U, true, true,
@@ -583,6 +585,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xd2000b9aU, 0x001ad715U, true, true, "" },
     /* negated expressions */
     { "vx=7;    v_add_f32  v154, -vx, v107", 0x0734d6c7U, 0, false, true, "" },
+    { "v12ZZ=7;    v_add_f32  v154, -v12ZZ, v107", 0x0734d6c7U, 0, false, true, "" },
     { "v_add_f32  v154, -vx, v107; vx=7", 0x0734d6ffU, uint32_t(-7), true, true, "" },
     { "vx=7737;    v_add_f32  v154, -vx, v107",
         0x0734d6ffU, uint32_t(-7737), true, true, "" },
@@ -2076,6 +2079,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:37: Error: Required 2 vector registers\n" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35"
         "offset:603 glc slc addr64 lds", 0, 0, false, false,
+        "test.s:1:57: Error: Literal in MUBUF is illegal\n"
+        "test.s:1:66: Error: Some garbages at MUBUF modifier place\n"
         "test.s:1:27: Error: Required 1 vector register\n" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:603 tfx",
         0, 0, false, false, "test.s:1:62: Error: Unknown MUBUF modifier\n" },
