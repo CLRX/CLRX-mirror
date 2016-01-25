@@ -6,19 +6,15 @@ The almost instructions are executed within 4 cycles (scalar and vector). Hence,
 achieve maximum performance, 4 wavefront per compute units must be ran. 
 
 NOTE: Simple single dword (4-byte) instruction is executed in 4 cycles (thanks fast
-dispatching from cache). However, 2 dword instruction requires more cycles (2 or 3)
+dispatching from cache). However, 2 dword instruction can require 4 extra cycles
 to execution due to bigger size in memory and limits of instruction dispatching.
 To achieve best performance, we recommend to use single dword instructions.
-
-## Instruction alignment
-
-The best place to put 2-dword instruction is 16-byte aligned address. It possible
-to put 2 subsequent 2-dword instructions in that address. Any misalignment can
-give penalty. 
 
 The 'Delay' column contains instruction's delays (how many cycles needed to execute
 instruction). The 'Throughput' contains instruction's throughputs (maximum number of
 instructions per cycle).
+
+### Instruction alignment
 
 Aligmnent Rules for 2-dword instructions (GCN 1.0):
 
@@ -26,7 +22,9 @@ Aligmnent Rules for 2-dword instructions (GCN 1.0):
 * program divided by in 32-byte blocks
 * only first 3 places (dwords) in 32-byte block is free (no penalty). Any 2-dword
 instruction outside these first 3 dwords adds single penalty.
-* if instructions is longer (more than four cycles) then last (cycles-4)/4 dwords are free
+* if instructions is longer (more than four cycles) then last cycles/4 dwords are free
+* if 16 or more cycle 2-dword instruction and 2 dword insutrction in 4 dword, then
+no penalty for second 2-dword instruction.
 
 ### SOP2 Instruction timings
 
