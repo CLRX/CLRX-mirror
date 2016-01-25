@@ -23,8 +23,13 @@ Aligmnent Rules for 2-dword instructions (GCN 1.0):
 * only first 3 places (dwords) in 32-byte block is free (no penalty). Any 2-dword
 instruction outside these first 3 dwords adds single penalty.
 * if instructions is longer (more than four cycles) then last cycles/4 dwords are free
-* if 16 or more cycle 2-dword instruction and 2 dword insutrction in 4 dword, then
+* if 16 or more cycle 2-dword instruction and 2 dword instruction in 4 dword, then
 no penalty for second 2-dword instruction.
+
+### Instruction scheduling
+
+Between any vector operation that operates on VCC and any scalar ALU instruction is
+16-cycle delay.
 
 ### SOP2 Instruction timings
 
@@ -99,3 +104,14 @@ no penalty for second 2-dword instruction.
  S_MULK_I32        | 4      | 1
  S_SETREG_B32      |        |
  S_SETREG_IMM32_B32 |       |
+
+ 
+### SOP1 Instruction timings
+
+The S_*_SAVEEXEC_B64 instructions takes 8 cycles. Other ALU instructions (expects
+S_MOV_REGRD_B32, S_CBRANCH_JOIN, S_RFE_B64) take 4 cycles.
+
+### SOPC Instruction timings
+
+All comparison and bit checking instructions take 4 cycles.
+

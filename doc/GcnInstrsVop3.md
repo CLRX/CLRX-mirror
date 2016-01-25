@@ -1271,10 +1271,10 @@ for (UINT8 i = 0; i < 4; i++)
     VDST += ABS(((SRC0 >> (i*8)) & 0xff) - ((SRC1 >> (i*8)) & 0xff))
 ```
 
-#### V_TRIG_REOP_F64
+#### V_TRIG_PREOP_F64
 
 Opcode: 372 (0x174) for GCN 1.0/1.1; 658 (0x292) for GCN 1.2  
-Syntax: V_TRIG_REOP_F64 VDST(2), SRC0(2), SRC1  
+Syntax: V_TRIG_PREOP_F64 VDST(2), SRC0(2), SRC1  
 Description:  D.d = Look Up 2/PI (S0.d) with segment select S1.u[4:0].
 Save choosen 53 bits of 2/PI in double floating point value in VDST. Second argument
 is initial segment. First argument is shift of the value (in power form).
