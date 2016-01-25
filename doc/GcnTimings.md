@@ -23,7 +23,10 @@ instructions per cycle).
 Aligmnent Rules for 2-dword instructions (GCN 1.0):
 
 * any penalty costs 4 cycles
-* in 32-byte boundary - only first 3 places (dwords) is free (no penalty).
+* program divided by in 32-byte blocks
+* only first 3 places (dwords) in 32-byte block is free (no penalty). Any 2-dword
+instruction outside these first 3 dwords adds single penalty.
+* if instructions is longer (more than four cycles) then last (cycles-4)/4 dwords are free
 
 ### SOP2 Instruction timings
 
