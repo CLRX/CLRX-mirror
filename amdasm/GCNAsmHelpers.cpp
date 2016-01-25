@@ -177,7 +177,8 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
                 linePtr++;
                 // if single register
                 cxuint value = cstrtobyte(linePtr, end);
-                if (linePtr==end || (!isAlpha(*linePtr) && *linePtr!='_' && *linePtr!='$'))
+                if (linePtr==end || (!isAlpha(*linePtr) && *linePtr!='_' &&
+                            *linePtr!='$' && *linePtr!='.'))
                 {
                     if (regsNum!=0 && regsNum != 1)
                     {
@@ -315,7 +316,8 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
         if (isDigit(*linePtr))
         {   // if single register
             cxuint value = cstrtobyte(linePtr, end);
-            if (linePtr==end || (!isAlpha(*linePtr) && *linePtr!='_' && *linePtr!='$'))
+            if (linePtr==end || (!isAlpha(*linePtr) && *linePtr!='_' &&
+                    *linePtr!='$' && *linePtr!='.'))
             {
                 if (!ttmpReg)
                 {
