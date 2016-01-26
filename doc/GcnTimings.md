@@ -34,7 +34,7 @@ does not apply to backward jumps (???)
 
 ### Instruction scheduling
 
-* between any integer V_ADD*, V_SUB*, V_FIRSTREADLINE_B32, V_READLANE_B32 operation
+* between any integer V_ADD\*, V_SUB\*, V_FIRSTREADLINE_B32, V_READLANE_B32 operation
 and any scalar ALU instruction is 16-cycle delay.
 * any conditional jump directly that checks VCCZ or EXECZ after instruction that changes
 VCC or EXEC adds single penalty (4 cycles)
