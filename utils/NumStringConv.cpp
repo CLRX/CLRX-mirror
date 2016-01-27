@@ -277,7 +277,7 @@ static bool inline bigAdd(cxuint aSize, uint64_t* biga, const uint64_t* bigb)
 
 static bool inline bigAdd(cxuint aSize, uint64_t* biga, cxuint bSize, const uint64_t* bigb)
 {
-    bool carry = false;
+    cxuint carry = 0;
     cxuint minSize = std::min(aSize, bSize);
     cxuint i = 0;
     for (; i < minSize; i++)
@@ -404,7 +404,7 @@ static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
             uint64_t* bigNum)
 {
     const cxuint roundSize = inSize-outSize;
-    bool carry = false;
+    cxuint carry = 0;
     if ((bigNum[roundSize-1] & (1ULL<<63)) != 0)
     {   /* apply rounding */
         carry = true;
@@ -1295,7 +1295,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                 /* round rescaled value */
                 if ((bigRescaled[powSize-1]&(1ULL<<63)) != 0)
                 {
-                    bool carry = true;
+                    cxuint carry = 1;
                     for (cxuint k = powSize; k < powSize+bigValueSize; k++)
                     {
                         bigRescaled[k] += carry;

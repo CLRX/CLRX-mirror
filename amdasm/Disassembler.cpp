@@ -1011,7 +1011,7 @@ void Disassembler::disassembleGallium()
                 (const std::pair<cxuint,cxuint>& p1, const std::pair<cxuint,cxuint>& p2)
                 { return p1.first < p2.first; });
         kernelSortedOffsets.push_back(
-            { galliumInput->codeSize, galliumInput->kernels.size()});
+            { cxuint(galliumInput->codeSize), cxuint(galliumInput->kernels.size())});
         
         std::vector<cxuint> kernelSizesTmp(galliumInput->kernels.size());
         for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
