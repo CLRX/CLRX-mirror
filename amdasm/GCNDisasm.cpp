@@ -1088,13 +1088,13 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
 
 struct CLRX_INTERNAL VOPExtraWordOut
 {
-    cxuint src0: 9;
-    cxuint sextSrc0: 1;
-    cxuint negSrc0: 1;
-    cxuint absSrc0: 1;
-    cxuint sextSrc1: 1;
-    cxuint negSrc1: 1;
-    cxuint absSrc1: 1;
+    uint16_t src0: 9;
+    bool sextSrc0;
+    bool negSrc0;
+    bool absSrc0;
+    bool sextSrc1;
+    bool negSrc1;
+    bool absSrc1;
 };
 
 static const char* sdwaSelChoicesTbl[] =
@@ -1110,7 +1110,7 @@ static const char* sdwaDstUnusedTbl[] =
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
 static inline VOPExtraWordOut decodeVOPSDWAFlags(uint32_t insnCode2)
 {
-    return { (insnCode2&0xff)+256,
+    return { uint16_t((insnCode2&0xff)+256),
         (insnCode2&(1U<<19))!=0, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
         (insnCode2&(1U<<27))!=0, (insnCode2&(1U<<28))!=0, (insnCode2&(1U<<29))!=0 };
 }
@@ -1186,7 +1186,7 @@ static const char* dppCtrl130Tbl[] =
 /* returns mask of abs,neg,sext for src0 and src1 argument and src0 register */
 static inline VOPExtraWordOut decodeVOPDPPFlags(uint32_t insnCode2)
 {
-    return { (insnCode2&0xff)+256,
+    return { uint16_t((insnCode2&0xff)+256),
         false, (insnCode2&(1U<<20))!=0, (insnCode2&(1U<<21))!=0,
         false, (insnCode2&(1U<<22))!=0, (insnCode2&(1U<<23))!=0 };
 }
