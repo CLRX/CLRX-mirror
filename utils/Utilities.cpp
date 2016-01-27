@@ -374,7 +374,11 @@ bool CLRX::isDirectory(const char* path)
         else
             throw Exception("Can't determine whether path refers to directory");
     }
+#ifdef HAVE_WINDOWS
+    return (_S_IFDIR&stBuf.st_mode)!=0;
+#else
     return S_ISDIR(stBuf.st_mode);
+#endif
 }
 
 Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
@@ -478,5 +482,9 @@ uint64_t CLRX::getFileTimestamp(const char* filename)
         else
             throw Exception("Can't determine whether path refers to directory");
     }
+#if _POSIX_C_SOURCE>=200800L
     return stBuf.st_mtim.tv_sec*1000000000ULL + stBuf.st_mtim.tv_nsec;
+#else
+    return stBuf.st_mtime*1000000000ULL;
+#endif
 }

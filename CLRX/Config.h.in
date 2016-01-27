@@ -187,7 +187,16 @@ typedef unsigned long cxulong;
 typedef signed long long cxllong;
 typedef unsigned long long cxullong;
 #ifdef _MSC_VER
+#  ifdef HAVE_64BIT
+typedef signed long long ssize_t;
+#    define SSIZE_MIN (-9223372036854775808LL)
+#    define SSIZE_MAX (9223372036854775807LL)
+#else
 typedef signed long ssize_t;
+#    define SSIZE_MIN (-2147483647LL)
+#    define SSIZE_MAX (2147483647LL)
+#  endif
+#  define NOMINMAX
 #endif
 
 #if __cplusplus < 201103L || (__GNUC__ == 4 && __GNUC_MINOR__ < 8)
