@@ -158,9 +158,11 @@
 #  define CLRX_ALT_DIR_SEP '/'
 #  define CLRX_ALT_DIR_SEP_S "/"
 
-#define strcasecmp(A,B) _stricmp(A,B)
-#define strncasecmp(A,B,N) _strnicmp(A,B,N)
-#define snprintf(B,N,F,...) _snprintf(B,N,F,__VA_ARGS__)
+#  define strcasecmp(A,B) _stricmp(A,B)
+#  define strncasecmp(A,B,N) _strnicmp(A,B,N)
+#  if _MSC_VER<1900
+#    define snprintf(B,N,F,...) _snprintf(B,N,F,__VA_ARGS__)
+#  endif
 #endif
 
 /* symbols visibility */
@@ -184,6 +186,9 @@ typedef signed long cxlong;
 typedef unsigned long cxulong;
 typedef signed long long cxllong;
 typedef unsigned long long cxullong;
+#ifdef _MSC_VER
+typedef signed long ssize_t;
+#endif
 
 #if __cplusplus < 201103L || (__GNUC__ == 4 && __GNUC_MINOR__ < 8)
 #define __STDC_LIMIT_MACROS 1

@@ -237,54 +237,55 @@ std::streambuf* VectorStreamBuf::setbuf(std::streambuf::char_type* buffer,
  */
 
 ArrayIStream::ArrayIStream(size_t size, const char* array)
-        : buffer(size, const_cast<char*>(array), std::ios_base::in)
+        : std::istream(nullptr), buffer(size, const_cast<char*>(array), std::ios_base::in)
 {
     rdbuf(&buffer);
 }
 
 ArrayOStream::ArrayOStream(size_t size, char* array)
-        : buffer(size, array, std::ios_base::out)
+        : std::ostream(nullptr), buffer(size, array, std::ios_base::out)
 {
     rdbuf(&buffer);
 }
 
 ArrayIOStream::ArrayIOStream(size_t size, char* array)
-        : buffer(size, array, std::ios_base::in | std::ios_base::out)
+        : std::iostream(nullptr), buffer(size, array, std::ios_base::in | std::ios_base::out)
 {
     rdbuf(&buffer);
 }
 
 StringIStream::StringIStream(const std::string& string)
-        : buffer(const_cast<std::string&>(string), std::ios_base::in)
+        : std::istream(nullptr), buffer(const_cast<std::string&>(string), std::ios_base::in)
 {
     rdbuf(&buffer);
 }
 
-StringOStream::StringOStream(std::string& string) : buffer(string, std::ios_base::out)
+StringOStream::StringOStream(std::string& string)
+        : std::ostream(nullptr), buffer(string, std::ios_base::out)
 {
     rdbuf(&buffer);
 }
 
 StringIOStream::StringIOStream(std::string& string)
-        : buffer(string, std::ios_base::in | std::ios_base::out)
+        : std::iostream(nullptr), buffer(string, std::ios_base::in | std::ios_base::out)
 {
     rdbuf(&buffer);
 }
 
-VectorIStream::VectorIStream(const std::vector<char>& vector)
-        : buffer(const_cast<std::vector<char>&>(vector), std::ios_base::in)
+VectorIStream::VectorIStream(const std::vector<char>& vector) : std::istream(nullptr),
+          buffer(const_cast<std::vector<char>&>(vector), std::ios_base::in)
 {
     rdbuf(&buffer);
 }
 
 VectorOStream::VectorOStream(std::vector<char>& vector)
-        : buffer(vector, std::ios_base::out)
+        : std::ostream(nullptr), buffer(vector, std::ios_base::out)
 {
     rdbuf(&buffer);
 }
 
 VectorIOStream::VectorIOStream(std::vector<char>& vector)
-        : buffer(vector, std::ios_base::in | std::ios_base::out)
+        : std::iostream(nullptr), buffer(vector, std::ios_base::in | std::ios_base::out)
 {
     rdbuf(&buffer);
 }

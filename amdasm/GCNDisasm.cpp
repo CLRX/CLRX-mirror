@@ -2434,8 +2434,7 @@ void GCNDisassembler::disassemble()
                 gcnInsn = gcnInstrTableByCode.get() + encSpace2.offset + opcode;
                 if (gcnInsn->mnemonic == nullptr ||
                         (curArchMask & gcnInsn->archMask) == 0)
-                        // illegal
-                    isIllegal = true;
+                    isIllegal = true; // illegal
             }
             else if (gcnInsn->mnemonic == nullptr ||
                 (curArchMask & gcnInsn->archMask) == 0)
