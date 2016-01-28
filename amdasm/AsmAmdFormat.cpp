@@ -213,7 +213,7 @@ cxuint AsmAmdHandler::getSectionId(const char* sectionName) const
         else
         {
             SectionMap::const_iterator it = kernelState.extraSectionMap.find(sectionName);
-            if (it != extraSectionMap.end())
+            if (it != kernelState.extraSectionMap.end())
                 return it->second;
         }
         return ASMSECT_NONE;
