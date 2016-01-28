@@ -34,7 +34,56 @@ extern "C"
 {
 
 /* public API definitions */
-
+#ifdef _MSC_VER
+#pragma comment(linker,"export:clSetEventCallback=clrxclSetEventCallback")
+#pragma comment(linker,"export:clCreateSubBuffer=clrxclCreateSubBuffer")
+#pragma comment(linker,"export:clSetMemObjectDestructorCallback=clrxclSetMemObjectDestructorCallback")
+#pragma comment(linker,"export:clCreateUserEvent=clrxclCreateUserEvent")
+#pragma comment(linker,"export:clSetUserEventStatus=clrxclSetUserEventStatus")
+#pragma comment(linker,"export:clEnqueueReadBufferRect=clrxclEnqueueReadBufferRect")
+#pragma comment(linker,"export:clEnqueueWriteBufferRect=clrxclEnqueueWriteBufferRect")
+#pragma comment(linker,"export:clEnqueueCopyBufferRect=clrxclEnqueueCopyBufferRect")
+#pragma comment(linker,"export:clCreateSubDevicesEXT=clrxclCreateSubDevicesEXT")
+#pragma comment(linker,"export:clRetainDeviceEXT=clrxclRetainDeviceEXT")
+#pragma comment(linker,"export:clReleaseDeviceEXT=clrxclReleaseDeviceEXT")
+#pragma comment(linker,"export:clCreateEventFromGLsyncKHR=clrxclCreateEventFromGLsyncKHR")
+#ifdef CL_VERSION_1_2
+#pragma comment(linker,"export:clCreateSubDevices=clrxclCreateSubDevices")
+#pragma comment(linker,"export:clRetainDevice=clrxclRetainDevice")
+#pragma comment(linker,"export:clReleaseDevice=clrxclReleaseDevice")
+#pragma comment(linker,"export:clCreateImage=clrxclCreateImage")
+#pragma comment(linker,"export:clCreateProgramWithBuiltInKernels=clrxclCreateProgramWithBuiltInKernels")
+#pragma comment(linker,"export:clCompileProgram=clrxclCompileProgram")
+#pragma comment(linker,"export:clLinkProgram=clrxclLinkProgram")
+#pragma comment(linker,"export:clUnloadPlatformCompiler=clrxclUnloadPlatformCompiler")
+#pragma comment(linker,"export:clGetKernelArgInfo=clrxclGetKernelArgInfo")
+#pragma comment(linker,"export:clEnqueueFillBuffer=clrxclEnqueueFillBuffer")
+#pragma comment(linker,"export:clEnqueueFillImage=clrxclEnqueueFillImage")
+#pragma comment(linker,"export:clEnqueueMigrateMemObjects=clrxclEnqueueMigrateMemObjects")
+#pragma comment(linker,"export:clEnqueueMarkerWithWaitList=clrxclEnqueueMarkerWithWaitList")
+#pragma comment(linker,"export:clEnqueueBarrierWithWaitList=clrxclEnqueueBarrierWithWaitList")
+#pragma comment(linker,"export:clGetExtensionFunctionAddressForPlatform=clrxclGetExtensionFunctionAddressForPlatform")
+#pragma comment(linker,"export:clCreateFromGLTexture=clrxclCreateFromGLTexture")
+#pragma comment(linker,"export:clEnqueueWaitSignalAMD=clrxclEnqueueWaitSignalAMD")
+#pragma comment(linker,"export:clEnqueueWriteSignalAMD=clrxclEnqueueWriteSignalAMD")
+#pragma comment(linker,"export:clEnqueueMakeBuffersResidentAMD=clrxclEnqueueMakeBuffersResidentAMD")
+#endif
+#ifdef CL_VERSION_2_0
+#pragma comment(linker,"export:clCreateCommandQueueWithProperties=clrxclCreateCommandQueueWithProperties")
+#pragma comment(linker,"export:clCreatePipe=clrxclCreatePipe")
+#pragma comment(linker,"export:clGetPipeInfo=clrxclGetPipeInfo")
+#pragma comment(linker,"export:clSVMAlloc=clrxclSVMAlloc")
+#pragma comment(linker,"export:clSVMFree=clrxclSVMFree")
+#pragma comment(linker,"export:clEnqueueSVMFree=clrxclEnqueueSVMFree")
+#pragma comment(linker,"export:clEnqueueSVMMemcpy=clrxclEnqueueSVMMemcpy")
+#pragma comment(linker,"export:clEnqueueSVMMemFill=clrxclEnqueueSVMMemFill")
+#pragma comment(linker,"export:clEnqueueSVMMap=clrxclEnqueueSVMMap")
+#pragma comment(linker,"export:clEnqueueSVMUnmap=clrxclEnqueueSVMUnmap")
+#pragma comment(linker,"export:clCreateSamplerWithProperties=clrxclCreateSamplerWithProperties")
+#pragma comment(linker,"export:clSetKernelArgSVMPointer=clrxclSetKernelArgSVMPointer")
+#pragma comment(linker,"export:clSetKernelExecInfo=clrxclSetKernelExecInfo")
+#endif
+#else
 CLRX_CL_PUBLIC_SYM(clSetEventCallback)
 CLRX_CL_PUBLIC_SYM(clCreateSubBuffer)
 CLRX_CL_PUBLIC_SYM(clSetMemObjectDestructorCallback)
@@ -82,6 +131,7 @@ CLRX_CL_PUBLIC_SYM(clEnqueueSVMUnmap)
 CLRX_CL_PUBLIC_SYM(clCreateSamplerWithProperties)
 CLRX_CL_PUBLIC_SYM(clSetKernelArgSVMPointer)
 CLRX_CL_PUBLIC_SYM(clSetKernelExecInfo)
+#endif
 #endif
 
 /* end of public API definitions */

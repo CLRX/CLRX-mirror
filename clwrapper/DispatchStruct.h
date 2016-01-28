@@ -32,6 +32,11 @@
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #endif
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#undef NOMINMAX
+#endif
 #include <CL/cl.h>
 #include <GL/gl.h>
 #include <CL/cl_gl.h>

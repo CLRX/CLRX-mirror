@@ -23,36 +23,36 @@ ADD_EXECUTABLE(GCNDisasmOpcodes
         GCNDisasmOpcodes.cpp
         GCNDisasmOpc11.cpp
         GCNDisasmOpc12.cpp)
-TARGET_LINK_LIBRARIES(GCNDisasmOpcodes ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(GCNDisasmOpcodes CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(GCNDisasmOpcodes GCNDisasmOpcodes)
 
 ADD_EXECUTABLE(GCNDisasmLabels GCNDisasmLabels.cpp)
-TARGET_LINK_LIBRARIES(GCNDisasmLabels ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(GCNDisasmLabels CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(GCNDisasmLabels GCNDisasmLabels)
 
 ADD_EXECUTABLE(DisasmDataTest DisasmDataTest.cpp)
-TARGET_LINK_LIBRARIES(DisasmDataTest ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(DisasmDataTest CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(DisasmDataTest DisasmDataTest)
 
 ADD_EXECUTABLE(AsmExprParse AsmExprParse.cpp)
-TARGET_LINK_LIBRARIES(AsmExprParse ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(AsmExprParse CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmExprParse AsmExprParse)
 
 ADD_EXECUTABLE(AssemblerBasics AssemblerBasics.cpp)
-TARGET_LINK_LIBRARIES(AssemblerBasics ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(AssemblerBasics CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AssemblerBasics AssemblerBasics)
 
 ADD_EXECUTABLE(AsmFormats AsmFormats.cpp)
-TARGET_LINK_LIBRARIES(AsmFormats ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(AsmFormats CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmFormats AsmFormats)
 
 ADD_EXECUTABLE(GCNAsmOpcodes
         GCNAsmOpcodes.cpp
         GCNAsmOpc11.cpp
         GCNAsmOpc12.cpp)
-TARGET_LINK_LIBRARIES(GCNAsmOpcodes ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(GCNAsmOpcodes CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(GCNAsmOpcodes GCNAsmOpcodes)
 
 ADD_EXECUTABLE(AsmRegPool AsmRegPool.cpp)
-TARGET_LINK_LIBRARIES(AsmRegPool ${CMAKE_THREAD_LIBS_INIT} CLRXAmdAsm CLRXUtils)
+TEST_LINK_LIBRARIES(AsmRegPool CLRXAmdAsm CLRXAmdBin CLRXUtils)
 ADD_TEST(AsmRegPool AsmRegPool)

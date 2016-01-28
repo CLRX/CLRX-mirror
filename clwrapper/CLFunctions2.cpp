@@ -34,6 +34,42 @@ extern "C"
 
 /* public API definitions */
 
+#ifdef _MSC_VER
+#pragma comment(linker,"export:clWaitForEvents=clrxclWaitForEvents")
+#pragma comment(linker,"export:clGetEventInfo=clrxclGetEventInfo")
+#pragma comment(linker,"export:clRetainEvent=clrxclRetainEvent")
+#pragma comment(linker,"export:clReleaseEvent=clrxclReleaseEvent")
+#pragma comment(linker,"export:clGetEventProfilingInfo=clrxclGetEventProfilingInfo")
+#pragma comment(linker,"export:clFlush=clrxclFlush")
+#pragma comment(linker,"export:clFinish=clrxclFinish")
+#pragma comment(linker,"export:clEnqueueReadBuffer=clrxclEnqueueReadBuffer")
+#pragma comment(linker,"export:clEnqueueWriteBuffer=clrxclEnqueueWriteBuffer")
+#pragma comment(linker,"export:clEnqueueCopyBuffer=clrxclEnqueueCopyBuffer")
+#pragma comment(linker,"export:clEnqueueReadImage=clrxclEnqueueReadImage")
+#pragma comment(linker,"export:clEnqueueWriteImage=clrxclEnqueueWriteImage")
+#pragma comment(linker,"export:clEnqueueCopyImage=clrxclEnqueueCopyImage")
+#pragma comment(linker,"export:clEnqueueCopyImageToBuffer=clrxclEnqueueCopyImageToBuffer")
+#pragma comment(linker,"export:clEnqueueCopyBufferToImage=clrxclEnqueueCopyBufferToImage")
+#pragma comment(linker,"export:clEnqueueMapBuffer=clrxclEnqueueMapBuffer")
+#pragma comment(linker,"export:clEnqueueMapImage=clrxclEnqueueMapImage")
+#pragma comment(linker,"export:clEnqueueUnmapMemObject=clrxclEnqueueUnmapMemObject")
+#pragma comment(linker,"export:clEnqueueNDRangeKernel=clrxclEnqueueNDRangeKernel")
+#pragma comment(linker,"export:clEnqueueTask=clrxclEnqueueTask")
+#pragma comment(linker,"export:clEnqueueNativeKernel=clrxclEnqueueNativeKernel")
+#pragma comment(linker,"export:clEnqueueMarker=clrxclEnqueueMarker")
+#pragma comment(linker,"export:clEnqueueWaitForEvents=clrxclEnqueueWaitForEvents")
+#pragma comment(linker,"export:clEnqueueBarrier=clrxclEnqueueBarrier")
+#pragma comment(linker,"export:clGetExtensionFunctionAddress=clrxclGetExtensionFunctionAddress")
+#pragma comment(linker,"export:clCreateFromGLBuffer=clrxclCreateFromGLBuffer")
+#pragma comment(linker,"export:clCreateFromGLTexture2D=clrxclCreateFromGLTexture2D")
+#pragma comment(linker,"export:clCreateFromGLTexture3D=clrxclCreateFromGLTexture3D")
+#pragma comment(linker,"export:clCreateFromGLRenderbuffer=clrxclCreateFromGLRenderbuffer")
+#pragma comment(linker,"export:clGetGLObjectInfo=clrxclGetGLObjectInfo")
+#pragma comment(linker,"export:clGetGLTextureInfo=clrxclGetGLTextureInfo")
+#pragma comment(linker,"export:clEnqueueAcquireGLObjects=clrxclEnqueueAcquireGLObjects")
+#pragma comment(linker,"export:clEnqueueReleaseGLObjects=clrxclEnqueueReleaseGLObjects")
+#pragma comment(linker,"export:clGetGLContextInfoKHR=clrxclGetGLContextInfoKHR")
+#else
 CLRX_CL_PUBLIC_SYM(clWaitForEvents)
 CLRX_CL_PUBLIC_SYM(clGetEventInfo)
 CLRX_CL_PUBLIC_SYM(clRetainEvent)
@@ -68,6 +104,7 @@ CLRX_CL_PUBLIC_SYM(clGetGLTextureInfo)
 CLRX_CL_PUBLIC_SYM(clEnqueueAcquireGLObjects)
 CLRX_CL_PUBLIC_SYM(clEnqueueReleaseGLObjects)
 CLRX_CL_PUBLIC_SYM(clGetGLContextInfoKHR)
+#endif
 
 /* end of public API definitions */
 

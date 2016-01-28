@@ -126,6 +126,11 @@ SET(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR})
 
 OPTION(NO_STATIC "Disable static during compiling" OFF)
 
+INCLUDE(PortUtils)
+IF(WIN32)
+  SET(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+ENDIF(WIN32)
+
 ####
 # Documentation
 ####
@@ -160,6 +165,12 @@ SET(OPENCL_DIST_DIR "" CACHE PATH "OpenCL Distribution directory")
 IF(NOT OPENCL_DIST_DIR)
     IF(EXISTS /opt/AMDAPP)
         SET(OPENCL_DIST_DIR "/opt/AMDAPP")
+        MESSAGE(STATUS "OpenCL AMDAPP found")
+    ELSEIF(EXISTS "/Program Files (x86)/AMD APP SDK")
+        FILE(GLOB OPENCL_DIST_DIR "/Program Files (x86)/AMD APP SDK/*")
+        MESSAGE(STATUS "OpenCL AMDAPP found")
+    ELSEIF(EXISTS "/Program Files/AMD APP SDK")
+        FILE(GLOB OPENCL_DIST_DIR "/Program Files/AMD APP SDK/*")
         MESSAGE(STATUS "OpenCL AMDAPP found")
     ELSEIF(EXISTS /usr/include/CL)
         SET(OPENCL_DIST_DIR "/usr")

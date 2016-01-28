@@ -30,6 +30,9 @@
 
 #  define CLRX_CL_PUBLIC_SYM(NAME) decltype(NAME) NAME \
         __attribute__((alias("clrx" #NAME), visibility("default")));
+#elif defined(_MSC_VER)
+#  define CLRX_CL_INTERNAL_DECLSYM(NAME) extern decltype(NAME) clrx##NAME;
+#  define CLRX_CL_PUBLIC_SYM(NAME)
 #else
 #  error "Unsupported compiler other than GCC 4"
 #endif
