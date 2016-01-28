@@ -362,18 +362,18 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    std::string filename;
+    std::string filename, sysfilename;
     const char* namePlace = linePtr;
     if (asmr.parseString(filename, linePtr))
     {
         if (!checkGarbagesAtEnd(asmr, linePtr))
             return;
-        
+        sysfilename = filename;
         bool failedOpen = false;
-        filesystemPath(filename);
+        filesystemPath(sysfilename);
         try
         {
-            asmr.includeFile(pseudoOpPlace, filename);
+            asmr.includeFile(pseudoOpPlace, sysfilename);
             return;
         }
         catch(const Exception& ex)
@@ -382,11 +382,12 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
         for (const CString& incDir: asmr.includeDirs)
         {
             failedOpen = false;
-            std::string inDirFilename;
+            std::string incDirPath(incDir.c_str());
+            filesystemPath(incDirPath);
             try
             {
                 asmr.includeFile(pseudoOpPlace, joinPaths(
-                            std::string(incDir.c_str()), filename));
+                            std::string(incDirPath.c_str()), sysfilename));
                 break;
             }
             catch(const Exception& ex)

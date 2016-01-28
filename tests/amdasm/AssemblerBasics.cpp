@@ -2544,7 +2544,7 @@ In macro content:
         { },
         { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:1:22: Error: Include file "
-        "'incdir0/incx.s' not found or unavailable in any directory\n"
+        "'incdir0\\incx.s' not found or unavailable in any directory\n"
         "test.s:2:22: Error: Include file 'xxxx.s' "
         "not found or unavailable in any directory\n"
         "test.s:3:22: Error: Include file 'xxxa.s' "
