@@ -16,13 +16,12 @@ This package provides source code and requires:
 * GNU make tool
 * CMake system (2.6 or later)
 * Threads support (for Linux, recommended NPTL)
-* 'elf.h' include file (should be installed in standard)
-* Linux system
+* Unix-like (Linux or BSD) system or Windows system
 
 Optionally for clwrapper (an OpenCL wrapper that replaces AMD Catalyst driver
 behaviour) requires:
 
-* libOpenCL.so
+* libOpenCL.so or OpenCL.dll
 * OpenCL ICD (for example from AMD Catalyst driver)
 * AMD Catalyst driver.
 
@@ -46,6 +45,7 @@ CMAKE_BUILD_TYPE - type of build (Release, Debug, GCCSan, GCCSSP).
 CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
 BUILD_32BIT - build also 32-bit binaries
 BUILD_TESTS - build all tests
+BUILD_SAMPLES - build OpenCL samples
 BUILD_DOCUMENTATION - build project documentation (doxygen, unix manuals, user doc)
 BUILD_DOXYGEN - build doxygen documentation
 BUILD_MANUAL - build Unix manual pages
@@ -64,6 +64,11 @@ After creating Makefiles scripts you can compile project:
 After building you can check whether project is working (if you will build tests):
 
   ctest
+  
+2.1. Windows and MSVC
+
+CLRadeonExtender has been compiled under Windows 8.1 and Microsoft Visual Studio 2015
+Community version.
 
 3. Installation
 
