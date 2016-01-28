@@ -31,7 +31,6 @@ CLRadeonExtender requires:
 * GNU make tool
 * CMake system (2.6 or later)
 * Threads support (for Linux, recommended NPTL)
-* 'elf.h' include file (should be installed in standard)
 * Unix-like (Linux or BSD) system or Windows system
 
 Optionally, CLRXWrapper requires:
