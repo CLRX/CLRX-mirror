@@ -32,11 +32,11 @@ CLRadeonExtender requires:
 * CMake system (2.6 or later)
 * Threads support (for Linux, recommended NPTL)
 * 'elf.h' include file (should be installed in standard)
-* Linux system
+* Unix-like (Linux or BSD) system or Windows system
 
 Optionally, CLRXWrapper requires:
 
-* libOpenCL.so
+* libOpenCL.so or OpenCL.dll
 * OpenCL ICD (for example from AMD Catalyst driver)
 * AMD Catalyst driver.
 
@@ -60,6 +60,7 @@ Optional CMake configuration options for build:
 * CMAKE_INSTALL_PREFIX - prefix for installation (for example '/usr/local')
 * BUILD_32BIT - build also 32-bit binaries
 * BUILD_TESTS - build all tests
+* BUILD_SAMPLES - build OpenCL samples
 * BUILD_DOCUMENTATION - build project documentation (doxygen, unix manuals, user doc)
 * BUILD_DOXYGEN - build doxygen documentation
 * BUILD_MANUAL - build Unix manual pages
