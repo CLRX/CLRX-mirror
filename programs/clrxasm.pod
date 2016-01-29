@@ -95,6 +95,19 @@ Print version
 
 =back
 
+=head1 ENVIRONMENT
+
+Following environment variables impacts on assembler work:
+
+=over 8
+
+=item CLRX_AMDOCL_PATH
+
+Path to AMDOCL (AMD OpenCL implementation) shared library
+(libamdocl32.so, libamdocl64.so, amdocl32.dll or amdocl64.dll).
+
+=back
+
 =head1 RETURN VALUE
 
 Returns zero if assembler succeeded, otherwise returns 1.

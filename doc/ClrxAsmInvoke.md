@@ -89,6 +89,15 @@ to keep compatibility with original format.
 
     Print version
 
+### Environment
+
+Following environment variables impacts on assembler work:
+
+* CLRX_AMDOCL_PATH
+
+    Path to AMDOCL (AMD OpenCL implementation) shared library (libamdocl32.so,
+libamdocl64.so, amdocl32.dll or amdocl64.dll).
+    
 ### Output
 
 An assembler generates single output binary. If no output specified an assembler will
