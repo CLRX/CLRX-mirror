@@ -15,6 +15,17 @@ directory
 
 Before below steps, we recommend to make copy of `/etc/OpenCL/vendors` directory.
 
+Installation on Windows:
+
+* copy all CLRX libraries and CLRXWrapper into AMDAPP directory or OpenCL directory
+* run RegEdit and go to `HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenCL\Vendors\`
+* remove `amdocl32.dll` or `amdocl64.dll` key
+* add a DWORD `CLRXWrapper.dll` key with value 0
+* additionally, set system environment variable to path to CLRX_AMDOCL_PATH dynamic library
+
+WARNING: CLRXWrapper has been tested under Linux. This part of CLRadeonExtender can behave
+very unexpectedly under Windows.
+
 ### Additional build options
 
 * **-xasm**, **-x asm**
