@@ -941,7 +941,7 @@ cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
     return CL_SUCCESS;
 }
 
-void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
+void CL_CALLBACK clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
 {
     CLRXBuildProgramUserData* wrappedDataPtr =
             static_cast<CLRXBuildProgramUserData*>(user_data);
@@ -971,7 +971,7 @@ void clrxBuildProgramNotifyWrapper(cl_program program, void * user_data)
     wrappedData.realNotify(wrappedData.clrxProgram, wrappedData.realUserData);
 }
 
-void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
+void CL_CALLBACK clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
 {
     CLRXLinkProgramUserData* wrappedDataPtr =
             static_cast<CLRXLinkProgramUserData*>(user_data);
@@ -1008,7 +1008,7 @@ void clrxLinkProgramNotifyWrapper(cl_program program, void * user_data)
     catch(const std::exception& ex)
     { clrxAbort("Fatal exception happened: ", ex.what()); }
     
-    void (*realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
+    void (CL_CALLBACK *realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
     if (!initializedByCallback) // if not initialized by this callback to delete
     {
         delete wrappedDataPtr->transDevicesMap;
@@ -1077,7 +1077,7 @@ cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
 }
 
 cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
-       cl_device_id* out_devices, cl_int (*AMDReleaseDevice)(cl_device_id),
+       cl_device_id* out_devices, cl_int (CL_API_CALL *AMDReleaseDevice)(cl_device_id),
        const char* fatalErrorMessage)
 {
     cl_uint dp = 0;
@@ -1124,7 +1124,7 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
     return CL_SUCCESS;
 }
 
-void clrxEventCallbackWrapper(cl_event event, cl_int exec_status, void * user_data)
+void CL_CALLBACK clrxEventCallbackWrapper(cl_event event, cl_int exec_status, void * user_data)
 {
     CLRXEventCallbackUserData* wrappedDataPtr =
             static_cast<CLRXEventCallbackUserData*>(user_data);
@@ -1135,7 +1135,7 @@ void clrxEventCallbackWrapper(cl_event event, cl_int exec_status, void * user_da
                 wrappedData.realUserData);
 }
 
-void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
+void CL_CALLBACK clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
 {
     CLRXMemDtorCallbackUserData* wrappedDataPtr =
             static_cast<CLRXMemDtorCallbackUserData*>(user_data);
@@ -1146,7 +1146,7 @@ void clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
 }
 
 #ifdef CL_VERSION_2_0
-void clrxSVMFreeCallbackWrapper(cl_command_queue queue,
+void CL_CALLBACK clrxSVMFreeCallbackWrapper(cl_command_queue queue,
       cl_uint num_svm_pointers, void** svm_pointers, void* user_data)
 {
     CLRXSVMFreeCallbackUserData* wrappedDataPtr =
