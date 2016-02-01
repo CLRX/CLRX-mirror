@@ -739,7 +739,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                     try
                     { optEntry.v.sArr = new const char*[optEntry.arrSize+8]; }
                     catch(...)
-                    { 
+                    {
                         delete[] value;
                         throw;
                     }
@@ -811,10 +811,7 @@ void CLIParser::parse()
                             throw CLIException("Null argument!");
                         if (argv[i+1][0] != '-' || argv[i+1][1] == 0 ||
                             !option.argIsOptional)
-                        {
-                            i++; // next elem
-                            optArg = argv[i];
-                        }
+                            optArg = argv[++i]; // next elem as argument
                     }
                     else if (!option.argIsOptional)
                         throw CLIException("A missing argument", option.longName);
@@ -847,10 +844,7 @@ void CLIParser::parse()
                                     throw CLIException("Null argument!");
                                 if (argv[i+1][0] != '-' || argv[i+1][1] == 0 ||
                                     !option.argIsOptional)
-                                {
-                                    i++; // next elem
-                                    optArg = argv[i];
-                                }
+                                    optArg = argv[++i]; // next elem as argument
                             }
                             else if (!option.argIsOptional)
                                 throw CLIException("A missing argument", option.shortName);
