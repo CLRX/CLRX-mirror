@@ -739,7 +739,10 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                     try
                     { optEntry.v.sArr = new const char*[optEntry.arrSize+8]; }
                     catch(...)
-                    { delete[] value; }
+                    { 
+                        delete[] value;
+                        throw;
+                    }
                     std::copy(oldArr, oldArr + optEntry.arrSize, optEntry.v.sArr);
                     delete[] oldArr;
                 }
