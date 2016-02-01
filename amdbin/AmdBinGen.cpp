@@ -989,7 +989,11 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             metadata += numBuf;
             metadata += ':';
             if (arg.ptrSpace == KernelPtrSpace::LOCAL)
-                metadata += "hl:1";
+            {
+                metadata += "hl:";
+                itocstrCStyle((arg.resId!=BINGEN_DEFAULT)?arg.resId:1, numBuf, 21);
+                metadata += numBuf;
+            }
             else if (arg.ptrSpace == KernelPtrSpace::CONSTANT ||
                      arg.ptrSpace == KernelPtrSpace::GLOBAL)
             {
