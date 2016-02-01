@@ -292,6 +292,7 @@ public:
  * adaptor
  */
 
+/// fast input buffer adapter
 class FastInputBuffer: public NonCopyableAndNonMovable
 {
 private:
@@ -300,6 +301,11 @@ private:
     cxuint bufSize;
     std::unique_ptr<char[]> buffer;
 public:
+    /// constructor
+    /**
+     * \param _bufSize buffer size
+     * \param input input stream
+     */
     FastInputBuffer(cxuint _bufSize, std::istream& input) : is(input), pos(0), endPos(0),
             bufSize(_bufSize), buffer(new char[_bufSize])
     { }
@@ -311,6 +317,7 @@ public:
     std::istream& getIStream()
     { return is; }
     
+    /// get character or returns eof()
     int get()
     {
         if (pos == endPos)
@@ -324,6 +331,7 @@ public:
         return (cxuchar)buffer.get()[pos++];
     }
     
+    /// read data from buffer and returns number of read bytes
     size_t read(char* buf, cxuint n)
     {
         size_t toRead = std::min(n, endPos-pos);

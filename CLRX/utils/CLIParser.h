@@ -238,6 +238,7 @@ public:
             cxuint argc, const char** argv);
     ~CLIParser();
     
+    /// set package name
     void setPackageName(const char* pkgName)
     { packageName = pkgName; }
     

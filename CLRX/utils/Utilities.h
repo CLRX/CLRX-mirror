@@ -698,6 +698,7 @@ extern void filesystemPath(std::string& path);
 /// join two paths
 extern std::string joinPaths(const std::string& path1, const std::string& path2);
 
+/// get file timestamp in nanosecond since Unix epoch
 extern uint64_t getFileTimestamp(const char* filename);
 
 /*
@@ -892,6 +893,9 @@ inline void toLowerString(char* cstr)
         *cstr = toLower(*cstr);
 }
 
+/// convert string to lowercase
+inline void toLowerString(CString& string);
+
 inline void toLowerString(CString& string)
 { if (!string.empty())
     toLowerString(string.begin()); }
@@ -916,6 +920,9 @@ inline void toUpperString(char* cstr)
     for (; *cstr!=0; cstr++)
         *cstr = toUpper(*cstr);
 }
+
+/// convert string to uppercase
+inline void toUpperString(CString& string);
 
 inline void toUpperString(CString& string)
 { if (!string.empty())
