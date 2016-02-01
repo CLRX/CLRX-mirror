@@ -717,7 +717,7 @@ private:
     bool isWriteableSection() const
     {
         return currentSection!=ASMSECT_ABS &&
-                sections[currentSection].flags & ASMSECT_WRITEABLE;
+                (sections[currentSection].flags & ASMSECT_WRITEABLE);
     }
     
 protected:    
