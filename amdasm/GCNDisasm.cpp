@@ -1962,13 +1962,25 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
         putChars(bufPtr, " tfe", 4);
     if (gcnInsn.encoding==GCNENC_MTBUF)
     {
-        putChars(bufPtr, " format:[", 9);
-        const char* dfmtStr = mtbufDFMTTable[(insnCode>>19)&15];
-        putChars(bufPtr, dfmtStr, ::strlen(dfmtStr));
-        *bufPtr++ = ',';
-        const char* nfmtStr = mtbufNFMTTable[(insnCode>>23)&7];
-        putChars(bufPtr, nfmtStr, ::strlen(nfmtStr));
-        *bufPtr++ = ']';
+        const cxuint dfmt = (insnCode>>19)&15;
+        const cxuint nfmt = (insnCode>>23)&7;
+        if (dfmt!=1 || nfmt!=0)
+        {
+            putChars(bufPtr, " format:[", 9);
+            if (dfmt!=1)
+            {
+                const char* dfmtStr = mtbufDFMTTable[dfmt];
+                putChars(bufPtr, dfmtStr, ::strlen(dfmtStr));
+            }
+            if (dfmt!=1 && nfmt!=0)
+                *bufPtr++ = ',';
+            if (nfmt!=0)
+            {
+                const char* nfmtStr = mtbufNFMTTable[nfmt];
+                putChars(bufPtr, nfmtStr, ::strlen(nfmtStr));
+            }
+            *bufPtr++ = ']';
+        }
     }
     
     if (mode1 == GCN_ARG_NONE || mode1 == GCN_MUBUF_NOVAD)

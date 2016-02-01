@@ -53,7 +53,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
         ".L4_0=.-4\n        s_branch        .L4_0\n"
         "        s_branch        .L24_0\n"
         "        tbuffer_load_format_x v[61:62], v[18:19], s[80:83], s35"
-        " offen idxen offset:2004 glc slc addr64 tfe format:[8,sint]\n"
+        " offen idxen offset:2004 glc slc addr64 tfe format:[sint]\n"
         ".L24_0:\n        v_cvt_pknorm_i16_f32 v55, s27, -v90\n"
     },
     {
@@ -140,7 +140,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     { { 0xbf820002U, 0xea8877d4U, 0x23f43d12U, 0xbf82fffdU }, /* MTBUF */
       "        s_branch        .L12_0\n.L4_0:\n        tbuffer_load_format_x "
       "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-      "format:[8,sint]\n.L12_0:\n        s_branch        .L4_0\n" },
+      "format:[sint]\n.L12_0:\n        s_branch        .L4_0\n" },
     { { 0xbf820002U, 0xf203fb00U, 0x00159d79U, 0xbf82fffdU }, /* MIMG */
       "        s_branch        .L12_0\n.L4_0:\n        image_load      v[157:160], "
       "v[121:124], s[84:87] dmask:11 unorm glc slc r128 tfe lwe da\n.L12_0:\n"
@@ -254,7 +254,7 @@ static const GCNDisasmLabelCase decGCN12LabelCases[] =
     { { 0xbf820002U, 0xea89f7d4U, 0x23f43d12U, 0xbf82fffdU },  /* MTBUF */
       "        s_branch        .L12_0\n.L4_0:\n        tbuffer_load_format_xyzw "
       "v[61:65], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-      "format:[8,sint]\n.L12_0:\n        s_branch        .L4_0\n" },
+      "format:[sint]\n.L12_0:\n        s_branch        .L4_0\n" },
     { { 0xbf820002U, 0xf024fb00U, 0x00159d79U, 0xbf82fffdU },  /* MIMG */
       "        s_branch        .L12_0\n.L4_0:\n        image_store_mip "
       "v[157:159], v[121:124], s[84:87] dmask:11 unorm glc r128 da\n"

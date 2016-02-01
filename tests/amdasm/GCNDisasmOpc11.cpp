@@ -2496,17 +2496,17 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     /* MTBUF encoding */
     { 0xea8877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea88f7d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc addr64 tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     /* formats */
     { 0xea8077d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[invalid,sint]\n" },
     { 0xea8877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea9077d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
         "format:[16,sint]\n" },
@@ -2551,51 +2551,50 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
         "format:[reserved,sint]\n" },
     /* nfmt */
     { 0xe80877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
-        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,unorm]\n" },
+        "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe\n" },
     { 0xe88877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,snorm]\n" },
+        "format:[snorm]\n" },
     { 0xe90877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,uscaled]\n" },
+        "format:[uscaled]\n" },
     { 0xe98877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sscaled]\n" },
+        "format:[sscaled]\n" },
     { 0xea0877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,uint]\n" },
+        "format:[uint]\n" },
     { 0xea8877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xeb0877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,snorm_ogl]\n" },
+        "format:[snorm_ogl]\n" },
     { 0xeb8877d4U, 0x23f43d12U, true, "        tbuffer_load_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,float]\n" },
+        "format:[float]\n" },
     /* instructions */
     { 0xea8977d4U, 0x23f43d12U, true, "        tbuffer_load_format_xy "
         "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea8a77d4U, 0x23f43d12U, true, "        tbuffer_load_format_xyz "
         "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea8b77d4U, 0x23f43d12U, true, "        tbuffer_load_format_xyzw "
         "v[61:65], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea8c77d4U, 0x23f43d12U, true, "        tbuffer_store_format_x "
         "v[61:62], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea8d77d4U, 0x23f43d12U, true, "        tbuffer_store_format_xy "
         "v[61:63], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea8e77d4U, 0x23f43d12U, true, "        tbuffer_store_format_xyz "
         "v[61:64], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     { 0xea8f77d4U, 0x23f43d12U, true, "        tbuffer_store_format_xyzw "
         "v[61:65], v[18:19], s[80:83], s35 offen idxen offset:2004 glc slc tfe "
-        "format:[8,sint]\n" },
+        "format:[sint]\n" },
     /* MIMG encoding */
     { 0xf203fb00U, 0x02d59d79U, true, "        image_load      v[157:160], "
         "v[121:124], s[84:87] dmask:11 unorm glc slc r128 tfe lwe da ssamp=0x16\n" },
