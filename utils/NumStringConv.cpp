@@ -1581,7 +1581,7 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     /* fix for rounding to ten */
     const cxuint mod = (decValue) % 100;
     /* check rounding digits */
-    if (mod >= 82 || (mod <= 18 && mod != 0))
+    if ((mod >= 82 || (mod <= 18 && mod != 0)) && (value&mantisaMask)!=0)
     {   // check higher round
         uint64_t rescaledHalf[4];
         // rescaled half (ULP) minus rescaled max error + 1
@@ -1639,7 +1639,7 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     }
     
     /* fix for rounding to one (to nearest value) (if not rounding zeros) */
-    if (!roundingFix && mod != 0 &&
+    if (!roundingFix && (mod != 0 || (value&mantisaMask)==0) &&
         ((rescaled[powSize+1] & (oneValue-1)) >= (oneValue>>1)))
         decValue++;
     
