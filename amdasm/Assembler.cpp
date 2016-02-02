@@ -513,10 +513,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                 for (cxuint i = 0; linePtr != end && i < 3; i++, linePtr++)
                 {
                     if (!isODigit(*linePtr))
-                    {
-                        printError(startPlace, "Expected octal character code");
-                        return false;
-                    }
+                        break;
                     value = (value<<3) + uint64_t(*linePtr-'0');
                     if (value > 255)
                     {
