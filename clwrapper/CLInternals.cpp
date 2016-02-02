@@ -1008,7 +1008,8 @@ void CL_CALLBACK clrxLinkProgramNotifyWrapper(cl_program program, void * user_da
     catch(const std::exception& ex)
     { clrxAbort("Fatal exception happened: ", ex.what()); }
     
-    void (CL_CALLBACK *realNotify)(cl_program program, void * user_data) = wrappedDataPtr->realNotify;
+    void (CL_CALLBACK *realNotify)(cl_program program, void * user_data) =
+            wrappedDataPtr->realNotify;
     if (!initializedByCallback) // if not initialized by this callback to delete
     {
         delete wrappedDataPtr->transDevicesMap;
@@ -1124,7 +1125,8 @@ cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
     return CL_SUCCESS;
 }
 
-void CL_CALLBACK clrxEventCallbackWrapper(cl_event event, cl_int exec_status, void * user_data)
+void CL_CALLBACK clrxEventCallbackWrapper(cl_event event, cl_int exec_status,
+                          void * user_data)
 {
     CLRXEventCallbackUserData* wrappedDataPtr =
             static_cast<CLRXEventCallbackUserData*>(user_data);

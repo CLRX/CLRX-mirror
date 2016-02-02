@@ -428,8 +428,10 @@ CLRX_INTERNAL cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* p
 CLRX_INTERNAL cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
             const cl_device_id* inDevices);
 CLRX_INTERNAL cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p);
-CLRX_INTERNAL void CL_CALLBACK clrxBuildProgramNotifyWrapper(cl_program program, void * user_data);
-CLRX_INTERNAL void CL_CALLBACK clrxLinkProgramNotifyWrapper(cl_program program, void * user_data);
+CLRX_INTERNAL void CL_CALLBACK clrxBuildProgramNotifyWrapper(cl_program program,
+             void * user_data);
+CLRX_INTERNAL void CL_CALLBACK clrxLinkProgramNotifyWrapper(cl_program program,
+             void * user_data);
 CLRX_INTERNAL CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
           cl_int* errcode_ret);
 CLRX_INTERNAL cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
