@@ -261,8 +261,8 @@ std::string CLRX::escapeStringCStyle(size_t strSize, const char* str)
                 if ((c>>3) != 0)
                     out.push_back('0'+((c>>3)&7));
                 out.push_back('0'+(c&7));
-                if ((c>>6) == 0) // if next character can change octal escape
-                    notFullOctalEscape = true;
+                // if next character can change octal escape
+                notFullOctalEscape = ((c>>6) == 0);
             }
         }
         else  if (c == '\"')
@@ -320,8 +320,8 @@ size_t CLRX::escapeStringCStyle(size_t strSize, const char* str,
                 if ((c>>3) != 0)
                     outStr[d++] = '0'+((c>>3)&7);
                 outStr[d++] = '0'+(c&7);
-                if ((c>>6) == 0) // if next character can change octal escape
-                    notFullOctalEscape = true;
+                // if next character can change octal escape
+                notFullOctalEscape = ((c>>6) == 0);
             }
         }
         else  if (c == '\"')
