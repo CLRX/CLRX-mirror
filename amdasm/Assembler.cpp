@@ -479,6 +479,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
             }
             if (*linePtr == 'x')
             {   // hex
+                const char* charPlace = linePtr-1;
                 linePtr++;
                 if (linePtr == end)
                 {
@@ -502,7 +503,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                     }
                 else
                 {
-                    printError(startPlace, "Expected hexadecimal character code");
+                    printError(charPlace, "Expected hexadecimal character code");
                     return false;
                 }
                 value &= 0xff;
@@ -510,6 +511,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
             else if (isODigit(*linePtr))
             {   // octal
                 value = 0;
+                const char* charPlace = linePtr-1;
                 for (cxuint i = 0; linePtr != end && i < 3; i++, linePtr++)
                 {
                     if (!isODigit(*linePtr))
@@ -517,7 +519,7 @@ bool Assembler::parseString(std::string& strarray, const char*& linePtr)
                     value = (value<<3) + uint64_t(*linePtr-'0');
                     if (value > 255)
                     {
-                        printError(startPlace, "Octal code out of range");
+                        printError(charPlace, "Octal code out of range");
                         return false;
                     }
                 }
