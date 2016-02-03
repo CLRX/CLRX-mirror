@@ -727,7 +727,12 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                       CL_DEVICE_VERSION, versionSize, versionBuffer.get(), nullptr);
             if (status != CL_SUCCESS)
                 break;
-            ::strcat(versionBuffer.get(), " (clrx 0.0)");
+            {
+                char verBuf[20];
+                snprintf(verBuf, 20, " (clrx %u.%u.%u)", CLRX_MAJOR_VERSION,
+                         CLRX_MINOR_VERSION, CLRX_MICRO_VERSION);
+                ::strcat(versionBuffer.get(), verBuf);
+            }
             clrxDevice.versionSize = ::strlen(versionBuffer.get())+1;
             clrxDevice.version = std::move(versionBuffer);
         }
