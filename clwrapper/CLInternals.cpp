@@ -831,8 +831,6 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
     status = c->amdOclContext->dispatch->clGetContextInfo(c->amdOclContext,
             CL_CONTEXT_DEVICES, sizeof(cl_device_id)*amdDevicesNum,
             amdDevices.get(), nullptr);
-    if (status == CL_OUT_OF_HOST_MEMORY)
-        return status;
     if (status != CL_SUCCESS)
         return status;
 
@@ -864,8 +862,6 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
     status = c->amdOclContext->dispatch->clGetContextInfo(c->amdOclContext,
             CL_CONTEXT_DEVICES, sizeof(cl_device_id)*amdDevicesNum,
             amdDevices.get(), nullptr);
-    if (status == CL_OUT_OF_HOST_MEMORY)
-        return status;
     if (status != CL_SUCCESS)
         return status;
     
