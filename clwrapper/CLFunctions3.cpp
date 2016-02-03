@@ -885,6 +885,7 @@ clrxclLinkProgram(cl_context           context,
         wrappedData->clrxProgram = nullptr;
         wrappedData->clrxContext = c;
         wrappedData->realUserData = user_data;
+        wrappedData->transDevicesMap = nullptr;
         destUserData = wrappedData;
         notifyToCall = clrxLinkProgramNotifyWrapper;
     }
@@ -894,16 +895,12 @@ clrxclLinkProgram(cl_context           context,
     CLRXProgramDevicesMap* transDevicesMap = nullptr;
     try
     {
-        if (wrappedData != nullptr)
-            wrappedData->transDevicesMap = transDevicesMap;
-        
         std::vector<cl_program> amdInputPrograms(num_input_programs);
         for (cl_uint i = 0; i < num_input_programs; i++)
         {
             if (input_programs[i] == nullptr)
             {
                 delete wrappedData;
-                delete transDevicesMap;
                 if (errcode_ret != nullptr)
                     *errcode_ret = CL_INVALID_PROGRAM;
                 return nullptr;
@@ -920,7 +917,6 @@ clrxclLinkProgram(cl_context           context,
                 if (device_list[i] == nullptr)
                 {
                     delete wrappedData;
-                    delete transDevicesMap;
                     if (errcode_ret != nullptr)
                         *errcode_ret = CL_INVALID_DEVICE;
                     return nullptr;
@@ -939,6 +935,8 @@ clrxclLinkProgram(cl_context           context,
             for (cl_uint i = 0; i < num_devices; i++)
                 transDevicesMap->insert(std::make_pair(amdDevices[i],
                       device_list[i]));
+            if (wrappedData != nullptr)
+                wrappedData->transDevicesMap = transDevicesMap;
             
             amdProgram = c->amdOclContext->dispatch->clLinkProgram(c->amdOclContext,
                     num_devices, amdDevices.data(), options, num_input_programs, 
