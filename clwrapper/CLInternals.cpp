@@ -413,7 +413,12 @@ void clrxWrapperInitialize()
                         CL_PLATFORM_VERSION, versionSize,
                         versionBuffer.get(), nullptr) != CL_SUCCESS)
                     continue;
-                ::strcat(versionBuffer.get(), " (clrx 0.0)");
+                {
+                    char verBuf[20];
+                    snprintf(verBuf, 20, " (clrx %u.%u.%u)", CLRX_MAJOR_VERSION,
+                             CLRX_MINOR_VERSION, CLRX_MICRO_VERSION);
+                    ::strcat(versionBuffer.get(), verBuf);
+                }
                 clrxPlatform.versionSize = ::strlen(versionBuffer.get())+1;
                 clrxPlatform.version = std::move(versionBuffer);
                 
