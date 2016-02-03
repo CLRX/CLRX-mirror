@@ -1139,8 +1139,7 @@ void CL_CALLBACK clrxEventCallbackWrapper(cl_event event, cl_int exec_status,
     CLRXEventCallbackUserData wrappedData = *wrappedDataPtr;
     // must be called only once (freeing wrapped data)
     delete wrappedDataPtr;
-    wrappedData.realNotify(wrappedData.clrxEvent, exec_status,
-                wrappedData.realUserData);
+    wrappedData.realNotify(wrappedData.clrxEvent, exec_status, wrappedData.realUserData);
 }
 
 void CL_CALLBACK clrxMemDtorCallbackWrapper(cl_mem memobj, void * user_data)
@@ -1289,14 +1288,12 @@ void clrxInitProgramTransDevicesMap(CLRXProgram* program,
         for (cl_uint i = 0; i < program->context->devicesNum; i++)
         {
             CLRXDevice* device = program->context->devices[i];
-            program->transDevicesMap->insert(std::make_pair(
-                        device->amdOclDevice, device));
+            program->transDevicesMap->insert(std::make_pair(device->amdOclDevice, device));
         }
     }
     // add device_list into translate device map
     for (cl_uint i = 0; i < num_devices; i++)
-        program->transDevicesMap->insert(std::make_pair(amdDevices[i],
-              device_list[i]));
+        program->transDevicesMap->insert(std::make_pair(amdDevices[i], device_list[i]));
 }
 
 void clrxReleaseConcurrentBuild(CLRXProgram* program)
