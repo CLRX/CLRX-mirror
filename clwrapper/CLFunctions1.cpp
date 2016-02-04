@@ -1789,8 +1789,9 @@ clrxclCreateKernel(cl_program      program,
     }
     catch(const std::bad_alloc& ex)
     {
-        if (p->amdOclProgram->dispatch->clReleaseKernel(amdKernel) != CL_SUCCESS)
-            clrxAbort("Fatal Error at handling error at kernel creation!");
+        if (amdKernel!=nullptr)
+            if (p->amdOclProgram->dispatch->clReleaseKernel(amdKernel) != CL_SUCCESS)
+                clrxAbort("Fatal Error at handling error at kernel creation!");
         if (errcode_ret != nullptr)
             *errcode_ret = CL_OUT_OF_HOST_MEMORY;
         return nullptr;
