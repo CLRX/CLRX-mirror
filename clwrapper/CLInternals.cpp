@@ -1188,7 +1188,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
     if (ptype != CL_PROGRAM_BINARY_TYPE_EXECUTABLE)
         return CL_SUCCESS; // do nothing if not executable
 #else
-    cl_int status = 0;
+    cl_int status = CL_SUCCESS;
 #endif
     
     std::unique_ptr<std::unique_ptr<unsigned char[]>[]> binaries = nullptr;
@@ -1720,12 +1720,11 @@ try
     if (compiledNum != 0)
     {   // if compilation is not zero
         // (use int32_t instead cl_int) - GCC 5 internal error!!!
-        std::unique_ptr<int32_t[]> binaryStatuses(new int32_t[compiledNum]);
         /// just create new amdAsmProgram
         newAmdAsmP = amdp->dispatch->clCreateProgramWithBinary(
                     program->context->amdOclContext, compiledNum, amdDevices.get(),
                     programBinSizes.get(), (const cxbyte**)programBinaries.get(),
-                    binaryStatuses.get(), &error);
+                    nullptr, &error);
         if (newAmdAsmP==nullptr)
         {   // return error
             program->asmState.store(CLRXAsmState::FAILED);
