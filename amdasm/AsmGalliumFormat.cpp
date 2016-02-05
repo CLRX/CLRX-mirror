@@ -929,6 +929,7 @@ bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
     size_t sectionsNum = sections.size();
     size_t kernelsNum = kernelStates.size();
+    output.deviceType = assembler.getDeviceType();
     if (assembler.isaAssembler!=nullptr)
     {   // make last kernel registers pool updates
         if (kcodeSelStack.empty())
