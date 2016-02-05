@@ -177,6 +177,8 @@ try
             ret = 1;
         }
     }
+    else // failed
+        ret = 1;
     return ret;
 }
 catch(const Exception& ex)
