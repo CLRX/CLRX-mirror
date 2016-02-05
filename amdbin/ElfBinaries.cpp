@@ -312,7 +312,7 @@ uint16_t CLRX::convertSectionId(cxuint sectionIndex, const uint16_t* builtinSect
         return SHN_ABS;
     if (sectionIndex == ELFSECTID_UNDEF)
         return SHN_UNDEF;
-    if (sectionIndex < ELFSECTID_SHSTRTAB)
+    if (sectionIndex < ELFSECTID_START)
         return sectionIndex+extraSectionIndex;
     else if (sectionIndex >= ELFSECTID_START && sectionIndex <= maxBuiltinSection)
     {
