@@ -398,6 +398,9 @@ public:
     
     void operator()(FastOutputBuffer& fob) const
     {
+        const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input.deviceType);
+        const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+        const uint32_t ldsMask = (1U<<ldsShift)-1U;
         for (uint32_t korder: kernelsOrder)
         {
             const GalliumKernelInput& kernel = input.kernels[korder];
@@ -425,7 +428,7 @@ public:
                 outEntries[1].value = (config.pgmRSRC2 & 0xffffe040U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
-                        (((config.localSize+63)>>6)<<15);
+                        (((config.localSize+ldsMask)>>ldsShift)<<15);
                 outEntries[2].value = (scratchBlocks)<<12;
                 for (cxuint k = 0; k < 3; k++)
                     outEntries[k].value = ULEV(outEntries[k].value);

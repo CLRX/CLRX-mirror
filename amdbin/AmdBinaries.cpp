@@ -987,9 +987,8 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
                             initKernelArgs.find(argInfo.argName);
                 if (argIt != initKernelArgs.end() &&
                     argIt->second.origArgType != KernelArgType::VOID)
-                {   /* revert sampler type and restore original arg type */
+                    /* revert sampler type and restore original arg type */
                     argInfo.argType = argIt->second.origArgType;
-                }
             }    
             
             while (kptr < kend && *kptr != '\n') kptr++;
