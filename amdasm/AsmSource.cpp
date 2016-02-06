@@ -962,6 +962,8 @@ static RefPtr<const AsmSource> printAsmRepeats(std::ostream& os,
 
 void AsmSourcePos::print(std::ostream& os, cxuint indentLevel) const
 {
+    if ((!macro && !source) || colNo==0 || lineNo==0)
+        return; // do not print asm source
     if (indentLevel == 10)
     {
         printIndent(os, indentLevel);

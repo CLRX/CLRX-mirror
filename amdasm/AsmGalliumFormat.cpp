@@ -1013,13 +1013,22 @@ bool AsmGalliumHandler::prepareBinary()
             config.usedVGPRsNum = kernelStates[i].allocRegs[1];
     }
     
+    bool good = true;
     // if set adds symbols to binary
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
-            if (!symEntry.second.hasValue ||
-                ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
-                continue; // unresolved or local
+            if (!symEntry.second.hasValue)
+                continue; // unresolved
+            if (ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
+                continue; // local
+            if (ELF32_ST_BIND(symEntry.second.info) == STB_GLOBAL)
+            {
+                assembler.printError(AsmSourcePos(), (std::string("Added symbol '")+
+                    symEntry.first.c_str()+"' must not be a global").c_str());
+                good = false;
+                continue; // local
+            }
             if (assembler.kernelMap.find(symEntry.first.c_str())!=assembler.kernelMap.end())
                 continue; // if kernel name
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
@@ -1031,7 +1040,6 @@ bool AsmGalliumHandler::prepareBinary()
         }
     
     /// checking symbols and set offset for kernels
-    bool good = true;
     const AsmSymbolMap& symbolMap = assembler.getSymbolMap();
     for (size_t ki = 0; ki < output.kernels.size(); ki++)
     {
