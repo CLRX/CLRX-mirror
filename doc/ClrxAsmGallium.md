@@ -46,7 +46,8 @@ First argument is type:
 * gridoffset - shortcut for gridoffset argument definition
 
 Second argument is size of argument. Third argument is targetSize which
-should be a multiplier of 4. Fourth argument is target alignment.
+should be a multiplier of 4. Fourth argument is target alignment. By default target
+alignment is power of 2 not less than size.
 Fifth argument determines how extend numeric value to larger target size:
 `sext` - signed, `zext` - zero extend. If argument is smaller than 4 byte,
 then `sext` can be to define signed integer, `zext` to unsigned integer.
