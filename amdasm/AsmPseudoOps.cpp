@@ -261,7 +261,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
-                   const char* linePtr)
+                   const char* linePtr, bool lowerCase)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -269,6 +269,8 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     CString sectionName;
     if (!getNameArg(asmr, sectionName, linePtr, "section name"))
         return;
+    if (lowerCase)
+        toLowerString(sectionName);
     bool haveFlags;
     uint32_t sectFlags = 0;
     AsmSectionType sectType = AsmSectionType::EXTRA_SECTION;
@@ -1987,7 +1989,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             }
             break;
         case ASMOP_DATA:
-            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace);
+            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace, true);
             break;
         case ASMOP_DOUBLE:
             AsmPseudoOps::putFloats<uint64_t>(*this, stmtPlace, linePtr);
@@ -2274,7 +2276,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::doRepeat(*this, stmtPlace, linePtr);
             break;
         case ASMOP_RODATA:
-            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace);
+            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace, true);
             break;
         case ASMOP_SECTION:
             AsmPseudoOps::goToSection(*this, stmtPlace, linePtr);
@@ -2308,7 +2310,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::setAbsoluteOffset(*this, linePtr);
             break;
         case ASMOP_TEXT:
-            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace);
+            AsmPseudoOps::goToSection(*this, stmtPlace, stmtPlace, true);
             break;
         case ASMOP_SBTTL:
         case ASMOP_TITLE:

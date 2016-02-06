@@ -3161,7 +3161,7 @@ aa1: bb2:   # kernel labels
             .ascii "xserver"
             .kernel aaa1
             .ascii "oops"
-            .data
+            .dATa
             .string "dd777dd"
             .section .ulu
             .ascii "uline"
@@ -3172,16 +3172,16 @@ aa1: bb2:   # kernel labels
             
             .kernel bxv
             .asciz "zeroOne"
-            .rodata
+            .roDATA
             .asciz "zeroTwo"
             .kernel aaa1
             .ascii "33"
-            .main
+            .mAIn
             .asciz "top1"
             .globaldata
             .ascii "nextType"
             .kernel aaa1
-            .text
+            .tEXt
             .main
             .ascii "yetAnother"
             .kernel aaa1
