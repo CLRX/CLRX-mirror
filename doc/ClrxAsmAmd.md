@@ -134,7 +134,7 @@ Following pseudo-ops can be inside kernel config:
 * .dims
 * .earlyexit
 * .hwlocal
-* .hwreg
+* .hwregion
 * .ieeemode
 * .pgmrsrc2
 * .printfid
