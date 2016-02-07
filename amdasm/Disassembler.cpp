@@ -204,8 +204,7 @@ void ISADisassembler::writeLocation(size_t pos)
     buf[bufPos++] = 'L';
     bufPos += itocstrCStyle(pos, buf+bufPos, 22, 10, 0, false);
     buf[bufPos++] = '_';
-                bufPos += itocstrCStyle(disassembler.sectionCount,
-                                buf+bufPos, 22, 10, 0, false);
+    bufPos += itocstrCStyle(disassembler.sectionCount, buf+bufPos, 22, 10, 0, false);
     output.forward(bufPos);
 }
 
