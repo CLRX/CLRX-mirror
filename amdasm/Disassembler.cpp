@@ -996,30 +996,6 @@ void Disassembler::disassembleGallium()
     const bool doMetadata = ((flags & DISASM_METADATA) != 0);
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     
-    /* generate kernel sizes */
-    std::vector<cxuint> kernelSizes(galliumInput->kernels.size());
-    {
-        std::vector<std::pair<cxuint,cxuint> > kernelSortedOffsets(
-                        galliumInput->kernels.size());
-        for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
-        {
-            const GalliumDisasmKernelInput& kinput = galliumInput->kernels[i];
-            kernelSortedOffsets[i] = { kinput.offset, i };
-        }
-        std::sort(kernelSortedOffsets.begin(), kernelSortedOffsets.end(), []
-                (const std::pair<cxuint,cxuint>& p1, const std::pair<cxuint,cxuint>& p2)
-                { return p1.first < p2.first; });
-        kernelSortedOffsets.push_back(
-            { cxuint(galliumInput->codeSize), cxuint(galliumInput->kernels.size())});
-        
-        std::vector<cxuint> kernelSizesTmp(galliumInput->kernels.size());
-        for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
-            kernelSizesTmp[i] = kernelSortedOffsets[i+1].first -
-                    kernelSortedOffsets[i].first;
-        for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
-            kernelSizes[kernelSortedOffsets[i].second] = kernelSizesTmp[i];
-    }
-    
     if (doDumpData && galliumInput->globalData != nullptr &&
         galliumInput->globalDataSize != 0)
     {   //
