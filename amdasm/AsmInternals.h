@@ -161,7 +161,7 @@ struct CLRX_INTERNAL AsmPseudoOps: AsmParseUtils
                    const char* linePtr);
     // change section
     static void goToSection(Assembler& asmr, const char* pseudoOpPlace,
-                   const char* linePtr, bool lowerCase = false);
+                   const char* linePtr, bool isPseudoOp = false);
     
     static void goToMain(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr);

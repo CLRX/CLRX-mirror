@@ -261,7 +261,7 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
 }
 
 void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
-                   const char* linePtr, bool lowerCase)
+                   const char* linePtr, bool isPseudoOp)
 {
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
@@ -269,13 +269,14 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     CString sectionName;
     if (!getNameArg(asmr, sectionName, linePtr, "section name"))
         return;
-    if (lowerCase)
+    if (isPseudoOp)
         toLowerString(sectionName);
-    bool haveFlags;
+    bool haveFlags = false;
     uint32_t sectFlags = 0;
     AsmSectionType sectType = AsmSectionType::EXTRA_SECTION;
-    if (!skipComma(asmr, haveFlags, linePtr))
-        return;
+    if (!isPseudoOp)
+        if (!skipComma(asmr, haveFlags, linePtr))
+            return;
     bool good = true;
     if (haveFlags)
     {
