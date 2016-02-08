@@ -2105,7 +2105,6 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         asmr.printError(instrPlace, "Idxen and offen must be zero in 64-bit address mode");
         return;
     }
-    
     if (haveTfe && haveLds)
     {
         asmr.printError(instrPlace, "Both LDS and TFE is illegal");

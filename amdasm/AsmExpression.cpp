@@ -1324,8 +1324,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         }
                         linePtr = symEndStr;
                     }
-                    else if (parenthesisCount != 0 || (*linePtr >= '0' && *linePtr <= '9') ||
-                             *linePtr == '\'')
+                    else if (parenthesisCount != 0 || (*linePtr >= '0' &&
+                            *linePtr <= '9') || *linePtr == '\'')
                     {   // other we try to parse number
                         const char* oldStr = linePtr;
                         if (!assembler.parseLiteral(arg.value, linePtr))
@@ -1481,7 +1481,6 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
             stack.pop();
         }
     }
-    //outend = linePtr;
     
     if (good)
     {

@@ -2344,8 +2344,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
                     {   // check gallium pseudo-op
                         if (isGalliumPseudoOp)
                         {
-                            printError(stmtPlace, "Gallium pseudo-op can be defined only in "
-                                    "Gallium format code");
+                            printError(stmtPlace, "Gallium pseudo-op can be defined "
+                                    "only in Gallium format code");
                             break;
                         }
                     }
