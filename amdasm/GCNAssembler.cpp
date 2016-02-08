@@ -2106,6 +2106,12 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
         return;
     }
     
+    if (haveTfe && haveLds)
+    {
+        asmr.printError(instrPlace, "Both LDS and TFE is illegal");
+        return;
+    }
+    
     if (offsetExpr!=nullptr)
         offsetExpr->setTarget(AsmExprTarget(GCNTGT_MXBUFOFFSET, asmr.currentSection,
                     output.size()));

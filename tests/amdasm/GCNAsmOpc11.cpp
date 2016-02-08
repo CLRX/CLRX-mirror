@@ -2025,9 +2025,14 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_max_src2_f64 v71 offset:52583", 0xdb4ccd67U, 0x00000047U, true, true, "" },
     /* MUBUF */
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
-        "offset:603 glc slc addr64 lds tfe", 0xe001c25bU, 0x23d43d12U, true, true, "" },
+        "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 lds", 0xe001c25bU, 0x23543d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 lds tfe", 0, 0, false, false,
+        "test.s:1:5: Error: Both LDS and TFE is illegal\n" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], 31 "
-        "offset:603 glc slc addr64 lds tfe", 0xe001c25bU, 0x9fd43d12U, true, true, "" },
+        "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x9fd43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v18, s[80:83], s35   ",
         0xe0000000U, 0x23143d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
@@ -2041,15 +2046,15 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 OfFset  :  603",
         0xe000025bU, 0x23143d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
-        "glc slc addr64 lds tfe", 0xe001c000U, 0x23d43d12U, true, true, "" },
+        "glc slc addr64 tfe", 0xe000c000U, 0x23d43d12U, true, true, "" },
     { "xx=5; yy=7;buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
-        "offset:xx+yy glc slc addr64 lds tfe", 0xe001c00cU, 0x23d43d12U, true, true, "" },
+        "offset:xx+yy glc slc addr64 tfe", 0xe000c00cU, 0x23d43d12U, true, true, "" },
     { "buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 offset:xx+yy "
-        "glc slc addr64 lds tfe;xx=5; yy=7", 0xe001c00cU, 0x23d43d12U, true, true, "" },
+        "glc slc addr64 tfe;xx=5; yy=7", 0xe000c00cU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x v[61:62], v[18:19], s[80:83], s35 offen idxen "
-        "glc slc lds tfe", 0xe0017000U, 0x23d43d12U, true, true, "" },
+        "glc slc tfe", 0xe0007000U, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x v[61:62], v18, s[80:83], s35 offset:577 idxen "
-        "glc slc lds tfe", 0xe0016241U, 0x23d43d12U, true, true, "" },
+        "glc slc tfe", 0xe0006241U, 0x23d43d12U, true, true, "" },
     /* MUBUF/MTBUF offset warnings */
     { "    buffer_load_format_x  v61, v18, s[80:83], s35 offset:4603",
         0xe00001fbU, 0x23143d12U, true, true,
