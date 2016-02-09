@@ -201,11 +201,16 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     if (!parseFormat(asmr, linePtr, format))
         return;
     
-    if (asmr.formatHandler!=nullptr)
-        asmr.printError(formatPlace, "Output format type is already defined");
     
     if (checkGarbagesAtEnd(asmr, linePtr))
+    {
+        if (asmr.formatHandler!=nullptr)
+        {
+            asmr.printError(formatPlace, "Output format type is already defined");
+            return;
+        }
         asmr.format = format;
+    }
 }
 
 void AsmPseudoOps::setGPUDevice(Assembler& asmr, const char* linePtr)
