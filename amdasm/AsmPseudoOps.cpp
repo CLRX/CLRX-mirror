@@ -900,6 +900,7 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
     // parse size
     uint64_t size;
     good &= getAbsoluteValueArg(asmr, size, linePtr, true);
+    bool ignore = false;
     if (symEntry != nullptr)
     {
         if (symEntry->second.base)
@@ -916,12 +917,13 @@ void AsmPseudoOps::setSymbolSize(Assembler& asmr, const char* linePtr)
         else if (symEntry->first == ".")
         {
             asmr.printWarning(symNamePlace, "Symbol '.' is ignored");
-            return;
+            ignore = true;
         }
     }
     
     if (good && checkGarbagesAtEnd(asmr, linePtr))
-        symEntry->second.size = size;
+        if (!ignore) // ignore if '.'
+            symEntry->second.size = size;
 }
 
 void AsmPseudoOps::ignoreExtern(Assembler& asmr, const char* linePtr)
@@ -1455,8 +1457,8 @@ void AsmPseudoOps::doIfStrEqual(Assembler& asmr, const char* pseudoOpPlace,
     }
 }
 
-void AsmPseudoOps::doIf64Bit(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
-                bool negation, bool elseIfClause)
+void AsmPseudoOps::doIf64Bit(Assembler& asmr, const char* pseudoOpPlace,
+                const char* linePtr, bool negation, bool elseIfClause)
 {
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
@@ -1472,8 +1474,8 @@ void AsmPseudoOps::doIf64Bit(Assembler& asmr, const char* pseudoOpPlace, const c
     }
 }
 
-void AsmPseudoOps::doIfArch(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
-            bool negation, bool elseIfClause)
+void AsmPseudoOps::doIfArch(Assembler& asmr, const char* pseudoOpPlace,
+            const char* linePtr, bool negation, bool elseIfClause)
 {
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
