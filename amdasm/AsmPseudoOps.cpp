@@ -201,7 +201,6 @@ void AsmPseudoOps::setOutFormat(Assembler& asmr, const char* linePtr)
     if (!parseFormat(asmr, linePtr, format))
         return;
     
-    
     if (checkGarbagesAtEnd(asmr, linePtr))
     {
         if (asmr.formatHandler!=nullptr)
@@ -402,12 +401,8 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
             { failedOpen = true; }
         }
         if (failedOpen)
-        {
-            std::string error("Include file '");
-            error += filename;
-            error += "' not found or unavailable in any directory";
-            asmr.printError(namePlace, error.c_str());
-        }
+            asmr.printError(namePlace, (std::string("Include file '") + filename +
+                    "' not found or unavailable in any directory").c_str());
     }
 }
 
