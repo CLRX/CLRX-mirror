@@ -408,7 +408,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
 
 void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
                           const char* linePtr)
-{   // FIXME: filesystem conversion path
+{
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     
