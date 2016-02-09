@@ -2586,7 +2586,22 @@ In macro content:
         true, "", "",
         { CLRX_SOURCE_DIR "/tests/amdasm/incdir0", CLRX_SOURCE_DIR "/tests/amdasm/incdir1" }
     },
-    /* 72 - absolute section and errors */
+    /* 72 - failed incbin */
+    {   R"ffDXD(            .incbin "incdir0\\incbinx"
+            .incbin "xxxx.bin"
+            .incbin "xxxa.bin")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
+        false, "test.s:1:21: Error: Binary file "
+        "'incdir0\\incbinx' not found or unavailable in any directory\n"
+        "test.s:2:21: Error: Binary file 'xxxx.bin' "
+        "not found or unavailable in any directory\n"
+        "test.s:3:21: Error: Binary file 'xxxa.bin' "
+        "not found or unavailable in any directory\n", "",
+        { CLRX_SOURCE_DIR "/tests/amdasm" }
+    },
+    /* 73 - absolute section and errors */
     {   R"ffDXD(        .struct 6
 label1:
         .struct 7
@@ -2606,7 +2621,7 @@ label4:)ffDXD",
         },
         true, "test.s:5:14: Warning: Fill value is ignored inside absolute section\n", ""
     },
-    /* 73 */
+    /* 74 */
     {   R"ffDXD(        .struct 6
 label1:
         .struct 7
@@ -2658,7 +2673,7 @@ test.s:23:17: Error: Expected primary expression before operator
 test.s:23:19: Error: Expected primary expression before operator
 )ffDXD", ""
     },
-    /* 74 - empty lines inside macro,repeats */
+    /* 75 - empty lines inside macro,repeats */
     {   R"ffDXD(            .rept 1
 
 .error "111"
@@ -2719,7 +2734,7 @@ In macro substituted from test.s:27:13:
 test.s:25:1: Error: uurggg
 )ffDXD", ""
     },
-    /* 75 - IRP and IRPC */
+    /* 76 - IRP and IRPC */
     {   R"ffDXD(        .irp Xv, aa , cv  ,  dd,  12AA,  ff
         .string "::\Xv\()__"
         .endr
@@ -2763,7 +2778,7 @@ test.s:25:1: Error: uurggg
         { { ".", 150U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 76 - section arithmetics */
+    /* 77 - section arithmetics */
     {   R"ffDXD(            .amd
             .kernel a
 al:         .ascii "aaabbcc"
@@ -2796,7 +2811,7 @@ be:
         },
         true, "", ""
     },
-    /* 77 - next test of sections' arithmetics */
+    /* 78 - next test of sections' arithmetics */
     {   R"ffDXD(.amd
             .kernel a
             .ascii "xx1"
@@ -2900,7 +2915,7 @@ ce:
             { "z0", 5U, 2, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 78 - error of section arithmetics */
+    /* 79 - error of section arithmetics */
     {   R"ffDXD(            .amd
             .kernel a
             .ascii "xx1"
@@ -2993,7 +3008,7 @@ test.s:39:18: Error: For comparisons two values must have this same relatives!
 test.s:40:18: Error: Choice is not allowed for first relative value
 )ffDXD", ""
     },
-    /* 79 - relatives inside '.eqv' expressions */
+    /* 80 - relatives inside '.eqv' expressions */
     {   R"ffDXD(            .amd
             .kernel a
             .ascii "xx1"
@@ -3039,7 +3054,7 @@ ce:
             { "x1", 11U, 2, 0U, true, false, false, 0, 0 }
         }, true, "", ""
     },
-    /* 80 - raw code section tests */
+    /* 81 - raw code section tests */
     {   R"ffDXD(            .rawcode
             .text
             .byte 1,2,2,3,4
@@ -3053,7 +3068,7 @@ ce:
         { { ".", 10U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
-    /* 81 - raw code section tests (errors) */
+    /* 82 - raw code section tests (errors) */
     {   R"ffDXD(            .rawcode
             .data
             .rodata
@@ -3068,7 +3083,7 @@ ce:
         "test.s:4:13: Error: Only section '.text' can be in raw code\n"
         "test.s:5:13: Error: In rawcode defining kernels is not allowed\n", ""
     },
-    /* 82 - Gallium format (sections) */
+    /* 83 - Gallium format (sections) */
     {   R"ffDXD(            .gallium
             .ascii "some text"
             .main
@@ -3130,7 +3145,7 @@ aa1: bb2:   # kernel labels
         },
         true, "", ""
     },
-    /* 82 - Gallium format (sections, errors) */
+    /* 84 - Gallium format (sections, errors) */
     {   R"ffDXD(            .gallium
             .kernel aa22
             .int 24,5,6

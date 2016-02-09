@@ -408,7 +408,7 @@ void AsmPseudoOps::includeFile(Assembler& asmr, const char* pseudoOpPlace,
 
 void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
                           const char* linePtr)
-{
+{   // FIXME: filesystem conversion path
     asmr.initializeOutputFormat();
     const char* end = asmr.line + asmr.lineSize;
     
@@ -420,7 +420,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     }
     
     skipSpacesToEnd(linePtr, end);
-    std::string filename;
+    std::string filename, sysfilename;
     const char* namePlace = linePtr;
     const char* offsetPlace = linePtr;
     const char* countPlace = linePtr;
@@ -471,21 +471,26 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     }
     
     std::ifstream ifs;
-    filesystemPath(filename);
-    ifs.open(filename.c_str(), std::ios::binary);
+    sysfilename = filename;
+    filesystemPath(sysfilename);
+    ifs.open(sysfilename.c_str(), std::ios::binary);
     if (!ifs)
     {
         for (const CString& incDir: asmr.includeDirs)
         {
-            std::string inDirFilename = joinPaths(incDir.c_str(), filename);
-            ifs.open(inDirFilename.c_str(), std::ios::binary);
+            std::string incDirPath(incDir.c_str());
+            filesystemPath(incDirPath);
+            ifs.open(joinPaths(incDirPath.c_str(), sysfilename).c_str(), std::ios::binary);
             if (ifs)
                 break;
         }
     }
     if (!ifs)
+    {
         asmr.printError(namePlace, (std::string("Binary file '") + filename +
                     "' not found or unavailable in any directory").c_str());
+        return;
+    }
     // exception for checking file seeking
     bool seekingIsWorking = true;
     ifs.exceptions(std::ios::badbit | std::ios::failbit); // exceptions
