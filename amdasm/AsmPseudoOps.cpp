@@ -1086,7 +1086,7 @@ void AsmPseudoOps::doAlign(Assembler& asmr, const char* pseudoOpPlace,
     {
         if (powerOf2)
         {
-            if (alignment >= 63)
+            if (alignment > 63)
             {
                 asmr.printError(alignPlace, "Power of 2 of alignment is greater than 63");
                 good = false;
