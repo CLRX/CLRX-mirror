@@ -1765,7 +1765,7 @@ void AsmPseudoOps::endMacro(Assembler& asmr, const char* pseudoOpPlace,
 
 void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr)
-{
+{   /* TODO: Fix exit macro */
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
@@ -2390,7 +2390,10 @@ bool Assembler::skipClauses(bool exitm)
             break;
         // if exit from macro mode, exit when macro filter exits
         if (exitm && inputFilterTop > asmInputFilters.size())
+        {
+            lineAlreadyRead  = true;
             break; // end of macro, 
+        }
         
         const char* linePtr = line;
         const char* end = line+lineSize;

@@ -2411,11 +2411,12 @@ In macro content:
             .byte 12,\b2&0xf
             .endm
             exiter 30,70
-            exiter 23,15)ffDXD",
+            exiter 23,15
+            .byte 155)ffDXD",
         BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
         { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
-            { 0x1e, 0x46, 0x0c, 0x06, 0x17, 0x0f, 0xad, 0x08 } } },
-        { { ".", 8U, 0, 0U, true, false, false, 0, 0 } },
+            { 0x1e, 0x46, 0x0c, 0x06, 0x17, 0x0f, 0xad, 0x08, 0x9b } } },
+        { { ".", 9U, 0, 0U, true, false, false, 0, 0 } },
         true, "", ""
     },
     /* 63 - purgem (undefine macro) */
