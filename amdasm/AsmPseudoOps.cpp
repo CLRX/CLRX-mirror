@@ -1765,7 +1765,7 @@ void AsmPseudoOps::endMacro(Assembler& asmr, const char* pseudoOpPlace,
 
 void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr)
-{   /* TODO: Fix exit macro */
+{
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
