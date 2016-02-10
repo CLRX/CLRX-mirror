@@ -2464,7 +2464,7 @@ bool Assembler::skipClauses(bool exitm)
                     good = false; // if .else have garbages
                 else if (!insideMacroOrRepeat)
                 {
-                    if (clauseLevel == clauses.size() && isTopIfClause)
+                    if (!exitm && clauseLevel == clauses.size() && isTopIfClause)
                     {
                         lineAlreadyRead = true; // read
                         return good; // do exit
