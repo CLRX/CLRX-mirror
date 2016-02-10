@@ -1384,14 +1384,14 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     }
     
     skipSpacesToEnd(linePtr, end);
+    if (!good)
+        return ParseState::FAILED;
     if (linePtr != end)
     {
         printError(linePtr, "Garbages at end of line");
         return ParseState::FAILED;
     }
     
-    if (!good)
-        return ParseState::FAILED;
     if (macroSubstLevel == 1000)
     {
         printError(macroStartPlace, "Macro substitution level is greater than 1000");
