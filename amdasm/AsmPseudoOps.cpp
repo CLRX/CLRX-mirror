@@ -1670,7 +1670,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         
         if (!macroArgSet.insert(argName).second)
         {   // duplicate!
-            asmr.printError(argPlace, (std::string("Duplicates macro argument '")+
+            asmr.printError(argPlace, (std::string("Duplicate macro argument '")+
                     argName.c_str()+'\'').c_str());
             argGood = false;
         }
@@ -1771,7 +1771,7 @@ void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
     
     const AsmInputFilterType type = asmr.currentInputFilter->getType();
     if (type == AsmInputFilterType::STREAM)
-        asmr.printWarning(pseudoOpPlace, "'.exitm' is ignored  outside macro content");
+        asmr.printWarning(pseudoOpPlace, "'.exitm' is ignored outside macro content");
     else
     {
         if (type == AsmInputFilterType::REPEAT)
