@@ -1771,7 +1771,7 @@ void AsmPseudoOps::exitMacro(Assembler& asmr, const char* pseudoOpPlace,
     
     const AsmInputFilterType type = asmr.currentInputFilter->getType();
     if (type == AsmInputFilterType::STREAM)
-        asmr.printWarning(pseudoOpPlace, "'.exitm' is ignored  outside macro content'");
+        asmr.printWarning(pseudoOpPlace, "'.exitm' is ignored  outside macro content");
     else
     {
         if (type == AsmInputFilterType::REPEAT)
