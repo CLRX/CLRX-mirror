@@ -521,10 +521,12 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             {
                 skipSpacesToEnd(linePtr, end);
                 const char* funcNamePlace = linePtr;
+                name[0] = 0;
                 good &= getNameArgS(asmr, 20, name, linePtr, "function name", true);
                 toLowerString(name);
                 
                 cxuint bitPos = 0, bitMask = UINT_MAX;
+                bool goodCnt = true;
                 if (::strcmp(name, "vmcnt")==0)
                 {
                     if (haveVMCnt)
@@ -552,13 +554,14 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 else
                 {
                     asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
-                    good = false;
+                    goodCnt = good = false;
                 }
                 
                 skipSpacesToEnd(linePtr, end);
                 if (linePtr==end || *linePtr!='(')
                 {
-                    asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
+                    if (goodCnt) // only if cnt has been parsed (do not duplicate errors)
+                        asmr.printError(funcNamePlace, "Expected vmcnt, lgkmcnt or expcnt");
                     return;
                 }
                 skipCharAndSpacesToEnd(linePtr, end);
