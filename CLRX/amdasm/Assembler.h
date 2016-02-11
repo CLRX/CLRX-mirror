@@ -758,7 +758,7 @@ public:
     /// main routine to assemble code
     bool assemble();
     
-    /// write binary to output stream
+    /// write binary to file
     void writeBinary(const char* filename) const;
     /// write binary to array
     void writeBinary(Array<cxbyte>& array) const;
