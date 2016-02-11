@@ -1670,7 +1670,7 @@ void AsmPseudoOps::doMacro(Assembler& asmr, const char* pseudoOpPlace, const cha
         
         if (!macroArgSet.insert(argName).second)
         {   // duplicate!
-            asmr.printError(argPlace, (std::string("Duplicate macro argument '")+
+            asmr.printError(argPlace, (std::string("Duplicated macro argument '")+
                     argName.c_str()+'\'').c_str());
             argGood = false;
         }

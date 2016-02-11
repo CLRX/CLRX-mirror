@@ -2466,7 +2466,7 @@ In macro content:
         { { ".", 0U, 0, 0U, true, false, false, 0, 0 } },
         false, "test.s:1:44: Error: Variadic argument must be last\n"
         "test.s:2:31: Error: Expected macro argument name\n"
-        "test.s:3:30: Error: Duplicate macro argument 'b'\n"
+        "test.s:3:30: Error: Duplicated macro argument 'b'\n"
         "test.s:3:32: Error: Expected macro argument name\n"
         "test.s:4:41: Error: Expected macro argument name\n"
         "test.s:5:44: Error: Expected macro argument name\n"
