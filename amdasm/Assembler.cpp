@@ -728,7 +728,8 @@ Assembler::ParseState Assembler::parseSymbol(const char*& linePtr,
     const CString symName = extractSymName(linePtr, line+lineSize, localLabel);
     if (symName.empty())
     {   // this is not symbol or a missing symbol
-        while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',') linePtr++;
+        while (linePtr != line+lineSize && !isSpace(*linePtr) && *linePtr != ',')
+            linePtr++;
         entry = nullptr;
         return Assembler::ParseState::MISSING;
     }
@@ -1805,7 +1806,7 @@ bool Assembler::assemble()
             if (!symEntry.second.occurrencesInExprs.empty())
                 for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
                     printError(occur.expression->getSourcePos(),(std::string(
-                                "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
+                            "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
     
     if (good && formatHandler!=nullptr)
         formatHandler->prepareBinary();
