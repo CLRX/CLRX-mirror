@@ -448,7 +448,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             {   // end of file. check comments
                 if (mode == LineMode::LONG_COMMENT && lineStart!=pos)
                     assembler.printError({lineNo, pos-joinStart+stmtPos+1},
-                           "Unterminated multi-line comment");
+                           "Terminated multi-line comment");
                 if (destPos-lineStart == 0)
                 {
                     lineSize = 0;
