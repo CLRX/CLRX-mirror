@@ -1665,24 +1665,15 @@ try
         {
             try
             {
-                const AsmFormatHandler* formatHandler = assembler.getFormatHandler();
-                if (formatHandler!=nullptr)
-                {
-                    progDevEntry.status = CL_BUILD_SUCCESS;
-                    Array<cxbyte> output;
-                    formatHandler->writeBinary(output);
-                    compiledProgBins[i] = RefPtr<CLProgBinEntry>(
-                                new CLProgBinEntry(std::move(output)));
-                }
-                else
-                {   // no format handler no binary
-                    compiledProgBins[i].reset();
-                    progDevEntry.status = CL_BUILD_ERROR;
-                    asmFailure = true;
-                }
+                progDevEntry.status = CL_BUILD_SUCCESS;
+                Array<cxbyte> output;
+                assembler.writeBinary(output);
+                compiledProgBins[i] = RefPtr<CLProgBinEntry>(
+                            new CLProgBinEntry(std::move(output)));
             }
             catch(const Exception& ex)
             {   // if exception during writing binary
+                compiledProgBins[i].reset();
                 msgString.append(ex.what());
                 progDevEntry.log = RefPtr<CLProgLogEntry>(
                             new CLProgLogEntry(std::move(msgString)));

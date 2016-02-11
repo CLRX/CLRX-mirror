@@ -147,7 +147,7 @@ public:
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
     virtual void writeBinary(std::ostream& os) const = 0;
-    /// write binaery to output stream
+    /// write binary to array
     virtual void writeBinary(Array<cxbyte>& array) const = 0;
 };
 

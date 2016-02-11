@@ -758,6 +758,11 @@ public:
     /// main routine to assemble code
     bool assemble();
     
+    /// write binary to output stream
+    void writeBinary(const char* filename) const;
+    /// write binary to array
+    void writeBinary(Array<cxbyte>& array) const;
+    
     /// get AMD driver version
     uint32_t getDriverVersion() const
     { return driverVersion; }

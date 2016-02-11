@@ -161,21 +161,10 @@ try
     /// write output to file
     if (good)
     {
-        const AsmFormatHandler* formatHandler = assembler->getFormatHandler();
-        if (formatHandler!=nullptr)
-        {
-            const char* outputName = "a.out";
-            if (cli.hasShortOption('o'))
-                outputName = cli.getShortOptArg<const char*>('o');
-            
-            std::ofstream ofs(outputName, std::ios::binary);
-            formatHandler->writeBinary(ofs);
-        }
-        else
-        {
-            std::cerr << "No output binary" << std::endl;
-            ret = 1;
-        }
+        const char* outputName = "a.out";
+        if (cli.hasShortOption('o'))
+            outputName = cli.getShortOptArg<const char*>('o');
+        assembler->writeBinary(outputName);
     }
     else // failed
         ret = 1;

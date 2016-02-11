@@ -155,16 +155,9 @@ try
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
         assembler.set64Bit(addressBits==64);
-        if (assembler.assemble())
-        {   // if good
-            const AsmFormatHandler* formatHandler = assembler.getFormatHandler();
-            if (formatHandler!=nullptr) // and if binary generated
-                formatHandler->writeBinary(binary);
-        }
+        assembler.assemble();
+        assembler.writeBinary(binary);
     }
-    
-    if (binary.empty())
-        throw Exception("No binary generated");
     
     size_t binarySize = binary.size();
     const cxbyte* binaryContent = binary.data();

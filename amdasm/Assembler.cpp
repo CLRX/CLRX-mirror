@@ -1811,3 +1811,37 @@ bool Assembler::assemble()
         formatHandler->prepareBinary();
     return good;
 }
+
+void Assembler::writeBinary(const char* filename) const
+{
+    if (good)
+    {
+        const AsmFormatHandler* formatHandler = getFormatHandler();
+        if (formatHandler!=nullptr)
+        {
+            std::ofstream ofs(filename, std::ios::binary);
+            if (ofs)
+                formatHandler->writeBinary(ofs);
+            else
+                throw Exception(std::string("Can't open file '")+filename+"' to write");
+        }
+        else
+            throw Exception("No output binary");
+    }
+    else // failed
+        throw Exception("Assembler failed!");
+}
+
+void Assembler::writeBinary(Array<cxbyte>& array) const
+{
+    if (good)
+    {
+        const AsmFormatHandler* formatHandler = getFormatHandler();
+        if (formatHandler!=nullptr)
+            formatHandler->writeBinary(array);
+        else
+            throw Exception("No output binary");
+    }
+    else // failed
+        throw Exception("Assembler failed!");
+}
