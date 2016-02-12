@@ -1824,7 +1824,7 @@ void Assembler::writeBinary(const char* filename) const
             if (ofs)
                 formatHandler->writeBinary(ofs);
             else
-                throw Exception(std::string("Can't open file '")+filename+"' to write");
+                throw Exception(std::string("Can't open output file '")+filename+"'");
         }
         else
             throw Exception("No output binary");
