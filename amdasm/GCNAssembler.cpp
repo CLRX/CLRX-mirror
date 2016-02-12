@@ -21,8 +21,10 @@
 //#include <iostream>
 #include <cstdio>
 #include <vector>
+#include <memory>
 #include <cstring>
 #include <algorithm>
+#include <mutex>
 #include <CLRX/amdasm/Assembler.h>
 #include "GCNAsmInternals.h"
 

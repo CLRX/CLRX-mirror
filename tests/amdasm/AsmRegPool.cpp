@@ -302,7 +302,6 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     Assembler assembler("test.s", input, ASM_ALL|ASM_TESTRUN, BinaryFormat::AMD,
             GPUDeviceType::CAPE_VERDE);
     assertTrue(testName, "good", assembler.assemble());
-    Array<KernelRegPool> resRegPools;
     // retrieve data
     if (assembler.getBinaryFormat()==BinaryFormat::AMD)
     {   // Catalyst

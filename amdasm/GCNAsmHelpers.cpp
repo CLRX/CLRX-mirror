@@ -20,6 +20,9 @@
 #include <CLRX/Config.h>
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <memory>
+#include <utility>
 #include <algorithm>
 #include "GCNAsmInternals.h"
 

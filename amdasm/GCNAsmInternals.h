@@ -23,6 +23,7 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <string>
+#include <memory>
 #include <utility>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Assembler.h>
