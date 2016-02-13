@@ -1800,6 +1800,8 @@ static std::string escapePath(const std::string& path)
             newPath.append("%#");
         else if (c == '%')
             newPath.append("%%");
+        else if (c == ':')
+            newPath.append("%$");
         else
             newPath += c;
     return newPath;
