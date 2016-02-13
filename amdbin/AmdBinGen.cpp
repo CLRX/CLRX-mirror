@@ -1383,10 +1383,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
             (config.scratchBufferSize != 0) | dimValues | (config.tgSize ? 0x400 : 0);
     
     putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
-    if (driverVersion < 180005)
-        putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);
-    else    // drivers 1800.5 and later includes VCC
-        putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum+2);
+    putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);
     putProgInfoEntryLE(bos, 0x80001863U, getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0));
     putProgInfoEntryLE(bos, 0x80001864U, 256);
     putProgInfoEntryLE(bos, 0x80001043U, config.floatMode);
