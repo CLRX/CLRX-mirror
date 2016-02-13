@@ -692,7 +692,6 @@ const char* AsmRepeatInputFilter::readLine(Assembler& assembler, size_t& lineSiz
         }
         sourceTransIndex = 0;
         curColTrans = repeat->getColTranslations().data();
-        lineNo = curColTrans[0].lineNo;
         pos = 0;
         contentLineNo = 0;
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
@@ -767,7 +766,6 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         }
         sourceTransIndex = 0;
         curColTrans = irp->getColTranslations().data();
-        lineNo = curColTrans[0].lineNo;
         realLinePos = -curColTrans[0].position;
         pos = contentLineNo = 0;
         source = RefPtr<const AsmSource>(new AsmRepeatSource(
