@@ -701,6 +701,11 @@ extern std::string joinPaths(const std::string& path1, const std::string& path2)
 /// get file timestamp in nanosecond since Unix epoch
 extern uint64_t getFileTimestamp(const char* filename);
 
+/// get user's home directory
+extern std::string getHomeDir();
+/// create directory
+extern void makeDir(const char* dirname);
+
 /*
  * Reference support
  */

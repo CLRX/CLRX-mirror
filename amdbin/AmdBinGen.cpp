@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <thread>
+#include <mutex>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
@@ -1792,11 +1792,25 @@ static uint64_t detectionFileTimestamp = 0;
 static std::string detectionAmdOclPath;
 static uint32_t detectedDriverVersion = 0;
 
+static std::string escapePath(const std::string& path)
+{
+    std::string newPath;
+    for (char c: path)
+        if (c == CLRX_NATIVE_DIR_SEP)
+            newPath.append("%#");
+        else if (c == '%')
+            newPath.append("%%");
+        else
+            newPath += c;
+    return newPath;
+}
+
 uint32_t CLRX::detectAmdDriverVersion()
 {
     std::lock_guard<std::mutex> lock(detectionMutex);
     std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
                            DEFAULT_AMDOCLPATH);
+    
     bool notThisSameFile = false;
     if (amdOclPath != detectionAmdOclPath)
     {
@@ -1809,9 +1823,41 @@ uint32_t CLRX::detectAmdDriverVersion()
     { timestamp = getFileTimestamp(amdOclPath.c_str()); }
     catch(const Exception& ex)
     { }
+    
     if (!notThisSameFile && timestamp == detectionFileTimestamp)
         return detectedDriverVersion;
     
+    std::string clrxTimestampPath = getHomeDir();
+    if (!clrxTimestampPath.empty())
+    {   // first, we check from stored version
+        clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxamdocltstamp");
+        try
+        { makeDir(clrxTimestampPath.c_str()); }
+        catch(const std::exception& ex)
+        { }
+        // file path
+        clrxTimestampPath = joinPaths(clrxTimestampPath, escapePath(amdOclPath));
+        try
+        {
+        std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
+        if (ifs)
+        {   // if opened
+            ifs.exceptions(std::ios::badbit | std::ios::failbit);
+            uint64_t readedTimestamp = 0;
+            uint32_t readedVersion = 0;
+            ifs >> readedTimestamp >> readedVersion;
+            if (readedTimestamp!=0 && readedVersion!=0 && timestamp==readedTimestamp)
+            {   // amdocl has not been changed
+                detectionFileTimestamp = readedTimestamp;
+                detectedDriverVersion = readedVersion;
+                return readedVersion;
+            }
+        }
+        }
+        catch(const std::exception& ex)
+        { }
+    }
+        
     detectionFileTimestamp = timestamp;
     detectedDriverVersion = 0;
     try
@@ -1845,6 +1891,13 @@ uint32_t CLRX::detectAmdDriverVersion()
             detectedDriverVersion = cstrtoui(buf, buf+20, next)*100;
             if (next!=buf+20 && *next=='.') // minor version
                 detectedDriverVersion += cstrtoui(next+1, buf+20, next)%100;
+        }
+        
+        // write to config
+        if (!clrxTimestampPath.empty()) // if clrxamdocltstamp set
+        {   // write to
+            std::ofstream ofs(clrxTimestampPath.c_str(), std::ios::binary);
+            ofs << detectionFileTimestamp << " " << detectedDriverVersion;
         }
     }
     catch(const std::exception& ex)

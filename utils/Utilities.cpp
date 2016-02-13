@@ -22,7 +22,12 @@
 #include <dlfcn.h>
 #endif
 #ifdef HAVE_WINDOWS
+#include <direct.h>
 #include <windows.h>
+#else
+#include <pwd.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #endif
 #include <fstream>
 #include <fcntl.h>
@@ -487,4 +492,48 @@ uint64_t CLRX::getFileTimestamp(const char* filename)
 #else
     return stBuf.st_mtime*1000000000ULL;
 #endif
+}
+
+std::string CLRX::getHomeDir()
+{
+#ifndef HAVE_WINDOWS
+    struct passwd pw;
+    long pwbufSize = sysconf(_SC_GETPW_R_SIZE_MAX);
+    if (pwbufSize != -1)
+    {
+        struct passwd* pwres;
+        Array<char> pwbuf(pwbufSize);
+        if (getpwuid_r(getuid(), &pw, pwbuf.data(), pwbufSize, &pwres)==0 &&
+                pwres!=nullptr)
+            return std::string(pwres->pw_dir);
+    }
+#else
+    char path[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPath(nullptr, CSIDL_PROFILE, nullptr, 0, path)))
+        return std::string(path);
+#endif
+    return "";
+}
+
+void CLRX::makeDir(const char* dirname)
+{
+    errno = 0;
+#ifdef HAVE_WINDOWS
+    int ret = _mkdir(dirname);
+#else
+    int um = umask(0);
+    umask(um);
+    int ret = ::mkdir(dirname, 0777&~um);
+#endif
+    if (ret!=0)
+    {
+        if (errno == EEXIST)
+            throw Exception("Directory already exists");
+        else if (errno == ENOENT)
+            throw Exception("No such parent directory");
+        else if (errno == EACCES)
+            throw Exception("Access to parent directory is not permitted");
+        else
+            throw Exception("Can't create directory");
+    }
 }
