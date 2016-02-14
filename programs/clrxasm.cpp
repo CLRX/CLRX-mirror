@@ -136,12 +136,27 @@ try
         if (eqPlace!=nullptr)
         {   // defsym with value
             const char* outEnd;
+            bool parsed = true;
             symName.assign(defSyms[i], eqPlace);
-            value = cstrtovCStyle<uint64_t>(eqPlace+1, nullptr, outEnd);
-            if (*outEnd!=0)
+            eqPlace++;
+            while (isSpace(*eqPlace)) eqPlace++;
+            try
+            { value = cstrtovCStyle<uint64_t>(eqPlace, nullptr, outEnd); }
+            catch(const ParseException& ex)
             {
-                std::cerr << "Garbages at symbol '" << symName << "' value" << std::endl;
+                std::cerr << "For symbol '" << symName << "': " << ex.what() << std::endl;
                 ret = 1;
+                parsed = false;
+            }
+            if (parsed)
+            {
+                while (isSpace(*outEnd)) outEnd++;
+                if (*outEnd!=0)
+                {
+                    std::cerr << "Garbages at symbol '" << symName <<
+                                    "' value" << std::endl;
+                    ret = 1;
+                }
             }
         }
         else
