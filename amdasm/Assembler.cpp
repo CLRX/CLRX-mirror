@@ -1833,6 +1833,20 @@ void Assembler::writeBinary(const char* filename) const
         throw Exception("Assembler failed!");
 }
 
+void Assembler::writeBinary(std::ostream& outStream) const
+{
+    if (good)
+    {
+        const AsmFormatHandler* formatHandler = getFormatHandler();
+        if (formatHandler!=nullptr)
+            formatHandler->writeBinary(outStream);
+        else
+            throw Exception("No output binary");
+    }
+    else // failed
+        throw Exception("Assembler failed!");
+}
+
 void Assembler::writeBinary(Array<cxbyte>& array) const
 {
     if (good)

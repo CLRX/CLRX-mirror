@@ -760,6 +760,8 @@ public:
     
     /// write binary to file
     void writeBinary(const char* filename) const;
+    /// write binary to stream
+    void writeBinary(std::ostream& outStream) const;
     /// write binary to array
     void writeBinary(Array<cxbyte>& array) const;
     
