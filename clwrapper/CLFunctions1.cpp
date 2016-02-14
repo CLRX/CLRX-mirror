@@ -1663,10 +1663,15 @@ clrxclGetProgramBuildInfo(cl_program            program,
                 param_value_size_ret);
     }
     
-    auto progDevIt = CLRX::binaryMapFind(p->asmProgEntries.get(),
-             p->asmProgEntries.get()+p->assocDevicesNum, device);
-    if (progDevIt == p->asmProgEntries.get()+p->assocDevicesNum)
-        return CL_INVALID_DEVICE;
+    ProgDeviceMapEntry* progDevIt = nullptr;
+    if (p->asmProgEntries!=nullptr)
+    {
+        progDevIt = CLRX::binaryMapFind(p->asmProgEntries.get(),
+                 p->asmProgEntries.get()+p->assocDevicesNum, device);
+        if (progDevIt == p->asmProgEntries.get()+p->assocDevicesNum)
+            return CL_INVALID_DEVICE;
+    }
+    
     switch(param_name)
     {
         case CL_PROGRAM_BUILD_STATUS:
