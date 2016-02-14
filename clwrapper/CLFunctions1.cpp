@@ -1671,6 +1671,14 @@ clrxclGetProgramBuildInfo(cl_program            program,
         if (progDevIt == p->asmProgEntries.get()+p->assocDevicesNum)
             return CL_INVALID_DEVICE;
     }
+    else if (p->assocDevicesNum!=0)
+    {   // if not program entries
+        if (std::find(p->assocDevices.get(), p->assocDevices.get()+p->assocDevicesNum,
+                        device) == p->assocDevices.get()+p->assocDevicesNum)
+            return CL_INVALID_DEVICE;
+    }
+    else // otherwise no associated devices
+        return CL_INVALID_DEVICE;
     
     switch(param_name)
     {
