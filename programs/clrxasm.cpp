@@ -172,18 +172,14 @@ try
     if (ret!=0)
         return ret;
     /// run assembling
-    bool good = assembler->assemble();
+    if (!assembler->assemble())
+        return 1;
     /// write output to file
-    if (good)
-    {
-        const char* outputName = "a.out";
-        if (cli.hasShortOption('o'))
-            outputName = cli.getShortOptArg<const char*>('o');
-        assembler->writeBinary(outputName);
-    }
-    else // failed
-        ret = 1;
-    return ret;
+    const char* outputName = "a.out";
+    if (cli.hasShortOption('o'))
+        outputName = cli.getShortOptArg<const char*>('o');
+    assembler->writeBinary(outputName);
+    return 0;
 }
 catch(const Exception& ex)
 {
