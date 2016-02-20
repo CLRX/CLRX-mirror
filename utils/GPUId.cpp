@@ -25,7 +25,7 @@
 
 using namespace CLRX;
 
-static const size_t gpuDeviceTableSize = 15;
+static const size_t gpuDeviceTableSize = 16;
 
 static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
 {
@@ -43,7 +43,8 @@ static const char* gpuDeviceNameTable[gpuDeviceTableSize] =
     "Tonga",
     "Mullins",
     "Fiji",
-    "Carrizo"
+    "Carrizo",
+    "Dummy"
 };
 
 static std::pair<const char*, GPUDeviceType>
@@ -52,6 +53,7 @@ lowerCaseGpuDeviceEntryTable[gpuDeviceTableSize] =
     { "bonaire", GPUDeviceType::BONAIRE },
     { "capeverde", GPUDeviceType::CAPE_VERDE },
     { "carrizo", GPUDeviceType::CARRIZO },
+    { "dummy", GPUDeviceType::DUMMY },
     { "fiji", GPUDeviceType::FIJI },
     { "hainan", GPUDeviceType::HAINAN },
     { "hawaii", GPUDeviceType::HAWAII },
@@ -82,7 +84,8 @@ static const GPUArchitecture gpuDeviceArchTable[gpuDeviceTableSize] =
     GPUArchitecture::GCN1_2, // Tonga
     GPUArchitecture::GCN1_1, // Mullins
     GPUArchitecture::GCN1_2, // Fiji
-    GPUArchitecture::GCN1_2  // Carrizo
+    GPUArchitecture::GCN1_2, // Carrizo
+    GPUArchitecture::GCN1_2  // Dummy
 };
 
 static const char* gpuArchitectureNameTable[3] =

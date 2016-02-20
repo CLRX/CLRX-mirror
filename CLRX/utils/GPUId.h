@@ -51,7 +51,8 @@ enum class GPUDeviceType: cxbyte
     MULLINS, ///< ???
     FIJI,  ///< Radeon Fury
     CARRIZO, ///< APU
-    GPUDEVICE_MAX = CARRIZO,    ///< last value
+    DUMMY,
+    GPUDEVICE_MAX = DUMMY,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800

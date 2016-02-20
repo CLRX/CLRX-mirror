@@ -216,7 +216,7 @@ struct GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceCodeEntry gpuDeviceCodeTable[15] =
+static const GPUDeviceCodeEntry gpuDeviceCodeTable[16] =
 {
     { 0x3fd, GPUDeviceType::TAHITI },
     { 0x3fe, GPUDeviceType::PITCAIRN },
@@ -232,7 +232,8 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[15] =
     { 0x40a, GPUDeviceType::TONGA },
     { 0x40b, GPUDeviceType::MULLINS },
     { 0x40c, GPUDeviceType::FIJI },
-    { 0x40d, GPUDeviceType::CARRIZO }
+    { 0x40d, GPUDeviceType::CARRIZO },
+    { 0x411, GPUDeviceType::DUMMY }
 };
 
 struct GPUDeviceInnerCodeEntry
@@ -241,7 +242,7 @@ struct GPUDeviceInnerCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[15] =
+static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[16] =
 {
     { 0x1a, GPUDeviceType::TAHITI },
     { 0x1b, GPUDeviceType::PITCAIRN },
@@ -257,7 +258,8 @@ static const GPUDeviceInnerCodeEntry gpuDeviceInnerCodeTable[15] =
     { 0x2a, GPUDeviceType::TONGA },
     { 0x2b, GPUDeviceType::MULLINS },
     { 0x2d, GPUDeviceType::FIJI },
-    { 0x2e, GPUDeviceType::CARRIZO }
+    { 0x2e, GPUDeviceType::CARRIZO },
+    { 0x31, GPUDeviceType::DUMMY }
 };
 
 static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBin,
