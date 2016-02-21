@@ -1389,9 +1389,9 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (isGCN12)
     {
         if (src0Field == 0xf9)
-            decodeVOPSDWA(output, literal, argsUsed, argsUsed);
+            decodeVOPSDWA(output, literal, argsUsed, false);
         else if (src0Field == 0xfa)
-            decodeVOPDPP(output, literal, argsUsed, argsUsed);
+            decodeVOPDPP(output, literal, argsUsed, false);
     }
 }
 
