@@ -9,6 +9,7 @@ CLRX/amdasm/Commons.h -text
 CLRX/amdasm/Disassembler.h -text
 CLRX/amdbin/AmdBinGen.h -text
 CLRX/amdbin/AmdBinaries.h -text
+CLRX/amdbin/AmdCL2Binaries.h -text
 CLRX/amdbin/Elf.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
@@ -46,6 +47,7 @@ amdasm/GCNInstructions.cpp -text
 amdasm/GCNInternals.h -text
 amdbin/AmdBinGen.cpp -text
 amdbin/AmdBinaries.cpp -text
+amdbin/AmdCL2Binaries.cpp -text
 amdbin/CMakeLists.txt -text svneol=unset#text/plain
 amdbin/ElfBinaries.cpp -text
 amdbin/GalliumBinaries.cpp -text
