@@ -56,7 +56,7 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     catch(const Exception& ex)
     { }
     if (amdGpuDisasmIndex != SHN_UNDEF)
-    {
+    {   // set disassembler section
         const Elf32_Shdr& shdr = getSectionHeader(amdGpuDisasmIndex);
         disasmOffset = ULEV(shdr.sh_offset);
         disasmSize = ULEV(shdr.sh_size);
@@ -185,6 +185,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         {
             GalliumArgInfo& argInfo = kernel.argInfos[j];
             const cxuint type = ULEV(data32[0]);
+            // accept not known arg type by this CLRadeonExtender
             if (type > 255)
                 throw Exception("Type of kernel argument out of handled range");
             argInfo.type = GalliumArgType(type);
@@ -193,6 +194,7 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
             argInfo.targetAlign = ULEV(data32[3]);
             argInfo.signExtended = ULEV(data32[4])!=0;
             const cxuint semType = ULEV(data32[5]);
+            // accept not known semantic type by this CLRadeonExtender
             if (semType > 255)
                 throw Exception("Semantic of kernel argument out of handled range");
             argInfo.semantic = GalliumArgSemantic(semType);
@@ -262,8 +264,9 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         {
             const Elf32_Sym& sym = elfBinary.getSymbol(symIndex);
             const char* symName = elfBinary.getSymbolName(symIndex);
+            // kernel symol must be defined as global and must be bound to text section
             if (ULEV(sym.st_shndx) == textIndex && ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
-            {
+            {   // names must be stored in order
                 if (kernel.kernelName != symName)
                     throw Exception("Kernel symbols out of order!");
                 if (ULEV(sym.st_value) != kernel.offset)
@@ -354,6 +357,7 @@ void GalliumBinGenerator::setInput(const GalliumInput* input)
     this->input = input;
 }
 
+// section index for symbol binding
 static const uint16_t mainBuiltinSectionTable[] =
 {
     8, // ELFSECTID_SHSTRTAB
@@ -370,6 +374,7 @@ static const uint16_t mainBuiltinSectionTable[] =
     7  // GALLIUMSECTID_NOTEGNUSTACK
 };
 
+// section index for symbol binding
 static const uint16_t mainBuiltinSectionTable2[] =
 {
     7, // ELFSECTID_SHSTRTAB
@@ -492,7 +497,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
             SHT_PROGBITS, SHF_ALLOC|SHF_WRITE));
     elfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 4, ".bss",
             SHT_NOBITS, SHF_ALLOC|SHF_WRITE));
-    
+    // write configuration for kernel execution
     AmdGpuConfigContent amdGpuConfigContent(kernelsOrder, *input);
     elfBinGen.addRegion(ElfRegion32(uint64_t(24U)*kernelsNum, &amdGpuConfigContent, 1,
             ".AMDGPU.config", SHT_PROGBITS, 0));
@@ -502,7 +507,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
                 ".rodata", SHT_PROGBITS, SHF_ALLOC));
     
     if (input->comment!=nullptr)
-    {
+    {   // if comment, store comment section
         comment = input->comment;
         commentSize = input->commentSize;
         if (commentSize==0)
@@ -517,6 +522,7 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
     elfBinGen.addRegion(ElfRegion32::symtabSection());
     elfBinGen.addRegion(ElfRegion32::strtabSection());
     /* symbols */
+    /// EndOfTextLabel - ?? always is at end of symbol table
     elfBinGen.addSymbol({"EndOfTextLabel", 1, ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE),
             0, false, uint32_t(input->codeSize), 0});
     const cxuint sectSymsNum = 6 + (input->globalData!=nullptr);

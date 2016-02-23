@@ -245,6 +245,7 @@ AmdInnerGPUBinary32::AmdInnerGPUBinary32(const CString& _kernelName,
             if (offset+size == encEntryOffset+encEntrySize)
             {   /* next encoding entry */
                 encodingIndex++;
+                // if program headers table is not exhausted, but no encoding entries
                 if (i+1 < getProgramHeadersNum() && encodingIndex >= encodingEntriesNum)
                     throw Exception("ProgramHeaders out of encodings!");
             }
@@ -290,6 +291,9 @@ struct CLRX_INTERNAL AmdInnerX86_64Types : Elf64Types
     static const size_t argDescTableOffset;
 };
 
+/* different argDescsNumOffset and argDescsNumESize used for compute number of
+ * entries in kernel argument table in binary */
+
 const size_t AmdInnerX86Types::argDescsNumOffset = 44;
 const size_t AmdInnerX86Types::argDescsNumESize = 12;
 const size_t AmdInnerX86Types::argDescTableOffset = 32;
@@ -298,7 +302,7 @@ const size_t AmdInnerX86_64Types::argDescsNumOffset = 80;
 const size_t AmdInnerX86_64Types::argDescsNumESize = 16;
 const size_t AmdInnerX86_64Types::argDescTableOffset = 64;
 
-
+/* generic code for X86 binary. get from metadata, informations about kernel arguments */
 template<typename Types>
 static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
              Array<KernelInfo>& kernelInfos)
@@ -332,6 +336,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     
     size_t unfinishedRegionArgNameSym = SIZE_MAX;
     
+    /* foundInStaticSymbols - deployed because ELF binaries for X86/X64 kernels differs
+     * between AMD Catalyst driver. Newest version just put symbols to dynamic table! */
     bool foundInStaticSymbols = false;
     std::vector<typename Types::Size> argTypeNamesSyms;
     if (choosenSyms.empty())
@@ -445,6 +451,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
             AmdKernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
             const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
+            
+            // next stuff to handle different place of symbols
             if (!foundInStaticSymbols)
             {
                 if (argNameSym.getNameOffset() < rodataHdrOffset ||
@@ -605,6 +613,8 @@ static inline CString stringFromCStringDelim(const char* c1, size_t maxSize, cha
     return CString(c1, i);
 }
 
+/* metadata string that stored in rodata section in main GPU binary holds needed kernel
+ * argument info (arg type and arg name). this function just retrieve that data */
 static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
           const char* kernelDesc, KernelInfo& kernelInfo)
 {
@@ -793,6 +803,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             CString name(kptr, tokPtr);
             
             kptr = ++tokPtr;
+            // quick image type parsing (1D,1DA,1DB,2D,2DA,3D)
             if (kptr+3 < kend)
             {
                 if (kptr[1] != 'D')
@@ -832,7 +843,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
             ++kptr;
             if (kptr+3 > kend || kptr[2] != ':')
                 throw ParseException(lineNo, "Can't parse image access qualifier");
-            
+            // handle img access qualifier: RO,WO,RW */
             if (*kptr == 'R' && kptr[1] == 'O')
                 argIt->second.ptrAccess |= KARG_PTR_READ_ONLY;
             else if (*kptr == 'W' && kptr[1] == 'O')
@@ -939,6 +950,7 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
         karg.argName = stringFromCStringDelim(e.second.nameStr, kend-e.second.nameStr, ':');
     }
     
+    /* reflections holds argument type names, we just retrieve from arg type names! */
     if (argIndex != 0)
     {   /* check whether not end */
         if (kptr >= kend)
@@ -1062,7 +1074,7 @@ void AmdMainGPUBinaryBase::initMainGPUBinary(typename Types::ElfBinary& mainElf)
         }
         else if (::strcmp(symName, "__OpenCL_0_global") == 0 ||
                  ::strcmp(symName, "__OpenCL_2_global") == 0)
-        {
+        {   /* global data (constant data) */
             const typename Types::Sym& sym = mainElf.getSymbol(i);
             const uint16_t shindex = ULEV(sym.st_shndx);
             const typename Types::Shdr& shdr = mainElf.getSectionHeader(shindex);

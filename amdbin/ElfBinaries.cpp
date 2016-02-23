@@ -110,6 +110,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             throw Exception("ProgramHeaders offset+size out of range!");
         
         cxuint phnum = ULEV(ehdr->e_phnum);
+        // checking program header segment offset ranges
         for (cxuint i = 0; i < phnum; i++)
         {
             const typename Types::Phdr& phdr = getProgramHeader(i);
@@ -147,6 +148,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
         for (cxuint i = 0; i < shnum; i++)
         {
             const typename Types::Shdr& shdr = getSectionHeader(i);
+            /// checking section offset ranges
             if (ULEV(shdr.sh_offset) > binaryCodeSize)
                 throw Exception("Section offset out of range!");
             if (ULEV(shdr.sh_type) != SHT_NOBITS)
@@ -167,6 +169,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
             
             if ((creationFlags & ELF_CREATE_SECTIONMAP) != 0)
                 sectionIndexMap[i] = std::make_pair(shname, i);
+            // set symbol table and dynamic symbol table pointers
             if (ULEV(shdr.sh_type) == SHT_SYMTAB)
                 symTableHdr = &shdr;
             if (ULEV(shdr.sh_type) == SHT_DYNSYM)
@@ -200,6 +203,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 const typename Types::Size symnameindx = ULEV(sym.st_name);
                 if (symnameindx >= ULEV(symstrShdr.sh_size))
                     throw Exception("Symbol name index out of range!");
+                // check whether name is finished in string section content
                 if (symnameindx >= unfinishedSymstrPos)
                     throw Exception("Unfinished symbol name!");
                 
@@ -239,6 +243,7 @@ ElfBinaryTemplate<Types>::ElfBinaryTemplate(size_t _binaryCodeSize, cxbyte* _bin
                 const typename Types::Size symnameindx = ULEV(sym.st_name);
                 if (symnameindx >= ULEV(dynSymstrShdr.sh_size))
                     throw Exception("DynSymbol name index out of range!");
+                // check whether name is finished in string section content
                 if (symnameindx >= unfinishedSymstrPos)
                     throw Exception("Unfinished dynsymbol name!");
                 
@@ -553,6 +558,9 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 SLEV(phdr.p_offset, regionOffsets[progHeader.regionStart]);
                 SLEV(phdr.p_align, regions[progHeader.regionStart].align);
                 
+                /* paddrBase and vaddrBase is base to program header virtual and physical
+                 * addresses for program header. if not defined then get address base
+                 * from ELF header */
                 if (progHeader.paddrBase != 0)
                     SLEV(phdr.p_paddr, progHeader.paddrBase +
                                 regionOffsets[progHeader.regionStart]);
@@ -607,6 +615,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     SLEV(shdr.sh_type, region2.section.type);
                     SLEV(shdr.sh_flags, region2.section.flags);
                     SLEV(shdr.sh_offset, regionOffsets[j]);
+                    /* addrBase is base address of first section. if not defined
+                     * use address base as virtual address base from elf header */
                     if (region2.section.addrBase != 0)
                         SLEV(shdr.sh_addr, region2.section.addrBase+regionOffsets[j]);
                     else if (header.vaddrBase != 0)
@@ -671,15 +681,17 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         
                         SLEV(sym.st_shndx, inSym.sectionIndex);
                         SLEV(sym.st_size, inSym.size);
+                        /// if value defined as address
                         if (!inSym.valueIsAddr)
                             SLEV(sym.st_value, inSym.value);
+                        // if not use conversion to address with section addrBase
                         else if (inSym.sectionIndex != 0 && regions[sectionRegions[
                                     inSym.sectionIndex]].section.addrBase != 0)
                             SLEV(sym.st_value, inSym.value + regionOffsets[
                                     sectionRegions[inSym.sectionIndex]] +
                                     regions[sectionRegions[inSym.sectionIndex]].
                                             section.addrBase);
-                        else
+                        else // use elf headerf virtual address base
                             SLEV(sym.st_value, inSym.value + regionOffsets[
                                 sectionRegions[inSym.sectionIndex]] + header.vaddrBase);
                         sym.st_other = inSym.other;

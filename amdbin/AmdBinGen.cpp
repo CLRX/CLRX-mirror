@@ -277,6 +277,7 @@ static const TypeNameVecSize argTypeNamesTable[] =
     { nullptr, KT_UNKNOWN, 1, 1 } // COUNTER64
 };
 
+/// temporary kernel configuration. holds resolved resource ids values and other setup
 struct CLRX_INTERNAL TempAmdKernelConfig
 {
     uint32_t hwRegion;
@@ -384,6 +385,7 @@ struct CLRX_INTERNAL TempAmdKernelData
     uint32_t header[8];
 };
 
+// fast and memory efficient String table generator for main binary
 class CLRX_INTERNAL MainStrTabGen: public ElfRegionContent
 {
 private:
@@ -434,6 +436,7 @@ public:
     }
 };
 
+// fast and memory efficient symbol table generator for main binary
 template<typename Types>
 class CLRX_INTERNAL MainSymTabGen: public ElfRegionContent
 {
@@ -631,6 +634,8 @@ static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint drive
     elfBinGen.addRegion(ElfRegionTemplate<Types>::sectionHeaderTable());
 }
 
+/* perform some checkings for resource ids and fill resource ids and other that was set
+ * as default. store that setup in TempAndKernelConfig */
 static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
        Array<TempAmdKernelConfig>& tempAmdKernelConfigs)
 {
@@ -940,6 +945,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     itocstrCStyle(tempConfig.hwRegion, numBuf, 21);
     metadata += numBuf;
     metadata += '\n';
+    /* reqd_work_group_size for kernel (cws) */
     if (config.reqdWorkGroupSize[0] != 0 || config.reqdWorkGroupSize[1] != 0 ||
         config.reqdWorkGroupSize[1] != 0)
     {
@@ -956,6 +962,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
     }
     
     size_t argOffset = 0;
+    /* put kernel arg info to metadata */
     for (cxuint k = 0; k < config.args.size(); k++)
     {
         const AmdKernelArgInput& arg = config.args[k];
@@ -983,7 +990,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             const cxuint typeSize =
                 cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*tp.elemSize;
             if (arg.structSize == 0 && arg.pointerType == KernelArgType::STRUCTURE)
-                metadata += "opaque";
+                metadata += "opaque"; // opaque indicates pointer to structure
             else
                 metadata += tp.name;
             metadata += ":1:1:";
@@ -1070,6 +1077,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             const TypeNameVecSize& tp = argTypeNamesTable[cxuint(arg.argType)];
             if (tp.kindOfType == KT_UNKNOWN)
                 throw Exception("Type not supported!");
+            // type size is aligned (fix for 3 length vectors)
             const cxuint typeSize =
                 cxuint((tp.vecSize==3) ? 4 : tp.vecSize)*std::max(cxbyte(4), tp.elemSize);
             metadata += tp.name;
@@ -1498,6 +1506,7 @@ static std::vector<cxuint> collectUniqueIdsAndFunctionIds(const AmdInput* input)
 
 /*
  * main routine to generate AmdBin for GPU
+ * this routine keep original structure of GPU binary (section order, alignment etc)
  */
 
 void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
@@ -1830,7 +1839,7 @@ uint32_t CLRX::detectAmdDriverVersion()
     
     std::string clrxTimestampPath = getHomeDir();
     if (!clrxTimestampPath.empty())
-    {   // first, we check from stored version
+    {   // first, we check from stored version in config files
         clrxTimestampPath = joinPaths(clrxTimestampPath, ".clrxamdocltstamp");
         try
         { makeDir(clrxTimestampPath.c_str()); }
@@ -1842,7 +1851,7 @@ uint32_t CLRX::detectAmdDriverVersion()
         {
         std::ifstream ifs(clrxTimestampPath.c_str(), std::ios::binary);
         if (ifs)
-        {   // if opened
+        {   // read driver version from stored config files
             ifs.exceptions(std::ios::badbit | std::ios::failbit);
             uint64_t readedTimestamp = 0;
             uint32_t readedVersion = 0;
