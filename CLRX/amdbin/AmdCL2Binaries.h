@@ -65,13 +65,54 @@ struct AmdCL2GPUKernel
 /// AMD OpenCL 2.0 inner binary base class
 class AmdCL2InnerGPUBinaryBase
 {
+public:
+    /// inner binary map type
+    typedef Array<std::pair<CString, size_t> > KernelDataMap;
 private:
     AmdCL2InnerBinaryType binaryType;
+    std::unique_ptr<AmdCL2GPUKernel[]> kernels;    ///< kernel headers
+    KernelDataMap kernelDataMap;
 public:
     ~AmdCL2InnerGPUBinaryBase() = default;
     
     AmdCL2InnerBinaryType getBinaryType() const
     { return binaryType; }
+    
+    /// get kernel header size for specified inner binary
+    size_t getKernelHeaderSize(size_t index) const
+    { return kernels[index].headerSize; }
+    
+    /// get kernel header for specified inner binary
+    const cxbyte* getKernelHeader(size_t index) const
+    { return kernels[index].header; }
+    
+    /// get kernel header for specified inner binary
+    cxbyte* getKernelHeader(size_t index)
+    { return kernels[index].header; }
+    
+    /// get kernel setup size for specified inner binary
+    size_t getKernelSetupSize(size_t index) const
+    { return kernels[index].setupSize; }
+    
+    /// get kernel setup for specified inner binary
+    const cxbyte* getKernelSetup(size_t index) const
+    { return kernels[index].setup; }
+    
+    /// get kernel setup for specified inner binary
+    cxbyte* getKernelSetup(size_t index)
+    { return kernels[index].setup; }
+    
+    /// get kernel code size for specified inner binary
+    size_t getKernelCodeSize(size_t index) const
+    { return kernels[index].codeSize; }
+    
+    /// get kernel code for specified inner binary
+    const cxbyte* getKernelCode(size_t index) const
+    { return kernels[index].code; }
+    
+    /// get kernel code for specified inner binary
+    cxbyte* getKernelCode(size_t index)
+    { return kernels[index].code; }
 };
 
 /// AMD OpenCL 2.0 old inner binary for GPU binaries that represent a single kernel
@@ -117,15 +158,11 @@ struct AmdCL2GPUKernelMetadata
 class AmdCL2MainGPUBinary: public AmdMainBinaryBase
 {
 public:
-    /// inner binary map type
-    typedef Array<std::pair<CString, size_t> > KernelDataMap;
     typedef Array<std::pair<CString, size_t> > MetadataMap;
 protected:
     size_t kernelsNum;
-    std::unique_ptr<AmdCL2GPUKernelMetadata[]> isaMetadatas;  ///< AMD metadatas
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
-    std::unique_ptr<AmdCL2GPUKernel[]> kernels;    ///< kernel headers
-    KernelDataMap kernelDataMap;
+    std::unique_ptr<AmdCL2GPUKernelMetadata[]> isaMetadatas;  ///< AMD metadatas
     MetadataMap metadataMap;
     MetadataMap isaMetadataMap;
     
@@ -177,42 +214,6 @@ public:
     /// get metadata for specified inner binary
     cxbyte* getMetadata(size_t index)
     { return metadatas[index].data; }
-    
-    /// get kernel header size for specified inner binary
-    size_t getKernelHeaderSize(size_t index) const
-    { return kernels[index].headerSize; }
-    
-    /// get kernel header for specified inner binary
-    const cxbyte* getKernelHeader(size_t index) const
-    { return kernels[index].header; }
-    
-    /// get kernel header for specified inner binary
-    cxbyte* getKernelHeader(size_t index)
-    { return kernels[index].header; }
-    
-    /// get kernel setup size for specified inner binary
-    size_t getKernelSetupSize(size_t index) const
-    { return kernels[index].setupSize; }
-    
-    /// get kernel setup for specified inner binary
-    const cxbyte* getKernelSetup(size_t index) const
-    { return kernels[index].setup; }
-    
-    /// get kernel setup for specified inner binary
-    cxbyte* getKernelSetup(size_t index)
-    { return kernels[index].setup; }
-    
-    /// get kernel code size for specified inner binary
-    size_t getKernelCodeSize(size_t index) const
-    { return kernels[index].codeSize; }
-    
-    /// get kernel code for specified inner binary
-    const cxbyte* getKernelCode(size_t index) const
-    { return kernels[index].code; }
-    
-    /// get kernel code for specified inner binary
-    cxbyte* getKernelCode(size_t index)
-    { return kernels[index].code; }
     
     /// get acl version string
     const CString& getAclVersionString() const
