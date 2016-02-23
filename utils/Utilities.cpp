@@ -237,6 +237,7 @@ std::string CLRX::parseEnvVariable<std::string>(const char* envVar,
 template
 bool CLRX::parseEnvVariable<bool>(const char* envVar, const bool& defaultValue);
 
+/// escape char names witout '\'
 static const char cstyleEscapesTable[32] =
 {
     0, 0, 0, 0, 0, 0, 0, 'a', 'b', 't', 'n', 'v', 'f', 'r', 0, 0,
@@ -409,7 +410,7 @@ Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
     Array<cxbyte> buf;
     ifs.exceptions(std::ifstream::badbit); // ignore failbit for read
     if (seekingIsWorking)
-    {
+    {   // just read whole file to memory
         size = ifs.tellg();
         if (size > SIZE_MAX)
             throw Exception("File is too big to load");
@@ -429,7 +430,7 @@ Array<cxbyte> CLRX::loadDataFromFile(const char* filename)
             ifs.read((char*)(buf.data()+prevBufSize), readBufSize-prevBufSize);
             const size_t readed = ifs.gcount();
             if (readed < readBufSize-prevBufSize)
-            {   /* final */
+            {   /* final resize */
                 buf.resize(prevBufSize + readed);
                 break;
             }
@@ -509,6 +510,7 @@ std::string CLRX::getHomeDir()
             return std::string(pwres->pw_dir);
     }
 #else
+    // requires Windows XP or Windows 2000
     char path[MAX_PATH];
     if (SUCCEEDED(SHGetFolderPath(nullptr, CSIDL_PROFILE, nullptr, 0, path)))
         return std::string(path);
@@ -522,6 +524,7 @@ void CLRX::makeDir(const char* dirname)
 #ifdef HAVE_WINDOWS
     int ret = _mkdir(dirname);
 #else
+    // warning this is not thread safe code! (umask)
     int um = umask(0);
     umask(um);
     int ret = ::mkdir(dirname, 0777&~um);

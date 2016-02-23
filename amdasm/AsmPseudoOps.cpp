@@ -38,6 +38,7 @@
 
 using namespace CLRX;
 
+// pseudo-ops used while skipping clauses
 static const char* offlinePseudoOpNamesTbl[] =
 {
     "else", "elseif", "elseif32", "elseif64", "elseifarch",
@@ -55,12 +56,13 @@ static const char* offlinePseudoOpNamesTbl[] =
     "irp", "irpc", "macro", "rept"
 };
 
+/// pseudo-ops not ignored while putting macro content
 static const char* macroRepeatPseudoOpNamesTbl[] =
 {
     "endm", "endr", "irp", "irpc", "macro", "rept"
 };
 
-
+// pseudo-ops used while skipping clauses
 enum
 {
     ASMCOP_ELSE = 0, ASMCOP_ELSEIF, ASMCOP_ELSEIF32, ASMCOP_ELSEIF64, ASMCOP_ELSEIFARCH,
@@ -79,9 +81,11 @@ enum
     ASMCOP_IRP, ASMCOP_IRPC, ASMCOP_MACRO, ASMCOP_REPT
 };
 
+/// pseudo-ops not ignored while putting macro content
 enum
 { ASMMROP_ENDM = 0, ASMMROP_ENDR, ASMMROP_IRP, ASMMROP_IRPC, ASMMROP_MACRO, ASMMROP_REPT };
 
+/// all main pseudo-ops
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align",
@@ -264,6 +268,8 @@ void AsmPseudoOps::goToKernel(Assembler& asmr, const char* pseudoOpPlace,
     asmr.goToKernel(pseudoOpPlace, kernelName.c_str());
 }
 
+/// isPseudoOp - if true then name is pseudo-operation (we must convert to lower-case)
+/// if pseudo-op we just do not try to parse section flags
 void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
                    const char* linePtr, bool isPseudoOp)
 {
@@ -520,6 +526,7 @@ void AsmPseudoOps::includeBinFile(Assembler& asmr, const char* pseudoOpPlace,
     else
     {   /* for sequential files, likes fifo */
         char tempBuf[256];
+        /// first we skipping bytes given in offset
         for (uint64_t pos = 0; pos < offset; )
         {
             const size_t toRead = std::min(offset-pos, uint64_t(256));
@@ -641,8 +648,8 @@ void AsmPseudoOps::putIntegers(Assembler& asmr, const char* pseudoOpPlace,
                         asmr.printError(exprPlace, "Expression must be absolute!");
                 }
             }
-            else // expression
-            {
+            else // expression, we set target of expression (just data)
+            {   /// will be resolved later
                 expr->setTarget(AsmExprTarget::dataTarget<T>(
                                 asmr.currentSection, asmr.currentOutPos));
                 expr.release();
@@ -751,7 +758,7 @@ void AsmPseudoOps::putUInt128s(Assembler& asmr, const char* pseudoOpPlace,
             catch(const ParseException& ex)
             { asmr.printError(literalPlace, ex.what()); }
             if (negative)
-            {
+            {   // negate value
                 value.hi = ~value.hi + (value.lo==0);
                 value.lo = -value.lo;
             }
@@ -815,6 +822,7 @@ void AsmPseudoOps::putStringsToInts(Assembler& asmr, const char* pseudoOpPlace,
                 const size_t strSize = outStr.size()+1;
                 T* outData = reinterpret_cast<T*>(
                         asmr.reserveData(sizeof(T)*(strSize)));
+                /// put as integer including nul-terminated string
                 for (size_t i = 0; i < strSize; i++)
                     SULEV(outData[i], T(outStr[i])&T(0xff));
             }
@@ -993,6 +1001,8 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     }
     
     cxuint truncBits = std::min(uint64_t(8), size)<<3;
+    /* honors old behaviour from original GNU as (just cut to 32-bit values)
+     * do not that for .fillq (_64bit=true) */
     if (!_64bit)
         truncBits = std::min(cxuint(32), truncBits);
     if (truncBits != 0 && truncBits < 64) // if print 
@@ -1012,6 +1022,7 @@ void AsmPseudoOps::doFill(Assembler& asmr, const char* pseudoOpPlace, const char
     const size_t valueSize = std::min(uint64_t(8), size);
     uint64_t outValue;
     SLEV(outValue, value);
+    // main filling route (slow)
     for (uint64_t r = 0; r < repeat; r++)
     {
         ::memcpy(content, &outValue, valueSize);
@@ -1268,6 +1279,7 @@ void AsmPseudoOps::doPrint(Assembler& asmr, const char* linePtr)
     asmr.printStream.put('\n');
 }
 
+/// perform .if for integer comparisons '.iflt', '.ifle', '.ifne'
 void AsmPseudoOps::doIfInt(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
                IfIntComp compType, bool elseIfClause)
 {
@@ -2390,7 +2402,7 @@ bool Assembler::skipClauses(bool exitm)
             break;
         // if exit from macro mode, exit when macro filter exits
         if (exitm && inputFilterTop > asmInputFilters.size())
-        {
+        {   // set lineAlreadyRead - next line after skipped region read will be read
             lineAlreadyRead  = true;
             break; // end of macro, 
         }
@@ -2465,7 +2477,8 @@ bool Assembler::skipClauses(bool exitm)
                 else if (!insideMacroOrRepeat)
                 {
                     if (!exitm && clauseLevel == clauses.size() && isTopIfClause)
-                    {
+                    {   /* set lineAlreadyRead - next line after skipped region read
+                         * will be read */
                         lineAlreadyRead = true; // read
                         return good; // do exit
                     }

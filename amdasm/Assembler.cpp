@@ -984,7 +984,7 @@ bool Assembler::assignSymbol(const CString& symbolName, const char* symbolPlace,
                         "' is already defined").c_str());
             return false;
         }
-        
+        // setup symbol entry (required)
         AsmSymbolEntry& symEntry = *res.first;
         symEntry.second.expression = nullptr;
         symEntry.second.onceDefined = !reassign;
@@ -1156,7 +1156,8 @@ void Assembler::printWarningForRange(cxuint bits, uint64_t value, const AsmSourc
         cxbyte signess)
 {
     if (bits < 64)
-    {
+    {   /* signess - WS_BOTH - check value range as signed value 
+         * WS_UNSIGNED - check value as unsigned value */
         if (signess == WS_BOTH &&
             !(int64_t(value) >= (1LL<<bits) || int64_t(value) < -(1LL<<(bits-1))))
             return;
@@ -1345,7 +1346,7 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
             }
         }
         else
-        {   /* parse variadic arguments */
+        {   /* parse variadic arguments, they requires ',' separator */
             bool argGood = true;
             while (linePtr != end)
             {
@@ -1441,7 +1442,7 @@ bool Assembler::readLine()
             asmInputFilters.pop();
         }
         else if (filenameIndex<filenames.size())
-        {
+        {   /* handling input assembler that have many files */
             do { // delete previous filter
                 delete asmInputFilters.top();
                 asmInputFilters.pop();
@@ -1668,6 +1669,8 @@ bool Assembler::assemble()
                     doNextLine = true;
                     break;
                 }
+                /* prevLRes - iterator to previous instance of local label (with 'b)
+                 * nextLRes - iterator to next instance of local label (with 'f) */
                 std::pair<AsmSymbolMap::iterator, bool> prevLRes =
                         symbolMap.insert(std::make_pair(
                             std::string(firstName.c_str())+"b", AsmSymbol()));
@@ -1676,7 +1679,8 @@ bool Assembler::assemble()
                             std::string(firstName.c_str())+"f", AsmSymbol()));
                 /* resolve forward symbol of label now */
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
-                /// setup backward symbol of label */
+                // move symbol value from next local label into previous local label
+                // clearOccurrences - do not resolve later previous value
                 prevLRes.first->second.clearOccurrencesInExpr();
                 prevLRes.first->second.value = nextLRes.first->second.value;
                 prevLRes.first->second.hasValue = true;

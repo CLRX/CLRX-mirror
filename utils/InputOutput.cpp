@@ -92,6 +92,7 @@ std::streambuf::int_type MemoryStreamBuf::pbackfail(std::streambuf::int_type ch)
 void MemoryStreamBuf::safePBump(ssize_t offset)
 {
 #ifdef HAVE_64BIT
+    // we use ssize_t because is safe type
     if (offset > 0)
         while (offset > INT_MAX)
         {

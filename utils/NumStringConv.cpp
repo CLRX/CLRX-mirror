@@ -1971,7 +1971,7 @@ UInt128 CLRX::cstrtou128CStyle(const char* str, const char* inend, const char*& 
             }
             const cxuint digit = (*p-'0');
             UInt128 temp = out;
-            // multiply by 10
+            // multiply by 10 by shifting right by 3 and 1 bits with adding them
             out.hi = (temp.hi<<3) | (temp.lo>>61);
             out.lo = (temp.lo<<3);
             out.hi += (temp.hi<<1) | (temp.lo>>63);

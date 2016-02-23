@@ -29,6 +29,11 @@
 
 using namespace CLRX;
 
+/* about column counting: simple input filters (source) handles correctly column counting
+ * Unfortunatelly: macro argument substitution can change column numeration, thus
+ * macro input filters counts incorectly columns (correct solution requires
+ * cumbersome code changes) */
+
 AsmSource::~AsmSource()
 { }
 
@@ -54,6 +59,7 @@ void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource
            const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
+    // line can be empty and can be not finished by newline
     if (lineSize==0 || (lineSize > 0 && line[lineSize-1] != '\n'))
         content.push_back('\n');
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
@@ -65,6 +71,8 @@ void AsmMacro::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSource
     else
     {   // with macro
         bool doAdd = sourceTranslations.empty();
+        /* add macro source information to line source translations if:
+         * it is first line at source, if macro source differs against previous */
         if (!doAdd)
         {
             doAdd = sourceTranslations.back().source->type != AsmSourceType::MACRO;
@@ -91,6 +99,7 @@ void AsmRepeat::addLine(RefPtr<const AsmMacroSubst> macro, RefPtr<const AsmSourc
             const std::vector<LineTrans>& colTrans, size_t lineSize, const char* line)
 {
     content.insert(content.end(), line, line+lineSize);
+    // line can be empty and can be not finished by newline
     if (lineSize==0 || (lineSize > 0 && line[lineSize-1] != '\n'))
         content.push_back('\n');
     colTranslations.insert(colTranslations.end(), colTrans.begin(), colTrans.end());
@@ -266,7 +275,8 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                                 buffer[pos] != ';');
                 }
                 if (pos < buffer.size() && mode!=LineMode::LINE_COMMENT)
-                {
+                {   // ignore for single line comment - because empty single comment
+                    // will be moved to next line!
                     if (buffer[pos] == '\n')
                     {
                         lineNo++;
@@ -310,7 +320,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
             case LineMode::LINE_COMMENT:
             {
                 while (pos < buffer.size() && buffer[pos] != '\n')
-                {
+                {   // skipping bytes until newline or buffer end
                     backslash = (buffer[pos] == '\\');
                     pos++;
                     buffer[destPos++] = ' ';
@@ -320,7 +330,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                     lineNo++;
                     endOfLine = (!backslash);
                     if (backslash)
-                    {
+                    {   // continue comment after line splitting
                         destPos--;
                         if (ssize_t(destPos-lineStart) == colTranslations.back().position)
                             colTranslations.pop_back();
@@ -349,7 +359,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                 if (pos < buffer.size())
                 {
                     if ((asterisk && buffer[pos] == '/'))
-                    {
+                    {   // end of multi line comment, set normal mode
                         pos++;
                         buffer[destPos++] = ' ';
                         mode = LineMode::NORMAL;
@@ -394,7 +404,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
                 if (pos < buffer.size())
                 {
                     if ((backslash&1)==0 && buffer[pos] == quoteChar)
-                    {
+                    {   // if qoutation character exists and it not escaped, we ends string
                         pos++;
                         mode = LineMode::NORMAL;
                         buffer[destPos++] = quoteChar;
@@ -430,7 +440,7 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
         if (pos >= buffer.size())
         {   /* get from buffer */
             if (lineStart != 0)
-            {
+            {   // use backward copying for moving buffer content back to begin
                 std::copy_backward(buffer.begin()+lineStart, buffer.begin()+pos,
                        buffer.begin() + pos-lineStart);
                 destPos -= lineStart;
@@ -522,10 +532,13 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     size_t destLineStart = 0;
     // first curColTrans
     colTranslations.push_back({ ssize_t(-realLinePos), curColTrans->lineNo});
+    // colTransThreshold is position of next column translation (e.g line splitting)
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
             (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                     nextLinePos) : SIZE_MAX;
     
+    /* loop move position to backslash. if backslash encountered then copy content
+     * to content and handles backsash with substitutions */
     while (pos < contentSize && content[pos] != '\n')
     {
         if (content[pos] != '\\')
@@ -562,7 +575,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
             }
-            // copy chars to buffer
+            // copy chars to buffer, fast copy regular content of macro (no substitution)
             if (pos > toCopyPos)
             {
                 buffer.resize(destPos + pos-toCopyPos);
@@ -600,6 +613,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                     {
                         buffer.push_back('\\');
                         destPos++;
+                        // do not skip column translation, because no substitution!
                         skipColTransBetweenMacroArg = false;
                     }
                 }
@@ -622,6 +636,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             }
         }
     }
+    // last copying of content of line (rest of line)
     if (pos > toCopyPos)
     {
         buffer.resize(destPos + pos-toCopyPos);
@@ -629,6 +644,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         destPos += pos-toCopyPos;
     }
     lineSize = buffer.size();
+    /// if not end of content (just newline)
     if (pos < contentSize)
     {
         if (curColTrans+1 != colTransEnd)
@@ -642,6 +658,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         pos++; // skip newline
     }
     lineNo = curColTrans->lineNo;
+    // move to next source translation
     if (sourceTransIndex+1 < macro->getSourceTransSize())
     {
         const AsmMacro::SourceTrans& fpos = macro->getSourceTrans(sourceTransIndex+1);
@@ -788,10 +805,13 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
     // determine start of destination line (real line, with real newline)
     size_t destLineStart = 0;
     colTranslations.push_back({ ssize_t(-realLinePos), curColTrans->lineNo});
+    // colTransThreshold is position of next column translation (e.g line splitting)
     size_t colTransThreshold = (curColTrans+1 != colTransEnd) ?
             (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                     nextLinePos) : SIZE_MAX;
     
+    /* loop move position to backslash. if backslash encountered then copy content
+     * to content and handles backsash with substitutions */
     while (pos < contentSize && content[pos] != '\n')
     {
         if (content[pos] != '\\')
@@ -865,6 +885,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
                     {
                         buffer.push_back('\\');
                         destPos++;
+                        // do not skip column translation, because no substitution!
                         skipColTransBetweenMacroArg = false;
                     }
                 }
@@ -894,6 +915,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         destPos += pos-toCopyPos;
     }
     lineSize = buffer.size();
+    // not content end (just newline at end of line)
     if (pos < contentSize)
     {
         if (curColTrans != colTransEnd)
@@ -911,6 +933,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         pos++; // skip newline
     }
     lineNo = (curColTrans != colTransEnd) ? curColTrans->lineNo : macroColTrans[0].lineNo;
+    // move to next source translation
     if (sourceTransIndex+1 < irp->getSourceTransSize())
     {
         const AsmRepeat::SourceTrans& fpos = irp->getSourceTrans(sourceTransIndex+1);
