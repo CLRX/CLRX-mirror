@@ -98,7 +98,7 @@ uint64_t CLRX::cstrtouXCStyle(const char* str, const char* inend,
                     digit = *p-'A'+10;
                 else if (*p >= 'a' && *p <= 'f')
                     digit = *p-'a'+10;
-                else //
+                else // stop in not hex digit
                     break;
                 
                 if ((out & lastHex) != 0)
@@ -204,9 +204,8 @@ int64_t CLRX::cstrtoiXCStyle(const char* str, const char* inend,
 }
 
 /*
- * parseExponent
+ * parses exponent of floating point value
  */
-
 static int32_t parseFloatExponent(const char*& expstr, const char* inend)
 {
     bool signOfExp = false; // positive exponent
@@ -227,7 +226,7 @@ static int32_t parseFloatExponent(const char*& expstr, const char* inend)
         cxuint digit = (*expstr-'0');
         absExponent = absExponent * 10 + digit;
         if ((absExponent&((1U<<31)-1)) < digit && absExponent != (1U<<31))
-            // if carry
+            // check additional conditions for out of range (carry)
             throw ParseException("Exponent out of range");
     }
     
@@ -429,6 +428,8 @@ struct Pow5Num128TableEntry
     int exponent;
 };
 
+/* this table used for speeding up computation of power of 5 for the most used cases.
+ * in 128-bit format, with exponent */
 static const Pow5Num128TableEntry pow5_128Table[129] =
 {
     { { 0x7e4731ae8f66c448ULL, 0x50ffd44f4a73d34aULL }, -149 },
@@ -562,6 +563,8 @@ static const Pow5Num128TableEntry pow5_128Table[129] =
     { { 0x797ed6e38ed64bf7ULL, 0x84f03e93ff9f4daaULL }, 148 }
 };
 
+/* multiply two floating point values. xxxExp is binary exponent.
+ * xxxxSize - number of dwords, xxxBits - number of used bits */
 static void bigMulFP(cxuint maxSize,
         cxuint bigaSize, cxuint bigaBits, cxint bigaExp, const uint64_t* biga,
         cxuint bigbSize, cxuint bigbBits, cxint bigbExp, const uint64_t* bigb,
@@ -572,6 +575,7 @@ static void bigMulFP(cxuint maxSize,
     /* realize AH*BH+AH*B+BH*A */
     cxuint carry = bigAdd(bigaSize, bigc + bigbSize, biga);
     carry += bigAdd(bigbSize, bigc + bigaSize, bigb);
+    // compute size and bits of output
     bigcSize = bigaSize + bigbSize;
     bigcBits = bigaBits + bigbBits;
     bigcExp = bigaExp + bigbExp;
@@ -675,7 +679,7 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
         pow2PowBits = maxSize<<6;
         p = 1;
     }
-    
+    // main loop to perform POW in form
     for (; p <= (absPower>>1); p<<=1)
     {
         if ((absPower&p)!=0)
@@ -700,7 +704,7 @@ static void bigPow5(cxint power, cxuint maxSize, cxuint& powSize,
              powSize, powBits, exponent, prevPow);
         std::swap(curPow, prevPow);
     }
-    // after computing
+    // after computing we round to nearest
     if (powSize == maxSize)
     {   /* round to nearest if result size is greater than original maxSize */
         bigFPRoundToNearest(maxSize, maxSize-1, exponent, curPow);
@@ -732,6 +736,7 @@ static inline cxint log10ByLog2Floor(cxint v)
 static inline cxint log10ByLog2Ceil(cxint v)
 { return (int64_t(v)*LOG10BYLOG2_32 + (1LL<<32)-1)>>32; }
 
+/// power of 10
 static const uint64_t power10sTable[20] =
 {
     1ULL,
@@ -860,7 +865,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         else
             outend = expstr;
         
-        // determine real exponent
+        // determine real exponent (exponent of value)
         cxint expOfValue = 0;
         while (p != valEnd && *p == '0') p++; // skip zeroes
         
@@ -906,7 +911,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
         const cxuint significantBits = (tempExp >= minExpNonDenorm) ? mantisaBits+2 :
             tempExp-minExpDenorm+2;
         uint64_t fvalue = 0;
-        // get exponent data from
+        // parse mantisa
         cxuint parsedBits = 0;
         for (; vs != valEnd && fvalue < (1ULL<<significantBits); vs++)
         {
@@ -1186,14 +1191,18 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
             bool isHalfEqual = false; // initialize for compiler warning
             
             /* next trials with higher precision */
+            /* parsing is divided by 5-dword packets, to speeding up.
+             * already parsed packed will be added to main value */
             while (isNotTooExact && processedDigits < maxDigits+3)
             {   /* parse digits and put to bigValue */
                 const cxuint digitsToProcess = std::min(int(maxDigits),
                         log2ByLog10Floor(bigSize<<6));
                 
+                /// loop that parses packets and adds to main value
                 while (processedDigits < digitsToProcess)
-                {
+                {   // digit pack is 4-dword packet of part of decimal value
                     uint64_t digitPack[4];
+                    // packTens holds temporary powers of 10 for current digitPack
                     uint64_t packTens[4];
                     digitPack[0] = digitPack[1] = digitPack[2] = digitPack[3] = 0;
                     packTens[0] = packTens[1] = packTens[2] = packTens[3] = 1;
@@ -1202,7 +1211,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                     cxuint digitsOfPack = 0;
                     while (digitPacksNum < 4 && processedDigits < digitsToProcess)
                     {
-                        cxuint digitsOfPart = 0;
+                        cxuint digitsOfPart = 0; // number of parsed digits for dword
                         uint64_t curValue = 0;
                         for (; vs != valEnd && digitsOfPart < 19 &&
                             processedDigits < digitsToProcess; vs++)
@@ -1215,7 +1224,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                             digitsOfPart++;
                         }
                         if (vs == valEnd)
-                        {   // fill first digits with zeroes
+                        {   // fill first digits with zeroes, for align to dword value
                             const cxuint pow10 = std::min(digitsToProcess-processedDigits,
                                         19-digitsOfPart);
                             curValue = curValue*power10sTable[pow10];
@@ -1223,7 +1232,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                             digitsOfPart += pow10;
                         }
                         uint64_t tmpPack[5];
-                        // put to digitPack
+                        // put to digitPack: make place for next value, and value
                         bigMul(1, &power10sTable[digitsOfPart], 4, digitPack, tmpPack);
                         digitPack[0] = tmpPack[0];
                         digitPack[1] = tmpPack[1];
@@ -1233,7 +1242,7 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                         digitsOfPack += digitsOfPart;
                         packTens[digitPacksNum++] = power10sTable[digitsOfPart];
                     }
-                    // generate power of tens for digitPack
+                    // generate power of tens for digitPack from packTens
                     uint64_t packPowerOfTen[4];
                     if (digitPacksNum > 2)
                     {
@@ -1255,11 +1264,12 @@ uint64_t CLRX::cstrtofXCStyle(const char* str, const char* inend,
                         else //
                             digitPackSize = 3;
                     }
-                    // put to bigValue
+                    // put to bigValue, multiply by power of 10 by processed digits number
                     bigMul(digitPackSize, packPowerOfTen, bigValueSize,
                            curBigValue, prevBigValue);
                     bigValueSize += digitPackSize;
                     prevBigValue[bigValueSize] = 0; // zeroing after addition
+                    // finally add value
                     bigAdd(bigValueSize+1, prevBigValue, digitPackSize, digitPack);
                     if (prevBigValue[bigValueSize] == 0)
                     {
@@ -1581,6 +1591,9 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
     /* fix for rounding to ten */
     const cxuint mod = (decValue) % 100;
     /* check rounding digits */
+    /* for latest two values >= 82 or <= 18 and not zeros, and binary mantisa is not zero
+     * then try to apply rounding. do not if binary mantisa is zero, because
+     * next exponent have different value threshold and that can makes trip of rounding */
     if ((mod >= 82 || (mod <= 18 && mod != 0)) && (value&mantisaMask)!=0)
     {   // check higher round
         uint64_t rescaledHalf[4];
@@ -1638,7 +1651,9 @@ size_t CLRX::fXtocstrCStyle(uint64_t value, char* str, size_t maxSize,
         }
     }
     
-    /* fix for rounding to one (to nearest value) (if not rounding zeros) */
+    /* fix for rounding to one (to nearest decimal value) (if not rounding zeros)
+     * if needed apply rounding to nearest (to decimal value) if lowest 2 two digits
+     * is not zero or mantisa is zero (just print in highest precision) */
     if (!roundingFix && (mod != 0 || (value&mantisaMask)==0) &&
         ((rescaled[powSize+1] & (oneValue-1)) >= (oneValue>>1)))
         decValue++;

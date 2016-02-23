@@ -38,8 +38,10 @@ namespace CLRX
 {
 
 enum : Flags {
-    AMDBIN_CREATE_KERNELDATAS = 0x400,    ///< create kernel setup
-    AMDBIN_CREATE_KERNELDATASMAP = 0x800,    ///< create kernel setups map
+    AMDBIN_INNER_CREATE_KERNELDATAS = 0x10000,    ///< create kernel setup
+    AMDBIN_INNER_CREATE_KERNELDATASMAP = 0x20000,    ///< create kernel setups map
+    AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000,    ///< create kernel stub
+    AMDBIN_INNER_CREATE_KERNELSTUBSMAP = 0x80000    ///< create kernel stub map
 };
 
 /// AMD OpenCL 2.0 inner binary type
@@ -54,12 +56,16 @@ enum AmdCL2InnerBinaryType : cxbyte
 /// AMD OpenCL 2.0 GPU metadata for kernel
 struct AmdCL2GPUKernel
 {
-    size_t headerSize;
-    cxbyte* header;
-    size_t setupSize;
-    cxbyte* setup;
+    size_t setupSize;   /// setup size
+    cxbyte* setup;      /// < setup data
     size_t codeSize;    ///< size
     cxbyte* code;     ///< data
+};
+
+struct AmdCL2GPUKernelStub
+{
+    size_t size;   /// setup size
+    cxbyte* data;      /// < setup data
 };
 
 /// AMD OpenCL 2.0 inner binary base class
@@ -75,20 +81,9 @@ private:
 public:
     ~AmdCL2InnerGPUBinaryBase() = default;
     
+    /// get binary type
     AmdCL2InnerBinaryType getBinaryType() const
     { return binaryType; }
-    
-    /// get kernel header size for specified inner binary
-    size_t getKernelHeaderSize(size_t index) const
-    { return kernels[index].headerSize; }
-    
-    /// get kernel header for specified inner binary
-    const cxbyte* getKernelHeader(size_t index) const
-    { return kernels[index].header; }
-    
-    /// get kernel header for specified inner binary
-    cxbyte* getKernelHeader(size_t index)
-    { return kernels[index].header; }
     
     /// get kernel setup size for specified inner binary
     size_t getKernelSetupSize(size_t index) const
@@ -119,19 +114,32 @@ public:
 class AmdCL2OldInnerGPUBinary: public NonCopyableAndNonMovable,
         public AmdCL2InnerGPUBinaryBase
 {
-public:
-    typedef Array<std::pair<CString, size_t> > KernelHeaderMap;
 private:
     /// ATTENTION: Do not put non-copyable stuff (likes pointers, arrays),
     /// because this object will copied
+    std::unique_ptr<AmdCL2GPUKernelStub[]> kernelStubs;
 public:
+    AmdCL2OldInnerGPUBinary() = default;
+    ~AmdCL2OldInnerGPUBinary() = default;
+    
+    /// get kernel stub size for specified inner binary
+    size_t getKernelStubSize(size_t index) const
+    { return kernelStubs[index].size; }
+    
+    /// get kernel stub for specified inner binary
+    const cxbyte* getKernelStub(size_t index) const
+    { return kernelStubs[index].data; }
+    
+    /// get kernel stub for specified inner binary
+    cxbyte* getKernelStub(size_t index)
+    { return kernelStubs[index].data; }
 };
 
 /// AMD OpenCL 2.0 inner binary for GPU binaries that represent a single kernel
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
  */
-class AmdCL2InnerGPUBinary: public ElfBinary64, public AmdCL2InnerGPUBinaryBase
+class AmdCL2InnerGPUBinary: public AmdCL2InnerGPUBinaryBase, public ElfBinary64
 {
 private:
     /// ATTENTION: Do not put non-copyable stuff (likes pointers, arrays),
@@ -142,6 +150,17 @@ private:
 public:
     AmdCL2InnerGPUBinary() = default;
     ~AmdCL2InnerGPUBinary() = default;
+    
+    /// get global data size
+    size_t getGlobalDataSize() const
+    { return globalDataSize; }
+    
+    /// get global data
+    const cxbyte* getGlobalData() const
+    { return globalData; }
+    /// get global data
+    cxbyte* getGlobalData()
+    { return globalData; }
 };
 
 /// AMD OpenCL 2.0 GPU metadata for kernel
@@ -155,7 +174,7 @@ struct AmdCL2GPUKernelMetadata
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
  */
-class AmdCL2MainGPUBinary: public AmdMainBinaryBase
+class AmdCL2MainGPUBinary: public AmdMainBinaryBase, public ElfBinary64
 {
 public:
     typedef Array<std::pair<CString, size_t> > MetadataMap;
@@ -167,10 +186,20 @@ protected:
     MetadataMap isaMetadataMap;
     
     CString aclVersionString; ///< driver info string
-    size_t globalDataSize;  ///< global data size
-    cxbyte* globalData; ///< global data content
     std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;
 public:
+    AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = AMDBIN_CREATE_ALL);
+    ~AmdCL2MainGPUBinary() = default;
+    
+    /// returns true if binary has kernel informations
+    bool hasKernelInfo() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFO) != 0; }
+    
+    /// returns true if binary has kernel informations map
+    bool hasKernelInfoMap() const
+    { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
+    
     /// get inner binary type
     AmdCL2InnerBinaryType getInnerBinaryType() const
     { return innerBinary.get()->getBinaryType(); }
@@ -218,17 +247,6 @@ public:
     /// get acl version string
     const CString& getAclVersionString() const
     { return aclVersionString; }
-    
-    /// get global data size
-    size_t getGlobalDataSize() const
-    { return globalDataSize; }
-    
-    /// get global data
-    const cxbyte* getGlobalData() const
-    { return globalData; }
-    /// get global data
-    cxbyte* getGlobalData()
-    { return globalData; }
 };
 
 };

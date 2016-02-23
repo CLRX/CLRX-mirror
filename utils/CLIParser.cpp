@@ -51,6 +51,7 @@ CLIException::CLIException(const std::string& message,
     this->message += message;
 }
 
+/// exception constructor designed to choosing between short or long option
 CLIException::CLIException(const std::string& message, const CLIOption& option,
              bool chooseShortName)
 {
@@ -95,10 +96,10 @@ CLIParser::CLIParser(const char* _programName, const CLIOption* _options,
                 throw CLIException("Duplicate of option", options[i].shortName);
             shortNameMap[cxuchar(options[i].shortName)] = i;
         }
-        
+        // add long option to map
         if (options[i].longName != nullptr)
             longNameMap[longNameCount++] = std::make_pair(options[i].longName, i);
-
+        // check conditions (illegal argument type, array occurrences only for arrays
         if ((options[i].argType > CLIArgType::SINGLE_MAX && 
              options[i].argType < CLIArgType::BOOL_ARRAY) ||
              options[i].argType > CLIArgType::ARRAY_MAX)
@@ -123,6 +124,7 @@ CLIParser::~CLIParser()
         const OptionEntry& optEntry = optionEntries[i];
         if (!optEntry.isArg)
             continue;
+        // array and trimmed string are own allocation, string just come from argument
         switch (options[i].argType)
         {
             case CLIArgType::TRIMMED_STRING:
@@ -171,6 +173,7 @@ void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType
     if (!optionEntries[optionId].isArg)
         throw CLIException("Command line option doesn't have argument!");
     const CLIArgType optArgType = options[optionId].argType;
+    /// checking argument match (if argument type is equivalent of option arg type)
     if (argType != optArgType && !(
         (argType == CLIArgType::TRIMMED_STRING &&
             optArgType == CLIArgType::STRING) ||
@@ -186,6 +189,7 @@ void CLIParser::handleExceptionsForGetOptArg(cxuint optionId, CLIArgType argType
        (argType == CLIArgType::SIZE && optArgType == CLIArgType::UINT) ||
        (argType == CLIArgType::UINT_ARRAY && optArgType == CLIArgType::SIZE_ARRAY) ||
        (argType == CLIArgType::SIZE_ARRAY && optArgType == CLIArgType::UINT_ARRAY))) ||
+       /* for 64-bit values and 64-bit sizes */
        (sizeof(size_t) == 8 &&
        ((argType == CLIArgType::UINT64 && optArgType == CLIArgType::SIZE) ||
        (argType == CLIArgType::SIZE && optArgType == CLIArgType::UINT64) ||
@@ -245,7 +249,7 @@ static bool parseBoolOptArg(const char* optArg)
         }
     }
     if (!value)
-    {
+    {   // if value true is not parsed, we try to parse false value
         bool isFalse = false;
         for (const char* v: { "0", "false", "f", "off", "no", "n"})
         {
@@ -363,7 +367,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                             break;
                         }
                     }
-                    
+                    // if value true is not parsed, we try to parse false value
                     if (!entryVal)
                     {
                         bool isFalse = false;
@@ -406,7 +410,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseBoolOptArg(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const bool* oldArr = optEntry.v.bArr;
@@ -437,7 +441,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<uint32_t>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const uint32_t* oldArr = optEntry.v.u32Arr;
@@ -468,7 +472,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<int32_t>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const int32_t* oldArr = optEntry.v.i32Arr;
@@ -499,7 +503,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<uint64_t>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const uint64_t* oldArr = optEntry.v.u64Arr;
@@ -530,7 +534,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<int64_t>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const int64_t* oldArr = optEntry.v.i64Arr;
@@ -561,7 +565,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<size_t>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const size_t* oldArr = optEntry.v.sizeArr;
@@ -592,7 +596,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<float>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const float* oldArr = optEntry.v.fArr;
@@ -620,7 +624,7 @@ void CLIParser::parseOptionArg(cxuint optionId, const char* optArg, bool chooseS
                 { value = parseOptArg<double>(optArg); }
                 catch(const ParseException& ex)
                 { throw CLIException(ex.what(), option, chooseShortName); }
-                
+                // resize array for every 8th element
                 if ((optEntry.arrSize&7) == 0)
                 {
                     const double* oldArr = optEntry.v.dArr;
@@ -779,6 +783,8 @@ void CLIParser::parse()
                 const char* lastEq = arg+::strlen(arg);
                 size_t optLongNameLen = lastEq-arg-2;
                 CString curArgStr;
+                /// we try to match longest option name that end from last '='
+                /// in next iterations, we check option name that ends from previous '='
                 while(lastEq != arg+1)
                 {
                     optLongNameLen = lastEq-arg-2;
@@ -809,6 +815,8 @@ void CLIParser::parse()
                     {
                         if (argv[i+1] == nullptr)
                             throw CLIException("Null argument!");
+                        // if next argument is not begin from '-' or only is '-' or
+                        // option argument is not optional we get optarg from next arg
                         if (argv[i+1][0] != '-' || argv[i+1][1] == 0 ||
                             !option.argIsOptional)
                             optArg = argv[++i]; // next elem as argument
@@ -842,6 +850,7 @@ void CLIParser::parse()
                             {
                                 if (argv[i+1] == nullptr)
                                     throw CLIException("Null argument!");
+                                // refer to long names parsing
                                 if (argv[i+1][0] != '-' || argv[i+1][1] == 0 ||
                                     !option.argIsOptional)
                                     optArg = argv[++i]; // next elem as argument
