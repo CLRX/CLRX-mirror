@@ -89,13 +89,15 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
     { // set up regrange
         cxuint rstart = symEntry->second.value&UINT_MAX;
         cxuint rend = symEntry->second.value>>32;
-        const cxuint vsflags = flags & (INSTROP_VREGS|INSTROP_SREGS);
+        cxuint vsflags = flags & (INSTROP_VREGS|INSTROP_SREGS);
         /* parse register range if:
          * vector/scalar register enabled and is vector/scalar register or
-         * other scalar register expect VCCZ, EXECZ, SCC */
-        if (((vsflags & INSTROP_VREGS)!=0 && rstart >= 256 && rend >= 256) ||
-            ((vsflags & INSTROP_SREGS)!=0 && rstart < 256 && rend < 256 &&
-            (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))))
+         * other scalar register, (ignore VCCZ, EXECZ, SCC if no SSOURCE enable),
+         * if all type of regs enabled then parse any register range */
+        if ((vsflags == INSTROP_VREGS && rstart >= 256 && rend >= 256) ||
+            (vsflags == INSTROP_SREGS && rstart < 256 && rend < 256 &&
+            (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))) ||
+            vsflags == (INSTROP_VREGS|INSTROP_SREGS))
         {
             skipSpacesToEnd(linePtr, end);
             if (*linePtr == '[')
@@ -204,7 +206,7 @@ bool GCNAsmUtils::parseVRegRange(Assembler& asmr, const char*& linePtr, RegRange
         asmr.printError(linePtr, ex.what());
         return false;
     }
-    
+    // if is not range: try to parse symbol with register range
     if (!isRange)
     {
         linePtr = oldLinePtr;
@@ -325,7 +327,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     *linePtr!='$' && *linePtr!='.'))
             {
                 if (!ttmpReg)
-                {
+                {   // if scalar register
                     if (value >= maxSGPRsNum)
                     {
                         asmr.printError(sgprRangePlace,
@@ -334,7 +336,7 @@ bool GCNAsmUtils::parseSRegRange(Assembler& asmr, const char*& linePtr, RegRange
                     }
                 }
                 else
-                {
+                {   // ttmp register
                     if (value >= 12)
                     {
                         asmr.printError(sgprRangePlace,
