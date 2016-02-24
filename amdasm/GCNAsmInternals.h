@@ -98,7 +98,7 @@ struct GCNOperand {
 };
 
 struct VOPExtraModifiers
-{
+{   // TODO: check that for MSVC 2015
     cxuint dstSel:3;
     cxuint dstUnused:2;
     cxuint src0Sel:3;

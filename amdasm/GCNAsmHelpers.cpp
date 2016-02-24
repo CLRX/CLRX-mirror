@@ -966,7 +966,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     if (linePtr!=end && toLower(*linePtr)=='s')
                         linePtr++;
                     value = v.i;
-                    
+                    /// simplify to float constant immediate (-0.5, 0.5, 1.0, 2.0,...)
+                    /// constant immediates converted only to single floating points
                     switch (value)
                     {
                         case 0x0:
@@ -1112,6 +1113,9 @@ static const std::pair<const char*, cxuint> vopSDWADSTSelNamesMap[] =
 static const size_t vopSDWADSTSelNamesNum = sizeof(vopSDWADSTSelNamesMap)/
             sizeof(std::pair<const char*, cxuint>);
 
+/* main routine to parse VOP modifiers: basic modifiers stored in mods parameter,
+ * modifier specific for VOP_SDWA and VOP_DPP stored in extraMods structure
+ * withSDWAOperands - specify number of operand for that modifier will be parsed */
 bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyte& mods,
                 VOPExtraModifiers* extraMods, bool withClamp, cxuint withSDWAOperands)
 {
@@ -1209,7 +1213,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                 else if (::strcmp(mod, "vop3")==0)
                     mods |= VOP3_VOP3;
                 else if (extraMods!=nullptr)
-                {   /* VOP_SDWA or VOP_DPP */
+                {   /* parse specific modofier from VOP_SDWA or VOP_DPP encoding */
                     if (withSDWAOperands>=1 && ::strcmp(mod, "dst_sel")==0)
                     {   // dstsel
                         skipSpacesToEnd(linePtr, end);
@@ -1557,9 +1561,9 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                         (mod[9]=='3' && mod[10]=='1' && mod[11]==0) || mod[9]==0))
                     {
                         bool modGood = true;
-                        if (mod[9] =='1')
+                        if (mod[9] =='1') // if row_bcast15
                             extraMods->dppCtrl = 0x142;
-                        else if (mod[9] =='3')
+                        else if (mod[9] =='3') // if row_bcast31
                             extraMods->dppCtrl = 0x143;
                         else
                         { // get number
@@ -1569,6 +1573,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
                                 skipCharAndSpacesToEnd(linePtr, end);
                                 const char* numPlace = linePtr;
                                 cxbyte value = cstrtobyte(linePtr, end);
+                                // parse row_bcast:15 or row_bcast:31
                                 if (value == 31)
                                     extraMods->dppCtrl = 0x143;
                                 else if (value == 15)
@@ -1637,6 +1642,7 @@ bool GCNAsmUtils::parseVOPModifiers(Assembler& asmr, const char*& linePtr, cxbyt
 static const char* vintrpParamsTbl[] =
 { "p10", "p20", "p0" };
 
+// parse interpolation (P0,P10,P20) parameter for VINTRP instructions
 bool GCNAsmUtils::parseVINTRP0P10P20(Assembler& asmr, const char*& linePtr, RegRange& reg)
 {
     const char* end = asmr.line+asmr.lineSize;
@@ -1690,7 +1696,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
     
     cxbyte attrVal = 0;
     if (goodAttr)
-    {
+    {   // parse only attribute value if no error before
         const char* attrNumPlace = linePtr;
         try
         { attrVal = cstrtobyte(linePtr, end); }
@@ -1706,7 +1712,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
         }
     }
     if (goodAttr)
-    {
+    {   // parse again if no error before
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end || *linePtr!='.')
         {
@@ -1717,7 +1723,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
             ++linePtr;
     }
     if (goodAttr)
-    {
+    {   // parse again if no error before
         skipSpacesToEnd(linePtr, end);
         if (linePtr==end)
         {
@@ -1727,7 +1733,7 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
     }
     char attrCmpName = 0;
     if (goodAttr)
-    {
+    {   // parse only attribute component if no error before
         attrCmpName = toLower(*linePtr);
         if (attrCmpName!='x' && attrCmpName!='y' && attrCmpName!='z' && attrCmpName!='w')
         {
@@ -1742,6 +1748,8 @@ bool GCNAsmUtils::parseVINTRPAttr(Assembler& asmr, const char*& linePtr, cxbyte&
     return good;
 }
 
+/* special version of getNameArg for MUBUF format name.
+ * this version accepts digits at first character of format name */
 bool GCNAsmUtils::getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName)
 {

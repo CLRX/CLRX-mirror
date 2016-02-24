@@ -21,6 +21,7 @@
 #include <string>
 #include <cstring>
 #include <ostream>
+#include <cstring>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -67,6 +68,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
             if (haveNamedLabel)
                 namedPos = namedLabelIter->first;
             
+            /// print numbered (not named) label in form .L[position]_[sectionCount]
             if (numberedPos <= namedPos && haveNumberedLabel)
             {
                 curPos = *labelIter;
@@ -79,7 +81,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 bufPos += itocstrCStyle(disassembler.sectionCount,
                                 buf+bufPos, 22, 10, 0, false);
                 if (curPos != pos)
-                {
+                {   // if label shifted back by some bytes before encoded instruction
                     buf[bufPos++] = '=';
                     buf[bufPos++] = '.';
                     buf[bufPos++] = '-';
@@ -96,6 +98,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 haveLabel = true;
             }
             
+            /// print named label
             if(namedPos <= numberedPos && haveNamedLabel)
             {
                 curPos = namedLabelIter->first;
@@ -104,7 +107,7 @@ void ISADisassembler::writeLabelsToPosition(size_t pos, LabelIter& labelIter,
                 char* buf = output.reserve(50);
                 size_t bufPos = 0;
                 if (curPos != pos)
-                {
+                {   // if label shifted back by some bytes before encoded instruction
                     buf[bufPos++] = '=';
                     buf[bufPos++] = '.';
                     buf[bufPos++] = '-';
@@ -140,14 +143,11 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
         if (numberedPos <= namedPos && labelIter != labels.end())
         {
             if (pos != *labelIter)
-            {
+            {   // print shift position to label (.org pseudo-op)
                 char* buf = output.reserve(30);
                 size_t bufPos = 0;
-                buf[bufPos++] = '.';
-                buf[bufPos++] = 'o';
-                buf[bufPos++] = 'r';
-                buf[bufPos++] = 'g';
-                buf[bufPos++] = ' ';
+                memcpy(buf+bufPos, ".org ", 5);
+                bufPos += 5;
                 bufPos += itocstrCStyle(*labelIter, buf+bufPos, 20, 16);
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
@@ -169,14 +169,11 @@ void ISADisassembler::writeLabelsToEnd(size_t start, LabelIter labelIter,
         if (namedPos <= numberedPos && namedLabelIter != namedLabels.end())
         {
             if (pos != namedLabelIter->first)
-            {
+            {   // print shift position to label (.org pseudo-op)
                 char* buf = output.reserve(30);
                 size_t bufPos = 0;
-                buf[bufPos++] = '.';
-                buf[bufPos++] = 'o';
-                buf[bufPos++] = 'r';
-                buf[bufPos++] = 'g';
-                buf[bufPos++] = ' ';
+                memcpy(buf+bufPos, ".org ", 5);
+                bufPos += 5;
                 bufPos += itocstrCStyle(namedLabelIter->first, buf+bufPos, 20, 16);
                 buf[bufPos++] = '\n';
                 output.forward(bufPos);
@@ -282,6 +279,7 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
             /* check gpuDeviceType */
             const uint32_t dMachine = ULEV(encEntry.machine);
             cxuint index;
+            // detect GPU device from machine field from CAL encoding entry
             for (index = 0; index < entriesNum; index++)
                 if (gpuDeviceInnerCodeTable[index].dMachine == dMachine)
                     break;
@@ -352,11 +350,13 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
     const uint16_t elfMachine = ULEV(binary.getHeader().e_machine);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
     const cxuint entriesNum = sizeof(gpuDeviceCodeTable)/sizeof(GPUDeviceCodeEntry);
+    // detect GPU device from elfMachine field from ELF header
     for (index = 0; index < entriesNum; index++)
         if (gpuDeviceCodeTable[index].elfMachine == elfMachine)
             break;
     if (entriesNum == index)
         throw Exception("Can't determine GPU device type");
+    
     input->deviceType = gpuDeviceCodeTable[index].deviceType;
     input->compileOptions = binary.getCompileOptions();
     input->driverInfo = binary.getDriverInfo();
@@ -542,11 +542,12 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
                 bool secondAlign = false)
 {
     char buf[68];
+    /// const strings for .byte and fill pseudo-ops
     const char* linePrefix = "    .byte ";
     const char* fillPrefix = "    .fill ";
     size_t prefixSize = 10;
     if (secondAlign)
-    {
+    {   // const string for double alignment
         linePrefix = "        .byte ";
         fillPrefix = "        .fill ";
         prefixSize += 4;
@@ -559,16 +560,14 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         for (fillEnd = p+1; fillEnd < size && data[fillEnd]==data[p]; fillEnd++);
         if (fillEnd >= p+8)
         {   // if element repeated for least 1 line
+            // print .fill pseudo-op
             ::memcpy(buf, fillPrefix, prefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(7) : fillEnd;
             size_t bufPos = prefixSize;
             bufPos += itocstrCStyle(p-oldP, buf+bufPos, 22, 10);
-            buf[bufPos++] = ',';
-            buf[bufPos++] = ' ';
-            buf[bufPos++] = '1';
-            buf[bufPos++] = ',';
-            buf[bufPos++] = ' ';
+            memcpy(buf+bufPos, ", 1, ", 5);
+            bufPos += 5;
             bufPos += itocstrCStyle(data[oldP], buf+bufPos, 6, 16, 2);
             buf[bufPos++] = '\n';
             output.write(buf, bufPos);
@@ -578,6 +577,7 @@ static void printDisasmData(size_t size, const cxbyte* data, std::ostream& outpu
         
         const size_t lineEnd = std::min(p+8, size);
         size_t bufPos = prefixSize;
+        // print 8 or less (if end of data) bytes
         for (; p < lineEnd; p++)
         {
             buf[bufPos++] = '0';
@@ -609,11 +609,12 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
                 bool secondAlign = false)
 {
     char buf[68];
+    /// const strings for .byte and fill pseudo-ops
     const char* linePrefix = "    .int ";
     const char* fillPrefix = "    .fill ";
     size_t fillPrefixSize = 10;
     if (secondAlign)
-    {
+    {   // const string for double alignment
         linePrefix = "        .int ";
         fillPrefix = "        .fill ";
         fillPrefixSize += 4;
@@ -628,16 +629,14 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
              fillEnd++);
         if (fillEnd >= p+4)
         {   // if element repeated for least 1 line
+            // print .fill pseudo-op
             ::memcpy(buf, fillPrefix, fillPrefixSize);
             const size_t oldP = p;
             p = (fillEnd != size) ? fillEnd&~size_t(3) : fillEnd;
             size_t bufPos = fillPrefixSize;
             bufPos += itocstrCStyle(p-oldP, buf+bufPos, 22, 10);
-            buf[bufPos++] = ',';
-            buf[bufPos++] = ' ';
-            buf[bufPos++] = '4';
-            buf[bufPos++] = ',';
-            buf[bufPos++] = ' ';
+            memcpy(buf+bufPos, ", 4, ", 5);
+            bufPos += 5;
             bufPos += itocstrCStyle(ULEV(data[oldP]), buf+bufPos, 12, 16, 8);
             buf[bufPos++] = '\n';
             output.write(buf, bufPos);
@@ -647,6 +646,7 @@ static void printDisasmDataU32(size_t size, const uint32_t* data, std::ostream& 
         
         const size_t lineEnd = std::min(p+4, size);
         size_t bufPos = intPrefixSize;
+        // print four or less (if end of data) dwords
         for (; p < lineEnd; p++)
         {
             bufPos += itocstrCStyle(ULEV(data[p]), buf+bufPos, 12, 16, 8);
@@ -942,6 +942,7 @@ void Disassembler::disassembleAmd()
                         for (cxuint k = 0; k < uavsNum; k++)
                         {
                             const CALUAVEntry& uavEntry = uavEntries[k];
+                            /// uav entry format: .entry UAVID, F1, F2, TYPE
                             size_t bufPos = 15 + itocstrCStyle(
                                         ULEV(uavEntry.uavId), buf + 15, 32);
                             buf[bufPos++] = ',';
@@ -1021,6 +1022,7 @@ void Disassembler::disassembleGallium()
             {
                 ::memcpy(lineBuf, "        .arg ", 13);
                 size_t pos = 13;
+                // arg format: .arg TYPENAME, SIZE, TARGETSIZE, TALIGN, NUMEXT, SEMANTIC
                 if (arg.type <= GalliumArgType::MAX_VALUE)
                 {
                     const char* typeStr = galliumArgTypeNamesTbl[cxuint(arg.type)];
