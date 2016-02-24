@@ -1159,7 +1159,7 @@ static void decodeVOPSDWA(FastOutputBuffer& output, uint32_t insnCode2,
         putChars(bufPtr, sdwaSelChoicesTbl[src1Sel],
                  ::strlen(sdwaSelChoicesTbl[src1Sel]));
     }
-    
+    // unused but fields
     if (!src0Used)
     {
         if ((insnCode2&(1U<<20))!=0)
@@ -1244,7 +1244,7 @@ static void decodeVOPDPP(FastOutputBuffer& output, uint32_t insnCode2,
     putByteToBuf((insnCode2>>24)&0xf, bufPtr);
     putChars(bufPtr, " row_mask:", 10);
     putByteToBuf((insnCode2>>28)&0xf, bufPtr);
-    
+    // unused but fields
     if (!src0Used)
     {
         if ((insnCode2&(1U<<20))!=0)
@@ -1377,7 +1377,7 @@ static void decodeVOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
             *bufPtr++ = ')';
     }
     else if ((insnCode & 0x1fe01ffU) != 0)
-    {
+    {   // unused, but set fields
         addSpaces(bufPtr, spacesToAdd);
         if ((insnCode & 0x1fe0000U) != 0)
         {
@@ -1667,7 +1667,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         putChars(bufPtr, " dst=", 5);
         bufPtr += itocstrCStyle(vdst, bufPtr, 6, 16);
     }
-        
+    
     if (!vsrc0Used)
     {
         if (vsrc0 != 0)

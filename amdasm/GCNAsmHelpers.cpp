@@ -90,10 +90,12 @@ bool GCNAsmUtils::parseSymRegRange(Assembler& asmr, const char*& linePtr,
         cxuint rstart = symEntry->second.value&UINT_MAX;
         cxuint rend = symEntry->second.value>>32;
         const cxuint vsflags = flags & (INSTROP_VREGS|INSTROP_SREGS);
-        if ((vsflags == INSTROP_VREGS && rstart >= 256 && rend >= 256) ||
-            (vsflags == INSTROP_SREGS && rstart < 256 && rend < 256 &&
-            (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))) ||
-            vsflags == (INSTROP_VREGS|INSTROP_SREGS))
+        /* parse register range if:
+         * vector/scalar register enabled and is vector/scalar register or
+         * other scalar register expect VCCZ, EXECZ, SCC */
+        if (((vsflags & INSTROP_VREGS)!=0 && rstart >= 256 && rend >= 256) ||
+            ((vsflags & INSTROP_SREGS)!=0 && rstart < 256 && rend < 256 &&
+            (((flags&INSTROP_SSOURCE)!=0) || (rstart!=251 && rstart!=252 && rstart!=253))))
         {
             skipSpacesToEnd(linePtr, end);
             if (*linePtr == '[')
