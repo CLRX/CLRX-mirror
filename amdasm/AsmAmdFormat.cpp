@@ -468,7 +468,7 @@ void AsmAmdPseudoOps::addCALNote(AsmAmdHandler& handler, const char* pseudoOpPla
     const bool singleValue = calNoteId < 32 &&
             (singleValueCALNotesMask & (1U<<calNoteId)) && linePtr != end;
     if (singleValue)
-    {
+    {   /* if pseudo-op for this calnote accept single 32-bit value */
         if (!getAbsoluteValueArg(asmr, value, linePtr, false))
             return; // error
         asmr.printWarningForRange(32, value, asmr.getSourcePos(valuePlace));
@@ -704,7 +704,7 @@ void AsmAmdPseudoOps::doSampler(AsmAmdHandler& handler, const char* pseudoOpPlac
         
         skipSpacesToEnd(linePtr, end);
         if (linePtr == end)
-            return;
+            return; /* if no samplers */
         do {
             uint64_t value = 0;
             const char* valuePlace = linePtr;
@@ -958,6 +958,7 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     config.reqdWorkGroupSize[2] = value3;
 }
 
+/// data class names
 static const std::pair<const char*, cxuint> dataClassMap[] =
 {
     { "imm_alu_bool32_const", 0x06 },
@@ -1110,6 +1111,7 @@ void AsmAmdPseudoOps::setDimensions(AsmAmdHandler& handler, const char* pseudoOp
     handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
 }
 
+/* argument type map - value is cxuint for getEnumaration */
 static const std::pair<const char*, cxuint> argTypeNameMap[] =
 {
     { "char", cxuint(KernelArgType::CHAR) },
@@ -1364,7 +1366,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             bool havePrevArgument = false;
             const char* place;
             if (ptrSpace == KernelPtrSpace::CONSTANT)
-            {
+            {   /* parse constant space size for constant pointer */
                 if (!skipComma(asmr, haveComma, linePtr))
                     return;
                 if (haveComma)
@@ -1383,7 +1385,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 havePrevArgument = true;
             
             if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
-            {
+            {   /* global and constant have resource id (uavId) */
                 if (!skipComma(asmr, haveComma, linePtr))
                     return;
                 if (haveComma)
@@ -1497,6 +1499,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     else
         haveLastArgument = true;
     
+    /* last argument is 'used' - indicate whether argument is used by kernel */
     if (haveLastArgument)
     {
         if (!skipComma(asmr, haveComma, linePtr))

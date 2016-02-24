@@ -397,6 +397,8 @@ union CLRX_INTERNAL FloatUnion
     uint32_t u;
 };
 
+// simple helpers for writing values: bytes, regranges
+
 static inline void putByteToBuf(cxuint op, char*& bufPtr)
 {
     cxuint val = op;
@@ -492,7 +494,7 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& bufPtr, uint16_t a
     if (op2 == 106 || op2 == 108 || op2 == 110 || op2 == 126 ||
         (op2 == 104 && (arch&ARCH_RX2X0)!=0) ||
         ((op2 == 102 || op2 == 104) && isGCN12))
-    {   // VCC
+    {   // if not SGPR, but other scalar registers
         switch(op2)
         {
             case 102:
@@ -523,6 +525,7 @@ static void decodeGCNOperand(cxuint op, cxuint regNum, char*& bufPtr, uint16_t a
                 putChars(bufPtr, "exec", 4);
                 break;
         }
+        // if full 64-bit register
         if (regNum >= 2)
         {
             if (op&1) // unaligned!!
@@ -673,7 +676,7 @@ static void decodeSOPCEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     output.forward(bufPtr-bufStart);
 }
 
-
+/// about label writer - label is workaround for class hermetization
 template<typename LabelWriter>
 static void decodeSOPPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          LabelWriter labelWriter, const GCNInstruction& gcnInsn, uint32_t insnCode,
@@ -819,11 +822,11 @@ static void decodeSOP1Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
                      arch, literal);
     }
     else if ((insnCode&0xff) != 0)
-    {
+    {   // print value, if some are not used, but values is not default
         putChars(bufPtr," ssrc=", 6);
         bufPtr += itocstrCStyle((insnCode&0xff), bufPtr, 6, 16);
     }
-    
+    // print value, if some are not used, but values is not default
     if (!isDst && ((insnCode>>16)&0x7f) != 0)
     {
         putChars(bufPtr, " sdst=", 6);
@@ -852,6 +855,7 @@ static void decodeSOP2Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     decodeGCNOperand((insnCode>>8)&0xff, (gcnInsn.mode&GCN_REG_SRC1_64)?2:1, bufPtr,
                      arch, literal);
     
+    // print value, if some are not used, but values is not default
     if ((gcnInsn.mode & GCN_MASK1) == GCN_DST_NONE && ((insnCode>>16)&0x7f) != 0)
     {
         putChars(bufPtr, " sdst=", 6);
@@ -868,6 +872,7 @@ static const char* hwregNames[13] =
     "ib_dbg0"
 };
 
+/// about label writer - label is workaround for class hermetization
 template<typename LabelWriter>
 static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer& output,
          LabelWriter labelWriter, const GCNInstruction& gcnInsn, uint32_t insnCode,
@@ -918,6 +923,7 @@ static void decodeSOPKEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     {
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
+        // print value, if some are not used, but values is not default
         if (gcnInsn.mode & GCN_SOPK_CONST)
         {
             bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
@@ -971,6 +977,7 @@ static void decodeSMRDEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         spacesAdded = true;
     }
     
+    // print value, if some are not used, but values is not default
     if (!useDst && (insnCode & 0x3f8000U) != 0)
     {
         addSpaces(bufPtr, spacesToAdd-1);
@@ -1051,6 +1058,7 @@ static void decodeSMEMEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
         putChars(bufPtr, " glc", 4);
     }
     
+    // print value, if some are not used, but values is not default
     if (!useDst && (insnCode & 0x1fc0U) != 0)
     {
         if (!spacesAdded)
@@ -1653,7 +1661,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (clamp)
         putChars(bufPtr, " clamp", 6);
     
-    /* as field */
+    /* print unused values of parts if not values are not default */
     if (!vdstUsed && vdst != 0)
     {
         putChars(bufPtr, " dst=", 5);
@@ -1699,7 +1707,7 @@ static void decodeVOP3Encoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     
     const cxuint usedMask = 7 & ~(vsrc2CC?4:0);
     /* check whether instruction is this same like VOP2/VOP1/VOPC */
-    bool isVOP1Word = false;
+    bool isVOP1Word = false; // if can be write in single VOP dword
     if (vop3Mode == GCN_VOP3_VINTRP)
     {
         if (mode1 != GCN_NEW_OPCODE) /* check clamp and abs flags */
@@ -1797,7 +1805,7 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
         vdstUsed = true;
     }
     if ((gcnInsn.mode & GCN_ONLYDST) == 0)
-    {
+    {   /// print VADDR
         if (vdstUsed)
         {
             *bufPtr++ = ',';
@@ -1813,7 +1821,7 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
         (gcnInsn.mode & (GCN_ADDR_DST|GCN_ADDR_SRC)) != 0 && srcMode != GCN_NOSRC)
     {   /* two vdata */
         if (vaddrUsed || vdstUsed)
-        {
+        {   // comma after previous argument (VDST, VADDR)
             *bufPtr++ = ',';
             *bufPtr++ = ' ';
         }
@@ -1859,6 +1867,7 @@ static void decodeDSEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffer
     if ((!isGCN12 && (insnCode&0x20000)!=0) || (isGCN12 && (insnCode&0x10000)!=0))
         putChars(bufPtr, " gds", 4);
     
+    // print value, if some are not used, but values is not default
     if (!vaddrUsed && vaddr != 0)
     {
         putChars(bufPtr, " vaddr=", 7);
@@ -1960,6 +1969,7 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
         putChars(bufPtr, " lds", 4);
     if (insnCode2 & 0x800000U)
         putChars(bufPtr, " tfe", 4);
+    // routine to decode MTBUF format (include default values)
     if (gcnInsn.encoding==GCNENC_MTBUF)
     {
         const cxuint dfmt = (insnCode>>19)&15;
@@ -1982,7 +1992,7 @@ static void decodeMUBUFEncoding(cxuint spacesToAdd, uint16_t arch,
             *bufPtr++ = ']';
         }
     }
-    
+    // print value, if some are not used, but values is not default
     if (mode1 == GCN_ARG_NONE || mode1 == GCN_MUBUF_NOVAD)
     {
         if (vaddr != 0)
@@ -2078,6 +2088,7 @@ static void decodeMIMGEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if ((arch & ARCH_RX3X0)!=0 && (insnCode2 & (1U<<31)) != 0)
         putChars(bufPtr, " d16", 4);
     
+    // print value, if some are not used, but values is not default
     if ((gcnInsn.mode & GCN_MIMG_SAMPLE) == 0 && ssamp != 0)
     {
         putChars(bufPtr, " ssamp=", 7);
@@ -2159,6 +2170,7 @@ static void decodeEXPEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuffe
         *bufPtr++ = 'm';
     }
     
+    // print value, if some are not used, but values is not default
     for (cxuint i = 0; i < 4; i++)
     {
         const cxuint val = (insnCode2>>(i<<3))&0xff;
@@ -2219,6 +2231,7 @@ static void decodeFLATEncoding(cxuint spacesToAdd, uint16_t arch, FastOutputBuff
     if (insnCode2 & 0x800000U)
         putChars(bufPtr, " tfe", 4);
     
+    // print value, if some are not used, but values is not default
     if (!vdataUsed && ((insnCode2>>8)&0xff) != 0)
     {
         putChars(bufPtr, " vdata=", 7);

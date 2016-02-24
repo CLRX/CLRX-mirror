@@ -199,6 +199,7 @@ AsmFormatHandler::SectionInfo AsmGalliumHandler::getSectionInfo(cxuint sectionId
     return info;
 }
 
+// check whether label is kernel label and restore register allocation to this kernel
 void AsmGalliumHandler::handleLabel(const CString& label)
 {
     if (assembler.sections[assembler.currentSection].type != AsmSectionType::CODE)
@@ -733,6 +734,8 @@ void AsmGalliumPseudoOps::doEntry(AsmGalliumHandler& handler,
     pentry.value = entryVal;
 }
 
+/* update kernel code selection, join all regallocation and store to
+ * current kernel regalloc */
 void AsmGalliumPseudoOps::updateKCodeSel(AsmGalliumHandler& handler,
           const std::vector<cxuint>& oldset)
 {

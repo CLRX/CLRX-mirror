@@ -77,7 +77,7 @@ AsmExpression::AsmExpression(const AsmSourcePos& _pos, size_t _symOccursNum,
 AsmExpression::~AsmExpression()
 {
     if (!baseExpr)
-    {
+    {   // delete all occurrences in expression at that place
         for (size_t i = 0, j = 0; i < ops.size(); i++)
             if (ops[i] == AsmExprOp::ARG_SYMBOL)
             {
@@ -299,11 +299,11 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
     else
     {   // relative symbols
         struct RelMultiply
-        {
+        {   // multiplication of section
             uint64_t multiply;
             cxuint sectionId;
         };
-        
+        // structure that contains relatives info: offset value and mult. of sections
         struct ValueAndMultiplies
         {
             uint64_t value;
@@ -792,6 +792,7 @@ struct CLRX_INTERNAL SymbolSnapshotEqual
     { return e1->first == e2->first; }
 };
 
+/// internal class of temporary symbol (snapshot of symbol) map 
 class CLRX_INTERNAL CLRX::AsmExpression::TempSymbolSnapshotMap: 
         public std::unordered_set<AsmSymbolEntry*, SymbolSnapshotHash, SymbolSnapshotEqual>
 { };
@@ -823,6 +824,8 @@ AsmExpression* AsmExpression::createForSnapshot(const AsmSourcePos* exprSourcePo
     return expr.release();
 }
 
+/* create symbol entry for temporary snapshot expression. this is copy of
+ * original symbol entry that can holds snapshot expression instead of normal expression */
 static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry& symEntry,
             const AsmSourcePos* exprSourcePos)
 {
@@ -838,6 +841,7 @@ static inline AsmSymbolEntry* createSymbolEntryForSnapshot(const AsmSymbolEntry&
     return newSymEntry.release();
 }
 
+// main routine to create symbol snapshot with snapshot expressions
 bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
            TempSymbolSnapshotMap* snapshotMap, const AsmSymbolEntry& symEntry,
            AsmSymbolEntry*& outSymEntry, const AsmSourcePos* topParentSourcePos)
@@ -977,6 +981,7 @@ bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
     return good;
 }
 
+// routine that call main makeSymbolSnapshot with error handling
 bool AsmExpression::makeSymbolSnapshot(Assembler& assembler,
            const AsmSymbolEntry& symEntry, AsmSymbolEntry*& outSymEntry,
            const AsmSourcePos* parentExprSourcePos)
@@ -1070,6 +1075,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
         bool doExit = false;
         
         const char* beforeToken = linePtr;
+        /* parse expression operator or value/symbol */
         switch(*linePtr)
         {
             case '(':
@@ -1290,6 +1296,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     if (parseState != Assembler::ParseState::MISSING)
                     {
                         if (symEntry!=nullptr && symEntry->second.base && !makeBase)
+                            // create symbol snapshot if symbol is base
+                            // only if for regular expression (not base
                             good = makeSymbolSnapshot(assembler, &symbolSnapshots,
                                       *symEntry, symEntry, &(expr->sourcePos));
                         if (symEntry==nullptr ||
@@ -1304,7 +1312,8 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                         else
                         {
                             if (symEntry->second.hasValue && !makeBase)
-                            {
+                            {   // resolve only if have symbol have value,
+                                // but do not that if expression will be base for snapshot
                                 if (!assembler.isAbsoluteSymbol(symEntry->second))
                                 {
                                     relativeSymOccurs = true;
@@ -1347,7 +1356,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
                     }
                 }
                 else
-                {
+                {   // otherwise we exit if no left parenthesis
                     if (parenthesisCount == 0)
                     { doExit = true; break; }
                     else
@@ -1485,6 +1494,7 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
     if (good)
     {
         const size_t argsNum = args.size();
+        // if good, we set symbol occurrences, operators, arguments ...
         expr->setParams(symOccursNum, relativeSymOccurs,
                   ops.size(), ops.data(), outMsgPositions.size(), outMsgPositions.data(),
                   argsNum, args.data(), makeBase);
