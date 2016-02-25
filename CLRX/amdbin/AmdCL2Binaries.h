@@ -38,10 +38,13 @@ namespace CLRX
 {
 
 enum : Flags {
+    AMDBIN_CREATE_KERNELDATAS = 0x10,    ///< create kernel setup
+    AMDBIN_CREATE_KERNELDATASMAP = 0x20,    ///< create kernel setups map
+    AMDBIN_CREATE_KERNELSTUBS = 0x40,    ///< create kernel stub
+    
     AMDBIN_INNER_CREATE_KERNELDATAS = 0x10000,    ///< create kernel setup
     AMDBIN_INNER_CREATE_KERNELDATASMAP = 0x20000,    ///< create kernel setups map
-    AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000,    ///< create kernel stub
-    AMDBIN_INNER_CREATE_KERNELSTUBSMAP = 0x80000    ///< create kernel stub map
+    AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000    ///< create kernel stub
 };
 
 /// AMD OpenCL 2.0 inner binary type
@@ -68,16 +71,18 @@ struct AmdCL2GPUKernelStub
     cxbyte* data;      /// < setup data
 };
 
+class AmdCL2MainGPUBinary;
+
 /// AMD OpenCL 2.0 inner binary base class
 class AmdCL2InnerGPUBinaryBase
 {
 public:
     /// inner binary map type
     typedef Array<std::pair<CString, size_t> > KernelDataMap;
-private:
+protected:
     AmdCL2InnerBinaryType binaryType;
     std::unique_ptr<AmdCL2GPUKernel[]> kernels;    ///< kernel headers
-    KernelDataMap kernelDataMap;
+    KernelDataMap kernelDatasMap;
 public:
     ~AmdCL2InnerGPUBinaryBase() = default;
     
@@ -85,29 +90,19 @@ public:
     AmdCL2InnerBinaryType getBinaryType() const
     { return binaryType; }
     
-    /// get kernel setup size for specified inner binary
-    size_t getKernelSetupSize(size_t index) const
-    { return kernels[index].setupSize; }
+    /// get kernel datas for specified index
+    const AmdCL2GPUKernel& getKernelDatas(size_t index) const
+    { return kernels[index]; }
     
-    /// get kernel setup for specified inner binary
-    const cxbyte* getKernelSetup(size_t index) const
-    { return kernels[index].setup; }
+    /// get kernel datas for specified index
+    AmdCL2GPUKernel& getKernelDatas(size_t index)
+    { return kernels[index]; }
     
-    /// get kernel setup for specified inner binary
-    cxbyte* getKernelSetup(size_t index)
-    { return kernels[index].setup; }
+    /// get kernel datas for specified kernel name
+    const AmdCL2GPUKernel& getKernelDatas(const char* name) const;
     
-    /// get kernel code size for specified inner binary
-    size_t getKernelCodeSize(size_t index) const
-    { return kernels[index].codeSize; }
-    
-    /// get kernel code for specified inner binary
-    const cxbyte* getKernelCode(size_t index) const
-    { return kernels[index].code; }
-    
-    /// get kernel code for specified inner binary
-    cxbyte* getKernelCode(size_t index)
-    { return kernels[index].code; }
+    /// get kernel datas for specified kernel name
+    AmdCL2GPUKernel& getKernelDatas(const char* name);
 };
 
 /// AMD OpenCL 2.0 old inner binary for GPU binaries that represent a single kernel
@@ -115,24 +110,39 @@ class AmdCL2OldInnerGPUBinary: public NonCopyableAndNonMovable,
         public AmdCL2InnerGPUBinaryBase
 {
 private:
-    /// ATTENTION: Do not put non-copyable stuff (likes pointers, arrays),
-    /// because this object will copied
+    Flags creationFlags;
+    size_t binarySize;
+    cxbyte* binary;
     std::unique_ptr<AmdCL2GPUKernelStub[]> kernelStubs;
 public:
     AmdCL2OldInnerGPUBinary() = default;
+    AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary, size_t binaryCodeSize,
+            cxbyte* binaryCode, Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2OldInnerGPUBinary() = default;
     
-    /// get kernel stub size for specified inner binary
-    size_t getKernelStubSize(size_t index) const
-    { return kernelStubs[index].size; }
+    /// return if binary has kernel datas
+    bool hasKernelDatas() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATAS; }
+    /// return if binary has kernel datas map
+    bool hasKernelDatasMap() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATASMAP; }
+    /// return if binary has kernel stubs
+    bool hasKernelStubs() const
+    { return creationFlags & AMDBIN_CREATE_KERNELSTUBS; }
     
-    /// get kernel stub for specified inner binary
-    const cxbyte* getKernelStub(size_t index) const
-    { return kernelStubs[index].data; }
+    /// get kernel stub for specified index
+    const AmdCL2GPUKernelStub& getKernelStub(size_t index) const
+    { return kernelStubs[index]; }
     
-    /// get kernel stub for specified inner binary
-    cxbyte* getKernelStub(size_t index)
-    { return kernelStubs[index].data; }
+    /// get kernel stub for specified index
+    AmdCL2GPUKernelStub& getKernelStub(size_t index)
+    { return kernelStubs[index]; }
+    
+    /// get kernel stub for specified kernel name
+    const AmdCL2GPUKernelStub& getKernelStub(const char* name) const;
+    
+    /// get kernel stub for specified kernel name
+    AmdCL2GPUKernelStub& getKernelStub(const char* name);
 };
 
 /// AMD OpenCL 2.0 inner binary for GPU binaries that represent a single kernel
@@ -142,14 +152,20 @@ public:
 class AmdCL2InnerGPUBinary: public AmdCL2InnerGPUBinaryBase, public ElfBinary64
 {
 private:
-    /// ATTENTION: Do not put non-copyable stuff (likes pointers, arrays),
-    /// because this object will copied
-    CString kernelName; ///< kernel name
     size_t globalDataSize;  ///< global data size
     cxbyte* globalData; ///< global data content
 public:
     AmdCL2InnerGPUBinary() = default;
+    AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
+            Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2InnerGPUBinary() = default;
+    
+    /// return if binary has kernel datas
+    bool hasKernelDatas() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATAS; }
+    /// return if binary has kernel datas map
+    bool hasKernelDatasMap() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATASMAP; }
     
     /// get global data size
     size_t getGlobalDataSize() const
