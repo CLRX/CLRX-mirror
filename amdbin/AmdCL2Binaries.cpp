@@ -72,7 +72,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
     {
         const char* symName = mainBinary->getSymbolName(i);
         const size_t len = ::strlen(symName);
-        if (len < 30 || (::strncmp(symName, "__ISA_&__OpenCL_", 16) != 0 &&
+        if (len < 30 || (::strncmp(symName, "__ISA_&__OpenCL_", 16) != 0 ||
             ::strcmp(symName+len-14, "_kernel_binary") != 0)) // not binary, skip
             continue;
         choosenSyms.push_back(i);
@@ -253,5 +253,5 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             choosenBinSyms.push_back(i);
     }
     
-    bool newInnerBinary;
+    const bool newInnerBinary = !choosenBinSyms.empty();
 }
