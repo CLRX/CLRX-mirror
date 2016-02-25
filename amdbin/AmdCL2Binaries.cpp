@@ -162,7 +162,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         {
             const char* symName = getSymbolName(i);
             const size_t len = ::strlen(symName);
-            if (len < 17 || (::strncmp(symName, "&__OpenCL_", 10) != 0 &&
+            if (len < 17 || (::strncmp(symName, "&__OpenCL_", 10) != 0 ||
                 ::strcmp(symName+len-7, "_kernel") != 0)) // not binary, skip
                 continue;
             choosenSyms.push_back(i);
@@ -231,8 +231,27 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
 
 /* AmdCL2MainGPUBinary */
 
+//static void getCL2KernelInfo()
+
 AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
+    std::vector<size_t> choosenMetadataSyms;
+    std::vector<size_t> choosenBinSyms;
+    
+    const size_t symbolsNum = getSymbolsNum();
+    for (size_t i = 0; i < symbolsNum; i++)
+    {
+        const char* symName = getSymbolName(i);
+        const size_t len = ::strlen(symName);
+        if (len >= 35 && (::strncmp(symName, "__OpenCL_&__OpenCL_", 19) == 0 &&
+                ::strcmp(symName+len-16, "_kernel_metadata") == 0)) // not binary, skip
+            choosenMetadataSyms.push_back(i);
+        if (len >= 30 && (::strncmp(symName, "__ISA_&__OpenCL_", 16) == 0 &&
+                ::strcmp(symName+len-14, "_kernel_binary") == 0)) // not binary, skip
+            choosenBinSyms.push_back(i);
+    }
+    
+    bool newInnerBinary;
 }
