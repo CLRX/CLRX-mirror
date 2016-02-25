@@ -420,9 +420,6 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
         case GALLIUMCVAL_PGMRSRC2:
             config.pgmRSRC2 = value;
             break;
-        case GALLIUMCVAL_IEEEMODE:
-            config.ieeeMode = value;
-            break;
         case GALLIUMCVAL_FLOATMODE:
             config.floatMode = value;
             break;
@@ -557,7 +554,8 @@ void AsmGalliumPseudoOps::doArg(AsmGalliumHandler& handler, const char* pseudoOp
     }
     else
         good = false;
-    //
+    
+    // parse rest of arguments
     if (!skipRequiredComma(asmr, linePtr))
         return;
     skipSpacesToEnd(linePtr, end);
@@ -774,7 +772,7 @@ void AsmGalliumPseudoOps::doKCode(AsmGalliumHandler& handler, const char* pseudo
         skipSpacesToEnd(linePtr, end);
         bool removeKernel = false;
         if (linePtr!=end && *linePtr=='-')
-        {
+        {   // '-' - remove this kernel from current kernel selection
             removeKernel = true;
             linePtr++;
         }
