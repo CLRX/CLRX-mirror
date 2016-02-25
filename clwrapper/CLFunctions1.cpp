@@ -451,7 +451,7 @@ clrxclCreateContext(const cl_context_properties * properties,
                 {
                     amdProps[i] = properties[i];
                     if (properties[i] == CL_CONTEXT_PLATFORM)
-                    {
+                    {   /* get original AMD OpenCL platform */
                         if (properties[i+1] != 0)
                             amdProps[i+1] = (cl_context_properties)
                                 (((CLRXPlatform*)(properties[i+1]))->amdOclPlatform);
@@ -572,7 +572,7 @@ clrxclCreateContextFromType(const cl_context_properties * properties,
                 {
                     amdProps[i] = properties[i];
                     if (properties[i] == CL_CONTEXT_PLATFORM)
-                    {
+                    {   /* get original AMD OpenCL platform */
                         if (properties[i+1] != 0)
                             amdProps[i+1] = (cl_context_properties)
                                 (((CLRXPlatform*)(properties[i+1]))->amdOclPlatform);
@@ -1229,7 +1229,7 @@ clrxclCreateProgramWithBinary(cl_context                     context,
     try
     {
         std::vector<cl_device_id> amdDevices(num_devices);
-        
+        /* get original devices before calling */
         for (cl_uint i = 0; i < num_devices; i++)
         {
             if (device_list[i] == nullptr)
@@ -1379,7 +1379,7 @@ clrxclBuildProgram(cl_program           program,
         try
         {
             std::vector<cl_device_id> amdDevices(num_devices);
-            
+            // get original AMD devices before calling
             for (cl_uint i = 0; i < num_devices; i++)
             {
                 if (device_list[i] == nullptr)

@@ -304,8 +304,9 @@ void clrxWrapperInitialize()
         useCLRXWrapper = !parseEnvVariable<bool>("CLRX_FORCE_ORIGINAL_AMDOCL", false);
         std::string amdOclPath = parseEnvVariable<std::string>("CLRX_AMDOCL_PATH",
                            DEFAULT_AMDOCLPATH);
+        /// set temporary amd ocl library
         tmpAmdOclLibrary.reset(new DynLibrary(amdOclPath.c_str(), DYNLIB_NOW));
-        
+        // get relevant OpenCL function pointers
         amdOclGetPlatformIDs = (CLRXpfn_clGetPlatformIDs)
                 tmpAmdOclLibrary->getSymbol("clGetPlatformIDs");
         if (amdOclGetPlatformIDs == nullptr)
@@ -619,7 +620,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
         std::vector<cl_device_id> amdDevices(platform->devicesNum);
         platform->devicesArray = new CLRXDevice[platform->devicesNum];
     
-        /* get amd devices */
+        /* get AMD devices */
         status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
                 platform->amdOclPlatform, CL_DEVICE_TYPE_ALL,
                 platform->devicesNum-customDevicesNum-amdOfflineDevicesNum,
@@ -632,8 +633,8 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
             platform->deviceInitStatus = status;
             return;
         }
-        // custom devices
 #ifdef CL_VERSION_1_2
+        // custom devices
         if (customDevicesNum != 0)
         {
             status = platform->amdOclPlatform->dispatch->clGetDeviceIDs(
@@ -649,6 +650,7 @@ void clrxPlatformInitializeDevices(CLRXPlatform* platform)
                 return;
             }
         }
+        /// get all AMD offline devices for enumerating and finding devices
         if (amdOfflineDevicesNum != 0)
         {
             std::vector<cl_device_id> offlineDevices(offlineContextDevicesNum);
@@ -796,7 +798,7 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
                 clrxAbort("Fatal error at translating AMD devices");
         }
     }
-    else if(amdDevicesNum != 0) // sorting
+    else if(amdDevicesNum != 0) // sorting (for more devices)
     {
         std::vector<const CLRXDevice*> sortedOriginal(allDevices,
                  allDevices + allDevicesNum);
@@ -818,7 +820,7 @@ void translateAMDDevicesIntoCLRXDevices(cl_uint allDevicesNum,
     }
 }
 
-/* called always on creating context */
+/* called always on creating context (clCreateContextFromType) */
 cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
 {
     cl_uint amdDevicesNum;
@@ -848,6 +850,7 @@ cl_int clrxSetContextDevices(CLRXContext* c, const CLRXPlatform* platform)
     return CL_SUCCESS;
 }
 
+/* called always on creating context (clCreateContext) */
 cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
             const cl_device_id* inDevices)
 {
@@ -878,6 +881,8 @@ cl_int clrxSetContextDevices(CLRXContext* c, cl_uint inDevicesNum,
     return CL_SUCCESS;
 }
 
+/* update associates devices for program (called when concurrent building working or
+ * after program building */
 cl_int clrxUpdateProgramAssocDevices(CLRXProgram* p)
 {
     size_t amdAssocDevicesNum;
@@ -1025,6 +1030,7 @@ void CL_CALLBACK clrxLinkProgramNotifyWrapper(cl_program program, void * user_da
     realNotify(clrxProgram, realUserData);
 }
 
+// helper for clCreateProgramXXX
 CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
           cl_int* errcode_ret)
 {
@@ -1055,6 +1061,7 @@ CLRXProgram* clrxCreateCLRXProgram(CLRXContext* c, cl_program amdProgram,
     return outProgram;
 }
 
+/// helper called while creating command event
 cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
              cl_event amdEvent, cl_int status)
 {
@@ -1083,6 +1090,8 @@ cl_int clrxApplyCLRXEvent(CLRXCommandQueue* q, cl_event* event,
     return status;
 }
 
+/* helper for clCreateSubDevices - creates CLRX devices, set extension and version info
+ * from parent CLRX device. includes exception handling */
 cl_int clrxCreateOutDevices(CLRXDevice* d, cl_uint devicesNum,
        cl_device_id* out_devices, cl_int (CL_API_CALL *AMDReleaseDevice)(cl_device_id),
        const char* fatalErrorMessage)
@@ -1235,7 +1244,7 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                 for (cxuint k = 0; k < kernelInfo.argInfos.size(); k++)
                 {
                     const AmdKernelArg& karg = kernelInfo.argInfos[k];
-                    // if mem object (image or
+                    // if mem object (image, buffer or counter32)
                     kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
                             (karg.ptrSpace == KernelPtrSpace::GLOBAL ||
                              karg.ptrSpace == KernelPtrSpace::CONSTANT)) ||

@@ -659,7 +659,7 @@ clrxclCreateProgramWithBuiltInKernels(cl_context            context,
     try
     {
         std::vector<cl_device_id> amdDevices(num_devices);
-        
+        // get original AMD devices before calling
         for (cl_uint i = 0; i < num_devices; i++)
         {
             if (device_list[i] == nullptr)
@@ -768,7 +768,7 @@ clrxclCompileProgram(cl_program           program,
         else
         {
             std::vector<cl_device_id> amdDevices(num_devices);
-            
+            // get original AMD devices before calling
             for (cl_uint i = 0; i < num_devices; i++)
             {
                 if (device_list[i] == nullptr)
@@ -781,7 +781,7 @@ clrxclCompileProgram(cl_program           program,
                 amdDevices[i] =
                     static_cast<const CLRXDevice*>(device_list[i])->amdOclDevice;
             }
-            
+            // intialize trans device map for new CLRX program
             clrxInitProgramTransDevicesMap(p, num_devices, device_list, amdDevices);
             
             status = p->amdOclProgram->dispatch->clCompileProgram(
