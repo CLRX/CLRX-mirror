@@ -48,7 +48,7 @@ enum : Flags {
 };
 
 /// AMD OpenCL 2.0 inner binary type
-enum AmdCL2InnerBinaryType : cxbyte
+enum class AmdCL2InnerBinaryType : cxbyte
 {
     CAT15_7 = 0,
     OLD = 0,
@@ -83,6 +83,8 @@ protected:
     AmdCL2InnerBinaryType binaryType;
     std::unique_ptr<AmdCL2GPUKernel[]> kernels;    ///< kernel headers
     KernelDataMap kernelDatasMap;
+    
+    explicit AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type);
 public:
     ~AmdCL2InnerGPUBinaryBase() = default;
     

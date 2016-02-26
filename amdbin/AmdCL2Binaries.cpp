@@ -34,6 +34,10 @@ using namespace CLRX;
 
 /* class AmdCL2InnerGPUBinaryBase */
 
+AmdCL2InnerGPUBinaryBase::AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type)
+        : binaryType(type)
+{ }
+
 const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelDatas(const char* name) const
 {
     KernelDataMap::const_iterator it = binaryMapFind(
@@ -56,7 +60,8 @@ AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelDatas(const char* name)
 
 AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary,
             size_t binaryCodeSize, cxbyte* binaryCode, Flags _creationFlags)
-        : creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
+        : AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CAT15_7),
+          creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
 {
     if ((creationFlags & (AMDBIN_CREATE_KERNELDATAS|AMDBIN_CREATE_KERNELSTUBS)) == 0)
         return; // nothing to initialize
@@ -152,7 +157,9 @@ AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* name)
 /* AmdCL2InnerGPUBinary */
 
 AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags): ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+            Flags creationFlags):
+            AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
+            ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     if ((creationFlags & (AMDBIN_CREATE_KERNELDATAS|AMDBIN_CREATE_KERNELSTUBS)) != 0)
     {
@@ -231,7 +238,10 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
 
 /* AmdCL2MainGPUBinary */
 
-//static void getCL2KernelInfo()
+static void getCL2KernelInfo(size_t metadataSize, const cxbyte* metadata,
+                 Array<KernelInfo>& kernelInfos)
+{
+}
 
 AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
@@ -254,4 +264,15 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     }
     
     const bool newInnerBinary = !choosenBinSyms.empty();
+    const Elf64_Shdr& textShdr = getSectionHeader(".text");
+    if (newInnerBinary)
+        innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),
+                           binaryCode + ULEV(textShdr.sh_offset)));
+    else // old driver
+        innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
+                           binaryCode + ULEV(textShdr.sh_offset)));
+   // get metadata
+   for (size_t index: choosenMetadataSyms)
+   {
+   }
 }
