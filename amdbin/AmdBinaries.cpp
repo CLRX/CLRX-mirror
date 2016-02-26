@@ -324,8 +324,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
     {
         const char* symName = elf.getDynSymbolName(i);
         const size_t len = ::strlen(symName);
-        if (len < 18 || (::strncmp(symName, "__OpenCL_", 9) != 0 ||
-            ::strcmp(symName+len-9, "_metadata") != 0)) // not metdata then skip
+        if (len < 18 || ::strncmp(symName, "__OpenCL_", 9) != 0 ||
+            ::strcmp(symName+len-9, "_metadata") != 0) // not metdata then skip
             continue;
         choosenSyms.push_back(i);
     }
@@ -388,8 +388,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 }
                 continue;
             }
-            if (len < 18 || (::strncmp(symName, "__OpenCL_", 9) != 0 ||
-                ::strcmp(symName+len-9, "_metadata") != 0)) // not metdata then skip
+            if (len < 18 || ::strncmp(symName, "__OpenCL_", 9) != 0 ||
+                ::strcmp(symName+len-9, "_metadata") != 0) // not metdata then skip
                 continue;
             choosenSyms.push_back(i);
         }
