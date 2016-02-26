@@ -238,9 +238,180 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
 
 /* AmdCL2MainGPUBinary */
 
-static void getCL2KernelInfo(size_t metadataSize, const cxbyte* metadata,
-                 Array<KernelInfo>& kernelInfos)
+static const KernelArgType cl20ArgTypeVectorTable[] =
 {
+    KernelArgType::CHAR,
+    KernelArgType::CHAR2,
+    KernelArgType::CHAR3,
+    KernelArgType::CHAR4,
+    KernelArgType::CHAR8,
+    KernelArgType::CHAR16,
+    KernelArgType::SHORT,
+    KernelArgType::SHORT2,
+    KernelArgType::SHORT3,
+    KernelArgType::SHORT4,
+    KernelArgType::SHORT8,
+    KernelArgType::SHORT16,
+    KernelArgType::INT,
+    KernelArgType::INT2,
+    KernelArgType::INT3,
+    KernelArgType::INT4,
+    KernelArgType::INT8,
+    KernelArgType::INT16,
+    KernelArgType::LONG,
+    KernelArgType::LONG2,
+    KernelArgType::LONG3,
+    KernelArgType::LONG4,
+    KernelArgType::LONG8,
+    KernelArgType::LONG16,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::FLOAT,
+    KernelArgType::FLOAT2,
+    KernelArgType::FLOAT3,
+    KernelArgType::FLOAT4,
+    KernelArgType::FLOAT8,
+    KernelArgType::FLOAT16,
+    KernelArgType::DOUBLE,
+    KernelArgType::DOUBLE2,
+    KernelArgType::DOUBLE3,
+    KernelArgType::DOUBLE4,
+    KernelArgType::DOUBLE8,
+    KernelArgType::DOUBLE16
+};
+
+static const cxuint vectorIdTable[17] =
+{ UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
+  UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
+
+static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
+             KernelInfo& kernelInfo, AmdGPUKernelHeader& kernelHeader, bool newDriver)
+{
+    if (metadataSize < 8+32+32)
+        throw Exception("Kernel metadata is too short");
+    
+    const AmdCL2GPUMetadataHeader* hdrStruc =
+            reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
+    kernelHeader.size = ULEV(hdrStruc->size);
+    if (kernelHeader.size >= metadataSize)
+        throw Exception("Metadata header size out of range");
+    if (kernelHeader.size < sizeof(AmdCL2GPUMetadataHeader))
+        throw Exception("Metadata header is too short");
+    kernelHeader.data = metadata;
+    const uint32_t argNum = ULEV(hdrStruc->argNum);
+    
+    if (usumGt(ULEV(hdrStruc->firstNameLength), ULEV(hdrStruc->secondNameLength),
+                metadataSize-kernelHeader.size-2))
+        throw Exception("KernelArgEntries offset out of range");
+    
+    size_t argOffset = kernelHeader.size +
+            ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
+    const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
+            const AmdCL2GPUKernelArgEntry*>(metadata + kernelHeader.size +
+            ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2);
+    
+    if(usumGt(argOffset, sizeof(AmdCL2GPUKernelArgEntry)*argNum, metadataSize))
+        throw Exception("Number of arguments out of range");
+    
+    const char* strBase = (const char*)metadata;
+    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argNum+1);
+    
+    kernelInfo.argInfos.resize(argNum);
+    for (uint32_t i = 0; i < argNum; i++, argPtr++)
+    {
+        AmdKernelArg arg;
+        if (argPtr->size!=sizeof(AmdCL2GPUKernelArgEntry))
+            throw Exception("Kernel ArgEntry size doesn't match");
+        size_t nameSize = ULEV(argPtr->argNameSize);
+        if (usumGt(strOffset, nameSize+1, metadataSize))
+            throw Exception("Kernel ArgEntry name size out of range");
+        arg.argName.assign(strBase+strOffset, nameSize);
+        strOffset += nameSize+1;
+        nameSize = ULEV(argPtr->typeNameSize);
+        if (usumGt(strOffset, nameSize+1, metadataSize))
+            throw Exception("Kernel ArgEntry typename size out of range");
+        arg.typeName.assign(strBase+strOffset, nameSize);
+        strOffset += nameSize+1;
+        
+        /// determine arg type
+        uint32_t vectorSize = ULEV(argPtr->vectorLength);
+        uint32_t argType = ULEV(argPtr->argType);
+        uint32_t kindOfType = ULEV(argPtr->kindOfType);
+        arg.ptrSpace = KernelPtrSpace::NONE;
+        arg.ptrAccess = KARG_PTR_NORMAL;
+        arg.argType = KernelArgType::VOID;
+        
+        if (!ULEV(argPtr->isPointerOrPipe))
+            switch(argType)
+            {
+                case 0:
+                    if (kindOfType!=0) // not sampler
+                        throw Exception("Wrong kernel argument type");
+                    break;
+                case 1:  // read_only image
+                case 2:  // write_only image
+                case 3:  // read_write image
+                    if (kindOfType!=2) // not image
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::IMAGE;
+                    arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==1) ?
+                             KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
+                    break;
+                case 6: // char
+                case 7: // short
+                case 8: // int
+                case 9: // long
+                case 11: // float
+                case 12: // short
+                {
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    const cxuint vectorId = vectorIdTable[vectorSize];
+                    if (vectorId == UINT_MAX)
+                        throw Exception("Wrong vector size");
+                    arg.argType = cl20ArgTypeVectorTable[argType*6 + vectorId];
+                    break;
+                }
+                case 15:
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::STRUCTURE;
+                    break;
+                case 18:
+                    if (kindOfType!=7) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::CMDQUEUE;
+                    break;
+                default:
+                    throw Exception("Wrong kernel argument type");
+            }
+        else // otherwise is pointer or pipe
+        {
+            uint32_t ptrSpace = ULEV(argPtr->ptrSpace);
+            if (argType == 7) // pointer
+                arg.argType = (argPtr->isPipe==0) ? KernelArgType::POINTER :
+                    KernelArgType::PIPE;
+            else if (argType == 15)
+                arg.argType = KernelArgType::POINTER;
+            if (arg.argType == KernelArgType::POINTER)
+            {   // if pointer
+                if (ptrSpace==3)
+                    arg.ptrSpace = KernelPtrSpace::LOCAL;
+                else if (ptrSpace==4)
+                    arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                else if (ptrSpace==5)
+                    arg.ptrSpace = KernelPtrSpace::CONSTANT;
+                else
+                    throw Exception("Illegal pointer space");
+            }
+            else if (ptrSpace!=4)
+                throw Exception("Illegal pipe space");
+        }
+    }
 }
 
 AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -255,10 +426,44 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     {
         const char* symName = getSymbolName(i);
         const size_t len = ::strlen(symName);
-        if (len >= 35 && (::strncmp(symName, "__OpenCL_&__OpenCL_", 19) == 0 &&
+        if (::strcmp(symName, "__OpenCL_compiler_options")==0)
+        {
+            const Elf64_Sym& sym = getSymbol(i);
+            if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
+                throw Exception("Compiler options section header out of range");
+            const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
+            const size_t coOffset = ULEV(sym.st_value);
+            const size_t coSize = ULEV(sym.st_size);
+            if (coOffset >= ULEV(shdr.sh_size))
+                throw Exception("Compiler options offset out of range");
+            if (usumGt(coOffset, coSize, ULEV(shdr.sh_size)))
+                throw Exception("Compiler options offset and size out of range");
+            
+            const char* coData = reinterpret_cast<const char*>(binaryCode) +
+                        ULEV(shdr.sh_offset) + coOffset;
+            compileOptions.assign(coData, coData + coSize);
+        }
+        else if (::strcmp(symName, "acl_version_string")==0)
+        {
+            const Elf64_Sym& sym = getSymbol(i);
+            if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
+                throw Exception("AclVersionString section header out of range");
+            const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
+            const size_t aclOffset = ULEV(sym.st_value);
+            const size_t aclSize = ULEV(sym.st_size);
+            if (aclOffset >= ULEV(shdr.sh_size))
+                throw Exception("AclVersionString offset out of range");
+            if (usumGt(aclOffset, aclSize, ULEV(shdr.sh_size)))
+                throw Exception("AclVersionString offset and size out of range");
+            
+            const char* aclVersionData = reinterpret_cast<const char*>(binaryCode) +
+                        ULEV(shdr.sh_offset) + aclOffset;
+            aclVersionString.assign(aclVersionData, aclVersionData + aclSize);
+        }
+        else if (len >= 35 && (::strncmp(symName, "__OpenCL_&__OpenCL_", 19) == 0 &&
                 ::strcmp(symName+len-16, "_kernel_metadata") == 0)) // not binary, skip
             choosenMetadataSyms.push_back(i);
-        if (len >= 30 && (::strncmp(symName, "__ISA_&__OpenCL_", 16) == 0 &&
+        else if (len >= 30 && (::strncmp(symName, "__ISA_&__OpenCL_", 16) == 0 &&
                 ::strcmp(symName+len-14, "_kernel_binary") == 0)) // not binary, skip
             choosenBinSyms.push_back(i);
     }
@@ -271,8 +476,42 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     else // old driver
         innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
                            binaryCode + ULEV(textShdr.sh_offset)));
-   // get metadata
-   for (size_t index: choosenMetadataSyms)
-   {
-   }
+   
+    // get metadata
+    if (hasKernelInfo())
+    {
+        kernelInfos.resize(choosenMetadataSyms.size());
+        kernelHeaders.reset(new AmdGPUKernelHeader[choosenMetadataSyms.size()]);
+        if (hasKernelInfoMap())
+            kernelInfosMap.resize(choosenMetadataSyms.size());
+        metadatas.reset(new AmdCL2GPUKernelMetadata[kernelInfos.size()]);
+        size_t ki = 0;
+        for (size_t index: choosenMetadataSyms)
+        {
+            const Elf64_Sym& mtsym = getSymbol(index);
+            const char* mtName = getSymbolName(index);
+            if (ULEV(mtsym.st_shndx) >= getSectionHeadersNum())
+                throw Exception("Kernel Metadata section header out of range");
+            const Elf64_Shdr& shdr = getSectionHeader(ULEV(mtsym.st_shndx));
+            const size_t mtOffset = ULEV(mtsym.st_value);
+            const size_t mtSize = ULEV(mtsym.st_size);
+            if (mtOffset >= ULEV(shdr.sh_size))
+                throw Exception("Kernel Metadata offset out of range");
+            if (usumGt(mtOffset, mtSize, ULEV(shdr.sh_size)))
+                throw Exception("Kernel Metadata offset and size out of range");
+            
+            cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
+            getCL2KernelInfo(mtSize, metadata, kernelInfos[ki], kernelHeaders[ki],
+                             newInnerBinary);
+            size_t len = ::strlen(mtName);
+            kernelHeaders[ki].kernelName = kernelInfos[ki].kernelName =
+                        CString(mtName+19, mtName+len-16);
+            if (hasKernelInfoMap())
+                kernelInfosMap[ki] = std::make_pair(kernelInfos[ki].kernelName, ki);
+            metadatas[ki++] = { mtSize, metadata };
+            ki++;
+        }
+        if (hasKernelInfoMap())
+            mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
+    }
 }

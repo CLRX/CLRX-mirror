@@ -188,6 +188,49 @@ struct AmdCL2GPUKernelMetadata
     cxbyte* data;     ///< data
 };
 
+/// header for metadata
+struct AmdCL2GPUMetadataHeader
+{
+    uint64_t size;      ///< size
+    uint64_t metadataSize;  /// metadata size
+    uint32_t unknown1[3];
+    uint32_t options[3];
+    uint64_t unknown2[3];
+    uint64_t reqdWorkGroupSize[3];  ///< reqd work group size
+    uint64_t unknown3[2];
+    uint64_t firstNameLength;   ///< first name length
+    uint64_t secondNameLength;  ///< second name length
+    uint64_t unknown4[6];
+    uint32_t argNum;
+};
+
+/// GPU kernel argument entry
+struct AmdCL2GPUKernelArgEntry
+{
+    uint64_t size;      ///< entry size
+    uint64_t argNameSize;   ///< argument name size
+    uint64_t typeNameSize;  ///< type name size
+    uint64_t unknown1, unknown2;
+    union {
+        uint32_t vectorLength;  ///< vector length (for old drivers not aligned)
+        uint32_t resId;     ///< resource id
+    };
+    uint32_t unknown3;
+    uint32_t argOffset; ///< virtual argument offset
+    uint32_t argType;   ///< argument type
+    uint32_t ptrAlignment; ///< pointer alignment
+    uint32_t ptrType;   ///< pointer type
+    uint32_t ptrSpace;  ///< pointer space
+    uint32_t isPointerOrPipe;   /// nonzero if pointer or pipe
+    cxbyte isVolatile;  ///< if pointer is volatile
+    cxbyte isRestrict;  ///< if pointer is restrict
+    cxbyte isPipe;      ///< if pipe
+    cxbyte unknown4;
+    uint32_t kindOfType;    ///< kind of type
+    uint32_t isConst;   ///< is const pointer
+    uint32_t unknown5;
+};
+
 /// AMD OpenCL 2.0 main binary for GPU for 64-bit mode
 /** This object doesn't copy binary code content.
  * Only it takes and uses a binary code.
@@ -200,6 +243,7 @@ protected:
     size_t kernelsNum;
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> isaMetadatas;  ///< AMD metadatas
+    std::unique_ptr<AmdGPUKernelHeader[]> kernelHeaders;
     MetadataMap metadataMap;
     MetadataMap isaMetadataMap;
     
