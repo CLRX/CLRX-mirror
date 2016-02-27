@@ -369,6 +369,8 @@ public:
 extern template class ElfBinaryTemplate<Elf32Types>;
 extern template class ElfBinaryTemplate<Elf64Types>;
 
+extern bool isElfBinary(size_t binarySize, const cxbyte* binary);
+
 /// type for 32-bit ELF binary
 typedef class ElfBinaryTemplate<Elf32Types> ElfBinary32;
 /// type for 64-bit ELF binary

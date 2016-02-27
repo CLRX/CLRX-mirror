@@ -710,6 +710,9 @@ public:
     { return innerBinary; }
 };
 
+/// check whether binary code is Amd Catalyst binary
+extern bool isAmdBinary(size_t binaryCodeSize, const cxbyte* binaryCode);
+
 /// create AMD binary object from binary code
 /**
  * \param binaryCodeSize binary code size

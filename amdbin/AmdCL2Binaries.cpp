@@ -476,11 +476,13 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     const Elf64_Shdr& textShdr = getSectionHeader(".text");
     if (newInnerBinary)
         innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),
-                           binaryCode + ULEV(textShdr.sh_offset)));
+                       binaryCode + ULEV(textShdr.sh_offset),
+                       creationFlags >> AMDBIN_INNER_SHIFT));
     else // old driver
         innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
-                           binaryCode + ULEV(textShdr.sh_offset)));
-   
+                       binaryCode + ULEV(textShdr.sh_offset),
+                       creationFlags >> AMDBIN_INNER_SHIFT));
+    
     // get metadata
     if (hasKernelInfo())
     {
@@ -520,4 +522,16 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
         if (hasKernelInfoMap())
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
     }
+}
+
+bool CLRX::isAmdCL2Binary(size_t binarySize, const cxbyte* binary)
+{
+    if (!isElfBinary(binarySize, binary))
+        return false;
+    if (binary[EI_CLASS] != ELFCLASS64)
+        return false;
+    const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binary);
+    if (ULEV(ehdr->e_machine) != 0xaf5b || ULEV(ehdr->e_flags)==0)
+        return false;
+    return true;
 }

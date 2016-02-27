@@ -1427,6 +1427,30 @@ AmdMainX86Binary64::AmdMainX86Binary64(size_t binaryCodeSize, cxbyte* binaryCode
         initKernelInfos(creationFlags);
 }
 
+bool CLRX::isAmdBinary(size_t binarySize, const cxbyte* binary)
+{
+    if (!isElfBinary(binarySize, binary))
+        return false;
+    
+    if (binary[EI_CLASS] == ELFCLASS32)
+    {
+        const Elf32_Ehdr* ehdr = reinterpret_cast<const Elf32_Ehdr*>(binary);
+        uint32_t emachine = ULEV(ehdr->e_machine);
+        if ((emachine != ELF_M_X86 && (emachine<=0x3f0 || emachine>=0x500)) ||
+                    ULEV(ehdr->e_flags)!=0)
+            return false;
+    }
+    else // elf 64-bit
+    {
+        const Elf64_Ehdr* ehdr = reinterpret_cast<const Elf64_Ehdr*>(binary);
+        uint32_t emachine = ULEV(ehdr->e_machine);
+        if ((emachine != ELF_M_X86 && (emachine<=0x3f0 || emachine>=0x500)) ||
+                    ULEV(ehdr->e_flags)!=0)
+            return false;
+    }
+    return true;
+}
+
 /* create amd binary */
 
 AmdMainBinaryBase* CLRX::createAmdBinaryFromCode(size_t binaryCodeSize, cxbyte* binaryCode,

@@ -311,6 +311,9 @@ public:
     { return aclVersionString; }
 };
 
+/// check whether is Amd OpenCL 2.0 binary
+extern bool isAmdCL2Binary(size_t binarySize, const cxbyte* binary);
+
 };
 
 #endif

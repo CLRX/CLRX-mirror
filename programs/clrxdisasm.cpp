@@ -99,7 +99,6 @@ try
         std::cout << "/* Disassembling '" << *args << "\' */" << std::endl;
         Array<cxbyte> binaryData;
         std::unique_ptr<AmdMainBinaryBase> base = nullptr;
-        std::unique_ptr<GalliumBinary> galliumBin = nullptr;
         try
         {
             binaryData = loadDataFromFile(*args);
@@ -114,35 +113,33 @@ try
                 if ((disasmFlags & DISASM_METADATA) != 0)
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
-                try
-                { base.reset(createAmdBinaryFromCode(binaryData.size(),
-                            binaryData.data(), binFlags)); }
-                catch(const Exception& ex)
-                {   // check whether is Gallium
-                    galliumBin.reset(new GalliumBinary(binaryData.size(),
-                           binaryData.data(), 0));
+                if (isAmdBinary(binaryData.size(), binaryData.data()))
+                {   // if amd binary
+                    base.reset(createAmdBinaryFromCode(binaryData.size(),
+                            binaryData.data(), binFlags));
+                    if (base->getType() == AmdMainType::GPU_BINARY)
+                    {
+                        AmdMainGPUBinary32* amdGpuBin =
+                                static_cast<AmdMainGPUBinary32*>(base.get());
+                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                        disasm.disassemble();
+                    }
+                    else if (base->getType() == AmdMainType::GPU_64_BINARY)
+                    {
+                        AmdMainGPUBinary64* amdGpuBin =
+                                static_cast<AmdMainGPUBinary64*>(base.get());
+                        Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                        disasm.disassemble();
+                    }
+                    else
+                        throw Exception("This is not AMDGPU binary file!");
                 }
-                if (galliumBin != nullptr)
-                {   // if Gallium
-                    Disassembler disasm(gpuDeviceType, *galliumBin, std::cout, disasmFlags);
-                    disasm.disassemble();
-                }
-                else if (base->getType() == AmdMainType::GPU_BINARY)
+                else // if gallium binary
                 {
-                    AmdMainGPUBinary32* amdGpuBin =
-                            static_cast<AmdMainGPUBinary32*>(base.get());
-                    Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
+                    GalliumBinary galliumBin(binaryData.size(),binaryData.data(), 0);
+                    Disassembler disasm(gpuDeviceType, galliumBin, std::cout, disasmFlags);
                     disasm.disassemble();
                 }
-                else if (base->getType() == AmdMainType::GPU_64_BINARY)
-                {
-                    AmdMainGPUBinary64* amdGpuBin =
-                            static_cast<AmdMainGPUBinary64*>(base.get());
-                    Disassembler disasm(*amdGpuBin, std::cout, disasmFlags);
-                    disasm.disassemble();
-                }
-                else
-                    throw Exception("This is not AMDGPU binary file!");
             }
             else
             {   /* raw binaries */
