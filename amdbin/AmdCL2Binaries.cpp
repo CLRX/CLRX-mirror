@@ -70,7 +70,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
     { textIndex = mainBinary->getSectionIndex(".text"); }
     catch(const Exception& ex)
     { }
-        
+    
     std::vector<size_t> choosenSyms;
     const size_t symbolsNum = mainBinary->getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
@@ -91,12 +91,14 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         kernelDatasMap.resize(choosenSyms.size());
     
     size_t ki = 0;
+    // main loop for kernel data and stub getting
     for (size_t index: choosenSyms)
     {
         const Elf64_Sym& sym = mainBinary->getSymbol(index);
         const char* symName = mainBinary->getSymbolName(index);
         const size_t binOffset = ULEV(sym.st_value);
         const size_t binSize = ULEV(sym.st_size);
+        /// check conditions for symbol
         if (textIndex != ULEV(sym.st_shndx))
             throw Exception("Kernel symbol outside text section");
         if (binOffset >= binaryCodeSize)
@@ -108,6 +110,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         
         AmdCL2GPUKernelStub kernelStub;
         AmdCL2GPUKernel kernelData;
+        // set data for stub
         kernelStub.data = binaryCode + binOffset;
         const size_t setupOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelStub.data));
         if (setupOffset >= binSize)
@@ -120,6 +123,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         kernelData.setupSize = textOffset;
         kernelData.code = kernelData.setup + textOffset;
         kernelData.codeSize = binSize - (kernelData.code - kernelStub.data);
+        // fill kernel data map and kernel stup info
         if (hasKernelDatasMap())
         {   // kernel data map
             const size_t len = ::strlen(symName);
@@ -161,8 +165,8 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
-    if ((creationFlags & (AMDBIN_CREATE_KERNELDATAS|AMDBIN_CREATE_KERNELSTUBS)) != 0)
-    {
+    if (hasKernelDatas())
+    {   // get kernel datas and kernel stubs 
         std::vector<size_t> choosenSyms;
         const size_t symbolsNum = getSymbolsNum();
         for (size_t i = 0; i < symbolsNum; i++)
@@ -176,11 +180,11 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         }
         
         size_t ki = 0;
-        if (hasKernelDatas())
-            kernels.reset(new AmdCL2GPUKernel[choosenSyms.size()]);
+        kernels.reset(new AmdCL2GPUKernel[choosenSyms.size()]);
         if (hasKernelDatasMap())
             kernelDatasMap.resize(choosenSyms.size());
         
+        // main loop for kernel data getting
         for (size_t index: choosenSyms)
         {
             const Elf64_Sym& sym = getSymbol(index);
@@ -197,20 +201,16 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             if (binSize < 192)
                 throw Exception("Kernel binary code size is too short");
             
-            if (hasKernelDatas())
-            {
-                AmdCL2GPUKernel kernelData;
-                kernelData.setup = binaryCode + ULEV(dataShdr.sh_offset) +
-                                ULEV(dataShdr.sh_offset) + binOffset;
-                const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(
-                                    kernelData.setup));
-                if (textOffset >= binSize)
-                    throw Exception("Kernel text offset out of range");
-                kernelData.setupSize = textOffset;
-                kernelData.code = kernelData.setup + textOffset;
-                kernelData.codeSize = binSize-textOffset;
-                kernels[ki] = kernelData;
-            }
+            kernels[ki].setup = binaryCode + ULEV(dataShdr.sh_offset) +
+                            ULEV(dataShdr.sh_offset) + binOffset;
+            const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(
+                            kernels[ki].setup));
+            
+            if (textOffset >= binSize)
+                throw Exception("Kernel text offset out of range");
+            kernels[ki].setupSize = textOffset;
+            kernels[ki].code = kernels[ki].setup + textOffset;
+            kernels[ki].codeSize = binSize-textOffset;
             if (hasKernelDatasMap())
             {   // kernel data map
                 const size_t len = ::strlen(symName);
@@ -219,6 +219,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             }
             ki++;
         }
+        // sort kernel data map
         if (hasKernelDatasMap())
             mapSort(kernelDatasMap.begin(), kernelDatasMap.end());
     }
@@ -289,7 +290,7 @@ static const cxuint vectorIdTable[17] =
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
 static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
-             KernelInfo& kernelInfo, AmdGPUKernelHeader& kernelHeader, bool newDriver)
+             KernelInfo& kernelInfo, AmdGPUKernelHeader& kernelHeader)
 {
     if (metadataSize < 8+32+32)
         throw Exception("Kernel metadata is too short");
@@ -326,10 +327,12 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
         AmdKernelArg arg;
         if (argPtr->size!=sizeof(AmdCL2GPUKernelArgEntry))
             throw Exception("Kernel ArgEntry size doesn't match");
+        // get name of argument
         size_t nameSize = ULEV(argPtr->argNameSize);
         if (usumGt(strOffset, nameSize+1, metadataSize))
             throw Exception("Kernel ArgEntry name size out of range");
         arg.argName.assign(strBase+strOffset, nameSize);
+        // get name of type of argument
         strOffset += nameSize+1;
         nameSize = ULEV(argPtr->typeNameSize);
         if (usumGt(strOffset, nameSize+1, metadataSize))
@@ -346,6 +349,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
         arg.argType = KernelArgType::VOID;
         
         if (!ULEV(argPtr->isPointerOrPipe))
+            // if not point or pipe (get regular type: scalar, image, sampler,...)
             switch(argType)
             {
                 case 0:
@@ -486,6 +490,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             kernelInfosMap.resize(choosenMetadataSyms.size());
         metadatas.reset(new AmdCL2GPUKernelMetadata[kernelInfos.size()]);
         size_t ki = 0;
+        // main loop
         for (size_t index: choosenMetadataSyms)
         {
             const Elf64_Sym& mtsym = getSymbol(index);
@@ -495,15 +500,16 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             const Elf64_Shdr& shdr = getSectionHeader(ULEV(mtsym.st_shndx));
             const size_t mtOffset = ULEV(mtsym.st_value);
             const size_t mtSize = ULEV(mtsym.st_size);
+            /// offset and size verifying
             if (mtOffset >= ULEV(shdr.sh_size))
                 throw Exception("Kernel Metadata offset out of range");
             if (usumGt(mtOffset, mtSize, ULEV(shdr.sh_size)))
                 throw Exception("Kernel Metadata offset and size out of range");
             
             cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
-            getCL2KernelInfo(mtSize, metadata, kernelInfos[ki], kernelHeaders[ki],
-                             newInnerBinary);
+            getCL2KernelInfo(mtSize, metadata, kernelInfos[ki], kernelHeaders[ki]);
             size_t len = ::strlen(mtName);
+            // set kernel name from symbol name (__OpenCL_&__OpenCL_[name]_kernel_metadata)
             kernelHeaders[ki].kernelName = kernelInfos[ki].kernelName =
                         CString(mtName+19, mtName+len-16);
             if (hasKernelInfoMap())
