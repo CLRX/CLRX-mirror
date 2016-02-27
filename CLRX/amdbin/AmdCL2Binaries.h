@@ -244,10 +244,9 @@ protected:
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> isaMetadatas;  ///< AMD metadatas
     std::unique_ptr<AmdGPUKernelHeader[]> kernelHeaders;
-    MetadataMap metadataMap;
     MetadataMap isaMetadataMap;
     
-    CString aclVersionString; ///< driver info string
+    CString aclVersionString; ///< acl version string
     std::unique_ptr<AmdCL2InnerGPUBinaryBase> innerBinary;
 public:
     AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -262,9 +261,17 @@ public:
     bool hasKernelInfoMap() const
     { return (creationFlags & AMDBIN_CREATE_KERNELINFOMAP) != 0; }
     
+    /// returns true if binary has info strings
+    bool hasInfoStrings() const
+    { return (creationFlags & AMDBIN_CREATE_INFOSTRINGS) != 0; }
+    
+    // returns true if inner binary exists
+    bool hasInnerBinary() const
+    { return innerBinary.get()!=nullptr; }
+    
     /// get inner binary type
     AmdCL2InnerBinaryType getInnerBinaryType() const
-    { return innerBinary.get()->getBinaryType(); }
+    { return innerBinary->getBinaryType(); }
     
     /// get inner binary
     const AmdCL2InnerGPUBinary& getInnerBinary() const
@@ -281,6 +288,11 @@ public:
     /// get old inner binary
     AmdCL2OldInnerGPUBinary& getOldInnerBinary()
     { return *reinterpret_cast<AmdCL2OldInnerGPUBinary*>(innerBinary.get()); }
+    
+    /// get kernel info index
+    size_t getKernelInfoIndex(const char* name) const;
+    /// get ISA metadata index
+    size_t getISAMetadataIndex(const char* name) const;
     
     /// get ISA metadata size for specified inner binary
     size_t getISAMetadataSize(size_t index) const

@@ -423,53 +423,66 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
     std::vector<size_t> choosenMetadataSyms;
+    std::vector<size_t> choosenISAMetadataSyms;
     std::vector<size_t> choosenBinSyms;
     
     const size_t symbolsNum = getSymbolsNum();
+    
+    if (hasInfoStrings())
+        /// get info strings if needed
+        for (size_t i = 0; i < symbolsNum; i++)
+        {
+            const char* symName = getSymbolName(i);
+            if (::strcmp(symName, "__OpenCL_compiler_options")==0)
+            {
+                const Elf64_Sym& sym = getSymbol(i);
+                if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
+                    throw Exception("Compiler options section header out of range");
+                const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
+                const size_t coOffset = ULEV(sym.st_value);
+                const size_t coSize = ULEV(sym.st_size);
+                if (coOffset >= ULEV(shdr.sh_size))
+                    throw Exception("Compiler options offset out of range");
+                if (usumGt(coOffset, coSize, ULEV(shdr.sh_size)))
+                    throw Exception("Compiler options offset and size out of range");
+                
+                const char* coData = reinterpret_cast<const char*>(binaryCode) +
+                            ULEV(shdr.sh_offset) + coOffset;
+                compileOptions.assign(coData, coData + coSize);
+            }
+            else if (::strcmp(symName, "acl_version_string")==0)
+            {
+                const Elf64_Sym& sym = getSymbol(i);
+                if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
+                    throw Exception("AclVersionString section header out of range");
+                const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
+                const size_t aclOffset = ULEV(sym.st_value);
+                const size_t aclSize = ULEV(sym.st_size);
+                if (aclOffset >= ULEV(shdr.sh_size))
+                    throw Exception("AclVersionString offset out of range");
+                if (usumGt(aclOffset, aclSize, ULEV(shdr.sh_size)))
+                    throw Exception("AclVersionString offset and size out of range");
+                
+                const char* aclVersionData = reinterpret_cast<const char*>(binaryCode) +
+                            ULEV(shdr.sh_offset) + aclOffset;
+                aclVersionString.assign(aclVersionData, aclVersionData + aclSize);
+            }
+        }
+    
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const char* symName = getSymbolName(i);
         const size_t len = ::strlen(symName);
-        if (::strcmp(symName, "__OpenCL_compiler_options")==0)
-        {
-            const Elf64_Sym& sym = getSymbol(i);
-            if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
-                throw Exception("Compiler options section header out of range");
-            const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
-            const size_t coOffset = ULEV(sym.st_value);
-            const size_t coSize = ULEV(sym.st_size);
-            if (coOffset >= ULEV(shdr.sh_size))
-                throw Exception("Compiler options offset out of range");
-            if (usumGt(coOffset, coSize, ULEV(shdr.sh_size)))
-                throw Exception("Compiler options offset and size out of range");
-            
-            const char* coData = reinterpret_cast<const char*>(binaryCode) +
-                        ULEV(shdr.sh_offset) + coOffset;
-            compileOptions.assign(coData, coData + coSize);
-        }
-        else if (::strcmp(symName, "acl_version_string")==0)
-        {
-            const Elf64_Sym& sym = getSymbol(i);
-            if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
-                throw Exception("AclVersionString section header out of range");
-            const Elf64_Shdr& shdr = getSectionHeader(ULEV(sym.st_shndx));
-            const size_t aclOffset = ULEV(sym.st_value);
-            const size_t aclSize = ULEV(sym.st_size);
-            if (aclOffset >= ULEV(shdr.sh_size))
-                throw Exception("AclVersionString offset out of range");
-            if (usumGt(aclOffset, aclSize, ULEV(shdr.sh_size)))
-                throw Exception("AclVersionString offset and size out of range");
-            
-            const char* aclVersionData = reinterpret_cast<const char*>(binaryCode) +
-                        ULEV(shdr.sh_offset) + aclOffset;
-            aclVersionString.assign(aclVersionData, aclVersionData + aclSize);
-        }
-        else if (len >= 35 && (::strncmp(symName, "__OpenCL_&__OpenCL_", 19) == 0 &&
-                ::strcmp(symName+len-16, "_kernel_metadata") == 0)) // not binary, skip
+        if (len >= 35 && (::strncmp(symName, "__OpenCL_&__OpenCL_", 19) == 0 &&
+                ::strcmp(symName+len-16, "_kernel_metadata") == 0)) // if metadata
             choosenMetadataSyms.push_back(i);
-        else if (len >= 30 && (::strncmp(symName, "__ISA_&__OpenCL_", 16) == 0 &&
-                ::strcmp(symName+len-14, "_kernel_binary") == 0)) // not binary, skip
-            choosenBinSyms.push_back(i);
+        else if (::strncmp(symName, "__ISA_&__OpenCL_", 16) == 0)
+        {
+            if (len >= 30 && ::strcmp(symName+len-14, "_kernel_binary") == 0)
+                choosenBinSyms.push_back(i); //  if binary
+            else if (len >= 32 && ::strcmp(symName+len-16, "_kernel_metadata") == 0)
+                choosenISAMetadataSyms.push_back(i); // if ISA metadata
+        }
     }
     
     const bool newInnerBinary = !choosenBinSyms.empty();
@@ -489,8 +502,12 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
         kernelInfos.resize(choosenMetadataSyms.size());
         kernelHeaders.reset(new AmdGPUKernelHeader[choosenMetadataSyms.size()]);
         if (hasKernelInfoMap())
+        {
             kernelInfosMap.resize(choosenMetadataSyms.size());
+            isaMetadataMap.resize(choosenISAMetadataSyms.size());
+        }
         metadatas.reset(new AmdCL2GPUKernelMetadata[kernelInfos.size()]);
+        isaMetadatas.reset(new AmdCL2GPUKernelMetadata[choosenISAMetadataSyms.size()]);
         size_t ki = 0;
         // main loop
         for (size_t index: choosenMetadataSyms)
@@ -516,12 +533,51 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                         CString(mtName+19, mtName+len-16);
             if (hasKernelInfoMap())
                 kernelInfosMap[ki] = std::make_pair(kernelInfos[ki].kernelName, ki);
-            metadatas[ki++] = { mtSize, metadata };
+            metadatas[ki] = { mtSize, metadata };
             ki++;
         }
+        
+        for (size_t index: choosenISAMetadataSyms)
+        {
+            const Elf64_Sym& mtsym = getSymbol(index);
+            const char* mtName = getSymbolName(index);
+            if (ULEV(mtsym.st_shndx) >= getSectionHeadersNum())
+                throw Exception("Kernel ISAMetadata section header out of range");
+            const Elf64_Shdr& shdr = getSectionHeader(ULEV(mtsym.st_shndx));
+            const size_t mtOffset = ULEV(mtsym.st_value);
+            const size_t mtSize = ULEV(mtsym.st_size);
+            /// offset and size verifying
+            if (mtOffset >= ULEV(shdr.sh_size))
+                throw Exception("Kernel ISAMetadata offset out of range");
+            if (usumGt(mtOffset, mtSize, ULEV(shdr.sh_size)))
+                throw Exception("Kernel ISAMetadata offset and size out of range");
+            
+            cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
+            size_t len = ::strlen(mtName);
+            CString kernelName = CString(mtName+16, mtName+len-16);
+            isaMetadatas[ki] = { mtSize, metadata };
+            ki++;
+        }
+        
         if (hasKernelInfoMap())
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
     }
+}
+
+size_t AmdCL2MainGPUBinary::getKernelInfoIndex(const char* name) const
+{
+    auto it = binaryMapFind(kernelInfosMap.begin(), kernelInfosMap.end(), name);
+    if (it == kernelInfosMap.end())
+        throw Exception("Can't find kernel info by name");
+    return it->second;
+}
+
+size_t AmdCL2MainGPUBinary::getISAMetadataIndex(const char* name) const
+{
+    auto it = binaryMapFind(isaMetadataMap.begin(), isaMetadataMap.end(), name);
+    if (it == isaMetadataMap.end())
+        throw Exception("Can't find kernel ISA metadata by name");
+    return it->second;
 }
 
 bool CLRX::isAmdCL2Binary(size_t binarySize, const cxbyte* binary)
