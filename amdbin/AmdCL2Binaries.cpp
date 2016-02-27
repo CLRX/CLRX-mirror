@@ -540,6 +540,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             ki++;
         }
         
+        ki = 0;
         for (size_t index: choosenISAMetadataSyms)
         {
             const Elf64_Sym& mtsym = getSymbol(index);
@@ -559,6 +560,8 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             size_t len = ::strlen(mtName);
             CString kernelName = CString(mtName+16, mtName+len-16);
             isaMetadatas[ki] = { mtSize, metadata };
+            if (hasKernelInfoMap())
+                isaMetadataMap[ki] = std::make_pair(kernelName, ki);
             ki++;
         }
         
