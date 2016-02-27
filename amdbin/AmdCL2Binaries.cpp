@@ -38,6 +38,9 @@ AmdCL2InnerGPUBinaryBase::AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type)
         : binaryType(type)
 { }
 
+AmdCL2InnerGPUBinaryBase::~AmdCL2InnerGPUBinaryBase()
+{ }
+
 const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelDatas(const char* name) const
 {
     KernelDataMap::const_iterator it = binaryMapFind(
@@ -485,7 +488,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
         }
     }
     
-    const bool newInnerBinary = !choosenBinSyms.empty();
+    const bool newInnerBinary = choosenBinSyms.empty();
     const Elf64_Shdr& textShdr = getSectionHeader(".text");
     if (newInnerBinary)
         innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),

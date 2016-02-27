@@ -86,7 +86,7 @@ protected:
     
     explicit AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type);
 public:
-    ~AmdCL2InnerGPUBinaryBase() = default;
+    virtual ~AmdCL2InnerGPUBinaryBase();
     
     /// get binary type
     AmdCL2InnerBinaryType getBinaryType() const
@@ -278,19 +278,19 @@ public:
     
     /// get inner binary
     const AmdCL2InnerGPUBinary& getInnerBinary() const
-    { return *reinterpret_cast<const AmdCL2InnerGPUBinary*>(innerBinary.get()); }
+    { return *static_cast<const AmdCL2InnerGPUBinary*>(innerBinary.get()); }
     
     /// get inner binary
     AmdCL2InnerGPUBinary& getInnerBinary()
-    { return *reinterpret_cast<AmdCL2InnerGPUBinary*>(innerBinary.get()); }
+    { return *static_cast<AmdCL2InnerGPUBinary*>(innerBinary.get()); }
     
     /// get old inner binary
     const AmdCL2OldInnerGPUBinary& getOldInnerBinary() const
-    { return *reinterpret_cast<const AmdCL2OldInnerGPUBinary*>(innerBinary.get()); }
+    { return *static_cast<const AmdCL2OldInnerGPUBinary*>(innerBinary.get()); }
     
     /// get old inner binary
     AmdCL2OldInnerGPUBinary& getOldInnerBinary()
-    { return *reinterpret_cast<AmdCL2OldInnerGPUBinary*>(innerBinary.get()); }
+    { return *static_cast<AmdCL2OldInnerGPUBinary*>(innerBinary.get()); }
     
     /// get kernel info index
     size_t getKernelInfoIndex(const char* name) const;
