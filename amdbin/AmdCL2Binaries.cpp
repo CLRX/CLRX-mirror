@@ -324,7 +324,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     kernelInfo.argInfos.resize(argNum);
     for (uint32_t i = 0; i < argNum; i++, argPtr++)
     {
-        AmdKernelArg arg;
+        AmdKernelArg& arg = kernelInfo.argInfos[i];
         if (argPtr->size!=sizeof(AmdCL2GPUKernelArgEntry))
             throw Exception("Kernel ArgEntry size doesn't match");
         // get name of argument
@@ -377,7 +377,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     const cxuint vectorId = vectorIdTable[vectorSize];
                     if (vectorId == UINT_MAX)
                         throw Exception("Wrong vector size");
-                    arg.argType = cl20ArgTypeVectorTable[argType*6 + vectorId];
+                    arg.argType = cl20ArgTypeVectorTable[(argType-6)*6 + vectorId];
                     break;
                 }
                 case 15:

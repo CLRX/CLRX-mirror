@@ -197,7 +197,7 @@ struct AmdCL2GPUMetadataHeader
     uint64_t size;      ///< size
     uint64_t metadataSize;  /// metadata size
     uint32_t unknown1[3];
-    uint32_t options[3];
+    uint32_t options;
     uint64_t unknown2[3];
     uint64_t reqdWorkGroupSize[3];  ///< reqd work group size
     uint64_t unknown3[2];
