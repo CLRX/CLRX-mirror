@@ -81,7 +81,7 @@ public:
     typedef Array<std::pair<CString, size_t> > KernelDataMap;
 protected:
     AmdCL2InnerBinaryType binaryType;
-    std::unique_ptr<AmdCL2GPUKernel[]> kernels;    ///< kernel headers
+    Array<AmdCL2GPUKernel> kernels;    ///< kernel headers
     KernelDataMap kernelDatasMap;
     
     explicit AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type);
@@ -91,6 +91,9 @@ public:
     /// get binary type
     AmdCL2InnerBinaryType getBinaryType() const
     { return binaryType; }
+    
+    size_t getKernelsNum() const
+    { return kernels.size(); }
     
     /// get kernel datas for specified index
     const AmdCL2GPUKernel& getKernelDatas(size_t index) const
@@ -242,7 +245,7 @@ public:
 protected:
     size_t kernelsNum;
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
-    std::unique_ptr<AmdCL2GPUKernelMetadata[]> isaMetadatas;  ///< AMD metadatas
+    Array<AmdCL2GPUKernelMetadata> isaMetadatas;  ///< AMD metadatas
     std::unique_ptr<AmdGPUKernelHeader[]> kernelHeaders;
     MetadataMap isaMetadataMap;
     
@@ -293,6 +296,16 @@ public:
     size_t getKernelInfoIndex(const char* name) const;
     /// get ISA metadata index
     size_t getISAMetadataIndex(const char* name) const;
+    
+    /// get kernel header for specified index
+    const AmdGPUKernelHeader& getKernelHeaderEntry(size_t index) const
+    { return kernelHeaders[index]; }
+    /// get kernel header for specified name
+    const AmdGPUKernelHeader& getKernelHeaderEntry(const char* name) const;
+    
+    /// get number of ISA metadatas
+    size_t getISAMetadatasNum() const
+    { return isaMetadatas.size(); }
     
     /// get ISA metadata size for specified inner binary
     size_t getISAMetadataSize(size_t index) const

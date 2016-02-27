@@ -84,7 +84,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
     }
     
     if (hasKernelDatas())
-        kernels.reset(new AmdCL2GPUKernel[choosenSyms.size()]);
+        kernels.resize(choosenSyms.size());
     if (hasKernelStubs())
         kernelStubs.reset(new AmdCL2GPUKernelStub[choosenSyms.size()]);
     if (hasKernelDatasMap())
@@ -180,7 +180,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         }
         
         size_t ki = 0;
-        kernels.reset(new AmdCL2GPUKernel[choosenSyms.size()]);
+        kernels.resize(choosenSyms.size());
         if (hasKernelDatasMap())
             kernelDatasMap.resize(choosenSyms.size());
         
@@ -507,7 +507,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             isaMetadataMap.resize(choosenISAMetadataSyms.size());
         }
         metadatas.reset(new AmdCL2GPUKernelMetadata[kernelInfos.size()]);
-        isaMetadatas.reset(new AmdCL2GPUKernelMetadata[choosenISAMetadataSyms.size()]);
+        isaMetadatas.resize(choosenISAMetadataSyms.size());
         size_t ki = 0;
         // main loop
         for (size_t index: choosenMetadataSyms)
