@@ -44,8 +44,8 @@ AmdCL2InnerGPUBinaryBase::~AmdCL2InnerGPUBinaryBase()
 const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelData(const char* name) const
 {
     KernelDataMap::const_iterator it = binaryMapFind(
-            kernelDatasMap.begin(), kernelDatasMap.end(), name);
-    if (it == kernelDatasMap.end())
+            kernelDataMap.begin(), kernelDataMap.end(), name);
+    if (it == kernelDataMap.end())
         throw Exception("Can't find kernel name");
     return kernels[it->second];
 }
@@ -57,7 +57,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         : AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CAT15_7),
           creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
 {
-    if ((creationFlags & (AMDBIN_CREATE_KERNELDATAS|AMDBIN_CREATE_KERNELSTUBS)) == 0)
+    if ((creationFlags & (AMDBIN_CREATE_KERNELDATA|AMDBIN_CREATE_KERNELSTUBS)) == 0)
         return; // nothing to initialize
     uint16_t textIndex = SHN_UNDEF;
     try
@@ -77,12 +77,12 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         choosenSyms.push_back(i);
     }
     
-    if (hasKernelDatas())
+    if (hasKernelData())
         kernels.resize(choosenSyms.size());
     if (hasKernelStubs())
         kernelStubs.reset(new AmdCL2GPUKernelStub[choosenSyms.size()]);
-    if (hasKernelDatasMap())
-        kernelDatasMap.resize(choosenSyms.size());
+    if (hasKernelDataMap())
+        kernelDataMap.resize(choosenSyms.size());
     
     size_t ki = 0;
     // main loop for kernel data and stub getting
@@ -121,25 +121,25 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         const CString kernelName = CString(symName+16, symName+len-14);
         kernelData.kernelName = kernelName;
         // fill kernel data map and kernel stup info
-        if (hasKernelDatasMap()) // kernel data map
-            kernelDatasMap[ki] = std::make_pair(kernelName, ki);
+        if (hasKernelDataMap()) // kernel data map
+            kernelDataMap[ki] = std::make_pair(kernelName, ki);
         
         if (hasKernelStubs())
             kernelStubs[ki] = kernelStub;
         // put to kernels table
-        if (hasKernelDatas())
+        if (hasKernelData())
             kernels[ki] = kernelData;
         ki++;
     }
-    if (hasKernelDatasMap())
-        mapSort(kernelDatasMap.begin(), kernelDatasMap.end());
+    if (hasKernelDataMap())
+        mapSort(kernelDataMap.begin(), kernelDataMap.end());
 }
 
 const AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* name) const
 {
     KernelDataMap::const_iterator it = binaryMapFind(
-            kernelDatasMap.begin(), kernelDatasMap.end(), name);
-    if (it == kernelDatasMap.end())
+            kernelDataMap.begin(), kernelDataMap.end(), name);
+    if (it == kernelDataMap.end())
         throw Exception("Can't find kernel name");
     return kernelStubs[it->second];
 }
@@ -151,7 +151,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
 {
-    if (hasKernelDatas())
+    if (hasKernelData())
     {   // get kernel datas and kernel stubs 
         std::vector<size_t> choosenSyms;
         const size_t symbolsNum = getSymbolsNum();
@@ -167,8 +167,8 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         
         size_t ki = 0;
         kernels.resize(choosenSyms.size());
-        if (hasKernelDatasMap())
-            kernelDatasMap.resize(choosenSyms.size());
+        if (hasKernelDataMap())
+            kernelDataMap.resize(choosenSyms.size());
         
         // main loop for kernel data getting
         for (size_t index: choosenSyms)
@@ -198,13 +198,13 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             kernels[ki].codeSize = binSize-textOffset;
             const size_t len = ::strlen(symName);
             kernels[ki].kernelName = CString(symName+10, symName+len-7);
-            if (hasKernelDatasMap()) // kernel data map
-                kernelDatasMap[ki] = std::make_pair(kernels[ki].kernelName, ki);
+            if (hasKernelDataMap()) // kernel data map
+                kernelDataMap[ki] = std::make_pair(kernels[ki].kernelName, ki);
             ki++;
         }
         // sort kernel data map
-        if (hasKernelDatasMap())
-            mapSort(kernelDatasMap.begin(), kernelDatasMap.end());
+        if (hasKernelDataMap())
+            mapSort(kernelDataMap.begin(), kernelDataMap.end());
     }
     
     uint16_t gdataSecIndex = SHN_UNDEF;

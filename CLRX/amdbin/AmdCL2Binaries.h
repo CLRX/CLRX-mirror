@@ -38,12 +38,12 @@ namespace CLRX
 {
 
 enum : Flags {
-    AMDBIN_CREATE_KERNELDATAS = 0x10,    ///< create kernel setup
-    AMDBIN_CREATE_KERNELDATASMAP = 0x20,    ///< create kernel setups map
+    AMDBIN_CREATE_KERNELDATA = 0x10,    ///< create kernel setup
+    AMDBIN_CREATE_KERNELDATAMAP = 0x20,    ///< create kernel setups map
     AMDBIN_CREATE_KERNELSTUBS = 0x40,    ///< create kernel stub
     
-    AMDBIN_INNER_CREATE_KERNELDATAS = 0x10000,    ///< create kernel setup
-    AMDBIN_INNER_CREATE_KERNELDATASMAP = 0x20000,    ///< create kernel setups map
+    AMDBIN_INNER_CREATE_KERNELDATA = 0x10000,    ///< create kernel setup
+    AMDBIN_INNER_CREATE_KERNELDATAMAP = 0x20000,    ///< create kernel setups map
     AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000    ///< create kernel stub
 };
 
@@ -83,7 +83,7 @@ public:
 protected:
     AmdCL2InnerBinaryType binaryType;
     Array<AmdCL2GPUKernel> kernels;    ///< kernel headers
-    KernelDataMap kernelDatasMap;
+    KernelDataMap kernelDataMap;
     
     explicit AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type);
 public:
@@ -134,11 +134,11 @@ public:
     { return binary; }
     
     /// return if binary has kernel datas
-    bool hasKernelDatas() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATAS; }
+    bool hasKernelData() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATA; }
     /// return if binary has kernel datas map
-    bool hasKernelDatasMap() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATASMAP; }
+    bool hasKernelDataMap() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATAMAP; }
     /// return if binary has kernel stubs
     bool hasKernelStubs() const
     { return creationFlags & AMDBIN_CREATE_KERNELSTUBS; }
@@ -167,11 +167,11 @@ public:
     ~AmdCL2InnerGPUBinary() = default;
     
     /// return if binary has kernel datas
-    bool hasKernelDatas() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATAS; }
+    bool hasKernelData() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATA; }
     /// return if binary has kernel datas map
-    bool hasKernelDatasMap() const
-    { return creationFlags & AMDBIN_CREATE_KERNELDATASMAP; }
+    bool hasKernelDataMap() const
+    { return creationFlags & AMDBIN_CREATE_KERNELDATAMAP; }
     
     /// get global data size
     size_t getGlobalDataSize() const
