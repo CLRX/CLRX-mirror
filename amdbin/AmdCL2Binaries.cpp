@@ -111,7 +111,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
             throw Exception("Kernel setup offset out of range");
         kernelStub.size = setupOffset;
         kernelData.setup = kernelStub.data + setupOffset;
-        const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelData.setup));
+        const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelData.setup+16));
         if (usumGe(textOffset, setupOffset, binSize))
             throw Exception("Kernel text offset out of range");
         kernelData.setupSize = textOffset;
@@ -136,15 +136,6 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
 }
 
 const AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* name) const
-{
-    KernelDataMap::const_iterator it = binaryMapFind(
-            kernelDatasMap.begin(), kernelDatasMap.end(), name);
-    if (it == kernelDatasMap.end())
-        throw Exception("Can't find kernel name");
-    return kernelStubs[it->second];
-}
-
-AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* name)
 {
     KernelDataMap::const_iterator it = binaryMapFind(
             kernelDatasMap.begin(), kernelDatasMap.end(), name);

@@ -123,6 +123,16 @@ public:
             cxbyte* binaryCode, Flags creationFlags = AMDBIN_CREATE_ALL);
     ~AmdCL2OldInnerGPUBinary() = default;
     
+    /// return binary size
+    size_t getSize() const
+    { return binarySize; }
+    /// return binary code
+    const cxbyte* getBinaryCode() const
+    { return binary; }
+    /// return binary code
+    cxbyte* getBinaryCode()
+    { return binary; }
+    
     /// return if binary has kernel datas
     bool hasKernelDatas() const
     { return creationFlags & AMDBIN_CREATE_KERNELDATAS; }
@@ -137,15 +147,8 @@ public:
     const AmdCL2GPUKernelStub& getKernelStub(size_t index) const
     { return kernelStubs[index]; }
     
-    /// get kernel stub for specified index
-    AmdCL2GPUKernelStub& getKernelStub(size_t index)
-    { return kernelStubs[index]; }
-    
     /// get kernel stub for specified kernel name
     const AmdCL2GPUKernelStub& getKernelStub(const char* name) const;
-    
-    /// get kernel stub for specified kernel name
-    AmdCL2GPUKernelStub& getKernelStub(const char* name);
 };
 
 /// AMD OpenCL 2.0 inner binary for GPU binaries that represent a single kernel
