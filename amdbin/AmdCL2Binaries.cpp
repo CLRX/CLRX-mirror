@@ -336,8 +336,9 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             switch(argType)
             {
                 case 0:
-                    if (kindOfType!=0) // not sampler
+                    if (kindOfType!=1) // not sampler
                         throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::SAMPLER;
                     break;
                 case 1:  // read_only image
                 case 2:  // write_only image
@@ -345,7 +346,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     if (kindOfType!=2) // not image
                         throw Exception("Wrong kernel argument type");
                     arg.argType = KernelArgType::IMAGE;
-                    arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==1) ?
+                    arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
                              KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
                     break;
                 case 6: // char
@@ -394,6 +395,12 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     arg.ptrSpace = KernelPtrSpace::CONSTANT;
                 else
                     throw Exception("Illegal pointer space");
+                if (ULEV(argPtr->isConst))
+                    arg.ptrAccess = KARG_PTR_CONST;
+                if (argPtr->isRestrict)
+                    arg.ptrAccess |= KARG_PTR_RESTRICT;
+                if (argPtr->isVolatile)
+                    arg.ptrAccess |= KARG_PTR_VOLATILE;
             }
             else if (ptrSpace!=4)
                 throw Exception("Illegal pipe space");
