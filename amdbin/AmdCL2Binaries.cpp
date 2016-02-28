@@ -41,19 +41,10 @@ AmdCL2InnerGPUBinaryBase::AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type)
 AmdCL2InnerGPUBinaryBase::~AmdCL2InnerGPUBinaryBase()
 { }
 
-const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelDatas(const char* name) const
+const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelData(const char* name) const
 {
     KernelDataMap::const_iterator it = binaryMapFind(
             kernelDatasMap.begin(), kernelDatasMap.end(), name);
-    if (it == kernelDatasMap.end())
-        throw Exception("Can't find kernel name");
-    return kernels[it->second];
-}
-
-AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelDatas(const char* name)
-{
-    KernelDataMap::iterator it = binaryMapFind(kernelDatasMap.begin(),
-                   kernelDatasMap.end(), name);
     if (it == kernelDatasMap.end())
         throw Exception("Can't find kernel name");
     return kernels[it->second];
@@ -126,12 +117,13 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
         kernelData.setupSize = textOffset;
         kernelData.code = kernelData.setup + textOffset;
         kernelData.codeSize = binSize - (kernelData.code - kernelStub.data);
+        const size_t len = ::strlen(symName);
+        const CString kernelName = CString(symName+16, symName+len-14);
+        kernelData.kernelName = kernelName;
         // fill kernel data map and kernel stup info
-        if (hasKernelDatasMap())
-        {   // kernel data map
-            const size_t len = ::strlen(symName);
-            kernelDatasMap[ki] = std::make_pair(CString(symName+16, symName+len-14), ki);
-        }
+        if (hasKernelDatasMap()) // kernel data map
+            kernelDatasMap[ki] = std::make_pair(kernelName, ki);
+        
         if (hasKernelStubs())
             kernelStubs[ki] = kernelStub;
         // put to kernels table
@@ -204,22 +196,19 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             if (binSize < 192)
                 throw Exception("Kernel binary code size is too short");
             
-            kernels[ki].setup = binaryCode + ULEV(dataShdr.sh_offset) +
-                            ULEV(dataShdr.sh_offset) + binOffset;
+            kernels[ki].setup = binaryCode + ULEV(dataShdr.sh_offset) + binOffset;
             const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(
-                            kernels[ki].setup));
+                            kernels[ki].setup+16));
             
             if (textOffset >= binSize)
                 throw Exception("Kernel text offset out of range");
             kernels[ki].setupSize = textOffset;
             kernels[ki].code = kernels[ki].setup + textOffset;
             kernels[ki].codeSize = binSize-textOffset;
-            if (hasKernelDatasMap())
-            {   // kernel data map
-                const size_t len = ::strlen(symName);
-                kernelDatasMap[ki] = std::make_pair(
-                                CString(symName+10, symName+len-7), ki);
-            }
+            const size_t len = ::strlen(symName);
+            kernels[ki].kernelName = CString(symName+10, symName+len-7);
+            if (hasKernelDatasMap()) // kernel data map
+                kernelDatasMap[ki] = std::make_pair(kernels[ki].kernelName, ki);
             ki++;
         }
         // sort kernel data map
@@ -536,7 +525,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                         CString(mtName+19, mtName+len-16);
             if (hasKernelInfoMap())
                 kernelInfosMap[ki] = std::make_pair(kernelInfos[ki].kernelName, ki);
-            metadatas[ki] = { mtSize, metadata };
+            metadatas[ki] = { kernelInfos[ki].kernelName, mtSize, metadata };
             ki++;
         }
         
@@ -559,7 +548,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
             size_t len = ::strlen(mtName);
             CString kernelName = CString(mtName+16, mtName+len-16);
-            isaMetadatas[ki] = { mtSize, metadata };
+            isaMetadatas[ki] = { kernelName, mtSize, metadata };
             if (hasKernelInfoMap())
                 isaMetadataMap[ki] = std::make_pair(kernelName, ki);
             ki++;
@@ -570,20 +559,22 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     }
 }
 
-size_t AmdCL2MainGPUBinary::getKernelInfoIndex(const char* name) const
+const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary::getMetadataEntry(
+                    const char* name) const
 {
     auto it = binaryMapFind(kernelInfosMap.begin(), kernelInfosMap.end(), name);
     if (it == kernelInfosMap.end())
-        throw Exception("Can't find kernel info by name");
-    return it->second;
+        throw Exception("Can't find kernel metadata by name");
+    return metadatas[it->second];
 }
 
-size_t AmdCL2MainGPUBinary::getISAMetadataIndex(const char* name) const
+const AmdCL2GPUKernelMetadata& AmdCL2MainGPUBinary::getISAMetadataEntry(
+                    const char* name) const
 {
     auto it = binaryMapFind(isaMetadataMap.begin(), isaMetadataMap.end(), name);
     if (it == isaMetadataMap.end())
         throw Exception("Can't find kernel ISA metadata by name");
-    return it->second;
+    return isaMetadatas[it->second];
 }
 
 bool CLRX::isAmdCL2Binary(size_t binarySize, const cxbyte* binary)

@@ -59,7 +59,8 @@ enum class AmdCL2InnerBinaryType : cxbyte
 /// AMD OpenCL 2.0 GPU metadata for kernel
 struct AmdCL2GPUKernel
 {
-    size_t setupSize;   /// setup size
+    CString kernelName; ///< kernel name
+    size_t setupSize;   ///< setup size
     cxbyte* setup;      /// < setup data
     size_t codeSize;    ///< size
     cxbyte* code;     ///< data
@@ -95,19 +96,16 @@ public:
     size_t getKernelsNum() const
     { return kernels.size(); }
     
-    /// get kernel datas for specified index
-    const AmdCL2GPUKernel& getKernelDatas(size_t index) const
+    /// get kernel data for specified index
+    const AmdCL2GPUKernel& getKernelData(size_t index) const
     { return kernels[index]; }
     
-    /// get kernel datas for specified index
-    AmdCL2GPUKernel& getKernelDatas(size_t index)
+    /// get kernel data for specified index
+    AmdCL2GPUKernel& getKernelData(size_t index)
     { return kernels[index]; }
     
-    /// get kernel datas for specified kernel name
-    const AmdCL2GPUKernel& getKernelDatas(const char* name) const;
-    
-    /// get kernel datas for specified kernel name
-    AmdCL2GPUKernel& getKernelDatas(const char* name);
+    /// get kernel data for specified kernel name
+    const AmdCL2GPUKernel& getKernelData(const char* name) const;
 };
 
 /// AMD OpenCL 2.0 old inner binary for GPU binaries that represent a single kernel
@@ -187,6 +185,7 @@ public:
 /// AMD OpenCL 2.0 GPU metadata for kernel
 struct AmdCL2GPUKernelMetadata
 {
+    CString kernelName; ///< kernel name
     size_t size;    ///< size
     cxbyte* data;     ///< data
 };
@@ -292,11 +291,6 @@ public:
     AmdCL2OldInnerGPUBinary& getOldInnerBinary()
     { return *static_cast<AmdCL2OldInnerGPUBinary*>(innerBinary.get()); }
     
-    /// get kernel info index
-    size_t getKernelInfoIndex(const char* name) const;
-    /// get ISA metadata index
-    size_t getISAMetadataIndex(const char* name) const;
-    
     /// get kernel header for specified index
     const AmdGPUKernelHeader& getKernelHeaderEntry(size_t index) const
     { return kernelHeaders[index]; }
@@ -306,6 +300,12 @@ public:
     /// get number of ISA metadatas
     size_t getISAMetadatasNum() const
     { return isaMetadatas.size(); }
+    
+    /// get kernel ISA metadata by kernel index
+    const AmdCL2GPUKernelMetadata& getISAMetadataEntry(size_t index) const
+    { return isaMetadatas[index]; }
+    /// get kernel ISA metadata by kernel name
+    const AmdCL2GPUKernelMetadata& getISAMetadataEntry(const char* name) const;
     
     /// get ISA metadata size for specified inner binary
     size_t getISAMetadataSize(size_t index) const
@@ -318,6 +318,12 @@ public:
     /// get ISA metadata for specified inner binary
     cxbyte* getISAMetadata(size_t index)
     { return isaMetadatas[index].data; }
+    
+    /// get kernel metadata by index
+    const AmdCL2GPUKernelMetadata& getMetadataEntry(size_t index) const
+    { return metadatas[index]; }
+    /// get kernel metadata by kernel name
+    const AmdCL2GPUKernelMetadata& getMetadataEntry(const char* name) const;
     
     /// get metadata size for specified inner binary
     size_t getMetadataSize(size_t index) const
