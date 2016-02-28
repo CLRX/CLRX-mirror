@@ -64,7 +64,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
     { textIndex = mainBinary->getSectionIndex(".text"); }
     catch(const Exception& ex)
     { }
-    
+    // find symbols of ISA kernel binary
     std::vector<size_t> choosenSyms;
     const size_t symbolsNum = mainBinary->getSymbolsNum();
     for (size_t i = 0; i < symbolsNum; i++)
@@ -76,7 +76,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
             continue;
         choosenSyms.push_back(i);
     }
-    
+    // allocate structures
     if (hasKernelData())
         kernels.resize(choosenSyms.size());
     if (hasKernelStubs())
@@ -111,6 +111,7 @@ AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary
             throw Exception("Kernel setup offset out of range");
         kernelStub.size = setupOffset;
         kernelData.setup = kernelStub.data + setupOffset;
+        // get size of setup (offset 16 of setup)
         const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(kernelData.setup+16));
         if (usumGe(textOffset, setupOffset, binSize))
             throw Exception("Kernel text offset out of range");
@@ -180,6 +181,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             const char* symName = getSymbolName(index);
             const size_t binOffset = ULEV(sym.st_value);
             const size_t binSize = ULEV(sym.st_size);
+            /// check conditions for symbol
             if (binOffset >= ULEV(dataShdr.sh_size))
                 throw Exception("Kernel binary code offset out of range");
             if (usumGt(binOffset, binSize, ULEV(dataShdr.sh_size)))
@@ -188,6 +190,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
                 throw Exception("Kernel binary code size is too short");
             
             kernels[ki].setup = binaryCode + ULEV(dataShdr.sh_offset) + binOffset;
+            // get size of setup (offset 16 of setup)
             const size_t textOffset = ULEV(*reinterpret_cast<uint32_t*>(
                             kernels[ki].setup+16));
             
@@ -206,7 +209,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         if (hasKernelDataMap())
             mapSort(kernelDataMap.begin(), kernelDataMap.end());
     }
-    
+    // get global data - from section
     uint16_t gdataSecIndex = SHN_UNDEF;
     try
     { gdataSecIndex = getSectionIndex(".hsadata_readonly_agent"); }
@@ -395,6 +398,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     arg.ptrSpace = KernelPtrSpace::CONSTANT;
                 else
                     throw Exception("Illegal pointer space");
+                // set access qualifiers (volatile, restrict, const)
                 if (ULEV(argPtr->isConst))
                     arg.ptrAccess = KARG_PTR_CONST;
                 if (argPtr->isRestrict)
@@ -424,7 +428,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
         {
             const char* symName = getSymbolName(i);
             if (::strcmp(symName, "__OpenCL_compiler_options")==0)
-            {
+            {   // compile options
                 const Elf64_Sym& sym = getSymbol(i);
                 if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
                     throw Exception("Compiler options section header out of range");
@@ -441,7 +445,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                 compileOptions.assign(coData, coData + coSize);
             }
             else if (::strcmp(symName, "acl_version_string")==0)
-            {
+            {   // acl version string
                 const Elf64_Sym& sym = getSymbol(i);
                 if (ULEV(sym.st_shndx) >= getSectionHeadersNum())
                     throw Exception("AclVersionString section header out of range");
@@ -459,6 +463,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             }
         }
     
+    // find symbol of kernel metadata, ISA metadata and binary
     for (size_t i = 0; i < symbolsNum; i++)
     {
         const char* symName = getSymbolName(i);
