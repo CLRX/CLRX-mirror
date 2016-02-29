@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <CLRX/amdbin/Elf.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdBinaries.h>

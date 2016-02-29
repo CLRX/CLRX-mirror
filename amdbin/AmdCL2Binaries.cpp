@@ -400,7 +400,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     throw Exception("Illegal pointer space");
                 // set access qualifiers (volatile, restrict, const)
                 if (ULEV(argPtr->isConst))
-                    arg.ptrAccess = KARG_PTR_CONST;
+                    arg.ptrAccess |= KARG_PTR_CONST;
                 if (argPtr->isRestrict)
                     arg.ptrAccess |= KARG_PTR_RESTRICT;
                 if (argPtr->isVolatile)
@@ -558,7 +558,10 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
         }
         
         if (hasKernelInfoMap())
+        {
             mapSort(kernelInfosMap.begin(), kernelInfosMap.end());
+            mapSort(isaMetadataMap.begin(), isaMetadataMap.end());
+        }
     }
 }
 
