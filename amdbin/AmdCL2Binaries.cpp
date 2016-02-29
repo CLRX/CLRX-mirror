@@ -311,7 +311,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     for (uint32_t i = 0; i < argNum; i++, argPtr++)
     {
         AmdKernelArg& arg = kernelInfo.argInfos[i];
-        if (argPtr->size!=sizeof(AmdCL2GPUKernelArgEntry))
+        if (ULEV(argPtr->size)!=sizeof(AmdCL2GPUKernelArgEntry))
             throw Exception("Kernel ArgEntry size doesn't match");
         // get name of argument
         size_t nameSize = ULEV(argPtr->argNameSize);
