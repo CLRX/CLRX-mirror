@@ -379,6 +379,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->aclVersionString = binary.getAclVersionString();
     bool isInnerNewBinary = binary.hasInnerBinary() &&
                 binary.getInnerBinaryType()==AmdCL2InnerBinaryType::NEW;
+    input->newDriver = isInnerNewBinary;
     
     if (isInnerNewBinary)
     {
@@ -1106,6 +1107,84 @@ void Disassembler::disassembleAmd()
     }
 }
 
+void Disassembler::disassembleAmdCL2()
+{
+    const bool doMetadata = ((flags & DISASM_METADATA) != 0);
+    const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
+    const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    const bool doSetup = ((flags & DISASM_SETUP) != 0);
+    
+    if (amdCL2Input->newDriver)
+        output.write(".driver_version 191205\n", 23);
+    else // old driver
+        output.write(".driver_version 180005\n", 23);
+    
+    if (doMetadata)
+    {
+        output.write(".compile_options \"", 18);
+        const std::string escapedCompileOptions = 
+                escapeStringCStyle(amdCL2Input->compileOptions);
+        output.write(escapedCompileOptions.c_str(), escapedCompileOptions.size());
+        output.write("\"\n.driver_info \"", 16);
+        const std::string escapedAclVersionString =
+                escapeStringCStyle(amdCL2Input->aclVersionString);
+        output.write(escapedAclVersionString.c_str(), escapedAclVersionString.size());
+        output.write("\"\n", 2);
+    }
+    if (doDumpData && amdCL2Input->globalData != nullptr &&
+        amdCL2Input->globalDataSize != 0)
+    {
+        output.write(".globaldata\n", 12);
+        printDisasmData(amdCL2Input->globalDataSize, amdCL2Input->globalData, output);
+    }
+    
+    for (const AmdCL2DisasmKernelInput& kinput: amdCL2Input->kernels)
+    {
+        output.write(".kernel ", 8);
+        output.write(kinput.kernelName.c_str(), kinput.kernelName.size());
+        output.put('\n');
+        if (doMetadata)
+        {
+            if (kinput.header != nullptr && kinput.headerSize != 0)
+            {   // if kernel header available
+                output.write("    .header\n", 12);
+                printDisasmData(kinput.headerSize, kinput.header, output, true);
+            }
+            if (kinput.metadata != nullptr && kinput.metadataSize != 0)
+            {   // if kernel metadata available
+                output.write("    .metadata\n", 14);
+                printDisasmData(kinput.metadataSize, kinput.metadata, output, true);
+            }
+            if (kinput.isaMetadata != nullptr && kinput.isaMetadataSize != 0)
+            {   // if kernel isametadata available
+                output.write("    .isametadata\n", 17);
+                printDisasmData(kinput.isaMetadataSize, kinput.isaMetadata, output, true);
+            }
+        }
+        if (doSetup)
+        {
+            if (kinput.stub != nullptr && kinput.stubSize != 0)
+            {   // if kernel setup available
+                output.write("    .stub\n", 10);
+                printDisasmData(kinput.stubSize, kinput.stub, output, true);
+            }
+            if (kinput.setup != nullptr && kinput.setupSize != 0)
+            {   // if kernel setup available
+                output.write("    .setup\n", 11);
+                printDisasmData(kinput.setupSize, kinput.setup, output, true);
+            }
+        }
+        if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
+        {   // input kernel code (main disassembly)
+            output.write("    .text\n", 10);
+            isaDisassembler->setInput(kinput.codeSize, kinput.code);
+            isaDisassembler->beforeDisassemble();
+            isaDisassembler->disassemble();
+            sectionCount++;
+        }
+    }
+}
+
 static const char* galliumArgTypeNamesTbl[] =
 {
     "scalar", "constant", "global", "local", "image2d_rd", "image2d_wr", "image3d_rd",
@@ -1227,6 +1306,8 @@ void Disassembler::disassemble()
     {
     if (binaryFormat == BinaryFormat::AMD)
         output.write(".amd\n", 5);
+    else if (binaryFormat == BinaryFormat::AMDCL2)
+        output.write(".amdcl2\n", 8);
     else if (binaryFormat == BinaryFormat::GALLIUM) // Gallium
         output.write(".gallium\n", 9);
     else // raw code
@@ -1240,6 +1321,8 @@ void Disassembler::disassemble()
     
     if (binaryFormat == BinaryFormat::AMD)
         disassembleAmd();
+    else if (binaryFormat == BinaryFormat::AMDCL2)
+        disassembleAmdCL2();
     else if (binaryFormat == BinaryFormat::GALLIUM) // Gallium
         disassembleGallium();
     else // raw code input

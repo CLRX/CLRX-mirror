@@ -52,6 +52,7 @@ enum: Flags
     DISASM_CALNOTES = 8,    ///< dump ATI CAL notes
     DISASM_FLOATLITS = 16,  ///< print in comments float literals
     DISASM_HEXCODE = 32,    ///< print on left side hexadecimal code
+    DISASM_SETUP = 64,
     DISASM_ALL = FLAGS_ALL       ///< all disassembler flags
 };
 

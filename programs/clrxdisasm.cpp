@@ -32,6 +32,7 @@ enum {
     PROGOPT_METADATA = 0,
     PROGOPT_DATA,
     PROGOPT_CALNOTES,
+    PROGOPT_SETUP,
     PROGOPT_FLOATS,
     PROGOPT_HEXCODE,
     PROGOPT_ALL,
@@ -45,6 +46,7 @@ static const CLIOption programOptions[] =
     { "metadata", 'm', CLIArgType::NONE, false, false, "dump object metadata", nullptr },
     { "data", 'd', CLIArgType::NONE, false, false, "dump global data", nullptr },
     { "calNotes", 'c', CLIArgType::NONE, false, false, "dump ATI CAL notes", nullptr },
+    { "setup", 's', CLIArgType::NONE, false, false, "dump kernel setup", nullptr },
     { "floats", 'f', CLIArgType::NONE, false, false, "display float literals", nullptr },
     { "hexcode", 'h', CLIArgType::NONE, false, false,
         "display hexadecimal instr. codes", nullptr },
@@ -80,6 +82,7 @@ try
         disasmFlags |= (cli.hasOption(PROGOPT_METADATA)?DISASM_METADATA:0) |
             (cli.hasOption(PROGOPT_DATA)?DISASM_DUMPDATA:0) |
             (cli.hasOption(PROGOPT_CALNOTES)?DISASM_CALNOTES:0) |
+            (cli.hasOption(PROGOPT_SETUP)?DISASM_SETUP:0) |
             (cli.hasOption(PROGOPT_FLOATS)?DISASM_FLOATLITS:0) |
             (cli.hasOption(PROGOPT_HEXCODE)?DISASM_HEXCODE:0);
     
@@ -133,6 +136,16 @@ try
                     }
                     else
                         throw Exception("This is not AMDGPU binary file!");
+                }
+                else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
+                {   // AMD OpenCL 2.0 binary
+                    binFlags |= AMDBIN_INNER_CREATE_KERNELDATA |
+                                AMDBIN_INNER_CREATE_KERNELDATAMAP |
+                                AMDBIN_INNER_CREATE_KERNELSTUBS;
+                    AmdCL2MainGPUBinary amdBin(binaryData.size(),
+                                       binaryData.data(), binFlags);
+                    Disassembler disasm(amdBin, std::cout, disasmFlags);
+                    disasm.disassemble();
                 }
                 else // if gallium binary
                 {
