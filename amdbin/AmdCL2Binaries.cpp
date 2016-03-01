@@ -351,6 +351,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     arg.argType = KernelArgType::IMAGE;
                     arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
                              KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
+                    arg.ptrSpace = KernelPtrSpace::GLOBAL;
                     break;
                 case 6: // char
                 case 7: // short
@@ -406,8 +407,12 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                 if (argPtr->isVolatile)
                     arg.ptrAccess |= KARG_PTR_VOLATILE;
             }
-            else if (ptrSpace!=4)
-                throw Exception("Illegal pipe space");
+            else
+            {
+                if (ptrSpace!=4)
+                    throw Exception("Illegal pipe space");
+                arg.ptrSpace = KernelPtrSpace::GLOBAL;
+            }
         }
     }
 }
