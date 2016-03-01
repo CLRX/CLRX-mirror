@@ -22,6 +22,7 @@
 #include <cstring>
 #include <ostream>
 #include <cstring>
+#include <memory>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -207,6 +208,27 @@ void ISADisassembler::writeLocation(size_t pos)
 
 /* helpers for main Disassembler class */
 
+struct CL2GPUDeviceCodeEntry
+{
+    uint32_t elfFlags;
+    GPUDeviceType deviceType;
+};
+
+static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
+{
+    { 6, GPUDeviceType::BONAIRE },
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 4, GPUDeviceType::MULLINS },
+    { 17, GPUDeviceType::FIJI },
+    { 16, GPUDeviceType::CARRIZO },
+    { 15, GPUDeviceType::DUMMY }
+};
+
 struct GPUDeviceCodeEntry
 {
     uint16_t elfMachine;
@@ -339,13 +361,110 @@ static void getAmdDisasmKernelInputFromBinary(const AmdInnerGPUBinary32* innerBi
     }
 }
 
+static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinary& binary)
+{
+    std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
+    const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
+    // detect GPU device from elfMachine field from ELF header
+    const cxuint entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    cxuint index;
+    for (index = 0; index < entriesNum; index++)
+        if (cl2GpuDeviceCodeTable[index].elfFlags == elfFlags)
+            break;
+    if (entriesNum == index)
+        throw Exception("Can't determine GPU device type");
+    
+    input->deviceType = cl2GpuDeviceCodeTable[index].deviceType;
+    input->compileOptions = binary.getCompileOptions();
+    input->aclVersionString = binary.getAclVersionString();
+    bool isInnerNewBinary = binary.hasInnerBinary() &&
+                binary.getInnerBinaryType()==AmdCL2InnerBinaryType::NEW;
+    
+    if (isInnerNewBinary)
+    {
+        const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
+        input->globalDataSize = innerBin.getGlobalDataSize();
+        input->globalData = innerBin.getGlobalData();
+    }
+    
+    const size_t kernelInfosNum = binary.getKernelInfosNum();
+    input->kernels.resize(kernelInfosNum);
+    for (cxuint i = 0; i < kernelInfosNum; i++)
+    {
+        const KernelInfo& kernelInfo = binary.getKernelInfo(i);
+        AmdCL2DisasmKernelInput& kinput = input->kernels[i];
+        kinput.kernelName = kernelInfo.kernelName;
+        const AmdGPUKernelHeader& header = binary.getKernelHeaderEntry(i);
+        kinput.headerSize = header.size;
+        kinput.header = header.data;
+        kinput.metadataSize = binary.getMetadataSize(i);
+        kinput.metadata = binary.getMetadata(i);
+        
+        kinput.isaMetadataSize = 0;
+        kinput.isaMetadata = nullptr;
+        
+        const AmdCL2GPUKernelMetadata* isaMetadata = nullptr;
+        if (i < binary.getISAMetadatasNum())
+            isaMetadata = &binary.getISAMetadataEntry(i);
+        if (isaMetadata == nullptr || isaMetadata->kernelName != kernelInfo.kernelName)
+        {   // fallback if not in order
+            try
+            { isaMetadata = &binary.getISAMetadataEntry(
+                            kernelInfo.kernelName.c_str()); }
+            catch(const Exception& ex) // failed
+            { isaMetadata = nullptr; }
+        }
+        if (isaMetadata!=nullptr)
+        {
+            kinput.isaMetadataSize = isaMetadata->size;
+            kinput.isaMetadata = isaMetadata->data;
+        }
+        
+        kinput.code = nullptr;
+        kinput.codeSize = 0;
+        kinput.setup = nullptr;
+        kinput.setupSize = 0;
+        kinput.stub = nullptr;
+        kinput.stubSize = 0;
+        if (!binary.hasInnerBinary())
+            continue; // nothing else to set
+        const AmdCL2InnerGPUBinaryBase& innerBin = binary.getInnerBinaryBase();
+        const AmdCL2GPUKernel* kernelData = nullptr;
+        if (i < innerBin.getKernelsNum())
+            kernelData = &innerBin.getKernelData(i);
+        if (kernelData==nullptr || kernelData->kernelName != kernelInfo.kernelName)
+            kernelData = &innerBin.getKernelData(kernelInfo.kernelName.c_str());
+        
+        if (kernelData!=nullptr)
+        {
+            kinput.code = kernelData->code;
+            kinput.codeSize = kernelData->codeSize;
+            kinput.setup = kernelData->setup;
+            kinput.setupSize = kernelData->setupSize;
+        }
+        if (!isInnerNewBinary)
+        {   // old drivers
+            const AmdCL2OldInnerGPUBinary& oldInnerBin = binary.getOldInnerBinary();
+            const AmdCL2GPUKernelStub* kstub = nullptr;
+            if (i < innerBin.getKernelsNum())
+                kstub = &oldInnerBin.getKernelStub(i);
+            if (kstub==nullptr || kernelData->kernelName != kernelInfo.kernelName)
+                kstub = &oldInnerBin.getKernelStub(kernelInfo.kernelName.c_str());
+            if (kstub!=nullptr)
+            {
+                kinput.stubSize = kstub->size;
+                kinput.stub = kstub->data;
+            }
+        }
+    }
+    return input.release();
+}
+
 template<typename AmdMainBinary>
 static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
            Flags flags)
 {
-    AmdDisasmInput* input = new AmdDisasmInput;
-    try
-    {   // for free input when exception
+    std::unique_ptr<AmdDisasmInput> input(new AmdDisasmInput);
     cxuint index = 0;
     const uint16_t elfMachine = ULEV(binary.getHeader().e_machine);
     input->is64BitMode = (binary.getHeader().e_ident[EI_CLASS] == ELFCLASS64);
@@ -406,21 +525,13 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
         kernelInput.kernelName = kernelInfo.kernelName;
         getAmdDisasmKernelInputFromBinary(innerBin, kernelInput, flags, input->deviceType);
     }
-    }
-    catch(...)
-    {
-        delete input;
-        throw; // if exception
-    }
-    return input;
+    return input.release();
 }
 
 static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
            const GalliumBinary& binary, Flags flags)
 {
-    GalliumDisasmInput* input = new GalliumDisasmInput;
-    try
-    {
+    std::unique_ptr<GalliumDisasmInput> input(new GalliumDisasmInput);
     input->deviceType = deviceType;
     const GalliumElfBinary& elfBin = binary.getElfBinary();
     uint16_t rodataIndex = SHN_UNDEF;
@@ -458,13 +569,7 @@ static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceT
     }
     input->code = elfBin.getSectionContent(textIndex);
     input->codeSize = ULEV(elfBin.getSectionHeader(textIndex).sh_size);
-    }
-    catch(...)
-    {
-        delete input;
-        throw; // if exception
-    }
-    return input;
+    return input.release();
 }
 
 Disassembler::Disassembler(const AmdMainGPUBinary32& binary, std::ostream& _output,
@@ -483,9 +588,24 @@ Disassembler::Disassembler(const AmdMainGPUBinary64& binary, std::ostream& _outp
     amdInput = getAmdDisasmInputFromBinary(binary, flags);
 }
 
+Disassembler::Disassembler(const AmdCL2MainGPUBinary& binary, std::ostream& _output,
+           Flags _flags) : fromBinary(true), binaryFormat(BinaryFormat::AMDCL2),
+            amdCL2Input(nullptr), output(_output), flags(_flags), sectionCount(0)
+{
+    isaDisassembler.reset(new GCNDisassembler(*this));
+    amdCL2Input = getAmdCL2DisasmInputFromBinary(binary);
+}
+
 Disassembler::Disassembler(const AmdDisasmInput* disasmInput, std::ostream& _output,
             Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMD),
             amdInput(disasmInput), output(_output), flags(_flags), sectionCount(0)
+{
+    isaDisassembler.reset(new GCNDisassembler(*this));
+}
+
+Disassembler::Disassembler(const AmdCL2DisasmInput* disasmInput, std::ostream& _output,
+            Flags _flags) : fromBinary(false), binaryFormat(BinaryFormat::AMDCL2),
+            amdCL2Input(disasmInput), output(_output), flags(_flags), sectionCount(0)
 {
     isaDisassembler.reset(new GCNDisassembler(*this));
 }
@@ -523,6 +643,8 @@ Disassembler::~Disassembler()
             delete amdInput;
         else if (binaryFormat == BinaryFormat::GALLIUM)
             delete galliumInput;
+        else if (binaryFormat == BinaryFormat::AMDCL2)
+            delete amdCL2Input;
         else // raw code input
             delete rawInput;
     }
@@ -532,6 +654,8 @@ GPUDeviceType Disassembler::getDeviceType() const
 {
     if (binaryFormat == BinaryFormat::AMD)
         return amdInput->deviceType;
+    else if (binaryFormat == BinaryFormat::AMDCL2)
+        return amdCL2Input->deviceType;
     else if (binaryFormat == BinaryFormat::GALLIUM)
         return galliumInput->deviceType;
     else // rawcode

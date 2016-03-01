@@ -279,6 +279,14 @@ public:
     AmdCL2InnerBinaryType getInnerBinaryType() const
     { return innerBinary->getBinaryType(); }
     
+    /// get inner binary base
+    const AmdCL2InnerGPUBinaryBase& getInnerBinaryBase() const
+    { return *innerBinary; }
+    
+    /// get inner binary base
+    AmdCL2InnerGPUBinaryBase& getInnerBinaryBase()
+    { return *innerBinary; }
+    
     /// get inner binary
     const AmdCL2InnerGPUBinary& getInnerBinary() const
     { return *static_cast<const AmdCL2InnerGPUBinary*>(innerBinary.get()); }

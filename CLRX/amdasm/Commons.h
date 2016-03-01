@@ -32,7 +32,8 @@ enum class BinaryFormat
 {
     AMD = 0,    ///< AMD CATALYST format
     GALLIUM,     ///< GalliumCompute format
-    RAWCODE     ///< raw code format
+    RAWCODE,     ///< raw code format
+    AMDCL2      ///< AMD OpenCL 2.0 format
 };
 
 };
