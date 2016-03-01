@@ -400,6 +400,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                 else
                     throw Exception("Illegal pointer space");
                 // set access qualifiers (volatile, restrict, const)
+                arg.ptrAccess = KARG_PTR_NORMAL;
                 if (ULEV(argPtr->isConst))
                     arg.ptrAccess |= KARG_PTR_CONST;
                 if (argPtr->isRestrict)

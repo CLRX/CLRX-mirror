@@ -425,6 +425,34 @@ static const AmdKernelArg expectedCL2NewKernelArgs1[] =
     { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, "void*", "v69" }
 };
 
+static const AmdKernelArg expectedCL2KernelArgs2[] =
+{
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "size_t",
+        "_.global_offset_0" },
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "size_t",
+        "_.global_offset_1" },
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "size_t",
+        "_.global_offset_2" },
+    { KernelArgType::POINTER, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, "size_t",
+        "_.printf_buffer" },
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "size_t",
+        "_.vqueue_pointer" },
+    { KernelArgType::LONG, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "size_t",
+        "_.aqlwrap_pointer" },
+    { KernelArgType::PIPE, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL,
+        "pipe __global uint *", "in" },
+    { KernelArgType::PIPE, KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL,
+        "pipe __global float *", "out" },
+    { KernelArgType::POINTER, KernelPtrSpace::LOCAL, KARG_PTR_NORMAL, "uint*", "v" },
+    { KernelArgType::CMDQUEUE, KernelPtrSpace::NONE, KARG_PTR_NORMAL, "queue_t", "cmdq" },
+    { KernelArgType::STRUCTURE, KernelPtrSpace::NONE, KARG_PTR_NORMAL,
+        "struct Xdata", "d1" },
+    { KernelArgType::POINTER, KernelPtrSpace::CONSTANT, KARG_PTR_CONST,
+        "struct Xdata*", "expected" },
+    { KernelArgType::IMAGE, KernelPtrSpace::GLOBAL, KARG_PTR_READ_WRITE,
+        "image2d_t", "rwimg" }
+};
+
 
 static void testKernelArgs(const char* filename, const char* kernelName,
                size_t expKernelArgsNum, const AmdKernelArg* expKernelArgs)
@@ -604,6 +632,14 @@ int main(int argc, const char** argv)
             "/tests/amdbin/amdbins/alltypes-15_11.clo",
             "myKernel", sizeof(expectedCL2NewKernelArgs1)/sizeof(AmdKernelArg),
             expectedCL2NewKernelArgs1);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/test3-15_7.clo",
+            "Piper", sizeof(expectedCL2KernelArgs2)/sizeof(AmdKernelArg),
+            expectedCL2KernelArgs2);
+    retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
+            "/tests/amdbin/amdbins/test3-15_11.clo",
+            "Piper", sizeof(expectedCL2KernelArgs2)/sizeof(AmdKernelArg),
+            expectedCL2KernelArgs2);
     retVal |= callTest(testKernelArgs, CLRX_SOURCE_DIR
             "/tests/amdbin/amdbins/structkernel2.clo",
             "myKernel1", sizeof(expectedKernelArgs2)/sizeof(AmdKernelArg),
