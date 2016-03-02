@@ -540,7 +540,7 @@ void AmdInnerX86Binary64::getKernelInfos(Array<KernelInfo>& kernelInfos) const
     getKernelInfosInternal<AmdInnerX86_64Types>(*this, kernelInfos);
 }
 
-/* AmdMaiBinaryBase */
+/* AmdMainBinaryBase */
 
 AmdMainBinaryBase::AmdMainBinaryBase(AmdMainType _type) : type(_type)
 { }
