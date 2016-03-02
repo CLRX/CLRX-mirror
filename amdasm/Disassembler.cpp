@@ -1125,7 +1125,7 @@ void Disassembler::disassembleAmdCL2()
         const std::string escapedCompileOptions = 
                 escapeStringCStyle(amdCL2Input->compileOptions);
         output.write(escapedCompileOptions.c_str(), escapedCompileOptions.size());
-        output.write("\"\n.driver_info \"", 16);
+        output.write("\"\n.acl_version \"", 16);
         const std::string escapedAclVersionString =
                 escapeStringCStyle(amdCL2Input->aclVersionString);
         output.write(escapedAclVersionString.c_str(), escapedAclVersionString.size());
