@@ -381,11 +381,24 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                 binary.getInnerBinaryType()==AmdCL2InnerBinaryType::NEW;
     input->newDriver = isInnerNewBinary;
     
+    input->samplerInitSize = 0;
+    input->samplerInit= nullptr;
+    input->globalDataSize = 0;
+    input->globalData = nullptr;
     if (isInnerNewBinary)
     {
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
         input->globalDataSize = innerBin.getGlobalDataSize();
         input->globalData = innerBin.getGlobalData();
+        try
+        {
+            const Elf64_Shdr& samplerShdr = innerBin.getSectionHeader(
+                            ".hsaimage_samplerinit");
+            input->samplerInitSize = ULEV(samplerShdr.sh_size);
+            input->samplerInit = innerBin.getBinaryCode() + ULEV(samplerShdr.sh_offset);
+        }
+        catch(Exception& ex)
+        { }
     }
     
     const size_t kernelInfosNum = binary.getKernelInfosNum();
@@ -1131,6 +1144,12 @@ void Disassembler::disassembleAmdCL2()
         output.write(escapedAclVersionString.c_str(), escapedAclVersionString.size());
         output.write("\"\n", 2);
     }
+    if (doSetup && amdCL2Input->samplerInit!=nullptr && amdCL2Input->samplerInitSize!=0)
+    {
+        output.write(".samplerinit\n", 13);
+        printDisasmData(amdCL2Input->samplerInitSize, amdCL2Input->samplerInit, output);
+    }
+    
     if (doDumpData && amdCL2Input->globalData != nullptr &&
         amdCL2Input->globalDataSize != 0)
     {

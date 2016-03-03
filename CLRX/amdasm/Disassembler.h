@@ -184,6 +184,8 @@ struct AmdCL2DisasmInput
     CString aclVersionString; ///< acl version string
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
+    size_t samplerInitSize;
+    const cxbyte* samplerInit;
     std::vector<AmdCL2DisasmKernelInput> kernels;    ///< kernel inputs
 };
 
