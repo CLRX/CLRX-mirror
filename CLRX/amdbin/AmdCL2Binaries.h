@@ -161,6 +161,8 @@ class AmdCL2InnerGPUBinary: public AmdCL2InnerGPUBinaryBase, public ElfBinary64
 private:
     size_t globalDataSize;  ///< global data size
     cxbyte* globalData; ///< global data content
+    size_t samplerInitSize;
+    cxbyte* samplerInit;
 public:
     AmdCL2InnerGPUBinary() = default;
     AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -184,6 +186,17 @@ public:
     /// get global data
     cxbyte* getGlobalData()
     { return globalData; }
+    
+    /// get global data size
+    size_t getSamplerInitSize() const
+    { return samplerInitSize; }
+    
+    /// get global data
+    const cxbyte* getSamplerInit() const
+    { return samplerInit; }
+    /// get global data
+    cxbyte* getSamplerInit()
+    { return samplerInit; }
 };
 
 /// AMD OpenCL 2.0 GPU metadata for kernel

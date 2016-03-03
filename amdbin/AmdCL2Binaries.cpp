@@ -150,7 +150,9 @@ const AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* na
 AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags):
             AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
-            ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+            ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
+            globalDataSize(0), globalData(nullptr),
+            samplerInitSize(0), samplerInit(nullptr)
 {
     if (hasKernelData())
     {   // get kernel datas and kernel stubs 
@@ -210,17 +212,23 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             mapSort(kernelDataMap.begin(), kernelDataMap.end());
     }
     // get global data - from section
-    uint16_t gdataSecIndex = SHN_UNDEF;
     try
-    { gdataSecIndex = getSectionIndex(".hsadata_readonly_agent"); }
-    catch(const Exception& ex)
-    { }
-    if (gdataSecIndex != SHN_UNDEF)
     {
-        const Elf64_Shdr& gdataShdr = getSectionHeader(gdataSecIndex);
+        const Elf64_Shdr& gdataShdr = getSectionHeader(".hsadata_readonly_agent");
         globalDataSize = ULEV(gdataShdr.sh_size);
         globalData = binaryCode + ULEV(gdataShdr.sh_offset);
     }
+    catch(const Exception& ex)
+    { }
+    
+    try
+    {
+        const Elf64_Shdr& gdataShdr = getSectionHeader(".hsaimage_samplerinit");
+        samplerInitSize = ULEV(gdataShdr.sh_size);
+        samplerInit = binaryCode + ULEV(gdataShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
 }
 
 /* AmdCL2MainGPUBinary */
@@ -420,7 +428,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
 
 AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
-            ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+            ElfBinary64(binaryCodeSize, binaryCode, creationFlags), kernelsNum(0)
 {
     std::vector<size_t> choosenMetadataSyms;
     std::vector<size_t> choosenISAMetadataSyms;

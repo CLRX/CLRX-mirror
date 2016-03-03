@@ -390,15 +390,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
         input->globalDataSize = innerBin.getGlobalDataSize();
         input->globalData = innerBin.getGlobalData();
-        try
-        {
-            const Elf64_Shdr& samplerShdr = innerBin.getSectionHeader(
-                            ".hsaimage_samplerinit");
-            input->samplerInitSize = ULEV(samplerShdr.sh_size);
-            input->samplerInit = innerBin.getBinaryCode() + ULEV(samplerShdr.sh_offset);
-        }
-        catch(Exception& ex)
-        { }
+        input->samplerInitSize = innerBin.getSamplerInitSize();
+        input->samplerInit = innerBin.getSamplerInit();
     }
     
     const size_t kernelInfosNum = binary.getKernelInfosNum();
