@@ -62,7 +62,7 @@ struct AmdCL2GPUKernel
 {
     CString kernelName; ///< kernel name
     size_t setupSize;   ///< setup size
-    cxbyte* setup;      /// < setup data
+    cxbyte* setup;      ///< setup data
     size_t codeSize;    ///< size
     cxbyte* code;     ///< data
 };
