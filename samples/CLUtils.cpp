@@ -81,6 +81,7 @@ try
             choosenPlatform = platforms[i];
             binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
                     BinaryFormat::GALLIUM : BinaryFormat::AMD;
+            break;
         }
     }
     
