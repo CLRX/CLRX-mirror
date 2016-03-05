@@ -119,7 +119,6 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
         v_add_i32  v2, vcc, s0, v0          # v[2:3] - input_offset+global_id(0)
         v_mov_b32 v3, s1                    # move to vector reg
         v_addc_u32  v3, vcc, v3, 0, vcc     # v_addc_u32 with only vector regs
-        s_waitcnt  lgkmcnt(0)
         buffer_load_ubyte  v1, v[2:3], s[8:11], 0 addr64 # load ubyte from input
         s_waitcnt  vmcnt(0)
         s_load_dwordx4 s[8:11], s[2:3], 0x68        # load output buffer
