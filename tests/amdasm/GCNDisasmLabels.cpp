@@ -341,7 +341,28 @@ static const uint32_t relocationCode[] =
     LEV(0x0934d6ffU), LEV(0x11110000U),
     LEV(0x0934d6ffU), LEV(0x11110000U),
     LEV(0x0934d6ffU), LEV(0x11110000U),
-    LEV(0x0934d6ffU), LEV(0x11110000U)
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    
+    LEV(0x8015ff04U), LEV(0x11110000U),
+    LEV(0x8015ff04U), LEV(0x11110000U),
+    LEV(0x8015ff04U), LEV(0x11110000U),
+    LEV(0x8015ff04U), LEV(0x11110000U),
+    LEV(0x8015ff04U), LEV(0x11110000U),
+    LEV(0x8015ff04U), LEV(0x11110000U),
+    
+    LEV(0x4334d715U), LEV(0x117d0700U),
+    LEV(0x4334d715U), LEV(0x117d0700U),
+    LEV(0x4334d715U), LEV(0x117d0700U),
+    LEV(0x4334d715U), LEV(0x117d0700U),
+    LEV(0x4334d715U), LEV(0x117d0700U),
+    LEV(0x4334d715U), LEV(0x117d0700U),
+    
+    LEV(0x4134d715U), LEV(0x117d0700U),
+    LEV(0x4134d715U), LEV(0x117d0700U),
+    LEV(0x4134d715U), LEV(0x117d0700U),
+    LEV(0x4134d715U), LEV(0x117d0700U),
+    LEV(0x4134d715U), LEV(0x117d0700U),
+    LEV(0x4134d715U), LEV(0x117d0700U),
 };
 
 struct Relocation
@@ -359,7 +380,28 @@ static const Relocation relocationData[] =
     { 20, "aaa2", RelocType::HIGH_32BIT, 0 },
     { 28, "aaa3", RelocType::HIGH_32BIT, 122 },
     { 36, "aaa4", RelocType::VALUE, 0 },
-    { 44, "aaa5", RelocType::VALUE, 122 }
+    { 44, "aaa5", RelocType::VALUE, 122 },
+    
+    { 48+4, "aaa0", RelocType::LOW_32BIT, 0 },
+    { 48+12, "aaa1", RelocType::LOW_32BIT, 122 },
+    { 48+20, "aaa2", RelocType::HIGH_32BIT, 0 },
+    { 48+28, "aaa3", RelocType::HIGH_32BIT, 122 },
+    { 48+36, "aaa4", RelocType::VALUE, 0 },
+    { 48+44, "aaa5", RelocType::VALUE, 122 },
+    
+    { 96+4, "baa0", RelocType::LOW_32BIT, 0 },
+    { 96+12, "baa1", RelocType::LOW_32BIT, 122 },
+    { 96+20, "baa2", RelocType::HIGH_32BIT, 0 },
+    { 96+28, "baa3", RelocType::HIGH_32BIT, 122 },
+    { 96+36, "baa4", RelocType::VALUE, 0 },
+    { 96+44, "baa5", RelocType::VALUE, 122 },
+    
+    { 144+4, "bcaa0", RelocType::LOW_32BIT, 0 },
+    { 144+12, "bca1", RelocType::LOW_32BIT, 122 },
+    { 144+20, "bcaa2", RelocType::HIGH_32BIT, 0 },
+    { 144+28, "bcaa3", RelocType::HIGH_32BIT, 122 },
+    { 144+36, "bcaa4", RelocType::VALUE, 0 },
+    { 144+44, "bcaa5", RelocType::VALUE, 122 }
 };
 
 static void testDecGCNRelocations()
@@ -385,7 +427,25 @@ static void testDecGCNRelocations()
         "        v_sub_f32       v154, aaa2>>32, v107\n"
         "        v_sub_f32       v154, (aaa3+122)>>32, v107\n"
         "        v_sub_f32       v154, aaa4, v107\n"
-        "        v_sub_f32       v154, aaa5+122, v107\n")
+        "        v_sub_f32       v154, aaa5+122, v107\n"
+        "        s_add_u32       s21, s4, aaa0&0xffffffff\n"
+        "        s_add_u32       s21, s4, (aaa1+122)&0xffffffff\n"
+        "        s_add_u32       s21, s4, aaa2>>32\n"
+        "        s_add_u32       s21, s4, (aaa3+122)>>32\n"
+        "        s_add_u32       s21, s4, aaa4\n"
+        "        s_add_u32       s21, s4, aaa5+122\n"
+        "        v_madak_f32     v154, v21, v107, baa0&0xffffffff\n"
+        "        v_madak_f32     v154, v21, v107, (baa1+122)&0xffffffff\n"
+        "        v_madak_f32     v154, v21, v107, baa2>>32\n"
+        "        v_madak_f32     v154, v21, v107, (baa3+122)>>32\n"
+        "        v_madak_f32     v154, v21, v107, baa4\n"
+        "        v_madak_f32     v154, v21, v107, baa5+122\n"
+        "        v_madmk_f32     v154, v21, bcaa0&0xffffffff, v107\n"
+        "        v_madmk_f32     v154, v21, (bca1+122)&0xffffffff, v107\n"
+        "        v_madmk_f32     v154, v21, bcaa2>>32, v107\n"
+        "        v_madmk_f32     v154, v21, (bcaa3+122)>>32, v107\n"
+        "        v_madmk_f32     v154, v21, bcaa4, v107\n"
+        "        v_madmk_f32     v154, v21, bcaa5+122, v107\n")
         throw Exception("FAILED relocationTest: result: "+disOss.str());
 }
 

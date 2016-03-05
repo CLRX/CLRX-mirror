@@ -727,13 +727,13 @@ char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
     if (op == 255)
     {   // literal
         printLiteral(dasm, codePos, relocIter, literal, floatLit);
-        return output.reserve(150);
+        return output.reserve(100);
     }
     char* bufStart = output.reserve(50);
     char* bufPtr = bufStart;
     decodeGCNOperandNoLit(op, regNum, bufPtr, arch, floatLit);
     output.forward(bufPtr-bufStart);
-    return output.reserve(150);
+    return output.reserve(100);
 }
 
 static const char* sendMsgCodeMessageTable[16] =
