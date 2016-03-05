@@ -60,7 +60,17 @@ enum: Flags
 class ISADisassembler: public NonCopyableAndNonMovable
 {
 protected:
+    struct Relocation
+    {
+        CString name;   ///< symbol name
+        RelocType type; ///< relocation type
+        uint64_t addend; ///< relocation addend
+    };
+    
     typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
+    
+    /// relocation iterator
+    typedef std::vector<std::pair<size_t, Relocation> >::const_iterator RelocIter;
     
     /// named label iterator
     typedef std::vector<std::pair<size_t, CString> >::const_iterator NamedLabelIter;
@@ -70,6 +80,7 @@ protected:
     const cxbyte* input;    ///< input code
     std::vector<size_t> labels; ///< list of local labels
     std::vector<std::pair<size_t, CString> > namedLabels;   ///< named labels
+    std::vector<std::pair<size_t, Relocation> > relocations;    ///< relocations
     FastOutputBuffer output;    ///< output buffer
     
     /// constructor
@@ -82,6 +93,8 @@ protected:
     void writeLabelsToEnd(size_t start, LabelIter labelIter, NamedLabelIter namedLabelIter);
     /// write location in the code
     void writeLocation(size_t pos);
+    /// write relocation to current place in instruction
+    bool writeRelocation(size_t pos, RelocIter& relocIter);
 public:
     virtual ~ISADisassembler();
     
@@ -103,13 +116,20 @@ public:
     /// add named label to list (must be called before disassembly)
     void addNamedLabel(size_t pos, CString&& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
+    /// add relocation
+    void addRelocation(size_t offset, RelocType type, const CString& name, uint64_t addend)
+    { relocations.push_back(std::make_pair(offset, Relocation{name, type, addend})); }
 };
+
+struct GCNDisasmUtils;
 
 /// GCN architectur dissassembler
 class GCNDisassembler: public ISADisassembler
 {
 private:
     bool instrOutOfCode;
+    
+    friend struct GCNDisasmUtils; // INTERNAL LOGIC
 public:
     /// constructor
     GCNDisassembler(Disassembler& disassembler);

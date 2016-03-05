@@ -334,6 +334,61 @@ static void testDecGCNNamedLabels()
         throw Exception("FAILED namedLabelsTest: result: "+disOss.str());
 }
 
+static const uint32_t relocationCode[] =
+{
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    LEV(0x0934d6ffU), LEV(0x11110000U),
+    LEV(0x0934d6ffU), LEV(0x11110000U)
+};
+
+struct Relocation
+{
+    size_t offset;
+    const char* name;
+    RelocType type;
+    uint64_t addend;
+};
+
+static const Relocation relocationData[] =
+{
+    { 4, "aaa0", RelocType::LOW_32BIT, 0 },
+    { 12, "aaa1", RelocType::LOW_32BIT, 122 },
+    { 20, "aaa2", RelocType::HIGH_32BIT, 0 },
+    { 28, "aaa3", RelocType::HIGH_32BIT, 122 },
+    { 36, "aaa4", RelocType::VALUE, 0 },
+    { 44, "aaa5", RelocType::VALUE, 122 }
+};
+
+static void testDecGCNRelocations()
+{
+    std::ostringstream disOss;
+    AmdDisasmInput input;
+    input.deviceType = GPUDeviceType::PITCAIRN;
+    input.is64BitMode = false;
+    Disassembler disasm(&input, disOss, DISASM_FLOATLITS);
+    
+    GCNDisassembler gcnDisasm(disasm);
+    gcnDisasm.setInput(sizeof(relocationCode),
+                   reinterpret_cast<const cxbyte*>(relocationCode));
+    
+    for (const Relocation& reloc: relocationData)
+        gcnDisasm.addRelocation(reloc.offset, reloc.type, reloc.name, reloc.addend);
+    
+    gcnDisasm.beforeDisassemble();
+    gcnDisasm.disassemble();
+    if (disOss.str() !=
+        "        v_sub_f32       v154, aaa0&0xffffffff, v107\n"
+        "        v_sub_f32       v154, (aaa1+122)&0xffffffff, v107\n"
+        "        v_sub_f32       v154, aaa2>>32, v107\n"
+        "        v_sub_f32       v154, (aaa3+122)>>32, v107\n"
+        "        v_sub_f32       v154, aaa4, v107\n"
+        "        v_sub_f32       v154, aaa5+122, v107\n")
+        throw Exception("FAILED relocationTest: result: "+disOss.str());
+}
+
 int main(int argc, const char** argv)
 {
     int retVal = 0;
@@ -363,7 +418,10 @@ int main(int argc, const char** argv)
         }
     
     try
-    { testDecGCNNamedLabels(); }
+    {
+        testDecGCNNamedLabels();
+        testDecGCNRelocations();
+    }
     catch(const std::exception& ex)
     {
         std::cerr << ex.what() << std::endl;

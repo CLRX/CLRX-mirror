@@ -36,6 +36,13 @@ enum class BinaryFormat
     AMDCL2      ///< AMD OpenCL 2.0 format
 };
 
+enum class RelocType
+{
+    VALUE = 0,
+    LOW_32BIT,
+    HIGH_32BIT
+};
+
 };
 
 #endif

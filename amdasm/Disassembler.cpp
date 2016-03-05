@@ -206,6 +206,40 @@ void ISADisassembler::writeLocation(size_t pos)
     output.forward(bufPos);
 }
 
+bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
+{
+    if (relocIter == relocations.end() || relocIter->first != pos)
+        return false;
+    const Relocation& reloc = relocIter->second;
+    if (reloc.addend != 0 && 
+        (reloc.type==RelocType::LOW_32BIT || reloc.type==RelocType::HIGH_32BIT))
+        output.write(1, "(");
+    /// write name+value
+    output.writeString(reloc.name.c_str());
+    char* buf = output.reserve(50);
+    size_t bufPos = 0;
+    if (reloc.addend != 0)
+    {
+        buf[bufPos++] = '+';
+        bufPos += itocstrCStyle(reloc.addend, buf+bufPos, 22, 10, 0, false);
+        if (reloc.type==RelocType::LOW_32BIT || reloc.type==RelocType::HIGH_32BIT)
+            buf[bufPos++] = ')';
+    }
+    if (reloc.type==RelocType::LOW_32BIT)
+    {
+        ::memcpy(buf+bufPos, "&0xffffffff", 11);
+        bufPos += 11;
+    }
+    else if (reloc.type==RelocType::HIGH_32BIT)
+    {
+        ::memcpy(buf+bufPos, ">>32", 4);
+        bufPos += 4;
+    }
+    output.forward(bufPos);
+    ++relocIter;
+    return true;
+}
+
 /* helpers for main Disassembler class */
 
 struct CL2GPUDeviceCodeEntry
