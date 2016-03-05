@@ -278,9 +278,8 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
-    const char* end;
-    if (argc >= 2)
-        deviceIndex = cstrtovCStyle<cl_uint>(argv[1], nullptr, end);
+    if (CLFacade::parseArgs("ReverseBits", "[INPUTFILE]", argc, argv, deviceIndex))
+        return 0;
     Array<cxbyte> data;
     if (argc >= 3)
         data = loadDataFromFile(argv[2]);

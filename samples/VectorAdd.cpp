@@ -256,10 +256,10 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
+    if (CLFacade::parseArgs("VectorAdd", "[ELEMSNUM]", argc, argv, deviceIndex))
+        return 0;
     size_t elemsNum = 100;
     const char* end;
-    if (argc >= 2)
-        deviceIndex = cstrtovCStyle<cl_uint>(argv[1], nullptr, end);
     if (argc >= 3)
         elemsNum = cstrtovCStyle<size_t>(argv[2], nullptr, end);
     

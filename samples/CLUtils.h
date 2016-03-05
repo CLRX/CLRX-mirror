@@ -74,6 +74,10 @@ protected:
     void callNDRangeKernel(cl_kernel kernel, cl_uint workDim, const size_t* offset,
                const size_t* workSize, const size_t* localSize);
 public:
+    // return true if application should immediately return
+    static bool parseArgs(const char* progName, const char* usagePart, int argc,
+                  const char** argv, cl_uint& deviceIndex);
+    
     explicit CLFacade(cl_uint deviceIndex, const char* sourceCode,
                       const char* kernelNames = nullptr);
     ~CLFacade();

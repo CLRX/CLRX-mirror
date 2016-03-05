@@ -39,6 +39,101 @@ static char* stripCString(char* str)
     return str;
 }
 
+bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
+                  const char** argv, cl_uint& deviceIndex)
+{
+    if (argc >= 2 && ::strcmp(argv[1], "-?")==0)
+    {
+        std::cout << "Usage: " << progName << " [DEVICE_INDEX] " << usagePart << "\n"
+                "Print device list: " << progName << " -L" << "\n"
+                "Print help: " << progName << " -?" << std::endl;
+        return true;
+    }
+    
+    cl_uint platformsNum;
+    std::unique_ptr<cl_platform_id[]> platforms;
+    cl_int error = 0;
+    error = clGetPlatformIDs(0, nullptr, &platformsNum);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clGetPlatformIDs");
+    platforms.reset(new cl_platform_id[platformsNum]);
+    error = clGetPlatformIDs(platformsNum, platforms.get(), nullptr);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clGetPlatformIDs");
+    
+    cl_platform_id choosenPlatform = nullptr;
+    /// find platform with AMD devices
+    for (cl_uint i = 0; i < platformsNum; i++)
+    {
+        size_t platformNameSize;
+        std::unique_ptr<char[]> platformName;
+        error = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, 0, nullptr,
+                           &platformNameSize);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetPlatformInfo");
+        platformName.reset(new char[platformNameSize]);
+        error = clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, platformNameSize,
+                   platformName.get(), nullptr);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetPlatformInfo");
+        
+        const char* splatformName = stripCString(platformName.get());
+        if (::strcmp(splatformName, "AMD Accelerated Parallel Processing")==0 ||
+            ::strcmp(splatformName, "Clover")==0)
+        {
+            choosenPlatform = platforms[i];
+            break;
+        }
+    }
+    
+    if (choosenPlatform==nullptr)
+        throw Exception("PlatformNotFound");
+    
+    if (argc >= 2 && ::strcmp(argv[1], "-L")==0)
+    {
+        cl_uint devicesNum;
+        std::unique_ptr<cl_device_id[]> devices;
+        error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU, 0,
+                               nullptr, &devicesNum);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceIDs");
+        
+        if (deviceIndex >= devicesNum)
+            throw CLError(0, "DeviceIndexOutOfRange");
+            
+        devices.reset(new cl_device_id[devicesNum]);
+        error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU,
+                        devicesNum, devices.get(), nullptr);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceIDs");
+        
+        for (cl_uint i = 0; i < devicesNum; i++)
+        {
+            cl_device_id device = devices[i];
+            // get device and print that
+            size_t deviceNameSize;
+            std::unique_ptr<char[]> deviceName;
+            error = clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize);
+            if (error != CL_SUCCESS)
+                throw CLError(error, "clGetDeviceInfoName");
+            deviceName.reset(new char[deviceNameSize]);
+            error = clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize,
+                                     deviceName.get(), nullptr);
+            if (error != CL_SUCCESS)
+                throw CLError(error, "clGetDeviceInfoName");
+            std::cout << "Device: " << i << " - " << deviceName.get() << "\n";
+        }
+        std::cout.flush();
+        return true;
+    }
+    else if (argc >= 2)
+    {
+        const char* end;
+        deviceIndex = cstrtovCStyle<cl_uint>(argv[1], nullptr, end);
+    }
+    return false;
+}
+
 CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames)
 try
 {

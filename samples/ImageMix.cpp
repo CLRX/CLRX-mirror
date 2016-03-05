@@ -301,9 +301,9 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
-    const char* end;
-    if (argc >= 2)
-        deviceIndex = cstrtovCStyle<cl_uint>(argv[1], nullptr, end);
+    if (CLFacade::parseArgs("ImageMix", "[IMAGE1] [IMAGE2] [OUTIMAGE]",
+                argc, argv, deviceIndex))
+        return 0;
     const char* inFileName1 = "image1.png";
     const char* inFileName2 = "image2.png";
     const char* outFileName = "outimage.png";
