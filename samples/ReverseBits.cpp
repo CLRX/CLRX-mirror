@@ -111,10 +111,10 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
         v_cmp_gt_u32  vcc, s4, v0           # n<global_id(0)
         s_and_saveexec_b64  s[0:1], vcc     # deactive thread with id(0)>=n
         s_cbranch_execz  end                # skip if no active thread
-        s_load_dwordx4 s[8:11], s[2:3], 0x60        # load input buffer descriptor
         s_load_dwordx4 s[12:15], s[2:3], 0x50       # load constant buffer descriptor
         s_buffer_load_dwordx2 s[0:1], s[8:11], 4  # input buffer offset
         s_buffer_load_dwordx2 s[4:5], s[8:11], 8  # output buffer offset
+        s_load_dwordx4 s[8:11], s[2:3], 0x60        # load input buffer descriptor
         s_waitcnt  lgkmcnt(0)
         v_add_i32  v2, vcc, s0, v0          # v[2:3] - input_offset+global_id(0)
         v_mov_b32 v3, s1                    # move to vector reg
