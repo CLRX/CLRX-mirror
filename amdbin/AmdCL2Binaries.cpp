@@ -152,7 +152,8 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
             globalDataSize(0), globalData(nullptr),
-            samplerInitSize(0), samplerInit(nullptr)
+            samplerInitSize(0), samplerInit(nullptr),
+            textRelsNum(0), textRelEntrySize(0), textRela(nullptr)
 {
     if (hasKernelData())
     {   // get kernel datas and kernel stubs 
@@ -223,9 +224,19 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     
     try
     {
-        const Elf64_Shdr& gdataShdr = getSectionHeader(".hsaimage_samplerinit");
-        samplerInitSize = ULEV(gdataShdr.sh_size);
-        samplerInit = binaryCode + ULEV(gdataShdr.sh_offset);
+        const Elf64_Shdr& dataShdr = getSectionHeader(".hsaimage_samplerinit");
+        samplerInitSize = ULEV(dataShdr.sh_size);
+        samplerInit = binaryCode + ULEV(dataShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
+    
+    try
+    {
+        const Elf64_Shdr& relaShdr = getSectionHeader(".rela.hsatext");
+        textRelEntrySize = ULEV(relaShdr.sh_entsize);
+        textRelsNum = ULEV(relaShdr.sh_size)/textRelEntrySize;
+        textRela = binaryCode + ULEV(relaShdr.sh_offset);
     }
     catch(const Exception& ex)
     { }

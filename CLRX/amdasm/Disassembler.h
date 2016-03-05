@@ -64,7 +64,7 @@ protected:
     {
         CString name;   ///< symbol name
         RelocType type; ///< relocation type
-        uint64_t addend; ///< relocation addend
+        int64_t addend; ///< relocation addend
     };
     
     typedef std::vector<size_t>::const_iterator LabelIter;  ///< label iterator
@@ -117,8 +117,11 @@ public:
     void addNamedLabel(size_t pos, CString&& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
     /// add relocation
-    void addRelocation(size_t offset, RelocType type, const CString& name, uint64_t addend)
+    void addRelocation(size_t offset, RelocType type, const CString& name, int64_t addend)
     { relocations.push_back(std::make_pair(offset, Relocation{name, type, addend})); }
+    
+    void clearRelocations()
+    { relocations.clear(); }
 };
 
 struct GCNDisasmUtils;
@@ -173,6 +176,14 @@ struct AmdDisasmInput
     std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs
 };
 
+struct AmdCL2RelaEntry
+{
+    size_t offset;
+    CString name;
+    RelocType type;
+    int64_t addend;
+};
+
 /// single kernel input for disassembler
 /** all pointer members holds only pointers that should be freed by your routines.
  * No management of data */
@@ -189,6 +200,7 @@ struct AmdCL2DisasmKernelInput
     const cxbyte* setup; ///< data from inner binary
     size_t stubSize;    ///< data (from inner binary) size
     const cxbyte* stub; ///< data from inner binary
+    std::vector<AmdCL2RelaEntry> textRelocs;    ///< text relocations
     size_t codeSize;    ///< size of code of kernel
     const cxbyte* code; ///< code of kernel
 };
