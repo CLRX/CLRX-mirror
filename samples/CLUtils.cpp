@@ -125,6 +125,19 @@ try
     if (context==nullptr)
         throw CLError(error, "clCreateContext");
     
+    // get device and print that
+    size_t deviceNameSize;
+    std::unique_ptr<char[]> deviceName;
+    error = clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clGetDeviceInfoName");
+    deviceName.reset(new char[deviceNameSize]);
+    error = clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize,
+                             deviceName.get(), nullptr);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clGetDeviceInfoName");
+    std::cout << "Device: " << deviceIndex << " - " << deviceName.get() << std::endl;
+    
     /// create command queue
     queue = clCreateCommandQueue(context, device, 0, &error);
     if (queue==nullptr)
@@ -132,16 +145,6 @@ try
     
     Array<cxbyte> binary;
     {   /* assemble source code */
-        size_t deviceNameSize;
-        std::unique_ptr<char[]> deviceName;
-        error = clGetDeviceInfo(device, CL_DEVICE_NAME, 0, nullptr, &deviceNameSize);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceInfoName");
-        deviceName.reset(new char[deviceNameSize]);
-        error = clGetDeviceInfo(device, CL_DEVICE_NAME, deviceNameSize,
-                                 deviceName.get(), nullptr);
-        if (error != CL_SUCCESS)
-            throw CLError(error, "clGetDeviceInfoName");
         /// determine device type
         char* sdeviceName = stripCString(deviceName.get());
         char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
