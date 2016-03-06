@@ -229,6 +229,8 @@ struct AmdCL2DisasmInput
     const cxbyte* globalData;   ///< global (constants for kernels) data
     size_t samplerInitSize;     ///< sampler init data size
     const cxbyte* samplerInit;  ///< sampler init data
+    /// sampler relocations
+    std::vector<std::pair<size_t, size_t> > samplerRelocs;
     std::vector<AmdCL2DisasmKernelInput> kernels;    ///< kernel inputs
 };
 

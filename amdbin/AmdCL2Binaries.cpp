@@ -240,6 +240,16 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
     }
     catch(const Exception& ex)
     { }
+    
+    try
+    {
+        const Elf64_Shdr& relaShdr = getSectionHeader(".rela.hsadata_readonly_agent");
+        globalDataRelEntrySize = ULEV(relaShdr.sh_entsize);
+        globalDataRelsNum = ULEV(relaShdr.sh_size)/globalDataRelEntrySize;
+        globalDataRela = binaryCode + ULEV(relaShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
 }
 
 /* AmdCL2MainGPUBinary */

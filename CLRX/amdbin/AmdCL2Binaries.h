@@ -166,6 +166,9 @@ private:
     size_t textRelsNum;
     size_t textRelEntrySize;
     cxbyte* textRela;
+    size_t globalDataRelsNum;
+    size_t globalDataRelEntrySize;
+    cxbyte* globalDataRela;
 public:
     AmdCL2InnerGPUBinary() = default;
     AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
@@ -210,6 +213,18 @@ public:
     /// get text rela entry
     Elf64_Rela& getTextRelaEntry(size_t index)
     { return *reinterpret_cast<Elf64_Rela*>(textRela + textRelEntrySize*index); }
+    
+    /// get global data rel entries number
+    size_t getGlobalDataRelaEntriesNum() const
+    { return globalDataRelsNum; }
+    /// get global data rela entry
+    const Elf64_Rela& getGlobalDataRelaEntry(size_t index) const
+    { return *reinterpret_cast<const Elf64_Rela*>(globalDataRela +
+                globalDataRelEntrySize*index); }
+    /// get global data rela entry
+    Elf64_Rela& getGlobalDataRelaEntry(size_t index)
+    { return *reinterpret_cast<Elf64_Rela*>(globalDataRela +
+                globalDataRelEntrySize*index); }
 };
 
 /// AMD OpenCL 2.0 GPU metadata for kernel

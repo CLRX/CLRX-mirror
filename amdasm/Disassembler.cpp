@@ -434,7 +434,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         input->samplerInitSize = innerBin.getSamplerInitSize();
         input->samplerInit = innerBin.getSamplerInit();
         
-        const size_t relaNum = innerBin.getTextRelaEntriesNum();
+        size_t relaNum = innerBin.getTextRelaEntriesNum();
         for (size_t i = 0; i < relaNum; i++)
         {
             const Elf64_Rela& rel = innerBin.getTextRelaEntry(i);
@@ -450,6 +450,19 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             const char* name = innerBin.getSymbolName(gDataSymIndex);
             if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
                 break;
+        }
+        relaNum = innerBin.getGlobalDataRelaEntriesNum();
+        for (size_t i = 0; i < relaNum; i++)
+        {
+            const Elf64_Rela& rel = innerBin.getGlobalDataRelaEntry(i);
+            size_t symIndex = ELF64_R_SYM(ULEV(rel.r_info));
+            const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
+            if (ELF64_ST_TYPE(sym.st_info) != 12)
+                throw Exception("Wrong sampler symbol");
+            uint64_t value = ULEV(sym.st_value);
+            if (value&7)
+                throw Exception("Wrong value of sampler symbol");
+            input->samplerRelocs.push_back({ ULEV(rel.r_offset), value>>3 });
         }
     }
     
@@ -1243,6 +1256,17 @@ void Disassembler::disassembleAmdCL2()
         output.write(".globaldata\n", 12);
         output.write(".gdata:\n", 8);
         printDisasmData(amdCL2Input->globalDataSize, amdCL2Input->globalData, output);
+        for (auto v: amdCL2Input->samplerRelocs)
+        {
+            output.write("    .samplerreloc ", 18);
+            char buf[64];
+            size_t bufPos = itocstrCStyle<size_t>(v.first, buf, 22);
+            buf[bufPos++] = ',';
+            buf[bufPos++] = ' ';
+            bufPos += itocstrCStyle<size_t>(v.second, buf+bufPos, 22);
+            buf[bufPos++] = '\n';
+            output.write(buf, bufPos);
+        }
     }
     
     for (const AmdCL2DisasmKernelInput& kinput: amdCL2Input->kernels)
