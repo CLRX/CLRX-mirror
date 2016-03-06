@@ -1271,6 +1271,7 @@ void Disassembler::disassembleAmdCL2()
         }
         if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
         {   // input kernel code (main disassembly)
+            isaDisassembler->clearRelocations();
             for (const AmdCL2RelaEntry& entry: kinput.textRelocs)
                 isaDisassembler->addRelocation(entry.offset, entry.type, entry.name,
                                entry.addend);
