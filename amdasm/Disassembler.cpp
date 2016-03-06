@@ -451,7 +451,27 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
                 break;
         }
+        {   // check gdata sym index
+            const Elf64_Sym& gDataSym = innerBin.getSymbol(gDataSymIndex);
+            if (ULEV(gDataSym.st_value)!=0)
+                throw Exception("Wrong value for global data symbol");
+            if (ULEV(gDataSym.st_shndx)>=innerBin.getSectionHeadersNum())
+                throw Exception("Section index out of range");
+            if (ELF64_ST_TYPE(gDataSym.st_info)!=STT_SECTION)
+                throw Exception("Section index out of range");
+            
+            if (::strcmp(innerBin.getSectionName(ULEV(gDataSym.st_shndx)),
+                            ".hsadata_readonly_agent") != 0)
+                throw Exception("Wrong section for global data symbol");
+        }
         relaNum = innerBin.getGlobalDataRelaEntriesNum();
+        
+        uint16_t samplerInitSecIndex = SHN_UNDEF;
+        try
+        { samplerInitSecIndex = innerBin.getSectionIndex(".hsaimage_samplerinit"); }
+        catch(const Exception& ex)
+        { }
+        
         for (size_t i = 0; i < relaNum; i++)
         {
             const Elf64_Rela& rel = innerBin.getGlobalDataRelaEntry(i);
@@ -460,7 +480,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             if (ELF64_ST_TYPE(sym.st_info) != 12)
                 throw Exception("Wrong sampler symbol");
             uint64_t value = ULEV(sym.st_value);
-            if (value&7)
+            if (ULEV(sym.st_shndx) != samplerInitSecIndex)
+                throw Exception("Wrong section for sampler symbol");
+            if ((value&7) != 0)
                 throw Exception("Wrong value of sampler symbol");
             input->samplerRelocs.push_back({ ULEV(rel.r_offset), value>>3 });
         }
