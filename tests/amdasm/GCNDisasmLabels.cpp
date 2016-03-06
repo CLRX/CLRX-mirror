@@ -368,40 +368,47 @@ static const uint32_t relocationCode[] =
 struct Relocation
 {
     size_t offset;
-    const char* name;
+    size_t symIndex;
     RelocType type;
     uint64_t addend;
 };
 
+static const char* relocSymbolNames[] =
+{
+    "aaa0", "aaa1", "aaa2", "aaa3", "aaa4", "aaa5",
+    "baa0", "baa1", "baa2", "baa3", "baa4", "baa5",
+    "bcaa0", "bca1", "bcaa2", "bcaa3", "bcaa4", "bcaa5"
+};
+
 static const Relocation relocationData[] =
 {
-    { 4, "aaa0", RelocType::LOW_32BIT, 0 },
-    { 12, "aaa1", RelocType::LOW_32BIT, 122 },
-    { 20, "aaa2", RelocType::HIGH_32BIT, 0 },
-    { 28, "aaa3", RelocType::HIGH_32BIT, 122 },
-    { 36, "aaa4", RelocType::VALUE, 0 },
-    { 44, "aaa5", RelocType::VALUE, 122 },
+    { 4, 0, RelocType::LOW_32BIT, 0 },
+    { 12, 1, RelocType::LOW_32BIT, 122 },
+    { 20, 2, RelocType::HIGH_32BIT, 0 },
+    { 28, 3, RelocType::HIGH_32BIT, 122 },
+    { 36, 4, RelocType::VALUE, 0 },
+    { 44, 5, RelocType::VALUE, 122 },
     
-    { 48+4, "aaa0", RelocType::LOW_32BIT, 0 },
-    { 48+12, "aaa1", RelocType::LOW_32BIT, 122 },
-    { 48+20, "aaa2", RelocType::HIGH_32BIT, 0 },
-    { 48+28, "aaa3", RelocType::HIGH_32BIT, 122 },
-    { 48+36, "aaa4", RelocType::VALUE, 0 },
-    { 48+44, "aaa5", RelocType::VALUE, 122 },
+    { 48+4, 0, RelocType::LOW_32BIT, 0 },
+    { 48+12, 1, RelocType::LOW_32BIT, 122 },
+    { 48+20, 2, RelocType::HIGH_32BIT, 0 },
+    { 48+28, 3, RelocType::HIGH_32BIT, 122 },
+    { 48+36, 4, RelocType::VALUE, 0 },
+    { 48+44, 5, RelocType::VALUE, 122 },
     
-    { 96+4, "baa0", RelocType::LOW_32BIT, 0 },
-    { 96+12, "baa1", RelocType::LOW_32BIT, 122 },
-    { 96+20, "baa2", RelocType::HIGH_32BIT, 0 },
-    { 96+28, "baa3", RelocType::HIGH_32BIT, 122 },
-    { 96+36, "baa4", RelocType::VALUE, 0 },
-    { 96+44, "baa5", RelocType::VALUE, 122 },
+    { 96+4, 6, RelocType::LOW_32BIT, 0 },
+    { 96+12, 7, RelocType::LOW_32BIT, 122 },
+    { 96+20, 8, RelocType::HIGH_32BIT, 0 },
+    { 96+28, 9, RelocType::HIGH_32BIT, 122 },
+    { 96+36, 10, RelocType::VALUE, 0 },
+    { 96+44, 11, RelocType::VALUE, 122 },
     
-    { 144+4, "bcaa0", RelocType::LOW_32BIT, 0 },
-    { 144+12, "bca1", RelocType::LOW_32BIT, 122 },
-    { 144+20, "bcaa2", RelocType::HIGH_32BIT, 0 },
-    { 144+28, "bcaa3", RelocType::HIGH_32BIT, 122 },
-    { 144+36, "bcaa4", RelocType::VALUE, 0 },
-    { 144+44, "bcaa5", RelocType::VALUE, 122 }
+    { 144+4, 12, RelocType::LOW_32BIT, 0 },
+    { 144+12, 13, RelocType::LOW_32BIT, 122 },
+    { 144+20, 14, RelocType::HIGH_32BIT, 0 },
+    { 144+28, 15, RelocType::HIGH_32BIT, 122 },
+    { 144+36, 16, RelocType::VALUE, 0 },
+    { 144+44, 17, RelocType::VALUE, 122 }
 };
 
 static void testDecGCNRelocations()
@@ -417,7 +424,9 @@ static void testDecGCNRelocations()
                    reinterpret_cast<const cxbyte*>(relocationCode));
     
     for (const Relocation& reloc: relocationData)
-        gcnDisasm.addRelocation(reloc.offset, reloc.type, reloc.name, reloc.addend);
+        gcnDisasm.addRelocation(reloc.offset, reloc.type, reloc.symIndex, reloc.addend);
+    for (const char* symName: relocSymbolNames)
+        gcnDisasm.addRelSymbol(symName);
     
     gcnDisasm.beforeDisassemble();
     gcnDisasm.disassemble();

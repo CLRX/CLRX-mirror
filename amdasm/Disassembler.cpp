@@ -217,7 +217,7 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
         (reloc.type==RelocType::LOW_32BIT || reloc.type==RelocType::HIGH_32BIT))
         output.write(1, "(");
     /// write name+value
-    output.writeString(reloc.name.c_str());
+    output.writeString(relSymbols[reloc.symbol].c_str());
     char* buf = output.reserve(50);
     size_t bufPos = 0;
     if (reloc.addend != 0)
@@ -424,6 +424,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->globalData = nullptr;
     std::vector<std::pair<size_t, size_t> > sortedRelocs; // by offset
     const cxbyte* textPtr = nullptr;
+    
+    size_t gDataSymIndex = 0;
     if (isInnerNewBinary)
     {
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
@@ -441,6 +443,14 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         // sort map
         mapSort(sortedRelocs.begin(), sortedRelocs.end());
         textPtr = innerBin.getSectionContent(".hsatext");
+        
+        const size_t symbolsNum = innerBin.getSymbolsNum();
+        for (gDataSymIndex = 0; gDataSymIndex < symbolsNum; gDataSymIndex++)
+        {
+            const char* name = innerBin.getSymbolName(gDataSymIndex);
+            if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
+                break;
+        }
     }
     
     const size_t kernelInfosNum = binary.getKernelInfosNum();
@@ -486,7 +496,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         kinput.stubSize = 0;
         if (!binary.hasInnerBinary())
             continue; // nothing else to set
-        
+            
         const AmdCL2InnerGPUBinaryBase& innerBin = binary.getInnerBinaryBase();
         const AmdCL2GPUKernel* kernelData = nullptr;
         if (i < innerBin.getKernelsNum())
@@ -531,6 +541,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     const Elf64_Rela& rela = innerBin.getTextRelaEntry(
                                 sortedRelocIter->second);
                     uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
+                    if (gDataSymIndex != symIndex)
+                        throw Exception("Other symbol than to global data is illegal");
                     uint32_t rtype = ELF64_R_TYPE(ULEV(rela.r_info));
                     RelocType relocType;
                     if (rtype==1)
@@ -541,8 +553,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                         throw Exception("Unknown relocation type");
                     
                     kinput.textRelocs.push_back(AmdCL2RelaEntry{sortedRelocIter->first-
-                            (kinput.code-textPtr), innerBin.getSymbolName(symIndex),
-                              relocType, ULEV(rela.r_addend) });
+                            (kinput.code-textPtr), relocType, ULEV(rela.r_addend) });
                 }
             }
         }
@@ -1230,6 +1241,7 @@ void Disassembler::disassembleAmdCL2()
         amdCL2Input->globalDataSize != 0)
     {
         output.write(".globaldata\n", 12);
+        output.write(".gdata:\n", 8);
         printDisasmData(amdCL2Input->globalDataSize, amdCL2Input->globalData, output);
     }
     
@@ -1272,9 +1284,9 @@ void Disassembler::disassembleAmdCL2()
         if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
         {   // input kernel code (main disassembly)
             isaDisassembler->clearRelocations();
+            isaDisassembler->addRelSymbol(".gdata");
             for (const AmdCL2RelaEntry& entry: kinput.textRelocs)
-                isaDisassembler->addRelocation(entry.offset, entry.type, entry.name,
-                               entry.addend);
+                isaDisassembler->addRelocation(entry.offset, entry.type, 0, entry.addend);
     
             output.write("    .text\n", 10);
             isaDisassembler->setInput(kinput.codeSize, kinput.code);

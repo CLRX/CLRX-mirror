@@ -62,7 +62,7 @@ class ISADisassembler: public NonCopyableAndNonMovable
 protected:
     struct Relocation
     {
-        CString name;   ///< symbol name
+        size_t symbol;   ///< symbol index
         RelocType type; ///< relocation type
         int64_t addend; ///< relocation addend
     };
@@ -80,6 +80,7 @@ protected:
     const cxbyte* input;    ///< input code
     std::vector<size_t> labels; ///< list of local labels
     std::vector<std::pair<size_t, CString> > namedLabels;   ///< named labels
+    std::vector<CString> relSymbols;    ///< symbols used by relocations
     std::vector<std::pair<size_t, Relocation> > relocations;    ///< relocations
     FastOutputBuffer output;    ///< output buffer
     
@@ -116,12 +117,23 @@ public:
     /// add named label to list (must be called before disassembly)
     void addNamedLabel(size_t pos, CString&& name)
     { namedLabels.push_back(std::make_pair(pos, name)); }
+    
+    /// add symbol to relocations
+    size_t addRelSymbol(const CString& symName)
+    {
+        size_t index = relSymbols.size();
+        relSymbols.push_back(symName);
+        return index;
+    }
     /// add relocation
-    void addRelocation(size_t offset, RelocType type, const CString& name, int64_t addend)
-    { relocations.push_back(std::make_pair(offset, Relocation{name, type, addend})); }
+    void addRelocation(size_t offset, RelocType type, size_t symIndex, int64_t addend)
+    { relocations.push_back(std::make_pair(offset, Relocation{symIndex, type, addend})); }
     
     void clearRelocations()
-    { relocations.clear(); }
+    {
+        relSymbols.clear();
+        relocations.clear();
+    }
 };
 
 struct GCNDisasmUtils;
@@ -179,7 +191,6 @@ struct AmdDisasmInput
 struct AmdCL2RelaEntry
 {
     size_t offset;
-    CString name;
     RelocType type;
     int64_t addend;
 };
