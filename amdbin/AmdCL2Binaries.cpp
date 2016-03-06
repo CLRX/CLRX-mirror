@@ -153,7 +153,8 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
             globalDataSize(0), globalData(nullptr),
             samplerInitSize(0), samplerInit(nullptr),
-            textRelsNum(0), textRelEntrySize(0), textRela(nullptr)
+            textRelsNum(0), textRelEntrySize(0), textRela(nullptr),
+            globalDataRelsNum(0), globalDataRelEntrySize(0), globalDataRela(nullptr)
 {
     if (hasKernelData())
     {   // get kernel datas and kernel stubs 
