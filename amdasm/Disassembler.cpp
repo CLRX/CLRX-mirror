@@ -442,17 +442,19 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         }
         // sort map
         mapSort(sortedRelocs.begin(), sortedRelocs.end());
+        // get code section pointer for determine relocation position kernel code
         textPtr = innerBin.getSectionContent(".hsatext");
         
         const size_t symbolsNum = innerBin.getSymbolsNum();
         for (gDataSymIndex = 0; gDataSymIndex < symbolsNum; gDataSymIndex++)
-        {
+        {   // find global data symbol (getSymbolIndex doesn't work always
             const char* name = innerBin.getSymbolName(gDataSymIndex);
             if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
                 break;
         }
         {   // check gdata sym index
             const Elf64_Sym& gDataSym = innerBin.getSymbol(gDataSymIndex);
+            /// check symbol value, section and name
             if (ULEV(gDataSym.st_value)!=0)
                 throw Exception("Wrong value for global data symbol");
             if (ULEV(gDataSym.st_shndx)>=innerBin.getSectionHeadersNum())
@@ -464,8 +466,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                             ".hsadata_readonly_agent") != 0)
                 throw Exception("Wrong section for global data symbol");
         }
+        // relocations for global data section (sampler symbols)
         relaNum = innerBin.getGlobalDataRelaEntriesNum();
-        
+        // section index for samplerinit (will be used for comparing sampler symbol section
         uint16_t samplerInitSecIndex = SHN_UNDEF;
         try
         { samplerInitSecIndex = innerBin.getSectionIndex(".hsaimage_samplerinit"); }
@@ -477,6 +480,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             const Elf64_Rela& rel = innerBin.getGlobalDataRelaEntry(i);
             size_t symIndex = ELF64_R_SYM(ULEV(rel.r_info));
             const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
+            // check symbol type, section and value
             if (ELF64_ST_TYPE(sym.st_info) != 12)
                 throw Exception("Wrong sampler symbol");
             uint64_t value = ULEV(sym.st_value);
@@ -505,7 +509,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         
         kinput.isaMetadataSize = 0;
         kinput.isaMetadata = nullptr;
-        
+        // setup isa metadata content
         const AmdCL2GPUKernelMetadata* isaMetadata = nullptr;
         if (i < binary.getISAMetadatasNum())
             isaMetadata = &binary.getISAMetadataEntry(i);
@@ -531,7 +535,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         kinput.stubSize = 0;
         if (!binary.hasInnerBinary())
             continue; // nothing else to set
-            
+        
+        // get kernel code, setup and stub content
         const AmdCL2InnerGPUBinaryBase& innerBin = binary.getInnerBinaryBase();
         const AmdCL2GPUKernel* kernelData = nullptr;
         if (i < innerBin.getKernelsNum())
@@ -586,7 +591,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                         relocType = RelocType::HIGH_32BIT;
                     else
                         throw Exception("Unknown relocation type");
-                    
+                    // put text relocs. compute offset by subtracting current code offset
                     kinput.textRelocs.push_back(AmdCL2RelaEntry{sortedRelocIter->first-
                             (kinput.code-textPtr), relocType, ULEV(rela.r_addend) });
                 }
@@ -1267,7 +1272,7 @@ void Disassembler::disassembleAmdCL2()
         output.write("\"\n", 2);
     }
     if (doSetup && amdCL2Input->samplerInit!=nullptr && amdCL2Input->samplerInitSize!=0)
-    {
+    {   /// sampler init entries
         output.write(".samplerinit\n", 13);
         printDisasmData(amdCL2Input->samplerInitSize, amdCL2Input->samplerInit, output);
     }
@@ -1276,8 +1281,9 @@ void Disassembler::disassembleAmdCL2()
         amdCL2Input->globalDataSize != 0)
     {
         output.write(".globaldata\n", 12);
-        output.write(".gdata:\n", 8);
+        output.write(".gdata:\n", 8); /// symbol used by text relocations
         printDisasmData(amdCL2Input->globalDataSize, amdCL2Input->globalData, output);
+        /// put sampler relocations at global data section
         for (auto v: amdCL2Input->samplerRelocs)
         {
             output.write("    .samplerreloc ", 18);
