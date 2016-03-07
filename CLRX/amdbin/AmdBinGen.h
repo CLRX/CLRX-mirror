@@ -25,7 +25,6 @@
 
 #include <CLRX/Config.h>
 #include <cstddef>
-#include <climits>
 #include <cstdint>
 #include <string>
 #include <ostream>

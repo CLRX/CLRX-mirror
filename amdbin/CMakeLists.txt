@@ -21,8 +21,9 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(LIBAMDBINSRC
         AmdBinaries.cpp
-        AmdCL2Binaries.cpp
         AmdBinGen.cpp
+        AmdCL2Binaries.cpp
+        AmdCL2BinGen.cpp
         ElfBinaries.cpp
         GalliumBinaries.cpp)
 
