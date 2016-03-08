@@ -70,8 +70,6 @@ struct AmdCL2KernelInput
     const cxbyte* stub;   ///< kernel stub size (used if useConfig=false)
     size_t setupSize;  ///< kernel setup size (used if useConfig=false)
     const cxbyte* setup;   ///< kernel setup size (used if useConfig=false)
-    size_t headerSize;  ///< kernel header size (used if useConfig=false)
-    const cxbyte* header;   ///< kernel header size (used if useConfig=false)
     size_t metadataSize;    ///< metadata size (used if useConfig=false)
     const cxbyte* metadata;   ///< kernel's metadata (used if useConfig=false)
     size_t isaMetadataSize;    ///< metadata size (used if useConfig=false)

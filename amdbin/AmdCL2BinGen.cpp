@@ -120,7 +120,7 @@ private:
     const AmdCL2Input* input;
     bool withBrig;
 public:
-    CL2MainStrTabGen(const AmdCL2Input* _input) : input(_input), withBrig(false)
+    explicit CL2MainStrTabGen(const AmdCL2Input* _input) : input(_input), withBrig(false)
     {
         for (const BinSection& section: input->extraSections)
             if (section.name==".brig")
@@ -307,6 +307,55 @@ public:
     }
 };
 
+class CLRX_INTERNAL CL2MainCommentGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+public:
+    explicit CL2MainCommentGen(const AmdCL2Input* _input) : input(_input)
+    { }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        fob.write(input->compileOptions.size(), input->compileOptions.c_str());
+        fob.write(input->aclVersion.size(), input->aclVersion.c_str());
+    }
+};
+
+class CLRX_INTERNAL CL2MainRodataGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+public:
+    explicit CL2MainRodataGen(const AmdCL2Input* _input) : input(_input)
+    { }
+    
+    size_t size() const
+    {
+        size_t out = 0;
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            out += kernel.metadataSize;
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            out += kernel.isaMetadataSize;
+        return out;
+    }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            fob.writeArray(kernel.metadataSize, kernel.metadata);
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            fob.writeArray(kernel.isaMetadataSize, kernel.isaMetadata);
+    }
+};
+
+class CLRX_INTERNAL CL2MainTextGen: public ElfRegionContent
+{
+public:
+    void operator()(FastOutputBuffer& fob) const
+    { }
+};
+
 /// main routine to generate OpenCL 2.0 binary
 void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
@@ -331,6 +380,9 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     }
     CL2MainStrTabGen mainStrTabGen(input);
     CL2MainSymTabGen mainSymTabGen(input, tempDatas);
+    CL2MainCommentGen mainCommentGen(input);
+    CL2MainRodataGen mainRodataGen(input);
+    
     // main section of main binary
     elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                     SHT_STRTAB, SHF_STRINGS));
@@ -338,6 +390,10 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     SHT_STRTAB, SHF_STRINGS));
     elfBinGen.addRegion(ElfRegion64(mainSymTabGen.size(), &mainSymTabGen, 8, ".symtab",
                     SHT_SYMTAB, 0));
+    elfBinGen.addRegion(ElfRegion64(input->compileOptions.size()+input->aclVersion.size(),
+                &mainCommentGen, 1, ".comment", SHT_PROGBITS, 0));
+    elfBinGen.addRegion(ElfRegion64(mainRodataGen.size(), &mainRodataGen, 1, ".rodata",
+                    SHT_PROGBITS, SHF_ALLOC));
 }
 
 void AmdCL2GPUBinGenerator::generate(Array<cxbyte>& array) const
