@@ -501,9 +501,6 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         const KernelInfo& kernelInfo = binary.getKernelInfo(i);
         AmdCL2DisasmKernelInput& kinput = input->kernels[i];
         kinput.kernelName = kernelInfo.kernelName;
-        const AmdGPUKernelHeader& header = binary.getKernelHeaderEntry(i);
-        kinput.headerSize = header.size;
-        kinput.header = header.data;
         kinput.metadataSize = binary.getMetadataSize(i);
         kinput.metadata = binary.getMetadata(i);
         
@@ -1304,11 +1301,6 @@ void Disassembler::disassembleAmdCL2()
         output.put('\n');
         if (doMetadata)
         {
-            if (kinput.header != nullptr && kinput.headerSize != 0)
-            {   // if kernel header available
-                output.write("    .header\n", 12);
-                printDisasmData(kinput.headerSize, kinput.header, output, true);
-            }
             if (kinput.metadata != nullptr && kinput.metadataSize != 0)
             {   // if kernel metadata available
                 output.write("    .metadata\n", 14);

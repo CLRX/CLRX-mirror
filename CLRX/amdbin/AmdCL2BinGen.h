@@ -74,6 +74,8 @@ struct AmdCL2KernelInput
     const cxbyte* header;   ///< kernel header size (used if useConfig=false)
     size_t metadataSize;    ///< metadata size (used if useConfig=false)
     const cxbyte* metadata;   ///< kernel's metadata (used if useConfig=false)
+    size_t isaMetadataSize;    ///< metadata size (used if useConfig=false)
+    const cxbyte* isaMetadata;   ///< kernel's metadata (used if useConfig=false)
     bool useConfig;         ///< true if configuration has been used to generate binary
     AmdCL2KernelConfig config; ///< kernel's configuration
     std::vector<AmdCL2RelInput> relocations;    ///< relocation to kernel code

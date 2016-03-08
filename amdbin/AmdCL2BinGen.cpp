@@ -319,13 +319,25 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC,  0xaf5b, EV_CURRENT,
                 UINT_MAX, 0, gpuDeviceCodeTable[cxuint(input->deviceType)] });
+    
+    Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
+    for (size_t i = 0; i < kernelsNum; i++)
     {
-        elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
-                                SHT_STRTAB, SHF_STRINGS));
-        CL2MainStrTabGen mainStrTabGen(input);
-        elfBinGen.addRegion(ElfRegion64(mainStrTabGen.size(), &mainStrTabGen, 1,
-                     ".strtab", SHT_STRTAB, SHF_STRINGS));
+        const AmdCL2KernelInput& kernel = input->kernels[i];
+        tempDatas[i].isaMetadataSize = kernel.isaMetadataSize;
+        tempDatas[i].setupSize = kernel.setupSize;
+        tempDatas[i].stubSize = kernel.stubSize;
+        tempDatas[i].codeSize = kernel.codeSize;
     }
+    CL2MainStrTabGen mainStrTabGen(input);
+    CL2MainSymTabGen mainSymTabGen(input, tempDatas);
+    // main section of main binary
+    elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+                    SHT_STRTAB, SHF_STRINGS));
+    elfBinGen.addRegion(ElfRegion64(mainStrTabGen.size(), &mainStrTabGen, 1, ".strtab",
+                    SHT_STRTAB, SHF_STRINGS));
+    elfBinGen.addRegion(ElfRegion64(mainSymTabGen.size(), &mainSymTabGen, 8, ".symtab",
+                    SHT_SYMTAB, 0));
 }
 
 void AmdCL2GPUBinGenerator::generate(Array<cxbyte>& array) const

@@ -205,8 +205,6 @@ struct AmdCL2DisasmKernelInput
     const cxbyte* metadata;   ///< kernel's metadata
     size_t isaMetadataSize;    ///< metadata size
     const cxbyte* isaMetadata;   ///< kernel's metadata
-    size_t headerSize;  ///< kernel header size
-    const cxbyte* header;   ///< kernel header size
     size_t setupSize;    ///< data (from inner binary) size
     const cxbyte* setup; ///< data from inner binary
     size_t stubSize;    ///< data (from inner binary) size
