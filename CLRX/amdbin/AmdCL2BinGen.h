@@ -29,7 +29,7 @@
 #include <string>
 #include <ostream>
 #include <vector>
-#include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/GPUId.h>
 #include <CLRX/utils/InputOutput.h>
@@ -37,23 +37,10 @@
 namespace CLRX
 {
 
-/// AMD OpenCL kernel argument description
-struct AmdCL2KernelArgInput
-{
-    CString argName;    ///< argument name
-    CString typeName;   ///< name of type of argument
-    KernelArgType argType;  ///< argument type
-    KernelArgType pointerType;  ///< pointer type
-    KernelPtrSpace ptrSpace;///< pointer space for argument if argument is pointer or image
-    cxbyte ptrAccess;  ///< pointer access flags
-    cxuint structSize; ///< structure size (if structure)
-    bool used;  ///< if used
-};
-
 /// kernel configuration
 struct AmdCL2KernelConfig
 {
-    std::vector<AmdCL2KernelArgInput> args; ///< arguments
+    std::vector<AmdKernelArgInput> args; ///< arguments
     std::vector<cxuint> samplers;   ///< defined samplers
     uint32_t dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
     uint32_t reqdWorkGroupSize[3];  ///< reqd_work_group_size
