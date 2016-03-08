@@ -386,13 +386,13 @@ struct CLRX_INTERNAL TempAmdKernelData
 };
 
 // fast and memory efficient String table generator for main binary
-class CLRX_INTERNAL MainStrTabGen: public ElfRegionContent
+class CLRX_INTERNAL CL1MainStrTabGen: public ElfRegionContent
 {
 private:
     cxuint driverVersion;
     const AmdInput* input;
 public:
-    MainStrTabGen(cxuint _driverVersion, const AmdInput* _input)
+    CL1MainStrTabGen(cxuint _driverVersion, const AmdInput* _input)
             : driverVersion(_driverVersion), input(_input)
     { }
     
@@ -438,14 +438,14 @@ public:
 
 // fast and memory efficient symbol table generator for main binary
 template<typename Types>
-class CLRX_INTERNAL MainSymTabGen: public ElfRegionContent
+class CLRX_INTERNAL CL1MainSymTabGen: public ElfRegionContent
 {
 private:
     cxuint driverVersion;
     const AmdInput* input;
     const Array<TempAmdKernelData>& tempDatas;
 public:
-    MainSymTabGen(cxuint _driverVersion, const AmdInput* _input,
+    CL1MainSymTabGen(cxuint _driverVersion, const AmdInput* _input,
                   const Array<TempAmdKernelData>& _tempDatas)
             : driverVersion(_driverVersion), input(_input), tempDatas(_tempDatas)
     { }
@@ -541,13 +541,13 @@ public:
     }
 };
 
-class CLRX_INTERNAL MainRoDataGen: public ElfRegionContent
+class CLRX_INTERNAL CL1MainRoDataGen: public ElfRegionContent
 {
 private:
     const AmdInput* input;
     const Array<TempAmdKernelData>& tempDatas;
 public:
-    MainRoDataGen(const AmdInput* _input, const Array<TempAmdKernelData>& _tempDatas)
+    CL1MainRoDataGen(const AmdInput* _input, const Array<TempAmdKernelData>& _tempDatas)
             : input(_input), tempDatas(_tempDatas)
     { }
     
@@ -572,12 +572,12 @@ public:
     }
 };
 
-class CLRX_INTERNAL MainTextGen: public ElfRegionContent
+class CLRX_INTERNAL CL1MainTextGen: public ElfRegionContent
 {
 private:
     Array<TempAmdKernelData>& tempDatas;
 public:
-    MainTextGen(Array<TempAmdKernelData>& _tempDatas) : tempDatas(_tempDatas)
+    CL1MainTextGen(Array<TempAmdKernelData>& _tempDatas) : tempDatas(_tempDatas)
     { }
     
     void operator()(FastOutputBuffer& fob) const
@@ -587,13 +587,13 @@ public:
     }
 };
 
-class CLRX_INTERNAL MainCommentGen: public ElfRegionContent
+class CLRX_INTERNAL CL1MainCommentGen: public ElfRegionContent
 {
 private:
     const AmdInput* input;
     const CString& driverInfo;
 public:
-    MainCommentGen(const AmdInput* _input, const CString& _driverInfo)
+    CL1MainCommentGen(const AmdInput* _input, const CString& _driverInfo)
             : input(_input), driverInfo(_driverInfo)
     { }
     
@@ -606,10 +606,10 @@ public:
 
 template<typename Types>
 static void putMainSections(ElfBinaryGenTemplate<Types>& elfBinGen, cxuint driverVersion,
-        const AmdInput* input, size_t allInnerBinSize, const MainTextGen& textGen,
-        size_t rodataSize, const MainRoDataGen& rodataGen, const CString& driverInfo,
-        const MainCommentGen& commentGen, const MainStrTabGen& mainStrGen,
-        const MainSymTabGen<Types>& mainSymGen)
+        const AmdInput* input, size_t allInnerBinSize, const CL1MainTextGen& textGen,
+        size_t rodataSize, const CL1MainRoDataGen& rodataGen, const CString& driverInfo,
+        const CL1MainCommentGen& commentGen, const CL1MainStrTabGen& mainStrGen,
+        const CL1MainSymTabGen<Types>& mainSymGen)
 {
     elfBinGen.addRegion(ElfRegionTemplate<Types>(0, (const cxbyte*)nullptr, 1,
                  ".shstrtab", SHT_STRTAB, SHF_STRINGS));
@@ -1713,12 +1713,12 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     if (input->globalData!=nullptr)
         rodataSize += input->globalDataSize;
     
-    MainRoDataGen rodataGen(input, tempAmdKernelDatas);
-    MainTextGen textGen(tempAmdKernelDatas);
-    MainCommentGen commentGen(input, driverInfo);
-    MainStrTabGen mainStrTabGen(driverVersion, input);
-    MainSymTabGen<Elf32Types> mainSymTabGen32(driverVersion, input, tempAmdKernelDatas);
-    MainSymTabGen<Elf64Types> mainSymTabGen64(driverVersion, input, tempAmdKernelDatas);
+    CL1MainRoDataGen rodataGen(input, tempAmdKernelDatas);
+    CL1MainTextGen textGen(tempAmdKernelDatas);
+    CL1MainCommentGen commentGen(input, driverInfo);
+    CL1MainStrTabGen mainStrTabGen(driverVersion, input);
+    CL1MainSymTabGen<Elf32Types> mainSymTabGen32(driverVersion, input, tempAmdKernelDatas);
+    CL1MainSymTabGen<Elf64Types> mainSymTabGen64(driverVersion, input, tempAmdKernelDatas);
     
     /* main sections and symbols */
     if (input->is64Bit)

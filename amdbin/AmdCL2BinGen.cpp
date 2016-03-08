@@ -91,12 +91,12 @@ static const uint32_t gpuDeviceCodeTable[16] =
 };
 
 // fast and memory efficient String table generator for main binary
-class CLRX_INTERNAL MainStrTabGen: public ElfRegionContent
+class CLRX_INTERNAL CL2MainStrTabGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
 public:
-    MainStrTabGen(const AmdCL2Input* _input) : input(_input)
+    CL2MainStrTabGen(const AmdCL2Input* _input) : input(_input)
     { }
     
     size_t size() const
@@ -125,7 +125,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     {
         elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                                 SHT_STRTAB, SHF_STRINGS));
-        MainStrTabGen mainStrTabGen(input);
+        CL2MainStrTabGen mainStrTabGen(input);
         elfBinGen.addRegion(ElfRegion64(mainStrTabGen.size(), &mainStrTabGen, 1,
                      ".strtab", SHT_STRTAB, SHF_STRINGS));
     }
