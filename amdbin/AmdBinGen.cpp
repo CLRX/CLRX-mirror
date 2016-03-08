@@ -404,8 +404,8 @@ public:
         if (input->globalData != nullptr)
             size += 18;
         
-        for (size_t i = 0; i < input->kernels.size(); i++)
-            size += input->kernels[i].kernelName.size()*3 + 19 + 17 + 17;
+        for (const AmdKernelInput& kernel: input->kernels)
+            size += kernel.kernelName.size()*3 + 19 + 17 + 17;
         for (const BinSymbol& symbol: input->extraSymbols)
             size += symbol.name.size()+1;
         return size;
@@ -420,9 +420,8 @@ public:
         if (input->globalData != nullptr)
             fob.write(18, (!isOlderThan1348)?"__OpenCL_0_global":"__OpenCL_2_global");
         
-        for (size_t i = 0; i < input->kernels.size(); i++)
+        for (const AmdKernelInput& kernel: input->kernels)
         {
-            const AmdKernelInput& kernel = input->kernels[i];
             fob.write(9, "__OpenCL_");
             fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
             fob.write(19, "_metadata\000__OpenCL_");

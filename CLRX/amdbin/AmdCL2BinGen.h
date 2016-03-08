@@ -55,6 +55,13 @@ struct AmdCL2KernelConfig
     bool useConstantData; ///< if const data required
 };
 
+/// AMD CL2 Relocation entry input
+struct AmdCL2RelInput
+{
+    size_t offset;
+    size_t addend;
+};
+
 /// AMD kernel input
 struct AmdCL2KernelInput
 {
@@ -69,6 +76,7 @@ struct AmdCL2KernelInput
     const cxbyte* metadata;   ///< kernel's metadata (used if useConfig=false)
     bool useConfig;         ///< true if configuration has been used to generate binary
     AmdCL2KernelConfig config; ///< kernel's configuration
+    std::vector<AmdCL2RelInput> relocations;    ///< relocation to kernel code
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
     
@@ -80,6 +88,11 @@ struct AmdCL2Input
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
+    size_t samplerInitSize;  ///< sampler init size
+    const cxbyte* samplerInit; ///< sampler init data
+    bool samplerConfig;
+    std::vector<cxuint> samplers;   ///< sampler config
+    std::vector<size_t> samplerOffsets; ///< sampler offsets
     uint32_t driverVersion;     ///< driver version (majorVersion*100 + minorVersion)
     CString compileOptions; ///< compile options
     CString aclVersion;     ///< acl version string
