@@ -64,6 +64,7 @@ struct Elf32Types
 {
     typedef uint32_t Size;  ///< size used to return size value
     typedef uint32_t Word;  ///< word size in ELF
+    typedef uint32_t SectionFlags;  ///< section flags
     typedef Elf32_Ehdr Ehdr;    ///< ELF header
     typedef Elf32_Shdr Shdr;    ///< Section header
     typedef Elf32_Phdr Phdr;    ///< program header
@@ -78,6 +79,7 @@ struct Elf64Types
 {
     typedef size_t Size;  ///< size used to return size value
     typedef uint64_t Word;  ///< word size in ELF
+    typedef uint64_t SectionFlags;  ///< section flags
     typedef Elf64_Ehdr Ehdr;    ///< ELF header
     typedef Elf64_Shdr Shdr;    ///< Section header
     typedef Elf64_Phdr Phdr;    ///< program header
@@ -444,7 +446,7 @@ struct BinSection
     const cxbyte* data; ///< data content
     size_t align;  ///< region alignment
     uint32_t type;  ///< section type
-    uint32_t flags; ///< section flags
+    uint64_t flags; ///< section flags
     cxuint linkId; ///< link section id (ELFSECTID_* or an extra section index)
     uint32_t info;  ///< section info
     size_t entSize;    ///< entries size
@@ -488,7 +490,7 @@ struct ElfRegionTemplate
     struct {
         const char* name;   ///< section name
         uint32_t type;  ///< section type
-        uint32_t flags; ///< section flags
+        typename Types::SectionFlags flags; ///< section flags
         uint32_t link;  ///< section link
         uint32_t info;  ///< section info
         typename Types::Word addrBase;   ///< section address base
@@ -526,7 +528,7 @@ struct ElfRegionTemplate
     /// constructor for section
     ElfRegionTemplate(typename Types::Word _size, const cxbyte* _data,
               typename Types::Word _align, const char* _name, uint32_t _type,
-              uint32_t _flags, uint32_t _link = 0, uint32_t _info = 0,
+              typename Types::SectionFlags _flags, uint32_t _link = 0, uint32_t _info = 0,
               typename Types::Word _addrBase = 0,
               typename Types::Word _entSize = 0)
             : type(ElfRegionType::SECTION), dataFromPointer(true), size(_size),
@@ -538,7 +540,7 @@ struct ElfRegionTemplate
     /// constructor for section with generator
     ElfRegionTemplate(typename Types::Word _size, const ElfRegionContent* _data,
               typename Types::Word _align, const char* inName, uint32_t _type,
-              uint32_t _flags, uint32_t _link = 0, uint32_t _info = 0,
+              typename Types::SectionFlags _flags, uint32_t _link = 0, uint32_t _info = 0,
               typename Types::Word _addrBase = 0,
               typename Types::Word _entSize = 0)
             : type(ElfRegionType::SECTION), dataFromPointer(false), size(_size),
@@ -558,7 +560,8 @@ struct ElfRegionTemplate
             : type(ElfRegionType::SECTION), dataFromPointer(true), size(binSection.size),
               align(binSection.align), data(binSection.data)
     {
-        section = { binSection.name.c_str(), binSection.type, binSection.flags,
+        section = { binSection.name.c_str(), binSection.type, 
+            typename Types::SectionFlags(binSection.flags),
             uint32_t(convertSectionId(binSection.linkId, builtinSections,
                              maxBuiltinSection, startExtraIndex)),
             binSection.info, 0, typename Types::Word(binSection.entSize) };
