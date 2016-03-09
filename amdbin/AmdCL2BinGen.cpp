@@ -391,6 +391,19 @@ public:
     }
 };
 
+class CLRX_INTERNAL CL2InnerTextRelsGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+public:
+    explicit CL2InnerTextRelsGen(const AmdCL2Input* _input) : input(_input)
+    { }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+    }
+};
+
 /// main routine to generate OpenCL 2.0 binary
 void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
@@ -446,6 +459,13 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                       4, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
         innerBinGen.addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007));
+        
+        bool hasTextRels = std::any_of(input->kernels.begin(), input->kernels.begin(),
+                    [](const AmdCL2KernelInput& kernel)
+                    { return !kernel.relocations.empty(); });
+        if (hasTextRels)
+        {   //
+        }
     }
     else
     {   // own binary format
