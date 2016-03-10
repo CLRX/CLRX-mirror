@@ -528,6 +528,13 @@ static const cxbyte noteSectionData[168] =
     0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00
 };
 
+static inline cxuint countDigits(size_t value)
+{
+    cxuint digits = 0;
+    for (; value!=0; value/=10, digits++);
+    return digits;
+}
+
 // fast and memory efficient symbol table generator for main binary
 class CLRX_INTERNAL CL2InnerSymTabGen: public ElfRegionContent
 {
@@ -557,8 +564,85 @@ public:
     void operator()(FastOutputBuffer& fob) const
     {
         Elf64_Sym symbol;
+        size_t codePos = 0;
         size_t nameIndex = 1;
         std::vector<bool> samplerMask(samplersNum);
+        size_t samplerOffset = input->globalDataSize - samplersNum;
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+        {   // first, we put sampler objects
+            if (kernel.useConfig)
+                for (cxuint samp: kernel.config.samplers)
+                {
+                    if (samplerMask[samp])
+                        continue; // if added to symbol table
+                    SLEV(symbol.st_name, nameIndex);
+                    if (!input->samplerOffsets.empty()) // from sampler offset in input
+                        SLEV(symbol.st_value, input->samplerOffsets[samp]);
+                    else // otherwise we compute
+                        SLEV(symbol.st_value, samplerOffset + samp*8);
+                    SLEV(symbol.st_shndx, 1);
+                    symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+                    symbol.st_other = 0;
+                    SLEV(symbol.st_size, 8);
+                    nameIndex += 12+4+countDigits(samp)+1;
+                    fob.writeObject(symbol);
+                    samplerMask[samp] = true;
+                }
+            // put kernel symbol
+            SLEV(symbol.st_name, nameIndex);
+            SLEV(symbol.st_value, codePos);
+            SLEV(symbol.st_size, kernel.codeSize+kernel.setupSize);
+            SLEV(symbol.st_shndx, 2);
+            symbol.st_info = ELF32_ST_INFO(STB_LOCAL, 10U);
+            symbol.st_other = 0;
+            SLEV(symbol.st_size, 8);
+            nameIndex += kernel.kernelName.size() + 10 + 8;
+            fob.writeObject(symbol);
+            codePos += kernel.codeSize+kernel.setupSize;
+        }
+        for (size_t i = 0; i < samplersNum; i++)
+            if (!samplerMask[i])
+            {   // put rest of symbol samplers
+                SLEV(symbol.st_name, nameIndex);
+                if (!input->samplerOffsets.empty()) // from sampler offset in input
+                    SLEV(symbol.st_value, input->samplerOffsets[i]);
+                else // otherwise we compute
+                    SLEV(symbol.st_value, samplerOffset + i*8);
+                SLEV(symbol.st_shndx, 1);
+                symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+                symbol.st_other = 0;
+                SLEV(symbol.st_size, 8);
+                nameIndex += 12+4+countDigits(i)+1;
+                fob.writeObject(symbol);
+                samplerMask[i] = true;
+            }
+        /* global data symbol, and text symbol */
+        SLEV(symbol.st_name, nameIndex);
+        SLEV(symbol.st_value, 0);
+        SLEV(symbol.st_size, 0);
+        SLEV(symbol.st_shndx, 1);
+        symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_SECTION);
+        symbol.st_other = 0;
+        nameIndex += 37;
+        fob.writeObject(symbol);
+        
+        SLEV(symbol.st_shndx, 2);
+        symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_SECTION);
+        symbol.st_other = 0;
+        nameIndex += 22;
+        fob.writeObject(symbol);
+        /* sampler global data symbols */
+        for (size_t i = 0; i < samplersNum; i++)
+        {
+            SLEV(symbol.st_name, nameIndex);
+            SLEV(symbol.st_value, i*8);
+            SLEV(symbol.st_size, 0);
+            SLEV(symbol.st_shndx, 3);
+            symbol.st_info = ELF32_ST_INFO(STB_LOCAL, 12U);
+            symbol.st_other = 0;
+            nameIndex++;
+            fob.writeObject(symbol);
+        }
     }
 };
 
