@@ -401,6 +401,62 @@ public:
     
     void operator()(FastOutputBuffer& fob) const
     {
+        if (input->samplerConfig)
+        {
+            uint32_t sampDef[2];
+            for (uint32_t sampler: input->samplers)
+            {
+                SLEV(sampDef[0], 0x10008);
+                SLEV(sampDef[1], sampler);
+                fob.writeArray(2, sampDef);
+            }
+        }
+        else
+            fob.writeArray(input->samplerInitSize, input->samplerInit);
+    }
+};
+
+class CLRX_INTERNAL CL2InnerGlobalDataRelsGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+public:
+    explicit CL2InnerGlobalDataRelsGen(const AmdCL2Input* _input) : input(_input)
+    { }
+    
+    size_t size() const
+    {
+        if (!input->samplerOffsets.empty())
+           return input->samplerOffsets.size();
+        return (input->samplerConfig) ? input->samplers.size() :
+                (input->samplerInitSize>>3);
+    }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        Elf64_Rela rela;
+        rela.r_addend = 0;
+        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 3;
+        if (!input->samplerOffsets.empty())
+            for (size_t sampOffset: input->samplerOffsets)
+            {
+                SLEV(rela.r_offset, sampOffset);
+                SLEV(rela.r_info, ELF64_R_INFO(symIndex, 4U));
+                fob.writeObject(rela);
+                symIndex++;
+            }
+        else // default in last bytes
+        {
+            const size_t samplersNum = (input->samplerConfig) ?
+                        input->samplers.size() : (input->samplerInitSize>>3);
+            size_t globalOffset = input->globalDataSize - samplersNum;
+            for (size_t i = 0; i < samplersNum; i++)
+            {
+                SLEV(rela.r_offset, globalOffset + 8*i);
+                SLEV(rela.r_info, ELF64_R_INFO(symIndex+i, 4U));
+                fob.writeObject(rela);
+            }
+        }
     }
 };
 
@@ -434,9 +490,75 @@ public:
                 uint32_t type = (inRel.type==RelocType::LOW_32BIT) ? 1 : 2;
                 SLEV(rela.r_info, ELF64_R_INFO(symIndex, type));
                 SLEV(rela.r_addend, inRel.addend);
+                fob.writeObject(rela);
             }
             codeOffset += (kernel.codeSize+255)&(~255);
         }
+    }
+};
+
+/* NT_VERSION (0x1): size: 8, value: 0x1
+ * NT_ARCH (0x2): size: 12, dwords: 0x1, 0x0, 0x010101
+ * 0x5: size: 25, string: \x16\000-hsa_call_convention=\0\0
+ * 0x3: size: 30, string: (version???)
+ * "\4\0\7\0\7\0\0\0\0\0\0\0\0\0\0\0AMD\0AMDGPU\0\0\0\0"
+ * 0x4: size: 4, random 64-bit value: 0x7ffXXXXXXXXX */
+static const cxbyte noteSectionData[168] =
+{
+    0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00,
+    0x02, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00,
+    0x19, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00,
+    0x41, 0x4d, 0x44, 0x00, 0x16, 0x00, 0x2d, 0x68,
+    0x73, 0x61, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x5f,
+    0x63, 0x6f, 0x6e, 0x76, 0x65, 0x6e, 0x74, 0x69,
+    0x6f, 0x6e, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x1e, 0x00, 0x00, 0x00,
+    0x03, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x04, 0x00, 0x07, 0x00, 0x07, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x41, 0x4d, 0x44, 0x00, 0x41, 0x4d, 0x44, 0x47,
+    0x50, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00
+};
+
+// fast and memory efficient symbol table generator for main binary
+class CLRX_INTERNAL CL2InnerSymTabGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+    size_t samplersNum;
+public:
+    CL2InnerSymTabGen(const AmdCL2Input* _input)
+    { 
+        if (!input->samplerOffsets.empty())
+           samplersNum = input->samplerOffsets.size();
+        else // if no sampler offsets
+            samplersNum = (input->samplerConfig) ? input->samplers.size() :
+                    (input->samplerInitSize>>3);
+    }
+    
+    size_t size() const
+    {
+        size_t symsNum = input->kernels.size();
+        symsNum += 2*samplersNum;
+        symsNum += (input->globalDataSize!=0 && input->globalData!=nullptr) +
+            (samplersNum!=0); // global data symbols
+        symsNum += input->innerExtraSymbols.size();
+        return symsNum*sizeof(Elf64_Sym);
+    }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        Elf64_Sym symbol;
+        size_t nameIndex = 1;
+        std::vector<bool> samplerMask(samplersNum);
     }
 };
 
