@@ -29,6 +29,7 @@
 #include <string>
 #include <ostream>
 #include <vector>
+#include <CLRX/amdbin/Commons.h>
 #include <CLRX/amdbin/AmdBinGen.h>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/GPUId.h>
@@ -59,6 +60,7 @@ struct AmdCL2KernelConfig
 struct AmdCL2RelInput
 {
     size_t offset;
+    RelocType type;
     size_t addend;
 };
 

@@ -391,6 +391,19 @@ public:
     }
 };
 
+class CLRX_INTERNAL CL2InnerSamplerInitGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+public:
+    explicit CL2InnerSamplerInitGen(const AmdCL2Input* _input) : input(_input)
+    { }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+    }
+};
+
 class CLRX_INTERNAL CL2InnerTextRelsGen: public ElfRegionContent
 {
 private:
@@ -399,8 +412,31 @@ public:
     explicit CL2InnerTextRelsGen(const AmdCL2Input* _input) : input(_input)
     { }
     
+    size_t size() const
+    {
+        size_t out = 0;
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            out += kernel.relocations.size()*sizeof(Elf64_Rela);
+        return out;
+    }
+    
     void operator()(FastOutputBuffer& fob) const
     {
+        Elf64_Rela rela;
+        size_t codeOffset = 0;
+        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 1;
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+        {
+            codeOffset += (kernel.setupSize+255)&(~255);
+            for (const AmdCL2RelInput inRel: kernel.relocations)
+            {
+                SLEV(rela.r_offset, inRel.offset + codeOffset);
+                uint32_t type = (inRel.type==RelocType::LOW_32BIT) ? 1 : 2;
+                SLEV(rela.r_info, ELF64_R_INFO(symIndex, type));
+                SLEV(rela.r_addend, inRel.addend);
+            }
+            codeOffset += (kernel.codeSize+255)&(~255);
+        }
     }
 };
 

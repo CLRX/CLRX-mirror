@@ -17,25 +17,21 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 /*! \file Commons.h
- * \brief common definitions for assembler and disassembler
+ * \brief common definitions for binaries
  */
 
-#ifndef __CLRX_ASMCOMMONS_H__
-#define __CLRX_ASMCOMMONS_H__
-
-#include <CLRX/amdbin/Commons.h>
+#ifndef __CLRX_COMMONS_H__
+#define __CLRX_COMMONS_H__
 
 /// main namespace
 namespace CLRX
 {
 
-/// binary for Disassembler
-enum class BinaryFormat
+enum class RelocType
 {
-    AMD = 0,    ///< AMD CATALYST format
-    GALLIUM,     ///< GalliumCompute format
-    RAWCODE,     ///< raw code format
-    AMDCL2      ///< AMD OpenCL 2.0 format
+    VALUE = 0,
+    LOW_32BIT,
+    HIGH_32BIT
 };
 
 };

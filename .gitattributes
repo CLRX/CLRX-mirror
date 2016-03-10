@@ -11,6 +11,7 @@ CLRX/amdbin/AmdBinGen.h -text
 CLRX/amdbin/AmdBinaries.h -text
 CLRX/amdbin/AmdCL2BinGen.h -text
 CLRX/amdbin/AmdCL2Binaries.h -text
+CLRX/amdbin/Commons.h -text
 CLRX/amdbin/Elf.h -text
 CLRX/amdbin/ElfBinaries.h -text
 CLRX/amdbin/GalliumBinaries.h -text
