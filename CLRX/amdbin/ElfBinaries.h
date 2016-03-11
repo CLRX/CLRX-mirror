@@ -676,6 +676,8 @@ class ElfBinaryGenTemplate
 {
 private:
     bool sizeComputed;
+    bool addNullSym, addNullDynSym;
+    bool addNullSection;
     uint16_t shStrTab, strTab, dynStr;
     cxuint shdrTabRegion, phdrTabRegion;
     uint16_t sectionsNum;
@@ -692,7 +694,9 @@ private:
 public:
     ElfBinaryGenTemplate();
     /// construcrtor
-    explicit ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& header);
+    explicit ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& header,
+            bool addNullSym = true, bool addNullDynSym = true,
+            bool addNullSection = true);
     
     /// set elf header
     void setHeader(const ElfHeaderTemplate<Types>& header)

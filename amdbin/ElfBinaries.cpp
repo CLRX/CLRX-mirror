@@ -351,13 +351,16 @@ ElfRegionContent::~ElfRegionContent()
 
 template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate()
-        : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
-          shdrTabRegion(0), phdrTabRegion(0)
+        : sizeComputed(false), addNullSym(true), addNullDynSym(true),
+          addNullSection(true), shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0),
+          phdrTabRegion(0)
 { }
 
 template<typename Types>
-ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& _header)
-        : sizeComputed(false), shStrTab(0), strTab(0), dynStr(0),
+ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& _header,
+            bool _addNullSym, bool _addNullDynSym, bool _addNullSection)
+        : sizeComputed(false), addNullSym(_addNullSym), addNullDynSym(_addNullDynSym),
+          addNullSection(_addNullSection), shStrTab(0), strTab(0), dynStr(0),
           shdrTabRegion(0), phdrTabRegion(0), header(_header)
 { }
 
@@ -381,7 +384,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     
     regionOffsets.reset(new typename Types::Word[regions.size()]);
     size = sizeof(typename Types::Ehdr);
-    sectionsNum = 1;
+    sectionsNum = addNullSection; // if add null section
     for (const auto& region: regions)
         if (region.type == ElfRegionType::SECTION)
             sectionsNum++;
@@ -438,28 +441,30 @@ void ElfBinaryGenTemplate<Types>::computeSize()
             else // otherwise get default size for symtab, dynsym, strtab, dynstr
             {
                 if (region.section.type == SHT_SYMTAB)
-                    size += uint64_t(symbols.size()+1)*sizeof(typename Types::Sym);
+                    size += uint64_t(symbols.size()+addNullSym)*
+                                sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_DYNSYM)
-                    size += uint64_t(dynSymbols.size()+1)*sizeof(typename Types::Sym);
+                    size += uint64_t(dynSymbols.size()+addNullDynSym)*
+                                sizeof(typename Types::Sym);
                 else if (region.section.type == SHT_STRTAB)
                 {
                     if (::strcmp(region.section.name, ".strtab") == 0)
                     {
-                        size += 1;
+                        size += (addNullSym);
                         for (const auto& sym: symbols)
                             if (sym.name != nullptr && sym.name[0] != 0)
                                 size += ::strlen(sym.name)+1;
                     }
                     else if (::strcmp(region.section.name, ".dynstr") == 0)
                     {
-                        size += 1;
+                        size += (addNullDynSym);
                         for (const auto& sym: dynSymbols)
                             if (sym.name != nullptr && sym.name[0] != 0)
                                 size += ::strlen(sym.name)+1;
                     }
                     else if (::strcmp(region.section.name, ".shstrtab") == 0)
                     {
-                        size += 1;
+                        size += (addNullSection);
                         for (const auto& region2: regions)
                         {
                             if (region2.type == ElfRegionType::SECTION &&
@@ -616,8 +621,9 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         }
         else if (region.type == ElfRegionType::SHDR_TABLE)
         {   /* write section headers table */
-            fob.fill(sizeof(typename Types::Shdr), 0);
-            uint32_t nameOffset = 1;
+            if (addNullSection)
+                fob.fill(sizeof(typename Types::Shdr), 0);
+            uint32_t nameOffset = (addNullSection);
             for (cxuint j = 0; j < regions.size(); j++)
             {
                 const auto& region2 = regions[j];
@@ -683,8 +689,17 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
             {
                 if (region.section.type == SHT_SYMTAB || region.section.type == SHT_DYNSYM)
                 {
-                    fob.fill(sizeof(typename Types::Sym), 0);
-                    uint32_t nameOffset = 1;
+                    uint32_t nameOffset = 0;
+                    if (region.section.type == SHT_SYMTAB && addNullSym)
+                    {
+                        fob.fill(sizeof(typename Types::Sym), 0);
+                        nameOffset = 1;
+                    }
+                    if (region.section.type == SHT_DYNSYM && addNullDynSym)
+                    {
+                        fob.fill(sizeof(typename Types::Sym), 0);
+                        nameOffset = 1;
+                    }
                     const auto& symbolsList = (region.section.type == SHT_SYMTAB) ?
                             symbols : dynSymbols;
                     for (const auto& inSym: symbolsList)
@@ -721,21 +736,24 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 {
                     if (::strcmp(region.section.name, ".strtab") == 0)
                     {
-                        fob.put(0);
+                        if (addNullSym)
+                            fob.put(0);
                         for (const auto& sym: symbols)
                             if (sym.name != nullptr && sym.name[0] != 0)
                                 fob.write(::strlen(sym.name)+1, sym.name);
                     }
                     else if (::strcmp(region.section.name, ".dynstr") == 0)
                     {
-                        fob.put(0);
+                        if (addNullDynSym)
+                            fob.put(0);
                         for (const auto& sym: dynSymbols)
                             if (sym.name != nullptr && sym.name[0] != 0)
                                 fob.write(::strlen(sym.name)+1, sym.name);
                     }
                     else if (::strcmp(region.section.name, ".shstrtab") == 0)
                     {
-                        fob.put(0);
+                        if (addNullSection)
+                            fob.put(0);
                         for (const auto& region2: regions)
                             if (region2.type == ElfRegionType::SECTION &&
                                 region2.section.name != nullptr &&
