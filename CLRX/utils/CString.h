@@ -51,6 +51,12 @@ public:
     { }
     
     /// constructor from C-style string pointer
+    explicit CString(uint n) : ptr(nullptr)
+    {
+        ptr = new char[n+1];
+    }
+    
+    /// constructor from C-style string pointer
     CString(const char* str) : ptr(nullptr)
     {
         if (str == nullptr)
@@ -243,6 +249,10 @@ public:
     
     /// get ith character (use only if string is not empty)
     const char& operator[](size_t i) const
+    { return ptr[i]; }
+    
+    /// get ith character (use only if string is not empty)
+    char& operator[](size_t i)
     { return ptr[i]; }
     
     /// return C-style string pointer

@@ -535,116 +535,81 @@ static inline cxuint countDigits(size_t value)
     return digits;
 }
 
-// fast and memory efficient symbol table generator for main binary
-class CLRX_INTERNAL CL2InnerSymTabGen: public ElfRegionContent
+static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
+                 size_t suffixSize, const char* suffix)
 {
-private:
-    const AmdCL2Input* input;
-    size_t samplersNum;
-public:
-    CL2InnerSymTabGen(const AmdCL2Input* _input)
-    { 
-        if (!input->samplerOffsets.empty())
-           samplersNum = input->samplerOffsets.size();
-        else // if no sampler offsets
-            samplersNum = (input->samplerConfig) ? input->samplers.size() :
-                    (input->samplerInitSize>>3);
-    }
-    
-    size_t size() const
-    {
-        size_t symsNum = input->kernels.size();
-        symsNum += 2*samplersNum;
-        symsNum += (input->globalDataSize!=0 && input->globalData!=nullptr) +
-            (samplersNum!=0); // global data symbols
-        symsNum += input->innerExtraSymbols.size();
-        return symsNum*sizeof(Elf64_Sym);
-    }
-    
-    void operator()(FastOutputBuffer& fob) const
-    {
-        Elf64_Sym symbol;
-        size_t codePos = 0;
-        size_t nameIndex = 1;
-        std::vector<bool> samplerMask(samplersNum);
-        size_t samplerOffset = input->globalDataSize - samplersNum;
-        for (const AmdCL2KernelInput& kernel: input->kernels)
-        {   // first, we put sampler objects
-            if (kernel.useConfig)
-                for (cxuint samp: kernel.config.samplers)
-                {
-                    if (samplerMask[samp])
-                        continue; // if added to symbol table
-                    SLEV(symbol.st_name, nameIndex);
-                    if (!input->samplerOffsets.empty()) // from sampler offset in input
-                        SLEV(symbol.st_value, input->samplerOffsets[samp]);
-                    else // otherwise we compute
-                        SLEV(symbol.st_value, samplerOffset + samp*8);
-                    SLEV(symbol.st_shndx, 1);
-                    symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
-                    symbol.st_other = 0;
-                    SLEV(symbol.st_size, 8);
-                    nameIndex += 12+4+countDigits(samp)+1;
-                    fob.writeObject(symbol);
-                    samplerMask[samp] = true;
-                }
-            // put kernel symbol
-            SLEV(symbol.st_name, nameIndex);
-            SLEV(symbol.st_value, codePos);
-            SLEV(symbol.st_size, kernel.codeSize+kernel.setupSize);
-            SLEV(symbol.st_shndx, 2);
-            symbol.st_info = ELF32_ST_INFO(STB_LOCAL, 10U);
-            symbol.st_other = 0;
-            SLEV(symbol.st_size, 8);
-            nameIndex += kernel.kernelName.size() + 10 + 8;
-            fob.writeObject(symbol);
-            codePos += kernel.codeSize+kernel.setupSize;
-        }
-        for (size_t i = 0; i < samplersNum; i++)
-            if (!samplerMask[i])
-            {   // put rest of symbol samplers
-                SLEV(symbol.st_name, nameIndex);
-                if (!input->samplerOffsets.empty()) // from sampler offset in input
-                    SLEV(symbol.st_value, input->samplerOffsets[i]);
-                else // otherwise we compute
-                    SLEV(symbol.st_value, samplerOffset + i*8);
-                SLEV(symbol.st_shndx, 1);
-                symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
-                symbol.st_other = 0;
-                SLEV(symbol.st_size, 8);
-                nameIndex += 12+4+countDigits(i)+1;
-                fob.writeObject(symbol);
-                samplerMask[i] = true;
+    const size_t nameLen = name.size();
+    CString out(prefixSize + suffixSize + nameLen);
+    char* outPtr = out.begin();
+    std::copy(prefix, prefix+prefixSize, outPtr);
+    std::copy(name.begin(), name.begin()+nameLen, outPtr+prefixSize);
+    std::copy(suffix, suffix+suffixSize, outPtr+prefixSize+nameLen);
+    return out;
+}
+
+static void putInnerSymbolsGen(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input)
+{
+    cxuint samplersNum;
+    if (!input->samplerOffsets.empty())
+       samplersNum = input->samplerOffsets.size();
+    else // if no sampler offsets
+        samplersNum = (input->samplerConfig) ? input->samplers.size() :
+                (input->samplerInitSize>>3);
+    // put kernel symbols
+    std::vector<bool> samplerMask(samplersNum);
+    size_t samplerOffset = input->globalDataSize - samplersNum;
+    size_t codePos = 0;
+    for (const AmdCL2KernelInput& kernel: input->kernels)
+    {   // first, we put sampler objects
+        if (kernel.useConfig)
+            for (cxuint samp: kernel.config.samplers)
+            {
+                if (samplerMask[samp])
+                    continue; // if added to symbol table
+                const uint64_t value = !input->samplerOffsets.empty() ?
+                        input->samplerOffsets[samp] : samplerOffset + samp*8;
+                char sampName[64];
+                memcpy(sampName, "&input_bc::&_.Samp", 18);
+                itocstrCStyle<cxuint>(samp, sampName+18, 64-18);
+                innerBinGen.addSymbol(ElfSymbol64(sampName, 1,
+                          ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
+                samplerMask[samp] = true;
             }
-        /* global data symbol, and text symbol */
-        SLEV(symbol.st_name, nameIndex);
-        SLEV(symbol.st_value, 0);
-        SLEV(symbol.st_size, 0);
-        SLEV(symbol.st_shndx, 1);
-        symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_SECTION);
-        symbol.st_other = 0;
-        nameIndex += 37;
-        fob.writeObject(symbol);
-        
-        SLEV(symbol.st_shndx, 2);
-        symbol.st_info = ELF32_ST_INFO(STB_LOCAL, STT_SECTION);
-        symbol.st_other = 0;
-        nameIndex += 22;
-        fob.writeObject(symbol);
-        /* sampler global data symbols */
-        for (size_t i = 0; i < samplersNum; i++)
-        {
-            SLEV(symbol.st_name, nameIndex);
-            SLEV(symbol.st_value, i*8);
-            SLEV(symbol.st_size, 0);
-            SLEV(symbol.st_shndx, 3);
-            symbol.st_info = ELF32_ST_INFO(STB_LOCAL, 12U);
-            symbol.st_other = 0;
-            nameIndex++;
-            fob.writeObject(symbol);
-        }
+        // put kernel symbol
+        CString kernSymName = constructName(10, "&__OpenCL_", kernel.kernelName,
+                        7, "_kernel");
+        innerBinGen.addSymbol(ElfSymbol64(kernSymName.c_str(), 2,
+                  ELF32_ST_INFO(STB_LOCAL, 10), 0, false, codePos, 
+                  kernel.codeSize+kernel.setupSize));
+        codePos += kernel.codeSize+kernel.setupSize;
     }
-};
+    
+    for (size_t i = 0; i < samplersNum; i++)
+        if (!samplerMask[i])
+        {
+            const uint64_t value = !input->samplerOffsets.empty() ?
+                    input->samplerOffsets[i] : samplerOffset + i*8;
+            char sampName[64];
+            memcpy(sampName, "&input_bc::&_.Samp", 18);
+            itocstrCStyle<cxuint>(i, sampName+18, 64-18);
+            innerBinGen.addSymbol(ElfSymbol64(sampName, 1,
+                      ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
+            samplerMask[i] = true;
+        }
+    
+    if (input->globalDataSize!=0 && input->globalData!=nullptr)
+        innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_readonly_agent", 1,
+              ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+    innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsatext", 2,
+              ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+    
+    for (size_t i = 0; i < samplersNum; i++)
+        innerBinGen.addSymbol(ElfSymbol64("", 3, ELF32_ST_INFO(STB_LOCAL, 12),
+                      0, false, i*8, 0));
+    /// add extra inner symbols
+    for (const BinSymbol& extraSym: input->innerExtraSymbols)
+        innerBinGen.addSymbol(ElfSymbol64(extraSym, nullptr, 0, 0));
+}
 
 /// main routine to generate OpenCL 2.0 binary
 void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
@@ -708,6 +673,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (hasTextRels)
         {   //
         }
+        putInnerSymbolsGen(innerBinGen, input);
     }
     else
     {   // own binary format
