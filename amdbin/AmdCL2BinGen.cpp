@@ -312,15 +312,24 @@ class CLRX_INTERNAL CL2MainCommentGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    const CString& aclVersion;
 public:
-    explicit CL2MainCommentGen(const AmdCL2Input* _input) : input(_input)
+    explicit CL2MainCommentGen(const AmdCL2Input* _input, const CString& _aclVersion) :
+            input(_input), aclVersion(_aclVersion)
     { }
     
     void operator()(FastOutputBuffer& fob) const
     {
         fob.write(input->compileOptions.size(), input->compileOptions.c_str());
-        fob.write(input->aclVersion.size(), input->aclVersion.c_str());
+        fob.write(aclVersion.size(), aclVersion.c_str());
     }
+};
+
+static const cxbyte kernelIsaMetadata[] =
+{
+    0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x08, 0x42, 0x09, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
 };
 
 class CLRX_INTERNAL CL2MainRodataGen: public ElfRegionContent
@@ -350,7 +359,12 @@ public:
             fob.writeArray(kernel.metadataSize, kernel.metadata);
         if (!newBinaries)
             for (const AmdCL2KernelInput& kernel: input->kernels)
-                fob.writeArray(kernel.isaMetadataSize, kernel.isaMetadata);
+            {
+                if (kernel.isaMetadata!=nullptr)
+                    fob.writeArray(kernel.isaMetadataSize, kernel.isaMetadata);
+                else // default values
+                    fob.writeArray(sizeof(kernelIsaMetadata), kernelIsaMetadata);
+            }
     }
 };
 
@@ -686,12 +700,40 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
 {
     const size_t kernelsNum = input->kernels.size();
     const bool newBinaries = input->driverVersion >= 191205;
+    const bool hasSamplers = !input->samplerOffsets.empty() ||
+                (!input->samplerConfig && input->samplerInitSize!=0 &&
+                    input->samplerInit!=nullptr) ||
+                (input->samplerConfig && !input->samplers.empty());
+    const bool hasGlobalData = input->globalDataSize!=0 && input->globalData!=nullptr;
+                
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     if (arch == GPUArchitecture::GCN1_0)
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
     
+    if ((hasGlobalData || hasSamplers) && !newBinaries)
+        throw Exception("Old driver binaries doesn't support global data or samplers");
+    
+    if (!hasGlobalData && hasSamplers)
+        throw Exception("Global data must be defined if samplers present");
+    if (!input->samplerConfig)
+    {
+        if (input->samplerInitSize != input->samplerOffsets.size()*8)
+            throw Exception("Sampler offsets and sampler init sizes doesn't match");
+    }
+    else if (input->samplers.size() != input->samplerOffsets.size())
+        throw Exception("Sampler offsets and sampler sizes doesn't match");
+    
     ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b, EV_CURRENT,
                 UINT_MAX, 0, gpuDeviceCodeTable[cxuint(input->deviceType)] });
+    
+    CString aclVersion = input->aclVersion;
+    if (aclVersion.empty())
+    {
+        if (newBinaries)
+            aclVersion = "AMD-COMP-LIB-v0.8 (0.0.SC_BUILD_NUMBER)";
+        else // old binaries
+            aclVersion = "AMD-COMP-LIB-v0.8 (0.0.326)";
+    }
     
     Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
     for (size_t i = 0; i < kernelsNum; i++)
@@ -701,7 +743,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             throw Exception("ISA metadata allowed for old driver binaries");
         if (newBinaries && (kernel.stubSize!=0 || kernel.stub!=nullptr))
             throw Exception("Kernel stub allowed for old driver binaries");
-            
+        
         tempDatas[i].isaMetadataSize = kernel.isaMetadataSize;
         tempDatas[i].setupSize = kernel.setupSize;
         tempDatas[i].stubSize = kernel.stubSize;
@@ -709,7 +751,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     }
     CL2MainStrTabGen mainStrTabGen(input);
     CL2MainSymTabGen mainSymTabGen(input, tempDatas);
-    CL2MainCommentGen mainCommentGen(input);
+    CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input);
     CL2InnerTextGen innerTextGen(input);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
@@ -723,7 +765,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     SHT_STRTAB, SHF_STRINGS));
     elfBinGen.addRegion(ElfRegion64(mainSymTabGen.size(), &mainSymTabGen, 8, ".symtab",
                     SHT_SYMTAB, 0));
-    elfBinGen.addRegion(ElfRegion64(input->compileOptions.size()+input->aclVersion.size(),
+    elfBinGen.addRegion(ElfRegion64(input->compileOptions.size()+aclVersion.size(),
                     &mainCommentGen, 1, ".comment", SHT_PROGBITS, 0));
     elfBinGen.addRegion(ElfRegion64(mainRodataGen.size(), &mainRodataGen, 1, ".rodata",
                     SHT_PROGBITS, SHF_ALLOC));
@@ -733,8 +775,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     {   // new binaries - .text holds inner ELF binaries
         const uint16_t* innerBinSectionTable;
         cxuint extraSectionIndex = 0;
-        const bool hasSamplers = !input->samplerOffsets.empty() ||
-                input->samplerInitSize!=0 || !input->samplers.empty();
         
         if (input->globalDataSize==0 || input->globalData==nullptr)
         {
@@ -754,6 +794,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
                         UINT_MAX, 0, 0 }, false));
+        innerBinGen->addRegion(ElfRegion64::programHeaderTable());
+        
         if (input->globalDataSize!=0 && input->globalData!=nullptr)
             // global data section
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
@@ -786,6 +828,12 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         for (const BinSection& section: input->innerExtraSections)
             innerBinGen->addRegion(ElfRegion64(section, innerBinSectionTable,
                          AMDCL2SECTID_MAX, extraSectionIndex));
+        // section table
+        innerBinGen->addRegion(ElfRegion64::sectionHeaderTable());
+        /// program headers
+        innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, 1, 1, true, 0, 0, 0 });
+        innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, 2, 1, true,
+                    0, -0x100ULL, 0 });
     }
     
     CL2MainTextGen mainTextGen(input, innerBinGen.get());
@@ -795,6 +843,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     for (const BinSection& section: input->extraSections)
             elfBinGen.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
                          ELFSECTID_STD_MAX, 7));
+    elfBinGen.addRegion(ElfRegion64::sectionHeaderTable());
     
     const uint64_t binarySize = elfBinGen.countSize();
     /****
