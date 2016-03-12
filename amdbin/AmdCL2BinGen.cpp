@@ -20,6 +20,7 @@
 #include <CLRX/Config.h>
 #include <cstring>
 #include <cstdint>
+#include <cassert>
 #include <fstream>
 #include <algorithm>
 #include <string>
@@ -357,12 +358,34 @@ class CLRX_INTERNAL CL2MainTextGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    ElfBinaryGen64* innerBinGen;
 public:
-    explicit CL2MainTextGen(const AmdCL2Input* _input) : input(_input)
+    explicit CL2MainTextGen(const AmdCL2Input* _input,
+            ElfBinaryGen64* _innerBinGen) : input(_input), innerBinGen(_innerBinGen)
     { }
     
+    size_t size() const
+    {
+        if (innerBinGen)
+            return innerBinGen->countSize();
+        size_t out = 0;
+        for (const AmdCL2KernelInput kernel: input->kernels)
+            out += kernel.stubSize + kernel.setupSize + kernel.codeSize;
+        return out;
+    }
+    
     void operator()(FastOutputBuffer& fob) const
-    { }
+    {
+        if (innerBinGen!=nullptr)
+            innerBinGen->generate(fob);
+        else // otherwise
+            for (const AmdCL2KernelInput kernel: input->kernels)
+            {
+                fob.writeArray(kernel.stubSize, kernel.stub);
+                fob.writeArray(kernel.setupSize, kernel.setup);
+                fob.writeArray(kernel.codeSize, kernel.code);
+            }
+    }
 };
 
 class CLRX_INTERNAL CL2InnerTextGen: public ElfRegionContent
@@ -705,6 +728,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     elfBinGen.addRegion(ElfRegion64(mainRodataGen.size(), &mainRodataGen, 1, ".rodata",
                     SHT_PROGBITS, SHF_ALLOC));
     
+    std::unique_ptr<ElfBinaryGen64> innerBinGen;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
         const uint16_t* innerBinSectionTable;
@@ -728,40 +752,86 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             extraSectionIndex = 10;
         }
         
-        ElfBinaryGen64 innerBinGen({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
-                        UINT_MAX, 0, 0 });
+        innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
+                        UINT_MAX, 0, 0 }, false));
         if (input->globalDataSize!=0 && input->globalData!=nullptr)
             // global data section
-            innerBinGen.addRegion(ElfRegion64(input->globalDataSize, input->globalData,
+            innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
                       4, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
-        innerBinGen.addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
+        innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007));
         if (hasSamplers)
         {
-            innerBinGen.addRegion(ElfRegion64(input->samplerConfig ?
+            innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
                     input->samplers.size()*8 : input->samplerInitSize,
                     &innerSamplerInitGen, 1, ".hsaimage_samplerinit", SHT_PROGBITS,
                     SHF_MERGE));
-            innerBinGen.addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
+            innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
                     ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1));
         }
         size_t textRelSize = innerTextGen.size();
         if (textRelSize!=0) // if some relocations
-            innerBinGen.addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
+            innerBinGen->addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
                     ".rela.hsatext", SHT_RELA, 0, (hasSamplers)?8:6, 2));
-        innerBinGen.addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
+        innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
                     ".note", SHT_NOTE, 0));
-        innerBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
+        innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
                               SHT_STRTAB, SHF_STRINGS, 0, 0));
-        innerBinGen.addRegion(ElfRegion64::symtabSection());
-        innerBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+        innerBinGen->addRegion(ElfRegion64::symtabSection());
+        innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                               SHT_STRTAB, SHF_STRINGS, 0, 0));
         
-        putInnerSymbols(innerBinGen, input, innerBinSectionTable, extraSectionIndex);
+        putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex);
+        
+        for (const BinSection& section: input->innerExtraSections)
+            innerBinGen->addRegion(ElfRegion64(section, innerBinSectionTable,
+                         AMDCL2SECTID_MAX, extraSectionIndex));
     }
-    else
-    {   // own binary format
+    
+    CL2MainTextGen mainTextGen(input, innerBinGen.get());
+    elfBinGen.addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen, 1, ".text",
+                    SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
+    
+    for (const BinSection& section: input->extraSections)
+            elfBinGen.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
+                         ELFSECTID_STD_MAX, 7));
+    
+    const uint64_t binarySize = elfBinGen.countSize();
+    /****
+     * prepare for write binary to output
+     ****/
+    std::unique_ptr<std::ostream> outStreamHolder;
+    std::ostream* os = nullptr;
+    if (aPtr != nullptr)
+    {
+        aPtr->resize(binarySize);
+        outStreamHolder.reset(
+            new ArrayOStream(binarySize, reinterpret_cast<char*>(aPtr->data())));
+        os = outStreamHolder.get();
     }
+    else if (vPtr != nullptr)
+    {
+        vPtr->resize(binarySize);
+        outStreamHolder.reset(new VectorOStream(*vPtr));
+        os = outStreamHolder.get();
+    }
+    else // from argument
+        os = osPtr;
+    
+    const std::ios::iostate oldExceptions = os->exceptions();
+    FastOutputBuffer fob(256, *os);
+    try
+    {
+        os->exceptions(std::ios::failbit | std::ios::badbit);
+        elfBinGen.generate(fob);
+    }
+    catch(...)
+    {
+        os->exceptions(oldExceptions);
+        throw;
+    }
+    os->exceptions(oldExceptions);
+    assert(fob.getWritten() == binarySize);
 }
 
 void AmdCL2GPUBinGenerator::generate(Array<cxbyte>& array) const
