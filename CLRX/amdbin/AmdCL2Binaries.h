@@ -67,10 +67,11 @@ struct AmdCL2GPUKernel
     cxbyte* code;     ///< data
 };
 
+/// AMD OpenCL 2.0 GPU kernel stub
 struct AmdCL2GPUKernelStub
 {
-    size_t size;   /// setup size
-    cxbyte* data;      /// < setup data
+    size_t size;   ///< setup size
+    cxbyte* data;      ///< setup data
 };
 
 class AmdCL2MainGPUBinary;

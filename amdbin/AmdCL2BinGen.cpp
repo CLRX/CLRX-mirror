@@ -165,7 +165,7 @@ public:
         }
         if (withBrig)
             fob.write(9, "__BRIG__");
-        if (newBinaries)
+        if (!newBinaries)
             for (const AmdCL2KernelInput& kernel: input->kernels)
             {   // put kernel ISA/binary symbol names
                 fob.write(19, "__ISA_&__OpenCL_");
@@ -574,11 +574,13 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
     std::copy(prefix, prefix+prefixSize, outPtr);
     std::copy(name.begin(), name.begin()+nameLen, outPtr+prefixSize);
     std::copy(suffix, suffix+suffixSize, outPtr+prefixSize+nameLen);
+    outPtr[prefixSize+nameLen] = 0;
     return out;
 }
 
 static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input,
-        const uint16_t* builtinSectionTable, cxuint extraSeciontIndex)
+        const uint16_t* builtinSectionTable, cxuint extraSeciontIndex,
+        std::vector<CString>& stringPool)
 {
     cxuint samplersNum;
     if (!input->samplerOffsets.empty())
@@ -590,6 +592,8 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
     std::vector<bool> samplerMask(samplersNum);
     size_t samplerOffset = input->globalDataSize - samplersNum;
     size_t codePos = 0;
+    uint16_t textSectId = convertSectionId(ELFSECTID_TEXT, builtinSectionTable,
+                             AMDCL2SECTID_MAX, extraSeciontIndex);
     for (const AmdCL2KernelInput& kernel: input->kernels)
     {   // first, we put sampler objects
         if (kernel.useConfig)
@@ -602,14 +606,16 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                 char sampName[64];
                 memcpy(sampName, "&input_bc::&_.Samp", 18);
                 itocstrCStyle<cxuint>(samp, sampName+18, 64-18);
-                innerBinGen.addSymbol(ElfSymbol64(sampName, 1,
+                stringPool.push_back(sampName);
+                innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), 1,
                           ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
                 samplerMask[samp] = true;
             }
         // put kernel symbol
-        CString kernSymName = constructName(10, "&__OpenCL_", kernel.kernelName,
-                        7, "_kernel");
-        innerBinGen.addSymbol(ElfSymbol64(kernSymName.c_str(), 2,
+        stringPool.push_back(constructName(10, "&__OpenCL_", kernel.kernelName,
+                        7, "_kernel"));
+        
+        innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), textSectId,
                   ELF32_ST_INFO(STB_LOCAL, 10), 0, false, codePos, 
                   kernel.codeSize+kernel.setupSize));
         codePos += kernel.codeSize+kernel.setupSize;
@@ -623,7 +629,8 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             char sampName[64];
             memcpy(sampName, "&input_bc::&_.Samp", 18);
             itocstrCStyle<cxuint>(i, sampName+18, 64-18);
-            innerBinGen.addSymbol(ElfSymbol64(sampName, 1,
+            stringPool.push_back(sampName);
+            innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), 1,
                       ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
             samplerMask[i] = true;
         }
@@ -631,7 +638,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
     if (input->globalDataSize!=0 && input->globalData!=nullptr)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_readonly_agent", 1,
               ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
-    innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsatext", 2,
+    innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsatext", textSectId,
               ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     
     for (size_t i = 0; i < samplersNum; i++)
@@ -771,6 +778,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     SHT_PROGBITS, SHF_ALLOC));
     
     std::unique_ptr<ElfBinaryGen64> innerBinGen;
+    std::vector<CString> symbolNamePool;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
         const uint16_t* innerBinSectionTable;
@@ -811,7 +819,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
                     ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1));
         }
-        size_t textRelSize = innerTextGen.size();
+        size_t textRelSize = innerTextRelsGen.size();
         if (textRelSize!=0) // if some relocations
             innerBinGen->addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
                     ".rela.hsatext", SHT_RELA, 0, (hasSamplers)?8:6, 2));
@@ -823,7 +831,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                               SHT_STRTAB, SHF_STRINGS, 0, 0));
         
-        putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex);
+        putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex,
+                        symbolNamePool);
         
         for (const BinSection& section: input->innerExtraSections)
             innerBinGen->addRegion(ElfRegion64(section, innerBinSectionTable,
