@@ -38,6 +38,12 @@
 namespace CLRX
 {
 
+enum: cxuint {
+    AMDCL2SECTID_SAMPLERINIT = ELFSECTID_OTHER_BUILTIN,
+    AMDCL2SECTID_NOTE,
+    AMDCL2SECTID_MAX = AMDCL2SECTID_NOTE
+};
+
 /// kernel configuration
 struct AmdCL2KernelConfig
 {

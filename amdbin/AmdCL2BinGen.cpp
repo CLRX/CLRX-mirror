@@ -528,13 +528,6 @@ static const cxbyte noteSectionData[168] =
     0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00
 };
 
-static inline cxuint countDigits(size_t value)
-{
-    cxuint digits = 0;
-    for (; value!=0; value/=10, digits++);
-    return digits;
-}
-
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
                  size_t suffixSize, const char* suffix)
 {
@@ -547,7 +540,8 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
     return out;
 }
 
-static void putInnerSymbolsGen(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input)
+static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input,
+        const uint16_t* builtinSectionTable, cxuint extraSeciontIndex)
 {
     cxuint samplersNum;
     if (!input->samplerOffsets.empty())
@@ -608,8 +602,60 @@ static void putInnerSymbolsGen(ElfBinaryGen64& innerBinGen, const AmdCL2Input* i
                       0, false, i*8, 0));
     /// add extra inner symbols
     for (const BinSymbol& extraSym: input->innerExtraSymbols)
-        innerBinGen.addSymbol(ElfSymbol64(extraSym, nullptr, 0, 0));
+        innerBinGen.addSymbol(ElfSymbol64(extraSym, builtinSectionTable, AMDCL2SECTID_MAX,
+                                  extraSeciontIndex));
 }
+
+/// without global data and samplers
+static const uint16_t innerBuiltinSectionTable1[] =
+{
+    5, // ELFSECTID_SHSTRTAB
+    3, // ELFSECTID_STRTAB
+    4, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    1, // ELFSECTID_TEXT
+    SHN_UNDEF, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    SHN_UNDEF, // ELFSECTID_COMMENT
+    SHN_UNDEF, // AMDCL2SECTID_SAMPLERINIT
+    2  // AMDCL2SECTID_NOTE
+};
+
+/// global data
+static const uint16_t innerBuiltinSectionTable2[] =
+{
+    7, // ELFSECTID_SHSTRTAB
+    5, // ELFSECTID_STRTAB
+    6, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    2, // ELFSECTID_TEXT
+    1, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    SHN_UNDEF, // ELFSECTID_COMMENT
+    SHN_UNDEF, // AMDCL2SECTID_SAMPLERINIT
+    4  // AMDCL2SECTID_NOTE
+};
+
+/// global data and samplers
+static const uint16_t innerBuiltinSectionTable3[] =
+{
+    9, // ELFSECTID_SHSTRTAB
+    7, // ELFSECTID_STRTAB
+    8, // ELFSECTID_SYMTAB
+    SHN_UNDEF, // ELFSECTID_DYNSTR
+    SHN_UNDEF, // ELFSECTID_DYNSYM
+    2, // ELFSECTID_TEXT
+    1, // ELFSECTID_RODATA
+    SHN_UNDEF, // ELFSECTID_DATA
+    SHN_UNDEF, // ELFSECTID_BSS
+    SHN_UNDEF, // ELFSECTID_COMMENT
+    3, // AMDCL2SECTID_SAMPLERINIT
+    6  // AMDCL2SECTID_NOTE
+};
 
 /// main routine to generate OpenCL 2.0 binary
 void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
@@ -643,6 +689,9 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     CL2MainCommentGen mainCommentGen(input);
     CL2MainRodataGen mainRodataGen(input);
     CL2InnerTextGen innerTextGen(input);
+    CL2InnerSamplerInitGen innerSamplerInitGen(input);
+    CL2InnerTextRelsGen innerTextRelsGen(input);
+    CL2InnerGlobalDataRelsGen innerGDataRels(input);
     
     // main section of main binary
     elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
@@ -658,6 +707,27 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
+        const uint16_t* innerBinSectionTable;
+        cxuint extraSectionIndex = 0;
+        const bool hasSamplers = !input->samplerOffsets.empty() ||
+                input->samplerInitSize!=0 || !input->samplers.empty();
+        
+        if (input->globalDataSize==0 || input->globalData==nullptr)
+        {
+            innerBinSectionTable = innerBuiltinSectionTable1;
+            extraSectionIndex = 6;
+        }
+        else if (!hasSamplers) // no samplers
+        {
+            innerBinSectionTable = innerBuiltinSectionTable2;
+            extraSectionIndex = 8;
+        }
+        else // samplers and global data
+        {
+            innerBinSectionTable = innerBuiltinSectionTable3;
+            extraSectionIndex = 10;
+        }
+        
         ElfBinaryGen64 innerBinGen({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
                         UINT_MAX, 0, 0 });
         if (input->globalDataSize!=0 && input->globalData!=nullptr)
@@ -666,14 +736,28 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                       4, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
         innerBinGen.addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007));
-        
-        bool hasTextRels = std::any_of(input->kernels.begin(), input->kernels.begin(),
-                    [](const AmdCL2KernelInput& kernel)
-                    { return !kernel.relocations.empty(); });
-        if (hasTextRels)
-        {   //
+        if (hasSamplers)
+        {
+            innerBinGen.addRegion(ElfRegion64(input->samplerConfig ?
+                    input->samplers.size()*8 : input->samplerInitSize,
+                    &innerSamplerInitGen, 1, ".hsaimage_samplerinit", SHT_PROGBITS,
+                    SHF_MERGE));
+            innerBinGen.addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
+                    ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1));
         }
-        putInnerSymbolsGen(innerBinGen, input);
+        size_t textRelSize = innerTextGen.size();
+        if (textRelSize!=0) // if some relocations
+            innerBinGen.addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
+                    ".rela.hsatext", SHT_RELA, 0, (hasSamplers)?8:6, 2));
+        innerBinGen.addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
+                    ".note", SHT_NOTE, 0));
+        innerBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
+                              SHT_STRTAB, SHF_STRINGS, 0, 0));
+        innerBinGen.addRegion(ElfRegion64::symtabSection());
+        innerBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+                              SHT_STRTAB, SHF_STRINGS, 0, 0));
+        
+        putInnerSymbols(innerBinGen, input, innerBinSectionTable, extraSectionIndex);
     }
     else
     {   // own binary format
