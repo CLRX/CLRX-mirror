@@ -168,7 +168,7 @@ public:
         if (!newBinaries)
             for (const AmdCL2KernelInput& kernel: input->kernels)
             {   // put kernel ISA/binary symbol names
-                fob.write(19, "__ISA_&__OpenCL_");
+                fob.write(16, "__ISA_&__OpenCL_");
                 fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
                 fob.write(31, "_kernel_binary\000__ISA_&__OpenCL_");
                 fob.write(kernel.kernelName.size(), kernel.kernelName.c_str());
@@ -271,7 +271,7 @@ public:
                 SLEV(sym.st_size, tempData.stubSize+tempData.setupSize+tempData.codeSize);
                 sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
                 sym.st_other = 0;
-                nameIndex += 19 + kernel.kernelName.size() + 15;
+                nameIndex += 16 + kernel.kernelName.size() + 15;
                 textPos += tempData.stubSize+tempData.setupSize+tempData.codeSize;
                 fob.writeObject(sym);
                 // put ISA metadata symbol
@@ -281,7 +281,7 @@ public:
                 SLEV(sym.st_size, tempData.isaMetadataSize);
                 sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
                 sym.st_other = 0;
-                nameIndex += 19 + kernel.kernelName.size() + 17;
+                nameIndex += 16 + kernel.kernelName.size() + 17;
                 rodataPos += tempData.isaMetadataSize;
                 fob.writeObject(sym);
             }
@@ -487,7 +487,7 @@ public:
     {
         Elf64_Rela rela;
         rela.r_addend = 0;
-        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 3;
+        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 2;
         if (!input->samplerOffsets.empty())
             for (size_t sampOffset: input->samplerOffsets)
             {
@@ -531,7 +531,7 @@ public:
     {
         Elf64_Rela rela;
         size_t codeOffset = 0;
-        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 1;
+        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size();
         for (const AmdCL2KernelInput& kernel: input->kernels)
         {
             codeOffset += (kernel.setupSize+255)&(~255);
@@ -737,15 +737,18 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if ((hasGlobalData || hasSamplers) && !newBinaries)
         throw Exception("Old driver binaries doesn't support global data or samplers");
     
-    if (!hasGlobalData && hasSamplers)
-        throw Exception("Global data must be defined if samplers present");
-    if (!input->samplerConfig)
+    if (newBinaries)
     {
-        if (input->samplerInitSize != input->samplerOffsets.size()*8)
-            throw Exception("Sampler offsets and sampler init sizes doesn't match");
+        if (!hasGlobalData && hasSamplers)
+            throw Exception("Global data must be defined if samplers present");
+        if (!input->samplerConfig)
+        {
+            if (input->samplerInitSize != input->samplerOffsets.size()*8)
+                throw Exception("Sampler offsets and sampler init sizes doesn't match");
+        }
+        else if (input->samplers.size() != input->samplerOffsets.size())
+            throw Exception("Sampler offsets and sampler sizes doesn't match");
     }
-    else if (input->samplers.size() != input->samplerOffsets.size())
-        throw Exception("Sampler offsets and sampler sizes doesn't match");
     
     ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b, EV_CURRENT,
                 UINT_MAX, 0, gpuDeviceCodeTable[cxuint(input->deviceType)] });
@@ -826,7 +829,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
                       4, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
         innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
-                      ".hsatext", SHT_PROGBITS, 0xc00007));
+                      ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, -0x100ULL));
         if (hasSamplers)
         {
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
@@ -834,12 +837,14 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     &innerSamplerInitGen, 1, ".hsaimage_samplerinit", SHT_PROGBITS,
                     SHF_MERGE));
             innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
-                    ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1));
+                    ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1, 0,
+                    sizeof(Elf64_Rela)));
         }
         size_t textRelSize = innerTextRelsGen.size();
         if (textRelSize!=0) // if some relocations
             innerBinGen->addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
-                    ".rela.hsatext", SHT_RELA, 0, (hasSamplers)?8:6, 2));
+                    ".rela.hsatext", SHT_RELA, 0, (hasSamplers)?8:6, 2,  0,
+                    sizeof(Elf64_Rela)));
         innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
                     ".note", SHT_NOTE, 0));
         innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
