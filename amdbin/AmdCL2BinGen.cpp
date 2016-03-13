@@ -477,10 +477,13 @@ public:
     
     size_t size() const
     {
+        size_t out;
         if (!input->samplerOffsets.empty())
-           return input->samplerOffsets.size();
-        return (input->samplerConfig) ? input->samplers.size() :
-                (input->samplerInitSize>>3);
+           out = input->samplerOffsets.size();
+        else
+            out= (input->samplerConfig) ? input->samplers.size() :
+                    (input->samplerInitSize>>3);
+        return out*sizeof(Elf64_Rela);
     }
     
     void operator()(FastOutputBuffer& fob) const
@@ -835,7 +838,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
                     input->samplers.size()*8 : input->samplerInitSize,
                     &innerSamplerInitGen, 1, ".hsaimage_samplerinit", SHT_PROGBITS,
-                    SHF_MERGE));
+                    SHF_MERGE, 0, 0, 0, 8));
             innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
                     ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1, 0,
                     sizeof(Elf64_Rela)));

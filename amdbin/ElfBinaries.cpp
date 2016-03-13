@@ -553,6 +553,23 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
         fob.writeObject(ehdr);
     }
     
+    size_t nullSymNameOffset = 0;
+    if (!addNullSym && !symbols.empty())
+        nullSymNameOffset = ::strlen(symbols[0].name);
+    size_t nullDynSymNameOffset = 0;
+    if (!addNullDynSym && !dynSymbols.empty())
+        nullDynSymNameOffset = ::strlen(dynSymbols[0].name);
+    size_t nullSectionNameOffset = 0;
+    if (!addNullSection)
+    {
+        for (const ElfRegionTemplate<Types>& reg: regions)
+            if (reg.type == ElfRegionType::SECTION)
+            {
+                nullSectionNameOffset = ::strlen(reg.section.name);
+                break;
+            }
+    }
+    
     /* write regions */
     for (size_t i = 0; i < regions.size(); i++)
     {   
@@ -633,7 +650,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     if (region2.section.name!=nullptr && region2.section.name[0]!=0)
                         SLEV(shdr.sh_name, nameOffset);
                     else
-                        SLEV(shdr.sh_name, 0);
+                        SLEV(shdr.sh_name, nullSectionNameOffset);
                     SLEV(shdr.sh_type, region2.section.type);
                     SLEV(shdr.sh_flags, region2.section.flags);
                     SLEV(shdr.sh_offset, regionOffsets[j]);
@@ -708,7 +725,8 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         if (inSym.name != nullptr && inSym.name[0] != 0)
                             SLEV(sym.st_name, nameOffset);
                         else
-                            SLEV(sym.st_name, 0);
+                            SLEV(sym.st_name, (region.section.type == SHT_SYMTAB) ?
+                                        nullSymNameOffset : nullDynSymNameOffset);
                         
                         SLEV(sym.st_shndx, inSym.sectionIndex);
                         SLEV(sym.st_size, inSym.size);
