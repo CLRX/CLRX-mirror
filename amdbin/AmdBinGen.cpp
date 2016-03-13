@@ -1793,7 +1793,7 @@ void AmdGPUBinGenerator::generate(std::vector<char>& vector) const
     generateInternal(nullptr, &vector, nullptr);
 }
 
-static const char* admOclMagicString = "AMD-APP";
+static const char* amdOclMagicString = "AMD-APP";
 static std::mutex detectionMutex;
 static uint64_t detectionFileTimestamp = 0;
 static std::string detectionAmdOclPath;
@@ -1875,17 +1875,17 @@ uint32_t CLRX::detectAmdDriverVersion()
         if (!fs) return 0;
         FastInputBuffer fib(256, fs);
         size_t index = 0;
-        while (admOclMagicString[index]!=0)
+        while (amdOclMagicString[index]!=0)
         {
             int c = fib.get();
             if (c == std::streambuf::traits_type::eof())
                 break;
-            if (admOclMagicString[index]==c)
+            if (amdOclMagicString[index]==c)
                 index++;
             else // reset
                 index=0;
         }
-        if (admOclMagicString[index]==0)
+        if (amdOclMagicString[index]==0)
         { //
             char buf[20];
             ::memset(buf, 0, 20);
