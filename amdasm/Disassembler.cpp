@@ -419,11 +419,12 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->newDriver = isInnerNewBinary;
     
     input->samplerInitSize = 0;
-    input->samplerInit= nullptr;
+    input->samplerInit = nullptr;
     input->globalDataSize = 0;
     input->globalData = nullptr;
     std::vector<std::pair<size_t, size_t> > sortedRelocs; // by offset
     const cxbyte* textPtr = nullptr;
+    const size_t kernelInfosNum = binary.getKernelInfosNum();
     
     size_t gDataSymIndex = 0;
     if (isInnerNewBinary)
@@ -433,6 +434,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         input->globalData = innerBin.getGlobalData();
         input->samplerInitSize = innerBin.getSamplerInitSize();
         input->samplerInit = innerBin.getSamplerInit();
+        // if no kernels and data
+        if (kernelInfosNum==0)
+            return input.release();
         
         size_t relaNum = innerBin.getTextRelaEntriesNum();
         for (size_t i = 0; i < relaNum; i++)
@@ -492,8 +496,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             input->samplerRelocs.push_back({ ULEV(rel.r_offset), value>>3 });
         }
     }
+    else if (kernelInfosNum==0)
+        return input.release();
     
-    const size_t kernelInfosNum = binary.getKernelInfosNum();
     input->kernels.resize(kernelInfosNum);
     auto sortedRelocIter = sortedRelocs.begin();
     
