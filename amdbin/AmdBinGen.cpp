@@ -460,28 +460,28 @@ public:
     {
         fob.fill(sizeof(typename Types::Sym), 0);
         typename Types::Sym sym;
-        size_t nameIndex = 1;
+        size_t nameOffset = 1;
         if (!input->compileOptions.empty())
         {
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, uint16_t((input->kernels.size()!=0)?6:4));
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->compileOptions.size());
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
-            nameIndex += 25;
+            nameOffset += 25;
             fob.writeObject(sym);
         }
         size_t rodataPos = 0;
         if (input->globalData != nullptr)
         {
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 4);
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->globalDataSize);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
-            nameIndex += 18;
+            nameOffset += 18;
             fob.writeObject(sym);
             rodataPos += input->globalDataSize;
         }
@@ -493,48 +493,48 @@ public:
             // metadata
             const size_t metadataSize = (kernel.useConfig) ?
                     tempDatas[i].metadata.size() : kernel.metadataSize;
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 4);
             SLEV(sym.st_size, metadataSize);
             SLEV(sym.st_value, rodataPos);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
             fob.writeObject(sym);
-            nameIndex += kernel.kernelName.size() + 19;
+            nameOffset += kernel.kernelName.size() + 19;
             rodataPos += metadataSize;
             // kernel
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 5);
             SLEV(sym.st_size, tempDatas[i].innerBinSize);
             SLEV(sym.st_value, textPos);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
             sym.st_other = 0;
             fob.writeObject(sym);
-            nameIndex += kernel.kernelName.size() + 17;
+            nameOffset += kernel.kernelName.size() + 17;
             textPos += tempDatas[i].innerBinSize;
             // kernel
             const size_t headerSize = (kernel.useConfig) ? 32 : kernel.headerSize;
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 4);
             SLEV(sym.st_size, headerSize);
             SLEV(sym.st_value, rodataPos);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
             fob.writeObject(sym);
-            nameIndex += kernel.kernelName.size() + 17;
+            nameOffset += kernel.kernelName.size() + 17;
             rodataPos += headerSize;
         }
         
         for (const BinSymbol& symbol: input->extraSymbols)
         {
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
                             ELFSECTID_STD_MAX, 7));
             SLEV(sym.st_size, symbol.size);
             SLEV(sym.st_value, symbol.value);
             sym.st_info = symbol.info;
             sym.st_other = symbol.other;
-            nameIndex += symbol.name.size()+1;
+            nameOffset += symbol.name.size()+1;
             fob.writeObject(sym);
         }
     }

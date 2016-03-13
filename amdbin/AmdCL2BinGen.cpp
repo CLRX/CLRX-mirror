@@ -220,41 +220,41 @@ public:
         const bool newBinaries = input->driverVersion >= 191205;
         fob.fill(sizeof(Elf64_Sym), 0);
         Elf64_Sym sym;
-        size_t nameIndex = 1;
+        size_t nameOffset = 1;
         if (!input->compileOptions.empty())
         {
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 4);
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->compileOptions.size());
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
-            nameIndex += 26;
+            nameOffset += 26;
             fob.writeObject(sym);
         }
         size_t rodataPos = 0;
         size_t textPos = 0;
         for (const AmdCL2KernelInput& kernel: input->kernels)
         {
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 5);
             SLEV(sym.st_value, rodataPos);
             SLEV(sym.st_size, kernel.metadataSize);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
-            nameIndex += kernel.kernelName.size() + 19 + 17;
+            nameOffset += kernel.kernelName.size() + 19 + 17;
             rodataPos += kernel.metadataSize;
             fob.writeObject(sym);
         }
         if (withBrig)
         {   // put __BRIG__ symbol
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 7 + brigIndex);
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->extraSections[brigIndex].size);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
-            nameIndex += 9;
+            nameOffset += 9;
             fob.writeObject(sym);
         }
         
@@ -265,29 +265,29 @@ public:
                 const AmdCL2KernelInput& kernel = input->kernels[i];
                 const TempAmdCL2KernelData& tempData = tempDatas[i];
                 // put kernel binary symbol
-                SLEV(sym.st_name, nameIndex);
+                SLEV(sym.st_name, nameOffset);
                 SLEV(sym.st_shndx, 6);
                 SLEV(sym.st_value, textPos);
                 SLEV(sym.st_size, tempData.stubSize+tempData.setupSize+tempData.codeSize);
                 sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
                 sym.st_other = 0;
-                nameIndex += 16 + kernel.kernelName.size() + 15;
+                nameOffset += 16 + kernel.kernelName.size() + 15;
                 textPos += tempData.stubSize+tempData.setupSize+tempData.codeSize;
                 fob.writeObject(sym);
                 // put ISA metadata symbol
-                SLEV(sym.st_name, nameIndex);
+                SLEV(sym.st_name, nameOffset);
                 SLEV(sym.st_shndx, 5);
                 SLEV(sym.st_value, rodataPos);
                 SLEV(sym.st_size, tempData.isaMetadataSize);
                 sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
                 sym.st_other = 0;
-                nameIndex += 16 + kernel.kernelName.size() + 17;
+                nameOffset += 16 + kernel.kernelName.size() + 17;
                 rodataPos += tempData.isaMetadataSize;
                 fob.writeObject(sym);
             }
         }
         // acl_version_string
-        SLEV(sym.st_name, nameIndex);
+        SLEV(sym.st_name, nameOffset);
         SLEV(sym.st_shndx, 4);
         SLEV(sym.st_value, input->compileOptions.size());
         SLEV(sym.st_size, aclVersion.size());
@@ -297,14 +297,14 @@ public:
         
         for (const BinSymbol& symbol: input->extraSymbols)
         {
-            SLEV(sym.st_name, nameIndex);
+            SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
                             ELFSECTID_STD_MAX, 7));
             SLEV(sym.st_size, symbol.size);
             SLEV(sym.st_value, symbol.value);
             sym.st_info = symbol.info;
             sym.st_other = symbol.other;
-            nameIndex += symbol.name.size()+1;
+            nameOffset += symbol.name.size()+1;
             fob.writeObject(sym);
         }
     }
