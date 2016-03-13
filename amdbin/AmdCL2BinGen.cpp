@@ -249,7 +249,7 @@ public:
         if (withBrig)
         {   // put __BRIG__ symbol
             SLEV(sym.st_name, nameIndex);
-            SLEV(sym.st_name, 7 + brigIndex);
+            SLEV(sym.st_shndx, 7 + brigIndex);
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->extraSections[brigIndex].size);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
