@@ -452,6 +452,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
                 break;
         }
+        if (gDataSymIndex < symbolsNum)
         {   // check gdata sym index
             const Elf64_Sym& gDataSym = innerBin.getSymbol(gDataSymIndex);
             /// check symbol value, section and name
