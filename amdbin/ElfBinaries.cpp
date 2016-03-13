@@ -554,11 +554,17 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
     }
     
     size_t nullSymNameOffset = 0;
+    // if addNullSym is not set, then no empty symbol name added, then we
+    // find first null character
     if (!addNullSym && !symbols.empty())
         nullSymNameOffset = ::strlen(symbols[0].name);
     size_t nullDynSymNameOffset = 0;
+    // if addNullDynSym is not set, then no empty dynamic symbol name added, then we
+    // find first null character
     if (!addNullDynSym && !dynSymbols.empty())
         nullDynSymNameOffset = ::strlen(dynSymbols[0].name);
+    // if addNullSection is not set, then no empty section name added, then we
+    // find first null character
     size_t nullSectionNameOffset = 0;
     if (!addNullSection)
     {
@@ -649,7 +655,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     typename Types::Shdr shdr;
                     if (region2.section.name!=nullptr && region2.section.name[0]!=0)
                         SLEV(shdr.sh_name, nameOffset);
-                    else
+                    else // set empty name offset
                         SLEV(shdr.sh_name, nullSectionNameOffset);
                     SLEV(shdr.sh_type, region2.section.type);
                     SLEV(shdr.sh_flags, region2.section.flags);
@@ -724,7 +730,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         typename Types::Sym sym;
                         if (inSym.name != nullptr && inSym.name[0] != 0)
                             SLEV(sym.st_name, nameOffset);
-                        else
+                        else  // set empty name offset (symbol or dynamic symbol)
                             SLEV(sym.st_name, (region.section.type == SHT_SYMTAB) ?
                                         nullSymNameOffset : nullDynSymNameOffset);
                         

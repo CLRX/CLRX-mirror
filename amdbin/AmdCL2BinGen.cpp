@@ -830,7 +830,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (input->globalDataSize!=0 && input->globalData!=nullptr)
             // global data section
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
-                      4, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
+                      8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
         innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, -0x100ULL));
         if (hasSamplers)
