@@ -189,10 +189,12 @@ private:
     bool withBrig;
     uint16_t brigIndex;
     const Array<TempAmdCL2KernelData>& tempDatas;
+    const CString& aclVersion;
 public:
     CL2MainSymTabGen(const AmdCL2Input* _input,
-        const Array<TempAmdCL2KernelData>& _tempDatas) : input(_input), withBrig(false),
-        tempDatas(_tempDatas)
+                     const Array<TempAmdCL2KernelData>& _tempDatas,
+                     const CString& _aclVersion) : input(_input), withBrig(false),
+        tempDatas(_tempDatas), aclVersion(_aclVersion)
     {
         for (brigIndex = 0; brigIndex < input->extraSections.size(); brigIndex++)
         {
@@ -288,7 +290,7 @@ public:
         SLEV(sym.st_name, nameIndex);
         SLEV(sym.st_shndx, 4);
         SLEV(sym.st_value, input->compileOptions.size());
-        SLEV(sym.st_size, input->aclVersion.size());
+        SLEV(sym.st_size, aclVersion.size());
         sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
         sym.st_other = 0;
         fob.writeObject(sym);
@@ -414,16 +416,28 @@ public:
     {
         size_t out = 0;
         for (const AmdCL2KernelInput& kernel: input->kernels)
+        {
+            if ((out & 255) != 0)
+                out += 256-(out&255);
             out += kernel.setupSize + kernel.codeSize;
+        }
         return out;
     }
     
     void operator()(FastOutputBuffer& fob) const
     {
+        size_t outSize = 0;
         for (const AmdCL2KernelInput& kernel: input->kernels)
         {
+            if ((outSize & 255) != 0)
+            {
+                size_t toFill = 256-(outSize&255);
+                fob.fill(toFill, 0);
+                outSize += toFill;
+            }
             fob.writeArray(kernel.setupSize, kernel.setup);
             fob.writeArray(kernel.codeSize, kernel.code);
+            outSize += kernel.setupSize + kernel.codeSize;
         }
     }
 };
@@ -574,7 +588,7 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
     std::copy(prefix, prefix+prefixSize, outPtr);
     std::copy(name.begin(), name.begin()+nameLen, outPtr+prefixSize);
     std::copy(suffix, suffix+suffixSize, outPtr+prefixSize+nameLen);
-    outPtr[prefixSize+nameLen] = 0;
+    outPtr[prefixSize+nameLen+suffixSize] = 0;
     return out;
 }
 
@@ -596,6 +610,9 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                              AMDCL2SECTID_MAX, extraSeciontIndex);
     for (const AmdCL2KernelInput& kernel: input->kernels)
     {   // first, we put sampler objects
+        if ((codePos & 255) != 0)
+            codePos += 256-(codePos&255);
+        
         if (kernel.useConfig)
             for (cxuint samp: kernel.config.samplers)
             {
@@ -616,7 +633,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                         7, "_kernel"));
         
         innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), textSectId,
-                  ELF32_ST_INFO(STB_LOCAL, 10), 0, false, codePos, 
+                  ELF32_ST_INFO(STB_GLOBAL, 10), 0, false, codePos, 
                   kernel.codeSize+kernel.setupSize));
         codePos += kernel.codeSize+kernel.setupSize;
     }
@@ -757,7 +774,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         tempDatas[i].codeSize = kernel.codeSize;
     }
     CL2MainStrTabGen mainStrTabGen(input);
-    CL2MainSymTabGen mainSymTabGen(input, tempDatas);
+    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input);
     CL2InnerTextGen innerTextGen(input);
@@ -840,9 +857,14 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         // section table
         innerBinGen->addRegion(ElfRegion64::sectionHeaderTable());
         /// program headers
-        innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, 1, 1, true, 0, 0, 0 });
-        innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, 2, 1, true,
-                    0, -0x100ULL, 0 });
+        cxuint textSectionReg = 1;
+        if (hasGlobalData)
+        {
+            innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, 1, 1, true, 0, 0, 0 });
+            textSectionReg = 2;
+        }
+        innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1, true,
+                        0, -0x100ULL, 0 });
     }
     
     CL2MainTextGen mainTextGen(input, innerBinGen.get());
