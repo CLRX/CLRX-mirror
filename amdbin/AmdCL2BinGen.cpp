@@ -537,7 +537,7 @@ public:
         uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size();
         for (const AmdCL2KernelInput& kernel: input->kernels)
         {
-            codeOffset += (kernel.setupSize+255)&(~255);
+            codeOffset += kernel.setupSize;
             for (const AmdCL2RelInput inRel: kernel.relocations)
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
@@ -806,6 +806,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     {   // new binaries - .text holds inner ELF binaries
         const uint16_t* innerBinSectionTable;
         cxuint extraSectionIndex = 0;
+        /* check kernel text relocations */
+        for (const AmdCL2KernelInput& kernel: input->kernels)
+            for (const AmdCL2RelInput& rel: kernel.relocations)
+                if (rel.offset >= kernel.codeSize)
+                    throw Exception("Kernel text relocation offset outside kernel code");
         
         if (input->globalDataSize==0 || input->globalData==nullptr)
         {
