@@ -572,8 +572,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         {   // relocations
             const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
             
-            for (; sortedRelocIter != sortedRelocs.end() &&
-                    sortedRelocIter->first<size_t(kinput.code-textPtr); ++sortedRelocIter);
+            if (sortedRelocIter != sortedRelocs.end() &&
+                    sortedRelocIter->first < size_t(kinput.code-textPtr))
+                throw Exception("Code relocation offset outside kernel code");
             
             if (sortedRelocIter != sortedRelocs.end())
             {
@@ -601,6 +602,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             }
         }
     }
+    if (sortedRelocIter != sortedRelocs.end())
+        throw Exception("Code relocation offset outside kernel code");
     return input.release();
 }
 
