@@ -751,6 +751,10 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         }
         else if (input->samplers.size() != input->samplerOffsets.size())
             throw Exception("Sampler offsets and sampler sizes doesn't match");
+        // check sampler offset range
+        for (size_t sampOffset: input->samplerOffsets)
+            if (sampOffset >= input->globalDataSize)
+                throw Exception("Sampler offset outside global data");
     }
     
     ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b, EV_CURRENT,
