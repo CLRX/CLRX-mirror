@@ -493,12 +493,13 @@ public:
             SLEV(argEntry.unknown1, 0);
             SLEV(argEntry.unknown2, 0);
             
+            bool isImage = (arg.argType >= KernelArgType::MIN_IMAGE &&
+                 arg.argType <= KernelArgType::MAX_IMAGE);
+            
             cxuint vectorLength = argTypeSizesTable[cxuint(arg.argType)].vectorSize;
             if (newBinaries && vectorLength==3)
                 vectorLength = 4;
-            if ((arg.argType >= KernelArgType::MIN_IMAGE &&
-                 arg.argType <= KernelArgType::MAX_IMAGE) ||
-                 arg.argType==KernelArgType::SAMPLER)
+            if (isImage || arg.argType==KernelArgType::SAMPLER)
                 // image/sampler resid
                 SLEV(argEntry.resId, tempData.argResIds[i]);
             else if (arg.argType == KernelArgType::STRUCTURE)
@@ -511,7 +512,25 @@ public:
                     vectorLength+ 15) & ~15U; // align to 16 bytes
             
             uint32_t argType = 0;
+            if (isImage)
+            {   // if image
+                cxuint ptrAccMask = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
+                argType = ptrAccMask==KARG_PTR_READ_ONLY ? 1 :
+                        ptrAccMask==KARG_PTR_WRITE_ONLY ? 2 : 3 /* read-write */;
+            }
+            if (arg.argType == KernelArgType::POINTER)
+                argType = (arg.pointerType==KernelArgType::STRUCTURE) ? 15 : 7;
+            
             SLEV(argEntry.argType, argType);
+            if (arg.argType == KernelArgType::POINTER)
+            {
+                SLEV(argEntry.isConst, (arg.ptrAccess & KARG_PTR_CONST) ? 1 : 0);
+                SLEV(argEntry.isVolatile, (arg.ptrAccess & KARG_PTR_VOLATILE) ? 1 : 0);
+                SLEV(argEntry.isRestrict, (arg.ptrAccess & KARG_PTR_RESTRICT) ? 1 : 0);
+            }
+            else if (isImage)
+            {
+            }
             fob.writeObject(argEntry);
         }
         fob.write(88, 0); // NULL arg
