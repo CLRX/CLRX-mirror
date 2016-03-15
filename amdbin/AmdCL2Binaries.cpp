@@ -323,7 +323,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     if (kernelHeader.size < sizeof(AmdCL2GPUMetadataHeader))
         throw Exception("Metadata header is too short");
     kernelHeader.data = metadata;
-    const uint32_t argNum = ULEV(hdrStruc->argNum);
+    const uint32_t argNum = ULEV(hdrStruc->argsNum);
     
     if (usumGt(ULEV(hdrStruc->firstNameLength), ULEV(hdrStruc->secondNameLength),
                 metadataSize-kernelHeader.size-2))

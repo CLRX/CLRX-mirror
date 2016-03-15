@@ -249,7 +249,7 @@ struct AmdCL2GPUMetadataHeader
     uint64_t firstNameLength;   ///< first name length
     uint64_t secondNameLength;  ///< second name length
     uint64_t unknown4[6];
-    uint32_t argNum;
+    uint64_t argsNum;
 };
 
 /// GPU kernel argument entry

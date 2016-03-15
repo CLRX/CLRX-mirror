@@ -28,6 +28,7 @@
 #include <memory>
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/InputOutput.h>
+#include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
 
 using namespace CLRX;
@@ -73,10 +74,52 @@ void AmdCL2GPUBinGenerator::setInput(const AmdCL2Input* input)
 
 struct CLRX_INTERNAL TempAmdCL2KernelData
 {
+    size_t metadataSize;
     size_t isaMetadataSize;
     size_t stubSize;
     size_t setupSize;
     size_t codeSize;
+    Array<uint16_t> argResIds;
+};
+
+struct CLRX_INTERNAL ArgTypeSizes
+{
+    cxbyte elemSize;
+    cxbyte vectorSize;
+};
+
+static const ArgTypeSizes argTypeSizesTable[] =
+{
+    { 1, 1 /*void */ },
+    { 1, 1 /*uchar*/ }, { 1, 1, /*char*/ }, { 2, 1, /*ushort*/ }, { 2, 1, /*short*/ },
+    { 4, 1, /*uint*/ }, { 4, 1, /*INT*/ }, { 8, 1, /*ulong*/ }, { 8, 1, /*long*/ },
+    { 4, 1, /*float*/ }, { 8, 1, /*double*/ }, { 8, 1, /*pointer*/ },
+    { 32, 1, /*image*/ }, { 32, 1, /*image1d*/ }, { 32, 1, /*image1da */ },
+    { 32, 1, /*image1db*/ }, { 32, 1, /*image2d*/ }, { 32, 1, /*image2da*/ },
+    { 32, 1, /*image3d*/ },
+    { 1, 2, /*uchar2*/ }, { 1, 3, /*uchar3*/ }, { 1, 4, /*uchar4*/ },
+    { 1, 8, /*uchar8*/ }, { 1, 16, /*uchar16*/ },
+    { 1, 2, /*char2*/ }, { 1, 3, /*char3*/ }, { 1, 4, /*char4*/ },
+    { 1, 8, /*char8*/ }, { 1, 16, /*char16*/ },
+    { 2, 2, /*ushort2*/ }, { 2, 3, /*ushort3*/ }, { 2, 4, /*ushort4*/ },
+    { 2, 8, /*ushort8*/ }, { 2, 16, /*ushort16*/ },
+    { 2, 2, /*short2*/ }, { 2, 3, /*short3*/ }, { 2, 4, /*short4*/ },
+    { 2, 8, /*short8*/ }, { 2, 16, /*short16*/ },
+    { 4, 2, /*uint2*/ }, { 4, 3, /*uint3*/ }, { 4, 4, /*uint4*/ },
+    { 4, 8, /*uint8*/ }, { 4, 16, /*uint16*/ },
+    { 4, 2, /*int2*/ }, { 4, 3, /*int3*/ }, { 4, 4, /*int4*/ },
+    { 4, 8, /*int8*/ }, { 4, 16, /*int16*/ },
+    { 8, 2, /*ulong2*/ }, { 8, 3, /*ulong3*/ }, { 8, 4, /*ulong4*/ },
+    { 8, 8, /*ulong8*/ }, { 8, 16, /*ulong16*/ },
+    { 8, 2, /*long2*/ }, { 8, 3, /*long3*/ }, { 8, 4, /*long4*/ },
+    { 8, 8, /*long8*/ }, { 8, 16, /*long16*/ },
+    { 4, 2, /*float2*/ }, { 4, 3, /*float3*/ }, { 4, 4, /*float4*/ },
+    { 4, 8, /*float8*/ }, { 4, 16, /*float16*/ },
+    { 8, 2, /*double2*/ }, { 8, 3, /*double3*/ }, { 8, 4, /*double4*/ },
+    { 8, 8, /*double8*/ }, { 8, 16, /*double16*/ },
+    { 16, 1, /* sampler*/ }, { 0, 0, /*structure*/ }, { 0, 0, /*counter*/ },
+    { 0, 0, /*counter64*/ }, { 16, 1, /* pipe*/ }, { 16, 1, /*cmdqueue*/ },
+    { 8, 1, /*clkevent*/ }
 };
 
 static const uint32_t gpuDeviceCodeTable[16] =
@@ -113,6 +156,52 @@ static const uint16_t mainBuiltinSectionTable[] =
     4 // ELFSECTID_COMMENT
 };
 
+static const cxbyte kernelIsaMetadata[] =
+{
+    0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x08, 0x42, 0x09, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00
+};
+
+static void prepareKernelTempData(const AmdCL2Input* input,
+          Array<TempAmdCL2KernelData>& tempDatas)
+{
+    const bool newBinaries = input->driverVersion >= 191205;
+    const size_t kernelsNum = input->kernels.size();
+    for (size_t i = 0; i < kernelsNum; i++)
+    {
+        const AmdCL2KernelInput& kernel = input->kernels[i];
+        if (newBinaries && (kernel.isaMetadataSize!=0 || kernel.isaMetadata!=nullptr))
+            throw Exception("ISA metadata allowed for old driver binaries");
+        if (newBinaries && (kernel.stubSize!=0 || kernel.stub!=nullptr))
+            throw Exception("Kernel stub allowed for old driver binaries");
+        
+        if (!kernel.useConfig)
+        {   // if no kernel configuration
+            tempDatas[i].metadataSize = kernel.metadataSize;
+            tempDatas[i].isaMetadataSize = (kernel.isaMetadata!=nullptr) ?
+                        kernel.isaMetadataSize : sizeof(kernelIsaMetadata);
+            tempDatas[i].setupSize = kernel.setupSize;
+            tempDatas[i].stubSize = kernel.stubSize;
+        }
+        else
+        {   // kernel configuration present
+            size_t out = ((newBinaries) ? 254 : 246) + (kernel.config.args.size() + 1)*88;
+            for (const AmdKernelArgInput& arg: kernel.config.args)
+                    out += arg.argName.size() + arg.typeName.size() + 2;
+            
+            tempDatas[i].metadataSize = out;
+            tempDatas[i].setupSize = 256;
+            tempDatas[i].stubSize = tempDatas[i].isaMetadataSize = 0;
+            if (!newBinaries)
+            {
+                tempDatas[i].stubSize = 0xa60;
+                tempDatas[i].isaMetadataSize = sizeof(kernelIsaMetadata);
+            }
+        }
+        tempDatas[i].codeSize = kernel.codeSize;
+    }
+}
 
 // fast and memory efficient String table generator for main binary
 class CLRX_INTERNAL CL2MainStrTabGen: public ElfRegionContent
@@ -234,16 +323,18 @@ public:
         }
         size_t rodataPos = 0;
         size_t textPos = 0;
-        for (const AmdCL2KernelInput& kernel: input->kernels)
+        for (size_t i = 0; i < input->kernels.size(); i++)
         {
+            const AmdCL2KernelInput& kernel = input->kernels[i];
+            const TempAmdCL2KernelData& tempData = tempDatas[i];
             SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, 5);
             SLEV(sym.st_value, rodataPos);
-            SLEV(sym.st_size, kernel.metadataSize);
+            SLEV(sym.st_size, tempData.metadataSize);
             sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
             nameOffset += kernel.kernelName.size() + 19 + 17;
-            rodataPos += kernel.metadataSize;
+            rodataPos += tempData.metadataSize;
             fob.writeObject(sym);
         }
         if (withBrig)
@@ -327,31 +418,104 @@ public:
     }
 };
 
-static const cxbyte kernelIsaMetadata[] =
+struct CLRX_INTERNAL TypeNameVecSize
 {
-    0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x08, 0x42, 0x09, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00
+    cxbyte elemSize;
+    cxbyte vecSize;
 };
 
 class CLRX_INTERNAL CL2MainRodataGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    const Array<TempAmdCL2KernelData>& tempDatas;
 public:
-    explicit CL2MainRodataGen(const AmdCL2Input* _input) : input(_input)
+    explicit CL2MainRodataGen(const AmdCL2Input* _input,
+              const Array<TempAmdCL2KernelData>& _tempDatas) : input(_input),
+              tempDatas(_tempDatas)
     { }
     
     size_t size() const
     {
         const bool newBinaries = input->driverVersion >= 191205;
         size_t out = 0;
-        for (const AmdCL2KernelInput& kernel: input->kernels)
-            out += kernel.metadataSize;
+        for (const TempAmdCL2KernelData& tempData: tempDatas)
+            out += tempData.metadataSize;
+            
         if (!newBinaries)
-            for (const AmdCL2KernelInput& kernel: input->kernels)
-                out += kernel.isaMetadataSize;
+            for (const TempAmdCL2KernelData& tempData: tempDatas)
+                out += tempData.isaMetadataSize;
         return out;
+    }
+    
+    void writeMetadata(bool newBinaries, const TempAmdCL2KernelData& tempData,
+               AmdCL2KernelConfig& config, FastOutputBuffer& fob) const
+    {
+        AmdCL2GPUMetadataHeader header;
+        cxuint argsNum = config.args.size();
+        
+        SLEV(header.size, (newBinaries) ? 0xe0 : 0xd8);
+        SLEV(header.metadataSize, tempData.metadataSize);
+        SLEV(header.unknown1[0], 0x3);
+        SLEV(header.unknown1[1], 0x1);
+        SLEV(header.unknown1[2], 0x68);
+        SLEV(header.options, config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20);
+        SLEV(header.unknown2[0], 0x0400ULL);
+        SLEV(header.unknown2[1], 0x0100000008ULL);
+        SLEV(header.unknown2[2], 0x0200000001ULL);
+        SLEV(header.reqdWorkGroupSize[0], config.reqdWorkGroupSize[0]);
+        SLEV(header.reqdWorkGroupSize[1], config.reqdWorkGroupSize[1]);
+        SLEV(header.reqdWorkGroupSize[2], config.reqdWorkGroupSize[2]);
+        SLEV(header.unknown3[0], 0);
+        SLEV(header.unknown3[1], 0);
+        SLEV(header.firstNameLength, 0x15);
+        SLEV(header.secondNameLength, 0x7);
+        for (cxuint i = 0; i < 6; i++)
+            SLEV(header.unknown4[i], 0);
+        SLEV(header.argsNum, argsNum);
+        fob.writeObject(header);
+        fob.fill(48, 0); // fill up
+        if (newBinaries) // additional data
+            fob.writeObject<uint64_t>(LEV(uint64_t(0xffffffff00000006ULL)));
+        // two null terminated strings
+        fob.writeArray(22, "__OpenCL_dummy_kernel");
+        fob.writeArray(8, "generic");
+        
+        // put argument entries
+        cxuint argOffset = 0;
+        for (cxuint i = 0; i < argsNum; i++)
+        {   //
+            const AmdKernelArgInput& arg = config.args[i];
+            AmdCL2GPUKernelArgEntry argEntry;
+            SLEV(argEntry.size, 88);
+            SLEV(argEntry.argNameSize, arg.argName.size());
+            SLEV(argEntry.typeNameSize, arg.typeName.size());
+            SLEV(argEntry.unknown1, 0);
+            SLEV(argEntry.unknown2, 0);
+            
+            cxuint vectorLength = argTypeSizesTable[cxuint(arg.argType)].vectorSize;
+            if (newBinaries && vectorLength==3)
+                vectorLength = 4;
+            if ((arg.argType >= KernelArgType::MIN_IMAGE &&
+                 arg.argType <= KernelArgType::MAX_IMAGE) ||
+                 arg.argType==KernelArgType::SAMPLER)
+                // image/sampler resid
+                SLEV(argEntry.resId, tempData.argResIds[i]);
+            else if (arg.argType == KernelArgType::STRUCTURE)
+                SLEV(argEntry.resId, arg.structSize);
+            else
+                SLEV(argEntry.vectorLength, vectorLength);
+            SLEV(argEntry.unknown3, 0);
+            SLEV(argEntry.argOffset, argOffset);
+            argOffset += (argTypeSizesTable[cxuint(arg.argType)].elemSize*
+                    vectorLength+ 15) & ~15U; // align to 16 bytes
+            
+            uint32_t argType = 0;
+            SLEV(argEntry.argType, argType);
+            fob.writeObject(argEntry);
+        }
+        fob.write(88, 0); // NULL arg
+        // arg names and type names
     }
     
     void operator()(FastOutputBuffer& fob) const
@@ -769,24 +933,14 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             aclVersion = "AMD-COMP-LIB-v0.8 (0.0.326)";
     }
     
+    
     Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
-    for (size_t i = 0; i < kernelsNum; i++)
-    {
-        const AmdCL2KernelInput& kernel = input->kernels[i];
-        if (newBinaries && (kernel.isaMetadataSize!=0 || kernel.isaMetadata!=nullptr))
-            throw Exception("ISA metadata allowed for old driver binaries");
-        if (newBinaries && (kernel.stubSize!=0 || kernel.stub!=nullptr))
-            throw Exception("Kernel stub allowed for old driver binaries");
-        
-        tempDatas[i].isaMetadataSize = kernel.isaMetadataSize;
-        tempDatas[i].setupSize = kernel.setupSize;
-        tempDatas[i].stubSize = kernel.stubSize;
-        tempDatas[i].codeSize = kernel.codeSize;
-    }
+    prepareKernelTempData(input, tempDatas);
+    
     CL2MainStrTabGen mainStrTabGen(input);
     CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
-    CL2MainRodataGen mainRodataGen(input);
+    CL2MainRodataGen mainRodataGen(input, tempDatas);
     CL2InnerTextGen innerTextGen(input);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
     CL2InnerTextRelsGen innerTextRelsGen(input);
