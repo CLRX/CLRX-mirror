@@ -1010,12 +1010,12 @@ static void parseAmdGpuKernelMetadata(const char* symName, size_t metadataSize,
     }
 }
 
-struct AmdGPU32Types : Elf32Types
+struct CLRX_INTERNAL AmdGPU32Types : Elf32Types
 {
     typedef ElfBinary32 ElfBinary;
 };
 
-struct AmdGPU64Types: Elf64Types
+struct CLRX_INTERNAL AmdGPU64Types: Elf64Types
 {
     typedef ElfBinary64 ElfBinary;
 };

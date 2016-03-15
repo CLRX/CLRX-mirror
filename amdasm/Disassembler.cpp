@@ -245,7 +245,7 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
 
 /* helpers for main Disassembler class */
 
-struct CL2GPUDeviceCodeEntry
+struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
 {
     uint32_t elfFlags;
     GPUDeviceType deviceType;
@@ -266,7 +266,7 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
     { 15, GPUDeviceType::DUMMY }
 };
 
-struct GPUDeviceCodeEntry
+struct CLRX_INTERNAL GPUDeviceCodeEntry
 {
     uint16_t elfMachine;
     GPUDeviceType deviceType;
@@ -292,7 +292,7 @@ static const GPUDeviceCodeEntry gpuDeviceCodeTable[16] =
     { 0x411, GPUDeviceType::DUMMY }
 };
 
-struct GPUDeviceInnerCodeEntry
+struct CLRX_INTERNAL GPUDeviceInnerCodeEntry
 {
     uint32_t dMachine;
     GPUDeviceType deviceType;

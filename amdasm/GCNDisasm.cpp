@@ -121,7 +121,7 @@ using namespace CLRX;
 static std::once_flag clrxGCNDisasmOnceFlag;
 static std::unique_ptr<GCNInstruction[]> gcnInstrTableByCode = nullptr;
 
-struct GCNEncodingSpace
+struct CLRX_INTERNAL GCNEncodingSpace
 {
     cxuint offset;
     cxuint instrsNum;

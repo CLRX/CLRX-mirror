@@ -753,7 +753,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             throw Exception("Sampler offsets and sampler sizes doesn't match");
         // check sampler offset range
         for (size_t sampOffset: input->samplerOffsets)
-            if (sampOffset >= input->globalDataSize)
+            if (sampOffset+8 > input->globalDataSize)
                 throw Exception("Sampler offset outside global data");
     }
     

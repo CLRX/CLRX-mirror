@@ -422,7 +422,7 @@ static bool bigFPRoundToNearest(cxuint inSize, cxuint outSize, cxint& exponent,
     return carry;
 }
 
-struct Pow5Num128TableEntry
+struct CLRX_INTERNAL Pow5Num128TableEntry
 {
     uint64_t value[2];
     int exponent;

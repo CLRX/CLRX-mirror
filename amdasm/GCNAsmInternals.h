@@ -72,7 +72,7 @@ enum: cxbyte {
     VOP3_BOUNDCTRL = 64
 };
 
-struct RegRange
+struct CLRX_INTERNAL RegRange
 {
     uint16_t start, end;
     
@@ -86,7 +86,8 @@ struct RegRange
     { return start!=0 || end!=0; }
 };
 
-struct GCNOperand {
+struct CLRX_INTERNAL GCNOperand
+{
     RegRange range;
     uint32_t value;
     cxbyte vopMods;
@@ -97,7 +98,7 @@ struct GCNOperand {
     { return range; }
 };
 
-struct VOPExtraModifiers
+struct CLRX_INTERNAL VOPExtraModifiers
 {   // TODO: check that for MSVC 2015
     cxuint dstSel:3;
     cxuint dstUnused:2;
