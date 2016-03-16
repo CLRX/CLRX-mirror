@@ -84,42 +84,46 @@ struct CLRX_INTERNAL TempAmdCL2KernelData
 
 struct CLRX_INTERNAL ArgTypeSizes
 {
+    cxbyte type;
     cxbyte elemSize;
     cxbyte vectorSize;
 };
 
 static const ArgTypeSizes argTypeSizesTable[] =
 {
-    { 1, 1 /*void */ },
-    { 1, 1 /*uchar*/ }, { 1, 1, /*char*/ }, { 2, 1, /*ushort*/ }, { 2, 1, /*short*/ },
-    { 4, 1, /*uint*/ }, { 4, 1, /*INT*/ }, { 8, 1, /*ulong*/ }, { 8, 1, /*long*/ },
-    { 4, 1, /*float*/ }, { 8, 1, /*double*/ }, { 8, 1, /*pointer*/ },
-    { 32, 1, /*image*/ }, { 32, 1, /*image1d*/ }, { 32, 1, /*image1da */ },
-    { 32, 1, /*image1db*/ }, { 32, 1, /*image2d*/ }, { 32, 1, /*image2da*/ },
-    { 32, 1, /*image3d*/ },
-    { 1, 2, /*uchar2*/ }, { 1, 3, /*uchar3*/ }, { 1, 4, /*uchar4*/ },
-    { 1, 8, /*uchar8*/ }, { 1, 16, /*uchar16*/ },
-    { 1, 2, /*char2*/ }, { 1, 3, /*char3*/ }, { 1, 4, /*char4*/ },
-    { 1, 8, /*char8*/ }, { 1, 16, /*char16*/ },
-    { 2, 2, /*ushort2*/ }, { 2, 3, /*ushort3*/ }, { 2, 4, /*ushort4*/ },
-    { 2, 8, /*ushort8*/ }, { 2, 16, /*ushort16*/ },
-    { 2, 2, /*short2*/ }, { 2, 3, /*short3*/ }, { 2, 4, /*short4*/ },
-    { 2, 8, /*short8*/ }, { 2, 16, /*short16*/ },
-    { 4, 2, /*uint2*/ }, { 4, 3, /*uint3*/ }, { 4, 4, /*uint4*/ },
-    { 4, 8, /*uint8*/ }, { 4, 16, /*uint16*/ },
-    { 4, 2, /*int2*/ }, { 4, 3, /*int3*/ }, { 4, 4, /*int4*/ },
-    { 4, 8, /*int8*/ }, { 4, 16, /*int16*/ },
-    { 8, 2, /*ulong2*/ }, { 8, 3, /*ulong3*/ }, { 8, 4, /*ulong4*/ },
-    { 8, 8, /*ulong8*/ }, { 8, 16, /*ulong16*/ },
-    { 8, 2, /*long2*/ }, { 8, 3, /*long3*/ }, { 8, 4, /*long4*/ },
-    { 8, 8, /*long8*/ }, { 8, 16, /*long16*/ },
-    { 4, 2, /*float2*/ }, { 4, 3, /*float3*/ }, { 4, 4, /*float4*/ },
-    { 4, 8, /*float8*/ }, { 4, 16, /*float16*/ },
-    { 8, 2, /*double2*/ }, { 8, 3, /*double3*/ }, { 8, 4, /*double4*/ },
-    { 8, 8, /*double8*/ }, { 8, 16, /*double16*/ },
-    { 16, 1, /* sampler*/ }, { 0, 0, /*structure*/ }, { 0, 0, /*counter*/ },
-    { 0, 0, /*counter64*/ }, { 16, 1, /* pipe*/ }, { 16, 1, /*cmdqueue*/ },
-    { 8, 1, /*clkevent*/ }
+    { 6, 1, 1 /*void */ },
+    { 6, 1, 1 /*uchar*/ }, { 6, 1, 1, /*char*/ },
+    { 7, 2, 1, /*ushort*/ }, { 7, 2, 1, /*short*/ },
+    { 8, 4, 1, /*uint*/ }, { 8, 4, 1, /*INT*/ },
+    { 9, 8, 1, /*ulong*/ }, { 9, 8, 1, /*long*/ },
+    { 11, 4, 1, /*float*/ }, { 12, 8, 1, /*double*/ },
+    { 7, 8, 1, /*pointer*/ },
+    { 0, 32, 1, /*image*/ }, { 0, 32, 1, /*image1d*/ }, { 0, 32, 1, /*image1da */ },
+    { 0, 32, 1, /*image1db*/ }, { 0, 32, 1, /*image2d*/ }, { 0, 32, 1, /*image2da*/ },
+    { 0, 32, 1, /*image3d*/ },
+    { 6, 1, 2, /*uchar2*/ }, { 6, 1, 3, /*uchar3*/ }, { 6, 1, 4, /*uchar4*/ },
+    { 6, 1, 8, /*uchar8*/ }, { 6, 1, 16, /*uchar16*/ },
+    { 6, 1, 2, /*char2*/ }, { 6, 1, 3, /*char3*/ }, { 6, 1, 4, /*char4*/ },
+    { 6, 1, 8, /*char8*/ }, { 6, 1, 16, /*char16*/ },
+    { 7, 2, 2, /*ushort2*/ }, { 7, 2, 3, /*ushort3*/ }, { 7, 2, 4, /*ushort4*/ },
+    { 7, 2, 8, /*ushort8*/ }, { 7, 2, 16, /*ushort16*/ },
+    { 7, 2, 2, /*short2*/ }, { 7, 2, 3, /*short3*/ }, { 7, 2, 4, /*short4*/ },
+    { 7, 2, 8, /*short8*/ }, { 7, 2, 16, /*short16*/ },
+    { 8, 4, 2, /*uint2*/ }, { 8, 4, 3, /*uint3*/ }, { 8, 4, 4, /*uint4*/ },
+    { 8, 4, 8, /*uint8*/ }, { 8, 4, 16, /*uint16*/ },
+    { 8, 4, 2, /*int2*/ }, { 8, 4, 3, /*int3*/ }, { 8, 4, 4, /*int4*/ },
+    { 8, 4, 8, /*int8*/ }, { 8, 4, 16, /*int16*/ },
+    { 9, 8, 2, /*ulong2*/ }, { 9, 8, 3, /*ulong3*/ }, { 9, 8, 4, /*ulong4*/ },
+    { 9, 8, 8, /*ulong8*/ }, { 9, 8, 16, /*ulong16*/ },
+    { 9, 8, 2, /*long2*/ }, { 9, 8, 3, /*long3*/ }, { 9, 8, 4, /*long4*/ },
+    { 9, 8, 8, /*long8*/ }, { 9, 8, 16, /*long16*/ },
+    { 11, 4, 2, /*float2*/ }, { 11, 4, 3, /*float3*/ }, { 11, 4, 4, /*float4*/ },
+    { 11, 4, 8, /*float8*/ }, { 11, 4, 16, /*float16*/ },
+    { 12, 8, 2, /*double2*/ }, { 12, 8, 3, /*double3*/ }, { 12, 8, 4, /*double4*/ },
+    { 12, 8, 8, /*double8*/ }, { 12, 8, 16, /*double16*/ },
+    { 0, 16, 1, /* sampler*/ }, { 15, 0, 0, /*structure*/ }, { 0, 0, 0, /*counter*/ },
+    { 0, 0, 0, /*counter64*/ }, { 7, 16, 1, /* pipe*/ }, { 18, 16, 1, /*cmdqueue*/ },
+    { 7, 8, 1, /*clkevent*/ }
 };
 
 static const uint32_t gpuDeviceCodeTable[16] =
@@ -424,6 +428,8 @@ struct CLRX_INTERNAL TypeNameVecSize
     cxbyte vecSize;
 };
 
+static const uint32_t ptrSpacesTable[4] = { 0, 1, 3, 2 };
+
 class CLRX_INTERNAL CL2MainRodataGen: public ElfRegionContent
 {
 private:
@@ -506,10 +512,12 @@ public:
                 SLEV(argEntry.resId, arg.structSize);
             else
                 SLEV(argEntry.vectorLength, vectorLength);
-            SLEV(argEntry.unknown3, 0);
+            size_t argSize = (arg.argType==KernelArgType::STRUCTURE) ? arg.structSize :
+                    argTypeSizesTable[cxuint(arg.argType)].elemSize*vectorLength;
+            
+            SLEV(argEntry.unknown3, (arg.argType==KernelArgType::SAMPLER));
             SLEV(argEntry.argOffset, argOffset);
-            argOffset += (argTypeSizesTable[cxuint(arg.argType)].elemSize*
-                    vectorLength+ 15) & ~15U; // align to 16 bytes
+            argOffset += (argSize + 15) & ~15U; // align to 16 bytes
             
             uint32_t argType = 0;
             if (isImage)
@@ -518,23 +526,65 @@ public:
                 argType = ptrAccMask==KARG_PTR_READ_ONLY ? 1 :
                         ptrAccMask==KARG_PTR_WRITE_ONLY ? 2 : 3 /* read-write */;
             }
-            if (arg.argType == KernelArgType::POINTER)
+            else if (arg.argType == KernelArgType::POINTER)
                 argType = (arg.pointerType==KernelArgType::STRUCTURE) ? 15 : 7;
-            
+            else // otherwise
+                argType = argTypeSizesTable[cxuint(arg.argType)].type;
             SLEV(argEntry.argType, argType);
+            
+            if (arg.argType == KernelArgType::CMDQUEUE)
+                SLEV(argEntry.ptrAlignment, newBinaries ? 2 : 4);
+            else // otherwise
+            {
+                cxuint powerof2 = 1U<<(32-CLZ32(argSize));
+                if (powerof2==argSize)
+                    powerof2++;
+                SLEV(argEntry.ptrAlignment, powerof2);
+            }
+            
             if (arg.argType == KernelArgType::POINTER)
             {
-                SLEV(argEntry.isConst, (arg.ptrAccess & KARG_PTR_CONST) ? 1 : 0);
-                SLEV(argEntry.isVolatile, (arg.ptrAccess & KARG_PTR_VOLATILE) ? 1 : 0);
-                SLEV(argEntry.isRestrict, (arg.ptrAccess & KARG_PTR_RESTRICT) ? 1 : 0);
+                SLEV(argEntry.ptrType, argTypeSizesTable[cxuint(arg.pointerType)].type);
+                SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
             }
-            else if (isImage)
+            else
             {
+                SLEV(argEntry.ptrType, 0);
+                SLEV(argEntry.ptrSpace, 0);
             }
+            bool isPointerOrPipe = (arg.argType==KernelArgType::POINTER ||
+                    arg.argType==KernelArgType::CLKEVENT ||
+                    arg.argType==KernelArgType::PIPE);
+            SLEV(argEntry.isPointerOrPipe, isPointerOrPipe);
+            
+            SLEV(argEntry.isConst, (arg.ptrAccess & KARG_PTR_CONST) != 0);
+            argEntry.isVolatile = ((arg.ptrAccess & KARG_PTR_VOLATILE) != 0);
+            argEntry.isRestrict = ((arg.ptrAccess & KARG_PTR_RESTRICT) != 0);
+            argEntry.isPipe = (arg.argType==KernelArgType::PIPE);
+            
+            uint32_t kindOfType;
+            if (arg.argType==KernelArgType::SAMPLER)
+                kindOfType = 1;
+            else if (isImage)
+                kindOfType = 2;
+            else if (isPointerOrPipe)
+                kindOfType = 5;
+            else if (arg.argType==KernelArgType::CMDQUEUE)
+                kindOfType = 7;
+            else // otherwise
+                kindOfType = 4;
+            SLEV(argEntry.kindOfType, kindOfType);
+            SLEV(argEntry.unknown5, 0);
             fob.writeObject(argEntry);
         }
         fob.write(88, 0); // NULL arg
+        
         // arg names and type names
+        for (const AmdKernelArgInput& arg: config.args)
+        {
+            fob.writeArray(arg.argName.size(), arg.argName.c_str());
+            fob.writeArray(arg.typeName.size(), arg.typeName.c_str());
+        }
     }
     
     void operator()(FastOutputBuffer& fob) const
@@ -553,14 +603,105 @@ public:
     }
 };
 
+static const cxbyte firstKernelSetupBytes[48] =
+{
+    0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+struct CLRX_INTERNAL IntAmdCL2SetupData
+{
+    uint32_t pgmRSRC1;
+    uint32_t pgmRSRC2;
+    uint16_t setup1;
+    uint16_t archInd;
+    uint32_t scratchBufferDwords;
+    uint32_t localSize; // in bytes
+    uint32_t zero1;
+    uint32_t kernelArgsSize;
+    uint32_t zeroes[2];
+    uint16_t sgprsNumAll;
+    uint16_t vgprsNum16;
+    uint32_t vgprsNum;
+    uint32_t sgprsNum;
+    uint32_t zero3;
+    uint32_t version; // ??
+};
+
+static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
+                FastOutputBuffer& fob, bool newBinaries)
+{
+    fob.writeArray(48, firstKernelSetupBytes);
+    IntAmdCL2SetupData setupData;
+    cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
+    cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
+    // pgmrsrc1
+    SLEV(setupData.pgmRSRC1, ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
+            ((uint32_t(config.floatMode)&0xff)<<12) |
+            (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10));
+    // pgmrsrc2 - without ldssize
+    uint32_t dimValues = 0;
+    if (config.dimMask != BINGEN_DEFAULT)
+        dimValues = ((config.dimMask&7)<<7) |
+                (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+    else
+        dimValues |= (config.pgmRSRC2 & 0x1b80U);
+    SLEV(setupData.pgmRSRC1, (config.pgmRSRC2 & 0xffffe040U) | (4<<1) /* userData=4*/ |
+            ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues);
+    
+    /// ohers
+    SLEV(setupData.setup1, 0xb);
+    SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
+    SLEV(setupData.scratchBufferDwords, (config.scratchBufferSize+3)>>2);
+    SLEV(setupData.localSize, config.localSize);
+    setupData.zero1 = 0;
+    setupData.zeroes[0] = setupData.zeroes[1] = 0;
+    setupData.zero3 = 0;
+    
+    cxuint kernelArgSize = 0;
+    for (const AmdKernelArgInput arg: config.args)
+    {
+        if (arg.argType == KernelArgType::POINTER || arg.argType == KernelArgType::PIPE ||
+            arg.argType == KernelArgType::CLKEVENT ||
+            arg.argType == KernelArgType::STRUCTURE ||
+            arg.argType == KernelArgType::CMDQUEUE ||
+            (arg.argType >= KernelArgType::MIN_IMAGE &&
+             arg.argType >= KernelArgType::MAX_IMAGE))
+            kernelArgSize += 8;
+        else if (arg.argType == KernelArgType::SAMPLER)
+            kernelArgSize += 4;
+        else
+        {   // scalar
+            const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
+            kernelArgSize += argTypeSizes.vectorSize * argTypeSizes.elemSize;
+        }
+    }
+    SLEV(setupData.kernelArgsSize, kernelArgSize);
+    SLEV(setupData.sgprsNumAll, config.usedSGPRsNum+2);
+    SLEV(setupData.vgprsNum16, config.usedVGPRsNum);
+    SLEV(setupData.vgprsNum, config.usedVGPRsNum);
+    SLEV(setupData.sgprsNum, config.usedSGPRsNum);
+    SLEV(setupData.version, newBinaries ? 0x06040404U : 0x06000003U);
+    
+    fob.writeObject(setupData);
+    fob.fill(256 - sizeof(IntAmdCL2SetupData) - 48, 0);
+}
+
 class CLRX_INTERNAL CL2MainTextGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    const Array<TempAmdCL2KernelData>& tempDatas;
     ElfBinaryGen64* innerBinGen;
 public:
     explicit CL2MainTextGen(const AmdCL2Input* _input,
-            ElfBinaryGen64* _innerBinGen) : input(_input), innerBinGen(_innerBinGen)
+            const Array<TempAmdCL2KernelData>& _tempDatas,
+            ElfBinaryGen64* _innerBinGen) : input(_input), tempDatas(_tempDatas),
+            innerBinGen(_innerBinGen)
     { }
     
     size_t size() const
@@ -568,8 +709,8 @@ public:
         if (innerBinGen)
             return innerBinGen->countSize();
         size_t out = 0;
-        for (const AmdCL2KernelInput kernel: input->kernels)
-            out += kernel.stubSize + kernel.setupSize + kernel.codeSize;
+        for (const TempAmdCL2KernelData tempData: tempDatas)
+            out += tempData.stubSize + tempData.setupSize + tempData.codeSize;
         return out;
     }
     
@@ -578,10 +719,20 @@ public:
         if (innerBinGen!=nullptr)
             innerBinGen->generate(fob);
         else // otherwise
-            for (const AmdCL2KernelInput kernel: input->kernels)
+            for (size_t i = 0; i < input->kernels.size(); i++)
             {
-                fob.writeArray(kernel.stubSize, kernel.stub);
-                fob.writeArray(kernel.setupSize, kernel.setup);
+                const AmdCL2KernelInput& kernel = input->kernels[i];
+                if (!kernel.useConfig)
+                {   // no configuration, get from kernel data
+                    fob.writeArray(kernel.stubSize, kernel.stub);
+                    fob.writeArray(kernel.setupSize, kernel.setup);
+                }
+                else
+                {   // generate stub, setup from kernel config
+                    generateKernelSetup(
+                        getGPUArchitectureFromDeviceType(input->deviceType),
+                        kernel.config, fob, false);
+                }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
     }
@@ -1057,7 +1208,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                         0, -0x100ULL, 0 });
     }
     
-    CL2MainTextGen mainTextGen(input, innerBinGen.get());
+    CL2MainTextGen mainTextGen(input, tempDatas, innerBinGen.get());
     elfBinGen.addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen, 1, ".text",
                     SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
     
