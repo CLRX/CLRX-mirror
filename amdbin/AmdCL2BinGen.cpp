@@ -650,7 +650,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
                 (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
     else
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
-    SLEV(setupData.pgmRSRC1, (config.pgmRSRC2 & 0xffffe040U) | (4<<1) /* userData=4*/ |
+    SLEV(setupData.pgmRSRC2, (config.pgmRSRC2 & 0xffffe040U) | (4<<1) /* userData=4*/ |
             ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues);
     
     /// ohers
@@ -691,6 +691,286 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     fob.fill(256 - sizeof(IntAmdCL2SetupData) - 48, 0);
 }
 
+struct CLRX_INTERNAL IntAmdCL2StubHeader
+{
+    uint32_t hsaTextOffset;
+    uint32_t instrsNum;
+    uint32_t vgprsNum;
+    uint32_t zeroes[6];
+    uint32_t sizeProgVal; // 0x24
+    uint32_t globalMemOps;
+    uint32_t localMemOps;
+    uint32_t zero2;
+    uint32_t programRegSize; // sum??
+    uint32_t sgprsNumAll;
+};
+
+static const bool gcnSize11Table[16] =
+{
+    false, // GCNENC_SMRD, // 0000
+    false, // GCNENC_SMRD, // 0001
+    false, // GCNENC_VINTRP, // 0010
+    false, // GCNENC_NONE, // 0011 - illegal
+    true,  // GCNENC_VOP3A, // 0100
+    false, // GCNENC_NONE, // 0101 - illegal
+    true,  // GCNENC_DS,   // 0110
+    true,  // GCNENC_FLAT, // 0111
+    true,  // GCNENC_MUBUF, // 1000
+    false, // GCNENC_NONE,  // 1001 - illegal
+    true,  // GCNENC_MTBUF, // 1010
+    false, // GCNENC_NONE,  // 1011 - illegal
+    true,  // GCNENC_MIMG,  // 1100
+    false, // GCNENC_NONE,  // 1101 - illegal
+    true,  // GCNENC_EXP,   // 1110
+    false, // GCNENC_NONE   // 1111 - illegal
+};
+
+static const bool gcnSize12Table[16] =
+{
+    true,  // GCNENC_SMEM, // 0000
+    true,  // GCNENC_EXP, // 0001
+    false, // GCNENC_NONE, // 0010 - illegal
+    false, // GCNENC_NONE, // 0011 - illegal
+    true,  // GCNENC_VOP3A, // 0100
+    false, // GCNENC_VINTRP, // 0101
+    true,  // GCNENC_DS,   // 0110
+    true,  // GCNENC_FLAT, // 0111
+    true,  // GCNENC_MUBUF, // 1000
+    false, // GCNENC_NONE,  // 1001 - illegal
+    true,  // GCNENC_MTBUF, // 1010
+    false, // GCNENC_NONE,  // 1011 - illegal
+    true,  // GCNENC_MIMG,  // 1100
+    false, // GCNENC_NONE,  // 1101 - illegal
+    false, // GCNENC_NONE,  // 1110 - illegal
+    false, // GCNENC_NONE   // 1111 - illegal
+};
+
+enum : cxbyte
+{
+    INSTRTYPE_OTHER = 0,
+    INSTRTYPE_GLOBAL,
+    INSTRTYPE_LOCAL,
+};
+
+static const cxbyte gcnEncInstrTable[16] =
+{
+    INSTRTYPE_OTHER, // 0000
+    INSTRTYPE_OTHER, // 0001
+    INSTRTYPE_OTHER, // 0010
+    INSTRTYPE_OTHER, // 0011 - illegal
+    INSTRTYPE_OTHER, // 0100
+    INSTRTYPE_OTHER, // 0101 - illegal
+    INSTRTYPE_LOCAL,   // 0110
+    INSTRTYPE_GLOBAL, // 0111
+    INSTRTYPE_GLOBAL, // 1000
+    INSTRTYPE_OTHER,  // 1001 - illegal
+    INSTRTYPE_GLOBAL, // 1010
+    INSTRTYPE_OTHER,  // 1011 - illegal
+    INSTRTYPE_GLOBAL,  // 1100
+    INSTRTYPE_OTHER,  // 1101 - illegal
+    INSTRTYPE_OTHER,   // 1110
+    INSTRTYPE_OTHER // 1111 - illegal
+};
+
+/* count number of instructions, local memory operations and global memory operations */
+
+static void analyzeCode(GPUArchitecture arch, size_t codeSize, const cxbyte* code,
+            IntAmdCL2StubHeader& stubHdr)
+{
+    uint32_t instrsNum = 0;
+    uint32_t globalMemOps = 0;
+    uint32_t localMemOps = 0;
+    const size_t codeWordsNum = codeSize>>2;
+    const uint32_t* codeWords = reinterpret_cast<const uint32_t*>(code);
+    bool isGCN12 = (arch == GPUArchitecture::GCN1_2);
+    bool isGCN11 = (arch == GPUArchitecture::GCN1_1);
+    
+    /* main analyzing code loop, parse and determine instr encoding, and counts
+     * global/local memory ops */
+    for (size_t pos = 0; pos < codeWordsNum; instrsNum++)
+    {
+        uint32_t insnCode = ULEV(codeWords[pos++]);
+        
+        if ((insnCode & 0x80000000U) != 0)
+        {
+            if ((insnCode & 0x40000000U) == 0)
+            {   // SOP???
+                if  ((insnCode & 0x30000000U) == 0x30000000U)
+                {   // SOP1/SOPK/SOPC/SOPP
+                    const uint32_t encPart = (insnCode & 0x0f800000U);
+                    if (encPart == 0x0e800000U)
+                    {   // SOP1
+                        if ((insnCode&0xff) == 0xff) // literal
+                        {
+                            if (pos < codeWordsNum) pos++;
+                        }
+                    }
+                    else if (encPart == 0x0f000000U)
+                    {   // SOPC
+                        if ((insnCode&0xff) == 0xff ||
+                            (insnCode&0xff00) == 0xff00) // literal
+                            if (pos < codeWordsNum) pos++;
+                    }
+                    else if (encPart != 0x0f800000U) // no SOPP
+                    {
+                        const uint32_t opcode = ((insnCode>>23)&0x1f);
+                        if ((!isGCN12 && opcode == 21) ||
+                            (isGCN12 && opcode == 20))
+                            if (pos < codeWordsNum) pos++;
+                    }
+                }
+                else
+                {   // SOP2
+                    if ((insnCode&0xff) == 0xff || (insnCode&0xff00) == 0xff00)
+                        // literal
+                        if (pos < codeWordsNum) pos++;
+                }
+            }
+            else
+            {   // SMRD and others
+                const uint32_t encPart = (insnCode&0x3c000000U)>>26;
+                if ((!isGCN12 && gcnSize11Table[encPart] && (encPart != 7 || isGCN11)) ||
+                    (isGCN12 && gcnSize12Table[encPart]))
+                {
+                    if (pos < codeWordsNum) pos++;
+                }
+                cxbyte instrType = gcnEncInstrTable[encPart];
+                if (instrType == INSTRTYPE_LOCAL)
+                    localMemOps++;
+                if (instrType == INSTRTYPE_GLOBAL)
+                    globalMemOps++;
+            }
+        }
+        else
+        {   // some vector instructions
+            if ((insnCode & 0x7e000000U) == 0x7c000000U)
+            {   // VOPC
+                if ((insnCode&0x1ff) == 0xff || // literal
+                    // SDWA, DDP
+                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                {
+                    if (pos < codeWordsNum) pos++;
+                }
+            }
+            else if ((insnCode & 0x7e000000U) == 0x7e000000U)
+            {   // VOP1
+                if ((insnCode&0x1ff) == 0xff || // literal
+                    // SDWA, DDP
+                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                    if (pos < codeWordsNum) pos++;
+            }
+            else
+            {   // VOP2
+                const cxuint opcode = (insnCode >> 25)&0x3f;
+                if ((!isGCN12 && (opcode == 32 || opcode == 33)) ||
+                    (isGCN12 && (opcode == 23 || opcode == 24 ||
+                    opcode == 36 || opcode == 37))) // V_MADMK and V_MADAK
+                {
+                    if (pos < codeWordsNum) pos++;
+                }
+                else if ((insnCode&0x1ff) == 0xff || // literal
+                    // SDWA, DDP
+                    (isGCN12 && ((insnCode&0x1ff) == 0xf9 || (insnCode&0x1ff) == 0xfa)))
+                    if (pos < codeWordsNum) pos++; 
+            }
+        }
+    }
+    
+    SLEV(stubHdr.instrsNum, instrsNum);
+    SLEV(stubHdr.localMemOps, localMemOps);
+    SLEV(stubHdr.globalMemOps, globalMemOps);
+}
+
+struct CLRX_INTERNAL IntAmdCL2StubEnd
+{
+    uint64_t hsaTextOffset;
+    uint32_t endSize;
+    uint32_t hsaTextSize;
+    uint32_t zeroes[2];
+    uint32_t unknown1; // value - 0x200
+    uint32_t unknown2;
+    uint64_t kernelSize;    // 0x20
+    uint32_t zeroesx[2];
+    uint64_t kernelSize2;
+    uint32_t zeroesy[2];
+    uint32_t vgprsNum;      // 0x30
+    uint32_t sgprsNumAll;
+    uint32_t zeroes2[2];
+    uint32_t vgprsNum2;
+    uint32_t sgprsNum;
+    uint32_t floatMode; // 0x50
+    uint32_t unknown3;
+    uint32_t one; //??
+    uint32_t zeroes3[3];    
+    uint32_t scratchBufferSize; // 0x68
+    uint32_t localSize;
+    uint32_t allOnes;// 0x70
+    uint32_t unknownlast; // 0x74 (alignment)
+};
+
+static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& config,
+        FastOutputBuffer& fob, size_t codeSize, const cxbyte* code)
+{
+    {
+        IntAmdCL2StubHeader stubHdr;
+        SLEV(stubHdr.hsaTextOffset, 0xa60);
+        SLEV(stubHdr.instrsNum, 0xa60);
+        SLEV(stubHdr.sgprsNumAll, config.usedSGPRsNum+2);
+        SLEV(stubHdr.vgprsNum, config.usedVGPRsNum);
+        analyzeCode(arch, codeSize, code, stubHdr);
+        stubHdr.sizeProgVal = stubHdr.instrsNum; // this same? enough reliable?
+        SLEV(stubHdr.programRegSize, config.usedSGPRsNum + config.usedVGPRsNum);
+        fob.writeObject(stubHdr);
+    }
+    // next bytes
+    fob.fill(0xb8 - sizeof(IntAmdCL2StubHeader), 0); // fill up
+    fob.writeObject(LEV(0xa60));
+    fob.fill(0x164-0xbc, 0); // fill up
+    // 0x164
+    fob.writeObject(LEV(3)); //?
+    fob.writeObject(LEV(12)); //?
+    fob.fill(0x9c0-0x16c, 0); // fill up
+    { // end of stub - kernel config?
+        IntAmdCL2StubEnd stubEnd;
+        SLEV(stubEnd.hsaTextOffset, 0xa60);
+        SLEV(stubEnd.endSize, 0x100);
+        SLEV(stubEnd.hsaTextSize, codeSize + 0x100);
+        stubEnd.zeroes[0] = stubEnd.zeroes[1] = 0;
+        SLEV(stubEnd.unknown1, 0x200);
+        stubEnd.unknown2 = 0;
+        SLEV(stubEnd.kernelSize, codeSize + 0xb60);
+        stubEnd.zeroesx[0] = stubEnd.zeroesx[1] = 0;
+        SLEV(stubEnd.kernelSize2, codeSize + 0xb60);
+        stubEnd.zeroesy[0] = stubEnd.zeroesy[1] = 0;
+        SLEV(stubEnd.vgprsNum, config.usedVGPRsNum);
+        SLEV(stubEnd.sgprsNumAll, config.usedSGPRsNum + 2);
+        SLEV(stubEnd.vgprsNum2, config.usedVGPRsNum);
+        stubEnd.zeroes2[0] = stubEnd.zeroes2[1] = 0;
+        SLEV(stubEnd.sgprsNum, config.usedSGPRsNum);
+        SLEV(stubEnd.floatMode, config.floatMode&0xff);
+        stubEnd.unknown3 = 0;
+        SLEV(stubEnd.one, 1);
+        stubEnd.zeroes3[0] = stubEnd.zeroes3[1] = stubEnd.zeroes3[2] = 0;
+        SLEV(stubEnd.scratchBufferSize, (config.scratchBufferSize+3)>>2);
+        SLEV(stubEnd.localSize, config.localSize);
+        SLEV(stubEnd.allOnes, 0xffffffffU);
+        fob.writeObject(stubEnd);
+    }
+    fob.fill(0xa8-sizeof(IntAmdCL2StubEnd), 0);
+    // pgmrsrc2 - without ldssize
+    uint32_t dimValues = 0;
+    if (config.dimMask != BINGEN_DEFAULT)
+        dimValues = ((config.dimMask&7)<<7) |
+                (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+    else
+        dimValues |= (config.pgmRSRC2 & 0x1b80U);
+    uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe040U) | (4<<1) /* userData=4*/ |
+        ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
+        (((config.localSize+511)>>9)<<15);
+    fob.writeObject(LEV(pgmRSRC2));
+    fob.fill(0xc0-0xac, 0);
+}
+
 class CLRX_INTERNAL CL2MainTextGen: public ElfRegionContent
 {
 private:
@@ -718,23 +998,27 @@ public:
     {
         if (innerBinGen!=nullptr)
             innerBinGen->generate(fob);
-        else // otherwise
+        else // otherwise (old binaries)
+        {
+            GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
             for (size_t i = 0; i < input->kernels.size(); i++)
             {
                 const AmdCL2KernelInput& kernel = input->kernels[i];
+                const TempAmdCL2KernelData& tempData = tempDatas[i];
                 if (!kernel.useConfig)
                 {   // no configuration, get from kernel data
-                    fob.writeArray(kernel.stubSize, kernel.stub);
-                    fob.writeArray(kernel.setupSize, kernel.setup);
+                    fob.writeArray(tempData.stubSize, kernel.stub);
+                    fob.writeArray(tempData.setupSize, kernel.setup);
                 }
-                else
-                {   // generate stub, setup from kernel config
-                    generateKernelSetup(
-                        getGPUArchitectureFromDeviceType(input->deviceType),
-                        kernel.config, fob, false);
+                else // generate stub, setup from kernel config
+                {
+                    generateKernelStub(arch, kernel.config, fob,
+                               tempData.codeSize, kernel.code);
+                    generateKernelSetup(arch, kernel.config, fob, false);
                 }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
+        }
     }
 };
 
@@ -742,36 +1026,45 @@ class CLRX_INTERNAL CL2InnerTextGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    const Array<TempAmdCL2KernelData>& tempDatas;
 public:
-    explicit CL2InnerTextGen(const AmdCL2Input* _input) : input(_input)
+    explicit CL2InnerTextGen(const AmdCL2Input* _input,
+                const Array<TempAmdCL2KernelData>& _tempDatas) : input(_input),
+                tempDatas(_tempDatas)
     { }
     
     size_t size() const
     {
         size_t out = 0;
-        for (const AmdCL2KernelInput& kernel: input->kernels)
+        for (const TempAmdCL2KernelData& tempData: tempDatas)
         {
             if ((out & 255) != 0)
                 out += 256-(out&255);
-            out += kernel.setupSize + kernel.codeSize;
+            out += tempData.setupSize + tempData.codeSize;
         }
         return out;
     }
     
     void operator()(FastOutputBuffer& fob) const
     {
+        GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
         size_t outSize = 0;
-        for (const AmdCL2KernelInput& kernel: input->kernels)
+        for (size_t i = 0; i < input->kernels.size(); i++)
         {
+            const AmdCL2KernelInput& kernel = input->kernels[i];
+            const TempAmdCL2KernelData& tempData = tempDatas[i];
             if ((outSize & 255) != 0)
             {
                 size_t toFill = 256-(outSize&255);
                 fob.fill(toFill, 0);
                 outSize += toFill;
             }
-            fob.writeArray(kernel.setupSize, kernel.setup);
-            fob.writeArray(kernel.codeSize, kernel.code);
-            outSize += kernel.setupSize + kernel.codeSize;
+            if (!kernel.useConfig)
+                fob.writeArray(tempData.setupSize, kernel.setup);
+            else
+                generateKernelSetup(arch, kernel.config, fob, true);
+            fob.writeArray(tempData.codeSize, kernel.code);
+            outSize += tempData.setupSize + tempData.codeSize;
         }
     }
 };
@@ -1111,7 +1404,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input, tempDatas);
-    CL2InnerTextGen innerTextGen(input);
+    CL2InnerTextGen innerTextGen(input, tempDatas);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
     CL2InnerTextRelsGen innerTextRelsGen(input);
     CL2InnerGlobalDataRelsGen innerGDataRels(input);
