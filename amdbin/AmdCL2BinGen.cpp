@@ -654,7 +654,14 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues);
     
     /// ohers
-    SLEV(setupData.setup1, 0xb);
+    uint16_t setup1 = 0x1;
+    if (config.useEnqueue)
+        setup1 = 0x2b;
+    else if (config.useSetup)
+        setup1 = (config.useSizes) ? 0xb : 0x9;
+    else if (config.useSizes)
+        setup1 = 0xb;
+    SLEV(setupData.setup1, setup1);
     SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
     SLEV(setupData.scratchBufferDwords, (config.scratchBufferSize+3)>>2);
     SLEV(setupData.localSize, config.localSize);
