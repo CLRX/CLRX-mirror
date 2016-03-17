@@ -323,7 +323,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     if (kernelHeader.size < sizeof(AmdCL2GPUMetadataHeader))
         throw Exception("Metadata header is too short");
     kernelHeader.data = metadata;
-    const uint32_t argNum = ULEV(hdrStruc->argsNum);
+    const uint32_t argsNum = ULEV(hdrStruc->argsNum);
     
     if (usumGt(ULEV(hdrStruc->firstNameLength), ULEV(hdrStruc->secondNameLength),
                 metadataSize-kernelHeader.size-2))
@@ -332,17 +332,16 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     size_t argOffset = kernelHeader.size +
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
     const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
-            const AmdCL2GPUKernelArgEntry*>(metadata + kernelHeader.size +
-            ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2);
+            const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
     
-    if(usumGt(argOffset, sizeof(AmdCL2GPUKernelArgEntry)*argNum, metadataSize))
+    if(usumGt(argOffset, sizeof(AmdCL2GPUKernelArgEntry)*argsNum, metadataSize))
         throw Exception("Number of arguments out of range");
     
     const char* strBase = (const char*)metadata;
-    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argNum+1);
+    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argsNum+1);
     
-    kernelInfo.argInfos.resize(argNum);
-    for (uint32_t i = 0; i < argNum; i++, argPtr++)
+    kernelInfo.argInfos.resize(argsNum);
+    for (uint32_t i = 0; i < argsNum; i++, argPtr++)
     {
         AmdKernelArg& arg = kernelInfo.argInfos[i];
         if (ULEV(argPtr->size)!=sizeof(AmdCL2GPUKernelArgEntry))
