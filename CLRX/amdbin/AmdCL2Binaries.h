@@ -262,6 +262,7 @@ struct AmdCL2GPUKernelArgEntry
     union {
         uint32_t vectorLength;  ///< vector length (for old drivers not aligned)
         uint32_t resId;     ///< resource id
+        uint32_t structSize;
     };
     uint32_t unknown3;
     uint32_t argOffset; ///< virtual argument offset
