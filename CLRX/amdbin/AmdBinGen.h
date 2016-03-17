@@ -88,7 +88,7 @@ struct AmdKernelArgInput
         KernelArgType imgType, cxbyte ptrAccess = KARG_PTR_READ_ONLY,
         uint32_t resId = BINGEN_DEFAULT, bool used = true)
     {
-        return { argName, typeName, imgType, KernelArgType::VOID, KernelPtrSpace::NONE,
+        return { argName, typeName, imgType, KernelArgType::VOID, KernelPtrSpace::GLOBAL,
             ptrAccess, 0, 0, resId, used };
     }
 };

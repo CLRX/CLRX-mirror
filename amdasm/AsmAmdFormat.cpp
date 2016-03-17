@@ -1417,6 +1417,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     else if (!pointer && argType >= KernelArgType::MIN_IMAGE &&
              argType <= KernelArgType::MAX_IMAGE)
     {
+        ptrSpace = KernelPtrSpace::GLOBAL;
         ptrAccess = KARG_PTR_READ_ONLY;
         if (!skipComma(asmr, haveComma, linePtr))
             return;

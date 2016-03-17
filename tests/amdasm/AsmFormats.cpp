@@ -767,18 +767,18 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
       Arg: "v19", "structure", structure, void, none, 0, 44, 0, default, false
       Arg: "v20", "counter32_t", counter32, void, none, 0, 0, 0, 3, true
       Arg: "v21", "counter32_t", counter32, void, none, 0, 0, 0, 3, false
-      Arg: "v22", "image2d_t", image, void, none, 1, 0, 0, default, true
-      Arg: "v23", "image2d_t", image2d, void, none, 1, 0, 0, default, true
-      Arg: "v24", "image3d_t", image3d, void, none, 1, 0, 0, default, true
-      Arg: "v25", "image2d_array_t", image2d_array, void, none, 1, 0, 0, default, true
-      Arg: "v26", "image1d_buffer_t", image1d_buffer, void, none, 1, 0, 0, default, true
-      Arg: "v27", "image1d_array_t", image1d_array, void, none, 1, 0, 0, default, true
-      Arg: "v28", "image1d_t", image1d, void, none, 1, 0, 0, default, true
-      Arg: "v29", "image2d_t", image2d, void, none, 2, 0, 0, default, true
-      Arg: "v30", "image2d_t", image2d, void, none, 1, 0, 0, 5, true
-      Arg: "v31", "image2d_t", image2d, void, none, 1, 0, 0, 5, false
-      Arg: "v32", "image2d_t", image2d, void, none, 1, 0, 0, default, false
-      Arg: "v33", "myimage", image3d, void, none, 1, 0, 0, default, true
+      Arg: "v22", "image2d_t", image, void, global, 1, 0, 0, default, true
+      Arg: "v23", "image2d_t", image2d, void, global, 1, 0, 0, default, true
+      Arg: "v24", "image3d_t", image3d, void, global, 1, 0, 0, default, true
+      Arg: "v25", "image2d_array_t", image2d_array, void, global, 1, 0, 0, default, true
+      Arg: "v26", "image1d_buffer_t", image1d_buffer, void, global, 1, 0, 0, default, true
+      Arg: "v27", "image1d_array_t", image1d_array, void, global, 1, 0, 0, default, true
+      Arg: "v28", "image1d_t", image1d, void, global, 1, 0, 0, default, true
+      Arg: "v29", "image2d_t", image2d, void, global, 2, 0, 0, default, true
+      Arg: "v30", "image2d_t", image2d, void, global, 1, 0, 0, 5, true
+      Arg: "v31", "image2d_t", image2d, void, global, 1, 0, 0, 5, false
+      Arg: "v32", "image2d_t", image2d, void, global, 1, 0, 0, default, false
+      Arg: "v33", "myimage", image3d, void, global, 1, 0, 0, default, true
       Arg: "v34", "void*", pointer, void, global, 0, 0, 0, default, true
       Arg: "v35", "void*", pointer, void, global, 4, 0, 0, default, true
       Arg: "v36", "void*", pointer, void, local, 0, 0, 0, default, true
