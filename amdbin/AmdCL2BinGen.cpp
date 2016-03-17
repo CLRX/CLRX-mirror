@@ -554,7 +554,7 @@ public:
             }
             bool isPointerOrPipe = (arg.argType==KernelArgType::POINTER ||
                     arg.argType==KernelArgType::CLKEVENT ||
-                    arg.argType==KernelArgType::PIPE);
+                    arg.argType==KernelArgType::PIPE) ? 3 : 0;
             SLEV(argEntry.isPointerOrPipe, isPointerOrPipe);
             
             SLEV(argEntry.isConst, (arg.ptrAccess & KARG_PTR_CONST) != 0);
