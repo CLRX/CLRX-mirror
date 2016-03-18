@@ -731,6 +731,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     {
         uint32_t extraBits = (config.useEnqueue) ? 0x30000U : 0;
         extraBits |= (!config.useEnqueue && config.scratchBufferSize!=0) ? 0x40000U : 0;
+        extraBits |= (config.localSize!=0) ? 0x200U : 0;
         SLEV(setupData.version, 0x06000003U | extraBits);
     }
     
