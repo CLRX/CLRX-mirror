@@ -691,7 +691,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             arg.argType == KernelArgType::STRUCTURE ||
             arg.argType == KernelArgType::CMDQUEUE ||
             (arg.argType >= KernelArgType::MIN_IMAGE &&
-             arg.argType >= KernelArgType::MAX_IMAGE))
+             arg.argType <= KernelArgType::MAX_IMAGE))
             kernelArgSize += 8;
         else if (arg.argType == KernelArgType::SAMPLER)
             kernelArgSize += 4;
