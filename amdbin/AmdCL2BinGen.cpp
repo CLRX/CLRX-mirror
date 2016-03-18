@@ -698,9 +698,17 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             arg.argType == KernelArgType::CMDQUEUE ||
             (arg.argType >= KernelArgType::MIN_IMAGE &&
              arg.argType <= KernelArgType::MAX_IMAGE))
+        {
+            if ((kernelArgSize&7)!=0)
+                kernelArgSize += 8-(kernelArgSize&7);
             kernelArgSize += 8;
+        }
         else if (arg.argType == KernelArgType::SAMPLER)
+        {
+            if ((kernelArgSize&3)!=0)
+                kernelArgSize += 4-(kernelArgSize&3);
             kernelArgSize += 4;
+        }
         else
         {   // scalar
             const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
@@ -720,7 +728,11 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     if (newBinaries)
         SLEV(setupData.version, 0x06040404U);
     else // old binaries
-        SLEV(setupData.version, (config.useEnqueue) ? 0x06030003U : 0x06000003U);
+    {
+        uint32_t extraBits = (config.useEnqueue) ? 0x30000U : 0;
+        extraBits |= (!config.useEnqueue && config.scratchBufferSize!=0) ? 0x40000U : 0;
+        SLEV(setupData.version, 0x06000003U | extraBits);
+    }
     
     fob.writeObject(setupData);
     fob.fill(256 - sizeof(IntAmdCL2SetupData) - 48, 0);
