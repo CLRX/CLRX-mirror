@@ -605,9 +605,8 @@ public:
     }
 };
 
-static const cxbyte firstKernelSetupBytes[48] =
+static const cxbyte kernelSetupBytesAfter8[40] =
 {
-    0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -637,13 +636,15 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
                 FastOutputBuffer& fob, bool newBinaries)
 {
-    fob.writeArray(48, firstKernelSetupBytes);
+    fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
+    fob.writeArray(40, kernelSetupBytesAfter8);
     IntAmdCL2SetupData setupData;
     cxuint sgprsNum = std::max(config.usedSGPRsNum+2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
     SLEV(setupData.pgmRSRC1, ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
-            ((uint32_t(config.floatMode)&0xff)<<12) | (1U<<21) /*dx11_clamp */ |
+            ((uint32_t(config.floatMode)&0xff)<<12) |
+            (newBinaries ? (1U<<21) : 0) /*dx11_clamp */ |
             (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10));
     // pgmrsrc2 - without ldssize
     uint32_t dimValues = 0;
@@ -727,6 +728,7 @@ struct CLRX_INTERNAL IntAmdCL2StubHeader
     uint32_t localMemOps;
     uint32_t zero2;
     uint32_t programRegSize; // sum??
+    uint32_t zero3;
     uint32_t sgprsNumAll;
 };
 
@@ -917,7 +919,6 @@ struct CLRX_INTERNAL IntAmdCL2StubEnd
     uint64_t kernelSize;    // 0x20
     uint32_t zeroesx[2];
     uint64_t kernelSize2;
-    uint32_t zeroesy[2];
     uint32_t vgprsNum;      // 0x30
     uint32_t sgprsNumAll;
     uint32_t zeroes2[2];
@@ -943,6 +944,9 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         SLEV(stubHdr.sgprsNumAll, config.usedSGPRsNum+2);
         SLEV(stubHdr.vgprsNum, config.usedVGPRsNum);
         analyzeCode(arch, codeSize, code, stubHdr);
+        std::fill(stubHdr.zeroes, stubHdr.zeroes+6, uint32_t(0));
+        stubHdr.zero2 = 0;
+        stubHdr.zero3 = 0;
         stubHdr.sizeProgVal = stubHdr.instrsNum; // this same? enough reliable?
         SLEV(stubHdr.programRegSize, config.usedSGPRsNum + config.usedVGPRsNum);
         fob.writeObject(stubHdr);
@@ -954,7 +958,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     // 0x164
     fob.writeObject(LEV(3)); //?
     fob.writeObject(LEV(12)); //?
-    fob.fill(0x9c0-0x16c, 0); // fill up
+    fob.fill(0x9a0-0x16c, 0); // fill up
     { // end of stub - kernel config?
         IntAmdCL2StubEnd stubEnd;
         SLEV(stubEnd.hsaTextOffset, 0xa60);
@@ -966,7 +970,6 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         SLEV(stubEnd.kernelSize, codeSize + 0xb60);
         stubEnd.zeroesx[0] = stubEnd.zeroesx[1] = 0;
         SLEV(stubEnd.kernelSize2, codeSize + 0xb60);
-        stubEnd.zeroesy[0] = stubEnd.zeroesy[1] = 0;
         SLEV(stubEnd.vgprsNum, config.usedVGPRsNum);
         SLEV(stubEnd.sgprsNumAll, config.usedSGPRsNum + 2);
         SLEV(stubEnd.vgprsNum2, config.usedVGPRsNum);
@@ -979,6 +982,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         SLEV(stubEnd.scratchBufferSize, (config.scratchBufferSize+3)>>2);
         SLEV(stubEnd.localSize, config.localSize);
         SLEV(stubEnd.allOnes, 0xffffffffU);
+        SLEV(stubEnd.unknownlast, 0);
         fob.writeObject(stubEnd);
     }
     fob.fill(0xa8-sizeof(IntAmdCL2StubEnd), 0);
@@ -989,7 +993,16 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
                 (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
     else
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
-    uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe040U) | (4<<1) /* userData=4*/ |
+    
+    cxuint userDatasNum = 4;
+    if (config.useEnqueue)
+        userDatasNum = 10;
+    else if (config.useSetup)
+        userDatasNum = (config.useSizes) ? 8 : 4;
+    else if (config.useSizes)
+        userDatasNum = 8;
+    
+    uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe040U) | (userDatasNum<<1) |
         ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
         (((config.localSize+511)>>9)<<15);
     fob.writeObject(LEV(pgmRSRC2));
