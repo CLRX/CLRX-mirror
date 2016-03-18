@@ -620,7 +620,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t pgmRSRC2;
     uint16_t setup1;
     uint16_t archInd;
-    uint32_t scratchBufferDwords;
+    uint32_t scratchBufferSize;
     uint32_t localSize; // in bytes
     uint32_t zero1;
     uint32_t kernelArgsSize;
@@ -639,7 +639,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
     IntAmdCL2SetupData setupData;
-    cxuint sgprsNum = std::max(config.usedSGPRsNum+2, 1U);
+    cxuint extraSGPRsNum = (config.useEnqueue) ? 2 : 0;
+    cxuint sgprsNum = std::max(config.usedSGPRsNum + extraSGPRsNum + 2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
     SLEV(setupData.pgmRSRC1, ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
@@ -649,8 +650,13 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     // pgmrsrc2 - without ldssize
     uint32_t dimValues = 0;
     if (config.dimMask != BINGEN_DEFAULT)
-        dimValues = ((config.dimMask&7)<<7) |
-                (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+    {
+        dimValues = ((config.dimMask&7)<<7);
+        if (!config.useEnqueue)
+            dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+        else // enqueue needs TIDIG_COMP_CNT=2 ????
+            dimValues |= (2U<<11);
+    }
     else
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
     
@@ -677,7 +683,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     
     SLEV(setupData.setup1, setup1);
     SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
-    SLEV(setupData.scratchBufferDwords, (config.scratchBufferSize+3)>>2);
+    SLEV(setupData.scratchBufferSize, config.scratchBufferSize);
     SLEV(setupData.localSize, config.localSize);
     setupData.zero1 = 0;
     setupData.zeroes[0] = setupData.zeroes[1] = 0;
@@ -707,11 +713,14 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     if (newBinaries)
         kernelArgSize = (kernelArgSize+15)&~15U;
     SLEV(setupData.kernelArgsSize, kernelArgSize);
-    SLEV(setupData.sgprsNumAll, config.usedSGPRsNum+2);
+    SLEV(setupData.sgprsNumAll, sgprsNum);
     SLEV(setupData.vgprsNum16, config.usedVGPRsNum);
     SLEV(setupData.vgprsNum, config.usedVGPRsNum);
     SLEV(setupData.sgprsNum, config.usedSGPRsNum);
-    SLEV(setupData.version, newBinaries ? 0x06040404U : 0x06000003U);
+    if (newBinaries)
+        SLEV(setupData.version, 0x06040404U);
+    else // old binaries
+        SLEV(setupData.version, (config.useEnqueue) ? 0x06030003U : 0x06000003U);
     
     fob.writeObject(setupData);
     fob.fill(256 - sizeof(IntAmdCL2SetupData) - 48, 0);
@@ -937,11 +946,13 @@ struct CLRX_INTERNAL IntAmdCL2StubEnd
 static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& config,
         FastOutputBuffer& fob, size_t codeSize, const cxbyte* code)
 {
+    cxuint extraSGPRsNum = (config.useEnqueue) ? 2 : 0;
+    cxuint sgprsNumAll = config.usedSGPRsNum+2 + extraSGPRsNum;
     {
         IntAmdCL2StubHeader stubHdr;
         SLEV(stubHdr.hsaTextOffset, 0xa60);
         SLEV(stubHdr.instrsNum, 0xa60);
-        SLEV(stubHdr.sgprsNumAll, config.usedSGPRsNum+2);
+        SLEV(stubHdr.sgprsNumAll, sgprsNumAll);
         SLEV(stubHdr.vgprsNum, config.usedVGPRsNum);
         analyzeCode(arch, codeSize, code, stubHdr);
         std::fill(stubHdr.zeroes, stubHdr.zeroes+6, uint32_t(0));
@@ -971,7 +982,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         stubEnd.zeroesx[0] = stubEnd.zeroesx[1] = 0;
         SLEV(stubEnd.kernelSize2, codeSize + 0xb60);
         SLEV(stubEnd.vgprsNum, config.usedVGPRsNum);
-        SLEV(stubEnd.sgprsNumAll, config.usedSGPRsNum + 2);
+        SLEV(stubEnd.sgprsNumAll, sgprsNumAll);
         SLEV(stubEnd.vgprsNum2, config.usedVGPRsNum);
         stubEnd.zeroes2[0] = stubEnd.zeroes2[1] = 0;
         SLEV(stubEnd.sgprsNum, config.usedSGPRsNum);
@@ -989,8 +1000,13 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     // pgmrsrc2 - without ldssize
     uint32_t dimValues = 0;
     if (config.dimMask != BINGEN_DEFAULT)
-        dimValues = ((config.dimMask&7)<<7) |
-                (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+    {
+        dimValues = ((config.dimMask&7)<<7);
+        if (!config.useEnqueue)
+            dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+        else // enqueue needs TIDIG_COMP_CNT=2 ????
+            dimValues |= (2U<<11);
+    }
     else
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
     
