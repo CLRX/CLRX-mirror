@@ -981,7 +981,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     fob.fill(0x164-0xbc, 0); // fill up
     // 0x164
     fob.writeObject(LEV(3)); //?
-    fob.writeObject(LEV(12)); //?
+    fob.writeObject(LEV(config.localSize!=0 ? 13 : 12)); //?
     fob.fill(0x9a0-0x16c, 0); // fill up
     { // end of stub - kernel config?
         IntAmdCL2StubEnd stubEnd;
