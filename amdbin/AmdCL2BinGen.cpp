@@ -193,6 +193,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             size_t out = ((newBinaries) ? 254 : 246) + (kernel.config.args.size() + 1)*88;
             for (const AmdKernelArgInput& arg: kernel.config.args)
                     out += arg.argName.size() + arg.typeName.size() + 2;
+            out += 48;
             
             tempDatas[i].metadataSize = out;
             tempDatas[i].setupSize = 256;
@@ -582,9 +583,10 @@ public:
         // arg names and type names
         for (const AmdKernelArgInput& arg: config.args)
         {
-            fob.writeArray(arg.argName.size(), arg.argName.c_str());
-            fob.writeArray(arg.typeName.size(), arg.typeName.c_str());
+            fob.writeArray(arg.argName.size()+1, arg.argName.c_str());
+            fob.writeArray(arg.typeName.size()+1, arg.typeName.c_str());
         }
+        fob.write(48, 0);
     }
     
     void operator()(FastOutputBuffer& fob) const
@@ -637,11 +639,11 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
 {
     fob.writeArray(48, firstKernelSetupBytes);
     IntAmdCL2SetupData setupData;
-    cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
+    cxuint sgprsNum = std::max(config.usedSGPRsNum+2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
     SLEV(setupData.pgmRSRC1, ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
-            ((uint32_t(config.floatMode)&0xff)<<12) |
+            ((uint32_t(config.floatMode)&0xff)<<12) | (1U<<21) /*dx11_clamp */ |
             (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10));
     // pgmrsrc2 - without ldssize
     uint32_t dimValues = 0;
@@ -650,17 +652,28 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
                 (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
     else
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
-    SLEV(setupData.pgmRSRC2, (config.pgmRSRC2 & 0xffffe040U) | (4<<1) /* userData=4*/ |
+    
+    uint16_t setup1 = 0x1;
+    cxuint userDatasNum = 4;
+    if (config.useEnqueue)
+    {
+        setup1 = 0x2b;
+        userDatasNum = 10;
+    }
+    else if (config.useSetup)
+    {
+        setup1 = (config.useSizes) ? 0xb : 0x9;
+        userDatasNum = (config.useSizes) ? 8 : 4;
+    }
+    else if (config.useSizes)
+    {
+        setup1 = 0xb;
+        userDatasNum = 8;
+    }
+    
+    SLEV(setupData.pgmRSRC2, (config.pgmRSRC2 & 0xffffe040U) | (userDatasNum<<1) |
             ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues);
     
-    /// ohers
-    uint16_t setup1 = 0x1;
-    if (config.useEnqueue)
-        setup1 = 0x2b;
-    else if (config.useSetup)
-        setup1 = (config.useSizes) ? 0xb : 0x9;
-    else if (config.useSizes)
-        setup1 = 0xb;
     SLEV(setupData.setup1, setup1);
     SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
     SLEV(setupData.scratchBufferDwords, (config.scratchBufferSize+3)>>2);
@@ -684,9 +697,14 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
         else
         {   // scalar
             const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
-            kernelArgSize += argTypeSizes.vectorSize * argTypeSizes.elemSize;
+            cxuint vectorLength = argTypeSizes.vectorSize;
+            if (newBinaries && vectorLength==3)
+                vectorLength = 4;
+            kernelArgSize += vectorLength * argTypeSizes.elemSize;
         }
     }
+    if (newBinaries)
+        kernelArgSize = (kernelArgSize+15)&~15U;
     SLEV(setupData.kernelArgsSize, kernelArgSize);
     SLEV(setupData.sgprsNumAll, config.usedSGPRsNum+2);
     SLEV(setupData.vgprsNum16, config.usedVGPRsNum);

@@ -90,7 +90,6 @@ struct AmdCL2KernelInput
     std::vector<AmdCL2RelInput> relocations;    ///< relocation to kernel code
     size_t codeSize;        ///< code size
     const cxbyte* code;     ///< code
-    
 };
 
 /// main Input for AmdCL2GPUBinGenerator
