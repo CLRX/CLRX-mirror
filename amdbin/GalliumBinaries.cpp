@@ -302,7 +302,8 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.usedVGPRsNum = BINGEN_DEFAULT;
     kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
     kinput.config.pgmRSRC2 = 0;
-    kinput.config.ieeeMode = false;
+    kinput.config.debugMode = kinput.config.ieeeMode = false;
+    kinput.config.privilegedMode = kinput.config.dx10Clamp = false;
     kinput.config.floatMode = 0xc0;
     kinput.config.localSize = 0;
     kinput.config.userDataNum = 4;
@@ -426,9 +427,12 @@ public:
                     dimValues |= (config.pgmRSRC2 & 0x1b80U);
                 cxuint sgprsNum = std::max(config.usedSGPRsNum, 1U);
                 cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
+                /// pgmRSRC1
                 outEntries[0].value = ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
                         ((uint32_t(config.floatMode)&0xff)<<12) |
-                        (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10);
+                        (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
+                        (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
+                        (config.debugMode?1U<<22:0);
                 
                 outEntries[1].value = (config.pgmRSRC2 & 0xff006040U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |

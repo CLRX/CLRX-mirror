@@ -82,13 +82,16 @@ Open kernel configuration. Must be inside kernel. Kernel configuration can not b
 defined if proginfo configuration was defined (by using `.proginfo`).
 Following pseudo-ops can be inside kernel config:
 
+* .debugmode - enables using of DEBUG_MODE
 * .dims DIMS - choose dimensions used by kernel function. Can be: x,y,z.
+* .dx10clamp - enables using of DX10_CLAMP
 * .floatmode VALUE - choose float mode for kernel (byte value).
 Default value is 0xc0
 * .ieeemode - choose IEEE mode for kernel
 * .localsize SIZE - initial local data size for kernel in bytes
 * .pgmrsrc2 VALUE - value of the PGMRSRC2 (only bits that is not set by other pseudo-ops)
 * .priority VALUE - set priority for kernel (0-3). Default value is 0.
+* .privmode - enables using of PRIV (privileged mode)
 * .scratchbuffer SIZE - size of scratchbuffer (???). Default value is 0.
 * .sgprsnum NUMBER - number of SGPR registers used by kernel (excluding VCC,FLAT_SCRATCH).
 By default, automatically computed by assembler.
@@ -105,12 +108,22 @@ Example configuration:
     .tgsize
 ```
 
+### .debugmode
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Enable usage of the DEBUG_MODE. Should be set.
+
 ### .dims
 
 Syntax: .dims DIMENSIONS
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines what dimensions
 (from list: x, y, z) will be used to determine space of the kernel execution.
+
+### .dx10clamp
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Enable usage of the DX10_CLAMP. Should be set.
 
 ### .entry
 
@@ -188,6 +201,11 @@ config pseudo-operations.
 Syntax: .priority PRIORITY
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines priority (0-3).
+
+### .privmode
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Enable usage of the PRIV (privileged mode). Should be set.
 
 ### .proginfo
 

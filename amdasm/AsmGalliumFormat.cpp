@@ -31,20 +31,26 @@ using namespace CLRX;
 
 static const char* galliumPseudoOpNamesTbl[] =
 {
-    "arg", "args", "config", "dims",
-    "entry", "floatmode", "globaldata", "ieeemode",
+    "arg", "args", "config",
+    "debugmode", "dims", "dx10clamp",
+    "entry", "floatmode",
+    "globaldata", "ieeemode",
     "kcode", "kcodeend",
-    "localsize", "pgmrsrc2", "priority", "proginfo",
+    "localsize", "pgmrsrc2", "priority",
+    "privmode", "proginfo",
     "scratchbuffer", "sgprsnum", "tgsize",
     "userdatanum", "vgprsnum"
 };
 
 enum
 {
-    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG, GALLIUMOP_DIMS,
-    GALLIUMOP_ENTRY, GALLIUMOP_FLOATMODE, GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
+    GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG,
+    GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DX10CLAMP,
+    GALLIUMOP_ENTRY, GALLIUMOP_FLOATMODE,
+    GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
     GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
-    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY, GALLIUMOP_PROGINFO,
+    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
+    GALLIUMOP_PRIVMODE, GALLIUMOP_PROGINFO,
     GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_TGSIZE,
     GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
 };
@@ -454,10 +460,26 @@ void AsmGalliumPseudoOps::setConfigBoolValue(AsmGalliumHandler& handler,
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     GalliumKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
-    if (target == GALLIUMCVAL_IEEEMODE)
-        config.ieeeMode = true;
-    else
-        config.tgSize = true;
+    switch(target)
+    {
+        case GALLIUMCVAL_DEBUGMODE:
+            config.debugMode = true;
+            break;
+        case GALLIUMCVAL_DX10CLAMP:
+            config.dx10Clamp = true;
+            break;
+        case GALLIUMCVAL_IEEEMODE:
+            config.ieeeMode = true;
+            break;
+        case GALLIUMCVAL_PRIVMODE:
+            config.privilegedMode = true;
+            break;
+        case GALLIUMCVAL_TGSIZE:
+            config.tgSize = true;
+            break;
+        default:
+            break;
+    }
 }
 
 void AsmGalliumPseudoOps::doArgs(AsmGalliumHandler& handler,
@@ -862,8 +884,16 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_CONFIG:
             AsmGalliumPseudoOps::doConfig(*this, stmtPlace, linePtr);
             break;
+        case GALLIUMOP_DEBUGMODE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_DEBUGMODE);
+            break;
         case GALLIUMOP_DIMS:
             AsmGalliumPseudoOps::setDimensions(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_DX10CLAMP:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_DX10CLAMP);
             break;
         case GALLIUMOP_ENTRY:
             AsmGalliumPseudoOps::doEntry(*this, stmtPlace, linePtr);
@@ -892,6 +922,10 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_PRIORITY:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                                     GALLIUMCVAL_PRIORITY);
+            break;
+        case GALLIUMOP_PRIVMODE:
+            AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                                GALLIUMCVAL_PRIVMODE);
             break;
         case GALLIUMOP_PGMRSRC2:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

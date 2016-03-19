@@ -315,6 +315,9 @@ struct GalliumKernelConfig
     cxbyte floatMode; ///< float mode
     cxbyte priority;    ///< priority
     bool tgSize;        ///< enable TG_SIZE_EN bit
+    bool debugMode;     ///< debug mode
+    bool privilegedMode;   ///< prvileged mode
+    bool dx10Clamp;     ///< DX10 CLAMP mode
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
 };
