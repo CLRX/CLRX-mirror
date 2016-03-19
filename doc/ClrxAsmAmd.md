@@ -296,8 +296,9 @@ add new CAL note.
 
 Syntax: .pgmrsrc2 VALUE
 
-This pseudo-operation must be inside kernel configuration. Set PGMRSRC2 value (except bits
-which can be by using other pseudo-operations).
+This pseudo-operation must be inside kernel configuration. Set PGMRSRC2 value.
+If dimensions is set then bits that controls dimension setup will be ignored.
+SCRATCH_EN bit will be ignored.
 
 ### .printfid
 

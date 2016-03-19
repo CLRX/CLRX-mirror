@@ -1376,8 +1376,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     const uint32_t ldsMask = (1U<<ldsShift)-1U;
     const cxuint localSize = (isLocalPointers) ? 32768 : config.hwLocalSize;
     uint32_t curPgmRSRC2 = config.pgmRSRC2;
-    curPgmRSRC2 = (curPgmRSRC2 & 0xff007fffU) |
-                ((((localSize+ldsMask)>>ldsShift)&0x1ff)<<15);
+    curPgmRSRC2 = curPgmRSRC2 | ((((localSize+ldsMask)>>ldsShift)&0x1ff)<<15);
     cxuint pgmUserSGPRsNum = 0;
     for (cxuint p = 0; p < config.userDataElemsNum; p++)
         pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
@@ -1389,7 +1388,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
                 (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
     else // get from current pgmRSRC2
         dimValues = (curPgmRSRC2 & 0x1b80U);
-    curPgmRSRC2 = (curPgmRSRC2 & 0xffffe040U) | ((pgmUserSGPRsNum&0x1f)<<1) |
+    curPgmRSRC2 = (curPgmRSRC2 & 0xffffe440U) | ((pgmUserSGPRsNum&0x1f)<<1) |
             (config.scratchBufferSize != 0) | dimValues | (config.tgSize ? 0x400 : 0) |
             ((uint32_t(config.exceptions)&0x7f)<<24);
     

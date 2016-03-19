@@ -435,7 +435,7 @@ public:
                         (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
                         (config.debugMode?1U<<22:0);
                 
-                outEntries[1].value = (config.pgmRSRC2 & 0xff006040U) |
+                outEntries[1].value = (config.pgmRSRC2 & 0xffffe440U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
                         (((config.localSize+ldsMask)>>ldsShift)<<15) |

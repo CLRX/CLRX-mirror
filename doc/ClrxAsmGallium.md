@@ -200,8 +200,8 @@ local memory size used by kernel.
 Syntax: .pgmrsrc2 VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`).
-Defines value of the PGMRSRC2 excepts bits which can be set by other
-config pseudo-operations.
+Defines value of the PGMRSRC2. If dimensions is set then bits that controls dimension setup
+will be ignored. SCRATCH_EN bit will be ignored.
 
 ### .priority
 
