@@ -559,8 +559,6 @@ public:
                 argType = ptrAccMask==KARG_PTR_READ_ONLY ? 1 :
                         ptrAccMask==KARG_PTR_WRITE_ONLY ? 2 : 3 /* read-write */;
             }
-            else if (arg.argType == KernelArgType::POINTER)
-                argType = (arg.pointerType==KernelArgType::STRUCTURE) ? 15 : 7;
             else // otherwise
                 argType = argTypeSizesTable[cxuint(arg.argType)].type;
             SLEV(argEntry.argType, argType);
@@ -593,7 +591,7 @@ public:
                 SLEV(argEntry.ptrType, 0);
                 SLEV(argEntry.ptrSpace, 0);
             }
-            bool isPointerOrPipe = (arg.argType==KernelArgType::POINTER ||
+            cxuint isPointerOrPipe = (arg.argType==KernelArgType::POINTER ||
                     arg.argType==KernelArgType::CLKEVENT ||
                     arg.argType==KernelArgType::PIPE) ? 3 : 0;
             SLEV(argEntry.isPointerOrPipe, isPointerOrPipe);
@@ -740,7 +738,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     
     cxuint kernelArgSize = 0;
     for (const AmdKernelArgInput arg: config.args)
-    {
+    {   /* TODO: include argument alignment */
         if (arg.argType == KernelArgType::POINTER || arg.argType == KernelArgType::PIPE ||
             arg.argType == KernelArgType::CLKEVENT ||
             arg.argType == KernelArgType::STRUCTURE ||
