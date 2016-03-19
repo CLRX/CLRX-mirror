@@ -309,6 +309,7 @@ struct GalliumKernelConfig
     cxuint dimMask;    ///< mask of dimension (bits: 0 - X, 1 - Y, 2 - Z)
     cxuint usedVGPRsNum;  ///< number of used VGPRs
     cxuint usedSGPRsNum;  ///< number of used SGPRs
+    uint32_t pgmRSRC1;      ///< pgmRSRC1 register value
     uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
     cxbyte userDataNum;   ///< number of user data
     bool ieeeMode;  ///< IEEE mode

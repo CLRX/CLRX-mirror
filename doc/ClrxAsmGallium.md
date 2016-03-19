@@ -195,6 +195,14 @@ Syntax: .localsize SIZE
 This pseudo-op must be inside kernel configuration (`.config`). Defines initial
 local memory size used by kernel.
 
+
+### .pgmrsrc1
+
+Syntax: .pgmrsrc1 VALUE
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Defines value of the PGMRSRC1.
+
 ### .pgmrsrc2
 
 Syntax: .pgmrsrc2 VALUE

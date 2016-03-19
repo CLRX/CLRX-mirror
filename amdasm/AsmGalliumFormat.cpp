@@ -36,7 +36,7 @@ static const char* galliumPseudoOpNamesTbl[] =
     "entry", "exceptions", "floatmode",
     "globaldata", "ieeemode",
     "kcode", "kcodeend",
-    "localsize", "pgmrsrc2", "priority",
+    "localsize", "pgmrsrc1", "pgmrsrc2", "priority",
     "privmode", "proginfo",
     "scratchbuffer", "sgprsnum", "tgsize",
     "userdatanum", "vgprsnum"
@@ -49,7 +49,7 @@ enum
     GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE,
     GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
     GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
-    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
+    GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC1, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
     GALLIUMOP_PRIVMODE, GALLIUMOP_PROGINFO,
     GALLIUMOP_SCRATCHBUFFER, GALLIUMOP_SGPRSNUM, GALLIUMOP_TGSIZE,
     GALLIUMOP_USERDATANUM, GALLIUMOP_VGPRSNUM
@@ -427,6 +427,9 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
             break;
         case GALLIUMCVAL_VGPRSNUM:
             config.usedVGPRsNum = value;
+            break;
+        case GALLIUMCVAL_PGMRSRC1:
+            config.pgmRSRC1 = value;
             break;
         case GALLIUMCVAL_PGMRSRC2:
             config.pgmRSRC2 = value;
@@ -938,6 +941,10 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
         case GALLIUMOP_PRIVMODE:
             AsmGalliumPseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                                 GALLIUMCVAL_PRIVMODE);
+            break;
+        case GALLIUMOP_PGMRSRC1:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_PGMRSRC1);
             break;
         case GALLIUMOP_PGMRSRC2:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
