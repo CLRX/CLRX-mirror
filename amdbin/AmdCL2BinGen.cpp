@@ -512,7 +512,8 @@ public:
             SLEV(header.unknown4[i], 0);
         SLEV(header.argsNum, argsNum);
         fob.writeObject(header);
-        fob.fill(48, 0); // fill up
+        fob.fill(44, 0); // fill up
+        fob.writeObject(LEV(uint32_t(kernelId)));
         if (newBinaries) // additional data
             fob.writeObject<uint64_t>(LEV(uint64_t(0xffffffff00000006ULL)));
         // two null terminated strings
@@ -547,7 +548,7 @@ public:
             size_t argSize = (arg.argType==KernelArgType::STRUCTURE) ? arg.structSize :
                     argTypeSizesTable[cxuint(arg.argType)].elemSize*vectorLength;
             
-            SLEV(argEntry.unknown3, (arg.argType==KernelArgType::SAMPLER));
+            SLEV(argEntry.unknown3, (arg.argType!=KernelArgType::SAMPLER));
             SLEV(argEntry.argOffset, argOffset);
             argOffset += (argSize + 15) & ~15U; // align to 16 bytes
             
@@ -569,8 +570,14 @@ public:
                 ptrAlignment = newBinaries ? 2 : 4;
             else if (arg.argType == KernelArgType::POINTER) // otherwise
             {
-                ptrAlignment = 1U<<(32-CLZ32(argSize));
-                if (ptrAlignment != argSize)
+                cxuint vectorLength = argTypeSizesTable[cxuint(arg.pointerType)].vectorSize;
+                if (newBinaries && vectorLength==3)
+                vectorLength = 4;
+                size_t ptrTypeSize = (arg.pointerType==KernelArgType::STRUCTURE) ?
+                    arg.structSize :argTypeSizesTable[cxuint(arg.pointerType)].elemSize *
+                    vectorLength;
+                ptrAlignment = 1U<<(31-CLZ32(ptrTypeSize));
+                if (ptrAlignment != ptrTypeSize)
                     ptrAlignment <<= 1;
             }
             
