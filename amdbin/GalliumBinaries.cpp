@@ -430,7 +430,7 @@ public:
                         ((uint32_t(config.floatMode)&0xff)<<12) |
                         (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10);
                 
-                outEntries[1].value = (config.pgmRSRC2 & 0xffffe040U) |
+                outEntries[1].value = (config.pgmRSRC2 & 0xff006040U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
                         (((config.localSize+ldsMask)>>ldsShift)<<15);
