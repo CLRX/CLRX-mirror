@@ -33,7 +33,7 @@ static const char* galliumPseudoOpNamesTbl[] =
 {
     "arg", "args", "config",
     "debugmode", "dims", "dx10clamp",
-    "entry", "floatmode",
+    "entry", "exceptions", "floatmode",
     "globaldata", "ieeemode",
     "kcode", "kcodeend",
     "localsize", "pgmrsrc2", "priority",
@@ -46,7 +46,7 @@ enum
 {
     GALLIUMOP_ARG = 0, GALLIUMOP_ARGS, GALLIUMOP_CONFIG,
     GALLIUMOP_DEBUGMODE, GALLIUMOP_DIMS, GALLIUMOP_DX10CLAMP,
-    GALLIUMOP_ENTRY, GALLIUMOP_FLOATMODE,
+    GALLIUMOP_ENTRY, GALLIUMOP_EXCEPTIONS, GALLIUMOP_FLOATMODE,
     GALLIUMOP_GLOBALDATA, GALLIUMOP_IEEEMODE,
     GALLIUMOP_KCODE, GALLIUMOP_KCODEEND,
     GALLIUMOP_LOCALSIZE, GALLIUMOP_PGMRSRC2, GALLIUMOP_PRIORITY,
@@ -381,6 +381,11 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
                 }
                 break;
             }
+            case GALLIUMCVAL_EXCEPTIONS:
+                asmr.printWarningForRange(7, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0x7f;
+                break;
             case GALLIUMCVAL_FLOATMODE:
                 asmr.printWarningForRange(8, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
@@ -440,6 +445,9 @@ void AsmGalliumPseudoOps::setConfigValue(AsmGalliumHandler& handler,
             break;
         case GALLIUMCVAL_USERDATANUM:
             config.userDataNum = value;
+            break;
+        case GALLIUMCVAL_EXCEPTIONS:
+            config.exceptions = value;
             break;
         default:
             break;
@@ -897,6 +905,10 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
             break;
         case GALLIUMOP_ENTRY:
             AsmGalliumPseudoOps::doEntry(*this, stmtPlace, linePtr);
+            break;
+        case GALLIUMOP_EXCEPTIONS:
+            AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                                    GALLIUMCVAL_EXCEPTIONS);
             break;
         case GALLIUMOP_FLOATMODE:
             AsmGalliumPseudoOps::setConfigValue(*this, stmtPlace, linePtr,

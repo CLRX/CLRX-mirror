@@ -307,6 +307,7 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.floatMode = 0xc0;
     kinput.config.localSize = 0;
     kinput.config.userDataNum = 4;
+    kinput.config.exceptions = 0;
     kinput.config.tgSize = false;
     kinput.config.scratchBufferSize = 0; ///< size of scratch buffer
     kernels.push_back(std::move(kinput));
@@ -437,7 +438,8 @@ public:
                 outEntries[1].value = (config.pgmRSRC2 & 0xff006040U) |
                         (config.userDataNum<<1) | ((config.tgSize) ? 0x400 : 0) |
                         ((config.scratchBufferSize)?1:0) | dimValues |
-                        (((config.localSize+ldsMask)>>ldsShift)<<15);
+                        (((config.localSize+ldsMask)>>ldsShift)<<15) |
+                        ((uint32_t(config.exceptions)&0x7f)<<24);
                 outEntries[2].value = (scratchBlocks)<<12;
                 for (cxuint k = 0; k < 3; k++)
                     outEntries[k].value = ULEV(outEntries[k].value);

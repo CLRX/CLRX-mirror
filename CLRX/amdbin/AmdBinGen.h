@@ -112,7 +112,6 @@ struct AmdKernelConfig
     uint32_t usedVGPRsNum;  ///< number of used VGPRs
     uint32_t usedSGPRsNum;  ///< number of used SGPRs
     uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
-    uint32_t ieeeMode;  ///< IEEE mode
     uint32_t floatMode; ///< float mode
     size_t hwLocalSize; ///< used local size (not local defined in kernel arguments)
     uint32_t hwRegion;  ///< hwRegion ????
@@ -124,6 +123,8 @@ struct AmdKernelConfig
     uint32_t privateId; ///< private id (???)
     uint32_t earlyExit; ///< CALNOTE_EARLYEXIT value
     uint32_t condOut;   ///< CALNOTE_CONDOUT value
+    bool ieeeMode;  ///< IEEE mode
+    cxbyte exceptions;  ///< enabled exception handling
     bool tgSize;    ///< enable tgSize
     bool usePrintf;     ///< if kernel uses printf function
     bool useConstantData; ///< if const data required

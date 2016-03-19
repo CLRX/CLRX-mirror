@@ -137,6 +137,13 @@ Add entry of proginfo. Must be inside proginfo configuration. Sample proginfo:
 .entry 0x0000b860, 0x00000000
 ```
 
+### .exceptions
+
+Syntax: .exceptions EXCPMASK
+
+This pseudo-op must be inside kernel configuration (`.config`).
+Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
+
 ### .floatmode
 
 Syntax: .floatmode BYTE-VALUE

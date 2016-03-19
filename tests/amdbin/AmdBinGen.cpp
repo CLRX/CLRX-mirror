@@ -121,6 +121,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     config.uavPrivate = BINGEN_DEFAULT;
     config.uavId = BINGEN_DEFAULT;
     config.privateId = BINGEN_DEFAULT;
+    config.exceptions = 0;
     config.usePrintf = ((ULEV(reinterpret_cast<const uint32_t*>(
                 kernelHeader)[4]) & 2) != 0);
     config.tgSize = config.useConstantData = false;

@@ -152,6 +152,7 @@ void AmdInput::addEmptyKernel(const char* kernelName)
     kernel.config.ieeeMode = 0;
     kernel.config.tgSize = false;
     kernel.config.floatMode = 0xc0;
+    kernel.config.exceptions = 0;
     kernel.config.dimMask = BINGEN_DEFAULT;
     kernel.config.reqdWorkGroupSize[0] = 0;
     kernel.config.reqdWorkGroupSize[1] = 0;
@@ -1389,7 +1390,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     else // get from current pgmRSRC2
         dimValues = (curPgmRSRC2 & 0x1b80U);
     curPgmRSRC2 = (curPgmRSRC2 & 0xffffe040U) | ((pgmUserSGPRsNum&0x1f)<<1) |
-            (config.scratchBufferSize != 0) | dimValues | (config.tgSize ? 0x400 : 0);
+            (config.scratchBufferSize != 0) | dimValues | (config.tgSize ? 0x400 : 0) |
+            ((uint32_t(config.exceptions)&0x7f)<<24);
     
     putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
     putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);

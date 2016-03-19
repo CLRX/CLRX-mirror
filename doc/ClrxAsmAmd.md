@@ -202,6 +202,13 @@ This pseudo-operation must be in ATI_UAV or ATI_PROGINFO CAL note.
 Add entry into CAL note. For ATI_UAV, pseudo-operation accepts 4 32-bit values.
 For ATI_PROGINFO, accepts 2 32-bit values.
 
+### .exceptions
+
+Syntax: .exceptions EXCPMASK
+
+This pseudo-operation must be inside kernel configuration.
+Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
+
 ### .floatconsts
 
 This pseudo-operation must be inside kernel.

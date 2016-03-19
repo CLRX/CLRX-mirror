@@ -35,7 +35,8 @@ static const char* amdPseudoOpNamesTbl[] =
     "arg", "boolconsts", "calnote", "cbid",
     "cbmask", "compile_options", "condout", "config",
     "constantbuffers", "cws", "dims", "driver_info", "driver_version",
-    "earlyexit", "entry", "floatconsts", "floatmode", "get_driver_version",
+    "earlyexit", "entry", "exceptions",
+    "floatconsts", "floatmode", "get_driver_version",
     "globalbuffers", "globaldata", "header", "hwlocal",
     "hwregion", "ieeemode", "inputs", "inputsamplers",
     "intconsts", "metadata", "outputs", "persistentbuffers",
@@ -51,7 +52,8 @@ enum
     AMDOP_ARG = 0, AMDOP_BOOLCONSTS, AMDOP_CALNOTE, AMDOP_CBID,
     AMDOP_CBMASK, AMDOP_COMPILE_OPTIONS, AMDOP_CONDOUT, AMDOP_CONFIG,
     AMDOP_CONSTANTBUFFERS, AMDOP_CWS, AMDOP_DIMS, AMDOP_DRIVER_INFO, AMDOP_DRIVER_VERSION,
-    AMDOP_EARLYEXIT, AMDOP_ENTRY, AMDOP_FLOATCONSTS, AMDOP_FLOATMODE, AMDOP_GETDRVVER,
+    AMDOP_EARLYEXIT, AMDOP_ENTRY, AMDOP_EXCEPTIONS,
+    AMDOP_FLOATCONSTS, AMDOP_FLOATMODE, AMDOP_GETDRVVER,
     AMDOP_GLOBALBUFFERS, AMDOP_GLOBALDATA, AMDOP_HEADER, AMDOP_HWLOCAL,
     AMDOP_HWREGION, AMDOP_IEEEMODE, AMDOP_INPUTS, AMDOP_INPUTSAMPLERS,
     AMDOP_INTCONSTS, AMDOP_METADATA, AMDOP_OUTPUTS, AMDOP_PERSISTENTBUFFERS,
@@ -787,6 +789,11 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);
                 value &= 0xff;
                 break;
+            case AMDCVAL_EXCEPTIONS:
+                asmr.printWarningForRange(7, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0x7f;
+                break;
             case AMDCVAL_UAVID:
                 if (value != BINGEN_NOTSUPPLIED && value >= 1024)
                 {
@@ -869,6 +876,9 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
             break;
         case AMDCVAL_CONDOUT:
             config.condOut = value;
+            break;
+        case AMDCVAL_EXCEPTIONS:
+            config.exceptions = value;
             break;
         default:
             break;
@@ -1594,6 +1604,9 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
         case AMDOP_ENTRY:
             AsmAmdPseudoOps::doEntry(*this, stmtPlace, linePtr,
                          (1U<<CALNOTE_ATI_PROGINFO) | (1<<CALNOTE_ATI_UAV), "entry");
+            break;
+        case AMDOP_EXCEPTIONS:
+            AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_EXCEPTIONS);
             break;
         case AMDOP_FLOATCONSTS:
             AsmAmdPseudoOps::addCALNote(*this, stmtPlace, linePtr,

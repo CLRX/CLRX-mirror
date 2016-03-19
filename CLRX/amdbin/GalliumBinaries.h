@@ -314,6 +314,7 @@ struct GalliumKernelConfig
     bool ieeeMode;  ///< IEEE mode
     cxbyte floatMode; ///< float mode
     cxbyte priority;    ///< priority
+    cxbyte exceptions;      ///< enabled exceptions
     bool tgSize;        ///< enable TG_SIZE_EN bit
     bool debugMode;     ///< debug mode
     bool privilegedMode;   ///< prvileged mode
