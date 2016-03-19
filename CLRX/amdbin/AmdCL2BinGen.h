@@ -114,6 +114,9 @@ struct AmdCL2Input
     std::vector<BinSymbol> extraSymbols;    ///< extra symbols
     std::vector<BinSection> innerExtraSections;      ///< list of extra sections
     std::vector<BinSymbol> innerExtraSymbols;        ///< list of extra symbols
+    
+    /// add empty kernel with default values (even for configuration)
+    void addEmptyKernel(const char* kernelName);
 };
 
 /// main AMD OpenCL2.0 GPU Binary generator
