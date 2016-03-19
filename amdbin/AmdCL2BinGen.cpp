@@ -21,6 +21,7 @@
 #include <cstring>
 #include <cstdint>
 #include <cassert>
+#include <bitset>
 #include <fstream>
 #include <algorithm>
 #include <string>
@@ -203,6 +204,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
     for (size_t i = 0; i < kernelsNum; i++)
     {
         const AmdCL2KernelInput& kernel = input->kernels[i];
+        TempAmdCL2KernelData& tempData = tempDatas[i];
         if (newBinaries && (kernel.isaMetadataSize!=0 || kernel.isaMetadata!=nullptr))
             throw Exception("ISA metadata allowed for old driver binaries");
         if (newBinaries && (kernel.stubSize!=0 || kernel.stub!=nullptr))
@@ -210,29 +212,137 @@ static void prepareKernelTempData(const AmdCL2Input* input,
         
         if (!kernel.useConfig)
         {   // if no kernel configuration
-            tempDatas[i].metadataSize = kernel.metadataSize;
-            tempDatas[i].isaMetadataSize = (kernel.isaMetadata!=nullptr) ?
+            tempData.metadataSize = kernel.metadataSize;
+            tempData.isaMetadataSize = (kernel.isaMetadata!=nullptr) ?
                         kernel.isaMetadataSize : sizeof(kernelIsaMetadata);
-            tempDatas[i].setupSize = kernel.setupSize;
-            tempDatas[i].stubSize = kernel.stubSize;
+            tempData.setupSize = kernel.setupSize;
+            tempData.stubSize = kernel.stubSize;
         }
         else
         {   // kernel configuration present
-            size_t out = ((newBinaries) ? 254 : 246) + (kernel.config.args.size() + 1)*88;
+            const cxuint argsNum = kernel.config.args.size();
+            size_t out = ((newBinaries) ? 254 : 246) + (argsNum + 1)*88;
             for (const AmdKernelArgInput& arg: kernel.config.args)
                     out += arg.argName.size() + arg.typeName.size() + 2;
             out += 48;
             
-            tempDatas[i].metadataSize = out;
-            tempDatas[i].setupSize = 256;
-            tempDatas[i].stubSize = tempDatas[i].isaMetadataSize = 0;
+            std::bitset<128> imgRoMask;
+            std::bitset<64> imgWoMask;
+            std::bitset<64> imgRWMask;
+            std::bitset<16> samplerMask;
+            imgRoMask.reset();
+            imgWoMask.reset();
+            imgRWMask.reset();
+            samplerMask.reset();
+            
+            tempData.argResIds.resize(argsNum);
+            // collect set bit to masks
+            for (cxuint k = 0; k < argsNum; k++)
+            {
+                const AmdKernelArgInput& inarg = kernel.config.args[k];
+                if (inarg.resId != BINGEN_DEFAULT)
+                {
+                    if (inarg.argType == KernelArgType::SAMPLER)
+                    {
+                        if (inarg.resId >= 16)
+                            throw Exception("SamplerId out of range!");
+                        if (samplerMask[inarg.resId])
+                            throw Exception("SamplerId already used!");
+                        samplerMask.set(inarg.resId);
+                        tempData.argResIds[k] = inarg.resId;
+                    }
+                    else if (inarg.argType >= KernelArgType::MIN_IMAGE &&
+                        inarg.argType <= KernelArgType::MAX_IMAGE)
+                    {
+                        uint32_t imgAccess = inarg.ptrAccess & KARG_PTR_ACCESS_MASK;
+                        if (imgAccess == KARG_PTR_READ_ONLY)
+                        {
+                            if (inarg.resId >= 128)
+                                throw Exception("RdOnlyImgId out of range!");
+                            if (imgRoMask[inarg.resId])
+                                throw Exception("RdOnlyImgId already used!");
+                            imgRoMask.set(inarg.resId);
+                            tempData.argResIds[k] = inarg.resId;
+                        }
+                        else if (imgAccess == KARG_PTR_WRITE_ONLY)
+                        {
+                            if (inarg.resId >= 64)
+                                throw Exception("WrOnlyImgId out of range!");
+                            if (imgWoMask[inarg.resId])
+                                throw Exception("WrOnlyImgId already used!");
+                            imgWoMask.set(inarg.resId);
+                            tempData.argResIds[k] = inarg.resId;
+                        }
+                        else // read-write images
+                        {
+                            if (inarg.resId >= 64)
+                                throw Exception("RdWrImgId out of range!");
+                            if (imgRWMask[inarg.resId])
+                                throw Exception("RdWrImgId already used!");
+                            imgRWMask.set(inarg.resId);
+                            tempData.argResIds[k] = inarg.resId;
+                        }
+                    }
+                }
+            }
+            
+            cxuint imgRoCount = 0;
+            cxuint imgWoCount = 0;
+            cxuint imgRWCount = 0;
+            cxuint samplerCount = 0;
+            // now, we can set resId for argument that have no resid
+            for (cxuint k = 0; k < argsNum; k++)
+            {
+                const AmdKernelArgInput& inarg = kernel.config.args[k];
+                if (inarg.resId == BINGEN_DEFAULT)
+                {
+                    if (inarg.argType == KernelArgType::SAMPLER)
+                    {
+                        for (; samplerCount < 16 && samplerMask[samplerCount];
+                             samplerCount++);
+                        if (samplerCount == 16)
+                            throw Exception("SamplerId out of range!");
+                        tempData.argResIds[k] = samplerCount++;
+                    }
+                    else if (inarg.argType >= KernelArgType::MIN_IMAGE &&
+                        inarg.argType <= KernelArgType::MAX_IMAGE)
+                    {
+                        uint32_t imgAccess = inarg.ptrAccess & KARG_PTR_ACCESS_MASK;
+                        if (imgAccess == KARG_PTR_READ_ONLY)
+                        {
+                            for (; imgRoCount < 128 && imgRoMask[imgRoCount]; imgRoCount++);
+                            if (imgRoCount == 128)
+                                throw Exception("RdOnlyImgId out of range!");
+                            tempData.argResIds[k] = imgRoCount++;
+                        }
+                        else if (imgAccess == KARG_PTR_WRITE_ONLY)
+                        {
+                            for (; imgWoCount < 64 && imgWoMask[imgWoCount]; imgWoCount++);
+                            if (imgWoCount == 64)
+                                throw Exception("WrOnlyImgId out of range!");
+                            tempData.argResIds[k] = imgWoCount++;
+                        }
+                        else // read-write images
+                        {
+                            for (; imgRWCount < 64 && imgRWMask[imgRWCount]; imgRWCount++);
+                            if (imgRWCount == 128)
+                                throw Exception("RdWrImgId out of range!");
+                            tempData.argResIds[k] = imgRWCount++;
+                        }
+                    }
+                }
+            }
+            
+            tempData.metadataSize = out;
+            tempData.setupSize = 256;
+            tempData.stubSize = tempData.isaMetadataSize = 0;
             if (!newBinaries)
             {
-                tempDatas[i].stubSize = 0xa60;
-                tempDatas[i].isaMetadataSize = sizeof(kernelIsaMetadata);
+                tempData.stubSize = 0xa60;
+                tempData.isaMetadataSize = sizeof(kernelIsaMetadata);
             }
         }
-        tempDatas[i].codeSize = kernel.codeSize;
+        tempData.codeSize = kernel.codeSize;
     }
 }
 
