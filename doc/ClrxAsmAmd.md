@@ -289,7 +289,7 @@ add new CAL note.
 
 Syntax: .pgmrsrc2 VALUE
 
-This pseudo-operation must be inside kernel configuration. Set PGMRSRC2 value (expect bits
+This pseudo-operation must be inside kernel configuration. Set PGMRSRC2 value (except bits
 which can be by using other pseudo-operations).
 
 ### .printfid
