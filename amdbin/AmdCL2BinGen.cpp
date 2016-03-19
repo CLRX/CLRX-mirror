@@ -457,7 +457,7 @@ struct CLRX_INTERNAL TypeNameVecSize
     cxbyte vecSize;
 };
 
-static const uint32_t ptrSpacesTable[4] = { 0, 1, 3, 2 };
+static const uint32_t ptrSpacesTable[4] = { 0, 3, 5, 4 };
 
 class CLRX_INTERNAL CL2MainRodataGen: public ElfRegionContent
 {
@@ -483,8 +483,9 @@ public:
         return out;
     }
     
-    void writeMetadata(bool newBinaries, const TempAmdCL2KernelData& tempData,
-               AmdCL2KernelConfig& config, FastOutputBuffer& fob) const
+    void writeMetadata(bool newBinaries, cxuint kernelId,
+               const TempAmdCL2KernelData& tempData, const AmdCL2KernelConfig& config,
+               FastOutputBuffer& fob) const
     {
         AmdCL2GPUMetadataHeader header;
         cxuint argsNum = config.args.size();
@@ -495,9 +496,11 @@ public:
         SLEV(header.unknown1[1], 0x1);
         SLEV(header.unknown1[2], 0x68);
         SLEV(header.options, config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20);
-        SLEV(header.unknown2[0], 0x0400ULL);
-        SLEV(header.unknown2[1], 0x0100000008ULL);
-        SLEV(header.unknown2[2], 0x0200000001ULL);
+        SLEV(header.kernelId, kernelId|0x400);
+        SLEV(header.unknownx, 0);
+        SLEV(header.unknowny, 0);
+        SLEV(header.unknown2[0], 0x0100000008ULL);
+        SLEV(header.unknown2[1], 0x0200000001ULL);
         SLEV(header.reqdWorkGroupSize[0], config.reqdWorkGroupSize[0]);
         SLEV(header.reqdWorkGroupSize[1], config.reqdWorkGroupSize[1]);
         SLEV(header.reqdWorkGroupSize[2], config.reqdWorkGroupSize[2]);
@@ -538,7 +541,7 @@ public:
                 // image/sampler resid
                 SLEV(argEntry.resId, tempData.argResIds[i]);
             else if (arg.argType == KernelArgType::STRUCTURE)
-                SLEV(argEntry.resId, arg.structSize);
+                SLEV(argEntry.structSize, arg.structSize);
             else
                 SLEV(argEntry.vectorLength, vectorLength);
             size_t argSize = (arg.argType==KernelArgType::STRUCTURE) ? arg.structSize :
@@ -561,15 +564,17 @@ public:
                 argType = argTypeSizesTable[cxuint(arg.argType)].type;
             SLEV(argEntry.argType, argType);
             
+            uint32_t ptrAlignment = 0;
             if (arg.argType == KernelArgType::CMDQUEUE)
-                SLEV(argEntry.ptrAlignment, newBinaries ? 2 : 4);
-            else // otherwise
+                ptrAlignment = newBinaries ? 2 : 4;
+            else if (arg.argType == KernelArgType::POINTER) // otherwise
             {
-                cxuint powerof2 = 1U<<(32-CLZ32(argSize));
-                if (powerof2==argSize)
-                    powerof2++;
-                SLEV(argEntry.ptrAlignment, powerof2);
+                ptrAlignment = 1U<<(32-CLZ32(argSize));
+                if (ptrAlignment != argSize)
+                    ptrAlignment <<= 1;
             }
+            
+            SLEV(argEntry.ptrAlignment, ptrAlignment);
             
             if (arg.argType == KernelArgType::POINTER)
             {
@@ -589,6 +594,7 @@ public:
             SLEV(argEntry.isConst, (arg.ptrAccess & KARG_PTR_CONST) != 0);
             argEntry.isVolatile = ((arg.ptrAccess & KARG_PTR_VOLATILE) != 0);
             argEntry.isRestrict = ((arg.ptrAccess & KARG_PTR_RESTRICT) != 0);
+            argEntry.unknown4 = 0;
             argEntry.isPipe = (arg.argType==KernelArgType::PIPE);
             
             uint32_t kindOfType;
@@ -606,7 +612,7 @@ public:
             SLEV(argEntry.unknown5, 0);
             fob.writeObject(argEntry);
         }
-        fob.write(88, 0); // NULL arg
+        fob.fill(88, 0); // NULL arg
         
         // arg names and type names
         for (const AmdKernelArgInput& arg: config.args)
@@ -614,14 +620,20 @@ public:
             fob.writeArray(arg.argName.size()+1, arg.argName.c_str());
             fob.writeArray(arg.typeName.size()+1, arg.typeName.c_str());
         }
-        fob.write(48, 0);
+        fob.fill(48, 0);
     }
     
     void operator()(FastOutputBuffer& fob) const
     {
         const bool newBinaries = input->driverVersion >= 191205;
-        for (const AmdCL2KernelInput& kernel: input->kernels)
-            fob.writeArray(kernel.metadataSize, kernel.metadata);
+        for (size_t i = 0; i < input->kernels.size(); i++)
+        {
+            const AmdCL2KernelInput& kernel = input->kernels[i];
+            if (kernel.useConfig)
+                writeMetadata(newBinaries, i, tempDatas[i], kernel.config, fob);
+            else
+                fob.writeArray(kernel.metadataSize, kernel.metadata);
+        }
         if (!newBinaries)
             for (const AmdCL2KernelInput& kernel: input->kernels)
             {
