@@ -230,11 +230,6 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             std::bitset<64> imgWoMask;
             std::bitset<64> imgRWMask;
             std::bitset<16> samplerMask;
-            imgRoMask.reset();
-            imgWoMask.reset();
-            imgRWMask.reset();
-            samplerMask.reset();
-            
             tempData.argResIds.resize(argsNum);
             // collect set bit to masks
             for (cxuint k = 0; k < argsNum; k++)

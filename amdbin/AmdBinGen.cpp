@@ -788,11 +788,6 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         std::bitset<128> rdImgMask;
         cxuint wrImgsCount = 0;
         std::bitset<8> wrImgMask;
-        puavMask.reset();
-        cntIdMask.reset();
-        cbIdMask.reset();
-        rdImgMask.reset();
-        wrImgMask.reset();
         tempConfig.argResIds.resize(config.args.size());
         
         for (cxuint k = 0; k < config.args.size(); k++)
