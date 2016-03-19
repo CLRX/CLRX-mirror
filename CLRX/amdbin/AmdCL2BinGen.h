@@ -60,6 +60,9 @@ struct AmdCL2KernelConfig
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
     bool tgSize;    ///< enable tgSize
+    bool debugMode;     ///< debug mode
+    bool privilegedMode;   ///< prvileged mode
+    bool dx10Clamp;     ///< DX10 CLAMP mode
     bool useSizes; ///< use global_size, local_size or groups_num
     bool useSetup; ///< use other kernel setup (local id, global id)
     bool useEnqueue; ///< this kernel enqueues other kernel

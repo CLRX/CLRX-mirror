@@ -646,7 +646,9 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     SLEV(setupData.pgmRSRC1, ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
             ((uint32_t(config.floatMode)&0xff)<<12) |
             (newBinaries ? (1U<<21) : 0) /*dx11_clamp */ |
-            (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10));
+            (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
+            (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
+            (config.debugMode?1U<<22:0));
     // pgmrsrc2 - without ldssize
     uint32_t dimValues = 0;
     if (config.dimMask != BINGEN_DEFAULT)
