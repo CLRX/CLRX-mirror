@@ -51,7 +51,7 @@ public:
     { }
     
     /// constructor from C-style string pointer
-    explicit CString(uint n) : ptr(nullptr)
+    explicit CString(size_t n) : ptr(nullptr)
     {
         ptr = new char[n+1];
     }
