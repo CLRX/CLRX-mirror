@@ -696,9 +696,16 @@ public:
                 SLEV(argEntry.ptrType, 0);
                 SLEV(argEntry.ptrSpace, 0);
             }
-            cxuint isPointerOrPipe = (arg.argType==KernelArgType::POINTER ||
+            cxuint isPointerOrPipe = 0;
+            if (arg.argType==KernelArgType::POINTER ||
                     arg.argType==KernelArgType::CLKEVENT ||
-                    arg.argType==KernelArgType::PIPE) ? 3 : 0;
+                    arg.argType==KernelArgType::PIPE)
+            {
+                if (newBinaries)
+                    isPointerOrPipe = (arg.used!=0) ? arg.used : 1;
+                else // ???
+                    isPointerOrPipe = 3;
+            }
             SLEV(argEntry.isPointerOrPipe, isPointerOrPipe);
             
             SLEV(argEntry.isConst, (arg.ptrAccess & KARG_PTR_CONST) != 0);

@@ -50,7 +50,7 @@ struct AmdKernelArgInput
     cxuint structSize; ///< structure size (if structure)
     size_t constSpaceSize; ///< constant space size
     uint32_t resId; ///< uavid or cbid or counterId
-    bool used; ///< used by kernel
+    cxbyte used; ///< flags that indicate how kernel uses this argument (1 - used)
     
     /// create simple type argument
     static AmdKernelArgInput arg(const CString& argName, const CString& typeName,
