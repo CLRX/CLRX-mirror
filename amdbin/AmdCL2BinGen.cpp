@@ -850,7 +850,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     
     cxuint kernelArgSize = 0;
     for (const AmdKernelArgInput arg: config.args)
-    {   /* TODO: include argument alignment */
+    {
         if (arg.argType == KernelArgType::POINTER || arg.argType == KernelArgType::PIPE ||
             arg.argType == KernelArgType::CLKEVENT ||
             arg.argType == KernelArgType::STRUCTURE ||
@@ -858,13 +858,13 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             (arg.argType >= KernelArgType::MIN_IMAGE &&
              arg.argType <= KernelArgType::MAX_IMAGE))
         {
-            if ((kernelArgSize&7)!=0)
+            if ((kernelArgSize&7)!=0)    // alignment
                 kernelArgSize += 8-(kernelArgSize&7);
             kernelArgSize += 8;
         }
         else if (arg.argType == KernelArgType::SAMPLER)
         {
-            if ((kernelArgSize&3)!=0)
+            if ((kernelArgSize&3)!=0)   // alignment
                 kernelArgSize += 4-(kernelArgSize&3);
             kernelArgSize += 4;
         }
@@ -874,6 +874,9 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             cxuint vectorLength = argTypeSizes.vectorSize;
             if (newBinaries && vectorLength==3)
                 vectorLength = 4;
+            if ((kernelArgSize & (argTypeSizes.elemSize-1))!=0)
+                kernelArgSize += argTypeSizes.elemSize -
+                        (kernelArgSize & (argTypeSizes.elemSize-1));
             kernelArgSize += vectorLength * argTypeSizes.elemSize;
         }
     }
