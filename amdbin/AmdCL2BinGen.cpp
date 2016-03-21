@@ -108,6 +108,7 @@ struct CLRX_INTERNAL TempAmdCL2KernelData
     size_t stubSize;
     size_t setupSize;
     size_t codeSize;
+    bool useLocals;
     Array<uint16_t> argResIds;
 };
 
@@ -225,6 +226,17 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             for (const AmdKernelArgInput& arg: kernel.config.args)
                     out += arg.argName.size() + arg.typeName.size() + 2;
             out += 48;
+            
+            /// if kernels uses locals
+            tempData.useLocals = (kernel.config.localSize != 0);
+            if (!tempData.useLocals)
+                for (const AmdKernelArgInput& inarg: kernel.config.args)
+                    if (inarg.argType == KernelArgType::POINTER &&
+                                inarg.ptrSpace == KernelPtrSpace::LOCAL)
+                    {
+                        tempData.useLocals = true;
+                        break;
+                    }
             
             std::bitset<128> imgRoMask;
             std::bitset<64> imgWoMask;
@@ -794,7 +806,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
 };
 
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
-                FastOutputBuffer& fob, bool newBinaries)
+                FastOutputBuffer& fob, bool newBinaries, bool useLocals)
 {
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
@@ -832,7 +844,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     else if (config.useSetup)
     {
         setup1 = (config.useSizes) ? 0xb : 0x9;
-        userDatasNum = (config.useSizes) ? 8 : 4;
+        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals) ? 2 : 0));
     }
     else if (config.useSizes)
     {
@@ -1122,8 +1134,10 @@ struct CLRX_INTERNAL IntAmdCL2StubEnd
     uint32_t unknownlast; // 0x74 (alignment)
 };
 
+/* TODO: fix userdata num for locals */
+
 static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& config,
-        FastOutputBuffer& fob, size_t codeSize, const cxbyte* code)
+        FastOutputBuffer& fob, size_t codeSize, const cxbyte* code, bool useLocals)
 {
     cxuint extraSGPRsNum = (config.useEnqueue) ? 2 : 0;
     cxuint sgprsNumAll = config.usedSGPRsNum+2 + extraSGPRsNum;
@@ -1193,7 +1207,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     if (config.useEnqueue)
         userDatasNum = 10;
     else if (config.useSetup)
-        userDatasNum = (config.useSizes) ? 8 : 4;
+        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals) ? 2 : 0));
     else if (config.useSizes)
         userDatasNum = 8;
     
@@ -1246,8 +1260,9 @@ public:
                 else // generate stub, setup from kernel config
                 {
                     generateKernelStub(arch, kernel.config, fob,
-                               tempData.codeSize, kernel.code);
-                    generateKernelSetup(arch, kernel.config, fob, false);
+                               tempData.codeSize, kernel.code, tempData.useLocals);
+                    generateKernelSetup(arch, kernel.config, fob, false,
+                                        tempData.useLocals);
                 }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
@@ -1295,7 +1310,7 @@ public:
             if (!kernel.useConfig)
                 fob.writeArray(tempData.setupSize, kernel.setup);
             else
-                generateKernelSetup(arch, kernel.config, fob, true);
+                generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals);
             fob.writeArray(tempData.codeSize, kernel.code);
             outSize += tempData.setupSize + tempData.codeSize;
         }
