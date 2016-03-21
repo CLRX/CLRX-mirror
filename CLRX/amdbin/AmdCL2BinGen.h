@@ -60,12 +60,14 @@ struct AmdCL2KernelConfig
     uint32_t reqdWorkGroupSize[3];  ///< reqd_work_group_size
     uint32_t usedVGPRsNum;  ///< number of used VGPRs
     uint32_t usedSGPRsNum;  ///< number of used SGPRs
+    uint32_t pgmRSRC1;      ///< pgmRSRC1 register value
     uint32_t pgmRSRC2;      ///< pgmRSRC2 register value
-    uint32_t ieeeMode;  ///< IEEE mode
     uint32_t floatMode; ///< float mode
     uint32_t priority;  ///< priority
     size_t localSize; ///< used local size (not local defined in kernel arguments)
     uint32_t scratchBufferSize; ///< size of scratch buffer
+    bool ieeeMode;  ///< IEEE mode
+    cxbyte exceptions;  ///< enabled exception handling
     bool tgSize;    ///< enable tgSize
     bool debugMode;     ///< debug mode
     bool privilegedMode;   ///< prvileged mode

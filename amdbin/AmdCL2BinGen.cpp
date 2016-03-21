@@ -800,8 +800,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     cxuint sgprsNum = std::max(config.usedSGPRsNum + extraSGPRsNum + 2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
-    SLEV(setupData.pgmRSRC1, ((vgprsNum-1)>>2) | (((sgprsNum-1)>>3)<<6) |
-            ((uint32_t(config.floatMode)&0xff)<<12) |
+    SLEV(setupData.pgmRSRC1, config.pgmRSRC1 | ((vgprsNum-1)>>2) |
+            (((sgprsNum-1)>>3)<<6) | ((uint32_t(config.floatMode)&0xff)<<12) |
             (newBinaries ? (1U<<21) : 0) /*dx11_clamp */ |
             (config.ieeeMode?1U<<23:0) | (uint32_t(config.priority&3)<<10) |
             (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
@@ -837,8 +837,9 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
         userDatasNum = 8;
     }
     
-    SLEV(setupData.pgmRSRC2, (config.pgmRSRC2 & 0xffffe040U) | (userDatasNum<<1) |
-            ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues);
+    SLEV(setupData.pgmRSRC2, (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
+            ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
+            (uint32_t(config.exceptions)<<24));
     
     SLEV(setupData.setup1, setup1);
     SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
@@ -1193,9 +1194,9 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     else if (config.useSizes)
         userDatasNum = 8;
     
-    uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe040U) | (userDatasNum<<1) |
+    uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
         ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
-        (((config.localSize+511)>>9)<<15);
+        (((config.localSize+511)>>9)<<15) | (uint32_t(config.exceptions)<<24);
     fob.writeObject(LEV(pgmRSRC2));
     fob.fill(0xc0-0xac, 0);
 }
