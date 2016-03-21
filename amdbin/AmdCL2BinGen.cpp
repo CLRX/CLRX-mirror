@@ -686,7 +686,8 @@ public:
             
             SLEV(argEntry.ptrAlignment, ptrAlignment);
             
-            if (arg.argType == KernelArgType::POINTER)
+            if (arg.argType == KernelArgType::POINTER ||
+                arg.argType == KernelArgType::PIPE)
             {
                 SLEV(argEntry.ptrType, argTypeSizesTable[cxuint(arg.pointerType)].type);
                 SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
