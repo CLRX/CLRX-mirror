@@ -684,7 +684,9 @@ public:
             
             uint32_t ptrAlignment = 0;
             if (arg.argType == KernelArgType::CMDQUEUE)
-                ptrAlignment = newBinaries ? 2 : 4;
+                ptrAlignment = newBinaries ? 4 : 2;
+            else if (arg.argType == KernelArgType::CLKEVENT)
+                ptrAlignment = 4;
             else if (arg.argType == KernelArgType::POINTER) // otherwise
             {
                 cxuint vectorLength = argTypeSizesTable[cxuint(arg.pointerType)].vectorSize;
@@ -700,7 +702,12 @@ public:
             
             SLEV(argEntry.ptrAlignment, ptrAlignment);
             
-            if (arg.argType == KernelArgType::POINTER ||
+            if (arg.argType == KernelArgType::CLKEVENT)
+            {
+                SLEV(argEntry.ptrType, 18);
+                SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
+            }
+            else if (arg.argType == KernelArgType::POINTER ||
                 arg.argType == KernelArgType::PIPE)
             {
                 SLEV(argEntry.ptrType, argTypeSizesTable[cxuint(arg.pointerType)].type);
