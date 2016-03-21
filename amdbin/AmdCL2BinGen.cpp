@@ -1134,8 +1134,6 @@ struct CLRX_INTERNAL IntAmdCL2StubEnd
     uint32_t unknownlast; // 0x74 (alignment)
 };
 
-/* TODO: fix userdata num for locals */
-
 static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& config,
         FastOutputBuffer& fob, size_t codeSize, const cxbyte* code, bool useLocals)
 {
