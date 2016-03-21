@@ -640,7 +640,8 @@ public:
             bool isImage = (arg.argType >= KernelArgType::MIN_IMAGE &&
                  arg.argType <= KernelArgType::MAX_IMAGE);
             
-            cxuint vectorLength = argTypeSizesTable[cxuint(arg.argType)].vectorSize;
+            const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
+            cxuint vectorLength = argTypeSizes.vectorSize;
             if (newBinaries && vectorLength==3)
                 vectorLength = 4;
             if (isImage || arg.argType==KernelArgType::SAMPLER)
@@ -651,7 +652,8 @@ public:
             else
                 SLEV(argEntry.vectorLength, vectorLength);
             size_t argSize = (arg.argType==KernelArgType::STRUCTURE) ? arg.structSize :
-                    argTypeSizesTable[cxuint(arg.argType)].elemSize*vectorLength;
+                    // argSize for argOffset: clamp elem size to 4 bytes
+                    std::max(cxbyte(4), argTypeSizes.elemSize)*vectorLength;
             
             SLEV(argEntry.unknown3, (arg.argType!=KernelArgType::SAMPLER));
             SLEV(argEntry.argOffset, argOffset);
@@ -665,7 +667,7 @@ public:
                         ptrAccMask==KARG_PTR_WRITE_ONLY ? 2 : 3 /* read-write */;
             }
             else // otherwise
-                argType = argTypeSizesTable[cxuint(arg.argType)].type;
+                argType = argTypeSizes.type;
             SLEV(argEntry.argType, argType);
             
             uint32_t ptrAlignment = 0;
