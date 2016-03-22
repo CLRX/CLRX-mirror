@@ -1765,13 +1765,18 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         }
     }
     
+    cxuint extraSectionIndex = 6;
     CL2MainTextGen mainTextGen(input, tempDatas, innerBinGen.get());
-    elfBinGen.addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen, 1, ".text",
+    if (kernelsNum != 0 || newBinaries)
+    {
+        elfBinGen.addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen, 1, ".text",
                     SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
+        extraSectionIndex = 7;
+    }
     
     for (const BinSection& section: input->extraSections)
             elfBinGen.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
-                         ELFSECTID_STD_MAX, 7));
+                         ELFSECTID_STD_MAX, extraSectionIndex));
     elfBinGen.addRegion(ElfRegion64::sectionHeaderTable());
     
     const uint64_t binarySize = elfBinGen.countSize();

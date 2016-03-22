@@ -520,15 +520,23 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     }
     
     const bool newInnerBinary = choosenBinSyms.empty();
-    const Elf64_Shdr& textShdr = getSectionHeader(".text");
-    if (newInnerBinary)
-        innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),
-                       binaryCode + ULEV(textShdr.sh_offset),
-                       creationFlags >> AMDBIN_INNER_SHIFT));
-    else // old driver
-        innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
-                       binaryCode + ULEV(textShdr.sh_offset),
-                       creationFlags >> AMDBIN_INNER_SHIFT));
+    uint16_t textIndex = SHN_UNDEF;
+    try
+    { textIndex = getSectionIndex(".text"); }
+    catch(const Exception& ex)
+    { }
+    if (textIndex != SHN_UNDEF)
+    {
+        const Elf64_Shdr& textShdr = getSectionHeader(textIndex);
+        if (newInnerBinary)
+            innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),
+                           binaryCode + ULEV(textShdr.sh_offset),
+                           creationFlags >> AMDBIN_INNER_SHIFT));
+        else // old driver
+            innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
+                           binaryCode + ULEV(textShdr.sh_offset),
+                           creationFlags >> AMDBIN_INNER_SHIFT));
+    }
     
     // get metadata
     if (hasKernelInfo())
