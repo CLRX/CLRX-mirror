@@ -306,28 +306,31 @@ public:
 
     /// find character in string
     size_type find(char ch, size_t pos = 0) const
-    { 
-        const char* p = ::strchr(ptr+pos, ch);
-        return (p!=nullptr) ? p-ptr : npos;
+    {
+        const char* th = c_str();
+        const char* p = ::strchr(th+pos, ch);
+        return (p!=nullptr) ? p-th : npos;
     }
     
     /// find string in string
     size_type find(const CString& str, size_t pos = 0) const
-    { 
-        const char* p = ::strstr(ptr+pos, str.c_str());
-        return (p!=nullptr) ? p-ptr : npos;
+    {
+        const char* th = c_str();
+        const char* p = ::strstr(th+pos, str.c_str());
+        return (p!=nullptr) ? p-th : npos;
     }
     
     /// find string in string
     size_type find(const char* str, size_t pos = 0) const
-    { 
-        const char* p = ::strstr(ptr+pos, str);
-        return (p!=nullptr) ? p-ptr : npos;
+    {
+        const char* th = c_str();
+        const char* p = ::strstr(th+pos, str);
+        return (p!=nullptr) ? p-th : npos;
     }
     
     /// make substring from string
     CString substr(size_t pos, size_t n) const
-    { return CString(ptr+pos, n); }
+    { return CString(c_str()+pos, n); }
     
     /// swap this string with another
     void swap(CString& s2) noexcept
