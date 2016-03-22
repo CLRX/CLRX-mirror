@@ -632,8 +632,7 @@ public:
             SLEV(header.unknown4[i], 0);
         SLEV(header.argsNum, argsNum);
         fob.writeObject(header);
-        if (newBinaries)
-            fob.fill(40, 0); // fill up
+        fob.fill(40, 0); // fill up
         fob.writeObject(LEV(uint32_t(config.useEnqueue?1:0)));
         fob.writeObject(LEV(uint32_t(kernelId)));
         if (newBinaries) // additional data
