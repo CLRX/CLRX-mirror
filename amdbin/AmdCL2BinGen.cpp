@@ -109,6 +109,7 @@ struct CLRX_INTERNAL TempAmdCL2KernelData
     size_t setupSize;
     size_t codeSize;
     bool useLocals;
+    uint32_t pipesUsed;
     Array<uint16_t> argResIds;
 };
 
@@ -228,6 +229,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             out += 48;
             
             /// if kernels uses locals
+            tempData.pipesUsed = 0;
             tempData.useLocals = (kernel.config.localSize != 0);
             if (!tempData.useLocals)
                 for (const AmdKernelArgInput& inarg: kernel.config.args)
@@ -237,6 +239,9 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                         tempData.useLocals = true;
                         break;
                     }
+            for (const AmdKernelArgInput& inarg: kernel.config.args)
+                if (inarg.argType == KernelArgType::PIPE && inarg.used)
+                    tempData.pipesUsed++;
             
             std::bitset<128> imgRoMask;
             std::bitset<64> imgWoMask;
@@ -613,7 +618,8 @@ public:
         SLEV(header.unknown1[1], 0x1);
         SLEV(header.unknown1[2], 0x68);
         uint32_t options = config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20;
-        if (config.useEnqueue && !newBinaries)
+        if (((config.useEnqueue || tempData.useLocals || tempData.pipesUsed!=0) &&
+                    !newBinaries))
             options |= 0x100U;
         SLEV(header.options, options);
         SLEV(header.kernelId, kernelId|0x400);
@@ -636,7 +642,10 @@ public:
         fob.writeObject(LEV(uint32_t(config.useEnqueue?1:0)));
         fob.writeObject(LEV(uint32_t(kernelId)));
         if (newBinaries) // additional data
-            fob.writeObject<uint64_t>(LEV(uint64_t(0xffffffff00000006ULL)));
+        {
+            fob.writeObject(LEV(uint32_t(0x00000006U)));
+            fob.writeObject(LEV(uint32_t(tempData.pipesUsed==0 ? 0xffffffffU : 0)));
+        }
         // two null terminated strings
         fob.writeArray(22, "__OpenCL_dummy_kernel");
         fob.writeArray(8, "generic");
@@ -689,6 +698,8 @@ public:
             uint32_t ptrAlignment = 0;
             if (arg.argType == KernelArgType::CMDQUEUE)
                 ptrAlignment = newBinaries ? 4 : 2;
+            else if (arg.argType == KernelArgType::PIPE)
+                ptrAlignment = 256;
             else if (arg.argType == KernelArgType::CLKEVENT)
                 ptrAlignment = 4;
             else if (arg.argType == KernelArgType::POINTER) // otherwise
@@ -711,10 +722,14 @@ public:
                 SLEV(argEntry.ptrType, 18);
                 SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
             }
-            else if (arg.argType == KernelArgType::POINTER ||
-                arg.argType == KernelArgType::PIPE)
+            else if (arg.argType == KernelArgType::POINTER)
             {
                 SLEV(argEntry.ptrType, argTypeSizesTable[cxuint(arg.pointerType)].type);
+                SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
+            }
+            else if (arg.argType == KernelArgType::PIPE)
+            {
+                SLEV(argEntry.ptrType, 15);
                 SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
             }
             else
@@ -723,9 +738,10 @@ public:
                 SLEV(argEntry.ptrSpace, 0);
             }
             cxuint isPointerOrPipe = 0;
-            if (arg.argType==KernelArgType::POINTER ||
-                    arg.argType==KernelArgType::CLKEVENT ||
-                    arg.argType==KernelArgType::PIPE)
+            if (arg.argType==KernelArgType::PIPE)
+                isPointerOrPipe = (arg.used) ? 3 : 1;
+            else if (arg.argType==KernelArgType::POINTER ||
+                    arg.argType==KernelArgType::CLKEVENT)
             {
                 if (newBinaries)
                     isPointerOrPipe = (arg.used!=0) ? arg.used : 1;
@@ -817,7 +833,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
 };
 
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
-                FastOutputBuffer& fob, bool newBinaries, bool useLocals)
+                FastOutputBuffer& fob, bool newBinaries, bool useLocals, bool usePipes)
 {
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
@@ -855,7 +871,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     else if (config.useSetup)
     {
         setup1 = (config.useSizes) ? 0xb : 0x9;
-        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals) ? 2 : 0));
+        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals || usePipes) ? 2 : 0));
     }
     else if (config.useSizes)
     {
@@ -1146,7 +1162,8 @@ struct CLRX_INTERNAL IntAmdCL2StubEnd
 };
 
 static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& config,
-        FastOutputBuffer& fob, size_t codeSize, const cxbyte* code, bool useLocals)
+        FastOutputBuffer& fob, size_t codeSize, const cxbyte* code, bool useLocals,
+        bool usePipes)
 {
     cxuint extraSGPRsNum = (config.useEnqueue) ? 2 : 0;
     cxuint sgprsNumAll = config.usedSGPRsNum+2 + extraSGPRsNum;
@@ -1216,7 +1233,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
     if (config.useEnqueue)
         userDatasNum = 10;
     else if (config.useSetup)
-        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals) ? 2 : 0));
+        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals || usePipes) ? 2 : 0));
     else if (config.useSizes)
         userDatasNum = 8;
     
@@ -1268,10 +1285,10 @@ public:
                 }
                 else // generate stub, setup from kernel config
                 {
-                    generateKernelStub(arch, kernel.config, fob,
-                               tempData.codeSize, kernel.code, tempData.useLocals);
+                    generateKernelStub(arch, kernel.config, fob, tempData.codeSize,
+                               kernel.code, tempData.useLocals, tempData.pipesUsed!=0);
                     generateKernelSetup(arch, kernel.config, fob, false,
-                                        tempData.useLocals);
+                                tempData.useLocals, tempData.pipesUsed!=0);
                 }
                 fob.writeArray(kernel.codeSize, kernel.code);
             }
@@ -1319,7 +1336,8 @@ public:
             if (!kernel.useConfig)
                 fob.writeArray(tempData.setupSize, kernel.setup);
             else
-                generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals);
+                generateKernelSetup(arch, kernel.config, fob, true, tempData.useLocals,
+                            tempData.pipesUsed!=0);
             fob.writeArray(tempData.codeSize, kernel.code);
             outSize += tempData.setupSize + tempData.codeSize;
         }
