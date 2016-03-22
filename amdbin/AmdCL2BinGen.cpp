@@ -1675,7 +1675,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     SHT_SYMTAB, 0));
     elfBinGen.addRegion(ElfRegion64(input->compileOptions.size()+aclVersion.size(),
                     &mainCommentGen, 1, ".comment", SHT_PROGBITS, 0));
-    elfBinGen.addRegion(ElfRegion64(mainRodataGen.size(), &mainRodataGen, 1, ".rodata",
+    if (kernelsNum != 0)
+        elfBinGen.addRegion(ElfRegion64(mainRodataGen.size(), &mainRodataGen, 1, ".rodata",
                     SHT_PROGBITS, SHF_ALLOC));
     
     std::unique_ptr<ElfBinaryGen64> innerBinGen;
@@ -1714,7 +1715,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             // global data section
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
                       8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
-        innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
+        if (kernelsNum != 0)
+            innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, -0x100ULL));
         if (hasSamplers)
         {
@@ -1739,7 +1741,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                               SHT_STRTAB, SHF_STRINGS, 0, 0));
         
-        putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex,
+        if (kernelsNum != 0)
+            putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex,
                         symbolNamePool);
         
         for (const BinSection& section: input->innerExtraSections)
@@ -1748,14 +1751,18 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         // section table
         innerBinGen->addRegion(ElfRegion64::sectionHeaderTable());
         /// program headers
-        cxuint textSectionReg = 1;
-        if (hasGlobalData)
+        if (kernelsNum != 0)
         {
-            innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, 1, 1, true, 0, 0, 0 });
-            textSectionReg = 2;
+            cxuint textSectionReg = 1;
+            if (hasGlobalData)
+            {
+                innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, 1, 1,
+                                true, 0, 0, 0 });
+                textSectionReg = 2;
+            }
+            innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1, true,
+                            0, -0x100ULL, 0 });
         }
-        innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1, true,
-                        0, -0x100ULL, 0 });
     }
     
     CL2MainTextGen mainTextGen(input, tempDatas, innerBinGen.get());
