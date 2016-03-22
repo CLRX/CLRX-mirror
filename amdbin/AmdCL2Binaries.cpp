@@ -524,7 +524,10 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     try
     { textIndex = getSectionIndex(".text"); }
     catch(const Exception& ex)
-    { }
+    {
+        if (!choosenMetadataSyms.empty())
+            throw;  // throw exception if least one kernel is present
+    }
     if (textIndex != SHN_UNDEF)
     {
         const Elf64_Shdr& textShdr = getSectionHeader(textIndex);
