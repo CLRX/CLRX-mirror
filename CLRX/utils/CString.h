@@ -53,6 +53,7 @@ public:
     /// constructor from C-style string pointer
     explicit CString(size_t n) : ptr(nullptr)
     {
+        if (n == 0) return;
         ptr = new char[n+1];
     }
     
