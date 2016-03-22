@@ -618,8 +618,8 @@ public:
         SLEV(header.unknown1[1], 0x1);
         SLEV(header.unknown1[2], 0x68);
         uint32_t options = config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20;
-        if (((config.useEnqueue || tempData.useLocals || tempData.pipesUsed!=0) &&
-                    !newBinaries))
+        if (((config.useEnqueue || tempData.useLocals || tempData.pipesUsed!=0 ||
+                config.scratchBufferSize!=0) && !newBinaries))
             options |= 0x100U;
         SLEV(header.options, options);
         SLEV(header.kernelId, kernelId|0x400);
@@ -636,7 +636,11 @@ public:
         SLEV(header.secondNameLength, 0x7);
         for (cxuint i = 0; i < 3; i++)
             header.unknown4[i] = 0;
-        SLEV(header.pipesUsage, (!newBinaries) ? (tempData.pipesUsed<<4) : 0);
+        if (!newBinaries)
+            SLEV(header.pipesUsage, (config.scratchBufferSize!=0) ?
+                    config.scratchBufferSize : (tempData.pipesUsed<<4));
+        else // new binaries
+            header.pipesUsage = 0;
         header.unknown5[0] = header.unknown5[1] = 0;
         SLEV(header.argsNum, argsNum);
         fob.writeObject(header);
