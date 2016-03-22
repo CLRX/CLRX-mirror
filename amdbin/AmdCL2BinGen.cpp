@@ -612,7 +612,10 @@ public:
         SLEV(header.unknown1[0], 0x3);
         SLEV(header.unknown1[1], 0x1);
         SLEV(header.unknown1[2], 0x68);
-        SLEV(header.options, config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20);
+        uint32_t options = config.reqdWorkGroupSize[0]!=0 ? 0x24 : 0x20;
+        if (config.useEnqueue && !newBinaries)
+            options |= 0x100U;
+        SLEV(header.options, options);
         SLEV(header.kernelId, kernelId|0x400);
         SLEV(header.unknownx, 0);
         SLEV(header.unknowny, 0);
@@ -629,7 +632,9 @@ public:
             SLEV(header.unknown4[i], 0);
         SLEV(header.argsNum, argsNum);
         fob.writeObject(header);
-        fob.fill(44, 0); // fill up
+        if (newBinaries)
+            fob.fill(40, 0); // fill up
+        fob.writeObject(LEV(uint32_t(config.useEnqueue?1:0)));
         fob.writeObject(LEV(uint32_t(kernelId)));
         if (newBinaries) // additional data
             fob.writeObject<uint64_t>(LEV(uint64_t(0xffffffff00000006ULL)));
