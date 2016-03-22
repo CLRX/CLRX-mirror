@@ -634,8 +634,10 @@ public:
         SLEV(header.unknown3[1], 0);
         SLEV(header.firstNameLength, 0x15);
         SLEV(header.secondNameLength, 0x7);
-        for (cxuint i = 0; i < 6; i++)
-            SLEV(header.unknown4[i], 0);
+        for (cxuint i = 0; i < 3; i++)
+            header.unknown4[i] = 0;
+        SLEV(header.pipesUsage, (!newBinaries) ? (tempData.pipesUsed<<4) : 0);
+        header.unknown5[0] = header.unknown5[1] = 0;
         SLEV(header.argsNum, argsNum);
         fob.writeObject(header);
         fob.fill(40, 0); // fill up
@@ -937,6 +939,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
         uint32_t extraBits = (config.useEnqueue) ? 0x30000U : 0;
         extraBits |= (!config.useEnqueue && config.scratchBufferSize!=0) ? 0x40000U : 0;
         extraBits |= (config.localSize!=0) ? 0x200U : 0;
+        extraBits |= (usePipes) ? 0x30000U : 0;
         SLEV(setupData.version, 0x06000003U | extraBits);
     }
     

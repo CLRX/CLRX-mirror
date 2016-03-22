@@ -251,7 +251,9 @@ struct AmdCL2GPUMetadataHeader
     uint64_t unknown3[2];
     uint64_t firstNameLength;   ///< first name length
     uint64_t secondNameLength;  ///< second name length
-    uint64_t unknown4[6];
+    uint64_t unknown4[3];
+    uint64_t pipesUsage;
+    uint64_t unknown5[2];
     uint64_t argsNum;
 };
 
