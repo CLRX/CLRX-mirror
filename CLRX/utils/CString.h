@@ -55,6 +55,7 @@ public:
     {
         if (n == 0) return;
         ptr = new char[n+1];
+        ptr[n] = 0;
     }
     
     /// constructor from C-style string pointer

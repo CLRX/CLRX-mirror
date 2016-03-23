@@ -1500,7 +1500,6 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
     std::copy(prefix, prefix+prefixSize, outPtr);
     std::copy(name.begin(), name.begin()+nameLen, outPtr+prefixSize);
     std::copy(suffix, suffix+suffixSize, outPtr+prefixSize+nameLen);
-    outPtr[prefixSize+nameLen+suffixSize] = 0;
     return out;
 }
 
