@@ -624,7 +624,7 @@ public:
                 config.scratchBufferSize!=0) && !newBinaries))
             options |= 0x100U;
         SLEV(header.options, options);
-        SLEV(header.kernelId, kernelId|0x400);
+        SLEV(header.kernelId, kernelId+1024);
         SLEV(header.unknownx, 0);
         SLEV(header.unknowny, 0);
         SLEV(header.unknown2[0], 0x0100000008ULL);
