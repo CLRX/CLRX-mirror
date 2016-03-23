@@ -923,18 +923,13 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             arg.argType == KernelArgType::CLKEVENT ||
             arg.argType == KernelArgType::STRUCTURE ||
             arg.argType == KernelArgType::CMDQUEUE ||
+            arg.argType == KernelArgType::SAMPLER ||
             (arg.argType >= KernelArgType::MIN_IMAGE &&
              arg.argType <= KernelArgType::MAX_IMAGE))
         {
             if ((kernelArgSize&7)!=0)    // alignment
                 kernelArgSize += 8-(kernelArgSize&7);
             kernelArgSize += 8;
-        }
-        else if (arg.argType == KernelArgType::SAMPLER)
-        {
-            if ((kernelArgSize&3)!=0)   // alignment
-                kernelArgSize += 4-(kernelArgSize&3);
-            kernelArgSize += 4;
         }
         else
         {   // scalar
@@ -962,7 +957,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
         uint32_t extraBits = (config.useEnqueue) ? 0x30000U : 0;
         extraBits |= (!config.useEnqueue && config.scratchBufferSize!=0) ? 0x40000U : 0;
         extraBits |= (config.localSize!=0) ? 0x200U : 0;
-        extraBits |= (usePipes) ? 0x30000U : 0;
+        extraBits |= (usePipes && (extraBits&0x40000U)==0) ? 0x30000U : 0;
         SLEV(setupData.version, 0x06000003U | extraBits);
     }
     
