@@ -652,7 +652,8 @@ public:
         if (newBinaries) // additional data
         {
             fob.writeObject(LEV(uint32_t(0x00000006U)));
-            fob.writeObject(LEV(uint32_t(tempData.pipesUsed==0 ? 0xffffffffU : 0)));
+            fob.writeObject(LEV(uint32_t(
+                        tempData.pipesUsed==0 && !config.useEnqueue ? 0xffffffffU : 0)));
         }
         // two null terminated strings
         fob.writeArray(22, "__OpenCL_dummy_kernel");
