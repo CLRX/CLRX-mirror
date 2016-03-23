@@ -840,8 +840,8 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t version; // ??
 };
 
-static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config, bool useLocals,
-                  bool usePipes, bool storeLocalSize = false)
+static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
+                  bool storeLocalSize = false)
 {
     uint32_t dimValues = 0;
     if (config.dimMask != BINGEN_DEFAULT)
@@ -861,7 +861,7 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config, bool useLoca
     if (config.useEnqueue)
         userDatasNum = 10;
     else if (config.useSetup)
-        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals || usePipes) ? 2 : 0));
+        userDatasNum = ((config.useSizes) ? 8 : 6);
     else if (config.useSizes)
         userDatasNum = 8;
     return (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
@@ -906,7 +906,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     else if (config.useSizes)
         setup1 = 0xb;
     
-    SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config, useLocals, usePipes));
+    SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config));
     
     SLEV(setupData.setup1, setup1);
     SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
@@ -1242,7 +1242,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         fob.writeObject(stubEnd);
     }
     fob.fill(0xa8-sizeof(IntAmdCL2StubEnd), 0);
-    fob.writeObject(LEV(calculatePgmRSRC2(config, useLocals, usePipes, true)));
+    fob.writeObject(LEV(calculatePgmRSRC2(config, true)));
     fob.fill(0xc0-0xac, 0);
 }
 
