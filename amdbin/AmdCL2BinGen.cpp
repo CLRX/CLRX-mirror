@@ -840,6 +840,35 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t version; // ??
 };
 
+static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config, bool useLocals,
+                  bool usePipes, bool storeLocalSize = false)
+{
+    uint32_t dimValues = 0;
+    if (config.dimMask != BINGEN_DEFAULT)
+    {
+        dimValues = ((config.dimMask&7)<<7);
+        if (!config.useEnqueue)
+            dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
+        else // enqueue needs TIDIG_COMP_CNT=2 ????
+            dimValues |= (2U<<11);
+    }
+    else
+        dimValues |= (config.pgmRSRC2 & 0x1b80U);
+    
+    const uint32_t localPart = (storeLocalSize) ? (((config.localSize+511)>>9)<<15) : 0;
+    
+    cxuint userDatasNum = 4;
+    if (config.useEnqueue)
+        userDatasNum = 10;
+    else if (config.useSetup)
+        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals || usePipes) ? 2 : 0));
+    else if (config.useSizes)
+        userDatasNum = 8;
+    return (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
+            ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
+            (uint32_t(config.exceptions)<<24) | localPart;
+}
+
 static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& config,
                 FastOutputBuffer& fob, bool newBinaries, bool useLocals, bool usePipes)
 {
@@ -870,26 +899,14 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
         dimValues |= (config.pgmRSRC2 & 0x1b80U);
     
     uint16_t setup1 = 0x1;
-    cxuint userDatasNum = 4;
     if (config.useEnqueue)
-    {
         setup1 = 0x2b;
-        userDatasNum = 10;
-    }
     else if (config.useSetup)
-    {
         setup1 = (config.useSizes) ? 0xb : 0x9;
-        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals || usePipes) ? 2 : 0));
-    }
     else if (config.useSizes)
-    {
         setup1 = 0xb;
-        userDatasNum = 8;
-    }
     
-    SLEV(setupData.pgmRSRC2, (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
-            ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
-            (uint32_t(config.exceptions)<<24));
+    SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config, useLocals, usePipes));
     
     SLEV(setupData.setup1, setup1);
     SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
@@ -1225,31 +1242,7 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         fob.writeObject(stubEnd);
     }
     fob.fill(0xa8-sizeof(IntAmdCL2StubEnd), 0);
-    // pgmrsrc2 - without ldssize
-    uint32_t dimValues = 0;
-    if (config.dimMask != BINGEN_DEFAULT)
-    {
-        dimValues = ((config.dimMask&7)<<7);
-        if (!config.useEnqueue)
-            dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
-        else // enqueue needs TIDIG_COMP_CNT=2 ????
-            dimValues |= (2U<<11);
-    }
-    else
-        dimValues |= (config.pgmRSRC2 & 0x1b80U);
-    
-    cxuint userDatasNum = 4;
-    if (config.useEnqueue)
-        userDatasNum = 10;
-    else if (config.useSetup)
-        userDatasNum = ((config.useSizes) ? 8 : 4 + ((useLocals || usePipes) ? 2 : 0));
-    else if (config.useSizes)
-        userDatasNum = 8;
-    
-    uint32_t pgmRSRC2 = (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
-        ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
-        (((config.localSize+511)>>9)<<15) | (uint32_t(config.exceptions)<<24);
-    fob.writeObject(LEV(pgmRSRC2));
+    fob.writeObject(LEV(calculatePgmRSRC2(config, useLocals, usePipes, true)));
     fob.fill(0xc0-0xac, 0);
 }
 
