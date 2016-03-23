@@ -434,11 +434,13 @@ private:
     uint16_t brigIndex;
     const Array<TempAmdCL2KernelData>& tempDatas;
     const CString& aclVersion;
+    cxuint extraSectionIndex;
 public:
     CL2MainSymTabGen(const AmdCL2Input* _input,
-                     const Array<TempAmdCL2KernelData>& _tempDatas,
-                     const CString& _aclVersion) : input(_input), withBrig(false),
-        tempDatas(_tempDatas), aclVersion(_aclVersion)
+             const Array<TempAmdCL2KernelData>& _tempDatas,
+             const CString& _aclVersion, cxuint _extraSectionIndex)
+             : input(_input), withBrig(false), tempDatas(_tempDatas),
+               aclVersion(_aclVersion), extraSectionIndex(_extraSectionIndex)
     {
         for (brigIndex = 0; brigIndex < input->extraSections.size(); brigIndex++)
         {
@@ -545,7 +547,7 @@ public:
         {
             SLEV(sym.st_name, nameOffset);
             SLEV(sym.st_shndx, convertSectionId(symbol.sectionId, mainBuiltinSectionTable,
-                            ELFSECTID_STD_MAX, 7));
+                            ELFSECTID_STD_MAX, extraSectionIndex));
             SLEV(sym.st_size, symbol.size);
             SLEV(sym.st_value, symbol.value);
             sym.st_info = symbol.info;
@@ -1681,8 +1683,9 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
     prepareKernelTempData(input, tempDatas);
     
+    cxuint mainExtraSectionIndex = 6 + (kernelsNum != 0 || newBinaries);
     CL2MainStrTabGen mainStrTabGen(input);
-    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion);
+    CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainExtraSectionIndex);
     CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input, tempDatas);
     CL2InnerTextGen innerTextGen(input, tempDatas);
@@ -1789,18 +1792,14 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         }
     }
     
-    cxuint extraSectionIndex = 6;
     CL2MainTextGen mainTextGen(input, tempDatas, innerBinGen.get());
     if (kernelsNum != 0 || newBinaries)
-    {
         elfBinGen.addRegion(ElfRegion64(mainTextGen.size(), &mainTextGen, 1, ".text",
                     SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR));
-        extraSectionIndex = 7;
-    }
     
     for (const BinSection& section: input->extraSections)
             elfBinGen.addRegion(ElfRegion64(section, mainBuiltinSectionTable,
-                         ELFSECTID_STD_MAX, extraSectionIndex));
+                         ELFSECTID_STD_MAX, mainExtraSectionIndex));
     elfBinGen.addRegion(ElfRegion64::sectionHeaderTable());
     
     const uint64_t binarySize = elfBinGen.countSize();
