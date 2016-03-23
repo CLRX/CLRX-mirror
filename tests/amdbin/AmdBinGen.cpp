@@ -426,7 +426,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                     switch(ULEV(piEntry[k].address))
                     {
                         case 0x80001000:
-                            config.userDataElemsNum = ULEV(piEntry[k].value);
+                            config.userDatas.resize(ULEV(piEntry[k].value));
                             break;
                         case 0x8000001f:
                         {
@@ -466,6 +466,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                             if (addr >= 0x80001001 && addr < 0x80001041)
                             {
                                 cxuint elIndex = (addr-0x80001001)>>2;
+                                if (config.userDatas.size() <= elIndex)
+                                    continue;
                                 switch (addr&3)
                                 {
                                     case 1:

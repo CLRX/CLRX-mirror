@@ -179,7 +179,7 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
                     "condOut=" << config.condOut << ", " <<
                     (config.usePrintf?"usePrintf ":"") <<
                     (config.useConstantData?"useConstantData ":"") << "\n";
-             for (cxuint u = 0; u < config.userDataElemsNum; u++)
+             for (cxuint u = 0; u < config.userDatas.size(); u++)
                  os << "      UserData: " << config.userDatas[u].dataClass << ", " <<
                         config.userDatas[u].apiSlot << ", " <<
                         config.userDatas[u].regStart << ", " <<

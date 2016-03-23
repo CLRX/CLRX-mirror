@@ -1071,16 +1071,17 @@ void AsmAmdPseudoOps::addUserData(AsmAmdHandler& handler, const char* pseudoOpPl
         return;
     
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
-    if (config.userDataElemsNum == 16)
+    if (config.userDatas.size() == 16)
     {
         asmr.printError(pseudoOpPlace, "Too many UserData elements");
         return;
     }
-    AmdUserData& userData = config.userDatas[config.userDataElemsNum++];
+    AmdUserData userData;
     userData.dataClass = dataClass;
     userData.apiSlot = apiSlot;
     userData.regStart = regStart;
     userData.regSize = regSize;
+    config.userDatas.push_back(userData);
 }
 
 void AsmAmdPseudoOps::setDimensions(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -1833,7 +1834,7 @@ bool AsmAmdHandler::prepareBinary()
         AmdKernelConfig& config = output.kernels[i].config;
         cxuint userSGPRsNum = 0;
         /* include userData sgprs */
-        for (cxuint i = 0; i < config.userDataElemsNum; i++)
+        for (cxuint i = 0; i < config.userDatas.size(); i++)
             userSGPRsNum = std::max(userSGPRsNum,
                         config.userDatas[i].regStart+config.userDatas[i].regSize);
         

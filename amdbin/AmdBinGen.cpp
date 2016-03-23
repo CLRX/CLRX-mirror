@@ -164,7 +164,6 @@ void AmdInput::addEmptyKernel(const char* kernelName)
     kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
         kernel.config.uavPrivate = kernel.config.constBufferId = BINGEN_DEFAULT;
     kernel.config.usePrintf = kernel.config.useConstantData = false;
-    kernel.config.userDataElemsNum = 0;
     kernels.push_back(std::move(kernel));
 }
 
@@ -661,7 +660,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
         }
         const AmdKernelConfig& config = kinput.config;
         TempAmdKernelConfig& tempConfig = tempAmdKernelConfigs[i];
-        if (config.userDataElemsNum > 16)
+        if (config.userDatas.size() > 16)
             throw Exception("UserDataElemsNum must not be greater than 16");
         if (config.usedVGPRsNum > maxVGPRSNum)
             throw Exception("Used VGPRs number out of range");
@@ -1344,13 +1343,14 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     putCALNoteLE(bos, CALNOTE_ATI_PERSISTENT_BUFFERS, 0);
     
     /* PROGRAM_INFO */
+    size_t userDataElemsNum = config.userDatas.size();
     const cxuint progInfoSize = (18+32 +
-            4*((isOlderThan1124)?16:config.userDataElemsNum))*8;
+            4*((isOlderThan1124)?16:userDataElemsNum))*8;
     putCALNoteLE(bos, CALNOTE_ATI_PROGINFO, progInfoSize);
     
-    putProgInfoEntryLE(bos, 0x80001000U, config.userDataElemsNum);
+    putProgInfoEntryLE(bos, 0x80001000U, userDataElemsNum);
     cxuint k = 0;
-    for (k = 0; k < config.userDataElemsNum; k++)
+    for (k = 0; k < userDataElemsNum; k++)
     {
         putProgInfoEntryLE(bos, 0x80001001U+(k<<2), config.userDatas[k].dataClass);
         putProgInfoEntryLE(bos, 0x80001002U+(k<<2), config.userDatas[k].apiSlot);
@@ -1358,7 +1358,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         putProgInfoEntryLE(bos, 0x80001004U+(k<<2), config.userDatas[k].regSize);
     }
     if (isOlderThan1124)
-        for (k =  config.userDataElemsNum; k < 16; k++)
+        for (k =  userDataElemsNum; k < 16; k++)
         {
             putProgInfoEntryLE(bos, 0x80001001U+(k<<2), 0);
             putProgInfoEntryLE(bos, 0x80001002U+(k<<2), 0);
@@ -1373,7 +1373,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     uint32_t curPgmRSRC2 = config.pgmRSRC2;
     curPgmRSRC2 = curPgmRSRC2 | ((((localSize+ldsMask)>>ldsShift)&0x1ff)<<15);
     cxuint pgmUserSGPRsNum = 0;
-    for (cxuint p = 0; p < config.userDataElemsNum; p++)
+    for (cxuint p = 0; p < userDataElemsNum; p++)
         pgmUserSGPRsNum = std::max(pgmUserSGPRsNum,
                  config.userDatas[p].regStart+config.userDatas[p].regSize);
     pgmUserSGPRsNum = (pgmUserSGPRsNum != 0) ? pgmUserSGPRsNum : 2;
@@ -1623,7 +1623,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
                      tempConfig, argSamplersNum, uniqueId);
             
             calNotesSize = uint64_t(20*17) /*calNoteHeaders*/ + 16 + 128 + (18+32 +
-                4*((isOlderThan1124)?16:config.userDataElemsNum))*8 /* proginfo */ +
+                4*((isOlderThan1124)?16:config.userDatas.size()))*8 /* proginfo */ +
                     readOnlyImages*4 /* inputs */ + 16*uavsNum /* uavs */ +
                     8*samplersNum /* samplers */ + 8*constBuffersNum /* cbids */;
             

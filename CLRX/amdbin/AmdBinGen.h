@@ -128,8 +128,7 @@ struct AmdKernelConfig
     bool tgSize;    ///< enable tgSize
     bool usePrintf;     ///< if kernel uses printf function
     bool useConstantData; ///< if const data required
-    cxuint userDataElemsNum;    ///< number of user data
-    AmdUserData userDatas[16];  ///< user datas
+    std::vector<AmdUserData> userDatas;  ///< user datas
 };
 
 /// AMD kernel input
