@@ -188,17 +188,11 @@ struct AmdDisasmInput
     std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs
 };
 
-enum AmdCL2RelSym: cxbyte
-{
-    GDATA = 0,
-    ADATA,  // global atomics
-};
-
 struct AmdCL2RelaEntry
 {
     size_t offset;
     RelocType type;
-    AmdCL2RelSym symbol;
+    cxuint symbol;
     int64_t addend;
 };
 

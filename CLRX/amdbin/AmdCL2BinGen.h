@@ -47,8 +47,11 @@ enum: cxbyte {
 
 enum: cxuint {
     AMDCL2SECTID_SAMPLERINIT = ELFSECTID_OTHER_BUILTIN,
+    AMDCL2SECTID_TEXTRELA,
+    AMDCL2SECTID_RODATARELA,
     AMDCL2SECTID_NOTE,
-    AMDCL2SECTID_MAX = AMDCL2SECTID_NOTE
+    AMDCL2SECTID_ATOMICDATA,
+    AMDCL2SECTID_MAX = AMDCL2SECTID_ATOMICDATA
 };
 
 /// kernel configuration
@@ -80,9 +83,10 @@ struct AmdCL2KernelConfig
 /// AMD CL2 Relocation entry input
 struct AmdCL2RelInput
 {
-    size_t offset;
-    RelocType type;
-    size_t addend;
+    size_t offset;  ///< offset
+    RelocType type; ///< relocation type
+    cxuint symbol;  ///< symbol (0 - globaldata, 1 - atomicdata)
+    size_t addend;  ///< addend
 };
 
 /// AMD kernel input
@@ -110,6 +114,8 @@ struct AmdCL2Input
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
+    size_t atomicDataSize;  ///< global constant data size
+    const cxbyte* atomicData;   ///< global constant data
     size_t samplerInitSize;  ///< sampler init size
     const cxbyte* samplerInit; ///< sampler init data
     bool samplerConfig;

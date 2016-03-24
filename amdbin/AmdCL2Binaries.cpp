@@ -30,8 +30,6 @@
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 
-// TODO: add hsadata_global_agent (global atomics?)
-
 using namespace CLRX;
 
 /* class AmdCL2InnerGPUBinaryBase */

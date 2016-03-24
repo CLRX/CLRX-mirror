@@ -623,8 +623,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     else
                         throw Exception("Unknown relocation type");
                     // put text relocs. compute offset by subtracting current code offset
-                    auto rsym = (aDataSymIndex==symIndex) ? AmdCL2RelSym::ADATA :
-                                    AmdCL2RelSym::GDATA;
+                    const cxuint rsym = (aDataSymIndex==symIndex) ? 1 : 0;
                     kinput.textRelocs.push_back(AmdCL2RelaEntry{sortedRelocIter->first-
                         (kinput.code-textPtr), relocType, rsym, ULEV(rela.r_addend) });
                 }

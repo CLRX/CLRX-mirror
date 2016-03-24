@@ -32,9 +32,9 @@
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
 
-// TODO: add hsadata_global_agent (global atomics?)
-
 using namespace CLRX;
+
+static const cxuint innerBinSectonTableLen = AMDCL2SECTID_MAX+1-ELFSECTID_START;
 
 void AmdCL2Input::addEmptyKernel(const char* kernelName)
 {
@@ -76,8 +76,8 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
        const std::vector<AmdCL2KernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, globalDataSize, globalData, 0, nullptr, false,
-                { }, { }, driverVersion, "", "", kernelInputs };
+    input = new AmdCL2Input{deviceType, globalDataSize, globalData, 0, nullptr,
+                0, nullptr, false, { }, { }, driverVersion, "", "", kernelInputs };
 }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
@@ -85,8 +85,9 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
        std::vector<AmdCL2KernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, globalDataSize, globalData, 0, nullptr, false,
-                { }, { }, driverVersion, "", "", std::move(kernelInputs) };
+    input = new AmdCL2Input{deviceType, globalDataSize, globalData, 0, nullptr,
+                0, nullptr, false, { }, { }, driverVersion, "", "",
+                std::move(kernelInputs) };
 }
 
 AmdCL2GPUBinGenerator::~AmdCL2GPUBinGenerator()
@@ -1394,7 +1395,8 @@ public:
     {
         Elf64_Rela rela;
         rela.r_addend = 0;
-        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 2;
+        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 2 +
+                (input->atomicDataSize!=0 && input->atomicData!=nullptr);
         if (!input->samplerOffsets.empty())
             for (size_t sampOffset: input->samplerOffsets)
             {
@@ -1438,7 +1440,13 @@ public:
     {
         Elf64_Rela rela;
         size_t codeOffset = 0;
-        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size();
+        uint32_t adataSymIndex = 0;
+        uint32_t gdataSymIndex = input->kernels.size() + input->samplerOffsets.size();
+        if (input->atomicDataSize!=0 && input->atomicData!=nullptr)
+        {   // atomic data available
+            adataSymIndex = gdataSymIndex; // first is atomic data symbol index
+            gdataSymIndex++;
+        }
         for (const AmdCL2KernelInput& kernel: input->kernels)
         {
             codeOffset += kernel.setupSize;
@@ -1446,6 +1454,7 @@ public:
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
                 uint32_t type = (inRel.type==RelocType::LOW_32BIT) ? 1 : 2;
+                uint32_t symIndex = (inRel.symbol==1) ? adataSymIndex : gdataSymIndex;
                 SLEV(rela.r_info, ELF64_R_INFO(symIndex, type));
                 SLEV(rela.r_addend, inRel.addend);
                 fob.writeObject(rela);
@@ -1512,8 +1521,12 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
     std::vector<bool> samplerMask(samplersNum);
     size_t samplerOffset = input->globalDataSize - samplersNum;
     size_t codePos = 0;
-    uint16_t textSectId = convertSectionId(ELFSECTID_TEXT, builtinSectionTable,
-                             AMDCL2SECTID_MAX, extraSeciontIndex);
+    const uint16_t textSectId = builtinSectionTable[ELFSECTID_TEXT-ELFSECTID_START];
+    const uint16_t globalSectId = builtinSectionTable[ELFSECTID_RODATA-ELFSECTID_START];
+    const uint16_t atomicSectId = builtinSectionTable[
+                AMDCL2SECTID_ATOMICDATA-ELFSECTID_START];
+    const uint16_t sampInitSectId = builtinSectionTable[
+                AMDCL2SECTID_SAMPLERINIT-ELFSECTID_START];
     for (const AmdCL2KernelInput& kernel: input->kernels)
     {   // first, we put sampler objects
         if ((codePos & 255) != 0)
@@ -1530,7 +1543,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                 memcpy(sampName, "&input_bc::&_.Samp", 18);
                 itocstrCStyle<cxuint>(samp, sampName+18, 64-18);
                 stringPool.push_back(sampName);
-                innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), 1,
+                innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), globalSectId,
                           ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
                 samplerMask[samp] = true;
             }
@@ -1553,76 +1566,28 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             memcpy(sampName, "&input_bc::&_.Samp", 18);
             itocstrCStyle<cxuint>(i, sampName+18, 64-18);
             stringPool.push_back(sampName);
-            innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), 1,
+            innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), globalSectId,
                       ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
             samplerMask[i] = true;
         }
     
+    if (input->atomicDataSize!=0 && input->atomicData!=nullptr)
+        innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_global_agent",
+              atomicSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     if (input->globalDataSize!=0 && input->globalData!=nullptr)
-        innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_readonly_agent", 1,
-              ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+        innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_readonly_agent",
+              globalSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsatext", textSectId,
               ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     
     for (size_t i = 0; i < samplersNum; i++)
-        innerBinGen.addSymbol(ElfSymbol64("", 3, ELF32_ST_INFO(STB_LOCAL, 12),
+        innerBinGen.addSymbol(ElfSymbol64("", sampInitSectId, ELF32_ST_INFO(STB_LOCAL, 12),
                       0, false, i*8, 0));
     /// add extra inner symbols
     for (const BinSymbol& extraSym: input->innerExtraSymbols)
         innerBinGen.addSymbol(ElfSymbol64(extraSym, builtinSectionTable, AMDCL2SECTID_MAX,
                                   extraSeciontIndex));
 }
-
-/// without global data and samplers
-static const uint16_t innerBuiltinSectionTable1[] =
-{
-    5, // ELFSECTID_SHSTRTAB
-    3, // ELFSECTID_STRTAB
-    4, // ELFSECTID_SYMTAB
-    SHN_UNDEF, // ELFSECTID_DYNSTR
-    SHN_UNDEF, // ELFSECTID_DYNSYM
-    1, // ELFSECTID_TEXT
-    SHN_UNDEF, // ELFSECTID_RODATA
-    SHN_UNDEF, // ELFSECTID_DATA
-    SHN_UNDEF, // ELFSECTID_BSS
-    SHN_UNDEF, // ELFSECTID_COMMENT
-    SHN_UNDEF, // AMDCL2SECTID_SAMPLERINIT
-    2  // AMDCL2SECTID_NOTE
-};
-
-/// global data
-static const uint16_t innerBuiltinSectionTable2[] =
-{
-    7, // ELFSECTID_SHSTRTAB
-    5, // ELFSECTID_STRTAB
-    6, // ELFSECTID_SYMTAB
-    SHN_UNDEF, // ELFSECTID_DYNSTR
-    SHN_UNDEF, // ELFSECTID_DYNSYM
-    2, // ELFSECTID_TEXT
-    1, // ELFSECTID_RODATA
-    SHN_UNDEF, // ELFSECTID_DATA
-    SHN_UNDEF, // ELFSECTID_BSS
-    SHN_UNDEF, // ELFSECTID_COMMENT
-    SHN_UNDEF, // AMDCL2SECTID_SAMPLERINIT
-    4  // AMDCL2SECTID_NOTE
-};
-
-/// global data and samplers
-static const uint16_t innerBuiltinSectionTable3[] =
-{
-    9, // ELFSECTID_SHSTRTAB
-    7, // ELFSECTID_STRTAB
-    8, // ELFSECTID_SYMTAB
-    SHN_UNDEF, // ELFSECTID_DYNSTR
-    SHN_UNDEF, // ELFSECTID_DYNSYM
-    2, // ELFSECTID_TEXT
-    1, // ELFSECTID_RODATA
-    SHN_UNDEF, // ELFSECTID_DATA
-    SHN_UNDEF, // ELFSECTID_BSS
-    SHN_UNDEF, // ELFSECTID_COMMENT
-    3, // AMDCL2SECTID_SAMPLERINIT
-    6  // AMDCL2SECTID_NOTE
-};
 
 /// main routine to generate OpenCL 2.0 binary
 void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
@@ -1635,13 +1600,15 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     input->samplerInit!=nullptr) ||
                 (input->samplerConfig && !input->samplers.empty());
     const bool hasGlobalData = input->globalDataSize!=0 && input->globalData!=nullptr;
+    const bool hasAtomicData = input->atomicDataSize!=0 && input->atomicData!=nullptr;
                 
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     if (arch == GPUArchitecture::GCN1_0)
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
     
-    if ((hasGlobalData || hasSamplers) && !newBinaries)
-        throw Exception("Old driver binaries doesn't support global data or samplers");
+    if ((hasGlobalData || hasAtomicData || hasSamplers) && !newBinaries)
+        throw Exception("Old driver binaries doesn't support "
+                        "global/atomic data or samplers");
     
     if (newBinaries)
     {
@@ -1703,63 +1670,77 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     std::vector<CString> symbolNamePool;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
-        const uint16_t* innerBinSectionTable;
-        cxuint extraSectionIndex = 0;
+        uint16_t innerBinSectionTable[innerBinSectonTableLen];
+        cxuint extraSectionIndex = 1;
         /* check kernel text relocations */
         for (const AmdCL2KernelInput& kernel: input->kernels)
             for (const AmdCL2RelInput& rel: kernel.relocations)
                 if (rel.offset >= kernel.codeSize)
                     throw Exception("Kernel text relocation offset outside kernel code");
         
-        if (input->globalDataSize==0 || input->globalData==nullptr)
-        {
-            innerBinSectionTable = innerBuiltinSectionTable1;
-            extraSectionIndex = 6;
-        }
-        else if (!hasSamplers) // no samplers
-        {
-            innerBinSectionTable = innerBuiltinSectionTable2;
-            extraSectionIndex = 8;
-        }
-        else // samplers and global data
-        {
-            innerBinSectionTable = innerBuiltinSectionTable3;
-            extraSectionIndex = 10;
-        }
+        std::fill(innerBinSectionTable,
+                  innerBinSectionTable+innerBinSectonTableLen, SHN_UNDEF);
         
+        cxuint symtabId = 6 + (hasSamplers?2:0) + (hasAtomicData);
+        cxuint globalDataId = 1 + (hasAtomicData);
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
                         UINT_MAX, 0, 0 }, false));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
         
-        if (input->globalDataSize!=0 && input->globalData!=nullptr)
-            // global data section
+        if (hasAtomicData)
+        {   // atomic data section
+            innerBinGen->addRegion(ElfRegion64(input->atomicDataSize, input->atomicData,
+                      8, ".hsadata_global_agent", SHT_PROGBITS, 0x900003));
+            innerBinSectionTable[AMDCL2SECTID_ATOMICDATA-ELFSECTID_START] =
+                    extraSectionIndex++;
+        }
+        if (hasGlobalData)
+        {// global data section
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
-                      8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003));
+                      8, ".hsadata_readonly_agent", SHT_PROGBITS,
+                      0xa00003, 0, 0, (hasAtomicData) ? -0xe8ULL : 0));
+            innerBinSectionTable[ELFSECTID_RODATA-ELFSECTID_START] =  extraSectionIndex++;
+        }
         if (kernelsNum != 0)
+        {
             innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, -0x100ULL));
+            innerBinSectionTable[ELFSECTID_TEXT-ELFSECTID_START] = extraSectionIndex++;
+        }
         if (hasSamplers)
         {
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
                     input->samplers.size()*8 : input->samplerInitSize,
                     &innerSamplerInitGen, 1, ".hsaimage_samplerinit", SHT_PROGBITS,
                     SHF_MERGE, 0, 0, 0, 8));
-            innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels, 8,
-                    ".rela.hsadata_readonly_agent", SHT_RELA, 0, 8, 1, 0,
-                    sizeof(Elf64_Rela)));
+            innerBinSectionTable[AMDCL2SECTID_SAMPLERINIT-ELFSECTID_START] =
+                        extraSectionIndex++;
+            innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels,
+                    8, ".rela.hsadata_readonly_agent", SHT_RELA, 0, symtabId,
+                    globalDataId, 0, sizeof(Elf64_Rela)));
+            innerBinSectionTable[AMDCL2SECTID_RODATARELA-ELFSECTID_START] =
+                        extraSectionIndex++;
         }
         size_t textRelSize = innerTextRelsGen.size();
         if (textRelSize!=0) // if some relocations
+        {
             innerBinGen->addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
-                    ".rela.hsatext", SHT_RELA, 0, (hasSamplers)?8:6, 2,  0,
+                    ".rela.hsatext", SHT_RELA, 0, symtabId, globalDataId+1,  0,
                     sizeof(Elf64_Rela)));
+            innerBinSectionTable[AMDCL2SECTID_TEXTRELA-ELFSECTID_START] =
+                    extraSectionIndex++;
+        }
         innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
                     ".note", SHT_NOTE, 0));
+        innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
         innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
                               SHT_STRTAB, SHF_STRINGS, 0, 0));
+        innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
         innerBinGen->addRegion(ElfRegion64::symtabSection());
+        innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
         innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
                               SHT_STRTAB, SHF_STRINGS, 0, 0));
+        innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
         
         if (kernelsNum != 0)
             putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex,
@@ -1774,11 +1755,17 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (kernelsNum != 0)
         {
             cxuint textSectionReg = 1;
+            if (hasAtomicData)
+            {
+                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
+                                true, 0, 0, 0 });
+                textSectionReg++;
+            }
             if (hasGlobalData)
             {
-                innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, 1, 1,
-                                true, 0, 0, 0 });
-                textSectionReg = 2;
+                innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, textSectionReg, 1,
+                                true, 0, (hasAtomicData) ? -0xe8ULL : 0, 0 });
+                textSectionReg++;
             }
             innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1, true,
                             0, -0x100ULL, 0 });
