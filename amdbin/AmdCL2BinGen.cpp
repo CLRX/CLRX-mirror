@@ -711,6 +711,8 @@ public:
                 ptrAlignment = 256;
             else if (arg.argType == KernelArgType::CLKEVENT)
                 ptrAlignment = 4;
+            else if (isImage)
+                ptrAlignment = 1;
             else if (arg.argType == KernelArgType::POINTER) // otherwise
             {
                 cxuint vectorLength = argTypeSizesTable[cxuint(arg.pointerType)].vectorSize;
