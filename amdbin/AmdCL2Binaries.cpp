@@ -30,6 +30,8 @@
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 
+// TODO: add hsadata_global_agent (global atomics?)
+
 using namespace CLRX;
 
 /* class AmdCL2InnerGPUBinaryBase */
@@ -151,7 +153,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             Flags creationFlags):
             AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
-            globalDataSize(0), globalData(nullptr),
+            globalDataSize(0), globalData(nullptr), atomicDataSize(0), atomicData(nullptr),
             samplerInitSize(0), samplerInit(nullptr),
             textRelsNum(0), textRelEntrySize(0), textRela(nullptr),
             globalDataRelsNum(0), globalDataRelEntrySize(0), globalDataRela(nullptr)
@@ -219,6 +221,15 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         const Elf64_Shdr& gdataShdr = getSectionHeader(".hsadata_readonly_agent");
         globalDataSize = ULEV(gdataShdr.sh_size);
         globalData = binaryCode + ULEV(gdataShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
+    
+    try
+    {
+        const Elf64_Shdr& atomShdr = getSectionHeader(".hsadata_global_agent");
+        atomicDataSize = ULEV(atomShdr.sh_size);
+        atomicData = binaryCode + ULEV(atomShdr.sh_offset);
     }
     catch(const Exception& ex)
     { }

@@ -32,6 +32,8 @@
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
 
+// TODO: add hsadata_global_agent (global atomics?)
+
 using namespace CLRX;
 
 void AmdCL2Input::addEmptyKernel(const char* kernelName)

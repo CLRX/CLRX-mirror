@@ -188,10 +188,17 @@ struct AmdDisasmInput
     std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs
 };
 
+enum AmdCL2RelSym: cxbyte
+{
+    GDATA = 0,
+    ADATA,  // global atomics
+};
+
 struct AmdCL2RelaEntry
 {
     size_t offset;
     RelocType type;
+    AmdCL2RelSym symbol;
     int64_t addend;
 };
 
@@ -225,6 +232,8 @@ struct AmdCL2DisasmInput
     CString aclVersionString; ///< acl version string
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
+    size_t atomicDataSize;  ///< global atomic data size
+    const cxbyte* atomicData;   ///< global atomic data data
     size_t samplerInitSize;     ///< sampler init data size
     const cxbyte* samplerInit;  ///< sampler init data
     /// sampler relocations

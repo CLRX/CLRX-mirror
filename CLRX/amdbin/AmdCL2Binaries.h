@@ -162,6 +162,8 @@ class AmdCL2InnerGPUBinary: public AmdCL2InnerGPUBinaryBase, public ElfBinary64
 private:
     size_t globalDataSize;  ///< global data size
     cxbyte* globalData; ///< global data content
+    size_t atomicDataSize;  ///< global atomic data size
+    cxbyte* atomicData; ///< global atomic init data
     size_t samplerInitSize;
     cxbyte* samplerInit;
     size_t textRelsNum;
@@ -193,6 +195,17 @@ public:
     /// get global data
     cxbyte* getGlobalData()
     { return globalData; }
+    
+    /// get atomic global data size
+    size_t getAtomicDataSize() const
+    { return atomicDataSize; }
+    
+    /// get global atomic data
+    const cxbyte* getAtomicData() const
+    { return atomicData; }
+    /// get global atomic data
+    cxbyte* getAtomicData()
+    { return atomicData; }
     
     /// get global data size
     size_t getSamplerInitSize() const
