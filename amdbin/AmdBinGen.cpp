@@ -175,7 +175,7 @@ AmdGPUBinGenerator::AmdGPUBinGenerator(const AmdInput* amdInput)
 { }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
-       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
+       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
        const std::vector<AmdKernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
@@ -184,7 +184,7 @@ AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType
 }
 
 AmdGPUBinGenerator::AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
-       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
+       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
        std::vector<AmdKernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {

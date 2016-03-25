@@ -39,10 +39,10 @@ namespace CLRX
 {
 
 enum: cxbyte {
-    AMDCL2_ARGUSED_NOTUSED = 0,
-    AMDCL2_ARGUSED_READ = 1,
-    AMDCL2_ARGUSED_WRITE = 2,
-    AMDCL2_ARGUSED_READ_WRITE = 3
+    AMDCL2_ARGUSED_NOTUSED = 0, ///< argument not used
+    AMDCL2_ARGUSED_READ = 1,    ///< argument to read
+    AMDCL2_ARGUSED_WRITE = 2,   ///< argument to write
+    AMDCL2_ARGUSED_READ_WRITE = 3   ///< argument to read and write
 };
 
 enum: cxuint {
@@ -154,14 +154,18 @@ public:
      * \param driverVersion number of driver version (majorVersion*100 + minorVersion)
      * \param globalDataSize size of constant global data
      * \param globalData global constant data
+     * \param atomicDataSize size of atomic global data
+     * \param atomicData atomic global data
      * \param kernelInputs array of kernel inputs
      */
     AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
-           size_t globalDataSize, const cxbyte* globalData, 
+           size_t globalDataSize, const cxbyte* globalData,
+           size_t atomicDataSize, const cxbyte* atomicData,
            const std::vector<AmdCL2KernelInput>& kernelInputs);
     /// constructor
     AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
-           size_t globalDataSize, const cxbyte* globalData, 
+           size_t globalDataSize, const cxbyte* globalData,
+           size_t atomicDataSize, const cxbyte* atomicData,
            std::vector<AmdCL2KernelInput>&& kernelInputs);
     ~AmdCL2GPUBinGenerator();
     

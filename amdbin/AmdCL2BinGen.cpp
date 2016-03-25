@@ -72,22 +72,25 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(const AmdCL2Input* amdInput)
 { }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
-       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
+       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
+       size_t atomicDataSize, const cxbyte* atomicData, 
        const std::vector<AmdCL2KernelInput>& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, globalDataSize, globalData, 0, nullptr,
-                0, nullptr, false, { }, { }, driverVersion, "", "", kernelInputs };
+    input = new AmdCL2Input{deviceType, globalDataSize, globalData,
+                atomicDataSize, atomicData, 0, nullptr, false, { }, { },
+                driverVersion, "", "", kernelInputs };
 }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
-       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData, 
+       uint32_t driverVersion, size_t globalDataSize, const cxbyte* globalData,
+       size_t atomicDataSize, const cxbyte* atomicData,
        std::vector<AmdCL2KernelInput>&& kernelInputs)
         : manageable(true), input(nullptr)
 {
-    input = new AmdCL2Input{deviceType, globalDataSize, globalData, 0, nullptr,
-                0, nullptr, false, { }, { }, driverVersion, "", "",
-                std::move(kernelInputs) };
+    input = new AmdCL2Input{deviceType, globalDataSize, globalData,
+                atomicDataSize, atomicData, 0, nullptr, false, { }, { },
+                driverVersion, "", "", std::move(kernelInputs) };
 }
 
 AmdCL2GPUBinGenerator::~AmdCL2GPUBinGenerator()
@@ -224,7 +227,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             tempData.stubSize = kernel.stubSize;
         }
         else
-        {   // kernel configuration present
+        {   // if kernel configuration present
             const cxuint argsNum = kernel.config.args.size();
             size_t out = ((newBinaries) ? 254 : 246) + (argsNum + 1)*88;
             for (const AmdKernelArgInput& arg: kernel.config.args)
@@ -628,15 +631,15 @@ public:
             options |= 0x100U;
         SLEV(header.options, options);
         SLEV(header.kernelId, kernelId+1024);
-        SLEV(header.unknownx, 0);
-        SLEV(header.unknowny, 0);
+        header.unknownx = 0;
+        header.unknowny = 0;
         SLEV(header.unknown2[0], 0x0100000008ULL);
         SLEV(header.unknown2[1], 0x0200000001ULL);
         SLEV(header.reqdWorkGroupSize[0], config.reqdWorkGroupSize[0]);
         SLEV(header.reqdWorkGroupSize[1], config.reqdWorkGroupSize[1]);
         SLEV(header.reqdWorkGroupSize[2], config.reqdWorkGroupSize[2]);
-        SLEV(header.unknown3[0], 0);
-        SLEV(header.unknown3[1], 0);
+        header.unknown3[0] = 0;
+        header.unknown3[1] = 0;
         SLEV(header.firstNameLength, 0x15);
         SLEV(header.secondNameLength, 0x7);
         for (cxuint i = 0; i < 3; i++)
@@ -671,8 +674,8 @@ public:
             SLEV(argEntry.size, 88);
             SLEV(argEntry.argNameSize, arg.argName.size());
             SLEV(argEntry.typeNameSize, arg.typeName.size());
-            SLEV(argEntry.unknown1, 0);
-            SLEV(argEntry.unknown2, 0);
+            argEntry.unknown1 = 0;
+            argEntry.unknown2 = 0;
             
             bool isImage = (arg.argType >= KernelArgType::MIN_IMAGE &&
                  arg.argType <= KernelArgType::MAX_IMAGE);
@@ -748,8 +751,8 @@ public:
             }
             else
             {
-                SLEV(argEntry.ptrType, 0);
-                SLEV(argEntry.ptrSpace, 0);
+                argEntry.ptrType = 0;
+                argEntry.ptrSpace = 0;
             }
             cxuint isPointerOrPipe = 0;
             if (arg.argType==KernelArgType::PIPE)

@@ -226,11 +226,11 @@ public:
      * \param kernelInputs array of kernel inputs
      */
     AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
-           size_t globalDataSize, const cxbyte* globalData, 
+           size_t globalDataSize, const cxbyte* globalData,
            const std::vector<AmdKernelInput>& kernelInputs);
     /// constructor
     AmdGPUBinGenerator(bool _64bitMode, GPUDeviceType deviceType, uint32_t driverVersion,
-           size_t globalDataSize, const cxbyte* globalData, 
+           size_t globalDataSize, const cxbyte* globalData,
            std::vector<AmdKernelInput>&& kernelInputs);
     ~AmdGPUBinGenerator();
     
