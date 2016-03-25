@@ -1681,8 +1681,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         std::fill(innerBinSectionTable,
                   innerBinSectionTable+innerBinSectonTableLen, SHN_UNDEF);
         
-        cxuint symtabId = 6 + (hasSamplers?2:0) + (hasAtomicData);
+        cxuint symtabId = 4 + (hasSamplers?2:0) /* samplerinit&rela.global */ +
+                (hasAtomicData) + (hasGlobalData) +
+                (hasAtomicData || hasGlobalData) /* rela.hsatext */;
         cxuint globalDataId = 1 + (hasAtomicData);
+        cxuint textId = 1 + (hasAtomicData) + (hasGlobalData);
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
                         UINT_MAX, 0, 0 }, false));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
@@ -1725,7 +1728,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (textRelSize!=0) // if some relocations
         {
             innerBinGen->addRegion(ElfRegion64(textRelSize, &innerTextRelsGen, 8,
-                    ".rela.hsatext", SHT_RELA, 0, symtabId, globalDataId+1,  0,
+                    ".rela.hsatext", SHT_RELA, 0, symtabId, textId,  0,
                     sizeof(Elf64_Rela)));
             innerBinSectionTable[AMDCL2SECTID_TEXTRELA-ELFSECTID_START] =
                     extraSectionIndex++;

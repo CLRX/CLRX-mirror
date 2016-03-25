@@ -400,7 +400,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                 case 8: // int
                 case 9: // long
                 case 11: // float
-                case 12: // short
+                case 12: // double
                 {
                     if (kindOfType!=4) // not scalar
                         throw Exception("Wrong kernel argument type");
