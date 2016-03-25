@@ -843,7 +843,7 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t vgprsNum;
     uint32_t sgprsNum;
     uint32_t zero3;
-    uint32_t version; // ??
+    uint32_t setup2; // ??
 };
 
 static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
@@ -957,14 +957,14 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     SLEV(setupData.vgprsNum, config.usedVGPRsNum);
     SLEV(setupData.sgprsNum, config.usedSGPRsNum);
     if (newBinaries)
-        SLEV(setupData.version, 0x06040404U);
+        SLEV(setupData.setup2, 0x06040404U);
     else // old binaries
     {
         uint32_t extraBits = (config.useEnqueue) ? 0x30000U : 0;
         extraBits |= (!config.useEnqueue && config.scratchBufferSize!=0) ? 0x40000U : 0;
         extraBits |= (config.localSize!=0) ? 0x200U : 0;
         extraBits |= (usePipes && (extraBits&0x40000U)==0) ? 0x30000U : 0;
-        SLEV(setupData.version, 0x06000003U | extraBits);
+        SLEV(setupData.setup2, 0x06000003U | extraBits);
     }
     
     fob.writeObject(setupData);
