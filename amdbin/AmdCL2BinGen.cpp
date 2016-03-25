@@ -884,7 +884,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     fob.writeObject<uint64_t>(LEV(uint64_t(newBinaries ? 0x100000001ULL : 1ULL)));
     fob.writeArray(40, kernelSetupBytesAfter8);
     IntAmdCL2SetupData setupData;
-    cxuint extraSGPRsNum = (config.useEnqueue) ? 2 : 0;
+    const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 4 : 2;
+    const cxuint extraSGPRsNum = (config.useEnqueue) ? neededExtraSGPRsNum : 0;
     cxuint sgprsNum = std::max(config.usedSGPRsNum + extraSGPRsNum + 2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
@@ -918,7 +919,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config));
     
     SLEV(setupData.setup1, setup1);
-    SLEV(setupData.archInd, (arch == GPUArchitecture::GCN1_2) ? 0x4a : 0x0a);
+    SLEV(setupData.archInd, (arch==GPUArchitecture::GCN1_2 && newBinaries) ? 0x4a : 0x0a);
     SLEV(setupData.scratchBufferSize, config.scratchBufferSize);
     SLEV(setupData.localSize, config.localSize);
     setupData.zero1 = 0;
@@ -1195,7 +1196,8 @@ static void generateKernelStub(GPUArchitecture arch, const AmdCL2KernelConfig& c
         FastOutputBuffer& fob, size_t codeSize, const cxbyte* code, bool useLocals,
         bool usePipes)
 {
-    cxuint extraSGPRsNum = (config.useEnqueue) ? 2 : 0;
+    const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 4 : 2;
+    const cxuint extraSGPRsNum = (config.useEnqueue) ? neededExtraSGPRsNum : 0;
     cxuint sgprsNumAll = config.usedSGPRsNum+2 + extraSGPRsNum;
     {
         IntAmdCL2StubHeader stubHdr;
