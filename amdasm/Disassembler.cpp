@@ -447,7 +447,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         for (size_t i = 0; i < relaNum; i++)
         {
             const Elf64_Rela& rel = innerBin.getTextRelaEntry(i);
-            sortedRelocs.push_back(std::make_pair(ULEV(rel.r_offset), i));
+            sortedRelocs.push_back(std::make_pair(size_t(ULEV(rel.r_offset)), i));
         }
         // sort map
         mapSort(sortedRelocs.begin(), sortedRelocs.end());
@@ -519,7 +519,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                 throw Exception("Wrong section for sampler symbol");
             if ((value&7) != 0)
                 throw Exception("Wrong value of sampler symbol");
-            input->samplerRelocs.push_back({ ULEV(rel.r_offset), value>>3 });
+            input->samplerRelocs.push_back({ size_t(ULEV(rel.r_offset)), value>>3 });
         }
     }
     else if (kernelInfosNum==0)
