@@ -140,6 +140,7 @@ tests/amdasm/incdir1/inc3.s -text
 tests/amdasm/incdir1/incbin3 -text svneol=unset#application/octet-stream
 tests/amdbin/AmdBinGen.cpp -text
 tests/amdbin/AmdBinLoading.cpp -text
+tests/amdbin/AmdCL2BinGen.cpp -text
 tests/amdbin/CMakeLists.txt -text svneol=unset#text/plain
 tests/amdbin/GalliumBinGen.cpp -text
 tests/amdbin/amdbins/alltypes-15_11.clo -text svneol=unset#application/x-executable

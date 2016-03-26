@@ -30,3 +30,7 @@ ADD_TEST(AmdBinGen AmdBinGen)
 ADD_EXECUTABLE(AmdBinLoading AmdBinLoading.cpp)
 TEST_LINK_LIBRARIES(AmdBinLoading CLRXAmdBin CLRXUtils)
 ADD_TEST(AmdBinLoading AmdBinLoading)
+
+ADD_EXECUTABLE(AmdCL2BinGen AmdCL2BinGen.cpp)
+TEST_LINK_LIBRARIES(AmdCL2BinGen CLRXAmdBin CLRXUtils)
+ADD_TEST(AmdCL2BinGen AmdCL2BinGen)
