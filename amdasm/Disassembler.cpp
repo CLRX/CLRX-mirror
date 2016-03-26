@@ -519,7 +519,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                 throw Exception("Wrong section for sampler symbol");
             if ((value&7) != 0)
                 throw Exception("Wrong value of sampler symbol");
-            input->samplerRelocs.push_back({ size_t(ULEV(rel.r_offset)), value>>3 });
+            input->samplerRelocs.push_back({ size_t(ULEV(rel.r_offset)),
+                size_t(value>>3) });
         }
     }
     else if (kernelInfosNum==0)
