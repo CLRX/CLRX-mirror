@@ -1532,6 +1532,9 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                 AMDCL2SECTID_ATOMICDATA-ELFSECTID_START];
     const uint16_t sampInitSectId = builtinSectionTable[
                 AMDCL2SECTID_SAMPLERINIT-ELFSECTID_START];
+    stringPool.resize(input->kernels.size() + samplersNum);
+    size_t nameIdx = 0;
+    
     for (const AmdCL2KernelInput& kernel: input->kernels)
     {   // first, we put sampler objects
         if ((codePos & 255) != 0)
@@ -1547,18 +1550,20 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                 char sampName[64];
                 memcpy(sampName, "&input_bc::&_.Samp", 18);
                 itocstrCStyle<cxuint>(samp, sampName+18, 64-18);
-                stringPool.push_back(sampName);
-                innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), globalSectId,
+                stringPool[nameIdx] = sampName;
+                innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), globalSectId,
                           ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
+                nameIdx++;
                 samplerMask[samp] = true;
             }
         // put kernel symbol
-        stringPool.push_back(constructName(10, "&__OpenCL_", kernel.kernelName,
-                        7, "_kernel"));
+        stringPool[nameIdx] = constructName(10, "&__OpenCL_", kernel.kernelName,
+                        7, "_kernel");
         
-        innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), textSectId,
+        innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), textSectId,
                   ELF32_ST_INFO(STB_GLOBAL, 10), 0, false, codePos, 
                   kernel.codeSize+kernel.setupSize));
+        nameIdx++;
         codePos += kernel.codeSize+kernel.setupSize;
     }
     
@@ -1570,9 +1575,10 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             char sampName[64];
             memcpy(sampName, "&input_bc::&_.Samp", 18);
             itocstrCStyle<cxuint>(i, sampName+18, 64-18);
-            stringPool.push_back(sampName);
-            innerBinGen.addSymbol(ElfSymbol64(stringPool.back().c_str(), globalSectId,
+            stringPool[nameIdx] = sampName;
+            innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), globalSectId,
                       ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
+            nameIdx++;
             samplerMask[i] = true;
         }
     
