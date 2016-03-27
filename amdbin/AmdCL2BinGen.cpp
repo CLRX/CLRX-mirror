@@ -1633,6 +1633,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if ((hasGlobalData || hasRWData || hasSamplers) && !newBinaries)
         throw Exception("Old driver binaries doesn't support "
                         "global/atomic data or samplers");
+    if (hasRWData && input->bssSize!=0)
+        throw Exception("Unsupported by this generator!");
     
     if (newBinaries)
     {
@@ -1692,6 +1694,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     std::unique_ptr<ElfBinaryGen64> innerBinGen;
     std::vector<CString> symbolNamePool;
+    uint64_t sectStart = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr)*(1 + hasGlobalData +
+                (input->bssSize!=0 || hasRWData));
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
@@ -1707,9 +1711,10 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         
         cxuint symtabId = 4 + (hasSamplers?2:0) /* samplerinit&rela.global */ +
                 (hasRWData) + (hasGlobalData) +
+                (input->bssSize!=0) +
                 (hasRWData || hasGlobalData) /* rela.hsatext */;
-        cxuint globalDataId = 1 + (hasRWData);
-        cxuint textId = 1 + (hasRWData) + (hasGlobalData);
+        cxuint globalDataId = 1 + (hasRWData) + (input->bssSize!=0);
+        cxuint textId = 1 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
                         UINT_MAX, 0, 0 }, false));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
@@ -1724,20 +1729,22 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (input->bssSize!=0)
         {
             innerBinGen->addRegion(ElfRegion64(input->bssSize, (const cxbyte*)nullptr,
-                      8, ".hsabss_global_agent", SHT_NOBITS, 0x900003));
+                      8, ".hsabss_global_agent", SHT_NOBITS, 0x900003,
+                      0, 0, (hasRWData) ? -sectStart : 0, 0, false, true));
             innerBinSectionTable[ELFSECTID_BSS-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasGlobalData)
         {// global data section
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
-                      8, ".hsadata_readonly_agent", SHT_PROGBITS,
-                      0xa00003, 0, 0, (hasRWData) ? -0xe8ULL : 0));
+                      8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003, 0, 0,
+                      (hasRWData || input->bssSize!=0) ? -sectStart+input->bssSize : 0));
             innerBinSectionTable[ELFSECTID_RODATA-ELFSECTID_START] =  extraSectionIndex++;
         }
         if (kernelsNum != 0)
         {
             innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
-                      ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, -0x100ULL));
+                      ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, 
+                      (input->bssSize==0) ? -0x100ULL : 0, 0, input->bssSize!=0));
             innerBinSectionTable[ELFSECTID_TEXT-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasSamplers)
@@ -1791,23 +1798,25 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             if (hasRWData)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
-                                true, 0, 0, 0 });
+                                true, false, false, 0, 0, 0 });
                 textSectionReg++;
             }
-            if (input->bssSize!=0)
+            else if (input->bssSize!=0)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
-                                true, 0, 0, 0 });
+                                true, false, false, 0, 0, 0 });
                 textSectionReg++;
             }
             if (hasGlobalData)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, textSectionReg, 1,
-                                true, 0, (hasRWData) ? -0xe8ULL : 0, 0 });
+                        true, false, false, 0, (hasRWData) ? -sectStart : 
+                        (input->bssSize!=0 ? input->bssSize-sectStart : 0)
+                        /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });
                 textSectionReg++;
             }
-            innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1, true,
-                            0, -0x100ULL, 0 });
+            innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1,
+                            true, false, (input->bssSize!=0), 0, -0x100ULL, 0 });
         }
     }
     

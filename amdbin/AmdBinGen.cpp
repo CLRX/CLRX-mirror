@@ -1687,9 +1687,9 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
             kelfBinGen.addRegion(ElfRegion32(section, kernelBuiltinSectionTable,
                          ELFSECTID_STD_MAX, 6));
         /* program headers */
-        kelfBinGen.addProgramHeader({ 0x70000002U, 0, 1, 1, false, 0, 0, 0});
-        kelfBinGen.addProgramHeader({ PT_NOTE, 0, 4, 1, false, 0, 0, 0 });
-        kelfBinGen.addProgramHeader({ PT_LOAD, 0, 5, 4, true, 0, 0, 0 });
+        kelfBinGen.addProgramHeader({ 0x70000002U, 0, 1, 1, false, false, false, 0, 0, 0});
+        kelfBinGen.addProgramHeader({ PT_NOTE, 0, 4, 1, false, false, false, 0, 0, 0 });
+        kelfBinGen.addProgramHeader({ PT_LOAD, 0, 5, 4, true, false, false, 0, 0, 0 });
         
         /* extra symbols */
         for (const BinSymbol& symbol: kinput.extraSymbols)

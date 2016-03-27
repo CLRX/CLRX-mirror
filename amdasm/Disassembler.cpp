@@ -1361,7 +1361,7 @@ void Disassembler::disassembleAmdCL2()
     if (doDumpData && amdCL2Input->rwData != nullptr &&
         amdCL2Input->rwDataSize != 0)
     {
-        output.write(".data\n", 12);
+        output.write(".data\n", 6);
         output.write(".ddata:\n", 8); /// symbol used by text relocations
         printDisasmData(amdCL2Input->rwDataSize, amdCL2Input->rwData, output);
     }

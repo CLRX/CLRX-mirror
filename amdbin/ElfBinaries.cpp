@@ -599,13 +599,19 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 typename Types::Phdr phdr;
                 SLEV(phdr.p_type, progHeader.type);
                 SLEV(phdr.p_flags, progHeader.flags);
-                SLEV(phdr.p_offset, regionOffsets[progHeader.regionStart]);
+                const ElfRegionTemplate<Types>& sregion = regions[progHeader.regionStart];
+                bool zeroOffset = sregion.type == ElfRegionType::SECTION &&
+                        sregion.section.zeroOffset;
+                SLEV(phdr.p_offset, !zeroOffset ?
+                        regionOffsets[progHeader.regionStart] : 0);
                 SLEV(phdr.p_align, regions[progHeader.regionStart].align);
                 
                 /* paddrBase and vaddrBase is base to program header virtual and physical
                  * addresses for program header. if not defined then get address base
                  * from ELF header */
-                if (progHeader.paddrBase != 0)
+                if (progHeader.offsetAsPAddress)
+                    SLEV(phdr.p_paddr, regionOffsets[progHeader.regionStart]);
+                else if (progHeader.paddrBase != 0)
                     SLEV(phdr.p_paddr, progHeader.paddrBase +
                                 regionOffsets[progHeader.regionStart]);
                 else if (header.paddrBase != 0)
@@ -614,7 +620,9 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 else
                     SLEV(phdr.p_paddr, 0);
                 
-                if (progHeader.vaddrBase != 0)
+                if (progHeader.offsetAsVAddress)
+                    SLEV(phdr.p_vaddr, regionOffsets[progHeader.regionStart]);
+                else if (progHeader.vaddrBase != 0)
                     SLEV(phdr.p_vaddr, progHeader.vaddrBase +
                                 regionOffsets[progHeader.regionStart]);
                 else if (header.vaddrBase != 0)
@@ -629,6 +637,13 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         regionOffsets[progHeader.regionStart];
                 SLEV(phdr.p_filesz, phSize);
                 
+                uint64_t noBitsData = 0; // to substract from file size
+                for (cxuint k = progHeader.regionStart; k < progHeader.regionStart+
+                            progHeader.regionsNum; k++)
+                    if (regions[k].type == ElfRegionType::SECTION &&
+                                regions[k].section.type == SHT_NOBITS)
+                    noBitsData += regions[k].size;
+                
                 if (progHeader.haveMemSize)
                 {
                     if (progHeader.memSize != 0)
@@ -638,7 +653,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 }
                 else
                     SLEV(phdr.p_memsz, 0);
-                SLEV(phdr.p_filesz, phSize);
+                SLEV(phdr.p_filesz, phSize-noBitsData);
                 fob.writeObject(phdr);
             }
         }
@@ -659,10 +674,13 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                         SLEV(shdr.sh_name, nullSectionNameOffset);
                     SLEV(shdr.sh_type, region2.section.type);
                     SLEV(shdr.sh_flags, region2.section.flags);
-                    SLEV(shdr.sh_offset, regionOffsets[j]);
+                    SLEV(shdr.sh_offset, (!region2.section.zeroOffset) ?
+                                regionOffsets[j] : 0);
                     /* addrBase is base address of first section. if not defined
                      * use address base as virtual address base from elf header */
-                    if (region2.section.addrBase != 0)
+                    if (region2.section.offsetAsAddress)
+                        SLEV(shdr.sh_addr, regionOffsets[j]);
+                    else if (region2.section.addrBase != 0)
                         SLEV(shdr.sh_addr, region2.section.addrBase+regionOffsets[j]);
                     else if (header.vaddrBase != 0)
                         SLEV(shdr.sh_addr, header.vaddrBase+regionOffsets[j]);
