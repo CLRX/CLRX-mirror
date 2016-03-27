@@ -631,18 +631,29 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 else
                     SLEV(phdr.p_vaddr, 0);
                 
-                const typename Types::Word phSize = regionOffsets[progHeader.regionStart+
-                        progHeader.regionsNum-1]+regions[progHeader.regionStart+
-                        progHeader.regionsNum-1].size -
-                        regionOffsets[progHeader.regionStart];
-                SLEV(phdr.p_filesz, phSize);
-                
-                uint64_t noBitsData = 0; // to substract from file size
+                /// fileSize - add offset of first region to simulate region alignment
+                typename Types::Word fileSize = regionOffsets[progHeader.regionStart];
+                typename Types::Word phSize = 0;
                 for (cxuint k = progHeader.regionStart; k < progHeader.regionStart+
                             progHeader.regionsNum; k++)
-                    if (regions[k].type == ElfRegionType::SECTION &&
-                                regions[k].section.type == SHT_NOBITS)
-                    noBitsData += regions[k].size;
+                {
+                    size_t toFill = 0;
+                    if (regions[k].type != ElfRegionType::SECTION ||
+                                regions[k].section.type != SHT_NOBITS)
+                    {   // add alignment
+                        if (regions[k].align!=0 && (fileSize&(regions[k].align-1))!=0)
+                            toFill = regions[k].align - (fileSize&(regions[k].align-1));
+                        fileSize += regions[k].size + toFill;
+                    }
+                    // add alignment to size
+                    toFill = 0;
+                    if (regions[k].align!=0 && (phSize&(regions[k].align-1))!=0)
+                        toFill = regions[k].align - (phSize&(regions[k].align-1));
+                    phSize += regions[k].size + toFill;
+                }
+                // first region offset is obsolete, just subtract
+                fileSize -= regionOffsets[progHeader.regionStart];
+                SLEV(phdr.p_filesz, phSize);
                 
                 if (progHeader.haveMemSize)
                 {
@@ -653,7 +664,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 }
                 else
                     SLEV(phdr.p_memsz, 0);
-                SLEV(phdr.p_filesz, phSize-noBitsData);
+                SLEV(phdr.p_filesz, fileSize);
                 fob.writeObject(phdr);
             }
         }
