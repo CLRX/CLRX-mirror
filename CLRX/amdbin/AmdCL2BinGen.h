@@ -116,6 +116,7 @@ struct AmdCL2Input
     const cxbyte* globalData;   ///< global constant data
     size_t atomicDataSize;  ///< global constant data size
     const cxbyte* atomicData;   ///< global constant data
+    size_t bssSize;             ///< global bss size
     size_t samplerInitSize;  ///< sampler init size
     const cxbyte* samplerInit; ///< sampler init data
     bool samplerConfig;
