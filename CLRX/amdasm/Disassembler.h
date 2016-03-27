@@ -226,8 +226,8 @@ struct AmdCL2DisasmInput
     CString aclVersionString; ///< acl version string
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
-    size_t atomicDataSize;  ///< global atomic data size
-    const cxbyte* atomicData;   ///< global atomic data data
+    size_t rwDataSize;  ///< global rw data size
+    const cxbyte* rwData;   ///< global rw data data
     size_t bssSize;         ///< size of global bss section
     size_t samplerInitSize;     ///< sampler init data size
     const cxbyte* samplerInit;  ///< sampler init data

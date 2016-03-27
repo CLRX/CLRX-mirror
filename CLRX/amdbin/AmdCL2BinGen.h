@@ -50,8 +50,7 @@ enum: cxuint {
     AMDCL2SECTID_TEXTRELA,
     AMDCL2SECTID_RODATARELA,
     AMDCL2SECTID_NOTE,
-    AMDCL2SECTID_ATOMICDATA,
-    AMDCL2SECTID_MAX = AMDCL2SECTID_ATOMICDATA
+    AMDCL2SECTID_MAX = AMDCL2SECTID_NOTE
 };
 
 /// kernel configuration
@@ -114,8 +113,8 @@ struct AmdCL2Input
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
-    size_t atomicDataSize;  ///< global constant data size
-    const cxbyte* atomicData;   ///< global constant data
+    size_t rwDataSize;  ///< global rw data size
+    const cxbyte* rwData;   ///< global rw data
     size_t bssSize;             ///< global bss size
     size_t samplerInitSize;  ///< sampler init size
     const cxbyte* samplerInit; ///< sampler init data
@@ -155,8 +154,8 @@ public:
      * \param driverVersion number of driver version (majorVersion*100 + minorVersion)
      * \param globalDataSize size of constant global data
      * \param globalData global constant data
-     * \param atomicDataSize size of atomic global data
-     * \param atomicData atomic global data
+     * \param rwDataSize size of rw global data
+     * \param rwData rw global data
      * \param kernelInputs array of kernel inputs
      */
     AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
@@ -166,7 +165,7 @@ public:
     /// constructor
     AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData,
-           size_t atomicDataSize, const cxbyte* atomicData,
+           size_t rwDataSize, const cxbyte* rwData,
            std::vector<AmdCL2KernelInput>&& kernelInputs);
     ~AmdCL2GPUBinGenerator();
     

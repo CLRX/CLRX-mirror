@@ -466,8 +466,9 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
         amdCL2Input.globalDataSize = innerBin.getGlobalDataSize();
         amdCL2Input.globalData = innerBin.getGlobalData();
-        amdCL2Input.atomicDataSize = innerBin.getAtomicDataSize();
-        amdCL2Input.atomicData = innerBin.getAtomicData();
+        amdCL2Input.rwDataSize = innerBin.getRwDataSize();
+        amdCL2Input.rwData = innerBin.getRwData();
+        amdCL2Input.bssSize = innerBin.getBssSize();
         amdCL2Input.samplerConfig = samplerConfig;
         if (samplerConfig)
         {
@@ -491,8 +492,9 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
     {
         amdCL2Input.globalDataSize = 0;
         amdCL2Input.globalData = nullptr;
-        amdCL2Input.atomicDataSize = 0;
-        amdCL2Input.atomicData = nullptr;
+        amdCL2Input.rwDataSize = 0;
+        amdCL2Input.rwData = nullptr;
+        amdCL2Input.bssSize = 0;
         amdCL2Input.samplerConfig = false;
     }
     
@@ -543,6 +545,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
         
         size_t gDataSymIndex = 0;
         size_t aDataSymIndex = 0;
+        size_t bssSymIndex = 0;
         const size_t symbolsNum = innerBin.getSymbolsNum();
         for (gDataSymIndex = 0; gDataSymIndex < symbolsNum; gDataSymIndex++)
         {   // find global data symbol (getSymbolIndex doesn't work always
@@ -554,6 +557,12 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
         {   // find global data symbol (getSymbolIndex doesn't work always
             const char* name = innerBin.getSymbolName(aDataSymIndex);
             if (::strcmp(name, "__hsa_section.hsadata_global_agent")==0)
+                break;
+        }
+        for (bssSymIndex = 0; bssSymIndex < symbolsNum; bssSymIndex++)
+        {   // find global data symbol (getSymbolIndex doesn't work always
+            const char* name = innerBin.getSymbolName(bssSymIndex);
+            if (::strcmp(name, "__hsa_section.hsabss_global_agent")==0)
                 break;
         }
         
@@ -577,8 +586,9 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
                     rtype = RelocType::HIGH_32BIT;
                 else
                     throw Exception("Wrong reltype");
+                cxuint rsym = symIndex==aDataSymIndex?1U:(symIndex==bssSymIndex?2U:0U);
                 kernel.relocations.push_back({size_t(ULEV(rela.r_offset))-offset,
-                        rtype, symIndex==aDataSymIndex?1U:0U, size_t(ULEV(rela.r_addend))});
+                        rtype, rsym, size_t(ULEV(rela.r_addend))});
             }
             offset += kernel.codeSize;
             if ((offset & 255) != 0)

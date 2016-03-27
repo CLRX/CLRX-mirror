@@ -422,8 +422,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->samplerInit = nullptr;
     input->globalDataSize = 0;
     input->globalData = nullptr;
-    input->atomicDataSize = 0;
-    input->atomicData = nullptr;
+    input->rwDataSize = 0;
+    input->rwData = nullptr;
     input->bssSize = 0;
     std::vector<std::pair<size_t, size_t> > sortedRelocs; // by offset
     const cxbyte* textPtr = nullptr;
@@ -437,8 +437,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
         input->globalDataSize = innerBin.getGlobalDataSize();
         input->globalData = innerBin.getGlobalData();
-        input->atomicDataSize = innerBin.getAtomicDataSize();
-        input->atomicData = innerBin.getAtomicData();
+        input->rwDataSize = innerBin.getRwDataSize();
+        input->rwData = innerBin.getRwData();
         input->samplerInitSize = innerBin.getSamplerInitSize();
         input->samplerInit = innerBin.getSamplerInit();
         input->bssSize = innerBin.getBssSize();
@@ -1358,19 +1358,19 @@ void Disassembler::disassembleAmdCL2()
             output.write(buf, bufPos);
         }
     }
-    if (doDumpData && amdCL2Input->atomicData != nullptr &&
-        amdCL2Input->atomicDataSize != 0)
+    if (doDumpData && amdCL2Input->rwData != nullptr &&
+        amdCL2Input->rwDataSize != 0)
     {
-        output.write(".atomicdata\n", 12);
-        output.write(".adata:\n", 8); /// symbol used by text relocations
-        printDisasmData(amdCL2Input->atomicDataSize, amdCL2Input->atomicData, output);
+        output.write(".data\n", 12);
+        output.write(".ddata:\n", 8); /// symbol used by text relocations
+        printDisasmData(amdCL2Input->rwDataSize, amdCL2Input->rwData, output);
     }
     
     if (doDumpData && amdCL2Input->bssSize)
     {
         output.write(".section .bss\n", 14);
-        output.write("    .bdata:\n", 12); /// symbol used by text relocations
-        output.write(".skip ", 6);
+        output.write(".bdata:\n", 8); /// symbol used by text relocations
+        output.write("    .skip ", 10);
         char buf[64];
         size_t bufPos = itocstrCStyle<size_t>(amdCL2Input->bssSize, buf, 22);
         buf[bufPos++] = '\n';
@@ -1412,7 +1412,7 @@ void Disassembler::disassembleAmdCL2()
         {   // input kernel code (main disassembly)
             isaDisassembler->clearRelocations();
             isaDisassembler->addRelSymbol(".gdata");
-            isaDisassembler->addRelSymbol(".adata"); // .atomic data
+            isaDisassembler->addRelSymbol(".ddata"); // rw data
             isaDisassembler->addRelSymbol(".bdata"); // .bss data
             for (const AmdCL2RelaEntry& entry: kinput.textRelocs)
                 isaDisassembler->addRelocation(entry.offset, entry.type, 
