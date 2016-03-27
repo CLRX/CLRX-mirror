@@ -164,6 +164,7 @@ private:
     cxbyte* globalData; ///< global data content
     size_t atomicDataSize;  ///< global atomic data size
     cxbyte* atomicData; ///< global atomic init data
+    size_t bssSize;
     size_t samplerInitSize;
     cxbyte* samplerInit;
     size_t textRelsNum;
@@ -206,6 +207,9 @@ public:
     /// get global atomic data
     cxbyte* getAtomicData()
     { return atomicData; }
+    
+    size_t getBssSize() const
+    { return bssSize; }
     
     /// get global data size
     size_t getSamplerInitSize() const

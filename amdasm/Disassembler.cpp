@@ -424,12 +424,14 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->globalData = nullptr;
     input->atomicDataSize = 0;
     input->atomicData = nullptr;
+    input->bssSize = 0;
     std::vector<std::pair<size_t, size_t> > sortedRelocs; // by offset
     const cxbyte* textPtr = nullptr;
     const size_t kernelInfosNum = binary.getKernelInfosNum();
     
     size_t gDataSymIndex = 0;
     size_t aDataSymIndex = 0;
+    size_t bssSymIndex = 0;
     if (isInnerNewBinary)
     {
         const AmdCL2InnerGPUBinary& innerBin = binary.getInnerBinary();
@@ -439,6 +441,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         input->atomicData = innerBin.getAtomicData();
         input->samplerInitSize = innerBin.getSamplerInitSize();
         input->samplerInit = innerBin.getSamplerInit();
+        input->bssSize = innerBin.getBssSize();
         // if no kernels and data
         if (kernelInfosNum==0)
             return input.release();
@@ -465,6 +468,12 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         {   // find global data symbol (getSymbolIndex doesn't work always
             const char* name = innerBin.getSymbolName(aDataSymIndex);
             if (::strcmp(name, "__hsa_section.hsadata_global_agent")==0)
+                break;
+        }
+        for (bssSymIndex = 0; bssSymIndex < symbolsNum; bssSymIndex++)
+        {   // find global data symbol (getSymbolIndex doesn't work always
+            const char* name = innerBin.getSymbolName(bssSymIndex);
+            if (::strcmp(name, "__hsa_section.hsabss_global_agent")==0)
                 break;
         }
         if (gDataSymIndex < symbolsNum)
@@ -495,6 +504,22 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
             
             if (::strcmp(innerBin.getSectionName(ULEV(aDataSym.st_shndx)),
                             ".hsadata_global_agent") != 0)
+                throw Exception("Wrong section for atomic data symbol");
+        }
+        
+        if (bssSymIndex < symbolsNum)
+        {   // check gdata sym index
+            const Elf64_Sym& bssSym = innerBin.getSymbol(bssSymIndex);
+            /// check symbol value, section and name
+            if (ULEV(bssSym.st_value)!=0)
+                throw Exception("Wrong value for atomic data symbol");
+            if (ULEV(bssSym.st_shndx)>=innerBin.getSectionHeadersNum())
+                throw Exception("Section index out of range");
+            if (ELF64_ST_TYPE(bssSym.st_info)!=STT_SECTION)
+                throw Exception("Section index out of range");
+            
+            if (::strcmp(innerBin.getSectionName(ULEV(bssSym.st_shndx)),
+                            ".hsabss_global_agent") != 0)
                 throw Exception("Wrong section for atomic data symbol");
         }
         // relocations for global data section (sampler symbols)
@@ -612,8 +637,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     const Elf64_Rela& rela = innerBin.getTextRelaEntry(
                                 sortedRelocIter->second);
                     uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
-                    if (gDataSymIndex != symIndex && aDataSymIndex != symIndex)
-                        throw Exception("Other symbol than to global or atomic data"
+                    if (gDataSymIndex != symIndex && aDataSymIndex != symIndex &&
+                                bssSymIndex != symIndex)
+                        throw Exception("Other symbol than to global or atomic data or bss"
                                                 " is illegal");
                     uint32_t rtype = ELF64_R_TYPE(ULEV(rela.r_info));
                     RelocType relocType;
@@ -624,7 +650,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     else
                         throw Exception("Unknown relocation type");
                     // put text relocs. compute offset by subtracting current code offset
-                    const cxuint rsym = (aDataSymIndex==symIndex) ? 1 : 0;
+                    const cxuint rsym = (aDataSymIndex==symIndex) ? 1 : 
+                        ((bssSymIndex==symIndex) ? 2 : 0);
                     kinput.textRelocs.push_back(AmdCL2RelaEntry{sortedRelocIter->first-
                         (kinput.code-textPtr), relocType, rsym, ULEV(rela.r_addend) });
                 }
@@ -1339,6 +1366,17 @@ void Disassembler::disassembleAmdCL2()
         printDisasmData(amdCL2Input->atomicDataSize, amdCL2Input->atomicData, output);
     }
     
+    if (doDumpData && amdCL2Input->bssSize)
+    {
+        output.write(".section .bss\n", 14);
+        output.write("    .bdata:\n", 12); /// symbol used by text relocations
+        output.write(".skip ", 6);
+        char buf[64];
+        size_t bufPos = itocstrCStyle<size_t>(amdCL2Input->bssSize, buf, 22);
+        buf[bufPos++] = '\n';
+        output.write(buf, bufPos);
+    }
+    
     for (const AmdCL2DisasmKernelInput& kinput: amdCL2Input->kernels)
     {
         output.write(".kernel ", 8);
@@ -1375,6 +1413,7 @@ void Disassembler::disassembleAmdCL2()
             isaDisassembler->clearRelocations();
             isaDisassembler->addRelSymbol(".gdata");
             isaDisassembler->addRelSymbol(".adata"); // .atomic data
+            isaDisassembler->addRelSymbol(".bdata"); // .bss data
             for (const AmdCL2RelaEntry& entry: kinput.textRelocs)
                 isaDisassembler->addRelocation(entry.offset, entry.type, 
                                cxuint(entry.symbol), entry.addend);

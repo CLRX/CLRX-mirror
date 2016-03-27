@@ -152,7 +152,7 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
             AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
             globalDataSize(0), globalData(nullptr), atomicDataSize(0), atomicData(nullptr),
-            samplerInitSize(0), samplerInit(nullptr),
+            bssSize(0), samplerInitSize(0), samplerInit(nullptr),
             textRelsNum(0), textRelEntrySize(0), textRela(nullptr),
             globalDataRelsNum(0), globalDataRelEntrySize(0), globalDataRela(nullptr)
 {
@@ -228,6 +228,14 @@ AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binary
         const Elf64_Shdr& atomShdr = getSectionHeader(".hsadata_global_agent");
         atomicDataSize = ULEV(atomShdr.sh_size);
         atomicData = binaryCode + ULEV(atomShdr.sh_offset);
+    }
+    catch(const Exception& ex)
+    { }
+    
+    try
+    {
+        const Elf64_Shdr& bssShdr = getSectionHeader(".hsabss_global_agent");
+        bssSize = ULEV(bssShdr.sh_size);
     }
     catch(const Exception& ex)
     { }

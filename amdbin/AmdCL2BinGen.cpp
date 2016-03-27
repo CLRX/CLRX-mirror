@@ -32,6 +32,8 @@
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
 
+/* TODO: add .hsabss_global_agent */
+
 using namespace CLRX;
 
 static const cxuint innerBinSectonTableLen = AMDCL2SECTID_MAX+1-ELFSECTID_START;
