@@ -1706,7 +1706,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         cxuint symtabId = 4 + (hasSamplers?2:0) /* samplerinit&rela.global */ +
                 (hasRWData) + (hasGlobalData) +
                 (input->bssSize!=0) +
-                (hasRWData || hasGlobalData) /* rela.hsatext */;
+                (hasRWData || hasGlobalData || input->bssSize!=0) /* rela.hsatext */;
         cxuint globalDataId = 1 + (hasRWData) + (input->bssSize!=0);
         cxuint textId = 1 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
         /* in innerbin we do not add null symbol, we count address for program headers
