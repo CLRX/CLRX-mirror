@@ -80,7 +80,7 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
         : manageable(true), input(nullptr)
 {
     input = new AmdCL2Input{deviceType, globalDataSize, globalData,
-                rwDataSize, rwData, 0, 0, nullptr, false, { }, { },
+                rwDataSize, rwData, 0, 0, 0, nullptr, false, { }, { },
                 driverVersion, "", "", kernelInputs };
 }
 
@@ -91,7 +91,7 @@ AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator(GPUDeviceType deviceType,
         : manageable(true), input(nullptr)
 {
     input = new AmdCL2Input{deviceType, globalDataSize, globalData,
-                rwDataSize, rwData, 0, 0, nullptr, false, { }, { },
+                rwDataSize, rwData, 0, 0, 0, nullptr, false, { }, { },
                 driverVersion, "", "", std::move(kernelInputs) };
 }
 
@@ -1729,7 +1729,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (input->bssSize!=0)
         {
             innerBinGen->addRegion(ElfRegion64(input->bssSize, (const cxbyte*)nullptr,
-                      8, ".hsabss_global_agent", SHT_NOBITS, 0x900003,
+                      input->bssAlignment!=0 ? input->bssAlignment : 8,
+                      ".hsabss_global_agent", SHT_NOBITS, 0x900003,
                       0, 0, (hasRWData) ? -sectStart : 0, 0, false, true));
             innerBinSectionTable[ELFSECTID_BSS-ELFSECTID_START] = extraSectionIndex++;
         }
@@ -1738,7 +1739,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
                       8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003, 0, 0,
                       (hasRWData || input->bssSize!=0) ? -sectStart+input->bssSize : 0));
-            innerBinSectionTable[ELFSECTID_RODATA-ELFSECTID_START] =  extraSectionIndex++;
+            innerBinSectionTable[ELFSECTID_RODATA-ELFSECTID_START] = extraSectionIndex++;
         }
         if (kernelsNum != 0)
         {

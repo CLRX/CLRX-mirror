@@ -228,6 +228,7 @@ struct AmdCL2DisasmInput
     const cxbyte* globalData;   ///< global (constants for kernels) data
     size_t rwDataSize;  ///< global rw data size
     const cxbyte* rwData;   ///< global rw data data
+    size_t bssAlignment;    ///< alignment of global bss section
     size_t bssSize;         ///< size of global bss section
     size_t samplerInitSize;     ///< sampler init data size
     const cxbyte* samplerInit;  ///< sampler init data

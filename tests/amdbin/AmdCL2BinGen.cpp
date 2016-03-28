@@ -445,7 +445,7 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
 static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& binary,
             bool addBrig, bool samplerConfig)
 {
-    AmdCL2Input amdCL2Input;
+    AmdCL2Input amdCL2Input{ };
     cxuint index;
     const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
     for (index = 0; index < 11; index++)
@@ -469,6 +469,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
         amdCL2Input.globalData = innerBin.getGlobalData();
         amdCL2Input.rwDataSize = innerBin.getRwDataSize();
         amdCL2Input.rwData = innerBin.getRwData();
+        amdCL2Input.bssAlignment = innerBin.getBssAlignment();
         amdCL2Input.bssSize = innerBin.getBssSize();
         amdCL2Input.samplerConfig = samplerConfig;
         if (samplerConfig)
@@ -488,15 +489,6 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
             const Elf64_Rela& rela = innerBin.getGlobalDataRelaEntry(k);
             amdCL2Input.samplerOffsets.push_back(ULEV(rela.r_offset));
         }
-    }
-    else
-    {
-        amdCL2Input.globalDataSize = 0;
-        amdCL2Input.globalData = nullptr;
-        amdCL2Input.rwDataSize = 0;
-        amdCL2Input.rwData = nullptr;
-        amdCL2Input.bssSize = 0;
-        amdCL2Input.samplerConfig = false;
     }
     
     size_t kernelsNum = binary.getKernelInfosNum();

@@ -424,7 +424,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->globalData = nullptr;
     input->rwDataSize = 0;
     input->rwData = nullptr;
-    input->bssSize = 0;
+    input->bssAlignment = input->bssSize = 0;
     std::vector<std::pair<size_t, size_t> > sortedRelocs; // by offset
     const cxbyte* textPtr = nullptr;
     const size_t kernelInfosNum = binary.getKernelInfosNum();
@@ -441,6 +441,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         input->rwData = innerBin.getRwData();
         input->samplerInitSize = innerBin.getSamplerInitSize();
         input->samplerInit = innerBin.getSamplerInit();
+        input->bssAlignment = innerBin.getBssAlignment();
         input->bssSize = innerBin.getBssSize();
         // if no kernels and data
         if (kernelInfosNum==0)
@@ -1368,11 +1369,14 @@ void Disassembler::disassembleAmdCL2()
     
     if (doDumpData && amdCL2Input->bssSize)
     {
-        output.write(".section .bss\n", 14);
+        output.write(".section .bss align=", 20);
+        char buf[64];
+        size_t bufPos = itocstrCStyle<size_t>(amdCL2Input->bssAlignment, buf, 22);
+        buf[bufPos++] = '\n';
+        output.write(buf, bufPos);
         output.write(".bdata:\n", 8); /// symbol used by text relocations
         output.write("    .skip ", 10);
-        char buf[64];
-        size_t bufPos = itocstrCStyle<size_t>(amdCL2Input->bssSize, buf, 22);
+        bufPos = itocstrCStyle<size_t>(amdCL2Input->bssSize, buf, 22);
         buf[bufPos++] = '\n';
         output.write(buf, bufPos);
     }

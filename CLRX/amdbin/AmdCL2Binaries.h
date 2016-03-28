@@ -164,6 +164,7 @@ private:
     cxbyte* globalData; ///< global data content
     size_t rwDataSize;  ///< global rw data size
     cxbyte* rwData; ///< global rw data
+    size_t bssAlignment;
     size_t bssSize;
     size_t samplerInitSize;
     cxbyte* samplerInit;
@@ -207,6 +208,9 @@ public:
     /// get readwrite atomic data
     cxbyte* getRwData()
     { return rwData; }
+    
+    size_t getBssAlignment() const
+    { return bssAlignment; }
     
     size_t getBssSize() const
     { return bssSize; }
