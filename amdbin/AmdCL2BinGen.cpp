@@ -1400,8 +1400,10 @@ public:
     {
         Elf64_Rela rela;
         rela.r_addend = 0;
+        /* calculate first symbol for samplers (last symbols) */
         uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 2 +
-                ((input->rwDataSize!=0 && input->rwData!=nullptr) || input->bssSize!=0);
+                (input->rwDataSize!=0 && input->rwData!=nullptr) /* globaldata symbol */ +
+                (input->bssSize!=0) /* bss data symbol */;
         if (!input->samplerOffsets.empty())
             for (size_t sampOffset: input->samplerOffsets)
             {
@@ -1660,7 +1662,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         else // old binaries
             aclVersion = "AMD-COMP-LIB-v0.8 (0.0.326)";
     }
-    
     
     Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
     prepareKernelTempData(input, tempDatas);
