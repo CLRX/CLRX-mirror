@@ -72,8 +72,7 @@ struct Elf32Types
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
-    static const Word nobase = Word(0)-1;
-    static const Word zeroOffset = Word(0)-2;
+    static const Word nobase = Word(0)-1;   ///< address with zero base
 };
 
 /// ELF 32-bit types
@@ -89,8 +88,7 @@ struct Elf64Types
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
-    static const Word nobase = Word(0)-1;
-    static const Word zeroOffset = Word(0)-2;
+    static const Word nobase = Word(0)-1;   ///< address with zero base
 };
 
 /// ELF binary class
@@ -683,6 +681,7 @@ private:
     bool sizeComputed;
     bool addNullSym, addNullDynSym;
     bool addNullSection;
+    cxuint addrStartRegion;
     uint16_t shStrTab, strTab, dynStr;
     cxuint shdrTabRegion, phdrTabRegion;
     uint16_t sectionsNum;
@@ -690,6 +689,7 @@ private:
     ElfHeaderTemplate<Types> header;
     std::vector<ElfRegionTemplate<Types> > regions;
     std::unique_ptr<typename Types::Word[]> regionOffsets;
+    std::unique_ptr<typename Types::Word[]> regionAddresses;
     std::unique_ptr<cxuint[]> sectionRegions;
     std::vector<ElfProgramHeaderTemplate<Types> > progHeaders;
     std::vector<ElfSymbolTemplate<Types> > symbols;
@@ -699,9 +699,16 @@ private:
 public:
     ElfBinaryGenTemplate();
     /// construcrtor
+    /**
+     * \param header elf header template
+     * \param addNullSym if true then add null symbol to symbol table
+     * \param addNullDynSym if true then add null dynsymbol to dynsymbol table
+     * \param addNullSection if true then add null section to section table
+     * \param addrCountingFromRegion begins counting address from region with that index
+     */
     explicit ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& header,
             bool addNullSym = true, bool addNullDynSym = true,
-            bool addNullSection = true);
+            bool addNullSection = true, cxuint addrCountingFromRegion = 0);
     
     /// set elf header
     void setHeader(const ElfHeaderTemplate<Types>& header)

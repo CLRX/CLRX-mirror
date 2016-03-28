@@ -351,17 +351,19 @@ ElfRegionContent::~ElfRegionContent()
 
 template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate()
-        : sizeComputed(false), addNullSym(true), addNullDynSym(true),
-          addNullSection(true), shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0),
+        : sizeComputed(false), addNullSym(true), addNullDynSym(true), addNullSection(true),
+          addrStartRegion(0), shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0),
           phdrTabRegion(0)
 { }
 
 template<typename Types>
 ElfBinaryGenTemplate<Types>::ElfBinaryGenTemplate(const ElfHeaderTemplate<Types>& _header,
-            bool _addNullSym, bool _addNullDynSym, bool _addNullSection)
+            bool _addNullSym, bool _addNullDynSym, bool _addNullSection,
+            cxuint addrCountingFromRegion)
         : sizeComputed(false), addNullSym(_addNullSym), addNullDynSym(_addNullDynSym),
-          addNullSection(_addNullSection), shStrTab(0), strTab(0), dynStr(0),
-          shdrTabRegion(0), phdrTabRegion(0), header(_header)
+          addNullSection(_addNullSection),  addrStartRegion(addrCountingFromRegion),
+          shStrTab(0), strTab(0), dynStr(0), shdrTabRegion(0), phdrTabRegion(0),
+          header(_header)
 { }
 
 template<typename Types>
@@ -383,6 +385,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         throw Exception("Header entry region out of range");
     
     regionOffsets.reset(new typename Types::Word[regions.size()]);
+    regionAddresses.reset(new typename Types::Word[regions.size()]);
     size = sizeof(typename Types::Ehdr);
     sectionsNum = addNullSection; // if add null section
     for (const auto& region: regions)
@@ -391,6 +394,7 @@ void ElfBinaryGenTemplate<Types>::computeSize()
     sectionRegions.reset(new cxuint[sectionsNum+1]);
     sectionRegions[0] = UINT_MAX;
     cxuint sectionCount = 1;
+    typename Types::Word address = 0;
     
     for (const auto& sym: symbols)
         if (sym.sectionIndex >= sectionsNum)
@@ -404,11 +408,14 @@ void ElfBinaryGenTemplate<Types>::computeSize()
         ElfRegionTemplate<Types>& region = regions[i];
         if (region.align > 1)
         {   // fix alignment
-            if (region.align!=0 && (size&(region.align-1))!=0)
+            if ((size&(region.align-1))!=0)
                 size += region.align - (size&(region.align-1));
+            if ((address&(region.align-1))!=0)
+                address += region.align - (address&(region.align-1));
         }
         
         regionOffsets[i] = size;
+        regionAddresses[i] = address;
         // add region size
         if (region.type == ElfRegionType::PHDR_TABLE)
         {
@@ -477,6 +484,9 @@ void ElfBinaryGenTemplate<Types>::computeSize()
                 if (region.section.type != SHT_NOBITS)
                     region.size = size-regionOffsets[i];
             }
+            if (i >= addrStartRegion) // begin counting address from that region
+                address += region.size;
+            
             if (::strcmp(region.section.name, ".strtab") == 0)
                 strTab = sectionCount;
             else if (::strcmp(region.section.name, ".dynstr") == 0)
@@ -610,49 +620,40 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                  * addresses for program header. if not defined then get address base
                  * from ELF header */
                 if (progHeader.paddrBase == Types::nobase)
-                    SLEV(phdr.p_paddr, regionOffsets[progHeader.regionStart]);
+                    SLEV(phdr.p_paddr, regionAddresses[progHeader.regionStart]);
                 else if (progHeader.paddrBase != 0)
                     SLEV(phdr.p_paddr, progHeader.paddrBase +
-                                regionOffsets[progHeader.regionStart]);
+                                regionAddresses[progHeader.regionStart]);
                 else if (header.paddrBase != 0)
                     SLEV(phdr.p_paddr, header.paddrBase +
-                                regionOffsets[progHeader.regionStart]);
+                                regionAddresses[progHeader.regionStart]);
                 else
                     SLEV(phdr.p_paddr, 0);
                 
                 if (progHeader.vaddrBase == Types::nobase)
-                    SLEV(phdr.p_vaddr, regionOffsets[progHeader.regionStart]);
+                    SLEV(phdr.p_vaddr, regionAddresses[progHeader.regionStart]);
                 else if (progHeader.vaddrBase != 0)
                     SLEV(phdr.p_vaddr, progHeader.vaddrBase +
-                                regionOffsets[progHeader.regionStart]);
+                                regionAddresses[progHeader.regionStart]);
                 else if (header.vaddrBase != 0)
                     SLEV(phdr.p_vaddr, header.vaddrBase +
-                                regionOffsets[progHeader.regionStart]);
+                                regionAddresses[progHeader.regionStart]);
                 else
                     SLEV(phdr.p_vaddr, 0);
                 
+                // last region size for file - if nobits section then we assume zero size
+                const auto& lastReg = regions[progHeader.regionStart+
+                            progHeader.regionsNum-1];
+                uint64_t fileLastRegSize =(lastReg.type!=ElfRegionType::SECTION ||
+                    lastReg.section.type!=SHT_NOBITS) ? lastReg.size : 0;
                 /// fileSize - add offset of first region to simulate region alignment
-                typename Types::Word fileSize = regionOffsets[progHeader.regionStart];
-                typename Types::Word phSize = 0;
-                for (cxuint k = progHeader.regionStart; k < progHeader.regionStart+
-                            progHeader.regionsNum; k++)
-                {
-                    size_t toFill = 0;
-                    if (regions[k].type != ElfRegionType::SECTION ||
-                                regions[k].section.type != SHT_NOBITS)
-                    {   // add alignment
-                        if (regions[k].align!=0 && (fileSize&(regions[k].align-1))!=0)
-                            toFill = regions[k].align - (fileSize&(regions[k].align-1));
-                        fileSize += regions[k].size + toFill;
-                    }
-                    // add alignment to size
-                    toFill = 0;
-                    if (regions[k].align!=0 && (phSize&(regions[k].align-1))!=0)
-                        toFill = regions[k].align - (phSize&(regions[k].align-1));
-                    phSize += regions[k].size + toFill;
-                }
-                // first region offset is obsolete, just subtract
-                fileSize -= regionOffsets[progHeader.regionStart];
+                const typename Types::Word fileSize = regionOffsets[progHeader.regionStart+
+                        progHeader.regionsNum-1] + fileLastRegSize -
+                        regionOffsets[progHeader.regionStart];
+                const typename Types::Word phSize = regionAddresses[progHeader.regionStart+
+                        progHeader.regionsNum-1]+regions[progHeader.regionStart+
+                        progHeader.regionsNum-1].size -
+                        regionAddresses[progHeader.regionStart];
                 SLEV(phdr.p_filesz, phSize);
                 
                 if (progHeader.haveMemSize)
@@ -690,11 +691,11 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                     /* addrBase is base address of first section. if not defined
                      * use address base as virtual address base from elf header */
                     if (region2.section.addrBase==Types::nobase)
-                        SLEV(shdr.sh_addr, regionOffsets[j]);
+                        SLEV(shdr.sh_addr, regionAddresses[j]);
                     else if (region2.section.addrBase != 0)
-                        SLEV(shdr.sh_addr, region2.section.addrBase+regionOffsets[j]);
+                        SLEV(shdr.sh_addr, region2.section.addrBase+regionAddresses[j]);
                     else if (header.vaddrBase != 0)
-                        SLEV(shdr.sh_addr, header.vaddrBase+regionOffsets[j]);
+                        SLEV(shdr.sh_addr, header.vaddrBase+regionAddresses[j]);
                     else
                         SLEV(shdr.sh_addr, 0);
                     

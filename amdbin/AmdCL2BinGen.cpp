@@ -1694,8 +1694,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     std::unique_ptr<ElfBinaryGen64> innerBinGen;
     std::vector<CString> symbolNamePool;
-    uint64_t sectStart = sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr)*(1 + hasGlobalData +
-                (input->bssSize!=0 || hasRWData));
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
@@ -1715,14 +1713,17 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                 (hasRWData || hasGlobalData) /* rela.hsatext */;
         cxuint globalDataId = 1 + (hasRWData) + (input->bssSize!=0);
         cxuint textId = 1 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
+        /* in innerbin we do not add null symbol, we count address for program headers
+         * and section from first section */
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
-                        UINT_MAX, 0, 0 }, false));
+                        UINT_MAX, 0, 0 }, false, true, true, 1));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
         
         if (hasRWData)
         {   // atomic data section
             innerBinGen->addRegion(ElfRegion64(input->rwDataSize, input->rwData,
-                      8, ".hsadata_global_agent", SHT_PROGBITS, 0x900003));
+                      8, ".hsadata_global_agent", SHT_PROGBITS, 0x900003, 0, 0,
+                      Elf64Types::nobase));
             innerBinSectionTable[ELFSECTID_DATA-ELFSECTID_START] =
                     extraSectionIndex++;
         }
@@ -1731,21 +1732,21 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(input->bssSize, (const cxbyte*)nullptr,
                       input->bssAlignment!=0 ? input->bssAlignment : 8,
                       ".hsabss_global_agent", SHT_NOBITS, 0x900003,
-                      0, 0, (hasRWData) ? -sectStart : 0, 0, true));
+                      0, 0, Elf64Types::nobase, 0, true));
             innerBinSectionTable[ELFSECTID_BSS-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasGlobalData)
         {// global data section
             innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
                       8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003, 0, 0,
-                      (hasRWData || input->bssSize!=0) ? -sectStart+input->bssSize : 0));
+                      Elf64Types::nobase));
             innerBinSectionTable[ELFSECTID_RODATA-ELFSECTID_START] = extraSectionIndex++;
         }
         if (kernelsNum != 0)
         {
             innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, 
-                      (input->bssSize==0) ? -0x100ULL : Elf64Types::nobase, 0));
+                      Elf64Types::nobase, 0));
             innerBinSectionTable[ELFSECTID_TEXT-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasSamplers)
@@ -1811,13 +1812,12 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             if (hasGlobalData)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, textSectionReg, 1,
-                        true, 0, (hasRWData) ? -sectStart : 
-                        (input->bssSize!=0 ? input->bssSize-sectStart : 0)
+                        true, 0, Elf64Types::nobase
                         /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });
                 textSectionReg++;
             }
             innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1,
-                    true, 0, (input->bssSize!=0) ? Elf64Types::nobase : -0x100ULL, 0 });
+                    true, 0, Elf64Types::nobase, 0 });
         }
     }
     
