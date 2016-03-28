@@ -32,8 +32,6 @@
 #include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/amdbin/AmdCL2BinGen.h>
 
-/* TODO: add .hsabss_global_agent */
-
 using namespace CLRX;
 
 static const cxuint innerBinSectonTableLen = AMDCL2SECTID_MAX+1-ELFSECTID_START;
@@ -1592,12 +1590,12 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             samplerMask[i] = true;
         }
     
-    if (input->bssSize!=0)
-        innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsabss_global_agent",
-              bssSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     if (input->rwDataSize!=0 && input->rwData!=nullptr)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_global_agent",
               atomicSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+    if (input->bssSize!=0)
+        innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsabss_global_agent",
+              bssSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     if (input->globalDataSize!=0 && input->globalData!=nullptr)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_readonly_agent",
               globalSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
@@ -1633,8 +1631,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     if ((hasGlobalData || hasRWData || hasSamplers) && !newBinaries)
         throw Exception("Old driver binaries doesn't support "
                         "global/atomic data or samplers");
-    if (hasRWData && input->bssSize!=0)
-        throw Exception("Unsupported by this generator!");
     
     if (newBinaries)
     {
@@ -1797,7 +1793,13 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if (kernelsNum != 0)
         {
             cxuint textSectionReg = 1;
-            if (hasRWData)
+            if (hasRWData && input->bssSize!=0)
+            {
+                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 2,
+                                true, 0, 0, 0 });
+                textSectionReg += 2;
+            }
+            else if (hasRWData)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
                                 true, 0, 0, 0 });
@@ -1810,11 +1812,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                 textSectionReg++;
             }
             if (hasGlobalData)
-            {
+            {   // textSectionReg - now is global data section
                 innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, textSectionReg, 1,
                         true, 0, Elf64Types::nobase
                         /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });
-                textSectionReg++;
+                textSectionReg++; // now is text section index
             }
             innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1,
                     true, 0, Elf64Types::nobase, 0 });

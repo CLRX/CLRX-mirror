@@ -48,6 +48,7 @@ static const char* origBinaryFiles[] =
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/nokernels.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/RegionGrowingSegmentation.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers2.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers4.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch-15_7.clo",

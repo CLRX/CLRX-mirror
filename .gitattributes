@@ -233,6 +233,8 @@ tests/amdbin/amdcl2bins/BinarySearchDeviceSideEnqueue_Kernels.clo.reconf -text s
 tests/amdbin/amdcl2bins/BinarySearchDeviceSideEnqueue_Kernels.clo.regen -text svneol=unset#application/x-executable
 tests/amdbin/amdcl2bins/ExtractPrimes_Kernels.clo.reconf -text svneol=unset#application/x-executable
 tests/amdbin/amdcl2bins/ExtractPrimes_Kernels.clo.regen -text svneol=unset#application/x-executable
+tests/amdbin/amdcl2bins/RegionGrowingSegmentation.clo.reconf -text svneol=unset#application/x-executable
+tests/amdbin/amdcl2bins/RegionGrowingSegmentation.clo.regen -text svneol=unset#application/x-executable
 tests/amdbin/amdcl2bins/alltypes-15_7.clo.reconf -text svneol=unset#application/x-executable
 tests/amdbin/amdcl2bins/alltypes-15_7.clo.regen -text svneol=unset#application/x-executable
 tests/amdbin/amdcl2bins/alltypes.clo.reconf -text svneol=unset#application/x-executable
