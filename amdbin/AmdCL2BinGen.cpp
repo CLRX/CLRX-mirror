@@ -1731,7 +1731,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(input->bssSize, (const cxbyte*)nullptr,
                       input->bssAlignment!=0 ? input->bssAlignment : 8,
                       ".hsabss_global_agent", SHT_NOBITS, 0x900003,
-                      0, 0, (hasRWData) ? -sectStart : 0, 0, false, true));
+                      0, 0, (hasRWData) ? -sectStart : 0, 0, true));
             innerBinSectionTable[ELFSECTID_BSS-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasGlobalData)
@@ -1745,7 +1745,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         {
             innerBinGen->addRegion(ElfRegion64(innerTextGen.size(), &innerTextGen, 256,
                       ".hsatext", SHT_PROGBITS, 0xc00007, 0, 0, 
-                      (input->bssSize==0) ? -0x100ULL : 0, 0, input->bssSize!=0));
+                      (input->bssSize==0) ? -0x100ULL : Elf64Types::nobase, 0));
             innerBinSectionTable[ELFSECTID_TEXT-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasSamplers)
@@ -1799,25 +1799,25 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             if (hasRWData)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
-                                true, false, false, 0, 0, 0 });
+                                true, 0, 0, 0 });
                 textSectionReg++;
             }
             else if (input->bssSize!=0)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
-                                true, false, false, 0, 0, 0 });
+                                true, 0, 0, 0 });
                 textSectionReg++;
             }
             if (hasGlobalData)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+2, PF_W|PF_R, textSectionReg, 1,
-                        true, false, false, 0, (hasRWData) ? -sectStart : 
+                        true, 0, (hasRWData) ? -sectStart : 
                         (input->bssSize!=0 ? input->bssSize-sectStart : 0)
                         /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });
                 textSectionReg++;
             }
             innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1,
-                            true, false, (input->bssSize!=0), 0, -0x100ULL, 0 });
+                    true, 0, (input->bssSize!=0) ? Elf64Types::nobase : -0x100ULL, 0 });
         }
     }
     

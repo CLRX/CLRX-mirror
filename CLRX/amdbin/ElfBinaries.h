@@ -72,6 +72,8 @@ struct Elf32Types
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
+    static const Word nobase = Word(0)-1;
+    static const Word zeroOffset = Word(0)-2;
 };
 
 /// ELF 32-bit types
@@ -87,6 +89,8 @@ struct Elf64Types
     static const cxbyte ELFCLASS;   ///< ELF class
     static const cxuint bitness;    ///< ELF bitness
     static const char* bitName;     ///< bitness name
+    static const Word nobase = Word(0)-1;
+    static const Word zeroOffset = Word(0)-2;
 };
 
 /// ELF binary class
@@ -495,7 +499,6 @@ struct ElfRegionTemplate
         uint32_t info;  ///< section info
         typename Types::Word addrBase;   ///< section address base
         typename Types::Word entSize;    ///< entries size
-        bool offsetAsAddress;
         bool zeroOffset;
     } section;  ///< section structure
     
@@ -532,13 +535,11 @@ struct ElfRegionTemplate
               typename Types::Word _align, const char* _name, uint32_t _type,
               typename Types::SectionFlags _flags, uint32_t _link = 0, uint32_t _info = 0,
               typename Types::Word _addrBase = 0,
-              typename Types::Word _entSize = 0, bool _offAsAddr = false,
-              bool _zeroOffset = false)
+              typename Types::Word _entSize = 0, bool _zeroOffset = false)
             : type(ElfRegionType::SECTION), dataFromPointer(true), size(_size),
               align(_align), data(_data)
     {
-        section = {_name, _type, _flags, _link, _info, _addrBase, _entSize, _offAsAddr,
-                _zeroOffset};
+        section = {_name, _type, _flags, _link, _info, _addrBase, _entSize, _zeroOffset};
     }
     
     /// constructor for section with generator
@@ -546,13 +547,11 @@ struct ElfRegionTemplate
               typename Types::Word _align, const char* inName, uint32_t _type,
               typename Types::SectionFlags _flags, uint32_t _link = 0, uint32_t _info = 0,
               typename Types::Word _addrBase = 0,
-              typename Types::Word _entSize = 0, bool _offAsAddr = false,
-              bool _zeroOffset = false)
+              typename Types::Word _entSize = 0, bool _zeroOffset = false)
             : type(ElfRegionType::SECTION), dataFromPointer(false), size(_size),
               align(_align), dataGen(_data)
     {
-        section = {inName, _type, _flags, _link, _info, _addrBase, _entSize, _offAsAddr,
-                _zeroOffset};
+        section = {inName, _type, _flags, _link, _info, _addrBase, _entSize, _zeroOffset};
     }
     /// constructor for external section (BinSection)
     /**
@@ -621,8 +620,6 @@ struct ElfProgramHeaderTemplate
     cxuint regionStart; ///< number of first region which is in program header data
     cxuint regionsNum;  ///< number of regions whose is in program header data
     bool haveMemSize;   ///< true if program header has memory size
-    bool offsetAsPAddress;   ///< offset as address
-    bool offsetAsVAddress;   ///< offset as address
     typename Types::Word paddrBase;  ///< paddr base
     typename Types::Word vaddrBase;  ///< vaddr base
     typename Types::Word memSize;    ///< size in memory

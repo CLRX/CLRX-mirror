@@ -609,7 +609,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 /* paddrBase and vaddrBase is base to program header virtual and physical
                  * addresses for program header. if not defined then get address base
                  * from ELF header */
-                if (progHeader.offsetAsPAddress)
+                if (progHeader.paddrBase == Types::nobase)
                     SLEV(phdr.p_paddr, regionOffsets[progHeader.regionStart]);
                 else if (progHeader.paddrBase != 0)
                     SLEV(phdr.p_paddr, progHeader.paddrBase +
@@ -620,7 +620,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                 else
                     SLEV(phdr.p_paddr, 0);
                 
-                if (progHeader.offsetAsVAddress)
+                if (progHeader.vaddrBase == Types::nobase)
                     SLEV(phdr.p_vaddr, regionOffsets[progHeader.regionStart]);
                 else if (progHeader.vaddrBase != 0)
                     SLEV(phdr.p_vaddr, progHeader.vaddrBase +
@@ -689,7 +689,7 @@ void ElfBinaryGenTemplate<Types>::generate(FastOutputBuffer& fob)
                                 regionOffsets[j] : 0);
                     /* addrBase is base address of first section. if not defined
                      * use address base as virtual address base from elf header */
-                    if (region2.section.offsetAsAddress)
+                    if (region2.section.addrBase==Types::nobase)
                         SLEV(shdr.sh_addr, regionOffsets[j]);
                     else if (region2.section.addrBase != 0)
                         SLEV(shdr.sh_addr, region2.section.addrBase+regionOffsets[j]);
