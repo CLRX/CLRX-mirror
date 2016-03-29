@@ -78,6 +78,8 @@ enum: Flags
 };
 
 class Assembler;
+class AsmExpression;
+struct AsmRelocation;
 
 /// assembler format exception
 class AsmFormatException: public Exception
@@ -143,6 +145,8 @@ public:
            const char* stmtPlace, const char* linePtr) = 0;
     /// handle labels
     virtual void handleLabel(const CString& label);
+    
+    virtual bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc);
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream

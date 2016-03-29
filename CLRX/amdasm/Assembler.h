@@ -336,6 +336,15 @@ struct AsmExprTarget
     }
 };
 
+struct AsmRelocation
+{
+    cxuint sectionId;
+    size_t offset;
+    RelocType type;
+    AsmSymbolEntry* symbol;
+    uint64_t addend;
+};
+
 /// assembler expression class
 class AsmExpression: public NonCopyableAndNonMovable
 {
@@ -562,6 +571,7 @@ private:
     std::vector<AsmSection> sections;
     AsmSymbolMap symbolMap;
     std::unordered_set<AsmSymbolEntry*> symbolSnapshots;
+    std::vector<AsmRelocation> relocations;
     MacroMap macroMap;
     KernelMap kernelMap;
     std::vector<AsmKernel> kernels;
