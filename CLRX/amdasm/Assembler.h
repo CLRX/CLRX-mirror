@@ -722,12 +722,17 @@ private:
     bool isAddressableSection() const
     {
         return currentSection==ASMSECT_ABS ||
-                    (sections[currentSection].flags & ASMSECT_ADDRESSABLE);
+                    (sections[currentSection].flags & ASMSECT_ADDRESSABLE) != 0;
     }
     bool isWriteableSection() const
     {
         return currentSection!=ASMSECT_ABS &&
-                (sections[currentSection].flags & ASMSECT_WRITEABLE);
+                (sections[currentSection].flags & ASMSECT_WRITEABLE) != 0;
+    }
+    bool isResolvableSection() const
+    {
+        return currentSection==ASMSECT_ABS ||
+                (sections[currentSection].flags & ASMSECT_UNRESOLVABLE) == 0;
     }
     
 protected:    
