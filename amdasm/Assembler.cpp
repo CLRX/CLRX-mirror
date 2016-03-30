@@ -822,9 +822,11 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.value = value;
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
-    symEntry.second.hasValue = true;
+    symEntry.second.hasValue = isResolvableSection(sectionId);
     symEntry.second.regRange = false;
     symEntry.second.base = false;
+    if (!symEntry.second.hasValue) // if not resolved we just return
+        return true; // no error
     bool good = true;
     
     // resolve value of pending symbols
@@ -867,8 +869,10 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         {
                             curSymEntry.second.value = value;
                             curSymEntry.second.sectionId = sectionId;
-                            curSymEntry.second.hasValue = true;
+                            curSymEntry.second.hasValue = isResolvableSection(sectionId);
                             symbolStack.push(std::make_pair(&curSymEntry, 0));
+                            if (!curSymEntry.second.hasValue)
+                                continue;
                             curSymEntry.second.resolving = true;
                         }
                         // otherwise we ignore circular dependencies
@@ -1684,7 +1688,7 @@ bool Assembler::assemble()
                 // move symbol value from next local label into previous local label
                 // clearOccurrences - obsolete - back local labels are undefined!
                 prevLRes.first->second.value = nextLRes.first->second.value;
-                prevLRes.first->second.hasValue = true;
+                prevLRes.first->second.hasValue = isResolvableSection();
                 prevLRes.first->second.sectionId = currentSection;
                 /// make forward symbol of label as undefined
                 nextLRes.first->second.hasValue = false;
