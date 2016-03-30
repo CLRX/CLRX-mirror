@@ -33,6 +33,7 @@
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
+#include <CLRX/amdbin/AmdCL2BinGen.h>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdasm/Commons.h>
 
@@ -63,7 +64,8 @@ enum: cxuint
 {
     ASMSECT_ABS = UINT_MAX,  ///< absolute section id
     ASMSECT_NONE = UINT_MAX,  ///< none section id
-    ASMKERN_GLOBAL = UINT_MAX ///< no kernel, global space
+    ASMKERN_GLOBAL = UINT_MAX, ///< no kernel, global space
+    ASMKERN_INNER = UINT_MAX-1 ///< no kernel, inner global space
 };
 
 enum: Flags
@@ -146,7 +148,7 @@ public:
            const char* stmtPlace, const char* linePtr) = 0;
     /// handle labels
     virtual void handleLabel(const CString& label);
-    
+    /// resolve relocation for specified expression
     virtual bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
                    bool& withReloc);
     /// prepare binary for use
@@ -246,6 +248,77 @@ public:
     void writeBinary(Array<cxbyte>& array) const;
     /// get output structure pointer
     const AmdInput* getOutput() const
+    { return &output; }
+};
+
+/// handles AMD OpenCL 2.0 binary format
+class AsmAmdCL2Handler: public AsmFormatHandler
+{
+private:
+    typedef std::unordered_map<CString, cxuint> SectionMap;
+    friend struct AsmAmdCL2PseudoOps;
+    AmdCL2Input output;
+    struct Section
+    {
+        cxuint kernelId;
+        AsmSectionType type;
+        cxuint elfBinSectId;
+        const char* name;
+        uint32_t extraId;
+    };
+    struct Kernel
+    {
+        cxuint stubSection;
+        cxuint setupSection;
+        cxuint metadataSection;
+        cxuint isaMetadataSection;
+        cxuint configSection;
+        cxuint codeSection;
+        SectionMap extraSectionMap;
+        cxuint extraSectionCount;
+        cxuint savedSection;
+        std::unordered_set<CString> argNamesSet;
+        cxuint allocRegs[2];
+        Flags allocRegFlags;
+    };
+    std::vector<Section> sections;
+    // use pointer to prevents copying Kernel objects
+    std::vector<Kernel*> kernelStates;
+    SectionMap extraSectionMap;
+    cxuint rodataSection; // global inner
+    cxuint dataSection; // global inner
+    cxuint bssSection; // global inner
+    cxuint samplerInitSection;
+    cxuint savedSection;
+    cxuint extraSectionCount;
+    
+    void saveCurrentSection();
+    void restoreCurrentAllocRegs();
+    void saveCurrentAllocRegs();
+public:
+    /// constructor
+    explicit AsmAmdCL2Handler(Assembler& assembler);
+    /// destructor
+    ~AsmAmdCL2Handler();
+    
+    cxuint addKernel(const char* kernelName);
+    cxuint addSection(const char* sectionName, cxuint kernelId);
+    
+    cxuint getSectionId(const char* sectionName) const;
+    void setCurrentKernel(cxuint kernel);
+    void setCurrentSection(cxuint sectionId);
+    
+    SectionInfo getSectionInfo(cxuint sectionId) const;
+    bool parsePseudoOp(const CString& firstName,
+           const char* stmtPlace, const char* linePtr);
+    
+    bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
+                   bool& withReloc);
+    bool prepareBinary();
+    void writeBinary(std::ostream& os) const;
+    void writeBinary(Array<cxbyte>& array) const;
+    /// get output structure pointer
+    const AmdCL2Input* getOutput() const
     { return &output; }
 };
 
