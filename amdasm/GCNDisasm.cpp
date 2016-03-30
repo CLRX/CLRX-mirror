@@ -2443,7 +2443,24 @@ void GCNDisassembler::disassemble()
         const size_t oldPos = pos;
         cxbyte gcnEncoding = GCNENC_NONE;
         const uint32_t insnCode = ULEV(codeWords[pos++]);
+        if (insnCode == 0)
+        {   /* fix for GalliumCOmpute disassemblying (assembler doesn't accep 
+             * with two scalar operands */
+            size_t count;
+            for (count = 1; pos < codeWordsNum && codeWords[pos]==0; count++, pos++);
+            // put to output
+            char* buf = output.reserve(40);
+            size_t bufPos = 0;
+            memcpy(buf+bufPos, ".fill ", 6);
+            bufPos += 6;
+            bufPos += itocstrCStyle(count, buf+bufPos, 20);
+            memcpy(buf+bufPos, ", 4, 0\n", 7);
+            bufPos += 7;
+            output.forward(bufPos);
+            continue;
+        }
         uint32_t insnCode2 = 0;
+        
         
         /* determine GCN encoding */
         if ((insnCode & 0x80000000U) != 0)

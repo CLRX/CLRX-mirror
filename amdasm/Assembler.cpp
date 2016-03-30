@@ -1815,13 +1815,14 @@ bool Assembler::assemble()
             if (!symEntry.second.occurrencesInExprs.empty())
                 for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
                 {
+                    bool withReloc = false;
                     AsmRelocation reloc;
                     // check whether occurence is resolvable by relocation
                     if (formatHandler==nullptr || !formatHandler->resolveRelocation(
-                                occur.expression, &reloc))
+                                occur.expression, &reloc, withReloc))
                         printError(occur.expression->getSourcePos(),(std::string(
                             "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
-                    else    // add resolved relocation
+                    else if (withReloc)    // add resolved relocation
                         relocations.push_back(reloc);
                 }
     

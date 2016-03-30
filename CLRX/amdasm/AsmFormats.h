@@ -147,7 +147,8 @@ public:
     /// handle labels
     virtual void handleLabel(const CString& label);
     
-    virtual bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc);
+    virtual bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
+                   bool& withReloc);
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
