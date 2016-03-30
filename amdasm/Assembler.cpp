@@ -31,6 +31,8 @@
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
 
+// TODO: handle unresolvable sections, fix invalidate occurrences in expressions
+
 using namespace CLRX;
 
 const cxbyte CLRX::tokenCharTable[96] =
@@ -351,7 +353,7 @@ void AsmSymbol::clearOccurrencesInExpr()
             occur.expression = nullptr;
             delete occurExpr;
             // subtract number of removed elements from counter
-            i -= oldSize-occurrencesInExprs.size(); 
+            i -= oldSize-occurrencesInExprs.size();
         }
     }
     occurrencesInExprs.clear();
@@ -1680,8 +1682,7 @@ bool Assembler::assemble()
                 /* resolve forward symbol of label now */
                 assert(setSymbol(*nextLRes.first, currentOutPos, currentSection));
                 // move symbol value from next local label into previous local label
-                // clearOccurrences - do not resolve later previous value
-                prevLRes.first->second.clearOccurrencesInExpr();
+                // clearOccurrences - obsolete - back local labels are undefined!
                 prevLRes.first->second.value = nextLRes.first->second.value;
                 prevLRes.first->second.hasValue = true;
                 prevLRes.first->second.sectionId = currentSection;

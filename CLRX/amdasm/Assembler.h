@@ -734,6 +734,11 @@ private:
         return currentSection==ASMSECT_ABS ||
                 (sections[currentSection].flags & ASMSECT_UNRESOLVABLE) == 0;
     }
+    bool isResolvableSection(cxuint sectionId) const
+    {
+        return sectionId==ASMSECT_ABS ||
+                (sections[sectionId].flags & ASMSECT_UNRESOLVABLE) == 0;
+    }
     
 protected:    
     /// helper for testing
