@@ -147,8 +147,9 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         /// referfence entry is available and unchangeable by whole lifecycle of section map
         section.name = out.first->first.c_str();
     }
-    else if (kernelId == ASMKERN_INNER)
+    else // add inner section (even if we inside kernel)
     {
+        kernelId = section.kernelId = ASMKERN_INNER;
         auto out = innerExtraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
@@ -158,8 +159,6 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         /// referfence entry is available and unchangeable by whole lifecycle of section map
         section.name = out.first->first.c_str();
     }
-    else // not in kernel
-        throw AsmFormatException("Extra section can be added in main or inner binary");
     
     sections.push_back(section);
     
@@ -182,18 +181,18 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
             return it->second;
         return ASMSECT_NONE;
     }
-    if (assembler.currentKernel == ASMKERN_INNER)
+    else 
     {
+        if (assembler.currentKernel != ASMKERN_INNER)
+        {
+            const Kernel& kernelState = *kernelStates[assembler.currentKernel];
+            if (::strcmp(sectionName, ".text") == 0)
+                return kernelState.codeSection;
+        }
+        
         SectionMap::const_iterator it = innerExtraSectionMap.find(sectionName);
         if (it != innerExtraSectionMap.end())
             return it->second;
-        return ASMSECT_NONE;
-    }
-    else
-    {
-        const Kernel& kernelState = *kernelStates[assembler.currentKernel];
-        if (::strcmp(sectionName, ".text") == 0)
-            return kernelState.codeSection;
         return ASMSECT_NONE;
     }
     return 0;
@@ -209,7 +208,7 @@ void AsmAmdCL2Handler::setCurrentKernel(cxuint kernel)
     assembler.currentKernel = kernel;
     if (kernel == ASMKERN_GLOBAL)
         assembler.currentSection = savedSection;
-    else if (kernel == ASMKERN_GLOBAL)
+    else if (kernel == ASMKERN_INNER)
         assembler.currentSection = innerSavedSection; // inner section
     else // kernel
         assembler.currentSection = kernelStates[kernel]->savedSection;
@@ -230,8 +229,226 @@ void AsmAmdCL2Handler::setCurrentSection(cxuint sectionId)
 
 AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId) const
 {
-    return { };
+    if (sectionId >= sections.size())
+        throw AsmFormatException("Section doesn't exists");
+    AsmFormatHandler::SectionInfo info;
+    info.type = sections[sectionId].type;
+    info.flags = 0;
+    if (info.type == AsmSectionType::CODE)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE;
+    else if (info.type == AsmSectionType::AMDCL2_BSS ||
+            info.type == AsmSectionType::AMDCL2_RWDATA ||
+            info.type == AsmSectionType::DATA)
+        // global data, rwdata and bss are relocatable sections (we set unresolvable flag)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE |
+                    ASMSECT_UNRESOLVABLE;
+    else if (info.type != AsmSectionType::CONFIG)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
+    info.name = sections[sectionId].name;
+    return info;
 }
+
+namespace CLRX
+{
+
+bool AsmAmdCL2PseudoOps::checkPseudoOpName(const CString& string)
+{
+    if (string.empty() || string[0] != '.')
+        return false;
+    const size_t pseudoOp = binaryFind(amdCL2PseudoOpNamesTbl, amdCL2PseudoOpNamesTbl +
+                sizeof(amdCL2PseudoOpNamesTbl)/sizeof(char*), string.c_str()+1,
+               CStringLess()) - amdCL2PseudoOpNamesTbl;
+    return pseudoOp < sizeof(amdCL2PseudoOpNamesTbl)/sizeof(char*);
+}
+
+void AsmAmdCL2PseudoOps::setAclVersion(AsmAmdCL2Handler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string out;
+    if (!asmr.parseString(out, linePtr))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.aclVersion = out;
+}
+
+void AsmAmdCL2PseudoOps::setCompileOptions(AsmAmdCL2Handler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    std::string out;
+    if (!asmr.parseString(out, linePtr))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.compileOptions = out;
+}
+
+void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
+         const char* pseudoOpPlace, const char* linePtr, AmdCL2ConfigValueTarget target)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    /*if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }*/
+    
+    skipSpacesToEnd(linePtr, end);
+    const char* valuePlace = linePtr;
+    uint64_t value = BINGEN_NOTSUPPLIED;
+    bool good = getAbsoluteValueArg(asmr, value, linePtr, true);
+    /* ranges checking */
+    if (good)
+    {
+        switch(target)
+        {
+            case AMDCL2CVAL_SGPRSNUM:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                if (value > maxSGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Used SGPRs number out of range (0-%u)", maxSGPRsNum);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case AMDCL2CVAL_VGPRSNUM:
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                cxuint maxVGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
+                if (value > maxVGPRsNum)
+                {
+                    char buf[64];
+                    snprintf(buf, 64, "Used VGPRs number out of range (0-%u)", maxVGPRsNum);
+                    asmr.printError(valuePlace, buf);
+                    good = false;
+                }
+                break;
+            }
+            case AMDCL2CVAL_EXCEPTIONS:
+                asmr.printWarningForRange(7, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0x7f;
+                break;
+            case AMDCL2CVAL_FLOATMODE:
+                asmr.printWarningForRange(8, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 0xff;
+                break;
+            case AMDCL2CVAL_PRIORITY:
+                asmr.printWarningForRange(2, value,
+                                  asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                value &= 3;
+                break;
+            case AMDCL2CVAL_LOCALSIZE:
+                if (value > 32768)
+                {
+                    asmr.printError(valuePlace, "LocalSize out of range (0-32768)");
+                    good = false;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    // set value
+    switch(target)
+    {
+        case AMDCL2CVAL_SGPRSNUM:
+            config.usedSGPRsNum = value;
+            break;
+        case AMDCL2CVAL_VGPRSNUM:
+            config.usedVGPRsNum = value;
+            break;
+        case AMDCL2CVAL_PGMRSRC1:
+            config.pgmRSRC1 = value;
+            break;
+        case AMDCL2CVAL_PGMRSRC2:
+            config.pgmRSRC2 = value;
+            break;
+        case AMDCL2CVAL_FLOATMODE:
+            config.floatMode = value;
+            break;
+        case AMDCL2CVAL_LOCALSIZE:
+            config.localSize = value;
+            break;
+        case AMDCL2CVAL_SCRATCHBUFFER:
+            config.scratchBufferSize = value;
+            break;
+        case AMDCL2CVAL_PRIORITY:
+            config.priority = value;
+            break;
+        case AMDCL2CVAL_EXCEPTIONS:
+            config.exceptions = value;
+            break;
+        default:
+            break;
+    }
+}
+
+void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
+         const char* pseudoOpPlace, const char* linePtr, AmdCL2ConfigValueTarget target)
+{
+    Assembler& asmr = handler.assembler;
+    
+    /*if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }*/
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    switch(target)
+    {
+        case AMDCL2CVAL_DEBUGMODE:
+            config.debugMode = true;
+            break;
+        case AMDCL2CVAL_DX10CLAMP:
+            config.dx10Clamp = true;
+            break;
+        case AMDCL2CVAL_IEEEMODE:
+            config.ieeeMode = true;
+            break;
+        case AMDCL2CVAL_PRIVMODE:
+            config.privilegedMode = true;
+            break;
+        case AMDCL2CVAL_TGSIZE:
+            config.tgSize = true;
+            break;
+        case AMDCL2CVAL_USESETUP:
+            config.useSetup = true;
+            break;
+        case AMDCL2CVAL_USESIZES:
+            config.useSizes = true;
+            break;
+        case AMDCL2CVAL_USEENQUEUE:
+            config.useEnqueue = true;
+            break;
+        default:
+            break;
+    }
+}
+
+};
 
 bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
        const char* stmtPlace, const char* linePtr)
@@ -243,28 +460,38 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
     switch(pseudoOp)
     {
         case AMDCL2OP_ACL_VERSION:
+            AsmAmdCL2PseudoOps::setAclVersion(*this, linePtr);
             break;
         case AMDCL2OP_ARG:
             break;
         case AMDCL2OP_BSSDATA:
             break;
         case AMDCL2OP_COMPILE_OPTIONS:
+            AsmAmdCL2PseudoOps::setCompileOptions(*this, linePtr);
             break;
         case AMDCL2OP_CONFIG:
             break;
         case AMDCL2OP_CWS:
             break;
         case AMDCL2OP_DEBUGMODE:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_DEBUGMODE);
             break;
         case AMDCL2OP_DIMS:
             break;
         case AMDCL2OP_DRIVER_VERSION:
             break;
         case AMDCL2OP_DX10CLAMP:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_DX10CLAMP);
             break;
         case AMDCL2OP_EXCEPTIONS:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_EXCEPTIONS);
             break;
         case AMDCL2OP_FLOATMODE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_FLOATMODE);
             break;
         case AMDCL2OP_GET_DRIVER_VERSION:
             break;
@@ -277,16 +504,26 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_ISAMETADATA:
             break;
         case AMDCL2OP_LOCALSIZE:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_LOCALSIZE);
             break;
         case AMDCL2OP_METADATA:
             break;
         case AMDCL2OP_PRIVMODE:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_PRIVMODE);
             break;
         case AMDCL2OP_PGMRSRC1:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_PGMRSRC1);
             break;
         case AMDCL2OP_PGMRSRC2:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_PGMRSRC2);
             break;
         case AMDCL2OP_PRIORITY:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_PRIORITY);
             break;
         case AMDCL2OP_RWDATA:
             break;
@@ -297,22 +534,36 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_SAMPLERRELOC:
             break;
         case AMDCL2OP_SCRATCHBUFFER:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_SCRATCHBUFFER);
             break;
         case AMDCL2OP_SETUPARGS:
             break;
         case AMDCL2OP_SGPRSNUM:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_SGPRSNUM);
             break;
         case AMDCL2OP_STUB:
             break;
         case AMDCL2OP_TGSIZE:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_TGSIZE);
             break;
         case AMDCL2OP_USEENQUEUE:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_USEENQUEUE);
             break;
         case AMDCL2OP_USESETUP:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_USESETUP);
             break;
         case AMDCL2OP_USESIZES:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_USESIZES);
             break;
         case AMDCL2OP_VGPRSNUM:
+            AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_VGPRSNUM);
             break;
         default:
             return false;
@@ -333,8 +584,12 @@ bool AsmAmdCL2Handler::prepareBinary()
 
 void AsmAmdCL2Handler::writeBinary(std::ostream& os) const
 {
+    AmdCL2GPUBinGenerator binGenerator(&output);
+    binGenerator.generate(os);
 }
 
 void AsmAmdCL2Handler::writeBinary(Array<cxbyte>& array) const
 {
+    AmdCL2GPUBinGenerator binGenerator(&output);
+    binGenerator.generate(array);
 }

@@ -301,7 +301,7 @@ enum GalliumConfigValueTarget
     GALLIUMCVAL_DEBUGMODE,
     GALLIUMCVAL_DX10CLAMP,
     GALLIUMCVAL_PRIVMODE,
-    GALLIUMCVAL_EXCEPTIONS,
+    GALLIUMCVAL_EXCEPTIONS
 };
 
 struct CLRX_INTERNAL AsmGalliumPseudoOps: AsmPseudoOps
@@ -427,9 +427,38 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
                       const char* linePtr);
 };
 
+enum AmdCL2ConfigValueTarget
+{
+    AMDCL2CVAL_SGPRSNUM,
+    AMDCL2CVAL_VGPRSNUM,
+    AMDCL2CVAL_PGMRSRC1,
+    AMDCL2CVAL_PGMRSRC2,
+    AMDCL2CVAL_IEEEMODE,
+    AMDCL2CVAL_FLOATMODE,
+    AMDCL2CVAL_LOCALSIZE,
+    AMDCL2CVAL_SCRATCHBUFFER,
+    AMDCL2CVAL_PRIORITY,
+    AMDCL2CVAL_TGSIZE,
+    AMDCL2CVAL_DEBUGMODE,
+    AMDCL2CVAL_DX10CLAMP,
+    AMDCL2CVAL_PRIVMODE,
+    AMDCL2CVAL_EXCEPTIONS,
+    AMDCL2CVAL_USESIZES,
+    AMDCL2CVAL_USESETUP,
+    AMDCL2CVAL_USEENQUEUE
+};
+
 struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
 {
     static bool checkPseudoOpName(const CString& string);
+    
+    static void setAclVersion(AsmAmdCL2Handler& handler, const char* linePtr);
+    static void setCompileOptions(AsmAmdCL2Handler& handler, const char* linePtr);
+    
+    static void setConfigValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+           const char* linePtr, AmdCL2ConfigValueTarget target);
+    static void setConfigBoolValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+           const char* linePtr, AmdCL2ConfigValueTarget target);
 };
 
 extern cxbyte cstrtobyte(const char*& str, const char* end);
