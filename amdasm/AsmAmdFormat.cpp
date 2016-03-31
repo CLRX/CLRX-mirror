@@ -151,15 +151,6 @@ cxuint AsmAmdHandler::addSection(const char* sectionName, cxuint kernelId)
         section.elfBinSectId = ELFSECTID_DATA;
         section.name = ".data"; // set static name (available by whole lifecycle)*/
     }
-    else if (::strcmp(sectionName, ".text") == 0) // code
-    {
-        if (kernelId == ASMKERN_GLOBAL)
-            throw AsmFormatException("Section '.text' permitted only inside kernels");
-        kernelStates[kernelId]->codeSection = thisSection;
-        section.type = AsmSectionType::CODE;
-        section.elfBinSectId = ELFSECTID_TEXT;
-        section.name = ".text"; // set static name (available by whole lifecycle)*/
-    }
     else if (kernelId == ASMKERN_GLOBAL)
     {
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),

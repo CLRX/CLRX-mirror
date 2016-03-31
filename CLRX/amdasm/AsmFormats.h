@@ -52,6 +52,14 @@ enum class AsmSectionType: cxbyte
     AMD_METADATA,       ///< AMD Catalyst kernel's metadata
     AMD_CALNOTE,        ///< AMD CALNote
     
+    AMDCL2_RWDATA = LAST_COMMON+1,
+    AMDCL2_BSS,
+    AMDCL2_SAMPLERINIT,
+    AMDCL2_SETUP,
+    AMDCL2_STUB,
+    AMDCL2_METADATA,
+    AMDCL2_ISAMETADATA,
+    
     GALLIUM_COMMENT = LAST_COMMON+1,    ///< gallium comment section
     EXTRA_FIRST = 0xfc,
     EXTRA_PROGBITS = 0xfc,
@@ -274,8 +282,6 @@ private:
         cxuint isaMetadataSection;
         cxuint configSection;
         cxuint codeSection;
-        SectionMap extraSectionMap;
-        cxuint extraSectionCount;
         cxuint savedSection;
         std::unordered_set<CString> argNamesSet;
         cxuint allocRegs[2];
@@ -285,12 +291,15 @@ private:
     // use pointer to prevents copying Kernel objects
     std::vector<Kernel*> kernelStates;
     SectionMap extraSectionMap;
+    SectionMap innerExtraSectionMap;
     cxuint rodataSection; // global inner
     cxuint dataSection; // global inner
     cxuint bssSection; // global inner
     cxuint samplerInitSection;
     cxuint savedSection;
+    cxuint innerSavedSection;
     cxuint extraSectionCount;
+    cxuint innerExtraSectionCount;
     
     void saveCurrentSection();
     void restoreCurrentAllocRegs();

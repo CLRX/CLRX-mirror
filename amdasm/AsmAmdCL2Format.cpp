@@ -60,48 +60,172 @@ enum
  * AmdCatalyst format handler
  */
 
-AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(assembler)
+AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(assembler),
+        output{}, dataSection(0), bssSection(ASMSECT_NONE), 
+        samplerInitSection(ASMSECT_NONE), extraSectionCount(0),
+        innerExtraSectionCount(0)
 {
+    assembler.currentKernel = ASMKERN_GLOBAL;
+    assembler.currentSection = 0;
+    sections.push_back({ ASMKERN_GLOBAL, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
+    savedSection = innerSavedSection = 0;
 }
 
 AsmAmdCL2Handler::~AsmAmdCL2Handler()
 {
+    for (Kernel* kernel: kernelStates)
+        delete kernel;
 }
 
 void AsmAmdCL2Handler::saveCurrentSection()
-{
+{   /// save previous section
+    if (assembler.currentKernel==ASMKERN_GLOBAL || assembler.currentKernel==ASMKERN_INNER)
+        savedSection = assembler.currentSection;
+    else
+        kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
 }
-
 
 void AsmAmdCL2Handler::restoreCurrentAllocRegs()
 {
+    if (assembler.currentKernel!=ASMKERN_GLOBAL &&
+        assembler.currentKernel!=ASMKERN_INNER &&
+        assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
+        assembler.isaAssembler->setAllocatedRegisters(
+                kernelStates[assembler.currentKernel]->allocRegs,
+                kernelStates[assembler.currentKernel]->allocRegFlags);
 }
 
 void AsmAmdCL2Handler::saveCurrentAllocRegs()
 {
+    if (assembler.currentKernel!=ASMKERN_GLOBAL &&
+        assembler.currentKernel!=ASMKERN_INNER &&
+        assembler.currentSection==kernelStates[assembler.currentKernel]->codeSection)
+    {
+        size_t num;
+        cxuint* destRegs = kernelStates[assembler.currentKernel]->allocRegs;
+        const cxuint* regs = assembler.isaAssembler->getAllocatedRegisters(num,
+                       kernelStates[assembler.currentKernel]->allocRegFlags);
+        destRegs[0] = regs[0];
+        destRegs[1] = regs[1];
+    }
 }
 
 cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
 {
-    return 0;
+    cxuint thisKernel = output.kernels.size();
+    cxuint thisSection = sections.size();
+    output.addEmptyKernel(kernelName);
+    Kernel kernelState{ ASMSECT_NONE, ASMSECT_NONE, ASMSECT_NONE,
+            ASMSECT_NONE, ASMSECT_NONE, thisSection, ASMSECT_NONE };
+    /* add new kernel and their section (.text) */
+    kernelStates.push_back(new Kernel(std::move(kernelState)));
+    sections.push_back({ thisKernel, AsmSectionType::CODE, ELFSECTID_TEXT, ".text" });
+    
+    saveCurrentAllocRegs();
+    saveCurrentSection();
+    
+    assembler.currentKernel = thisKernel;
+    assembler.currentSection = thisSection;
+    assembler.isaAssembler->setAllocatedRegisters();
+    return thisKernel;
 }
 
 cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
 {
-    return 0;
+    const cxuint thisSection = sections.size();
+    Section section;
+    section.kernelId = kernelId;
+    
+    if (kernelId == ASMKERN_GLOBAL)
+    {
+        auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
+                    thisSection));
+        if (!out.second)
+            throw AsmFormatException("Section already exists");
+        section.type = AsmSectionType::EXTRA_SECTION;
+        section.elfBinSectId = extraSectionCount++;
+        /// referfence entry is available and unchangeable by whole lifecycle of section map
+        section.name = out.first->first.c_str();
+    }
+    else if (kernelId == ASMKERN_INNER)
+    {
+        auto out = innerExtraSectionMap.insert(std::make_pair(std::string(sectionName),
+                    thisSection));
+        if (!out.second)
+            throw AsmFormatException("Section already exists");
+        section.type = AsmSectionType::EXTRA_SECTION;
+        section.elfBinSectId = innerExtraSectionCount++;
+        /// referfence entry is available and unchangeable by whole lifecycle of section map
+        section.name = out.first->first.c_str();
+    }
+    else // not in kernel
+        throw AsmFormatException("Extra section can be added in main or inner binary");
+    
+    sections.push_back(section);
+    
+    saveCurrentAllocRegs();
+    saveCurrentSection();
+    
+    assembler.currentKernel = kernelId;
+    assembler.currentSection = thisSection;
+    
+    restoreCurrentAllocRegs();
+    return thisSection;
 }
 
 cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
 {
+    if (assembler.currentKernel == ASMKERN_GLOBAL)
+    {
+        SectionMap::const_iterator it = extraSectionMap.find(sectionName);
+        if (it != extraSectionMap.end())
+            return it->second;
+        return ASMSECT_NONE;
+    }
+    if (assembler.currentKernel == ASMKERN_INNER)
+    {
+        SectionMap::const_iterator it = innerExtraSectionMap.find(sectionName);
+        if (it != innerExtraSectionMap.end())
+            return it->second;
+        return ASMSECT_NONE;
+    }
+    else
+    {
+        const Kernel& kernelState = *kernelStates[assembler.currentKernel];
+        if (::strcmp(sectionName, ".text") == 0)
+            return kernelState.codeSection;
+        return ASMSECT_NONE;
+    }
     return 0;
 }
 
 void AsmAmdCL2Handler::setCurrentKernel(cxuint kernel)
 {
+    if (kernel!=ASMKERN_GLOBAL && kernel!=ASMKERN_INNER && kernel >= kernelStates.size())
+        throw AsmFormatException("KernelId out of range");
+    
+    saveCurrentAllocRegs();
+    saveCurrentSection();
+    assembler.currentKernel = kernel;
+    if (kernel == ASMKERN_GLOBAL)
+        assembler.currentSection = savedSection;
+    else if (kernel == ASMKERN_GLOBAL)
+        assembler.currentSection = innerSavedSection; // inner section
+    else // kernel
+        assembler.currentSection = kernelStates[kernel]->savedSection;
+    restoreCurrentAllocRegs();
 }
 
 void AsmAmdCL2Handler::setCurrentSection(cxuint sectionId)
 {
+    if (sectionId >= sections.size())
+        throw AsmFormatException("SectionId out of range");
+    
+    saveCurrentAllocRegs();
+    saveCurrentSection();
+    assembler.currentKernel = sections[sectionId].kernelId;
+    assembler.currentSection = sectionId;
+    restoreCurrentAllocRegs();
 }
 
 AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId) const

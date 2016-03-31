@@ -550,6 +550,7 @@ private:
     friend class AsmFormatHandler;
     friend class AsmRawCodeHandler;
     friend class AsmAmdHandler;
+    friend class AsmAmdCL2Handler;
     friend class AsmGalliumHandler;
     friend class ISAAssembler;
     
