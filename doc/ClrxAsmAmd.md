@@ -243,7 +243,7 @@ Go to main header of the binary.
 
 ### .hwlocal, .localsize
 
-Syntax: .hwlocal SIZE
+Syntax: .hwlocal SIZE  
 Syntax: .localsize SIZE
 
 This pseudo-operation must be inside kernel configuration. Set HWLOCAL value, the initial
