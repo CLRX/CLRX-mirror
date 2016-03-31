@@ -30,6 +30,18 @@
 
 using namespace CLRX;
 
+static const char* amdPseudoOpNamesTbl[] =
+{
+    "acl_version", "arg", "bssdata", "compile_options", "config",
+    "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
+    "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
+    "isametadata", "localsize" "metadata", "privmode",
+    "pgmrsrc1", "pgmrsrc2", "priority", "rwdata", "sampler",
+    "samplerinit", "samplerreloc", "scratchbuffer",
+    "setupargs", "sgprsnum", "stub", "tgsize",
+    "useenqueue", "usesetup", "usesizes", "vgprsnum"
+};
+
 /*
  * AmdCatalyst format handler
  */

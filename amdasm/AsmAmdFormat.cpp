@@ -39,7 +39,7 @@ static const char* amdPseudoOpNamesTbl[] =
     "floatconsts", "floatmode", "get_driver_version",
     "globalbuffers", "globaldata", "header", "hwlocal",
     "hwregion", "ieeemode", "inputs", "inputsamplers",
-    "intconsts", "metadata", "outputs", "persistentbuffers",
+    "intconsts", "localsize", "metadata", "outputs", "persistentbuffers",
     "pgmrsrc2", "printfid", "privateid", "proginfo",
     "sampler", "scratchbuffer", "scratchbuffers", "segment",
     "sgprsnum", "subconstantbuffers", "tgsize", "uav", "uavid",
@@ -56,8 +56,9 @@ enum
     AMDOP_FLOATCONSTS, AMDOP_FLOATMODE, AMDOP_GETDRVVER,
     AMDOP_GLOBALBUFFERS, AMDOP_GLOBALDATA, AMDOP_HEADER, AMDOP_HWLOCAL,
     AMDOP_HWREGION, AMDOP_IEEEMODE, AMDOP_INPUTS, AMDOP_INPUTSAMPLERS,
-    AMDOP_INTCONSTS, AMDOP_METADATA, AMDOP_OUTPUTS, AMDOP_PERSISTENTBUFFERS,
-    AMDOP_PGMRSRC2, AMDOP_PRINTFID, AMDOP_PRIVATEID, AMDOP_PROGINFO,
+    AMDOP_INTCONSTS, AMDOP_LOCALSIZE, AMDOP_METADATA,
+    AMDOP_OUTPUTS,AMDOP_PERSISTENTBUFFERS, AMDOP_PGMRSRC2,
+    AMDOP_PRINTFID, AMDOP_PRIVATEID, AMDOP_PROGINFO,
     AMDOP_SAMPLER, AMDOP_SCRATCHBUFFER, AMDOP_SCRATCHBUFFERS, AMDOP_SEGMENT,
     AMDOP_SGPRSNUM, AMDOP_SUBCONSTANTBUFFERS, AMDOP_TGSIZE, AMDOP_UAV, AMDOP_UAVID,
     AMDOP_UAVMAILBOXSIZE, AMDOP_UAVOPMASK, AMDOP_UAVPRIVATE, AMDOP_USECONSTDATA,
@@ -1630,6 +1631,7 @@ bool AsmAmdHandler::parsePseudoOp(const CString& firstName,
             AsmAmdPseudoOps::addHeader(*this, stmtPlace, linePtr);
             break;
         case AMDOP_HWLOCAL:
+        case AMDOP_LOCALSIZE:
             AsmAmdPseudoOps::setConfigValue(*this, stmtPlace, linePtr, AMDCVAL_HWLOCAL);
             break;
         case AMDOP_HWREGION:
