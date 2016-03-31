@@ -44,6 +44,7 @@ void AmdCL2Input::addEmptyKernel(const char* kernelName)
     kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = BINGEN_DEFAULT;
     kernel.config.floatMode = 0xc0;
     kernel.config.dimMask = BINGEN_DEFAULT;
+    kernels.push_back(std::move(kernel));
 }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator() : manageable(false), input(nullptr)
