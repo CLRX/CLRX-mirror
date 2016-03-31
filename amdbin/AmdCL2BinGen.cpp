@@ -38,30 +38,12 @@ static const cxuint innerBinSectonTableLen = AMDCL2SECTID_MAX+1-ELFSECTID_START;
 
 void AmdCL2Input::addEmptyKernel(const char* kernelName)
 {
-    AmdCL2KernelInput kernel;
+    AmdCL2KernelInput kernel{};
     kernel.kernelName = kernelName;
-    kernel.stubSize = kernel.setupSize = kernel.codeSize = 0;
-    kernel.metadataSize = kernel.isaMetadataSize = 0;
-    kernel.stub = kernel.setup = kernel.code = nullptr;
-    kernel.metadata = kernel.isaMetadata = nullptr;
-    kernel.useConfig = false;
     
     kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = BINGEN_DEFAULT;
-    kernel.config.pgmRSRC2 = 0;
-    kernel.config.ieeeMode = 0;
-    kernel.config.tgSize = false;
     kernel.config.floatMode = 0xc0;
-    kernel.config.priority = 0;
-    kernel.config.localSize = 0;
-    kernel.config.scratchBufferSize = 0;
     kernel.config.dimMask = BINGEN_DEFAULT;
-    kernel.config.reqdWorkGroupSize[0] = 0;
-    kernel.config.reqdWorkGroupSize[1] = 0;
-    kernel.config.reqdWorkGroupSize[2] = 0;
-    kernel.config.tgSize = kernel.config.debugMode = false;
-    kernel.config.privilegedMode = kernel.config.dx10Clamp = false;
-    kernel.config.useSizes = kernel.config.useSetup = false;
-    kernel.config.useEnqueue = false;
 }
 
 AmdCL2GPUBinGenerator::AmdCL2GPUBinGenerator() : manageable(false), input(nullptr)

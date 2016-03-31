@@ -142,28 +142,14 @@ void AmdInput::addKernel(const char* kernelName, size_t codeSize,
 
 void AmdInput::addEmptyKernel(const char* kernelName)
 {
-    AmdKernelInput kernel;
+    AmdKernelInput kernel{};
     kernel.kernelName = kernelName;
-    kernel.dataSize = kernel.headerSize = kernel.metadataSize = kernel.codeSize = 0;
-    kernel.data = kernel.header = kernel.code = nullptr;
-    kernel.metadata = nullptr;
-    kernel.useConfig = false;
-    kernel.config.pgmRSRC2 = 0;
-    kernel.config.ieeeMode = 0;
-    kernel.config.tgSize = false;
     kernel.config.floatMode = 0xc0;
-    kernel.config.exceptions = 0;
     kernel.config.dimMask = BINGEN_DEFAULT;
-    kernel.config.reqdWorkGroupSize[0] = 0;
-    kernel.config.reqdWorkGroupSize[1] = 0;
-    kernel.config.reqdWorkGroupSize[2] = 0;
     kernel.config.usedSGPRsNum = kernel.config.usedVGPRsNum = BINGEN_DEFAULT;
     kernel.config.hwRegion = BINGEN_DEFAULT;
-    kernel.config.hwLocalSize = kernel.config.scratchBufferSize =
-         kernel.config.condOut = kernel.config.earlyExit = 0;
     kernel.config.uavId = kernel.config.privateId = kernel.config.printfId =
         kernel.config.uavPrivate = kernel.config.constBufferId = BINGEN_DEFAULT;
-    kernel.config.usePrintf = kernel.config.useConstantData = false;
     kernels.push_back(std::move(kernel));
 }
 

@@ -301,15 +301,8 @@ void GalliumInput::addEmptyKernel(const char* kernelName)
     kinput.config.dimMask = BINGEN_DEFAULT;
     kinput.config.usedVGPRsNum = BINGEN_DEFAULT;
     kinput.config.usedSGPRsNum = BINGEN_DEFAULT;
-    kinput.config.pgmRSRC1 = kinput.config.pgmRSRC2 = 0;
-    kinput.config.debugMode = kinput.config.ieeeMode = false;
-    kinput.config.privilegedMode = kinput.config.dx10Clamp = false;
     kinput.config.floatMode = 0xc0;
-    kinput.config.localSize = 0;
     kinput.config.userDataNum = 4;
-    kinput.config.exceptions = 0;
-    kinput.config.tgSize = false;
-    kinput.config.scratchBufferSize = 0; ///< size of scratch buffer
     kernels.push_back(std::move(kinput));
 }
 
