@@ -37,7 +37,7 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
     "isametadata", "localsize", "metadata", "privmode",
     "pgmrsrc1", "pgmrsrc2", "priority", "rwdata", "sampler",
-    "samplerinit", "samplerreloc", "scratchbuffer",
+    "samplerinit", "samplerreloc", "scratchbuffer", "setup",
     "setupargs", "sgprsnum", "stub", "tgsize",
     "useenqueue", "usesetup", "usesizes", "vgprsnum"
 };
@@ -51,7 +51,7 @@ enum
     AMDCL2OP_IEEEMODE, AMDCL2OP_INNER, AMDCL2OP_ISAMETADATA, AMDCL2OP_LOCALSIZE,
     AMDCL2OP_METADATA, AMDCL2OP_PRIVMODE, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2,
     AMDCL2OP_PRIORITY, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
-    AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUPARGS,
+    AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUP, AMDCL2OP_SETUPARGS,
     AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE, AMDCL2OP_USEENQUEUE,
     AMDCL2OP_USESETUP, AMDCL2OP_USESIZES, AMDCL2OP_VGPRSNUM
 };
@@ -136,7 +136,28 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     Section section;
     section.kernelId = kernelId;
     
-    if (kernelId == ASMKERN_GLOBAL)
+    if (::strcmp(sectionName, ".rodata")==0 && (kernelId == ASMKERN_GLOBAL ||
+            kernelId == ASMKERN_INNER))
+    {
+        rodataSection = sections.size();
+        sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
+                ELFSECTID_UNDEF, ".rodata" });
+    }
+    else if (::strcmp(sectionName, ".data")==0 && (kernelId == ASMKERN_GLOBAL ||
+            kernelId == ASMKERN_INNER))
+    {
+        dataSection = sections.size();
+        sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_RWDATA,
+                ELFSECTID_UNDEF, ".data" });
+    }
+    else if (::strcmp(sectionName, ".bss")==0 && (kernelId == ASMKERN_GLOBAL ||
+            kernelId == ASMKERN_INNER))
+    {
+        bssSection = sections.size();
+        sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_BSS,
+                ELFSECTID_UNDEF, ".bss" });
+    }
+    else if (kernelId == ASMKERN_GLOBAL)
     {
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
@@ -176,6 +197,12 @@ cxuint AsmAmdCL2Handler::getSectionId(const char* sectionName) const
 {
     if (assembler.currentKernel == ASMKERN_GLOBAL)
     {
+        if (::strcmp(sectionName, ".rodata")==0)
+            return rodataSection;
+        else if (::strcmp(sectionName, ".data")==0)
+            return dataSection;
+        else if (::strcmp(sectionName, ".bss")==0)
+            return bssSection;
         SectionMap::const_iterator it = extraSectionMap.find(sectionName);
         if (it != extraSectionMap.end())
             return it->second;
@@ -239,9 +266,11 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
     else if (info.type == AsmSectionType::AMDCL2_BSS ||
             info.type == AsmSectionType::AMDCL2_RWDATA ||
             info.type == AsmSectionType::DATA)
-        // global data, rwdata and bss are relocatable sections (we set unresolvable flag)
-        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE |
-                    ASMSECT_UNRESOLVABLE;
+    {   // global data, rwdata and bss are relocatable sections (we set unresolvable flag)
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_ABS_ADDRESSABLE | ASMSECT_UNRESOLVABLE;
+        if (info.type != AsmSectionType::AMDCL2_BSS)
+            info.flags |= ASMSECT_WRITEABLE;
+    }
     else if (info.type != AsmSectionType::CONFIG)
         info.flags = ASMSECT_ADDRESSABLE | ASMSECT_WRITEABLE | ASMSECT_ABS_ADDRESSABLE;
     info.name = sections[sectionId].name;
@@ -337,6 +366,141 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
         else
             asmr.setSymbol(*res.first, driverVersion, ASMSECT_ABS);
     }
+}
+
+void AsmAmdCL2PseudoOps::doInner(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    try
+    { handler.setCurrentKernel(ASMKERN_INNER); }
+    catch(const AsmFormatException& ex) // if error
+    {
+        asmr.printError(pseudoOpPlace, ex.what());
+        return;
+    }
+    
+    asmr.currentOutPos = asmr.sections[asmr.currentSection].content.size();
+}
+
+void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.rodataSection==ASMSECT_NONE)
+    {   /* add this section */
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
+            ELFSECTID_UNDEF, ".rodata" });
+        handler.rodataSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, handler.rodataSection);
+}
+
+void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.dataSection==ASMSECT_NONE)
+    {   /* add this section */
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_RWDATA,
+            ELFSECTID_UNDEF, ".data" });
+        handler.dataSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, handler.dataSection);
+}
+
+void AsmAmdCL2PseudoOps::doBssSection(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.bssSection==ASMSECT_NONE)
+    {   /* add this section */
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_BSS,
+            ELFSECTID_UNDEF, ".bss" });
+        handler.bssSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, handler.bssSection);
+}
+
+void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.samplerInitSection==ASMSECT_NONE)
+    {   /* add this section */
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_SAMPLERINIT,
+            ELFSECTID_UNDEF, nullptr });
+        handler.samplerInitSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, handler.samplerInitSection);
+}
+
+void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+        
+    // accepts many values (this same format like
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr == end)
+        return; /* if no samplers */
+    do {
+        uint64_t value = 0;
+        const char* valuePlace = linePtr;
+        if (getAbsoluteValueArg(asmr, value, linePtr, true))
+        {
+            asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                             asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+            config.samplers.push_back(value);
+        }
+    } while(skipCommaForMultipleArgs(asmr, linePtr));
+    checkGarbagesAtEnd(asmr, linePtr);
 }
 
 void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
@@ -584,6 +748,173 @@ void AsmAmdCL2PseudoOps::doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPl
     kernelState.argNamesSet.insert(argName);
 }
 
+void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
+    {
+        asmr.printError(pseudoOpPlace, "Metadata can be defined only inside kernel");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Metadata can't be defined if configuration was defined");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint& metadataSection = handler.kernelStates[asmr.currentKernel]->metadataSection;
+    if (metadataSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_METADATA,
+            ELFSECTID_UNDEF, nullptr });
+        metadataSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, metadataSection);
+}
+
+void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
+    {
+        asmr.printError(pseudoOpPlace, "ISAMetadata can be defined only inside kernel");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace,
+                    "ISAMetadata can't be defined if configuration was defined");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint& isaMDSection = handler.kernelStates[asmr.currentKernel]->isaMetadataSection;
+    if (isaMDSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel,
+                AsmSectionType::AMDCL2_ISAMETADATA, ELFSECTID_UNDEF, nullptr });
+        isaMDSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, isaMDSection);
+}
+
+void AsmAmdCL2PseudoOps::addKernelSetup(AsmAmdCL2Handler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
+    {
+        asmr.printError(pseudoOpPlace, "Setup can be defined only inside kernel");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Setup can't be defined if configuration was defined");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint& setupSection = handler.kernelStates[asmr.currentKernel]->setupSection;
+    if (setupSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_SETUP,
+            ELFSECTID_UNDEF, nullptr });
+        setupSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, setupSection);
+}
+
+void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
+                const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
+    {
+        asmr.printError(pseudoOpPlace, "Stub can be defined only inside kernel");
+        return;
+    }
+    if (handler.kernelStates[asmr.currentKernel]->configSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace,
+                    "Stub can't be defined if configuration was defined");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint& stubSection = handler.kernelStates[asmr.currentKernel]->stubSection;
+    if (stubSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel, AsmSectionType::AMDCL2_STUB,
+            ELFSECTID_UNDEF, nullptr });
+        stubSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, stubSection);
+}
+
+void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER)
+    {
+        asmr.printError(pseudoOpPlace, "Kernel config can be defined only inside kernel");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    AsmAmdCL2Handler::Kernel& kernel = *handler.kernelStates[asmr.currentKernel];
+    if (kernel.metadataSection!=ASMSECT_NONE || kernel.isaMetadataSection!=ASMSECT_NONE ||
+        kernel.setupSection!=ASMSECT_NONE || kernel.stubSection!=ASMSECT_NONE)
+    {
+        asmr.printError(pseudoOpPlace, "Config can't be defined if metadata,header and/or"
+                        " CALnotes section exists");
+        return;
+    }
+
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+        
+    if (kernel.configSection == ASMSECT_NONE)
+    {
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ asmr.currentKernel, AsmSectionType::CONFIG,
+            ELFSECTID_UNDEF, nullptr });
+        kernel.configSection = thisSection;
+    }
+    asmr.goToSection(pseudoOpPlace, kernel.configSection);
+    handler.output.kernels[asmr.currentKernel].useConfig = true;
+}
+
 };
 
 bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
@@ -602,11 +933,13 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::doArg(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_BSSDATA:
+            AsmAmdCL2PseudoOps::doBssSection(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_COMPILE_OPTIONS:
             AsmAmdCL2PseudoOps::setCompileOptions(*this, linePtr);
             break;
         case AMDCL2OP_CONFIG:
+            AsmAmdCL2PseudoOps::doConfig(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_CWS:
             AsmAmdCL2PseudoOps::setCWS(*this, stmtPlace, linePtr);
@@ -637,20 +970,24 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::getDriverVersion(*this, linePtr);
             break;
         case AMDCL2OP_GLOBALDATA:
+            AsmAmdCL2PseudoOps::doGlobalData(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_IEEEMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_IEEEMODE);
             break;
         case AMDCL2OP_INNER:
+            AsmAmdCL2PseudoOps::doInner(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_ISAMETADATA:
+            AsmAmdCL2PseudoOps::addISAMetadata(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_LOCALSIZE:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_LOCALSIZE);
             break;
         case AMDCL2OP_METADATA:
+            AsmAmdCL2PseudoOps::addMetadata(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_PRIVMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -669,16 +1006,22 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
                        AMDCL2CVAL_PRIORITY);
             break;
         case AMDCL2OP_RWDATA:
+            AsmAmdCL2PseudoOps::doRwData(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SAMPLER:
+            AsmAmdCL2PseudoOps::doSampler(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SAMPLERINIT:
+            AsmAmdCL2PseudoOps::doSamplerInit(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SAMPLERRELOC:
             break;
         case AMDCL2OP_SCRATCHBUFFER:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_SCRATCHBUFFER);
+            break;
+        case AMDCL2OP_SETUP:
+            AsmAmdCL2PseudoOps::addKernelSetup(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SETUPARGS:
             break;
@@ -687,6 +1030,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
                        AMDCL2CVAL_SGPRSNUM);
             break;
         case AMDCL2OP_STUB:
+            AsmAmdCL2PseudoOps::addKernelStub(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_TGSIZE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,

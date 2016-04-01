@@ -464,6 +464,21 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     
     static void getDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr);
     
+    static void doInner(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void doGlobalData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doRwData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doBssSection(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void doSampler(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
     static void setConfigValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
            const char* linePtr, AmdCL2ConfigValueTarget target);
     static void setConfigBoolValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -475,6 +490,17 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void addMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void addISAMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void addKernelSetup(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void addKernelStub(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doConfig(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };
 

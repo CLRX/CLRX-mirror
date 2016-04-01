@@ -31,7 +31,7 @@
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
 
-// TODO: handle unresolvable sections, fix invalidate occurrences in expressions
+// TODO: handle non-writeable section (likes bss)
 
 using namespace CLRX;
 
