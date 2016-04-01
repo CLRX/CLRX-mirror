@@ -454,6 +454,13 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (handler.output.samplerConfig)
+    {   // error
+        asmr.printError(pseudoOpPlace,
+                "SamplerInit is illegal if sampler definitions are present");
+        return;
+    }
+    
     if (handler.samplerInitSection==ASMSECT_NONE)
     {   /* add this section */
         cxuint thisSection = handler.sections.size();
@@ -468,39 +475,93 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
                       const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
-    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_GLOBAL ||
+    if (asmr.currentKernel!=ASMKERN_GLOBAL && asmr.currentKernel!=ASMKERN_INNER &&
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    
+    bool inMain = asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER;
         
-    // accepts many values (this same format like
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    if (!inMain)
+    {
+        if (linePtr == end)
+            return; /* if no samplers */
+        AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+        do {
+            uint64_t value = 0;
+            const char* valuePlace = linePtr;
+            if (getAbsoluteValueArg(asmr, value, linePtr, true))
+            {
+                asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                config.samplers.push_back(value);
+            }
+        } while(skipCommaForMultipleArgs(asmr, linePtr));
+    }
+    else
+    {   // global sampler definitions
+        if (handler.samplerInitSection!=ASMSECT_NONE)
+        {   // error
+            asmr.printError(pseudoOpPlace,
+                    "Illegal sampler definition if samplerinit was defined");
+            return;
+        }
+        handler.output.samplerConfig = true;
+        if (linePtr == end)
+            return; /* if no samplers */
+        do {
+            uint64_t value = 0;
+            const char* valuePlace = linePtr;
+            if (getAbsoluteValueArg(asmr, value, linePtr, true))
+            {
+                asmr.printWarningForRange(sizeof(cxuint)<<3, value,
+                                 asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+                handler.output.samplers.push_back(value);
+            }
+        } while(skipCommaForMultipleArgs(asmr, linePtr));
+    }
+    checkGarbagesAtEnd(asmr, linePtr);
+}
+
+void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
+                 const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
     
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    if (asmr.currentKernel!=ASMKERN_GLOBAL && asmr.currentKernel!=ASMKERN_INNER)
     {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        asmr.printError(pseudoOpPlace, "Illegal place of samplerreloc pseudo-op");
         return;
     }
     
-    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
-    
     skipSpacesToEnd(linePtr, end);
-    if (linePtr == end)
-        return; /* if no samplers */
-    do {
-        uint64_t value = 0;
-        const char* valuePlace = linePtr;
-        if (getAbsoluteValueArg(asmr, value, linePtr, true))
-        {
-            asmr.printWarningForRange(sizeof(cxuint)<<3, value,
-                             asmr.getSourcePos(valuePlace), WS_UNSIGNED);
-            config.samplers.push_back(value);
-        }
-    } while(skipCommaForMultipleArgs(asmr, linePtr));
-    checkGarbagesAtEnd(asmr, linePtr);
+    const char* offsetPlace = linePtr;
+    uint64_t samplerId = 0;
+    uint64_t offset = 0;
+    cxuint sectionId = 0;
+    bool good = getAnyValueArg(asmr, offset, sectionId, linePtr);
+    if (!skipRequiredComma(asmr, linePtr))
+        return;
+    good |= getAbsoluteValueArg(asmr, offset, linePtr, true);
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (sectionId != ASMSECT_ABS && sectionId != handler.rodataSection)
+    {
+        asmr.printError(offsetPlace, "Offset can be an absolute value "
+                    "or globaldata place");
+        return;
+    }
+    // put to sampler offsets
+    if (handler.output.samplerOffsets.size() <= samplerId)
+        handler.output.samplerOffsets.resize(samplerId+1);
+    handler.output.samplerOffsets[samplerId] = offset;
 }
 
 void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
@@ -1015,6 +1076,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::doSamplerInit(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SAMPLERRELOC:
+            AsmAmdCL2PseudoOps::doSamplerReloc(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SCRATCHBUFFER:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,

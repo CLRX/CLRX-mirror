@@ -475,6 +475,8 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
                       const char* linePtr);
     static void doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    static void doSamplerReloc(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     
     static void doSampler(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
@@ -491,6 +493,8 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
                       const char* linePtr);
     static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
+    static void doSetupArg(AsmAmdCL2Handler& handler, const char* linePtr);
     
     static void addMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
