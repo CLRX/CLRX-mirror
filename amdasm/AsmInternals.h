@@ -412,12 +412,17 @@ struct CLRX_INTERNAL AsmAmdPseudoOps: AsmPseudoOps
     /* user configuration pseudo-ops */
     static void setDimensions(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    
+    static bool parseArg(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+         const std::unordered_set<CString>& argNamesSet, AmdKernelArgInput& arg, bool cl20);
     static void doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
     static void setConfigValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr, AmdConfigValueTarget target);
     
+    static bool parseCWS(Assembler& asmr, const char* pseudoOpPlace, const char* linePtr,
+                     uint64_t* out);
     static void setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void setConfigBoolValue(AsmAmdHandler& handler, const char* pseudoOpPlace,
@@ -465,6 +470,11 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
            const char* linePtr, AmdCL2ConfigValueTarget target);
     
     static void setDimensions(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    
+    static void setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
+    static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
 };
 

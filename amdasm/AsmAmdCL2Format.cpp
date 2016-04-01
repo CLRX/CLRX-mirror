@@ -345,12 +345,12 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
     
-    /*if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
-    }*/
+    }
     
     skipSpacesToEnd(linePtr, end);
     const char* valuePlace = linePtr;
@@ -460,12 +460,12 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
 {
     Assembler& asmr = handler.assembler;
     
-    /*if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        handler.inside != AsmGalliumHandler::Inside::CONFIG)
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
-    }*/
+    }
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
@@ -505,7 +505,7 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
 {
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
         asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
@@ -538,6 +538,52 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
     handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
 }
 
+void AsmAmdCL2PseudoOps::setCWS(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    
+    skipSpacesToEnd(linePtr, end);
+    uint64_t out[3] = { 0, 0, 0 };
+    if (!AsmAmdPseudoOps::parseCWS(asmr, pseudoOpPlace, linePtr, out))
+        return;
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    config.reqdWorkGroupSize[0] = out[0];
+    config.reqdWorkGroupSize[1] = out[1];
+    config.reqdWorkGroupSize[2] = out[2];
+}
+
+void AsmAmdCL2PseudoOps::doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
+        return;
+    }
+    
+    auto& kernelState = *handler.kernelStates[asmr.currentKernel];
+    AmdKernelArgInput argInput;
+    if (!AsmAmdPseudoOps::parseArg(asmr, pseudoOpPlace, linePtr, kernelState.argNamesSet,
+                    argInput, true))
+        return;
+    /* setup argument */
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    const CString argName = argInput.argName;
+    config.args.push_back(std::move(argInput));
+    /// put argName
+    kernelState.argNamesSet.insert(argName);
+}
+
 };
 
 bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
@@ -553,6 +599,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setAclVersion(*this, linePtr);
             break;
         case AMDCL2OP_ARG:
+            AsmAmdCL2PseudoOps::doArg(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_BSSDATA:
             break;
@@ -562,6 +609,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_CONFIG:
             break;
         case AMDCL2OP_CWS:
+            AsmAmdCL2PseudoOps::setCWS(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_DEBUGMODE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -591,6 +639,8 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_GLOBALDATA:
             break;
         case AMDCL2OP_IEEEMODE:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_IEEEMODE);
             break;
         case AMDCL2OP_INNER:
             break;

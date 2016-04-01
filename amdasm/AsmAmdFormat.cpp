@@ -905,46 +905,38 @@ void AsmAmdPseudoOps::setConfigBoolValue(AsmAmdHandler& handler, const char* pse
         config.tgSize = true;
 }
 
-void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
+bool AsmAmdPseudoOps::parseCWS(Assembler& asmr, const char* pseudoOpPlace,
+              const char* linePtr, uint64_t* out)
 {
-    Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
-        return;
-    }
-    
     skipSpacesToEnd(linePtr, end);
-    uint64_t value1 = 1;
-    uint64_t value2 = 0;
-    uint64_t value3 = 0;
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
     const char* valuePlace = linePtr;
-    bool good = getAbsoluteValueArg(asmr, value1, linePtr, true);
+    bool good = getAbsoluteValueArg(asmr, out[0], linePtr, true);
     if (good)
-        asmr.printWarningForRange(32, value1, asmr.getSourcePos(valuePlace), WS_UNSIGNED);
+        asmr.printWarningForRange(32, out[0], asmr.getSourcePos(valuePlace), WS_UNSIGNED);
     bool haveComma;
     if (!skipComma(asmr, haveComma, linePtr))
-        return;
+        return false;
     if (haveComma)
     {
         skipSpacesToEnd(linePtr, end);
         valuePlace = linePtr;
-        if (getAbsoluteValueArg(asmr, value2, linePtr, false))
-            asmr.printWarningForRange(32, value2, asmr.getSourcePos(valuePlace),
+        if (getAbsoluteValueArg(asmr, out[1], linePtr, false))
+            asmr.printWarningForRange(32, out[1], asmr.getSourcePos(valuePlace),
                               WS_UNSIGNED);
         else
             good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
-            return;
+            return false;
         if (haveComma)
         {
             valuePlace = linePtr;
-            if (getAbsoluteValueArg(asmr, value3, linePtr, false))
-                asmr.printWarningForRange(32, value3, asmr.getSourcePos(valuePlace),
+            if (getAbsoluteValueArg(asmr, out[2], linePtr, false))
+                asmr.printWarningForRange(32, out[2], asmr.getSourcePos(valuePlace),
                             WS_UNSIGNED);
             else
                 good = false;
@@ -952,12 +944,28 @@ void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return false;
+    return true;
+}
+
+void AsmAmdPseudoOps::setCWS(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
+    }
     
+    uint64_t out[3] = { 0, 0, 0 };
+    if (!parseCWS(asmr, pseudoOpPlace, linePtr, out))
+        return;
     AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
-    config.reqdWorkGroupSize[0] = value1;
-    config.reqdWorkGroupSize[1] = value2;
-    config.reqdWorkGroupSize[2] = value3;
+    config.reqdWorkGroupSize[0] = out[0];
+    config.reqdWorkGroupSize[1] = out[1];
+    config.reqdWorkGroupSize[2] = out[2];
 }
 
 /// data class names
@@ -1123,6 +1131,7 @@ static const std::pair<const char*, cxuint> argTypeNameMap[] =
     { "char3", cxuint(KernelArgType::CHAR3) },
     { "char4", cxuint(KernelArgType::CHAR4) },
     { "char8", cxuint(KernelArgType::CHAR8) },
+    { "clk_event_t", cxuint(KernelArgType::CLKEVENT) },
     { "counter32", cxuint(KernelArgType::COUNTER32) },
     { "counter64", cxuint(KernelArgType::COUNTER64) },
     { "double", cxuint(KernelArgType::DOUBLE) },
@@ -1156,6 +1165,8 @@ static const std::pair<const char*, cxuint> argTypeNameMap[] =
     { "long3", cxuint(KernelArgType::LONG3) },
     { "long4", cxuint(KernelArgType::LONG4) },
     { "long8", cxuint(KernelArgType::LONG8) },
+    { "pipe", cxuint(KernelArgType::PIPE) },
+    { "queue_t", cxuint(KernelArgType::CMDQUEUE) },
     { "sampler", cxuint(KernelArgType::SAMPLER) },
     { "short", cxuint(KernelArgType::SHORT) },
     { "short16", cxuint(KernelArgType::SHORT16) },
@@ -1213,23 +1224,16 @@ static const char* defaultArgTypeNames[] =
 static const size_t argTypeNameMapSize = sizeof(argTypeNameMap) /
         sizeof(std::pair<const char*, KernelArgType>);
 
-void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
+bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
+          const char* linePtr, const std::unordered_set<CString>& argNamesSet,
+          AmdKernelArgInput& argInput, bool cl20)
 {
-    Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    if (asmr.currentKernel==ASMKERN_GLOBAL ||
-        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
-    {
-        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
-        return;
-    }
-    
     CString argName;
+    const char* end = asmr.line + asmr.lineSize;
     const char* argNamePlace = linePtr;
+    
     bool good = getNameArg(asmr, argName, linePtr, "argument name", true);
-    auto& kernelState = *handler.kernelStates[asmr.currentKernel];
-    if (kernelState.argNamesSet.find(argName) != kernelState.argNamesSet.end())
+    if (argNamesSet.find(argName) != argNamesSet.end())
     {   // if found kernel arg with this same name
         asmr.printError(argNamePlace, (std::string("Kernel argument '")+argName.c_str()+
                     "' is already defined").c_str());
@@ -1237,7 +1241,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     }
     
     if (!skipRequiredComma(asmr, linePtr))
-        return;
+        return false;
     
     skipSpacesToEnd(linePtr, end);
     bool typeNameDefined = false;
@@ -1246,7 +1250,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     {   // if type name defined by user
         good &= asmr.parseString(typeName, linePtr);
         if (!skipRequiredComma(asmr, linePtr))
-            return;
+            return false;
         typeNameDefined = true;
     }
     
@@ -1260,11 +1264,20 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                     argTypeValue))
     {
         argType = KernelArgType(argTypeValue);
-        skipSpacesToEnd(linePtr, end);
-        if (linePtr!=end && *linePtr == '*')
+        if (cl20 || argType <= KernelArgType::MAX_VALUE)
         {
-            pointer = true; // if is pointer
-            linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end && *linePtr == '*')
+            {
+                pointer = true; // if is pointer
+                linePtr++;
+            }
+        }
+        else
+        {   // if not OpenCL 2.0 and argument type only present in OpenCL 2.0
+            skipSpacesToEnd(linePtr, end);
+            asmr.printError(linePtr, "Unknown argument type");
+            good = false;
         }
     }
     else // if failed
@@ -1296,7 +1309,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     uint64_t structSizeVal = 0;
     uint64_t constSpaceSizeVal = 0;
     uint64_t resIdVal = BINGEN_DEFAULT;
-    bool usedArg = true;
+    cxbyte usedArg = (cl20) ? 3 : 1;
     
     bool haveComma;
     bool haveLastArgument = false;
@@ -1305,7 +1318,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         if (argType == KernelArgType::STRUCTURE)
         {
             if (!skipRequiredComma(asmr, linePtr))
-                return;
+                return false;
             skipSpacesToEnd(linePtr, end);
             const char* structSizePlace = linePtr;
             if (getAbsoluteValueArg(asmr, structSizeVal, linePtr, true))
@@ -1316,7 +1329,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         }
         
         if (!skipRequiredComma(asmr, linePtr))
-            return;
+            return false;
         skipSpacesToEnd(linePtr, end);
         const char* ptrSpacePlace = linePtr;
         // parse ptrSpace
@@ -1339,7 +1352,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             good = false;
         
         if (!skipComma(asmr, haveComma, linePtr))
-            return;
+            return false;
         if (haveComma)
         {   // parse ptr access
             while (linePtr!=end && *linePtr!=',')
@@ -1371,7 +1384,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             if (ptrSpace == KernelPtrSpace::CONSTANT)
             {   /* parse constant space size for constant pointer */
                 if (!skipComma(asmr, haveComma, linePtr))
-                    return;
+                    return false;
                 if (haveComma)
                 {
                     skipSpacesToEnd(linePtr, end);
@@ -1390,7 +1403,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
             {   /* global and constant have resource id (uavId) */
                 if (!skipComma(asmr, haveComma, linePtr))
-                    return;
+                    return false;
                 if (haveComma)
                 {
                     haveLastArgument = true;
@@ -1423,7 +1436,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
         ptrSpace = KernelPtrSpace::GLOBAL;
         ptrAccess = KARG_PTR_READ_ONLY;
         if (!skipComma(asmr, haveComma, linePtr))
-            return;
+            return false;
         if (haveComma)
         {
             skipSpacesToEnd(linePtr, end);
@@ -1444,7 +1457,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
                 good = false;
             
             if (!skipComma(asmr, haveComma, linePtr))
-                return;
+                return false;
             if (haveComma)
             {
                 haveLastArgument = true;
@@ -1469,7 +1482,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     else if (!pointer && argType == KernelArgType::COUNTER32)
     {   // counter uavId
         if (!skipComma(asmr, haveComma, linePtr))
-            return;
+            return false;
         if (haveComma)
         {
             haveLastArgument = true;
@@ -1490,7 +1503,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     else if (!pointer && argType == KernelArgType::STRUCTURE)
     {   /* parse structure size */
         if (!skipRequiredComma(asmr, linePtr))
-            return;
+            return false;
         skipSpacesToEnd(linePtr, end);
         const char* structSizePlace = linePtr;
         if (getAbsoluteValueArg(asmr, structSizeVal, linePtr, true))
@@ -1507,7 +1520,7 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     if (haveLastArgument)
     {
         if (!skipComma(asmr, haveComma, linePtr))
-            return;
+            return false;
         if (haveComma)
         {
             skipSpacesToEnd(linePtr, end);
@@ -1516,6 +1529,10 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
             toLowerString(name);
             if (::strcmp(name, "unused")==0)
                 usedArg = false;
+            else if (cl20 && ::strcmp(name, "rdonly"))
+                usedArg = 1;
+            else if (cl20 && ::strcmp(name, "wronly"))
+                usedArg = 2;
             else
             {
                 asmr.printError(place, "This is not 'unused' specifier");
@@ -1525,14 +1542,32 @@ void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
     }
     
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
-        return;
+        return false;
     
-    /* setup argument */
-    AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
-    const AmdKernelArgInput argInput = { argName, typeName,
-        (pointer) ? KernelArgType::POINTER :  argType,
+    argInput = { argName, typeName, (pointer) ? KernelArgType::POINTER :  argType,
         (pointer) ? argType : KernelArgType::VOID, ptrSpace, ptrAccess,
         cxuint(structSizeVal), size_t(constSpaceSizeVal), uint32_t(resIdVal), usedArg };
+    return true;
+}
+
+void AsmAmdPseudoOps::doArg(AsmAmdHandler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
+        return;
+    }
+    
+    auto& kernelState = *handler.kernelStates[asmr.currentKernel];
+    AmdKernelArgInput argInput;
+    if (!parseArg(asmr, pseudoOpPlace, linePtr, kernelState.argNamesSet, argInput, false))
+        return;
+    /* setup argument */
+    AmdKernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    const CString argName = argInput.argName;
     config.args.push_back(std::move(argInput));
     /// put argName
     kernelState.argNamesSet.insert(argName);
