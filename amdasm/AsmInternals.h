@@ -455,10 +455,17 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void setAclVersion(AsmAmdCL2Handler& handler, const char* linePtr);
     static void setCompileOptions(AsmAmdCL2Handler& handler, const char* linePtr);
     
+    static void setDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr);
+    
+    static void getDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr);
+    
     static void setConfigValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
            const char* linePtr, AmdCL2ConfigValueTarget target);
     static void setConfigBoolValue(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
            const char* linePtr, AmdCL2ConfigValueTarget target);
+    
+    static void setDimensions(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
 };
 
 extern cxbyte cstrtobyte(const char*& str, const char* end);

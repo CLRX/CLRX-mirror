@@ -287,6 +287,58 @@ void AsmAmdCL2PseudoOps::setCompileOptions(AsmAmdCL2Handler& handler, const char
     handler.output.compileOptions = out;
 }
 
+void AsmAmdCL2PseudoOps::setDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    uint64_t value;
+    if (!getAbsoluteValueArg(asmr, value, linePtr, true))
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.driverVersion = value;
+}
+
+void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    const char* symNamePlace = linePtr;
+    const CString symName = extractSymName(linePtr, end, false);
+    if (symName.empty())
+    {
+        asmr.printError(symNamePlace, "Illegal symbol name");
+        return;
+    }
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    cxuint driverVersion = 0;
+    if (handler.output.driverVersion==0)
+    {
+        if (asmr.driverVersion==0) // just detect driver version
+            driverVersion = detectAmdDriverVersion();
+        else // from assembler setup
+            driverVersion = asmr.driverVersion;
+    }
+    else
+        driverVersion = handler.output.driverVersion;
+    
+    std::pair<AsmSymbolMap::iterator, bool> res = asmr.symbolMap.insert(
+                std::make_pair(symName, AsmSymbol(ASMSECT_ABS, driverVersion)));
+    if (!res.second)
+    {   // found
+        if (res.first->second.onceDefined && res.first->second.isDefined()) // if label
+            asmr.printError(symNamePlace, (std::string("Symbol '")+symName.c_str()+
+                        "' is already defined").c_str());
+        else
+            asmr.setSymbol(*res.first, driverVersion, ASMSECT_ABS);
+    }
+}
+
 void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
          const char* pseudoOpPlace, const char* linePtr, AmdCL2ConfigValueTarget target)
 {
@@ -448,6 +500,44 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
     }
 }
 
+void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
+                   const char* pseudoOpPlace, const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    if (asmr.currentKernel==ASMKERN_GLOBAL ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
+        return;
+    }
+    skipSpacesToEnd(linePtr, end);
+    const char* dimPlace = linePtr;
+    char buf[10];
+    cxuint dimMask = 0;
+    if (getNameArg(asmr, 10, buf, linePtr, "dimension set"))
+    {
+        toLowerString(buf);
+        for (cxuint i = 0; buf[i]!=0; i++)
+            if (buf[i]=='x')
+                dimMask |= 1;
+            else if (buf[i]=='y')
+                dimMask |= 2;
+            else if (buf[i]=='z')
+                dimMask |= 4;
+            else
+            {
+                asmr.printError(dimPlace, "Unknown dimension type");
+                return;
+            }
+    }
+    else // error
+        return;
+    if (!checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    handler.output.kernels[asmr.currentKernel].config.dimMask = dimMask;
+}
+
 };
 
 bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
@@ -478,8 +568,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
                        AMDCL2CVAL_DEBUGMODE);
             break;
         case AMDCL2OP_DIMS:
+            AsmAmdCL2PseudoOps::setDimensions(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_DRIVER_VERSION:
+            AsmAmdCL2PseudoOps::setDriverVersion(*this, linePtr);
             break;
         case AMDCL2OP_DX10CLAMP:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
@@ -494,6 +586,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
                        AMDCL2CVAL_FLOATMODE);
             break;
         case AMDCL2OP_GET_DRIVER_VERSION:
+            AsmAmdCL2PseudoOps::getDriverVersion(*this, linePtr);
             break;
         case AMDCL2OP_GLOBALDATA:
             break;
