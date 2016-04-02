@@ -809,6 +809,61 @@ void AsmAmdCL2PseudoOps::doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPl
     kernelState.argNamesSet.insert(argName);
 }
 
+/// AMD OpenCL kernel argument description
+struct CLRX_INTERNAL IntAmdCL2KernelArg
+{
+    const char* argName;
+    const char* typeName;
+    KernelArgType argType;
+    KernelArgType pointerType;
+    KernelPtrSpace ptrSpace;
+    cxbyte ptrAccess;
+    cxbyte used;
+};
+
+static const IntAmdCL2KernelArg setupArgsTable[] =
+{
+    { "_.global_offset_0", "size_t", KernelArgType::ULONG, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.global_offset_1", "size_t", KernelArgType::ULONG, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.global_offset_2", "size_t", KernelArgType::ULONG, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.printf_buffer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
+        KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, AMDCL2_ARGUSED_READ_WRITE },
+    { "_.vqueue_pointer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
+        KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, 0 },
+    { "_.aqlwrap_pointer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
+        KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, 0 }
+};
+
+void AsmAmdCL2PseudoOps::doSetupArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                       const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    if (asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER ||
+        asmr.sections[asmr.currentSection].type != AsmSectionType::CONFIG)
+    {
+        asmr.printError(pseudoOpPlace, "Illegal place of kernel argument");
+        return;
+    }
+    
+    auto& kernelState = *handler.kernelStates[asmr.currentKernel];
+    if (!kernelState.argNamesSet.empty())
+    {
+        asmr.printError(pseudoOpPlace, "SetupArgs must be as first in argument list");
+        return;
+    }
+    
+    AmdCL2KernelConfig& config = handler.output.kernels[asmr.currentKernel].config;
+    for (const IntAmdCL2KernelArg& arg: setupArgsTable)
+    {
+        kernelState.argNamesSet.insert(arg.argName);
+        config.args.push_back({arg.argName, arg.typeName, arg.argType, arg.pointerType,
+                arg.ptrSpace, arg.ptrAccess, arg.used });
+    }
+}
+
 void AsmAmdCL2PseudoOps::addMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {

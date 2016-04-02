@@ -494,7 +494,8 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
     static void doArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     
-    static void doSetupArg(AsmAmdCL2Handler& handler, const char* linePtr);
+    static void doSetupArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                       const char* linePtr);
     
     static void addMetadata(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
