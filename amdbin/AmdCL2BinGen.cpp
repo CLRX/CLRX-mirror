@@ -192,6 +192,10 @@ static void prepareKernelTempData(const AmdCL2Input* input,
 {
     const bool newBinaries = input->driverVersion >= 191205;
     const size_t kernelsNum = input->kernels.size();
+    
+    const size_t samplersNum = (input->samplerConfig) ?
+                input->samplers.size() : (input->samplerInitSize>>3);
+    
     for (size_t i = 0; i < kernelsNum; i++)
     {
         const AmdCL2KernelInput& kernel = input->kernels[i];
@@ -333,6 +337,11 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                     }
                 }
             }
+            
+            // check sampler list
+            for (cxuint sampler: kernel.config.samplers)
+                if (sampler >= samplersNum)
+                    throw Exception("SamplerId out of range");
             
             tempData.metadataSize = out;
             tempData.setupSize = 256;
@@ -1399,7 +1408,8 @@ public:
         {
             const size_t samplersNum = (input->samplerConfig) ?
                         input->samplers.size() : (input->samplerInitSize>>3);
-            size_t globalOffset = input->globalDataSize - samplersNum;
+            size_t globalOffset = input->globalDataSize - (samplersNum<<3);
+            globalOffset &= ~size_t(7); // alignment
             for (size_t i = 0; i < samplersNum; i++)
             {
                 SLEV(rela.r_offset, globalOffset + 8*i);
@@ -1508,11 +1518,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
         const uint16_t* builtinSectionTable, cxuint extraSeciontIndex,
         std::vector<CString>& stringPool)
 {
-    cxuint samplersNum;
-    if (!input->samplerOffsets.empty())
-       samplersNum = input->samplerOffsets.size();
-    else // if no sampler offsets
-        samplersNum = (input->samplerConfig) ? input->samplers.size() :
+    const size_t samplersNum = (input->samplerConfig) ? input->samplers.size() :
                 (input->samplerInitSize>>3);
     // put kernel symbols
     std::vector<bool> samplerMask(samplersNum);
@@ -1608,7 +1614,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                 (input->samplerConfig && !input->samplers.empty());
     const bool hasGlobalData = input->globalDataSize!=0 && input->globalData!=nullptr;
     const bool hasRWData = input->rwDataSize!=0 && input->rwData!=nullptr;
-                
+    
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
     if (arch == GPUArchitecture::GCN1_0)
         throw Exception("OpenCL 2.0 supported only for GCN1.1 or later");
@@ -1633,6 +1639,15 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             if (sampOffset+8 > input->globalDataSize)
                 throw Exception("Sampler offset outside global data");
     }
+    /* check samplers */
+    const cxuint samplersNum = (input->samplerConfig) ? input->samplers.size() :
+                (input->samplerInitSize>>3);
+    if (!input->samplerOffsets.empty() && input->samplerOffsets.size() != samplersNum)
+        throw Exception("SamplerOffset number doesn't match to samplers number");
+    
+    for (size_t sampOffset: input->samplerOffsets)
+        if ((sampOffset&7) != 0 && sampOffset >= input->globalDataSize)
+            throw Exception("Wrong sampler offset (out of range of unaligned)");
     
     ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b, EV_CURRENT,
                 UINT_MAX, 0, gpuDeviceCodeTable[cxuint(input->deviceType)] });
