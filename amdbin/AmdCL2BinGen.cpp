@@ -1379,12 +1379,8 @@ public:
     
     size_t size() const
     {
-        size_t out;
-        if (!input->samplerOffsets.empty())
-           out = input->samplerOffsets.size();
-        else
-            out= (input->samplerConfig) ? input->samplers.size() :
-                    (input->samplerInitSize>>3);
+        size_t out = (input->samplerConfig) ? input->samplers.size() :
+                (input->samplerInitSize>>3);
         return out*sizeof(Elf64_Rela);
     }
     

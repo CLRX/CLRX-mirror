@@ -1184,7 +1184,112 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, AsmRelocatio
 
 bool AsmAmdCL2Handler::prepareBinary()
 {
-    return false;
+    if (assembler.isaAssembler!=nullptr)
+        saveCurrentAllocRegs(); // save last kernel allocated registers to kernel state
+    
+    output.deviceType = assembler.getDeviceType();
+    /* initialize sections */
+    const size_t sectionsNum = sections.size();
+    const size_t kernelsNum = kernelStates.size();
+    for (size_t i = 0; i < sectionsNum; i++)
+    {
+        const AsmSection& asmSection = assembler.sections[i];
+        const Section& section = sections[i];
+        const size_t sectionSize = asmSection.content.size();
+        const cxbyte* sectionData = (!asmSection.content.empty()) ?
+                asmSection.content.data() : (const cxbyte*)"";
+        AmdCL2KernelInput* kernel = (section.kernelId!=ASMKERN_GLOBAL) ?
+                    &output.kernels[section.kernelId] : nullptr;
+        
+        switch(asmSection.type)
+        {
+            case AsmSectionType::CODE:
+                kernel->codeSize = sectionSize;
+                kernel->code = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_METADATA:
+                kernel->metadataSize = sectionSize;
+                kernel->metadata = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_ISAMETADATA:
+                kernel->isaMetadataSize = sectionSize;
+                kernel->isaMetadata = sectionData;
+                break;
+            case AsmSectionType::DATA:
+                output.globalDataSize = sectionSize;
+                output.globalData = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_RWDATA:
+                output.rwDataSize = sectionSize;
+                output.rwData = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_SAMPLERINIT:
+                output.samplerInitSize = sectionSize;
+                output.samplerInit = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_SETUP:
+                kernel->setupSize = sectionSize;
+                kernel->setup = sectionData;
+                break;
+            case AsmSectionType::AMDCL2_STUB:
+                kernel->stubSize = sectionSize;
+                kernel->stub = sectionData;
+                break;
+            default: // ignore other sections
+                break;
+        }
+    }
+    
+    // set up number of the allocated SGPRs and VGPRs for kernel
+    for (size_t i = 0; i < kernelsNum; i++)
+    {
+        if (!output.kernels[i].useConfig)
+            continue;
+        AmdCL2KernelConfig& config = output.kernels[i].config;
+        cxuint userSGPRsNum = 0;
+        /* include userData sgprs */
+        cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
+                ((config.pgmRSRC2>>7)&7);
+        // extra sgprs for dimensions
+        userSGPRsNum += ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0) + 1;
+        
+        if (config.usedSGPRsNum==BINGEN_DEFAULT)
+            config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i]->allocRegs[0]);
+        if (config.usedVGPRsNum==BINGEN_DEFAULT)
+            config.usedVGPRsNum = kernelStates[i]->allocRegs[1];
+    }
+    
+    /* put extra symbols */
+    if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
+        for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
+        {
+            if (!symEntry.second.hasValue ||
+                ELF32_ST_BIND(symEntry.second.info) == STB_LOCAL)
+                continue; // unresolved or local
+            cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
+                    sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
+            if (binSectId==ELFSECTID_UNDEF)
+                continue; // no section
+            
+            const BinSymbol binSym = { symEntry.first, symEntry.second.value,
+                        symEntry.second.size, binSectId, false, symEntry.second.info,
+                        symEntry.second.other };
+            
+            if (symEntry.second.sectionId == ASMSECT_ABS ||
+                sections[symEntry.second.sectionId].kernelId == ASMKERN_GLOBAL)
+                output.extraSymbols.push_back(std::move(binSym));
+            else // to kernel extra symbols. TODO: translate correct value!
+                output.innerExtraSymbols.push_back(std::move(binSym));
+        }
+    // driver version setup
+    if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
+    {
+        if (assembler.driverVersion==0) // just detect driver version
+            output.driverVersion = detectAmdDriverVersion();
+        else // from assembler setup
+            output.driverVersion = assembler.driverVersion;
+    }
+    return true;
 }
 
 void AsmAmdCL2Handler::writeBinary(std::ostream& os) const
