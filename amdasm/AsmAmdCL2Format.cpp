@@ -837,7 +837,7 @@ static const IntAmdCL2KernelArg setupArgsTable[] =
         KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, 0 }
 };
 
-void AsmAmdCL2PseudoOps::doSetupArg(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                        const char* linePtr)
 {
     Assembler& asmr = handler.assembler;
@@ -1141,6 +1141,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::addKernelSetup(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SETUPARGS:
+            AsmAmdCL2PseudoOps::doSetupArgs(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_SGPRSNUM:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
