@@ -358,7 +358,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     }
     // parse alignment
     skipSpacesToEnd(linePtr, end);
-    if (linePtr+6<end && ::strncmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
+    if (linePtr+6<end && ::strncasecmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
     {   // if alignment
         linePtr+=5;
         skipSpacesToEnd(linePtr, end);

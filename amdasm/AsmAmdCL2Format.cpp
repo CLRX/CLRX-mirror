@@ -426,56 +426,6 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
     asmr.goToSection(pseudoOpPlace, handler.dataSection);
 }
 
-void AsmAmdCL2PseudoOps::doBssSection(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
-                      const char* linePtr)
-{
-    Assembler& asmr = handler.assembler;
-    const char* end = asmr.line + asmr.lineSize;
-    skipSpacesToEnd(linePtr, end);
-    bool good = true;
-    // parse alignment
-    uint64_t sectionAlign = 0;
-    skipSpacesToEnd(linePtr, end);
-    if (linePtr+6<end && ::strncmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
-    {   // if alignment
-        linePtr+=5;
-        skipSpacesToEnd(linePtr, end);
-        if (linePtr!=end && *linePtr=='=')
-        {
-            skipCharAndSpacesToEnd(linePtr, end);
-            const char* valuePtr = linePtr;
-            if (getAbsoluteValueArg(asmr, sectionAlign, linePtr, true))
-            {
-                if (sectionAlign!=0 && (1ULL<<(63-CLZ64(sectionAlign))) != sectionAlign)
-                {
-                    asmr.printError(valuePtr, "Alignment must be power of two or zero");
-                    good = false;
-                }
-            }
-            else
-                good = false;
-        }
-        else
-        {
-            asmr.printError(linePtr, "Expected '=' after 'align'");
-            good = false;
-        }
-    }
-    
-    if (!good && !checkGarbagesAtEnd(asmr, linePtr))
-        return;
-    
-    if (handler.bssSection==ASMSECT_NONE)
-    {   /* add this section */
-        cxuint thisSection = handler.sections.size();
-        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_BSS,
-            ELFSECTID_UNDEF, ".bss" });
-        handler.bssSection = thisSection;
-    }
-    
-    asmr.goToSection(pseudoOpPlace, handler.bssSection, sectionAlign);
-}
-
 void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr)
 {
@@ -1080,7 +1030,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::doArg(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_BSSDATA:
-            AsmAmdCL2PseudoOps::doBssSection(*this, stmtPlace, linePtr);
+            AsmPseudoOps::goToSection(assembler, stmtPlace, linePtr, true);
             break;
         case AMDCL2OP_COMPILE_OPTIONS:
             AsmAmdCL2PseudoOps::setCompileOptions(*this, linePtr);
