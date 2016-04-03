@@ -1880,6 +1880,17 @@ bool AsmAmdHandler::prepareBinary()
     }
     
     /* put extra symbols */
+    std::unique_ptr<size_t[]> headerOffsets(new size_t[kernelsNum]);
+    std::unique_ptr<size_t[]> metadataOffsets(new size_t[kernelsNum]);
+    size_t offset = 0;
+    for (size_t i = 0; i < kernelsNum; i++)
+    {
+        headerOffsets[i] = offset;
+        offset += output.kernels[i].headerSize;
+        metadataOffsets[i] = offset;
+        offset += output.kernels[i].metadataSize;
+    }
+    
     if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
@@ -1888,15 +1899,32 @@ bool AsmAmdHandler::prepareBinary()
                 continue; // unresolved or local
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
-            if (binSectId==ELFSECTID_UNDEF)
+            cxuint kernelId = (symEntry.second.sectionId != ASMSECT_ABS) ? 
+                sections[symEntry.second.sectionId].kernelId : ASMKERN_GLOBAL;
+            if (binSectId==ELFSECTID_UNDEF && (kernelId==ASMKERN_GLOBAL ||
+                output.kernels[kernelId].useConfig))
                 continue; // no section
             
-            const BinSymbol binSym = { symEntry.first, symEntry.second.value,
+            uint64_t value = symEntry.second.value;
+            if (sections[symEntry.second.sectionId].type == AsmSectionType::AMD_HEADER)
+            {
+                value = headerOffsets[kernelId]+value;
+                binSectId = ELFSECTID_RODATA;
+                kernelId = ASMKERN_GLOBAL;
+            }
+            else if (sections[symEntry.second.sectionId].type ==
+                        AsmSectionType::AMD_METADATA)
+            {
+                value = metadataOffsets[kernelId]+value;
+                binSectId = ELFSECTID_RODATA;
+                kernelId = ASMKERN_GLOBAL;
+            }
+            
+            const BinSymbol binSym = { symEntry.first, value,
                         symEntry.second.size, binSectId, false, symEntry.second.info,
                         symEntry.second.other };
             
-            if (symEntry.second.sectionId == ASMSECT_ABS ||
-                sections[symEntry.second.sectionId].kernelId == ASMKERN_GLOBAL)
+            if (kernelId == ASMKERN_GLOBAL)
                 output.extraSymbols.push_back(std::move(binSym));
             else // to kernel extra symbols
                 output.kernels[sections[symEntry.second.sectionId].kernelId].extraSymbols
