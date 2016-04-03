@@ -1906,18 +1906,21 @@ bool AsmAmdHandler::prepareBinary()
                 continue; // no section
             
             uint64_t value = symEntry.second.value;
-            if (sections[symEntry.second.sectionId].type == AsmSectionType::AMD_HEADER)
+            if (symEntry.second.sectionId != ASMSECT_ABS)
             {
-                value = headerOffsets[kernelId]+value;
-                binSectId = ELFSECTID_RODATA;
-                kernelId = ASMKERN_GLOBAL;
-            }
-            else if (sections[symEntry.second.sectionId].type ==
-                        AsmSectionType::AMD_METADATA)
-            {
-                value = metadataOffsets[kernelId]+value;
-                binSectId = ELFSECTID_RODATA;
-                kernelId = ASMKERN_GLOBAL;
+                if (sections[symEntry.second.sectionId].type == AsmSectionType::AMD_HEADER)
+                {
+                    value = headerOffsets[kernelId]+value;
+                    binSectId = ELFSECTID_RODATA;
+                    kernelId = ASMKERN_GLOBAL;
+                }
+                else if (sections[symEntry.second.sectionId].type ==
+                            AsmSectionType::AMD_METADATA)
+                {
+                    value = metadataOffsets[kernelId]+value;
+                    binSectId = ELFSECTID_RODATA;
+                    kernelId = ASMKERN_GLOBAL;
+                }
             }
             
             const BinSymbol binSym = { symEntry.first, value,
