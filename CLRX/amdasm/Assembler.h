@@ -504,7 +504,8 @@ struct AsmSection
     cxuint kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
     Flags flags;   ///< section flags
-    size_t size;
+    uint64_t alignment;
+    uint64_t size;
     std::vector<cxbyte> content;    ///< content of section
     
     size_t getSize() const
@@ -700,10 +701,10 @@ private:
     
     void goToMain(const char* pseudoOpPlace);
     void goToKernel(const char* pseudoOpPlace, const char* kernelName);
-    void goToSection(const char* pseudoOpPlace, const char* sectionName);
+    void goToSection(const char* pseudoOpPlace, const char* sectionName, uint64_t align=0);
     void goToSection(const char* pseudoOpPlace, const char* sectionName,
-                     AsmSectionType type, Flags flags);
-    void goToSection(const char* pseudoOpPlace, cxuint sectionId);
+                     AsmSectionType type, Flags flags, uint64_t align=0);
+    void goToSection(const char* pseudoOpPlace, cxuint sectionId, uint64_t align=0);
     
     void printWarningForRange(cxuint bits, uint64_t value, const AsmSourcePos& pos,
                   cxbyte signess = WS_BOTH);

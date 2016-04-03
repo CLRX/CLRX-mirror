@@ -380,7 +380,7 @@ thirdKernel:
         "test.s:20:39: Warning: Target size of argument out of range\n"
         "test.s:37:20: Warning: Value 0xfffffaaaaa truncated to 0xfffaaaaa\n"
         "test.s:38:26: Warning: Value 0x111223030 truncated to 0x11223030\n"
-        "test.s:52:13: Warning: Section type and flags was ignored\n", true
+        "test.s:52:13: Warning: Section type, flags and alignment was ignored\n", true
     },
     /* 1 - gallium (configured proginfo) */
     { R"ffDXD(            .gallium

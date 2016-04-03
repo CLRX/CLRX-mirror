@@ -432,7 +432,27 @@ void AsmAmdCL2PseudoOps::doBssSection(AsmAmdCL2Handler& handler, const char* pse
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
-    if (!checkGarbagesAtEnd(asmr, linePtr))
+    bool good = true;
+    // parse alignment
+    uint64_t sectionAlign = 0;
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr+6<end && ::strncmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
+    {   // if alignment
+        linePtr+=5;
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr=='=')
+        {
+            skipCharAndSpacesToEnd(linePtr, end);
+            good &= getAbsoluteValueArg(asmr, sectionAlign, linePtr, true);
+        }
+        else
+        {
+            asmr.printError(linePtr, "Expected '=' after 'align'");
+            good = false;
+        }
+    }
+    
+    if (!good && !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     if (handler.bssSection==ASMSECT_NONE)
@@ -442,7 +462,8 @@ void AsmAmdCL2PseudoOps::doBssSection(AsmAmdCL2Handler& handler, const char* pse
             ELFSECTID_UNDEF, ".bss" });
         handler.bssSection = thisSection;
     }
-    asmr.goToSection(pseudoOpPlace, handler.bssSection);
+    
+    asmr.goToSection(pseudoOpPlace, handler.bssSection, sectionAlign);
 }
 
 void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -1223,6 +1244,10 @@ bool AsmAmdCL2Handler::prepareBinary()
                 output.rwDataSize = sectionSize;
                 output.rwData = sectionData;
                 break;
+            case AsmSectionType::AMDCL2_BSS:
+                output.bssAlignment = asmSection.alignment;
+                output.bssSize = asmSection.getSize();
+                break;
             case AsmSectionType::AMDCL2_SAMPLERINIT:
                 output.samplerInitSize = sectionSize;
                 output.samplerInit = sectionData;
@@ -1235,6 +1260,26 @@ bool AsmAmdCL2Handler::prepareBinary()
                 kernel->stubSize = sectionSize;
                 kernel->stub = sectionData;
                 break;
+            case AsmSectionType::EXTRA_SECTION:
+            {
+                uint32_t elfSectType =
+                       (asmSection.type==AsmSectionType::EXTRA_NOTE) ? SHT_NOTE :
+                       (asmSection.type==AsmSectionType::EXTRA_NOBITS) ? SHT_NOBITS :
+                             SHT_PROGBITS;
+                uint32_t elfSectFlags = 
+                    ((asmSection.flags&ASMELFSECT_ALLOCATABLE) ? SHF_ALLOC : 0) |
+                    ((asmSection.flags&ASMELFSECT_WRITEABLE) ? SHF_WRITE : 0) |
+                    ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
+                if (section.kernelId == ASMKERN_GLOBAL)
+                    output.extraSections.push_back({section.name, sectionSize, sectionData,
+                            asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
+                            elfSectFlags, ELFSECTID_NULL, 0, 0 });
+                else
+                    output.innerExtraSections.push_back({section.name, sectionSize,
+                            sectionData, asmSection.alignment!=0?asmSection.alignment:1,
+                            elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
+                break;
+            }
             default: // ignore other sections
                 break;
         }

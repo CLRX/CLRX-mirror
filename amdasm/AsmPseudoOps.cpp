@@ -284,6 +284,7 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     bool haveFlags = false;
     uint32_t sectFlags = 0;
     AsmSectionType sectType = AsmSectionType::EXTRA_SECTION;
+    uint64_t sectionAlign = 0;
     if (!isPseudoOp)
         if (!skipComma(asmr, haveFlags, linePtr))
             return;
@@ -349,13 +350,32 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
             }
         }
     }
+    // parse alignment
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr+6<end && ::strncmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
+    {   // if alignment
+        linePtr+=5;
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr=='=')
+        {
+            skipCharAndSpacesToEnd(linePtr, end);
+            good &= getAbsoluteValueArg(asmr, sectionAlign, linePtr, true);
+        }
+        else
+        {
+            asmr.printError(linePtr, "Expected '=' after 'align'");
+            good = false;
+        }
+    }
+    
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
     if (!haveFlags)
-        asmr.goToSection(pseudoOpPlace, sectionName.c_str());
+        asmr.goToSection(pseudoOpPlace, sectionName.c_str(), sectionAlign);
     else
-        asmr.goToSection(pseudoOpPlace, sectionName.c_str(), sectType, sectFlags);
+        asmr.goToSection(pseudoOpPlace, sectionName.c_str(), sectType, sectFlags,
+                 sectionAlign);
 }
 
 void AsmPseudoOps::goToMain(Assembler& asmr, const char* pseudoOpPlace,

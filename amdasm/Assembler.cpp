@@ -1524,7 +1524,7 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
         auto it = kernelMap.insert(std::make_pair(kernelName, kernelId)).first;
         kernels.push_back({ it->first.c_str(),  getSourcePos(pseudoOpPlace) });
         auto info = formatHandler->getSectionInfo(currentSection);
-        sections.push_back({ info.name, currentKernel, info.type, info.flags });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, 0 });
         currentOutPos = 0;
     }
     else
@@ -1541,7 +1541,8 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
     }
 }
 
-void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
+void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
+                            uint64_t align)
 {
     const cxuint sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
@@ -1555,7 +1556,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
             return;
         }
         auto info = formatHandler->getSectionInfo(sectionId);
-        sections.push_back({ info.name, currentKernel, info.type, info.flags });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, align });
         currentOutPos = 0;
     }
     else // if section exists
@@ -1568,12 +1569,14 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
             return;
         }
         
+        if (align!=0)
+            printWarning(pseudoOpPlace, "Section alignment was ignored");
         currentOutPos = sections[currentSection].getSize();
     }
 }
 
 void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
-        AsmSectionType type, Flags flags)
+        AsmSectionType type, Flags flags, uint64_t align)
 {
     const cxuint sectionId = formatHandler->getSectionId(sectionName);
     if (sectionId == ASMSECT_NONE)
@@ -1595,7 +1598,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         else
             printWarning(pseudoOpPlace,
                      "Section type and flags was ignored for builtin section");
-        sections.push_back({ info.name, currentKernel, info.type, info.flags });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, align });
         currentOutPos = 0;
     }
     else // if section exists
@@ -1608,12 +1611,12 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
             return;
         }
         
-        printWarning(pseudoOpPlace, "Section type and flags was ignored");
+        printWarning(pseudoOpPlace, "Section type, flags and alignment was ignored");
         currentOutPos = sections[currentSection].getSize();
     }
 }
 
-void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId)
+void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId, uint64_t align)
 {
     try
     { formatHandler->setCurrentSection(sectionId); }
@@ -1622,8 +1625,10 @@ void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId)
     if (sectionId >= sections.size())
     {
         auto info = formatHandler->getSectionInfo(sectionId);
-        sections.push_back({ info.name, currentKernel, info.type, info.flags });
+        sections.push_back({ info.name, currentKernel, info.type, info.flags, align });
     }
+    else if (align!=0)
+        printWarning(pseudoOpPlace, "Section alignment was ignored");
     
     currentOutPos = sections[currentSection].getSize();
 }
@@ -1641,7 +1646,7 @@ void Assembler::initializeOutputFormat()
     isaAssembler = new GCNAssembler(*this);
     // add first section
     auto info = formatHandler->getSectionInfo(currentSection);
-    sections.push_back({ info.name, currentKernel, info.type, info.flags });
+    sections.push_back({ info.name, currentKernel, info.type, info.flags, 0 });
     currentOutPos = 0;
 }
 

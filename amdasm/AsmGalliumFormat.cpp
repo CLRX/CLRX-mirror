@@ -1028,7 +1028,8 @@ bool AsmGalliumHandler::prepareBinary()
                     ((asmSection.flags&ASMELFSECT_WRITEABLE) ? SHF_WRITE : 0) |
                     ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
                 output.extraSections.push_back({section.name, sectionSize, sectionData,
-                    1, elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
+                    asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
+                    elfSectFlags, ELFSECTID_NULL, 0, 0 });
                 break;
             }
             case AsmSectionType::GALLIUM_COMMENT:

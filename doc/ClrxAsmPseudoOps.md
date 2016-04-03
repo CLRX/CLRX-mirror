@@ -630,7 +630,7 @@ These pseudo-operations are ignored by CLRX assembler.
 
 ### .section
 
-Syntax: .section SECTIONNAME[, "FLAGS"[, @TYPE]]
+Syntax: .section SECTIONNAME[, "FLAGS"[, @TYPE]] [align=ALIGN]
 
 Go to specified section SECTIONNAME. If section doesn't exist assembler create it.
 Second optional argument set flags of the section. Can be from list:
@@ -645,6 +645,8 @@ the binary format. Type can be one of following type:
 * `progbits` - program data
 * `note` - informations about program or other things
 * `nobits` - doesn't contain data (only occupies space)
+
+The last attribute called 'align' set up section aligmnent.
 
 ### .size
 

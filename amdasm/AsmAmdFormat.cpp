@@ -1843,10 +1843,12 @@ bool AsmAmdHandler::prepareBinary()
                     ((asmSection.flags&ASMELFSECT_EXECUTABLE) ? SHF_EXECINSTR : 0);
                 if (section.kernelId == ASMKERN_GLOBAL)
                     output.extraSections.push_back({section.name, sectionSize, sectionData,
-                            1, elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
+                            asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
+                            elfSectFlags, ELFSECTID_NULL, 0, 0 });
                 else
                     kernel->extraSections.push_back({section.name, sectionSize, sectionData,
-                            1, elfSectType, elfSectFlags, ELFSECTID_NULL, 0, 0 });
+                            asmSection.alignment!=0?asmSection.alignment:1, elfSectType,
+                            elfSectFlags, ELFSECTID_NULL, 0, 0 });
                 break;
             }
             default: // ignore other sections
