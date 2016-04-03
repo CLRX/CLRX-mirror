@@ -1845,7 +1845,7 @@ bool Assembler::assemble()
     if ((flags&ASM_TESTRUN) == 0)
         for (const AsmSymbolEntry& symEntry: symbolMap)
             if (!symEntry.second.occurrencesInExprs.empty())
-                for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
+                for (const auto& occur: symEntry.second.occurrencesInExprs)
                 {
                     bool withReloc = false;
                     AsmRelocation reloc;

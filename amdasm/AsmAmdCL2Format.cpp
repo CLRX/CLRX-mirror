@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <stack>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -1160,6 +1161,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
 bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
                bool& withReloc)
 {
+    std::stack<AsmSymbolEntry*> depthStack;
+    // we are scanning expressions
+    const Array<AsmExprOp>& exprOps = expr->getOps();
+    const AsmExprArg* exprArgs = expr->getArgs();
     return false;
 }
 
@@ -1220,6 +1225,9 @@ bool AsmAmdCL2Handler::prepareBinary()
                 kernel->stubSize = sectionSize;
                 kernel->stub = sectionData;
                 break;
+            case AsmSectionType::EXTRA_PROGBITS:
+            case AsmSectionType::EXTRA_NOTE:
+            case AsmSectionType::EXTRA_NOBITS:
             case AsmSectionType::EXTRA_SECTION:
             {
                 uint32_t elfSectType =
@@ -1251,7 +1259,14 @@ bool AsmAmdCL2Handler::prepareBinary()
         if (!output.kernels[i].useConfig)
             continue;
         AmdCL2KernelConfig& config = output.kernels[i].config;
-        cxuint userSGPRsNum = 0;
+        cxuint userSGPRsNum = 4;
+        if (config.useEnqueue)
+            userSGPRsNum = 10;
+        else if (config.useSetup)
+            userSGPRsNum = ((config.useSizes) ? 8 : 6);
+        else if (config.useSizes)
+            userSGPRsNum = 8;
+        
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);
@@ -1262,6 +1277,18 @@ bool AsmAmdCL2Handler::prepareBinary()
             config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i]->allocRegs[0]);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = kernelStates[i]->allocRegs[1];
+    }
+    
+    /* put kernels relocations */
+    for (const AsmRelocation& reloc: assembler.relocations)
+    {   /* put only code relocations */
+        cxuint kernelId = sections[reloc.sectionId].kernelId;
+        cxuint sectionId = reloc.symbol->second.sectionId;
+        cxuint symbol = sections[sectionId].type==AsmSectionType::DATA ? 0 :
+            (sections[sectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
+        uint64_t addend = reloc.symbol->second.value + reloc.addend;
+        output.kernels[kernelId].relocations.push_back({reloc.offset, reloc.type,
+                    symbol, addend });
     }
     
     /* put extra symbols */

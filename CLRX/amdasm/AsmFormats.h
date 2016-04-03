@@ -274,6 +274,14 @@ private:
         const char* name;
         uint32_t extraId;
     };
+    struct Relocation
+    {
+        RelocType type;
+        cxuint symbol;  // 0,1,2
+        size_t addend;
+    };
+    /* relocmap: key - symbol, value - relocation */
+    typedef std::unordered_map<CString, Relocation> RelocMap;
     struct Kernel
     {
         cxuint stubSection;
@@ -290,6 +298,7 @@ private:
     std::vector<Section> sections;
     // use pointer to prevents copying Kernel objects
     std::vector<Kernel*> kernelStates;
+    RelocMap relocsMap;
     SectionMap extraSectionMap;
     SectionMap innerExtraSectionMap;
     cxuint rodataSection; // global inner
