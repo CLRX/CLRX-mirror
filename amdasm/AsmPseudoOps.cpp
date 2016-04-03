@@ -286,8 +286,14 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
     AsmSectionType sectType = AsmSectionType::EXTRA_SECTION;
     uint64_t sectionAlign = 0;
     if (!isPseudoOp)
-        if (!skipComma(asmr, haveFlags, linePtr))
-            return;
+    {
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr==',')
+        {
+            haveFlags = true;
+            linePtr++;
+        }
+    }
     bool good = true;
     if (haveFlags)
     {
