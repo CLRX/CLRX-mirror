@@ -365,7 +365,17 @@ void AsmPseudoOps::goToSection(Assembler& asmr, const char* pseudoOpPlace,
         if (linePtr!=end && *linePtr=='=')
         {
             skipCharAndSpacesToEnd(linePtr, end);
-            good &= getAbsoluteValueArg(asmr, sectionAlign, linePtr, true);
+            const char* valuePtr = linePtr;
+            if (getAbsoluteValueArg(asmr, sectionAlign, linePtr, true))
+            {
+                if (sectionAlign!=0 && (1ULL<<(63-CLZ64(sectionAlign))) != sectionAlign)
+                {
+                    asmr.printError(valuePtr, "Alignment must be power of two or zero");
+                    good = false;
+                }
+            }
+            else
+                good = false;
         }
         else
         {
