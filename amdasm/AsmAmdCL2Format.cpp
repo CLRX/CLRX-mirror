@@ -385,7 +385,7 @@ void AsmAmdCL2PseudoOps::doInner(AsmAmdCL2Handler& handler, const char* pseudoOp
         return;
     }
     
-    asmr.currentOutPos = asmr.sections[asmr.currentSection].content.size();
+    asmr.currentOutPos = asmr.sections[asmr.currentSection].getSize();
 }
 
 void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -1195,7 +1195,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     {
         const AsmSection& asmSection = assembler.sections[i];
         const Section& section = sections[i];
-        const size_t sectionSize = asmSection.content.size();
+        const size_t sectionSize = asmSection.getSize();
         const cxbyte* sectionData = (!asmSection.content.empty()) ?
                 asmSection.content.data() : (const cxbyte*)"";
         AmdCL2KernelInput* kernel = (section.kernelId!=ASMKERN_GLOBAL) ?

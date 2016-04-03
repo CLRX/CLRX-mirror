@@ -1782,7 +1782,7 @@ bool AsmAmdHandler::prepareBinary()
     {
         const AsmSection& asmSection = assembler.sections[i];
         const Section& section = sections[i];
-        const size_t sectionSize = asmSection.content.size();
+        const size_t sectionSize = asmSection.getSize();
         const cxbyte* sectionData = (!asmSection.content.empty()) ?
                 asmSection.content.data() : (const cxbyte*)"";
         AmdKernelInput* kernel = (section.kernelId!=ASMKERN_GLOBAL) ?

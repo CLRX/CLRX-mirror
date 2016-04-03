@@ -1470,6 +1470,33 @@ bool Assembler::readLine()
     return true;
 }
 
+cxbyte* Assembler::reserveData(size_t size, cxbyte fillValue)
+{
+    if (currentSection != ASMSECT_ABS)
+    {
+        size_t oldOutPos = currentOutPos;
+        AsmSection& section = sections[currentSection];
+        if ((section.flags & ASMSECT_WRITEABLE) == 0) // non writeable
+        {
+            currentOutPos += size;
+            section.size += size;
+            return nullptr;
+        }
+        else
+        {
+            section.content.insert(section.content.end(), size, fillValue);
+            currentOutPos += size;
+            return section.content.data() + oldOutPos;
+        }
+    }
+    else
+    {
+        currentOutPos += size;
+        return nullptr;
+    }
+}
+
+
 void Assembler::goToMain(const char* pseudoOpPlace)
 {
     try
@@ -1477,7 +1504,7 @@ void Assembler::goToMain(const char* pseudoOpPlace)
     catch(const AsmFormatException& ex) // if error
     { printError(pseudoOpPlace, ex.what()); }
     
-    currentOutPos = sections[currentSection].content.size();
+    currentOutPos = sections[currentSection].getSize();
 }
 
 void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
@@ -1510,7 +1537,7 @@ void Assembler::goToKernel(const char* pseudoOpPlace, const char* kernelName)
             return;
         }
         
-        currentOutPos = sections[currentSection].content.size();
+        currentOutPos = sections[currentSection].getSize();
     }
 }
 
@@ -1541,7 +1568,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName)
             return;
         }
         
-        currentOutPos = sections[currentSection].content.size();
+        currentOutPos = sections[currentSection].getSize();
     }
 }
 
@@ -1582,7 +1609,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, const char* sectionName,
         }
         
         printWarning(pseudoOpPlace, "Section type and flags was ignored");
-        currentOutPos = sections[currentSection].content.size();
+        currentOutPos = sections[currentSection].getSize();
     }
 }
 
@@ -1598,7 +1625,7 @@ void Assembler::goToSection(const char* pseudoOpPlace, cxuint sectionId)
         sections.push_back({ info.name, currentKernel, info.type, info.flags });
     }
     
-    currentOutPos = sections[currentSection].content.size();
+    currentOutPos = sections[currentSection].getSize();
 }
 
 void Assembler::initializeOutputFormat()
@@ -1778,7 +1805,7 @@ bool Assembler::assemble()
                 }
                 isaAssembler->assemble(firstName, stmtPlace, linePtr, end,
                            sections[currentSection].content);
-                currentOutPos = sections[currentSection].content.size();
+                currentOutPos = sections[currentSection].getSize();
             }
         }
     }

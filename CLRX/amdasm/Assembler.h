@@ -504,7 +504,11 @@ struct AsmSection
     cxuint kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
     Flags flags;   ///< section flags
+    size_t size;
     std::vector<cxbyte> content;    ///< content of section
+    
+    size_t getSize() const
+    { return ((flags&ASMSECT_WRITEABLE) != 0) ? content.size() : size; }
 };
 
 /// type of clause
@@ -692,22 +696,7 @@ private:
         currentOutPos += size;
     }
 
-    cxbyte* reserveData(size_t size, cxbyte fillValue = 0)
-    {
-        if (currentSection != ASMSECT_ABS)
-        {
-            size_t oldOutPos = currentOutPos;
-            AsmSection& section = sections[currentSection];
-            section.content.insert(section.content.end(), size, fillValue);
-            currentOutPos += size;
-            return section.content.data() + oldOutPos;
-        }
-        else
-        {
-            currentOutPos += size;
-            return nullptr;
-        }
-    }
+    cxbyte* reserveData(size_t size, cxbyte fillValue = 0);
     
     void goToMain(const char* pseudoOpPlace);
     void goToKernel(const char* pseudoOpPlace, const char* kernelName);
