@@ -1136,7 +1136,7 @@ bool Assembler::isAbsoluteSymbol(const AsmSymbol& symbol) const
     if (sections.empty())
         return false; // fallback
     const AsmSection& section = sections[symbol.sectionId];
-    return section.type!=AsmSectionType::CODE;
+    return (section.flags&ASMSECT_ABS_ADDRESSABLE) != 0;
 }
 
 void Assembler::printWarning(const AsmSourcePos& pos, const char* message)

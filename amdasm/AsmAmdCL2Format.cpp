@@ -268,7 +268,7 @@ AsmFormatHandler::SectionInfo AsmAmdCL2Handler::getSectionInfo(cxuint sectionId)
             info.type == AsmSectionType::AMDCL2_RWDATA ||
             info.type == AsmSectionType::DATA)
     {   // global data, rwdata and bss are relocatable sections (we set unresolvable flag)
-        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_ABS_ADDRESSABLE | ASMSECT_UNRESOLVABLE;
+        info.flags = ASMSECT_ADDRESSABLE | ASMSECT_UNRESOLVABLE;
         if (info.type != AsmSectionType::AMDCL2_BSS)
             info.flags |= ASMSECT_WRITEABLE;
     }
