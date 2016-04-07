@@ -130,6 +130,7 @@ public:
     /// parse register range
     virtual bool parseRegisterRange(const char*& linePtr,
                         cxuint& regStart, cxuint& regEnd) = 0;
+    virtual bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType) = 0;
 };
 
 /// GCN arch assembler
@@ -164,6 +165,7 @@ public:
     const cxuint* getAllocatedRegisters(size_t& regTypesNum, Flags& regFlags) const;
     void fillAlignment(size_t size, cxbyte* output);
     bool parseRegisterRange(const char*& linePtr, cxuint& regStart, cxuint& regEnd);
+    bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType);
 };
 
 /*

@@ -2849,3 +2849,10 @@ bool GCNAssembler::parseRegisterRange(const char*& linePtr, cxuint& regStart,
     regEnd = operand.range.end;
     return true;
 }
+
+bool GCNAssembler::relocationIsFit(cxuint bits, AsmExprTargetType tgtType)
+{
+    if (bits==32)
+        return tgtType==GCNTGT_SOPJMP || tgtType==GCNTGT_LITIMM;
+    return false;
+}

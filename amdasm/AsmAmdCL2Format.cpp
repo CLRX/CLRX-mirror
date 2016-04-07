@@ -1329,6 +1329,12 @@ bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
 bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& value,
                  cxuint& sectionId)
 {
+    AsmExprTargetType tgtType = expr->getTarget().type;
+    if (tgtType!=ASMXTGT_DATA32 && !assembler.isaAssembler->relocationIsFit(32, tgtType))
+        return false;
+    const Array<AsmExprOp>& ops = expr->getOps();
+    const AsmExprArg* args = expr->getArgs();
+    // checking what is expression
     return false;
 }
 
