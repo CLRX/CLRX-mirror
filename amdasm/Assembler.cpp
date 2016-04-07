@@ -1844,27 +1844,11 @@ bool Assembler::assemble()
     }
     
     if ((flags&ASM_TESTRUN) == 0)
-    {
         for (const AsmSymbolEntry& symEntry: symbolMap)
             if (!symEntry.second.occurrencesInExprs.empty())
-                for (size_t i = 0; i < symEntry.second.occurrencesInExprs.size(); i++)
-                {
-                    auto& occur = symEntry.second.occurrencesInExprs[i];
-                    bool withReloc = false;
-                    AsmRelocation reloc;
-                    AsmExpression* occurExpr = occur.expression;
-                    // check whether occurence is resolvable by relocation
-                    if (formatHandler==nullptr || !formatHandler->resolveRelocation(
-                                occurExpr, &reloc, withReloc))
-                        printError(occur.expression->getSourcePos(),(std::string(
+                for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
+                    printError(occur.expression->getSourcePos(),(std::string(
                             "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
-                    else if (withReloc)    // add resolved relocation
-                    {
-                        delete occurExpr;
-                        relocations.push_back(reloc);
-                    }
-                }
-    }
     
     if (good && formatHandler!=nullptr)
         formatHandler->prepareBinary();

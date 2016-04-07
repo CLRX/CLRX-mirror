@@ -41,10 +41,8 @@ AsmFormatHandler::~AsmFormatHandler()
 void AsmFormatHandler::handleLabel(const CString& label)
 { }
 
-bool AsmFormatHandler::resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
-        bool& withReloc)
+bool AsmFormatHandler::resolveRelocation(const AsmExpression* expr)
 {
-    withReloc = false;
     return false;
 }
 

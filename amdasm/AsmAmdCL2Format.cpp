@@ -1158,13 +1158,8 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
     return true;
 }
 
-bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
-               bool& withReloc)
+bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr)
 {
-    std::stack<AsmSymbolEntry*> depthStack;
-    // we are scanning expressions
-    const Array<AsmExprOp>& exprOps = expr->getOps();
-    const AsmExprArg* exprArgs = expr->getArgs();
     return false;
 }
 

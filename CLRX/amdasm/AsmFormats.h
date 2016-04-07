@@ -157,8 +157,7 @@ public:
     /// handle labels
     virtual void handleLabel(const CString& label);
     /// resolve relocation for specified expression
-    virtual bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
-                   bool& withReloc);
+    virtual bool resolveRelocation(const AsmExpression* expr);
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
@@ -330,8 +329,7 @@ public:
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
-    bool resolveRelocation(const AsmExpression* expr, AsmRelocation* reloc,
-                   bool& withReloc);
+    bool resolveRelocation(const AsmExpression* expr);
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;
