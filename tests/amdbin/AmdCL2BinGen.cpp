@@ -577,9 +577,9 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
                 uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
                 RelocType rtype;
                 if (typev == 1)
-                    rtype = RelocType::LOW_32BIT;
+                    rtype = RELTYPE_LOW_32BIT;
                 else if (typev == 2)
-                    rtype = RelocType::HIGH_32BIT;
+                    rtype = RELTYPE_HIGH_32BIT;
                 else
                     throw Exception("Wrong reltype");
                 cxuint rsym = symIndex==aDataSymIndex?1U:(symIndex==bssSymIndex?2U:0U);

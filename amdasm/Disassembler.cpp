@@ -214,7 +214,7 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
         return false;
     const Relocation& reloc = relocIter->second;
     if (reloc.addend != 0 && 
-        (reloc.type==RelocType::LOW_32BIT || reloc.type==RelocType::HIGH_32BIT))
+        (reloc.type==RELTYPE_LOW_32BIT || reloc.type==RELTYPE_HIGH_32BIT))
         output.write(1, "(");
     /// write name+value
     output.writeString(relSymbols[reloc.symbol].c_str());
@@ -225,15 +225,15 @@ bool ISADisassembler::writeRelocation(size_t pos, RelocIter& relocIter)
         if (reloc.addend > 0)
             buf[bufPos++] = '+';
         bufPos += itocstrCStyle(reloc.addend, buf+bufPos, 22, 10, 0, false);
-        if (reloc.type==RelocType::LOW_32BIT || reloc.type==RelocType::HIGH_32BIT)
+        if (reloc.type==RELTYPE_LOW_32BIT || reloc.type==RELTYPE_HIGH_32BIT)
             buf[bufPos++] = ')';
     }
-    if (reloc.type==RelocType::LOW_32BIT)
+    if (reloc.type==RELTYPE_LOW_32BIT)
     {
         ::memcpy(buf+bufPos, "&0xffffffff", 11);
         bufPos += 11;
     }
-    else if (reloc.type==RelocType::HIGH_32BIT)
+    else if (reloc.type==RELTYPE_HIGH_32BIT)
     {
         ::memcpy(buf+bufPos, ">>32", 4);
         bufPos += 4;
@@ -645,9 +645,9 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     uint32_t rtype = ELF64_R_TYPE(ULEV(rela.r_info));
                     RelocType relocType;
                     if (rtype==1)
-                        relocType = RelocType::LOW_32BIT;
+                        relocType = RELTYPE_LOW_32BIT;
                     else if (rtype==2)
-                        relocType = RelocType::HIGH_32BIT;
+                        relocType = RELTYPE_HIGH_32BIT;
                     else
                         throw Exception("Unknown relocation type");
                     // put text relocs. compute offset by subtracting current code offset

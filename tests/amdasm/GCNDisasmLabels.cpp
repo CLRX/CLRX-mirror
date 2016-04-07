@@ -382,33 +382,33 @@ static const char* relocSymbolNames[] =
 
 static const Relocation relocationData[] =
 {
-    { 4, 0, RelocType::LOW_32BIT, 0 },
-    { 12, 1, RelocType::LOW_32BIT, 122 },
-    { 20, 2, RelocType::HIGH_32BIT, 0 },
-    { 28, 3, RelocType::HIGH_32BIT, 122 },
-    { 36, 4, RelocType::VALUE, 0 },
-    { 44, 5, RelocType::VALUE, 122 },
+    { 4, 0, RELTYPE_LOW_32BIT, 0 },
+    { 12, 1, RELTYPE_LOW_32BIT, 122 },
+    { 20, 2, RELTYPE_HIGH_32BIT, 0 },
+    { 28, 3, RELTYPE_HIGH_32BIT, 122 },
+    { 36, 4, RELTYPE_VALUE, 0 },
+    { 44, 5, RELTYPE_VALUE, 122 },
     
-    { 48+4, 0, RelocType::LOW_32BIT, 0 },
-    { 48+12, 1, RelocType::LOW_32BIT, 122 },
-    { 48+20, 2, RelocType::HIGH_32BIT, 0 },
-    { 48+28, 3, RelocType::HIGH_32BIT, 122 },
-    { 48+36, 4, RelocType::VALUE, 0 },
-    { 48+44, 5, RelocType::VALUE, 122 },
+    { 48+4, 0, RELTYPE_LOW_32BIT, 0 },
+    { 48+12, 1, RELTYPE_LOW_32BIT, 122 },
+    { 48+20, 2, RELTYPE_HIGH_32BIT, 0 },
+    { 48+28, 3, RELTYPE_HIGH_32BIT, 122 },
+    { 48+36, 4, RELTYPE_VALUE, 0 },
+    { 48+44, 5, RELTYPE_VALUE, 122 },
     
-    { 96+4, 6, RelocType::LOW_32BIT, 0 },
-    { 96+12, 7, RelocType::LOW_32BIT, 122 },
-    { 96+20, 8, RelocType::HIGH_32BIT, 0 },
-    { 96+28, 9, RelocType::HIGH_32BIT, 122 },
-    { 96+36, 10, RelocType::VALUE, 0 },
-    { 96+44, 11, RelocType::VALUE, 122 },
+    { 96+4, 6, RELTYPE_LOW_32BIT, 0 },
+    { 96+12, 7, RELTYPE_LOW_32BIT, 122 },
+    { 96+20, 8, RELTYPE_HIGH_32BIT, 0 },
+    { 96+28, 9, RELTYPE_HIGH_32BIT, 122 },
+    { 96+36, 10, RELTYPE_VALUE, 0 },
+    { 96+44, 11, RELTYPE_VALUE, 122 },
     
-    { 144+4, 12, RelocType::LOW_32BIT, 0 },
-    { 144+12, 13, RelocType::LOW_32BIT, 122 },
-    { 144+20, 14, RelocType::HIGH_32BIT, 0 },
-    { 144+28, 15, RelocType::HIGH_32BIT, 122 },
-    { 144+36, 16, RelocType::VALUE, 0 },
-    { 144+44, 17, RelocType::VALUE, 122 }
+    { 144+4, 12, RELTYPE_LOW_32BIT, 0 },
+    { 144+12, 13, RELTYPE_LOW_32BIT, 122 },
+    { 144+20, 14, RELTYPE_HIGH_32BIT, 0 },
+    { 144+28, 15, RELTYPE_HIGH_32BIT, 122 },
+    { 144+36, 16, RELTYPE_VALUE, 0 },
+    { 144+44, 17, RELTYPE_VALUE, 122 }
 };
 
 static void testDecGCNRelocations()

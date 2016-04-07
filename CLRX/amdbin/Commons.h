@@ -23,15 +23,19 @@
 #ifndef __CLRX_COMMONS_H__
 #define __CLRX_COMMONS_H__
 
+#include <CLRX/Config.h>
+
 /// main namespace
 namespace CLRX
 {
 
-enum class RelocType
+typedef cxuint RelocType;
+    
+enum
 {
-    VALUE = 0,
-    LOW_32BIT,
-    HIGH_32BIT
+    RELTYPE_VALUE = 0,
+    RELTYPE_LOW_32BIT,
+    RELTYPE_HIGH_32BIT
 };
 
 };

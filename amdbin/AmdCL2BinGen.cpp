@@ -1455,7 +1455,7 @@ public:
             for (const AmdCL2RelInput inRel: kernel.relocations)
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
-                uint32_t type = (inRel.type==RelocType::LOW_32BIT) ? 1 : 2;
+                uint32_t type = (inRel.type==RELTYPE_LOW_32BIT) ? 1 : 2;
                 uint32_t symIndex = (inRel.symbol==1) ? adataSymIndex : 
                     ((inRel.symbol==2) ? bssSymIndex: gdataSymIndex);
                 SLEV(rela.r_info, ELF64_R_INFO(symIndex, type));
