@@ -33,6 +33,12 @@ using namespace CLRX;
  * expressions
  */
 
+static const uint64_t operatorWithMessage = 
+        (1ULL<<int(AsmExprOp::DIVISION)) | (1ULL<<int(AsmExprOp::SIGNED_DIVISION)) |
+        (1ULL<<int(AsmExprOp::MODULO)) | (1ULL<<int(AsmExprOp::SIGNED_MODULO)) |
+        (1ULL<<int(AsmExprOp::SHIFT_LEFT)) | (1ULL<<int(AsmExprOp::SHIFT_RIGHT)) |
+        (1ULL<<int(AsmExprOp::SIGNED_SHIFT_RIGHT));
+
 AsmExpression::AsmExpression() : symOccursNum(0), relativeSymOccurs(false),
             baseExpr(false)
 { }
@@ -89,8 +95,8 @@ AsmExpression::~AsmExpression()
     }
 }
 
-bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
-                             cxuint& outSectionId) const
+bool AsmExpression::evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
+                 uint64_t& outValue, cxuint& outSectionId) const
 {
     if (symOccursNum != 0)
         throw Exception("Expression can't be evaluated if symbols still are unresolved!");
@@ -106,7 +112,15 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
         size_t opPos = 0;
         size_t messagePosIndex = 0;
         
-        while (opPos < ops.size())
+        for (opPos = 0; opPos < opStart; opPos++)
+        {
+            if (ops[opPos]==AsmExprOp::ARG_VALUE)
+                argPos++;
+            if ((operatorWithMessage & (1ULL<<cxuint(ops[opPos])))!=0)
+                messagePosIndex++;
+        }
+        
+        while (opPos < opEnd)
         {
             const AsmExprOp op = ops[opPos++];
             if (op == AsmExprOp::ARG_VALUE)
@@ -322,7 +336,15 @@ bool AsmExpression::evaluate(Assembler& assembler, uint64_t& outValue,
         size_t messagePosIndex = 0;
         std::vector<RelMultiply> relatives;
         
-        while (opPos < ops.size())
+        for (opPos = 0; opPos < opStart; opPos++)
+        {
+            if (ops[opPos]==AsmExprOp::ARG_VALUE)
+                argPos++;
+            if ((operatorWithMessage & (1ULL<<cxuint(ops[opPos])))!=0)
+                messagePosIndex++;
+        }
+        
+        while (opPos < opEnd)
         {
             const AsmExprOp op = ops[opPos++];
             if (op == AsmExprOp::ARG_VALUE)
@@ -796,12 +818,6 @@ struct CLRX_INTERNAL SymbolSnapshotEqual
 class CLRX_INTERNAL CLRX::AsmExpression::TempSymbolSnapshotMap: 
         public std::unordered_set<AsmSymbolEntry*, SymbolSnapshotHash, SymbolSnapshotEqual>
 { };
-
-static const uint64_t operatorWithMessage = 
-        (1ULL<<int(AsmExprOp::DIVISION)) | (1ULL<<int(AsmExprOp::SIGNED_DIVISION)) |
-        (1ULL<<int(AsmExprOp::MODULO)) | (1ULL<<int(AsmExprOp::SIGNED_MODULO)) |
-        (1ULL<<int(AsmExprOp::SHIFT_LEFT)) | (1ULL<<int(AsmExprOp::SHIFT_RIGHT)) |
-        (1ULL<<int(AsmExprOp::SIGNED_SHIFT_RIGHT));
 
 AsmExpression* AsmExpression::createForSnapshot(const AsmSourcePos* exprSourcePos) const
 {
@@ -1547,4 +1563,25 @@ AsmExpression* AsmExpression::parse(Assembler& assembler, const char*& linePtr,
         }
         throw;
     }
+}
+
+size_t AsmExpression::toTop(size_t opIndex) const
+{
+    std::stack<cxbyte> stack;
+    while (true)
+    {
+        AsmExprOp op = ops[opIndex];
+        if (op==AsmExprOp::ARG_VALUE)
+        {
+            if (!stack.empty())
+                while (--stack.top()==0)
+                    stack.pop();
+            if (stack.empty())
+                break; // is end
+        }
+        else // operators
+            stack.push(isUnaryOp(op) ? 1 : (isBinaryOp(op) ? 2 : 3));
+        opIndex--;
+    }
+    return opIndex;
 }

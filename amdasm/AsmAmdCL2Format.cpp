@@ -1273,12 +1273,10 @@ bool AsmAmdCL2Handler::prepareBinary()
     for (const AsmRelocation& reloc: assembler.relocations)
     {   /* put only code relocations */
         cxuint kernelId = sections[reloc.sectionId].kernelId;
-        cxuint sectionId = reloc.symbol->second.sectionId;
-        cxuint symbol = sections[sectionId].type==AsmSectionType::DATA ? 0 :
-            (sections[sectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
-        uint64_t addend = reloc.symbol->second.value + reloc.addend;
+        cxuint symbol = sections[reloc.sectionId].type==AsmSectionType::DATA ? 0 :
+            (sections[reloc.sectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
         output.kernels[kernelId].relocations.push_back({reloc.offset, reloc.type,
-                    symbol, addend });
+                    symbol, reloc.addend });
     }
     
     /* put extra symbols */
@@ -1326,15 +1324,82 @@ bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
     return false;
 }
 
-bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& value,
-                 cxuint& sectionId)
+bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& outValue,
+                 cxuint& outSectionId)
 {
     AsmExprTargetType tgtType = expr->getTarget().type;
     if (tgtType!=ASMXTGT_DATA32 && !assembler.isaAssembler->relocationIsFit(32, tgtType))
         return false;
     const Array<AsmExprOp>& ops = expr->getOps();
     const AsmExprArg* args = expr->getArgs();
+    
+    size_t relOpStart = 0;
+    size_t relOpEnd = ops.size();
+    RelocType relType = RELTYPE_LOW_32BIT;
     // checking what is expression
+    AsmExprOp lastOp = ops.back();
+    if (lastOp==AsmExprOp::BIT_AND || lastOp==AsmExprOp::MODULO ||
+        lastOp==AsmExprOp::SIGNED_MODULO || lastOp==AsmExprOp::DIVISION ||
+        lastOp==AsmExprOp::SIGNED_DIVISION || lastOp==AsmExprOp::SHIFT_RIGHT)
+    {   // check low or high relocation
+        relOpStart = expr->toTop(ops.size()-2);
+        relOpEnd = ops.size()-1;
+        /// evaluate second argument
+        cxuint tmpSectionId;
+        uint64_t secondArg;
+        if (!expr->evaluate(assembler, 0, relOpStart, secondArg, tmpSectionId))
+            return false;
+        if (tmpSectionId!=ASMSECT_ABS)
+        {   // must be absolute
+            assembler.printError(expr->getSourcePos(),
+                        "Second argument for relocation operand must be absolute");
+            return false;
+        }
+        bool good = true;
+        switch (lastOp)
+        {
+            case AsmExprOp::BIT_AND:
+                relType = RELTYPE_LOW_32BIT;
+                good = ((secondArg & 0xffffffffULL) == 0xffffffffULL);
+                break;
+            case AsmExprOp::MODULO:
+            case AsmExprOp::SIGNED_MODULO:
+                relType = RELTYPE_LOW_32BIT;
+                good = (secondArg == 0x100000000ULL);
+                break;
+            case AsmExprOp::DIVISION:
+            case AsmExprOp::SIGNED_DIVISION:
+                relType = RELTYPE_HIGH_32BIT;
+                good = (secondArg == 0x100000000ULL);
+                break;
+            case AsmExprOp::SHIFT_RIGHT:
+                relType = RELTYPE_HIGH_32BIT;
+                good = (secondArg == 32);
+                break;
+            default:
+                break;
+        }
+        if (!good)
+        {
+            assembler.printError(expr->getSourcePos(),
+                        "Can't resolve relocation for this expression");
+            return false;
+        }
+    }
+    // 
+    cxuint relSectionId = 0;
+    uint64_t relValue = 0;
+    if (expr->evaluate(assembler, relOpStart, relOpEnd, relValue, relSectionId))
+    {
+        const AsmExprTarget& target = expr->getTarget();
+        outSectionId = 0;   // for filling values in code
+        outValue = 0x55555555U; // for filling values in code
+        AsmRelocation reloc = { target.sectionId, target.offset, relType };
+        reloc.relSectionId = relSectionId;
+        reloc.addend = relValue;
+        assembler.relocations.push_back(reloc);
+        return true;
+    }
     return false;
 }
 

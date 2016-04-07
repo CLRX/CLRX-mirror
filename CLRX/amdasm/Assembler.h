@@ -343,7 +343,10 @@ struct AsmRelocation
     cxuint sectionId;
     size_t offset;
     RelocType type;
-    AsmSymbolEntry* symbol;
+    union {
+        AsmSymbolEntry* symbol;
+        cxuint relSectionId;
+    };
     uint64_t addend;
 };
 
@@ -408,7 +411,20 @@ public:
      * \param sectionId output section id
      * \return true if evaluated
      */
-    bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const;
+    bool evaluate(Assembler& assembler, uint64_t& value, cxuint& sectionId) const
+    { return evaluate(assembler, 0, ops.size(), value, sectionId); }
+    
+    /// try to evaluate expression
+    /**
+     * \param assembler assembler instace
+     * \param value output value
+     * \param opStart start operand
+     * \param opEnd end operand
+     * \param sectionId output section id
+     * \return true if evaluated
+     */
+    bool evaluate(Assembler& assembler, size_t opStart, size_t opEnd,
+                  uint64_t& value, cxuint& sectionId) const;
     
     /// parse expression. By default, also gets values of symbol or  creates them
     /** parse expresion from assembler's line string. Accepts empty expression.
@@ -466,6 +482,8 @@ public:
     /// get source position
     const AsmSourcePos& getSourcePos() const
     { return sourcePos; }
+    
+    size_t toTop(size_t opIndex) const;
     
     /// make symbol snapshot (required to implement .eqv pseudo-op)    
     static bool makeSymbolSnapshot(Assembler& assembler, const AsmSymbolEntry& symEntry,
