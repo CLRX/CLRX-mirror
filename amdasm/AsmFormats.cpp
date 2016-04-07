@@ -41,7 +41,14 @@ AsmFormatHandler::~AsmFormatHandler()
 void AsmFormatHandler::handleLabel(const CString& label)
 { }
 
-bool AsmFormatHandler::resolveRelocation(const AsmExpression* expr)
+bool AsmFormatHandler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
+                 cxuint& sectionId)
+{
+    return false;
+}
+
+bool AsmFormatHandler::resolveRelocation(const AsmExpression* expr, uint64_t& value,
+                 cxuint& sectionId)
 {
     return false;
 }

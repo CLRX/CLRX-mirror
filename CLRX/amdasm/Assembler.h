@@ -572,6 +572,7 @@ private:
     uint32_t driverVersion;
     bool _64bit;    ///
     bool good;
+    bool resolvingRelocs;
     ISAAssembler* isaAssembler;
     std::vector<DefSym> defSyms;
     std::vector<CString> includeDirs;

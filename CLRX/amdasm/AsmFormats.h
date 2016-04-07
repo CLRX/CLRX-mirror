@@ -91,6 +91,7 @@ enum: Flags
 class Assembler;
 class AsmExpression;
 struct AsmRelocation;
+struct AsmSymbol;
 
 /// assembler format exception
 class AsmFormatException: public Exception
@@ -156,8 +157,12 @@ public:
            const char* stmtPlace, const char* linePtr) = 0;
     /// handle labels
     virtual void handleLabel(const CString& label);
+    /// resolve symbol if needed (for example that comes from unresolvable sections)
+    virtual bool resolveSymbol(const AsmSymbol& symbol,
+               uint64_t& value, cxuint& sectionId);
     /// resolve relocation for specified expression
-    virtual bool resolveRelocation(const AsmExpression* expr);
+    virtual bool resolveRelocation(const AsmExpression* expr,
+                uint64_t& value, cxuint& sectionId);
     /// prepare binary for use
     virtual bool prepareBinary() = 0;
     /// write binary to output stream
@@ -329,7 +334,8 @@ public:
     bool parsePseudoOp(const CString& firstName,
            const char* stmtPlace, const char* linePtr);
     
-    bool resolveRelocation(const AsmExpression* expr);
+    bool resolveSymbol(const AsmSymbol& symbol, uint64_t& value, cxuint& sectionId);
+    bool resolveRelocation(const AsmExpression* expr, uint64_t& value, cxuint& sectionId);
     bool prepareBinary();
     void writeBinary(std::ostream& os) const;
     void writeBinary(Array<cxbyte>& array) const;

@@ -395,6 +395,7 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
     macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
+    resolvingRelocs = false;
     formatHandler = nullptr;
     input.exceptions(std::ios::badbit);
     std::unique_ptr<AsmInputFilter> thatInputFilter(
@@ -426,6 +427,7 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
     macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
+    resolvingRelocs = false;
     formatHandler = nullptr;
     std::unique_ptr<AsmInputFilter> thatInputFilter(
                 new AsmStreamInputFilter(filenames[filenameIndex++]));
@@ -823,7 +825,7 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
     symEntry.second.value = value;
     symEntry.second.expression = nullptr;
     symEntry.second.sectionId = sectionId;
-    symEntry.second.hasValue = isResolvableSection(sectionId);
+    symEntry.second.hasValue = isResolvableSection(sectionId) || resolvingRelocs;
     symEntry.second.regRange = false;
     symEntry.second.base = false;
     if (!symEntry.second.hasValue) // if not resolved we just return
@@ -853,7 +855,18 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                 uint64_t value;
                 cxuint sectionId;
                 const AsmExprTarget& target = expr->getTarget();
-                if (!expr->evaluate(*this, value, sectionId))
+                if (!resolvingRelocs || target.type==ASMXTGT_SYMBOL)
+                {   // standard mode
+                    if (!expr->evaluate(*this, value, sectionId))
+                    {   // if failed
+                        delete occurrence.expression; // delete expression
+                        good = false;
+                        continue;
+                    }
+                }
+                // resolve expression if at resolving symbol phase
+                else if (formatHandler==nullptr ||
+                        !formatHandler->resolveRelocation(expr, value, sectionId))
                 {   // if failed
                     delete occurrence.expression; // delete expression
                     good = false;
@@ -870,7 +883,8 @@ bool Assembler::setSymbol(AsmSymbolEntry& symEntry, uint64_t value, cxuint secti
                         {
                             curSymEntry.second.value = value;
                             curSymEntry.second.sectionId = sectionId;
-                            curSymEntry.second.hasValue = isResolvableSection(sectionId);
+                            curSymEntry.second.hasValue =
+                                isResolvableSection(sectionId) || resolvingRelocs;
                             symbolStack.push(std::make_pair(&curSymEntry, 0));
                             if (!curSymEntry.second.hasValue)
                                 continue;
@@ -1653,6 +1667,8 @@ void Assembler::initializeOutputFormat()
 
 bool Assembler::assemble()
 {
+    resolvingRelocs = false;
+    
     for (const DefSym& defSym: defSyms)
         if (defSym.first!=".")
             symbolMap[defSym.first] = AsmSymbol(ASMSECT_ABS, defSym.second);
@@ -1843,12 +1859,21 @@ bool Assembler::assemble()
         clauses.pop();
     }
     
+    resolvingRelocs = true;
     if ((flags&ASM_TESTRUN) == 0)
-        for (const AsmSymbolEntry& symEntry: symbolMap)
+        for (AsmSymbolEntry& symEntry: symbolMap)
             if (!symEntry.second.occurrencesInExprs.empty())
-                for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
-                    printError(occur.expression->getSourcePos(),(std::string(
+            {   // try to resolve symbols
+                uint64_t value;
+                cxuint sectionId;
+                if (formatHandler!=nullptr &&
+                    formatHandler->resolveSymbol(symEntry.second, value, sectionId))
+                    setSymbol(symEntry, value, sectionId);
+                else // otherwise we print errors
+                    for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
+                        printError(occur.expression->getSourcePos(),(std::string(
                             "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
+            }
     
     if (good && formatHandler!=nullptr)
         formatHandler->prepareBinary();
@@ -1902,3 +1927,4 @@ void Assembler::writeBinary(Array<cxbyte>& array) const
     else // failed
         throw Exception("Assembler failed!");
 }
+

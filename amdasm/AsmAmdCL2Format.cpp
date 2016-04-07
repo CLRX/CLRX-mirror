@@ -1158,11 +1158,6 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
     return true;
 }
 
-bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr)
-{
-    return false;
-}
-
 bool AsmAmdCL2Handler::prepareBinary()
 {
     if (assembler.isaAssembler!=nullptr)
@@ -1317,6 +1312,24 @@ bool AsmAmdCL2Handler::prepareBinary()
             output.driverVersion = assembler.driverVersion;
     }
     return true;
+}
+
+bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
+                 cxuint& sectionId)
+{
+    if (!assembler.isResolvableSection(symbol.sectionId))
+    {
+        value = symbol.value;
+        sectionId = symbol.sectionId;
+        return true;
+    }
+    return false;
+}
+
+bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& value,
+                 cxuint& sectionId)
+{
+    return false;
 }
 
 void AsmAmdCL2Handler::writeBinary(std::ostream& os) const
