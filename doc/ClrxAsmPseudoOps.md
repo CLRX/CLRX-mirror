@@ -21,11 +21,6 @@ Choose 64-bit binaries (it have meaning for the AMD Catalyst binary format)
 
 Aborts compilation.
 
-### .amd
-
-This pseudo-operation should to be at begin of source.
-Choose AMD Catalyst OpenCL program binary format.
-
 ### .align, .balign
 
 Syntax: .align ALIGNMENT[, [VALUE] [, LIMIT]]  
@@ -40,6 +35,16 @@ Third expression limits skip to own value. If any alignment needs to skip number
 of the bytes greater than that value, then alignment will not be done.
 If aligment will be done in `.text` section and second expresion will not be given, then
 assembler fills no-operation instructions in that hole.
+
+### .amd
+
+This pseudo-operation should to be at begin of source.
+Choose AMD Catalyst OpenCL 1.2 program binary format.
+
+### .amdcl2
+
+This pseudo-operation should to be at begin of source.
+Choose AMD Catalyst OpenCL 2.0 program binary format.
 
 ### .arch
 
@@ -244,7 +249,8 @@ Syntax: .format BINFORMAT
 This pseudo-operation should to be at begin of source.
 Choose binary format. Binary can be one of following list:
 
-* `amd`, `catalyst` - AMD Catalyst OpenCL binary format
+* `amd`, `catalyst` - AMD Catalyst OpenCL 1.2 binary format
+* `amdcl2` - AMD Catalyst OpenCL 2.0 binary format
 * `gallium` - the GalliumCompute binary format
 * `raw` - rawcode (raw program instructions)
 

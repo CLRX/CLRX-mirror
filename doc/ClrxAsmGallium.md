@@ -149,7 +149,7 @@ Set exception mask in PGMRSRC2 register value. Value should be 7-bit.
 Syntax: .floatmode BYTE-VALUE
 
 This pseudo-op must be inside kernel configuration (`.config`). Defines float-mode.
-Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register).
+Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register). Default value is 0xc0.
 
 ### .globaldata
 

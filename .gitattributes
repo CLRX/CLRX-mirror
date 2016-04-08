@@ -68,6 +68,7 @@ cmake/PortUtils.cmake -text
 doc/AmdAbi.md -text
 doc/CMakeLists.txt -text svneol=unset#text/plain
 doc/ClrxAsmAmd.md -text
+doc/ClrxAsmAmdCl2.md -text
 doc/ClrxAsmGallium.md -text
 doc/ClrxAsmInvoke.md -text
 doc/ClrxAsmPseudoOps.md -text

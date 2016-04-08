@@ -1,8 +1,8 @@
 ## CLRadeonExtender Assembler AMD Catalyst handling
 
 The AMD Catalyst driver provides own OpenCL implementation that can generates
-own binaries of the OpenCL programs. The CLRX assembler supports only OpenCL 1.2
-binary format.
+own binaries of the OpenCL programs. The CLRX assembler supports both OpenCL 1.2
+and OpenCL 2.0 binary format. This chapter describes Amd OpenCL 1.2 binary format.
 
 ## Binary format
 
@@ -220,7 +220,7 @@ Syntax: .floatmode VALUE
 
 This pseudo-operation must be inside kernel configuration.
 Set floatmode (FP_ROUND and FP_DENORM fields of the MODE register).
-Value shall to be byte value.
+Value shall to be byte value. Default value is 0xc0.
 
 ### .get_driver_version
 
@@ -260,7 +260,6 @@ This pseudo-operation must be inside kernel configuration. Set HWREGION value.
 Syntax: .ieeemode
 
 This pseudo-op must be inside kernel configuration. Set ieee-mode.
-
 
 ### .inputs
 
