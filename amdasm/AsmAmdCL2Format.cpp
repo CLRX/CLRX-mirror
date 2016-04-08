@@ -33,7 +33,7 @@ using namespace CLRX;
 
 static const char* amdCL2PseudoOpNamesTbl[] =
 {
-    "acl_version", "arg", "bssdata", "compile_options", "config",
+    "acl_version", "arg", "compile_options", "config",
     "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
     "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
     "isametadata", "localsize", "metadata", "privmode",
@@ -45,7 +45,7 @@ static const char* amdCL2PseudoOpNamesTbl[] =
 
 enum
 {
-    AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
+    AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARG, AMDCL2OP_COMPILE_OPTIONS,
     AMDCL2OP_CONFIG, AMDCL2OP_CWS, AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
     AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
     AMDCL2OP_FLOATMODE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
@@ -1032,9 +1032,6 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             break;
         case AMDCL2OP_ARG:
             AsmAmdCL2PseudoOps::doArg(*this, stmtPlace, linePtr);
-            break;
-        case AMDCL2OP_BSSDATA:
-            AsmPseudoOps::goToSection(assembler, stmtPlace, linePtr, true);
             break;
         case AMDCL2OP_COMPILE_OPTIONS:
             AsmAmdCL2PseudoOps::setCompileOptions(*this, linePtr);

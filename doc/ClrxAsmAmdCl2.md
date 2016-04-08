@@ -86,12 +86,6 @@ Sample usage:
 .arg v57,structure*,82,global
 ```
 
-### .bssdata
-
-Syntax: .bssdata [align=ALIGNMENT]
-
-Go to global data bss section. Optional argument sets alignment of section.
-
 ### .cws
 
 Syntax: .cws SIZEHINT[, SIZEHINT[, SIZEHINT]]
