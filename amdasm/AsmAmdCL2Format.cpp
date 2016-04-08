@@ -62,7 +62,7 @@ enum
  */
 
 AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(assembler),
-        output{}, dataSection(0), bssSection(ASMSECT_NONE), 
+        output{}, rodataSection(0), dataSection(ASMSECT_NONE), bssSection(ASMSECT_NONE), 
         samplerInitSection(ASMSECT_NONE), extraSectionCount(0),
         innerExtraSectionCount(0)
 {
@@ -80,8 +80,10 @@ AsmAmdCL2Handler::~AsmAmdCL2Handler()
 
 void AsmAmdCL2Handler::saveCurrentSection()
 {   /// save previous section
-    if (assembler.currentKernel==ASMKERN_GLOBAL || assembler.currentKernel==ASMKERN_INNER)
+    if (assembler.currentKernel==ASMKERN_GLOBAL)
         savedSection = assembler.currentSection;
+    else if (assembler.currentKernel==ASMKERN_INNER)
+        innerSavedSection = assembler.currentSection;
     else
         kernelStates[assembler.currentKernel]->savedSection = assembler.currentSection;
 }
@@ -134,8 +136,6 @@ cxuint AsmAmdCL2Handler::addKernel(const char* kernelName)
 cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
 {
     const cxuint thisSection = sections.size();
-    Section section;
-    section.kernelId = kernelId;
     
     if (::strcmp(sectionName, ".rodata")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
@@ -160,6 +160,8 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     }
     else if (kernelId == ASMKERN_GLOBAL)
     {
+        Section section;
+        section.kernelId = kernelId;
         auto out = extraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
@@ -168,9 +170,11 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         section.elfBinSectId = extraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
         section.name = out.first->first.c_str();
+        sections.push_back(section);
     }
     else // add inner section (even if we inside kernel)
     {
+        Section section;
         kernelId = section.kernelId = ASMKERN_INNER;
         auto out = innerExtraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
@@ -180,9 +184,8 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
         section.elfBinSectId = innerExtraSectionCount++;
         /// referfence entry is available and unchangeable by whole lifecycle of section map
         section.name = out.first->first.c_str();
+        sections.push_back(section);
     }
-    
-    sections.push_back(section);
     
     saveCurrentAllocRegs();
     saveCurrentSection();
