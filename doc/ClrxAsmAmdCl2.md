@@ -197,7 +197,7 @@ Go to read-write global data section.
 
 ### .sampler
 
-Syntax: .sampler VALUE
+Syntax: .sampler VALUE,...
 
 Inside main and inner binary: add sampler definition.
 Inside kernel configuration: add sampler to kernel (value is sampler id).
