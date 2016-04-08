@@ -1327,9 +1327,22 @@ bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,
 bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& outValue,
                  cxuint& outSectionId)
 {
-    AsmExprTargetType tgtType = expr->getTarget().type;
-    if (tgtType!=ASMXTGT_DATA32 && !assembler.isaAssembler->relocationIsFit(32, tgtType))
+    const AsmExprTarget& target = expr->getTarget();
+    const AsmExprTargetType tgtType = target.type;
+    if ((tgtType!=ASMXTGT_DATA32 &&
+        !assembler.isaAssembler->relocationIsFit(32, tgtType)))
+    {
+        assembler.printError(expr->getSourcePos(),
+                        "Can't resolve expression for non 32-bit integer");
         return false;
+    }
+    if (target.sectionId==ASMSECT_ABS ||
+        assembler.sections[target.sectionId].type!=AsmSectionType::CODE)
+    {
+        assembler.printError(expr->getSourcePos(), "Can't resolve expression outside "
+                "code section");
+        return false;
+    }
     const Array<AsmExprOp>& ops = expr->getOps();
     
     size_t relOpStart = 0;
@@ -1390,7 +1403,13 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
     uint64_t relValue = 0;
     if (expr->evaluate(assembler, relOpStart, relOpEnd, relValue, relSectionId))
     {
-        const AsmExprTarget& target = expr->getTarget();
+        if (relSectionId!=rodataSection && relSectionId!=dataSection &&
+            relSectionId!=bssSection)
+        {
+            assembler.printError(expr->getSourcePos(),
+                     "Section of this expression must be a global data, rwdata or bss");
+            return false;
+        }
         outSectionId = 0;   // for filling values in code
         outValue = 0x55555555U; // for filling values in code
         AsmRelocation reloc = { target.sectionId, target.offset, relType };
