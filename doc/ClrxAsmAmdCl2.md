@@ -14,7 +14,7 @@ format structure.
 ## Layout of the source code
 
 The CLRX assembler allow to use one of two ways to configure kernel setup:
-for human (`.config`) and for quick recompilation (ATI CALNotes and the metadata string).
+for human (`.config`) and for quick recompilation (kernel setup, stub, metadata content).
 
 ## List of the specific pseudo-operations
 
