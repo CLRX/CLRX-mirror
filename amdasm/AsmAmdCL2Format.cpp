@@ -1276,7 +1276,7 @@ bool AsmAmdCL2Handler::prepareBinary()
         cxuint symbol = sections[reloc.sectionId].type==AsmSectionType::DATA ? 0 :
             (sections[reloc.sectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
         output.kernels[kernelId].relocations.push_back({reloc.offset, reloc.type,
-                    symbol, reloc.addend });
+                    symbol, size_t(reloc.addend) });
     }
     
     /* put extra symbols */
@@ -1331,7 +1331,6 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
     if (tgtType!=ASMXTGT_DATA32 && !assembler.isaAssembler->relocationIsFit(32, tgtType))
         return false;
     const Array<AsmExprOp>& ops = expr->getOps();
-    const AsmExprArg* args = expr->getArgs();
     
     size_t relOpStart = 0;
     size_t relOpEnd = ops.size();
