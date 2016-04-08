@@ -21,6 +21,7 @@
 #include <iostream>
 #include <cstdio>
 #include <sstream>
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <CLRX/amdasm/Assembler.h>
@@ -209,6 +210,119 @@ static void printAmdOutput(std::ostream& os, const AmdInput* output)
                 ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
     os.flush();
 }
+
+static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
+{
+    os << "AmdCL2BinDump:" << std::endl;
+    os << "  devType=" << getGPUDeviceTypeName(output->deviceType) << ", "
+            "aclVersion=" << output->aclVersion << ", "
+            "drvVersion=" << output->driverVersion << ", "
+            "compileOptions=\"" << output->compileOptions << "\"\n";
+    
+    for (const AmdCL2KernelInput& kernel: output->kernels)
+    {
+        os << "  Kernel: " << kernel.kernelName << "\n";
+        os << "    Code:\n";
+        printHexData(os, 2, kernel.codeSize, kernel.code);
+        if (!kernel.useConfig)
+        {
+            os << "    Metadata:\n";
+            printHexData(os, 2, kernel.metadataSize, (const cxbyte*)kernel.metadata);
+            os << "    Setup:\n";
+            printHexData(os, 2, kernel.setupSize, (const cxbyte*)kernel.setup);
+            if (kernel.stubSize!=0)
+            {
+                os << "    Stub:\n";
+                printHexData(os, 2, kernel.stubSize, (const cxbyte*)kernel.stub);
+            }
+            if (kernel.isaMetadataSize!=0)
+            {
+                os << "    ISAMetadata:\n";
+                printHexData(os, 2, kernel.metadataSize, (const cxbyte*)kernel.metadata);
+            }
+        }
+        else
+        {   // when config
+            const AmdCL2KernelConfig& config = kernel.config;
+            os << "    Config:\n";
+            for (AmdKernelArgInput arg: config.args)
+                os << "      Arg: \"" << arg.argName << "\", \"" <<
+                        arg.typeName << "\", " <<
+                        argTypeNameTbl[cxuint(arg.argType)] << ", " <<
+                        argTypeNameTbl[cxuint(arg.pointerType)] << ", " <<
+                        ptrSpaceNameTbl[cxuint(arg.ptrSpace)] << ", " <<
+                        cxuint(arg.ptrAccess) << ", " << arg.structSize << ", " <<
+                        arg.constSpaceSize << ", " << confValueToString(arg.resId) << ", " <<
+                        cxuint(arg.used) << "\n";
+            if (!config.samplers.empty())
+            {
+                os << "      Sampler:";
+                for (cxuint sampler: config.samplers)
+                    os << " " << sampler;
+                os << '\n';
+            }
+            os << "      dims=" << confValueToString(config.dimMask) << ", "
+                    "cws=" << config.reqdWorkGroupSize[0] << " " <<
+                    config.reqdWorkGroupSize[1] << " " << config.reqdWorkGroupSize[2] << ", "
+                    "SGPRS=" << config.usedSGPRsNum << ", "
+                    "VGPRS=" << config.usedVGPRsNum << "\n      "
+                    "pgmRSRC1=" << std::hex << "0x" << config.pgmRSRC1 << ", "
+                    "pgmRSRC2=0x" << config.pgmRSRC2 << ", "
+                    "ieeeMode=0x" << config.ieeeMode << ", "
+                    "floatMode=0x" << config.floatMode<< std::dec << "\n      "
+                    "priority=" << config.priority << ", "
+                    "exceptions=" << config.exceptions << ", "
+                    "localSize=" << config.localSize << ", "
+                    "scratchBuffer=" << config.scratchBufferSize << "\n      " <<
+                    (config.tgSize?"tgsize":"") << ", " <<
+                    (config.debugMode?"debug":"") << ", " <<
+                    (config.privilegedMode?"priv":"") << ", " <<
+                    (config.dx10Clamp?"dx10clamp":"") << ", " <<
+                    (config.useSizes?"useSizes":"") << ", " <<
+                    (config.useSetup?"useSetup":"") << ", " <<
+                    (config.useEnqueue?"useEnqueue":"") << "\n";
+        }
+        std::vector<AmdCL2RelInput> relocs(kernel.relocations.begin(),
+                            kernel.relocations.end());
+        std::sort(relocs.begin(), relocs.end(),
+                  [] (const AmdCL2RelInput& a, const AmdCL2RelInput& b)
+                  { return a.offset < b.offset; });
+        for (const AmdCL2RelInput& rel: relocs)
+            std::cout << "    Rel: offset=" << rel.offset << ", type=" << rel.type << ", "
+                "symbol=" << rel.symbol << ", addend=" << rel.addend << "\n";
+    }
+    
+    os << "  GlobalData:\n";
+    printHexData(os,  1, output->globalDataSize, output->globalData);
+    os << "  RwData:\n";
+    printHexData(os,  1, output->rwDataSize, output->rwData);
+    os << "  Bss size: " << output->bssSize << ", bssAlign: " <<
+                output->bssAlignment << "\n";
+    os << "  SamplerInit:\n";
+    printHexData(os,  1, output->samplerInitSize, output->samplerInit);
+    
+    for (BinSection section: output->innerExtraSections)
+    {
+        os << "    ISection " << section.name << ", type=" << section.type <<
+                        ", flags=" << section.flags << ":\n";
+        printHexData(os, 1, section.size, section.data);
+    }
+    for (BinSymbol symbol: output->innerExtraSymbols)
+        os << "    ISymbol: name=" << symbol.name << ", value=" << symbol.value <<
+                ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
+    
+    for (BinSection section: output->extraSections)
+    {
+        os << "  Section " << section.name << ", type=" << section.type <<
+                        ", flags=" << section.flags << ":\n";
+        printHexData(os, 1, section.size, section.data);
+    }
+    for (BinSymbol symbol: output->extraSymbols)
+        os << "  Symbol: name=" << symbol.name << ", value=" << symbol.value <<
+                ", size=" << symbol.size << ", section=" << symbol.sectionId << "\n";
+    os.flush();
+}
+
 
 static void printGalliumOutput(std::ostream& os, const GalliumInput* output)
 {
@@ -1051,6 +1165,9 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
     {   // get format handler and their output
         if (assembler.getBinaryFormat() == BinaryFormat::AMD)
             printAmdOutput(dumpOss, static_cast<const AsmAmdHandler*>(
+                        assembler.getFormatHandler())->getOutput());
+        else if (assembler.getBinaryFormat() == BinaryFormat::AMDCL2)
+            printAmdCL2Output(std::cerr, static_cast<const AsmAmdCL2Handler*>(
                         assembler.getFormatHandler())->getOutput());
         else if (assembler.getBinaryFormat() == BinaryFormat::GALLIUM)
             printGalliumOutput(dumpOss, static_cast<const AsmGalliumHandler*>(
