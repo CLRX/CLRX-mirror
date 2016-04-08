@@ -1652,12 +1652,21 @@ void Assembler::initializeOutputFormat()
 {
     if (formatHandler!=nullptr)
         return;
-    if (format == BinaryFormat::AMD)
-        formatHandler = new AsmAmdHandler(*this);
-    else if (format == BinaryFormat::GALLIUM)
-        formatHandler = new AsmGalliumHandler(*this);
-    else // raw code
-        formatHandler = new AsmRawCodeHandler(*this);
+    switch(format)
+    {
+        case BinaryFormat::AMD:
+            formatHandler = new AsmAmdHandler(*this);
+            break;
+        case BinaryFormat::AMDCL2:
+            formatHandler = new AsmAmdCL2Handler(*this);
+            break;
+        case BinaryFormat::GALLIUM:
+            formatHandler = new AsmGalliumHandler(*this);
+            break;
+        default:
+            formatHandler = new AsmRawCodeHandler(*this);
+            break;
+    }
     isaAssembler = new GCNAssembler(*this);
     // add first section
     auto info = formatHandler->getSectionInfo(currentSection);

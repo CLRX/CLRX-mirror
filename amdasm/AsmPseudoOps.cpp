@@ -89,7 +89,7 @@ enum
 static const char* pseudoOpNamesTbl[] =
 {
     "32bit", "64bit", "abort", "align",
-    "amd", "arch", "ascii", "asciz",
+    "amd", "amdcl2", "arch", "ascii", "asciz",
     "balign", "balignl", "balignw", "byte",
     "data", "double", "else",
     "elseif", "elseif32", "elseif64",
@@ -124,7 +124,7 @@ static const char* pseudoOpNamesTbl[] =
 enum
 {
     ASMOP_32BIT = 0, ASMOP_64BIT, ASMOP_ABORT, ASMOP_ALIGN,
-    ASMOP_AMD, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
+    ASMOP_AMD, ASMOP_AMDCL2, ASMOP_ARCH, ASMOP_ASCII, ASMOP_ASCIZ,
     ASMOP_BALIGN, ASMOP_BALIGNL, ASMOP_BALIGNW, ASMOP_BYTE,
     ASMOP_DATA, ASMOP_DOUBLE, ASMOP_ELSE,
     ASMOP_ELSEIF, ASMOP_ELSEIF32, ASMOP_ELSEIF64,
@@ -184,6 +184,8 @@ bool AsmPseudoOps::parseFormat(Assembler& asmr, const char* linePtr, BinaryForma
     toLowerString(formatName);
     if (::strcmp(formatName, "catalyst")==0 || ::strcmp(formatName, "amd")==0)
         format = BinaryFormat::AMD;
+    else if (::strcmp(formatName, "amdcl2")==0)
+        format = BinaryFormat::AMDCL2;
     else if (::strcmp(formatName, "gallium")==0)
         format = BinaryFormat::GALLIUM;
     else if (::strcmp(formatName, "raw")==0)
@@ -2032,6 +2034,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
             AsmPseudoOps::putIntegers<cxbyte>(*this, stmtPlace, linePtr);
             break;
         case ASMOP_AMD:
+        case ASMOP_AMDCL2:
         case ASMOP_RAWCODE:
         case ASMOP_GALLIUM:
             if (AsmPseudoOps::checkGarbagesAtEnd(*this, linePtr))
@@ -2041,6 +2044,7 @@ void Assembler::parsePseudoOps(const CString& firstName,
                 else
                     format = (pseudoOp == ASMOP_GALLIUM) ? BinaryFormat::GALLIUM :
                         (pseudoOp == ASMOP_AMD) ? BinaryFormat::AMD :
+                        (pseudoOp == ASMOP_AMDCL2) ? BinaryFormat::AMDCL2 :
                         BinaryFormat::RAWCODE;
             }
             break;
