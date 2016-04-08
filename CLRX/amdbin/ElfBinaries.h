@@ -446,7 +446,7 @@ struct BinSection
     CString name;   ///< name of section
     size_t size;    ///< size of content
     const cxbyte* data; ///< data content
-    size_t align;  ///< region alignment
+    uint64_t align;  ///< region alignment
     uint32_t type;  ///< section type
     uint64_t flags; ///< section flags
     cxuint linkId; ///< link section id (ELFSECTID_* or an extra section index)
