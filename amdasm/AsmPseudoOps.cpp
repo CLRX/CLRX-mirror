@@ -2393,7 +2393,8 @@ void Assembler::parsePseudoOps(const CString& firstName,
         {
             bool isGalliumPseudoOp = AsmGalliumPseudoOps::checkPseudoOpName(firstName);
             bool isAmdPseudoOp = AsmAmdPseudoOps::checkPseudoOpName(firstName);
-            if (isGalliumPseudoOp || isAmdPseudoOp)
+            bool isAmdCL2PseudoOp = AsmAmdCL2PseudoOps::checkPseudoOpName(firstName);
+            if (isGalliumPseudoOp || isAmdPseudoOp || isAmdCL2PseudoOp)
             {   // initialize only if gallium pseudo-op or AMD pseudo-op
                 initializeOutputFormat();
                 /// try to parse
@@ -2414,6 +2415,15 @@ void Assembler::parsePseudoOps(const CString& firstName,
                         {
                             printError(stmtPlace, "AMD pseudo-op can be defined only in "
                                     "AMD format code");
+                            break;
+                        }
+                    }
+                    if (format != BinaryFormat::AMDCL2)
+                    {   // check amd pseudo-op
+                        if (isAmdCL2PseudoOp)
+                        {
+                            printError(stmtPlace, "AMDCL2 pseudo-op can be defined only in "
+                                    "AMDCL2 format code");
                             break;
                         }
                     }
