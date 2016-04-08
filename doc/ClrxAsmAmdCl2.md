@@ -9,7 +9,10 @@ and OpenCL 2.0 binary format. This chapter describes Amd OpenCL 2.0 binary forma
 An AMD Catalyst binary format for OpenCL 2.0 support significantly differs from
 prevbious binary format for OpenCL 1.2. The Kernel codes are in single text inner binary.
 Instead of AMD CAL notes and ProgInfo entries, the kernel setup is in special
-format structure.
+format structure. Metadatas mainly holds arguments definitions of kernels.
+
+A CLRadeonExtender supports two versions of binary formats for OpenCL 2.0: newer (since 
+AMD OpenCL 1912.05) and older (before 1912.05 driver version).
 
 ## Layout of the source code
 
@@ -205,7 +208,7 @@ Go to samplerinit content section.
 
 ### .samplerreloc
 
-Syntax: .samplerreloc SAMPLERID, OFFSET
+Syntax: .samplerreloc OFFSET, SAMPLERID
 
 Add sampler relocation that points to constant global data (rodata).
 
@@ -234,7 +237,7 @@ registers which can be used during kernel execution.
 
 ### .stub
 
-Go to kernel stub content section.
+Go to kernel stub content section. Only allowed for older driver version binaries.
 
 ### .tgsize
 
@@ -262,3 +265,56 @@ Syntax: .vgprsnum REGNUM
 
 This pseudo-op must be inside kernel configuration. Set number of vector
 registers which can be used during kernel execution.
+
+## Sample code
+
+This is sample example of the kernel setup:
+
+```
+.amdcl2
+.gpu Bonaire
+.driver_version 191205
+.compile_options "-I ./ -cl-std=CL2.0"
+.acl_version "AMD-COMP-LIB-v0.8 (0.0.SC_BUILD_NUMBER)"
+.kernel DCT
+    .metadata
+        .byte 0xe0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        ...,
+    .setup
+        .byte 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00
+        .byte 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        ....
+    .text
+/*c0000501         */ s_load_dword    s0, s[4:5], 0x1
+....
+/*bf810000         */ s_endpgm
+```
+
+This is sample of the kernel with configuration:
+
+```
+.amdcl2
+.gpu Bonaire
+.driver_version 191205
+.compile_options "-I ./ -cl-std=CL2.0"
+.acl_version "AMD-COMP-LIB-v0.8 (0.0.SC_BUILD_NUMBER)"
+.kernel DCT
+    .config
+        .dims xy
+        .usesizes
+        .usesetup
+        .setupargs
+        .arg output,float*
+        .arg input,float*
+        .arg dct8x8,float*
+        .arg dct8x8_trans,float*
+        .arg inter,float*,local
+        .arg width,uint
+        .arg blockWidth,uint
+        .arg inverse,uint
+        .......
+    .text
+/*c0000501         */ s_load_dword    s0, s[4:5], 0x1
+....
+/*bf810000         */ s_endpgm
+```

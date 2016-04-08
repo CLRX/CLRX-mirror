@@ -530,7 +530,7 @@ void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
     bool good = getAnyValueArg(asmr, offset, sectionId, linePtr);
     if (!skipRequiredComma(asmr, linePtr))
         return;
-    good |= getAbsoluteValueArg(asmr, offset, linePtr, true);
+    good |= getAbsoluteValueArg(asmr, samplerId, linePtr, true);
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
