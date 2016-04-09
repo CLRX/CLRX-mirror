@@ -1503,12 +1503,12 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
             case AsmExprOp::MODULO:
             case AsmExprOp::SIGNED_MODULO:
                 relType = RELTYPE_LOW_32BIT;
-                good = ((secondArg & 0xffffffffULL) == 0);
+                good = ((secondArg>>32)!=0 && (secondArg & 0xffffffffULL) == 0);
                 break;
             case AsmExprOp::DIVISION:
             case AsmExprOp::SIGNED_DIVISION:
                 relType = RELTYPE_HIGH_32BIT;
-                good = ((secondArg & 0xffffffffULL) == 0);
+                good = ((secondArg>>32)!=0 && (secondArg & 0xffffffffULL) == 0);
                 break;
             case AsmExprOp::SHIFT_RIGHT:
                 relType = RELTYPE_HIGH_32BIT;
