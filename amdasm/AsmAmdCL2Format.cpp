@@ -36,8 +36,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "acl_version", "arg", "bssdata", "compile_options", "config",
     "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
     "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
-    "isametadata", "localsize", "metadata", "privmode",
-    "pgmrsrc1", "pgmrsrc2", "priority", "rwdata", "sampler",
+    "isametadata", "localsize", "metadata", "pgmrsrc1", "pgmrsrc2",
+    "priority", "privmode", "rwdata", "sampler",
     "samplerinit", "samplerreloc", "scratchbuffer", "setup",
     "setupargs", "sgprsnum", "stub", "tgsize",
     "useenqueue", "usesetup", "usesizes", "vgprsnum"
@@ -50,8 +50,8 @@ enum
     AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
     AMDCL2OP_FLOATMODE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
     AMDCL2OP_IEEEMODE, AMDCL2OP_INNER, AMDCL2OP_ISAMETADATA, AMDCL2OP_LOCALSIZE,
-    AMDCL2OP_METADATA, AMDCL2OP_PRIVMODE, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2,
-    AMDCL2OP_PRIORITY, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
+    AMDCL2OP_METADATA, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2, AMDCL2OP_PRIORITY,
+    AMDCL2OP_PRIVMODE, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
     AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUP, AMDCL2OP_SETUPARGS,
     AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE, AMDCL2OP_USEENQUEUE,
     AMDCL2OP_USESETUP, AMDCL2OP_USESIZES, AMDCL2OP_VGPRSNUM

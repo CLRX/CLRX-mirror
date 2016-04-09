@@ -1131,7 +1131,7 @@ static const std::pair<const char*, cxuint> argTypeNameMap[] =
     { "char3", cxuint(KernelArgType::CHAR3) },
     { "char4", cxuint(KernelArgType::CHAR4) },
     { "char8", cxuint(KernelArgType::CHAR8) },
-    { "clk_event_t", cxuint(KernelArgType::CLKEVENT) },
+    { "clkevent", cxuint(KernelArgType::CLKEVENT) },
     { "counter32", cxuint(KernelArgType::COUNTER32) },
     { "counter64", cxuint(KernelArgType::COUNTER64) },
     { "double", cxuint(KernelArgType::DOUBLE) },
@@ -1166,7 +1166,7 @@ static const std::pair<const char*, cxuint> argTypeNameMap[] =
     { "long4", cxuint(KernelArgType::LONG4) },
     { "long8", cxuint(KernelArgType::LONG8) },
     { "pipe", cxuint(KernelArgType::PIPE) },
-    { "queue_t", cxuint(KernelArgType::CMDQUEUE) },
+    { "queue", cxuint(KernelArgType::CMDQUEUE) },
     { "sampler", cxuint(KernelArgType::SAMPLER) },
     { "short", cxuint(KernelArgType::SHORT) },
     { "short16", cxuint(KernelArgType::SHORT16) },
@@ -1218,7 +1218,8 @@ static const char* defaultArgTypeNames[] =
     "long2", "long3", "long4", "long8", "long16",
     "float2", "float3", "float4", "float8", "float16",
     "double2", "double3", "double4", "double8", "double16",
-    "sampler_t", "structure", "counter32_t", "counter64_t"
+    "sampler_t", "structure", "counter32_t", "counter64_t",
+    "pipe", "cmdqueue_t", "clk_event_t"
 };
 
 static const size_t argTypeNameMapSize = sizeof(argTypeNameMap) /

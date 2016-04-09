@@ -54,7 +54,8 @@ static const char* argTypeNameTbl[] =
     "long2", "long3", "long4", "long8", "long16",
     "float2", "float3", "float4", "float8", "float16",
     "double2", "double3", "double4", "double8", "double16",
-    "sampler", "structure", "counter32", "counter64"
+    "sampler", "structure", "counter32", "counter64",
+    "pipe", "cmdqueue", "clkevent"
 };
 
 static const char* ptrSpaceNameTbl[] =
@@ -268,19 +269,19 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                     "VGPRS=" << config.usedVGPRsNum << "\n      "
                     "pgmRSRC1=" << std::hex << "0x" << config.pgmRSRC1 << ", "
                     "pgmRSRC2=0x" << config.pgmRSRC2 << ", "
-                    "ieeeMode=0x" << config.ieeeMode << ", "
+                    "ieeeMode=0x" << std::dec << config.ieeeMode << std::hex << ", "
                     "floatMode=0x" << config.floatMode<< std::dec << "\n      "
                     "priority=" << config.priority << ", "
-                    "exceptions=" << config.exceptions << ", "
+                    "exceptions=" << cxuint(config.exceptions) << ", "
                     "localSize=" << config.localSize << ", "
                     "scratchBuffer=" << config.scratchBufferSize << "\n      " <<
-                    (config.tgSize?"tgsize":"") << ", " <<
-                    (config.debugMode?"debug":"") << ", " <<
-                    (config.privilegedMode?"priv":"") << ", " <<
-                    (config.dx10Clamp?"dx10clamp":"") << ", " <<
-                    (config.useSizes?"useSizes":"") << ", " <<
-                    (config.useSetup?"useSetup":"") << ", " <<
-                    (config.useEnqueue?"useEnqueue":"") << "\n";
+                    (config.tgSize?"tgsize ":"") <<
+                    (config.debugMode?"debug ":"") <<
+                    (config.privilegedMode?"priv ":"") <<
+                    (config.dx10Clamp?"dx10clamp ":"") <<
+                    (config.useSizes?"useSizes ":"") <<
+                    (config.useSetup?"useSetup ":"") <<
+                    (config.useEnqueue?"useEnqueue ":"") << "\n";
         }
         std::vector<AmdCL2RelInput> relocs(kernel.relocations.begin(),
                             kernel.relocations.end());
@@ -1288,6 +1289,134 @@ R"ffDXD(            .amdcl2
   nullptr
   Section .cc, type=1, flags=0:
   0c0022000501
+)ffDXD", "", true
+    },
+    /* AMDCL2 with configs */
+    {
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.driver_version 191205
+.kernel aaa1
+    .config
+        .dims x
+        .setupargs
+        .arg n,uint
+        .arg in,uint*,global,const
+        .arg out,uint*,global
+        .ieeemode
+        .floatmode 0xda
+        .localsize 1000
+        .usesetup
+    .text
+        s_and_b32 s9,s5,44
+        s_and_b32 s10,s5,5
+.kernel aaa2
+    .config
+        .dims x
+        .setupargs
+        .arg n,uint
+        .arg in,float*,global,const
+        .arg out,float*,global
+        .arg q,queue
+        .arg piper,pipe
+        .scratchbuffer 2342
+        .ieeemode
+        .floatmode 0xda
+        .localsize 1000
+        .usesetup
+        .priority 2
+        .privmode
+        .debugmode
+        .dx10clamp
+        .exceptions 0x12
+        .useenqueue
+    .text
+        s_and_b32 s9,s5,44
+        s_endpgm
+.kernel aaa1
+        s_and_b32 s11,s5,5
+        s_endpgm
+.kernel gfd12
+    .config
+        .dims xyz
+        .cws 8,5,2
+        .sgprsnum 25
+        .vgprsnum 78
+        .setupargs
+        .arg n,uint
+        .arg in,double*,global,const
+        .arg out,double*,global
+        .localsize 656
+        .pgmrsrc1 0x1234000
+        .pgmrsrc2 0xfcdefd0
+        .usesetup
+        .usesizes
+    .text
+        v_mov_b32 v1,v2
+        v_add_i32 v1,vcc,55,v3
+        s_endpgm
+)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=191205, compileOptions=""
+  Kernel: aaa1
+    Code:
+    05ac098705850a8705850b87000081bf
+    Config:
+      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "in", "uint*", pointer, uint, global, 4, 0, 0, default, 3
+      Arg: "out", "uint*", pointer, uint, global, 0, 0, 0, default, 3
+      dims=1, cws=0 0 0, SGPRS=12, VGPRS=0
+      pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
+      priority=0, exceptions=0, localSize=1000, scratchBuffer=0
+      useSetup 
+  Kernel: aaa2
+    Code:
+    05ac0987000081bf
+    Config:
+      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "in", "float*", pointer, float, global, 4, 0, 0, default, 3
+      Arg: "out", "float*", pointer, float, global, 0, 0, 0, default, 3
+      Arg: "q", "cmdqueue_t", cmdqueue, void, none, 0, 0, 0, default, 3
+      Arg: "piper", "pipe", pipe, void, none, 0, 0, 0, default, 3
+      dims=1, cws=0 0 0, SGPRS=12, VGPRS=0
+      pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
+      priority=2, exceptions=18, localSize=1000, scratchBuffer=2342
+      debug priv dx10clamp useSetup useEnqueue 
+  Kernel: gfd12
+    Code:
+    0203027eb706024a000081bf
+    Config:
+      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "in", "double*", pointer, double, global, 4, 0, 0, default, 3
+      Arg: "out", "double*", pointer, double, global, 0, 0, 0, default, 3
+      dims=7, cws=8 5 2, SGPRS=25, VGPRS=78
+      pgmRSRC1=0x1234000, pgmRSRC2=0xfcdefd0, ieeeMode=0x0, floatMode=0xc0
+      priority=0, exceptions=0, localSize=656, scratchBuffer=0
+      useSizes useSetup 
+  GlobalData:
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
 )ffDXD", "", true
     }
 };
