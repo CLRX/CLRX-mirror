@@ -174,6 +174,21 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     }
     else // add inner section (even if we inside kernel)
     {
+        cxuint driverVersion = 0;
+        if (output.driverVersion==0)
+        {
+            if (assembler.driverVersion==0) // just detect driver version
+                driverVersion = detectAmdDriverVersion();
+            else // from assembler setup
+                driverVersion = assembler.driverVersion;
+        }
+        else
+            driverVersion = output.driverVersion;
+        
+        if (driverVersion < 191205)
+            throw AsmFormatException("Inner section are allowed "
+                        "only for new binary format");
+        
         Section section;
         section.kernelId = ASMKERN_INNER;
         auto out = innerExtraSectionMap.insert(std::make_pair(std::string(sectionName),
