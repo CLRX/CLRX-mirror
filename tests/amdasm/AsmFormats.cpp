@@ -1319,6 +1319,7 @@ R"ffDXD(            .amdcl2
         .arg out,float*,global
         .arg q,queue
         .arg piper,pipe
+        .arg ce,clkevent
         .scratchbuffer 2342
         .ieeemode
         .floatmode 0xda
@@ -1390,6 +1391,7 @@ R"ffDXD(            .amdcl2
       Arg: "out", "float*", pointer, float, global, 0, 0, 0, default, 3
       Arg: "q", "cmdqueue_t", cmdqueue, void, none, 0, 0, 0, default, 3
       Arg: "piper", "pipe", pipe, void, none, 0, 0, 0, default, 3
+      Arg: "ce", "clk_event_t", clkevent, void, none, 0, 0, 0, default, 3
       dims=1, cws=0 0 0, SGPRS=12, VGPRS=0
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
       priority=2, exceptions=18, localSize=1000, scratchBuffer=2342

@@ -1480,12 +1480,12 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
         lastOp==AsmExprOp::SIGNED_MODULO || lastOp==AsmExprOp::DIVISION ||
         lastOp==AsmExprOp::SIGNED_DIVISION || lastOp==AsmExprOp::SHIFT_RIGHT)
     {   // check low or high relocation
-        relOpStart = expr->toTop(ops.size()-2);
-        relOpEnd = ops.size()-1;
+        relOpStart = 0;
+        relOpEnd = expr->toTop(ops.size()-2)-1;
         /// evaluate second argument
         cxuint tmpSectionId;
         uint64_t secondArg;
-        if (!expr->evaluate(assembler, 0, relOpStart, secondArg, tmpSectionId))
+        if (!expr->evaluate(assembler, relOpEnd+1, ops.size()-1, secondArg, tmpSectionId))
             return false;
         if (tmpSectionId!=ASMSECT_ABS)
         {   // must be absolute
@@ -1536,9 +1536,9 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
                      "Section of this expression must be a global data, rwdata or bss");
             return false;
         }
-        outSectionId = 0;   // for filling values in code
+        outSectionId = ASMSECT_ABS;   // for filling values in code
         outValue = 0x55555555U; // for filling values in code
-        AsmRelocation reloc = { target.sectionId, target.offset, relType };
+        AsmRelocation reloc = { target.sectionId, target.offset+4, relType };
         reloc.relSectionId = relSectionId;
         reloc.addend = relValue;
         assembler.relocations.push_back(reloc);
