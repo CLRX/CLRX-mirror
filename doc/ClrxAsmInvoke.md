@@ -43,7 +43,7 @@ This option can be occurred many times to adding many include paths.
 * **-b BINFORMAT**, **--binaryFormat=BINFORMAT**
 
     Set output binary format. This settings can be overriden in source code.
-Assembler accepts following formats: 'amd', 'gallium', 'rawcode'.
+Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rawcode'.
 
 * **-6**, **--64bit**
 
