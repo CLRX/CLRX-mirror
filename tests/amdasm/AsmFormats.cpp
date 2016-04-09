@@ -1148,7 +1148,7 @@ test.s:108:35: Error: Unknown access qualifier
 test.s:110:13: Error: Illegal place of configuration pseudo-op
 )ffDXD", false
     },
-    /* AMD CL2 */
+    /* AMD CL2 (no config) */
     {
 R"ffDXD(            .amdcl2
             .gpu Bonaire
@@ -1233,6 +1233,61 @@ R"ffDXD(            .amdcl2
   616c61000aba
   Section .xx, type=1, flags=0:
   0117
+)ffDXD", "", true
+    },
+    /* AMD CL2 (old format, no config) */
+    {
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.driver_version 180005
+.kernel aaa1
+    .metadata
+        .byte 1,2,3,4,44
+    .setup
+        .byte 0,6,0,3,4
+    .stub
+.kernel aaa2
+    .stub
+        .byte 0xf0,0xef,0xe1
+    .setup
+        .byte 0,6,0,3,4
+    .metadata
+        .byte 1,2,3,4,44
+    .isametadata
+        .byte 0xd0,0xd1,0xd4
+.kernel aaa1
+        .byte 0xc1,0xc4
+.main
+    .section .cc
+        .short 12,34,261)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=180005, compileOptions=""
+  Kernel: aaa1
+    Code:
+    Metadata:
+    010203042c
+    Setup:
+    0006000304
+    Stub:
+    c1c4
+  Kernel: aaa2
+    Code:
+    Metadata:
+    010203042c
+    Setup:
+    0006000304
+    Stub:
+    f0efe1
+    ISAMetadata:
+    010203042c
+  GlobalData:
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
+  Section .cc, type=1, flags=0:
+  0c0022000501
 )ffDXD", "", true
     }
 };
