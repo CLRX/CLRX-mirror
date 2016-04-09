@@ -22,7 +22,7 @@ global bss data in kernel code. These relocations can be applied to places that 
 
 * `place`, `place&0xffffffff`, `place%0x10000000`, `place%%0x10000000` -
 low 32 bits of value
-* `place>>32`, `place/0x100000000`, `place//0x100000000` - high bits of value
+* `place>>32`, `place/0x100000000`, `place//0x100000000` - high 32 bits of value
 
 The `place` indicates an expression that result points to some place in one of
 allowed sections.
