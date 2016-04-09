@@ -155,6 +155,8 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     if (::strcmp(sectionName, ".rodata")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
     {
+        if (getDriverVersion() < 191205)
+            throw AsmFormatException("Global Data allowed only for new binary format");
         rodataSection = sections.size();
         sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::DATA,
                 ELFSECTID_UNDEF, ".rodata" });
@@ -162,6 +164,8 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".data")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
     {
+        if (getDriverVersion() < 191205)
+            throw AsmFormatException("Global RWData allowed only for new binary format");
         dataSection = sections.size();
         sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_RWDATA,
                 ELFSECTID_UNDEF, ".data" });
@@ -169,6 +173,8 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     else if (::strcmp(sectionName, ".bss")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
     {
+        if (getDriverVersion() < 191205)
+            throw AsmFormatException("Global BSS allowed only for new binary format");
         bssSection = sections.size();
         sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_BSS,
                 ELFSECTID_UNDEF, ".bss" });
@@ -269,6 +275,22 @@ void AsmAmdCL2Handler::setCurrentSection(cxuint sectionId)
 {
     if (sectionId >= sections.size())
         throw AsmFormatException("SectionId out of range");
+    
+    if (sections[sectionId].type == AsmSectionType::DATA)
+    {
+        if (getDriverVersion() < 191205)
+            throw AsmFormatException("Global Data allowed only for new binary format");
+    }
+    if (sections[sectionId].type == AsmSectionType::AMDCL2_RWDATA)
+    {
+        if (getDriverVersion() < 191205)
+            throw AsmFormatException("Global RWData allowed only for new binary format");
+    }
+    if (sections[sectionId].type == AsmSectionType::AMDCL2_BSS)
+    {
+        if (getDriverVersion() < 191205)
+            throw AsmFormatException("Global BSS allowed only for new binary format");
+    }
     
     saveCurrentAllocRegs();
     saveCurrentSection();
@@ -409,6 +431,11 @@ void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pse
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
+    if (handler.getDriverVersion() < 191205)
+    {
+        asmr.printError(pseudoOpPlace, "Global Data allowed only for new binary format");
+        return;
+    }
     
     if (handler.rodataSection==ASMSECT_NONE)
     {   /* add this section */
@@ -429,6 +456,12 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (handler.getDriverVersion() < 191205)
+    {
+        asmr.printError(pseudoOpPlace, "Global RWData allowed only for new binary format");
+        return;
+    }
+    
     if (handler.dataSection==ASMSECT_NONE)
     {   /* add this section */
         cxuint thisSection = handler.sections.size();
@@ -445,6 +478,12 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
     Assembler& asmr = handler.assembler;
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
+    
+    if (handler.getDriverVersion() < 191205)
+    {
+        asmr.printError(pseudoOpPlace, "Global BSS allowed only for new binary format");
+        return;
+    }
     
     uint64_t sectionAlign = 0;
     bool good = true;
