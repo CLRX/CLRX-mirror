@@ -98,7 +98,7 @@ void AsmAmdCL2Handler::restoreCurrentAllocRegs()
                 kernelStates[assembler.currentKernel]->allocRegFlags);
 }
 
-cxuint AsmAmdCL2Handler::getDriverVersion()
+cxuint AsmAmdCL2Handler::getDriverVersion() const
 {
     cxuint driverVersion = 0;
     if (output.driverVersion==0)
@@ -1503,12 +1503,12 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
             case AsmExprOp::MODULO:
             case AsmExprOp::SIGNED_MODULO:
                 relType = RELTYPE_LOW_32BIT;
-                good = (secondArg == 0x100000000ULL);
+                good = ((secondArg & 0xffffffffULL) == 0);
                 break;
             case AsmExprOp::DIVISION:
             case AsmExprOp::SIGNED_DIVISION:
                 relType = RELTYPE_HIGH_32BIT;
-                good = (secondArg == 0x100000000ULL);
+                good = ((secondArg & 0xffffffffULL) == 0);
                 break;
             case AsmExprOp::SHIFT_RIGHT:
                 relType = RELTYPE_HIGH_32BIT;

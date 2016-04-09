@@ -317,7 +317,7 @@ private:
     void saveCurrentSection();
     void restoreCurrentAllocRegs();
     void saveCurrentAllocRegs();
-    cxuint getDriverVersion();
+    cxuint getDriverVersion() const;
 public:
     /// constructor
     explicit AsmAmdCL2Handler(Assembler& assembler);
