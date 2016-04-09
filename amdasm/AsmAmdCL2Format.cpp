@@ -98,6 +98,21 @@ void AsmAmdCL2Handler::restoreCurrentAllocRegs()
                 kernelStates[assembler.currentKernel]->allocRegFlags);
 }
 
+cxuint AsmAmdCL2Handler::getDriverVersion()
+{
+    cxuint driverVersion = 0;
+    if (output.driverVersion==0)
+    {
+        if (assembler.driverVersion==0) // just detect driver version
+            driverVersion = detectAmdDriverVersion();
+        else // from assembler setup
+            driverVersion = assembler.driverVersion;
+    }
+    else
+        driverVersion = output.driverVersion;
+    return driverVersion;
+}
+
 void AsmAmdCL2Handler::saveCurrentAllocRegs()
 {
     if (assembler.currentKernel!=ASMKERN_GLOBAL &&
@@ -174,18 +189,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     }
     else // add inner section (even if we inside kernel)
     {
-        cxuint driverVersion = 0;
-        if (output.driverVersion==0)
-        {
-            if (assembler.driverVersion==0) // just detect driver version
-                driverVersion = detectAmdDriverVersion();
-            else // from assembler setup
-                driverVersion = assembler.driverVersion;
-        }
-        else
-            driverVersion = output.driverVersion;
-        
-        if (driverVersion < 191205)
+        if (getDriverVersion() < 191205)
             throw AsmFormatException("Inner section are allowed "
                         "only for new binary format");
         
@@ -364,17 +368,7 @@ void AsmAmdCL2PseudoOps::getDriverVersion(AsmAmdCL2Handler& handler, const char*
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
-    cxuint driverVersion = 0;
-    if (handler.output.driverVersion==0)
-    {
-        if (asmr.driverVersion==0) // just detect driver version
-            driverVersion = detectAmdDriverVersion();
-        else // from assembler setup
-            driverVersion = asmr.driverVersion;
-    }
-    else
-        driverVersion = handler.output.driverVersion;
-    
+    cxuint driverVersion = handler.getDriverVersion();
     std::pair<AsmSymbolMap::iterator, bool> res = asmr.symbolMap.insert(
                 std::make_pair(symName, AsmSymbol(ASMSECT_ABS, driverVersion)));
     if (!res.second)
@@ -965,6 +959,11 @@ void AsmAmdCL2PseudoOps::addISAMetadata(AsmAmdCL2Handler& handler,
                     "ISAMetadata can't be defined if configuration was defined");
         return;
     }
+    if (handler.getDriverVersion() >= 191205)
+    {
+        asmr.printError(pseudoOpPlace, "ISA Metadata allowed only for old binary format");
+        return;
+    }
     
     skipSpacesToEnd(linePtr, end);
     if (!checkGarbagesAtEnd(asmr, linePtr))
@@ -1029,6 +1028,11 @@ void AsmAmdCL2PseudoOps::addKernelStub(AsmAmdCL2Handler& handler,
     {
         asmr.printError(pseudoOpPlace,
                     "Stub can't be defined if configuration was defined");
+        return;
+    }
+    if (handler.getDriverVersion() >= 191205)
+    {
+        asmr.printError(pseudoOpPlace, "Stub allowed only for old binary format");
         return;
     }
     
