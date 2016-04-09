@@ -538,6 +538,11 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (handler.getDriverVersion() < 191205)
+    {
+        asmr.printError(pseudoOpPlace, "SamplerInit allowed only for new binary format");
+        return;
+    }
     if (handler.output.samplerConfig)
     {   // error
         asmr.printError(pseudoOpPlace,
@@ -565,9 +570,13 @@ void AsmAmdCL2PseudoOps::doSampler(AsmAmdCL2Handler& handler, const char* pseudo
         asmr.printError(pseudoOpPlace, "Illegal place of configuration pseudo-op");
         return;
     }
+    if (handler.getDriverVersion() < 191205)
+    {
+        asmr.printError(pseudoOpPlace, "Sampler allowed only for new binary format");
+        return;
+    }
     
     bool inMain = asmr.currentKernel==ASMKERN_GLOBAL || asmr.currentKernel==ASMKERN_INNER;
-        
     const char* end = asmr.line + asmr.lineSize;
     skipSpacesToEnd(linePtr, end);
     
@@ -621,6 +630,11 @@ void AsmAmdCL2PseudoOps::doSamplerReloc(AsmAmdCL2Handler& handler,
     if (asmr.currentKernel!=ASMKERN_GLOBAL && asmr.currentKernel!=ASMKERN_INNER)
     {
         asmr.printError(pseudoOpPlace, "Illegal place of samplerreloc pseudo-op");
+        return;
+    }
+    if (handler.getDriverVersion() < 191205)
+    {
+        asmr.printError(pseudoOpPlace, "SamplerReloc allowed only for new binary format");
         return;
     }
     
