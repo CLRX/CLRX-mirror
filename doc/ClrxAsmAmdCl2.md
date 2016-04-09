@@ -14,6 +14,28 @@ format structure. Metadatas mainly holds arguments definitions of kernels.
 A CLRadeonExtender supports two versions of binary formats for OpenCL 2.0: newer (since 
 AMD OpenCL 1912.05) and older (before 1912.05 driver version).
 
+## Relocations
+
+An CLRX assembler handles relocations to symbol at global data, global rwdata and
+global bss data in kernel code. These relocations can be applied to places that accepts
+32-bit literal immediates. Only two types of relocations is allowed:
+
+* `place`, `place&0xffffffff`, `place%0x10000000`, `place%%0x10000000` -
+low 32 bits of value
+* `place>>32`, `place/0x100000000`, `place//0x100000000` - high bits of value
+
+The `place` indicates an expression that result points to some place in one of
+allowed sections.
+
+Examples:
+
+```
+s_mov_b32       s13, (gdata+152)>>32
+s_mov_b32       s12, (gdata+152)&0xffffffff
+s_mov_b32       s15, (gdata+160)>>32
+s_mov_b32       s14, (gdata+160)&0xffffffff
+```
+
 ## Layout of the source code
 
 The CLRX assembler allow to use one of two ways to configure kernel setup:
@@ -47,7 +69,6 @@ from OpenCL kernel definition. Next arugment is argument type:
 * char, uchar, short, ushort, int, uint, ulong, long, float, double - simple scalar types
 * charX, ucharX, shortX, ushortX, intX, uintX, ulongX, longX, floatX, doubleX - vector types
 (X indicates number of elements: 2, 3, 4, 8 or 16)
-* counter32 - 32-bit counter type
 * structure - structure
 * image, image1d, image1d_array, image1d_buffer, image2d, image2d_array, image3d -
 image types
@@ -62,12 +83,11 @@ PTRSPACE determines space where pointer points to.
 It can be one of: `local`, `constant` or `global`.
 ACCESS for pointers can be: `const`, `restrict` and `volatile`.
 CONSTSIZE determines maximum size in bytes for constant buffer.
-RESID determines resource id.
+RESID determines resource id (only for samplers and images).
 
-* for global or constant pointers is UAVID, range is in 8-1023.
-* for constant pointers (driver older than 1348.X), range is in 1-159.
 * for read only images range is in 0-127.
-* For write only images or counters range is in 0-7.
+* for other images is in 0-63.
+* for samplers is in 0-15.
 
 The last argument `unused` indicates that argument will not be used by kernel. In this
 argument can be given 'rdonly' (argument used for read-only) and 'wronly'
