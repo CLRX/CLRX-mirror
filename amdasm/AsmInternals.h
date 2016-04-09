@@ -471,6 +471,8 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
                       const char* linePtr);
     static void doRwData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
+    static void doBssData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr);
     static void doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
                       const char* linePtr);
     static void doSamplerReloc(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,

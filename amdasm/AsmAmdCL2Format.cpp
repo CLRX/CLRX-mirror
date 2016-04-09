@@ -33,7 +33,7 @@ using namespace CLRX;
 
 static const char* amdCL2PseudoOpNamesTbl[] =
 {
-    "acl_version", "arg", "compile_options", "config",
+    "acl_version", "arg", "bssdata", "compile_options", "config",
     "cws", "debugmode", "dims", "driver_version", "dx10clamp", "exceptions",
     "floatmode", "get_driver_version", "globaldata", "ieeemode", "inner",
     "isametadata", "localsize", "metadata", "privmode",
@@ -45,7 +45,7 @@ static const char* amdCL2PseudoOpNamesTbl[] =
 
 enum
 {
-    AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARG, AMDCL2OP_COMPILE_OPTIONS,
+    AMDCL2OP_ACL_VERSION = 0, AMDCL2OP_ARG, AMDCL2OP_BSSDATA, AMDCL2OP_COMPILE_OPTIONS,
     AMDCL2OP_CONFIG, AMDCL2OP_CWS, AMDCL2OP_DEBUGMODE, AMDCL2OP_DIMS,
     AMDCL2OP_DRIVER_VERSION, AMDCL2OP_DX10CLAMP, AMDCL2OP_EXCEPTIONS,
     AMDCL2OP_FLOATMODE, AMDCL2OP_GET_DRIVER_VERSION, AMDCL2OP_GLOBALDATA,
@@ -428,6 +428,57 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
         handler.dataSection = thisSection;
     }
     asmr.goToSection(pseudoOpPlace, handler.dataSection);
+}
+
+void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
+                      const char* linePtr)
+{
+    Assembler& asmr = handler.assembler;
+    const char* end = asmr.line + asmr.lineSize;
+    skipSpacesToEnd(linePtr, end);
+    
+    uint64_t sectionAlign = 0;
+    bool good = true;
+    // parse alignment
+    skipSpacesToEnd(linePtr, end);
+    if (linePtr+6<end && ::strncasecmp(linePtr, "align", 5)==0 && !isAlpha(linePtr[5]))
+    {   // if alignment
+        linePtr+=5;
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr!=end && *linePtr=='=')
+        {
+            skipCharAndSpacesToEnd(linePtr, end);
+            const char* valuePtr = linePtr;
+            if (getAbsoluteValueArg(asmr, sectionAlign, linePtr, true))
+            {
+                if (sectionAlign!=0 && (1ULL<<(63-CLZ64(sectionAlign))) != sectionAlign)
+                {
+                    asmr.printError(valuePtr, "Alignment must be power of two or zero");
+                    good = false;
+                }
+            }
+            else
+                good = false;
+        }
+        else
+        {
+            asmr.printError(linePtr, "Expected '=' after 'align'");
+            good = false;
+        }
+    }
+    
+    if (!good || !checkGarbagesAtEnd(asmr, linePtr))
+        return;
+    
+    if (handler.bssSection==ASMSECT_NONE)
+    {   /* add this section */
+        cxuint thisSection = handler.sections.size();
+        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_BSS,
+            ELFSECTID_UNDEF, ".bss" });
+        handler.bssSection = thisSection;
+    }
+    
+    asmr.goToSection(pseudoOpPlace, handler.bssSection, sectionAlign);
 }
 
 void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
@@ -1032,6 +1083,9 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             break;
         case AMDCL2OP_ARG:
             AsmAmdCL2PseudoOps::doArg(*this, stmtPlace, linePtr);
+            break;
+        case AMDCL2OP_BSSDATA:
+            AsmAmdCL2PseudoOps::doBssData(*this, stmtPlace, linePtr);
             break;
         case AMDCL2OP_COMPILE_OPTIONS:
             AsmAmdCL2PseudoOps::setCompileOptions(*this, linePtr);

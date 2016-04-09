@@ -27,6 +27,12 @@ Syntax: .acl_version "STRING"
 
 Set ACL version string.
 
+### .bssdata
+
+Syntax: .bssdata [align=ALIGNMENT]
+
+Go to global data bss section. Optional argument sets alignment of section.
+
 ### .arg
 
 Syntax for scalar: .arg ARGNAME \[, "ARGTYPENAME"], ARGTYPE[, unused]  
