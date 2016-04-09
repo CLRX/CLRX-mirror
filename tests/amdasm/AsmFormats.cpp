@@ -305,7 +305,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
     {
         os << "    ISection " << section.name << ", type=" << section.type <<
                         ", flags=" << section.flags << ":\n";
-        printHexData(os, 1, section.size, section.data);
+        printHexData(os, 2, section.size, section.data);
     }
     for (BinSymbol symbol: output->innerExtraSymbols)
         os << "    ISymbol: name=" << symbol.name << ", value=" << symbol.value <<
@@ -1147,6 +1147,93 @@ test.s:107:22: Error: Illegal pointer type
 test.s:108:35: Error: Unknown access qualifier
 test.s:110:13: Error: Illegal place of configuration pseudo-op
 )ffDXD", false
+    },
+    /* AMD CL2 */
+    {
+R"ffDXD(            .amdcl2
+            .gpu Bonaire
+            .driver_version 191205
+            .kernel aaa1
+                .metadata
+                    .byte 1,2,3,4,44
+                .setup
+                    .byte 0,6,0,3,4
+
+            .kernel aaa2
+                .setup
+                    .byte 0,6,0,3,4
+                .metadata
+                    .byte 1,2,3,4,44
+            .kernel aaa1
+                    .byte 0xc1,0xc4
+            .main
+            .globaldata
+                .byte 44,55,66
+            .bssdata align=8
+                .skip 50
+            .section .ala
+                .string "ala"
+            .inner
+            .section .beta
+                .string "beta"
+            .main
+                .byte 0xa,0xba
+            .inner
+                .byte 0xff,0xfd
+            .main
+            .bssdata
+                .skip 10
+            .section .xx
+                .byte 1,23
+            .inner
+            .section .xx
+                .byte 12,13
+            .kernel vu
+                .section aaaxx
+                .text
+                    s_endpgm
+            .inner
+                .section aaaxx
+                .byte 0xcd,0xdc)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=191205, compileOptions=""
+  Kernel: aaa1
+    Code:
+    Metadata:
+    010203042c
+    Setup:
+    0006000304c1c4
+  Kernel: aaa2
+    Code:
+    Metadata:
+    010203042c
+    Setup:
+    0006000304
+  Kernel: vu
+    Code:
+    000081bf
+    Metadata:
+    nullptr
+    Setup:
+    nullptr
+  GlobalData:
+  2c3742
+  RwData:
+  nullptr
+  Bss size: 60, bssAlign: 8
+  SamplerInit:
+  nullptr
+    ISection .beta, type=1, flags=0:
+    6265746100fffd
+    ISection .xx, type=1, flags=0:
+    0c0d
+    ISection aaaxx, type=1, flags=0:
+    cddc
+  Section .ala, type=1, flags=0:
+  616c61000aba
+  Section .xx, type=1, flags=0:
+  0117
+)ffDXD", "", true
     }
 };
 
@@ -1167,7 +1254,7 @@ static void testAssembler(cxuint testId, const AsmTestCase& testCase)
             printAmdOutput(dumpOss, static_cast<const AsmAmdHandler*>(
                         assembler.getFormatHandler())->getOutput());
         else if (assembler.getBinaryFormat() == BinaryFormat::AMDCL2)
-            printAmdCL2Output(std::cerr, static_cast<const AsmAmdCL2Handler*>(
+            printAmdCL2Output(dumpOss, static_cast<const AsmAmdCL2Handler*>(
                         assembler.getFormatHandler())->getOutput());
         else if (assembler.getBinaryFormat() == BinaryFormat::GALLIUM)
             printGalliumOutput(dumpOss, static_cast<const AsmGalliumHandler*>(
