@@ -175,7 +175,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
     else // add inner section (even if we inside kernel)
     {
         Section section;
-        kernelId = section.kernelId = ASMKERN_INNER;
+        section.kernelId = ASMKERN_INNER;
         auto out = innerExtraSectionMap.insert(std::make_pair(std::string(sectionName),
                     thisSection));
         if (!out.second)
