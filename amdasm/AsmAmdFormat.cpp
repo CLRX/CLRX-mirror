@@ -1872,12 +1872,13 @@ bool AsmAmdHandler::prepareBinary()
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);
         // extra sgprs for dimensions
-        userSGPRsNum += ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0) + 1;
+        cxuint dimRegs = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
+        userSGPRsNum += dimRegs + 1;
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
             config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i]->allocRegs[0]);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
-            config.usedVGPRsNum = kernelStates[i]->allocRegs[1];
+            config.usedVGPRsNum = std::max(dimRegs, kernelStates[i]->allocRegs[1]);
     }
     
     /* put extra symbols */

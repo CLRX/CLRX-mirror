@@ -529,7 +529,7 @@ aa23:)ffDXD",
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Kernel: name=aa23, offset=0
     Config:
-      dims=6, SGPRS=7, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x1
+      dims=6, SGPRS=7, VGPRS=2, pgmRSRC2=0x0, ieeeMode=0x1
       floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Comment:
@@ -1372,7 +1372,7 @@ R"ffDXD(            .amdcl2
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "uint*", pointer, uint, global, 4, 0, 0, default, 3
       Arg: "out", "uint*", pointer, uint, global, 0, 0, 0, default, 3
-      dims=1, cws=0 0 0, SGPRS=12, VGPRS=0
+      dims=1, cws=0 0 0, SGPRS=12, VGPRS=1
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
       priority=0, exceptions=0, localSize=1000, scratchBuffer=0
       useSetup 
@@ -1392,7 +1392,7 @@ R"ffDXD(            .amdcl2
       Arg: "q", "cmdqueue_t", cmdqueue, void, none, 0, 0, 0, default, 3
       Arg: "piper", "pipe", pipe, void, none, 0, 0, 0, default, 3
       Arg: "ce", "clk_event_t", clkevent, void, none, 0, 0, 0, default, 3
-      dims=1, cws=0 0 0, SGPRS=12, VGPRS=0
+      dims=1, cws=0 0 0, SGPRS=12, VGPRS=1
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
       priority=2, exceptions=18, localSize=1000, scratchBuffer=2342
       debug priv dx10clamp useSetup useEnqueue 
