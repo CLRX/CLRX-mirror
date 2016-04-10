@@ -131,7 +131,5 @@ Useful options for clrxdisasm:
 * -h - print hexadecimal instruction codes
 * -g DEVICETYPE - device type ('pitcairn', 'bonaire'...)
 * -A ARCH - architecture ('gcn1.0', 'gcn1.1' or 'gcn1.2')
-* -b BINFMT - binary format ('amd', 'gallium', 'rawcode')
-* -w - suppress warnings
 
 A CLRX assembler accepts source from disassembler.
