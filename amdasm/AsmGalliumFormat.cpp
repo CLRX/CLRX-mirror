@@ -1053,8 +1053,9 @@ bool AsmGalliumHandler::prepareBinary()
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);
         // extra sgprs for dimensions
-        cxuint dimRegs = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
-        userSGPRsNum += 4 + dimRegs + 1;
+        cxuint vdimRegs = ((dimMask&4) ? 3 : ((dimMask&2) ? 2: (dimMask&1) ? 1 : 0));
+        cxuint sdimRegs = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
+        userSGPRsNum += 4 + sdimRegs + 1;
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {
@@ -1066,7 +1067,7 @@ bool AsmGalliumHandler::prepareBinary()
                 getGPUMaxRegistersNum(arch, REGTYPE_SGPR, REGCOUNT_INCLUDE_VCC));
         }
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
-            config.usedVGPRsNum = std::max(dimRegs, kernelStates[i].allocRegs[1]);
+            config.usedVGPRsNum = std::max(vdimRegs, kernelStates[i].allocRegs[1]);
     }
     
     bool good = true;

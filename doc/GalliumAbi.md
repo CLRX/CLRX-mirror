@@ -25,7 +25,7 @@ Userdata tooks 4 first scalar registers and holds:
 
 Scalar register after userdata holds (n - userdatanum):
 
-* s[n:n+2] - group id for each dimension
+* s[n:n+enabled_dims-1] - group id for each enabled dimension
 * s[n+3] - tg_size_en (???)
 * s[n+4] - scratch wave offset (??)
 

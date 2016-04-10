@@ -69,7 +69,7 @@ Local pointers holds its offset in bytes (1 dword).
 
 Scalar register after userdata holds (n - userdatanum):
 
-* s[n:n+2] - group id for each dimension
+* s[n:n+enabled_dims-1] - group id for each enabled dimension
 
 First three vector registers holds local ids for each dimension.
 
