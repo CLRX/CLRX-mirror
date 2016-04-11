@@ -289,7 +289,7 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                   [] (const AmdCL2RelInput& a, const AmdCL2RelInput& b)
                   { return a.offset < b.offset; });
         for (const AmdCL2RelInput& rel: relocs)
-            std::cout << "    Rel: offset=" << rel.offset << ", type=" << rel.type << ", "
+            os << "    Rel: offset=" << rel.offset << ", type=" << rel.type << ", "
                 "symbol=" << rel.symbol << ", addend=" << rel.addend << "\n";
     }
     
@@ -1414,6 +1414,100 @@ R"ffDXD(            .amdcl2
       priority=0, exceptions=0, localSize=656, scratchBuffer=0
       useSizes useSetup 
   GlobalData:
+  RwData:
+  nullptr
+  Bss size: 0, bssAlign: 0
+  SamplerInit:
+  nullptr
+)ffDXD", "", true
+    },
+    /* AMDCL2 - relocations */
+    {
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.driver_version 191205
+.globaldata
+gstart:
+        .int 1,2,3,4,5,6
+gstart2:
+.kernel aaa1
+    .config
+        .dims x
+        .setupargs
+        .arg n,uint
+        .arg in,uint*,global,const
+        .arg out,uint*,global
+        .ieeemode
+        .usesetup
+cc=gstart+10+x
+    .text
+        s_and_b32 s9,s5,44
+        s_and_b32 s10,s5,5
+        s_mov_b32 s1, gstart+77
+        s_mov_b32 s1, gstart+7*3
+        s_mov_b32 s1, (gstart+7*3)&(1<<32-1)
+        s_mov_b32 s1, ((gstart+7*3)*2-gstart)&(4096*4096*256-1)
+        s_mov_b32 s1, (-gstart+2*(gstart+7*3))%(4096*4096*256)
+        s_mov_b32 s1, (-gstart+2*(gstart2+7*3))%%(4096*4096*256)
+        s_mov_b32 s1, (-gstart+2*(gstart2+7*5))%%(4096*4096*256*9)
+        s_mov_b32 s1, (-gstart+2*(gstart2+7*5))%(4096*4096*256*9)
+        s_mov_b32 s1, (gstart+7*3)>>(31-5+6)
+        s_mov_b32 s1, (gstart+7*3)>>(234%101)
+        s_mov_b32 s1, (gstart+7*3)>>(235%101-1)
+        s_mov_b32 s1, (gstart+7*3)/(4096*4096*256)
+        s_mov_b32 s1, (gstart+7*3)//(4096*4096*256)
+        s_mov_b32 s1, aa>>32
+        s_mov_b32 s1, (aa-10)>>32
+        s_mov_b32 s1, (bb-10)>>32
+        s_mov_b32 s1, (cc+1)>>32
+        s_mov_b32 s1, gstart2+77
+        s_endpgm
+aa = gstart2 + 100
+bb = aa + 3
+x=3*6)ffDXD",
+        R"ffDXD(AmdCL2BinDump:
+  devType=Bonaire, aclVersion=, drvVersion=191205, compileOptions=""
+  Kernel: aaa1
+    Code:
+    05ac098705850a87ff0381be55555555ff0381be55555555ff0381be55555555
+    ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
+    ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
+    ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
+    ff0381be55555555ff0381be55555555ff0381be55555555000081bf
+    Config:
+      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
+      Arg: "in", "uint*", pointer, uint, global, 4, 0, 0, default, 3
+      Arg: "out", "uint*", pointer, uint, global, 0, 0, 0, default, 3
+      dims=1, cws=0 0 0, SGPRS=11, VGPRS=1
+      pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xc0
+      priority=0, exceptions=0, localSize=0, scratchBuffer=0
+      useSetup 
+    Rel: offset=12, type=1, symbol=2, addend=77
+    Rel: offset=20, type=1, symbol=2, addend=21
+    Rel: offset=28, type=1, symbol=2, addend=21
+    Rel: offset=36, type=1, symbol=2, addend=42
+    Rel: offset=44, type=1, symbol=2, addend=42
+    Rel: offset=52, type=1, symbol=2, addend=90
+    Rel: offset=60, type=1, symbol=2, addend=118
+    Rel: offset=68, type=1, symbol=2, addend=118
+    Rel: offset=76, type=2, symbol=2, addend=21
+    Rel: offset=84, type=2, symbol=2, addend=21
+    Rel: offset=92, type=2, symbol=2, addend=21
+    Rel: offset=100, type=2, symbol=2, addend=21
+    Rel: offset=108, type=2, symbol=2, addend=21
+    Rel: offset=116, type=2, symbol=2, addend=124
+    Rel: offset=124, type=2, symbol=2, addend=114
+    Rel: offset=132, type=2, symbol=2, addend=117
+    Rel: offset=140, type=2, symbol=2, addend=29
+    Rel: offset=148, type=1, symbol=2, addend=101
+  GlobalData:
+  010000000200000003000000040000000500000006000000
   RwData:
   nullptr
   Bss size: 0, bssAlign: 0
