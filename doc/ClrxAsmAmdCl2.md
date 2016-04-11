@@ -219,12 +219,13 @@ Go to read-write global data section.
 
 Syntax: .sampler VALUE,...
 
-Inside main and inner binary: add sampler definition.
-Inside kernel configuration: add sampler to kernel (value is sampler id).
+Inside main and inner binary: add sampler definitions.
+Only legal when no samplerinit section. Inside kernel configuration:
+add samplers to kernel (values are sampler ids).
 
 ### .samplerinit
 
-Go to samplerinit content section.
+Go to samplerinit content section. Only legal if no sampler definitions.
 
 ### .samplerreloc
 
