@@ -349,6 +349,9 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     
     size_t argOffset = kernelHeader.size +
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
+    // fix for latest Crimson drivers
+    if (*((const uint32_t*)(metadata+argOffset)) == 0x5800)
+        argOffset++;
     const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
             const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
     
@@ -403,6 +406,11 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
                              KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
                     arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                    break;
+                case 5: // long
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::ULONG;
                     break;
                 case 6: // char
                 case 7: // short
