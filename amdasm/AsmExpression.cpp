@@ -1573,9 +1573,8 @@ size_t AsmExpression::toTop(size_t opIndex) const
         AsmExprOp op = ops[opIndex];
         if (op==AsmExprOp::ARG_VALUE)
         {
-            if (!stack.empty())
-                while (--stack.top()==0)
-                    stack.pop();
+            while (!stack.empty() && --stack.top()==0)
+                stack.pop();
             if (stack.empty())
                 break; // is end
         }
