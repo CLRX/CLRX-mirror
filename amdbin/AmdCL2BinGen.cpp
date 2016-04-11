@@ -1369,6 +1369,31 @@ public:
     }
 };
 
+class CLRX_INTERNAL CL2InnerGlobalDataGen: public ElfRegionContent
+{
+private:
+    const AmdCL2Input* input;
+public:
+    explicit CL2InnerGlobalDataGen(const AmdCL2Input* _input) : input(_input)
+    { }
+    
+    size_t size() const
+    {
+        size_t rwDataSize = (input->rwData!=nullptr) ? input->rwDataSize : 0;
+        size_t allSize = (input->globalDataSize + input->bssSize +
+                rwDataSize + 255) & ~size_t(255);
+        return allSize - rwDataSize - input->bssSize;
+    }
+    
+    void operator()(FastOutputBuffer& fob) const
+    {
+        size_t gdataSize = size();
+        fob.writeArray(input->globalDataSize, input->globalData);
+        if (gdataSize > input->globalDataSize)
+            fob.fill(gdataSize - input->globalDataSize, 0);
+    }
+};
+
 class CLRX_INTERNAL CL2InnerGlobalDataRelsGen: public ElfRegionContent
 {
 private:
@@ -1659,6 +1684,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     CL2MainCommentGen mainCommentGen(input, aclVersion);
     CL2MainRodataGen mainRodataGen(input, tempDatas);
     CL2InnerTextGen innerTextGen(input, tempDatas);
+    CL2InnerGlobalDataGen innerGDataGen(input);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
     CL2InnerTextRelsGen innerTextRelsGen(input);
     CL2InnerGlobalDataRelsGen innerGDataRels(input);
@@ -1721,7 +1747,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         }
         if (hasGlobalData)
         {// global data section
-            innerBinGen->addRegion(ElfRegion64(input->globalDataSize, input->globalData,
+            innerBinGen->addRegion(ElfRegion64(innerGDataGen.size(), &innerGDataGen,
                       8, ".hsadata_readonly_agent", SHT_PROGBITS, 0xa00003, 0, 0,
                       Elf64Types::nobase));
             innerBinSectionTable[ELFSECTID_RODATA-ELFSECTID_START] = extraSectionIndex++;
