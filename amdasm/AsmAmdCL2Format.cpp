@@ -1483,11 +1483,11 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
         lastOp==AsmExprOp::SIGNED_DIVISION || lastOp==AsmExprOp::SHIFT_RIGHT)
     {   // check low or high relocation
         relOpStart = 0;
-        relOpEnd = expr->toTop(ops.size()-2)-1;
+        relOpEnd = expr->toTop(ops.size()-2);
         /// evaluate second argument
         cxuint tmpSectionId;
         uint64_t secondArg;
-        if (!expr->evaluate(assembler, relOpEnd+1, ops.size()-1, secondArg, tmpSectionId))
+        if (!expr->evaluate(assembler, relOpEnd, ops.size()-1, secondArg, tmpSectionId))
             return false;
         if (tmpSectionId!=ASMSECT_ABS)
         {   // must be absolute
