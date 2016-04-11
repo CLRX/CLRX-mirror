@@ -1869,20 +1869,22 @@ bool Assembler::assemble()
     }
     
     resolvingRelocs = true;
+    for (AsmSymbolEntry& symEntry: symbolMap)
+        if (!symEntry.second.occurrencesInExprs.empty())
+        {   // try to resolve symbols
+            uint64_t value;
+            cxuint sectionId;
+            if (formatHandler!=nullptr &&
+                formatHandler->resolveSymbol(symEntry.second, value, sectionId))
+                setSymbol(symEntry, value, sectionId);
+        }
+    
     if ((flags&ASM_TESTRUN) == 0)
         for (AsmSymbolEntry& symEntry: symbolMap)
             if (!symEntry.second.occurrencesInExprs.empty())
-            {   // try to resolve symbols
-                uint64_t value;
-                cxuint sectionId;
-                if (formatHandler!=nullptr &&
-                    formatHandler->resolveSymbol(symEntry.second, value, sectionId))
-                    setSymbol(symEntry, value, sectionId);
-                else // otherwise we print errors
-                    for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
-                        printError(occur.expression->getSourcePos(),(std::string(
-                            "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
-            }
+                for (AsmExprSymbolOccurrence occur: symEntry.second.occurrencesInExprs)
+                    printError(occur.expression->getSourcePos(),(std::string(
+                        "Unresolved symbol '")+symEntry.first.c_str()+"'").c_str());
     
     if (good && formatHandler!=nullptr)
         formatHandler->prepareBinary();
