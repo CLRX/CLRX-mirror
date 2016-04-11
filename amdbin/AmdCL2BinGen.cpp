@@ -1388,8 +1388,10 @@ public:
     {
         Elf64_Rela rela;
         rela.r_addend = 0;
+        const size_t samplersNum = (input->samplerConfig) ?
+                input->samplers.size() : (input->samplerInitSize>>3);
         /* calculate first symbol for samplers (last symbols) */
-        uint32_t symIndex = input->kernels.size() + input->samplerOffsets.size() + 2 +
+        uint32_t symIndex = input->kernels.size() + samplersNum + 2 +
                 (input->rwDataSize!=0 && input->rwData!=nullptr) /* globaldata symbol */ +
                 (input->bssSize!=0) /* bss data symbol */;
         if (!input->samplerOffsets.empty())
@@ -1402,8 +1404,6 @@ public:
             }
         else // default in last bytes
         {
-            const size_t samplersNum = (input->samplerConfig) ?
-                        input->samplers.size() : (input->samplerInitSize>>3);
             size_t globalOffset = input->globalDataSize - (samplersNum<<3);
             globalOffset &= ~size_t(7); // alignment
             for (size_t i = 0; i < samplersNum; i++)
@@ -1623,13 +1623,6 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     {
         if (!hasGlobalData && hasSamplers)
             throw Exception("Global data must be defined if samplers present");
-        if (!input->samplerConfig)
-        {
-            if (input->samplerInitSize != input->samplerOffsets.size()*8)
-                throw Exception("Sampler offsets and sampler init sizes doesn't match");
-        }
-        else if (input->samplers.size() != input->samplerOffsets.size())
-            throw Exception("Sampler offsets and sampler sizes doesn't match");
         // check sampler offset range
         for (size_t sampOffset: input->samplerOffsets)
             if (sampOffset+8 > input->globalDataSize)

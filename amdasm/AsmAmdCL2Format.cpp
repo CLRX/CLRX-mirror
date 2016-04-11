@@ -1120,8 +1120,8 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
     if (kernel.metadataSection!=ASMSECT_NONE || kernel.isaMetadataSection!=ASMSECT_NONE ||
         kernel.setupSection!=ASMSECT_NONE || kernel.stubSection!=ASMSECT_NONE)
     {
-        asmr.printError(pseudoOpPlace, "Config can't be defined if metadata,header and/or"
-                        " CALnotes section exists");
+        asmr.printError(pseudoOpPlace, "Config can't be defined if metadata,header,setup,"
+                        "stub section exists");
         return;
     }
 

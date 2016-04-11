@@ -1514,6 +1514,83 @@ x=3*6)ffDXD",
   SamplerInit:
   nullptr
 )ffDXD", "", true
+    },
+    /* AMDCL2 - errors */
+    {
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.driver_version 191205
+.kernel aaa1
+    .config
+        .dims xyd
+        .setupargs
+        .cws  
+        .arg n,uint
+        .arg in,uint*,global,const
+        .arg out,uint*,global
+        .ieeemode
+        .floatmode 0x111da
+        .localsize 103000
+        .priority 6
+        .exceptions 0xd9
+        .sgprsnum 231
+        
+        .usesetup
+    .text
+        s_and_b32 s9,s5,44
+        s_and_b32 s10,s5,5
+        .dims x
+        .setupargs
+        .arg n,uint
+        .arg in,float*,global,const
+        .arg out,float*,global
+        .arg q,queue
+        .arg piper,pipe
+        .arg ce,clkevent
+        .scratchbuffer 2342
+        .ieeemode
+        .floatmode 0xda
+        .localsize 1000
+        .usesetup
+        .priority 2
+        .privmode
+        .debugmode
+        .dx10clamp
+        .exceptions 0x12
+        .useenqueue
+.kernel aaa2
+    .metadata
+        .byte 1,234,4
+    .config)ffDXD",
+        "",
+        R"ffDXD(test.s:6:15: Error: Unknown dimension type
+test.s:8:15: Error: Expected expression
+test.s:13:20: Warning: Value 0x111da truncated to 0xda
+test.s:14:20: Error: LocalSize out of range (0-32768)
+test.s:15:19: Warning: Value 0x6 truncated to 0x2
+test.s:16:21: Warning: Value 0xd9 truncated to 0x59
+test.s:17:19: Error: Used SGPRs number out of range (0-102)
+test.s:23:9: Error: Illegal place of configuration pseudo-op
+test.s:24:9: Error: Illegal place of kernel argument
+test.s:25:9: Error: Illegal place of kernel argument
+test.s:26:9: Error: Illegal place of kernel argument
+test.s:27:9: Error: Illegal place of kernel argument
+test.s:28:9: Error: Illegal place of kernel argument
+test.s:29:9: Error: Illegal place of kernel argument
+test.s:30:9: Error: Illegal place of kernel argument
+test.s:31:9: Error: Illegal place of configuration pseudo-op
+test.s:32:9: Error: Illegal place of configuration pseudo-op
+test.s:33:9: Error: Illegal place of configuration pseudo-op
+test.s:34:9: Error: Illegal place of configuration pseudo-op
+test.s:35:9: Error: Illegal place of configuration pseudo-op
+test.s:36:9: Error: Illegal place of configuration pseudo-op
+test.s:37:9: Error: Illegal place of configuration pseudo-op
+test.s:38:9: Error: Illegal place of configuration pseudo-op
+test.s:39:9: Error: Illegal place of configuration pseudo-op
+test.s:40:9: Error: Illegal place of configuration pseudo-op
+test.s:41:9: Error: Illegal place of configuration pseudo-op
+test.s:45:5: Error: Config can't be defined if metadata,header,setup,stub section exists
+)ffDXD", false
     }
 };
 
