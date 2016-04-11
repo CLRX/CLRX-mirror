@@ -1462,8 +1462,10 @@ public:
         Elf64_Rela rela;
         size_t codeOffset = 0;
         uint32_t adataSymIndex = 0;
-        uint32_t gdataSymIndex = input->kernels.size() + input->samplerOffsets.size();
-        uint32_t bssSymIndex = input->kernels.size() + input->samplerOffsets.size();
+        cxuint samplersNum = (input->samplerConfig) ?
+                input->samplers.size() : (input->samplerInitSize>>3);
+        uint32_t gdataSymIndex = input->kernels.size() + samplersNum;
+        uint32_t bssSymIndex = input->kernels.size() + samplersNum;
         if (input->rwDataSize!=0 && input->rwData!=nullptr)
         {   // atomic data available
             adataSymIndex = gdataSymIndex; // first is atomic data symbol index

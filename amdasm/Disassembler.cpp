@@ -429,9 +429,6 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     const cxbyte* textPtr = nullptr;
     const size_t kernelInfosNum = binary.getKernelInfosNum();
     
-    size_t gDataSymIndex = 0;
-    size_t rwDataSymIndex = 0;
-    size_t bssSymIndex = 0;
     uint16_t gDataSectionIdx = SHN_UNDEF;
     uint16_t rwDataSectionIdx = SHN_UNDEF;
     uint16_t bssDataSectionIdx = SHN_UNDEF;
@@ -462,25 +459,6 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         // get code section pointer for determine relocation position kernel code
         textPtr = innerBin.getSectionContent(".hsatext");
         
-        const size_t symbolsNum = innerBin.getSymbolsNum();
-        for (gDataSymIndex = 0; gDataSymIndex < symbolsNum; gDataSymIndex++)
-        {   // find global data symbol (getSymbolIndex doesn't work always
-            const char* name = innerBin.getSymbolName(gDataSymIndex);
-            if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
-                break;
-        }
-        for (rwDataSymIndex = 0; rwDataSymIndex < symbolsNum; rwDataSymIndex++)
-        {   // find global data symbol (getSymbolIndex doesn't work always
-            const char* name = innerBin.getSymbolName(rwDataSymIndex);
-            if (::strcmp(name, "__hsa_section.hsadata_global_agent")==0)
-                break;
-        }
-        for (bssSymIndex = 0; bssSymIndex < symbolsNum; bssSymIndex++)
-        {   // find global data symbol (getSymbolIndex doesn't work always
-            const char* name = innerBin.getSymbolName(bssSymIndex);
-            if (::strcmp(name, "__hsa_section.hsabss_global_agent")==0)
-                break;
-        }
         try
         { gDataSectionIdx = innerBin.getSectionIndex(".hsadata_readonly_agent"); }
         catch(const Exception& ex)
@@ -493,52 +471,6 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
         { bssDataSectionIdx = innerBin.getSectionIndex(".hsabss_global_agent"); }
         catch(const Exception& ex)
         { }
-        if (gDataSymIndex < symbolsNum)
-        {   // check gdata sym index
-            const Elf64_Sym& gDataSym = innerBin.getSymbol(gDataSymIndex);
-            /// check symbol value, section and name
-            if (ULEV(gDataSym.st_value)!=0)
-                throw Exception("Wrong value for global data symbol");
-            if (ULEV(gDataSym.st_shndx)>=innerBin.getSectionHeadersNum())
-                throw Exception("Section index out of range");
-            if (ELF64_ST_TYPE(gDataSym.st_info)!=STT_SECTION)
-                throw Exception("Section index out of range");
-            
-            if (::strcmp(innerBin.getSectionName(ULEV(gDataSym.st_shndx)),
-                            ".hsadata_readonly_agent") != 0)
-                throw Exception("Wrong section for global data symbol");
-        }
-        if (rwDataSymIndex < symbolsNum)
-        {   // check gdata sym index
-            const Elf64_Sym& aDataSym = innerBin.getSymbol(rwDataSymIndex);
-            /// check symbol value, section and name
-            if (ULEV(aDataSym.st_value)!=0)
-                throw Exception("Wrong value for rwdata data symbol");
-            if (ULEV(aDataSym.st_shndx)>=innerBin.getSectionHeadersNum())
-                throw Exception("Section index out of range");
-            if (ELF64_ST_TYPE(aDataSym.st_info)!=STT_SECTION)
-                throw Exception("Section index out of range");
-            
-            if (::strcmp(innerBin.getSectionName(ULEV(aDataSym.st_shndx)),
-                            ".hsadata_global_agent") != 0)
-                throw Exception("Wrong section for rwdata data symbol");
-        }
-        
-        if (bssSymIndex < symbolsNum)
-        {   // check gdata sym index
-            const Elf64_Sym& bssSym = innerBin.getSymbol(bssSymIndex);
-            /// check symbol value, section and name
-            if (ULEV(bssSym.st_value)!=0)
-                throw Exception("Wrong value for bss data symbol");
-            if (ULEV(bssSym.st_shndx)>=innerBin.getSectionHeadersNum())
-                throw Exception("Section index out of range");
-            if (ELF64_ST_TYPE(bssSym.st_info)!=STT_SECTION)
-                throw Exception("Section index out of range");
-            
-            if (::strcmp(innerBin.getSectionName(ULEV(bssSym.st_shndx)),
-                            ".hsabss_global_agent") != 0)
-                throw Exception("Wrong section for bss data symbol");
-        }
         // relocations for global data section (sampler symbols)
         relaNum = innerBin.getGlobalDataRelaEntriesNum();
         // section index for samplerinit (will be used for comparing sampler symbol section
@@ -656,22 +588,17 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     uint32_t symIndex = ELF64_R_SYM(ULEV(rela.r_info));
                     int64_t addend = ULEV(rela.r_addend);
                     cxuint rsym = 0;
-                    if (gDataSymIndex != symIndex && rwDataSymIndex != symIndex &&
-                                bssSymIndex != symIndex)
-                    {   // check this symbol
-                        const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
-                        uint16_t symShndx = ULEV(sym.st_shndx);
-                        if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
-                            symShndx!=bssDataSectionIdx)
-                            throw Exception("Other symbol than to global or "
-                                    "rwdata data or bss is illegal");
-                        addend += ULEV(sym.st_value);
-                        rsym = (symShndx==rwDataSectionIdx) ? 1 : 
-                            ((symShndx==bssDataSectionIdx) ? 2 : 0);
-                    }
-                    else
-                        rsym = (rwDataSymIndex==symIndex) ? 1 : 
-                            ((bssSymIndex==symIndex) ? 2 : 0);
+                    // check this symbol
+                    const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
+                    uint16_t symShndx = ULEV(sym.st_shndx);
+                    if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
+                        symShndx!=bssDataSectionIdx)
+                        throw Exception("Other symbol than to global or "
+                                "rwdata data or bss is illegal");
+                    addend += ULEV(sym.st_value);
+                    rsym = (symShndx==rwDataSectionIdx) ? 1 : 
+                        ((symShndx==bssDataSectionIdx) ? 2 : 0);
+                    
                     RelocType relocType;
                     uint32_t rtype = ELF64_R_TYPE(ULEV(rela.r_info));
                     if (rtype==1)
