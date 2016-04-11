@@ -1487,7 +1487,7 @@ public:
                 SLEV(rela.r_addend, inRel.addend);
                 fob.writeObject(rela);
             }
-            codeOffset += (kernel.codeSize+255)&(~255);
+            codeOffset += (kernel.codeSize+255)&~size_t(255);
         }
     }
 };
