@@ -1445,8 +1445,11 @@ class CLRX_INTERNAL CL2InnerTextRelsGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    const Array<TempAmdCL2KernelData>& tempDatas;
 public:
-    explicit CL2InnerTextRelsGen(const AmdCL2Input* _input) : input(_input)
+    explicit CL2InnerTextRelsGen(const AmdCL2Input* _input,
+            const Array<TempAmdCL2KernelData>& _tempDatas) : input(_input),
+            tempDatas(_tempDatas)
     { }
     
     size_t size() const
@@ -1476,9 +1479,12 @@ public:
             bssSymIndex = gdataSymIndex; // first is bss data symbol index
             gdataSymIndex++;
         }
-        for (const AmdCL2KernelInput& kernel: input->kernels)
+        for (size_t i = 0; i < input->kernels.size(); i++)
         {
-            codeOffset += (kernel.useConfig)? 256 : kernel.setupSize;
+            const AmdCL2KernelInput& kernel = input->kernels[i];
+            const TempAmdCL2KernelData& tempData = tempDatas[i];
+            
+            codeOffset += tempData.setupSize;
             for (const AmdCL2RelInput inRel: kernel.relocations)
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
@@ -1690,7 +1696,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     CL2InnerTextGen innerTextGen(input, tempDatas);
     CL2InnerGlobalDataGen innerGDataGen(input);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
-    CL2InnerTextRelsGen innerTextRelsGen(input);
+    CL2InnerTextRelsGen innerTextRelsGen(input, tempDatas);
     CL2InnerGlobalDataRelsGen innerGDataRels(input);
     
     // main section of main binary
