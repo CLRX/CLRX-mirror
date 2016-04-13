@@ -400,17 +400,29 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                 case 1:  // read_only image
                 case 2:  // write_only image
                 case 3:  // read_write image
-                    if (kindOfType!=2) // not image
+                    if (kindOfType==2) // not image
+                    {
+                        arg.argType = KernelArgType::IMAGE;
+                        arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
+                                 KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
+                        arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                    }
+                    else if (argType==2 || argType == 3)
+                    {
+                        if (kindOfType!=4) // not scalar
+                            throw Exception("Wrong kernel argument type");
+                        arg.argType = (argType==3) ?
+                            KernelArgType::USHORT : KernelArgType::UCHAR;
+                    }
+                    else
                         throw Exception("Wrong kernel argument type");
-                    arg.argType = KernelArgType::IMAGE;
-                    arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
-                             KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
-                    arg.ptrSpace = KernelPtrSpace::GLOBAL;
                     break;
+                case 4: // uint
                 case 5: // long
                     if (kindOfType!=4) // not scalar
                         throw Exception("Wrong kernel argument type");
-                    arg.argType = KernelArgType::ULONG;
+                    arg.argType = (argType==5) ?
+                        KernelArgType::ULONG : KernelArgType::UINT;
                     break;
                 case 6: // char
                 case 7: // short
@@ -439,6 +451,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                     break;
                 default:
                     throw Exception("Wrong kernel argument type");
+                    break;
             }
         else // otherwise is pointer or pipe
         {
