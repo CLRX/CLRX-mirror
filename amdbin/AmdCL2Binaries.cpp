@@ -412,17 +412,17 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
                         if (kindOfType!=4) // not scalar
                             throw Exception("Wrong kernel argument type");
                         arg.argType = (argType==3) ?
-                            KernelArgType::USHORT : KernelArgType::UCHAR;
+                            KernelArgType::SHORT : KernelArgType::CHAR;
                     }
                     else
                         throw Exception("Wrong kernel argument type");
                     break;
-                case 4: // uint
+                case 4: // int
                 case 5: // long
                     if (kindOfType!=4) // not scalar
                         throw Exception("Wrong kernel argument type");
                     arg.argType = (argType==5) ?
-                        KernelArgType::ULONG : KernelArgType::UINT;
+                        KernelArgType::LONG : KernelArgType::INT;
                     break;
                 case 6: // char
                 case 7: // short
