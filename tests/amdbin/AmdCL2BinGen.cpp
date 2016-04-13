@@ -598,6 +598,11 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
             kernel.config = genKernelConfig(kernel.metadataSize, kernel.metadata,
                         kernel.setupSize, kernel.setup, amdCL2Input.samplerOffsets,
                         kernel.relocations);
+            /* zeroing obsolete fields */
+            kernel.metadata = kernel.isaMetadata = nullptr;
+            kernel.stub = kernel.setup = nullptr;
+            kernel.metadataSize = kernel.isaMetadataSize = 0;
+            kernel.stubSize = kernel.setupSize = 0;
         }
     
     // add brig

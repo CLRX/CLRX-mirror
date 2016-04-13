@@ -1478,7 +1478,7 @@ public:
         }
         for (const AmdCL2KernelInput& kernel: input->kernels)
         {
-            codeOffset += kernel.setupSize;
+            codeOffset += (kernel.useConfig)? 256 : kernel.setupSize;
             for (const AmdCL2RelInput inRel: kernel.relocations)
             {
                 SLEV(rela.r_offset, inRel.offset + codeOffset);
