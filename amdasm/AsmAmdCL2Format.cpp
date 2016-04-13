@@ -1409,6 +1409,18 @@ bool AsmAmdCL2Handler::prepareBinary()
     
     /* put extra symbols */
     if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
+    {
+        std::vector<size_t> codeOffsets(kernelsNum);
+        size_t codeOffset = 0;
+        // make offset translation table
+        for (size_t i = 0; i < kernelsNum; i++)
+        {
+            const AmdCL2KernelInput& kernel = output.kernels[i];
+            codeOffset += (kernel.useConfig) ? 256 : kernel.setupSize;
+            codeOffsets[i] = codeOffset;
+            codeOffset += (kernel.codeSize+255)&~size_t(255);
+        }
+        
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
         {
             if (!symEntry.second.hasValue ||
@@ -1419,16 +1431,23 @@ bool AsmAmdCL2Handler::prepareBinary()
             if (binSectId==ELFSECTID_UNDEF)
                 continue; // no section
             
-            const BinSymbol binSym = { symEntry.first, symEntry.second.value,
+            BinSymbol binSym = { symEntry.first, symEntry.second.value,
                         symEntry.second.size, binSectId, false, symEntry.second.info,
                         symEntry.second.other };
             
             if (symEntry.second.sectionId == ASMSECT_ABS ||
                 sections[symEntry.second.sectionId].kernelId == ASMKERN_GLOBAL)
                 output.extraSymbols.push_back(std::move(binSym));
-            else // to kernel extra symbols. TODO: translate correct value!
+            else if (sections[symEntry.second.sectionId].kernelId == ASMKERN_INNER)
+                // to kernel extra symbols.
                 output.innerExtraSymbols.push_back(std::move(binSym));
+            else if (sections[symEntry.second.sectionId].type == AsmSectionType::CODE)
+            {
+                binSym.value += codeOffsets[sections[symEntry.second.sectionId].kernelId];
+                output.innerExtraSymbols.push_back(std::move(binSym));
+            }
         }
+    }
     // driver version setup
     if (output.driverVersion==0 && (assembler.flags&ASM_TESTRUN)==0)
     {

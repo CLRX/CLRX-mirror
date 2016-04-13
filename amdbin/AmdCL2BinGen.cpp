@@ -1538,8 +1538,8 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
 }
 
 static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input,
-        const uint16_t* builtinSectionTable, cxuint extraSeciontIndex,
-        std::vector<CString>& stringPool)
+        const Array<TempAmdCL2KernelData>& tempDatas, const uint16_t* builtinSectionTable,
+        cxuint extraSeciontIndex, std::vector<CString>& stringPool)
 {
     const size_t samplersNum = (input->samplerConfig) ? input->samplers.size() :
                 (input->samplerInitSize>>3);
@@ -1557,8 +1557,10 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
     stringPool.resize(input->kernels.size() + samplersNum);
     size_t nameIdx = 0;
     
-    for (const AmdCL2KernelInput& kernel: input->kernels)
+    for (size_t i = 0; i < input->kernels.size(); i++)
     {   // first, we put sampler objects
+        const AmdCL2KernelInput& kernel = input->kernels[i];
+        const TempAmdCL2KernelData& tempData = tempDatas[i];
         if ((codePos & 255) != 0)
             codePos += 256-(codePos&255);
         
@@ -1584,9 +1586,9 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
         
         innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), textSectId,
                   ELF32_ST_INFO(STB_GLOBAL, 10), 0, false, codePos, 
-                  kernel.codeSize+kernel.setupSize));
+                  kernel.codeSize + tempData.setupSize));
         nameIdx++;
-        codePos += kernel.codeSize+kernel.setupSize;
+        codePos += kernel.codeSize + tempData.setupSize;
     }
     
     for (size_t i = 0; i < samplersNum; i++)
@@ -1797,8 +1799,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
         
         if (kernelsNum != 0)
-            putInnerSymbols(*innerBinGen, input, innerBinSectionTable, extraSectionIndex,
-                        symbolNamePool);
+            putInnerSymbols(*innerBinGen, input, tempDatas, innerBinSectionTable,
+                        extraSectionIndex, symbolNamePool);
         
         for (const BinSection& section: input->innerExtraSections)
             innerBinGen->addRegion(ElfRegion64(section, innerBinSectionTable,
