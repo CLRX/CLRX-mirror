@@ -460,7 +460,7 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
     //std::cout << "BinCompOptions: " << binary.getCompileOptions() << std::endl;
     amdCL2Input.compileOptions = binary.getCompileOptions();
     bool isNewBinary = (binary.hasInnerBinary() &&
-            binary.getInnerBinaryType()==AmdCL2InnerBinaryType::NEW);
+            binary.getFormatVersion()>=AmdCL2FormatVersion::NEW);
     amdCL2Input.driverVersion = isNewBinary ? 191205 : 180005;
     
     amdCL2Input.samplerInitSize = 0;

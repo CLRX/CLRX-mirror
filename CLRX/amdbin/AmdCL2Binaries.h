@@ -48,13 +48,14 @@ enum : Flags {
     AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000    ///< create kernel stub
 };
 
-/// AMD OpenCL 2.0 inner binary type
-enum class AmdCL2InnerBinaryType : cxbyte
+/// AMD CL2 format version
+enum class AmdCL2FormatVersion: cxbyte
 {
     CAT15_7 = 0,
     OLD = 0,
     CRIMSON = 1,
-    NEW = 1
+    NEW = 1,
+    CRIMSON_16 = 2
 };
 
 /// AMD OpenCL 2.0 GPU metadata for kernel
@@ -83,17 +84,10 @@ public:
     /// inner binary map type
     typedef Array<std::pair<CString, size_t> > KernelDataMap;
 protected:
-    AmdCL2InnerBinaryType binaryType;
     Array<AmdCL2GPUKernel> kernels;    ///< kernel headers
     KernelDataMap kernelDataMap;
-    
-    explicit AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type);
 public:
     virtual ~AmdCL2InnerGPUBinaryBase();
-    
-    /// get binary type
-    AmdCL2InnerBinaryType getBinaryType() const
-    { return binaryType; }
     
     size_t getKernelsNum() const
     { return kernels.size(); }
@@ -315,6 +309,7 @@ class AmdCL2MainGPUBinary: public AmdMainBinaryBase, public ElfBinary64
 public:
     typedef Array<std::pair<CString, size_t> > MetadataMap;
 protected:
+    AmdCL2FormatVersion formatVersion;
     size_t kernelsNum;
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
     Array<AmdCL2GPUKernelMetadata> isaMetadatas;  ///< AMD metadatas
@@ -344,9 +339,9 @@ public:
     bool hasInnerBinary() const
     { return innerBinary.get()!=nullptr; }
     
-    /// get inner binary type
-    AmdCL2InnerBinaryType getInnerBinaryType() const
-    { return innerBinary->getBinaryType(); }
+    /// get format version
+    AmdCL2FormatVersion getFormatVersion() const
+    { return formatVersion; }
     
     /// get inner binary base
     const AmdCL2InnerGPUBinaryBase& getInnerBinaryBase() const

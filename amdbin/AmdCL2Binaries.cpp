@@ -34,10 +34,6 @@ using namespace CLRX;
 
 /* class AmdCL2InnerGPUBinaryBase */
 
-AmdCL2InnerGPUBinaryBase::AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType type)
-        : binaryType(type)
-{ }
-
 AmdCL2InnerGPUBinaryBase::~AmdCL2InnerGPUBinaryBase()
 { }
 
@@ -54,8 +50,7 @@ const AmdCL2GPUKernel& AmdCL2InnerGPUBinaryBase::getKernelData(const char* name)
 
 AmdCL2OldInnerGPUBinary::AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary,
             size_t binaryCodeSize, cxbyte* binaryCode, Flags _creationFlags)
-        : AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CAT15_7),
-          creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
+        : creationFlags(_creationFlags), binarySize(binaryCodeSize), binary(binaryCode)
 {
     if ((creationFlags & (AMDBIN_CREATE_KERNELDATA|AMDBIN_CREATE_KERNELSTUBS)) == 0)
         return; // nothing to initialize
@@ -148,9 +143,7 @@ const AmdCL2GPUKernelStub& AmdCL2OldInnerGPUBinary::getKernelStub(const char* na
 /* AmdCL2InnerGPUBinary */
 
 AmdCL2InnerGPUBinary::AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-            Flags creationFlags):
-            AmdCL2InnerGPUBinaryBase(AmdCL2InnerBinaryType::CRIMSON),
-            ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
+            Flags creationFlags): ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
             globalDataSize(0), globalData(nullptr), rwDataSize(0), rwData(nullptr),
             bssAlignment(0), bssSize(0), samplerInitSize(0), samplerInit(nullptr),
             textRelsNum(0), textRelEntrySize(0), textRela(nullptr),
@@ -328,8 +321,9 @@ static const cxuint vectorIdTable[17] =
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
 static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
-             KernelInfo& kernelInfo, AmdGPUKernelHeader& kernelHeader)
+             KernelInfo& kernelInfo, AmdGPUKernelHeader& kernelHeader, bool& crimson16)
 {
+    crimson16 = false;
     if (metadataSize < 8+32+32)
         throw Exception("Kernel metadata is too short");
     
@@ -351,7 +345,10 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
     // fix for latest Crimson drivers
     if (*((const uint32_t*)(metadata+argOffset)) == 0x5800)
+    {
+        crimson16 = true;
         argOffset++;
+    }
     const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
             const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
     
@@ -492,7 +489,8 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
 
 AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
-            ElfBinary64(binaryCodeSize, binaryCode, creationFlags), kernelsNum(0)
+            ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
+            formatVersion(AmdCL2FormatVersion::OLD), kernelsNum(0)
 {
     std::vector<size_t> choosenMetadataSyms;
     std::vector<size_t> choosenISAMetadataSyms;
@@ -560,6 +558,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     
     const bool newInnerBinary = choosenBinSyms.empty();
     uint16_t textIndex = SHN_UNDEF;
+    formatVersion = newInnerBinary ? AmdCL2FormatVersion::NEW : AmdCL2FormatVersion::OLD;
     try
     { textIndex = getSectionIndex(".text"); }
     catch(const Exception& ex)
@@ -571,9 +570,16 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     {
         const Elf64_Shdr& textShdr = getSectionHeader(textIndex);
         if (newInnerBinary)
+        {
             innerBinary.reset(new AmdCL2InnerGPUBinary(ULEV(textShdr.sh_size),
                            binaryCode + ULEV(textShdr.sh_offset),
                            creationFlags >> AMDBIN_INNER_SHIFT));
+            // detect new format from Crimson 16.4
+            const auto& innerBin = getInnerBinary();
+            formatVersion = (innerBin.getSymbolsNum()!=0 &&
+                    innerBin.getSymbolName(0)[0]==0) ?
+                        AmdCL2FormatVersion::CRIMSON_16 : AmdCL2FormatVersion::NEW;
+        }
         else // old driver
             innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
                            binaryCode + ULEV(textShdr.sh_offset),
@@ -610,7 +616,9 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                 throw Exception("Kernel Metadata offset and size out of range");
             
             cxbyte* metadata = binaryCode + ULEV(shdr.sh_offset) + mtOffset;
-            getCL2KernelInfo(mtSize, metadata, kernelInfos[ki], kernelHeaders[ki]);
+            bool crimson16 = false;
+            getCL2KernelInfo(mtSize, metadata, kernelInfos[ki], kernelHeaders[ki],
+                             crimson16);
             size_t len = ::strlen(mtName);
             // set kernel name from symbol name (__OpenCL_&__OpenCL_[name]_kernel_metadata)
             kernelHeaders[ki].kernelName = kernelInfos[ki].kernelName =
@@ -619,6 +627,8 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                 kernelInfosMap[ki] = std::make_pair(kernelInfos[ki].kernelName, ki);
             metadatas[ki] = { kernelInfos[ki].kernelName, mtSize, metadata };
             ki++;
+            if (crimson16) // if AMD Crimson 16
+                formatVersion = AmdCL2FormatVersion::CRIMSON_16;
         }
         
         ki = 0;
