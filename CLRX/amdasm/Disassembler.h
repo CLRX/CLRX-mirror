@@ -221,7 +221,7 @@ struct AmdCL2DisasmKernelInput
 struct AmdCL2DisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
-    AmdCL2FormatVersion formatVersion; ///< format version
+    cxuint driverVersion; ///< driver version
     CString compileOptions; ///< compile options which used by in clBuildProgram
     CString aclVersionString; ///< acl version string
     size_t globalDataSize;  ///< global (constants for kernels) data size

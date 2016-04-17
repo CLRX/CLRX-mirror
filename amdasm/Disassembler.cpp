@@ -463,8 +463,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     input->compileOptions = binary.getCompileOptions();
     input->aclVersionString = binary.getAclVersionString();
     bool isInnerNewBinary = binary.hasInnerBinary() &&
-                binary.getFormatVersion()>=AmdCL2FormatVersion::NEW;
-    input->formatVersion = binary.getFormatVersion();
+                binary.getDriverVersion()>=191205;
+    input->driverVersion = binary.getDriverVersion();
     
     input->samplerInitSize = 0;
     input->samplerInit = nullptr;
@@ -1320,12 +1320,12 @@ void Disassembler::disassembleAmdCL2()
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
     
-    if (amdCL2Input->formatVersion == AmdCL2FormatVersion::CRIMSON_16)
-        output.write(".driver_version 200406\n", 23);
-    else if (amdCL2Input->formatVersion == AmdCL2FormatVersion::CRIMSON)
-        output.write(".driver_version 191205\n", 23);
-    else // old driver
-        output.write(".driver_version 180005\n", 23);
+    {
+        char buf[40];
+        size_t size = snprintf(buf, 40, ".driver_version %u\n",
+                   amdCL2Input->driverVersion);
+        output.write(buf, size);
+    }
     
     if (doMetadata)
     {

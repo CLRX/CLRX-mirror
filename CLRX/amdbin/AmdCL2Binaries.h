@@ -48,16 +48,6 @@ enum : Flags {
     AMDBIN_INNER_CREATE_KERNELSTUBS = 0x40000    ///< create kernel stub
 };
 
-/// AMD CL2 format version
-enum class AmdCL2FormatVersion: cxbyte
-{
-    CAT15_7 = 0,
-    OLD = 0,
-    CRIMSON = 1,
-    NEW = 1,
-    CRIMSON_16 = 2
-};
-
 /// AMD OpenCL 2.0 GPU metadata for kernel
 struct AmdCL2GPUKernel
 {
@@ -309,7 +299,7 @@ class AmdCL2MainGPUBinary: public AmdMainBinaryBase, public ElfBinary64
 public:
     typedef Array<std::pair<CString, size_t> > MetadataMap;
 protected:
-    AmdCL2FormatVersion formatVersion;
+    cxuint driverVersion;
     size_t kernelsNum;
     std::unique_ptr<AmdCL2GPUKernelMetadata[]> metadatas;  ///< AMD metadatas
     Array<AmdCL2GPUKernelMetadata> isaMetadatas;  ///< AMD metadatas
@@ -339,9 +329,9 @@ public:
     bool hasInnerBinary() const
     { return innerBinary.get()!=nullptr; }
     
-    /// get format version
-    AmdCL2FormatVersion getFormatVersion() const
-    { return formatVersion; }
+    /// get driver version
+    cxuint getDriverVersion() const
+    { return driverVersion; }
     
     /// get inner binary base
     const AmdCL2InnerGPUBinaryBase& getInnerBinaryBase() const

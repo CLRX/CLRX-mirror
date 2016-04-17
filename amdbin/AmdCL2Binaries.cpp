@@ -490,7 +490,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
 AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags) : AmdMainBinaryBase(AmdMainType::GPU_CL2_BINARY),
             ElfBinary64(binaryCodeSize, binaryCode, creationFlags),
-            formatVersion(AmdCL2FormatVersion::OLD), kernelsNum(0)
+            driverVersion(180005), kernelsNum(0)
 {
     std::vector<size_t> choosenMetadataSyms;
     std::vector<size_t> choosenISAMetadataSyms;
@@ -558,13 +558,15 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
     
     const bool newInnerBinary = choosenBinSyms.empty();
     uint16_t textIndex = SHN_UNDEF;
-    formatVersion = newInnerBinary ? AmdCL2FormatVersion::NEW : AmdCL2FormatVersion::OLD;
+    driverVersion = newInnerBinary ? 191205: 180005;
     try
     { textIndex = getSectionIndex(".text"); }
     catch(const Exception& ex)
     {
         if (!choosenMetadataSyms.empty())
             throw;  // throw exception if least one kernel is present
+        else // old driver version
+            driverVersion = 180005;
     }
     if (textIndex != SHN_UNDEF)
     {
@@ -576,9 +578,8 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                            creationFlags >> AMDBIN_INNER_SHIFT));
             // detect new format from Crimson 16.4
             const auto& innerBin = getInnerBinary();
-            formatVersion = (innerBin.getSymbolsNum()!=0 &&
-                    innerBin.getSymbolName(0)[0]==0) ?
-                        AmdCL2FormatVersion::CRIMSON_16 : AmdCL2FormatVersion::NEW;
+            driverVersion = (innerBin.getSymbolsNum()!=0 &&
+                    innerBin.getSymbolName(0)[0]==0) ? 200406 : 191205;
         }
         else // old driver
             innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
@@ -628,7 +629,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             metadatas[ki] = { kernelInfos[ki].kernelName, mtSize, metadata };
             ki++;
             if (crimson16) // if AMD Crimson 16
-                formatVersion = AmdCL2FormatVersion::CRIMSON_16;
+                driverVersion = 200406;
         }
         
         ki = 0;
