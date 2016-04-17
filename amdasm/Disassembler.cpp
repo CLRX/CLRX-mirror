@@ -451,20 +451,42 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     std::unique_ptr<AmdCL2DisasmInput> input(new AmdCL2DisasmInput);
     const uint32_t elfFlags = ULEV(binary.getHeader().e_flags);
     // detect GPU device from elfMachine field from ELF header
-    const cxuint entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    cxuint entriesNum = 0;
+    const CL2GPUDeviceCodeEntry* gpuCodeTable = nullptr;
+    input->driverVersion = binary.getDriverVersion();
+    if (input->driverVersion < 191205)
+    {
+        gpuCodeTable = cl2_15_7GpuDeviceCodeTable;
+        entriesNum = sizeof(cl2_15_7GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    }
+    else if (input->driverVersion < 200406)
+    {
+        gpuCodeTable = cl2GpuDeviceCodeTable;
+        entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    }
+    else if (input->driverVersion < 203603)
+    {
+        gpuCodeTable = cl2_16_4GpuDeviceCodeTable;
+        entriesNum = sizeof(cl2_16_4GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    }
+    else
+    {
+        gpuCodeTable = cl2GPUPROGpuDeviceCodeTable;
+        entriesNum = sizeof(cl2GPUPROGpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+    }
+    //const cxuint entriesNum = sizeof(cl2GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     cxuint index;
     for (index = 0; index < entriesNum; index++)
-        if (cl2GpuDeviceCodeTable[index].elfFlags == elfFlags)
+        if (gpuCodeTable[index].elfFlags == elfFlags)
             break;
     if (entriesNum == index)
         throw Exception("Can't determine GPU device type");
     
-    input->deviceType = cl2GpuDeviceCodeTable[index].deviceType;
+    input->deviceType = gpuCodeTable[index].deviceType;
     input->compileOptions = binary.getCompileOptions();
     input->aclVersionString = binary.getAclVersionString();
     bool isInnerNewBinary = binary.hasInnerBinary() &&
                 binary.getDriverVersion()>=191205;
-    input->driverVersion = binary.getDriverVersion();
     
     input->samplerInitSize = 0;
     input->samplerInit = nullptr;

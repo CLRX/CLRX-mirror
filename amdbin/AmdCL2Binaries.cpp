@@ -580,6 +580,16 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
             const auto& innerBin = getInnerBinary();
             driverVersion = (innerBin.getSymbolsNum()!=0 &&
                     innerBin.getSymbolName(0)[0]==0) ? 200406 : 191205;
+            try
+            {
+                const Elf64_Shdr& noteShdr = innerBin.getSectionHeader(".note");
+                const cxbyte* noteContent = innerBin.getSectionContent(".note");
+                const size_t noteSize = ULEV(noteShdr.sh_size);
+                if (noteSize == 200 && noteContent[197]!=0)
+                    driverVersion = 203603;
+            }
+            catch(const Exception& ex)
+            { }
         }
         else // old driver
             innerBinary.reset(new AmdCL2OldInnerGPUBinary(this, ULEV(textShdr.sh_size),
@@ -628,7 +638,7 @@ AmdCL2MainGPUBinary::AmdCL2MainGPUBinary(size_t binaryCodeSize, cxbyte* binaryCo
                 kernelInfosMap[ki] = std::make_pair(kernelInfos[ki].kernelName, ki);
             metadatas[ki] = { kernelInfos[ki].kernelName, mtSize, metadata };
             ki++;
-            if (crimson16) // if AMD Crimson 16
+            if (crimson16 && driverVersion < 200406) // if AMD Crimson 16
                 driverVersion = 200406;
         }
         
