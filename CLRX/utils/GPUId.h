@@ -54,7 +54,10 @@ enum class GPUDeviceType: cxbyte
     DUMMY,
     GOOSE,
     HORSE,
-    GPUDEVICE_MAX = HORSE,    ///< last value
+    STONEY,
+    ELLESMERE,
+    BAFFIN,
+    GPUDEVICE_MAX = BAFFIN,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800

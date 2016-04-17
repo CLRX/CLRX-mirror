@@ -73,7 +73,7 @@ static inline void putProgInfoEntryLE(FastOutputBuffer& bos,
 }
 
 // e_type (16-bit)
-static const uint16_t gpuDeviceCodeTable[18] =
+static const uint16_t gpuDeviceCodeTable[21] =
 {
     0x3ff, // GPUDeviceType::CAPE_VERDE
     0x3fe, // GPUDeviceType::PITCAIRN
@@ -92,11 +92,14 @@ static const uint16_t gpuDeviceCodeTable[18] =
     0x40d, // GPUDeviceType::CARRIZO
     0x411, // GPUDeviceType::DUMMY
     0xffff,
+    0xffff,
+    0xffff,
+    0xffff,
     0xffff
 };
 
 /// CALNoteEntry (32-bit)
-static const uint32_t gpuDeviceInnerCodeTable[18] =
+static const uint32_t gpuDeviceInnerCodeTable[21] =
 {
     0x1c, // GPUDeviceType::CAPE_VERDE
     0x1b, // GPUDeviceType::PITCAIRN
@@ -114,6 +117,9 @@ static const uint32_t gpuDeviceInnerCodeTable[18] =
     0x2d, // GPUDeviceType::FIJI
     0x2e, // GPUDeviceType::CARRIZO
     0x31, // GPUDeviceType::DUMMY
+    UINT_MAX,
+    UINT_MAX,
+    UINT_MAX,
     UINT_MAX,
     UINT_MAX
 };

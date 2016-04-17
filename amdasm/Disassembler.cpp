@@ -251,7 +251,7 @@ struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[13] =
+static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
 {
     { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
@@ -263,9 +263,55 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[13] =
     { 4, GPUDeviceType::MULLINS },
     { 17, GPUDeviceType::FIJI },
     { 16, GPUDeviceType::CARRIZO },
-    { 15, GPUDeviceType::DUMMY },
+    { 15, GPUDeviceType::DUMMY }
+};
+
+static const CL2GPUDeviceCodeEntry cl2_16_4GpuDeviceCodeTable[] =
+{
+    { 6, GPUDeviceType::BONAIRE },
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 4, GPUDeviceType::MULLINS },
+    { 16, GPUDeviceType::FIJI },
+    { 15, GPUDeviceType::CARRIZO },
     { 13, GPUDeviceType::GOOSE },
-    { 12, GPUDeviceType::HORSE }
+    { 12, GPUDeviceType::HORSE },
+    { 17, GPUDeviceType::STONEY }
+};
+
+static const CL2GPUDeviceCodeEntry cl2_15_7GpuDeviceCodeTable[] =
+{
+    { 6, GPUDeviceType::BONAIRE },
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 4, GPUDeviceType::MULLINS },
+    { 16, GPUDeviceType::FIJI },
+    { 15, GPUDeviceType::CARRIZO }
+};
+/* driver version: 2036.3 */
+static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
+{
+    { 6, GPUDeviceType::BONAIRE },
+    { 1, GPUDeviceType::SPECTRE },
+    { 2, GPUDeviceType::SPOOKY },
+    { 3, GPUDeviceType::KALINDI },
+    { 7, GPUDeviceType::HAWAII },
+    { 8, GPUDeviceType::ICELAND },
+    { 9, GPUDeviceType::TONGA },
+    { 4, GPUDeviceType::MULLINS },
+    { 14, GPUDeviceType::FIJI },
+    { 13, GPUDeviceType::CARRIZO },
+    { 17, GPUDeviceType::ELLESMERE },
+    { 16, GPUDeviceType::BAFFIN },
+    { 15, GPUDeviceType::STONEY }
 };
 
 struct CLRX_INTERNAL GPUDeviceCodeEntry
