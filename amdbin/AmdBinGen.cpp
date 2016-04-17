@@ -73,7 +73,7 @@ static inline void putProgInfoEntryLE(FastOutputBuffer& bos,
 }
 
 // e_type (16-bit)
-static const uint16_t gpuDeviceCodeTable[16] =
+static const uint16_t gpuDeviceCodeTable[18] =
 {
     0x3ff, // GPUDeviceType::CAPE_VERDE
     0x3fe, // GPUDeviceType::PITCAIRN
@@ -90,11 +90,13 @@ static const uint16_t gpuDeviceCodeTable[16] =
     0x40b, // GPUDeviceType::MULLINS
     0x40c, // GPUDeviceType::FIJI
     0x40d, // GPUDeviceType::CARRIZO
-    0x411  // GPUDeviceType::DUMMY
+    0x411, // GPUDeviceType::DUMMY
+    0xffff,
+    0xffff
 };
 
 /// CALNoteEntry (32-bit)
-static const uint32_t gpuDeviceInnerCodeTable[16] =
+static const uint32_t gpuDeviceInnerCodeTable[18] =
 {
     0x1c, // GPUDeviceType::CAPE_VERDE
     0x1b, // GPUDeviceType::PITCAIRN
@@ -111,7 +113,9 @@ static const uint32_t gpuDeviceInnerCodeTable[16] =
     0x2b, // GPUDeviceType::MULLINS
     0x2d, // GPUDeviceType::FIJI
     0x2e, // GPUDeviceType::CARRIZO
-    0x31  // GPUDeviceType::DUMMY
+    0x31, // GPUDeviceType::DUMMY
+    UINT_MAX,
+    UINT_MAX
 };
 
 void AmdInput::addKernel(const AmdKernelInput& kernelInput)
@@ -1537,6 +1541,9 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
     
     std::unique_ptr<ElfBinaryGen32> elfBinGen32;
     std::unique_ptr<ElfBinaryGen64> elfBinGen64;
+    
+    if (gpuDeviceCodeTable[cxuint(input->deviceType)] == 0xffff)
+        throw Exception("Unsupported GPU device type by OpenCL 1.2 binary format");
     
     if (input->is64Bit)
         elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 

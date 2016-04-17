@@ -52,7 +52,9 @@ enum class GPUDeviceType: cxbyte
     FIJI,  ///< Radeon Fury
     CARRIZO, ///< APU
     DUMMY,
-    GPUDEVICE_MAX = DUMMY,    ///< last value
+    GOOSE,
+    HORSE,
+    GPUDEVICE_MAX = HORSE,    ///< last value
     
     RADEON_HD7700 = CAPE_VERDE, ///< Radeon HD7700
     RADEON_HD7800 = PITCAIRN,   ///< Radeon HD7800

@@ -251,7 +251,7 @@ struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
-static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
+static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[13] =
 {
     { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
@@ -263,7 +263,9 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[11] =
     { 4, GPUDeviceType::MULLINS },
     { 17, GPUDeviceType::FIJI },
     { 16, GPUDeviceType::CARRIZO },
-    { 15, GPUDeviceType::DUMMY }
+    { 15, GPUDeviceType::DUMMY },
+    { 13, GPUDeviceType::GOOSE },
+    { 12, GPUDeviceType::HORSE }
 };
 
 struct CLRX_INTERNAL GPUDeviceCodeEntry
@@ -593,7 +595,7 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
                     uint16_t symShndx = ULEV(sym.st_shndx);
                     if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
                         symShndx!=bssDataSectionIdx)
-                        throw Exception("Other symbol than to global or "
+                        throw Exception("Symbol is not placed in global or "
                                 "rwdata data or bss is illegal");
                     addend += ULEV(sym.st_value);
                     rsym = (symShndx==rwDataSectionIdx) ? 1 : 

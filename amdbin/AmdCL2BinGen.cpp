@@ -146,7 +146,7 @@ static const ArgTypeSizes argTypeSizesTable[] =
     { 7, 8, 1, /*clkevent*/ }
 };
 
-static const uint32_t gpuDeviceCodeTable[16] =
+static const uint32_t gpuDeviceCodeTable[18] =
 {
     0, // GPUDeviceType::CAPE_VERDE
     0, // GPUDeviceType::PITCAIRN
@@ -163,7 +163,9 @@ static const uint32_t gpuDeviceCodeTable[16] =
     4, // GPUDeviceType::MULLINS
     17, // GPUDeviceType::FIJI
     16, // GPUDeviceType::CARRIZO
-    15 // GPUDeviceType::DUMMY
+    15, // GPUDeviceType::DUMMY
+    13, // GPUDeviceType::GOOSE
+    12  // GPUDeviceType::HORSE
 };
 
 static const uint16_t mainBuiltinSectionTable[] =

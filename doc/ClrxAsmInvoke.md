@@ -54,7 +54,7 @@ Assembler accepts following formats: 'amd', 'amdcl2', 'gallium', 'rawcode'.
     Choose device type. Device type name is case-insensitive.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
-Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji and Carrizo.
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose and Horse.
 
 * **-A ARCH**, **--arch=ARCH**
 
