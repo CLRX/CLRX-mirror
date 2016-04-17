@@ -275,7 +275,8 @@ Syntax: .gpu GPUDEVICE
 This pseudo-operation should to be at begin of source. Set GPU device.
 One of following device type can be set:
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
-Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji and Carrizo.
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Goose, Horse, Stoney,
+Ellesmere, and Baffin.
 
 ### .half
 

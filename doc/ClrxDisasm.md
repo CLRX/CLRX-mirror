@@ -61,7 +61,8 @@ the GCN1.0 architecture.
     Choose device type. Device type name is case-insensitive.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
-Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose and Horse.
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
+Ellesmere, and Baffin.
 
 * **-A ARCH**, **--arch=ARCH**
 

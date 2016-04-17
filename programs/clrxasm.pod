@@ -58,7 +58,8 @@ Enable generating of the 64-bit binaries (only for AMD catalyst format).
 Choose device type. Device type name is case-insensitive.
 Currently is supported: 
 CapeVerde, Pitcairn, Tahiti, Oland, Bonaire, Spectre, Spooky, Kalindi,
-Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose and Horse.
+Hainan, Hawaii, Iceland, Tonga, Mullins, Fiji, Carrizo, Dummy, Goose, Horse, Stoney,
+Ellesmere, and Baffin.
 
 =item B<-A ARCH>, B<--arch=ARCH>
 
