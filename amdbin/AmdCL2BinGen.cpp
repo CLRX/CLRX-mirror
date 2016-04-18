@@ -1385,6 +1385,8 @@ public:
     
     size_t size() const
     {
+        if (input->driverVersion >= 200406)
+            return input->globalDataSize;
         size_t rwDataSize = (input->rwData!=nullptr) ? input->rwDataSize : 0;
         size_t allSize = (input->globalDataSize + input->bssSize +
                 rwDataSize + 255) & ~size_t(255);
@@ -1787,24 +1789,36 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         std::fill(innerBinSectionTable,
                   innerBinSectionTable+innerBinSectonTableLen, SHN_UNDEF);
         
-        cxuint symtabId = 4 + (hasSamplers?2:0) /* samplerinit&rela.global */ +
-                (hasRWData) + (hasGlobalData) +
-                (input->bssSize!=0) +
-                (hasRWData || hasGlobalData || input->bssSize!=0) /* rela.hsatext */;
-        cxuint globalDataId = 1 + (hasRWData) + (input->bssSize!=0);
-        cxuint textId = 1 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
+        cxuint symtabId, globalDataId, textId;
+        if (input->driverVersion<200406)
+        {
+            symtabId = 4 + (hasSamplers?2:0) /* samplerinit&rela.global */ +
+                    (hasRWData) + (hasGlobalData) +
+                    (input->bssSize!=0) +
+                    (hasRWData || hasGlobalData || input->bssSize!=0) /* rela.hsatext */;
+            globalDataId = 1 + (hasRWData) + (input->bssSize!=0);
+            textId = 1 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
+        }
+        else
+        {
+            textId = 4 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
+            symtabId = 5 + (hasRWData) + (hasGlobalData) + (input->bssSize!=0);
+            globalDataId = 4 + (hasRWData) + (input->bssSize!=0);
+        }
         /* in innerbin we do not add null symbol, we count address for program headers
          * and section from first section */
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
-                        UINT_MAX, 0, 0 }, (input->driverVersion>=200406), true, true, 1));
+                        UINT_MAX, 0, 0 }, (input->driverVersion>=200406), true, true, 
+                        /* globaldata sectionid: for 200406 - 4, for older - 1 */
+                        (input->driverVersion<200406)? 1 : 4));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
         
         if (input->driverVersion>=200406)
         {   /* first is shstrab and strtab */
-            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8, ".shstrtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
-            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
+            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8, ".strtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
             if (input->driverVersion < 203603)
@@ -1861,8 +1875,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         {
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
                     input->samplers.size()*8 : input->samplerInitSize,
-                    &innerSamplerInitGen, 1, ".hsaimage_samplerinit", SHT_PROGBITS,
-                    SHF_MERGE, 0, 0, 0, 8));
+                    &innerSamplerInitGen, (input->driverVersion>=200406) ? 8 : 1,
+                    ".hsaimage_samplerinit", SHT_PROGBITS, SHF_MERGE, 0, 0, 0, 8));
             innerBinSectionTable[AMDCL2SECTID_SAMPLERINIT-ELFSECTID_START] =
                         extraSectionIndex++;
             innerBinGen->addRegion(ElfRegion64(innerGDataRels.size(), &innerGDataRels,
@@ -1908,7 +1922,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         /// program headers
         if (kernelsNum != 0)
         {
-            cxuint textSectionReg = 1;
+            cxuint textSectionReg = (input->driverVersion<200406) ? 1 : 4;
             if (hasRWData && input->bssSize!=0)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 2,
@@ -1934,7 +1948,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                         /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });
                 textSectionReg++; // now is text section index
             }
-            innerBinGen->addProgramHeader({ PT_LOOS+3, PF_W|PF_R, textSectionReg, 1,
+            uint32_t phFlags = (input->driverVersion<200406) ? (PF_W|PF_R) : (PF_R|PF_X);
+            innerBinGen->addProgramHeader({ PT_LOOS+3, phFlags, textSectionReg, 1,
                     true, 0, Elf64Types::nobase, 0 });
         }
     }
