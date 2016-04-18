@@ -243,7 +243,7 @@ static const bool gcnSize11Table[16] =
     true,  // GCNENC_MIMG,  // 1100
     false, // GCNENC_NONE,  // 1101 - illegal
     true,  // GCNENC_EXP,   // 1110
-    false, // GCNENC_NONE   // 1111 - illegal
+    false // GCNENC_NONE   // 1111 - illegal
 };
 
 static const bool gcnSize12Table[16] =
@@ -263,7 +263,7 @@ static const bool gcnSize12Table[16] =
     true,  // GCNENC_MIMG,  // 1100
     false, // GCNENC_NONE,  // 1101 - illegal
     false, // GCNENC_NONE,  // 1110 - illegal
-    false, // GCNENC_NONE   // 1111 - illegal
+    false // GCNENC_NONE   // 1111 - illegal
 };
 
 void GCNDisassembler::beforeDisassemble()

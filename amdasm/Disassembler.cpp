@@ -266,7 +266,7 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
     { 15, GPUDeviceType::DUMMY }
 };
 
-static const CL2GPUDeviceCodeEntry cl2_16_4GpuDeviceCodeTable[] =
+static const CL2GPUDeviceCodeEntry cl2_16_3GpuDeviceCodeTable[] =
 {
     { 6, GPUDeviceType::BONAIRE },
     { 1, GPUDeviceType::SPECTRE },
@@ -466,8 +466,8 @@ static AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBina
     }
     else if (input->driverVersion < 203603)
     {
-        gpuCodeTable = cl2_16_4GpuDeviceCodeTable;
-        entriesNum = sizeof(cl2_16_4GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
+        gpuCodeTable = cl2_16_3GpuDeviceCodeTable;
+        entriesNum = sizeof(cl2_16_3GpuDeviceCodeTable)/sizeof(CL2GPUDeviceCodeEntry);
     }
     else
     {

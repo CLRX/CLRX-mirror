@@ -1005,7 +1005,7 @@ static const bool gcnSize11Table[16] =
     true,  // GCNENC_MIMG,  // 1100
     false, // GCNENC_NONE,  // 1101 - illegal
     true,  // GCNENC_EXP,   // 1110
-    false, // GCNENC_NONE   // 1111 - illegal
+    false  // GCNENC_NONE   // 1111 - illegal
 };
 
 static const bool gcnSize12Table[16] =
@@ -1025,7 +1025,7 @@ static const bool gcnSize12Table[16] =
     true,  // GCNENC_MIMG,  // 1100
     false, // GCNENC_NONE,  // 1101 - illegal
     false, // GCNENC_NONE,  // 1110 - illegal
-    false, // GCNENC_NONE   // 1111 - illegal
+    false  // GCNENC_NONE   // 1111 - illegal
 };
 
 enum : cxbyte
@@ -1043,15 +1043,15 @@ static const cxbyte gcnEncInstrTable[16] =
     INSTRTYPE_OTHER, // 0011 - illegal
     INSTRTYPE_OTHER, // 0100
     INSTRTYPE_OTHER, // 0101 - illegal
-    INSTRTYPE_LOCAL,   // 0110
+    INSTRTYPE_LOCAL,  // 0110
     INSTRTYPE_GLOBAL, // 0111
     INSTRTYPE_GLOBAL, // 1000
     INSTRTYPE_OTHER,  // 1001 - illegal
     INSTRTYPE_GLOBAL, // 1010
     INSTRTYPE_OTHER,  // 1011 - illegal
-    INSTRTYPE_GLOBAL,  // 1100
+    INSTRTYPE_GLOBAL, // 1100
     INSTRTYPE_OTHER,  // 1101 - illegal
-    INSTRTYPE_OTHER,   // 1110
+    INSTRTYPE_OTHER,  // 1110
     INSTRTYPE_OTHER // 1111 - illegal
 };
 
@@ -1426,7 +1426,8 @@ public:
         /* calculate first symbol for samplers (last symbols) */
         uint32_t symIndex = input->kernels.size() + samplersNum + dataSymbolsNum + 2 +
                 (input->rwDataSize!=0 && input->rwData!=nullptr) /* globaldata symbol */ +
-                (input->bssSize!=0) /* bss data symbol */;
+                (input->bssSize!=0) /* bss data symbol */ +
+                (input->driverVersion>=200406);
         if (!input->samplerOffsets.empty())
             for (size_t sampOffset: input->samplerOffsets)
             {
@@ -1476,8 +1477,10 @@ public:
         uint32_t adataSymIndex = 0;
         cxuint samplersNum = (input->samplerConfig) ?
                 input->samplers.size() : (input->samplerInitSize>>3);
-        uint32_t gdataSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum;
-        uint32_t bssSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum;
+        uint32_t gdataSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum +
+            (input->driverVersion>=200406);
+        uint32_t bssSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum +
+            (input->driverVersion>=200406);
         if (input->rwDataSize!=0 && input->rwData!=nullptr)
         {   // atomic data available
             adataSymIndex = gdataSymIndex; // first is atomic data symbol index
@@ -1538,6 +1541,35 @@ static const cxbyte noteSectionData[168] =
     0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
     0x04, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
     0xf0, 0x83, 0x17, 0xfb, 0xfc, 0x7f, 0x00, 0x00
+};
+
+static const cxbyte noteSectionData16_3[200] =
+{
+    0x04, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x0c, 0x00, 0x00, 0x00,
+    0x02, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x01, 0x01, 0x01, 0x00, 0x04, 0x00, 0x00, 0x00,
+    0x1a, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+    0x41, 0x4d, 0x44, 0x00, 0x04, 0x00, 0x07, 0x00,
+    0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x41, 0x4d, 0x44, 0x47, 0x50, 0x55, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x29, 0x00, 0x00, 0x00,
+    0x04, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x00,
+    0x19, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x41, 0x4d, 0x44, 0x20,
+    0x48, 0x53, 0x41, 0x20, 0x52, 0x75, 0x6e, 0x74,
+    0x69, 0x6d, 0x65, 0x20, 0x46, 0x69, 0x6e, 0x61,
+    0x6c, 0x69, 0x7a, 0x65, 0x72, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00,
+    0x1a, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00,
+    0x41, 0x4d, 0x44, 0x00, 0x16, 0x00, 0x2d, 0x68,
+    0x73, 0x61, 0x5f, 0x63, 0x61, 0x6c, 0x6c, 0x5f,
+    0x63, 0x6f, 0x6e, 0x76, 0x65, 0x6e, 0x74, 0x69,
+    0x6f, 0x6e, 0x3d, 0x30, 0x00, 0xe0, 0x00, 0x00,
 };
 
 static CString constructName(size_t prefixSize, const char* prefix, const CString& name,
@@ -1764,9 +1796,30 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         /* in innerbin we do not add null symbol, we count address for program headers
          * and section from first section */
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
-                        UINT_MAX, 0, 0 }, false, true, true, 1));
+                        UINT_MAX, 0, 0 }, (input->driverVersion>=200406), true, true, 1));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
         
+        if (input->driverVersion>=200406)
+        {   /* first is shstrab and strtab */
+            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+                                  SHT_STRTAB, SHF_STRINGS, 0, 0));
+            innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
+            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
+                                  SHT_STRTAB, SHF_STRINGS, 0, 0));
+            innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
+            if (input->driverVersion < 203603)
+                innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
+                           noteSectionData16_3, 8, ".note", SHT_NOTE, 0));
+            else
+            {   /* AMD GPU PRO */
+                cxbyte noteBuf[sizeof(noteSectionData16_3)];
+                ::memcpy(noteBuf, noteSectionData16_3, sizeof(noteSectionData16_3));
+                noteBuf[197] = 't';
+                innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
+                           noteBuf, 8, ".note", SHT_NOTE, 0));
+            }
+            innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
+        }
         if (hasRWData)
         {   // atomic data section
             innerBinGen->addRegion(ElfRegion64(input->rwDataSize, input->rwData,
@@ -1797,6 +1850,13 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                       Elf64Types::nobase, 0));
             innerBinSectionTable[ELFSECTID_TEXT-ELFSECTID_START] = extraSectionIndex++;
         }
+        
+        if (input->driverVersion>=200406)
+        {   /* new driver version */
+            innerBinGen->addRegion(ElfRegion64::symtabSection());
+            innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
+        }
+        
         if (hasSamplers)
         {
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
@@ -1820,17 +1880,21 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinSectionTable[AMDCL2SECTID_TEXTRELA-ELFSECTID_START] =
                     extraSectionIndex++;
         }
-        innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
-                    ".note", SHT_NOTE, 0));
-        innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
-        innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
-                              SHT_STRTAB, SHF_STRINGS, 0, 0));
-        innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
-        innerBinGen->addRegion(ElfRegion64::symtabSection());
-        innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
-        innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
-                              SHT_STRTAB, SHF_STRINGS, 0, 0));
-        innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
+        
+        if (input->driverVersion < 200406)
+        {   /* this order of section for 1912.05 driver version */
+            innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
+                        ".note", SHT_NOTE, 0));
+            innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
+            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".strtab",
+                                  SHT_STRTAB, SHF_STRINGS, 0, 0));
+            innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
+            innerBinGen->addRegion(ElfRegion64::symtabSection());
+            innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
+            innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
+                                  SHT_STRTAB, SHF_STRINGS, 0, 0));
+            innerBinSectionTable[ELFSECTID_SHSTRTAB-ELFSECTID_START] = extraSectionIndex++;
+        }
         
         if (kernelsNum != 0)
             putInnerSymbols(*innerBinGen, input, tempDatas, innerBinSectionTable,
