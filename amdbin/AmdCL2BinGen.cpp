@@ -714,7 +714,14 @@ public:
                         ptrAccMask==KARG_PTR_WRITE_ONLY ? 2 : 3 /* read-write */;
             }
             else // otherwise
+            {
                 argType = argTypeSizes.type;
+                if (is16_3Ver && (arg.argType==KernelArgType::CHAR ||
+                     arg.argType==KernelArgType::SHORT ||
+                     arg.argType==KernelArgType::INT||
+                     arg.argType==KernelArgType::LONG))
+                    argType -= 4; // fix for crimson 16.4/gpupro
+            }
             SLEV(argEntry.argType, argType);
             
             uint32_t ptrAlignment = 0;
