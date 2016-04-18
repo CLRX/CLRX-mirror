@@ -66,7 +66,7 @@ AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(asse
         samplerInitSection(ASMSECT_NONE), extraSectionCount(0),
         innerExtraSectionCount(0)
 {
-    assembler.currentKernel = ASMKERN_INNER;
+    assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
     sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
     savedSection = innerSavedSection = 0;
