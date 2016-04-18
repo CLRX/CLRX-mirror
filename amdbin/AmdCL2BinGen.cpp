@@ -193,6 +193,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
           Array<TempAmdCL2KernelData>& tempDatas)
 {
     const bool newBinaries = input->driverVersion >= 191205;
+    const bool is16_3Ver = input->driverVersion >= 200406;
     const size_t kernelsNum = input->kernels.size();
     
     const size_t samplersNum = (input->samplerConfig) ?
@@ -218,7 +219,8 @@ static void prepareKernelTempData(const AmdCL2Input* input,
         else
         {   // if kernel configuration present
             const cxuint argsNum = kernel.config.args.size();
-            size_t out = ((newBinaries) ? 254 : 246) + (argsNum + 1)*88;
+            size_t out = ((newBinaries) ? ((is16_3Ver) ? 303 : 254) : 246) +
+                        (argsNum + 1)*88;
             for (const AmdKernelArgInput& arg: kernel.config.args)
                     out += arg.argName.size() + arg.typeName.size() + 2;
             out += 48;
@@ -611,14 +613,15 @@ public:
         return out;
     }
     
-    void writeMetadata(bool newBinaries, cxuint kernelId,
-               const TempAmdCL2KernelData& tempData, const AmdCL2KernelConfig& config,
-               FastOutputBuffer& fob) const
+    void writeMetadata(cxuint kernelId, const TempAmdCL2KernelData& tempData,
+               const AmdCL2KernelConfig& config, FastOutputBuffer& fob) const
     {
+        const bool newBinaries = input->driverVersion >= 191205;
+        const bool is16_3Ver = input->driverVersion >= 200406;
         AmdCL2GPUMetadataHeader header;
         cxuint argsNum = config.args.size();
         
-        SLEV(header.size, (newBinaries) ? 0xe0 : 0xd8);
+        SLEV(header.size, (newBinaries) ? (is16_3Ver ? 0x110 : 0xe0) : 0xd8);
         SLEV(header.metadataSize, tempData.metadataSize);
         SLEV(header.unknown1[0], 0x3);
         SLEV(header.unknown1[1], 0x1);
@@ -656,12 +659,18 @@ public:
         if (newBinaries) // additional data
         {
             fob.writeObject(LEV(uint32_t(0x00000006U)));
+            if (is16_3Ver)
+                fob.writeObject(uint32_t(0));
             fob.writeObject(LEV(uint32_t(
                         tempData.pipesUsed==0 && !config.useEnqueue ? 0xffffffffU : 0)));
         }
+        if (is16_3Ver)
+            fob.fill(44, 0);
         // two null terminated strings
         fob.writeArray(22, "__OpenCL_dummy_kernel");
         fob.writeArray(8, "generic");
+        if (is16_3Ver)
+            fob.writeObject<cxbyte>(0);
         
         // put argument entries
         cxuint argOffset = 0;
@@ -804,7 +813,7 @@ public:
         {
             const AmdCL2KernelInput& kernel = input->kernels[i];
             if (kernel.useConfig)
-                writeMetadata(newBinaries, i, tempDatas[i], kernel.config, fob);
+                writeMetadata(i, tempDatas[i], kernel.config, fob);
             else
                 fob.writeArray(kernel.metadataSize, kernel.metadata);
         }
@@ -1778,6 +1787,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     std::vector<CString> symbolNamePool;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
+        bool is16_3Ver = (input->driverVersion>=200406);
         uint16_t innerBinSectionTable[innerBinSectonTableLen];
         cxuint extraSectionIndex = 1;
         /* check kernel text relocations */
@@ -1790,7 +1800,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                   innerBinSectionTable+innerBinSectonTableLen, SHN_UNDEF);
         
         cxuint symtabId, globalDataId, textId;
-        if (input->driverVersion<200406)
+        if (!is16_3Ver)
         {
             symtabId = 4 + (hasSamplers?2:0) /* samplerinit&rela.global */ +
                     (hasRWData) + (hasGlobalData) +
@@ -1810,10 +1820,10 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         innerBinGen.reset(new ElfBinaryGen64({ 0, 0, 0x40, 0, ET_REL, 0xe0, EV_CURRENT,
                         UINT_MAX, 0, 0 }, (input->driverVersion>=200406), true, true, 
                         /* globaldata sectionid: for 200406 - 4, for older - 1 */
-                        (input->driverVersion<200406)? 1 : 4));
+                        (!is16_3Ver) ? 1 : 4));
         innerBinGen->addRegion(ElfRegion64::programHeaderTable());
         
-        if (input->driverVersion>=200406)
+        if (is16_3Ver)
         {   /* first is shstrab and strtab */
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8, ".shstrtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
@@ -1865,7 +1875,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinSectionTable[ELFSECTID_TEXT-ELFSECTID_START] = extraSectionIndex++;
         }
         
-        if (input->driverVersion>=200406)
+        if (is16_3Ver)
         {   /* new driver version */
             innerBinGen->addRegion(ElfRegion64::symtabSection());
             innerBinSectionTable[ELFSECTID_SYMTAB-ELFSECTID_START] = extraSectionIndex++;
@@ -1875,7 +1885,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         {
             innerBinGen->addRegion(ElfRegion64(input->samplerConfig ?
                     input->samplers.size()*8 : input->samplerInitSize,
-                    &innerSamplerInitGen, (input->driverVersion>=200406) ? 8 : 1,
+                    &innerSamplerInitGen, (is16_3Ver) ? 8 : 1,
                     ".hsaimage_samplerinit", SHT_PROGBITS, SHF_MERGE, 0, 0, 0, 8));
             innerBinSectionTable[AMDCL2SECTID_SAMPLERINIT-ELFSECTID_START] =
                         extraSectionIndex++;
@@ -1895,7 +1905,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                     extraSectionIndex++;
         }
         
-        if (input->driverVersion < 200406)
+        if (!is16_3Ver)
         {   /* this order of section for 1912.05 driver version */
             innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData), noteSectionData, 8,
                         ".note", SHT_NOTE, 0));
@@ -1922,7 +1932,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         /// program headers
         if (kernelsNum != 0)
         {
-            cxuint textSectionReg = (input->driverVersion<200406) ? 1 : 4;
+            cxuint textSectionReg = (is16_3Ver) ? 4 : 1;
             if (hasRWData && input->bssSize!=0)
             {
                 innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 2,
@@ -1948,7 +1958,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                         /*(hasRWData || input->bssSize!=0) ? -0xe8ULL+ : 0*/, 0 });
                 textSectionReg++; // now is text section index
             }
-            uint32_t phFlags = (input->driverVersion<200406) ? (PF_W|PF_R) : (PF_R|PF_X);
+            uint32_t phFlags = (is16_3Ver) ? (PF_X|PF_R) : (PF_R|PF_W);
             innerBinGen->addProgramHeader({ PT_LOOS+3, phFlags, textSectionReg, 1,
                     true, 0, Elf64Types::nobase, 0 });
         }
