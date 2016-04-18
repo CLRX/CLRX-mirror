@@ -391,6 +391,9 @@ public:
             for (const AmdCL2KernelInput& kernel: input->kernels)
                 size += kernel.kernelName.size()*3 + 19 + 17 + 16*2 + 17 + 15;
         size += 19; // acl version string
+        /// extra symbols
+        for (const BinSymbol& symbol: input->extraSymbols)
+            size += symbol.name.size()+1;
         return size;
     }
     
@@ -473,7 +476,7 @@ public:
             SLEV(sym.st_shndx, 4);
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->compileOptions.size());
-            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_info = ELF64_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
             nameOffset += 26;
             fob.writeObject(sym);
@@ -488,7 +491,7 @@ public:
             SLEV(sym.st_shndx, 5);
             SLEV(sym.st_value, rodataPos);
             SLEV(sym.st_size, tempData.metadataSize);
-            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_info = ELF64_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
             nameOffset += kernel.kernelName.size() + 19 + 17;
             rodataPos += tempData.metadataSize;
@@ -500,7 +503,7 @@ public:
             SLEV(sym.st_shndx, 7 + brigIndex);
             SLEV(sym.st_value, 0);
             SLEV(sym.st_size, input->extraSections[brigIndex].size);
-            sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+            sym.st_info = ELF64_ST_INFO(STB_LOCAL, STT_OBJECT);
             sym.st_other = 0;
             nameOffset += 9;
             fob.writeObject(sym);
@@ -517,7 +520,7 @@ public:
                 SLEV(sym.st_shndx, 6);
                 SLEV(sym.st_value, textPos);
                 SLEV(sym.st_size, tempData.stubSize+tempData.setupSize+tempData.codeSize);
-                sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_FUNC);
+                sym.st_info = ELF64_ST_INFO(STB_LOCAL, STT_FUNC);
                 sym.st_other = 0;
                 nameOffset += 16 + kernel.kernelName.size() + 15;
                 textPos += tempData.stubSize+tempData.setupSize+tempData.codeSize;
@@ -527,7 +530,7 @@ public:
                 SLEV(sym.st_shndx, 5);
                 SLEV(sym.st_value, rodataPos);
                 SLEV(sym.st_size, tempData.isaMetadataSize);
-                sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+                sym.st_info = ELF64_ST_INFO(STB_LOCAL, STT_OBJECT);
                 sym.st_other = 0;
                 nameOffset += 16 + kernel.kernelName.size() + 17;
                 rodataPos += tempData.isaMetadataSize;
@@ -539,9 +542,10 @@ public:
         SLEV(sym.st_shndx, 4);
         SLEV(sym.st_value, input->compileOptions.size());
         SLEV(sym.st_size, aclVersion.size());
-        sym.st_info = ELF32_ST_INFO(STB_LOCAL, STT_OBJECT);
+        sym.st_info = ELF64_ST_INFO(STB_LOCAL, STT_OBJECT);
         sym.st_other = 0;
         fob.writeObject(sym);
+        nameOffset += 19;
         
         for (const BinSymbol& symbol: input->extraSymbols)
         {
@@ -1400,8 +1404,10 @@ class CLRX_INTERNAL CL2InnerGlobalDataRelsGen: public ElfRegionContent
 {
 private:
     const AmdCL2Input* input;
+    size_t dataSymbolsNum;
 public:
-    explicit CL2InnerGlobalDataRelsGen(const AmdCL2Input* _input) : input(_input)
+    explicit CL2InnerGlobalDataRelsGen(const AmdCL2Input* _input, size_t _dataSymNum)
+            : input(_input), dataSymbolsNum(_dataSymNum)
     { }
     
     size_t size() const
@@ -1418,7 +1424,7 @@ public:
         const size_t samplersNum = (input->samplerConfig) ?
                 input->samplers.size() : (input->samplerInitSize>>3);
         /* calculate first symbol for samplers (last symbols) */
-        uint32_t symIndex = input->kernels.size() + samplersNum + 2 +
+        uint32_t symIndex = input->kernels.size() + samplersNum + dataSymbolsNum + 2 +
                 (input->rwDataSize!=0 && input->rwData!=nullptr) /* globaldata symbol */ +
                 (input->bssSize!=0) /* bss data symbol */;
         if (!input->samplerOffsets.empty())
@@ -1448,10 +1454,11 @@ class CLRX_INTERNAL CL2InnerTextRelsGen: public ElfRegionContent
 private:
     const AmdCL2Input* input;
     const Array<TempAmdCL2KernelData>& tempDatas;
+    size_t dataSymbolsNum;
 public:
     explicit CL2InnerTextRelsGen(const AmdCL2Input* _input,
-            const Array<TempAmdCL2KernelData>& _tempDatas) : input(_input),
-            tempDatas(_tempDatas)
+            const Array<TempAmdCL2KernelData>& _tempDatas, size_t _dataSymNum) :
+            input(_input), tempDatas(_tempDatas), dataSymbolsNum(_dataSymNum)
     { }
     
     size_t size() const
@@ -1469,8 +1476,8 @@ public:
         uint32_t adataSymIndex = 0;
         cxuint samplersNum = (input->samplerConfig) ?
                 input->samplers.size() : (input->samplerInitSize>>3);
-        uint32_t gdataSymIndex = input->kernels.size() + samplersNum;
-        uint32_t bssSymIndex = input->kernels.size() + samplersNum;
+        uint32_t gdataSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum;
+        uint32_t bssSymIndex = input->kernels.size() + samplersNum + dataSymbolsNum;
         if (input->rwDataSize!=0 && input->rwData!=nullptr)
         {   // atomic data available
             adataSymIndex = gdataSymIndex; // first is atomic data symbol index
@@ -1547,7 +1554,7 @@ static CString constructName(size_t prefixSize, const char* prefix, const CStrin
 
 static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* input,
         const Array<TempAmdCL2KernelData>& tempDatas, const uint16_t* builtinSectionTable,
-        cxuint extraSeciontIndex, std::vector<CString>& stringPool)
+        cxuint extraSeciontIndex, std::vector<CString>& stringPool, size_t dataSymbolsNum)
 {
     const size_t samplersNum = (input->samplerConfig) ? input->samplers.size() :
                 (input->samplerInitSize>>3);
@@ -1562,9 +1569,23 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
     const uint16_t sampInitSectId = builtinSectionTable[
                 AMDCL2SECTID_SAMPLERINIT-ELFSECTID_START];
     const uint16_t bssSectId = builtinSectionTable[ELFSECTID_BSS-ELFSECTID_START];
-    stringPool.resize(input->kernels.size() + samplersNum);
+    stringPool.resize(input->kernels.size() + samplersNum + dataSymbolsNum);
     size_t nameIdx = 0;
     
+    /* put data symbols */
+    for (const BinSymbol& symbol: input->innerExtraSymbols)
+        if (symbol.sectionId==ELFSECTID_RODATA || symbol.sectionId==ELFSECTID_DATA ||
+                   symbol.sectionId==ELFSECTID_BSS)
+        {
+            stringPool[nameIdx] = constructName(12, "&input_bc::&", symbol.name,
+                        0, nullptr);
+            innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(),
+                  convertSectionId(symbol.sectionId, builtinSectionTable, AMDCL2SECTID_MAX,
+                           extraSeciontIndex),
+                  ELF64_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, symbol.value, 
+                  symbol.size));
+            nameIdx++;
+        }
     for (size_t i = 0; i < input->kernels.size(); i++)
     {   // first, we put sampler objects
         const AmdCL2KernelInput& kernel = input->kernels[i];
@@ -1584,7 +1605,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                 itocstrCStyle<cxuint>(samp, sampName+18, 64-18);
                 stringPool[nameIdx] = sampName;
                 innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), globalSectId,
-                          ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
+                          ELF64_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
                 nameIdx++;
                 samplerMask[samp] = true;
             }
@@ -1593,7 +1614,7 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
                         7, "_kernel");
         
         innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), textSectId,
-                  ELF32_ST_INFO(STB_GLOBAL, 10), 0, false, codePos, 
+                  ELF64_ST_INFO(STB_GLOBAL, 10), 0, false, codePos, 
                   kernel.codeSize + tempData.setupSize));
         nameIdx++;
         codePos += kernel.codeSize + tempData.setupSize;
@@ -1609,25 +1630,25 @@ static void putInnerSymbols(ElfBinaryGen64& innerBinGen, const AmdCL2Input* inpu
             itocstrCStyle<cxuint>(i, sampName+18, 64-18);
             stringPool[nameIdx] = sampName;
             innerBinGen.addSymbol(ElfSymbol64(stringPool[nameIdx].c_str(), globalSectId,
-                      ELF32_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
+                      ELF64_ST_INFO(STB_LOCAL, STT_OBJECT), 0, false, value, 8));
             nameIdx++;
             samplerMask[i] = true;
         }
     
     if (input->rwDataSize!=0 && input->rwData!=nullptr)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_global_agent",
-              atomicSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+              atomicSectId, ELF64_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     if (input->bssSize!=0)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsabss_global_agent",
-              bssSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+              bssSectId, ELF64_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     if (input->globalDataSize!=0 && input->globalData!=nullptr)
         innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsadata_readonly_agent",
-              globalSectId, ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+              globalSectId, ELF64_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     innerBinGen.addSymbol(ElfSymbol64("__hsa_section.hsatext", textSectId,
-              ELF32_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
+              ELF64_ST_INFO(STB_LOCAL, STT_SECTION), 0, false, 0, 0));
     
     for (size_t i = 0; i < samplersNum; i++)
-        innerBinGen.addSymbol(ElfSymbol64("", sampInitSectId, ELF32_ST_INFO(STB_LOCAL, 12),
+        innerBinGen.addSymbol(ElfSymbol64("", sampInitSectId, ELF64_ST_INFO(STB_LOCAL, 12),
                       0, false, i*8, 0));
     /// add extra inner symbols
     for (const BinSymbol& extraSym: input->innerExtraSymbols)
@@ -1690,6 +1711,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     Array<TempAmdCL2KernelData> tempDatas(kernelsNum);
     prepareKernelTempData(input, tempDatas);
     
+    const size_t dataSymbolsNum = std::count_if(input->innerExtraSymbols.begin(),
+        input->innerExtraSymbols.end(), [](const BinSymbol& symbol)
+        { return symbol.sectionId==ELFSECTID_RODATA || symbol.sectionId==ELFSECTID_DATA ||
+                   symbol.sectionId==ELFSECTID_BSS; });
+    
     cxuint mainExtraSectionIndex = 6 + (kernelsNum != 0 || newBinaries);
     CL2MainStrTabGen mainStrTabGen(input);
     CL2MainSymTabGen mainSymTabGen(input, tempDatas, aclVersion, mainExtraSectionIndex);
@@ -1698,8 +1724,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     CL2InnerTextGen innerTextGen(input, tempDatas);
     CL2InnerGlobalDataGen innerGDataGen(input);
     CL2InnerSamplerInitGen innerSamplerInitGen(input);
-    CL2InnerTextRelsGen innerTextRelsGen(input, tempDatas);
-    CL2InnerGlobalDataRelsGen innerGDataRels(input);
+    CL2InnerTextRelsGen innerTextRelsGen(input, tempDatas, dataSymbolsNum);
+    CL2InnerGlobalDataRelsGen innerGDataRels(input, dataSymbolsNum);
     
     // main section of main binary
     elfBinGen.addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 1, ".shstrtab",
@@ -1808,7 +1834,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         
         if (kernelsNum != 0)
             putInnerSymbols(*innerBinGen, input, tempDatas, innerBinSectionTable,
-                        extraSectionIndex, symbolNamePool);
+                        extraSectionIndex, symbolNamePool, dataSymbolsNum);
         
         for (const BinSection& section: input->innerExtraSections)
             innerBinGen->addRegion(ElfRegion64(section, innerBinSectionTable,

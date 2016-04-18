@@ -1172,6 +1172,7 @@ R"ffDXD(            .amdcl2
                 .byte 44,55,66
             .bssdata align=8
                 .skip 50
+            .main
             .section .ala
                 .string "ala"
             .inner
@@ -1184,6 +1185,7 @@ R"ffDXD(            .amdcl2
             .main
             .bssdata
                 .skip 10
+            .main
             .section .xx
                 .byte 1,23
             .inner

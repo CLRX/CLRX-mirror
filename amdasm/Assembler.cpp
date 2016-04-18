@@ -1870,7 +1870,8 @@ bool Assembler::assemble()
     
     resolvingRelocs = true;
     for (AsmSymbolEntry& symEntry: symbolMap)
-        if (!symEntry.second.occurrencesInExprs.empty())
+        if (!symEntry.second.occurrencesInExprs.empty() || 
+            (symEntry.first!="."  && !isResolvableSection(symEntry.second.sectionId)))
         {   // try to resolve symbols
             uint64_t value;
             cxuint sectionId;
