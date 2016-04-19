@@ -1490,24 +1490,24 @@ x=3*6)ffDXD",
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xc0
       priority=0, exceptions=0, localSize=0, scratchBuffer=0
       useSetup 
-    Rel: offset=12, type=1, symbol=2, addend=77
-    Rel: offset=20, type=1, symbol=2, addend=21
-    Rel: offset=28, type=1, symbol=2, addend=21
-    Rel: offset=36, type=1, symbol=2, addend=42
-    Rel: offset=44, type=1, symbol=2, addend=42
-    Rel: offset=52, type=1, symbol=2, addend=90
-    Rel: offset=60, type=1, symbol=2, addend=118
-    Rel: offset=68, type=1, symbol=2, addend=118
-    Rel: offset=76, type=2, symbol=2, addend=21
-    Rel: offset=84, type=2, symbol=2, addend=21
-    Rel: offset=92, type=2, symbol=2, addend=21
-    Rel: offset=100, type=2, symbol=2, addend=21
-    Rel: offset=108, type=2, symbol=2, addend=21
-    Rel: offset=116, type=2, symbol=2, addend=124
-    Rel: offset=124, type=2, symbol=2, addend=114
-    Rel: offset=132, type=2, symbol=2, addend=117
-    Rel: offset=140, type=2, symbol=2, addend=29
-    Rel: offset=148, type=1, symbol=2, addend=101
+    Rel: offset=12, type=1, symbol=0, addend=77
+    Rel: offset=20, type=1, symbol=0, addend=21
+    Rel: offset=28, type=1, symbol=0, addend=21
+    Rel: offset=36, type=1, symbol=0, addend=42
+    Rel: offset=44, type=1, symbol=0, addend=42
+    Rel: offset=52, type=1, symbol=0, addend=90
+    Rel: offset=60, type=1, symbol=0, addend=118
+    Rel: offset=68, type=1, symbol=0, addend=118
+    Rel: offset=76, type=2, symbol=0, addend=21
+    Rel: offset=84, type=2, symbol=0, addend=21
+    Rel: offset=92, type=2, symbol=0, addend=21
+    Rel: offset=100, type=2, symbol=0, addend=21
+    Rel: offset=108, type=2, symbol=0, addend=21
+    Rel: offset=116, type=2, symbol=0, addend=124
+    Rel: offset=124, type=2, symbol=0, addend=114
+    Rel: offset=132, type=2, symbol=0, addend=117
+    Rel: offset=140, type=2, symbol=0, addend=29
+    Rel: offset=148, type=1, symbol=0, addend=101
   GlobalData:
   010000000200000003000000040000000500000006000000
   RwData:

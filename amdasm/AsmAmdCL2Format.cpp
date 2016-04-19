@@ -1401,11 +1401,16 @@ bool AsmAmdCL2Handler::prepareBinary()
     for (const AsmRelocation& reloc: assembler.relocations)
     {   /* put only code relocations */
         cxuint kernelId = sections[reloc.sectionId].kernelId;
-        cxuint symbol = sections[reloc.sectionId].type==AsmSectionType::DATA ? 0 :
-            (sections[reloc.sectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
+        cxuint symbol = sections[reloc.relSectionId].type==AsmSectionType::DATA ? 0 :
+            (sections[reloc.relSectionId].type==AsmSectionType::AMDCL2_RWDATA ? 1 : 2);
         output.kernels[kernelId].relocations.push_back({reloc.offset, reloc.type,
                     symbol, size_t(reloc.addend) });
     }
+    
+    for (AmdCL2KernelInput& kernel: output.kernels)
+        std::sort(kernel.relocations.begin(), kernel.relocations.end(),
+                [](const AmdCL2RelInput& a, const AmdCL2RelInput& b)
+                { return a.offset < b.offset; });
     
     /* put extra symbols */
     if (assembler.flags & ASM_FORCE_ADD_SYMBOLS)
