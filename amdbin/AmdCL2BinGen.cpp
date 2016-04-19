@@ -1942,19 +1942,19 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             cxuint textSectionReg = (is16_3Ver) ? 4 : 1;
             if (hasRWData && input->bssSize!=0)
             {
-                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 2,
+                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, textSectionReg, 2,
                                 true, 0, 0, 0 });
                 textSectionReg += 2;
             }
             else if (hasRWData)
             {
-                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
+                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, textSectionReg, 1,
                                 true, 0, 0, 0 });
                 textSectionReg++;
             }
             else if (input->bssSize!=0)
             {
-                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, 1, 1,
+                innerBinGen->addProgramHeader({ PT_LOOS+1, PF_W|PF_R, textSectionReg, 1,
                                 true, 0, 0, 0 });
                 textSectionReg++;
             }
