@@ -1365,12 +1365,12 @@ R"ffDXD(            .amdcl2
     Code:
     05ac098705850a8705850b87000081bf
     Config:
-      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
-      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
-      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "uint*", pointer, uint, global, 4, 0, 0, default, 3
       Arg: "out", "uint*", pointer, uint, global, 0, 0, 0, default, 3
@@ -1382,12 +1382,12 @@ R"ffDXD(            .amdcl2
     Code:
     05ac0987000081bf
     Config:
-      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
-      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
-      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "float*", pointer, float, global, 4, 0, 0, default, 3
       Arg: "out", "float*", pointer, float, global, 0, 0, 0, default, 3
@@ -1402,12 +1402,12 @@ R"ffDXD(            .amdcl2
     Code:
     0203027eb706024a000081bf
     Config:
-      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
-      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
-      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "double*", pointer, double, global, 4, 0, 0, default, 3
       Arg: "out", "double*", pointer, double, global, 0, 0, 0, default, 3
@@ -1477,12 +1477,12 @@ x=3*6)ffDXD",
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
     ff0381be55555555ff0381be55555555ff0381be55555555000081bf
     Config:
-      Arg: "_.global_offset_0", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_1", "size_t", ulong, void, none, 0, 0, 0, 0, 0
-      Arg: "_.global_offset_2", "size_t", ulong, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.global_offset_2", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "_.printf_buffer", "size_t", pointer, void, global, 0, 3, 0, 0, 0
-      Arg: "_.vqueue_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
-      Arg: "_.aqlwrap_pointer", "size_t", pointer, void, global, 0, 0, 0, 0, 0
+      Arg: "_.vqueue_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
+      Arg: "_.aqlwrap_pointer", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "uint*", pointer, uint, global, 4, 0, 0, default, 3
       Arg: "out", "uint*", pointer, uint, global, 0, 0, 0, default, 3

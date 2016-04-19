@@ -921,18 +921,18 @@ struct CLRX_INTERNAL IntAmdCL2KernelArg
 
 static const IntAmdCL2KernelArg setupArgsTable[] =
 {
-    { "_.global_offset_0", "size_t", KernelArgType::ULONG, KernelArgType::VOID,
+    { "_.global_offset_0", "size_t", KernelArgType::LONG, KernelArgType::VOID,
         KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
-    { "_.global_offset_1", "size_t", KernelArgType::ULONG, KernelArgType::VOID,
+    { "_.global_offset_1", "size_t", KernelArgType::LONG, KernelArgType::VOID,
         KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
-    { "_.global_offset_2", "size_t", KernelArgType::ULONG, KernelArgType::VOID,
+    { "_.global_offset_2", "size_t", KernelArgType::LONG, KernelArgType::VOID,
         KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
     { "_.printf_buffer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
         KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, AMDCL2_ARGUSED_READ_WRITE },
-    { "_.vqueue_pointer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
-        KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, 0 },
-    { "_.aqlwrap_pointer", "size_t", KernelArgType::POINTER, KernelArgType::VOID,
-        KernelPtrSpace::GLOBAL, KARG_PTR_NORMAL, 0 }
+    { "_.vqueue_pointer", "size_t", KernelArgType::LONG, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 },
+    { "_.aqlwrap_pointer", "size_t", KernelArgType::LONG, KernelArgType::VOID,
+        KernelPtrSpace::NONE, KARG_PTR_NORMAL, 0 }
 };
 
 void AsmAmdCL2PseudoOps::doSetupArgs(AsmAmdCL2Handler& handler, const char* pseudoOpPlace,
