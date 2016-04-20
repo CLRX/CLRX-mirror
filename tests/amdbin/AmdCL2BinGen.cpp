@@ -36,6 +36,8 @@ static const char* origBinaryFiles[] =
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/argtypes.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/atomics.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/atomics2.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/atomics-gpupro.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/atomics2-gpupro.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/BinarySearchDeviceSideEnqueue_Kernels.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/enqueue-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/enqueue.clo",
@@ -50,9 +52,11 @@ static const char* origBinaryFiles[] =
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/nokernels.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/piper-16_4.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/RegionGrowingSegmentation.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers2.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers4.clo",
+    CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/samplers4-gpupro.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch-15_7.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/scratch.clo",
     CLRX_SOURCE_DIR "/tests/amdbin/amdcl2bins/test2-15_7.clo",
@@ -128,7 +132,7 @@ static const ArgTypeNameEntry cl20ArgNameTypeTable[] =
     { "short3", KernelArgType::SHORT3 },
     { "short4", KernelArgType::SHORT4 },
     { "short8", KernelArgType::SHORT8 },
-    { "size_t", KernelArgType::ULONG },
+    { "size_t", KernelArgType::LONG },
     { "uchar", KernelArgType::UCHAR },
     { "uchar16", KernelArgType::UCHAR16 },
     { "uchar2", KernelArgType::UCHAR2 },
@@ -255,6 +259,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     // get kernel args
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
+    if (*((const uint32_t*)(metadata+argOffset)) == 0x5800)
+        argOffset++;
     const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
             const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
@@ -294,12 +300,29 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 case 1:  // read_only image
                 case 2:  // write_only image
                 case 3:  // read_write image
-                    if (kindOfType!=2) // not image
+                    if (kindOfType==2) // not image
+                    {
+                        arg.argType = KernelArgType::IMAGE;
+                        arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
+                                 KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
+                        arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                    }
+                    else if (argType==2 || argType == 3)
+                    {
+                        if (kindOfType!=4) // not scalar
+                            throw Exception("Wrong kernel argument type");
+                        arg.argType = (argType==3) ?
+                            KernelArgType::SHORT : KernelArgType::CHAR;
+                    }
+                    else
                         throw Exception("Wrong kernel argument type");
-                    arg.argType = KernelArgType::IMAGE;
-                    arg.ptrAccess |= (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
-                             KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
-                    arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                    break;
+                case 4: // int
+                case 5: // long
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = (argType==5) ?
+                        KernelArgType::LONG : KernelArgType::INT;
                     break;
                 case 6: // char
                 case 7: // short
@@ -328,6 +351,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                     break;
                 default:
                     throw Exception("Wrong kernel argument type");
+                    break;
             }
             
             auto it = binaryMapFind(cl20ArgNameTypeTable,
@@ -538,28 +562,21 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
         size_t relaId = 0;
         size_t offset = 0;
         
-        size_t gDataSymIndex = 0;
-        size_t aDataSymIndex = 0;
-        size_t bssSymIndex = 0;
-        const size_t symbolsNum = innerBin.getSymbolsNum();
-        for (gDataSymIndex = 0; gDataSymIndex < symbolsNum; gDataSymIndex++)
-        {   // find global data symbol (getSymbolIndex doesn't work always
-            const char* name = innerBin.getSymbolName(gDataSymIndex);
-            if (::strcmp(name, "__hsa_section.hsadata_readonly_agent")==0)
-                break;
-        }
-        for (aDataSymIndex = 0; aDataSymIndex < symbolsNum; aDataSymIndex++)
-        {   // find global data symbol (getSymbolIndex doesn't work always
-            const char* name = innerBin.getSymbolName(aDataSymIndex);
-            if (::strcmp(name, "__hsa_section.hsadata_global_agent")==0)
-                break;
-        }
-        for (bssSymIndex = 0; bssSymIndex < symbolsNum; bssSymIndex++)
-        {   // find global data symbol (getSymbolIndex doesn't work always
-            const char* name = innerBin.getSymbolName(bssSymIndex);
-            if (::strcmp(name, "__hsa_section.hsabss_global_agent")==0)
-                break;
-        }
+        uint16_t gDataSectionIdx = SHN_UNDEF;
+        uint16_t rwDataSectionIdx = SHN_UNDEF;
+        uint16_t bssDataSectionIdx = SHN_UNDEF;
+        try
+        { gDataSectionIdx = innerBin.getSectionIndex(".hsadata_readonly_agent"); }
+        catch(const Exception& ex)
+        { }
+        try
+        { rwDataSectionIdx = innerBin.getSectionIndex(".hsadata_global_agent"); }
+        catch(const Exception& ex)
+        { }
+        try
+        { bssDataSectionIdx = innerBin.getSectionIndex(".hsabss_global_agent"); }
+        catch(const Exception& ex)
+        { }
         
         for (size_t k = 0; k < kernelsNum; k++)
         {
@@ -579,11 +596,20 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
                     rtype = RELTYPE_LOW_32BIT;
                 else if (typev == 2)
                     rtype = RELTYPE_HIGH_32BIT;
-                else
-                    throw Exception("Wrong reltype");
-                cxuint rsym = symIndex==aDataSymIndex?1U:(symIndex==bssSymIndex?2U:0U);
+                
+                int64_t addend = ULEV(rela.r_addend);
+                // check this symbol
+                const Elf64_Sym& sym = innerBin.getSymbol(symIndex);
+                uint16_t symShndx = ULEV(sym.st_shndx);
+                if (symShndx!=gDataSectionIdx && symShndx!=rwDataSectionIdx &&
+                    symShndx!=bssDataSectionIdx)
+                    throw Exception("Symbol is not placed in global or "
+                            "rwdata data or bss is illegal");
+                addend += ULEV(sym.st_value);
+                cxuint rsym = symShndx==rwDataSectionIdx?1U:
+                            (symShndx==bssDataSectionIdx?2U:0U);
                 kernel.relocations.push_back({size_t(ULEV(rela.r_offset))-offset,
-                        rtype, rsym, size_t(ULEV(rela.r_addend))});
+                            rtype, rsym, size_t(addend)});
             }
             offset += kernel.codeSize;
             if ((offset & 255) != 0)
