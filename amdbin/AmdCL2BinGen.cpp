@@ -1884,6 +1884,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
     
     std::unique_ptr<ElfBinaryGen64> innerBinGen;
     std::vector<CString> symbolNamePool;
+    std::unique_ptr<cxbyte[]> noteBuf;
     if (newBinaries)
     {   // new binaries - .text holds inner ELF binaries
         bool is16_3Ver = (input->driverVersion>=200406);
@@ -1935,11 +1936,11 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
                            noteSectionData16_3, 8, ".note", SHT_NOTE, 0));
             else
             {   /* AMD GPU PRO */
-                cxbyte noteBuf[sizeof(noteSectionData16_3)];
-                ::memcpy(noteBuf, noteSectionData16_3, sizeof(noteSectionData16_3));
+                noteBuf.reset(new cxbyte[sizeof(noteSectionData16_3)]);
+                ::memcpy(noteBuf.get(), noteSectionData16_3, sizeof(noteSectionData16_3));
                 noteBuf[197] = 't';
                 innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
-                           noteBuf, 8, ".note", SHT_NOTE, 0));
+                           noteBuf.get(), 8, ".note", SHT_NOTE, 0));
             }
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
         }
