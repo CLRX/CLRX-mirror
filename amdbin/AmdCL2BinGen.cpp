@@ -146,17 +146,17 @@ static const ArgTypeSizes argTypeSizesTable[] =
     { 7, 8, 1, /*clkevent*/ }
 };
 
-static const uint32_t gpuDeviceCodeTable[18] =
+static const uint32_t gpuDeviceCodeTable[21] =
 {
-    0, // GPUDeviceType::CAPE_VERDE
-    0, // GPUDeviceType::PITCAIRN
-    0, // GPUDeviceType::TAHITI
-    0, // GPUDeviceType::OLAND
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
     6, // GPUDeviceType::BONAIRE
     1, // GPUDeviceType::SPECTRE
     2, // GPUDeviceType::SPOOKY
     3, // GPUDeviceType::KALINDI
-    0, // GPUDeviceType::HAINAN
+    UINT_MAX, // GPUDeviceType::HAINAN
     7, // GPUDeviceType::HAWAII
     8, // GPUDeviceType::ICELAND
     9, // GPUDeviceType::TONGA
@@ -164,8 +164,86 @@ static const uint32_t gpuDeviceCodeTable[18] =
     17, // GPUDeviceType::FIJI
     16, // GPUDeviceType::CARRIZO
     15, // GPUDeviceType::DUMMY
+    UINT_MAX, // GPUDeviceType::GOOSE
+    UINT_MAX, // GPUDeviceType::HORSE
+    UINT_MAX, // GPUDeviceType::STONEY
+    UINT_MAX, // GPUDeviceType::ELLESMERE
+    UINT_MAX  // GPUDeviceType::BAFFIN
+};
+
+static const uint32_t gpuDeviceCodeTable15_7[21] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    16, // GPUDeviceType::FIJI
+    15, // GPUDeviceType::CARRIZO
+    UINT_MAX, // GPUDeviceType::DUMMY
+    UINT_MAX, // GPUDeviceType::GOOSE
+    UINT_MAX, // GPUDeviceType::HORSE
+    UINT_MAX, // GPUDeviceType::STONEY
+    UINT_MAX, // GPUDeviceType::ELLESMERE
+    UINT_MAX  // GPUDeviceType::BAFFIN
+};
+
+static const uint32_t gpuDeviceCodeTable16_3[21] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    16, // GPUDeviceType::FIJI
+    15, // GPUDeviceType::CARRIZO
+    UINT_MAX, // GPUDeviceType::DUMMY
     13, // GPUDeviceType::GOOSE
-    12  // GPUDeviceType::HORSE
+    12, // GPUDeviceType::HORSE
+    17, // GPUDeviceType::STONEY
+    UINT_MAX, // GPUDeviceType::ELLESMERE
+    UINT_MAX  // GPUDeviceType::BAFFIN
+};
+
+static const uint32_t gpuDeviceCodeTableGPUPRO[21] =
+{
+    UINT_MAX, // GPUDeviceType::CAPE_VERDE
+    UINT_MAX, // GPUDeviceType::PITCAIRN
+    UINT_MAX, // GPUDeviceType::TAHITI
+    UINT_MAX, // GPUDeviceType::OLAND
+    6, // GPUDeviceType::BONAIRE
+    1, // GPUDeviceType::SPECTRE
+    2, // GPUDeviceType::SPOOKY
+    3, // GPUDeviceType::KALINDI
+    UINT_MAX, // GPUDeviceType::HAINAN
+    7, // GPUDeviceType::HAWAII
+    8, // GPUDeviceType::ICELAND
+    9, // GPUDeviceType::TONGA
+    4, // GPUDeviceType::MULLINS
+    14, // GPUDeviceType::FIJI
+    13, // GPUDeviceType::CARRIZO
+    UINT_MAX, // GPUDeviceType::DUMMY
+    UINT_MAX, // GPUDeviceType::GOOSE
+    UINT_MAX, // GPUDeviceType::HORSE
+    15, // GPUDeviceType::STONEY
+    17, // GPUDeviceType::ELLESMERE
+    16 // GPUDeviceType::BAFFIN
 };
 
 static const uint16_t mainBuiltinSectionTable[] =
@@ -1746,8 +1824,22 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if ((sampOffset&7) != 0 && sampOffset >= input->globalDataSize)
             throw Exception("Wrong sampler offset (out of range of unaligned)");
     
+    /* determine correct flags for device type */
+    const uint32_t* deviceCodeTable;
+    if (input->driverVersion < 191205)
+        deviceCodeTable = gpuDeviceCodeTable15_7;
+    else if (input->driverVersion < 200406)
+        deviceCodeTable = gpuDeviceCodeTable;
+    else if (input->driverVersion < 203603)
+        deviceCodeTable = gpuDeviceCodeTable16_3;
+    else // AMD GPUPRO driver
+        deviceCodeTable = gpuDeviceCodeTableGPUPRO;
+    // if GPU type is not supported by driver version
+    if (deviceCodeTable[cxuint(input->deviceType)] == UINT_MAX)
+        throw Exception("Unsupported GPU device type by driver version");
+    
     ElfBinaryGen64 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0, ET_EXEC, 0xaf5b, EV_CURRENT,
-                UINT_MAX, 0, gpuDeviceCodeTable[cxuint(input->deviceType)] });
+                UINT_MAX, 0, deviceCodeTable[cxuint(input->deviceType)] });
     
     CString aclVersion = input->aclVersion;
     if (aclVersion.empty())
