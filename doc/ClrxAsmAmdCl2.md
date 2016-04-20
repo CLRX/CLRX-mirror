@@ -54,7 +54,7 @@ Set ACL version string.
 Syntax for scalar: .arg ARGNAME \[, "ARGTYPENAME"], ARGTYPE[, unused]  
 Syntax for structure: .arg ARGNAME, \[, "ARGTYPENAME"], ARGTYPE[, STRUCTSIZE[, unused]]  
 Syntax for image: .arg ARGNAME\[, "ARGTYPENAME"], ARGTYPE[, [ACCESS] [, RESID[, unused]]]  
-Syntax for counter32: .arg ARGNAME\[, "ARGTYPENAME"], ARGTYPE[, RESID[, unused]]  
+Syntax for sampler: .arg ARGNAME\[, "ARGTYPENAME"], ARGTYPE[, RESID[, unused]]  
 Syntax for global pointer: .arg ARGNAME\[, "ARGTYPENAME"], 
 ARGTYPE\[\[, STRUCTSIZE], PTRSPACE[, [ACCESS] [, RESID[, unused]]]]  
 Syntax for local pointer: .arg ARGNAME\[, "ARGTYPENAME"], 

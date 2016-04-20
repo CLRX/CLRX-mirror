@@ -1480,7 +1480,8 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             }
         }
     }
-    else if (!pointer && argType == KernelArgType::COUNTER32)
+    else if (!pointer && ((!cl20 && argType == KernelArgType::COUNTER32) ||
+            (cl20 && argType == KernelArgType::SAMPLER)))
     {   // counter uavId
         if (!skipComma(asmr, haveComma, linePtr))
             return false;
@@ -1491,9 +1492,14 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             const char* place = linePtr;
             if (getAbsoluteValueArg(asmr, resIdVal, linePtr, true))
             {
-                if (resIdVal!=BINGEN_DEFAULT && resIdVal > 7)
+                if (resIdVal!=BINGEN_DEFAULT && (!cl20 && resIdVal > 7))
                 {
                     asmr.printError(place, "Resource Id out of range (0-7)");
+                    good = false;
+                }
+                else if (resIdVal!=BINGEN_DEFAULT && cl20 && resIdVal > 15)
+                {
+                    asmr.printError(place, "Sampler Id out of range (0-15)");
                     good = false;
                 }
             }
