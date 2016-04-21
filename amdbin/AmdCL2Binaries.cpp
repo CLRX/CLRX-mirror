@@ -344,7 +344,7 @@ static void getCL2KernelInfo(size_t metadataSize, cxbyte* metadata,
     size_t argOffset = kernelHeader.size +
             ULEV(hdrStruc->firstNameLength)+ULEV(hdrStruc->secondNameLength)+2;
     // fix for latest Crimson drivers
-    if (*((const uint32_t*)(metadata+argOffset)) == 0x5800)
+    if (ULEV(*(const uint32_t*)(metadata+argOffset)) == 0x5800)
     {
         crimson16 = true;
         argOffset++;

@@ -259,7 +259,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     // get kernel args
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
-    if (*((const uint32_t*)(metadata+argOffset)) == 0x5800)
+    if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
         argOffset++;
     const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
             const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
