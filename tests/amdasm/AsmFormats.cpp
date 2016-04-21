@@ -1471,6 +1471,8 @@ cc=gstart+10+x
         s_mov_b32 s1, gstart2+77
         s_mov_b32 s1, rwdat1+33
         s_mov_b32 s1, bsslabel+33
+        .byte 12
+        .int (gstart+22)>>32
         s_endpgm
 aa = gstart2 + 100
 bb = aa + 3
@@ -1484,7 +1486,7 @@ x=3*6)ffDXD",
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
     ff0381be55555555ff0381be55555555ff0381be55555555ff0381be55555555
-    ff0381be55555555000081bf
+    ff0381be555555550c55555555000081bf
     Config:
       Arg: "_.global_offset_0", "size_t", long, void, none, 0, 0, 0, 0, 0
       Arg: "_.global_offset_1", "size_t", long, void, none, 0, 0, 0, 0, 0
@@ -1519,6 +1521,7 @@ x=3*6)ffDXD",
     Rel: offset=148, type=1, symbol=0, addend=101
     Rel: offset=156, type=1, symbol=1, addend=41
     Rel: offset=164, type=1, symbol=2, addend=43
+    Rel: offset=169, type=2, symbol=0, addend=22
   GlobalData:
   010000000200000003000000040000000500000006000000
   RwData:

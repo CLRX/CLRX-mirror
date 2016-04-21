@@ -1576,7 +1576,8 @@ bool AsmAmdCL2Handler::resolveRelocation(const AsmExpression* expr, uint64_t& ou
         }
         outSectionId = ASMSECT_ABS;   // for filling values in code
         outValue = 0x55555555U; // for filling values in code
-        AsmRelocation reloc = { target.sectionId, target.offset+4, relType };
+        size_t extraOffset = (tgtType!=ASMXTGT_DATA32) ? 4 : 0;
+        AsmRelocation reloc = { target.sectionId, target.offset+extraOffset, relType };
         reloc.relSectionId = relSectionId;
         reloc.addend = relValue;
         assembler.relocations.push_back(reloc);
