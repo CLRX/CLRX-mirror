@@ -1536,9 +1536,9 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             toLowerString(name);
             if (::strcmp(name, "unused")==0)
                 usedArg = false;
-            else if (cl20 && ::strcmp(name, "rdonly"))
+            else if (cl20 && ::strcmp(name, "rdonly")==0)
                 usedArg = 1;
-            else if (cl20 && ::strcmp(name, "wronly"))
+            else if (cl20 && ::strcmp(name, "wronly")==0)
                 usedArg = 2;
             else
             {
