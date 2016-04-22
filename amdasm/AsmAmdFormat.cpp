@@ -1444,9 +1444,9 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             const char* ptrAccessPlace = linePtr;
             if (getNameArg(asmr, 15, name, linePtr, "access qualifier", false))
             {
-                if (::strcmp(name, "read_only")==0)
+                if (::strcmp(name, "read_only")==0 || ::strcmp(name, "rdonly")==0)
                     ptrAccess = KARG_PTR_READ_ONLY;
-                else if (::strcmp(name, "write_only")==0)
+                else if (::strcmp(name, "write_only")==0 || ::strcmp(name, "wronly")==0)
                     ptrAccess = KARG_PTR_WRITE_ONLY;
                 else if (*name!=0)
                 {   // unknown
