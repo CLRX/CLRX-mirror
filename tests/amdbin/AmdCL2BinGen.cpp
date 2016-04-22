@@ -596,6 +596,8 @@ static AmdCL2Input genAmdCL2Input(bool useConfig, const AmdCL2MainGPUBinary& bin
                     rtype = RELTYPE_LOW_32BIT;
                 else if (typev == 2)
                     rtype = RELTYPE_HIGH_32BIT;
+                else
+                    throw Exception("Unknown relocation type");
                 
                 int64_t addend = ULEV(rela.r_addend);
                 // check this symbol
