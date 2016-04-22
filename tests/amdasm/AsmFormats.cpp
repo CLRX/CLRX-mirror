@@ -1349,6 +1349,8 @@ R"ffDXD(            .amdcl2
         .arg n,uint
         .arg in,double*,global,const
         .arg out,double*,global
+        .arg v,uchar,rdonly
+        .arg v2,uchar,wronly
         .localsize 656
         .pgmrsrc1 0x1234000
         .pgmrsrc2 0xfcdefd0
@@ -1411,6 +1413,8 @@ R"ffDXD(            .amdcl2
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "double*", pointer, double, global, 4, 0, 0, default, 3
       Arg: "out", "double*", pointer, double, global, 0, 0, 0, default, 3
+      Arg: "v", "uchar", uchar, void, none, 0, 0, 0, default, 1
+      Arg: "v2", "uchar", uchar, void, none, 0, 0, 0, default, 2
       dims=7, cws=8 5 2, SGPRS=25, VGPRS=78
       pgmRSRC1=0x1234000, pgmRSRC2=0xfcdefd0, ieeeMode=0x0, floatMode=0xc0
       priority=0, exceptions=0, localSize=656, scratchBuffer=0
@@ -1550,7 +1554,7 @@ x=3*6)ffDXD",
         .priority 6
         .exceptions 0xd9
         .sgprsnum 231
-        
+        .arg vx,uint,dxdd
         .usesetup
     .text
         s_and_b32 s9,s5,44
@@ -1586,6 +1590,7 @@ test.s:14:20: Error: LocalSize out of range (0-32768)
 test.s:15:19: Warning: Value 0x6 truncated to 0x2
 test.s:16:21: Warning: Value 0xd9 truncated to 0x59
 test.s:17:19: Error: Used SGPRs number out of range (0-102)
+test.s:18:22: Error: This is not 'unused' specifier
 test.s:23:9: Error: Illegal place of configuration pseudo-op
 test.s:24:9: Error: Illegal place of kernel argument
 test.s:25:9: Error: Illegal place of kernel argument
