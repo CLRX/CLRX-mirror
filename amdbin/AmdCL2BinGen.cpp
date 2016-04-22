@@ -285,6 +285,14 @@ static void prepareKernelTempData(const AmdCL2Input* input,
             throw Exception("ISA metadata allowed for old driver binaries");
         if (newBinaries && (kernel.stubSize!=0 || kernel.stub!=nullptr))
             throw Exception("Kernel stub allowed for old driver binaries");
+        /* check relocations */
+        for (const AmdCL2RelInput& rel: kernel.relocations)
+        {
+            if (rel.type > RELTYPE_HIGH_32BIT || rel.symbol > 2)
+                throw Exception("Wrong relocation symbol or type");
+            if (rel.offset+4 > kernel.codeSize)
+                throw Exception("Relocation offset outside code size");
+        }
         
         if (!kernel.useConfig)
         {   // if no kernel configuration
