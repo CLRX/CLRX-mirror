@@ -770,12 +770,19 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
                 break;
             }
             case AMDCVAL_HWLOCAL:
-                if (value > 32768)
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
+                if (value > maxLocalSize)
                 {
-                    asmr.printError(valuePlace, "HWLocalSize out of range (0-32768)");
+                    char buf[64];
+                    snprintf(buf, 64, "HWLocalSize out of range (0-%u)", maxLocalSize);
+                    asmr.printError(valuePlace, buf);
                     good = false;
                 }
                 break;
+            }
             case AMDCVAL_FLOATMODE:
                 asmr.printWarningForRange(8, value,
                                   asmr.getSourcePos(valuePlace), WS_UNSIGNED);

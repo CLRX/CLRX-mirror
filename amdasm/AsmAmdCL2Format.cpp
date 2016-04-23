@@ -729,12 +729,19 @@ void AsmAmdCL2PseudoOps::setConfigValue(AsmAmdCL2Handler& handler,
                 value &= 3;
                 break;
             case AMDCL2CVAL_LOCALSIZE:
-                if (value > 32768)
+            {
+                const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
+                            asmr.deviceType);
+                const cxuint maxLocalSize = getGPUMaxLocalSize(arch);
+                if (value > maxLocalSize)
                 {
-                    asmr.printError(valuePlace, "LocalSize out of range (0-32768)");
+                    char buf[64];
+                    snprintf(buf, 64, "LocalSize out of range (0-%u)", maxLocalSize);
+                    asmr.printError(valuePlace, buf);
                     good = false;
                 }
                 break;
+            }
             default:
                 break;
         }

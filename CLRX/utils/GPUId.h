@@ -115,6 +115,8 @@ extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
                cxuint userDataNum, Flags flags, cxuint* gprsOut);
 
+extern size_t getGPUMaxLocalSize(GPUArchitecture architecture);
+
 };
 
 #endif
