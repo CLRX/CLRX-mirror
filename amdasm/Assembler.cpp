@@ -32,8 +32,6 @@
 #include <CLRX/amdasm/Assembler.h>
 #include "AsmInternals.h"
 
-// TODO: handle non-writeable section (likes bss)
-
 using namespace CLRX;
 
 const cxbyte CLRX::tokenCharTable[96] =
