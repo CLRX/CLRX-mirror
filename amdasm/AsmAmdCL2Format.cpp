@@ -554,7 +554,7 @@ void AsmAmdCL2PseudoOps::doSamplerInit(AsmAmdCL2Handler& handler, const char* ps
     if (handler.samplerInitSection==ASMSECT_NONE)
     {   /* add this section */
         cxuint thisSection = handler.sections.size();
-        handler.sections.push_back({ ASMKERN_GLOBAL,  AsmSectionType::AMDCL2_SAMPLERINIT,
+        handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_SAMPLERINIT,
             AMDCL2SECTID_SAMPLERINIT, nullptr });
         handler.samplerInitSection = thisSection;
     }
