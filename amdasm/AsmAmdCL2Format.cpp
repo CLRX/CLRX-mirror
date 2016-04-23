@@ -1125,10 +1125,10 @@ void AsmAmdCL2PseudoOps::doConfig(AsmAmdCL2Handler& handler, const char* pseudoO
                         "stub section exists");
         return;
     }
-
+    
     if (!checkGarbagesAtEnd(asmr, linePtr))
         return;
-        
+    
     if (kernel.configSection == ASMSECT_NONE)
     {
         cxuint thisSection = handler.sections.size();
