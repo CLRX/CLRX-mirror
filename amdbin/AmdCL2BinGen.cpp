@@ -1954,7 +1954,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinSectionTable[AMDCL2SECTID_NOTE-ELFSECTID_START] = extraSectionIndex++;
         }
         if (hasRWData)
-        {   // atomic data section
+        {   // rw data section
             innerBinGen->addRegion(ElfRegion64(input->rwDataSize, input->rwData,
                       8, ".hsadata_global_agent", SHT_PROGBITS, 0x900003, 0, 0,
                       Elf64Types::nobase));

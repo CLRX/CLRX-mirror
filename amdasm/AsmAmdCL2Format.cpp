@@ -159,7 +159,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
             throw AsmFormatException("Global Data allowed only for new binary format");
         rodataSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::DATA,
-                ELFSECTID_UNDEF, ".rodata" });
+                ELFSECTID_RODATA, ".rodata" });
     }
     else if (::strcmp(sectionName, ".data")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
@@ -168,7 +168,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
             throw AsmFormatException("Global RWData allowed only for new binary format");
         dataSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_RWDATA,
-                ELFSECTID_UNDEF, ".data" });
+                ELFSECTID_DATA, ".data" });
     }
     else if (::strcmp(sectionName, ".bss")==0 && (kernelId == ASMKERN_GLOBAL ||
             kernelId == ASMKERN_INNER))
@@ -177,7 +177,7 @@ cxuint AsmAmdCL2Handler::addSection(const char* sectionName, cxuint kernelId)
             throw AsmFormatException("Global BSS allowed only for new binary format");
         bssSection = sections.size();
         sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
-                ELFSECTID_UNDEF, ".bss" });
+                ELFSECTID_BSS, ".bss" });
     }
     else if (kernelId == ASMKERN_GLOBAL)
     {
@@ -441,7 +441,7 @@ void AsmAmdCL2PseudoOps::doGlobalData(AsmAmdCL2Handler& handler, const char* pse
     {   /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::DATA,
-            ELFSECTID_UNDEF, ".rodata" });
+            ELFSECTID_RODATA, ".rodata" });
         handler.rodataSection = thisSection;
     }
     asmr.goToSection(pseudoOpPlace, handler.rodataSection);
@@ -466,7 +466,7 @@ void AsmAmdCL2PseudoOps::doRwData(AsmAmdCL2Handler& handler, const char* pseudoO
     {   /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_RWDATA,
-            ELFSECTID_UNDEF, ".data" });
+            ELFSECTID_DATA, ".data" });
         handler.dataSection = thisSection;
     }
     asmr.goToSection(pseudoOpPlace, handler.dataSection);
@@ -522,7 +522,7 @@ void AsmAmdCL2PseudoOps::doBssData(AsmAmdCL2Handler& handler, const char* pseudo
     {   /* add this section */
         cxuint thisSection = handler.sections.size();
         handler.sections.push_back({ ASMKERN_INNER,  AsmSectionType::AMDCL2_BSS,
-            ELFSECTID_UNDEF, ".bss" });
+            ELFSECTID_BSS, ".bss" });
         handler.bssSection = thisSection;
     }
     
@@ -1434,19 +1434,7 @@ bool AsmAmdCL2Handler::prepareBinary()
             cxuint binSectId = (symEntry.second.sectionId != ASMSECT_ABS) ?
                     sections[symEntry.second.sectionId].elfBinSectId : ELFSECTID_ABS;
             if (binSectId==ELFSECTID_UNDEF)
-            {
-                if (symEntry.second.sectionId == ASMSECT_ABS)
-                    continue;
-                AsmSectionType stype = sections[symEntry.second.sectionId].type;
-                if (stype==AsmSectionType::DATA)
-                    binSectId = ELFSECTID_RODATA;
-                else if (stype==AsmSectionType::AMDCL2_RWDATA)
-                    binSectId = ELFSECTID_DATA;
-                else if (stype==AsmSectionType::AMDCL2_BSS)
-                    binSectId = ELFSECTID_BSS;
-                else
-                    continue; // no section
-            }
+                continue; // no section
             
             BinSymbol binSym = { symEntry.first, symEntry.second.value,
                         symEntry.second.size, binSectId, false, symEntry.second.info,
