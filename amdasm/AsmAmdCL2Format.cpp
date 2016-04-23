@@ -68,7 +68,8 @@ AsmAmdCL2Handler::AsmAmdCL2Handler(Assembler& assembler) : AsmFormatHandler(asse
 {
     assembler.currentKernel = ASMKERN_GLOBAL;
     assembler.currentSection = 0;
-    sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_UNDEF, nullptr });
+    sections.push_back({ ASMKERN_INNER, AsmSectionType::DATA, ELFSECTID_RODATA,
+            ".rodata" });
     savedSection = innerSavedSection = 0;
 }
 
