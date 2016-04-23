@@ -1863,6 +1863,7 @@ bool AsmAmdHandler::prepareBinary()
         }
     }
     
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     // set up number of the allocated SGPRs and VGPRs for kernel
     for (size_t i = 0; i < kernelsNum; i++)
     {
@@ -1877,15 +1878,14 @@ bool AsmAmdHandler::prepareBinary()
         
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :
                 ((config.pgmRSRC2>>7)&7);
-        // extra sgprs for dimensions
-        cxuint vdimRegs = ((dimMask&4) ? 3 : ((dimMask&2) ? 2: (dimMask&1) ? 1 : 0));
-        cxuint sdimRegs = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
-        userSGPRsNum += sdimRegs + 1;
+        cxuint minRegsNum[2];
+        getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
+                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
-            config.usedSGPRsNum = std::max(userSGPRsNum, kernelStates[i]->allocRegs[0]);
+            config.usedSGPRsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
-            config.usedVGPRsNum = std::max(vdimRegs, kernelStates[i]->allocRegs[1]);
+            config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
     }
     
     /* put extra symbols */

@@ -42,61 +42,70 @@ struct AsmRegPoolTestCase
 
 static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
 {   /* gcn asm test cases */
-    { ".amd;.kernel xx;.config;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_and_b64 s[6:7],s[0:1],s[2:3]", { { "xx", 8, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_cmpk_lt_i32 s14,43", { { "xx", 15, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_brev_b32 s17,s2", { { "xx", 18, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_brev_b64 s[18:19],s[2:3]", { { "xx", 20, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_cmp_lg_i32 s11,s0", { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_load_dword s11,s[0:1],s5", { { "xx", 12, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_load_dwordx4 s[20:23],s[0:1],s5",
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_and_b64 s[6:7],s[0:1],s[2:3]",
+        { { "xx", 8, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_cmpk_lt_i32 s14,43", { { "xx", 15, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_brev_b32 s17,s2", { { "xx", 18, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_brev_b64 s[18:19],s[2:3]",
+        { { "xx", 20, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_cmp_lg_i32 s11,s0", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_load_dword s11,s[0:1],s5",
+        { { "xx", 12, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_load_dwordx4 s[20:23],s[0:1],s5",
         { { "xx", 24, 0 } } },
-    { ".amd;.kernel xx;.config;.text;s_load_dwordx16 s[20:35],s[0:1],s5",
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_load_dwordx16 s[20:35],s[0:1],s5",
         { { "xx", 36, 0 } } },
-    { ".amd;.kernel xx;.config;.text;v_mul_f32 v36,v1,v2", { { "xx", 1, 37 } } },
-    { ".amd;.kernel xx;.config;.text;v_fract_f32 v22,v1", { { "xx", 1, 23 } } },
-    { ".amd;.kernel xx;.config;.text;v_cmp_gt_f32 vcc,v71,v7", { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;v_cmp_gt_f32 s[18:19],v71,v7", { { "xx", 20, 0 } } },
-    { ".amd;.kernel xx;.config;.text;v_min3_f32 v22,v1,v5,v7", { { "xx", 1, 23 } } },
-    { ".amd;.kernel xx;.config;.text;v_min3_f32 v22,v1,v5,v7", { { "xx", 1, 23 } } },
-    { ".amd;.kernel xx;.config;.text;v_readlane_b32 s43,v4,s5", { { "xx", 44, 0 } } },
-    { ".amd;.kernel xx;.config;.text;v_interp_p1_f32 v93, v211, attr26.x",
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_mul_f32 v36,v1,v2", { { "xx", 1, 37 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_fract_f32 v22,v1", { { "xx", 1, 23 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_cmp_gt_f32 vcc,v71,v7",
+        { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_cmp_gt_f32 s[18:19],v71,v7",
+        { { "xx", 20, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_min3_f32 v22,v1,v5,v7",
+        { { "xx", 1, 23 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_min3_f32 v22,v1,v5,v7",
+        { { "xx", 1, 23 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_readlane_b32 s43,v4,s5",
+        { { "xx", 44, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;v_interp_p1_f32 v93, v211, attr26.x",
         { { "xx", 1, 94 } } },
-    { ".amd;.kernel xx;.config;.text;ds_write_b32 v71, v169 offset:40",
+    { ".amd;.kernel xx;.config;.tgsize;.text;ds_write_b32 v71, v169 offset:40",
         { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;ds_write_b32 v71, v169 offset:40",
+    { ".amd;.kernel xx;.config;.tgsize;.text;ds_write_b32 v71, v169 offset:40",
         { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;ds_read_b32 v155, v71", { { "xx", 1, 156 } } },
-    { ".amd;.kernel xx;.config;.text;ds_max_rtn_i64  v[139:140], "
+    { ".amd;.kernel xx;.config;.tgsize;.text;ds_read_b32 v155, v71",
+        { { "xx", 1, 156 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;ds_max_rtn_i64  v[139:140], "
         "v71, v[169:170] offset:84", { { "xx", 1, 141 } } },
-    { ".amd;.kernel xx;.config;.text;buffer_load_format_xyzw v[61:64], v18, s[80:83], "
-        "s35 idxen offset:603", { { "xx", 1, 65 } } },
-    { ".amd;.kernel xx;.config;.text;buffer_store_format_xyzw v[61:64], v18, s[80:83], "
-        "s35 idxen offset:603", { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;buffer_atomic_sub_x2 v[61:62], v18, s[80:83], "
-        "s35 idxen offset:603", { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;buffer_atomic_sub_x2 v[61:62], v18, s[80:83], "
-        "s35 idxen offset:603 glc", { { "xx", 1, 63 } } },
-    { ".amd;.kernel xx;.config;.text;image_load_mip  v[157:159], v[121:124], s[84:87] "
-        "dmask:11 unorm glc r128 da", { { "xx", 1, 160 } } },
-    { ".amd;.kernel xx;.config;.text;image_store  v[157:159], v[121:124], s[84:87] "
-        "dmask:11 unorm glc r128 da", { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;image_atomic_smax  v[157:159], v[121:124], "
+    { ".amd;.kernel xx;.config;.tgsize;.text;buffer_load_format_xyzw v[61:64], "
+        "v18, s[80:83], s35 idxen offset:603", { { "xx", 1, 65 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;buffer_store_format_xyzw v[61:64], "
+        "v18, s[80:83], s35 idxen offset:603", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;buffer_atomic_sub_x2 v[61:62], "
+        "v18, s[80:83], s35 idxen offset:603", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;buffer_atomic_sub_x2 v[61:62], "
+        "v18, s[80:83], s35 idxen offset:603 glc", { { "xx", 1, 63 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;image_load_mip  v[157:159], v[121:124], "
+        "s[84:87] dmask:11 unorm glc r128 da", { { "xx", 1, 160 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;image_store  v[157:159], v[121:124], "
+        "s[84:87] dmask:11 unorm glc r128 da", { { "xx", 1, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;image_atomic_smax  v[157:159], v[121:124], "
         "s[84:87] dmask:11 unorm r128 da", { { "xx", 1, 0 } } },
-    { ".amd;.kernel xx;.config;.text;image_atomic_smax  v[157:159], v[121:124], "
+    { ".amd;.kernel xx;.config;.tgsize;.text;image_atomic_smax  v[157:159], v[121:124], "
         "s[84:87] dmask:11 unorm r128 da glc", { { "xx", 1, 160 } } },
-    { ".amd;.kernel xx;.config;.text;exp  param5, v116, v93, v27, v124 done",
+    { ".amd;.kernel xx;.config;.tgsize;.text;exp  param5, v116, v93, v27, v124 done",
         { { "xx", 1, 0 } } },
     /* gcn1.1 asm test cases */
-    { ".amd;.arch gcn1.1;.kernel xx;.config;.text;flat_load_dwordx2  v[47:48], v[187:188]",
-        { { "xx", 1, 49 } } },
-    { ".amd;.arch gcn1.1;.kernel xx;.config;.text;flat_store_dwordx2 v[47:48], v[187:188]",
-        { { "xx", 1, 0 } } },
-    { ".amd;.arch gcn1.1;.kernel xx;.config;.text;flat_atomic_inc v47, v[187:188], v65",
-        { { "xx", 1, 48 } } }, // ???? only if glc
+    { ".amd;.arch gcn1.1;.kernel xx;.config;.tgsize;.text;flat_load_dwordx2  v[47:48], "
+        "v[187:188]", { { "xx", 1, 49 } } },
+    { ".amd;.arch gcn1.1;.kernel xx;.config;.tgsize;.text;flat_store_dwordx2 v[47:48], "
+        "v[187:188]", { { "xx", 1, 0 } } },
+    { ".amd;.arch gcn1.1;.kernel xx;.config;.tgsize;.text;flat_atomic_inc v47, "
+        "v[187:188], v65", { { "xx", 1, 48 } } }, // ???? only if glc
     /* gcn1.2 asm test cases - vop3 vintrp */
-    { ".amd;.arch gcn1.2;.kernel xx;.config;.text;v_interp_p1_f32 v42, v16, attr39.z vop3",
-        { { "xx", 1, 43 } } },
+    { ".amd;.arch gcn1.2;.kernel xx;.config;.tgsize;.text;v_interp_p1_f32 v42, v16, "
+        "attr39.z vop3", { { "xx", 1, 43 } } },
     /* regflags test */
     { ".gallium;.kernel xx;.config;.text;xx:s_xor_b64 "
         "s[10:11], s[4:5], s[62:63]", { { "xx", 12, 0 } } },

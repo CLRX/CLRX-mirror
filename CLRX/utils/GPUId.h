@@ -103,9 +103,17 @@ enum: cxuint {
     REGTYPE_VGPR
 };
 
+enum: Flags {
+    GPUSETUP_TGSIZE_EN = 1
+};
+
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
 extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
                          cxuint flags = 0);
+
+// get minimal number of required registers
+extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
+               cxuint userDataNum, Flags flags, cxuint* gprsOut);
 
 };
 

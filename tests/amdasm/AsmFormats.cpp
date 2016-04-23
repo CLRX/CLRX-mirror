@@ -529,7 +529,7 @@ aa23:)ffDXD",
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Kernel: name=aa23, offset=0
     Config:
-      dims=6, SGPRS=7, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
+      dims=6, SGPRS=6, VGPRS=3, pgmRSRC2=0x0, ieeeMode=0x1
       floatMode=0xc0, priority=3, localSize=0, scratchBuffer=0
     Arg: scalar, true, griddim, size=8, tgtSize=8, tgtAlign=8
   Comment:
@@ -850,7 +850,7 @@ test.s:16:23: Error: Used VGPRs number out of range (0-256)
     Code:
     7468697320697320636f6465
     Config:
-      dims=default, cws=0 0 0, SGPRS=1, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
+      dims=default, cws=0 0 0, SGPRS=0, VGPRS=0, pgmRSRC2=0x0, ieeeMode=0x0
       floatMode=0xc0, hwLocalSize=0, hwRegion=default, scratchBuffer=0
       uavPrivate=default, uavId=default, constBufferId=default, printfId=default
       privateId=default, earlyExit=0,condOut=0, 
@@ -1396,7 +1396,7 @@ R"ffDXD(            .amdcl2
       Arg: "q", "cmdqueue_t", cmdqueue, void, none, 0, 0, 0, default, 3
       Arg: "piper", "pipe", pipe, void, none, 0, 0, 0, default, 3
       Arg: "ce", "clk_event_t", clkevent, void, none, 0, 0, 0, default, 3
-      dims=1, cws=0 0 0, SGPRS=12, VGPRS=1
+      dims=1, cws=0 0 0, SGPRS=11, VGPRS=1
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
       priority=2, exceptions=18, localSize=1000, scratchBuffer=2342
       debug priv dx10clamp useSetup useEnqueue 

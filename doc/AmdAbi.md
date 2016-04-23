@@ -37,7 +37,7 @@ Each entry have 4 dwords.
 
 All global pointers resource descriptors stored in the UAV table begin from
 UAVID+1 id. By default UAVID=11 (or for driver older than 1384.xx UAVID=9).
-By default10th entry is reserved for global data constant buffer.
+By default 10th entry is reserved for global data constant buffer.
 9th entry is reserved for printf buffer.
 First eight entries is write only image descriptors if defined.
 

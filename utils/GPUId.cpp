@@ -175,3 +175,13 @@ cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
     else    /* really 102 sgprsNum only for GCN1.2 ??? (check) */
         return (regType == 0) ? ((flags & REGCOUNT_INCLUDE_VCC) ? 102 : 100) : 256;
 }
+
+void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
+              cxuint userDataNum, Flags flags, cxuint* gprsOut)
+{
+    /// SGPRs
+    gprsOut[0] = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
+    /// VGPRS
+    gprsOut[1] = ((dimMask&4) ? 3 : ((dimMask&2) ? 2: (dimMask&1) ? 1 : 0));
+    gprsOut[0] += userDataNum + ((flags & GPUSETUP_TGSIZE_EN)!=0);
+}
