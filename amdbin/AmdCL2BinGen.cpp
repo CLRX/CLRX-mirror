@@ -1030,7 +1030,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     cxuint kernelArgSize = 0;
     for (const AmdKernelArgInput arg: config.args)
     {
-        if (arg.argType == KernelArgType::POINTER || arg.argType == KernelArgType::PIPE ||
+        if (arg.argType == KernelArgType::POINTER ||
+            arg.argType == KernelArgType::PIPE ||
             arg.argType == KernelArgType::CLKEVENT ||
             arg.argType == KernelArgType::STRUCTURE ||
             arg.argType == KernelArgType::CMDQUEUE ||

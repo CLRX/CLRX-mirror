@@ -1937,4 +1937,3 @@ void Assembler::writeBinary(Array<cxbyte>& array) const
     else // failed
         throw Exception("Assembler failed!");
 }
-
