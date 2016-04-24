@@ -34,6 +34,7 @@
 #include <CLRX/utils/Containers.h>
 #include <CLRX/amdasm/Assembler.h>
 #include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/AmdCL2Binaries.h>
 #include <CLRX/utils/InputOutput.h>
 #include <CLRX/utils/GPUId.h>
 #include "CLWrapper.h"
@@ -1228,8 +1229,16 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             if (binaries[i] == nullptr)
                 continue; // skip if not built for this device
             
-            std::unique_ptr<AmdMainBinaryBase> amdBin(
-                createAmdBinaryFromCode(binarySizes[i], binaries[i].get(),
+            std::unique_ptr<AmdMainBinaryBase> amdBin;
+            bool binCL20 = false;
+            if (isAmdCL2Binary(binarySizes[i], binaries[i].get()))
+            {
+                amdBin.reset(new AmdCL2MainGPUBinary(binarySizes[i], binaries[i].get(),
+                             AMDBIN_CREATE_KERNELINFO));
+                binCL20 = true;
+            }
+            else /* CL1.2 binary format */
+                amdBin.reset(createAmdBinaryFromCode(binarySizes[i], binaries[i].get(),
                              AMDBIN_CREATE_KERNELINFO));
             
             size_t kernelsNum = amdBin->getKernelInfosNum();
@@ -1241,7 +1250,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             {
                 const KernelInfo& kernelInfo = kernelInfos[i];
                 std::vector<bool> kernelFlags(kernelInfo.argInfos.size()<<1);
-                for (cxuint k = 0; k < kernelInfo.argInfos.size(); k++)
+                 /* for CL2 binformat: 6 args is kernel setup */
+                cxuint k = binCL20 ? 6 : 0;
+                for (; k < kernelInfo.argInfos.size(); k++)
                 {
                     const AmdKernelArg& karg = kernelInfo.argInfos[k];
                     // if mem object (image, buffer or counter32)
@@ -1496,6 +1507,9 @@ try
     bool nextIsIncludePath = false;
     bool nextIsDefSym = false;
     bool nextIsLang = false;
+    bool useCL20Std = false;
+    // drivers since 200406 version uses AmdCL2 binary format by default for >=GCN1.1
+    bool useCL2StdForGCN11 = detectAmdDriverVersion() >= 200406;
     
     try
     {
@@ -1538,6 +1552,17 @@ try
                 defSyms.push_back(getDefSym(word.substr(2, word.size()-2)));
             else if (word.compare(0, 8, "-defsym=")==0)
                 defSyms.push_back(getDefSym(word.substr(8, word.size()-8)));
+            else if (word.compare(0, 8, "-cl-std=")==0)
+            {
+                const CString stdName = word.substr(8, word.size()-8);
+                if (stdName=="CL2.0")
+                    useCL20Std = true;
+                else if (stdName!="CL1.1" && stdName!="CL1.1" && stdName!="CL1.2")
+                {
+                    program->asmState.store(CLRXAsmState::FAILED);
+                    return CL_INVALID_BUILD_OPTIONS;
+                }
+            }
             else if (word == "-x" )
                 nextIsLang = true;
             else if (word != "-xasm")
@@ -1615,6 +1640,7 @@ try
     bool asmFailure = false;
     bool asmNotAvailable = false;
     cxuint prevDeviceType = -1;
+    bool buildWithCL20 = false;
     for (cxuint i = 0; i < devicesNum; i++)
     {
         const auto& entry = outDeviceIndexMap[i];
@@ -1641,7 +1667,13 @@ try
         ArrayIStream astream(sourceCodeSize-1, sourceCode.get());
         std::string msgString;
         StringOStream msgStream(msgString);
-        Assembler assembler("", astream, asmFlags, BinaryFormat::AMD,
+        /// determine whether use useCL20StdByDev
+        bool useCL20StdByDev = (useCL20Std || (useCL2StdForGCN11 &&
+                getGPUArchitectureFromDeviceType(GPUDeviceType(devType))
+                        >=GPUArchitecture::GCN1_1));
+        buildWithCL20 |= useCL20StdByDev;
+        Assembler assembler("", astream, asmFlags,
+                    (useCL20StdByDev) ? BinaryFormat::AMDCL2 : BinaryFormat::AMD,
                     GPUDeviceType(devType), msgStream);
         
         cl_uint addressBits;
@@ -1732,7 +1764,7 @@ try
         }
         /// and build (errorLast holds last error to be returned)
         errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, compiledNum,
-                          amdDevices.get(), "", nullptr, nullptr);
+              amdDevices.get(), (buildWithCL20) ? "-cl-std=CL2.0" : "", nullptr, nullptr);
     }
     
     if (errorLast == CL_SUCCESS)
