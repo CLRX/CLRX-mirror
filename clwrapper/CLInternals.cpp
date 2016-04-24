@@ -1249,12 +1249,12 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             for (size_t i = 0; i < kernelsNum; i++)
             {
                 const KernelInfo& kernelInfo = kernelInfos[i];
-                std::vector<bool> kernelFlags(kernelInfo.argInfos.size()<<1);
+                cxuint kStart = binCL20 ? 6 : 0;
+                std::vector<bool> kernelFlags((kernelInfo.argInfos.size()-kStart)<<1);
                  /* for CL2 binformat: 6 args is kernel setup */
-                cxuint k = binCL20 ? 6 : 0;
-                for (; k < kernelInfo.argInfos.size(); k++)
+                for (cxuint k = 0; k < kernelInfo.argInfos.size()-kStart; k++)
                 {
-                    const AmdKernelArg& karg = kernelInfo.argInfos[k];
+                    const AmdKernelArg& karg = kernelInfo.argInfos[k+kStart];
                     // if mem object (image, buffer or counter32)
                     kernelFlags[k<<1] = ((karg.argType == KernelArgType::POINTER &&
                             (karg.ptrSpace == KernelPtrSpace::GLOBAL ||
