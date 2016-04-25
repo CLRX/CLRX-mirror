@@ -1249,7 +1249,9 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
             for (size_t i = 0; i < kernelsNum; i++)
             {
                 const KernelInfo& kernelInfo = kernelInfos[i];
-                cxuint kStart = binCL20 ? 6 : 0;
+                const cxuint kStart = binCL20 ? 6 : 0;
+                if (binCL20 && kernelInfo.argInfos.size() < 6)
+                    throw Exception("OpenCL2.0 kernel must have 6 setup arguments!");
                 std::vector<bool> kernelFlags((kernelInfo.argInfos.size()-kStart)<<1);
                  /* for CL2 binformat: 6 args is kernel setup */
                 for (cxuint k = 0; k < kernelInfo.argInfos.size()-kStart; k++)
@@ -1261,10 +1263,14 @@ cl_int clrxInitKernelArgFlagsMap(CLRXProgram* program)
                              karg.ptrSpace == KernelPtrSpace::CONSTANT)) ||
                              (karg.argType >= KernelArgType::MIN_IMAGE &&
                               karg.argType <= KernelArgType::MAX_IMAGE) ||
+                             karg.argType == KernelArgType::PIPE ||
                              karg.argType == KernelArgType::COUNTER32 ||
                              karg.argType == KernelArgType::COUNTER64);
                     // if sampler
                     kernelFlags[(k<<1)+1] = (karg.argType == KernelArgType::SAMPLER);
+                    if (karg.argType == KernelArgType::CMDQUEUE)
+                        // if command queue
+                        kernelFlags[k<<1] = kernelFlags[(k<<1)+1] = true;
                 }
                 
                 program->kernelArgFlagsMap[oldKernelMapSize+i] =

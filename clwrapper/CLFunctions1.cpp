@@ -2007,7 +2007,18 @@ clrxclSetKernelArg(cl_kernel    kernel,
     if (arg_index >= (k->argTypes.size()>>1))
         return CL_INVALID_ARG_INDEX;
     
-    if (k->argTypes[arg_index<<1]) // memobject
+    if (k->argTypes[arg_index<<1] && k->argTypes[(arg_index<<1) + 1]) // cmdqueue
+    {
+        if (arg_size != sizeof(cl_command_queue))
+            return CL_INVALID_ARG_SIZE;
+        
+        cl_command_queue amdCmdQueue = nullptr;
+        if (arg_value != nullptr && *(cl_command_queue*)arg_value != nullptr)
+            amdCmdQueue = (*(const CLRXCommandQueue**)(arg_value))->amdOclCommandQueue;
+        return k->amdOclKernel->dispatch->clSetKernelArg(k->amdOclKernel, arg_index,
+                     arg_size, &amdCmdQueue);
+    }
+    else if (k->argTypes[arg_index<<1]) // memobject
     {
         /*std::cout << "set buffer for kernel " << kernel << " for arg " <<
                     arg_index << std::endl;*/
