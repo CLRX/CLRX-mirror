@@ -632,10 +632,10 @@ typedef union _CLRXIcdDispatch
         CLRXpfn_emtyFunction clEnqueueReleaseDX9MediaSurfacesKHR;
 #endif
 #ifdef CL_VERSION_2_0
-        CLRXpfn_emtyFunction emptyFunc119;
-        CLRXpfn_emtyFunction emptyFunc120;
-        CLRXpfn_emtyFunction emptyFunc121;
-        CLRXpfn_emtyFunction emptyFunc122;
+        CLRXpfn_emtyFunction clCreateFromEGLImageKHR;
+        CLRXpfn_emtyFunction clEnqueueAcquireEGLObjectsKHR;
+        CLRXpfn_emtyFunction clEnqueueReleaseEGLObjectsKHR;
+        CLRXpfn_emtyFunction clCreateEventFromEGLSyncKHR;
         CLRXpfn_clCreateCommandQueueWithProperties clCreateCommandQueueWithProperties;
         CLRXpfn_clCreatePipe clCreatePipe;
         CLRXpfn_clGetPipeInfo clGetPipeInfo;
