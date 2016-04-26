@@ -72,8 +72,10 @@ v_xor_b32 regpool[zx+1], regpool[zx+5], regpool[zx+7]    # v_xor_b32 v27, v31, v
 
 Special operator 'lit' force literal encoding for operand immediates:
 
+```
 s_add_u32 s1,s2,lit(4)      # encode 4 as literal (two 32-bit words)
 s_add_u32 s1,s2,lit(4.0)    # encode 4.0 as literal (two 32-bit words)
+```
 
 ### Sections
 
