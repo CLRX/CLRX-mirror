@@ -47,6 +47,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "zx=%s[20:23]; ss=%execz; b=%s[57:67];s_add_u32  zx[1], ss, b[4]",
             0x80153dfcU, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0", 0x80158004U, 0, false, true, "" },
+    { "lit=3;s_add_u32  s21, s4, lit*5", 0x80158f04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 1", 0x80158104U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, 0x2a", 0x8015aa04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, -7", 0x8015c704U, 0, false, true, "" },
