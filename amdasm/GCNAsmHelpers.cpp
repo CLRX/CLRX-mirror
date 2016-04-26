@@ -937,6 +937,26 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         uint64_t value;
         operand.vopMods = 0; // zeroing operand modifiers
         bool isFP32;
+        
+        bool exprToResolve = false;
+        bool encodeAsLiteral = false;
+        if (linePtr+4<end && toLower(linePtr[0])=='l' && toLower(linePtr[1])=='i' &&
+            toLower(linePtr[2])=='t' && (isSpace(linePtr[3]) || linePtr[3]=='('))
+        {
+            linePtr+=3;
+            const char* oldLinePtr = linePtr;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end && *linePtr=='(')
+            {
+                encodeAsLiteral = true;
+                linePtr++;
+                skipSpacesToEnd(linePtr, end);
+                negPlace = linePtr;
+            }
+            else // back to expression start
+                linePtr = oldLinePtr;
+        }
+        
         if (!forceExpression && isOnlyFloat(negPlace, end, 
                     (instrOpMask & INSTROP_TYPE_MASK)!=INSTROP_F16, isFP32))
         {   // if only floating point value
@@ -951,7 +971,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     if (linePtr!=end && toLower(*linePtr)=='h')
                         linePtr++;
                     
-                    if (value == 0)
+                    if (!encodeAsLiteral && value == 0)
                     {
                         operand.range = { 128, 0 };
                         return true;
@@ -968,42 +988,43 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                     value = v.i;
                     /// simplify to float constant immediate (-0.5, 0.5, 1.0, 2.0,...)
                     /// constant immediates converted only to single floating points
-                    switch (value)
-                    {
-                        case 0x0:
-                            operand.range = { 128, 0 };
-                            return true;
-                        case 0x3f000000: // 0.5
-                            operand.range = { 240, 0 };
-                            return true;
-                        case 0xbf000000: // -0.5
-                            operand.range = { 241, 0 };
-                            return true;
-                        case 0x3f800000: // 1.0
-                            operand.range = { 242, 0 };
-                            return true;
-                        case 0xbf800000: // -1.0
-                            operand.range = { 243, 0 };
-                            return true;
-                        case 0x40000000: // 2.0
-                            operand.range = { 244, 0 };
-                            return true;
-                        case 0xc0000000: // -2.0
-                            operand.range = { 245, 0 };
-                            return true;
-                        case 0x40800000: // 4.0
-                            operand.range = { 246, 0 };
-                            return true;
-                        case 0xc0800000: // -4.0
-                            operand.range = { 247, 0 };
-                            return true;
-                        case 0x3e22f983: // 1/(2*PI)
-                            if (arch&ARCH_RX3X0)
-                            {
-                                operand.range = { 248, 0 };
+                    if (!encodeAsLiteral)
+                        switch (value)
+                        {
+                            case 0x0:
+                                operand.range = { 128, 0 };
                                 return true;
-                            }
-                    }
+                            case 0x3f000000: // 0.5
+                                operand.range = { 240, 0 };
+                                return true;
+                            case 0xbf000000: // -0.5
+                                operand.range = { 241, 0 };
+                                return true;
+                            case 0x3f800000: // 1.0
+                                operand.range = { 242, 0 };
+                                return true;
+                            case 0xbf800000: // -1.0
+                                operand.range = { 243, 0 };
+                                return true;
+                            case 0x40000000: // 2.0
+                                operand.range = { 244, 0 };
+                                return true;
+                            case 0xc0000000: // -2.0
+                                operand.range = { 245, 0 };
+                                return true;
+                            case 0x40800000: // 4.0
+                                operand.range = { 246, 0 };
+                                return true;
+                            case 0xc0800000: // -4.0
+                                operand.range = { 247, 0 };
+                                return true;
+                            case 0x3e22f983: // 1/(2*PI)
+                                if (arch&ARCH_RX3X0)
+                                {
+                                    operand.range = { 248, 0 };
+                                    return true;
+                                }
+                        }
                 }
             }
             catch(const ParseException& ex)
@@ -1049,20 +1070,37 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 if (outTargetExpr!=nullptr)
                     *outTargetExpr = std::move(expr);
                 operand.range = { 255, 0 };
-                return true;
+                exprToResolve = true;
             }
             
-            if (value <= 64)
+            if (!encodeAsLiteral && !exprToResolve)
             {
-                operand.range = { 128+value, 0 };
-                return true;
-            }
-            else if (int64_t(value) >= -16 && int64_t(value) < 0)
-            {
-                operand.range = { 192-value, 0 };
-                return true;
+                if (value <= 64)
+                {
+                    operand.range = { 128+value, 0 };
+                    return true;
+                }
+                else if (int64_t(value) >= -16 && int64_t(value) < 0)
+                {
+                    operand.range = { 192-value, 0 };
+                    return true;
+                }
             }
         }
+        if (encodeAsLiteral)
+        {   /* finish lit function */
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr==end || *linePtr!=')')
+            {
+                asmr.printError(linePtr, "Expected ')' after expression at 'lit'");
+                return false;
+            }
+            else // skip end of lit
+                linePtr++;
+        }
+        if (exprToResolve) // finish if expression to resolve
+            return true;
+        
         
         if ((instrOpMask & INSTROP_ONLYINLINECONSTS)!=0)
         {   // error
