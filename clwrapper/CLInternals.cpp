@@ -1646,7 +1646,6 @@ try
     bool asmFailure = false;
     bool asmNotAvailable = false;
     cxuint prevDeviceType = -1;
-    bool buildWithCL20 = false;
     for (cxuint i = 0; i < devicesNum; i++)
     {
         const auto& entry = outDeviceIndexMap[i];
@@ -1677,7 +1676,6 @@ try
         bool useCL20StdByDev = (useCL20Std || (useCL2StdForGCN11 &&
                 getGPUArchitectureFromDeviceType(GPUDeviceType(devType))
                         >=GPUArchitecture::GCN1_1));
-        buildWithCL20 |= useCL20StdByDev;
         Assembler assembler("", astream, asmFlags,
                     (useCL20StdByDev) ? BinaryFormat::AMDCL2 : BinaryFormat::AMD,
                     GPUDeviceType(devType), msgStream);
@@ -1752,7 +1750,7 @@ try
     for (cxuint i = 0; i < devicesNum; i++)
         if (!compiledProgBins[i])   /// creating failed devices table
             failedDevices[j++] = sortedDevs[i];
-        
+    
     cl_program newAmdAsmP = nullptr;
     cl_int errorLast = CL_SUCCESS;
     if (compiledNum != 0)
@@ -1770,7 +1768,7 @@ try
         }
         /// and build (errorLast holds last error to be returned)
         errorLast = amdp->dispatch->clBuildProgram(newAmdAsmP, compiledNum,
-              amdDevices.get(), (buildWithCL20) ? "-cl-std=CL2.0" : "", nullptr, nullptr);
+              amdDevices.get(), (useCL20Std) ? "-cl-std=CL2.0" : "", nullptr, nullptr);
     }
     
     if (errorLast == CL_SUCCESS)
