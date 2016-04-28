@@ -308,8 +308,8 @@ static void testAsmRegPoolTestCase(cxuint testId, const AsmRegPoolTestCase& test
     snprintf(testName, 30, "Test #%u", testId);
     
     std::istringstream input(testCase.input);
-    Assembler assembler("test.s", input, ASM_ALL|ASM_TESTRUN, BinaryFormat::AMD,
-            GPUDeviceType::CAPE_VERDE);
+    Assembler assembler("test.s", input, (ASM_ALL|ASM_TESTRUN)&~ASM_ALTMACRO,
+            BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE);
     assertTrue(testName, "good", assembler.assemble());
     // retrieve data
     if (assembler.getBinaryFormat()==BinaryFormat::AMD)

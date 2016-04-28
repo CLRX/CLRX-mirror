@@ -49,7 +49,7 @@ enum: Flags
     ASM_FORCE_ADD_SYMBOLS = 2,
     ASM_ALTMACRO = 4,
     ASM_TESTRUN = (1U<<31), ///< only for running tests
-    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_ALTMACRO)  ///< all flags
+    ASM_ALL = FLAGS_ALL&~ASM_TESTRUN  ///< all flags
 };
 
 enum: cxbyte {

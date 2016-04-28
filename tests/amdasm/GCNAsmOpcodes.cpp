@@ -33,8 +33,8 @@ static void testEncGCNOpcodes(cxuint i, const GCNAsmOpcodeCase& testCase,
     std::istringstream input(testCase.input);
     std::ostringstream errorStream;
     
-    Assembler assembler("test.s", input, ASM_ALL, BinaryFormat::GALLIUM, deviceType,
-                    errorStream);
+    Assembler assembler("test.s", input, ASM_ALL&~ASM_ALTMACRO,
+                    BinaryFormat::GALLIUM, deviceType, errorStream);
     bool good = assembler.assemble();
     std::ostringstream oss;
     oss << getGPUDeviceTypeName(deviceType) << " encGCNCase#" << i;
