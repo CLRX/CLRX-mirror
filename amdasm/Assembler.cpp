@@ -796,7 +796,32 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
         }
     }
     
-    if (string != end && *string=='"')
+    if (alternateMacro && string != end && *string=='<')
+    {   /* alternate string quoting */
+        string++;
+        bool escape = false;
+        while (string != end && (*string != '>' || escape))
+        {
+            if (!escape && *string=='!')
+            {
+                escape = true;
+                string++;
+            }
+            else
+            {
+                escape = false;
+                outStr.push_back(*string++);
+            }
+        }
+        if (string == end)
+        {
+            printError(string, "Unterminated quoted string");
+            return false;
+        }
+        string++;
+        return true;
+    }
+    else if (string != end && *string=='"')
     {
         if (alternateMacro)
             outStr.push_back('"');
