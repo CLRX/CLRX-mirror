@@ -593,11 +593,12 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     {
         if (assembler.alternateMacro && localStmtStart!=nullptr &&
                     content+pos == localStmtStart)
-        {   // before finishing we put coltranses
+        {   // put remaining text from source (to local stmt start position)
             buffer.resize(destPos + pos-toCopyPos);
             std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
             destPos += pos-toCopyPos;
             toCopyPos = pos;
+            // put col translations and spaces to buffer
             while (pos < contentSize && content[pos] != '\n')
             {
                 if (pos >= colTransThreshold)

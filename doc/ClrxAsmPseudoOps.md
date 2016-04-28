@@ -36,6 +36,46 @@ of the bytes greater than that value, then alignment will not be done.
 If aligment will be done in `.text` section and second expresion will not be given, then
 assembler fills no-operation instructions in that hole.
 
+### .altmacro
+
+Enable alternate macro syntax. This mode enables following features:
+
+* new macro substitution without backslash:
+
+```
+.macro test1 a b
+    .int a, b
+.endm
+test1 12,34     # put 12 and 34 integer value
+```
+
+* evaluating expression as string in macro arguments:
+
+```
+.macro stringize a,b,c
+    .string "a, b, c"
+.endm
+stringize %12|33, %43*5, %12-65 # generate string "45, 215, -53"
+```
+
+* new string quoting in macro arguments (by triagular brackets '<' and '>'). Also, enables
+new string escaping by '!'.
+
+```
+test1 <this is test !<!>>  # put "this is test <>" string to first macro argument
+```
+
+* local symbol names. 'local name' defines new unique symbol name for name. If any name
+will be occurred then that unique name will substituted.
+
+```
+local myName    # myName substitutes new unique name
+myName:     # define new label with unique name
+```
+
+An alternate macro syntax does not disable any standard macro syntax features likes
+macro substitution via backslashes, '\@'.
+
 ### .amd
 
 This pseudo-operation should to be at begin of source.
@@ -547,6 +587,10 @@ genF1 10,12
 ### .main
 
 Go to main binary over binary of the kernel.
+
+### .noaltmacro
+
+Disables alternate macro syntax.
 
 ### .octa
 
