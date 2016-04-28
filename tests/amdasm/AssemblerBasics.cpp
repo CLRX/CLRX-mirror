@@ -3403,6 +3403,86 @@ test.s:8:22: Error: Symbol must not be register symbol
 test.s:9:15: Error: Symbol must not be register symbol
 test.s:9:21: Error: Symbol must not be register symbol
 )ffDXD", ""
+    },
+    /* altmacro */
+    {   R"ffDXD(.altmacro
+        .macro test a,b,c
+        .byte a,b,c,a+b
+        .endm
+        test 2,4,7
+        test a,b,c
+        a=10
+        b=54
+        c=26
+        )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 2, 4, 7, 6, 10, 54, 26, 64} } },
+        {
+            { ".", 8U, 0, 0U, true, false, false, 0, 0 },
+            { "a", 10U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "b", 54U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "c", 26U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    {   R"ffDXD(.altmacro
+        .macro test a,b,c
+        local al,bl,cl,dl
+al:     .byte a
+bl:     .byte b
+cl:     .byte c
+dl:     .byte a+b
+        .endm
+        test 2,4,7
+        test a,b,c
+        a=10
+        b=54
+        c=26
+        )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 2, 4, 7, 6, 10, 54, 26, 64} } },
+        {
+            { ".", 8U, 0, 0U, true, false, false, 0, 0 },
+            { ".LL0", 0U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL1", 1U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL2", 2U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL3", 3U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL4", 4U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL5", 5U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL6", 6U, 0, 0U, true, true, false, 0, 0 },
+            { ".LL7", 7U, 0, 0U, true, true, false, 0, 0 },
+            { "a", 10U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "b", 54U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "c", 26U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    {
+        R"ffDXD(.altmacro
+.macro test1 v1 v2
+xx: yyx:    local t1 , t6
+    .string "v1 v2 vxx t1  \t6 t9 "
+.endm
+someval = 221
+        test1 %-(12+someval*2),  <aaa!!>
+     )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 
+                0x2d, 0x34, 0x35, 0x34, 0x20, 0x61, 0x61, 0x61,
+                0x21, 0x20, 0x76, 0x78, 0x78, 0x20, 0x2e, 0x4c,
+                0x4c, 0x30, 0x20, 0x20, 0x2e, 0x4c, 0x4c, 0x31,
+                0x20, 0x74, 0x39, 0x20, 0x00
+            } } },
+        {
+            { ".", 29U, 0, 0U, true, false, false, 0, 0 },
+            { "someval", 221U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "xx", 0U, 0, 0U, true, true, false, 0, 0 },
+            { "yyx", 0U, 0, 0U, true, true, false, 0, 0 }
+        },
+        true, "", ""
     }
 };
 

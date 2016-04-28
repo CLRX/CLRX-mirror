@@ -640,12 +640,13 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
             }
-            pos++;
             if (assembler.alternateMacro && pos < contentSize && isAlpha(content[pos]))
             {   // try parse substitution (altmacro mode)
                 tryParseSubstition = true;
                 altMacroSyntax = true; // disables '@' and '()'
             }
+            else
+                pos++;
         }
         else
         {   // backslash
@@ -734,7 +735,10 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                             destPos++;
                         }
                         else // continue consuming to copy
+                        {
+                            pos++;
                             continue;
+                        }
                         // do not skip column translation, because no substitution!
                         skipColTransBetweenMacroArg = false;
                     }
