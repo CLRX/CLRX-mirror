@@ -776,8 +776,30 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     bool firstNonSpace = false;
     cxbyte prevTok = 0;
     cxuint backslash = 0;
+    
+    if (alternateMacro && string != end && *string=='%')
+    {   // alternate syntax
+        const char* exprPlace = string+1;
+        uint64_t value;
+        if (AsmParseUtils::getAbsoluteValueArg(*this, value, exprPlace, true))
+        {
+            char buf[32];
+            itocstrCStyle<int64_t>(value, buf, 32);
+            string = exprPlace;
+            outStr = buf;
+            return true;
+        }
+        else
+        {
+            string = exprPlace;
+            return false;
+        }
+    }
+    
     if (string != end && *string=='"')
     {
+        if (alternateMacro)
+            outStr.push_back('"');
         string++;
         while (string != end && (*string != '\"' || (backslash&1)!=0))
         {
@@ -793,6 +815,8 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
             return false;
         }
         string++;
+        if (alternateMacro)
+            outStr.push_back('"');
         return true;
     }
     
