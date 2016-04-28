@@ -49,6 +49,8 @@ static const CLIOption programOptions[] =
         "set driver version (for AmdCatalyst)", nullptr },
     { "forceAddSymbols", 'S', CLIArgType::NONE, false, false,
         "force add symbols to binaries", nullptr },
+    { "alternate", 'a', CLIArgType::NONE, false, false,
+        "enable alternate macro mode", nullptr }, 
     { "noWarnings", 'w', CLIArgType::NONE, false, false, "disable warnings", nullptr },
     CLRX_CLI_AUTOHELP
     { nullptr, 0 }
@@ -105,6 +107,8 @@ try
         flags |= ASM_FORCE_ADD_SYMBOLS;
     if (!cli.hasShortOption('w'))
         flags |= ASM_WARNINGS;
+    if (cli.hasShortOption('a'))
+        flags |= ASM_ALTMACRO;
     
     cxuint argsNum = cli.getArgsNum();
     Array<CString> filenames(argsNum);

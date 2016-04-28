@@ -47,8 +47,9 @@ enum: Flags
 {
     ASM_WARNINGS = 1,   ///< enable all warnings for assembler
     ASM_FORCE_ADD_SYMBOLS = 2,
+    ASM_ALTMACRO = 4,
     ASM_TESTRUN = (1U<<31), ///< only for running tests
-    ASM_ALL = FLAGS_ALL&~ASM_TESTRUN  ///< all flags
+    ASM_ALL = FLAGS_ALL&~(ASM_TESTRUN|ASM_ALTMACRO)  ///< all flags
 };
 
 enum: cxbyte {
@@ -605,6 +606,8 @@ private:
     std::vector<AsmKernel> kernels;
     Flags flags;
     uint64_t macroCount;
+    uint64_t localCount; // macro's local count
+    bool alternateMacro;
     
     cxuint inclusionLevel;
     cxuint macroSubstLevel;

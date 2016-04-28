@@ -82,6 +82,10 @@ to keep compatibility with original format.
 
 Do not print all warnings.
 
+=item B<-a>, B<--alternate>
+
+Enable alternate macro syntax.
+
 =item B<-?>, B<--help>
 
 Print help and list of the options.

@@ -390,7 +390,9 @@ Assembler::Assembler(const CString& filename, std::istream& input, Flags _flags,
           currentOutPos(symbolMap.begin()->second.value)
 {
     filenameIndex = 0;
-    macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
+    alternateMacro = (flags & ASM_ALTMACRO)!=0;
+    localCount = macroCount = inclusionLevel = 0;
+    macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
     resolvingRelocs = false;
@@ -422,7 +424,9 @@ Assembler::Assembler(const Array<CString>& _filenames, Flags _flags,
 {
     filenameIndex = 0;
     filenames = _filenames;
-    macroCount = inclusionLevel = macroSubstLevel = repetitionLevel = 0;
+    alternateMacro = (flags & ASM_ALTMACRO)!=0;
+    localCount = macroCount = inclusionLevel = 0;
+    macroSubstLevel = repetitionLevel = 0;
     lineAlreadyRead = false;
     good = true;
     resolvingRelocs = false;

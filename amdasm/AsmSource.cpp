@@ -537,10 +537,92 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                     nextLinePos) : SIZE_MAX;
     
+    const char* localStmtStart = nullptr;
+    std::vector<std::pair<CString, const char*> > localNames;
+    const char* stmtStartPtr = content + pos;
+    /* parse local statement */
+    if (assembler.alternateMacro)
+    {   // try to parse local statement
+        const char* linePtr = stmtStartPtr;
+        const char* end = content+nextLinePos;
+        while (true)
+        {
+            skipSpacesToEnd(linePtr, end);
+            localStmtStart = linePtr;
+            // skip labels and macro substitutions
+            while (linePtr!=end && (isAlnum(*linePtr) || *linePtr=='$' ||
+                *linePtr=='_' || *linePtr=='\\')) linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr==end || *linePtr!=':')
+                break;
+            linePtr++; // skip ':'
+        }
+        // check 'local'
+        linePtr = localStmtStart;
+        if (linePtr+6 < end && ::strncasecmp(linePtr, "local", 5)==0 && linePtr[5]==' ')
+        {   // if local
+            linePtr+=5;
+            while (true)
+            {
+                skipSpacesToEnd(linePtr, end);
+                if (linePtr == end)
+                    break; // end of list
+                const char* symNamePlace = linePtr;
+                const CString localName = extractSymName(linePtr, end, false);
+                if (!localName.empty())
+                {
+                    localNames.push_back({localName, symNamePlace});
+                    skipSpacesToEnd(linePtr, end);
+                    if (linePtr!=end && *linePtr==',')
+                        linePtr++; // skip ','
+                }
+                else // is not symbol
+                    break;
+            }
+            
+            skipSpacesToEnd(linePtr, end);
+            if (linePtr!=end)
+                localStmtStart = nullptr; // this is not local stmt
+        }
+        else
+            localStmtStart = nullptr; // this is not local stmt
+    }
     /* loop move position to backslash. if backslash encountered then copy content
      * to content and handles backsash with substitutions */
     while (pos < contentSize && content[pos] != '\n')
     {
+        if (assembler.alternateMacro && localStmtStart!=nullptr &&
+                    content+pos == localStmtStart)
+        {   // before finishing we put coltranses
+            buffer.resize(destPos + pos-toCopyPos);
+            std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
+            destPos += pos-toCopyPos;
+            toCopyPos = pos;
+            while (pos < contentSize && content[pos] != '\n')
+            {
+                if (pos >= colTransThreshold)
+                {
+                    curColTrans++;
+                    colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
+                                curColTrans->lineNo});
+                    if (curColTrans->position >= 0)
+                    {   /// real new line, reset real line position
+                        realLinePos = 0;
+                        destLineStart = destPos + pos-toCopyPos;
+                    }
+                    colTransThreshold = (curColTrans+1 != colTransEnd) ?
+                            (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
+                                    nextLinePos) : SIZE_MAX;
+                }
+                pos++;
+                buffer.push_back(' ');
+            }
+            toCopyPos = pos;
+            break; // end of line of statement if local statement occurrent
+        }
+        
+        bool tryParseSubstition = false;
+        bool altMacroSyntax = false;
         if (content[pos] != '\\')
         {
             if (pos >= colTransThreshold)
@@ -558,6 +640,11 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                                 nextLinePos) : SIZE_MAX;
             }
             pos++;
+            if (assembler.alternateMacro && pos < contentSize && isAlpha(content[pos]))
+            {   // try parse substitution (altmacro mode)
+                tryParseSubstition = true;
+                altMacroSyntax = true; // disables '@' and '()'
+            }
         }
         else
         {   // backslash
@@ -583,17 +670,37 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 destPos += pos-toCopyPos;
             }
             pos++;
+            tryParseSubstition = true;
+        }
+        if (tryParseSubstition)
+        {
             bool skipColTransBetweenMacroArg = true;
             if (pos < contentSize)
             {
-                if (content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
+                if (!altMacroSyntax &&
+                    content[pos] == '(' && pos+1 < contentSize && content[pos+1]==')')
                     pos += 2;   // skip this separator
                 else
                 { // extract argName
                     const char* thisPos = content + pos;
                     const CString symName = extractSymName(
                                 thisPos, content+contentSize, false);
-                    auto it = binaryMapFind(argMap.begin(), argMap.end(), symName);
+                    auto it = argMap.end();
+                    auto localIt = localMap.end();
+                    if (!symName.empty()) // find only if not empty symName
+                    {
+                        it = binaryMapFind(argMap.begin(), argMap.end(), symName);
+                        if (it == argMap.end())
+                            localIt = localMap.find(symName);
+                    }
+                    if (altMacroSyntax && (it!=argMap.end() || localIt!=localMap.end()))
+                    {
+                        buffer.resize(destPos + pos-toCopyPos);
+                        std::copy(content + toCopyPos, content + pos,
+                                  buffer.begin() + destPos);
+                        destPos += pos-toCopyPos;
+                    }
+                    
                     if (it != argMap.end())
                     {   // if found
                         buffer.insert(buffer.end(), it->second.begin(),
@@ -601,7 +708,16 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         destPos += it->second.size();
                         pos = thisPos-content;
                     }
-                    else if (content[pos] == '@')
+                    else if (localIt != localMap.end())
+                    {   // substitute local definition
+                        char buf[32];
+                        ::memcpy(buf, ".LL", 3);
+                        size_t bufSize = itocstrCStyle(localIt->second, buf+3, 29)+3;
+                        buffer.insert(buffer.end(), buf, buf+bufSize);
+                        destPos += bufSize;
+                        pos = thisPos-content;
+                    }
+                    else if (!altMacroSyntax && content[pos] == '@')
                     {
                         char numBuf[32];
                         const size_t numLen = itocstrCStyle(macroCount, numBuf, 32);
@@ -611,8 +727,13 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                     }
                     else
                     {
-                        buffer.push_back('\\');
-                        destPos++;
+                        if (!altMacroSyntax)
+                        {
+                            buffer.push_back('\\');
+                            destPos++;
+                        }
+                        else // continue consuming to copy
+                            continue;
                         // do not skip column translation, because no substitution!
                         skipColTransBetweenMacroArg = false;
                     }
@@ -669,7 +790,24 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         }
     }
     contentLineNo++;
+    if (localStmtStart!=nullptr)
+    {   // if really is local statement, we add local defs to map
+        for (const auto& elem: localNames)
+            if (!addLocal(elem.first, assembler.localCount))
+                // error report error if duplicate
+                assembler.printError(getSourcePos(elem.second-stmtStartPtr),
+                                     "Duplicated local definition or argument");
+            else
+                assembler.localCount++;
+    }
     return (!buffer.empty()) ? buffer.data() : "";
+}
+
+bool AsmMacroInputFilter::addLocal(const CString& name, uint64_t localNo)
+{
+    if (binaryMapFind(argMap.begin(), argMap.end(), name) != argMap.end())
+        return false; // if found in argument list
+    return localMap.insert(std::make_pair(name, localNo)).second;
 }
 
 /*

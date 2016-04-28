@@ -78,6 +78,10 @@ to keep compatibility with original format.
 
     Do not print all warnings.
 
+* **-a**, **--alternate**
+
+    Enable alternate macro syntax.
+    
 * **-?**, **--help**
 
     Print help and list of the options.

@@ -425,9 +425,11 @@ class AsmMacroInputFilter: public AsmInputFilter
 public:
     /// macro argument map type
     typedef Array<std::pair<CString, CString> > MacroArgMap;
+    typedef std::unordered_map<CString, uint64_t> MacroLocalMap;
 private:
     RefPtr<const AsmMacro> macro;  ///< input macro
     MacroArgMap argMap;  ///< input macro argument map
+    MacroLocalMap localMap; ///< local defines for macro
     
     uint64_t macroCount;
     LineNo contentLineNo;
@@ -443,6 +445,8 @@ public:
         MacroArgMap&& argMap, uint64_t macroCount);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
+    /// add local argument
+    bool addLocal(const CString& name, uint64_t localNo);
 };
 
 /// assembler repeat input filter
