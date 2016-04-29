@@ -3483,6 +3483,53 @@ someval = 221
             { "yyx", 0U, 0, 0U, true, true, false, 0, 0 }
         },
         true, "", ""
+    },
+    {   R"ffDXD(.altmacro
+        .macro test a$xx,_b.,$$c
+        .byte a$xx,_b.,$\
+$c,a$x\
+x+_b.
+        .endm
+        test 2,4,7
+        test a,b,c
+        a=10
+        b=54
+        c=26
+        )ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 2, 4, 7, 6, 10, 54, 26, 64} } },
+        {
+            { ".", 8U, 0, 0U, true, false, false, 0, 0 },
+            { "a", 10U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "b", 54U, ASMSECT_ABS, 0U, true, false, false, 0, 0 },
+            { "c", 26U, ASMSECT_ABS, 0U, true, false, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    {
+        R"ffDXD(.altmacro
+        .macro test v1
+a: b: _c:    local a a .\
+. ..\
+ d a
+        .endm
+        test 44)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA, { } } },
+        {
+            { ".", 0U, 0, 0U, true, false, false, 0, 0 },
+            { "_c", 0U, 0, 0U, true, true, false, 0, 0 },
+            { "a", 0U, 0, 0U, true, true, false, 0, 0 },
+            { "b", 0U, 0, 0U, true, true, false, 0, 0 }
+        },
+        false, R"ffDXD(In macro substituted from test.s:7:9:
+test.s:3:22: Error: Name a was already used by local or macro argument
+In macro substituted from test.s:7:9:
+test.s:4:3: Error: Name .. was already used by local or macro argument
+In macro substituted from test.s:7:9:
+test.s:5:4: Error: Name a was already used by local or macro argument
+)ffDXD", ""
     }
 };
 
