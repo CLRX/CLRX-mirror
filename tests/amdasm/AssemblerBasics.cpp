@@ -3524,11 +3524,11 @@ a: b: _c:    local a a .\
             { "b", 0U, 0, 0U, true, true, false, 0, 0 }
         },
         false, R"ffDXD(In macro substituted from test.s:7:9:
-test.s:3:22: Error: Name a was already used by local or macro argument
+test.s:3:22: Error: Name 'a' was already used by local or macro argument
 In macro substituted from test.s:7:9:
-test.s:4:3: Error: Name .. was already used by local or macro argument
+test.s:4:3: Error: Name '..' was already used by local or macro argument
 In macro substituted from test.s:7:9:
-test.s:5:4: Error: Name a was already used by local or macro argument
+test.s:5:4: Error: Name 'a' was already used by local or macro argument
 )ffDXD", ""
     }
 };

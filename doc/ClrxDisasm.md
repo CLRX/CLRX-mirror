@@ -2,7 +2,7 @@
 
 The CLRadeonExtender provides a disassembler that can disassemble code
 for the Radeon GPU's based on the GCN 1.0/1.1/1.2 architecture.
-Program is called `clrxdisasm`
+Program is called `clrxdisasm`.
 
 Disassembler can handle the AMD Catalyst(tm) OpenCL(tm) kernel binaries and the
 GalliumCompute kernel binaries. It displays instructions of the code and optionally
@@ -11,7 +11,7 @@ can be used as input to the CLRX assembler if option '--all' will be used.
 
 ### Invoking a disassembler
 
-the `clrxdisasm` can be invoked in following way:
+The `clrxdisasm` can be invoked in following way:
 
 clrxdisasm [-mdcfhar?] [-g GPUDEVICE] [-a ARCH] [--metadata] [--data] [--calNotes]
 [--floats] [--hexcode] [--all] [--raw] [--gpuType=GPUDEVICE] [--arch=ARCH]

@@ -809,8 +809,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             if (!addLocal(elem.first, assembler.localCount))
                 // error report error if duplicate
                 assembler.printError(getSourcePos(elem.second-stmtStartPtr),
-                     (std::string("Name ")+elem.first.c_str()+
-                     " was already used by local or macro argument").c_str());
+                     (std::string("Name '")+elem.first.c_str()+
+                     "' was already used by local or macro argument").c_str());
             else
                 assembler.localCount++;
     }
