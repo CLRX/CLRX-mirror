@@ -587,6 +587,9 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         else
             localStmtStart = nullptr; // this is not local stmt
     }
+    
+    /// counter to skip word
+    size_t wordSkip = 0;
     /* loop move position to backslash. if backslash encountered then copy content
      * to content and handles backsash with substitutions */
     while (pos < contentSize && content[pos] != '\n')
@@ -640,13 +643,17 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
             }
-            if (assembler.alternateMacro && pos < contentSize && isAlpha(content[pos]))
+            if (assembler.alternateMacro && wordSkip==0 && pos < contentSize &&
+                isAlpha(content[pos]))
             {   // try parse substitution (altmacro mode)
                 tryParseSubstition = true;
                 altMacroSyntax = true; // disables '@' and '()'
             }
             else
+            {
+                if (wordSkip!=0) wordSkip--;
                 pos++;
+            }
         }
         else
         {   // backslash
@@ -736,7 +743,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         }
                         else // continue consuming to copy
                         {
-                            pos++;
+                            wordSkip = symName.size();
                             continue;
                         }
                         // do not skip column translation, because no substitution!
