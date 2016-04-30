@@ -551,7 +551,26 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             localStmtStart = linePtr;
             // skip labels and macro substitutions
             while (linePtr!=end && (isAlnum(*linePtr) || *linePtr=='$' || *linePtr=='.' ||
-                *linePtr=='_' || *linePtr=='\\')) linePtr++;
+                *linePtr=='_' || *linePtr=='\\'))
+            {
+                if (*linePtr!='\\')
+                    linePtr++;
+                else
+                {   /* handle \@ and \() for correct parsing */
+                    linePtr++;
+                    if (linePtr!=end)
+                    {
+                        if (*linePtr=='@')
+                            linePtr++;
+                        if (*linePtr=='(')
+                        {
+                            linePtr++;
+                            if (linePtr!=end && *linePtr==')')
+                                linePtr++;
+                        }
+                    }
+                }
+            }
             skipSpacesToEnd(linePtr, end);
             if (linePtr==end || *linePtr!=':')
                 break;
