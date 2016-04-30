@@ -436,13 +436,14 @@ private:
     size_t sourceTransIndex;
     const LineTrans* curColTrans;
     size_t realLinePos; ///< real line size
+    bool alternateMacro;
 public:
     /// constructor with input macro, source position and arguments map
     AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
-        const MacroArgMap& argMap, uint64_t macroCount);
+        const MacroArgMap& argMap, uint64_t macroCount, bool alternateMacro);
     /// constructor with input macro, source position and rvalue of arguments map
     AsmMacroInputFilter(RefPtr<const AsmMacro> macro, const AsmSourcePos& pos,
-        MacroArgMap&& argMap, uint64_t macroCount);
+        MacroArgMap&& argMap, uint64_t macroCount, bool alternateMacro);
     
     const char* readLine(Assembler& assembler, size_t& lineSize);
     /// add local argument

@@ -3530,6 +3530,39 @@ test.s:4:3: Error: Name '..' was already used by local or macro argument
 In macro substituted from test.s:7:9:
 test.s:5:4: Error: Name 'a' was already used by local or macro argument
 )ffDXD", ""
+    },
+    {
+        R"ffDXD(.altmacro
+.macro testw vx
+local sx2
+        .string "<vx>sx2"
+.endm
+
+.macro testx vx
+        #.noaltmacro
+        testw aaarrggg
+x\():    local ad
+        .string "\vx (ad)"
+Local sx
+        .string "sx\()___"
+.endm
+
+        testx "aaaax!! bbb!!")ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            {
+                0x3c, 0x61, 0x61, 0x61, 0x72, 0x72, 0x67, 0x67,
+                0x67, 0x3e, 0x2e, 0x4c, 0x4c, 0x30, 0x00, 0x61,
+                0x61, 0x61, 0x61, 0x78, 0x21, 0x20, 0x62, 0x62,
+                0x62, 0x21, 0x20, 0x28, 0x2e, 0x4c, 0x4c, 0x31,
+                0x29, 0x00, 0x2e, 0x4c, 0x4c, 0x32, 0x5f, 0x5f,
+                0x5f, 0x00,
+            } } },
+        {
+            { ".", 42U, 0, 0U, true, false, false, 0, 0 },
+            { "x", 15U, 0, 0U, true, true, false, 0, 0 }
+        },
+        true, "", ""
     }
 };
 

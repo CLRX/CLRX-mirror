@@ -1472,7 +1472,8 @@ Assembler::ParseState Assembler::makeMacroSubstitution(const char* linePtr)
     mapSort(argMap.begin(), argMap.end());
     // create macro input filter and push to stack
     std::unique_ptr<AsmInputFilter> macroFilter(new AsmMacroInputFilter(macro,
-            getSourcePos(macroStartPlace), std::move(argMap), macroCount++));
+            getSourcePos(macroStartPlace), std::move(argMap), macroCount++,
+            alternateMacro));
     asmInputFilters.push(macroFilter.release());
     currentInputFilter = asmInputFilters.top();
     macroSubstLevel++;

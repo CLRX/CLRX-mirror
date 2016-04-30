@@ -473,10 +473,11 @@ const char* AsmStreamInputFilter::readLine(Assembler& assembler, size_t& lineSiz
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
-         const AsmSourcePos& pos, const MacroArgMap& _argMap, uint64_t _macroCount)
+         const AsmSourcePos& pos, const MacroArgMap& _argMap, uint64_t _macroCount,
+         bool _alternateMacro)
         : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
           argMap(_argMap), macroCount(_macroCount), contentLineNo(0), sourceTransIndex(0),
-          realLinePos(0)
+          realLinePos(0), alternateMacro(_alternateMacro)
 {
     if (macro->getSourceTransSize()!=0)
         source = macro->getSourceTrans(0).source;
@@ -490,10 +491,12 @@ AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
 }
 
 AsmMacroInputFilter::AsmMacroInputFilter(RefPtr<const AsmMacro> _macro,
-         const AsmSourcePos& pos, MacroArgMap&& _argMap, uint64_t _macroCount)
+         const AsmSourcePos& pos, MacroArgMap&& _argMap, uint64_t _macroCount,
+         bool _alternateMacro)
         : AsmInputFilter(AsmInputFilterType::MACROSUBST), macro(_macro),
           argMap(std::move(_argMap)), macroCount(_macroCount),
-          contentLineNo(0), sourceTransIndex(0), realLinePos(0)
+          contentLineNo(0), sourceTransIndex(0), realLinePos(0),
+          alternateMacro(_alternateMacro)
 {
     if (macro->getSourceTransSize()!=0)
         source = macro->getSourceTrans(0).source;
@@ -541,7 +544,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     std::vector<std::pair<CString, const char*> > localNames;
     const char* stmtStartPtr = content + pos;
     /* parse local statement */
-    if (assembler.alternateMacro)
+    if (alternateMacro)
     {   // try to parse local statement
         const char* linePtr = stmtStartPtr;
         const char* end = content+nextLinePos;
@@ -613,8 +616,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
      * to content and handles backsash with substitutions */
     while (pos < contentSize && content[pos] != '\n')
     {
-        if (assembler.alternateMacro && localStmtStart!=nullptr &&
-                    content+pos == localStmtStart)
+        if (alternateMacro && localStmtStart!=nullptr && content+pos == localStmtStart)
         {   // put remaining text from source (to local stmt start position)
             buffer.resize(destPos + pos-toCopyPos);
             std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
@@ -662,7 +664,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                         (curColTrans[1].position>0 ? curColTrans[1].position + linePos :
                                 nextLinePos) : SIZE_MAX;
             }
-            if (assembler.alternateMacro && wordSkip==0 && pos < contentSize &&
+            if (alternateMacro && wordSkip==0 && pos < contentSize &&
                 (isAlpha(content[pos]) || content[pos]=='.' || content[pos]=='$' ||
                  content[pos]=='_'))
             {   // try parse substitution (altmacro mode)
