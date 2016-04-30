@@ -58,11 +58,13 @@ test1 12,34     # put 12 and 34 integer value
 stringize %12|33, %43*5, %12-65 # generate string "45, 215, -53"
 ```
 
-* new string quoting in macro arguments (by triagular brackets '<' and '>'). Also, enables
-new string escaping by '!'.
+* new string quoting in macro arguments (by triagular brackets '<' and '>' or by single qote '
+or double quote "). Also, enables new string escaping by '!'.
 
 ```
 test1 <this is test !<!>>  # put "this is test <>" string to first macro argument
+test1 "this is test <>"  # put "this is test <>" string to first macro argument
+test1 'this is test !''  # put "this is test '" string to first macro argument
 ```
 
 * local symbol names. 'local name' defines new unique symbol name for name. If any name

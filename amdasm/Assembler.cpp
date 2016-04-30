@@ -796,11 +796,12 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
         }
     }
     
-    if (alternateMacro && string != end && *string=='<')
+    if (alternateMacro && string != end && (*string=='<' || *string=='\'' || *string=='"'))
     {   /* alternate string quoting */
+        const char termChar = (*string=='<') ? '>' : *string;
         string++;
         bool escape = false;
-        while (string != end && (*string != '>' || escape))
+        while (string != end && (*string != termChar || escape))
         {
             if (!escape && *string=='!')
             {
@@ -823,8 +824,6 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     }
     else if (string != end && *string=='"')
     {
-        if (alternateMacro)
-            outStr.push_back('"');
         string++;
         while (string != end && (*string != '\"' || (backslash&1)!=0))
         {
@@ -840,8 +839,6 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
             return false;
         }
         string++;
-        if (alternateMacro)
-            outStr.push_back('"');
         return true;
     }
     
