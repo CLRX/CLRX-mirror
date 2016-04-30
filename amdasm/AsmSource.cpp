@@ -649,7 +649,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
         }
         
         bool tryParseSubstition = false;
-        bool altMacroSyntax = false;
+        bool altMacroSyntax = false; // indicate if currently used altmacro syntax
         if (content[pos] != '\\')
         {
             if (pos >= colTransThreshold)
@@ -671,7 +671,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                  content[pos]=='_'))
             {   // try parse substitution (altmacro mode)
                 tryParseSubstition = true;
-                altMacroSyntax = true; // disables '@' and '()'
+                altMacroSyntax = true; // disables '@' and '()' use altmacro
             }
             else
             {   /* otherwise consume one character */

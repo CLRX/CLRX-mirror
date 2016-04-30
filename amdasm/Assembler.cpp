@@ -778,7 +778,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     cxuint backslash = 0;
     
     if (alternateMacro && string != end && *string=='%')
-    {   // alternate syntax
+    {   // alternate syntax, parse expression evaluation
         const char* exprPlace = string+1;
         uint64_t value;
         if (AsmParseUtils::getAbsoluteValueArg(*this, value, exprPlace, true))
@@ -790,7 +790,7 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
             return true;
         }
         else
-        {
+        {   /* if error */
             string = exprPlace;
             return false;
         }
@@ -804,18 +804,18 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
         while (string != end && (*string != termChar || escape))
         {
             if (!escape && *string=='!')
-            {
+            {   /* skip this escaping */
                 escape = true;
                 string++;
             }
             else
-            {
+            {   /* put character */
                 escape = false;
                 outStr.push_back(*string++);
             }
         }
         if (string == end)
-        {
+        {   /* if unterminated string */
             printError(string, "Unterminated quoted string");
             return false;
         }
