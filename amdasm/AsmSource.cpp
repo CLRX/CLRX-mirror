@@ -610,14 +610,16 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             localStmtStart = nullptr; // this is not local stmt
     }
     
-    /// counter to skip word
+    // indicate length of name to copy to buffer (skip)
     size_t wordSkip = 0;
     /* loop move position to backslash. if backslash encountered then copy content
      * to content and handles backsash with substitutions */
     while (pos < contentSize && content[pos] != '\n')
     {
         if (alternateMacro && localStmtStart!=nullptr && content+pos == localStmtStart)
-        {   // put remaining text from source (to local stmt start position)
+        {   /* if end of labels in 'local' statement',
+             * we just replaces character by spaces */
+            // put remaining text from source (to local stmt start position)
             buffer.resize(destPos + pos-toCopyPos);
             std::copy(content + toCopyPos, content + pos, buffer.begin() + destPos);
             destPos += pos-toCopyPos;
@@ -626,7 +628,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
             while (pos < contentSize && content[pos] != '\n')
             {
                 if (pos >= colTransThreshold)
-                {
+                {   // put column translation
                     curColTrans++;
                     colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                                 curColTrans->lineNo});
@@ -640,7 +642,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                                     nextLinePos) : SIZE_MAX;
                 }
                 pos++;
-                buffer.push_back(' ');
+                buffer.push_back(' '); // put space instead of character to ignore later
             }
             toCopyPos = pos;
             break; // end of line of statement if local statement occurrent
@@ -672,15 +674,17 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                 altMacroSyntax = true; // disables '@' and '()'
             }
             else
-            {
-                if (wordSkip!=0) wordSkip--;
+            {   /* otherwise consume one character */
+                if (wordSkip!=0)
+                    // after unmatched alternate substitution, we copy unmatched name
+                    wordSkip--;
                 pos++;
             }
         }
         else
         {   // backslash
             if (pos >= colTransThreshold)
-            {
+            {   // put column translation
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
@@ -725,7 +729,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                             localIt = localMap.find(symName);
                     }
                     if (altMacroSyntax && (it!=argMap.end() || localIt!=localMap.end()))
-                    {
+                    {   /* copy previous content, missing copy before alternate
+                         * substitution */
                         buffer.resize(destPos + pos-toCopyPos);
                         std::copy(content + toCopyPos, content + pos,
                                   buffer.begin() + destPos);
@@ -764,7 +769,7 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
                             destPos++;
                         }
                         else // continue consuming to copy
-                        {
+                        {   // and set name to copy to buffer (skip)
                             wordSkip = symName.size();
                             continue;
                         }
@@ -990,7 +995,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         if (content[pos] != '\\')
         {
             if (pos >= colTransThreshold)
-            {
+            {   // put column translation
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
@@ -1008,7 +1013,7 @@ const char* AsmIRPInputFilter::readLine(Assembler& assembler, size_t& lineSize)
         else
         {   // backslash
             if (pos >= colTransThreshold)
-            {
+            {   // put column translation
                 curColTrans++;
                 colTranslations.push_back({ssize_t(destPos + pos-toCopyPos),
                             curColTrans->lineNo});
