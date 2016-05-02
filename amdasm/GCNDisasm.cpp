@@ -2356,8 +2356,10 @@ void GCNDisasmUtils::decodeFLATEncoding(GCNDisassembler& dasm ,cxuint spacesToAd
     bool vdstUsed = false;
     bool vdataUsed = false;
     const cxuint dregsNum = ((gcnInsn.mode&GCN_DSIZE_MASK)>>GCN_SHIFT2)+1;
+    /// cmpswap store only to half of number of data registers
+    cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) :  dregsNum;
     // tfe
-    const cxuint dstRegsNum = (insnCode2 & 0x800000U)?dregsNum+1:dregsNum;
+    dstRegsNum = (insnCode2 & 0x800000U)?dstRegsNum+1:dstRegsNum;
     
     if ((gcnInsn.mode & GCN_FLAT_ADST) == 0)
     {

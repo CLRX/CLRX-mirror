@@ -2559,7 +2559,8 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /* check register ranges */
     if (vdstReg)
     {
-        const cxuint dstRegsNum = (haveTfe) ? dregsNum+1:dregsNum; // include tfe 
+        cxuint dstRegsNum = ((gcnInsn.mode & GCN_CMPSWAP)!=0) ? (dregsNum>>1) : dregsNum;
+        dstRegsNum = (haveTfe) ? dstRegsNum+1:dstRegsNum; // include tfe 
         if (!isXRegRange(vdstReg, dstRegsNum))
         {
             char errorMsg[40];
