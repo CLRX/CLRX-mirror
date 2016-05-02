@@ -4,7 +4,7 @@ These instructions allow to access to main memory, LDS and VGPRS registers.
 FLAT instructions fetch address from 2 vector registers that hold 64-bit address.
 FLAT instruction presents only in GCN 1.1 architecture.
 
-List of fields for the MUBUF encoding (GCN 1.1):
+List of fields for the FLAT encoding (GCN 1.1):
 
 Bits  | Name     | Description
 ------|----------|------------------------------
@@ -29,7 +29,7 @@ to main memory, or LKGMCNT if accesses to LDS.
 
 ### Instructions by opcode
 
-List of the MUBUF instructions by opcode (GCN 1.1/1.2):
+List of the FLAT instructions by opcode (GCN 1.1/1.2):
 
  Opcode     | Mnemonic (GCN1.1)      | Mnemonic (GCN1.2)
 ------------|------------------------|------------------------
@@ -99,34 +99,77 @@ List of the MUBUF instructions by opcode (GCN 1.1/1.2):
  94 (0x5e)  | FLAT_ATOMIC_FCMPSWAP_X2 | --
  95 (0x5f)  | FLAT_ATOMIC_FMIN_X2    | --
  96 (0x60)  | FLAT_ATOMIC_FMAX_X2    | FLAT_ATOMIC_SWAP_X2
- 81 (0x61)  | --                     | FLAT_ATOMIC_CMPSWAP_X2
- 82 (0x62)  | --                     | FLAT_ATOMIC_ADD_X2
- 83 (0x63)  | --                     | FLAT_ATOMIC_SUB_X2
- 84 (0x64)  | --                     | FLAT_ATOMIC_SMIN_X2
- 85 (0x65)  | --                     | FLAT_ATOMIC_UMIN_X2
- 86 (0x66)  | --                     | FLAT_ATOMIC_SMAX_X2
- 87 (0x67)  | --                     | FLAT_ATOMIC_UMAX_X2
- 88 (0x68)  | --                     | FLAT_ATOMIC_AND_X2
- 89 (0x69)  | --                     | FLAT_ATOMIC_OR_X2
- 90 (0x6a)  | --                     | FLAT_ATOMIC_XOR_X2
- 91 (0x6b)  | --                     | FLAT_ATOMIC_INC_X2
- 92 (0x6c)  | --                     | FLAT_ATOMIC_DEC_X2
+ 97 (0x61)  | --                     | FLAT_ATOMIC_CMPSWAP_X2
+ 98 (0x62)  | --                     | FLAT_ATOMIC_ADD_X2
+ 99 (0x63)  | --                     | FLAT_ATOMIC_SUB_X2
+ 100 (0x64) | --                     | FLAT_ATOMIC_SMIN_X2
+ 101 (0x65) | --                     | FLAT_ATOMIC_UMIN_X2
+ 102 (0x66) | --                     | FLAT_ATOMIC_SMAX_X2
+ 103 (0x67) | --                     | FLAT_ATOMIC_UMAX_X2
+ 104 (0x68) | --                     | FLAT_ATOMIC_AND_X2
+ 105 (0x69) | --                     | FLAT_ATOMIC_OR_X2
+ 106 (0x6a) | --                     | FLAT_ATOMIC_XOR_X2
+ 107 (0x6b) | --                     | FLAT_ATOMIC_INC_X2
+ 108 (0x6c) | --                     | FLAT_ATOMIC_DEC_X2
 
 ### Instruction set
 
 Alphabetically sorted instruction list:
+
+#### BUFFER_ATOMIC_CMPSWAP
+
+Opcode: 49 (0x31) for GCN 1.0/1.1; 65 (0x41) for GCN 1.2  
+Syntax: FLAT_ATOMIC_CMPSWAP VDST, VADDR(2), VDATA(2)  
+Description: Store lower VDATA dword into VADDR address  if previous value
+from that address is equal VDATA>>32, otherwise keep old value from address.
+If GLC flag is set then return previous value from resource to VDST,
+otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = *VM==(VDATA>>32) ? VDATA&0xffffffff : *VM // part of atomic
+VDST = (GLC) ? P : VDST // last part of atomic
+```
+
+#### BUFFER_ATOMIC_CMPSWAP_X2
+
+Opcode: 81 (0x51) for GCN 1.0/1.1; 97 (0x61) for GCN 1.2  
+Syntax: FLAT_ATOMIC_CMPSWAP_X2 VDST(2), VADDR(2), VDATA(4)  
+Description: Store lower VDATA 64-bit word into VADDR address if previous value
+from resource is equal VDATA>>64, otherwise keep old value from VADDR.
+If GLC flag is set then return previous value from VADDR to VDST,
+otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = *VM==(VDATA[2:3]) ? VDATA[0:1] : *VM // part of atomic
+VDST = (GLC) ? P : VDST // last part of atomic
+```
 
 #### FLAT_ATOMIC_SWAP
 
 Opcode: 48 (0x30) for GCN 1.0/1.1; 64 (0x40) for GCN 1.2  
 Syntax: FLAT_ATOMIC_SWAP VDST, VADDR(2), VDATA
 Description: Store VDATA dword into VADDR address. If GLC flag is set then
-return previous value from resource to VDST, otherwise store old value from VDATA to VDST.
+return previous value from VADDR address to VDST, otherwise keep old value from VDST.
 Operation is atomic.  
 Operation:  
 ```
 UINT32* VM = (UINT32*)VADDR
-UINT32 P = *VM; *VM = VDATA; VDST = (GLC) ? P : VDATA // atomic
+UINT32 P = *VM; *VM = VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SWAP_X2
+
+Opcode: 80 (0x50) for GCN 1.0/1.1; 96 (0x60) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SWAP_X2 VDST(2), VADDR(2), VDATA(2)
+Description: Store VDATA 64-bit word into VADDR address. If GLC flag is set then
+return previous value from VADDR address to VDST, otherwise keep old value from VDST.
+Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = VDATA; VDST = (GLC) ? P : VDST // atomic
 ```
 
 #### FLAT_LOAD_DWORD
