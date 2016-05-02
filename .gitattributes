@@ -79,6 +79,7 @@ doc/ClrxWrapper.md -text
 doc/DocLicense.md -text
 doc/GalliumAbi.md -text
 doc/GcnInstrsDs.md -text
+doc/GcnInstrsFlat.md -text
 doc/GcnInstrsMimg.md -text
 doc/GcnInstrsMtbuf.md -text
 doc/GcnInstrsMubuf.md -text

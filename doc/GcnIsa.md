@@ -66,6 +66,7 @@ By default, any register value is treated as unsigned integer.
 * [MUBUF instructions](GcnInstrsMubuf)
 * [MTBUF instructions](GcnInstrsMtbuf)
 * [MIMG instructions](GcnInstrsMimg)
+* [FLAT instructions](GcnInstrsFlat)
 * [GCN Instruction Timimgs](GcnTimings)
 
 ---

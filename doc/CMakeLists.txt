@@ -36,6 +36,7 @@ IF(BUILD_CLRXDOC)
           ${PROJECT_SOURCE_DIR}/doc/DocLicense.md
           ${PROJECT_SOURCE_DIR}/doc/GalliumAbi.md
           ${PROJECT_SOURCE_DIR}/doc/GcnInstrsDs.md
+          ${PROJECT_SOURCE_DIR}/doc/GcnInstrsFlat.md
           ${PROJECT_SOURCE_DIR}/doc/GcnInstrsMimg.md
           ${PROJECT_SOURCE_DIR}/doc/GcnInstrsMtbuf.md
           ${PROJECT_SOURCE_DIR}/doc/GcnInstrsMubuf.md
