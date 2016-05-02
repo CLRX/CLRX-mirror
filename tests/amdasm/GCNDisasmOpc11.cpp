@@ -3169,7 +3169,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     { 0xdcf70000U, 0x2f0041bbU, true, "        flat_atomic_dec "
                 "v47, v[187:188], v65 glc slc\n" },
     { 0xdcfb0000U, 0x2f0041bbU, true, "        flat_atomic_fcmpswap "
-                "v[47:48], v[187:188], v[65:66] glc slc\n" },
+                "v47, v[187:188], v[65:66] glc slc\n" },
     { 0xdcff0000U, 0x2f0041bbU, true, "        flat_atomic_fmin "
                 "v47, v[187:188], v65 glc slc\n" },
     { 0xdd030000U, 0x2f0041bbU, true, "        flat_atomic_fmax "
@@ -3219,7 +3219,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     { 0xdd770000U, 0x2f0041bbU, true, "        flat_atomic_dec_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
     { 0xdd7b0000U, 0x2f0041bbU, true, "        flat_atomic_fcmpswap_x2 "
-                "v[47:50], v[187:188], v[65:68] glc slc\n" },
+                "v[47:48], v[187:188], v[65:68] glc slc\n" },
     { 0xdd7f0000U, 0x2f0041bbU, true, "        flat_atomic_fmin_x2 "
                 "v[47:48], v[187:188], v[65:66] glc slc\n" },
     { 0xdd830000U, 0x2f0041bbU, true, "        flat_atomic_fmax_x2 "
