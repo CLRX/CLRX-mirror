@@ -1,6 +1,6 @@
 ## GCN ISA FLAT instructions
 
-These instructions allow to access to main memory, LDS and VGPRS registers.
+These instructions allow to access to main memory, LDS and VGPR registers.
 FLAT instructions fetch address from 2 vector registers that hold 64-bit address.
 FLAT instruction presents only in GCN 1.1 architecture.
 
@@ -116,7 +116,59 @@ List of the FLAT instructions by opcode (GCN 1.1/1.2):
 
 Alphabetically sorted instruction list:
 
-#### BUFFER_ATOMIC_CMPSWAP
+#### FLAT_ATOMIC_ADD
+
+Opcode: 50 (0x32) for GCN 1.0/1.1; 66 (0x42) for GCN 1.2  
+Syntax: FLAT_ATOMIC_ADD VDST, VADDR(2), VDATA  
+Description: Add VDATA to value of VADDR address, and store result to this address.
+If GLC flag is set then return previous value from this address to VDST,
+otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = *VM + VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_ADD_X2
+
+Opcode: 82 (0x52) for GCN 1.0/1.1; 98 (0x62) for GCN 1.2  
+Syntax: FLAT_ATOMIC_ADD_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Add 64-bit VDATA to 64-bit value of VADDR address, and store result
+to this address. If GLC flag is set then return previous value from resource to VDST,
+otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = *VM + VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_AND
+
+Opcode: 57 (0x39) for GCN 1.0/1.1; 72 (0x48) for GCN 1.2  
+Syntax: FLAT_ATOMIC_AND VDST, VADDR(2), VDATA  
+Description: Do bitwise AND on VDATA and value of VADDR address,
+and store result to this address. If GLC flag is set then return previous value
+from this address to VDST, otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = *VM & VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_AND_X2
+
+Opcode: 89 (0x59) for GCN 1.0/1.1; 104 (0x68) for GCN 1.2  
+Syntax: FLAT_ATOMIC_AND_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Do 64-bit bitwise AND on VDATA and value of VADDR address,
+and store result to this address. If GLC flag is set then return previous value
+from this address to VDST, otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = *VM & VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_CMPSWAP
 
 Opcode: 49 (0x31) for GCN 1.0/1.1; 65 (0x41) for GCN 1.2  
 Syntax: FLAT_ATOMIC_CMPSWAP VDST, VADDR(2), VDATA(2)  
@@ -131,7 +183,7 @@ UINT32 P = *VM; *VM = *VM==(VDATA>>32) ? VDATA&0xffffffff : *VM // part of atomi
 VDST = (GLC) ? P : VDST // last part of atomic
 ```
 
-#### BUFFER_ATOMIC_CMPSWAP_X2
+#### FLAT_ATOMIC_CMPSWAP_X2
 
 Opcode: 81 (0x51) for GCN 1.0/1.1; 97 (0x61) for GCN 1.2  
 Syntax: FLAT_ATOMIC_CMPSWAP_X2 VDST(2), VADDR(2), VDATA(4)  
@@ -144,6 +196,114 @@ Operation:
 UINT64* VM = (UINT64*)VADDR
 UINT64 P = *VM; *VM = *VM==(VDATA[2:3]) ? VDATA[0:1] : *VM // part of atomic
 VDST = (GLC) ? P : VDST // last part of atomic
+```
+
+#### FLAT_ATOMIC_OR
+
+Opcode: 58 (0x3a) for GCN 1.0/1.1; 73 (0x49) for GCN 1.2  
+Syntax: FLAT_ATOMIC_OR VDST, VADDR(2), VDATA  
+Description: Do bitwise OR on VDATA and value of VADDR address,
+and store result to this address. If GLC flag is set then return previous value
+from this address to VDST, otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = *VM | VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_OR_X2
+
+Opcode: 90 (0x5a) for GCN 1.0/1.1; 105 (0x69) for GCN 1.2  
+Syntax: FLAT_ATOMIC_OR_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Do 64-bit bitwise OR on VDATA and value of VADDR address,
+and store result to this address. If GLC flag is set then return previous value
+from this address to VDST, otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = *VM | VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SMAX
+
+Opcode: 55 (0x37) for GCN 1.0/1.1; 70 (0x46) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SMAX VDST, VADDR(2), VDATA  
+Description: Choose greatest signed 32-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+INT32* VM = (INT32*)VADDR
+UINT32 P = *VM; *VM = MAX(*VM, (INT32)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SMAX_X2
+
+Opcode: 87 (0x57) for GCN 1.0/1.1; 102 (0x66) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SMAX_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Choose greatest signed 64-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+INT64* VM = (INT64*)VADDR
+UINT64 P = *VM; *VM = MAX(*VM, (INT64)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SMIN
+
+Opcode: 53 (0x35) for GCN 1.0/1.1; 68 (0x44) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SMIN VDST, VADDR(2), VDATA  
+Description: Choose smallest signed 32-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+INT32* VM = (INT32*)VADDR
+UINT32 P = *VM; *VM = MIN(*VM, (INT32)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SMIN_X2
+
+Opcode: 85 (0x55) for GCN 1.0/1.1; 100 (0x64) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SMIN_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Choose smallest signed 64-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+INT64* VM = (INT64*)VADDR
+UINT64 P = *VM; *VM = MIN(*VM, (INT64)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SUB
+
+Opcode: 51 (0x33) for GCN 1.0/1.1; 67 (0x43) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SUB VDST, VADDR(2), VDATA  
+Description: Subtract VDATA from value of VADDR address, and store result to this address.
+If GLC flag is set then return previous value from this address to VDST,
+otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = *VM - VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_SUB_X2
+
+Opcode: 83 (0x53) for GCN 1.0/1.1; 99 (0x63) for GCN 1.2  
+Syntax: FLAT_ATOMIC_SUB_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Subtract 64-bit VDATA from 64-bit value of VADDR address, and store result
+to this address. If GLC flag is set then return previous value from resource to VDST,
+otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = *VM - VDATA; VDST = (GLC) ? P : VDST // atomic
 ```
 
 #### FLAT_ATOMIC_SWAP
@@ -170,6 +330,88 @@ Operation:
 ```
 UINT64* VM = (UINT64*)VADDR
 UINT64 P = *VM; *VM = VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_UMAX
+
+Opcode: 56 (0x38) for GCN 1.0/1.1; 71 (0x47) for GCN 1.2  
+Syntax: FLAT_ATOMIC_UMAX VDST, VADDR(2), VDATA  
+Description: Choose greatest unsigned 32-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = MAX(*VM, (UINT32)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_UMAX_X2
+
+Opcode: 88 (0x58) for GCN 1.0/1.1; 103 (0x67) for GCN 1.2  
+Syntax: FLAT_ATOMIC_UMAX_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Choose greatest unsigned 64-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = MAX(*VM, (UINT64)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_UMIN
+
+Opcode: 54 (0x36) for GCN 1.0/1.1; 69 (0x45) for GCN 1.2  
+Syntax: FLAT_ATOMIC_UMIN VDST, VADDR(2), VDATA  
+Description: Choose smallest unsigned 32-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = MIN(*VM, (UINT32)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_UMIN_X2
+
+Opcode: 86 (0x56) for GCN 1.0/1.1; 101 (0x65) for GCN 1.2  
+Syntax: FLAT_ATOMIC_UMIN_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Choose smallest unsigned 64-bit value from VDATA and from VADDR address,
+and store result to this address.
+If GLC flag is set then return previous value from this address to VDST, otherwise keep
+VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = MIN(*VM, (UINT64)VDATA); VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_XOR
+
+Opcode: 59 (0x3b) for GCN 1.0/1.1; 73 (0x4a) for GCN 1.2  
+Syntax: FLAT_ATOMIC_XOR VDST, VADDR(2), VDATA  
+Description: Do bitwise XOR on VDATA and value of VADDR address,
+and store result to this address. If GLC flag is set then return previous value
+from this address to VDST, otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT32* VM = (UINT32*)VADDR
+UINT32 P = *VM; *VM = *VM ^ VDATA; VDST = (GLC) ? P : VDST // atomic
+```
+
+#### FLAT_ATOMIC_XOR_X2
+
+Opcode: 91 (0x5b) for GCN 1.0/1.1; 106 (0x6a) for GCN 1.2  
+Syntax: FLAT_ATOMIC_XOR_X2 VDST(2), VADDR(2), VDATA(2)  
+Description: Do 64-bit bitwise XOR on VDATA and value of VADDR address,
+and store result to this address. If GLC flag is set then return previous value
+from this address to VDST, otherwise keep VDST value. Operation is atomic.  
+Operation:  
+```
+UINT64* VM = (UINT64*)VADDR
+UINT64 P = *VM; *VM = *VM ^ VDATA; VDST = (GLC) ? P : VDST // atomic
 ```
 
 #### FLAT_LOAD_DWORD
