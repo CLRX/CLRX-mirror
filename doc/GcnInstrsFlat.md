@@ -58,7 +58,7 @@ List of the FLAT instructions by opcode (GCN 1.1/1.2):
  48 (0x30)  | FLAT_ATOMIC_SWAP       | --
  49 (0x31)  | FLAT_ATOMIC_CMPSWAP    | --
  50 (0x32)  | FLAT_ATOMIC_ADD        | --
- 52 (0x34)  | FLAT_ATOMIC_SUB        | --
+ 51 (0x33)  | FLAT_ATOMIC_SUB        | --
  53 (0x35)  | FLAT_ATOMIC_SMIN       | --
  54 (0x36)  | FLAT_ATOMIC_UMIN       | --
  55 (0x37)  | FLAT_ATOMIC_SMAX       | --
@@ -86,7 +86,7 @@ List of the FLAT instructions by opcode (GCN 1.1/1.2):
  80 (0x50)  | FLAT_ATOMIC_SWAP_X2    | --
  81 (0x51)  | FLAT_ATOMIC_CMPSWAP_X2 | --
  82 (0x52)  | FLAT_ATOMIC_ADD_X2     | --
- 84 (0x54)  | FLAT_ATOMIC_SUB_X2     | --
+ 83 (0x53)  | FLAT_ATOMIC_SUB_X2     | --
  85 (0x55)  | FLAT_ATOMIC_SMIN_X2    | --
  86 (0x56)  | FLAT_ATOMIC_UMIN_X2    | --
  87 (0x57)  | FLAT_ATOMIC_SMAX_X2    | --                                                                                         
@@ -536,7 +536,7 @@ UINT64 P = *VM; *VM = MIN(*VM, (UINT64)VDATA); VDST = (GLC) ? P : VDST // atomic
 
 #### FLAT_ATOMIC_XOR
 
-Opcode: 59 (0x3b) for GCN 1.1; 73 (0x4a) for GCN 1.2  
+Opcode: 59 (0x3b) for GCN 1.1; 74 (0x4a) for GCN 1.2  
 Syntax: FLAT_ATOMIC_XOR VDST, VADDR(2), VDATA  
 Description: Do bitwise XOR on VDATA and value of VADDR address,
 and store result to this address. If GLC flag is set then return previous value
