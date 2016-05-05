@@ -12,7 +12,7 @@ Bits  | Name     | Description
 17    | SLC      | System level coherent
 18-24 | OPCODE   | Operation code
 25-31 | ENCODING | Encoding type. Must be 0b110111
-32-39 | VADDR     | Vector address registers
+32-39 | VADDR    | Vector address registers
 40-47 | VDATA    | Vector data register
 55    | TFE      | Texture Fail Enable ???
 56-63 | VDST     | Vector destination register

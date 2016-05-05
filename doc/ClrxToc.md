@@ -31,6 +31,7 @@ Copyright (c)  2015-2016  Mateusz Szpakowski.
 * [CLRXWrapper](ClrxWrapper)
 * [GalliumCompute ABI](GalliumAbi)
 * [AMD Catalyst ABI](AmdAbi)
+* [AMD OpenCL 2.0 Catalyst ABI](AmdCl2Abi)
 * [AMD GCN Instruction Set](GcnIsa)
     * [GCN Operands](GcnOperands)
     * [GCN Machine State](GcnState)

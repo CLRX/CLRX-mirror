@@ -66,6 +66,7 @@ clwrapper/InternalDecls.h -text
 cmake/Pod2Man.cmake -text
 cmake/PortUtils.cmake -text
 doc/AmdAbi.md -text
+doc/AmdCl2Abi.md -text
 doc/CMakeLists.txt -text svneol=unset#text/plain
 doc/ClrxAsmAmd.md -text
 doc/ClrxAsmAmdCl2.md -text

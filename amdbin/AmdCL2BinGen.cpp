@@ -950,8 +950,6 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t setup2; // ??
 };
 
-/* TODO: fix kernel setup for generic address kernels */
-
 static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
                   bool storeLocalSize = false)
 {

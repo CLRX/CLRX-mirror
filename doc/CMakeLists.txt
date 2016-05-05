@@ -24,6 +24,7 @@ IF(BUILD_CLRXDOC)
   IF(MARKDOWN_PY)
       SET(CLRXDOCS_SOURCES
           ${PROJECT_SOURCE_DIR}/doc/AmdAbi.md
+          ${PROJECT_SOURCE_DIR}/doc/AmdCl2Abi.md
           ${PROJECT_SOURCE_DIR}/doc/ClrxAsmAmd.md
           ${PROJECT_SOURCE_DIR}/doc/ClrxAsmAmdCl2.md
           ${PROJECT_SOURCE_DIR}/doc/ClrxAsmGallium.md
