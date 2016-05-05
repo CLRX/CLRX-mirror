@@ -245,7 +245,12 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     uint16_t ksetup1 = ULEV(setupData->setup1);
     config.useSizes = (ksetup1&2)!=0;
     config.useSetup = (ksetup1&8)!=0;
-    config.useEnqueue = (ksetup1&0x20)!=0;
+    config.useGeneric = config.useEnqueue = false;
+    if (ksetup1==0x2f)
+        config.useGeneric = true;
+    else
+        config.useEnqueue = (ksetup1&0x20)!=0;
+    
     // get samplers
     for (const AmdCL2RelInput& reloc: textRelocs)
     {   // check if sampler

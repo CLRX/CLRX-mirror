@@ -281,7 +281,8 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                     (config.dx10Clamp?"dx10clamp ":"") <<
                     (config.useSizes?"useSizes ":"") <<
                     (config.useSetup?"useSetup ":"") <<
-                    (config.useEnqueue?"useEnqueue ":"") << "\n";
+                    (config.useEnqueue?"useEnqueue ":"") <<
+                    (config.useGeneric?"useGeneric ":"") << "\n";
         }
         std::vector<AmdCL2RelInput> relocs(kernel.relocations.begin(),
                             kernel.relocations.end());
@@ -1356,6 +1357,7 @@ R"ffDXD(            .amdcl2
         .pgmrsrc2 0xfcdefd0
         .usesetup
         .usesizes
+        .usegeneric
     .text
         v_mov_b32 v1,v2
         v_add_i32 v1,vcc,55,v3
@@ -1418,7 +1420,7 @@ R"ffDXD(            .amdcl2
       dims=7, cws=8 5 2, SGPRS=25, VGPRS=78
       pgmRSRC1=0x1234000, pgmRSRC2=0xfcdefd0, ieeeMode=0x0, floatMode=0xc0
       priority=0, exceptions=0, localSize=656, scratchBuffer=0
-      useSizes useSetup 
+      useSizes useSetup useGeneric 
   GlobalData:
   RwData:
   nullptr

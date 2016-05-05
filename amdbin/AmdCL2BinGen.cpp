@@ -950,6 +950,8 @@ struct CLRX_INTERNAL IntAmdCL2SetupData
     uint32_t setup2; // ??
 };
 
+/* TODO: fix kernel setup for generic address kernels */
+
 static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
                   bool storeLocalSize = false)
 {
@@ -968,7 +970,9 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     const uint32_t localPart = (storeLocalSize) ? (((config.localSize+511)>>9)<<15) : 0;
     
     cxuint userDatasNum = 4;
-    if (config.useEnqueue)
+    if (config.useGeneric)
+        userDatasNum = 12;
+    else if (config.useEnqueue)
         userDatasNum = 10;
     else if (config.useSetup)
         userDatasNum = ((config.useSizes) ? 8 : 6);
@@ -986,7 +990,8 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     fob.writeArray(40, kernelSetupBytesAfter8);
     IntAmdCL2SetupData setupData;
     const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 4 : 2;
-    const cxuint extraSGPRsNum = (config.useEnqueue) ? neededExtraSGPRsNum : 0;
+    const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
+                neededExtraSGPRsNum : 0;
     cxuint sgprsNum = std::max(config.usedSGPRsNum + extraSGPRsNum + 2, 1U);
     cxuint vgprsNum = std::max(config.usedVGPRsNum, 1U);
     // pgmrsrc1
@@ -997,20 +1002,10 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             (config.privilegedMode?1U<<20:0) | (config.dx10Clamp?1U<<21:0) |
             (config.debugMode?1U<<22:0));
     // pgmrsrc2 - without ldssize
-    uint32_t dimValues = 0;
-    if (config.dimMask != BINGEN_DEFAULT)
-    {
-        dimValues = ((config.dimMask&7)<<7);
-        if (!config.useEnqueue)
-            dimValues |= (((config.dimMask&4) ? 2 : (config.dimMask&2) ? 1 : 0)<<11);
-        else // enqueue needs TIDIG_COMP_CNT=2 ????
-            dimValues |= (2U<<11);
-    }
-    else
-        dimValues |= (config.pgmRSRC2 & 0x1b80U);
-    
     uint16_t setup1 = 0x1;
-    if (config.useEnqueue)
+    if (config.useGeneric)
+        setup1 = 0x2f;
+    else if (config.useEnqueue)
         setup1 = 0x2b;
     else if (config.useSetup)
         setup1 = (config.useSizes) ? 0xb : 0x9;

@@ -40,7 +40,7 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "priority", "privmode", "rwdata", "sampler",
     "samplerinit", "samplerreloc", "scratchbuffer", "setup",
     "setupargs", "sgprsnum", "stub", "tgsize",
-    "useenqueue", "usesetup", "usesizes", "vgprsnum"
+    "useenqueue", "usegeneric", "usesetup", "usesizes", "vgprsnum"
 };
 
 enum
@@ -54,7 +54,7 @@ enum
     AMDCL2OP_PRIVMODE, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
     AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUP, AMDCL2OP_SETUPARGS,
     AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE, AMDCL2OP_USEENQUEUE,
-    AMDCL2OP_USESETUP, AMDCL2OP_USESIZES, AMDCL2OP_VGPRSNUM
+    AMDCL2OP_USEGENERIC, AMDCL2OP_USESETUP, AMDCL2OP_USESIZES, AMDCL2OP_VGPRSNUM
 };
 
 /*
@@ -826,6 +826,9 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
         case AMDCL2CVAL_USEENQUEUE:
             config.useEnqueue = true;
             break;
+        case AMDCL2CVAL_USEGENERIC:
+            config.useGeneric = true;
+            break;
         default:
             break;
     }
@@ -1274,6 +1277,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USEENQUEUE);
             break;
+        case AMDCL2OP_USEGENERIC:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_USEGENERIC);
+            break;
         case AMDCL2OP_USESETUP:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USESETUP);
@@ -1385,7 +1392,9 @@ bool AsmAmdCL2Handler::prepareBinary()
             continue;
         AmdCL2KernelConfig& config = output.kernels[i].config;
         cxuint userSGPRsNum = 4;
-        if (config.useEnqueue)
+        if (config.useGeneric)
+            userSGPRsNum = 12;
+        else if (config.useEnqueue)
             userSGPRsNum = 10;
         else if (config.useSetup)
             userSGPRsNum = ((config.useSizes) ? 8 : 6);

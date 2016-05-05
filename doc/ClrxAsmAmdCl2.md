@@ -271,6 +271,11 @@ Enable usage of the TG_SIZE_EN.
 This pseudo-op must be inside kernel configuration. Indicate that kernel uses
 enqueue mechanism.
 
+### .usegeneric
+
+This pseudo-op must be inside kernel configuration. Indicate that kernel uses
+generic pointers mechanism (FLAT instructions).
+
 ### .usesetup
 
 This pseudo-op must be inside kernel configuration. Indicate that kernel uses

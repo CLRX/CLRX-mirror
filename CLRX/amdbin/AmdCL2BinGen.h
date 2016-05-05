@@ -77,6 +77,7 @@ struct AmdCL2KernelConfig
     bool useSizes; ///< use global_size, local_size or groups_num
     bool useSetup; ///< use other kernel setup (local id, global id)
     bool useEnqueue; ///< this kernel enqueues other kernel
+    bool useGeneric;    ///< use generic pointer addresses (for flat instrs)
 };
 
 /// AMD CL2 Relocation entry input
