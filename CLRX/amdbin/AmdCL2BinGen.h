@@ -74,8 +74,8 @@ struct AmdCL2KernelConfig
     bool debugMode;     ///< debug mode
     bool privilegedMode;   ///< prvileged mode
     bool dx10Clamp;     ///< DX10 CLAMP mode
-    bool useSizes; ///< use global_size, local_size or groups_num
-    bool useSetup; ///< use other kernel setup (local id, global id)
+    bool useSetup; ///< use setup buffer (local sizes, global sizes)
+    bool useArgs; ///< use argument's buffer
     bool useEnqueue; ///< this kernel enqueues other kernel
     bool useGeneric;    ///< use generic pointer addresses (for flat instrs)
 };

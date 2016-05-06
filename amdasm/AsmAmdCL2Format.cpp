@@ -39,8 +39,8 @@ static const char* amdCL2PseudoOpNamesTbl[] =
     "isametadata", "localsize", "metadata", "pgmrsrc1", "pgmrsrc2",
     "priority", "privmode", "rwdata", "sampler",
     "samplerinit", "samplerreloc", "scratchbuffer", "setup",
-    "setupargs", "sgprsnum", "stub", "tgsize",
-    "useenqueue", "usegeneric", "usesetup", "usesizes", "vgprsnum"
+    "setupargs", "sgprsnum", "stub", "tgsize", "useargs",
+    "useenqueue", "usegeneric", "usesetup", "vgprsnum"
 };
 
 enum
@@ -53,8 +53,8 @@ enum
     AMDCL2OP_METADATA, AMDCL2OP_PGMRSRC1, AMDCL2OP_PGMRSRC2, AMDCL2OP_PRIORITY,
     AMDCL2OP_PRIVMODE, AMDCL2OP_RWDATA, AMDCL2OP_SAMPLER, AMDCL2OP_SAMPLERINIT,
     AMDCL2OP_SAMPLERRELOC, AMDCL2OP_SCRATCHBUFFER, AMDCL2OP_SETUP, AMDCL2OP_SETUPARGS,
-    AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE, AMDCL2OP_USEENQUEUE,
-    AMDCL2OP_USEGENERIC, AMDCL2OP_USESETUP, AMDCL2OP_USESIZES, AMDCL2OP_VGPRSNUM
+    AMDCL2OP_SGPRSNUM, AMDCL2OP_STUB, AMDCL2OP_TGSIZE, AMDCL2OP_USEARGS,
+    AMDCL2OP_USEENQUEUE, AMDCL2OP_USEGENERIC, AMDCL2OP_USESETUP, AMDCL2OP_VGPRSNUM
 };
 
 /*
@@ -817,11 +817,11 @@ void AsmAmdCL2PseudoOps::setConfigBoolValue(AsmAmdCL2Handler& handler,
         case AMDCL2CVAL_TGSIZE:
             config.tgSize = true;
             break;
+        case AMDCL2CVAL_USEARGS:
+            config.useArgs = true;
+            break;
         case AMDCL2CVAL_USESETUP:
             config.useSetup = true;
-            break;
-        case AMDCL2CVAL_USESIZES:
-            config.useSizes = true;
             break;
         case AMDCL2CVAL_USEENQUEUE:
             config.useEnqueue = true;
@@ -1273,6 +1273,10 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_TGSIZE);
             break;
+        case AMDCL2OP_USEARGS:
+            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
+                       AMDCL2CVAL_USEARGS);
+            break;
         case AMDCL2OP_USEENQUEUE:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USEENQUEUE);
@@ -1284,10 +1288,6 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
         case AMDCL2OP_USESETUP:
             AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
                        AMDCL2CVAL_USESETUP);
-            break;
-        case AMDCL2OP_USESIZES:
-            AsmAmdCL2PseudoOps::setConfigBoolValue(*this, stmtPlace, linePtr,
-                       AMDCL2CVAL_USESIZES);
             break;
         case AMDCL2OP_VGPRSNUM:
             AsmAmdCL2PseudoOps::setConfigValue(*this, stmtPlace, linePtr,
@@ -1397,9 +1397,9 @@ bool AsmAmdCL2Handler::prepareBinary()
         else if (config.useEnqueue)
             userSGPRsNum = 10;
         else if (config.useSetup)
-            userSGPRsNum = ((config.useSizes) ? 8 : 6);
-        else if (config.useSizes)
             userSGPRsNum = 8;
+        else if (config.useArgs)
+            userSGPRsNum = 6;
         
         /* include userData sgprs */
         cxuint dimMask = (config.dimMask!=BINGEN_DEFAULT) ? config.dimMask :

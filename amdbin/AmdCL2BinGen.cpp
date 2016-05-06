@@ -973,9 +973,9 @@ static uint32_t calculatePgmRSRC2(const AmdCL2KernelConfig& config,
     else if (config.useEnqueue)
         userDatasNum = 10;
     else if (config.useSetup)
-        userDatasNum = ((config.useSizes) ? 8 : 6);
-    else if (config.useSizes)
         userDatasNum = 8;
+    else if (config.useArgs)
+        userDatasNum = 6;
     return (config.pgmRSRC2 & 0xffffe440U) | (userDatasNum<<1) |
             ((config.tgSize) ? 0x400 : 0) | ((config.scratchBufferSize)?1:0) | dimValues |
             (uint32_t(config.exceptions)<<24) | localPart;
@@ -1006,9 +1006,9 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
     else if (config.useEnqueue)
         setup1 = 0x2b;
     else if (config.useSetup)
-        setup1 = (config.useSizes) ? 0xb : 0x9;
-    else if (config.useSizes)
         setup1 = 0xb;
+    else if (config.useArgs)
+        setup1 = 0x9;
     
     SLEV(setupData.pgmRSRC2, calculatePgmRSRC2(config));
     

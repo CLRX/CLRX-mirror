@@ -279,8 +279,8 @@ static void printAmdCL2Output(std::ostream& os, const AmdCL2Input* output)
                     (config.debugMode?"debug ":"") <<
                     (config.privilegedMode?"priv ":"") <<
                     (config.dx10Clamp?"dx10clamp ":"") <<
-                    (config.useSizes?"useSizes ":"") <<
                     (config.useSetup?"useSetup ":"") <<
+                    (config.useArgs?"useArgs ":"") <<
                     (config.useEnqueue?"useEnqueue ":"") <<
                     (config.useGeneric?"useGeneric ":"") << "\n";
         }
@@ -1309,7 +1309,7 @@ R"ffDXD(            .amdcl2
         .ieeemode
         .floatmode 0xda
         .localsize 1000
-        .usesetup
+        .useargs
     .text
         s_and_b32 s9,s5,44
         s_and_b32 s10,s5,5
@@ -1327,7 +1327,7 @@ R"ffDXD(            .amdcl2
         .ieeemode
         .floatmode 0xda
         .localsize 1000
-        .usesetup
+        .useargs
         .priority 2
         .privmode
         .debugmode
@@ -1355,8 +1355,8 @@ R"ffDXD(            .amdcl2
         .localsize 656
         .pgmrsrc1 0x1234000
         .pgmrsrc2 0xfcdefd0
+        .useargs
         .usesetup
-        .usesizes
         .usegeneric
     .text
         v_mov_b32 v1,v2
@@ -1381,7 +1381,7 @@ R"ffDXD(            .amdcl2
       dims=1, cws=0 0 0, SGPRS=12, VGPRS=1
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
       priority=0, exceptions=0, localSize=1000, scratchBuffer=0
-      useSetup 
+      useArgs 
   Kernel: aaa2
     Code:
     05ac0987000081bf
@@ -1401,7 +1401,7 @@ R"ffDXD(            .amdcl2
       dims=1, cws=0 0 0, SGPRS=11, VGPRS=1
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xda
       priority=2, exceptions=18, localSize=1000, scratchBuffer=2342
-      debug priv dx10clamp useSetup useEnqueue 
+      debug priv dx10clamp useArgs useEnqueue 
   Kernel: gfd12
     Code:
     0203027eb706024a000081bf
@@ -1420,7 +1420,7 @@ R"ffDXD(            .amdcl2
       dims=7, cws=8 5 2, SGPRS=25, VGPRS=78
       pgmRSRC1=0x1234000, pgmRSRC2=0xfcdefd0, ieeeMode=0x0, floatMode=0xc0
       priority=0, exceptions=0, localSize=656, scratchBuffer=0
-      useSizes useSetup useGeneric 
+      useSetup useArgs useGeneric 
   GlobalData:
   RwData:
   nullptr
@@ -1452,7 +1452,7 @@ bsslabel:
         .arg in,uint*,global,const
         .arg out,uint*,global
         .ieeemode
-        .usesetup
+        .useargs
 cc=gstart+10+x
     .text
         s_and_b32 s9,s5,44
@@ -1506,7 +1506,7 @@ x=3*6)ffDXD",
       dims=1, cws=0 0 0, SGPRS=11, VGPRS=1
       pgmRSRC1=0x0, pgmRSRC2=0x0, ieeeMode=0x1, floatMode=0xc0
       priority=0, exceptions=0, localSize=0, scratchBuffer=0
-      useSetup 
+      useArgs 
     Rel: offset=12, type=1, symbol=0, addend=77
     Rel: offset=20, type=1, symbol=0, addend=21
     Rel: offset=28, type=1, symbol=0, addend=21
@@ -1557,7 +1557,7 @@ x=3*6)ffDXD",
         .exceptions 0xd9
         .sgprsnum 231
         .arg vx,uint,dxdd
-        .usesetup
+        .useargs
     .text
         s_and_b32 s9,s5,44
         s_and_b32 s10,s5,5
@@ -1573,7 +1573,7 @@ x=3*6)ffDXD",
         .ieeemode
         .floatmode 0xda
         .localsize 1000
-        .usesetup
+        .useargs
         .priority 2
         .privmode
         .debugmode

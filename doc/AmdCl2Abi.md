@@ -9,9 +9,9 @@ In this chapter, size is given in dwords. Dword is 4-byte value.
 CLRX assembler give ability to set what feature will be used by kernel in configuration.
 Following feature can be enabled:
 
-* usesizes - use sizes information. Add kernel setup and sizes buffer
+* usesetup - use sizes information. Add kernel setup and sizes buffer
 to user data registers.
-* usesetup - kernel uses setup. Add kernel arguments to user data registers.
+* useargs - kernel uses arguments. Add kernel arguments to user data registers.
 * useenqueue - enable enqueue mechanism support
 * usegeneric - enable generic pointers support
 
@@ -19,9 +19,9 @@ Number of user data registers depends on set of an enabled features. Following r
 be applied:
 
 * if no feature enabled only 4 user data registers will be used.
-* if usesetup enabled, then 6 user data registers will be used. 4-5 user data are
+* if useargs enabled, then 6 user data registers will be used. 4-5 user data are
 argument's pointer.
-* if usesizes enabled, then 8 user data registers will be used. 4-5 user data are kernel
+* if usesetup enabled, then 8 user data registers will be used. 4-5 user data are kernel
 setup pointer. 6-7 user data regs are argument's pointer.
 * if useenqueue enabled, then 10 user data registers will be used. 4-5 user data are kernel
 setup pointer. 6-7 user data regs are argument's pointer.

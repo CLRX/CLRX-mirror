@@ -266,6 +266,10 @@ Go to kernel stub content section. Only allowed for older driver version binarie
 This pseudo-op must be inside kernel configuration.
 Enable usage of the TG_SIZE_EN.
 
+### .useargs
+
+This pseudo-op must be inside kernel configuration. Indicate that kernel uses arguments.
+
 ### .useenqueue
 
 This pseudo-op must be inside kernel configuration. Indicate that kernel uses
@@ -277,11 +281,6 @@ This pseudo-op must be inside kernel configuration. Indicate that kernel uses
 generic pointers mechanism (FLAT instructions).
 
 ### .usesetup
-
-This pseudo-op must be inside kernel configuration. Indicate that kernel uses
-setup data (global ids, local ids, group ids).
-
-### .usesizes
 
 This pseudo-op must be inside kernel configuration. Indicate that kernel uses
 setup data (global sizes, local sizes, work groups num).
@@ -328,7 +327,7 @@ This is sample of the kernel with configuration:
 .kernel DCT
     .config
         .dims xy
-        .usesizes
+        .useargs
         .usesetup
         .setupargs
         .arg output,float*

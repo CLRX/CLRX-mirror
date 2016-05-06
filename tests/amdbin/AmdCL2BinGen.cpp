@@ -243,8 +243,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     config.scratchBufferSize = ULEV(setupData->scratchBufferSize);
     config.localSize = ULEV(setupData->localSize);
     uint16_t ksetup1 = ULEV(setupData->setup1);
-    config.useSizes = (ksetup1&2)!=0;
-    config.useSetup = (ksetup1&8)!=0;
+    config.useSetup = (ksetup1&2)!=0;
+    config.useArgs = (ksetup1&8)!=0;
     config.useGeneric = config.useEnqueue = false;
     if (ksetup1==0x2f)
         config.useGeneric = true;
