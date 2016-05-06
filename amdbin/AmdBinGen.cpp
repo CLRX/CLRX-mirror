@@ -950,6 +950,10 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
         metadata += numBuf;
         metadata += '\n';
     }
+    if (driverVersion >= 180005 && driverVersion <= 180011)
+        metadata += ";limitwave:1\n";
+    else if (driverVersion >= 191205)
+        metadata += ";WavesPerSimdHint:0\n";
     
     size_t argOffset = 0;
     /* put kernel arg info to metadata */
