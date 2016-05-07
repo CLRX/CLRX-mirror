@@ -10,12 +10,16 @@ A CLRX assembler stores values greater than byte in the little-endian ordering.
 ### .32bit
 
 This pseudo-operation should to be at begin of source.
-Choose 32-bit binaries (it have meaningful for the AMD Catalyst binary format)
+Choose 32-bit binaries (it have meaningful for the AMD Catalyst and GalliumCompute
+binary format). For AMD Catalyst OpenCL 1.2 format, it determines bitness of address.
+For GalliumCompute, it determines bitness of inner ELF binary.
 
 ### .64bit
 
 This pseudo-operation should to be at begin of source.
-Choose 64-bit binaries (it have meaning for the AMD Catalyst binary format)
+Choose 64-bit binaries (it have meaningful for the AMD Catalyst and GalliumCompute
+binary format). For AMD Catalyst OpenCL 1.2 format, it determines bitness of address.
+For GalliumCompute, it determines bitness of inner ELF binary.
 
 ### .abort
 
