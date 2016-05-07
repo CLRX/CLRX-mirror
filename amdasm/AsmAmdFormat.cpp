@@ -1887,7 +1887,8 @@ bool AsmAmdHandler::prepareBinary()
                 ((config.pgmRSRC2>>7)&7);
         cxuint minRegsNum[2];
         getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
-                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0), minRegsNum);
+                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
+                   ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
             config.usedSGPRsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);

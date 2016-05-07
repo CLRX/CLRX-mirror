@@ -95,5 +95,5 @@ Sampler argument holds sampler value:
 ### Scratch buffer access
 
 Second entry in the internal global table holds scratch buffer descriptor.
-s[n+3] register holds wavefront offset to scratch buffer.
-where n is userdatanum.
+s[n+enabled_dims] register holds wavefront offset to scratch buffer.
+where n is userdatanum, enabled_dims is number of enabled dimensions.

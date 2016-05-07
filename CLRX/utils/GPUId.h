@@ -104,7 +104,8 @@ enum: cxuint {
 };
 
 enum: Flags {
-    GPUSETUP_TGSIZE_EN = 1
+    GPUSETUP_TGSIZE_EN = 1,
+    GPUSETUP_SCRATCH_EN = 2
 };
 
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)

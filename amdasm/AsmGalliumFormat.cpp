@@ -1063,7 +1063,8 @@ bool AsmGalliumHandler::prepareBinary()
         // extra sgprs for dimensions
         cxuint minRegsNum[2];
         getGPUSetupMinRegistersNum(arch, dimMask, userSGPRsNum,
-                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0), minRegsNum);
+                   ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
+                   ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {

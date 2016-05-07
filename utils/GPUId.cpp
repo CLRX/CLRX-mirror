@@ -183,7 +183,8 @@ void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMa
     gprsOut[0] = ((dimMask&1)!=0) + ((dimMask&2)!=0) + ((dimMask&4)!=0);
     /// VGPRS
     gprsOut[1] = ((dimMask&4) ? 3 : ((dimMask&2) ? 2: (dimMask&1) ? 1 : 0));
-    gprsOut[0] += userDataNum + ((flags & GPUSETUP_TGSIZE_EN)!=0);
+    gprsOut[0] += userDataNum + ((flags & GPUSETUP_TGSIZE_EN)!=0) +
+            ((flags & GPUSETUP_SCRATCH_EN)!=0);
 }
 
 size_t CLRX::getGPUMaxLocalSize(GPUArchitecture architecture)

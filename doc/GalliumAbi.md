@@ -26,8 +26,9 @@ Userdata tooks 4 first scalar registers and holds:
 Scalar register after userdata holds (n - userdatanum):
 
 * s[n:n+enabled_dims-1] - group id for each enabled dimension
-* s[n+3] - tg_size_en (???)
-* s[n+4] - scratch wave offset (??)
+* s[n+enabled_dims] - tg_size_en (???) if TG_SIZE_EN
+* s[n+enabled_dims] - scratch wave offset (??) if SCRATCH_EN and no TG_SIZE_EN
+* s[n+enabled_dims+1] - scratch wave offset (??) if SCRATCH_EN and TG_SIZE_EN
 
 First three vector registers holds local ids for each dimensions.
 
