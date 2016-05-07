@@ -165,11 +165,11 @@ void AsmPseudoOps::setBitness(Assembler& asmr, const char* linePtr, bool _64Bit)
         return;
     if (asmr.formatHandler != nullptr)
         asmr.printError(linePtr, "Bitness is already defined");
-    else if (asmr.format != BinaryFormat::AMD)
-        asmr.printWarning(linePtr, "Bitness ignored for other formats than AMD Catalyst");
+    else if (asmr.format != BinaryFormat::AMD && asmr.format != BinaryFormat::GALLIUM)
+        asmr.printWarning(linePtr, "Bitness ignored for other formats than "
+                "AMD Catalyst and GalliumCompute");
     else
-        asmr._64bit = (_64Bit);
-    
+        asmr._64bit = (_64Bit);    
 }
 
 bool AsmPseudoOps::parseFormat(Assembler& asmr, const char* linePtr, BinaryFormat& format)
