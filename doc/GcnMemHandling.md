@@ -459,3 +459,16 @@ About accuracy: Threshold of coordinates for image's sampling are 1/256 of dista
 between pixels.
 
 The sampling of the mipmaps requires normalized coordinates.
+
+### Flat addressing
+
+By default, FLAT instructions read or write values from main memory.
+Special register FLAT scratch defines size and offset of scratch buffer to access
+scratch space for current wave. Bit fields:
+
+ Bits  | Description
+-------|-------------------------------------
+ 0-23  | Scratch offset without first 8 bits
+ 32-50 | Scratch size in bytes.
+ 
+The base addresses to access scratch and LDS must be given by driver to some user place.

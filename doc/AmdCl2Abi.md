@@ -100,3 +100,11 @@ First four scalar registers holds scratch buffer descriptor.
 s[n+enabled_dims+tgsize] register holds wavefront offset to scratch buffer.
 where n is userdatanum, enabled_dims is number of enabled dimensions, tgsize is
 1 if tgsize is enabled, otherwise is 0.
+
+### Flat access
+
+By default, FLAT instructions read or write values from main memory. 6-7 SGPRs hold
+special buffer that hold a LDS and scratch buffer base addresses for FLAT instructions.
+10 dword of that buffer holds 32-63 bits of LDS base address for FLAT instructions.
+11 dword of that buffer holds 32-63 bits of scratch buffer base address for
+FLAT instructions.
