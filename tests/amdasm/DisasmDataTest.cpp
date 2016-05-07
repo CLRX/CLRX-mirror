@@ -181,7 +181,7 @@ static const cxbyte galliumInput1Global[14] =
 
 static const GalliumDisasmInput galliumDisasmData =
 {
-    GPUDeviceType::PITCAIRN,
+    GPUDeviceType::PITCAIRN, false,
     sizeof(galliumInput1Global), galliumInput1Global,
     {
         { "kernel1",
@@ -985,6 +985,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
     { nullptr, &galliumDisasmData, nullptr,
         R"fxDfx(.gallium
 .gpu Pitcairn
+.32bit
 .rodata
     .byte 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
     .byte 0x09, 0x0a, 0x0b, 0x21, 0x2c, 0x37

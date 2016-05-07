@@ -34,40 +34,37 @@ using namespace CLRX;
 
 /* Gallium ELF binary */
 
-GalliumElfBinary::GalliumElfBinary() :
+GalliumElfBinaryBase::GalliumElfBinaryBase() :
         progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0)
 { }
 
-GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
-               Flags creationFlags) : 
-       ElfBinary32(binaryCodeSize, binaryCode, creationFlags),
-       progInfosNum(0), progInfoEntries(nullptr), disasmSize(0), disasmOffset(0)
-       
+template<typename ElfBinary>
+void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary)
 {
     uint16_t amdGpuConfigIndex = SHN_UNDEF;
     try
-    { amdGpuConfigIndex = getSectionIndex(".AMDGPU.config"); }
+    { amdGpuConfigIndex = elfBinary.getSectionIndex(".AMDGPU.config"); }
     catch(const Exception& ex)
     { }
     
     uint16_t amdGpuDisasmIndex = SHN_UNDEF;
     try
-    { amdGpuDisasmIndex = getSectionIndex(".AMDGPU.disasm"); }
+    { amdGpuDisasmIndex = elfBinary.getSectionIndex(".AMDGPU.disasm"); }
     catch(const Exception& ex)
     { }
     if (amdGpuDisasmIndex != SHN_UNDEF)
     {   // set disassembler section
-        const Elf32_Shdr& shdr = getSectionHeader(amdGpuDisasmIndex);
+        const auto& shdr = elfBinary.getSectionHeader(amdGpuDisasmIndex);
         disasmOffset = ULEV(shdr.sh_offset);
         disasmSize = ULEV(shdr.sh_size);
     }
     
     uint16_t textIndex = SHN_UNDEF;
-    uint32_t textSize = 0;
+    size_t textSize = 0;
     try
     {
-        textIndex = getSectionIndex(".text");
-        textSize = ULEV(getSectionHeader(textIndex).sh_size);
+        textIndex = elfBinary.getSectionIndex(".text");
+        textSize = ULEV(elfBinary.getSectionHeader(textIndex).sh_size);
     }
     catch(const Exception& ex)
     { }
@@ -75,44 +72,75 @@ GalliumElfBinary::GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode,
     if (amdGpuConfigIndex == SHN_UNDEF || textIndex == SHN_UNDEF)
         return;
     // create amdGPU config systems
-    const Elf32_Shdr& shdr = getSectionHeader(amdGpuConfigIndex);
+    const auto& shdr = elfBinary.getSectionHeader(amdGpuConfigIndex);
     if ((ULEV(shdr.sh_size) % 24U) != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
     
+    bool hasProgInfoMap = (elfBinary.getCreationFlags() & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0;
     /* check symbols */
-    const cxuint symbolsNum = getSymbolsNum();
+    const size_t symbolsNum = elfBinary.getSymbolsNum();
     progInfosNum = 0;
-    if (hasProgInfoMap())
+    if (hasProgInfoMap)
         progInfoEntryMap.resize(symbolsNum);
-    for (cxuint i = 0; i < symbolsNum; i++)
+    for (size_t i = 0; i < symbolsNum; i++)
     {
-        const Elf32_Sym& sym = getSymbol(i);
-        const char* symName = getSymbolName(i);
+        const auto& sym = elfBinary.getSymbol(i);
+        const char* symName = elfBinary.getSymbolName(i);
         if (ULEV(sym.st_shndx) == textIndex && ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
         {
             if (ULEV(sym.st_value) >= textSize)
                 throw Exception("kernel symbol offset out of range");
-            if (hasProgInfoMap())
+            if (hasProgInfoMap)
                 progInfoEntryMap[progInfosNum] = std::make_pair(symName, 3*progInfosNum);
             progInfosNum++;
         }
     }
     if (progInfosNum*24U != ULEV(shdr.sh_size))
         throw Exception("Number of symbol kernels doesn't match progInfos number!");
+    cxbyte* binaryCode = (cxbyte*)elfBinary.getBinaryCode();
     progInfoEntries = reinterpret_cast<GalliumProgInfoEntry*>(binaryCode +
                 ULEV(shdr.sh_offset));
     
-    if (hasProgInfoMap())
+    if (hasProgInfoMap)
     {
         progInfoEntryMap.resize(progInfosNum);
         mapSort(progInfoEntryMap.begin(), progInfoEntryMap.end(), CStringLess());
     }
 }
 
-uint32_t GalliumElfBinary::getProgramInfoEntriesNum(uint32_t index) const
+GalliumElfBinaryBase::~GalliumElfBinaryBase()
+{ }
+
+GalliumElfBinary32::GalliumElfBinary32()
+{ }
+
+GalliumElfBinary32::~GalliumElfBinary32()
+{ }
+
+GalliumElfBinary32::GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode,
+           Flags creationFlags) : ElfBinary32(binaryCodeSize, binaryCode, creationFlags)
+       
+{
+    loadFromElf(static_cast<const ElfBinary32&>(*this));
+}
+
+GalliumElfBinary64::GalliumElfBinary64()
+{ }
+
+GalliumElfBinary64::~GalliumElfBinary64()
+{ }
+
+GalliumElfBinary64::GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode,
+           Flags creationFlags) : ElfBinary64(binaryCodeSize, binaryCode, creationFlags)
+       
+{
+    loadFromElf(static_cast<const ElfBinary64&>(*this));
+}
+
+uint32_t GalliumElfBinaryBase::getProgramInfoEntriesNum(uint32_t index) const
 { return 3; }
 
-uint32_t GalliumElfBinary::getProgramInfoEntryIndex(const char* name) const
+uint32_t GalliumElfBinaryBase::getProgramInfoEntryIndex(const char* name) const
 {
     ProgInfoEntryIndexMap::const_iterator it = binaryMapFind(progInfoEntryMap.begin(),
                          progInfoEntryMap.end(), name, CStringLess());
@@ -121,22 +149,56 @@ uint32_t GalliumElfBinary::getProgramInfoEntryIndex(const char* name) const
     return it->second;
 }
 
-const GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index) const
+const GalliumProgInfoEntry* GalliumElfBinaryBase::getProgramInfo(uint32_t index) const
 {
     return progInfoEntries + index*3U;
 }
 
-GalliumProgInfoEntry* GalliumElfBinary::getProgramInfo(uint32_t index)
+GalliumProgInfoEntry* GalliumElfBinaryBase::getProgramInfo(uint32_t index)
 {
     return progInfoEntries + index*3U;
 }
 
 /* main GalliumBinary */
 
+template<typename GalliumElfBinary>
+static void verifyKernelSymbols(size_t kernelsNum, const GalliumKernel* kernels,
+                const GalliumElfBinary& elfBinary)
+{
+    size_t symIndex = 0;
+    const size_t symsNum = elfBinary.getSymbolsNum();
+    uint16_t textIndex = elfBinary.getSectionIndex(".text");
+    for (uint32_t i = 0; i < kernelsNum; i++)
+    {
+        const GalliumKernel& kernel = kernels[i];
+        for (; symIndex < symsNum; symIndex++)
+        {
+            const auto& sym = elfBinary.getSymbol(symIndex);
+            const char* symName = elfBinary.getSymbolName(symIndex);
+            // kernel symol must be defined as global and must be bound to text section
+            if (ULEV(sym.st_shndx) == textIndex &&
+                ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
+            {   // names must be stored in order
+                if (kernel.kernelName != symName)
+                    throw Exception("Kernel symbols out of order!");
+                if (ULEV(sym.st_value) != kernel.offset)
+                    throw Exception("Kernel symbol value and Kernel "
+                                "offset doesn't match");
+                break;
+            }
+        }
+        if (symIndex >= symsNum)
+            throw Exception("Number of kernels in ElfBinary and "
+                        "MainBinary doesn't match");
+        symIndex++;
+    }
+}
+
 GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
                  Flags _creationFlags) : creationFlags(_creationFlags),
          binaryCodeSize(_binaryCodeSize), binaryCode(_binaryCode),
-         kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr)
+         kernelsNum(0), sectionsNum(0), kernels(nullptr), sections(nullptr),
+         elf64BitBinary(false)
 {
     if (binaryCodeSize < 4)
         throw Exception("GalliumBinary is too small!!!");
@@ -240,9 +302,24 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         
         if (!elfBinary && section.type == GalliumSectionType::TEXT)
         {
-            elfSectionId = section.sectionId;
-            elfBinary = GalliumElfBinary(section.size, data,
-                             creationFlags>>GALLIUM_INNER_SHIFT);
+            if (section.size < sizeof(Elf32_Ehdr))
+                throw Exception("Wrong GalliumElfBinary size");
+            const Elf32_Ehdr& ehdr = *reinterpret_cast<const Elf32_Ehdr*>(data);
+            if (ehdr.e_ident[EI_CLASS] == ELFCLASS32)
+            {   // 32-bit
+                elfBinary.reset(new GalliumElfBinary32(section.size, data,
+                                 creationFlags>>GALLIUM_INNER_SHIFT));
+                elf64BitBinary = false;
+            }
+            else if (ehdr.e_ident[EI_CLASS] == ELFCLASS64)
+            {   // 64-bit
+                elfSectionId = section.sectionId;
+                elfBinary.reset(new GalliumElfBinary64(section.size, data,
+                                 creationFlags>>GALLIUM_INNER_SHIFT));
+                elf64BitBinary = true;
+            }
+            else // wrong class
+                throw Exception("Wrong GalliumElfBinary class");
         }
         data += section.size;
         data32 = reinterpret_cast<uint32_t*>(data);
@@ -254,30 +331,10 @@ GalliumBinary::GalliumBinary(size_t _binaryCodeSize, cxbyte* _binaryCode,
         if (kernels[i].sectionId != elfSectionId)
             throw Exception("Kernel not in text section!");
     // verify kernel offsets
-    cxuint symIndex = 0;
-    const cxuint symsNum = elfBinary.getSymbolsNum();
-    uint16_t textIndex = elfBinary.getSectionIndex(".text");
-    for (uint32_t i = 0; i < kernelsNum; i++)
-    {
-        const GalliumKernel& kernel = kernels[i];
-        for (; symIndex < symsNum; symIndex++)
-        {
-            const Elf32_Sym& sym = elfBinary.getSymbol(symIndex);
-            const char* symName = elfBinary.getSymbolName(symIndex);
-            // kernel symol must be defined as global and must be bound to text section
-            if (ULEV(sym.st_shndx) == textIndex && ELF32_ST_BIND(sym.st_info) == STB_GLOBAL)
-            {   // names must be stored in order
-                if (kernel.kernelName != symName)
-                    throw Exception("Kernel symbols out of order!");
-                if (ULEV(sym.st_value) != kernel.offset)
-                    throw Exception("Kernel symbol value and Kernel offset doesn't match");
-                break;
-            }
-        }
-        if (symIndex >= symsNum)
-            throw Exception("Number of kernels in ElfBinary and MainBinary doesn't match");
-        symIndex++;
-    }
+    if (!elf64BitBinary)
+        verifyKernelSymbols(kernelsNum, kernels.get(), getElfBinary32());
+    else
+        verifyKernelSymbols(kernelsNum, kernels.get(), getElfBinary64());
 }
 
 uint32_t GalliumBinary::getKernelIndex(const char* name) const

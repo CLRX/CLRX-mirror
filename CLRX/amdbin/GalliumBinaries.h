@@ -128,35 +128,25 @@ struct GalliumSection
     uint32_t size;      ///< size of section
 };
 
-/* INFO: in this file is used ULEV function for conversion
- * from LittleEndian and unaligned access to other memory access policy and endianness
- * Please use this function whenever you want to get or set word in ELF binary,
- * because ELF binaries can be unaligned in memory (as inner binaries).
- */
-/// Gallium ELF binary
-/** ULEV function is required to access programInfoEntry fields */
-class GalliumElfBinary: public ElfBinary32
+class GalliumElfBinaryBase
 {
 public:
     /// program info entry index map
     typedef Array<std::pair<const char*, size_t> > ProgInfoEntryIndexMap;
-private:
+protected:
     uint32_t progInfosNum;
     GalliumProgInfoEntry* progInfoEntries;
     ProgInfoEntryIndexMap progInfoEntryMap;
-    uint32_t disasmSize;
-    uint32_t disasmOffset;
+    size_t disasmSize;
+    size_t disasmOffset;
+    
+    template<typename ElfBinary>
+    void loadFromElf(ElfBinary& elfBinary);
 public:
     /// empty constructor
-    GalliumElfBinary();
-    /// constructor
-    GalliumElfBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
+    GalliumElfBinaryBase();
     /// destructor
-    ~GalliumElfBinary() = default;
-    
-    /// return true if binary has program info map
-    bool hasProgInfoMap() const
-    { return (creationFlags & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0; }
+    virtual ~GalliumElfBinaryBase();
     
     /// returns program infos number
     uint32_t getProgramInfosNum() const
@@ -188,8 +178,49 @@ public:
     { return disasmOffset != 0; }
     
     /// returns size of disassembly
-    uint32_t getDisassemblySize() const
+    size_t getDisassemblySize() const
     { return disasmSize; }
+};
+
+/* INFO: in this file is used ULEV function for conversion
+ * from LittleEndian and unaligned access to other memory access policy and endianness
+ * Please use this function whenever you want to get or set word in ELF binary,
+ * because ELF binaries can be unaligned in memory (as inner binaries).
+ */
+/// Gallium ELF binary
+/** ULEV function is required to access programInfoEntry fields */
+class GalliumElfBinary32: public GalliumElfBinaryBase, public ElfBinary32
+{
+public:
+    /// empty constructor
+    GalliumElfBinary32();
+    /// constructor
+    GalliumElfBinary32(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
+    /// destructor
+    virtual ~GalliumElfBinary32();
+    
+    /// return true if binary has program info map
+    bool hasProgInfoMap() const
+    { return (creationFlags & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0; }
+    
+    /// return disassembly content (without null-character)
+    const char* getDisassembly() const
+    { return reinterpret_cast<const char*>(binaryCode + disasmOffset); }
+};
+
+class GalliumElfBinary64: public GalliumElfBinaryBase, public ElfBinary64
+{
+public:
+    /// empty constructor
+    GalliumElfBinary64();
+    /// constructor
+    GalliumElfBinary64(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
+    /// destructor
+    virtual ~GalliumElfBinary64();
+    
+    /// return true if binary has program info map
+    bool hasProgInfoMap() const
+    { return (creationFlags & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0; }
     
     /// return disassembly content (without null-character)
     const char* getDisassembly() const
@@ -209,7 +240,8 @@ private:
     std::unique_ptr<GalliumKernel[]> kernels;
     std::unique_ptr<GalliumSection[]> sections;
     
-    GalliumElfBinary elfBinary;
+    bool elf64BitBinary;
+    std::unique_ptr<GalliumElfBinaryBase> elfBinary;
 public:
     /// constructor
     GalliumBinary(size_t binaryCodeSize, cxbyte* binaryCode, Flags creationFlags);
@@ -240,13 +272,24 @@ public:
     cxbyte* getBinaryCode()
     { return binaryCode; }
     
-    /// returns Gallium inner ELF binary
-    GalliumElfBinary& getElfBinary()
-    { return elfBinary; }
+    bool is64BitElfBinary() const
+    { return elf64BitBinary; }
     
-    /// returns Gallium inner ELF binary
-    const GalliumElfBinary& getElfBinary() const
-    { return elfBinary; }
+    /// returns Gallium inner ELF 32-bit binary
+    GalliumElfBinary32& getElfBinary32()
+    { return *static_cast<GalliumElfBinary32*>(elfBinary.get()); }
+    
+    /// returns Gallium inner ELF 32-bit binary
+    const GalliumElfBinary32& getElfBinary32() const
+    { return *static_cast<const GalliumElfBinary32*>(elfBinary.get()); }
+    
+    /// returns Gallium inner ELF 64-bit binary
+    GalliumElfBinary64& getElfBinary64()
+    { return *static_cast<GalliumElfBinary64*>(elfBinary.get()); }
+    
+    /// returns Gallium inner ELF 64-bit binary
+    const GalliumElfBinary64& getElfBinary64() const
+    { return *static_cast<const GalliumElfBinary64*>(elfBinary.get()); }
     
     /// get sections number
     uint32_t getSectionsNum() const

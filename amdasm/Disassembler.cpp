@@ -757,12 +757,10 @@ static AmdDisasmInput* getAmdDisasmInputFromBinary(const AmdMainBinary& binary,
     return input.release();
 }
 
-static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
-           const GalliumBinary& binary, Flags flags)
+template<typename GalliumElfBinary>
+static void getGalliumDisasmInputFromBinaryBase(const GalliumBinary& binary,
+            const GalliumElfBinary& elfBin, Flags flags, GalliumDisasmInput* input)
 {
-    std::unique_ptr<GalliumDisasmInput> input(new GalliumDisasmInput);
-    input->deviceType = deviceType;
-    const GalliumElfBinary& elfBin = binary.getElfBinary();
     uint16_t rodataIndex = SHN_UNDEF;
     try
     { rodataIndex = elfBin.getSectionIndex(".rodata"); }
@@ -798,6 +796,25 @@ static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceT
     }
     input->code = elfBin.getSectionContent(textIndex);
     input->codeSize = ULEV(elfBin.getSectionHeader(textIndex).sh_size);
+}
+
+static GalliumDisasmInput* getGalliumDisasmInputFromBinary(GPUDeviceType deviceType,
+           const GalliumBinary& binary, Flags flags)
+{
+    std::unique_ptr<GalliumDisasmInput> input(new GalliumDisasmInput);
+    input->deviceType = deviceType;
+    if (!binary.is64BitElfBinary())
+    {
+        input->is64BitMode = false;
+        getGalliumDisasmInputFromBinaryBase(binary, binary.getElfBinary32(),
+                                flags, input.get());
+    }
+    else // 64-bit
+    {
+        input->is64BitMode = true;
+        getGalliumDisasmInputFromBinaryBase(binary, binary.getElfBinary64(),
+                                flags, input.get());
+    }
     return input.release();
 }
 
@@ -1474,6 +1491,11 @@ void Disassembler::disassembleGallium()
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doMetadata = ((flags & DISASM_METADATA) != 0);
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    
+    if (galliumInput->is64BitMode)
+        output.write(".64bit\n", 7);
+    else
+        output.write(".32bit\n", 7);
     
     if (doDumpData && galliumInput->globalData != nullptr &&
         galliumInput->globalDataSize != 0)

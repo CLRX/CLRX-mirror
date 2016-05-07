@@ -35,7 +35,7 @@ static const char* origBinaryFiles[3] =
 
 static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galliumBin)
 {
-    const GalliumElfBinary& elfBin = galliumBin->getElfBinary();
+    const GalliumElfBinary32& elfBin = galliumBin->getElfBinary32();
     const Elf32_Shdr& commentHdr = elfBin.getSectionHeader(".comment");
     uint16_t rodataIndex = SHN_UNDEF;
     try

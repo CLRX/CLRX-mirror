@@ -242,6 +242,7 @@ struct AmdCL2DisasmInput
 struct GalliumDisasmInput
 {
     GPUDeviceType deviceType;   ///< GPU device type
+    bool is64BitMode;       ///< true if 64-bit mode of addressing
     size_t globalDataSize;  ///< global (constants for kernels) data size
     const cxbyte* globalData;   ///< global (constants for kernels) data
     std::vector<GalliumDisasmKernelInput> kernels;    ///< list of input kernels
