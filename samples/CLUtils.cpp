@@ -204,11 +204,14 @@ try
     
     device = devices[deviceIndex];
     
-    cl_uint addressBits;
-    error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint),
-                             &addressBits, nullptr);
-    if (error != CL_SUCCESS)
-        throw CLError(error, "clGetDeviceAddressBits");
+    cl_uint bits = 32;
+    if (binaryFormat != BinaryFormat::GALLIUM)
+    {   // get address Bits from device info
+        error = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint),
+                                 &bits, nullptr);
+        if (error != CL_SUCCESS)
+            throw CLError(error, "clGetDeviceAddressBits");
+    }
     
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
                              &maxWorkGroupSize, nullptr);
@@ -237,6 +240,31 @@ try
         throw CLError(error, "clGetDeviceInfoName");
     std::cout << "Device: " << deviceIndex << " - " << deviceName.get() << std::endl;
     
+    // get bits from device name (LLVM version)
+#if HAVE_64BIT
+    if (binaryFormat == BinaryFormat::GALLIUM)
+    {
+        const char* llvmPart = strstr(deviceName.get(), "LLVM ");
+        if (llvmPart!=nullptr)
+        {
+            try
+            {
+                const char* majorVerPart = llvmPart+5;
+                const char* minorVerPart;
+                const char* end;
+                cxuint majorVersion = cstrtoui(majorVerPart, nullptr, minorVerPart);
+                minorVerPart++; // skip '.'
+                cxuint minorVersion = cstrtoui(minorVerPart, nullptr, end);
+                if (majorVersion*10000U + minorVersion*100U >= 30900U)
+                    bits = 64; // use 64-bit
+            }
+            catch(const ParseException& ex)
+            { } // ignore error
+        }
+    }
+#endif
+    std::cout << "Bitness: " << bits << std::endl;
+    
     /// create command queue
     queue = clCreateCommandQueue(context, device, 0, &error);
     if (queue==nullptr)
@@ -256,7 +284,7 @@ try
         ArrayIStream astream(::strlen(sourceCode), sourceCode);
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
-        assembler.set64Bit(addressBits==64);
+        assembler.set64Bit(bits==64);
         assembler.assemble();
         assembler.writeBinary(binary);
     }

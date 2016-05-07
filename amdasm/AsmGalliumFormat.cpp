@@ -988,6 +988,7 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
 
 bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
+    output.is64BitElf = assembler.is64Bit();
     size_t sectionsNum = sections.size();
     size_t kernelsNum = kernelStates.size();
     output.deviceType = assembler.getDeviceType();

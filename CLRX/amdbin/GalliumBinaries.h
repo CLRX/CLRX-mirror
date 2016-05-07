@@ -381,6 +381,7 @@ struct GalliumKernelInput
 /// Gallium input
 struct GalliumInput
 {
+    bool is64BitElf;   ///< is 64-bit elf binary
     GPUDeviceType deviceType;   ///< GPU device type
     size_t globalDataSize;  ///< global constant data size
     const cxbyte* globalData;   ///< global constant data
@@ -412,6 +413,7 @@ public:
     
     /// constructor
     /**
+     * \param _64bitMode 64-bit elf binary
      * \param deviceType device type
      * \param codeSize size of code
      * \param code code pointer
@@ -419,12 +421,12 @@ public:
      * \param globalData global data pointer
      * \param kernels vector of kernels
      */
-    GalliumBinGenerator(GPUDeviceType deviceType, size_t codeSize, const cxbyte* code,
-            size_t globalDataSize, const cxbyte* globalData,
+    GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceType, size_t codeSize,
+            const cxbyte* code, size_t globalDataSize, const cxbyte* globalData,
             const std::vector<GalliumKernelInput>& kernels);
     /// constructor
-    GalliumBinGenerator(GPUDeviceType deviceType, size_t codeSize, const cxbyte* code,
-            size_t globalDataSize, const cxbyte* globalData,
+    GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceType, size_t codeSize,
+            const cxbyte* code, size_t globalDataSize, const cxbyte* globalData,
             std::vector<GalliumKernelInput>&& kernels);
     ~GalliumBinGenerator();
     

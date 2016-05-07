@@ -43,6 +43,7 @@ static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galli
     catch(Exception& ex)
     { }
     GalliumInput input;
+    input.is64BitElf = false;
     
     input.deviceType = GPUDeviceType::CAPE_VERDE;
     if (rodataIndex != SHN_UNDEF)

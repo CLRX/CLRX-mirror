@@ -76,7 +76,8 @@ void GalliumElfBinaryBase::loadFromElf(ElfBinary& elfBinary)
     if ((ULEV(shdr.sh_size) % 24U) != 0)
         throw Exception("Wrong size of .AMDGPU.config section!");
     
-    bool hasProgInfoMap = (elfBinary.getCreationFlags() & GALLIUM_ELF_CREATE_PROGINFOMAP) != 0;
+    const bool hasProgInfoMap = (elfBinary.getCreationFlags() &
+                        GALLIUM_ELF_CREATE_PROGINFOMAP) != 0;
     /* check symbols */
     const size_t symbolsNum = elfBinary.getSymbolsNum();
     progInfosNum = 0;
@@ -374,24 +375,24 @@ GalliumBinGenerator::GalliumBinGenerator(const GalliumInput* galliumInput)
         : manageable(false), input(galliumInput)
 { }
 
-GalliumBinGenerator::GalliumBinGenerator(GPUDeviceType deviceType,
+GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
         size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
         const std::vector<GalliumKernelInput>& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ deviceType, globalDataSize, globalData, kernels,
+    input = new GalliumInput{ _64bitMode, deviceType, globalDataSize, globalData, kernels,
             codeSize, code, 0, nullptr };
 }
 
-GalliumBinGenerator::GalliumBinGenerator(GPUDeviceType deviceType,
+GalliumBinGenerator::GalliumBinGenerator(bool _64bitMode, GPUDeviceType deviceType,
         size_t codeSize, const cxbyte* code,
         size_t globalDataSize, const cxbyte* globalData,
         std::vector<GalliumKernelInput>&& kernels)
         : manageable(true), input(nullptr)
 {
-    input = new GalliumInput{ deviceType, globalDataSize, globalData, std::move(kernels),
-        codeSize, code, 0, nullptr };
+    input = new GalliumInput{ _64bitMode, deviceType, globalDataSize, globalData,
+        std::move(kernels), codeSize, code, 0, nullptr };
 }
 
 
@@ -505,6 +506,77 @@ public:
     }
 };
 
+template<typename Types>
+static void putSectionsAndSymbols(ElfBinaryGenTemplate<Types>& elfBinGen,
+      const GalliumInput* input, const Array<uint32_t>& kernelsOrder,
+      const AmdGpuConfigContent& amdGpuConfigContent)
+{
+    uint32_t commentSize = 28;
+    const char* comment = "CLRX GalliumBinGenerator 0.1";
+    
+    typedef ElfRegionTemplate<Types> ElfRegion;
+    typedef ElfSymbolTemplate<Types> ElfSymbol;
+    const uint32_t kernelsNum = input->kernels.size();
+    elfBinGen.addRegion(ElfRegion(input->codeSize, input->code, 256, ".text",
+            SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR));
+    elfBinGen.addRegion(ElfRegion(0, (const cxbyte*)nullptr, 4, ".data",
+            SHT_PROGBITS, SHF_ALLOC|SHF_WRITE));
+    elfBinGen.addRegion(ElfRegion(0, (const cxbyte*)nullptr, 4, ".bss",
+            SHT_NOBITS, SHF_ALLOC|SHF_WRITE));
+    // write configuration for kernel execution
+    elfBinGen.addRegion(ElfRegion(uint64_t(24U)*kernelsNum, &amdGpuConfigContent, 1,
+            ".AMDGPU.config", SHT_PROGBITS, 0));
+    
+    if (input->globalData!=nullptr)
+        elfBinGen.addRegion(ElfRegion(input->globalDataSize, input->globalData, 4,
+                ".rodata", SHT_PROGBITS, SHF_ALLOC));
+    
+    if (input->comment!=nullptr)
+    {   // if comment, store comment section
+        comment = input->comment;
+        commentSize = input->commentSize;
+        if (commentSize==0)
+            commentSize = ::strlen(comment);
+    }
+    elfBinGen.addRegion(ElfRegion(commentSize, (const cxbyte*)comment, 1,
+                ".comment", SHT_PROGBITS, SHF_STRINGS|SHF_MERGE, 0, 0, 0, 1));
+    elfBinGen.addRegion(ElfRegion(0, (const cxbyte*)nullptr, 1, ".note.GNU-stack",
+            SHT_PROGBITS, 0));
+    elfBinGen.addRegion(ElfRegion::shstrtabSection());
+    elfBinGen.addRegion(ElfRegion::sectionHeaderTable());
+    elfBinGen.addRegion(ElfRegion::symtabSection());
+    elfBinGen.addRegion(ElfRegion::strtabSection());
+    /* symbols */
+    /// EndOfTextLabel - ?? always is at end of symbol table
+    elfBinGen.addSymbol({"EndOfTextLabel", 1, ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE),
+            0, false, uint32_t(input->codeSize), 0});
+    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr);
+    // local symbols for sections
+    for (cxuint i = 0; i < sectSymsNum; i++)
+        elfBinGen.addSymbol({"", uint16_t(i+1), ELF32_ST_INFO(STB_LOCAL, STT_SECTION),
+                0, false, 0, 0});
+    for (uint32_t korder: kernelsOrder)
+    {
+        const GalliumKernelInput& kernel = input->kernels[korder];
+        elfBinGen.addSymbol({kernel.kernelName.c_str(), 1,
+                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0, false, kernel.offset, 0});
+    }
+    
+    /* choose builtin section table and extraSectionStartIndex */
+    const uint16_t* curMainBuiltinSections = (input->globalData!=nullptr) ?
+            mainBuiltinSectionTable : mainBuiltinSectionTable2;
+    cxuint startSectionIndex = (input->globalData!=nullptr) ? 11 : 10;
+    
+    /* extra sections */
+    for (const BinSection& section: input->extraSections)
+        elfBinGen.addRegion(ElfRegion(section, curMainBuiltinSections,
+                         GALLIUMSECTID_MAX, startSectionIndex));
+    /* extra symbols */
+    for (const BinSymbol& symbol: input->extraSymbols)
+        elfBinGen.addSymbol(ElfSymbol(symbol, curMainBuiltinSections,
+                         GALLIUMSECTID_MAX, startSectionIndex));
+}
+
 void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>* vPtr,
              Array<cxbyte>* aPtr) const
 {
@@ -534,9 +606,6 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
                 throw Exception("UserDataNum out of range");
         }
     
-    // elf extra data
-    uint32_t commentSize = 28;
-    const char* comment = "CLRX GalliumBinGenerator 0.1";
     // sort kernels by name (for correct order in binary file) */
     Array<uint32_t> kernelsOrder(kernelsNum);
     for (cxuint i = 0; i < kernelsNum; i++)
@@ -545,73 +614,33 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
           [this](const uint32_t& a,const uint32_t& b)
           { return input->kernels[a].kernelName < input->kernels[b].kernelName; });
     
-    ElfBinaryGen32 elfBinGen({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0, EV_CURRENT,
-            UINT_MAX, 0, 0 });
-    elfBinGen.addRegion(ElfRegion32(input->codeSize, input->code, 256, ".text",
-            SHT_PROGBITS, SHF_ALLOC|SHF_EXECINSTR));
-    elfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 4, ".data",
-            SHT_PROGBITS, SHF_ALLOC|SHF_WRITE));
-    elfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 4, ".bss",
-            SHT_NOBITS, SHF_ALLOC|SHF_WRITE));
-    // write configuration for kernel execution
+    std::unique_ptr<ElfBinaryGen32> elfBinGen32;
+    std::unique_ptr<ElfBinaryGen64> elfBinGen64;
+    
     AmdGpuConfigContent amdGpuConfigContent(kernelsOrder, *input);
-    elfBinGen.addRegion(ElfRegion32(uint64_t(24U)*kernelsNum, &amdGpuConfigContent, 1,
-            ".AMDGPU.config", SHT_PROGBITS, 0));
-    
-    if (input->globalData!=nullptr)
-        elfBinGen.addRegion(ElfRegion32(input->globalDataSize, input->globalData, 4,
-                ".rodata", SHT_PROGBITS, SHF_ALLOC));
-    
-    if (input->comment!=nullptr)
-    {   // if comment, store comment section
-        comment = input->comment;
-        commentSize = input->commentSize;
-        if (commentSize==0)
-            commentSize = ::strlen(comment);
+    if (!input->is64BitElf)
+    {   /* 32-bit ELF */
+        elfBinGen32.reset(new ElfBinaryGen32({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
+                    EV_CURRENT, UINT_MAX, 0, 0 }));
+        putSectionsAndSymbols(*elfBinGen32, input, kernelsOrder, amdGpuConfigContent);
+        elfSize = elfBinGen32->countSize();
     }
-    elfBinGen.addRegion(ElfRegion32(commentSize, (const cxbyte*)comment, 1,
-                ".comment", SHT_PROGBITS, SHF_STRINGS|SHF_MERGE, 0, 0, 0, 1));
-    elfBinGen.addRegion(ElfRegion32(0, (const cxbyte*)nullptr, 1, ".note.GNU-stack",
-            SHT_PROGBITS, 0));
-    elfBinGen.addRegion(ElfRegion32::shstrtabSection());
-    elfBinGen.addRegion(ElfRegion32::sectionHeaderTable());
-    elfBinGen.addRegion(ElfRegion32::symtabSection());
-    elfBinGen.addRegion(ElfRegion32::strtabSection());
-    /* symbols */
-    /// EndOfTextLabel - ?? always is at end of symbol table
-    elfBinGen.addSymbol({"EndOfTextLabel", 1, ELF32_ST_INFO(STB_LOCAL, STT_NOTYPE),
-            0, false, uint32_t(input->codeSize), 0});
-    const cxuint sectSymsNum = 6 + (input->globalData!=nullptr);
-    // local symbols for sections
-    for (cxuint i = 0; i < sectSymsNum; i++)
-        elfBinGen.addSymbol({"", uint16_t(i+1), ELF32_ST_INFO(STB_LOCAL, STT_SECTION),
-                0, false, 0, 0});
-    for (uint32_t korder: kernelsOrder)
-    {
-        const GalliumKernelInput& kernel = input->kernels[korder];
-        elfBinGen.addSymbol({kernel.kernelName.c_str(), 1,
-                ELF32_ST_INFO(STB_GLOBAL, STT_NOTYPE), 0, false, kernel.offset, 0});
+    else
+    {   /* 64-bit ELF */
+        elfBinGen64.reset(new ElfBinaryGen64({ 0, 0, ELFOSABI_SYSV, 0,  ET_REL, 0,
+                    EV_CURRENT, UINT_MAX, 0, 0 }));
+        putSectionsAndSymbols(*elfBinGen64, input, kernelsOrder, amdGpuConfigContent);
+        elfSize = elfBinGen64->countSize();
     }
-    
-    /* choose builtin section table and extraSectionStartIndex */
-    const uint16_t* curMainBuiltinSections = (input->globalData!=nullptr) ?
-            mainBuiltinSectionTable : mainBuiltinSectionTable2;
-    cxuint startSectionIndex = (input->globalData!=nullptr) ? 11 : 10;
-    
-    /* extra sections */
-    for (const BinSection& section: input->extraSections)
-        elfBinGen.addRegion(ElfRegion32(section, curMainBuiltinSections,
-                         GALLIUMSECTID_MAX, startSectionIndex));
-    /* extra symbols */
-    for (const BinSymbol& symbol: input->extraSymbols)
-        elfBinGen.addSymbol(ElfSymbol32(symbol, curMainBuiltinSections,
-                         GALLIUMSECTID_MAX, startSectionIndex));
-    
-    elfSize = elfBinGen.countSize();
+
     binarySize += elfSize;
     
-    if (elfSize > UINT32_MAX)
-    throw Exception("Elf binary size is too big!");
+    if (
+#ifdef HAVE_64BIT
+        !input->is64BitElf &&
+#endif
+        elfSize > UINT32_MAX)
+        throw Exception("Elf binary size is too big!");
     
 #ifdef HAVE_32BIT
     if (binarySize > UINT32_MAX)
@@ -673,7 +702,10 @@ void GalliumBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char
             LEV(uint32_t(elfSize+4)), LEV(uint32_t(elfSize)) };
         bos.writeArray(6, section);
     }
-    elfBinGen.generate(bos);
+    if (!input->is64BitElf)
+        elfBinGen32->generate(bos);
+    else // 64-bit
+        elfBinGen64->generate(bos);
     assert(bos.getWritten() == binarySize);
     }
     catch(...)
