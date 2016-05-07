@@ -26,29 +26,31 @@
 
 using namespace CLRX;
 
-static const char* origBinaryFiles[3] =
+static const char* origBinaryFiles[4] =
 {
     CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/BlackScholes.0.reconf.orig",
     CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/DCT.0.reconf.orig",
-    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig"
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/MatrixMultiplication.0.reconf.orig",
+    CLRX_SOURCE_DIR "/tests/amdbin/galliumbins/vectoradd-64bit.clo.reconf"
 };
 
-static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galliumBin)
+template<typename GalliumElfBinary>
+static GalliumInput getGalliumInputBase(bool disassembly, const GalliumBinary* galliumBin,
+        const GalliumElfBinary& elfBin)
 {
-    const GalliumElfBinary32& elfBin = galliumBin->getElfBinary32();
-    const Elf32_Shdr& commentHdr = elfBin.getSectionHeader(".comment");
+    const auto& commentHdr = elfBin.getSectionHeader(".comment");
     uint16_t rodataIndex = SHN_UNDEF;
     try
     { rodataIndex = elfBin.getSectionIndex(".rodata"); }
     catch(Exception& ex)
     { }
     GalliumInput input;
-    input.is64BitElf = false;
+    input.is64BitElf = galliumBin->is64BitElfBinary();
     
     input.deviceType = GPUDeviceType::CAPE_VERDE;
     if (rodataIndex != SHN_UNDEF)
     {
-        const Elf32_Shdr& rodataHdr = elfBin.getSectionHeader(rodataIndex);
+        const auto& rodataHdr = elfBin.getSectionHeader(rodataIndex);
         input.globalDataSize = ULEV(rodataHdr.sh_size);
         input.globalData = elfBin.getSectionContent(rodataIndex);
     }
@@ -83,6 +85,14 @@ static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galli
     input.codeSize = ULEV(elfBin.getSectionHeader(".text").sh_size);
     input.code = elfBin.getSectionContent(".text");
     return input;
+}
+
+static GalliumInput getGalliumInput(bool disassembly, const GalliumBinary* galliumBin)
+{
+    if (!galliumBin->is64BitElfBinary())
+        return getGalliumInputBase(disassembly, galliumBin, galliumBin->getElfBinary32());
+    else // 64-bit elf binary
+        return getGalliumInputBase(disassembly, galliumBin, galliumBin->getElfBinary64());
 }
 
 static void testOrigBinary(cxuint testCase, const char* origBinaryFilename)
