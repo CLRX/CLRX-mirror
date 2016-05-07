@@ -590,6 +590,10 @@ generators F1,2,3
 genF1 10,12
 ```
 
+If macro argument starts with '\%' then rest of macro argument will be evaluated as
+expression and its results will be stored in string form (likewise '%EXPR' evaluation if
+alternate macro syntax is enabled).
+
 ### .main
 
 Go to main binary over binary of the kernel.

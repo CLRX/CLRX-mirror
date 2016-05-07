@@ -777,9 +777,10 @@ bool Assembler::parseMacroArgValue(const char*& string, std::string& outStr)
     cxbyte prevTok = 0;
     cxuint backslash = 0;
     
-    if (alternateMacro && string != end && *string=='%')
+    if ((alternateMacro && string != end && *string=='%') ||
+        (!alternateMacro && string+2 <= end && *string=='\\' && string[1]=='%'))
     {   // alternate syntax, parse expression evaluation
-        const char* exprPlace = string+1;
+        const char* exprPlace = string + ((alternateMacro) ? 1 : 2);
         uint64_t value;
         if (AsmParseUtils::getAbsoluteValueArg(*this, value, exprPlace, true))
         {
