@@ -93,3 +93,9 @@ Before looking up table, value should be masked: (value&0x1f).
 ### Sampler arguments
 
 A samplers are passed via pointers. A sampler pointers points to sampler resource.
+
+### Scratch buffer access
+
+First four scalar registers holds scratch buffer descriptor.
+s[n+enabled_dims] register holds wavefront offset to scratch buffer.
+where n is userdatanum, enabled_dims is number of enabled dimensions.
