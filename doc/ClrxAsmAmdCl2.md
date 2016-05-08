@@ -43,8 +43,8 @@ for human (`.config`) and for quick recompilation (kernel setup, stub, metadata 
 
 ## Scalar register allocation
 
-Depends on configuration option, assembler add VCC and FLAT_SCRATCH
-(if useenqueue or usegeneric enabled).
+Depend on configuration options, an assembler add VCC and FLAT_SCRATCH
+(if `.useenqueue` or `.usegeneric` enabled).
 
 ## List of the specific pseudo-operations
 

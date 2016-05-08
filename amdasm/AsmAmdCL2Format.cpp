@@ -1421,8 +1421,8 @@ bool AsmAmdCL2Handler::prepareBinary()
                 char numBuf[64];
                 snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
                 assembler.printError(assembler.kernels[i].sourcePos, (std::string(
-                        "Number of total SGPRs for kernel '")+
-                        output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
+                    "Number of total SGPRs for kernel '")+
+                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
                 good = false;
             }
         }
