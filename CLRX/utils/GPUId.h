@@ -24,6 +24,7 @@
 #define __CLRX_GPUID_H__
 
 #include <CLRX/Config.h>
+#include <CLRX/utils/Utilities.h>
 #include <string>
 
 /// main namespace
@@ -94,13 +95,23 @@ extern GPUDeviceType getLowestGPUDeviceTypeFromArchitecture(GPUArchitecture arch
 /// get GPU architecture name
 extern const char* getGPUArchitectureName(GPUArchitecture architecture);
 
-enum: cxuint {
-    REGCOUNT_INCLUDE_VCC = 1
+enum: Flags {
+    REGCOUNT_NO_VCC = 1,
+    REGCOUNT_NO_FLAT = 2,
+    REGCOUNT_NO_XNACK = 4,
+    REGCOUNT_NO_EXTRA = 0xffff
 };
 
 enum: cxuint {
     REGTYPE_SGPR = 0,
     REGTYPE_VGPR
+};
+
+enum : Flags
+{
+    GCN_VCC = 1,
+    GCN_FLAT = 2,
+    GCN_XNACK = 4
 };
 
 enum: Flags {
@@ -110,13 +121,16 @@ enum: Flags {
 
 /// get maximum available registers for GPU (type: 0 - scalar, 1 - vector)
 extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
-                         cxuint flags = 0);
+                         Flags flags = 0);
 
 // get minimal number of required registers
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
                cxuint userDataNum, Flags flags, cxuint* gprsOut);
 
 extern size_t getGPUMaxLocalSize(GPUArchitecture architecture);
+
+extern cxuint getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType,
+              Flags flags);
 
 };
 

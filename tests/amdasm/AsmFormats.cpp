@@ -619,7 +619,7 @@ R"ffDXD(test.s:4:13: Error: ProgInfo can't be defined if configuration was exist
 test.s:7:13: Error: Configuration can't be defined if progInfo was defined
 test.s:12:23: Warning: Value 0x7 truncated to 0x3
 test.s:13:24: Warning: Value 0x157 truncated to 0x57
-test.s:15:23: Error: Used SGPRs number out of range (0-102)
+test.s:15:23: Error: Used SGPRs number out of range (0-104)
 test.s:16:23: Error: Used VGPRs number out of range (0-256)
 )ffDXD", false
     },
@@ -1591,7 +1591,7 @@ test.s:13:20: Warning: Value 0x111da truncated to 0xda
 test.s:14:20: Error: LocalSize out of range (0-32768)
 test.s:15:19: Warning: Value 0x6 truncated to 0x2
 test.s:16:21: Warning: Value 0xd9 truncated to 0x59
-test.s:17:19: Error: Used SGPRs number out of range (0-102)
+test.s:17:19: Error: Used SGPRs number out of range (0-104)
 test.s:18:22: Error: This is not 'unused' specifier
 test.s:23:9: Error: Illegal place of configuration pseudo-op
 test.s:24:9: Error: Illegal place of kernel argument

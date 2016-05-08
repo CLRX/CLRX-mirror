@@ -745,7 +745,8 @@ void AsmAmdPseudoOps::setConfigValue(AsmAmdHandler& handler, const char* pseudoO
             {
                 const GPUArchitecture arch = getGPUArchitectureFromDeviceType(
                             asmr.deviceType);
-                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+                cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR,
+                                       REGCOUNT_NO_VCC);
                 if (value > maxSGPRsNum)
                 {
                     char buf[64];

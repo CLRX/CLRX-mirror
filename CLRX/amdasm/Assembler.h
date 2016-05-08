@@ -81,13 +81,6 @@ enum : AsmExprTargetType
     GCNTGT_SMEMIMM
 };
 
-enum : Flags
-{
-    GCN_VCC = 1,
-    GCN_FLAT = 2,
-    GCN_XNACK = 4
-};
-
 /// ISA assembler class
 class ISAAssembler: public NonCopyableAndNonMovable
 {

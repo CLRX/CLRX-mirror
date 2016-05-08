@@ -638,7 +638,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
     const bool isOlderThan1598 = driverVersion < 159805;
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(input->deviceType);
-    cxuint maxSGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    cxuint maxSGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, REGCOUNT_NO_VCC);
     cxuint maxVGPRSNum = getGPUMaxRegistersNum(arch, REGTYPE_VGPR, 0);
     
     for (size_t i = 0; i < input->kernels.size(); i++)
@@ -1389,7 +1389,8 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     
     putProgInfoEntryLE(bos, 0x80001041U, config.usedVGPRsNum);
     putProgInfoEntryLE(bos, 0x80001042U, config.usedSGPRsNum);
-    putProgInfoEntryLE(bos, 0x80001863U, getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0));
+    putProgInfoEntryLE(bos, 0x80001863U, getGPUMaxRegistersNum(arch, REGTYPE_SGPR,
+                           REGCOUNT_NO_VCC));
     putProgInfoEntryLE(bos, 0x80001864U, 256);
     putProgInfoEntryLE(bos, 0x80001043U, config.floatMode);
     putProgInfoEntryLE(bos, 0x80001044U, config.ieeeMode);

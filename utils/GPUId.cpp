@@ -166,14 +166,20 @@ const char* CLRX::getGPUArchitectureName(GPUArchitecture architecture)
 }
 
 cxuint CLRX::getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
-                         cxuint flags)
+                         Flags flags)
 {
     if (architecture > GPUArchitecture::GPUARCH_MAX)
         throw Exception("Unknown GPU architecture");
-    if (architecture != GPUArchitecture::GCN1_2)
-        return (regType == 0) ? ((flags & REGCOUNT_INCLUDE_VCC) ? 104  : 102) : 256;
-    else    /* really 102 sgprsNum only for GCN1.2 ??? (check) */
-        return (regType == 0) ? ((flags & REGCOUNT_INCLUDE_VCC) ? 102 : 100) : 256;
+    if (regType == 1)
+        return 256; // VGPRS
+    cxuint maxSpgrs = (architecture==GPUArchitecture::GCN1_2) ? 102 : 104;
+    if ((flags & REGCOUNT_NO_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
+        maxSpgrs -= (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
+    else if ((flags & REGCOUNT_NO_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
+        maxSpgrs -= 4;
+    else if ((flags & REGCOUNT_NO_VCC)!=0)
+        maxSpgrs -= 2;
+    return maxSpgrs;
 }
 
 void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
@@ -190,4 +196,17 @@ void CLRX::getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMa
 size_t CLRX::getGPUMaxLocalSize(GPUArchitecture architecture)
 {
     return 32768;
+}
+
+cxuint CLRX::getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType, Flags flags)
+{
+    if (regType == 1)
+        return 0;
+    if ((flags & GCN_FLAT)!=0 && (architecture>GPUArchitecture::GCN1_0))
+        return (architecture==GPUArchitecture::GCN1_2) ? 6 : 4;
+    else if ((flags & GCN_XNACK)!=0 && (architecture>GPUArchitecture::GCN1_1))
+        return 4;
+    else if ((flags & REGCOUNT_NO_VCC)!=0)
+        return 2;
+    return 0;
 }
