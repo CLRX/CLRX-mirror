@@ -21,6 +21,10 @@ like register usage, UAV usage, floating point setup.
 The CLRX assembler allow to use one of two ways to configure kernel setup:
 for human (`.config`) and for quick recompilation (ATI CALNotes and the metadata string).
 
+## Scalar register allocation
+
+To used scalar registers, assembler add 2 additional registers for handling VCC.
+
 ## List of the specific pseudo-operations
 
 ### .arg

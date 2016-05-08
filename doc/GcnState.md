@@ -38,16 +38,21 @@ The register 1-5 bits of PGM_RSRC2 indicates how many first scalar registers hol
 Further scalar registers store group id and it are different for every wavefront.
 Number of that registers determined from number of enabled dimensions (fields TGID_X_EN,
 TGID_Y_EN and TGID_Z_EN in PGM_RSRC2). Last scalar registers is TG_SIZE value and
-scratch buffer wave offset (for handling scratch buffer).
+scratch buffer wave offset (for handling scratch buffer). Following is depicting
+layout of SGPR's:
 
- Register             | Number of registers                  | Description
-----------------------|--------------------------------------|----------------------
- SGPR[0:UN-1]         | UN - number of user data registers   | User data registers
- SGPR[UN:UN+DIMS-1]   | DIMS - number of enabled dimensions  | Group Id
- SGPR[UN+DIMS]        | TGSIZE - 1 if TGSIZE_EN enabled      | TGSIZE
- SGPR[UN+DIMS+TGSIZE] | SCRATCH_EN - 1 if SCRATCH enabled    | Scratch wave offset
+ First register  | Number of registers           | Description
+-----------------|-------------------------------|----------------------
+ SGPR0           | number of user data registers | User data registers
+ next SGPR       | number of enabled dimensions  | Group Id
+ next SGPR       | 1 if TGSIZE_EN enabled        | TGSIZE
+ next SGPR       | 1 if SCRATCH enabled          | Scratch wave offset
+ SGPR[N-6:N-5]   | 2 registers                   | FLAT_SCRATCH (GCN 1.2)
+ SGPR[N-4:N-3]   | 2 registers                   | XNACK_MASK (GCN 1.2) or FLAT_SCRATCH (GCN 1.1)
+ SGPR[N-2:N-1]   | 2 registers                   | VCC
 
-
+Note: N - number of allocated SGPR's.
+ 
 ### STATUS Register
 
 Table of fields for STATUS Register:
@@ -118,4 +123,3 @@ List of possible values:
 
 The initial value of FP_ROUND and FP_DENORM fields (first 8 bits in MODE register)
 can be given by including .floatmode pseudo-operation.
-
