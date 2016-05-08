@@ -37,9 +37,10 @@ the same arguments). User data can allow to pass any constant data to kernel fro
 The register 1-5 bits of PGM_RSRC2 indicates how many first scalar registers hold user data.
 Further scalar registers store group id and it are different for every wavefront.
 Number of that registers determined from number of enabled dimensions (fields TGID_X_EN,
-TGID_Y_EN and TGID_Z_EN in PGM_RSRC2). Last scalar registers is TG_SIZE value and
-scratch buffer wave offset (for handling scratch buffer). Following is depicting
-layout of SGPR's:
+TGID_Y_EN and TGID_Z_EN in PGM_RSRC2). Next scalar registers is TG_SIZE value and
+scratch buffer wave offset (for handling scratch buffer). Last allocated SGPR's
+are VCC, FLAT_SCRATCH and XNACK_MASK, depending on GCN architecture.
+Following table is depicting layout of SGPR's:
 
  First register  | Number of registers           | Description
 -----------------|-------------------------------|----------------------
@@ -47,9 +48,9 @@ layout of SGPR's:
  next SGPR       | number of enabled dimensions  | Group Id
  next SGPR       | 1 if TGSIZE_EN enabled        | TGSIZE
  next SGPR       | 1 if SCRATCH enabled          | Scratch wave offset
- SGPR[N-6:N-5]   | 2 registers                   | FLAT_SCRATCH (GCN 1.2)
- SGPR[N-4:N-3]   | 2 registers                   | XNACK_MASK (GCN 1.2) or FLAT_SCRATCH (GCN 1.1)
- SGPR[N-2:N-1]   | 2 registers                   | VCC
+ SGPR[N-6]       | 2 registers                   | FLAT_SCRATCH (GCN 1.2)
+ SGPR[N-4]       | 2 registers                   | XNACK_MASK (GCN 1.2) or FLAT_SCRATCH (GCN 1.1)
+ SGPR[N-2]       | 2 registers                   | VCC
 
 Note: N - number of allocated SGPR's.
  
