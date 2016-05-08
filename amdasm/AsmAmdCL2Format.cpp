@@ -1301,6 +1301,7 @@ bool AsmAmdCL2Handler::parsePseudoOp(const CString& firstName,
 
 bool AsmAmdCL2Handler::prepareBinary()
 {
+    bool good = true;
     if (assembler.isaAssembler!=nullptr)
         saveCurrentAllocRegs(); // save last kernel allocated registers to kernel state
     
@@ -1385,6 +1386,7 @@ bool AsmAmdCL2Handler::prepareBinary()
     }
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
+    cxuint maxTotalSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     // set up number of the allocated SGPRs and VGPRs for kernel
     for (size_t i = 0; i < kernelsNum; i++)
     {
@@ -1413,6 +1415,19 @@ bool AsmAmdCL2Handler::prepareBinary()
             config.usedSGPRsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
+        
+        const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 6 : 4;
+        const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
+                    neededExtraSGPRsNum : 2;
+        if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
+        {
+            char numBuf[64];
+            snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
+            assembler.printError(assembler.kernels[i].sourcePos, (std::string(
+                    "Number of total SGPRs for kernel '")+
+                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
+            good = false;
+        }
     }
     
     /* put kernels relocations */
@@ -1479,7 +1494,7 @@ bool AsmAmdCL2Handler::prepareBinary()
         else // from assembler setup
             output.driverVersion = assembler.driverVersion;
     }
-    return true;
+    return good;
 }
 
 bool AsmAmdCL2Handler::resolveSymbol(const AsmSymbol& symbol, uint64_t& value,

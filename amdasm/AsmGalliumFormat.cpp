@@ -988,6 +988,8 @@ bool AsmGalliumHandler::parsePseudoOp(const CString& firstName,
 
 bool AsmGalliumHandler::prepareBinary()
 {   // before call we initialize pointers and datas
+    bool good = true;
+    
     output.is64BitElf = assembler.is64Bit();
     size_t sectionsNum = sections.size();
     size_t kernelsNum = kernelStates.size();
@@ -1051,6 +1053,8 @@ bool AsmGalliumHandler::prepareBinary()
     
     GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
     // set up number of the allocated SGPRs and VGPRs for kernel
+    cxuint maxSGPRsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
+    
     for (size_t i = 0; i < kernelsNum; i++)
     {
         if (!output.kernels[i].useConfig)
@@ -1071,13 +1075,21 @@ bool AsmGalliumHandler::prepareBinary()
             config.usedSGPRsNum = std::min(
                 std::max(minRegsNum[0], kernelStates[i].allocRegs[0]) +
                 getGPUExtraRegsNum(arch, REGTYPE_SGPR, kernelStates[i].allocRegFlags),
-                getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0)); // include all extra sgprs
+                maxSGPRsNum); // include all extra sgprs
         }
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i].allocRegs[1]);
+        if (maxSGPRsNum < config.usedSGPRsNum)
+        {
+            char numBuf[64];
+            snprintf(numBuf, 64, "(max %u)", maxSGPRsNum);
+            assembler.printError(assembler.kernels[i].sourcePos, (std::string(
+                    "Number of total SGPRs for kernel '")+
+                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
+            good = false;
+        }
     }
     
-    bool good = true;
     // if set adds symbols to binary
     if (assembler.getFlags() & ASM_FORCE_ADD_SYMBOLS)
         for (const AsmSymbolEntry& symEntry: assembler.symbolMap)
