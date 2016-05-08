@@ -1070,6 +1070,16 @@ bool AsmGalliumHandler::prepareBinary()
                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
+        if (config.usedSGPRsNum!=BINGEN_DEFAULT && maxSGPRsNum < config.usedSGPRsNum)
+        {   // check only if sgprsnum set explicitly
+            char numBuf[64];
+            snprintf(numBuf, 64, "(max %u)", maxSGPRsNum);
+            assembler.printError(assembler.kernels[i].sourcePos, (std::string(
+                    "Number of total SGPRs for kernel '")+
+                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
+            good = false;
+        }
+        
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
         {
             config.usedSGPRsNum = std::min(
@@ -1079,15 +1089,6 @@ bool AsmGalliumHandler::prepareBinary()
         }
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i].allocRegs[1]);
-        if (maxSGPRsNum < config.usedSGPRsNum)
-        {
-            char numBuf[64];
-            snprintf(numBuf, 64, "(max %u)", maxSGPRsNum);
-            assembler.printError(assembler.kernels[i].sourcePos, (std::string(
-                    "Number of total SGPRs for kernel '")+
-                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
-            good = false;
-        }
     }
     
     // if set adds symbols to binary

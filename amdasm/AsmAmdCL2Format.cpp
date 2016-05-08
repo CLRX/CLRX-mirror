@@ -1411,23 +1411,26 @@ bool AsmAmdCL2Handler::prepareBinary()
                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
+        if (config.usedSGPRsNum!=BINGEN_DEFAULT)
+        {   // check only if sgprsnum set explicitly
+            const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 6 : 4;
+            const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
+                        neededExtraSGPRsNum : 2;
+            if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
+            {
+                char numBuf[64];
+                snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
+                assembler.printError(assembler.kernels[i].sourcePos, (std::string(
+                        "Number of total SGPRs for kernel '")+
+                        output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
+                good = false;
+            }
+        }
+        
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
             config.usedSGPRsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
-        
-        const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 6 : 4;
-        const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
-                    neededExtraSGPRsNum : 2;
-        if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
-        {
-            char numBuf[64];
-            snprintf(numBuf, 64, "(max %u)", maxTotalSgprsNum);
-            assembler.printError(assembler.kernels[i].sourcePos, (std::string(
-                    "Number of total SGPRs for kernel '")+
-                    output.kernels[i].kernelName.c_str()+"' is too high "+numBuf).c_str());
-            good = false;
-        }
     }
     
     /* put kernels relocations */
