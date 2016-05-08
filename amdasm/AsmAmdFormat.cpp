@@ -1872,6 +1872,8 @@ bool AsmAmdHandler::prepareBinary()
     }
     
     const GPUArchitecture arch = getGPUArchitectureFromDeviceType(assembler.deviceType);
+    const cxuint maxSGPRsNumWithoutVCC = getGPUMaxRegistersNum(arch, REGTYPE_SGPR,
+                REGCOUNT_NO_VCC);
     // set up number of the allocated SGPRs and VGPRs for kernel
     for (size_t i = 0; i < kernelsNum; i++)
     {
@@ -1892,7 +1894,8 @@ bool AsmAmdHandler::prepareBinary()
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
-            config.usedSGPRsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);
+            config.usedSGPRsNum = std::min(maxSGPRsNumWithoutVCC,
+                std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]));
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
     }

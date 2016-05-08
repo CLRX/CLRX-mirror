@@ -1411,11 +1411,11 @@ bool AsmAmdCL2Handler::prepareBinary()
                    ((config.tgSize) ? GPUSETUP_TGSIZE_EN : 0) |
                    ((config.scratchBufferSize!=0) ? GPUSETUP_SCRATCH_EN : 0), minRegsNum);
         
+        const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 6 : 4;
+        const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
+                    neededExtraSGPRsNum : 2;
         if (config.usedSGPRsNum!=BINGEN_DEFAULT)
         {   // check only if sgprsnum set explicitly
-            const cxuint neededExtraSGPRsNum = arch==GPUArchitecture::GCN1_2 ? 6 : 4;
-            const cxuint extraSGPRsNum = (config.useEnqueue || config.useGeneric) ?
-                        neededExtraSGPRsNum : 2;
             if (maxTotalSgprsNum-extraSGPRsNum < config.usedSGPRsNum)
             {
                 char numBuf[64];
@@ -1428,7 +1428,8 @@ bool AsmAmdCL2Handler::prepareBinary()
         }
         
         if (config.usedSGPRsNum==BINGEN_DEFAULT)
-            config.usedSGPRsNum = std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]);
+            config.usedSGPRsNum = std::min(maxTotalSgprsNum-extraSGPRsNum, 
+                std::max(minRegsNum[0], kernelStates[i]->allocRegs[0]));
         if (config.usedVGPRsNum==BINGEN_DEFAULT)
             config.usedVGPRsNum = std::max(minRegsNum[1], kernelStates[i]->allocRegs[1]);
     }

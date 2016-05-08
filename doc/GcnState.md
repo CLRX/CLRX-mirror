@@ -30,7 +30,25 @@ VMCNT   | VM Instruction Count | 4 bits | Counts the number of not completed VM 
 EXPCNT  | Export Count        | 3 bits | 
 LGKMCNT | LDS, GDS, Kmem, Message Count | 5 bits | Counts the number of LDS, GDS, K mem and message instrs.
 
-## STATUS Register
+### Scalar registers layout
+
+The user data registers hold execution setup (global offset, pointers, arguments pointers,
+the same arguments). User data can allow to pass any constant data to kernel from host.
+The register 1-5 bits of PGM_RSRC2 indicates how many first scalar registers hold user data.
+Further scalar registers store group id and it are different for every wavefront.
+Number of that registers determined from number of enabled dimensions (fields TGID_X_EN,
+TGID_Y_EN and TGID_Z_EN in PGM_RSRC2). Last scalar registers is TG_SIZE value and
+scratch buffer wave offset (for handling scratch buffer).
+
+ Register             | Number of registers                  | Description
+----------------------|--------------------------------------|----------------------
+ SGPR[0:UN-1]         | UN - number of user data registers   | User data registers
+ SGPR[UN:UN+DIMS-1]   | DIMS - number of enabled dimensions  | Group Id
+ SGPR[UN+DIMS]        | TGSIZE - 1 if TGSIZE_EN enabled      | TGSIZE
+ SGPR[UN+DIMS+TGSIZE] | SCRATCH_EN - 1 if SCRATCH enabled    | Scratch wave offset
+
+
+### STATUS Register
 
 Table of fields for STATUS Register:
 
@@ -61,7 +79,7 @@ Table of fields for STATUS Register:
  24-26  | DISPATCH_CACHE_CTRL | Indicates the cache policies for this dispatch
  27     | MUST_EXPORT | ???
 
-## MODE Register
+### MODE Register
 
 Table of fields for STATUS Register:
 
