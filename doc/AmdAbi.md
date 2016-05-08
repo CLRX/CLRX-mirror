@@ -65,14 +65,6 @@ Second const buffer (id=1) holds arguments aligned to 4 dwords.
 Global pointers holds vector offset (64-bit for 64-bit binary) to memory.
 Local pointers holds its offset in bytes (1 dword).
 
-### Other data and resources
-
-Scalar register after userdata holds (n - userdatanum):
-
-* s[n:n+enabled_dims-1] - group id for each enabled dimension
-
-First three vector registers holds local ids for each dimension.
-
 ### Image arguments
 
 Image arguments needs 8 dwords.
@@ -95,6 +87,4 @@ Sampler argument holds sampler value:
 ### Scratch buffer access
 
 Second entry in the internal global table holds scratch buffer descriptor.
-s[n+enabled_dims+tgsize] register holds wavefront offset to scratch buffer.
-where n is userdatanum, enabled_dims is number of enabled dimensions, tgsize is
-1 if tgsize is enabled, othwerise is 0.
+Refer to [GCN Machine State](GcnState) to learn about vector and scalar initial registers.

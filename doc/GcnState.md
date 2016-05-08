@@ -30,6 +30,10 @@ VMCNT   | VM Instruction Count | 4 bits | Counts the number of not completed VM 
 EXPCNT  | Export Count        | 3 bits | 
 LGKMCNT | LDS, GDS, Kmem, Message Count | 5 bits | Counts the number of LDS, GDS, K mem and message instrs.
 
+### Initial vector registers
+
+First three vector registers holds local ids for each dimension.
+
 ### Scalar registers layout
 
 The user data registers hold execution setup (global offset, pointers, arguments pointers,

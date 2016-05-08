@@ -96,10 +96,8 @@ A samplers are passed via pointers. A sampler pointers points to sampler resourc
 
 ### Scratch buffer access
 
-First four scalar registers holds scratch buffer descriptor.
-s[n+enabled_dims+tgsize] register holds wavefront offset to scratch buffer.
-where n is userdatanum, enabled_dims is number of enabled dimensions, tgsize is
-1 if tgsize is enabled, otherwise is 0.
+First four scalar registers holds scratch buffer descriptor. Refer to
+[GCN Machine State](GcnState) to learn about vector and scalar initial registers.
 
 ### Flat access
 
