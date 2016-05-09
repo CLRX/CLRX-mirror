@@ -106,8 +106,8 @@ Generic addressing (usegeneric) allow to access to LDS and scratch buffer by usi
 FLAT instructions. A following rules gives ability to correctly setting up that mechanism.
 Registers S[6-7] holds special buffer that hold a LDS and scratch buffer base addresses for
 FLAT instructions.
-10 dword of that buffer holds 32-63 bits of LDS base address for FLAT instructions.
-11 dword of that buffer holds 32-63 bits of scratch buffer base address for
+16 dword of that buffer holds 32-63 bits of LDS base address for FLAT instructions.
+17 dword of that buffer holds 32-63 bits of scratch buffer base address for
 FLAT instructions.
 Register S10 holds base scratch buffer offset for FLAT_SCRATCH. Register S11 holds
 size of scratch per thread (for FLAT_SCRATCH).
