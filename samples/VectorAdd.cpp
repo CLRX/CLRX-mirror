@@ -98,8 +98,54 @@ static const char* vectorAddSource = R"ffDXD(# VectorAdd example
         v_mov_b32 v3, s7                        # move to vector reg
         v_addc_u32 v1,vcc,v3,v1,vcc             # v_addc_u32 with only vector regs
         s_waitcnt lgkmcnt(0)         # wait for cBuf descriptor and offset
-        buffer_store_dword v2, v[0:1], s[8:11], 0 addr64    # value from aBuf
+        buffer_store_dword v2, v[0:1], s[8:11], 0 addr64    # value to cBuf
     .endif
+end:
+        s_endpgm
+.elseiffmt amdcl2  # AMD OpenCL 2.0 code
+.kernel vectorAdd
+    .config
+        .dims x
+        .useargs
+        .usesetup
+        .setupargs
+        .arg n, uint                        # argument uint n
+        .arg aBuf, float*, global, const    # argument const float* aBuf
+        .arg bBuf, float*, global, const    # argument const float* bBuf
+        .arg cBuf, float*, global           # argument float* cBuf
+    .text
+        s_load_dwordx4 s[0:3], s[6:7], 14       # get aBuf and bBuf pointers
+        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dword s9, s[6:7], 0              # get global offset (32-bit)
+        s_load_dword s5, s[6:7], 12            # get n - number of elems
+        s_waitcnt lgkmcnt(0)                    # wait for data
+        s_and_b32 s4, s4, 0xffff            # only first localsize(0)
+        s_mul_i32 s4, s8, s4                # localsize*groupId
+        s_add_u32 s4, s9, s4                # localsize*groupId+offset
+        v_add_i32 v0, vcc, s4, v0           # final global_id
+        v_cmp_gt_u32 vcc, s5, v0            # global_id(0) < n
+        s_and_saveexec_b64 s[4:5], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+        
+        v_lshrrev_b32 v1, 30, v0
+        v_lshlrev_b32 v0, 2, v0             # v[0:1] - global_id(0)*4
+        v_add_i32 v2, vcc, s0, v0           # aBuf+get_global_id(0)
+        v_mov_b32 v3, s1
+        v_addc_u32 v3, vcc, 0, v3, vcc      # aBuf+get_global_id(0) - higher part
+        v_add_i32 v4, vcc, s2, v0           # bBuf+get_global_id(0)
+        v_mov_b32 v5, s3
+        v_addc_u32 v5, vcc, 0, v5, vcc      # bBuf+get_global_id(0) - higher part
+        flat_load_dword v2, v[2:3]          # load value from aBuf
+        flat_load_dword v4, v[4:5]          # load value from bBuf
+        s_waitcnt vmcnt(0) & lgkmcnt(0)     # wait for data
+        v_add_f32 v2, v2, v4                # add values
+        
+        s_load_dwordx2 s[0:1], s[6:7], 18       # get cBuf pointer
+        s_waitcnt lgkmcnt(0)
+        v_add_i32 v0, vcc, s0, v0           # cBuf+get_global_id(0)
+        v_mov_b32 v3, s1
+        v_addc_u32 v1, vcc, 0, v3, vcc      # cBuf+get_global_id(0) - higher part
+        flat_store_dword v[0:1], v2         # store value to cBuf
 end:
         s_endpgm
 .else   # GalliumCompute code
@@ -241,7 +287,7 @@ void VectorAdd::run()
         const float expected = aData[i]+bData[i];
         if (::fabs(expected-cData[i]) >= 1.0e-7)
         {
-            std::cerr << i << i << ": " << aData[i] << " + " << bData[i] <<
+            std::cerr << i << ": " << aData[i] << " + " << bData[i] <<
                 ": " << expected << "!=" << cData[i] << "\n";
             throw Exception("CData mismatch!");
         }
