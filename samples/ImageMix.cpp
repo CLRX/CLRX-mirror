@@ -40,7 +40,7 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
         .uavid 11       # force first UAV=12
         .arg img1, image, read_only     # read_only image2d_t img1
         .arg img2, image, read_only     # read_only image2d_t img2
-        .arg outimg,image,write_only    # write_only image2d_t outimg
+        .arg outimg, image, write_only    # write_only image2d_t outimg
         .userdata ptr_resource_table, 0, 2, 2   # s[2:3] - res. table for read only images
         .userdata imm_const_buffer, 0, 4, 4     # s[4:7] - kernel setup const buffer
         .userdata imm_const_buffer, 0, 8, 4     # s[8:11] - kernel args const buffer
@@ -56,8 +56,8 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
         s_add_u32  s1, s5, s1
         v_add_i32  v0, vcc, s0, v0      #  v[0:1] - global_id(0,1)
         v_add_i32  v1, vcc, s1, v1
-        v_cmp_gt_i32  s[0:1], s7, v1    # global_id(0) < img1.width
-        v_cmp_gt_i32  vcc, s6, v0       # global_id(1) < img1.height
+        v_cmp_gt_i32  s[0:1], s7, v1    # global_id(1) < img1.height
+        v_cmp_gt_i32  vcc, s6, v0       # global_id(0) < img1.width
         s_and_b64  vcc, s[0:1], vcc
         s_and_saveexec_b64 s[0:1], vcc      # deactivate obsolete threads
         s_cbranch_execz end                 # skip to end
@@ -65,8 +65,8 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
         s_load_dwordx8  s[16:23], s[2:3], 0x8        # load img2 descriptor
         s_load_dwordx8  s[24:31], s[12:13], 0x0     # load outimg descriptor
         s_waitcnt       lgkmcnt(0)      # wait for descriptors
-        image_load  v[5:8], v[0:3], s[4:11] dmask:15 unorm    # load pixel from img1
-        image_load  v[9:12], v[0:3], s[16:23] dmask:15 unorm    # load pixel from img2
+        image_load  v[5:8], v[0:1], s[4:11] dmask:15 unorm    # load pixel from img1
+        image_load  v[9:12], v[0:1], s[16:23] dmask:15 unorm    # load pixel from img2
         s_waitcnt       vmcnt(0)        # wait for results
         v_add_f32       v2, v5, v9      # img1+img2
         v_add_f32       v3, v6, v10
@@ -76,7 +76,64 @@ static const char* imageMixSource = R"ffDXD(# ImageMix example
         v_mul_f32       v3, 0.5, v3
         v_mul_f32       v4, 0.5, v4
         v_mul_f32       v5, 0.5, v5
-        image_store     v[2:5], v[0:3], s[24:31] dmask:15 unorm glc # store pixel to outimg
+        image_store     v[2:5], v[0:1], s[24:31] dmask:15 unorm glc # store pixel to outimg
+end:
+        s_endpgm
+.elseiffmt amdcl2  # AMD OpenCL 2.0 code
+.kernel imageMix
+    .config
+        .dims xy
+        .useargs
+        .usesetup
+        .setupargs
+        .arg img1, image, read_only     # read_only image2d_t img1
+        .arg img2, image, read_only     # read_only image2d_t img2
+        .arg outimg, image, write_only    # write_only image2d_t outimg
+    .text
+        s_load_dwordx2 s[0:1], s[6:7], 12   # load img1
+        s_load_dword s2, s[6:7], 0          # global_offset(0)
+        s_load_dword s3, s[6:7], 2          # global_offset(1)
+        s_load_dword s4, s[4:5], 1          # localSizes dword
+        s_waitcnt lgkmcnt(0)
+        s_lshr_b32 s5, s4, 16               # localsize(1)
+        s_and_b32 s4, s4, 0xffff            # localsize(0)
+        s_mul_i32 s4, s8, s4                # localsize(0)*groupid(0)
+        s_add_u32 s4, s4, s2                # +global_offset(0)
+        s_mul_i32 s5, s9, s5                # localsize(1)*groupid(1)
+        s_add_u32 s5, s5, s3                # +global_offset(1)
+        v_add_i32 v0, vcc, s4, v0           # globalid(0)
+        v_add_i32 v1, vcc, s5, v1           # globalid(1)
+        s_load_dword s8, s[0:1], 0          # load first image desc dword
+        s_waitcnt lgkmcnt(0)
+        s_and_b32 s4, s8, (1<<14)-1         # img width-1
+        s_bfe_u32 s5, s8, (14<<16)+14       # img height-1
+        s_add_u32 s4, 1, s4         # img width
+        s_add_u32 s5, 1, s5         # img height
+        v_cmp_gt_i32  s[2:3], s5, v1    # global_id(1) < img1.height
+        v_cmp_gt_i32  vcc, s4, v0       # global_id(0) < img1.width
+        s_and_b64  vcc, s[2:3], vcc
+        s_and_saveexec_b64 s[2:3], vcc      # deactivate obsolete threads
+        s_cbranch_execz end                 # skip to end
+        
+        s_load_dwordx4 s[4:7], s[6:7], 14   # load img2,outimg pointers
+        s_waitcnt lgkmcnt(0)                # wait
+        s_load_dwordx8 s[8:15], s[0:1], 0   # load first img desc
+        s_load_dwordx8 s[16:23], s[4:5], 0  # load second img desc
+        s_load_dwordx8 s[24:31], s[6:7], 0  # load outimg desc
+        s_waitcnt lgkmcnt(0)                # wait for descriptors
+        
+        image_load v[5:8], v[0:1], s[8:15] dmask:15 unorm   # load pixel from img1
+        image_load v[9:12], v[0:1], s[16:23] dmask:15 unorm   # load pixel from img2
+        s_waitcnt vmcnt(0)
+        v_add_f32       v2, v5, v9      # img1+img2
+        v_add_f32       v3, v6, v10
+        v_add_f32       v4, v7, v11
+        v_add_f32       v5, v8, v12
+        v_mul_f32       v2, 0.5, v2     # img1*0.5
+        v_mul_f32       v3, 0.5, v3
+        v_mul_f32       v4, 0.5, v4
+        v_mul_f32       v5, 0.5, v5
+        image_store v[2:5], v[0:1], s[24:31] dmask:15 unorm glc # store pixel to outimg
 end:
         s_endpgm
 .else
