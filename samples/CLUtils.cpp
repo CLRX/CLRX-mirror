@@ -164,6 +164,7 @@ try
     
     BinaryFormat binaryFormat = BinaryFormat::GALLIUM;
     cl_platform_id choosenPlatform = nullptr;
+    bool defaultCL2ForDriver = false;
     /// find platform with AMD devices
     for (cl_uint i = 0; i < platformsNum; i++)
     {
@@ -186,9 +187,10 @@ try
             choosenPlatform = platforms[i];
             binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
                     BinaryFormat::GALLIUM : BinaryFormat::AMD;
-            if (binaryFormat == BinaryFormat::AMD &&
-                    (useCL2 || detectAmdDriverVersion() >= 200406))
+            if (binaryFormat == BinaryFormat::AMD && useCL2)
                 binaryFormat = BinaryFormat::AMDCL2;
+            if (binaryFormat == BinaryFormat::AMD && detectAmdDriverVersion() >= 200406)
+                defaultCL2ForDriver = true;
             break;
         }
     }
@@ -273,6 +275,21 @@ try
         }
     }
 #endif
+    /* assemble source code */
+    /// determine device type
+    char* sdeviceName = stripCString(deviceName.get());
+    char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
+            ::strncmp(sdeviceName, "AMD ", 4)==0) ? sdeviceName+4 : sdeviceName;
+    char* devNameEnd = devNamePtr;
+    while (isAlnum(*devNameEnd)) devNameEnd++;
+    *devNameEnd = 0; // finish at first word
+    const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
+    /* change binary format to AMDCL2 if default for this driver version and 
+     * architecture >= GCN 1.1 */
+    if (defaultCL2ForDriver &&
+        getGPUArchitectureFromDeviceType(devType) >= GPUArchitecture::GCN1_1)
+        binaryFormat = BinaryFormat::AMDCL2;
+
     std::cout << "BinaryFormat: " << binaryFormatNamesTbl[cxuint(binaryFormat)] << "\n"
         "Bitness: " << bits << std::endl;
     
@@ -284,14 +301,6 @@ try
     Array<cxbyte> binary;
     {   /* assemble source code */
         /// determine device type
-        char* sdeviceName = stripCString(deviceName.get());
-        char* devNamePtr = (binaryFormat==BinaryFormat::GALLIUM &&
-                ::strncmp(sdeviceName, "AMD ", 4)==0) ? sdeviceName+4 : sdeviceName;
-        char* devNameEnd = devNamePtr;
-        while (isAlnum(*devNameEnd)) devNameEnd++;
-        *devNameEnd = 0; // finish at first word
-        const GPUDeviceType devType = getGPUDeviceTypeFromName(devNamePtr);
-        
         ArrayIStream astream(::strlen(sourceCode), sourceCode);
         // by default assembler put logs to stderr
         Assembler assembler("", astream, 0, binaryFormat, devType);
