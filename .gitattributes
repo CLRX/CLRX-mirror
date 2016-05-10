@@ -111,6 +111,7 @@ programs/clrxdisasm.pod -text
 samples/CLUtils.cpp -text
 samples/CLUtils.h -text
 samples/CMakeLists.txt -text svneol=unset#text/plain
+samples/GenericPtr.cpp -text
 samples/ImageMix.cpp -text
 samples/ReverseBits.cpp -text
 samples/VectorAdd.cpp -text

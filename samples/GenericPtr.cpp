@@ -1,0 +1,156 @@
+/*
+ *  CLRadeonExtender - Unofficial OpenCL Radeon Extensions Library
+ *  Copyright (C) 2014-2016 Mateusz Szpakowski
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
+
+#include <iostream>
+#include <memory>
+#include <cmath>
+#include <CLRX/utils/Utilities.h>
+#include "CLUtils.h"
+
+using namespace CLRX;
+
+static const char* genericPtrSource = R"ffDXD(.amdcl2
+.gpu Bonaire
+.kernel genericPtr
+    .config
+        .dims x
+        .setupargs
+        .arg out,uint*,global
+        .useargs
+        .usegeneric         # enable generic pointers
+        .localsize 400      # local size
+        .scratchbuffer 180   # define scratch buffer
+    .text
+        # initialize flat_scratch
+        s_add_u32 s5, s10, s13      # flat scratch offset
+        s_lshr_b32 s5, s5, 8        # for bitfield
+        s_mov_b32 s10, s11          # flat scratch size
+        s_mov_b32 s11, s5
+        s_mov_b64 flat_scratch, s[10:11]    # store to flat_scratch
+        
+        s_load_dwordx2 s[10:11], s[6:7], 16     # load localptr base and scratchptr base
+        s_load_dwordx2 s[8:9], s[8:9], 12   # load output buffer pointer
+        s_waitcnt lgkmcnt(0)        # wait for data
+        # write to LDS
+        s_mov_b32 m0, 0x8000            # needed by local access
+        v_mov_b32 v1, 36  # address
+        v_mov_b32 v2, 24411  # value
+        ds_write_b32 v1, v2         # store this value to LDS
+        s_waitcnt lgkmcnt(0)        # wait
+        # write to scratch buffer
+        v_mov_b32 v3, 15321         # value to write
+        buffer_store_dword v3, v0, s[0:3], s13 offset:76    # store to scratch buffer
+        s_waitcnt vmcnt(0)
+        
+        # load valuefrom LDS via flat
+        v_mov_b32 v1, s10       # local ptr base
+        v_mov_b32 v0, 36        # LDS offset
+        flat_load_dword v2, v[0:1]
+        s_waitcnt lgkmcnt(0) & vmcnt(0)     # wait
+        # store to entry in output buffer
+        v_mov_b32 v3, s8    # output buffer pointer
+        v_mov_b32 v4, s9
+        flat_store_dword v[3:4], v2     # store value
+        
+        # load value from scratch via flat
+        v_mov_b32 v1, s11       # scratch ptr base
+        v_mov_b32 v0, 76
+        flat_load_dword v2, v[0:1]      # load
+        s_waitcnt lgkmcnt(0) & vmcnt(0) #wait
+        # store to next entry in output buffer
+        v_add_i32 v3, vcc, 4, v3        # next entry in output buffer
+        v_addc_u32 v4, vcc, 0, v4, vcc
+        flat_store_dword v[3:4], v2     # store value
+        s_endpgm
+)ffDXD";
+
+class GenericPtr: public CLFacade
+{
+private:
+    cl_mem outBuffer;
+public:
+    explicit GenericPtr(cl_uint deviceIndex);
+    ~GenericPtr() = default;
+    
+    void run();
+};
+
+GenericPtr::GenericPtr(cl_uint deviceIndex)
+            : CLFacade(deviceIndex, genericPtrSource, "genericPtr", true)
+{   // creating buffers: two for read-only, one for output
+    cl_int error;
+    outBuffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(cl_uint)*2,
+                        nullptr, &error);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clCreateBuffer");
+    memObjects.push_back(outBuffer);
+}
+
+static const cl_uint2 twoZeroes[2] = { 0, 0 };
+
+void GenericPtr::run()
+{
+    cl_int error;
+    error = clEnqueueWriteBuffer(queue, outBuffer, CL_TRUE, 0, sizeof(cl_uint)*2,
+                          twoZeroes, 0, nullptr, nullptr);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clEnqueueWriteBuffer");
+    // kernel args
+    clSetKernelArg(kernels[0], 0, sizeof(cl_mem), &outBuffer);
+    
+    size_t workSize = 1;
+    size_t localSize = 1;
+    callNDRangeKernel(kernels[0], 1, nullptr, &workSize, &localSize);
+    
+    cl_uint outData[2];
+    /// read output buffer
+    error = clEnqueueReadBuffer(queue, outBuffer, CL_TRUE, 0, sizeof(cl_uint)*2,
+                          outData, 0, nullptr, nullptr);
+    if (error != CL_SUCCESS)
+        throw CLError(error, "clEnqueueReadBuffer");
+    
+    if (outData[0] != 24411 || outData[1] != 15321)
+    {
+        std::cerr << outData[0] << "," << outData[1] << "!=24411,15321" << std::endl;
+        throw Exception("CData mismatch!");
+    }
+    std::cout << "Results is OK" << std::endl;
+}
+
+int main(int argc, const char** argv)
+try
+{
+    cl_uint deviceIndex = 0;
+    bool useCL2;
+    if (CLFacade::parseArgs("GenericPtr", "", argc, argv, deviceIndex, useCL2))
+        return 0;
+    GenericPtr genericPtr(deviceIndex);
+    genericPtr.run();
+    return 0;
+}
+catch(const std::exception& ex)
+{
+    std::cerr << ex.what() << std::endl;
+    return 1;
+}
+catch(...)
+{
+    std::cerr << "unknown exception!" << std::endl;
+    return 1;
+}
