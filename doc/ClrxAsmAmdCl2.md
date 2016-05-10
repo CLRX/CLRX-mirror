@@ -14,6 +14,12 @@ format structure. Metadatas mainly holds arguments definitions of kernels.
 A CLRadeonExtender supports two versions of binary formats for OpenCL 2.0: newer (since 
 AMD OpenCL 1912.05) and older (before 1912.05 driver version).
 
+Special section to define global data for all kernels:
+
+* `rodata`, `.globaldata` - read-only constant (global) data
+* `.rwdata`, `.data` - read-write global data
+* `.bss`, `.bssdata` - allocatable read-write data
+
 ## Relocations
 
 An CLRX assembler handles relocations to symbol at global data, global rwdata and

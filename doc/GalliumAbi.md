@@ -4,7 +4,7 @@ This chapter describes how kernel gets its argument, how access to constant data
 
 In this chapter, size is given in dwords. Dword is 4-byte value.
 
-## Argument passing
+### Argument passing
 
 Argument is stored in memory which address is stored in s[0:1].
 Argument begins from 9 dword. First 9 dwords are:
@@ -23,4 +23,5 @@ Userdata tooks 4 first scalar registers and holds:
 
 ### Other data and resources
 
+Section '.rodata' ('.globaldata') hold constant data for kernels.
 Constant data is placed after code of kernels. Use PC pointer to get this data.

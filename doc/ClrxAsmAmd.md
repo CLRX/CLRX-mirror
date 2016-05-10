@@ -16,6 +16,8 @@ ATI CAL notes are special small data fragments that describes features of the ke
 The most important ATI CAL note is PROGINFO that holds important data for runtime execution,
 like register usage, UAV usage, floating point setup.
 
+A `.data` section inside kernel is usable section and holds same zeroes.
+
 ## Layout of the source code
 
 The CLRX assembler allow to use one of two ways to configure kernel setup:
