@@ -25,8 +25,13 @@
 
 using namespace CLRX;
 
-static const char* genericPtrSource = R"ffDXD(.amdcl2
-.gpu Bonaire
+static const char* genericPtrSource = R"ffDXD(
+.ifarch gcn1.2
+    .error "Unsupported GCN1.2 architecture"
+.endif
+.ifnfmt amdcl2  # AMD OpenCL 2.0 code
+    .error "Only AMD OpenCL 2.0 binary format is supported"
+.endif
 .kernel genericPtr
     .config
         .dims x
