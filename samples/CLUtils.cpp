@@ -43,11 +43,11 @@ static char* stripCString(char* str)
 }
 
 bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
-                  const char** argv, cl_uint& deviceIndex)
+                  const char** argv, cl_uint& deviceIndex, bool& useCL2)
 {
     if (argc >= 2 && ::strcmp(argv[1], "-?")==0)
     {
-        std::cout << "Usage: " << progName << " [DEVICE_INDEX] " << usagePart << "\n"
+        std::cout << "Usage: " << progName << " [DEVICE_INDEXcl2] " << usagePart << "\n"
                 "Print device list: " << progName << " -L" << "\n"
                 "Print help: " << progName << " -?" << std::endl;
         return true;
@@ -101,9 +101,6 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
         if (error != CL_SUCCESS)
             throw CLError(error, "clGetDeviceIDs");
         
-        if (deviceIndex >= devicesNum)
-            throw CLError(0, "DeviceIndexOutOfRange");
-            
         devices.reset(new cl_device_id[devicesNum]);
         error = clGetDeviceIDs(choosenPlatform, CL_DEVICE_TYPE_GPU,
                         devicesNum, devices.get(), nullptr);
@@ -132,12 +129,21 @@ bool CLFacade::parseArgs(const char* progName, const char* usagePart, int argc,
     else if (argc >= 2)
     {
         const char* end;
+        useCL2 = false;
         deviceIndex = cstrtovCStyle<cl_uint>(argv[1], nullptr, end);
+        if (strcasecmp(end, "cl2")==0)
+            useCL2 = true;
     }
     return false;
 }
 
-CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames)
+static const char* binaryFormatNamesTbl[] =
+{
+    "AMD OpenCL 1.2", "GalliumCompute", "Raw code", "AMD OpenCL 2.0"
+};
+
+CLFacade::CLFacade(cl_uint deviceIndex, const char* sourceCode, const char* kernelNames,
+            bool useCL2)
 try
 {
     context = nullptr;
@@ -179,6 +185,9 @@ try
             choosenPlatform = platforms[i];
             binaryFormat = ::strcmp(platformName.get(), "Clover")==0 ?
                     BinaryFormat::GALLIUM : BinaryFormat::AMD;
+            if (binaryFormat == BinaryFormat::AMD &&
+                    (useCL2 || detectAmdDriverVersion() >= 200406))
+                binaryFormat = BinaryFormat::AMDCL2;
             break;
         }
     }
@@ -263,7 +272,8 @@ try
         }
     }
 #endif
-    std::cout << "Bitness: " << bits << std::endl;
+    std::cout << "BinaryFormat: " << binaryFormatNamesTbl[cxuint(binaryFormat)] << "\n"
+        "Bitness: " << bits << std::endl;
     
     /// create command queue
     queue = clCreateCommandQueue(context, device, 0, &error);
@@ -296,7 +306,9 @@ try
     if (program==nullptr)
         throw CLError(error, "clCreateProgramWithBinary");
     // build program
-    error = clBuildProgram(program, 1, &device, "", nullptr, nullptr);
+    error = clBuildProgram(program, 1, &device,
+               (binaryFormat==BinaryFormat::AMDCL2) ? "-cl-std=CL2.0" : "",
+               nullptr, nullptr);
     if (error != CL_SUCCESS)
     {   /* get build logs */
         size_t buildLogSize;

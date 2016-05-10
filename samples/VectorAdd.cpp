@@ -158,14 +158,15 @@ private:
     size_t elemsNum;
     cl_mem aBuffer, bBuffer, cBuffer;
 public:
-    explicit VectorAdd(cl_uint deviceIndex, size_t elemsNum);
+    explicit VectorAdd(cl_uint deviceIndex, bool useCL2, size_t elemsNum);
     ~VectorAdd() = default;
     
     void run();
 };
 
-VectorAdd::VectorAdd(cl_uint deviceIndex, size_t _elemsNum)
-            : CLFacade(deviceIndex, vectorAddSource, "vectorAdd"), elemsNum(_elemsNum)
+VectorAdd::VectorAdd(cl_uint deviceIndex, bool useCL2, size_t _elemsNum)
+            : CLFacade(deviceIndex, vectorAddSource, "vectorAdd", useCL2),
+              elemsNum(_elemsNum)
 {   // creating buffers: two for read-only, one for output
     cl_int error;
     aBuffer = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(float)*elemsNum,
@@ -256,14 +257,15 @@ int main(int argc, const char** argv)
 try
 {
     cl_uint deviceIndex = 0;
-    if (CLFacade::parseArgs("VectorAdd", "[ELEMSNUM]", argc, argv, deviceIndex))
+    bool useCL2 = false;
+    if (CLFacade::parseArgs("VectorAdd", "[ELEMSNUM]", argc, argv, deviceIndex, useCL2))
         return 0;
     size_t elemsNum = 100;
     const char* end;
     if (argc >= 3)
         elemsNum = cstrtovCStyle<size_t>(argv[2], nullptr, end);
     
-    VectorAdd vectorAdd(deviceIndex, elemsNum);
+    VectorAdd vectorAdd(deviceIndex, useCL2, elemsNum);
     vectorAdd.run();
     return 0;
 }

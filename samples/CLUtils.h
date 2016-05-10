@@ -76,10 +76,10 @@ protected:
 public:
     // return true if application should immediately return
     static bool parseArgs(const char* progName, const char* usagePart, int argc,
-                  const char** argv, cl_uint& deviceIndex);
+                  const char** argv, cl_uint& deviceIndex, bool& useCL2);
     
     explicit CLFacade(cl_uint deviceIndex, const char* sourceCode,
-                      const char* kernelNames = nullptr);
+                      const char* kernelNames = nullptr, bool useCL2 = false);
     ~CLFacade();
 };
 
