@@ -134,7 +134,7 @@ UINT32 P = *VM; *VM = *VM + VDATA; VDST = (GLC) ? P : VDST // atomic
 Opcode: 82 (0x52) for GCN 1.1; 98 (0x62) for GCN 1.2  
 Syntax: FLAT_ATOMIC_ADD_X2 VDST(2), VADDR(2), VDATA(2)  
 Description: Add 64-bit VDATA to 64-bit value of VADDR address, and store result
-to this address. If GLC flag is set then return previous value from resource to VDST,
+to this address. If GLC flag is set then return previous value from address to VDST,
 otherwise keep VDST value. Operation is atomic.  
 Operation:  
 ```
@@ -174,7 +174,7 @@ Opcode: 49 (0x31) for GCN 1.1; 65 (0x41) for GCN 1.2
 Syntax: FLAT_ATOMIC_CMPSWAP VDST, VADDR(2), VDATA(2)  
 Description: Store lower VDATA dword into VADDR address  if previous value
 from that address is equal VDATA>>32, otherwise keep old value from address.
-If GLC flag is set then return previous value from resource to VDST,
+If GLC flag is set then return previous value from address to VDST,
 otherwise keep VDST value. Operation is atomic.  
 Operation:  
 ```
@@ -188,7 +188,7 @@ VDST = (GLC) ? P : VDST // last part of atomic
 Opcode: 81 (0x51) for GCN 1.1; 97 (0x61) for GCN 1.2  
 Syntax: FLAT_ATOMIC_CMPSWAP_X2 VDST(2), VADDR(2), VDATA(4)  
 Description: Store lower VDATA 64-bit word into VADDR address if previous value
-from resource is equal VDATA>>64, otherwise keep old value from VADDR.
+from address is equal VDATA>>64, otherwise keep old value from VADDR.
 If GLC flag is set then return previous value from VADDR to VDST,
 otherwise keep VDST value. Operation is atomic.  
 Operation:  
@@ -444,7 +444,7 @@ UINT32 P = *VM; *VM = *VM - VDATA; VDST = (GLC) ? P : VDST // atomic
 Opcode: 83 (0x53) for GCN 1.1; 99 (0x63) for GCN 1.2  
 Syntax: FLAT_ATOMIC_SUB_X2 VDST(2), VADDR(2), VDATA(2)  
 Description: Subtract 64-bit VDATA from 64-bit value of VADDR address, and store result
-to this address. If GLC flag is set then return previous value from resource to VDST,
+to this address. If GLC flag is set then return previous value from address to VDST,
 otherwise keep VDST value. Operation is atomic.  
 Operation:  
 ```
