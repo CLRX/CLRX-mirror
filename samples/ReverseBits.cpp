@@ -30,6 +30,7 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
     .error "Unsupported GCN1.2 architecture"
 .endif
 .globaldata     # const data (conversion table)
+revTable:
     .byte 0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0
     .byte 0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0
     .byte 0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8
@@ -133,6 +134,46 @@ static const char* reverseBitsSource = R"ffDXD(# ReverseBits example
         s_waitcnt  vmcnt(0) & lgkmcnt(0)            # wait for result and descriptor
         buffer_store_byte  v1, v[2:3], s[8:11], 0 addr64 # write byte to output
     .endif
+end:
+        s_endpgm
+.elseiffmt amdcl2  # AMD OpenCL 2.0 code
+.kernel reverseBits
+    .config
+        .dims x
+        .useargs
+        .usesetup
+        .setupargs
+        .arg n, uint                        # uint n
+        .arg input, uchar*, global, const   # const global uint* input
+        .arg output, uchar*, global         # global uint* output
+    .text
+        s_load_dwordx4 s[0:3], s[6:7], 14       # get input and output pointers
+        s_load_dword s4, s[4:5], 1              # get local info dword
+        s_load_dword s9, s[6:7], 0              # get global offset (32-bit)
+        s_load_dword s5, s[6:7], 12             # get n - number of elems
+        s_waitcnt lgkmcnt(0)        # wait
+        s_and_b32 s4, s4, 0xffff            # only first localsize(0)
+        s_mul_i32 s4, s8, s4                # localsize*groupId
+        s_add_u32 s4, s9, s4                # localsize*groupId+offset
+        v_add_i32 v0, vcc, s4, v0           # final global_id
+        v_cmp_gt_u32 vcc, s5, v0            # global_id(0) < n
+        s_and_saveexec_b64 s[4:5], vcc          # lock all threads with id>=n
+        s_cbranch_execz end                     # no active threads, we jump to end
+        v_add_i32 v1, vcc, s0, v0           # input+global_id(0)
+        v_mov_b32 v2, s1
+        v_addc_u32 v2, vcc, 0, v2, vcc      # higher part
+        flat_load_ubyte v3, v[1:2]          # load byte
+        s_waitcnt lgkmcnt(0) & vmcnt(0)
+        v_mov_b32 v1, revTable&0xffffffff   # get revTable
+        v_mov_b32 v2, revTable>>32          # revTable - higher part
+        v_add_i32 v1, vcc, v1, v3           # get revTable+v
+        v_addc_u32 v2, vcc, 0, v2, vcc      # get revTable+v
+        flat_load_ubyte v3, v[1:2]           # get converted byte
+        s_waitcnt lgkmcnt(0) & vmcnt(0)
+        v_add_i32 v1, vcc, s2, v0           # output+global_id(0)
+        v_mov_b32 v2, s3
+        v_addc_u32 v2, vcc, 0, v2, vcc      # higher part
+        flat_store_byte v[1:2], v3          # store converted byte to output
 end:
         s_endpgm
 .else   # GalliumCompute code
