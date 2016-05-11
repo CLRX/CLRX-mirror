@@ -158,8 +158,8 @@ end:
         .arg griddim,4
         .arg gridoffset,4
     .config
-        .dims xyz   # required, gallium set always three dimensions
-        .tgsize     # required, TG_SIZE_EN is always enabled
+        .dims xyz   # gallium set always three dimensions by Gallium
+        .tgsize     # TG_SIZE_EN is always enabled by Gallium
         # arg offset in dwords:
         # 9 - n, 11 - abuf, 13 - bbuf, 15 - cbuf, 17 - griddim, 18 - gridoffset
 .text
