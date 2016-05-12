@@ -561,7 +561,7 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
 
-static const KernelArgType determineKernelArgType(const char* typeString,
+static KernelArgType determineKernelArgType(const char* typeString,
            cxuint vectorSize, LineNo lineNo)
 {
     KernelArgType outType;

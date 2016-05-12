@@ -30,6 +30,7 @@
 #include <utility>
 #include <algorithm>
 #include <CLRX/utils/Utilities.h>
+#include <CLRX/utils/Containers.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/AmdBinGen.h>
@@ -256,28 +257,199 @@ AmdDisasmInput* CLRX::getAmdDisasmInputFromBinary64(const AmdMainGPUBinary64& bi
 
 /* get AsmConfig */
 
-static const char* openclArgTypeNamesTbl[] =
+static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
 {
-    "void",
-    "uchar", "char", "ushort", "short", "uint", "int", "ulong", "long", "float",
-    "double", nullptr, nullptr,
-    nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-    "uchar2", "uchar3", "uchar4", "uchar8", "uchar16",
-    "char2", "char3", "char4", "char8", "char16",
-    "ushort2", "ushort3", "ushort4", "ushort8", "ushort16",
-    "short2", "short3", "short4", "short8", "short16",
-    "uint2", "uint3", "uint4", "uint8", "uint16",
-    "int2", "int3", "int4", "int8", "int16",
-    "ulong2", "ulong3", "ulong4", "ulong8", "ulong16",
-    "long2", "long3", "long4", "long8", "long16",
-    "float2", "float3", "float4", "float8", "float16",
-    "double2", "double3", "double4", "double8", "double16",
-    "sampler_t", nullptr, "counter32_t", nullptr,
+    { "char", KernelArgType::CHAR },
+    { "char16", KernelArgType::CHAR16 },
+    { "char2", KernelArgType::CHAR2 },
+    { "char3", KernelArgType::CHAR3 },
+    { "char4", KernelArgType::CHAR4 },
+    { "char8", KernelArgType::CHAR8 },
+    { "clk_event_t", KernelArgType::CLKEVENT },
+    { "counter32", KernelArgType::COUNTER32 },
+    { "double", KernelArgType::DOUBLE },
+    { "double16", KernelArgType::DOUBLE16 },
+    { "double2", KernelArgType::DOUBLE2 },
+    { "double3", KernelArgType::DOUBLE3 },
+    { "double4", KernelArgType::DOUBLE4 },
+    { "double8", KernelArgType::DOUBLE8 },
+    { "float", KernelArgType::FLOAT },
+    { "float16", KernelArgType::FLOAT16 },
+    { "float2", KernelArgType::FLOAT2 },
+    { "float3", KernelArgType::FLOAT3 },
+    { "float4", KernelArgType::FLOAT4 },
+    { "float8", KernelArgType::FLOAT8 },
+    { "image", KernelArgType::IMAGE },
+    { "image1d", KernelArgType::IMAGE1D },
+    { "image1d_array", KernelArgType::IMAGE1D_ARRAY },
+    { "image1d_buffer", KernelArgType::IMAGE1D_BUFFER },
+    { "image2d", KernelArgType::IMAGE2D },
+    { "image2d_array", KernelArgType::IMAGE2D_ARRAY },
+    { "image3d", KernelArgType::IMAGE3D },
+    { "int", KernelArgType::INT },
+    { "int16", KernelArgType::INT16 },
+    { "int2", KernelArgType::INT2 },
+    { "int3", KernelArgType::INT3 },
+    { "int4", KernelArgType::INT4 },
+    { "int8", KernelArgType::INT8 },
+    { "long", KernelArgType::LONG },
+    { "long16", KernelArgType::LONG16 },
+    { "long2", KernelArgType::LONG2 },
+    { "long3", KernelArgType::LONG3 },
+    { "long4", KernelArgType::LONG4 },
+    { "long8", KernelArgType::LONG8 },
+    { "pipe", KernelArgType::PIPE },
+    { "queue_t", KernelArgType::CMDQUEUE },
+    { "sampler_t", KernelArgType::SAMPLER },
+    { "short", KernelArgType::SHORT },
+    { "short16", KernelArgType::SHORT16 },
+    { "short2", KernelArgType::SHORT2 },
+    { "short3", KernelArgType::SHORT3 },
+    { "short4", KernelArgType::SHORT4 },
+    { "short8", KernelArgType::SHORT8 },
+    { "structure", KernelArgType::STRUCTURE },
+    { "uchar", KernelArgType::UCHAR },
+    { "uchar16", KernelArgType::UCHAR16 },
+    { "uchar2", KernelArgType::UCHAR2 },
+    { "uchar3", KernelArgType::UCHAR3 },
+    { "uchar4", KernelArgType::UCHAR4 },
+    { "uchar8", KernelArgType::UCHAR8 },
+    { "uint", KernelArgType::UINT },
+    { "uint16", KernelArgType::UINT16 },
+    { "uint2", KernelArgType::UINT2 },
+    { "uint3", KernelArgType::UINT3 },
+    { "uint4", KernelArgType::UINT4 },
+    { "uint8", KernelArgType::UINT8 },
+    { "ulong", KernelArgType::ULONG},
+    { "ulong16", KernelArgType::ULONG16 },
+    { "ulong2", KernelArgType::ULONG2 },
+    { "ulong3", KernelArgType::ULONG3 },
+    { "ulong4", KernelArgType::ULONG4 },
+    { "ulong8", KernelArgType::ULONG8 },
+    { "ushort", KernelArgType::USHORT },
+    { "ushort16", KernelArgType::USHORT16 },
+    { "ushort2", KernelArgType::USHORT2 },
+    { "ushort3", KernelArgType::USHORT3 },
+    { "ushort4", KernelArgType::USHORT4 },
+    { "ushort8", KernelArgType::USHORT8 },
+    { "void", KernelArgType::VOID }
 };
 
-static const size_t openclArgTypeNamesTblLength =
-        sizeof(openclArgTypeNamesTbl)/sizeof(const char*);
+static const size_t argTypeNameMapLength =
+        sizeof(argTypeNameMap)/sizeof(std::pair<const char*, KernelArgType>);
 
+static const KernelArgType gpuArgTypeTable[] =
+{
+    KernelArgType::UCHAR,
+    KernelArgType::UCHAR2,
+    KernelArgType::UCHAR3,
+    KernelArgType::UCHAR4,
+    KernelArgType::UCHAR8,
+    KernelArgType::UCHAR16,
+    KernelArgType::CHAR,
+    KernelArgType::CHAR2,
+    KernelArgType::CHAR3,
+    KernelArgType::CHAR4,
+    KernelArgType::CHAR8,
+    KernelArgType::CHAR16,
+    KernelArgType::USHORT,
+    KernelArgType::USHORT2,
+    KernelArgType::USHORT3,
+    KernelArgType::USHORT4,
+    KernelArgType::USHORT8,
+    KernelArgType::USHORT16,
+    KernelArgType::SHORT,
+    KernelArgType::SHORT2,
+    KernelArgType::SHORT3,
+    KernelArgType::SHORT4,
+    KernelArgType::SHORT8,
+    KernelArgType::SHORT16,
+    KernelArgType::UINT,
+    KernelArgType::UINT2,
+    KernelArgType::UINT3,
+    KernelArgType::UINT4,
+    KernelArgType::UINT8,
+    KernelArgType::UINT16,
+    KernelArgType::INT,
+    KernelArgType::INT2,
+    KernelArgType::INT3,
+    KernelArgType::INT4,
+    KernelArgType::INT8,
+    KernelArgType::INT16,
+    KernelArgType::ULONG,
+    KernelArgType::ULONG2,
+    KernelArgType::ULONG3,
+    KernelArgType::ULONG4,
+    KernelArgType::ULONG8,
+    KernelArgType::ULONG16,
+    KernelArgType::LONG,
+    KernelArgType::LONG2,
+    KernelArgType::LONG3,
+    KernelArgType::LONG4,
+    KernelArgType::LONG8,
+    KernelArgType::LONG16,
+    KernelArgType::FLOAT,
+    KernelArgType::FLOAT2,
+    KernelArgType::FLOAT3,
+    KernelArgType::FLOAT4,
+    KernelArgType::FLOAT8,
+    KernelArgType::FLOAT16,
+    KernelArgType::DOUBLE,
+    KernelArgType::DOUBLE2,
+    KernelArgType::DOUBLE3,
+    KernelArgType::DOUBLE4,
+    KernelArgType::DOUBLE8,
+    KernelArgType::DOUBLE16
+};
+
+static const cxuint vectorIdTable[17] =
+{ UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
+  UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };        
+
+static KernelArgType determineKernelArgType(const char* typeString, cxuint vectorSize)
+{
+    KernelArgType outType;
+    
+    if (vectorSize > 16)
+        throw ParseException("Wrong vector size");
+    const cxuint vectorId = vectorIdTable[vectorSize];
+    if (vectorId == UINT_MAX)
+        throw ParseException("Wrong vector size");
+    
+    if (::strncmp(typeString, "float:", 6) == 0)
+        outType = gpuArgTypeTable[8*6+vectorId];
+    else if (::strncmp(typeString, "double:", 7) == 0)
+        outType = gpuArgTypeTable[9*6+vectorId];
+    else if ((typeString[0] == 'i' || typeString[0] == 'u'))
+    {
+        /* indexBase - choose between unsigned/signed */
+        const cxuint indexBase = (typeString[0] == 'i')?6:0;
+        if (typeString[1] == '8')
+        {
+            if (typeString[2] != 0)
+                throw ParseException("Can't parse type");
+            outType = gpuArgTypeTable[indexBase+vectorId];
+        }
+        else
+        {
+            if (typeString[1] == '1' && typeString[2] == '6')
+                outType = gpuArgTypeTable[indexBase+2*6+vectorId];
+            else if (typeString[1] == '3' && typeString[2] == '2')
+                outType = gpuArgTypeTable[indexBase+4*6+vectorId];
+            else if (typeString[1] == '6' && typeString[2] == '4')
+                outType = gpuArgTypeTable[indexBase+6*6+vectorId];
+            else // if not determined
+                throw ParseException("Can't parse type");
+            if (typeString[3] != 0)
+                throw ParseException("Can't parse type");
+        }
+    }
+    else
+        throw ParseException("Can't parse type");
+    
+    return outType;
+}
+        
 /* get configuration to human readable form */
 static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metadata,
             const std::vector<CALNoteInput>& calNotes, const CString& driverInfo,
@@ -374,6 +546,14 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             {
                 arg.argType = KernelArgType::STRUCTURE;
                 arg.structSize = cstrtovCStyle<uint32_t>(line.c_str()+pos, nullptr, outEnd);
+            }
+            else
+            {   // regular type
+                nextPos = line.find(':', pos);
+                nextPos++;
+                const char* outend;
+                cxuint vectorSize = cstrtoui(line.c_str()+nextPos, nullptr, outend);
+                arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize);
             }
             argUavIds.push_back(0);
             config.args.push_back(arg);
@@ -534,29 +714,16 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             if (arg.argType == KernelArgType::POINTER &&
                 arg.pointerType == KernelArgType::VOID)
             {
-                cxuint found  = 0;
                 CString ptrTypeName = arg.typeName.substr(0, arg.typeName.size()-1);
-                for (found = 0; found < openclArgTypeNamesTblLength; found++)
-                    if (openclArgTypeNamesTbl[found]!=nullptr &&
-                        ::strcmp(ptrTypeName.c_str(), openclArgTypeNamesTbl[found]) == 0)
-                        break;
-                if (found != openclArgTypeNamesTblLength)
-                    arg.pointerType = KernelArgType(found);
+                auto it = binaryMapFind(argTypeNameMap, argTypeNameMap+argTypeNameMapLength,
+                        ptrTypeName.c_str(), CStringLess());
+                
+                if (it != argTypeNameMap+argTypeNameMapLength)
+                    arg.pointerType = it->second;
                 else if (arg.typeName.compare(0, 5, "enum ")==0)
                     arg.pointerType = KernelArgType::UINT;
             }
-            else if (arg.argType == KernelArgType::VOID)
-            {   // value
-                cxuint found  = 0;
-                for (found = 0; found < openclArgTypeNamesTblLength; found++)
-                    if (openclArgTypeNamesTbl[found]!=nullptr &&
-                        ::strcmp(arg.typeName.c_str(), openclArgTypeNamesTbl[found]) == 0)
-                        break;
-                if (found != openclArgTypeNamesTblLength)
-                    arg.argType = KernelArgType(found);
-                else if (arg.typeName.compare(0, 5, "enum ")==0)
-                    arg.argType = KernelArgType::UINT;
-            }
+            //else
         }
         else if (line.compare(0, 7, ";uavid:")==0)
         {
