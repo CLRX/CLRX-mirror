@@ -1227,7 +1227,7 @@ static const char* defaultArgTypeNames[] =
     "float2", "float3", "float4", "float8", "float16",
     "double2", "double3", "double4", "double8", "double16",
     "sampler_t", "structure", "counter32_t", "counter64_t",
-    "pipe", "cmdqueue_t", "clk_event_t"
+    "pipe", "queue_t", "clk_event_t"
 };
 
 static const size_t argTypeNameMapSize = sizeof(argTypeNameMap) /

@@ -1395,7 +1395,7 @@ R"ffDXD(            .amdcl2
       Arg: "n", "uint", uint, void, none, 0, 0, 0, default, 3
       Arg: "in", "float*", pointer, float, global, 4, 0, 0, default, 3
       Arg: "out", "float*", pointer, float, global, 0, 0, 0, default, 3
-      Arg: "q", "cmdqueue_t", cmdqueue, void, none, 0, 0, 0, default, 3
+      Arg: "q", "queue_t", cmdqueue, void, none, 0, 0, 0, default, 3
       Arg: "piper", "pipe", pipe, void, none, 0, 0, 0, default, 3
       Arg: "ce", "clk_event_t", clkevent, void, none, 0, 0, 0, default, 3
       dims=1, cws=0 0 0, SGPRS=12, VGPRS=1
