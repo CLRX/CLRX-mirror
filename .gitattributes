@@ -41,6 +41,10 @@ amdasm/AsmPseudoOps.cpp -text
 amdasm/AsmSource.cpp -text
 amdasm/Assembler.cpp -text
 amdasm/CMakeLists.txt -text svneol=unset#text/plain
+amdasm/DisasmAmd.cpp -text
+amdasm/DisasmAmdCL2.cpp -text
+amdasm/DisasmGallium.cpp -text
+amdasm/DisasmInternals.h -text
 amdasm/Disassembler.cpp -text
 amdasm/GCNAsmHelpers.cpp -text
 amdasm/GCNAsmInternals.h -text

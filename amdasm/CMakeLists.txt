@@ -29,6 +29,9 @@ SET(LIBAMDASMSRC
         AsmSource.cpp
         Assembler.cpp
         Disassembler.cpp
+        DisasmAmd.cpp
+        DisasmAmdCL2.cpp
+        DisasmGallium.cpp
         GCNAsmHelpers.cpp
         GCNAssembler.cpp
         GCNDisasm.cpp

@@ -107,7 +107,7 @@ GenericPtr::GenericPtr(cl_uint deviceIndex)
     memObjects.push_back(outBuffer);
 }
 
-static const cl_uint2 twoZeroes[2] = { 0, 0 };
+static const cl_uint twoZeroes[2] = { 0, 0 };
 
 void GenericPtr::run()
 {

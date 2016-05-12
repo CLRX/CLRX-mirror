@@ -510,7 +510,7 @@ struct CLRX_INTERNAL AsmAmdCL2PseudoOps: AsmPseudoOps
                       const char* linePtr);
 };
 
-extern cxbyte cstrtobyte(const char*& str, const char* end);
+extern CLRX_INTERNAL cxbyte cstrtobyte(const char*& str, const char* end);
 
 extern const cxbyte tokenCharTable[96] CLRX_INTERNAL;
 

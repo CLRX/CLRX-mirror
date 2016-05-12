@@ -275,11 +275,6 @@ private:
     std::ostream& output;
     Flags flags;
     size_t sectionCount;
-    
-    void disassembleAmd(); // Catalyst format
-    void disassembleAmdCL2(); // Catalyst OpenCL 2.0 format
-    void disassembleGallium(); // Gallium format
-    void disassembleRawCode(); // raw code format
 public:
     /// constructor for 32-bit GPU binary
     /**
