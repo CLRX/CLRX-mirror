@@ -28,20 +28,6 @@
 
 using namespace CLRX;
 
-enum {
-    PROGOPT_METADATA = 0,
-    PROGOPT_DATA,
-    PROGOPT_CALNOTES,
-    PROGOPT_CONFIG,
-    PROGOPT_SETUP,
-    PROGOPT_FLOATS,
-    PROGOPT_HEXCODE,
-    PROGOPT_ALL,
-    PROGOPT_RAWCODE,
-    PROGOPT_GPUTYPE,
-    PROGOPT_ARCH
-};
-
 static const CLIOption programOptions[] =
 {
     { "metadata", 'm', CLIArgType::NONE, false, false, "dump object metadata", nullptr },
@@ -78,26 +64,24 @@ try
     }
     
     Flags disasmFlags = DISASM_DUMPCODE;
-    if (cli.hasOption(PROGOPT_ALL))
-        disasmFlags = DISASM_ALL;
+    if (cli.hasShortOption('a'))
+        disasmFlags = DISASM_ALL | (cli.hasShortOption('C')?DISASM_CONFIG:0);
     else
-        disasmFlags |= (cli.hasOption(PROGOPT_METADATA)?DISASM_METADATA:0) |
-            (cli.hasOption(PROGOPT_DATA)?DISASM_DUMPDATA:0) |
-            (cli.hasOption(PROGOPT_CALNOTES)?DISASM_CALNOTES:0) |
-            (cli.hasOption(PROGOPT_SETUP)?DISASM_SETUP:0) |
-            (cli.hasOption(PROGOPT_FLOATS)?DISASM_FLOATLITS:0) |
-            (cli.hasOption(PROGOPT_HEXCODE)?DISASM_HEXCODE:0) |
-            (cli.hasOption(PROGOPT_CONFIG)?DISASM_CONFIG:0);
+        disasmFlags |= (cli.hasShortOption('m')?DISASM_METADATA:0) |
+            (cli.hasShortOption('d')?DISASM_DUMPDATA:0) |
+            (cli.hasShortOption('c')?DISASM_CALNOTES:0) |
+            (cli.hasShortOption('s')?DISASM_SETUP:0) |
+            (cli.hasShortOption('f')?DISASM_FLOATLITS:0) |
+            (cli.hasShortOption('h')?DISASM_HEXCODE:0) |
+            (cli.hasShortOption('C')?DISASM_CONFIG:0);
     
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
-    const bool fromRawCode = cli.hasOption(PROGOPT_RAWCODE);
-    if (cli.hasOption(PROGOPT_GPUTYPE))
-        gpuDeviceType = getGPUDeviceTypeFromName(
-                cli.getOptArg<const char*>(PROGOPT_GPUTYPE));
-    else if (cli.hasOption(PROGOPT_ARCH))
+    const bool fromRawCode = cli.hasShortOption('r');
+    if (cli.hasShortOption('g'))
+        gpuDeviceType = getGPUDeviceTypeFromName(cli.getShortOptArg<const char*>('g'));
+    else if (cli.hasShortOption('A'))
         gpuDeviceType = getLowestGPUDeviceTypeFromArchitecture(
-                    getGPUArchitectureFromName(
-                            cli.getOptArg<const char*>(PROGOPT_ARCH)));
+                    getGPUArchitectureFromName(cli.getShortOptArg<const char*>('A')));
     
     int ret = 0;
     for (const char* const* args = cli.getArgs();*args != nullptr; args++)

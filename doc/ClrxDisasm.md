@@ -37,6 +37,10 @@ For GalliumCompute binaries disassembler prints a global constant data.
 
     Print list of the ATI CAL notes and their content from AMD Catalyst binaries to output.
 
+* **-C**, **--config**
+
+    Print human-readable configuration instead of metadatas, headers and ATI CAL notes.
+    
 * **-f**, **--float**
 
     Print floating point literals in instructions if instructions accept float point values
@@ -49,7 +53,7 @@ will be printed in 4-byte words.
 
 * **-a**, **--all**
 
-    Enable all options -mdcfh.
+    Enable all options -mdcfh (except -C).
 
 * **-r**, **--raw**
 
