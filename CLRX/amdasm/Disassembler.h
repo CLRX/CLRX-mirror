@@ -53,7 +53,8 @@ enum: Flags
     DISASM_FLOATLITS = 16,  ///< print in comments float literals
     DISASM_HEXCODE = 32,    ///< print on left side hexadecimal code
     DISASM_SETUP = 64,
-    DISASM_ALL = FLAGS_ALL       ///< all disassembler flags
+    DISASM_CONFIG = 128,    ///< print kernel configuration instead raw data
+    DISASM_ALL = FLAGS_ALL&~DISASM_CONFIG  ///< all disassembler flags (without config)
 };
 
 /// main class for

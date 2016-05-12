@@ -32,6 +32,7 @@ enum {
     PROGOPT_METADATA = 0,
     PROGOPT_DATA,
     PROGOPT_CALNOTES,
+    PROGOPT_CONFIG,
     PROGOPT_SETUP,
     PROGOPT_FLOATS,
     PROGOPT_HEXCODE,
@@ -46,6 +47,7 @@ static const CLIOption programOptions[] =
     { "metadata", 'm', CLIArgType::NONE, false, false, "dump object metadata", nullptr },
     { "data", 'd', CLIArgType::NONE, false, false, "dump global data", nullptr },
     { "calNotes", 'c', CLIArgType::NONE, false, false, "dump ATI CAL notes", nullptr },
+    { "config", 'C', CLIArgType::NONE, false, false, "dump kernel configuration", nullptr },
     { "setup", 's', CLIArgType::NONE, false, false, "dump kernel setup", nullptr },
     { "floats", 'f', CLIArgType::NONE, false, false, "display float literals", nullptr },
     { "hexcode", 'h', CLIArgType::NONE, false, false,
@@ -84,7 +86,8 @@ try
             (cli.hasOption(PROGOPT_CALNOTES)?DISASM_CALNOTES:0) |
             (cli.hasOption(PROGOPT_SETUP)?DISASM_SETUP:0) |
             (cli.hasOption(PROGOPT_FLOATS)?DISASM_FLOATLITS:0) |
-            (cli.hasOption(PROGOPT_HEXCODE)?DISASM_HEXCODE:0);
+            (cli.hasOption(PROGOPT_HEXCODE)?DISASM_HEXCODE:0) |
+            (cli.hasOption(PROGOPT_CONFIG)?DISASM_CONFIG:0);
     
     GPUDeviceType gpuDeviceType = GPUDeviceType::CAPE_VERDE;
     const bool fromRawCode = cli.hasOption(PROGOPT_RAWCODE);
@@ -111,9 +114,9 @@ try
                 Flags binFlags = AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                         AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                         AMDBIN_CREATE_KERNELHEADERMAP;
-                if ((disasmFlags & DISASM_CALNOTES) != 0)
+                if ((disasmFlags & (DISASM_CALNOTES|DISASM_CONFIG)) != 0)
                     binFlags |= AMDBIN_INNER_CREATE_CALNOTES;
-                if ((disasmFlags & DISASM_METADATA) != 0)
+                if ((disasmFlags & (DISASM_METADATA|DISASM_CONFIG)) != 0)
                     binFlags |= AMDBIN_CREATE_INFOSTRINGS;
                 
                 if (isAmdBinary(binaryData.size(), binaryData.data()))

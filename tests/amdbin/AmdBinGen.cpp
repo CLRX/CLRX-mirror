@@ -372,7 +372,6 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             uavIdToCompare = uavId;
             if (driverVersion < 134805)
                 uavIdToCompare = 9;
-            
         }
     }
     if (argSamplers != 0 && !config.samplers.empty())
