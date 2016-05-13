@@ -1266,11 +1266,8 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
     output.write(buf, bufSize);
     bufSize = snprintf(buf, 100, "        .condout %u\n", config.condOut);
     output.write(buf, bufSize);
-    if ((config.pgmRSRC2 & 0x80000040) != 0)
-    {
-        bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
-        output.write(buf, bufSize);
-    }
+    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
+    output.write(buf, bufSize);
     if (config.ieeeMode)
         output.write("        .ieeemode\n", 18);
     if (config.tgSize)
