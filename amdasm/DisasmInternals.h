@@ -42,7 +42,7 @@ extern CLRX_INTERNAL void printDisasmDataU32(size_t size, const uint32_t* data,
 extern CLRX_INTERNAL void printDisasmLongString(size_t size, const char* data,
             std::ostream& output, bool secondAlign = false);
 
-extern void CLRX_INTERNAL disassembleAmd(std::ostream& output,
+extern CLRX_INTERNAL void disassembleAmd(std::ostream& output,
        const AmdDisasmInput* amdInput, ISADisassembler* isaDisassembler,
        size_t& sectionCount, Flags flags);
 
