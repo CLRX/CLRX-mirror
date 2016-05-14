@@ -608,12 +608,12 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             //arg.resId = AMDBIN_DEFAULT;
             ptr = strechr(ptr, lineEnd, ':');
             ptr++;
-            if (::strnecmp(typeName, "opaque:", 7, typeNameEnd)==0)
+            if (::strnecmp(typeName, "opaque:", 7, typeNameEnd+1)==0)
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
                 ptr = strechr(ptr, lineEnd, ':');
             }
-            else if (::strnecmp(typeName, "struct:", 7, typeNameEnd)==0)
+            else if (::strnecmp(typeName, "struct:", 7, typeNameEnd+1)==0)
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
                 arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
@@ -650,19 +650,20 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.used = true;
             ptr++;
             const char* nextPtr = strechr(ptr, lineEnd, ':');
-            std::string imgType(ptr, nextPtr);
+            const char* imgType = ptr;
+            const char* imgTypeEnd = nextPtr;
             ptr = nextPtr+1;
-            if (imgType == "1D")
+            if (::strnecmp(imgType, "1D:", 3, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE1D;
-            else if (imgType == "1DA")
+            else if (::strnecmp(imgType, "1DA:", 4, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE1D_ARRAY;
-            else if (imgType == "1DB")
+            else if (::strnecmp(imgType, "1DB:", 4, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE1D_BUFFER;
-            else if (imgType == "2D")
+            else if (::strnecmp(imgType, "2D:", 3, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE2D;
-            else if (imgType == "2DA")
+            else if (::strnecmp(imgType, "2DA:", 4, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE2D_ARRAY;
-            else if (imgType == "3D")
+            else if (::strnecmp(imgType, "3D:", 3, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE3D;
             if (::strnecmp(ptr,"RO:", 3, lineEnd) == 0)
                 arg.ptrAccess |= KARG_PTR_READ_ONLY;
@@ -709,7 +710,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 cxuint sampId = cstrtovCStyle<cxuint>(ptr, lineEnd, outEnd);
                 ptr = strechr(ptr, lineEnd, ':');
                 ptr += 3;
-                cxuint value = cstrtovCStyle<cxuint>(linePtr, lineEnd, outEnd);
+                cxuint value = cstrtovCStyle<cxuint>(ptr, lineEnd, outEnd);
                 if (config.samplers.size() < sampId+1)
                     config.samplers.resize(sampId+1);
                 config.samplers[sampId] = value;
