@@ -405,15 +405,16 @@ static const cxuint vectorIdTable[17] =
 { UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
   UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };        
 
-static KernelArgType determineKernelArgType(const char* typeString, cxuint vectorSize)
+static KernelArgType determineKernelArgType(const char* typeString, cxuint vectorSize,
+                    LineNo lineNo)
 {
     KernelArgType outType;
     
     if (vectorSize > 16)
-        throw ParseException("Wrong vector size");
+        throw ParseException(lineNo, "Wrong vector size");
     const cxuint vectorId = vectorIdTable[vectorSize];
     if (vectorId == UINT_MAX)
-        throw ParseException("Wrong vector size");
+        throw ParseException(lineNo, "Wrong vector size");
     
     if (::strncmp(typeString, "float:", 6) == 0)
         outType = gpuArgTypeTable[8*6+vectorId];
@@ -426,7 +427,7 @@ static KernelArgType determineKernelArgType(const char* typeString, cxuint vecto
         if (typeString[1] == '8')
         {
             if (typeString[2] != 0)
-                throw ParseException("Can't parse type");
+                throw ParseException(lineNo, "Can't parse type");
             outType = gpuArgTypeTable[indexBase+vectorId];
         }
         else
@@ -438,13 +439,13 @@ static KernelArgType determineKernelArgType(const char* typeString, cxuint vecto
             else if (typeString[1] == '6' && typeString[2] == '4')
                 outType = gpuArgTypeTable[indexBase+6*6+vectorId];
             else // if not determined
-                throw ParseException("Can't parse type");
+                throw ParseException(lineNo, "Can't parse type");
             if (typeString[3] != 0)
-                throw ParseException("Can't parse type");
+                throw ParseException(lineNo, "Can't parse type");
         }
     }
     else
-        throw ParseException("Can't parse type");
+        throw ParseException(lineNo, "Can't parse type");
     
     return outType;
 }
@@ -513,7 +514,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     /* parse arguments */
     const char* linePtr = metadata;
     const char* mtEnd = metadata + metadataSize;
-    while (linePtr != mtEnd)
+    LineNo lineNo = 1;
+    for (; linePtr != mtEnd; lineNo++)
     {
         const char* lineEnd = linePtr;
         while (lineEnd!=mtEnd && *lineEnd!='\n') lineEnd++;
@@ -527,9 +529,13 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         {  // cws
             config.reqdWorkGroupSize[0] = cstrtovCStyle<uint32_t>(
                         linePtr+5, lineEnd, outEnd);
+            if (outEnd==lineEnd || *outEnd!=':')
+                throw ParseException(lineNo, "Can't parse CWS");
             outEnd++;
             config.reqdWorkGroupSize[1] = cstrtovCStyle<uint32_t>(
                         outEnd, lineEnd, outEnd);
+            if (outEnd==lineEnd || *outEnd!=':')
+                throw ParseException(lineNo, "Can't parse CWS");
             outEnd++;
             config.reqdWorkGroupSize[2] = cstrtovCStyle<uint32_t>(
                         outEnd, lineEnd, outEnd);
@@ -538,6 +544,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         {
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+7, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse value argument");
             arg.argName.assign(linePtr+7, ptr);
             arg.argType = KernelArgType::VOID;
             arg.pointerType = KernelArgType::VOID;
@@ -550,6 +558,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.used = true;
             ptr++;
             const char* nextPtr = strechr(ptr, lineEnd, ':');
+            if (nextPtr==nullptr)
+                throw ParseException(lineNo, "Can't parse value argument");
             std::string typeStr(ptr, nextPtr);
             ptr = nextPtr+1;
             if (typeStr == "struct")
@@ -560,9 +570,11 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             else
             {   // regular type
                 nextPtr = strechr(ptr, lineEnd, ':');
+                if (nextPtr==nullptr)
+                    throw ParseException(lineNo, "Can't parse value argument");
                 nextPtr++;
                 cxuint vectorSize = cstrtoui(nextPtr, lineEnd, outEnd);
-                arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize);
+                arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize, lineNo);
             }
             argUavIds.push_back(0);
             argIndexMap[arg.argName] = config.args.size();
@@ -572,6 +584,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         {
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             arg.argName.assign(linePtr+9, ptr);
             arg.argType = KernelArgType::POINTER;
             arg.pointerType = KernelArgType::VOID;
@@ -583,11 +597,15 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.used = true;
             ptr++;
             const char* nextPtr = strechr(ptr, lineEnd, ':');
+            if (nextPtr==nullptr)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             const char* typeName = ptr;
             const char* typeNameEnd = nextPtr;
             ptr = nextPtr;
             ptr += 5; // to argOffset
             ptr = strechr(ptr, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
             // qualifier
             if (::strnecmp(ptr, "uav:", 4, lineEnd) == 0)
@@ -597,7 +615,11 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.ptrSpace = KernelPtrSpace::CONSTANT;
             else if (::strnecmp(ptr, "hl:", 3, lineEnd) == 0)
                 arg.ptrSpace = KernelPtrSpace::LOCAL;
+            else
+                throw ParseException(lineNo, "Can't parse pointer space");
             ptr = strechr(ptr, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
             arg.resId = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             
@@ -607,6 +629,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             argUavIds.push_back(arg.resId);
             //arg.resId = AMDBIN_DEFAULT;
             ptr = strechr(ptr, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
             if (::strnecmp(typeName, "opaque:", 7, typeNameEnd+1)==0)
             {
@@ -620,17 +644,25 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             }
             else
                 ptr = strechr(ptr, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
             if (::strnecmp(ptr, "RO:", 2, lineEnd)==0 &&
                     arg.ptrSpace==KernelPtrSpace::GLOBAL)
                 arg.ptrAccess |= KARG_PTR_CONST;
             else if (::strnecmp(ptr, "RW:", 2, lineEnd) == 0)
                 arg.ptrAccess |= KARG_PTR_NORMAL;
+            
             ptr = strechr(ptr, lineEnd, ':');
+            if (ptr==nullptr || ptr+2>=lineEnd)
+                throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
             if (*ptr == '1')
                 arg.ptrAccess |= KARG_PTR_VOLATILE;
-            ptr+=2;
+            ptr++;
+            if (ptr+1>=lineEnd || *ptr!=':')
+                throw ParseException(lineNo, "Can't parse pointer argument");
+            ptr++;
             if (*ptr == '1')
                 arg.ptrAccess |= KARG_PTR_RESTRICT;
             argIndexMap[arg.argName] = config.args.size();
@@ -640,6 +672,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         {
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+7, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse image argument");
             arg.argName.assign(linePtr+7, ptr);
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
@@ -650,6 +684,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.used = true;
             ptr++;
             const char* nextPtr = strechr(ptr, lineEnd, ':');
+            if (nextPtr==nullptr)
+                throw ParseException(lineNo, "Can't parse image argument");
             const char* imgType = ptr;
             const char* imgTypeEnd = nextPtr;
             ptr = nextPtr+1;
@@ -665,6 +701,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.argType = KernelArgType::IMAGE2D_ARRAY;
             else if (::strnecmp(imgType, "3D:", 3, imgTypeEnd+1)==0)
                 arg.argType = KernelArgType::IMAGE3D;
+            else
+                throw ParseException(lineNo, "Can't parse image type");
             if (::strnecmp(ptr,"RO:", 3, lineEnd) == 0)
                 arg.ptrAccess |= KARG_PTR_READ_ONLY;
             else if (::strnecmp(ptr,"WO:", 3, lineEnd) == 0)
@@ -672,6 +710,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.ptrAccess |= KARG_PTR_WRITE_ONLY;
                 woImageIds.push_back(config.args.size());
             }
+            else
+                throw ParseException(lineNo, "Can't parse image access");
             ptr += 3;
             arg.resId = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             argUavIds.push_back(0);
@@ -703,12 +743,16 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         else if (::strnecmp(linePtr, ";sampler:", 9, lineEnd)==0)
         {
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse sampler entry");
             std::string samplerName(linePtr+9, ptr);
             if (samplerName.compare(0, 8, "unknown_") == 0)
             { // add sampler
                 ptr++;
                 cxuint sampId = cstrtovCStyle<cxuint>(ptr, lineEnd, outEnd);
                 ptr = strechr(ptr, lineEnd, ':');
+                if (ptr==nullptr)
+                    throw ParseException(lineNo, "Can't parse sampler entry");
                 ptr += 3;
                 cxuint value = cstrtovCStyle<cxuint>(ptr, lineEnd, outEnd);
                 if (config.samplers.size() < sampId+1)
@@ -727,6 +771,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         {
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
             const char* ptr = strechr(linePtr+12, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse reflection entry");
             ptr++;
             AmdKernelArgInput& arg = config.args[argNo];
             arg.typeName.assign(ptr, lineEnd);
