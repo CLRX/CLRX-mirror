@@ -106,12 +106,79 @@ static const char* galliumArgSemTypeNamesTbl[] =
     "general", "griddim", "gridoffset", "imgsize", "imgformat"
 };
 
-void CLRX::disassembleGallium(std::ostream& output, const GalliumDisasmInput* galliumInput,
-          ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)
+static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
+             GPUArchitecture arch, const GalliumProgInfoEntry* progInfo)
+{
+    output.write("    .config\n", 12);
+    size_t bufSize;
+    char buf[100];
+    const cxuint ldsShift = arch<GPUArchitecture::GCN1_1 ? 8 : 9;
+    const uint32_t pgmRsrc1 = progInfo[0].value;
+    const uint32_t pgmRsrc2 = progInfo[1].value;
+    const uint32_t scratchVal = progInfo[2].value;
+    
+    cxuint dimMask = (pgmRsrc2 >> 7);
+    strcpy(buf, "        .dims ");
+    bufSize = 14;
+    if ((dimMask & 1) != 0)
+        buf[bufSize++] = 'x';
+    if ((dimMask & 2) != 0)
+        buf[bufSize++] = 'y';
+    if ((dimMask & 4) != 0)
+        buf[bufSize++] = 'z';
+    buf[bufSize++] = '\n';
+    output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n",
+              std::min((((pgmRsrc1>>6) & 0xf)<<3)+8, maxSgprsNum));
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", ((pgmRsrc1 & 0x3f)<<2)+4);
+    output.write(buf, bufSize);
+    if ((pgmRsrc1 & (1U<<20)) != 0)
+        output.write("        .privmode\n", 18);
+    if ((pgmRsrc1 & (1U<<22)) != 0)
+        output.write("        .debugmode\n", 19);
+    if ((pgmRsrc1 & (1U<<21)) != 0)
+        output.write("        .dx10clamp\n", 19);
+    if ((pgmRsrc1 & (1U<<23)) != 0)
+        output.write("        .ieeemode\n", 18);
+    if ((pgmRsrc2 & 0x400) != 0)
+        output.write("        .tgsize\n", 16);
+    
+    bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", (pgmRsrc1>>12) & 0xff);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .priority %u\n", (pgmRsrc1>>10) & 3);
+    output.write(buf, bufSize);
+    if (((pgmRsrc1>>24) & 0x7f) != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                   (pgmRsrc1>>24) & 0x7f);
+        output.write(buf, bufSize);
+    }
+    const cxuint localSize = ((pgmRsrc2>>15) & 0x1ff) << ldsShift;
+    if (localSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .localsize %u\n", localSize);
+        output.write(buf, bufSize);
+    }
+    bufSize = snprintf(buf, 100, "        .userdatanum %u\n", (pgmRsrc2>>1) & 0x1f);
+    output.write(buf, bufSize);
+    const cxuint scratchSize = ((scratchVal >> 12) << 10) >> 6;
+    if (scratchSize != 0) // scratch buffer
+    {
+        bufSize = snprintf(buf, 100, "        .scratchbuffer %u\n", scratchSize);
+        output.write(buf, bufSize);
+    }
+}
+
+void CLRX::disassembleGallium(std::ostream& output,
+          const GalliumDisasmInput* galliumInput, ISADisassembler* isaDisassembler,
+          size_t& sectionCount, Flags flags)
 {
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
-    const bool doMetadata = ((flags & DISASM_METADATA) != 0);
+    const bool doMetadata = ((flags & (DISASM_METADATA|DISASM_CONFIG)) != 0);
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     
     if (galliumInput->is64BitMode)
         output.write(".64bit\n", 7);
@@ -124,6 +191,9 @@ void CLRX::disassembleGallium(std::ostream& output, const GalliumDisasmInput* ga
         output.write(".rodata\n", 8);
         printDisasmData(galliumInput->globalDataSize, galliumInput->globalData, output);
     }
+    
+    const GPUArchitecture arch = getGPUArchitectureFromDeviceType(galliumInput->deviceType);
+    const cxuint maxSgprsNum = getGPUMaxRegistersNum(arch, REGTYPE_SGPR, 0);
     
     for (cxuint i = 0; i < galliumInput->kernels.size(); i++)
     {
@@ -178,19 +248,24 @@ void CLRX::disassembleGallium(std::ostream& output, const GalliumDisasmInput* ga
                 lineBuf[pos++] = '\n';
                 output.write(lineBuf, pos);
             }
-            /// proginfo
-            output.write("    .proginfo\n", 14);
-            for (const GalliumProgInfoEntry& piEntry: kinput.progInfo)
-            {
-                output.write("        .entry ", 15);
-                char buf[32];
-                size_t numSize = itocstrCStyle<uint32_t>(piEntry.address, buf, 32, 16, 8);
-                output.write(buf, numSize);
-                output.write(", ", 2);
-                numSize = itocstrCStyle<uint32_t>(piEntry.value, buf, 32, 16, 8);
-                output.write(buf, numSize);
-                output.write("\n", 1);
+            if (!doDumpConfig)
+            {   /// proginfo
+                output.write("    .proginfo\n", 14);
+                for (const GalliumProgInfoEntry& piEntry: kinput.progInfo)
+                {
+                    output.write("        .entry ", 15);
+                    char buf[32];
+                    size_t numSize = itocstrCStyle<uint32_t>(piEntry.address,
+                                 buf, 32, 16, 8);
+                    output.write(buf, numSize);
+                    output.write(", ", 2);
+                    numSize = itocstrCStyle<uint32_t>(piEntry.value, buf, 32, 16, 8);
+                    output.write(buf, numSize);
+                    output.write("\n", 1);
+                }
             }
+            else
+                dumpKernelConfig(output, maxSgprsNum, arch, kinput.progInfo);
         }
         isaDisassembler->addNamedLabel(kinput.offset, kinput.kernelName);
     }
