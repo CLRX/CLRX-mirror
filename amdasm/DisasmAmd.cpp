@@ -491,6 +491,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     AmdKernelConfig config{};
     std::vector<cxuint> argUavIds;
     std::map<cxuint,cxuint> argCbIds;
+    std::map<CString, cxuint> argIndexMap;
     config.dimMask = BINGEN_DEFAULT;
     config.printfId = BINGEN_DEFAULT;
     config.constBufferId = BINGEN_DEFAULT;
@@ -564,6 +565,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize);
             }
             argUavIds.push_back(0);
+            argIndexMap[arg.argName] = config.args.size();
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";pointer:", 9, lineEnd)==0)
@@ -581,7 +583,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.used = true;
             ptr++;
             const char* nextPtr = strechr(ptr, lineEnd, ':');
-            std::string typeName(ptr, nextPtr);
+            const char* typeName = ptr;
+            const char* typeNameEnd = nextPtr;
             ptr = nextPtr;
             ptr += 5; // to argOffset
             ptr = strechr(ptr, lineEnd, ':');
@@ -592,7 +595,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             else if (::strnecmp(ptr, "hc:", 3, lineEnd) == 0 ||
                         ::strnecmp(ptr, "c:", 2, lineEnd) == 0)
                 arg.ptrSpace = KernelPtrSpace::CONSTANT;
-            else if (::strnecmp(ptr, "hl", 3, lineEnd) == 0)
+            else if (::strnecmp(ptr, "hl:", 3, lineEnd) == 0)
                 arg.ptrSpace = KernelPtrSpace::LOCAL;
             ptr = strechr(ptr, lineEnd, ':');
             ptr++;
@@ -605,12 +608,12 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             //arg.resId = AMDBIN_DEFAULT;
             ptr = strechr(ptr, lineEnd, ':');
             ptr++;
-            if (typeName == "opaque")
+            if (::strnecmp(typeName, "opaque:", 7, typeNameEnd)==0)
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
                 ptr = strechr(ptr, lineEnd, ':');
             }
-            else if (typeName == "struct")
+            else if (::strnecmp(typeName, "struct:", 7, typeNameEnd)==0)
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
                 arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
@@ -630,6 +633,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             ptr+=2;
             if (*ptr == '1')
                 arg.ptrAccess |= KARG_PTR_RESTRICT;
+            argIndexMap[arg.argName] = config.args.size();
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";image:", 7, lineEnd)==0)
@@ -660,9 +664,9 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.argType = KernelArgType::IMAGE2D_ARRAY;
             else if (imgType == "3D")
                 arg.argType = KernelArgType::IMAGE3D;
-            if (::strncmp(ptr,"RO:", lineEnd-ptr) == 0)
+            if (::strnecmp(ptr,"RO:", 3, lineEnd) == 0)
                 arg.ptrAccess |= KARG_PTR_READ_ONLY;
-            else if (::strncmp(ptr,"RO:", lineEnd-ptr) == 0)
+            else if (::strnecmp(ptr,"WO:", 3, lineEnd) == 0)
             {
                 arg.ptrAccess |= KARG_PTR_WRITE_ONLY;
                 woImageIds.push_back(config.args.size());
@@ -670,6 +674,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             ptr += 3;
             arg.resId = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             argUavIds.push_back(0);
+            argIndexMap[arg.argName] = config.args.size();
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";counter:", 9, lineEnd)==0)
@@ -686,6 +691,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.constSpaceSize = 0;
             arg.used = true;
             argUavIds.push_back(0);
+            argIndexMap[arg.argName] = config.args.size();
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";constarg:", 10, lineEnd)==0)
@@ -709,7 +715,12 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 config.samplers[sampId] = value;
             }
             else
+            {
+                auto it = argIndexMap.find(samplerName);
+                if (it!=argIndexMap.end())
+                    config.args[it->second].argType = KernelArgType::SAMPLER;
                 argSamplers++;
+            }
         }
         else if (::strnecmp(linePtr, ";reflection:", 12, lineEnd)==0)
         {
@@ -1201,7 +1212,7 @@ static const char* kernelArgTypeNamesTbl[] =
     "long2", "long3", "long4", "long8", "long16",
     "float2", "float3", "float4", "float8", "float16",
     "double2", "double3", "double4", "double8", "double16",
-    "sampler_t", "structure", "counter32_t", "counter64_t"
+    "sampler", "structure", "counter32", "counter64"
 };
 
 
@@ -1335,8 +1346,10 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
                 cxbyte access = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
                 if (access == KARG_PTR_READ_ONLY)
                     output.write(", read_only", 11);
-                if (access == KARG_PTR_WRITE_ONLY)
+                else if (access == KARG_PTR_WRITE_ONLY)
                     output.write(", write_only", 12);
+                else
+                    output.write(", ", 2);
             }
             if (isImage || arg.argType == KernelArgType::COUNTER32)
             {
