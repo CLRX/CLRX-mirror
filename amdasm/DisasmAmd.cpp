@@ -636,17 +636,14 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
             if (::strnecmp(typeName, "opaque:", 7, typeNameEnd+1)==0)
-            {
                 arg.pointerType = KernelArgType::STRUCTURE;
-                ptr = strechr(ptr, lineEnd, ':');
-            }
             else if (::strnecmp(typeName, "struct:", 7, typeNameEnd+1)==0)
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
                 arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             }
-            else
-                ptr = strechr(ptr, lineEnd, ':');
+            ptr = strechr(ptr, lineEnd, ':');
+            
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse pointer argument");
             ptr++;
