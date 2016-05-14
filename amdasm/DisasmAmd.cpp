@@ -504,15 +504,9 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         const char* outEnd;
         // cws
         if (line.compare(0, 16, ";memory:hwlocal:")==0)
-        {
-            const char* outEnd;
             config.hwLocalSize = cstrtovCStyle<size_t>(line.c_str()+16, nullptr, outEnd);
-        }
         else if (line.compare(0, 17, ";memory:hwregion:")==0)
-        {
-            const char* outEnd;
             config.hwRegion = cstrtovCStyle<uint32_t>(line.c_str()+17, nullptr, outEnd);
-        }
         else if (line.compare(0, 5, ";cws:")==0)
         {  // cws
             config.reqdWorkGroupSize[0] = cstrtovCStyle<uint32_t>(
@@ -551,8 +545,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             {   // regular type
                 nextPos = line.find(':', pos);
                 nextPos++;
-                const char* outend;
-                cxuint vectorSize = cstrtoui(line.c_str()+nextPos, nullptr, outend);
+                cxuint vectorSize = cstrtoui(line.c_str()+nextPos, nullptr, outEnd);
                 arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize);
             }
             argUavIds.push_back(0);
