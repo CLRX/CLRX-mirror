@@ -22,7 +22,7 @@
 #include <string>
 #include <ostream>
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <cstring>
 #include <memory>
 #include <vector>
@@ -491,8 +491,10 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     
     AmdKernelConfig config{};
     std::vector<cxuint> argUavIds;
-    std::map<cxuint,cxuint> argCbIds;
-    std::map<CString, cxuint> argIndexMap;
+    std::unordered_map<cxuint,cxuint> argCbIds;
+    std::unordered_map<CString, cxuint> argIndexMap;
+    std::vector<cxuint> samplerArgIndices;
+    std::vector<cxuint> constArgIndices;
     config.dimMask = BINGEN_DEFAULT;
     config.printfId = BINGEN_DEFAULT;
     config.constBufferId = BINGEN_DEFAULT;
@@ -738,7 +740,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         else if (::strnecmp(linePtr, ";constarg:", 10, lineEnd)==0)
         {
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+10, lineEnd, outEnd);
-            config.args[argNo].ptrAccess |= KARG_PTR_CONST;
+            constArgIndices.push_back(argNo);
         }
         else if (::strnecmp(linePtr, ";sampler:", 9, lineEnd)==0)
         {
@@ -763,13 +765,15 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             {
                 auto it = argIndexMap.find(samplerName);
                 if (it!=argIndexMap.end())
-                    config.args[it->second].argType = KernelArgType::SAMPLER;
+                    samplerArgIndices.push_back(it->second);
                 argSamplers++;
             }
         }
         else if (::strnecmp(linePtr, ";reflection:", 12, lineEnd)==0)
         {
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
+            if (argNo >= config.args.size())
+                throw Exception("ArgNo out of range");
             const char* ptr = strechr(linePtr+12, lineEnd, ':');
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse reflection entry");
@@ -817,6 +821,17 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.samplers[k-argSamplers] = config.samplers[k];
         config.samplers.resize(config.samplers.size()-argSamplers);
     }
+    for (cxuint argIdx: samplerArgIndices)
+        if (argIdx < config.args.size())
+            config.args[argIdx].argType = KernelArgType::SAMPLER;
+        else
+            throw Exception("Sampler arg index out of range");
+    
+    for (cxuint argIdx: constArgIndices)
+        if (argIdx < config.args.size())
+            config.args[argIdx].ptrAccess |= KARG_PTR_CONST;
+        else
+            throw Exception("Const arg index out of range");
     /* from ATI CAL NOTES */
     cxbyte uavMask[128];
     std::fill(uavMask, uavMask+128, cxbyte(0));
