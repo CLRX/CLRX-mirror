@@ -20,7 +20,6 @@
 #include <CLRX/Config.h>
 #include <cstdint>
 #include <string>
-#include <sstream>
 #include <ostream>
 #include <memory>
 #include <map>
@@ -449,7 +448,22 @@ static KernelArgType determineKernelArgType(const char* typeString, cxuint vecto
     
     return outType;
 }
-        
+
+// find char to end
+inline static const char* strechr(const char* str, const char* end, int c)
+{
+    const char* p = str;
+    while (p!=end && *p != c && *p != 0) p++;
+    return (p!=end && *p==c) ? p : nullptr;
+}
+
+inline static int strnecmp(const char* str1, const char* str2, size_t n, const char* end)
+{
+    if (str1+n > end) return -1;
+    return strncmp(str1, str2, n);
+}
+
+
 /* get configuration to human readable form */
 static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metadata,
             const std::vector<CALNoteInput>& calNotes, const CString& driverInfo,
@@ -477,7 +491,6 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     AmdKernelConfig config{};
     std::vector<cxuint> argUavIds;
     std::map<cxuint,cxuint> argCbIds;
-    std::istringstream iss(std::string(metadata, metadataSize));
     config.dimMask = BINGEN_DEFAULT;
     config.printfId = BINGEN_DEFAULT;
     config.constBufferId = BINGEN_DEFAULT;
@@ -497,32 +510,34 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     
     cxuint uavIdToCompare = 0;
     /* parse arguments */
-    while (!iss.eof())
+    const char* linePtr = metadata;
+    const char* mtEnd = metadata + metadataSize;
+    while (linePtr != mtEnd)
     {
-        std::string line;
-        std::getline(iss, line);
+        const char* lineEnd = linePtr;
+        while (lineEnd!=mtEnd && *lineEnd!='\n') lineEnd++;
         const char* outEnd;
         // cws
-        if (line.compare(0, 16, ";memory:hwlocal:")==0)
-            config.hwLocalSize = cstrtovCStyle<size_t>(line.c_str()+16, nullptr, outEnd);
-        else if (line.compare(0, 17, ";memory:hwregion:")==0)
-            config.hwRegion = cstrtovCStyle<uint32_t>(line.c_str()+17, nullptr, outEnd);
-        else if (line.compare(0, 5, ";cws:")==0)
+        if (::strnecmp(linePtr, ";memory:hwlocal:", 16, lineEnd)==0)
+            config.hwLocalSize = cstrtovCStyle<size_t>(linePtr+16, lineEnd, outEnd);
+        else if (::strnecmp(linePtr, ";memory:hwregion:", 17, lineEnd)==0)
+            config.hwRegion = cstrtovCStyle<uint32_t>(linePtr+17, lineEnd, outEnd);
+        else if (::strnecmp(linePtr, ";cws:", 5, lineEnd)==0)
         {  // cws
             config.reqdWorkGroupSize[0] = cstrtovCStyle<uint32_t>(
-                        line.c_str()+5, nullptr, outEnd);
+                        linePtr+5, lineEnd, outEnd);
             outEnd++;
             config.reqdWorkGroupSize[1] = cstrtovCStyle<uint32_t>(
-                        outEnd, nullptr, outEnd);
+                        outEnd, lineEnd, outEnd);
             outEnd++;
             config.reqdWorkGroupSize[2] = cstrtovCStyle<uint32_t>(
-                        outEnd, nullptr, outEnd);
+                        outEnd, lineEnd, outEnd);
         }
-        else if (line.compare(0, 7, ";value:")==0)
+        else if (::strnecmp(linePtr, ";value:", 7, lineEnd)==0)
         {
             AmdKernelArgInput arg;
-            size_t pos = line.find(':', 7);
-            arg.argName = line.substr(7, pos-7);
+            const char* ptr = strechr(linePtr+7, lineEnd, ':');
+            arg.argName.assign(linePtr+7, ptr);
             arg.argType = KernelArgType::VOID;
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
@@ -532,30 +547,30 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.constSpaceSize = 0;
             arg.resId = 0;
             arg.used = true;
-            pos++;
-            size_t nextPos = line.find(':', pos);
-            std::string typeStr = line.substr(pos, nextPos-pos);
-            pos = nextPos+1;
+            ptr++;
+            const char* nextPtr = strechr(ptr, lineEnd, ':');
+            std::string typeStr(ptr, nextPtr);
+            ptr = nextPtr+1;
             if (typeStr == "struct")
             {
                 arg.argType = KernelArgType::STRUCTURE;
-                arg.structSize = cstrtovCStyle<uint32_t>(line.c_str()+pos, nullptr, outEnd);
+                arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             }
             else
             {   // regular type
-                nextPos = line.find(':', pos);
-                nextPos++;
-                cxuint vectorSize = cstrtoui(line.c_str()+nextPos, nullptr, outEnd);
+                nextPtr = strechr(ptr, lineEnd, ':');
+                nextPtr++;
+                cxuint vectorSize = cstrtoui(nextPtr, lineEnd, outEnd);
                 arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize);
             }
             argUavIds.push_back(0);
             config.args.push_back(arg);
         }
-        else if (line.compare(0, 9, ";pointer:")==0)
+        else if (::strnecmp(linePtr, ";pointer:", 9, lineEnd)==0)
         {
             AmdKernelArgInput arg;
-            size_t pos = line.find(':', 9);
-            arg.argName = line.substr(9, pos-9);
+            const char* ptr = strechr(linePtr+9, lineEnd, ':');
+            arg.argName.assign(linePtr+9, ptr);
             arg.argType = KernelArgType::POINTER;
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
@@ -564,62 +579,64 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.constSpaceSize = 0;
             arg.resId = BINGEN_DEFAULT;
             arg.used = true;
-            pos++;
-            size_t nextPos = line.find(':', pos);
-            std::string typeName = line.substr(pos, nextPos-pos);
-            pos = nextPos;
-            pos += 5; // to argOffset
-            pos = line.find(':', pos);
-            pos++;
+            ptr++;
+            const char* nextPtr = strechr(ptr, lineEnd, ':');
+            std::string typeName(ptr, nextPtr);
+            ptr = nextPtr;
+            ptr += 5; // to argOffset
+            ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
             // qualifier
-            if (line.compare(pos, 3, "uav") == 0)
+            if (::strnecmp(ptr, "uav:", 4, lineEnd) == 0)
                 arg.ptrSpace = KernelPtrSpace::GLOBAL;
-            else if (line.compare(pos, 2, "hc") == 0 || line.compare(pos, 1, "c") == 0)
+            else if (::strnecmp(ptr, "hc:", 3, lineEnd) == 0 ||
+                        ::strnecmp(ptr, "c:", 2, lineEnd) == 0)
                 arg.ptrSpace = KernelPtrSpace::CONSTANT;
-            else if (line.compare(pos, 2, "hl") == 0)
+            else if (::strnecmp(ptr, "hl", 3, lineEnd) == 0)
                 arg.ptrSpace = KernelPtrSpace::LOCAL;
-            pos = line.find(':', pos);
-            pos++;
-            arg.resId = cstrtovCStyle<uint32_t>(line.c_str()+pos, nullptr, outEnd);
+            ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
+            arg.resId = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             
             if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
                 argCbIds[arg.resId] = config.args.size();
             
             argUavIds.push_back(arg.resId);
             //arg.resId = AMDBIN_DEFAULT;
-            pos = line.find(':', pos);
-            pos++;
+            ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
             if (typeName == "opaque")
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
-                pos = line.find(':', pos);
+                ptr = strechr(ptr, lineEnd, ':');
             }
             else if (typeName == "struct")
             {
                 arg.pointerType = KernelArgType::STRUCTURE;
-                arg.structSize = cstrtovCStyle<uint32_t>(line.c_str()+pos, nullptr, outEnd);
+                arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             }
             else
-                pos = line.find(':', pos);
-            pos++;
-            if (line.compare(pos, 2, "RO") == 0 && arg.ptrSpace == KernelPtrSpace::GLOBAL)
+                ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
+            if (::strnecmp(ptr, "RO:", 2, lineEnd)==0 &&
+                    arg.ptrSpace==KernelPtrSpace::GLOBAL)
                 arg.ptrAccess |= KARG_PTR_CONST;
-            else if (line.compare(pos, 2, "RW") == 0)
+            else if (::strnecmp(ptr, "RW:", 2, lineEnd) == 0)
                 arg.ptrAccess |= KARG_PTR_NORMAL;
-            pos = line.find(':', pos);
-            pos++;
-            if (line[pos] == '1')
+            ptr = strechr(ptr, lineEnd, ':');
+            ptr++;
+            if (*ptr == '1')
                 arg.ptrAccess |= KARG_PTR_VOLATILE;
-            pos+=2;
-            if (line[pos] == '1')
+            ptr+=2;
+            if (*ptr == '1')
                 arg.ptrAccess |= KARG_PTR_RESTRICT;
             config.args.push_back(arg);
         }
-        else if (line.compare(0, 7, ";image:")==0)
+        else if (::strnecmp(linePtr, ";image:", 7, lineEnd)==0)
         {
             AmdKernelArgInput arg;
-            size_t pos = line.find(':', 7);
-            arg.argName = line.substr(7, pos-7);
+            const char* ptr = strechr(linePtr+7, lineEnd, ':');
+            arg.argName.assign(linePtr+7, ptr);
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
             arg.resId = BINGEN_DEFAULT;
@@ -627,10 +644,10 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.structSize = 0;
             arg.constSpaceSize = 0;
             arg.used = true;
-            pos++;
-            size_t nextPos = line.find(':', pos);
-            std::string imgType = line.substr(pos, nextPos-pos);
-            pos = nextPos+1;
+            ptr++;
+            const char* nextPtr = strechr(ptr, lineEnd, ':');
+            std::string imgType(ptr, nextPtr);
+            ptr = nextPtr+1;
             if (imgType == "1D")
                 arg.argType = KernelArgType::IMAGE1D;
             else if (imgType == "1DA")
@@ -643,24 +660,23 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.argType = KernelArgType::IMAGE2D_ARRAY;
             else if (imgType == "3D")
                 arg.argType = KernelArgType::IMAGE3D;
-            std::string accessStr = line.substr(pos, 2);
-            if (line.compare(pos, 2, "RO") == 0)
+            if (::strncmp(ptr,"RO:", lineEnd-ptr) == 0)
                 arg.ptrAccess |= KARG_PTR_READ_ONLY;
-            else if (line.compare(pos, 2, "WO") == 0)
+            else if (::strncmp(ptr,"RO:", lineEnd-ptr) == 0)
             {
                 arg.ptrAccess |= KARG_PTR_WRITE_ONLY;
                 woImageIds.push_back(config.args.size());
             }
-            pos += 3;
-            arg.resId = cstrtovCStyle<uint32_t>(line.c_str()+pos, nullptr, outEnd);
+            ptr += 3;
+            arg.resId = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             argUavIds.push_back(0);
             config.args.push_back(arg);
         }
-        else if (line.compare(0, 9, ";counter:")==0)
+        else if (::strnecmp(linePtr, ";counter:", 9, lineEnd)==0)
         {
             AmdKernelArgInput arg;
-            size_t pos = line.find(':', 9);
-            arg.argName = line.substr(9, pos-9);
+            const char* ptr = strechr(linePtr+9, lineEnd, ':');
+            arg.argName.assign(linePtr+9, ptr);
             arg.argType = KernelArgType::COUNTER32;
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
@@ -672,22 +688,22 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             argUavIds.push_back(0);
             config.args.push_back(arg);
         }
-        else if (line.compare(0, 10, ";constarg:")==0)
+        else if (::strnecmp(linePtr, ";constarg:", 10, lineEnd)==0)
         {
-            cxuint argNo = cstrtovCStyle<cxuint>(line.c_str()+10, nullptr, outEnd);
+            cxuint argNo = cstrtovCStyle<cxuint>(linePtr+10, lineEnd, outEnd);
             config.args[argNo].ptrAccess |= KARG_PTR_CONST;
         }
-        else if (line.compare(0, 9, ";sampler:")==0)
+        else if (::strnecmp(linePtr, ";sampler:", 9, lineEnd)==0)
         {
-            size_t pos = line.find(':', 9);
-            std::string samplerName = line.substr(9, pos-9);
+            const char* ptr = strechr(linePtr+9, lineEnd, ':');
+            std::string samplerName(linePtr+9, ptr);
             if (samplerName.compare(0, 8, "unknown_") == 0)
             { // add sampler
-                pos++;
-                cxuint sampId = cstrtovCStyle<cxuint>(line.c_str()+pos, nullptr, outEnd);
-                pos = line.find(':', pos);
-                pos += 3;
-                cxuint value = cstrtovCStyle<cxuint>(line.c_str()+pos, nullptr, outEnd);
+                ptr++;
+                cxuint sampId = cstrtovCStyle<cxuint>(ptr, lineEnd, outEnd);
+                ptr = strechr(ptr, lineEnd, ':');
+                ptr += 3;
+                cxuint value = cstrtovCStyle<cxuint>(linePtr, lineEnd, outEnd);
                 if (config.samplers.size() < sampId+1)
                     config.samplers.resize(sampId+1);
                 config.samplers[sampId] = value;
@@ -695,20 +711,20 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             else
                 argSamplers++;
         }
-        else if (line.compare(0, 12, ";reflection:")==0)
+        else if (::strnecmp(linePtr, ";reflection:", 12, lineEnd)==0)
         {
-            size_t pos = 12;
-            cxuint argNo = cstrtovCStyle<cxuint>(line.c_str()+pos, nullptr, outEnd);
-            pos = line.find(':', pos);
-            pos++;
+            cxuint argNo = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
+            const char* ptr = strechr(linePtr+12, lineEnd, ':');
+            ptr++;
             AmdKernelArgInput& arg = config.args[argNo];
-            arg.typeName = line.substr(pos);
+            arg.typeName.assign(ptr, lineEnd);
             /* determine type */
             if (arg.argType == KernelArgType::POINTER &&
                 arg.pointerType == KernelArgType::VOID)
             {
                 CString ptrTypeName = arg.typeName.substr(0, arg.typeName.size()-1);
-                auto it = binaryMapFind(argTypeNameMap, argTypeNameMap+argTypeNameMapLength,
+                auto it = binaryMapFind(argTypeNameMap, 
+                        argTypeNameMap+argTypeNameMapLength,
                         ptrTypeName.c_str(), CStringLess());
                 
                 if (it != argTypeNameMap+argTypeNameMapLength)
@@ -718,22 +734,25 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             }
             //else
         }
-        else if (line.compare(0, 7, ";uavid:")==0)
+        else if (::strnecmp(linePtr, ";uavid:", 7, lineEnd)==0)
         {
-            cxuint uavId = cstrtovCStyle<cxuint>(line.c_str()+7, nullptr, outEnd);
+            cxuint uavId = cstrtovCStyle<cxuint>(linePtr+7, lineEnd, outEnd);
             uavIdToCompare = uavId;
             if (driverVersion < 134805)
                 uavIdToCompare = 9;
         }
-        else if (line.compare(0, 10, ";printfid:")==0)
-            config.printfId = cstrtovCStyle<cxuint>(line.c_str()+10, nullptr, outEnd);
-        else if (line.compare(0, 11, ";privateid:")==0)
-            config.privateId = cstrtovCStyle<cxuint>(line.c_str()+11, nullptr, outEnd);
-        else if (line.compare(0, 6, ";cbid:")==0)
-            config.constBufferId= cstrtovCStyle<cxuint>(line.c_str()+6, nullptr, outEnd);
-        else if (line.compare(0, 12, ";uavprivate:")==0)
-            config.uavPrivate = cstrtovCStyle<cxuint>(line.c_str()+12, nullptr, outEnd);
+        else if (::strnecmp(linePtr, ";printfid:", 10, lineEnd)==0)
+            config.printfId = cstrtovCStyle<cxuint>(linePtr+10, lineEnd, outEnd);
+        else if (::strnecmp(linePtr, ";privateid:", 11, lineEnd)==0)
+            config.privateId = cstrtovCStyle<cxuint>(linePtr+11, lineEnd, outEnd);
+        else if (::strnecmp(linePtr, ";cbid:", 6, lineEnd)==0)
+            config.constBufferId= cstrtovCStyle<cxuint>(linePtr+6, lineEnd, outEnd);
+        else if (::strnecmp(linePtr, ";uavprivate:", 12, lineEnd)==0)
+            config.uavPrivate = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
+        // to next line
+        linePtr = (lineEnd!=mtEnd) ? lineEnd+1 : lineEnd;
     }
+    
     if (argSamplers != 0 && !config.samplers.empty())
     {
         for (cxuint k = argSamplers; k < config.samplers.size(); k++)
@@ -741,6 +760,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         config.samplers.resize(config.samplers.size()-argSamplers);
     }
     /* from ATI CAL NOTES */
+    cxbyte uavMask[128];
+    std::fill(uavMask, uavMask+128, cxbyte(0));
     for (const CALNoteInput& calNoteInput: calNotes)
     {
         const CALNoteHeader& cnHdr = calNoteInput.header;
@@ -845,28 +866,33 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                                         break;
                                 }
                             }
+                            if (addr >= 0x80001843 && addr < 0x80001863)
+                            {
+                                cxuint elIndex = (addr-0x80001843)<<2;
+                                uavMask[elIndex] = val&0xff;
+                                uavMask[elIndex+1] = (val>>8)&0xff;
+                                uavMask[elIndex+2] = (val>>16)&0xff;
+                                uavMask[elIndex+3] = val>>24;
+                            }
                         }
                     }
                 }
                 break;
             }
-            case CALNOTE_ATI_UAV_OP_MASK:
-            {
-                cxuint k = 0;
-                for (AmdKernelArgInput& arg: config.args)
-                {
-                    if (arg.argType == KernelArgType::POINTER &&
-                        (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
-                         (arg.ptrSpace == KernelPtrSpace::CONSTANT &&
-                             driverVersion >= 134805)) &&
-                        (cnData[argUavIds[k]>>3] & (1U<<(argUavIds[k]&7))) == 0)
-                        arg.used = false;
-                    k++;
-                }
-                break;
-            }
         }
     }
+    // check if argument is unused
+    cxuint k = 0;
+    for (AmdKernelArgInput& arg: config.args)
+    {
+        if (arg.argType == KernelArgType::POINTER &&
+            (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
+             (arg.ptrSpace == KernelPtrSpace::CONSTANT && driverVersion >= 134805)) &&
+                 (uavMask[argUavIds[k]>>3] & (1U<<(argUavIds[k]&7))) == 0)
+            arg.used = false;
+        k++;
+    }
+            
     config.uavId = uavIdToCompare;
     return config;
 }
