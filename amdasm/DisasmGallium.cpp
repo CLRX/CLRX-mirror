@@ -23,7 +23,6 @@
 #include <string>
 #include <ostream>
 #include <memory>
-#include <memory>
 #include <vector>
 #include <utility>
 #include <CLRX/utils/Utilities.h>
