@@ -897,6 +897,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                             config.pgmRSRC2 = ULEV(piEntry[k].value);
                             config.tgSize = (config.pgmRSRC2 & 0x400)!=0;
                             config.exceptions = (config.pgmRSRC2>>24)&0x7f;
+                            config.dimMask = (config.pgmRSRC2>>7) & 3;
                             break;
                         }
                         default:
@@ -950,7 +951,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             arg.used = false;
         k++;
     }
-            
+    
     config.uavId = uavIdToCompare;
     return config;
 }
