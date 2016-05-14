@@ -19,6 +19,7 @@
 
 #include <CLRX/Config.h>
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <ostream>
 #include <memory>
