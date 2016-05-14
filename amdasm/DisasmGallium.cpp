@@ -169,6 +169,10 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
         bufSize = snprintf(buf, 100, "        .scratchbuffer %u\n", scratchSize);
         output.write(buf, bufSize);
     }
+    bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", pgmRsrc1);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", pgmRsrc2);
+    output.write(buf, bufSize);
 }
 
 void CLRX::disassembleGallium(std::ostream& output,
