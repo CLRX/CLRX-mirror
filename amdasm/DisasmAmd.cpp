@@ -427,7 +427,7 @@ static KernelArgType determineKernelArgType(const char* typeString, cxuint vecto
         const cxuint indexBase = (typeString[0] == 'i')?6:0;
         if (typeString[1] == '8')
         {
-            if (typeString[2] != 0)
+            if (typeString[2] != ':')
                 throw ParseException(lineNo, "Can't parse type");
             outType = gpuArgTypeTable[indexBase+vectorId];
         }
@@ -441,7 +441,7 @@ static KernelArgType determineKernelArgType(const char* typeString, cxuint vecto
                 outType = gpuArgTypeTable[indexBase+6*6+vectorId];
             else // if not determined
                 throw ParseException(lineNo, "Can't parse type");
-            if (typeString[3] != 0)
+            if (typeString[3] != ':')
                 throw ParseException(lineNo, "Can't parse type");
         }
     }
@@ -563,9 +563,9 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             const char* nextPtr = strechr(ptr, lineEnd, ':');
             if (nextPtr==nullptr)
                 throw ParseException(lineNo, "Can't parse value argument");
-            std::string typeStr(ptr, nextPtr);
+            const char* typeStr = ptr;
             ptr = nextPtr+1;
-            if (typeStr == "struct")
+            if (::strncmp(typeStr, "struct:", 7)==0)
             {
                 arg.argType = KernelArgType::STRUCTURE;
                 arg.structSize = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
@@ -577,7 +577,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                     throw ParseException(lineNo, "Can't parse value argument");
                 nextPtr++;
                 cxuint vectorSize = cstrtoui(nextPtr, lineEnd, outEnd);
-                arg.argType = determineKernelArgType(typeStr.c_str(), vectorSize, lineNo);
+                arg.argType = determineKernelArgType(typeStr, vectorSize, lineNo);
             }
             argUavIds.push_back(0);
             argIndexMap[arg.argName] = config.args.size();
