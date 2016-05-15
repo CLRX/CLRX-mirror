@@ -257,7 +257,7 @@ AmdDisasmInput* CLRX::getAmdDisasmInputFromBinary64(const AmdMainGPUBinary64& bi
 
 /* get AsmConfig */
 
-static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
+const std::pair<const char*, KernelArgType> CLRX::disasmArgTypeNameMap[74] =
 {
     { "char", KernelArgType::CHAR },
     { "char16", KernelArgType::CHAR16 },
@@ -335,10 +335,10 @@ static const std::pair<const char*, KernelArgType> argTypeNameMap[] =
     { "void", KernelArgType::VOID }
 };
 
-static const size_t argTypeNameMapLength =
-        sizeof(argTypeNameMap)/sizeof(std::pair<const char*, KernelArgType>);
+static const size_t disasmArgTypeNameMapLength =
+        sizeof(disasmArgTypeNameMap)/sizeof(std::pair<const char*, KernelArgType>);
 
-static const KernelArgType gpuArgTypeTable[] =
+const KernelArgType gpuArgTypeTable[] =
 {
     KernelArgType::UCHAR,
     KernelArgType::UCHAR2,
@@ -783,11 +783,11 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 arg.pointerType == KernelArgType::VOID)
             {
                 CString ptrTypeName = arg.typeName.substr(0, arg.typeName.size()-1);
-                auto it = binaryMapFind(argTypeNameMap, 
-                        argTypeNameMap+argTypeNameMapLength,
+                auto it = binaryMapFind(disasmArgTypeNameMap, 
+                        disasmArgTypeNameMap+disasmArgTypeNameMapLength,
                         ptrTypeName.c_str(), CStringLess());
                 
-                if (it != argTypeNameMap+argTypeNameMapLength)
+                if (it != disasmArgTypeNameMap+disasmArgTypeNameMapLength)
                     arg.pointerType = it->second;
                 else if (arg.typeName.compare(0, 5, "enum ")==0)
                     arg.pointerType = KernelArgType::UINT;

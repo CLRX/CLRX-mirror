@@ -28,6 +28,7 @@
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
+#include <CLRX/amdbin/AmdCL2BinGen.h>
 #include <CLRX/amdasm/Disassembler.h>
 #include <CLRX/utils/GPUId.h>
 #include "DisasmInternals.h"
@@ -347,6 +348,319 @@ AmdCL2DisasmInput* CLRX::getAmdCL2DisasmInputFromBinary(const AmdCL2MainGPUBinar
         throw Exception("Code relocation offset outside kernel code");
     return input.release();
 }
+
+struct CLRX_INTERNAL IntAmdCL2SetupData
+{
+    uint32_t pgmRSRC1;
+    uint32_t pgmRSRC2;
+    uint16_t setup1;
+    uint16_t archInd;
+    uint32_t scratchBufferSize;
+    uint32_t localSize; // in bytes
+    uint32_t zero1;
+    uint32_t kernelArgsSize;
+    uint32_t zeroes[2];
+    uint16_t sgprsNumAll;
+    uint16_t vgprsNum16;
+    uint32_t vgprsNum;
+    uint32_t sgprsNum;
+    uint32_t zero3;
+    uint32_t version; // ??
+};
+
+static const size_t disasmArgTypeNameMapSize = sizeof(disasmArgTypeNameMap)/
+            sizeof(std::pair<const char*, KernelArgType>);
+
+static const KernelArgType cl20ArgTypeVectorTable[] =
+{
+    KernelArgType::CHAR,
+    KernelArgType::CHAR2,
+    KernelArgType::CHAR3,
+    KernelArgType::CHAR4,
+    KernelArgType::CHAR8,
+    KernelArgType::CHAR16,
+    KernelArgType::SHORT,
+    KernelArgType::SHORT2,
+    KernelArgType::SHORT3,
+    KernelArgType::SHORT4,
+    KernelArgType::SHORT8,
+    KernelArgType::SHORT16,
+    KernelArgType::INT,
+    KernelArgType::INT2,
+    KernelArgType::INT3,
+    KernelArgType::INT4,
+    KernelArgType::INT8,
+    KernelArgType::INT16,
+    KernelArgType::LONG,
+    KernelArgType::LONG2,
+    KernelArgType::LONG3,
+    KernelArgType::LONG4,
+    KernelArgType::LONG8,
+    KernelArgType::LONG16,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::VOID,
+    KernelArgType::FLOAT,
+    KernelArgType::FLOAT2,
+    KernelArgType::FLOAT3,
+    KernelArgType::FLOAT4,
+    KernelArgType::FLOAT8,
+    KernelArgType::FLOAT16,
+    KernelArgType::DOUBLE,
+    KernelArgType::DOUBLE2,
+    KernelArgType::DOUBLE3,
+    KernelArgType::DOUBLE4,
+    KernelArgType::DOUBLE8,
+    KernelArgType::DOUBLE16
+};
+
+static const cxuint vectorIdTable[17] =
+{ UINT_MAX, 0, 1, 2, 3, UINT_MAX, UINT_MAX, UINT_MAX, 4,
+  UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, UINT_MAX, 5 };
+
+static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
+        size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
+        const std::vector<AmdCL2RelInput>& textRelocs)
+{
+    AmdCL2KernelConfig config;
+    const AmdCL2GPUMetadataHeader* mdHdr =
+            reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
+    size_t headerSize = ULEV(mdHdr->size);
+    for (size_t i = 0; i < 3; i++)
+        config.reqdWorkGroupSize[i] = ULEV(mdHdr->reqdWorkGroupSize[i]);
+    const IntAmdCL2SetupData* setupData =
+            reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
+    uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
+    uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
+    config.dimMask = (pgmRSRC2>>7)&7;
+    config.ieeeMode = (pgmRSRC1>>23)&1;
+    config.exceptions = (pgmRSRC2>>24)&0xff;
+    config.floatMode = (pgmRSRC1>>12)&0xff;
+    config.priority = (pgmRSRC1>>10)&3;
+    config.tgSize = (pgmRSRC2>>10)&1;
+    config.privilegedMode = (pgmRSRC1>>20)&1;
+    config.dx10Clamp = (pgmRSRC1>>21)&1;
+    config.debugMode = (pgmRSRC1>>22)&1;
+    config.pgmRSRC2 = pgmRSRC2;
+    config.pgmRSRC1 = pgmRSRC1;
+    config.usedVGPRsNum = ULEV(setupData->vgprsNum);
+    config.usedSGPRsNum = ULEV(setupData->sgprsNum);
+    config.scratchBufferSize = ULEV(setupData->scratchBufferSize);
+    config.localSize = ULEV(setupData->localSize);
+    uint16_t ksetup1 = ULEV(setupData->setup1);
+    config.useSetup = (ksetup1&2)!=0;
+    config.useArgs = (ksetup1&8)!=0;
+    config.useGeneric = config.useEnqueue = false;
+    if (ksetup1==0x2f)
+        config.useGeneric = true;
+    else
+        config.useEnqueue = (ksetup1&0x20)!=0;
+    
+    // get samplers
+    for (const AmdCL2RelInput& reloc: textRelocs)
+    {   // check if sampler
+        auto it = std::find(samplerOffsets.begin(), samplerOffsets.end(), reloc.addend);
+        if (it!=samplerOffsets.end())
+            config.samplers.push_back(it-samplerOffsets.begin());
+    }
+    std::sort(config.samplers.begin(), config.samplers.end());
+    config.samplers.resize(std::unique(config.samplers.begin(), config.samplers.end()) -
+                config.samplers.begin());
+    // get kernel args
+    size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
+            ULEV(mdHdr->secondNameLength)+2;
+    if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
+        argOffset++;
+    const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
+            const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
+    const uint32_t argsNum = ULEV(mdHdr->argsNum);
+    const char* strBase = (const char*)metadata;
+    size_t strOffset = argOffset + sizeof(AmdCL2GPUKernelArgEntry)*(argsNum+1);
+    
+    for (uint32_t i = 0; i < argsNum; i++, argPtr++)
+    {
+        AmdKernelArgInput arg{};
+        size_t nameSize = ULEV(argPtr->argNameSize);
+        arg.argName.assign(strBase+strOffset, nameSize);
+        strOffset += nameSize+1;
+        nameSize = ULEV(argPtr->typeNameSize);
+        arg.typeName.assign(strBase+strOffset, nameSize);
+        strOffset += nameSize+1;
+        
+        uint32_t vectorSize = ULEV(argPtr->vectorLength);
+        uint32_t argType = ULEV(argPtr->argType);
+        uint32_t kindOfType = ULEV(argPtr->kindOfType);
+        
+        arg.ptrSpace = KernelPtrSpace::NONE;
+        arg.ptrAccess = KARG_PTR_NORMAL;
+        arg.argType = KernelArgType::VOID;
+        
+        if (ULEV(argPtr->isConst))
+            arg.ptrAccess |= KARG_PTR_CONST;
+        
+        if (!ULEV(argPtr->isPointerOrPipe))
+        { // if not point or pipe (get regular type: scalar, image, sampler,...)
+            switch(argType)
+            {
+                case 0:
+                    if (kindOfType!=1) // not sampler
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::SAMPLER;
+                    break;
+                case 1:  // read_only image
+                case 2:  // write_only image
+                case 3:  // read_write image
+                    if (kindOfType==2) // not image
+                    {
+                        arg.argType = KernelArgType::IMAGE;
+                        arg.ptrAccess = (argType==1) ? KARG_PTR_READ_ONLY : (argType==2) ?
+                                 KARG_PTR_WRITE_ONLY : KARG_PTR_READ_WRITE;
+                        arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                    }
+                    else if (argType==2 || argType == 3)
+                    {
+                        if (kindOfType!=4) // not scalar
+                            throw Exception("Wrong kernel argument type");
+                        arg.argType = (argType==3) ?
+                            KernelArgType::SHORT : KernelArgType::CHAR;
+                    }
+                    else
+                        throw Exception("Wrong kernel argument type");
+                    break;
+                case 4: // int
+                case 5: // long
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = (argType==5) ?
+                        KernelArgType::LONG : KernelArgType::INT;
+                    break;
+                case 6: // char
+                case 7: // short
+                case 8: // int
+                case 9: // long
+                case 11: // float
+                case 12: // double
+                {
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    const cxuint vectorId = vectorIdTable[vectorSize];
+                    if (vectorId == UINT_MAX)
+                        throw Exception("Wrong vector size");
+                    arg.argType = cl20ArgTypeVectorTable[(argType-6)*6 + vectorId];
+                    break;
+                }
+                case 15:
+                    if (kindOfType!=4) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::STRUCTURE;
+                    break;
+                case 18:
+                    if (kindOfType!=7) // not scalar
+                        throw Exception("Wrong kernel argument type");
+                    arg.argType = KernelArgType::CMDQUEUE;
+                    break;
+                default:
+                    throw Exception("Wrong kernel argument type");
+                    break;
+            }
+            
+            auto it = binaryMapFind(disasmArgTypeNameMap,
+                        disasmArgTypeNameMap + disasmArgTypeNameMapSize,
+                        arg.typeName.c_str(), CStringLess());
+            if (it != disasmArgTypeNameMap + disasmArgTypeNameMapSize) // if found
+                arg.argType = it->second;
+            
+            if (arg.argType == KernelArgType::STRUCTURE)
+                arg.structSize = ULEV(argPtr->structSize);
+            else if ((arg.argType >= KernelArgType::MIN_IMAGE &&
+                      arg.argType <= KernelArgType::MAX_IMAGE) ||
+                     arg.argType == KernelArgType::SAMPLER)
+                arg.resId = LEV(argPtr->resId);
+        }
+        else
+        {   // pointer or pipe
+            if (argPtr->isPipe)
+                arg.used = (ULEV(argPtr->isPointerOrPipe))==3;
+            else
+                arg.used = (ULEV(argPtr->isPointerOrPipe));
+            uint32_t ptrType = ULEV(argPtr->ptrType);
+            uint32_t ptrSpace = ULEV(argPtr->ptrSpace);
+            if (argType == 7) // pointer
+                arg.argType = (argPtr->isPipe==0) ? KernelArgType::POINTER :
+                    KernelArgType::PIPE;
+            else if (argType == 15)
+                arg.argType = KernelArgType::POINTER;
+            if (arg.argType == KernelArgType::POINTER)
+            {   // if pointer
+                if (ptrSpace==3)
+                    arg.ptrSpace = KernelPtrSpace::LOCAL;
+                else if (ptrSpace==4)
+                    arg.ptrSpace = KernelPtrSpace::GLOBAL;
+                else if (ptrSpace==5)
+                    arg.ptrSpace = KernelPtrSpace::CONSTANT;
+                else
+                    throw Exception("Illegal pointer space");
+                // set access qualifiers (volatile, restrict, const)
+                arg.ptrAccess |= KARG_PTR_NORMAL;
+                if (argPtr->isRestrict)
+                    arg.ptrAccess |= KARG_PTR_RESTRICT;
+                if (argPtr->isVolatile)
+                    arg.ptrAccess |= KARG_PTR_VOLATILE;
+            }
+            else
+            {
+                if (ptrSpace!=4)
+                    throw Exception("Illegal pipe space");
+                arg.ptrSpace = KernelPtrSpace::GLOBAL;
+            }
+            
+            if (arg.argType == KernelArgType::POINTER)
+            {
+                size_t ptrTypeNameSize=0;
+                if (arg.typeName.empty()) // ctx_struct_fld1
+                {
+                    if (ptrType >= 6 && ptrType <= 12)
+                        arg.pointerType = cl20ArgTypeVectorTable[(ptrType-6)*6];
+                    else
+                        arg.pointerType = KernelArgType::FLOAT;
+                }
+                else
+                {
+                    while (isAlnum(arg.typeName[ptrTypeNameSize]) ||
+                        arg.typeName[ptrTypeNameSize]=='_') ptrTypeNameSize++;
+                    CString ptrTypeName(arg.typeName.c_str(), ptrTypeNameSize);
+                    if (arg.typeName.find('*')!=CString::npos) // assume 'void*'
+                    {
+                        auto it = binaryMapFind(disasmArgTypeNameMap,
+                                    disasmArgTypeNameMap + disasmArgTypeNameMapSize,
+                                    ptrTypeName.c_str(), CStringLess());
+                        if (it != disasmArgTypeNameMap + disasmArgTypeNameMapSize)
+                            // if found
+                            arg.pointerType = it->second;
+                        else // otherwise structure
+                            arg.pointerType = KernelArgType::STRUCTURE;
+                    }
+                    else if (ptrType==18)
+                    {
+                        arg.argType = KernelArgType::CLKEVENT;
+                        arg.pointerType = KernelArgType::VOID;
+                    }
+                    else
+                        arg.pointerType = KernelArgType::VOID;
+                        
+                    if (arg.pointerType == KernelArgType::STRUCTURE)
+                        arg.structSize = ULEV(argPtr->ptrAlignment);
+                }
+            }
+        }
+        config.args.push_back(arg);
+    }
+    return config;
+}
+
 
 void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdCL2Input,
        ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)

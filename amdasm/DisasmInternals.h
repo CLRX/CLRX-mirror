@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <string>
 #include <ostream>
+#include <utility>
 #include <CLRX/utils/Utilities.h>
 #include <CLRX/amdbin/AmdBinaries.h>
 #include <CLRX/amdbin/AmdCL2Binaries.h>
@@ -65,6 +66,10 @@ extern CLRX_INTERNAL AmdCL2DisasmInput* getAmdCL2DisasmInputFromBinary(
 
 extern CLRX_INTERNAL GalliumDisasmInput* getGalliumDisasmInputFromBinary(
             GPUDeviceType deviceType, const GalliumBinary& binary, Flags flags);
+
+extern CLRX_INTERNAL const std::pair<const char*, KernelArgType> disasmArgTypeNameMap[74];
+
+extern CLRX_INTERNAL const KernelArgType disasmGpuArgTypeTable[];
 
 };
 
