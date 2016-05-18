@@ -630,6 +630,21 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 }
                 else
                 {
+                    arg.pointerType = KernelArgType::VOID;
+                    switch (ptrType)
+                    {
+                        case 6: // char
+                        case 7: // short
+                        case 8: // int
+                        case 9: // long
+                        case 11: // float
+                        case 12: // double
+                        {
+                            arg.pointerType = cl20ArgTypeVectorTable[(ptrType-6)*6];
+                            break;
+                        }
+                    }
+                    
                     while (isAlnum(arg.typeName[ptrTypeNameSize]) ||
                         arg.typeName[ptrTypeNameSize]=='_') ptrTypeNameSize++;
                     CString ptrTypeName(arg.typeName.c_str(), ptrTypeNameSize);
@@ -641,7 +656,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                         if (it != disasmArgTypeNameMap + disasmArgTypeNameMapSize)
                             // if found
                             arg.pointerType = it->second;
-                        else // otherwise structure
+                        else if (arg.pointerType==KernelArgType::VOID) // otherwise structure
                             arg.pointerType = KernelArgType::STRUCTURE;
                     }
                     else if (ptrType==18)
