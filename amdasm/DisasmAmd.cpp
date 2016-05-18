@@ -1273,7 +1273,7 @@ static const char* kernelArgTypeNamesTbl[] =
     "long2", "long3", "long4", "long8", "long16",
     "float2", "float3", "float4", "float8", "float16",
     "double2", "double3", "double4", "double8", "double16",
-    "sampler", "structure", "counter32", "counter64"
+    "sampler", "structure", "counter32", "counter64", "pipe", "queue", "clkevent"
 };
 
 void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, bool cl20)
@@ -1304,10 +1304,13 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
                 output.write(", read_only", 11);
             else if (access == KARG_PTR_WRITE_ONLY)
                 output.write(", write_only", 12);
+            else if (access == KARG_PTR_READ_WRITE)
+                output.write(", read_write", 12);
             else
                 output.write(", ", 2);
         }
-        if (isImage || arg.argType == KernelArgType::COUNTER32)
+        if (isImage || ((!cl20 && arg.argType == KernelArgType::COUNTER32) ||
+            (cl20 && arg.argType == KernelArgType::SAMPLER)))
         {
             bufSize = snprintf(buf, 100, ", %u", arg.resId);
             output.write(buf, bufSize);
@@ -1339,12 +1342,12 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
         }
         else // empty
             output.write(", ", 2);
-        if (arg.ptrSpace==KernelPtrSpace::CONSTANT)
+        if (arg.ptrSpace==KernelPtrSpace::CONSTANT && !cl20)
         {   // constant size
             bufSize = snprintf(buf, 100, ", %llu", cxullong(arg.constSpaceSize));
             output.write(buf, bufSize);
         }
-        if (arg.ptrSpace!=KernelPtrSpace::LOCAL)
+        if (arg.ptrSpace!=KernelPtrSpace::LOCAL && !cl20)
         {   // resid
             bufSize = snprintf(buf, 100, ", %u", arg.resId);
             output.write(buf, bufSize);

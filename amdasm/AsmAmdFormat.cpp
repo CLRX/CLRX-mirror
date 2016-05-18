@@ -1390,7 +1390,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             
             bool havePrevArgument = false;
             const char* place;
-            if (ptrSpace == KernelPtrSpace::CONSTANT)
+            if (ptrSpace == KernelPtrSpace::CONSTANT && !cl20)
             {   /* parse constant space size for constant pointer */
                 if (!skipComma(asmr, haveComma, linePtr))
                     return false;
