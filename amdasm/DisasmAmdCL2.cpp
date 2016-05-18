@@ -656,7 +656,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                         if (it != disasmArgTypeNameMap + disasmArgTypeNameMapSize)
                             // if found
                             arg.pointerType = it->second;
-                        else if (arg.pointerType==KernelArgType::VOID) // otherwise structure
+                        else if (arg.pointerType==KernelArgType::VOID)
                             arg.pointerType = KernelArgType::STRUCTURE;
                     }
                     else if (ptrType==18)
