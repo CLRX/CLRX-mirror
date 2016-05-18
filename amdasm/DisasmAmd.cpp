@@ -1457,7 +1457,8 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
         output.write("        .useconstdata\n", 22);
     if ((config.exceptions & 0x7f) != 0)
     {
-        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n", config.exceptions);
+        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                   cxuint(config.exceptions));
         output.write(buf, bufSize);
     }
     /* user datas */

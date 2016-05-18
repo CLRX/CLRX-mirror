@@ -743,7 +743,8 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
         output.write("        .tgsize\n", 16);
     if ((config.exceptions & 0x7f) != 0)
     {
-        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n", config.exceptions);
+        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n",
+                   cxuint(config.exceptions));
         output.write(buf, bufSize);
     }
     if (config.useArgs)
