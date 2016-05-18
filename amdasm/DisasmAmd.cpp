@@ -33,7 +33,7 @@
 #include <CLRX/utils/Containers.h>
 #include <CLRX/utils/MemAccess.h>
 #include <CLRX/amdbin/AmdBinaries.h>
-#include <CLRX/amdbin/AmdBinGen.h>
+#include <CLRX/amdbin/AmdCL2BinGen.h>
 #include <CLRX/amdasm/Disassembler.h>
 #include <CLRX/utils/GPUId.h>
 #include "DisasmInternals.h"
@@ -1355,6 +1355,10 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
     }
     if (!arg.used)
         output.write(", unused\n", 9);
+    else if (cl20 && arg.used==AMDCL2_ARGUSED_READ)
+        output.write(", rdonly\n", 9);
+    else if (cl20 && arg.used==AMDCL2_ARGUSED_WRITE)
+        output.write(", wronly\n", 9);
     else
         output.write("\n", 1);
 }

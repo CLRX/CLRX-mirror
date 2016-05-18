@@ -501,6 +501,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         
         if (ULEV(argPtr->isConst))
             arg.ptrAccess |= KARG_PTR_CONST;
+        arg.used = AMDCL2_ARGUSED_READ_WRITE; // default is used
         
         if (!ULEV(argPtr->isPointerOrPipe))
         { // if not point or pipe (get regular type: scalar, image, sampler,...)
@@ -741,6 +742,12 @@ static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfi
     // arguments
     for (const AmdKernelArgInput& arg: config.args)
         dumpAmdKernelArg(output, arg, true);
+    // samplers
+    for (cxuint sampler: config.samplers)
+    {
+        bufSize = snprintf(buf, 100, "        .sampler %u\n", sampler);
+        output.write(buf, bufSize);
+    }
 }
 
 void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdCL2Input,
