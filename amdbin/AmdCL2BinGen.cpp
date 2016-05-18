@@ -848,7 +848,7 @@ public:
             else if (arg.argType == KernelArgType::PIPE)
             {
                 SLEV(argEntry.ptrType, 15);
-                SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
+                SLEV(argEntry.ptrSpace, 4);
             }
             else
             {
