@@ -1367,16 +1367,19 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
     size_t bufSize;
     char buf[100];
     output.write("    .config\n", 12);
-    strcpy(buf, "        .dims ");
-    bufSize = 14;
-    if ((config.dimMask & 1) != 0)
-        buf[bufSize++] = 'x';
-    if ((config.dimMask & 2) != 0)
-        buf[bufSize++] = 'y';
-    if ((config.dimMask & 4) != 0)
-        buf[bufSize++] = 'z';
-    buf[bufSize++] = '\n';
-    output.write(buf, bufSize);
+    if (config.dimMask != BINGEN_DEFAULT)
+    {
+        strcpy(buf, "        .dims ");
+        bufSize = 14;
+        if ((config.dimMask & 1) != 0)
+            buf[bufSize++] = 'x';
+        if ((config.dimMask & 2) != 0)
+            buf[bufSize++] = 'y';
+        if ((config.dimMask & 4) != 0)
+            buf[bufSize++] = 'z';
+        buf[bufSize++] = '\n';
+        output.write(buf, bufSize);
+    }
     bufSize = 0;
     if (config.reqdWorkGroupSize[2] != 0)
         bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
