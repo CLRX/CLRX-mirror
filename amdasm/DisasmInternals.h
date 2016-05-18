@@ -71,6 +71,9 @@ extern CLRX_INTERNAL const std::pair<const char*, KernelArgType> disasmArgTypeNa
 
 extern CLRX_INTERNAL const KernelArgType disasmGpuArgTypeTable[];
 
+extern CLRX_INTERNAL void dumpAmdKernelArg(std::ostream& output,
+           const AmdKernelArgInput& arg, bool cl20);
+
 };
 
 #endif

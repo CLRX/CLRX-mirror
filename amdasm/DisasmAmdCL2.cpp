@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <string>
 #include <ostream>
+#include <cstdio>
 #include <memory>
 #include <memory>
 #include <vector>
@@ -423,9 +424,9 @@ static const cxuint vectorIdTable[17] =
 
 static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* metadata,
         size_t setupSize, const cxbyte* setup, const std::vector<size_t> samplerOffsets,
-        const std::vector<AmdCL2RelInput>& textRelocs)
+        const std::vector<AmdCL2RelaEntry>& textRelocs)
 {
-    AmdCL2KernelConfig config;
+    AmdCL2KernelConfig config{};
     const AmdCL2GPUMetadataHeader* mdHdr =
             reinterpret_cast<const AmdCL2GPUMetadataHeader*>(metadata);
     size_t headerSize = ULEV(mdHdr->size);
@@ -460,7 +461,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
         config.useEnqueue = (ksetup1&0x20)!=0;
     
     // get samplers
-    for (const AmdCL2RelInput& reloc: textRelocs)
+    for (const AmdCL2RelaEntry& reloc: textRelocs)
     {   // check if sampler
         auto it = std::find(samplerOffsets.begin(), samplerOffsets.end(), reloc.addend);
         if (it!=samplerOffsets.end())
@@ -661,6 +662,86 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     return config;
 }
 
+static void dumpAmdCL2KernelConfig(std::ostream& output, const AmdCL2KernelConfig& config)
+{
+    size_t bufSize;
+    char buf[100];
+    output.write("    .config\n", 12);
+    strcpy(buf, "        .dims ");
+    bufSize = 14;
+    if ((config.dimMask & 1) != 0)
+        buf[bufSize++] = 'x';
+    if ((config.dimMask & 2) != 0)
+        buf[bufSize++] = 'y';
+    if ((config.dimMask & 4) != 0)
+        buf[bufSize++] = 'z';
+    buf[bufSize++] = '\n';
+    output.write(buf, bufSize);
+    bufSize = 0;
+    if (config.reqdWorkGroupSize[2] != 0)
+        bufSize = snprintf(buf, 100, "        .cws %u, %u, %u\n",
+               config.reqdWorkGroupSize[0], config.reqdWorkGroupSize[1],
+               config.reqdWorkGroupSize[2]);
+    else if (config.reqdWorkGroupSize[1] != 0)
+        bufSize = snprintf(buf, 100, "        .cws %u, %u\n", config.reqdWorkGroupSize[0],
+                   config.reqdWorkGroupSize[1]);
+    else if (config.reqdWorkGroupSize[0] != 0)
+        bufSize = snprintf(buf, 100, "        .cws %u\n", config.reqdWorkGroupSize[0]);
+    if (bufSize != 0) // if we have cws
+        output.write(buf, bufSize);
+    
+    bufSize = snprintf(buf, 100, "        .sgprsnum %u\n", config.usedSGPRsNum);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .vgprsnum %u\n", config.usedVGPRsNum);
+    output.write(buf, bufSize);
+    
+    if (config.localSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .localsize %llu\n",
+                       cxullong(config.localSize));
+        output.write(buf, bufSize);
+    }
+    bufSize = snprintf(buf, 100, "        .floatmode 0x%02x\n", config.floatMode);
+    output.write(buf, bufSize);
+    if (config.scratchBufferSize!=0)
+    {
+        bufSize = snprintf(buf, 100, "        .scratchbuffer %u\n",
+                           config.scratchBufferSize);
+        output.write(buf, bufSize);
+    }
+    bufSize = snprintf(buf, 100, "        .pgmrsrc1 0x%08x\n", config.pgmRSRC1);
+    output.write(buf, bufSize);
+    bufSize = snprintf(buf, 100, "        .pgmrsrc2 0x%08x\n", config.pgmRSRC2);
+    output.write(buf, bufSize);
+    if (config.privilegedMode)
+        output.write("        .privmode\n", 18);
+    if (config.debugMode)
+        output.write("        .debugmode\n", 19);
+    if (config.dx10Clamp)
+        output.write("        .dx10clamp\n", 19);
+    if (config.ieeeMode)
+        output.write("        .ieeemode\n", 18);
+    if (config.tgSize)
+        output.write("        .tgsize\n", 16);
+    if ((config.exceptions & 0x7f) != 0)
+    {
+        bufSize = snprintf(buf, 100, "        .exceptions 0x%02x\n", config.exceptions);
+        output.write(buf, bufSize);
+    }
+    if (config.useArgs)
+        output.write("        .useargs\n", 17);
+    if (config.useSetup)
+        output.write("        .usesetup\n", 18);
+    if (config.useEnqueue)
+        output.write("        .useenqueue\n", 20);
+    if (config.useGeneric)
+        output.write("        .usegeneric\n", 20);
+    bufSize = snprintf(buf, 100, "        .priority %u\n", config.priority);
+    output.write(buf, bufSize);
+    // arguments
+    for (const AmdKernelArgInput& arg: config.args)
+        dumpAmdKernelArg(output, arg, true);
+}
 
 void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdCL2Input,
        ISADisassembler* isaDisassembler, size_t& sectionCount, Flags flags)
@@ -668,6 +749,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
     const bool doMetadata = ((flags & DISASM_METADATA) != 0);
     const bool doDumpData = ((flags & DISASM_DUMPDATA) != 0);
     const bool doDumpCode = ((flags & DISASM_DUMPCODE) != 0);
+    const bool doDumpConfig = ((flags & DISASM_CONFIG) != 0);
     const bool doSetup = ((flags & DISASM_SETUP) != 0);
     
     {
@@ -736,12 +818,23 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         output.write(buf, bufPos);
     }
     
+    std::vector<size_t> samplerOffsets;
+    if (doDumpConfig)
+    {
+        for (auto reloc: amdCL2Input->samplerRelocs)
+        {
+            if (samplerOffsets.size() >= reloc.second)
+                samplerOffsets.resize(reloc.second+1);
+            samplerOffsets[reloc.second] = reloc.first;
+        }
+    }
+    
     for (const AmdCL2DisasmKernelInput& kinput: amdCL2Input->kernels)
     {
         output.write(".kernel ", 8);
         output.write(kinput.kernelName.c_str(), kinput.kernelName.size());
         output.put('\n');
-        if (doMetadata)
+        if (doMetadata && !doDumpConfig)
         {
             if (kinput.metadata != nullptr && kinput.metadataSize != 0)
             {   // if kernel metadata available
@@ -754,7 +847,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                 printDisasmData(kinput.isaMetadataSize, kinput.isaMetadata, output, true);
             }
         }
-        if (doSetup)
+        if (doSetup && !doDumpConfig)
         {
             if (kinput.stub != nullptr && kinput.stubSize != 0)
             {   // if kernel setup available
@@ -767,6 +860,15 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
                 printDisasmData(kinput.setupSize, kinput.setup, output, true);
             }
         }
+        
+        if (doDumpConfig)
+        {
+            const AmdCL2KernelConfig config = genKernelConfig(kinput.metadataSize,
+                    kinput.metadata, kinput.setupSize, kinput.setup, samplerOffsets,
+                    kinput.textRelocs);
+            dumpAmdCL2KernelConfig(output, config);
+        }
+        
         if (doDumpCode && kinput.code != nullptr && kinput.codeSize != 0)
         {   // input kernel code (main disassembly)
             isaDisassembler->clearRelocations();

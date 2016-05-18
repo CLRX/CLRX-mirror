@@ -1409,7 +1409,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
             else
                 havePrevArgument = true;
             
-            if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL)
+            if (havePrevArgument && ptrSpace != KernelPtrSpace::LOCAL && !cl20)
             {   /* global and constant have resource id (uavId) */
                 if (!skipComma(asmr, haveComma, linePtr))
                     return false;

@@ -1276,6 +1276,85 @@ static const char* kernelArgTypeNamesTbl[] =
     "sampler", "structure", "counter32", "counter64"
 };
 
+void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, bool cl20)
+{
+    size_t bufSize;
+    char buf[100];
+    output.write("        .arg ", 13);
+    output.write(arg.argName.c_str(), arg.argName.size());
+    output.write(", \"", 3);
+    output.write(arg.typeName.c_str(), arg.typeName.size());
+    if (arg.argType != KernelArgType::POINTER)
+    {
+        bufSize = snprintf(buf, 100, "\", %s",
+                   kernelArgTypeNamesTbl[cxuint(arg.argType)]);
+        output.write(buf, bufSize);
+        if (arg.argType == KernelArgType::STRUCTURE)
+        {   // structure size
+            bufSize = snprintf(buf, 100, ", %u", arg.structSize);
+            output.write(buf, bufSize);
+        }
+        bool isImage = false;
+        if (arg.argType >= KernelArgType::MIN_IMAGE &&
+            arg.argType <= KernelArgType::MAX_IMAGE)
+        {   // images
+            isImage = true;
+            cxbyte access = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
+            if (access == KARG_PTR_READ_ONLY)
+                output.write(", read_only", 11);
+            else if (access == KARG_PTR_WRITE_ONLY)
+                output.write(", write_only", 12);
+            else
+                output.write(", ", 2);
+        }
+        if (isImage || arg.argType == KernelArgType::COUNTER32)
+        {
+            bufSize = snprintf(buf, 100, ", %u", arg.resId);
+            output.write(buf, bufSize);
+        }
+    }
+    else
+    {   // pointer
+        bufSize = snprintf(buf, 100, "\", %s*",
+                   kernelArgTypeNamesTbl[cxuint(arg.pointerType)]);
+        output.write(buf, bufSize);
+        if (arg.pointerType == KernelArgType::STRUCTURE)
+        {   // structure size
+            bufSize = snprintf(buf, 100, ", %u", arg.structSize);
+            output.write(buf, bufSize);
+        }
+        if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
+            output.write(", constant", 10);
+        else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
+            output.write(", local", 7);
+        else if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
+            output.write(", global", 8);
+        if ((arg.ptrAccess & (KARG_PTR_CONST|KARG_PTR_VOLATILE|KARG_PTR_RESTRICT))!=0)
+        {
+            bufSize = snprintf(buf, 100, ",%s%s%s",
+                     ((arg.ptrAccess & KARG_PTR_CONST) ? " const" : ""),
+                     ((arg.ptrAccess & KARG_PTR_RESTRICT) ? " restrict" : ""),
+                     ((arg.ptrAccess & KARG_PTR_VOLATILE) ? " volatile" : ""));
+            output.write(buf, bufSize);
+        }
+        else // empty
+            output.write(", ", 2);
+        if (arg.ptrSpace==KernelPtrSpace::CONSTANT)
+        {   // constant size
+            bufSize = snprintf(buf, 100, ", %llu", cxullong(arg.constSpaceSize));
+            output.write(buf, bufSize);
+        }
+        if (arg.ptrSpace!=KernelPtrSpace::LOCAL)
+        {   // resid
+            bufSize = snprintf(buf, 100, ", %u", arg.resId);
+            output.write(buf, bufSize);
+        }
+    }
+    if (!arg.used)
+        output.write(", unused\n", 9);
+    else
+        output.write("\n", 1);
+}
 
 static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& config)
 {
@@ -1384,82 +1463,7 @@ static void dumpAmdKernelConfig(std::ostream& output, const AmdKernelConfig& con
     }
     // arguments
     for (const AmdKernelArgInput& arg: config.args)
-    {
-        output.write("        .arg ", 13);
-        output.write(arg.argName.c_str(), arg.argName.size());
-        output.write(", \"", 3);
-        output.write(arg.typeName.c_str(), arg.typeName.size());
-        if (arg.argType != KernelArgType::POINTER)
-        {
-            bufSize = snprintf(buf, 100, "\", %s",
-                       kernelArgTypeNamesTbl[cxuint(arg.argType)]);
-            output.write(buf, bufSize);
-            if (arg.argType == KernelArgType::STRUCTURE)
-            {   // structure size
-                bufSize = snprintf(buf, 100, ", %u", arg.structSize);
-                output.write(buf, bufSize);
-            }
-            bool isImage = false;
-            if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                arg.argType <= KernelArgType::MAX_IMAGE)
-            {   // images
-                isImage = true;
-                cxbyte access = arg.ptrAccess & KARG_PTR_ACCESS_MASK;
-                if (access == KARG_PTR_READ_ONLY)
-                    output.write(", read_only", 11);
-                else if (access == KARG_PTR_WRITE_ONLY)
-                    output.write(", write_only", 12);
-                else
-                    output.write(", ", 2);
-            }
-            if (isImage || arg.argType == KernelArgType::COUNTER32)
-            {
-                bufSize = snprintf(buf, 100, ", %u", arg.resId);
-                output.write(buf, bufSize);
-            }
-        }
-        else
-        {   // pointer
-            bufSize = snprintf(buf, 100, "\", %s*",
-                       kernelArgTypeNamesTbl[cxuint(arg.pointerType)]);
-            output.write(buf, bufSize);
-            if (arg.pointerType == KernelArgType::STRUCTURE)
-            {   // structure size
-                bufSize = snprintf(buf, 100, ", %u", arg.structSize);
-                output.write(buf, bufSize);
-            }
-            if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
-                output.write(", constant", 10);
-            else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
-                output.write(", local", 7);
-            else if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
-                output.write(", global", 8);
-            if ((arg.ptrAccess & (KARG_PTR_CONST|KARG_PTR_VOLATILE|KARG_PTR_RESTRICT))!=0)
-            {
-                bufSize = snprintf(buf, 100, ",%s%s%s",
-                         ((arg.ptrAccess & KARG_PTR_CONST) ? " const" : ""),
-                         ((arg.ptrAccess & KARG_PTR_RESTRICT) ? " restrict" : ""),
-                         ((arg.ptrAccess & KARG_PTR_VOLATILE) ? " volatile" : ""));
-                output.write(buf, bufSize);
-            }
-            else // empty
-                output.write(", ", 2);
-            if (arg.ptrSpace==KernelPtrSpace::CONSTANT)
-            {   // constant size
-                bufSize = snprintf(buf, 100, ", %llu", cxullong(arg.constSpaceSize));
-                output.write(buf, bufSize);
-            }
-            if (arg.ptrSpace!=KernelPtrSpace::LOCAL)
-            {   // resid
-                bufSize = snprintf(buf, 100, ", %u", arg.resId);
-                output.write(buf, bufSize);
-            }
-        }
-        if (!arg.used)
-            output.write(", unused\n", 9);
-        else
-            output.write("\n", 1);
-    }
+        dumpAmdKernelArg(output, arg, false);
     // samplers
     for (cxuint sampler: config.samplers)
     {
