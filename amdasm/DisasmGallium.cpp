@@ -117,7 +117,7 @@ static void dumpKernelConfig(std::ostream& output, cxuint maxSgprsNum,
     const uint32_t pgmRsrc2 = progInfo[1].value;
     const uint32_t scratchVal = progInfo[2].value;
     
-    cxuint dimMask = (pgmRsrc2 >> 7);
+    const cxuint dimMask = std::max(((pgmRsrc2 >> 7) & 7), 1U);
     strcpy(buf, "        .dims ");
     bufSize = 14;
     if ((dimMask & 1) != 0)

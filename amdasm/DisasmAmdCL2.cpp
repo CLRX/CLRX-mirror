@@ -435,7 +435,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
     uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
     uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
-    config.dimMask = (pgmRSRC2>>7)&7;
+    config.dimMask = std::max((pgmRSRC2>>7)&7, 1U);
     config.ieeeMode = (pgmRSRC1>>23)&1;
     config.exceptions = (pgmRSRC2>>24)&0xff;
     config.floatMode = (pgmRSRC1>>12)&0xff;
