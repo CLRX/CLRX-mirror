@@ -778,10 +778,25 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         output.write(escapedAclVersionString.c_str(), escapedAclVersionString.size());
         output.write("\"\n", 2);
     }
-    if (doSetup && amdCL2Input->samplerInit!=nullptr && amdCL2Input->samplerInitSize!=0)
-    {   /// sampler init entries
-        output.write(".samplerinit\n", 13);
-        printDisasmData(amdCL2Input->samplerInitSize, amdCL2Input->samplerInit, output);
+    if (doSetup && !doDumpCode)
+    {
+        if (amdCL2Input->samplerInit!=nullptr && amdCL2Input->samplerInitSize!=0)
+        {   /// sampler init entries
+            output.write(".samplerinit\n", 13);
+            printDisasmData(amdCL2Input->samplerInitSize,
+                            amdCL2Input->samplerInit, output);
+        }
+    }
+    else if (doDumpConfig && amdCL2Input->samplerInit!=nullptr)
+    {
+        char buf[50];
+        const size_t samplersNum = amdCL2Input->samplerInitSize>>3;
+        for (size_t i = 0; i < samplersNum; i++)
+        {
+            size_t bufSize = snprintf(buf, 50, ".sampler 0x%08x\n",
+                      ULEV(((const uint32_t*)amdCL2Input->samplerInit)[i*2+1]));
+            output.write(buf, bufSize);
+        }
     }
     
     if (doDumpData && amdCL2Input->globalData != nullptr &&
