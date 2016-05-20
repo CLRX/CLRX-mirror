@@ -261,6 +261,22 @@ if (ASFLOAT(SRC0) > 0.0 && ASFLOAT(SRC0) != F)
 VDST = F
 ```
 
+#### V_CEIL_F64
+
+Opcode VOP1: 24 (0x18) for GCN 1.1/1.2  
+Opcode VOP3A: 408 (0x198) for GCN 1.1; 344 (0x158) for GCN 1.2  
+Syntax: V_CEIL_F64 VDST(2), SRC0(2)  
+Description: Truncate double floating point valu from SRC0 with rounding to
+positive infinity (ceilling), and store result to VDST. Implemented by flooring.
+If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+DOUBLE F = FLOOR(ASDOUBLE(SRC0))
+if (ASDOUBLE(SRC0) > 0.0 && ASDOUBLE(SRC0) != F)
+    F += 1.0
+VDST = F
+```
+
 #### V_CLREXCP
 
 Opcode VOP1: 65 (0x41) for GCN 1.0/1.1; 53 (0x35) for GCN 1.2  
@@ -613,6 +629,18 @@ Operation:
 VDST = FLOOR(ASFLOAT(SRC0))
 ```
 
+#### V_FLOOR_F64
+
+Opcode VOP1: 26 (0x1a) for GCN 1.1/1.2  
+Opcode VOP3A: 410 (0x19a) for GCN 1.1; 346 (0x15a) for GCN 1.2  
+Syntax: V_FLOOR_F64 VDST(2), SRC0(2)  
+Description: Truncate double floating point value SRC0 with rounding to positive infinity
+(flooring), and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = FLOOR(ASDOUBLE(SRC0))
+```
+
 #### V_FRACT_F32
 
 Opcode VOP1: 32 (0x20) for GCN 1.0/1.1; 27 (0x1b) for GCN 1.2  
@@ -940,9 +968,21 @@ Opcode VOP3A: 420 (0x1a4) for GCN 1.0/1.1; 350 (0x15e) for GCN 1.2
 Syntax: V_RNDNE_F32 VDST, SRC0  
 Description: Round floating point value SRC0 to nearest even integer, and store result to
 VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
-Operation:
+Operation:  
 ```
 VDST = RNDNE(ASFLOAT(SRC0))
+```
+
+#### V_RNDNE_F64
+
+Opcode VOP1: 25 (0x19) for GCN 1.1/1.2  
+Opcode VOP3A: 409 (0x199) for GCN 1.1; 345 (0x159) for GCN 1.2  
+Syntax: V_RNDNE_F64 VDST(2), SRC0(2)  
+Description: Round double floating point value SRC0 to nearest even integer,
+and store result to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = RNDNE(ASDOUBLE(SRC0))
 ```
 
 #### V_RSQ_CLAMP_F32
@@ -1078,4 +1118,16 @@ it to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.
 Operation:  
 ```
 VDST = RNDTZ(ASFLOAT(SRC0))
+```
+
+#### V_TRUNC_F64
+
+Opcode VOP1: 23 (0x17) for GCN 1.1/1.2  
+Opcode VOP3A: 407 (0x197) for GCN 1.1; 343 (0x157) for GCN 1.2  
+Syntax: V_TRUNC_F64 VDST(2), SRC0(2)  
+Description: Get integer value from double floating point value SRC0, and store (as float)
+it to VDST. If SRC0 is infinity or NaN then copy SRC0 to VDST.  
+Operation:  
+```
+VDST = RNDTZ(ASDOUBLE(SRC0))
 ```

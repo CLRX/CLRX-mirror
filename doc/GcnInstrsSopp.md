@@ -69,6 +69,30 @@ Operation:
 PC = RELADDR
 ```
 
+#### S_CBRANCH_CDBGSYS
+
+Opcode: 23 (0x17) for GCN 1.1/1.2  
+Syntax: S_CBRANCH_CDBGSYS RELADDR  
+Description: Jump to address RELADDR if COND_DBG_SYS status bit is set.
+
+#### S_CBRANCH_CDBGSYS_AND_USER
+
+Opcode: 26 (0x1a) for GCN 1.1/1.2  
+Syntax: S_CBRANCH_CDBGSYS_AND_USER RELADDR  
+Description: Jump to address RELADDR if COND_DBG_SYS and COND_DBG_USER status bit is set.
+
+#### S_CBRANCH_CDBGSYS_OR_USER
+
+Opcode: 25 (0x19) for GCN 1.1/1.2  
+Syntax: S_CBRANCH_CDBGSYS_OR_USER RELADDR  
+Description: Jump to address RELADDR if COND_DBG_SYS or COND_DBG_USER status bit is set.
+
+#### S_CBRANCH_CDBGUSER
+
+Opcode: 24 (0x18) for GCN 1.1/1.2  
+Syntax: S_CBRANCH_CDBGUSER RELADDR  
+Description: Jump to address RELADDR if COND_DBG_USER status bit is set.
+
 #### S_CBRANCH_EXECNZ
 
 Opcode: 9 (0x9)  

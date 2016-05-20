@@ -119,7 +119,7 @@ Description: Invalidate entire L1 K cache.
 
 #### S_DCACHE_INV_VOL
 
-Opcode: 29 (0x1d)  
+Opcode: 29 (0x1d) for GCN 1.1  
 Syntax: S_DCACHE_INV_VOL  
 Description: Invalidate all volatile lines in L1 K cache.
 
