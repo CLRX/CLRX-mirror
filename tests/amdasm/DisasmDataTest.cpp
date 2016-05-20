@@ -22,6 +22,9 @@
 #include <sstream>
 #include <string>
 #include <cstring>
+#include <CLRX/amdbin/AmdBinaries.h>
+#include <CLRX/amdbin/AmdCL2Binaries.h>
+#include <CLRX/amdbin/GalliumBinaries.h>
 #include <CLRX/amdasm/Disassembler.h>
 
 using namespace CLRX;
@@ -236,6 +239,7 @@ struct DisasmAmdTestCase
     const GalliumDisasmInput* galliumInput;
     const char* filename;
     const char* expectedString;
+    bool config;
 };
 
 static const DisasmAmdTestCase disasmDataTestCases[] =
@@ -345,7 +349,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .byte 0x05, 0x00, 0x00, 0x00, 0x56, 0x00, 0x00, 0x00
         .byte 0x34, 0x08, 0x00, 0x00, 0xd2, 0x01, 0x00, 0x00
     .uavopmask 4556
-)xxFxx"
+)xxFxx", false
     },
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels.clo",
         R"xxFxx(.amd
@@ -652,7 +656,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*eba41000 80040100*/ tbuffer_store_format_x v1, v0, s[16:19], 0 offen format:[32,float]
 .L128_1:
 /*bf810000         */ s_endpgm
-)xxFxx"
+)xxFxx", false
     },
     { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/samplekernels_64.clo",
         R"xxFxx(.amd
@@ -980,7 +984,7 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
 /*eba48000 80010200*/ tbuffer_store_format_x v2, v[0:1], s[4:7], 0 addr64 format:[32,float]
 .L172_1:
 /*bf810000         */ s_endpgm
-)xxFxx"
+)xxFxx", false
     },
     { nullptr, &galliumDisasmData, nullptr,
         R"fxDfx(.gallium
@@ -1023,7 +1027,217 @@ static const DisasmAmdTestCase disasmDataTestCases[] =
         .entry 0x00234423, 0x00aaabba
         .entry 0x03bdd123, 0x00132235
         .entry 0x00011122, 0x0f3424dd
-)fxDfx"
+)fxDfx", false
+    },
+    /* configuration dump test cases */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amd1.clo",
+        R"ffDXD(.amd
+.gpu Bonaire
+.32bit
+.compile_options "-O"
+.driver_info "@(#) OpenCL 1.2 AMD-APP (1912.5).  Driver version: 1912.5 (VM)"
+.kernel xT1
+    .config
+        .dims xyz
+        .cws 2, 7, 1
+        .sgprsnum 18
+        .vgprsnum 222
+        .floatmode 0xc0
+        .scratchbuffer 108
+        .uavid 11
+        .uavprivate 314
+        .printfid 9
+        .privateid 8
+        .cbid 10
+        .earlyexit 1
+        .condout 5
+        .pgmrsrc2 0x7520139d
+        .useprintf
+        .exceptions 0x75
+        .userdata ptr_uav_table, 0, 2, 2
+        .userdata imm_const_buffer, 0, 4, 4
+        .userdata imm_const_buffer, 7, 12, 2
+        .arg x, "float", float
+        .arg xff, "SP", float
+        .arg x4, "float4", float
+        .arg aaa, "SP4", float
+        .arg vv, "double3", double
+        .arg vv3, "SP4", double
+        .arg sampler, "sampler_t", sampler
+        .arg structor, "TypeX", structure, 24
+        .arg structor2, "TypeX", structure, 24
+        .arg img1, "IMG2D", image2d, read_only, 0
+        .arg img1a, "IMG2DA", image2d_array, read_only, 1
+        .arg img2, "TDIMG", image3d, write_only, 0
+        .arg buf1, "uint*", uint*, global, const, 12
+        .arg buf2, "ColorData", structure*, 52, global, const, 13
+        .arg const2, "ColorData", structure*, 52, constant, volatile, 0, 14
+        .arg dblloc, "double*", double*, local, 
+        .arg counterx, "counter32_t", counter32, 0
+        .arg sampler2, "sampler_t", sampler
+        .arg countery, "counter32_t", counter32, 1
+    .text
+/*bf810000         */ s_endpgm
+/*4a040501         */ v_add_i32       v2, vcc, v1, v2
+)ffDXD", true
+    },
+    /* amdcl2 config */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/amdcl2.clo",
+        R"ffDXD(.amdcl2
+.gpu Bonaire
+.driver_version 191205
+.compile_options ""
+.acl_version "AMD-COMP-LIB-v0.8 (0.0.SC_BUILD_NUMBER)"
+.kernel aaa1
+    .config
+        .dims x
+        .sgprsnum 12
+        .vgprsnum 1
+        .localsize 1000
+        .floatmode 0xda
+        .pgmrsrc1 0x00ada040
+        .pgmrsrc2 0x0000008c
+        .dx10clamp
+        .ieeemode
+        .useargs
+        .priority 0
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg n, "uint", uint
+        .arg in, "uint*", uint*, global, const
+        .arg out, "uint*", uint*, global, 
+    .text
+/*8709ac05         */ s_and_b32       s9, s5, 44
+/*870a8505         */ s_and_b32       s10, s5, 5
+/*870b8505         */ s_and_b32       s11, s5, 5
+/*bf810000         */ s_endpgm
+.kernel aaa2
+    .config
+        .dims x
+        .sgprsnum 12
+        .vgprsnum 1
+        .localsize 1000
+        .floatmode 0xda
+        .scratchbuffer 2342
+        .pgmrsrc1 0x00fda840
+        .pgmrsrc2 0x12001095
+        .privmode
+        .debugmode
+        .dx10clamp
+        .ieeemode
+        .exceptions 0x12
+        .useargs
+        .usesetup
+        .useenqueue
+        .priority 2
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg n, "uint", uint
+        .arg in, "float*", float*, global, const
+        .arg out, "float*", float*, global, 
+        .arg q, "queue_t", queue
+        .arg piper, "pipe", pipe, rdonly
+        .arg ce, "clk_event_t", clkevent
+    .text
+/*8709ac05         */ s_and_b32       s9, s5, 44
+/*bf810000         */ s_endpgm
+.kernel gfd12
+    .config
+        .dims xyz
+        .cws 8, 5, 2
+        .sgprsnum 25
+        .vgprsnum 78
+        .localsize 656
+        .floatmode 0xf4
+        .pgmrsrc1 0x012f40d3
+        .pgmrsrc2 0x0fcdf7d8
+        .dx10clamp
+        .tgsize
+        .exceptions 0x0f
+        .useargs
+        .usesetup
+        .usegeneric
+        .priority 0
+        .arg _.global_offset_0, "size_t", long
+        .arg _.global_offset_1, "size_t", long
+        .arg _.global_offset_2, "size_t", long
+        .arg _.printf_buffer, "size_t", void*, global, , rdonly
+        .arg _.vqueue_pointer, "size_t", long
+        .arg _.aqlwrap_pointer, "size_t", long
+        .arg n, "uint", uint
+        .arg in, "double*", double*, global, const
+        .arg out, "double*", double*, global, 
+        .arg v, "uchar", uchar
+        .arg v2, "uchar", uchar
+    .text
+/*7e020302         */ v_mov_b32       v1, v2
+/*4a0206b7         */ v_add_i32       v1, vcc, 55, v3
+/*bf810000         */ s_endpgm
+)ffDXD", true
+    },
+    /* gallium config */
+    { nullptr, nullptr, CLRX_SOURCE_DIR "/tests/amdasm/amdbins/gallium1.clo",
+        R"ffDXD(.gallium
+.gpu CapeVerde
+.32bit
+.rodata
+    .byte 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
+    .byte 0x03, 0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00
+    .byte 0x2d, 0x00, 0x00, 0x00
+.kernel one1
+    .args
+        .arg scalar, 4, 8, 4, sext, general
+        .arg scalar, 16, 16, 32, sext, general
+        .arg scalar, 4, 4, 4, zext, imgformat
+        .arg global, 8, 8, 8, zext, general
+        .arg scalar, 4, 4, 4, zext, griddim
+        .arg scalar, 4, 4, 4, zext, gridoffset
+    .config
+        .dims x
+        .sgprsnum 104
+        .vgprsnum 12
+        .privmode
+        .debugmode
+        .ieeemode
+        .tgsize
+        .floatmode 0xfe
+        .priority 3
+        .exceptions 0x7f
+        .localsize 32768
+        .userdatanum 16
+        .scratchbuffer 48
+        .pgmrsrc1 0xffdfef02
+        .pgmrsrc2 0x004004a1
+.kernel secondx
+    .args
+    .config
+        .dims xyz
+        .sgprsnum 8
+        .vgprsnum 56
+        .tgsize
+        .floatmode 0xd0
+        .priority 3
+        .localsize 256
+        .userdatanum 16
+        .pgmrsrc1 0x000d0c0d
+        .pgmrsrc2 0x3d0097a0
+.text
+secondx:
+/*3a040480         */ v_xor_b32       v2, 0, v2
+/*bf810000         */ s_endpgm
+.fill 62, 4, 0
+one1:
+/*7e000301         */ v_mov_b32       v0, v1
+/*7e000303         */ v_mov_b32       v0, v3
+)ffDXD", true
     }
 };
 
@@ -1031,17 +1245,20 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
 {
     std::ostringstream disasmOss;
     std::string resultStr;
+    Flags disasmFlags = DISASM_ALL;
+    if (testCase.config)
+        disasmFlags |= DISASM_CONFIG;
     if (testCase.filename == nullptr)
     {
         if (testCase.amdInput != nullptr)
         {
-            Disassembler disasm(testCase.amdInput, disasmOss, DISASM_ALL);
+            Disassembler disasm(testCase.amdInput, disasmOss, disasmFlags);
             disasm.disassemble();
             resultStr = disasmOss.str();
         }
         else if (testCase.galliumInput != nullptr)
         {
-            Disassembler disasm(testCase.galliumInput, disasmOss, DISASM_ALL);
+            Disassembler disasm(testCase.galliumInput, disasmOss, disasmFlags);
             disasm.disassemble();
             resultStr = disasmOss.str();
         }
@@ -1049,22 +1266,46 @@ static void testDisasmData(cxuint testId, const DisasmAmdTestCase& testCase)
     else
     {
         Array<cxbyte> binaryData = loadDataFromFile(testCase.filename);
-        std::unique_ptr<AmdMainBinaryBase> base(createAmdBinaryFromCode(
-                binaryData.size(), binaryData.data(),
+        if (isAmdBinary(binaryData.size(), binaryData.data()))
+        {
+            std::unique_ptr<AmdMainBinaryBase> base(createAmdBinaryFromCode(
+                    binaryData.size(), binaryData.data(),
+                    AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
+                    AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
+                    AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |
+                    AMDBIN_CREATE_INFOSTRINGS));
+            AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base.get());
+            Disassembler disasm(*amdGpuBin, disasmOss, disasmFlags);
+            disasm.disassemble();
+            resultStr = disasmOss.str();
+        }
+        else if (isAmdCL2Binary(binaryData.size(), binaryData.data()))
+        {
+            AmdCL2MainGPUBinary amdBin(binaryData.size(), binaryData.data(),
                 AMDBIN_CREATE_KERNELINFO | AMDBIN_CREATE_KERNELINFOMAP |
                 AMDBIN_CREATE_INNERBINMAP | AMDBIN_CREATE_KERNELHEADERS |
                 AMDBIN_CREATE_KERNELHEADERMAP | AMDBIN_INNER_CREATE_CALNOTES |
-                AMDBIN_CREATE_INFOSTRINGS));
-        AmdMainGPUBinary32* amdGpuBin = static_cast<AmdMainGPUBinary32*>(base.get());
-        Disassembler disasm(*amdGpuBin, disasmOss, DISASM_ALL);
-        disasm.disassemble();
-        resultStr = disasmOss.str();
+                AMDBIN_CREATE_INFOSTRINGS | AMDBIN_INNER_CREATE_KERNELDATA |
+                AMDBIN_INNER_CREATE_KERNELDATAMAP | AMDBIN_INNER_CREATE_KERNELSTUBS);
+            Disassembler disasm(amdBin, disasmOss, disasmFlags);
+            disasm.disassemble();
+            resultStr = disasmOss.str();
+        }
+        else
+        {   /* gallium */
+            GalliumBinary galliumBin(binaryData.size(),binaryData.data(), 0);
+            Disassembler disasm(GPUDeviceType::CAPE_VERDE, galliumBin,
+                            disasmOss, disasmFlags);
+            disasm.disassemble();
+            resultStr = disasmOss.str();
+        }
     }
     
     if (::strcmp(testCase.expectedString, resultStr.c_str()) != 0)
     {   // print error
         std::ostringstream oss;
         oss << "Failed for #" << testId << std::endl;
+        oss << resultStr << std::endl;
         oss.flush();
         throw Exception(oss.str());
     }
