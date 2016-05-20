@@ -1446,6 +1446,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     GCNOperand src1Op{};
     GCNOperand src2Op{};
     
+    const bool is128Ops = (gcnInsn.mode & 0xf000) == GCN_VOP3_DS2_128;
     bool modHigh = false;
     cxbyte modifiers = 0;
     const Flags vop3Mods = (gcnInsn.encoding == GCNENC_VOP3B) ?
@@ -1455,7 +1456,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     {
         if ((gcnInsn.mode&GCN_VOP3_DST_SGPR)==0)
             good &= parseVRegRange(asmr, linePtr, dstReg,
-                                   (gcnInsn.mode&GCN_REG_DST_64)?2:1);
+                       (is128Ops) ? 4 : ((gcnInsn.mode&GCN_REG_DST_64)?2:1));
         else // SGPRS as dest
             good &= parseSRegRange(asmr, linePtr, dstReg, arch,
                        (gcnInsn.mode&GCN_REG_DST_64)?2:1, true,
@@ -1544,8 +1545,9 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 if (!skipRequiredComma(asmr, linePtr))
                     return;
                 good &= parseOperand(asmr, linePtr, src2Op, nullptr, arch,
-                        (gcnInsn.mode&GCN_REG_SRC2_64)?2:1, literalConstsFlags|
-                        INSTROP_UNALIGNED|INSTROP_VREGS|INSTROP_SSOURCE|INSTROP_SREGS|
+                        is128Ops ? 4 : ((gcnInsn.mode&GCN_REG_SRC2_64)?2:1),
+                        literalConstsFlags|INSTROP_UNALIGNED|INSTROP_VREGS|
+                        INSTROP_SSOURCE|INSTROP_SREGS|
                         vop3Mods|INSTROP_ONLYINLINECONSTS|INSTROP_NOLITERALERROR);
             }
         }

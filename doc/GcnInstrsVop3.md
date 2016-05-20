@@ -846,6 +846,22 @@ INT32 V1 = (INT32)((SRC1&0x7fffff) | (SSRC1&0x800000 ? 0xff800000 : 0))
 VDST = V0 * V1 + SRC2
 ```
 
+#### V_MAD_I64_I32
+
+Opcode (VOP3B): 375 (0x177) for GCN 1.1; 489 (0x1e9) for GCN 1.2  
+Syntax: V_MAD_I64_I32 VDST(2), SDST(2), SRC0, SRC1, SRC2(2)  
+Description: Multiply 32-bit signed integer value from SRC0 by 32-bit signed value
+from SRC1 and add 64-bit unsigned value to this result, and store final result into
+VDST and store some value of bits to SDST (unknown behavior).  
+Operation:  
+```
+INT64 PROD = (INT64)SRC0*(INT32)SRC1
+VDST = SRC2 + PROD
+SDST = 0
+UINT64 mask = (1ULL<<LANEID)
+//SDST = (SDST&~mask) | ((?????) ? mask : 0)
+```
+
 #### V_MAD_LEGACY_F32
 
 Opcode: 320 (0x140) for GCN 1.0/1.1; 448 (0x1c0) for GCN 1.2  
@@ -868,6 +884,22 @@ from SRC1, add SRC2 to this product and store result to VDST.
 Operation:  
 ```
 VDST = (UINT32)(SRC0&0xffffff) * (UINT32)(SRC1&0xffffff) + SRC2
+```
+
+#### V_MAD_U64_U32
+
+Opcode (VOP3B): 374 (0x176) for GCN 1.1; 488 (0x1e8) for GCN 1.2  
+Syntax: V_MAD_U64_U32 VDST(2), SDST(2), SRC0, SRC1, SRC2(2)  
+Description: Multiply 32-bit unsigned integer value from SRC0 by 32-bit unsigned value
+from SRC1 and add 64-bit unsigned value to this result, and store final result into
+VDST and store carry bits to SDST.  
+Operation:  
+```
+UINT64 PROD = (UINT64)SRC0*SRC1
+VDST = SRC2 + PROD
+SDST = 0
+UINT64 mask = (1ULL<<LANEID)
+SDST = (SDST&~mask) | ((VDST < PROD) ? mask : 0)
 ```
 
 #### V_MAX_F64
@@ -1075,11 +1107,35 @@ else
     VDST = MIN(SRC1, SRC0)
 ```
 
+#### V_MQSAD_U32_U8
+
+Opcode: 373 (0x175) for GCN 1.1; 487 (0x1e7) for GCN 1.2  
+Syntax: V_MQSAD_U32_U8 VDST(4), SRC0(2), SRC1, SRC2(4)  
+Description: Compute four masked sum of absolute differences with accumulation.
+Any that operation get first argument from four bytes begins from N and ends to N+3
+(where N is number of operation), second argument is SRC1, and third argument is
+N'th 32-bit dword from SRC2.  
+Operation:  
+```
+void MSADU8(UINT32 S0, UINT32 S1, UINT32 S2)
+{
+    UINT64 OUT = S2;
+    for (UINT8 i = 0; i < 4; i++)
+        if ((S1 >> (i*8)) & 0xff) != 0)
+            OUT += ABS(((S0 >> (i*8)) & 0xff) - ((S1 >> (i*8)) & 0xff))
+    return (UINT32)MIN(OUT,0xffffffff);
+}
+VDST = (MSADU8((UINT32)SRC0, SRC1, SRC2)
+VDST |= (MSADU8((UINT32)(SRC0>>8), SRC1, SRC2>>32)<<32
+VDST |= (MSADU8((UINT32)(SRC0>>16), SRC1, SRC2>>64)<<64
+VDST |= (MSADU8((UINT32)(SRC0>>24), SRC1, SRC2>>96)<<96
+```
+
 #### V_MQSAD_U8, V_MQSAD_PK_U16_U8
 
 Opcode: 371 (0x173) for GCN 1.0/1.1; 486 (0x1e6) for GCN 1.2  
-Syntax (GCN 1.0): V_QSAD_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
-Syntax (GCN 1.1/1.2): V_QSAD_PK_U16_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
+Syntax (GCN 1.0): V_MQSAD_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
+Syntax (GCN 1.1/1.2): V_MQSAD_PK_U16_U8 VDST(2), SRC0(2), SRC1, SRC2(2)  
 Description: Compute four masked sum of absolute differences with accumulation.
 Any that operation get first argument from four bytes begins from N and ends to N+3
 (where N is number of operation), second argument is SRC1, and third argument is

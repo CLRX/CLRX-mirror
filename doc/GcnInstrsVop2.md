@@ -163,7 +163,7 @@ Operation:
 ```
 UINT64 temp = (UINT64)SRC0 + (UINT64)SRC1
 VDST = temp
-SDS = 0
+SDST = 0
 UINT64 mask = (1ULL<<LANEID)
 SDST = (SDST&~mask) | ((temp >> 32) ? mask : 0)
 ```

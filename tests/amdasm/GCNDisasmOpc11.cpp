@@ -3003,7 +3003,7 @@ const GCNDisasmOpcodeCase decGCNOpcodeGCN11Cases[] =
     { 0xd2e60037U, 0x07974d4fU, true, "        v_mqsad_pk_u16_u8 "
                 "v[55:56], v[79:80], v166, v[229:230]\n" },
     { 0xd2ea0037U, 0x07974d4fU, true, "        v_mqsad_u32_u8  "
-                "v[55:56], v[79:80], v166, v[229:230]\n" },
+                "v[55:58], v[79:80], v166, v[229:232]\n" },
     { 0xd2ec2f37U, 0x07974d4fU, true, "        v_mad_u64_u32   "
                 "v[55:56], s[47:48], v79, v166, v[229:230]\n" },
     { 0xd2ee2f37U, 0x07974d4fU, true, "        v_mad_i64_i32   "

@@ -110,6 +110,7 @@ enum : uint16_t
     GCN_VOP3_VOP2 = 0x100,  /// VOP2 encoded as VOP3
     GCN_VOP3_VOP1 = 0x200,  /// VOP1 encoded as VOP3
     GCN_VOP3_VINTRP = 0x300,    /// VINTRP encoded as VOP3
+    GCN_VOP3_DS2_128 = 0xf000,   /// VOP3 with DST 128 and SRC2 128
     GCN_VOP3_VINTRP_NEW = 0x3e0,    /// new VINTRP instructions encoded as VOP3 
     GCN_VOP3_VOP2_DS01 = 0x110, /// VOP2 in VOP3, destination and two sources
     GCN_VOP3_VOP1_DS0 = 0x230,  /// VOP1 in VOP3, destination and one source
