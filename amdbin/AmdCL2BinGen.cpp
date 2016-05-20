@@ -838,7 +838,7 @@ public:
             if (arg.argType == KernelArgType::CLKEVENT)
             {
                 SLEV(argEntry.ptrType, 18);
-                SLEV(argEntry.ptrSpace, ptrSpacesTable[cxuint(arg.ptrSpace)]);
+                SLEV(argEntry.ptrSpace, 4);
             }
             else if (arg.argType == KernelArgType::POINTER)
             {
