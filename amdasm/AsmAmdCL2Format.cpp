@@ -849,7 +849,7 @@ void AsmAmdCL2PseudoOps::setDimensions(AsmAmdCL2Handler& handler,
     const char* dimPlace = linePtr;
     char buf[10];
     cxuint dimMask = 0;
-    if (getNameArg(asmr, 10, buf, linePtr, "dimension set"))
+    if (getNameArg(asmr, 10, buf, linePtr, "dimension set", false))
     {
         toLowerString(buf);
         for (cxuint i = 0; buf[i]!=0; i++)
