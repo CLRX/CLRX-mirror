@@ -812,8 +812,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.privateId = cstrtovCStyle<cxuint>(linePtr+11, lineEnd, outEnd);
         else if (::strnecmp(linePtr, ";cbid:", 6, lineEnd)==0)
             config.constBufferId= cstrtovCStyle<cxuint>(linePtr+6, lineEnd, outEnd);
-        else if (::strnecmp(linePtr, ";uavprivate:", 12, lineEnd)==0)
-            config.uavPrivate = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
+        else if (::strnecmp(linePtr, ";memory:uavprivate:", 19, lineEnd)==0)
+            config.uavPrivate = cstrtovCStyle<cxuint>(linePtr+19, lineEnd, outEnd);
         // to next line
         linePtr = (lineEnd!=mtEnd) ? lineEnd+1 : lineEnd;
     }
