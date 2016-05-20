@@ -721,11 +721,17 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
         {
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
+            if (ptr==nullptr)
+                throw ParseException(lineNo, "Can't parse counter argument");
             arg.argName.assign(linePtr+9, ptr);
             arg.argType = KernelArgType::COUNTER32;
             arg.pointerType = KernelArgType::VOID;
             arg.ptrSpace = KernelPtrSpace::NONE;
-            arg.resId = BINGEN_DEFAULT;
+            ptr++; // skip ':'
+            if (::strnecmp(ptr, "32:", 3, lineEnd)!=0)
+                throw ParseException(lineNo, "Can't parse counter argument");
+            ptr+=3; // '32:'
+            arg.resId = cstrtovCStyle<uint32_t>(ptr, lineEnd, outEnd);
             arg.ptrAccess = 0;
             arg.structSize = 0;
             arg.constSpaceSize = 0;
