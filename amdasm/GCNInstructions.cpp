@@ -1847,7 +1847,7 @@ const GCNInstruction CLRX::gcnInstrsTable[] =
     { "ds_cmpst_f32",        GCNENC_DS,     GCN_ADDR_DST|GCN_2SRCS,   17,   ARCH_GCN_ALL  },
     { "ds_min_f32",          GCNENC_DS,     GCN_ADDR_DST,             18,   ARCH_GCN_ALL  },
     { "ds_max_f32",          GCNENC_DS,     GCN_ADDR_DST,             19,   ARCH_GCN_ALL  },
-    { "ds_nop",              GCNENC_DS,     GCN_ADDR_NONE,            20,   ARCH_GCN_1_1_2    },
+    { "ds_nop",              GCNENC_DS,     GCN_ADDR_STD,             20,   ARCH_GCN_1_1_2    },
     { "ds_add_f32",          GCNENC_DS,     GCN_ADDR_DST,             21,   ARCH_RX3X0  },
     { "ds_gws_sema_release_all", GCNENC_DS,     GCN_ADDR_DST|GCN_NOSRC|GCN_ONLYGDS, 24, ARCH_RX2X0    },
     { "ds_gws_init",         GCNENC_DS,     GCN_ADDR_DST|GCN_NOSRC|GCN_ONLYGDS, 25, ARCH_GCN_1_0_1  },

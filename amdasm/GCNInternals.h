@@ -121,7 +121,7 @@ enum : uint16_t
     GCN_VINTRP_SRC2 = 0x1000,   /// VOP3/VINTRP with source2 (third source)
     GCN_VOP3_MASK3 = 0xf000,    /// mask for VINTRP in VOP2 encodings
     // DS encoding modes
-    GCN_ADDR_NONE = 0x0,    /// no address operand
+    GCN_ADDR_STD = 0x0,    /// standard place of address
     GCN_ADDR_DST = 0x10,    /// address operand in destination place
     GCN_ADDR_SRC = 0x20,    /// address operand in source
     GCN_ADDR_DST64 = 0x1f,  /// address operand in destination place and all is 64-bit
