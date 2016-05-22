@@ -1252,6 +1252,12 @@ UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~7))
 VDST = *V; *V = (*V & ~VDATA0) | VDATA1 // atomic operation
 ```
 
+#### DS_NOP
+
+Opcode: 20 (0x14) for GCN 1.1/1.2  
+Syntax: DS_NOP VADDR  
+Description: Do nothing.
+
 #### DS_OR_B32
 
 Opcode: 10 (0xa)  
@@ -1336,6 +1342,18 @@ UINT64* V = (UINT64*)(DS + A)
 *V = *V | *(UINT64*)(DS + B) // atomic operation
 ```
 
+#### DS_READ_B128
+
+Opcode: 255 (0xff) for GCN 1.1/1.2  
+Syntax: DS_READ_B128 VDST(4), ADDR [OFFSET:OFFSET]  
+Description: Read four dwords from LDS/GDS at address (ADDR+OFFSET) & ~15,
+store into VDST.  
+Operation:  
+```
+VDST[0:1] = *(UINT64*)(DS + ((ADDR+OFFSET)&~15))
+VDST[2:3] = *(UINT64*)(DS + ((ADDR+OFFSET)&~15) + 8)
+```
+
 #### DS_READ_B32
 
 Opcode: 54 (0x36)  
@@ -1344,6 +1362,28 @@ Description: Read dword from LDS/GDS at address (ADDR+OFFSET) & ~3, store into V
 Operation:  
 ```
 VDST = *(UINT32*)(DS + ((ADDR+OFFSET)&~3))
+```
+
+#### DS_READ_B64
+
+Opcode: 118 (0x76)  
+Syntax: DS_READ_B64 VDST(2), ADDR [OFFSET:OFFSET]  
+Description: Read two dwords from LDS/GDS at address (ADDR+OFFSET) & ~7, store into VDST.  
+Operation:  
+```
+VDST = *(UINT64*)(DS + ((ADDR+OFFSET)&~7))
+```
+
+#### DS_READ_B96
+
+Opcode: 254 (0xfe) for GCN 1.1/1.2  
+Syntax: DS_READ_B96 VDST(3), ADDR [OFFSET:OFFSET]  
+Description: Read three dwords from LDS/GDS at address (ADDR+OFFSET) & ~15,
+store into VDST.  
+Operation:  
+```
+VDST[0:1] = *(UINT64*)(DS + ((ADDR+OFFSET)&~15))
+VDST[2] = *(UINT32*)(DS + ((ADDR+OFFSET)&~15) + 8)
 ```
 
 #### DS_READ_I16
@@ -1407,7 +1447,7 @@ VDST = *V0 | (UINT64(*V1)<<32)
 Opcode: 119 (0x77)  
 Syntax: DS_READ2_B64 VDST(4), ADDR [OFFSET0:OFFSET0] [OFFSET1:OFFSET1]  
 Description: Read 64-bit value from LDS/GDS at address (ADDR+OFFSET0\*8) & ~7,
-and second value at address (ADDR+OFFSET1\*4) & ~3, and store these values into VDST.  
+and second value at address (ADDR+OFFSET1\*8) & ~7, and store these values into VDST.  
 Operation:  
 ```
 UINT64* V0 = (UINT64*)(DS + (ADDR + OFFSET0*8)&~7) 
@@ -1636,6 +1676,33 @@ else
 VDST[LANEID] = (EXEC & (1ULL<<INLANEID)) ? ADDR[INLANEID] : 0
 ```
 
+#### DS_WRAP_RTN_B32
+
+Opcode: 52 (0x34) for GCN 1.1/1.2  
+Syntax: DS_WRAP_RTN_B32 VDST, ADDR, VDATA0, VDATA1 [OFFSET:OFFSET]  
+Description: Compare unsigned 32-bit value from LDS/GDS at address A and D0. If value from
+LDS/GDS is not less than VDATA0 value, then subtract VDATA0 from this value and store
+result into LDS/GDS. Otherwise add VDATA1 to LDS/GDS value and store into LDS/GDS.
+Previous value from LDS/GDS are stored in VDST. Operation is atomic.  
+Operation:  
+```
+UINT32 A = (UINT32*)(DS + ((ADDR+OFFSET)&~3))
+VDST = *V; *V = (*V >= VDATA0) ? (*V-VDATA0) : (*V+VDATA1) // atomic operation
+```
+
+#### DS_WRITE_B128
+
+Opcode: 223 (0xdf)for GCN 1.1/1.2  
+Syntax: DS_WRITE_B128 ADDR, VDATA0(4) [OFFSET:OFFSET]  
+Description: Store four dwords value from VDATA0 into LDS/GDS at address
+(ADDR+OFFSET) & ~15.  
+Operation:  
+```
+UINT64* V = (UINT64*)(DS + ((ADDR+OFFSET)&~15))
+*V = VDATA0[0:1]
+*(V+1) = VDATA0[2:3]
+```
+
 #### DS_WRITE_B16
 
 Opcode: 31 (0x1f)  
@@ -1678,6 +1745,19 @@ Operation:
 ```
 UINT8* V = (UINT8*)(DS + (ADDR+OFFSET))
 *V = VDATA0&0xff
+```
+
+#### DS_WRITE_B96
+
+Opcode: 222 (0xde) for GCN 1.1/1.2  
+Syntax: DS_WRITE_B96 ADDR, VDATA0(3) [OFFSET:OFFSET]  
+Description: Store three dwords value from VDATA0 into LDS/GDS at address
+(ADDR+OFFSET) & ~15.  
+Operation:  
+```
+UINT32* V = (UINT64*)(DS + ((ADDR+OFFSET)&~15))
+*(UINT64*)V = VDATA0[0:1]
+*(V+2) = VDATA0[2]
 ```
 
 #### DS_WRITE_SRC2_B32

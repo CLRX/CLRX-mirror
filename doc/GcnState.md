@@ -122,7 +122,7 @@ List of possible values:
  Value | Description
 -------|---------------------------------
  0     | flush input and output denormals
- 1     | allow input denormals, flush output denormals.
+ 1     | allow input denormals, flush output denormals
  2     | flush input denormals, allow output denormals
  3     | allow input and output denormals
 

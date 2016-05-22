@@ -571,6 +571,22 @@ else
     VDST = 0.0
 ```
 
+### V_EXP_LEGACY_F32
+
+Opcode VOP1: 70 (0x46) for GCN 1.1; 75 (0x4b) for GCN 1.2  
+Opcode VOP3A: 454 (0x1c6) for GCN 1.1; 395 (0x18b) for GCN 1.2  
+Syntax: V_EXP_LEGACY_F32 VDST, SRC0  
+Description: Approximate power of two from FP value SRC0 and store it to VDST. Instruction
+for values smaller than -126.0 always returns 0 regardless floatmode in MODE register.
+For some cases this instructions returns slightly less accurate result than V_EXP_F32.  
+Operation:  
+```
+if (ASFLOAT(SRC0)>=-126.0)
+    VDST = APPROX_POW2(ASFLOAT(SRC0))
+else
+    VDST = 0.0
+```
+
 #### V_FFBH_U32
 
 Opcode VOP1: 57 (0x39) for GCN 1.0/1.1; 45 (0x2d) for GCN 1.2  
@@ -777,6 +793,26 @@ Syntax: V_LOG_F32 VDST, SRC0
 Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
 to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
+Operation:  
+```
+FLOAT F = ASFLOAT(SRC0)
+if (F==1.0)
+    VDST = 0.0f
+if (F<0.0)
+    VDST = -NaN
+else
+    VDST = APPROX_LOG2(F)
+```
+
+#### V_LOG_LEGACY_F32
+
+Opcode VOP1: 69 (0x45) for GCN 1.1; 76 (0x4c) for GCN 1.2  
+Opcode VOP3A: 453 (0x1c5) for GCN 1.1; 396 (0x18c) for GCN 1.2  
+Syntax: V_LOG_LEGACY_F32 VDST, SRC0  
+Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
+to VDST. If SRC0 is negative then store -NaN to VDST.
+This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.
+This instruction returns slightly different results than V_LOG_F32.  
 Operation:  
 ```
 FLOAT F = ASFLOAT(SRC0)
