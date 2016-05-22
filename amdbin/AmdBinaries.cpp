@@ -448,6 +448,8 @@ static size_t getKernelInfosInternal(const typename Types::ElfBinary& elf,
                 ai++;
             const typename Types::KernelArgSym& argTypeSym = argDescTable[ai];
             
+            if (realArgsNum >= kernelInfo.argInfos.size())
+                throw Exception("Kernel ArgInfo index out of range");
             AmdKernelArg& karg = kernelInfo.argInfos[realArgsNum++];
             const size_t rodataHdrOffset = ULEV(rodataHdr.sh_offset);
             const size_t rodataHdrSize = ULEV(rodataHdr.sh_size);
