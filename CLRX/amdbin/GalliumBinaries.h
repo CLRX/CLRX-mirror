@@ -128,18 +128,20 @@ struct GalliumSection
     uint32_t size;      ///< size of section
 };
 
+/// Gallium elf binary base (for 32-bit and 64-bit)
 class GalliumElfBinaryBase
 {
 public:
     /// program info entry index map
     typedef Array<std::pair<const char*, size_t> > ProgInfoEntryIndexMap;
 protected:
-    uint32_t progInfosNum;
-    GalliumProgInfoEntry* progInfoEntries;
-    ProgInfoEntryIndexMap progInfoEntryMap;
-    size_t disasmSize;
-    size_t disasmOffset;
+    uint32_t progInfosNum;  ///< program info entries number
+    GalliumProgInfoEntry* progInfoEntries;  ///< program info entries
+    ProgInfoEntryIndexMap progInfoEntryMap; ///< program info map
+    size_t disasmSize;  ///< disassembly size
+    size_t disasmOffset;    ///< disassembly offset
     
+    /// routine to load binary fro internal ELF 
     template<typename ElfBinary>
     void loadFromElf(ElfBinary& elfBinary);
 public:
@@ -187,7 +189,7 @@ public:
  * Please use this function whenever you want to get or set word in ELF binary,
  * because ELF binaries can be unaligned in memory (as inner binaries).
  */
-/// Gallium ELF binary
+/// 32-bit Gallium ELF binary
 /** ULEV function is required to access programInfoEntry fields */
 class GalliumElfBinary32: public GalliumElfBinaryBase, public ElfBinary32
 {
@@ -208,6 +210,7 @@ public:
     { return reinterpret_cast<const char*>(binaryCode + disasmOffset); }
 };
 
+/// 64-bit Gallium ELF binary
 class GalliumElfBinary64: public GalliumElfBinaryBase, public ElfBinary64
 {
 public:
@@ -271,7 +274,7 @@ public:
     /// returns binary code data
     cxbyte* getBinaryCode()
     { return binaryCode; }
-    
+    /// return true if inner binary is 64-bit
     bool is64BitElfBinary() const
     { return elf64BitBinary; }
     

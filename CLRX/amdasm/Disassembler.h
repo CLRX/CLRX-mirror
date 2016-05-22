@@ -61,6 +61,7 @@ enum: Flags
 class ISADisassembler: public NonCopyableAndNonMovable
 {
 protected:
+    /// internal relocation structure
     struct Relocation
     {
         size_t symbol;   ///< symbol index
@@ -129,7 +130,7 @@ public:
     /// add relocation
     void addRelocation(size_t offset, RelocType type, size_t symIndex, int64_t addend)
     { relocations.push_back(std::make_pair(offset, Relocation{symIndex, type, addend})); }
-    
+    /// clear all relocations
     void clearRelocations()
     {
         relSymbols.clear();
@@ -189,12 +190,13 @@ struct AmdDisasmInput
     std::vector<AmdDisasmKernelInput> kernels;    ///< kernel inputs
 };
 
+/// relocation with addend
 struct AmdCL2RelaEntry
 {
-    size_t offset;
-    RelocType type;
-    cxuint symbol;
-    int64_t addend;
+    size_t offset;  ///< offset
+    RelocType type; ///< relocation type
+    cxuint symbol;  ///< symbol
+    int64_t addend; ///< addend
 };
 
 /// single kernel input for disassembler
@@ -233,6 +235,7 @@ struct AmdCL2DisasmInput
     size_t bssSize;         ///< size of global bss section
     size_t samplerInitSize;     ///< sampler init data size
     const cxbyte* samplerInit;  ///< sampler init data
+    
     /// sampler relocations
     std::vector<std::pair<size_t, size_t> > samplerRelocs;
     std::vector<AmdCL2DisasmKernelInput> kernels;    ///< kernel inputs

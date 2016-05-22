@@ -120,7 +120,7 @@ struct AmdCL2Input
     size_t bssSize;             ///< global bss size
     size_t samplerInitSize;  ///< sampler init size
     const cxbyte* samplerInit; ///< sampler init data
-    bool samplerConfig;
+    bool samplerConfig;     ///< use sample config instead raw data from samplerinit
     std::vector<uint32_t> samplers;   ///< sampler config
     std::vector<size_t> samplerOffsets; ///< sampler offsets
     uint32_t driverVersion;     ///< driver version (majorVersion*100 + minorVersion)
@@ -162,7 +162,7 @@ public:
      */
     AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,
            size_t globalDataSize, const cxbyte* globalData,
-           size_t atomicDataSize, const cxbyte* atomicData,
+           size_t rwDataSize, const cxbyte* rwData,
            const std::vector<AmdCL2KernelInput>& kernelInputs);
     /// constructor
     AmdCL2GPUBinGenerator(GPUDeviceType deviceType, uint32_t driverVersion,

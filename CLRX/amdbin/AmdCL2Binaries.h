@@ -75,10 +75,10 @@ public:
     typedef Array<std::pair<CString, size_t> > KernelDataMap;
 protected:
     Array<AmdCL2GPUKernel> kernels;    ///< kernel headers
-    KernelDataMap kernelDataMap;
+    KernelDataMap kernelDataMap;    ///< kernel data map
 public:
     virtual ~AmdCL2InnerGPUBinaryBase();
-    
+    /// get kernels number
     size_t getKernelsNum() const
     { return kernels.size(); }
     
@@ -104,9 +104,18 @@ private:
     cxbyte* binary;
     std::unique_ptr<AmdCL2GPUKernelStub[]> kernelStubs;
 public:
+    /// constructor
     AmdCL2OldInnerGPUBinary() = default;
+    /// constructor
+    /**
+     * \param mainBinary main GPU binary
+     * \param binaryCodeSize inner binary code size
+     * \param binaryCode inner binary code
+     * \param creationFlags creation's flags
+     */
     AmdCL2OldInnerGPUBinary(AmdCL2MainGPUBinary* mainBinary, size_t binaryCodeSize,
             cxbyte* binaryCode, Flags creationFlags = AMDBIN_CREATE_ALL);
+    /// destructor
     ~AmdCL2OldInnerGPUBinary() = default;
     
     /// return binary size
@@ -159,9 +168,17 @@ private:
     size_t globalDataRelEntrySize;
     cxbyte* globalDataRela;
 public:
+    /// constructor
     AmdCL2InnerGPUBinary() = default;
+    /// constructor
+    /**
+     * \param binaryCodeSize inner binary code size
+     * \param binaryCode inner binary code
+     * \param creationFlags creation's flags
+     */
     AmdCL2InnerGPUBinary(size_t binaryCodeSize, cxbyte* binaryCode,
             Flags creationFlags = AMDBIN_CREATE_ALL);
+    /// destructor
     ~AmdCL2InnerGPUBinary() = default;
     
     /// return if binary has kernel datas
@@ -192,10 +209,10 @@ public:
     /// get readwrite atomic data
     cxbyte* getRwData()
     { return rwData; }
-    
+    /// get bss alignment
     size_t getBssAlignment() const
     { return bssAlignment; }
-    
+    /// get bss section's size
     size_t getBssSize() const
     { return bssSize; }
     
@@ -248,7 +265,7 @@ struct AmdCL2GPUMetadataHeader
     uint64_t metadataSize;  /// metadata size
     uint32_t unknown1[3];
     uint32_t options;
-    uint16_t kernelId;
+    uint16_t kernelId;  ///< kernel id
     uint16_t unknownx;
     uint32_t unknowny;
     uint64_t unknown2[2];
@@ -259,7 +276,7 @@ struct AmdCL2GPUMetadataHeader
     uint64_t unknown4[3];
     uint64_t pipesUsage;
     uint64_t unknown5[2];
-    uint64_t argsNum;
+    uint64_t argsNum;       ///< number of arguments
 };
 
 /// GPU kernel argument entry

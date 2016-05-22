@@ -425,6 +425,7 @@ class AsmMacroInputFilter: public AsmInputFilter
 public:
     /// macro argument map type
     typedef Array<std::pair<CString, CString> > MacroArgMap;
+    /// macro local map type (key - name of variable, value - number of local label)
     typedef std::unordered_map<CString, uint64_t> MacroLocalMap;
 private:
     RefPtr<const AsmMacro> macro;  ///< input macro

@@ -124,6 +124,7 @@ public:
     /// parse register range
     virtual bool parseRegisterRange(const char*& linePtr,
                         cxuint& regStart, cxuint& regEnd) = 0;
+    /// return true if expresion of target fit to value with specified bits
     virtual bool relocationIsFit(cxuint bits, AsmExprTargetType tgtType) = 0;
 };
 
@@ -135,7 +136,7 @@ public:
     struct Regs {
         cxuint sgprsNum;    ///< SGPRs number
         cxuint vgprsNum;    ///< VGPRs number
-        Flags regFlags;
+        Flags regFlags; ///< define what extra register must be included
     };
 private:
     union {
@@ -332,16 +333,17 @@ struct AsmExprTarget
     }
 };
 
+/// assembler relocation
 struct AsmRelocation
 {
-    cxuint sectionId;
-    size_t offset;
-    RelocType type;
+    cxuint sectionId;   ///< section id where relocation is present
+    size_t offset;  ///< offset of relocation
+    RelocType type; ///< relocation type
     union {
-        AsmSymbolEntry* symbol;
-        cxuint relSectionId;
+        AsmSymbolEntry* symbol; ///< symbol
+        cxuint relSectionId;    ///< section for which relocation is defined
     };
-    uint64_t addend;
+    uint64_t addend;    ///< addend
 };
 
 /// assembler expression class
@@ -518,10 +520,11 @@ struct AsmSection
     cxuint kernelId;    ///< kernel id (optional)
     AsmSectionType type;        ///< type of section
     Flags flags;   ///< section flags
-    uint64_t alignment;
-    uint64_t size;
+    uint64_t alignment; ///< section alignment
+    uint64_t size;  ///< section size
     std::vector<cxbyte> content;    ///< content of section
     
+    /// get section's size
     size_t getSize() const
     { return ((flags&ASMSECT_WRITEABLE) != 0) ? content.size() : size; }
 };

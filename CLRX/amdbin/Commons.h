@@ -16,7 +16,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
-/*! \file Commons.h
+/*! \file amdbin/Commons.h
  * \brief common definitions for binaries
  */
 
@@ -28,14 +28,14 @@
 /// main namespace
 namespace CLRX
 {
-
+/// relocation type
 typedef cxuint RelocType;
     
 enum
 {
-    RELTYPE_VALUE = 0,
-    RELTYPE_LOW_32BIT,
-    RELTYPE_HIGH_32BIT
+    RELTYPE_VALUE = 0,  ///< relocation that get value
+    RELTYPE_LOW_32BIT,    ///< relocation that get low 32-bit of value
+    RELTYPE_HIGH_32BIT    ///< relocation that get high 32-bit of value
 };
 
 };

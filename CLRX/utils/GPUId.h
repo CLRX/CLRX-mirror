@@ -123,12 +123,14 @@ enum: Flags {
 extern cxuint getGPUMaxRegistersNum(GPUArchitecture architecture, cxuint regType,
                          Flags flags = 0);
 
-// get minimal number of required registers
+/// get minimal number of required registers
 extern void getGPUSetupMinRegistersNum(GPUArchitecture architecture, cxuint dimMask,
                cxuint userDataNum, Flags flags, cxuint* gprsOut);
 
+/// get maximum local size for GPU architecture
 extern size_t getGPUMaxLocalSize(GPUArchitecture architecture);
 
+/// get extra registers (like VCC,FLAT_SCRATCH)
 extern cxuint getGPUExtraRegsNum(GPUArchitecture architecture, cxuint regType,
               Flags flags);
 
