@@ -43,6 +43,7 @@ struct CLRX_INTERNAL CL2GPUDeviceCodeEntry
     GPUDeviceType deviceType;
 };
 
+/* 1912.05 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
 {
     { 6, GPUDeviceType::BONAIRE },
@@ -58,6 +59,7 @@ static const CL2GPUDeviceCodeEntry cl2GpuDeviceCodeTable[] =
     { 15, GPUDeviceType::DUMMY }
 };
 
+/* 2004.06 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2_16_3GpuDeviceCodeTable[] =
 {
     { 6, GPUDeviceType::BONAIRE },
@@ -75,6 +77,7 @@ static const CL2GPUDeviceCodeEntry cl2_16_3GpuDeviceCodeTable[] =
     { 17, GPUDeviceType::STONEY }
 };
 
+/* 1801.05 driver device table list */
 static const CL2GPUDeviceCodeEntry cl2_15_7GpuDeviceCodeTable[] =
 {
     { 6, GPUDeviceType::BONAIRE },
@@ -88,6 +91,7 @@ static const CL2GPUDeviceCodeEntry cl2_15_7GpuDeviceCodeTable[] =
     { 16, GPUDeviceType::FIJI },
     { 15, GPUDeviceType::CARRIZO }
 };
+
 /* driver version: 2036.3 */
 static const CL2GPUDeviceCodeEntry cl2GPUPROGpuDeviceCodeTable[] =
 {
@@ -435,6 +439,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             reinterpret_cast<const IntAmdCL2SetupData*>(setup + 48);
     uint32_t pgmRSRC1 = ULEV(setupData->pgmRSRC1);
     uint32_t pgmRSRC2 = ULEV(setupData->pgmRSRC2);
+    /* initializing fields from PGM_RSRC1 and PGM_RSRC2 */
     config.dimMask = (pgmRSRC2>>7)&7;
     config.ieeeMode = (pgmRSRC1>>23)&1;
     config.exceptions = (pgmRSRC2>>24)&0xff;
@@ -454,7 +459,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     config.useSetup = (ksetup1&2)!=0;
     config.useArgs = (ksetup1&8)!=0;
     config.useGeneric = config.useEnqueue = false;
-    if (ksetup1==0x2f)
+    if (ksetup1==0x2f) // if generic pointer support
         config.useGeneric = true;
     else
         config.useEnqueue = (ksetup1&0x20)!=0;
@@ -473,7 +478,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
     size_t argOffset = headerSize + ULEV(mdHdr->firstNameLength) + 
             ULEV(mdHdr->secondNameLength)+2;
     if (ULEV(*((const uint32_t*)(metadata+argOffset))) == 0x5800)
-        argOffset++;
+        argOffset++;    // fix for AMD GPUPRO driver (2036.03) */
     const AmdCL2GPUKernelArgEntry* argPtr = reinterpret_cast<
             const AmdCL2GPUKernelArgEntry*>(metadata + argOffset);
     const uint32_t argsNum = ULEV(mdHdr->argsNum);
@@ -579,7 +584,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             else if ((arg.argType >= KernelArgType::MIN_IMAGE &&
                       arg.argType <= KernelArgType::MAX_IMAGE) ||
                      arg.argType == KernelArgType::SAMPLER)
-                arg.resId = LEV(argPtr->resId);
+                arg.resId = LEV(argPtr->resId); // sampler and images have resource id
         }
         else
         {   // pointer or pipe
@@ -589,7 +594,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                 arg.used = (ULEV(argPtr->isPointerOrPipe));
             uint32_t ptrType = ULEV(argPtr->ptrType);
             uint32_t ptrSpace = ULEV(argPtr->ptrSpace);
-            if (argType == 7) // pointer
+            if (argType == 7) // pointer or pipe
                 arg.argType = (argPtr->isPipe==0) ? KernelArgType::POINTER :
                     KernelArgType::PIPE;
             else if (argType == 15)
@@ -639,10 +644,8 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                         case 9: // long
                         case 11: // float
                         case 12: // double
-                        {
                             arg.pointerType = cl20ArgTypeVectorTable[(ptrType-6)*6];
                             break;
-                        }
                     }
                     
                     while (isAlnum(arg.typeName[ptrTypeNameSize]) ||
@@ -660,11 +663,11 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
                             arg.pointerType = KernelArgType::STRUCTURE;
                     }
                     else if (ptrType==18)
-                    {
+                    {   /* if clkevent */
                         arg.argType = KernelArgType::CLKEVENT;
                         arg.pointerType = KernelArgType::VOID;
                     }
-                    else
+                    else /* unknown type of pointer */
                         arg.pointerType = KernelArgType::VOID;
                         
                     if (arg.pointerType == KernelArgType::STRUCTURE)
@@ -806,7 +809,7 @@ void CLRX::disassembleAmdCL2(std::ostream& output, const AmdCL2DisasmInput* amdC
         }
     }
     else if (doDumpConfig && amdCL2Input->samplerInit!=nullptr)
-    {
+    {   // print sampler values instead raw samler data in .samplerinit
         char buf[50];
         const size_t samplersNum = amdCL2Input->samplerInitSize>>3;
         for (size_t i = 0; i < samplersNum; i++)

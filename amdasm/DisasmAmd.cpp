@@ -543,7 +543,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                         outEnd, lineEnd, outEnd);
         }
         else if (::strnecmp(linePtr, ";value:", 7, lineEnd)==0)
-        {
+        {   /* scalar value or structure */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+7, lineEnd, ':');
             if (ptr==nullptr)
@@ -583,7 +583,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";pointer:", 9, lineEnd)==0)
-        {
+        {   /* pointer (local, global, constant */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
             if (ptr==nullptr)
@@ -668,7 +668,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";image:", 7, lineEnd)==0)
-        {
+        {   /* parse image argument entry */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+7, lineEnd, ':');
             if (ptr==nullptr)
@@ -718,7 +718,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";counter:", 9, lineEnd)==0)
-        {
+        {   /* counter */
             AmdKernelArgInput arg;
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
             if (ptr==nullptr)
@@ -741,12 +741,12 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             config.args.push_back(arg);
         }
         else if (::strnecmp(linePtr, ";constarg:", 10, lineEnd)==0)
-        {
+        {   /* constant argument to apply constant qualifier */
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+10, lineEnd, outEnd);
             constArgIndices.push_back(argNo);
         }
         else if (::strnecmp(linePtr, ";sampler:", 9, lineEnd)==0)
-        {
+        {   /* image sampler */
             const char* ptr = strechr(linePtr+9, lineEnd, ':');
             if (ptr==nullptr)
                 throw ParseException(lineNo, "Can't parse sampler entry");
@@ -773,7 +773,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
             }
         }
         else if (::strnecmp(linePtr, ";reflection:", 12, lineEnd)==0)
-        {
+        {   /* reflection that have type name */
             cxuint argNo = cstrtovCStyle<cxuint>(linePtr+12, lineEnd, outEnd);
             if (argNo >= config.args.size())
                 throw Exception("ArgNo out of range");
@@ -819,7 +819,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     }
     
     if (argSamplers != 0 && !config.samplers.empty())
-    {
+    {   // get sampler's values
         for (cxuint k = argSamplers; k < config.samplers.size(); k++)
             config.samplers[k-argSamplers] = config.samplers[k];
         config.samplers.resize(config.samplers.size()-argSamplers);
@@ -851,10 +851,10 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                 break;
             case CALNOTE_ATI_CONSTANT_BUFFERS:
                 if (driverVersion < 112402)
-                {
+                {   // older drivers holds info about constant buffer in that CALNote
                     const CALConstantBufferMask* cbMask =
                             reinterpret_cast<const CALConstantBufferMask*>(cnData);
-                    cxuint entriesNum = cnHdr.descSize/sizeof(CALConstantBufferMask);
+                    const cxuint entriesNum = cnHdr.descSize/sizeof(CALConstantBufferMask);
                     for (cxuint k = 0; k < entriesNum; k++)
                     {
                         if (argCbIds.find(ULEV(cbMask[k].index)) == argCbIds.end())
@@ -920,13 +920,13 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                         }
                         default:
                         {
-                            uint32_t addr = ULEV(piEntry[k].address);
-                            uint32_t val = ULEV(piEntry[k].value);
+                            const uint32_t addr = ULEV(piEntry[k].address);
+                            const uint32_t val = ULEV(piEntry[k].value);
                             if (addr >= 0x80001001 && addr < 0x80001041)
                             {
-                                cxuint elIndex = (addr-0x80001001)>>2;
+                                const cxuint elIndex = (addr-0x80001001)>>2;
                                 if (config.userDatas.size() <= elIndex)
-                                    continue;
+                                    continue; // ignore userdata beyond specified number
                                 switch (addr&3)
                                 {
                                     case 1:
@@ -944,8 +944,8 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
                                 }
                             }
                             if (addr >= 0x80001843 && addr < 0x80001863)
-                            {
-                                cxuint elIndex = (addr-0x80001843)<<2;
+                            {   // get uav mask from proginfo
+                                const cxuint elIndex = (addr-0x80001843)<<2;
                                 uavMask[elIndex] = val&0xff;
                                 uavMask[elIndex+1] = (val>>8)&0xff;
                                 uavMask[elIndex+2] = (val>>16)&0xff;
@@ -961,7 +961,7 @@ static AmdKernelConfig getAmdKernelConfig(size_t metadataSize, const char* metad
     // check if argument is unused
     cxuint k = 0;
     for (AmdKernelArgInput& arg: config.args)
-    {
+    {   /* apply used flag for argument */
         if (arg.argType == KernelArgType::POINTER &&
             (arg.ptrSpace == KernelPtrSpace::GLOBAL ||
              (arg.ptrSpace == KernelPtrSpace::CONSTANT && driverVersion >= 134805)) &&
@@ -1281,6 +1281,7 @@ static const char* kernelArgTypeNamesTbl[] =
     "sampler", "structure", "counter32", "counter64", "pipe", "queue", "clkevent"
 };
 
+/* function to print kernel argument (used by DisasmAmd and DisasmAmdCL2 */
 void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, bool cl20)
 {
     size_t bufSize;
@@ -1316,7 +1317,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
         }
         if (isImage || ((!cl20 && arg.argType == KernelArgType::COUNTER32) ||
             (cl20 && arg.argType == KernelArgType::SAMPLER)))
-        {
+        {   // print resource id: only for images counters and for samplers (if CL2.0)
             bufSize = snprintf(buf, 100, ", %u", arg.resId);
             output.write(buf, bufSize);
         }
@@ -1331,6 +1332,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
             bufSize = snprintf(buf, 100, ", %u", arg.structSize);
             output.write(buf, bufSize);
         }
+        // print pointer space
         if (arg.ptrSpace == KernelPtrSpace::CONSTANT)
             output.write(", constant", 10);
         else if (arg.ptrSpace == KernelPtrSpace::LOCAL)
@@ -1338,7 +1340,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
         else if (arg.ptrSpace == KernelPtrSpace::GLOBAL)
             output.write(", global", 8);
         if ((arg.ptrAccess & (KARG_PTR_CONST|KARG_PTR_VOLATILE|KARG_PTR_RESTRICT))!=0)
-        {
+        {   // pointer access
             bufSize = snprintf(buf, 100, ",%s%s%s",
                      ((arg.ptrAccess & KARG_PTR_CONST) ? " const" : ""),
                      ((arg.ptrAccess & KARG_PTR_RESTRICT) ? " restrict" : ""),
@@ -1360,6 +1362,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
     }
     if (!arg.used)
         output.write(", unused\n", 9);
+    // further flags for OpenCL 2.0 binary format
     else if (cl20 && arg.used==AMDCL2_ARGUSED_READ)
         output.write(", rdonly\n", 9);
     else if (cl20 && arg.used==AMDCL2_ARGUSED_WRITE)
