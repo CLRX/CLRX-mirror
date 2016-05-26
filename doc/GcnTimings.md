@@ -43,82 +43,17 @@ EXEC, VCC adds single penalty (4 cycles)
 
 ### SOP2 Instruction timings
 
- Instruction      | Delay  | Throughput
-------------------|--------|-------------
- S_ABSDIFF_I32    | 4      | 1
- S_ADDC_U32       | 4      | 1
- S_ADD_I32        | 4      | 1
- S_ADD_U32        | 4      | 1
- S_ANDN2_B32      | 4      | 1
- S_ANDN2_B64      | 4      | 1
- S_AND_B32        | 4      | 1
- S_AND_B64        | 4      | 1
- S_ASHR_I32       | 4      | 1
- S_ASHR_I64       | 4      | 1
- S_BFE_I32        | 4      | 1
- S_BFE_I64        | 4      | 1
- S_BFE_U32        | 4      | 1
- S_BFE_U64        | 4      | 1
- S_BFM_B32        | 4      | 1
- S_BFM_B64        | 4      | 1
- S_CBRANCH_G_FORK |        |
- S_CSELECT_B32    | 4      | 1
- S_CSELECT_B64    | 4      | 1
- S_LSHL_B32       | 4      | 1
- S_LSHL_B64       | 4      | 1
- S_LSHR_B32       | 4      | 1
- S_LSHR_B64       | 4      | 1
- S_MAX_I32        | 4      | 1
- S_MAX_U32        | 4      | 1
- S_MIN_I32        | 4      | 1
- S_MIN_U32        | 4      | 1
- S_MUL_I32        | 4      | 1
- S_NAND_B32       | 4      | 1
- S_NAND_B64       | 4      | 1
- S_NOR_B32        | 4      | 1
- S_NOR_B64        | 4      | 1
- S_ORN2_B32       | 4      | 1
- S_ORN2_B64       | 4      | 1
- S_OR_B32         | 4      | 1
- S_OR_B64         | 4      | 1
- S_SUBB_U32       | 4      | 1
- S_SUB_I32        | 4      | 1
- S_SUB_U32        | 4      | 1
- S_XNOR_B32       | 4      | 1
- S_XNOR_B64       | 4      | 1
- S_XOR_B32        | 4      | 1
- S_XOR_B64        | 4      | 1
+All SOP2 instructions (S_CBRANCH_G_FORK not checked) takes 4 cycles and can be executed in
+1 cycle throughput.
 
 ### SOPK Instruction timings
 
- Instruction       | Delay  | Throughput
--------------------|--------|-------------
- S_ADDK_I32        | 4      | 1
- S_CBRANCH_I_FORK  |        |
- S_CMOVK_I32       | 4      | 1
- S_CMPK_EQ_I32     | 4      | 1
- S_CMPK_EQ_U32     | 4      | 1
- S_CMPK_GE_I32     | 4      | 1
- S_CMPK_GE_U32     | 4      | 1
- S_CMPK_GT_I32     | 4      | 1
- S_CMPK_GT_U32     | 4      | 1
- S_CMPK_LE_I32     | 4      | 1
- S_CMPK_LE_U32     | 4      | 1
- S_CMPK_LG_I32     | 4      | 1
- S_CMPK_LG_U32     | 4      | 1
- S_CMPK_LT_I32     | 4      | 1
- S_CMPK_LT_U32     | 4      | 1
- S_GETREG_B32      |        |
- S_GETREG_REGRD_B32 |       |
- S_MOVK_I32        | 4      | 1
- S_MULK_I32        | 4      | 1
- S_SETREG_B32      |        |
- S_SETREG_IMM32_B32 |       |
-
+All SOPK instructions (S_CBRANCH_I_FORK, S_GETREG_B32, S_GETREG_REGRD_B32, S_SETREG_B32,
+S_SETREG_IMM32_B32 not checked) takes 4 cycles and can be executed in 1 cycle throughput.
  
 ### SOP1 Instruction timings
 
-The S_*_SAVEEXEC_B64 instructions takes 8 cycles. Other ALU instructions (expects
+The S_*_SAVEEXEC_B64 instructions takes 8 cycles. Other ALU instructions (except
 S_MOV_REGRD_B32, S_CBRANCH_JOIN, S_RFE_B64) take 4 cycles.
 
 ### SOPC Instruction timings
@@ -128,4 +63,3 @@ All comparison and bit checking instructions take 4 cycles.
 ### SOPP Instruction timings
 
 Jumps costs 4 (no jump) or 20 cycles (???) if jump will performed.
-
