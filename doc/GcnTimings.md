@@ -3,16 +3,36 @@
 ### Preliminary explanations
 
 The almost instructions are executed within 4 cycles (scalar and vector). Hence, to
-achieve maximum performance, 4 wavefront per compute units must be ran. 
+achieve maximum performance, 4 wavefront per compute units must be ran.
 
 NOTE: Simple single dword (4-byte) instruction is executed in 4 cycles (thanks fast
 dispatching from cache). However, 2 dword instruction can require 4 extra cycles
 to execution due to bigger size in memory and limits of instruction dispatching.
 To achieve best performance, we recommend to use single dword instructions.
 
-The 'Delay' column contains instruction's delays (how many cycles needed to execute
-instruction). The 'Throughput' contains instruction's throughputs (maximum number of
-instructions per cycle).
+### Occupancy table
+
+Waves | SGPRs | VGPRs | LdsW/I | Issue
+------|-------|-------|--------|---------
+1     | 128   | 256   | 64     | 1
+2     | 128   | 128   | 32     | 2
+3     | 128   | 84    | 21     | 3
+4     | 128   | 64    | 16     | 4
+5     | 96    | 48    | 12     | 5
+6     | 80    | 40    | 10     | 5
+7     | 72    | 36    | 9      | 5
+8     | 64    | 32    | 8      | 5
+9     | 56    | 28    | 7      | 5
+10    | 48    | 24    | 6      | 5
+
+Waves - number of concurrent waves that can be computed by single SIMD unit  
+SGPRs - number of maximum SGPRs that can be allocated that occupancy  
+VPGRs - number of maximum VGPRs that can be allocated that occupancy  
+LdsW/I - Maximum amount of LDS space per vector lane per wavefront in dwords  
+Issue - number of maximum instruction per clock that can be processed  
+
+Each compute unit partitioned into four SIMD units. So, maximum number of waves per
+compute unit is 40.
 
 ### Instruction alignment
 
@@ -34,8 +54,8 @@ does not apply to backward jumps (???)
 
 IMPORTANT: If occupancy is greater than 1 wave per compute unit, then penalties for
 instruction fetching, branches, and scalar instructions will be masked while executing
-more waves than 4*CUs. For best results is recommended to execute many waves
-(multiple of 4*CUs) with occupancy greater than 1.
+more waves than 4\*CUs. For best results is recommended to execute many waves
+(multiple of 4\*CUs) with occupancy greater than 1.
 
 ### Instruction scheduling
 
