@@ -1297,8 +1297,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
         asmr.printError(argTypePlace, "Unsupported counter64 type");
         good = false;
     }
-    if (pointer && ((argType >= KernelArgType::MIN_IMAGE &&
-            argType <= KernelArgType::MAX_IMAGE) ||
+    if (pointer && (isKernelArgImage(argType) ||
             argType == KernelArgType::SAMPLER || argType == KernelArgType::POINTER ||
             argType == KernelArgType::COUNTER32 || argType == KernelArgType::COUNTER64))
     {
@@ -1439,8 +1438,7 @@ bool AsmAmdPseudoOps::parseArg(Assembler& asmr, const char* pseudoOpPlace,
                 haveLastArgument = havePrevArgument;
         }
     }
-    else if (!pointer && argType >= KernelArgType::MIN_IMAGE &&
-             argType <= KernelArgType::MAX_IMAGE)
+    else if (!pointer && isKernelArgImage(argType))
     {
         ptrSpace = KernelPtrSpace::GLOBAL;
         ptrAccess = KARG_PTR_READ_ONLY;

@@ -1301,8 +1301,7 @@ void CLRX::dumpAmdKernelArg(std::ostream& output, const AmdKernelArgInput& arg, 
             output.write(buf, bufSize);
         }
         bool isImage = false;
-        if (arg.argType >= KernelArgType::MIN_IMAGE &&
-            arg.argType <= KernelArgType::MAX_IMAGE)
+        if (isKernelArgImage(arg.argType))
         {   // images
             isImage = true;
             cxbyte access = arg.ptrAccess & KARG_PTR_ACCESS_MASK;

@@ -367,8 +367,7 @@ static AmdCL2KernelConfig genKernelConfig(size_t metadataSize, const cxbyte* met
             
             if (arg.argType == KernelArgType::STRUCTURE)
                 arg.structSize = ULEV(argPtr->structSize);
-            else if ((arg.argType >= KernelArgType::MIN_IMAGE &&
-                      arg.argType <= KernelArgType::MAX_IMAGE) ||
+            else if (isKernelArgImage(arg.argType) ||
                      arg.argType == KernelArgType::SAMPLER)
                 arg.resId = LEV(argPtr->resId);
         }

@@ -347,8 +347,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                         samplerMask.set(inarg.resId);
                         tempData.argResIds[k] = inarg.resId;
                     }
-                    else if (inarg.argType >= KernelArgType::MIN_IMAGE &&
-                        inarg.argType <= KernelArgType::MAX_IMAGE)
+                    else if (isKernelArgImage(inarg.argType))
                     {
                         uint32_t imgAccess = inarg.ptrAccess & KARG_PTR_ACCESS_MASK;
                         if (imgAccess == KARG_PTR_READ_ONLY)
@@ -400,8 +399,7 @@ static void prepareKernelTempData(const AmdCL2Input* input,
                             throw Exception("SamplerId out of range!");
                         tempData.argResIds[k] = samplerCount++;
                     }
-                    else if (inarg.argType >= KernelArgType::MIN_IMAGE &&
-                        inarg.argType <= KernelArgType::MAX_IMAGE)
+                    else if (isKernelArgImage(inarg.argType))
                     {
                         uint32_t imgAccess = inarg.ptrAccess & KARG_PTR_ACCESS_MASK;
                         if (imgAccess == KARG_PTR_READ_ONLY)
@@ -771,8 +769,7 @@ public:
             argEntry.unknown1 = 0;
             argEntry.unknown2 = 0;
             
-            bool isImage = (arg.argType >= KernelArgType::MIN_IMAGE &&
-                 arg.argType <= KernelArgType::MAX_IMAGE);
+            const bool isImage = isKernelArgImage(arg.argType);
             
             const ArgTypeSizes& argTypeSizes = argTypeSizesTable[cxuint(arg.argType)];
             cxuint vectorLength = argTypeSizes.vectorSize;
@@ -1028,9 +1025,7 @@ static void generateKernelSetup(GPUArchitecture arch, const AmdCL2KernelConfig& 
             arg.argType == KernelArgType::CLKEVENT ||
             arg.argType == KernelArgType::STRUCTURE ||
             arg.argType == KernelArgType::CMDQUEUE ||
-            arg.argType == KernelArgType::SAMPLER ||
-            (arg.argType >= KernelArgType::MIN_IMAGE &&
-             arg.argType <= KernelArgType::MAX_IMAGE))
+            arg.argType == KernelArgType::SAMPLER || isKernelArgImage(arg.argType))
         {
             if ((kernelArgSize&7)!=0)    // alignment
                 kernelArgSize += 8-(kernelArgSize&7);

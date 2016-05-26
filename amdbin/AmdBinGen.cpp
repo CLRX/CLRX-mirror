@@ -685,8 +685,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     arg.ptrSpace == KernelPtrSpace::NONE)
                     throw Exception("Wrong pointer space type");
             }
-            else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                arg.argType <= KernelArgType::MAX_IMAGE)
+            else if (isKernelArgImage(arg.argType))
             {
                 if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == 0)
                     throw Exception("Invalid access qualifier for image");
@@ -811,8 +810,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                 cbIdMask.set(arg.resId);
                 tempConfig.argResIds[k] = arg.resId;
             }
-            else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId != BINGEN_DEFAULT)
+            else if (isKernelArgImage(arg.argType) && arg.resId != BINGEN_DEFAULT)
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
@@ -871,8 +869,7 @@ static void prepareTempConfigs(cxuint driverVersion, const AmdInput* input,
                     throw Exception("CbId out of range!");
                 tempConfig.argResIds[k] = cbIdsCount++;
             }
-            else if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                     arg.argType <= KernelArgType::MAX_IMAGE && arg.resId == BINGEN_DEFAULT)
+            else if (isKernelArgImage(arg.argType) && arg.resId == BINGEN_DEFAULT)
             {   // images
                 if (arg.ptrAccess & KARG_PTR_READ_ONLY)
                 {
@@ -1024,8 +1021,7 @@ static std::string generateMetadata(cxuint driverVersion, const AmdInput* input,
             metadata += '\n';
             argOffset += 16;
         }
-        else if ((arg.argType >= KernelArgType::MIN_IMAGE) &&
-            (arg.argType <= KernelArgType::MAX_IMAGE))
+        else if (isKernelArgImage(arg.argType))
         {
             metadata += ";image:";
             metadata += arg.argName.c_str();
@@ -1198,8 +1194,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
     cxuint woUsedImagesMask = 0;
     for (const AmdKernelArgInput& arg: config.args)
     {
-        if (arg.argType >= KernelArgType::MIN_IMAGE &&
-            arg.argType <= KernelArgType::MAX_IMAGE)
+        if (isKernelArgImage(arg.argType))
         {
             if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
                 readOnlyImages++;
@@ -1240,8 +1235,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
-            if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                arg.argType <= KernelArgType::MAX_IMAGE &&
+            if (isKernelArgImage(arg.argType) &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                 /* writeOnlyImages */
                 putCALUavEntryLE(bos, tempConfig.argResIds[k], 2, imgUavDimTable[
@@ -1263,8 +1257,7 @@ static void generateCALNotes(FastOutputBuffer& bos, const AmdInput* input,
         for (cxuint k = 0; k < config.args.size(); k++)
         {
             const AmdKernelArgInput& arg = config.args[k];
-            if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                arg.argType <= KernelArgType::MAX_IMAGE &&
+            if (isKernelArgImage(arg.argType) &&
                 (arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_WRITE_ONLY)
                 // write_only images
                 putCALUavEntryLE(bos, tempConfig.argResIds[k], 2, 2, 5);
@@ -1591,8 +1584,7 @@ void AmdGPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<char>
                     (input->globalData != nullptr));
             for (const AmdKernelArgInput& arg: config.args)
             {
-                if (arg.argType >= KernelArgType::MIN_IMAGE &&
-                    arg.argType <= KernelArgType::MAX_IMAGE)
+                if (isKernelArgImage(arg.argType))
                 {
                     if ((arg.ptrAccess & KARG_PTR_ACCESS_MASK) == KARG_PTR_READ_ONLY)
                         readOnlyImages++;

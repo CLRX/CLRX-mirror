@@ -86,6 +86,14 @@ enum class KernelArgType : cxbyte
     MAX_IMAGE = IMAGE3D
 };
 
+/// return true if argType is image
+inline bool isKernelArgImage(KernelArgType argType);
+
+inline bool isKernelArgImage(KernelArgType argType)
+{
+    return argType>=KernelArgType::MIN_IMAGE && argType<=KernelArgType::MAX_IMAGE;
+}
+
 /// kernel pointer type of argument
 enum class KernelPtrSpace : cxbyte
 {
