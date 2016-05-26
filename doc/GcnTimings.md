@@ -16,7 +16,7 @@ instructions per cycle).
 
 ### Instruction alignment
 
-Aligmnent Rules for 2-dword instructions (GCN 1.0):
+Aligmnent Rules for 2-dword instructions (GCN 1.0/1.1):
 
 * any penalty costs 4 cycles
 * program divided by in 32-byte blocks
@@ -31,6 +31,11 @@ does not apply to backward jumps (???)
 * any conditional jump instruction should be in first half of 32-byte block, otherwise
 1-4 penalties will be added if jump was not taken, depending on number of dword
 (N-3, where N is number of dword).
+
+IMPORTANT: If occupancy is greater than 1 wave per compute unit, then penalties for
+instruction fetching, branches, and scalar instructions will be masked while executing
+more waves than 4*CUs. For best results is recommended to execute many waves
+(multiple of 4*CUs) with occupancy greater than 1.
 
 ### Instruction scheduling
 
