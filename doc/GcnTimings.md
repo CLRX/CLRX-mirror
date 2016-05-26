@@ -43,13 +43,12 @@ EXEC, VCC adds single penalty (4 cycles)
 
 ### SOP2 Instruction timings
 
-All SOP2 instructions (S_CBRANCH_G_FORK not checked) takes 4 cycles and can be executed in
-1 cycle throughput.
+All SOP2 instructions (S_CBRANCH_G_FORK not checked) takes 4 cycles.
 
 ### SOPK Instruction timings
 
-All SOPK instructions (S_CBRANCH_I_FORK, S_GETREG_B32, S_GETREG_REGRD_B32, S_SETREG_B32,
-S_SETREG_IMM32_B32 not checked) takes 4 cycles and can be executed in 1 cycle throughput.
+All SOPK instructions (S_CBRANCH_I_FORK  not checked) takes 4 cycles.
+S_SETREG_B32 and S_SETREG_IMM32_B32 takes 8 cycles.
  
 ### SOP1 Instruction timings
 
