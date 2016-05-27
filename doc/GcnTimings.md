@@ -52,19 +52,19 @@ does not apply to backward jumps (???)
 1-4 penalties will be added if jump was not taken, depending on number of dword
 (N-3, where N is number of dword).
 
-IMPORTANT: If occupancy is greater than 1 wave per compute unit, then penalties for
-instruction fetching, branches, and scalar instructions will be masked while executing
+IMPORTANT: If occupancy is greater than 1 wave per compute unit, then penalties,
+branches, and scalar instructions will be masked while executing
 more waves than 4\*CUs. For best results is recommended to execute many waves
 (multiple of 4\*CUs) with occupancy greater than 1.
 
 ### Instruction scheduling
 
 * between any integer V_ADD\*, V_SUB\*, V_FIRSTREADLINE_B32, V_READLANE_B32 operation
-and any scalar ALU instruction is 16-cycle delay.
+and any scalar ALU instruction is 16-cycle delay. Masked if more waves than 4*CUs
 * any conditional jump directly that checks VCCZ or EXECZ after instruction that changes
-VCC or EXEC adds single penalty (4 cycles)
+VCC or EXEC adds single penalty (4 cycles). Masked if more waves than 4*CUs
 * any conditional jump directly that checks SCC after instruction that changes SCC,
-EXEC, VCC adds single penalty (4 cycles)
+EXEC, VCC adds single penalty (4 cycles). Masked if more waves than 4*CUs
 
 ### SOP2 Instruction timings
 

@@ -372,7 +372,7 @@ bool CLRX::isDirectory(const char* path)
 {
     struct stat stBuf;
     errno = 0;
-    if (stat(path, &stBuf) != 0)
+    if (::stat(path, &stBuf) != 0)
     {
         if (errno == ENOENT)
             throw Exception("File or directory doesn't exists");
@@ -480,7 +480,7 @@ uint64_t CLRX::getFileTimestamp(const char* filename)
 {
     struct stat stBuf;
     errno = 0;
-    if (stat(filename, &stBuf) != 0)
+    if (::stat(filename, &stBuf) != 0)
     {
         if (errno == ENOENT)
             throw Exception("File or directory doesn't exists");
