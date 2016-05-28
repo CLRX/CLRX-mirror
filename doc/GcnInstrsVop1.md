@@ -847,7 +847,7 @@ Description: Introduce edc double error upon write to dest vgpr without causing 
 
 Opcode VOP1: 66 (0x42) for GCN 1.0/1.1; 54 (0x34) for GCN 1.2  
 Opcode VOP3A: 450 (0x1c2) for GCN 1.0/1.1; 374 (0x174) for GCN 1.2  
-Syntax: V_MOVRELD VDST, VSRC0  
+Syntax: V_MOVRELD_B32 VDST, VSRC0  
 Description: Move SRC0 to VGPR[VDST_NUMBER+M0].  
 Operation:  
 ```
@@ -858,7 +858,7 @@ VGPR[VDST_NUMBER+M0] = SRC0
 
 Opcode VOP1: 67 (0x43) for GCN 1.0/1.1; 55 (0x35) for GCN 1.2  
 Opcode VOP3A: 451 (0x1c3) for GCN 1.0/1.1; 375 (0x175) for GCN 1.2  
-Syntax: V_MOVRELS VDST, VSRC0  
+Syntax: V_MOVRELS_B32 VDST, VSRC0  
 Description: Move SRC0[SRC0_NUMBER+M0] to VDST.  
 Operation:  
 ```
@@ -869,7 +869,7 @@ VDST = VGPR[SRC0_NUMBER+M0]
 
 Opcode VOP1: 68 (0x44) for GCN 1.0/1.1; 56 (0x36) for GCN 1.2  
 Opcode VOP3A: 452 (0x1c4) for GCN 1.0/1.1; 376 (0x176) for GCN 1.2  
-Syntax: V_MOVRELSD VDST, VSRC0  
+Syntax: V_MOVRELSD_B32 VDST, VSRC0  
 Description: Move SRC0[SRC0_NUMBER+M0] to VGPR[VDST_NUMBER+M0].  
 Operation:  
 ```

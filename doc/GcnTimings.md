@@ -10,6 +10,17 @@ dispatching from cache). However, 2 dword instruction can require 4 extra cycles
 to execution due to bigger size in memory and limits of instruction dispatching.
 To achieve best performance, we recommend to use single dword instructions.
 
+In some tables present DPFACTOR term. This term indicates that number of cycles depends
+on the model of GPU as follows:
+
+ DPFACTOR     | DP speed | GPU subfamily
+--------------|----------|----------------------------
+ 1            | 1/2      | professional Hawaii
+ 2            | 1/4      | Highend Tahiti: Radeon HD7970
+ 4            | 1/8      | Highend Hawaii: R9 290
+ 8            | 1/16     | Other GPU's
+ 
+
 ### Occupancy table
 
 Waves | SGPRs | VGPRs | LdsW/I | Issue
@@ -87,3 +98,76 @@ All comparison and bit checking instructions take 4 cycles.
 ### SOPP Instruction timings
 
 Jumps costs 4 (no jump) or 20 cycles (???) if jump will performed.
+
+### VOP1 Instruction timings
+
+Almost instructions takes 4 cycles except:
+
+ Instruction           | Cycles
+-----------------------|---------------
+ V_BFREV_B32           | 4
+ V_CEIL_F32            | 4
+ V_CEIL_F64            | DPFACTOR*4
+ V_CLREXCP             | 4
+ V_COS_F32             | 16
+ V_CVT_F16_F32         | 4
+ V_CVT_F32_F16         | 4
+ V_CVT_F32_F64         | DPFACTOR*4
+ V_CVT_F32_I32         | 4
+ V_CVT_F32_U32         | 4
+ V_CVT_F32_UBYTE0      | 4
+ V_CVT_F32_UBYTE1      | 4
+ V_CVT_F32_UBYTE2      | 4
+ V_CVT_F32_UBYTE3      | 4
+ V_CVT_F64_F32         | DPFACTOR*4
+ V_CVT_F64_I32         | DPFACTOR*4
+ V_CVT_F64_U32         | DPFACTOR*4
+ V_CVT_FLR_I32_F32     | 4
+ V_CVT_I32_F32         | 4
+ V_CVT_I32_F64         | DPFACTOR*4
+ V_CVT_OFF_F32_I4      | 4
+ V_CVT_RPI_I32_F32     | 4
+ V_CVT_U32_F32         | 4
+ V_CVT_U32_F64         | DPFACTOR*4
+ V_EXP_F32             | 16
+ V_EXP_LEGACY_F32      | 16
+ V_FFBH_I32            | 4
+ V_FFBH_U32            | 4
+ V_FFBL_B32            | 4
+ V_FLOOR_F32           | 4
+ V_FLOOR_F64           | DPFACTOR*4
+ V_FRACT_F32           | 4
+ V_FRACT_F64           | DPFACTOR*4
+ V_FREXP_EXP_I32_F32   | 4
+ V_FREXP_EXP_I32_F64   | DPFACTOR*4
+ V_FREXP_MANT_F32      | 4
+ V_FREXP_MANT_F64      | DPFACTOR*4
+ V_LOG_CLAMP_F32       | 16
+ V_LOG_F32             | 16
+ V_LOG_LEGACY_F32      | 16
+ V_MOVRELD_B32         | 4
+ V_MOVRELSD_B32        | 4
+ V_MOVRELS_B32         | 4
+ V_MOV_B32             | 4
+ V_MOV_FED_B32         | 4
+ V_NOP                 | 4
+ V_NOT_B32             | 4
+ V_RCP_CLAMP_F32       | 16
+ V_RCP_CLAMP_F64       | DPFACTOR*8
+ V_RCP_F32             | 16
+ V_RCP_F64             | DPFACTOR*8
+ V_RCP_IFLAG_F32       | 16
+ V_RCP_LEGACY_F32      | 16
+ V_READFIRSTLANE_B32   | 4
+ V_RNDNE_F32           | 4
+ V_RNDNE_F64           | DPFACTOR*4
+ V_RSQ_CLAMP_F32       | 16
+ V_RSQ_CLAMP_F64       | DPFACTOR*8
+ V_RSQ_F32             | 16
+ V_RSQ_F64             | DPFACTOR*8
+ V_RSQ_LEGACY_F32      | 16
+ V_SIN_F32             | 16
+ V_SQRT_F32            | 16
+ V_SQRT_F64            | DPFACTOR*8
+ V_TRUNC_F32           | 4
+ V_TRUNC_F64           | DPFACTOR*4
