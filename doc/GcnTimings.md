@@ -99,6 +99,10 @@ All comparison and bit checking instructions take 4 cycles.
 
 Jumps costs 4 (no jump) or 20 cycles (???) if jump will performed.
 
+### VOP2 Instruction timings
+
+All VOP2 instructions takes 4 cycles.
+
 ### VOP1 Instruction timings
 
 Timings of VOP1 instructions is in this table:
@@ -139,7 +143,8 @@ Timings of VOP1 instructions is in this table:
  V_FRACT_F32           | 4             | V_TRUNC_F32           | 4
  V_FRACT_F64           | DPFACTOR*4    | V_TRUNC_F64           | DPFACTOR*4
 
-### VOP2 Instruction timings
+### VOPC Instruction timings
 
-All VOP2 instructions takes 4 cycles.
+All 32-bit comparison instructions takes 4 cycles. All 64-bit comparison instructions takes
+DPFACTOR*4 cycles.
 
