@@ -85,7 +85,7 @@ All SOP2 instructions (S_CBRANCH_G_FORK not checked) takes 4 cycles.
 
 All SOPK instructions (S_CBRANCH_I_FORK  not checked) takes 4 cycles.
 S_SETREG_B32 and S_SETREG_IMM32_B32 takes 8 cycles.
- 
+
 ### SOP1 Instruction timings
 
 The S_*_SAVEEXEC_B64 instructions takes 8 cycles. Other ALU instructions (except
@@ -98,6 +98,21 @@ All comparison and bit checking instructions takes 4 cycles.
 ### SOPP Instruction timings
 
 Jumps costs 4 (no jump) or 20 cycles (???) if jump will performed.
+
+### SMRD Instruction timings
+
+Timings of SMRD instructions includes only time to fetch and execute instruction without
+loading data from memory. Timings of SMRD instructions are in this table:
+
+ Instruction           | Cycles        | Instruction           | Cycles
+-----------------------|---------------|-----------------------|---------------
+ S_BUFFER_LOAD_DWORD   | 4             | S_LOAD_DWORD          | 4
+ S_BUFFER_LOAD_DWORDX2 | 4             | S_LOAD_DWORDX2        | 4
+ S_BUFFER_LOAD_DWORDX4 | 4             | S_LOAD_DWORDX4        | 4
+ S_BUFFER_LOAD_DWORDX8 | 8             | S_LOAD_DWORDX8        | 8
+ S_BUFFER_LOAD_DWORDX16 | 16-24        | S_LOAD_DWORDX16       | 16-24
+ S_DCACHE_INV          | 4             | S_MEMTIME             | 4
+ S_DCACHE_INV_VOL      | 4             |
 
 ### VOP2 Instruction timings
 
