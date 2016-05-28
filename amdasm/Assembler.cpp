@@ -62,6 +62,43 @@ const cxbyte CLRX::tokenCharTable[96] =
     0x90, 0x90, 0x90, 0x97, 0x18, 0x99, 0x1a, 0x1b
 };
 
+void CLRX::skipSpacesAndLabels(const char*& linePtr, const char* end)
+{
+    const char* stmtStart;
+    while (true)
+    {
+        skipSpacesToEnd(linePtr, end);
+        stmtStart = linePtr;
+        // skip labels and macro substitutions
+        while (linePtr!=end && (isAlnum(*linePtr) || *linePtr=='$' || *linePtr=='.' ||
+            *linePtr=='_' || *linePtr=='\\'))
+        {
+            if (*linePtr!='\\')
+                linePtr++;
+            else
+            {   /* handle \@ and \() for correct parsing */
+                linePtr++;
+                if (linePtr!=end)
+                {
+                    if (*linePtr=='@')
+                        linePtr++;
+                    if (*linePtr=='(')
+                    {
+                        linePtr++;
+                        if (linePtr!=end && *linePtr==')')
+                            linePtr++;
+                    }
+                }
+            }
+        }
+        skipSpacesToEnd(linePtr, end);
+        if (linePtr==end || *linePtr!=':')
+            break;
+        linePtr++; // skip ':'
+    }
+    linePtr = stmtStart;
+}
+
 bool AsmParseUtils::checkGarbagesAtEnd(Assembler& asmr, const char* linePtr)
 {
     skipSpacesToEnd(linePtr, asmr.line + asmr.lineSize);

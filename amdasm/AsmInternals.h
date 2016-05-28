@@ -40,16 +40,16 @@ static inline void skipCharAndSpacesToEnd(const char*& string, const char* end)
 static inline void skipSpacesToEnd(const char*& string, const char* end)
 { while (string!=end && *string == ' ') string++; }
 
-static inline void skipSymName(const char*& string, const char* end,
-           bool localLabelSymName, bool withBackSlash = false)
+// extract sybol name or argument name or other identifier
+static inline CString extractSymName(const char*& string, const char* end,
+           bool localLabelSymName)
 {
     const char* startString = string;
     if (string != end)
     {
         if(isAlpha(*string) || *string == '_' || *string == '.' || *string == '$')
             for (string++; string != end && (isAlnum(*string) || *string == '_' ||
-                 *string == '.' || *string == '$' || (*string=='\\' && withBackSlash)) ;
-                 string++);
+                 *string == '.' || *string == '$') ; string++);
         else if (localLabelSymName && isDigit(*string)) // local label
         {
             for (string++; string!=end && isDigit(*string); string++);
@@ -61,14 +61,6 @@ static inline void skipSymName(const char*& string, const char* end,
                 string = startString;
         }
     }
-}
-
-// extract sybol name or argument name or other identifier
-static inline CString extractSymName(const char*& string, const char* end,
-           bool localLabelSymName)
-{
-    const char* startString = string;
-    skipSymName(string, end, localLabelSymName);
     return CString(startString, string);
 }
 
@@ -83,14 +75,7 @@ static inline CString extractLabelName(const char*& string, const char* end)
     return extractSymName(string, end, false);
 }
 
-static inline void skipLabelNameWithBackSlash(const char*& string, const char* end)
-{
-    if (string != end && isDigit(*string))
-        while (string != end && (isDigit(*string) || *string=='\\')) string++;
-    else
-        skipSymName(string, end, false, true);
-}
-
+void skipSpacesAndLabels(const char*& linePtr, const char* end);
 
 class Assembler;
 

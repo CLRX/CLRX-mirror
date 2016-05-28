@@ -3592,7 +3592,7 @@ loop:   .rept 10
     },
     {   R"ffDXD(.irpc x, "abc"
         .int 0xaaddd
-loop\x: .rept 3
+\x\()loop\x: .rept 3
         .int 0x10
         .endr
         .int 0xaaaa
@@ -3613,9 +3613,9 @@ loop\x: .rept 3
             } } },
         {
             { ".", 64U, 0, 0U, true, false, false, 0, 0 },
-            { "loopa", 4U, 0, 0U, true, true, false, 0, 0 },
-            { "loopb", 24U, 0, 0U, true, true, false, 0, 0 },
-            { "loopc", 44U, 0, 0U, true, true, false, 0, 0 }
+            { "aloopa", 4U, 0, 0U, true, true, false, 0, 0 },
+            { "bloopb", 24U, 0, 0U, true, true, false, 0, 0 },
+            { "cloopc", 44U, 0, 0U, true, true, false, 0, 0 }
         },
         true, "", ""
     }

@@ -2445,25 +2445,6 @@ void Assembler::parsePseudoOps(const CString& firstName,
     }
 }
 
-
-static void skipSpacesAndLabels(const char*& ptr, const char* end)
-{
-    skipSpacesToEnd(ptr, end);
-    const char* oldPtr = ptr;
-    skipLabelNameWithBackSlash(ptr, end);
-    bool noEmpty = oldPtr!=ptr;
-    skipSpacesToEnd(ptr, end);
-    while (noEmpty && ptr!=end && *ptr==':')
-    {
-        ptr++;
-        skipSpacesToEnd(ptr, end);
-        oldPtr = ptr;
-        skipLabelNameWithBackSlash(ptr, end);
-        noEmpty = oldPtr!=ptr;
-    }
-    ptr = oldPtr;
-}
-
 /* skipping clauses */
 bool Assembler::skipClauses(bool exitm)
 {

@@ -548,39 +548,8 @@ const char* AsmMacroInputFilter::readLine(Assembler& assembler, size_t& lineSize
     {   // try to parse local statement
         const char* linePtr = stmtStartPtr;
         const char* end = content+nextLinePos;
-        while (true)
-        {
-            skipSpacesToEnd(linePtr, end);
-            localStmtStart = linePtr;
-            // skip labels and macro substitutions
-            while (linePtr!=end && (isAlnum(*linePtr) || *linePtr=='$' || *linePtr=='.' ||
-                *linePtr=='_' || *linePtr=='\\'))
-            {
-                if (*linePtr!='\\')
-                    linePtr++;
-                else
-                {   /* handle \@ and \() for correct parsing */
-                    linePtr++;
-                    if (linePtr!=end)
-                    {
-                        if (*linePtr=='@')
-                            linePtr++;
-                        if (*linePtr=='(')
-                        {
-                            linePtr++;
-                            if (linePtr!=end && *linePtr==')')
-                                linePtr++;
-                        }
-                    }
-                }
-            }
-            skipSpacesToEnd(linePtr, end);
-            if (linePtr==end || *linePtr!=':')
-                break;
-            linePtr++; // skip ':'
-        }
-        // check 'local'
-        linePtr = localStmtStart;
+        skipSpacesAndLabels(linePtr, end);
+        localStmtStart = linePtr;
         if (linePtr+6 < end && ::strncasecmp(linePtr, "local", 5)==0 && linePtr[5]==' ')
         {   // if local
             linePtr+=5;
