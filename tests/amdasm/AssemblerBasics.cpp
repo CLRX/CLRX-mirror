@@ -3586,7 +3586,36 @@ loop:   .rept 10
             } } },
         {
             { ".", 52U, 0, 0U, true, false, false, 0, 0 },
-            { "loop", 4U, 0, 0U, true, true, false, 0, 0 },
+            { "loop", 4U, 0, 0U, true, true, false, 0, 0 }
+        },
+        true, "", ""
+    },
+    {   R"ffDXD(.irpc x, "abc"
+        .int 0xaaddd
+loop\x: .rept 3
+        .int 0x10
+        .endr
+        .int 0xaaaa
+
+        .endr            
+            .int 12343)ffDXD",
+        BinaryFormat::AMD, GPUDeviceType::CAPE_VERDE, false, { },
+        { { nullptr, ASMKERN_GLOBAL, AsmSectionType::DATA,
+            { 
+                0xdd, 0xad, 0x0a, 0x00, 0x10, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
+                0xaa, 0xaa, 0x00, 0x00, 0xdd, 0xad, 0x0a, 0x00,
+                0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00, 0xaa, 0xaa, 0x00, 0x00,
+                0xdd, 0xad, 0x0a, 0x00, 0x10, 0x00, 0x00, 0x00,
+                0x10, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00,
+                0xaa, 0xaa, 0x00, 0x00, 0x37, 0x30, 0x00, 0x00
+            } } },
+        {
+            { ".", 64U, 0, 0U, true, false, false, 0, 0 },
+            { "loopa", 4U, 0, 0U, true, true, false, 0, 0 },
+            { "loopb", 24U, 0, 0U, true, true, false, 0, 0 },
+            { "loopc", 44U, 0, 0U, true, true, false, 0, 0 }
         },
         true, "", ""
     }
