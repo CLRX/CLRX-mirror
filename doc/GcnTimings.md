@@ -171,7 +171,7 @@ Timings of VOP3 instructions are in this table:
  V_DIV_FMAS_F32        | 16            | V_MQSAD_U8            | 16
  V_DIV_FMAS_F64        | DPFACTOR*8    | V_MSAD_U8             | 4
  V_DIV_SCALE_F32       | 16            | V_MULLIT_F32          | 4
- V_DIV_SCALE_F64       | DPFACTOR*4    | V_MUL_F64             | DPFACTOR*4
+ V_DIV_SCALE_F64       | DPFACTOR*4    | V_MUL_F64             | DPFACTOR*8
  V_FMA_F32             | 16            | V_MUL_HI_I32          | 16
  V_FMA_F64             | DPFACTOR*8    | V_MUL_HI_U32          | 16
  V_LDEXP_F64           | DPFACTOR*4    | V_MUL_LO_I32          | 16
