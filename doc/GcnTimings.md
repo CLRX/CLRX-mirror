@@ -93,7 +93,7 @@ S_MOV_REGRD_B32, S_CBRANCH_JOIN, S_RFE_B64) take 4 cycles.
 
 ### SOPC Instruction timings
 
-All comparison and bit checking instructions take 4 cycles.
+All comparison and bit checking instructions takes 4 cycles.
 
 ### SOPP Instruction timings
 
@@ -105,7 +105,7 @@ All VOP2 instructions takes 4 cycles.
 
 ### VOP1 Instruction timings
 
-Timings of VOP1 instructions is in this table:
+Timings of VOP1 instructions are in this table:
 
  Instruction           | Cycles        | Instruction           | Cycles
 -----------------------|---------------|-----------------------|---------------
@@ -148,3 +148,38 @@ Timings of VOP1 instructions is in this table:
 All 32-bit comparison instructions takes 4 cycles. All 64-bit comparison instructions takes
 DPFACTOR*4 cycles.
 
+### VOP3 Instruction timings
+
+Timings of VOP3 instructions are in this table:
+
+ Instruction           | Cycles        | Instruction           | Cycles
+-----------------------|---------------|-----------------------|---------------
+ V_ADD_F64             | DPFACTOR*4    | V_MAD_U64_U32         | 16
+ V_ALIGNBIT_B32        | 4             | V_MAX3_F32            | 4
+ V_ALIGNBYTE_B32       | 4             | V_MAX3_I32            | 4
+ V_ASHR_I64            | DPFACTOR*4    | V_MAX3_U32            | 4
+ V_BFE_I32             | 4             | V_MAX_F64             | DPFACTOR*4
+ V_BFE_U32             | 4             | V_MED3_F32            | 4
+ V_BFI_B32             | 4             | V_MED3_I32            | 4
+ V_CUBEID_F32          | 4             | V_MED3_U32            | 4
+ V_CUBEMA_F32          | 4             | V_MIN3_F32            | 4
+ V_CUBESC_F32          | 4             | V_MIN3_I32            | 4
+ V_CUBETC_F32          | 4             | V_MIN3_U32            | 4
+ V_CVT_PK_U8_F32       | 4             | V_MIN_F64             | DPFACTOR*4
+ V_DIV_FIXUP_F32       | 16            | V_MQSAD_PK_U16_U8     | 16
+ V_DIV_FIXUP_F64       | DPFACTOR*4    | V_MQSAD_U32_U8        | 16
+ V_DIV_FMAS_F32        | 16            | V_MQSAD_U8            | 16
+ V_DIV_FMAS_F64        | DPFACTOR*8    | V_MSAD_U8             | 4
+ V_DIV_SCALE_F32       | 16            | V_MULLIT_F32          | 4
+ V_DIV_SCALE_F64       | DPFACTOR*4    | V_MUL_F64             | DPFACTOR*4
+ V_FMA_F32             | 16            | V_MUL_HI_I32          | 16
+ V_FMA_F64             | DPFACTOR*8    | V_MUL_HI_U32          | 16
+ V_LDEXP_F64           | DPFACTOR*4    | V_MUL_LO_I32          | 16
+ V_LERP_U8             | 4             | V_MUL_LO_U32          | 16
+ V_LSHL_B64            | DPFACTOR*4    | V_QSAD_PK_U16_U8      | 16
+ V_LSHR_B64            | DPFACTOR*4    | V_QSAD_U8             | 16
+ V_MAD_F32             | 4             | V_SAD_HI_U8           | 4
+ V_MAD_I32_I24         | 4             | V_SAD_U16             | 4
+ V_MAD_I64_I32         | 16            | V_SAD_U32             | 4
+ V_MAD_LEGACY_F32      | 4             | V_SAD_U8              | 4
+ V_MAD_U32_U24         | 4             | V_TRIG_PREOP_F64      | DPFACTOR*8
