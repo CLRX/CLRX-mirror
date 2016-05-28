@@ -2700,7 +2700,6 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
         
         CString pseudoOpName = extractSymName(linePtr, end, false);
         toLowerString(pseudoOpName);
-        std::cout << "pseudoOp: " << pseudoOpName << std::endl;
         const size_t pseudoOp = binaryFind(macroRepeatPseudoOpNamesTbl,
                macroRepeatPseudoOpNamesTbl + sizeof(macroRepeatPseudoOpNamesTbl) /
                sizeof(char*), pseudoOpName.c_str()+1, CStringLess()) -
