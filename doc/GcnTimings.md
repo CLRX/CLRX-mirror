@@ -141,5 +141,5 @@ Timings of VOP1 instructions is in this table:
 
 ### VOP2 Instruction timings
 
-All VOP2 instruction takes 4 cycles.
+All VOP2 instructions takes 4 cycles.
 
