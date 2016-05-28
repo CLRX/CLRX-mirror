@@ -2445,6 +2445,25 @@ void Assembler::parsePseudoOps(const CString& firstName,
     }
 }
 
+
+static void skipSpacesAndLabels(const char*& ptr, const char* end)
+{
+    skipSpacesToEnd(ptr, end);
+    const char* oldPtr = ptr;
+    skipLabelName(ptr, end);
+    bool noEmpty = oldPtr!=ptr;
+    skipSpacesToEnd(ptr, end);
+    while (noEmpty && ptr!=end && *ptr==':')
+    {
+        ptr++;
+        skipSpacesToEnd(ptr, end);
+        oldPtr = ptr;
+        skipLabelName(ptr, end);
+        noEmpty = oldPtr!=ptr;
+    }
+    ptr = oldPtr;
+}
+
 /* skipping clauses */
 bool Assembler::skipClauses(bool exitm)
 {
@@ -2468,7 +2487,7 @@ bool Assembler::skipClauses(bool exitm)
         
         const char* linePtr = line;
         const char* end = line+lineSize;
-        skipSpacesToEnd(linePtr, end);
+        skipSpacesAndLabels(linePtr, end);
         const char* stmtPlace = linePtr;
         if (linePtr == end || *linePtr != '.')
             continue;
@@ -2607,7 +2626,7 @@ bool Assembler::putMacroContent(RefPtr<AsmMacro> macro)
         
         const char* linePtr = line;
         const char* end = line+lineSize;
-        skipSpacesToEnd(linePtr, end);
+        skipSpacesAndLabels(linePtr, end);
         const char* stmtPlace = linePtr;
         if (linePtr == end || *linePtr != '.')
         {
@@ -2669,7 +2688,7 @@ bool Assembler::putRepetitionContent(AsmRepeat& repeat)
         
         const char* linePtr = line;
         const char* end = line+lineSize;
-        skipSpacesToEnd(linePtr, end);
+        skipSpacesAndLabels(linePtr, end);
         const char* stmtPlace = linePtr;
         if (linePtr == end || *linePtr != '.')
         {
