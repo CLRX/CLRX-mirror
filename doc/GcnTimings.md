@@ -138,3 +138,8 @@ Timings of VOP1 instructions is in this table:
  V_FLOOR_F64           | DPFACTOR*4    | V_SQRT_F64            | DPFACTOR*8
  V_FRACT_F32           | 4             | V_TRUNC_F32           | 4
  V_FRACT_F64           | DPFACTOR*4    | V_TRUNC_F64           | DPFACTOR*4
+
+### VOP2 Instruction timings
+
+All VOP2 instruction takes 4 cycles.
+
