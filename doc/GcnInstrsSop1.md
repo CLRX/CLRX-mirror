@@ -629,8 +629,8 @@ PC = SSRC0
 Opcode: 9 (0x9) for GCN 1.0/1.1; 6 (0x6) for GCN 1.2  
 Syntax: S_WQM_B32 SDST, SSRC0  
 Description: For every 4-bit groups in SSRC0, if any bit of that group is set, then
-set all four bits for that group, otherwise zeroes all bits; and store that result into SDST.
-If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
+set all four bits for that group, otherwise zeroes all bits; and store that result into
+SDST. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.  
 Operation:  
 ```
 UINT32 temp = 0
@@ -645,8 +645,8 @@ SCC = SDST!=0
 Opcode: 10 (0xa) for GCN 1.0/1.1; 7 (0x7) for GCN 1.2  
 Syntax: S_WQM_B64 SDST(2), SSRC0(2)  
 Description: For every 4-bit groups in SSRC0, if any bit of that group is set, then
-set all four bits for that group, otherwise zeroes all bits; and store that result into SDST.
-If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
+set all four bits for that group, otherwise zeroes all bits; and store that result into
+SDST. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
 Operation:  
 ```

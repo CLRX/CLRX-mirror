@@ -513,8 +513,8 @@ Opcode VOP3A: 396 (0x18c) for GCN 1.0/1.1; 332 (0x14c) for GCN 1.2
 Syntax: V_CVT_RPI_I32_F32 VDST, SRC0  
 Description: Convert 32-bit floating point value from SRC0 to signed 32-bit integer, and
 store result to VDST. Conversion adds 0.5 to value and rounds negative infinity (floor).
-If value is higher/lower than maximal/minimal integer then store MAX_INT32/MIN_INT32 to VDST.
-If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.  
+If value is higher/lower than maximal/minimal integer then store MAX_INT32/MIN_INT32 to
+VDST. If input value is NaN/-NaN then store MAX_INT32/MIN_INT32 to VDST.  
 Operation:  
 ```
 FLOAT SF = ASFLOAT(SRC0)
@@ -790,8 +790,8 @@ else
 Opcode VOP1: 39 (0x27) for GCN 1.0/1.1; 33 (0x21) for GCN 1.2  
 Opcode VOP3A: 423 (0x1a7) for GCN 1.0/1.1; 353 (0x161) for GCN 1.2  
 Syntax: V_LOG_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
-to VDST. If SRC0 is negative then store -NaN to VDST.
+Description: Approximate logarithm of base 2 from floating point value SRC0, and store
+result to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.  
 Operation:  
 ```
@@ -809,8 +809,8 @@ else
 Opcode VOP1: 69 (0x45) for GCN 1.1; 76 (0x4c) for GCN 1.2  
 Opcode VOP3A: 453 (0x1c5) for GCN 1.1; 396 (0x18c) for GCN 1.2  
 Syntax: V_LOG_LEGACY_F32 VDST, SRC0  
-Description: Approximate logarithm of base 2 from floating point value SRC0, and store result
-to VDST. If SRC0 is negative then store -NaN to VDST.
+Description: Approximate logarithm of base 2 from floating point value SRC0, and store
+result to VDST. If SRC0 is negative then store -NaN to VDST.
 This instruction doesn't handle denormalized values regardless FLOAT MODE register setup.
 This instruction returns slightly different results than V_LOG_F32.  
 Operation:  
@@ -966,8 +966,8 @@ Opcode VOP1: 41 (0x29) for GCN 1.0/1.1
 Opcode VOP3A: 425 (0x1a9) for GCN 1.0/1.1  
 Syntax: V_RCP_LEGACY_F32 VDST, SRC0  
 Description: Approximate reciprocal from floating point value SRC0 and store it to VDST.
-Guaranted error below 1ulp. If SRC0 or VDST is zero or infinity then store 0 with proper sign
-to VDST.  
+Guaranted error below 1ulp. If SRC0 or VDST is zero or infinity then store 0 with proper
+sign to VDST.  
 Operation:  
 ```
 FLOAT SF = ASFLOAT(SRC0)

@@ -340,9 +340,9 @@ VDST = ((1U << (SRC0&31))-1) << (SRC1&31)
 
 Opcode: 324 (0x144) for GCN 1.0/1.1; 452 (0x1c4) for GCN 1.2  
 Syntax: V_CUBEID_F32 VDST, SRC0, SRC1, SRC2  
-Description: Cubemap face identification. Determine face by comparing three single FP values:
-SRC0 (X), SRC1 (Y), SRC2(Z). Choose highest absolute value and check whether is negative or
-positive. Store floating point value of face ID: (DIM*2.0)+(V[DIM]>=0?1:0),
+Description: Cubemap face identification. Determine face by comparing three single FP
+values: SRC0 (X), SRC1 (Y), SRC2(Z). Choose highest absolute value and check whether is
+negative or positive. Store floating point value of face ID: (DIM*2.0)+(V[DIM]>=0?1:0),
 where DIM is number of choosen dimension (X - 0, Y - 1, Z - 2);
 V - vector = [SRC0, SRC1, SRC2].  
 Operation:  
@@ -837,8 +837,8 @@ VDST = ASFLOAT(SRC0) * ASFLOAT(SRC1) + ASFLOAT(SRC2)
 
 Opcode: 322 (0x142) for GCN 1.0/1.1; 450 (0x1c2) for GCN 1.2  
 Syntax: V_MAD_I32_I24 VDST, SRC0, SRC1, SRC2  
-Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from SRC1,
-add SRC2 to this product, and and store result to VDST.  
+Description: Multiply 24-bit signed integer value from SRC0 by 24-bit signed value from
+SRC1, add SRC2 to this product, and and store result to VDST.  
 Operation:  
 ```
 INT32 V0 = (INT32)((SRC0&0x7fffff) | (SSRC0&0x800000 ? 0xff800000 : 0))
