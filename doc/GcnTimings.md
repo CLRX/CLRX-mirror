@@ -116,10 +116,14 @@ loading data from memory. Timings of SMRD instructions are in this table:
 
 ### VOP2 Instruction timings
 
-All VOP2 instructions takes 4 cycles.
+All VOP2 instructions takes 4 cycles. All instruction can achieve throughput 1 instruction
+per cycle.
 
 ### VOP1 Instruction timings
 
+Maximum throughput of these instruction can be calculated by using expression
+`(1/(CYCLES/4))` - for 4 cycles is 1 instruction per cycle, for 8 cycles is 1/2 instruction
+per cycle and etc.
 Timings of VOP1 instructions are in this table:
 
  Instruction           | Cycles        | Instruction           | Cycles
@@ -160,11 +164,17 @@ Timings of VOP1 instructions are in this table:
 
 ### VOPC Instruction timings
 
+Maximum throughput of these instruction can be calculated by using expression
+`(1/(CYCLES/4))` - for 4 cycles is 1 instruction per cycle, for 8 cycles is 1/2 instruction
+per cycle and etc.
 All 32-bit comparison instructions takes 4 cycles. All 64-bit comparison instructions takes
 DPFACTOR*4 cycles.
 
 ### VOP3 Instruction timings
 
+Maximum throughput of these instruction can be calculated by using expression
+`(1/(CYCLES/4))` - for 4 cycles is 1 instruction per cycle, for 8 cycles is 1/2 instruction
+per cycle and etc.
 Timings of VOP3 instructions are in this table:
 
  Instruction           | Cycles        | Instruction           | Cycles
@@ -204,75 +214,146 @@ Timings of VOP3 instructions are in this table:
 Timings of DS instructions includes only execution without waiting for completing
 LDS/GDS memory access on single wavefront. Timings of DS instructions are in this table:
 
- Instruction            | Cycles | Instruction            | Cycles 
-------------------------|--------|------------------------|---------
- DS_ADD_RTN_U32         | 8      | DS_MIN_SRC2_F32        | 4
- DS_ADD_RTN_U64         | 12     | DS_MIN_SRC2_F64        | 8
- DS_ADD_SRC2_U32        | 4      | DS_MIN_SRC2_I32        | 4
- DS_ADD_SRC2_U64        | 8      | DS_MIN_SRC2_I64        | 8
- DS_ADD_U32             | 8      | DS_MIN_SRC2_U32        | 4
- DS_ADD_U64             | 12     | DS_MIN_SRC2_U64        | 8
- DS_AND_B32             | 8      | DS_MIN_U32             | 8
- DS_AND_B64             | 12     | DS_MIN_U64             | 12
- DS_AND_RTN_B32         | 8      | DS_MSKOR_B32           | 12
- DS_AND_RTN_B64         | 12     | DS_MSKOR_B64           | 20
- DS_AND_SRC2_B32        | 4      | DS_MSKOR_RTN_B32       | 12
- DS_AND_SRC2_B64        | 8      | DS_MSKOR_RTN_B64       | 20
- DS_APPEND              | 4      | DS_NOP                 | 4
- DS_CMPST_B32           | 12     | DS_ORDERED_COUNT (???) | ?
- DS_CMPST_B64           | 20     | DS_OR_B32              | 8
- DS_CMPST_F32           | 12     | DS_OR_B64              | 12
- DS_CMPST_F64           | 20     | DS_OR_RTN_B32          | 8
- DS_CMPST_RTN_B32       | 12     | DS_OR_RTN_B64          | 12
- DS_CMPST_RTN_B64       | 20     | DS_OR_SRC2_B32         | 4
- DS_CMPST_RTN_F32       | 12     | DS_OR_SRC2_B64         | 8
- DS_CMPST_RTN_F64       | 20     | DS_READ2ST64_B32       | 8
- DS_CONDXCHG32_RTN_B128 | ?      | DS_READ2ST64_B64       | 16
- DS_CONDXCHG32_RTN_B64  | ?      | DS_READ2_B32           | 8
- DS_CONSUME             | 4      | DS_READ2_B64           | 16
- DS_DEC_RTN_U32         | 8      | DS_READ_B128           | 16
- DS_DEC_RTN_U64         | 12     | DS_READ_B32            | 4
- DS_DEC_SRC2_U32        | 4      | DS_READ_B64            | 8
- DS_DEC_SRC2_U64        | 8      | DS_READ_B96            | 16
- DS_DEC_U32             | 8      | DS_READ_I16            | 4
- DS_DEC_U64             | 12     | DS_READ_I8             | 4
- DS_GWS_BARRIER         | ?      | DS_READ_U16            | 4
- DS_GWS_INIT            | ?      | DS_READ_U8             | 4
- DS_GWS_SEMA_BR         | ?      | DS_RSUB_RTN_U32        | 8
- DS_GWS_SEMA_P          | ?      | DS_RSUB_RTN_U64        | 12
- DS_GWS_SEMA_RELEASE_ALL| ?      | DS_RSUB_SRC2_U32       | 4
- DS_GWS_SEMA_V          | ?      | DS_RSUB_SRC2_U64       | 8
- DS_INC_RTN_U32         | 8      | DS_RSUB_U32            | 8
- DS_INC_RTN_U64         | 12     | DS_RSUB_U64            | 12
- DS_INC_SRC2_U32        | 4      | DS_SUB_RTN_U32         | 8
- DS_INC_SRC2_U64        | 8      | DS_SUB_RTN_U64         | 12
- DS_INC_U32             | 8      | DS_SUB_SRC2_U32        | 4
- DS_INC_U64             | 12     | DS_SUB_SRC2_U64        | 8
- DS_MAX_F32             | 8      | DS_SUB_U32             | 8
- DS_MAX_F64             | 12     | DS_SUB_U64             | 12
- DS_MAX_I32             | 8      | DS_SWIZZLE_B32         | 4
- DS_MAX_I64             | 12     | DS_WRAP_RTN_B32        | ?
- DS_MAX_RTN_F32         | 8      | DS_WRITE2ST64_B32      | 12
- DS_MAX_RTN_F64         | 12     | DS_WRITE2ST64_B64      | 20
- DS_MAX_RTN_I32         | 8      | DS_WRITE2_B32          | 12
- DS_MAX_RTN_I64         | 12     | DS_WRITE2_B64          | 20
- DS_MAX_RTN_U32         | 8      | DS_WRITE_B128          | 20
- DS_MAX_RTN_U64         | 12     | DS_WRITE_B16           | 8
- DS_MAX_SRC2_F32        | 4      | DS_WRITE_B32           | 8
- DS_MAX_SRC2_F64        | 8      | DS_WRITE_B64           | 12
- DS_MAX_SRC2_I32        | 4      | DS_WRITE_B8            | 8
- DS_MAX_SRC2_I64        | 8      | DS_WRITE_B96           | 16
- DS_MAX_SRC2_U32        | 4      | DS_WRITE_SRC2_B32      | 12
- DS_MAX_SRC2_U64        | 8      | DS_WRITE_SRC2_B64      | 20
- DS_MAX_U32             | 8      | DS_WRXCHG2ST64_RTN_B32 | 12
- DS_MAX_U64             | 12     | DS_WRXCHG2ST64_RTN_B64 | 20
- DS_MIN_F32             | 8      | DS_WRXCHG2_RTN_B32     | 12
- DS_MIN_F64             | 12     | DS_WRXCHG2_RTN_B64     | 20
- DS_MIN_I32             | 8      | DS_WRXCHG_RTN_B32      | 8
- DS_MIN_I64             | 12     | DS_WRXCHG_RTN_B64      | 12
- DS_MIN_RTN_F32         | 8      | DS_XOR_B32             | 8
- DS_MIN_RTN_F64         | 12     | DS_XOR_B64             | 12
- DS_MIN_RTN_I32         | 8      | DS_XOR_RTN_B32         | 8
- DS_MIN_RTN_I64         | 12     | DS_XOR_RTN_B64         | 12
- DS_MIN_RTN_U32         | 8      | DS_XOR_SRC2_B32        | 4
- DS_MIN_RTN_U64         | 12     | DS_XOR_SRC2_B64        | 8
+ Instruction            | Cycles | Throughput
+------------------------|--------|------------
+ DS_ADD_RTN_U32         | 8      | 1/4
+ DS_ADD_RTN_U64         | 12     | 1/6
+ DS_ADD_SRC2_U32        | 4      | 1/4
+ DS_ADD_SRC2_U64        | 8      | 1/8
+ DS_ADD_U32             | 8      | 1/4
+ DS_ADD_U64             | 12     | 1/6
+ DS_AND_B32             | 8      | 1/4
+ DS_AND_B64             | 12     | 1/6
+ DS_AND_RTN_B32         | 8      | 1/4
+ DS_AND_RTN_B64         | 12     | 1/6
+ DS_AND_SRC2_B32        | 4      | 1/4
+ DS_AND_SRC2_B64        | 8      | 1/8
+ DS_APPEND              | 4      | ?
+ DS_CMPST_B32           | 12     | 1/6
+ DS_CMPST_B64           | 20     | 1/10
+ DS_CMPST_F32           | 12     | 1/6
+ DS_CMPST_F64           | 20     | 1/10
+ DS_CMPST_RTN_B32       | 12     | 1/6
+ DS_CMPST_RTN_B64       | 20     | 1/10
+ DS_CMPST_RTN_F32       | 12     | 1/6
+ DS_CMPST_RTN_F64       | 20     | 1/10
+ DS_CONDXCHG32_RTN_B128 | ?      | ?
+ DS_CONDXCHG32_RTN_B64  | ?      | ?
+ DS_CONSUME             | 4      | ?
+ DS_DEC_RTN_U32         | 8      | 1/4
+ DS_DEC_RTN_U64         | 12     | 1/6
+ DS_DEC_SRC2_U32        | 4      | 1/4
+ DS_DEC_SRC2_U64        | 8      | 1/8
+ DS_DEC_U32             | 8      | 1/4
+ DS_DEC_U64             | 12     | 1/6
+ DS_GWS_BARRIER         | ?      | ?
+ DS_GWS_INIT            | ?      | ?
+ DS_GWS_SEMA_BR         | ?      | ?
+ DS_GWS_SEMA_P          | ?      | ?
+ DS_GWS_SEMA_RELEASE_ALL| ?      | ?
+ DS_GWS_SEMA_V          | ?      | ?
+ DS_INC_RTN_U32         | 8      | 1/4
+ DS_INC_RTN_U64         | 12     | 1/6
+ DS_INC_SRC2_U32        | 4      | 1/4
+ DS_INC_SRC2_U64        | 8      | 1/8
+ DS_INC_U32             | 8      | 1/4
+ DS_INC_U64             | 12     | 1/6
+ DS_MAX_F32             | 8      | 1/4
+ DS_MAX_F64             | 12     | 1/6
+ DS_MAX_I32             | 8      | 1/4
+ DS_MAX_I64             | 12     | 1/6
+ DS_MAX_RTN_F32         | 8      | 1/4
+ DS_MAX_RTN_F64         | 12     | 1/6
+ DS_MAX_RTN_I32         | 8      | 1/4
+ DS_MAX_RTN_I64         | 12     | 1/6
+ DS_MAX_RTN_U32         | 8      | 1/4
+ DS_MAX_RTN_U64         | 12     | 1/6
+ DS_MAX_SRC2_F32        | 4      | 1/4
+ DS_MAX_SRC2_F64        | 8      | 1/8
+ DS_MAX_SRC2_I32        | 4      | 1/4
+ DS_MAX_SRC2_I64        | 8      | 1/8
+ DS_MAX_SRC2_U32        | 4      | 1/4
+ DS_MAX_SRC2_U64        | 8      | 1/8
+ DS_MAX_U32             | 8      | 1/4
+ DS_MAX_U64             | 12     | 1/6
+ DS_MIN_F32             | 8      | 1/4
+ DS_MIN_F64             | 12     | 1/6
+ DS_MIN_I32             | 8      | 1/4
+ DS_MIN_I64             | 12     | 1/6
+ DS_MIN_RTN_F32         | 8      | 1/4
+ DS_MIN_RTN_F64         | 12     | 1/6
+ DS_MIN_RTN_I32         | 8      | 1/4
+ DS_MIN_RTN_I64         | 12     | 1/6
+ DS_MIN_RTN_U32         | 8      | 1/4
+ DS_MIN_RTN_U64         | 12     | 1/6
+ DS_MIN_SRC2_F32        | 4      | 1/4
+ DS_MIN_SRC2_F64        | 8      | 1/8
+ DS_MIN_SRC2_I32        | 4      | 1/4
+ DS_MIN_SRC2_I64        | 8      | 1/8
+ DS_MIN_SRC2_U32        | 4      | 1/4
+ DS_MIN_SRC2_U64        | 8      | 1/8
+ DS_MIN_U32             | 8      | 1/4
+ DS_MIN_U64             | 12     | 1/6
+ DS_MSKOR_B32           | 12     | 1/6
+ DS_MSKOR_B64           | 20     | 1/10
+ DS_MSKOR_RTN_B32       | 12     | 1/6
+ DS_MSKOR_RTN_B64       | 20     | 1/10
+ DS_NOP                 | 4      | ?
+ DS_ORDERED_COUNT (???) | ?      | ?
+ DS_OR_B32              | 8      | 1/4
+ DS_OR_B64              | 12     | 1/6
+ DS_OR_RTN_B32          | 8      | 1/4
+ DS_OR_RTN_B64          | 12     | 1/6
+ DS_OR_SRC2_B32         | 4      | 1/4
+ DS_OR_SRC2_B64         | 8      | 1/8
+ DS_READ2ST64_B32       | 8      | 1/4
+ DS_READ2ST64_B64       | 16     | 1/8
+ DS_READ2_B32           | 8      | 1/4
+ DS_READ2_B64           | 16     | 1/8
+ DS_READ_B128           | 16     | 1/8
+ DS_READ_B32            | 4      | 1/2
+ DS_READ_B64            | 8      | 1/4
+ DS_READ_B96            | 16     | 1/8
+ DS_READ_I16            | 4      | 1/2
+ DS_READ_I8             | 4      | 1/2
+ DS_READ_U16            | 4      | 1/2
+ DS_READ_U8             | 4      | 1/2
+ DS_RSUB_RTN_U32        | 8      | 1/4
+ DS_RSUB_RTN_U64        | 12     | 1/6
+ DS_RSUB_SRC2_U32       | 4      | 1/4
+ DS_RSUB_SRC2_U64       | 8      | 1/8
+ DS_RSUB_U32            | 8      | 1/4
+ DS_RSUB_U64            | 12     | 1/6
+ DS_SUB_RTN_U32         | 8      | 1/4
+ DS_SUB_RTN_U64         | 12     | 1/6
+ DS_SUB_SRC2_U32        | 4      | 1/4
+ DS_SUB_SRC2_U64        | 8      | 1/8
+ DS_SUB_U32             | 8      | 1/4
+ DS_SUB_U64             | 12     | 1/6
+ DS_SWIZZLE_B32         | 4      | 1/2
+ DS_WRAP_RTN_B32        | ?      | ?
+ DS_WRITE2ST64_B32      | 12     | 1/6
+ DS_WRITE2ST64_B64      | 20     | 1/10
+ DS_WRITE2_B32          | 12     | 1/6
+ DS_WRITE2_B64          | 20     | 1/10
+ DS_WRITE_B128          | 20     | 1/10
+ DS_WRITE_B16           | 8      | 1/4
+ DS_WRITE_B32           | 8      | 1/4
+ DS_WRITE_B64           | 12     | 1/8
+ DS_WRITE_B8            | 8      | 1/4
+ DS_WRITE_B96           | 16     | 1/10
+ DS_WRITE_SRC2_B32      | 12     | 1/4
+ DS_WRITE_SRC2_B64      | 20     | 1/8
+ DS_WRXCHG2ST64_RTN_B32 | 12     | 1/6
+ DS_WRXCHG2ST64_RTN_B64 | 20     | 1/12
+ DS_WRXCHG2_RTN_B32     | 12     | 1/6
+ DS_WRXCHG2_RTN_B64     | 20     | 1/12
+ DS_WRXCHG_RTN_B32      | 8      | 1/4
+ DS_WRXCHG_RTN_B64      | 12     | 1/6
+ DS_XOR_B32             | 8      | 1/4
+ DS_XOR_B64             | 12     | 1/6
+ DS_XOR_RTN_B32         | 8      | 1/4
+ DS_XOR_RTN_B64         | 12     | 1/6
+ DS_XOR_SRC2_B32        | 4      | 1/4
+ DS_XOR_SRC2_B64        | 8      | 1/8
+ 
