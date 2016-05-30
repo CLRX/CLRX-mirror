@@ -132,7 +132,7 @@ List of the instructions by opcode:
  106 (0x6a) |   ✓   |   ✓   | DS_OR_RTN_B64          | DS_OR_RTN_B64
  107 (0x6b) |   ✓   |   ✓   | DS_XOR_RTN_B64         | DS_XOR_RTN_B64
  108 (0x6c) |   ✓   |   ✓   | DS_MSKOR_RTN_B64       | DS_MSKOR_RTN_B64
- 109 (0x6d) |   ✓   |   ✓   | DS_WRXCHG_RTN_B6       | DS_WRXCHG_RTN_B64
+ 109 (0x6d) |   ✓   |   ✓   | DS_WRXCHG_RTN_B64      | DS_WRXCHG_RTN_B64
  110 (0x6e) |   ✓   |   ✓   | DS_WRXCHG2_RTN_B64     | DS_WRXCHG2_RTN_B64
  111 (0x6f) |   ✓   |   ✓   | DS_WRXCHG2ST64_RTN_B64 | DS_WRXCHG2ST64_RTN_B64
  112 (0x70) |   ✓   |   ✓   | DS_CMPST_RTN_B64       | DS_CMPST_RTN_B64
