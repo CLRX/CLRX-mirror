@@ -231,7 +231,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = *V + *(UINT32*)(DS + B) // atomic operation
 ```
@@ -248,7 +248,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V + *(UINT64*)(DS + B) // atomic operation
 ```
@@ -340,7 +340,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = *V & *(UINT32*)(DS + B) // atomic operation
 ```
@@ -356,7 +356,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V & *(UINT64*)(DS + B) // atomic operation
 ```
@@ -534,7 +534,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 UINT32* VB = (UINT32*)(DS + B)
 *V = (*VB >= *V && *V!=0) ? *V-1 : *VB // atomic operation
@@ -554,7 +554,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 UINT64* VB = (UINT64*)(DS + B)
 *V = (*VB >= *V && *V!=0) ? *V-1 : *VB // atomic operation
@@ -629,7 +629,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = (*(UINT32*)(DS + B) > *V) ? *V+1 : 0  // atomic operation
 ```
@@ -647,7 +647,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = (*(UINT64*)(DS + B) > *V) ? *V+1 : 0  // atomic operation
 ```
@@ -820,7 +820,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 FLOAT* V = (FLOAT*)(DS + A)
 *V = MAX(*V, *(FLOAT*)(DS + B)) // atomic operation
 ```
@@ -837,7 +837,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 DOUBLE* V = (DOUBLE*)(DS + A)
 *V = MAX(*V, *(DOUBLE*)(DS + B)) // atomic operation
 ```
@@ -854,7 +854,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 INT32* V = (INT32*)(DS + A)
 *V = MAX(*V, *(INT32*)(DS + B)) // atomic operation
 ```
@@ -871,7 +871,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 INT64* V = (INT64*)(DS + A)
 *V = MAX(*V, *(INT64*)(DS + B)) // atomic operation
 ```
@@ -888,7 +888,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = MAX(*V, *(UINT32*)(DS + B)) // atomic operation
 ```
@@ -905,7 +905,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = MAX(*V, *(UINT64*)(DS + B)) // atomic operation
 ```
@@ -1078,7 +1078,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 FLOAT* V = (FLOAT*)(DS + A)
 *V = MIN(*V, *(FLOAT*)(DS + B)) // atomic operation
 ```
@@ -1095,7 +1095,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 DOUBLE* V = (DOUBLE*)(DS + A)
 *V = MIN(*V, *(DOUBLE*)(DS + B)) // atomic operation
 ```
@@ -1112,7 +1112,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 INT32* V = (INT32*)(DS + A)
 *V = MIN(*V, *(INT32*)(DS + B)) // atomic operation
 ```
@@ -1129,7 +1129,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = A + (((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 INT64* V = (INT64*)(DS + A)
 *V = MIN(*V, *(INT64*)(DS + B)) // atomic operation
 ```
@@ -1146,7 +1146,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = MIN(*V, *(UINT32*)(DS + B)) // atomic operation
 ```
@@ -1163,7 +1163,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = MIN(*V, *(UINT64*)(DS + B)) // atomic operation
 ```
@@ -1321,7 +1321,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = *V | *(UINT32*)(DS + B) // atomic operation
 ```
@@ -1337,7 +1337,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V | *(UINT64*)(DS + B) // atomic operation
 ```
@@ -1519,7 +1519,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = *(UINT32*)(DS + B) - *V // atomic operation
 ```
@@ -1536,7 +1536,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *(UINT64*)(DS + B) - *V // atomic operation
 ```
@@ -1605,7 +1605,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = *V - *(UINT32*)(DS + B) // atomic operation
 ```
@@ -1622,7 +1622,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V - *(UINT64*)(DS + B) // atomic operation
 ```
@@ -1770,7 +1770,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 *(UINT32*)(DS + A) = *(UINT32*)(DS + B)
 ```
 
@@ -1784,7 +1784,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 *(UINT64*)(DS + A) = *(UINT64*)(DS + B)
 ```
 
@@ -1999,7 +1999,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fffc : ADDR&~3
 UINT32 B = A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4
 UINT32* V = (UINT32*)(DS + A)
 *V = *V ^ *(UINT32*)(DS + B) // atomic operation
 ```
@@ -2015,7 +2015,7 @@ Operation:
 UINT32 A = (OFFSET&0x8000) ? ADDR&0x1fff8 : ADDR&~7
 UINT32 B = (A + ((OFFSET&0x8000) ? \
             ((ADDR>>17) | ((ADDR>>16)&0x8000)) : \
-            ((OFFSET&07fff) | (OFFSET<<1)&0x8000)) * 4)&~7
+            ((OFFSET&0x7fff) | (OFFSET<<1)&0x8000)) * 4)&~7
 UINT64* V = (UINT64*)(DS + A)
 *V = *V ^ *(UINT64*)(DS + B) // atomic operation
 ```
