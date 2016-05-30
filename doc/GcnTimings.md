@@ -209,7 +209,7 @@ Timings of VOP3 instructions are in this table:
  V_MAD_LEGACY_F32      | 4             | V_SAD_U8              | 4
  V_MAD_U32_U24         | 4             | V_TRIG_PREOP_F64      | DPFACTOR*8
 
-# DS Instruction timings
+### DS Instruction timings
 
 Timings of DS instructions includes only execution without waiting for completing
 LDS/GDS memory access on single wavefront. Timings of DS instructions are in this table:
