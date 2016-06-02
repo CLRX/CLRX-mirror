@@ -357,3 +357,69 @@ LDS/GDS memory access on single wavefront. Timings of DS instructions are in thi
  DS_XOR_SRC2_B32        | 4      | 1/4
  DS_XOR_SRC2_B64        | 8      | 1/8
  
+### MUBUF Instruction timings
+
+Timings of MUBUF instructions includes only execution without waiting for completing
+main memory access on single wavefront. Additional GLCX adds X cycles to instruction
+if instruction uses GLC modifier. Timings of MUBUF instructions are in this table:
+
+ Instruction                | Cycles
+----------------------------|-----------
+ BUFFER_ATOMIC_ADD          | 16+GLC1
+ BUFFER_ATOMIC_ADD_X2       | 16+GLC2
+ BUFFER_ATOMIC_AND          | 16+GLC1
+ BUFFER_ATOMIC_AND_X2       | 16
+ BUFFER_ATOMIC_CMPSWAP      | 32
+ BUFFER_ATOMIC_CMPSWAP_X2   | 32
+ BUFFER_ATOMIC_DEC          | 16+GLC1
+ BUFFER_ATOMIC_DEC_X2       | 16+GLC2
+ BUFFER_ATOMIC_FCMPSWAP     | 32
+ BUFFER_ATOMIC_FCMPSWAP_X2  | 32
+ BUFFER_ATOMIC_FMAX         | 16+GLC1
+ BUFFER_ATOMIC_FMAX_X2      | 16+GLC2
+ BUFFER_ATOMIC_FMIN         | 16+GLC1
+ BUFFER_ATOMIC_FMIN_X2      | 16+GLC2
+ BUFFER_ATOMIC_INC          | 16+GLC1
+ BUFFER_ATOMIC_INC_X2       | 16+GLC2
+ BUFFER_ATOMIC_OR           | 16+GLC1
+ BUFFER_ATOMIC_OR_X2        | 16+GLC2
+ BUFFER_ATOMIC_RSUB         | 16+GLC1
+ BUFFER_ATOMIC_RSUB_X2      | 16+GLC2
+ BUFFER_ATOMIC_SMAX         | 16+GLC1
+ BUFFER_ATOMIC_SMAX_X2      | 16+GLC2
+ BUFFER_ATOMIC_SMIN         | 16+GLC1
+ BUFFER_ATOMIC_SMIN_X2      | 16+GLC2
+ BUFFER_ATOMIC_SUB          | 16+GLC1
+ BUFFER_ATOMIC_SUB_X2       | 16+GLC2
+ BUFFER_ATOMIC_SWAP         | 16+GLC1
+ BUFFER_ATOMIC_SWAP_X2      | 16+GLC2
+ BUFFER_ATOMIC_UMAX         | 16+GLC1
+ BUFFER_ATOMIC_UMAX_X2      | 16+GLC2
+ BUFFER_ATOMIC_UMIN         | 16+GLC1
+ BUFFER_ATOMIC_UMIN_X2      | 16+GLC2
+ BUFFER_ATOMIC_XOR          | 16+GLC1
+ BUFFER_ATOMIC_XOR_X2       | 16+GLC2
+ BUFFER_LOAD_DWORD          | 8
+ BUFFER_LOAD_DWORDX2        | 18
+ BUFFER_LOAD_DWORDX3        | 16
+ BUFFER_LOAD_DWORDX4        | 16
+ BUFFER_LOAD_FORMAT_X       | 8
+ BUFFER_LOAD_FORMAT_XY      | 18?
+ BUFFER_LOAD_FORMAT_XYZ     | 16
+ BUFFER_LOAD_FORMAT_XYZW    | 16
+ BUFFER_LOAD_SBYTE          | 8
+ BUFFER_LOAD_SSHORT         | 8
+ BUFFER_LOAD_UBYTE          | 8
+ BUFFER_LOAD_USHORT         | 8
+ BUFFER_STORE_BYTE          | 16
+ BUFFER_STORE_DWORD         | 16
+ BUFFER_STORE_DWORDX2       | 16
+ BUFFER_STORE_DWORDX3       | 16
+ BUFFER_STORE_DWORDX4       | 16
+ BUFFER_STORE_FORMAT_X      | 16
+ BUFFER_STORE_FORMAT_XY     | 16
+ BUFFER_STORE_FORMAT_XYZ    | 16
+ BUFFER_STORE_FORMAT_XYZW   | 16
+ BUFFER_STORE_SHORT         | 16
+ BUFFER_WBINVL1             | ?
+ BUFFER_WBINVL1_SC          | ?
