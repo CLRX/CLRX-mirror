@@ -215,7 +215,9 @@ Timings of VOP3 instructions are in this table:
 ### DS Instruction timings
 
 Timings of DS instructions includes only execution without waiting for completing
-LDS/GDS memory access on single wavefront. Timings of DS instructions are in this table:
+LDS/GDS memory access on single wavefront. Throughput indicates maximal possible
+throughput that excludes any other delays and penalties.
+Timings of DS instructions are in this table:
 
  Instruction            | Cycles | Throughput
 ------------------------|--------|------------
