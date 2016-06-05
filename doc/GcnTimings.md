@@ -70,6 +70,9 @@ more waves than 4\*CUs. For best results is recommended to execute many waves
 
 ### Instruction scheduling
 
+* if many wavefront executed in single CU (if many wavefronts) then scalar, vector and
+data-share, memory (???) execution units can run independently (parallely) way,
+achieving many instructions per cycles.
 * between any integer V_ADD\*, V_SUB\*, V_FIRSTREADLINE_B32, V_READLANE_B32 operation
 and any scalar ALU instruction is 16-cycle delay. Masked if more waves than 4*CUs
 * any conditional jump directly that checks VCCZ or EXECZ after instruction that changes
