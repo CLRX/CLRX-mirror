@@ -44,7 +44,7 @@ static const GCNDisasmLabelCase decGCNLabelCases[] =
     {
         { 0x7c6b92ffU },
         "        /* WARNING: Unfinished instruction at end! */\n"
-        "        v_cmpx_lg_f64   vcc, 0x0, v[201:202]\n"
+        "        v_cmpx_lg_f64   vcc, lit(0), v[201:202]\n"
     },
     {
         { 0xd8dc2625U, 0x37000006U, 0xbf82fffeU, 0xbf820002U,

@@ -42,7 +42,7 @@ struct CLRX_INTERNAL GCNDisasmUtils
 {
     typedef GCNDisassembler::RelocIter RelocIter;
     static void printLiteral(GCNDisassembler& dasm, size_t codePos, RelocIter& relocIter,
-              uint32_t literal, FloatLitType floatLit);
+              uint32_t literal, FloatLitType floatLit, bool optional);
     static void decodeGCNOperandNoLit(cxuint op, cxuint regNum, char*& bufPtr,
               uint16_t arch, FloatLitType floatLit = FLTLIT_NONE);
     static char* decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
@@ -535,15 +535,24 @@ static void decodeGCNVRegOperand(cxuint op, cxuint vregNum, char*& bufPtr)
     return regRanges(op, vregNum, bufPtr);
 }
 
+/* parameters: dasm - disassembler, codePos - code position for relocation,
+ * relocIter, optional - if literal is optional (can be replaced by inline constant) */
 void GCNDisasmUtils::printLiteral(GCNDisassembler& dasm, size_t codePos,
-          RelocIter& relocIter, uint32_t literal, FloatLitType floatLit)
+          RelocIter& relocIter, uint32_t literal, FloatLitType floatLit, bool optional)
 {
     if (dasm.writeRelocation((codePos<<2)-4, relocIter))
         return;
     FastOutputBuffer& output = dasm.output;
     char* bufStart = output.reserve(50);
     char* bufPtr = bufStart;
-    bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
+    if (optional && (int32_t(literal)<=64 && int32_t(literal)>=-16)) // use lit(...)
+    {
+        putChars(bufPtr, "lit(", 4);
+        bufPtr += itocstrCStyle<int32_t>(literal, bufPtr, 11, 10);
+        *bufPtr++ = ')';
+    }
+    else
+        bufPtr += itocstrCStyle(literal, bufPtr, 11, 16);
     if (floatLit != FLTLIT_NONE)
     {
         FloatUnion fu;
@@ -726,7 +735,7 @@ char* GCNDisasmUtils::decodeGCNOperand(GCNDisassembler& dasm, size_t codePos,
     FastOutputBuffer& output = dasm.output;
     if (op == 255)
     {   // literal
-        printLiteral(dasm, codePos, relocIter, literal, floatLit);
+        printLiteral(dasm, codePos, relocIter, literal, floatLit, true);
         return output.reserve(100);
     }
     char* bufStart = output.reserve(50);
@@ -1598,7 +1607,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
         output.forward(bufPtr-bufStart);
-        printLiteral(dasm, codePos, relocIter, literal, displayFloatLits);
+        printLiteral(dasm, codePos, relocIter, literal, displayFloatLits, false);
         bufStart = bufPtr = output.reserve(100);
     }
     *bufPtr++ = ',';
@@ -1628,7 +1637,7 @@ void GCNDisasmUtils::decodeVOP2Encoding(GCNDisassembler& dasm, size_t codePos,
         *bufPtr++ = ',';
         *bufPtr++ = ' ';
         output.forward(bufPtr-bufStart);
-        printLiteral(dasm, codePos, relocIter, literal, displayFloatLits);
+        printLiteral(dasm, codePos, relocIter, literal, displayFloatLits, false);
     }
     else if (mode1 == GCN_DS2_VCC || mode1 == GCN_SRC2_VCC)
     {
