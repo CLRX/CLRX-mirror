@@ -400,11 +400,15 @@ const GCNDisasmOpcodeCase decGCNOpcodeCases[] =
     { 0x3f34d715U, 0, false, "        v_mac_f32       v154, v21, v107\n" },
     { 0x4134d715U, 0x567d0700U, true, "        v_madmk_f32     "
             "v154, v21, 0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
+    { 0x4134d715U, 0x11U, true, "        v_madmk_f32     "
+            "v154, v21, 0x11 /* 2.38e-44f */, v107\n" }, /* check floatLits */
     { 0x4134d6ffU, 0x567d0700U, true, "        v_madmk_f32     "
             "v154, 0x567d0700 /* 6.9551627e+13f */, "
             "0x567d0700 /* 6.9551627e+13f */, v107\n" }, /* check floatLits */
     { 0x4334d715U, 0x567d0700U, true, "        v_madak_f32     "
             "v154, v21, v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
+    { 0x4334d715U, 0x11U, true, "        v_madak_f32     "
+            "v154, v21, v107, 0x11 /* 2.38e-44f */\n" },  /* check floatLits */
     { 0x4334d6ffU, 0x567d0700U, true, "        v_madak_f32     "
             "v154, 0x567d0700 /* 6.9551627e+13f */, "
             "v107, 0x567d0700 /* 6.9551627e+13f */\n" },  /* check floatLits */
