@@ -1822,6 +1822,8 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         if ((sampOffset&7) != 0 && sampOffset >= input->globalDataSize)
             throw Exception("Wrong sampler offset (out of range of unaligned)");
     
+    const bool gpuProDriver = (input->driverVersion == 203603 ||
+            input->driverVersion == 207903);
     /* determine correct flags for device type */
     const uint32_t* deviceCodeTable;
     if (input->driverVersion < 191205)
@@ -1830,7 +1832,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
         deviceCodeTable = gpuDeviceCodeTable;
     else if (input->driverVersion < 203603)
         deviceCodeTable = gpuDeviceCodeTable16_3;
-    else // AMD GPUPRO driver
+    else // AMD GPUPRO driver and later
         deviceCodeTable = gpuDeviceCodeTableGPUPRO;
     // if GPU type is not supported by driver version
     if (deviceCodeTable[cxuint(input->deviceType)] == UINT_MAX)
@@ -1929,7 +1931,7 @@ void AmdCL2GPUBinGenerator::generateInternal(std::ostream* osPtr, std::vector<ch
             innerBinGen->addRegion(ElfRegion64(0, (const cxbyte*)nullptr, 8, ".strtab",
                                   SHT_STRTAB, SHF_STRINGS, 0, 0));
             innerBinSectionTable[ELFSECTID_STRTAB-ELFSECTID_START] = extraSectionIndex++;
-            if (input->driverVersion < 203603)
+            if (!gpuProDriver)
                 innerBinGen->addRegion(ElfRegion64(sizeof(noteSectionData16_3),
                            noteSectionData16_3, 8, ".note", SHT_NOTE, 0));
             else
