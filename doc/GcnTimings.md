@@ -361,6 +361,13 @@ Timings of DS instructions are in this table:
  DS_XOR_RTN_B64         | 12     | 1/6
  DS_XOR_SRC2_B32        | 4      | 1/4
  DS_XOR_SRC2_B64        | 8      | 1/8
+
+About bank conflict: The LDS memory is partitioned by 32 banks. The bank number is in
+2-6 bit of the address. Bank conflict encounters when two addresses have this same
+bank, but are not equal begins from 7 bit address
+(the first 2 bits of addresses doesn't matter).
+Any bank conflict adds penalty to timing and throughput. In worst case the throughput
+can be not greater 1/32 request per cycle.
  
 ### MUBUF Instruction timings
 
