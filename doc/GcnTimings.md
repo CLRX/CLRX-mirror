@@ -366,7 +366,7 @@ About bank conflict: The LDS memory is partitioned by 32 banks. The bank number 
 2-6 bit of the address. Bank conflict encounters when two addresses have this same
 bank, but are not equal begins from 7 bit address
 (the first 2 bits of addresses doesn't matter).
-Any bank conflict adds penalty to timing and throughput. In worst case the throughput
+Any bank conflict adds penalty to timing and throughput. In worst case, the throughput
 can be not greater 1/32 request per cycle.
  
 ### MUBUF Instruction timings
