@@ -2,16 +2,16 @@
 
 ### Preliminary explanations
 
-The almost instructions are executed within 4 cycles (scalar and vector). Hence, to
-achieve maximum performance, 4 wavefront per compute units must be ran.
+Almost all instructions (scalar and vector) are executed within 4 cycles. Hence, to
+achieve maximum performance, 4 wavefronts should be executed per compute unit.
 
-NOTE: Simple single dword (4-byte) instruction is executed in 4 cycles (thanks fast
-dispatching from cache). However, 2 dword instruction can require 4 extra cycles
-to execution due to bigger size in memory and limits of instruction dispatching.
+NOTE: a simple single dword (4-byte) instruction is executed in 4 cycles (thanks to fast
+dispatching from cache). However, a 2 dword (8-byte) instruction may require 4 extra cycles
+for execution due to bigger size in memory and limits of instruction dispatching.
 To achieve best performance, we recommend to use single dword instructions.
 
-In some tables present DPFACTOR term. This term indicates that number of cycles depends
-on the model of GPU as follows:
+A DPFACTOR term is present in some tables; it indicates that the number of cycles depends
+on the model of the GPU as follows:
 
  DPFACTOR     | DP speed | GPU subfamily
 --------------|----------|----------------------------
@@ -36,13 +36,13 @@ Waves | SGPRs | VGPRs | LdsW/I | Issue
 9     | 56    | 28    | 7      | 5
 10    | 48    | 24    | 6      | 5
 
-Waves - number of concurrent waves that can be computed by single SIMD unit  
-SGPRs - number of maximum SGPRs that can be allocated that occupancy  
-VPGRs - number of maximum VGPRs that can be allocated that occupancy  
-LdsW/I - Maximum amount of LDS space per vector lane per wavefront in dwords  
-Issue - number of maximum instruction per clock that can be processed  
+Waves - number of concurrent waves that can be computed by a single SIMD unit
+SGPRs - number of maximum SGPRs that can be allocated at that occupancy
+VPGRs - number of maximum VGPRs that can be allocated at that occupancy
+LdsW/I - maximum amount of LDS space per vector lane per wavefront in dwords
+Issue - maximum number of instructions per clock
 
-Each compute unit partitioned into four SIMD units. So, maximum number of waves per
+Each compute unit is partitioned into four SIMD units. So, the maximum number of waves per
 compute unit is 40.
 
 ### Instruction alignment
@@ -51,56 +51,55 @@ Aligmnent Rules for 2-dword instructions (GCN 1.0/1.1):
 
 * any penalty costs 4 cycles
 * program divided by in 32-byte blocks
-* only first 3 places (dwords) in 32-byte block is free (no penalty). Any 2-dword
-instruction outside these first 3 dwords adds single penalty.
-* if instructions is longer (more than four cycles) then last cycles/4 dwords are free
-* if 16 or more cycle 2-dword instruction and 2 dword instruction in 4 dword, then
-no penalty for second 2-dword instruction.
-* best place to jump is 5 first dwords in 32-byte block. Jump to rest of dwords causes
-1-3 penalties, depending on number of dword (N-4, where N is number of dword). This rule
+* only the first 3 dwords in the 32-byte block incur no penalty. Any 2-dword
+instruction outside these first 3 dwords adds a single penalty.
+* if the instructions is longer (more than four cycles) then the last cycles/4 dwords are free
+* if 16 or more cycle 2-dword instruction and 2-dword instruction in 4 dword, then there is
+no penalty for the second 2-dword instruction.
+* best place to jump is the 5 first dwords in the 32-byte block. Jump to rest of the dwords causes
+1-3 penalties, depending on number of dwords (N-4, where N is the dword number). This rule
 does not apply to backward jumps (???)
-* any conditional jump instruction should be in first half of 32-byte block, otherwise
-1-4 penalties will be added if jump was not taken, depending on number of dword
-(N-3, where N is number of dword).
+* any conditional jump instruction should be in first half of the 32-byte block, otherwise
+1-4 penalties are added if jump is not taken, depending on dword number (N-3, where N is dword number).
 
-IMPORTANT: If occupancy is greater than 1 wave per compute unit, then penalties,
+IMPORTANT: If the occupancy is greater than 1 wave per compute unit, then the penalties,
 branches, and scalar instructions will be masked while executing
 more waves than 4\*CUs. For best results is recommended to execute many waves
 (multiple of 4\*CUs) with occupancy greater than 1.
 
 ### Instruction scheduling
 
-* if many wavefront executed in single CU (if many wavefronts) then scalar, vector and
-data-share, memory (???) execution units can run independently (parallely) way,
+* if many wavefronts are executed in a single CU (if many wavefronts) then scalar, vector and
+data-share, memory (???) execution units can run independently in parallel,
 achieving many instructions per cycles.
-* between any integer V_ADD\*, V_SUB\*, V_FIRSTREADLINE_B32, V_READLANE_B32 operation
-and any scalar ALU instruction is 16-cycle delay. Masked if more waves than 4*CUs
-* any conditional jump directly that checks VCCZ or EXECZ after instruction that changes
-VCC or EXEC adds single penalty (4 cycles). Masked if more waves than 4*CUs
-* any conditional jump directly that checks SCC after instruction that changes SCC,
-EXEC, VCC adds single penalty (4 cycles). Masked if more waves than 4*CUs
+* between any integer V_ADD\*, V_SUB\*, V_FIRSTREADLINE_B32, V_READLANE_B32 operations
+and any scalar ALU instructions there is 16-cycle delay. Masked if there are more waves than 4*CUs.
+* any conditional jump that directly checks VCCZ or EXECZ after an instruction that changes
+VCC or EXEC adds a single penalty (4 cycles). Masked if there are more waves than 4*CUs.
+* any conditional jump that directly checks SCC after an instruction that changes SCC,
+EXEC, VCC adds a single penalty (4 cycles). Masked if there are more waves than 4*CUs.
 
 ### SOP2 Instruction timings
 
-All SOP2 instructions (S_CBRANCH_G_FORK not checked) takes 4 cycles.
+All SOP2 instructions (S_CBRANCH_G_FORK not checked) take 4 cycles.
 
 ### SOPK Instruction timings
 
-All SOPK instructions (S_CBRANCH_I_FORK  not checked) takes 4 cycles.
-S_SETREG_B32 and S_SETREG_IMM32_B32 takes 8 cycles.
+All SOPK instructions (S_CBRANCH_I_FORK  not checked) take 4 cycles.
+S_SETREG_B32 and S_SETREG_IMM32_B32 take 8 cycles.
 
 ### SOP1 Instruction timings
 
-The S_*_SAVEEXEC_B64 instructions takes 8 cycles. Other ALU instructions (except
+The S_*_SAVEEXEC_B64 instructions take 8 cycles. Other ALU instructions (except
 S_MOV_REGRD_B32, S_CBRANCH_JOIN, S_RFE_B64) take 4 cycles.
 
 ### SOPC Instruction timings
 
-All comparison and bit checking instructions takes 4 cycles.
+All comparison and bit checking instructions take 4 cycles.
 
 ### SOPP Instruction timings
 
-Jumps costs 4 (no jump) or 20 cycles (???) if jump will performed.
+Jumps cost 4 cycle (no jump) or 20 cycles (???) if jump is performed.
 
 ### SMRD Instruction timings
 
@@ -119,14 +118,14 @@ loading data from memory. Timings of SMRD instructions are in this table:
 
 ### VOP2 Instruction timings
 
-All VOP2 instructions takes 4 cycles. All instruction can achieve throughput 1 instruction
+All VOP2 instructions take 4 cycles. All instruction can achieve throughput 1 instruction
 per cycle.
 
 ### VOP1 Instruction timings
 
-Maximum throughput of these instruction can be calculated by using expression
-`(1/(CYCLES/4))` - for 4 cycles is 1 instruction per cycle, for 8 cycles is 1/2 instruction
-per cycle and etc.
+Maximum throughput of these instructions can be calculated by using the expression
+`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2 instruction
+per cycle, etc.
 Timings of VOP1 instructions are in this table:
 
  Instruction           | Cycles        | Instruction           | Cycles
@@ -167,16 +166,16 @@ Timings of VOP1 instructions are in this table:
 
 ### VOPC Instruction timings
 
-Maximum throughput of these instruction can be calculated by using expression
-`(1/(CYCLES/4))` - for 4 cycles is 1 instruction per cycle, for 8 cycles is 1/2 instruction
-per cycle and etc.
-All 32-bit comparison instructions takes 4 cycles. All 64-bit comparison instructions takes
+Maximum throughput of these instructions can be calculated by using expression
+`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2 instruction
+per cycle, etc.
+All 32-bit comparison instructions take 4 cycles. All 64-bit comparison instructions take
 DPFACTOR*4 cycles.
 
 ### VOP3 Instruction timings
 
-Maximum throughput of these instruction can be calculated by using expression
-`(1/(CYCLES/4))` - for 4 cycles is 1 instruction per cycle, for 8 cycles is 1/2 instruction
+Maximum throughput of these instructions can be calculated by using expression
+`(1/(CYCLES/4))` - for 4 cycles it is 1 instruction per cycle, for 8 cycles it is 1/2 instruction
 per cycle and etc.
 Timings of VOP3 instructions are in this table:
 
@@ -215,7 +214,7 @@ Timings of VOP3 instructions are in this table:
 ### DS Instruction timings
 
 Timings of DS instructions includes only execution without waiting for completing
-LDS/GDS memory access on single wavefront. Throughput indicates maximal possible
+LDS/GDS memory access on a single wavefront. Throughput indicates maximal possible
 throughput that excludes any other delays and penalties.
 Timings of DS instructions are in this table:
 
@@ -362,18 +361,18 @@ Timings of DS instructions are in this table:
  DS_XOR_SRC2_B32        | 4      | 1/4
  DS_XOR_SRC2_B64        | 8      | 1/8
 
-About bank conflict: The LDS memory is partitioned by 32 banks. The bank number is in
-2-6 bit of the address. Bank conflict encounters when two addresses have this same
-bank, but are not equal begins from 7 bit address
-(the first 2 bits of addresses doesn't matter).
-Any bank conflict adds penalty to timing and throughput. In worst case, the throughput
-can be not greater 1/32 request per cycle.
+About bank conflicts: The LDS memory is partitioned in 32 banks. The bank number is in
+bits 2-6 of the address. A bank conflict occurs when two addresses hit the same
+bank, but the addresses are different starting from the 7bit
+(the first 2 bits of the address doesn't matter).
+Any bank conflict adds penalty to timing and throughput. In the worst case, the throughput
+can be not greater 1/32 requests per cycle.
  
 ### MUBUF Instruction timings
 
 Timings of MUBUF instructions includes only execution without waiting for completing
-main memory access on single wavefront. Additional GLCX adds X cycles to instruction
-if instruction uses GLC modifier. Timings of MUBUF instructions are in this table:
+main memory access on a single wavefront. Additional GLCX adds X cycles to instruction
+if the instruction uses the GLC modifier. Timings of MUBUF instructions are in this table:
 
  Instruction                | Cycles
 ----------------------------|-----------
