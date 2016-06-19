@@ -5,11 +5,11 @@ DESTDIR="$2"
 [ -d "$2" ] || mkdir -p "$2"
 rm -f "$2"/*
 
-for md in $1/*.md; do
+for md in "$1"/*.md; do
     md="$(basename "${md}")"
     TITLE="${md%%.md}"
     OUTHTML="${DESTDIR}/${TITLE}.html"
-    echo ${md}
+    echo "${md}"
 
     cat > "${OUTHTML}" <<FFXX
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
