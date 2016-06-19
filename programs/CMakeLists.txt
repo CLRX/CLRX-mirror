@@ -36,6 +36,6 @@ TARGET_LINK_LIBRARIES(clrxasm ${LINK_LIBRARIES})
 INSTALL(TARGETS clrxasm RUNTIME DESTINATION bin)
 
 IF(BUILD_MANUAL)
-    POD2MAN(${PROJECT_SOURCE_DIR}/programs/clrxdisasm.pod clrxdisasm 1)
-    POD2MAN(${PROJECT_SOURCE_DIR}/programs/clrxasm.pod clrxasm 1)
+    POD2MAN("${PROJECT_SOURCE_DIR}/programs/clrxdisasm.pod" clrxdisasm 1)
+    POD2MAN("${PROJECT_SOURCE_DIR}/programs/clrxasm.pod" clrxasm 1)
 ENDIF(BUILD_MANUAL)
