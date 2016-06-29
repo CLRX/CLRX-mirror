@@ -21,7 +21,7 @@ For S_LOAD_DWORD\* instructions, 2 SBASE SGPRs holds an base 48-bit address and 
 For S_BUFFER_LOAD_DWORD\* instructions, 4 SBASE SGPRs holds a buffer descriptor.
 In this case, SBASE must be a multipla of 2.
 
-The SMRD instructions can return the resul data out of the order. Any SMRD operation
+The SMRD instructions can return the result data out of the order. Any SMRD operation
 (including S_MEMTIME) increments LGKM_CNT counter. The best way to wait for results
 is `S_WAITCNT LGKMCNT(0)`.
 
