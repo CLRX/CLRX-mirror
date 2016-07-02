@@ -422,6 +422,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xbf8c0f2eU, 0, false, true, "" },
     { "a=14\nb=2\ns_waitcnt  vmcnt(a) & expcnt(b)", 0xbf8c0f2eU, 0, false, true, "" },
     { "s_waitcnt  vmcnt  (14  ) & expcnt(  2)", 0xbf8c0f2eU, 0, false, true, "" },
+    { "s_waitcnt  vmcnt  (14  ) expcnt(  2)", 0xbf8c0f2eU, 0, false, true, "" },
     { "s_waitcnt  vmcnt  (  14  )&expcnt(  2  )", 0xbf8c0f2eU, 0, false, true, "" },
     { "s_waitcnt  VmCnt  (  14  )&exPCnt(  2  )", 0xbf8c0f2eU, 0, false, true, "" },
     { "s_waitcnt  lgkmcnt(13) & expcnt(2)", 0xbf8c0d2fU, 0, false, true, "" },
@@ -454,7 +455,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "s_waitcnt  vmcxxnt(11)", 0, 0, false, false,
         "test.s:1:12: Error: Expected vmcnt, lgkmcnt or expcnt\n" },
     { "s_waitcnt  vmcnt(11) _", 0, 0, false, false,
-        "test.s:1:22: Error: Expected '&' before lock function\n" },
+        "test.s:1:22: Error: Expected vmcnt, lgkmcnt or expcnt\n" },
     { "s_waitcnt  vmcnt  (14  ) & expcnt(  2) & aaaa(6) & vmcnt(4)", 0, 0, false, false,
         "test.s:1:42: Error: Expected vmcnt, lgkmcnt or expcnt\n"
         "test.s:1:52: Warning: vmcnt was already defined\n" },

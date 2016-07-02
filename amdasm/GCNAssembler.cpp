@@ -622,12 +622,8 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                 skipCharAndSpacesToEnd(linePtr, end);
                 if (linePtr==end)
                     break;
-                if (linePtr[0] != '&')
-                {
-                    asmr.printError(linePtr, "Expected '&' before lock function");
-                    return;
-                }
-                ++linePtr;
+                if (linePtr[0] == '&')
+                    ++linePtr;
             }
             break;
         }
