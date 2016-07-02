@@ -127,12 +127,29 @@ GCNAssembler::~GCNAssembler()
 namespace CLRX
 {
 
+bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
+                     GCNEncSize gcnEncSize, uint32_t wordsNum)
+{
+    if (gcnEncSize==GCNEncSize::BIT32 && wordsNum!=1)
+    {
+        asmr.printError(insnPtr, "32-bit encoding specified when 64-bit encoding");
+        return false;
+    }
+    if (gcnEncSize==GCNEncSize::BIT64 && wordsNum!=2)
+    {
+        asmr.printError(insnPtr, "64-bit encoding specified when 32-bit encoding");
+        return false;
+    }
+    return true;
+}
+
 void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     bool good = true;
     RegRange dstReg(0, 0);
+    const char* insnPtr = linePtr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -169,6 +186,8 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             SLEV(words[1], 0);
         wordsNum++;
     }
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
@@ -195,10 +214,11 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     bool good = true;
     RegRange dstReg(0, 0);
+    const char* insnPtr = linePtr;
     if ((gcnInsn.mode & GCN_MASK1) != GCN_DST_NONE)
     {
         good &= parseSRegRange(asmr, linePtr, dstReg, arch,
@@ -230,6 +250,8 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             SLEV(words[1], 0);
         wordsNum++;
     }
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
@@ -270,10 +292,11 @@ static const size_t hwregNamesMapSize = sizeof(hwregNamesMap) /
 
 void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    const char* insnPtr = linePtr;
     RegRange dstReg(0, 0);
     if ((gcnInsn.mode & GCN_IMM_DST) == 0)
     {
@@ -383,6 +406,9 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     const cxuint wordsNum = (gcnInsn.mode & GCN_SOPK_CONST) ? 2 : 1;
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
+    
     uint32_t words[2];
     SLEV(words[0], 0xb0000000U | imm16 | uint32_t(dstReg.start)<<16 |
                 uint32_t(gcnInsn.code1)<<23);
@@ -410,9 +436,10 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     bool good = true;
+    const char* insnPtr = linePtr;
     std::unique_ptr<AsmExpression> src0Expr, src1Expr;
     GCNOperand src0Op{};
     good &= parseOperand(asmr, linePtr, src0Op, &src0Expr, arch,
@@ -445,6 +472,8 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             SLEV(words[1], 0);
         wordsNum++;
     }
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     // set expression targets
     if (src0Expr!=nullptr)
         src0Expr->setTarget(AsmExprTarget(GCNTGT_LITIMM, asmr.currentSection,
@@ -481,10 +510,16 @@ static const char* sendMsgGSOPTable[] =
 
 void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    if (gcnEncSize==GCNEncSize::BIT64)
+    {
+        asmr.printError(linePtr, "Only 32-bit size for SOPP encoding");
+        return;
+    }
+    
     uint16_t imm16 = 0;
     std::unique_ptr<AsmExpression> imm16Expr;
     switch (gcnInsn.mode&GCN_MASK1)
@@ -706,10 +741,16 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for SMRD encoding");
+        return;
+    }
+    
     RegRange dstReg(0, 0);
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
@@ -768,10 +809,15 @@ void GCNAsmUtils::parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for SMRD encoding");
+        return;
+    }
     RegRange dataReg(0, 0);
     RegRange sbaseReg(0, 0);
     RegRange soffsetReg(0, 0);
@@ -866,10 +912,12 @@ void GCNAsmUtils::parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    const char* insnPtr = linePtr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
@@ -953,7 +1001,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
         (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0 ||
         /* srcCC!=VCC or dstCC!=VCC */
-        (haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106);
+        (haveDstCC && dstCCReg.start!=106) || (haveSrcCC && srcCCReg.start!=106) ||
+        (gcnEncSize==GCNEncSize::BIT64);
     
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
         (src0Op.range.start<108 || src0Op.range.start==124 ||
@@ -1090,6 +1139,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));
         wordsNum++;
     }
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -1120,9 +1171,11 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     bool good = true;
+    const char* insnPtr = linePtr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
@@ -1159,7 +1212,8 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     bool vop3 = ((!isGCN12 && src0Op.vopMods!=0) ||
-            (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0);
+            (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0) ||
+            (gcnEncSize==GCNEncSize::BIT64);
     
     bool sextFlags = (src0Op.vopMods & VOPOP_SEXT);
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
@@ -1244,6 +1298,8 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0));
         wordsNum++;
     }
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -1266,9 +1322,11 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     bool good = true;
+    const char* insnPtr = linePtr;
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
     
@@ -1306,7 +1364,8 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     bool vop3 = (dstReg.start!=106) || (src1Op.range.start<256) ||
         (!isGCN12 && (src0Op.vopMods!=0 || src1Op.vopMods!=0)) ||
-        (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0;
+        (modifiers&~(VOP3_BOUNDCTRL|(extraMods.needSDWA?VOP3_CLAMP:0)))!=0 ||
+        (gcnEncSize==GCNEncSize::BIT64);
     
     if ((src0Op.range.start==255 || src1Op.range.start==255) &&
         (src0Op.range.start<108 || src0Op.range.start==124 ||
@@ -1419,6 +1478,8 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0));
         wordsNum++;
     }
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
     /// prevent freeing expression
@@ -1433,9 +1494,15 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     bool good = true;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for VOP3 encoding");
+        return;
+    }
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
@@ -1616,12 +1683,11 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             wordsNum--;
         }
     }
-    if (wordsNum==2)
-        SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
-                (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
-                ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
-                ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
-                ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
+    SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
+            (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
+            ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
+            ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
+            ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
@@ -1654,11 +1720,16 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     bool good = true;
     RegRange dstReg(0, 0);
     RegRange srcReg(0, 0);
+    if (gcnEncSize==GCNEncSize::BIT64)
+    {
+        asmr.printError(linePtr, "Only 32-bit size for VINTRP encoding");
+        return;
+    }
     
     good &= parseVRegRange(asmr, linePtr, dstReg, 1);
     if (!skipRequiredComma(asmr, linePtr))
@@ -1689,10 +1760,16 @@ void GCNAsmUtils::parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& 
 
 void GCNAsmUtils::parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for DS encoding");
+        return;
+    }
     RegRange dstReg(0, 0);
     RegRange addrReg(0, 0);
     RegRange data0Reg(0, 0), data1Reg(0, 0);
@@ -1901,10 +1978,16 @@ static const std::pair<const char*, cxuint> mtbufNFMTNamesMap[] =
 
 void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
     bool good = true;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for MUBUF/MTBUF encoding");
+        return;
+    }
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
@@ -2157,9 +2240,15 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
 
 void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* instrPlace, const char* linePtr, uint16_t arch,
-                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs)
+                  std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                  GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for MIMG encoding");
+        return;
+    }
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdataReg(0, 0);
@@ -2338,9 +2427,14 @@ void GCNAsmUtils::parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for EXP encoding");
+        return;
+    }
     bool good = true;
     cxbyte enMask = 0xf;
     cxbyte target = 0;
@@ -2493,9 +2587,14 @@ void GCNAsmUtils::parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcn
 
 void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                  GCNAssembler::Regs& gcnRegs)
+                  GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
 {
     const char* end = asmr.line+asmr.lineSize;
+    if (gcnEncSize==GCNEncSize::BIT32)
+    {
+        asmr.printError(linePtr, "Only 64-bit size for FLAT encoding");
+        return;
+    }
     bool good = true;
     RegRange vaddrReg(0, 0);
     RegRange vdstReg(0, 0);
@@ -2591,9 +2690,27 @@ void GCNAsmUtils::parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gc
 
 };
 
-void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
+void GCNAssembler::assemble(const CString& inMnemonic, const char* mnemPlace,
             const char* linePtr, const char* lineEnd, std::vector<cxbyte>& output)
 {
+    CString mnemonic;
+    size_t inMnemonicLength = inMnemonic.size();
+    GCNEncSize gcnEncSize = GCNEncSize::UNKNOWN;
+    if (inMnemonicLength>4 &&
+        ::strcasecmp(inMnemonic.c_str()+inMnemonicLength-4, "_e64")==0)
+    {
+        gcnEncSize = GCNEncSize::BIT64;
+        mnemonic = inMnemonic.substr(0, inMnemonicLength-4);
+    }
+    else if (inMnemonicLength>4 &&
+        ::strcasecmp(inMnemonic.c_str()+inMnemonicLength-4, "_e32")==0)
+    {
+        gcnEncSize = GCNEncSize::BIT32;
+        mnemonic = inMnemonic.substr(0, inMnemonicLength-4);
+    }
+    else
+        mnemonic = inMnemonic;
+    
     auto it = binaryFind(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
                GCNAsmInstruction{mnemonic.c_str()},
                [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)
@@ -2617,73 +2734,73 @@ void GCNAssembler::assemble(const CString& mnemonic, const char* mnemPlace,
     {
         case GCNENC_SOPC:
             GCNAsmUtils::parseSOPCEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SOPP:
             GCNAsmUtils::parseSOPPEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SOP1:
             GCNAsmUtils::parseSOP1Encoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SOP2:
             GCNAsmUtils::parseSOP2Encoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SOPK:
             GCNAsmUtils::parseSOPKEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_SMRD:
             if (curArchMask & ARCH_RX3X0)
                 GCNAsmUtils::parseSMEMEncoding(assembler, *it, linePtr,
-                                       curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             else
                 GCNAsmUtils::parseSMRDEncoding(assembler, *it, linePtr,
-                                       curArchMask, output, regs);
+                               curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_VOPC:
             GCNAsmUtils::parseVOPCEncoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_VOP1:
             GCNAsmUtils::parseVOP1Encoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                                   curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_VOP2:
             GCNAsmUtils::parseVOP2Encoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                                   curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_VOP3A:
         case GCNENC_VOP3B:
             GCNAsmUtils::parseVOP3Encoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                                   curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_VINTRP:
             GCNAsmUtils::parseVINTRPEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_DS:
             GCNAsmUtils::parseDSEncoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_MUBUF:
         case GCNENC_MTBUF:
             GCNAsmUtils::parseMUBUFEncoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_MIMG:
             GCNAsmUtils::parseMIMGEncoding(assembler, *it, mnemPlace, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_EXP:
             GCNAsmUtils::parseEXPEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         case GCNENC_FLAT:
             GCNAsmUtils::parseFLATEncoding(assembler, *it, linePtr,
-                                   curArchMask, output, regs);
+                           curArchMask, output, regs, gcnEncSize);
             break;
         default:
             break;
@@ -2804,8 +2921,17 @@ bool GCNAssembler::resolveCode(const AsmSourcePos& sourcePos, cxuint targetSecti
     }
 }
 
-bool GCNAssembler::checkMnemonic(const CString& mnemonic) const
+bool GCNAssembler::checkMnemonic(const CString& inMnemonic) const
 {
+    CString mnemonic;
+    size_t inMnemonicLength = inMnemonic.size();
+    if (inMnemonicLength>4 &&
+        (::strcasecmp(inMnemonic.c_str()+inMnemonicLength-4, "_e64")==0 ||
+            ::strcasecmp(inMnemonic.c_str()+inMnemonicLength-4, "_e32")==0))
+        mnemonic = inMnemonic.substr(0, inMnemonicLength-4);
+    else
+        mnemonic = inMnemonic;
+    
     return std::binary_search(gcnInstrSortedTable.begin(), gcnInstrSortedTable.end(),
                GCNAsmInstruction{mnemonic.c_str()},
                [](const GCNAsmInstruction& instr1, const GCNAsmInstruction& instr2)

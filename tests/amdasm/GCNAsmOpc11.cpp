@@ -174,6 +174,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "test.s:1:35: Error: Expected ',' before argument\n" },
     /* SOP2 encodings */
     { "    s_sub_u32  s21, s4, s61", 0x80953d04U, 0, false, true, "" },
+    { "    s_sub_u32_e32  s21, s4, s61", 0x80953d04U, 0, false, true, "" },
     { "    s_add_i32  s21, s4, s61", 0x81153d04U, 0, false, true, "" },
     { "    s_sub_i32  s21, s4, s61", 0x81953d04U, 0, false, true, "" },
     { "    s_addc_u32  s21, s4, s61", 0x82153d04U, 0, false, true, "" },
@@ -571,6 +572,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "tx=%s21; v_add_f32  v154, tx, v107", 0x0734d615U, 0, false, true, "" },
     { "    v_add_f32  v154, s21, v107", 0x0734d615U, 0, false, true, "" },
     { "    v_add_f32  v154, v21, v107 vop3", 0xd206009aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32_e64  v154, v21, v107", 0xd206009aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, s98", 0xd206009aU, 0x0000c515U, true, true, "" },
     { "    v_add_f32  v154, abs(v21), v107", 0xd206019aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, abs(v21), abs(v107)",
@@ -756,6 +758,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_subrev_u32  v55, s[10:11], s27, -v90",
         0xd24e0a37U, 0x4002b41bU, true, true, "" },
     { "    v_addc_u32  v154, vcc, v21, v107, vcc", 0x5134d715U, 0, false, true, "" },
+    { "    v_addc_u32_e32  v154, vcc, v21, v107, vcc", 0x5134d715U, 0, false, true, "" },
     { "    v_subb_u32  v154, vcc, v21, v107, vcc", 0x5334d715U, 0, false, true, "" },
     { "    v_subbrev_u32  v154, vcc, v21, v107, vcc", 0x5534d715U, 0, false, true, "" },
     /* VOP3B errors */
@@ -1729,6 +1732,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0xd2e80037U, 0x00034d4fU, true, true, "" },
     /* VINTRP encoding */
     { "   v_interp_p1_f32 v93, v211, attr26.w", 0xc9746bd3U, 0, false, true, "" },
+    { "   v_interp_p1_f32_e32 v93, v211, attr26.w", 0xc9746bd3U, 0, false, true, "" },
     { "   v_interp_p1_f32 v93, v211, attr26 . w", 0xc9746bd3U, 0, false, true, "" },
     { "   v_interp_p1_f32 v93, v211, aTTR26 . W", 0xc9746bd3U, 0, false, true, "" },
     { "   v_interp_p1_f32 v93, v211, aTTR00026 . W", 0xc9746bd3U, 0, false, true, "" },
@@ -1767,6 +1771,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* DS encoding */
     { "   ds_add_u32  v71, v169 offset:52583", 0xd800cd67U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169   ", 0xd8000000U, 0x0000a947U, true, true, "" },
+    { "   ds_add_u32_e64  v71, v169   ", 0xd8000000U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169 offset :  52583",
         0xd800cd67U, 0x0000a947U, true, true, "" },
     { "   ds_add_u32  v71, v169", 0xd8000000U, 0x0000a947U, true, true, "" },
@@ -2044,6 +2049,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "   ds_max_src2_f64 v71 offset:52583", 0xdb4ccd67U, 0x00000047U, true, true, "" },
     /* MUBUF */
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
+        "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x_e64  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 lds", 0xe001c25bU, 0x23543d12U, true, true, "" },

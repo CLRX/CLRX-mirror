@@ -111,6 +111,13 @@ struct CLRX_INTERNAL VOPExtraModifiers
     cxuint needDPP:1;
 };
 
+enum class GCNEncSize
+{
+    UNKNOWN,
+    BIT32,
+    BIT64
+};
+
 struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
 {
     static bool printRegisterRangeExpected(Assembler& asmr, const char* linePtr,
@@ -184,59 +191,69 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
     static bool getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char* outStr,
                const char*& linePtr, const char* objName);
     
+    static bool checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
+                     GCNEncSize gcnEncSize, uint32_t wordsNum);
+    
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     
     static void parseSMRDEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseSMEMEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     
     static void parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseVINTRPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseDSEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseMIMGEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* instrPlace, const char* linePtr, uint16_t arch,
-                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs);
+                      std::vector<cxbyte>& output, GCNAssembler::Regs& gcnRegs,
+                      GCNEncSize gcnEncSize);
     static void parseEXPEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
     static void parseFLATEncoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
-                      GCNAssembler::Regs& gcnRegs);
+                      GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize);
 };
 
 static inline bool isXRegRange(RegRange pair, cxuint regsNum = 1)
