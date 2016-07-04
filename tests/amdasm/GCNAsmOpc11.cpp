@@ -2061,6 +2061,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     /* MUBUF */
     { "    buffer_load_format_x  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], s[80:83], s35 "
+        "offset:603 glc slc tfe", 0xe000425bU, 0x23d43d00U, true, true, "" },
     { "    buffer_load_format_x_e64  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "
@@ -2134,6 +2136,9 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
     { "    buffer_load_format_x v61, v18, s[80:83], xx idxen offset:603",
         0, 0, false, false, "test.s:1:46: Error: Literal in MUBUF is illegal\n" },
+    { "    buffer_load_format_x  v[61:62], s[80:83], s35 "
+        "offset:603 glc slc addr64 tfe", 0, 0, false, false,
+        "test.s:1:37: Error: VADDR is required if idxen, offen or addr64 is enabled\n" },
     /* other MUBUF instructions */
     { "    buffer_load_format_x v61, v18, s[80:83], s35 idxen offset:603",
         0xe000225bU, 0x23143d12U, true, true, "" },

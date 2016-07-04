@@ -2038,6 +2038,7 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     skipSpacesToEnd(linePtr, end);
     const char* vdataPlace = linePtr;
     const char* vaddrPlace = nullptr;
+    bool parsedVaddr = false;
     if (mode1 != GCN_ARG_NONE)
     {
         if (mode1 != GCN_MUBUF_NOVAD)
@@ -2048,9 +2049,16 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
             
             skipSpacesToEnd(linePtr, end);
             vaddrPlace = linePtr;
-            good &= parseVRegRange(asmr, linePtr, vaddrReg, 0);
-            if (!skipRequiredComma(asmr, linePtr))
-                return;
+            if (!parseVRegRange(asmr, linePtr, vaddrReg, 0, false))
+                good = false;
+            if (vaddrReg) // only if vaddr is
+            {
+                parsedVaddr = true;
+                if (!skipRequiredComma(asmr, linePtr))
+                    return;
+            }
+            else // if not, default is v0
+                vaddrReg = {256, 257};
         }
         good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
         if (!skipRequiredComma(asmr, linePtr))
@@ -2217,12 +2225,21 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
     }
     if (vaddrReg)
     {
-        const cxuint vaddrSize = ((haveOffen&&haveIdxen) || haveAddr64) ? 2 : 1;
-        if (!isXRegRange(vaddrReg, vaddrSize))
-        {
-            asmr.printError(vaddrPlace, (vaddrSize==2) ? "Required 2 vector registers" : 
-                        "Required 1 vector register");
+        if (!parsedVaddr && (haveIdxen || haveOffen || haveAddr64))
+        {   // no vaddr in instruction
+            asmr.printError(vaddrPlace, "VADDR is required if idxen, offen "
+                    "or addr64 is enabled");
             good = false;
+        }
+        else
+        {
+            const cxuint vaddrSize = ((haveOffen&&haveIdxen) || haveAddr64) ? 2 : 1;
+            if (!isXRegRange(vaddrReg, vaddrSize))
+            {
+                asmr.printError(vaddrPlace, (vaddrSize==2) ? "Required 2 vector registers" : 
+                            "Required 1 vector register");
+                good = false;
+            }
         }
     }
     
