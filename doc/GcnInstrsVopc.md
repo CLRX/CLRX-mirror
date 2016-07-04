@@ -47,7 +47,7 @@ Syntax: INSTRUCTION SDST(2), SRC0, SRC1 [MODIFIERS]
 Modifiers:
 
 * -SRC - negate floating point value from source operand. Applied after ABS modifier.
-* ABS(SRC) - apply absolute value to source operand
+* ABS(SRC), |SRC| - apply absolute value to source operand
 
 NOTE: ABS and negation is applied to source operand for any instruction.
 

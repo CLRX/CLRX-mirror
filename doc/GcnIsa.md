@@ -14,6 +14,8 @@ few instruction's kinds: scalar, vector, main memory access instructions.
 Optionally, suffixes can be appended to instruction mnemonic to indicate encoding size.
 `_e32` suffix marks that instruction will be encoded in single dword.
 `_e64` suffix marks that instruction will be encoded in two dwords.
+`_sdwa` suffix marks that instruction uses SDWA encoding.
+`_dpp` suffix marks that instruction uses DPP encoding.
 
 ### Language that describes operation.
 

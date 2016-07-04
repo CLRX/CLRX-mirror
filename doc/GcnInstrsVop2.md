@@ -54,7 +54,7 @@ Modifiers:
 * MUL:2, MUL:4, DIV:2 - OMOD modifiers. Multiply destination floating point value by
 2.0, 4.0 or 0.5 respectively. Clamping applied after OMOD modifier.
 * -SRC - negate floating point value from source operand. Applied after ABS modifier.
-* ABS(SRC) - apply absolute value to source operand
+* ABS(SRC), |SRC| - apply absolute value to source operand
 
 NOTE: OMOD modifier doesn't work if output denormals are allowed
 (5 bit of MODE register for single precision or 7 bit for double precision).  
