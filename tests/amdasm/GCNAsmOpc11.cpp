@@ -586,6 +586,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    v_add_f32_e64  v154, v21, v107", 0xd206009aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, s98", 0xd206009aU, 0x0000c515U, true, true, "" },
     { "    v_add_f32  v154, abs(v21), v107", 0xd206019aU, 0x0002d715U, true, true, "" },
+    { "    v_add_f32  v154, |v21|, v107", 0xd206019aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, abs(v21), abs(v107)",
         0xd206039aU, 0x0002d715U, true, true, "" },
     { "    v_add_f32  v154, v21, abs(v107)", 0xd206029aU, 0x0002d715U, true, true, "" },

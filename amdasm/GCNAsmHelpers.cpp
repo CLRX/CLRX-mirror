@@ -785,6 +785,7 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
             operand.vopMods |= VOPOP_NEG;
             skipCharAndSpacesToEnd(linePtr, end);
         }
+        bool llvmAbs = false;
         if (linePtr+3 <= end && toLower(linePtr[0])=='a' &&
             toLower(linePtr[1])=='b' && toLower(linePtr[2])=='s')
         {
@@ -801,6 +802,13 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
                 return false;
             }
         }
+        else if (linePtr<=end && linePtr[0]=='|')
+        {   // LLVM like syntax for abs modifier
+            linePtr++;
+            skipSpacesToEnd(linePtr, end);
+            operand.vopMods |= VOPOP_ABS;
+            llvmAbs = true;
+        }
         
         bool good;
         if ((operand.vopMods&(VOPOP_NEG|VOPOP_ABS)) != VOPOP_NEG)
@@ -816,7 +824,8 @@ bool GCNAsmUtils::parseOperand(Assembler& asmr, const char*& linePtr, GCNOperand
         if (operand.vopMods & VOPOP_ABS)
         {
             skipSpacesToEnd(linePtr, end);
-            if (linePtr!=end && *linePtr==')')
+            if (linePtr!=end && ((*linePtr==')' && !llvmAbs) ||
+                        (*linePtr=='|' && llvmAbs)))
                 linePtr++;
             else
             {
