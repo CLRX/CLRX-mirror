@@ -1494,11 +1494,7 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                   GCNEncSize gcnEncSize)
 {
     bool good = true;
-    if (gcnEncSize==GCNEncSize::BIT32)
-    {
-        asmr.printError(linePtr, "Only 64-bit size for VOP3 encoding");
-        return;
-    }
+    const char* insnPtr = linePtr;
     const uint16_t mode1 = (gcnInsn.mode & GCN_MASK1);
     const uint16_t mode2 = (gcnInsn.mode & GCN_MASK2);
     const bool isGCN12 = (arch & ARCH_RX3X0)!=0;
@@ -1686,6 +1682,8 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
                 ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
                 ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
     
+    if (!checkGCNEncodingSize(asmr, insnPtr, gcnEncSize, wordsNum))
+        return;
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
     // update register pool
