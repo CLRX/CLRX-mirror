@@ -487,6 +487,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_sendmsg  sendmsg(MSG_GS, GS_OP_EMIT, 0)", 0xbf900022U, 0, false, true, "" },
     { "    s_sendmsg  sendmsg(gs, emit_cut, 3)", 0xbf900332U, 0,
         false, true, "" },
+    { "    s_sendmsg  sendmsg(gs, emit-cut, 3)", 0xbf900332U, 0,
+        false, true, "" },
     { "    s_sendmsg  sendmsg ( gs    , emit_cut  , 3  )", 0xbf900332U, 0,
         false, true, "" },
     { "    s_sendmsg  sendmsg(MSG_GS, GS_OP_EMIT_CUT, 3)", 0xbf900332U, 0,

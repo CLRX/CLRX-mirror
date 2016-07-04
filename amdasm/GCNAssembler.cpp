@@ -713,6 +713,16 @@ void GCNAsmUtils::parseSOPPEncoding(Assembler& asmr, const GCNAsmInstruction& gc
                     for (gsopIndex = 0; gsopIndex < 4; gsopIndex++)
                         if (::strcmp(name+gsopNameIndex, sendMsgGSOPTable[gsopIndex])==0)
                             break;
+                    if (gsopIndex==2 && gsopNameIndex==0)
+                    {   /* 'emit-cut' handling */
+                        if (linePtr+4<end && ::strncmp(linePtr, "-cut", 4)==0 &&
+                            (linePtr==end || (!isAlnum(*linePtr) && *linePtr!='_' &&
+                            *linePtr!='$' && *linePtr!='.')))
+                        {
+                            linePtr+=4;
+                            gsopIndex++;
+                        }
+                    }
                     if (gsopIndex == 4)
                     {   // not found
                         gsopIndex = 0;
