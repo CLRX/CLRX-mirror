@@ -44,12 +44,12 @@ Bits  | Name     | Description
 55    | TFE      | Texture Fail Enable ???
 56-63 | SOFFSET  | Scalar base offset operand
 
-Instruction syntax: INSTRUCTION VDATA, VADDR(1:2), SRSRC(4), SOFFSET [MODIFIERS]
+Instruction syntax: INSTRUCTION VDATA, [VADDR(1:2),] SRSRC(4), SOFFSET [MODIFIERS]
 
 Modifiers can be supplied in any order. Modifiers list:
 OFFEN, IDXEN, SLC, GLC, TFE, ADDR64, LDS, OFFSET:OFFSET.
 The TFE flag requires additional the VDATA register. IDXEN and OFFEN both enabled
-requires 64-bit VADDR.
+requires 64-bit VADDR. VADDR is optional if no IDXEN, OFFEN and ADDR64.
 
 The MUBUF instructions is executed in order. Any MUBUF instruction increments VMCNT and
 it decrements VMCNT after memory operation. Any memory-write operation increments EXPCNT,

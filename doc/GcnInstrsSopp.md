@@ -207,7 +207,7 @@ List of the GSOP's:
 * NOP, GS_NOP - M0&0xff defines wave id. only GS_DONE
 * CUT, GS_CUT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent, M0&0xff - gs waveID
 * EMIT, GS_EMIT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent, M0&0xff - gs waveID
-* EMIT_CUT, GS_EMIT_CUT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent,
+* EMIT_CUT, GS_EMIT_CUT, EMIT-CUT - (SIMM16 & 0x300)>>8 - streamid, EXEC also sent,
 M0&0xff - gs waveID
 
 #### S_SENDMSGHALT

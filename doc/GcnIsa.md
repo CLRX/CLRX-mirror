@@ -9,6 +9,12 @@ The most CPU architectures provides an unified memory access approach. By contra
 the most GPU's have few different resource types for which access is different. Hence,
 few instruction's kinds: scalar, vector, main memory access instructions.
 
+### Instruction suffixes
+
+Optionally, suffixes can be appended to instruction mnemonic to indicate encoding size.
+`_e32` suffix marks that instruction will be encoded in single dword.
+`_e64` suffix marks that instruction will be encoded in two dwords.
+
 ### Language that describes operation.
 
 In 'Operation' field, this document describes operation in specific computer language.
