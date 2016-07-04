@@ -1679,11 +1679,12 @@ void GCNAsmUtils::parseVOP3Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             wordsNum--;
         }
     }
-    SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
-            (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
-            ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
-            ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
-            ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
+    if (wordsNum==2)
+        SLEV(words[1], src0Op.range.start | (uint32_t(src1Op.range.start)<<9) |
+                (uint32_t(src2Op.range.start)<<18) | ((modifiers & 3) << 27) |
+                ((src0Op.vopMods & VOPOP_NEG) ? (1U<<29) : 0) |
+                ((src1Op.vopMods & VOPOP_NEG) ? (1U<<30) : 0) |
+                ((src2Op.vopMods & VOPOP_NEG) ? (1U<<31) : 0));
     
     output.insert(output.end(), reinterpret_cast<cxbyte*>(words),
             reinterpret_cast<cxbyte*>(words + wordsNum));
