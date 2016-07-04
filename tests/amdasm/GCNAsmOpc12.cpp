@@ -317,6 +317,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
         0x0134d6faU, 0xbe, true, true, ""  },
     { "   v_cndmask_b32  v154, v190, v107, vcc bank_mask:0 row_mask:0",
         0x0134d6faU, 0xe4be, true, true, ""  },
+    { "   v_cndmask_b32_dpp  v154, v190, v107, vcc bank_mask:0 row_mask:0",
+        0x0134d6faU, 0xe4be, true, true, ""  },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[2,1,0,3] "
         "bank_mask:14 row_mask:11", 0x0134d6faU, 0xbe00c6be, true, true, "" },
     { "   v_cndmask_b32  v154, v190, v107, vcc quad_perm:[3,2,1,2] "
@@ -591,6 +593,7 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    v_ldexp_f16  v55, s27, v90 vop3", 0xd1330037U, 0x0002b41bU, true, true, "" },
     /* VOP1 - SDWA */
     { "    v_mov_b32  v158, sext(v79)", 0x7f3c02f9U, 0x0e064fU, true, true, "" },
+    { "    v_mov_b32_sdwa  v158, sext(v79)", 0x7f3c02f9U, 0x0e064fU, true, true, "" },
     { "    v_mov_b32  v158, sext(abs(v79))", 0x7f3c02f9U, 0x2e064fU, true, true, "" },
     { "    v_mov_b32  v158, sext(-abs(v79))", 0x7f3c02f9U, 0x3e064fU, true, true, "" },
     { "    v_mov_b32  v158, v79 dst_sel:w1 src0_sel:b2 dst_un:preserve",
