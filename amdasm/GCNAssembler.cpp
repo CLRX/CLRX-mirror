@@ -1087,7 +1087,8 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
              mode1 == GCN_ARG1_IMM || mode1 == GCN_ARG2_IMM);
     
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
+                gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
         if (needImm)
         {
@@ -1111,7 +1112,12 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         }
         if (!extraMods.needSDWA && !extraMods.needDPP)
-            extraMods.needSDWA = true; // by default we choose SDWA word
+        {
+            if (gcnVOPEnc!=GCNVOPEnc::DPP)
+                extraMods.needSDWA = true; // by default we choose SDWA word
+            else
+                extraMods.needDPP = true;
+        }
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1276,7 +1282,8 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             (gcnEncSize==GCNEncSize::BIT64);
     
     bool sextFlags = (src0Op.vopMods & VOPOP_SEXT);
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
+                gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
         if (src0Op && src0Op.range.start==255)
         {
@@ -1300,7 +1307,12 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         }
         if (!extraMods.needSDWA && !extraMods.needDPP)
-            extraMods.needSDWA = true; // by default we choose SDWA word
+        {
+            if (gcnVOPEnc!=GCNVOPEnc::DPP)
+                extraMods.needSDWA = true; // by default we choose SDWA word
+            else
+                extraMods.needDPP = true;
+        }
     }
     else if (isGCN12 && (src0Op.vopMods & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1447,7 +1459,8 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     const bool needImm = src0Op.range.start==255 || src1Op.range.start==255;
     
     bool sextFlags = ((src0Op.vopMods|src1Op.vopMods) & VOPOP_SEXT);
-    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags))
+    if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
+                gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
         if (needImm)
         {
@@ -1471,7 +1484,12 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
             return;
         }
         if (!extraMods.needSDWA && !extraMods.needDPP)
-            extraMods.needSDWA = true; // by default we choose SDWA word
+        {
+            if (gcnVOPEnc!=GCNVOPEnc::DPP)
+                extraMods.needSDWA = true; // by default we choose SDWA word
+            else
+                extraMods.needDPP = true;
+        }
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
