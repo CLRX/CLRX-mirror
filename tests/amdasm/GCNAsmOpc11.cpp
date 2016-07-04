@@ -2064,6 +2064,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v[61:62], s[80:83], s35 "
         "offset:603 glc slc tfe", 0xe000425bU, 0x23d43d00U, true, true, "" },
+    { "    buffer_load_format_x  v[61:62], off, s[80:83], s35 "
+        "offset:603 glc slc tfe", 0xe000425bU, 0x23d43d00U, true, true, "" },
     { "    buffer_load_format_x_e64  v[61:62], v[18:19], s[80:83], s35 "
         "offset:603 glc slc addr64 tfe", 0xe000c25bU, 0x23d43d12U, true, true, "" },
     { "    buffer_load_format_x  v61, v[18:19], s[80:83], s35 "

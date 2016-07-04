@@ -2057,8 +2057,17 @@ void GCNAsmUtils::parseMUBUFEncoding(Assembler& asmr, const GCNAsmInstruction& g
                 if (!skipRequiredComma(asmr, linePtr))
                     return;
             }
-            else // if not, default is v0
+            else
+            {// if not, default is v0
+                if (linePtr+3<=end && ::strncasecmp(linePtr, "off", 3)==0 &&
+                    (isSpace(linePtr[3]) || linePtr[3]==','))
+                {
+                    linePtr+=3;
+                    if (!skipRequiredComma(asmr, linePtr))
+                        return;
+                }
                 vaddrReg = {256, 257};
+            }
         }
         good &= parseSRegRange(asmr, linePtr, srsrcReg, arch, 4);
         if (!skipRequiredComma(asmr, linePtr))
