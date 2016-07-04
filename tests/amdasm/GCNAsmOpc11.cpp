@@ -52,8 +52,11 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_add_u32  s21, s4, 0x2a", 0x8015aa04U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, -7", 0x8015c704U, 0, false, true, "" },
     { "    s_add_u32  s21, s4, lit(-7)", 0x8015ff04U, 0xfffffff9, true, true, "" },
+    { "    s_add_u32_e64  s21, s4, -7", 0x8015ff04U, 0xfffffff9, true, true, "" },
     { "    s_add_u32  s21, s4, lit(0)", 0x8015ff04U, 0x0, true, true, "" },
     { "    s_add_u32  s21, s4, lit(32)", 0x8015ff04U, 0x20, true, true, "" },
+    { "    s_add_u32_e64 s21, s4, 32", 0x8015ff04U, 0x20, true, true, "" },
+    { "    s_add_u32_e64 s21, 32, s4", 0x801504ffU, 0x20, true, true, "" },
     { "    s_add_u32  s21, s4, lit  (  32  )  ", 0x8015ff04U, 0x20, true, true, "" },
     { "    s_add_u32  s21, s4, LiT  (  32  )  ", 0x8015ff04U, 0x20, true, true, "" },
     { "    s_add_u32  s21, s4, lit(0.0)", 0x8015ff04U, 0x0, true, true, "" },
@@ -218,6 +221,7 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_absdiff_i32  s21, s4, s61", 0x96153d04U, 0, false, true, "" },
     /* SOP1 */
     { "    s_mov_b32  s86, s20", 0xbed60314U, 0, false, true, "" },
+    { "    s_mov_b32_e64  s86, -4", 0xbed603ffU, 0xfffffffcU, true, true, "" },
     { "    s_mov_b32  s86, 0xadbc", 0xbed603ff, 0xadbc, true, true, "" },
     { "    s_mov_b32  s86, xx; xx=0xadbc", 0xbed603ff, 0xadbc, true, true, "" },
     { "    s_mov_b64  s[86:87], s[20:21]", 0xbed60414U, 0, false, true, "" },
@@ -271,6 +275,8 @@ const GCNAsmOpcodeCase encGCNOpcodeCases[] =
     { "    s_mov_fed_b32  s86, s20", 0xbed63514U, 0, false, true, "" },
     /* SOPC */
     { "    s_cmp_eq_i32  s29, s69", 0xbf00451dU, 0, false, true, "" },
+    { "    s_cmp_eq_i32_e64  s29, 51", 0xbf00ff1dU, 51, true, true, "" },
+    { "    s_cmp_eq_i32_e64  51, s69", 0xbf0045ffU, 51, true, true, "" },
     { "    s_cmp_eq_i32  12222, s69", 0xbf0045ffU, 12222, true, true, "" },
     { "    s_cmp_eq_i32  xx, s69; xx=12222", 0xbf0045ffU, 12222, true, true, "" },
     { "    s_cmp_eq_i32  s29, 32545", 0xbf00ff1dU, 32545, true, true, "" },

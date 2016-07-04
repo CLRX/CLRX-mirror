@@ -173,6 +173,21 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (gcnEncSize==GCNEncSize::BIT64)
+    {   // try to promote constant immediate to literal
+        if (src0Op.range.start>=128 && src0Op.range.start<=208)
+        {
+            src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
+                    192-src0Op.range.start;
+            src0Op.range.start = 255;
+        }
+        else if (src1Op.range.start>=128 && src1Op.range.start<=208)
+        {
+            src1Op.value = src1Op.range.start<193? src1Op.range.start-128 :
+                    192-src1Op.range.start;
+            src1Op.range.start = 255;
+        }
+    }
     // put data
     cxuint wordsNum = 1;
     uint32_t words[2];
@@ -238,6 +253,15 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (gcnEncSize==GCNEncSize::BIT64)
+    {   // try to promote constant immediate to literal
+        if (src0Op.range.start>=128 && src0Op.range.start<=208)
+        {
+            src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
+                    192-src0Op.range.start;
+            src0Op.range.start = 255;
+        }
+    }
     cxuint wordsNum = 1;
     uint32_t words[2];
     SLEV(words[0], 0xbe800000U | (uint32_t(gcnInsn.code1)<<8) | src0Op.range.start |
@@ -458,6 +482,21 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (!good || !checkGarbagesAtEnd(asmr, linePtr))
         return;
     
+    if (gcnEncSize==GCNEncSize::BIT64)
+    {   // try to promote constant immediate to literal
+        if (src0Op.range.start>=128 && src0Op.range.start<=208)
+        {
+            src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
+                    192-src0Op.range.start;
+            src0Op.range.start = 255;
+        }
+        else if (src1Op.range.start>=128 && src1Op.range.start<=208)
+        {
+            src1Op.value = src1Op.range.start<193? src1Op.range.start-128 :
+                    192-src1Op.range.start;
+            src1Op.range.start = 255;
+        }
+    }
     // put data
     cxuint wordsNum = 1;
     uint32_t words[2];
