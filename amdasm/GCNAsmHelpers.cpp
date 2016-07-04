@@ -1832,4 +1832,71 @@ bool GCNAsmUtils::getMUBUFFmtNameArg(Assembler& asmr, size_t maxOutStrSize, char
     return true;
 }
 
+bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
+                     GCNEncSize gcnEncSize, uint32_t wordsNum)
+{
+    if (gcnEncSize==GCNEncSize::BIT32 && wordsNum!=1)
+    {
+        asmr.printError(insnPtr, "32-bit encoding specified when 64-bit encoding");
+        return false;
+    }
+    if (gcnEncSize==GCNEncSize::BIT64 && wordsNum!=2)
+    {
+        asmr.printError(insnPtr, "64-bit encoding specified when 32-bit encoding");
+        return false;
+    }
+    return true;
+}
+
+bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
+                     GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers)
+{
+    if (vopEnc==GCNVOPEnc::DPP && !modifiers->needDPP)
+    {
+        asmr.printError(insnPtr, "DPP encoding specified when DPP not present");
+        return false;
+    }
+    if (vopEnc==GCNVOPEnc::SDWA && !modifiers->needSDWA)
+    {
+        asmr.printError(insnPtr, "DPP encoding specified when DPP not present");
+        return false;
+    }
+    return true;
+}
+
+bool GCNAsmUtils::checkGCNVOPExtraModifers(Assembler& asmr, bool needImm, bool sextFlags,
+                 bool vop3, GCNVOPEnc gcnVOPEnc, const GCNOperand& src0Op,
+                 VOPExtraModifiers& extraMods, const char* instrPlace)
+{
+    if (needImm)
+    {
+        asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+        return false;
+    }
+    if (src0Op.range.start < 256)
+    {
+        asmr.printError(instrPlace, "SRC0 must be a vector register with "
+                    "SDWA or DPP word");
+        return false;
+    }
+    if (vop3)
+    {   // if VOP3 and (VOP_DPP or VOP_SDWA)
+        asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
+        return false;
+    }
+    if (sextFlags & extraMods.needDPP)
+    {
+        asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
+        return false;
+    }
+    if (!extraMods.needSDWA && !extraMods.needDPP)
+    {
+        if (gcnVOPEnc!=GCNVOPEnc::DPP)
+            extraMods.needSDWA = true; // by default we choose SDWA word
+        else
+            extraMods.needDPP = true;
+    }
+    return true;
+}
+
 };

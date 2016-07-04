@@ -202,6 +202,9 @@ struct CLRX_INTERNAL GCNAsmUtils: AsmParseUtils
                      GCNEncSize gcnEncSize, uint32_t wordsNum);
     static bool checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
                      GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers);
+    static bool checkGCNVOPExtraModifers(Assembler& asmr, bool needImm, bool sextFlags,
+                 bool vop3, GCNVOPEnc gcnVOPEnc, const GCNOperand& src0Op,
+                 VOPExtraModifiers& extraMods, const char* instrPlace);
     
     static void parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                       const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,

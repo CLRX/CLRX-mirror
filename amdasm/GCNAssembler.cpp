@@ -127,38 +127,6 @@ GCNAssembler::~GCNAssembler()
 namespace CLRX
 {
 
-bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
-                     GCNEncSize gcnEncSize, uint32_t wordsNum)
-{
-    if (gcnEncSize==GCNEncSize::BIT32 && wordsNum!=1)
-    {
-        asmr.printError(insnPtr, "32-bit encoding specified when 64-bit encoding");
-        return false;
-    }
-    if (gcnEncSize==GCNEncSize::BIT64 && wordsNum!=2)
-    {
-        asmr.printError(insnPtr, "64-bit encoding specified when 32-bit encoding");
-        return false;
-    }
-    return true;
-}
-
-bool GCNAsmUtils::checkGCNVOPEncoding(Assembler& asmr, const char* insnPtr,
-                     GCNVOPEnc vopEnc, const VOPExtraModifiers* modifiers)
-{
-    if (vopEnc==GCNVOPEnc::DPP && !modifiers->needDPP)
-    {
-        asmr.printError(insnPtr, "DPP encoding specified when DPP not present");
-        return false;
-    }
-    if (vopEnc==GCNVOPEnc::SDWA && !modifiers->needSDWA)
-    {
-        asmr.printError(insnPtr, "DPP encoding specified when DPP not present");
-        return false;
-    }
-    return true;
-}
-
 static const uint32_t constImmFloatLiterals[9] = 
 {
     0x3f000000, 0xbf000000, 0x3f800000, 0xbf800000,
@@ -1090,34 +1058,9 @@ void GCNAsmUtils::parseVOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
-        if (needImm)
-        {
-            asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+        if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
+                    extraMods, instrPlace))
             return;
-        }
-        if (src0Op.range.start < 256)
-        {
-            asmr.printError(instrPlace, "SRC0 must be a vector register with "
-                        "SDWA or DPP word");
-            return;
-        }
-        if (vop3)
-        {   // if VOP3 and (VOP_DPP or VOP_SDWA)
-            asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
-            return;
-        }
-        if (sextFlags & extraMods.needDPP)
-        {
-            asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
-            return;
-        }
-        if (!extraMods.needSDWA && !extraMods.needDPP)
-        {
-            if (gcnVOPEnc!=GCNVOPEnc::DPP)
-                extraMods.needSDWA = true; // by default we choose SDWA word
-            else
-                extraMods.needDPP = true;
-        }
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1282,37 +1225,13 @@ void GCNAsmUtils::parseVOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
             (gcnEncSize==GCNEncSize::BIT64);
     
     bool sextFlags = (src0Op.vopMods & VOPOP_SEXT);
+    bool needImm = (src0Op && src0Op.range.start==255);
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
-        if (src0Op && src0Op.range.start==255)
-        {
-            asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+        if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
+                    extraMods, instrPlace))
             return;
-        }
-        if (src0Op && src0Op.range.start < 256)
-        {
-            asmr.printError(instrPlace, "SRC0 must be a vector register with "
-                        "SDWA or DPP word");
-            return;
-        }
-        if (vop3)
-        {   // if VOP3 and (VOP_DPP or VOP_SDWA)
-            asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
-            return;
-        }
-        if (sextFlags & extraMods.needDPP)
-        {
-            asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
-            return;
-        }
-        if (!extraMods.needSDWA && !extraMods.needDPP)
-        {
-            if (gcnVOPEnc!=GCNVOPEnc::DPP)
-                extraMods.needSDWA = true; // by default we choose SDWA word
-            else
-                extraMods.needDPP = true;
-        }
     }
     else if (isGCN12 && (src0Op.vopMods & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
@@ -1462,34 +1381,9 @@ void GCNAsmUtils::parseVOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     if (isGCN12 && (extraMods.needSDWA || extraMods.needDPP || sextFlags ||
                 gcnVOPEnc!=GCNVOPEnc::NORMAL))
     {   /* if VOP_SDWA or VOP_DPP is required */
-        if (needImm)
-        {
-            asmr.printError(instrPlace, "Literal with SDWA or DPP word is illegal");
+        if (!checkGCNVOPExtraModifers(asmr, needImm, sextFlags, vop3, gcnVOPEnc, src0Op,
+                    extraMods, instrPlace))
             return;
-        }
-        if (src0Op.range.start < 256)
-        {
-            asmr.printError(instrPlace, "SRC0 must be a vector register with "
-                        "SDWA or DPP word");
-            return;
-        }
-        if (vop3)
-        {   // if VOP3 and (VOP_DPP or VOP_SDWA)
-            asmr.printError(instrPlace, "Mixing VOP3 with SDWA or WORD is illegal");
-            return;
-        }
-        if (sextFlags & extraMods.needDPP)
-        {
-            asmr.printError(instrPlace, "SEXT modifiers is unavailable for DPP word");
-            return;
-        }
-        if (!extraMods.needSDWA && !extraMods.needDPP)
-        {
-            if (gcnVOPEnc!=GCNVOPEnc::DPP)
-                extraMods.needSDWA = true; // by default we choose SDWA word
-            else
-                extraMods.needDPP = true;
-        }
     }
     else if (isGCN12 && ((src0Op.vopMods|src1Op.vopMods) & ~VOPOP_SEXT)!=0 && !sextFlags)
         // if all pass we check we promote VOP3 if only operand modifiers expect sext()
