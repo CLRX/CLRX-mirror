@@ -29,6 +29,8 @@ const GCNAsmOpcodeCase encGCN12OpcodeCases[] =
     { "    s_add_u32  xnack_mask_hi, s4, s61", 0x80693d04U, 0, false, true, "" },
     { "    s_add_u32  xnack_mask_hi, 0.15915494, s61", 0x80693df8U, 0, false, true, "" },
     { "    s_add_u32  xnack_mask_hi, 15.915494e-2, s61", 0x80693df8U, 0, false, true, "" },
+    { "    s_add_u32_e64  xnack_mask_hi, 15.915494e-2, s61",
+        0x80693dffU, 0x3e22f983U, true, true, "" },
     // SOP2 instructions
     { "    s_addc_u32  s21, s4, s61", 0x82153d04U, 0, false, true, "" },
     { "    s_and_b32  s21, s4, s61", 0x86153d04U, 0, false, true, "" },

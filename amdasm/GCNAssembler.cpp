@@ -143,6 +143,28 @@ bool GCNAsmUtils::checkGCNEncodingSize(Assembler& asmr, const char* insnPtr,
     return true;
 }
 
+static const uint32_t constImmFloatLiterals[9] = 
+{
+    0x3f000000, 0xbf000000, 0x3f800000, 0xbf800000,
+    0x40000000, 0xc0000000, 0x40800000, 0xc0800000, 0x3e22f983
+};
+
+static void tryPromoteConstImmToLiteral(GCNOperand& src0Op, uint16_t arch)
+{
+    if (src0Op.range.start>=128 && src0Op.range.start<=208)
+    {
+        src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
+                192-src0Op.range.start;
+        src0Op.range.start = 255;
+    }
+    else if ((src0Op.range.start>=240 && src0Op.range.start<248) ||
+            ((arch&ARCH_RX3X0)!=0 && src0Op.range.start==248))
+    {
+        src0Op.value = constImmFloatLiterals[src0Op.range.start-240];
+        src0Op.range.start = 255;
+    }
+}
+
 void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gcnInsn,
                   const char* linePtr, uint16_t arch, std::vector<cxbyte>& output,
                   GCNAssembler::Regs& gcnRegs, GCNEncSize gcnEncSize)
@@ -175,18 +197,8 @@ void GCNAsmUtils::parseSOP2Encoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (gcnEncSize==GCNEncSize::BIT64)
     {   // try to promote constant immediate to literal
-        if (src0Op.range.start>=128 && src0Op.range.start<=208)
-        {
-            src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
-                    192-src0Op.range.start;
-            src0Op.range.start = 255;
-        }
-        else if (src1Op.range.start>=128 && src1Op.range.start<=208)
-        {
-            src1Op.value = src1Op.range.start<193? src1Op.range.start-128 :
-                    192-src1Op.range.start;
-            src1Op.range.start = 255;
-        }
+        tryPromoteConstImmToLiteral(src0Op, arch);
+        tryPromoteConstImmToLiteral(src1Op, arch);
     }
     // put data
     cxuint wordsNum = 1;
@@ -254,14 +266,8 @@ void GCNAsmUtils::parseSOP1Encoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     if (gcnEncSize==GCNEncSize::BIT64)
-    {   // try to promote constant immediate to literal
-        if (src0Op.range.start>=128 && src0Op.range.start<=208)
-        {
-            src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
-                    192-src0Op.range.start;
-            src0Op.range.start = 255;
-        }
-    }
+        // try to promote constant immediate to literal
+        tryPromoteConstImmToLiteral(src0Op, arch);
     cxuint wordsNum = 1;
     uint32_t words[2];
     SLEV(words[0], 0xbe800000U | (uint32_t(gcnInsn.code1)<<8) | src0Op.range.start |
@@ -484,18 +490,8 @@ void GCNAsmUtils::parseSOPCEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     
     if (gcnEncSize==GCNEncSize::BIT64)
     {   // try to promote constant immediate to literal
-        if (src0Op.range.start>=128 && src0Op.range.start<=208)
-        {
-            src0Op.value = src0Op.range.start<193? src0Op.range.start-128 :
-                    192-src0Op.range.start;
-            src0Op.range.start = 255;
-        }
-        else if (src1Op.range.start>=128 && src1Op.range.start<=208)
-        {
-            src1Op.value = src1Op.range.start<193? src1Op.range.start-128 :
-                    192-src1Op.range.start;
-            src1Op.range.start = 255;
-        }
+        tryPromoteConstImmToLiteral(src0Op, arch);
+        tryPromoteConstImmToLiteral(src1Op, arch);
     }
     // put data
     cxuint wordsNum = 1;
