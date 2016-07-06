@@ -45,7 +45,8 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
     { ".amd;.kernel xx;.config;.tgsize;.text;s_add_u32 s5,s0,s1", { { "xx", 6, 0 } } },
     { ".amd;.kernel xx;.config;.tgsize;.text;s_and_b64 s[6:7],s[0:1],s[2:3]",
         { { "xx", 8, 0 } } },
-    { ".amd;.kernel xx;.config;.tgsize;.text;s_cmpk_lt_i32 s14,43", { { "xx", 15, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_movk_i32 s14,43", { { "xx", 15, 0 } } },
+    { ".amd;.kernel xx;.config;.tgsize;.text;s_cmpk_lt_i32 s14,43", { { "xx", 1, 0 } } },
     { ".amd;.kernel xx;.config;.tgsize;.text;s_brev_b32 s17,s2", { { "xx", 18, 0 } } },
     { ".amd;.kernel xx;.config;.tgsize;.text;s_brev_b64 s[18:19],s[2:3]",
         { { "xx", 20, 0 } } },
@@ -123,7 +124,7 @@ static const AsmRegPoolTestCase regPoolTestCasesTbl[] =
         { { "xx", 18, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_cmp_lg_u32 s6,vcc_hi;s_not_b32 s15, s1",
         { { "xx", 18, 0 } } },
-    { ".gallium;.kernel xx;.config;.text;xx:s_cmpk_ge_i32 vcc_lo,0xd3b9;"
+    { ".gallium;.kernel xx;.config;.text;xx:s_movk_i32 vcc_lo,0xd3b9;"
         "s_not_b32 s15, s1", { { "xx", 18, 0 } } },
     { ".gallium;.kernel xx;.config;.text;xx:s_load_dwordx2  s[2:3], s[8:9], vcc_lo;"
         "s_not_b32 s15, s1", { { "xx", 18, 0 } } },

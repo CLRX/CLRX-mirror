@@ -86,6 +86,7 @@ enum : uint16_t
     GCN_IMM_MSGS = 0x50,    /// SOPK, s_sendmsg* message function
     GCN_IMM_SREG = 0x60,    /// SOPK, hwreg function
     GCN_SRC_NONE = 0x70,    /// SOP1, omit source
+    GCN_DST_SRC = 0x80,     /// SOPK, SDST is first source
     GCN_IMM_DST = 0x100,    /// immediate is first (destplace), destination is second
     GCN_SOPK_CONST = 0x200, /// constant instead destination
     GCN_SOPK_SRIMM32 = 0x300, /// GCN_IMM_DST and GCN_SOPK_CONST together
