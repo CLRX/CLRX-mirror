@@ -441,7 +441,8 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
     /// prevent freeing expression
     imm32Expr.release();
     imm16Expr.release();
-    if (dstReg && (gcnInsn.mode&GCN_MASK1)!=GCN_DST_SRC)
+    if (dstReg && (gcnInsn.mode&GCN_MASK1)!=GCN_DST_SRC && 
+                (gcnInsn.mode & GCN_IMM_DST)==0)
     {
         updateSGPRsNum(gcnRegs.sgprsNum, dstReg.end-1, arch);
         updateRegFlags(gcnRegs.regFlags, dstReg.start, arch);
