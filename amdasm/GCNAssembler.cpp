@@ -424,7 +424,7 @@ void GCNAsmUtils::parseSOPKEncoding(Assembler& asmr, const GCNAsmInstruction& gc
         return;
     
     uint32_t words[2];
-    SLEV(words[0], 0xb0000000U | imm16 | uint32_t(dstReg.start)<<16 |
+    SLEV(words[0], 0xb0000000U | imm16 | (uint32_t(dstReg.start)<<16) |
                 uint32_t(gcnInsn.code1)<<23);
     if (wordsNum==2)
         SLEV(words[1], imm32);
