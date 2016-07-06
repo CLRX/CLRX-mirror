@@ -91,7 +91,7 @@ SCC = SDST!=0
 #### S_AND_SAVEEXEC_B64
 
 Opcode: 36 (0x24) for GCN 1.0/1.1; 32 (0x20) for GCN 1.2  
-Syntax: S_AND_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_AND_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise AND on SSRC0 and EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
@@ -105,7 +105,7 @@ SCC = EXEC!=0
 #### S_ANDN2_SAVEEXEC_B64
 
 Opcode: 39 (0x27) for GCN 1.0/1.1; 35 (0x23) for GCN 1.2  
-Syntax: S_AND_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_AND_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise AND on SSRC0 and negated EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
@@ -461,7 +461,7 @@ SDST = SGPR[SSRC0_NUMBER + M0 : SSRC0_NUMBER + M0 + 1]
 #### S_NAND_SAVEEXEC_B64
 
 Opcode: 41 (0x29) for GCN 1.0/1.1; 37 (0x25) for GCN 1.2  
-Syntax: S_NAND_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_NAND_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise NAND on SSRC0 and EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
@@ -475,7 +475,7 @@ SCC = EXEC!=0
 #### S_NOR_SAVEEXEC_B64
 
 Opcode: 42 (0x2a) for GCN 1.0/1.1; 38 (0x26) for GCN 1.2  
-Syntax: S_NOR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_NOR_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise NOR on SSRC0 and EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
@@ -528,7 +528,7 @@ SCC = EXEC!=0
 #### S_ORN2_SAVEEXEC_B64
 
 Opcode: 40 (0x28) for GCN 1.0/1.1; 36 (0x24) for GCN 1.2  
-Syntax: S_ORN2_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_ORN2_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise OR on SSRC0 and negated EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
@@ -660,7 +660,7 @@ SCC = SDST!=0
 #### S_XNOR_SAVEEXEC_B64
 
 Opcode: 43 (0x2b) for GCN 1.0/1.1; 39 (0x27) for GCN 1.2  
-Syntax: S_XNOR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_XNOR_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise XNOR on SSRC0 and EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
@@ -674,7 +674,7 @@ SCC = EXEC!=0
 #### S_XOR_SAVEEXEC_B64
 
 Opcode: 38 (0x26) for GCN 1.0/1.1; 34 (0x22) for GCN 1.2  
-Syntax: S_XOR_SAVEEXEC_B64 SDST(2), SDST(2)  
+Syntax: S_XOR_SAVEEXEC_B64 SDST(2), SSRC0(2)  
 Description: Store EXEC register to SDST. Make bitwise XOR on SSRC0 and EXEC
 and store result to EXEC. If result is non-zero, store 1 to SCC, otherwise store 0 to SCC.
 SDST and SSRC0 are 64-bit.  
