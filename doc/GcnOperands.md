@@ -95,7 +95,7 @@ always encodes and decodes literal immediate as 32-bit value (includes floating 
 The immediate constants are always exact value, either for 32-bit and 64-bit operands.
 For example, instructions `v_frexp_exp_i32_f64 v3, lit(45)` and
 `v_frexp_exp_i32_f64 v3, 45` generates different results, because literal and constant
-will be have different meaning. Th
+will be have different meaning.
 
 **NOTE:** These same literals and constants gives different values for 64-bit operand in
 vector instructions. To distinguish values, please use `lit()` function.
