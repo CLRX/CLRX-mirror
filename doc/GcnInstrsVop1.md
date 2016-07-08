@@ -322,7 +322,8 @@ VDST = CVTHALF(ASFLOAT(SRC0))
 Opcode VOP1: 11 (0xb)  
 Opcode VOP3A: 395 (0x18b) for GCN 1.0/1.1; 331 (0x14b) for GCN 1.2  
 Syntax: V_CVT_F32_F16 VDST, SRC0  
-Description: Convert half FP value to single FP value, and store result to VDST.  
+Description: Convert half FP value to single FP value, and store result to VDST.
+**By default, immediate is in FP32 format!**.  
 Operation:  
 ```
 VDST = (FLOAT)(ASHALF(SRC0))
