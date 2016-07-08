@@ -91,7 +91,7 @@ The literals are differently treated for scalar instructions and for vector inst
 In scalar instructions if operand is 64-bit, the literal value is exact value 64-bit value
 (sign or zero extended). By contrast, in vector instructions, for 64-bit operand, the
 literal is higher 32-bits of value (lower 32-bit are zero). Unhapilly, the CLRX assembler
-always encodes and decodes literal immediate as 32-bit value (includes floating values).
+always encodes and decodes literal immediate as 32-bit value (except floating values).
 The immediate constants are always exact value, either for 32-bit and 64-bit operands.
 For example, instructions `v_frexp_exp_i32_f64 v3, lit(45)` and
 `v_frexp_exp_i32_f64 v3, 45` generates different results, because literal and constant
