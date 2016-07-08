@@ -54,12 +54,19 @@ enum: Flags
     DISASM_HEXCODE = 32,    ///< print on left side hexadecimal code
     DISASM_SETUP = 64,
     DISASM_CONFIG = 128,    ///< print kernel configuration instead raw data
-    DISASM_ALL = FLAGS_ALL&~DISASM_CONFIG  ///< all disassembler flags (without config)
+    DISASM_BUGGYFPLIT = 256,
+    
+    ///< all disassembler flags (without config)
+    DISASM_ALL = FLAGS_ALL&(~(DISASM_CONFIG|DISASM_BUGGYFPLIT))
 };
+
+struct GCNDisasmUtils;
 
 /// main class for
 class ISADisassembler: public NonCopyableAndNonMovable
 {
+private:
+    friend struct GCNDisasmUtils; // INTERNAL LOGIC
 protected:
     /// internal relocation structure
     struct Relocation
@@ -137,8 +144,6 @@ public:
         relocations.clear();
     }
 };
-
-struct GCNDisasmUtils;
 
 /// GCN architectur dissassembler
 class GCNDisassembler: public ISADisassembler

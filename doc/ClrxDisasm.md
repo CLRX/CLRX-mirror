@@ -74,6 +74,11 @@ Ellesmere, and Baffin.
 List of supported architectures:
 GCN1.0, GCN1.1 and GCN1.2.
 
+* **--buggy-fplit**
+
+    Choose old and buggy floating point literals rules (to 0.1.2 version)
+for compatibility.
+
 * **-?**, **--help**
 
     Print help and list of the options.
